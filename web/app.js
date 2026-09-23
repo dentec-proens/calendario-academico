@@ -1,4 +1,5 @@
 import {proposedDates} from '/history-dates.mjs';
+import {historyCandidateKey,includedHistoryCandidate} from '/history-progress.mjs';
 import {suggestStages} from '/stage-suggestions.mjs';
 import {teacherVacations} from '/teacher-vacations.mjs';
 import {regimeLabels} from '/calendar-label.mjs';
@@ -61,7 +62,7 @@ function render(){
   $('issue-list').innerHTML=issues.map(([mark,title,detail])=>`<li class="issue-item"><span class="issue-mark">${mark}</span><div><strong>${escape(title)}</strong><small>${escape(detail)}</small></div></li>`).join('');
   $('calendar-title').textContent=`${state.year} · ${state.campus || 'Campus não informado'}${state.offer?' · '+calendarModalities(state).map(m=>modalityLabels[m]).join(' + '):''}`;
   $('months').innerHTML=proensLayout(state,allEvents(),result,record);
-  renderSaturdays();updateStageSuggestion();
+  renderSaturdays();updateStageSuggestion();renderHistorySuggestions();
 }
 function sync(){$('vacation-july').value=state.teacherVacations?.julyStart||'';$('vacation-evidence').value=state.teacherVacations?.evidence||'';vacationPreview();if(['integrado','subsequente','posgraduacao'].includes(state.offer)&&!Array.from($('offer').options).some(o=>o.value===state.offer))$('offer').add(new Option(modalityLabels[state.offer],state.offer));for(const key of ['campus','year','offer','regime'])$(key).value=state[key];document.querySelectorAll('#weekdays input').forEach(el=>el.checked=state.weekdays.includes(Number(el.value)));$('week-evidence').value=state.weekEvidence;$('week-confirmed').checked=state.weekConfirmed;}
 $('identity').onsubmit=e=>e.preventDefault();
@@ -127,7 +128,7 @@ async function analyzeUploadedHistory(id){
   const analysis=await api('/api/history/'+id+'/analysis','POST',{});historyAnalysis=analysis;analyzedHistory=record.histories.find(h=>h.id===id);
   $('history-analysis').hidden=false;
   $('history-analysis-help').textContent=analysis.needsText?'Este PDF parece ser uma imagem digitalizada. Ainda não há leitura de imagens (OCR). Envie uma versão com texto selecionável ou consulte o original e preencha os eventos manualmente.':`Foram encontrados ${analysis.candidates.length} possíveis itens${analysis.truncated?' (limite de 150)':''}. A leitura pode omitir ou juntar trechos. Nem todo feriado é municipal: compare com a base PROENS. Escolha um item, corrija a descrição e confirme as datas e a fonte vigente para ${state.year}.`;
-  $('history-suggestions').innerHTML=analysis.candidates.map((c,i)=>`<li><div><strong>${escape(c.name)}</strong><small>Página ${c.page} · texto do ano anterior: ${escape(c.excerpt)}</small></div><button type="button" data-history-candidate="${i}">Revisar e incluir</button></li>`).join('');
+  renderHistorySuggestions();
   $('history-text').textContent=analysis.pages.map(p=>`Página ${p.page}\n${p.text}`).join('\n\n');
   $('history-status').textContent='Leitura concluída. Use Revisar e incluir para conferir cada atividade e suas datas sugeridas.';
  }catch(err){$('history-status').textContent=err.message;message(err.message,true);}
@@ -136,7 +137,8 @@ document.addEventListener('click',async e=>{
  const b=e.target.closest('[data-analyze-history]');if(b){b.disabled=true;await analyzeUploadedHistory(b.dataset.analyzeHistory);b.disabled=false;}
  const candidateButton=e.target.closest('[data-history-candidate]');if(!candidateButton||!historyAnalysis)return;
  const c=historyAnalysis.candidates[Number(candidateButton.dataset.historyCandidate)];if(!c)return;
- historicalSource={historyId:analyzedHistory.id,page:c.page};
+ if(includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates))return;
+ historicalSource={historyId:analyzedHistory.id,page:c.page,candidateKey:historyCandidateKey(c)};
  $('historical-event-source').hidden=false;$('historical-event-source').textContent=`Origem histórica: ${analyzedHistory.filename}, página ${c.page}. Confira a descrição, informe as datas de ${state.year} e a fonte vigente. O PDF anterior não comprova a vigência do feriado.`;
  $('event-requirement').value='';$('event-name').value=c.name;$('event-category').value=c.category;$('event-kind').value='note';
  const proposed=proposedDates(c,state.year);$('event-start').value=proposed.start;$('event-end').value=proposed.end;$('event-evidence').value='';$('event-confirmed').checked=false;
@@ -203,3 +205,10 @@ function updateStageSuggestion(){
 }
 $('event-start').addEventListener('input',updateStageSuggestion);
 $('event-start').addEventListener('change',updateStageSuggestion);
+
+function renderHistorySuggestions(){
+ if(!historyAnalysis||!analyzedHistory)return;
+ let count=0;
+ $('history-suggestions').innerHTML=historyAnalysis.candidates.map((c,i)=>{const done=includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates);if(done)count++;return `<li class="${done?'history-included':''}"><div><strong>${i+1}. ${escape(c.name)}</strong><small>Página ${c.page} · texto do ano anterior: ${escape(c.excerpt)}</small>${done?'<span class="history-check">✓ Revisado e incluído</span>':''}</div><button type="button" data-history-candidate="${i}" ${done?'disabled':''}>${done?'✓ Incluído':'Revisar e incluir'}</button></li>`;}).join('');
+ let progress=$('history-progress');if(!progress){progress=document.createElement('p');progress.id='history-progress';progress.setAttribute('role','status');$('history-suggestions').before(progress);}progress.textContent=`${count} de ${historyAnalysis.candidates.length} itens incluídos. A ordem da lista é mantida. Salve o calendário para guardar as novas inclusões.`;
+}

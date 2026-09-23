@@ -1,3 +1,4 @@
+import {historyCandidateKey} from '../src/history-progress.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {analyzeHistory,suggestionsFromPages} from '../src/history-analysis.mjs';
@@ -32,7 +33,7 @@ test('Campus uploads, analyzes and confirms its historical event, while foreign 
  assert.equal((await call(path,'POST',{})).status,401);assert.equal((await call(path,'POST',{},other)).status,404);
  const parsed=await call(path,'POST',{},campus);assert.equal(parsed.status,200);assert.equal(parsed.data.candidates[0].category,'feriado');assert.deepEqual((await call(path,'POST',{},campus)).data,parsed.data);
  const fresh=(await call('/api/calendars/'+record.id,'GET',null,campus)).data;assert.equal(fresh.state.events.length,0);assert.equal(fresh.histories[0].analyzed,true);assert(!('analysis' in fresh.histories[0]));assert(!('data' in fresh.histories[0]));
- const state={...fresh.state,events:[{id:'confirmed-local',name:'Feriado municipal confirmado',start:'2027-06-24',end:'2027-06-24',kind:'exclude',category:'feriado',evidence:'Lei municipal conferida pelo diretor',historicalSource:{historyId:uploaded.data.id,page:1}}]};
+ const state={...fresh.state,events:[{id:'confirmed-local',name:'Feriado municipal confirmado',start:'2027-06-24',end:'2027-06-24',kind:'exclude',category:'feriado',evidence:'Lei municipal conferida pelo diretor',historicalSource:{historyId:uploaded.data.id,page:1,candidateKey:historyCandidateKey(parsed.data.candidates[0])}}]};
  assert.equal((await call('/api/calendars/'+record.id,'PUT',{state,version:1,catalogueRevision:fresh.currentCatalogueRevision},campus)).status,200);
  const saved=(await call('/api/calendars/'+record.id,'GET',null,campus)).data;assert.deepEqual(saved.state.events[0].historicalSource,state.events[0].historicalSource);
  state.events[0].historicalSource.historyId='foreign-history';assert.equal((await call('/api/calendars/'+record.id,'PUT',{state,version:2,catalogueRevision:fresh.currentCatalogueRevision},campus)).status,400);
