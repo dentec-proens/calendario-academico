@@ -129,7 +129,7 @@ async function analyzeUploadedHistory(id){
   $('history-analysis-help').textContent=analysis.needsText?'Este PDF parece ser uma imagem digitalizada. Ainda não há leitura de imagens (OCR). Envie uma versão com texto selecionável ou consulte o original e preencha os eventos manualmente.':`Foram encontrados ${analysis.candidates.length} possíveis itens${analysis.truncated?' (limite de 150)':''}. A leitura pode omitir ou juntar trechos. Nem todo feriado é municipal: compare com a base PROENS. Escolha um item, corrija a descrição e confirme as datas e a fonte vigente para ${state.year}.`;
   $('history-suggestions').innerHTML=analysis.candidates.map((c,i)=>`<li><div><strong>${escape(c.name)}</strong><small>Página ${c.page} · texto do ano anterior: ${escape(c.excerpt)}</small></div><button type="button" data-history-candidate="${i}">Revisar e incluir</button></li>`).join('');
   $('history-text').textContent=analysis.pages.map(p=>`Página ${p.page}\n${p.text}`).join('\n\n');
-  renderHistoryBatch();$('history-status').textContent='Leitura concluída. Confira as datas sugeridas e inclua os itens em lote.';
+  $('history-status').textContent='Leitura concluída. Use Revisar e incluir para conferir cada atividade e suas datas sugeridas.';
  }catch(err){$('history-status').textContent=err.message;message(err.message,true);}
 }
 document.addEventListener('click',async e=>{
@@ -190,24 +190,6 @@ function vacationPreview(){try{const v=teacherVacations(state.year,$('vacation-j
 $('vacation-july').onchange=vacationPreview;
 $('vacation-form').onsubmit=e=>{e.preventDefault();act(()=>{const vacation=teacherVacations(state.year,$('vacation-july').value,$('vacation-evidence').value);state.teacherVacations={julyStart:vacation.julyStart,evidence:$('vacation-evidence').value.trim()};state.events=state.events.filter(e=>!['teacher-vacation-january','teacher-vacation-july'].includes(e.id)).concat(vacation.events);dirty=true;render();vacationPreview();message('Férias docentes aplicadas: 30 dias em janeiro + 15 dias em julho = 45 dias. Salve no sistema.');});};
 document.addEventListener('input',e=>{if(e.target.closest('form'))message('Formulário alterado. Aplique a alteração no botão correspondente e depois salve no sistema.');});
-
-function renderHistoryBatch(){
- let panel=$('history-batch');if(!panel){panel=document.createElement('section');panel.id='history-batch';$('history-suggestions').before(panel);}
- panel.innerHTML='<h3>Trazer atividades para o ano atual</h3><p>Confira as datas sugeridas. Nada será aplicado antes da sua confirmação. Os itens incluídos em lote abrangem todas as formas de oferta/níveis deste calendário; para outra abrangência, use Revisar e incluir individualmente.</p><button type="button" id="select-history-dates">Selecionar itens com datas preenchidas</button><div id="history-batch-rows"></div><label>Fonte ou decisão vigente para os itens selecionados<input id="history-batch-evidence" maxlength="240" placeholder="Informe a fonte atual ou a decisão do campus"></label><label><input type="checkbox" id="history-batch-confirm"> Conferi as datas, a abrangência e o efeito na contagem dos itens selecionados.</label><button type="button" id="apply-history-batch">Incluir itens selecionados no calendário</button>';
- $('history-batch-rows').innerHTML=historyAnalysis.candidates.map((c,i)=>{const d=proposedDates(c,state.year);return `<fieldset data-history-row="${i}"><legend><label><input type="checkbox" data-history-select> Incluir item ${i+1}</label></legend><label>Atividade<input data-history-name maxlength="160" value="${escape(c.name)}"></label><small>Página ${c.page}: ${escape(c.excerpt)}</small><p>${escape(d.warning)}</p><label>Início<input type="date" data-history-start value="${d.start}" min="${state.year}-01-01" max="${state.year}-12-31"></label><label>Término<input type="date" data-history-end value="${d.end}" min="${state.year}-01-01" max="${state.year}-12-31"></label><label>Efeito na contagem<select data-history-kind><option value="note">Sem efeito na contagem</option><option value="exclude">Excluir dia(s) letivo(s)</option><option value="include">Incluir dia(s) letivo(s)</option></select></label><label>Categoria e cor<select data-history-category>${categories.map(([key,label])=>`<option value="${key}" ${key===c.category?'selected':''}>${escape(label)}</option>`).join('')}</select></label></fieldset>`;}).join('');
- $('select-history-dates').onclick=()=>panel.querySelectorAll('[data-history-row]').forEach(row=>{row.querySelector('[data-history-select]').checked=!!row.querySelector('[data-history-start]').value&&!!row.querySelector('[data-history-end]').value;});
- $('apply-history-batch').onclick=()=>{try{
-  const evidence=$('history-batch-evidence').value.trim();if(!evidence||!$('history-batch-confirm').checked)throw Error('Informe a fonte vigente e confirme a revisão dos itens.');
-  const additions=[];let duplicates=0;
-  for(const row of panel.querySelectorAll('[data-history-row]')){if(!row.querySelector('[data-history-select]').checked)continue;const c=historyAnalysis.candidates[Number(row.dataset.historyRow)],name=row.querySelector('[data-history-name]').value.trim(),start=row.querySelector('[data-history-start]').value,end=row.querySelector('[data-history-end]').value,kind=row.querySelector('[data-history-kind]').value,category=row.querySelector('[data-history-category]').value;
-   if(!name||!start||!end||start>end||!start.startsWith(state.year+'-')||!end.startsWith(state.year+'-'))throw Error('Confira o nome e as datas do item '+(Number(row.dataset.historyRow)+1)+'.');
-   if([...allEvents(),...additions].some(e=>e.name.trim().toLocaleLowerCase()===name.toLocaleLowerCase()&&e.start===start&&e.end===end)){duplicates++;continue;}
-   additions.push({id:crypto.randomUUID(),name,start,end,kind,category,evidence,modalities:calendarModalities(state),historicalSource:{historyId:analyzedHistory.id,page:c.page}});
-  }
-  if(!additions.length)throw Error(duplicates?'Os itens selecionados já constam no calendário.':'Selecione pelo menos um item.');
-  state.events.push(...additions);dirty=true;render();$('history-batch-confirm').checked=false;message(`${additions.length} atividade(s) incluída(s); ${duplicates} repetida(s) ignorada(s). Clique em Salvar para gravar o calendário.`);
- }catch(error){message(error.message,true);}};
-}
 
 function updateStageSuggestion(){
  let panel=$('stage-suggestion');if(!panel){panel=document.createElement('section');panel.id='stage-suggestion';panel.className='notice';panel.setAttribute('aria-live','polite');$('event-form').append(panel);}
