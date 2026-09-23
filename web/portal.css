@@ -58,3 +58,12 @@
 #history-suggestions .inline-history-review .row-form label{min-width:0;flex:1 1 200px}
 #history-suggestions .inline-history-review input:not([type="checkbox"]),#history-suggestions .inline-history-review select{width:100%;min-width:0}
 @media(max-width:600px){#history-suggestions .inline-history-review{padding:14px}#history-suggestions .inline-history-review .row-form{display:block}}
+
+.workspace.sequential-editor{display:block}
+
+#activity-checklist > li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px}
+#activity-checklist .inline-history-review{grid-column:1/-1;width:100%;min-width:0;padding:20px;border:1px solid var(--line);border-radius:8px;background:#f8faf9}
+#activity-checklist .inline-history-review .row-form{gap:16px}
+#activity-checklist .inline-history-review label{min-width:0}
+#activity-checklist button:disabled{background:#e3eee8;color:#285641;border-color:#cadbd1;opacity:1}
+@media(max-width:600px){#activity-checklist > li{grid-template-columns:minmax(0,1fr)}#activity-checklist .inline-history-review{padding:12px}}

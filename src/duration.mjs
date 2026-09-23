@@ -1,5 +1,11 @@
 import {parseDate,datesBetween} from './calendar.mjs';
 import {calendarModalities,appliesTo} from './modalities.mjs';
+export function recalculatePeriods(state,events){
+ const periods=state.periods.map(p=>p.targetDays===undefined?{...p}:{...p,end:durationEnd(p.start,p.targetDays,state,events)});
+ const ordered=[...periods].sort((a,b)=>a.start.localeCompare(b.start));
+ for(let i=1;i<ordered.length;i++)if(ordered[i-1].end>=ordered[i].start)throw Error(`O término previsto de ${ordered[i-1].name} (${ordered[i-1].end}) alcança ${ordered[i].name}. Ajuste o início do período seguinte ou os dias letivos; as datas anteriores foram mantidas.`);
+ return periods;
+}
 export function durationEnd(start,quantity,state,events=[]){
  const count=Number(quantity),time=parseDate(start);
  if(!Number.isInteger(count)||count<1||count>366)throw Error('Informe uma quantidade inteira entre 1 e 366 dias.');

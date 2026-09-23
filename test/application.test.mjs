@@ -50,6 +50,11 @@ test('accounts, campus isolation, history, propagation, versioning and persisten
  assert.deepEqual(definitive.state.modalities,['subsequente','graduacao']);assert.equal(definitive.state.regime,'misto');assert.equal(definitive.name,'Calendário 2027 - Campus Foz do Iguaçu');
  assert.equal((await call('/api/logs','GET')).status,401);const log=(await call('/api/logs','GET',null,campus)).data;assert(log.entries.every(e=>e.calendar.includes('Foz do Iguaçu')));assert(log.entries.some(e=>e.version===1));
  const blocked=await call('/api/calendars/'+definitive.id+'/pdf','POST',{version:1,catalogueRevision:1},campus);assert.equal(blocked.status,409);assert.match(blocked.data.error,/bloqueada/);assert.equal(rendered,0);
+ const automatic=(await call('/api/calendars','POST',{campusId:foz.id,courses:'Synthetic',year:2027,offer:'integrado',regime:'semestral',purpose:'test'},campus)).data;
+ const autoState={...automatic.state,weekdays:[1,2,3,4,5],weekConfirmed:true,weekEvidence:'Ata',periods:[{id:'first',name:'1º semestre',start:'2027-02-09',end:'2027-02-10',targetDays:100},{id:'second',name:'2º semestre',start:'2027-07-20',end:'2027-07-21',targetDays:100}]};
+ assert.equal((await call('/api/calendars/'+automatic.id,'PUT',{version:1,catalogueRevision:1,state:autoState},campus)).status,200);
+ const autoSaved=(await call('/api/calendars/'+automatic.id,'GET',null,campus)).data.state;
+ assert.equal(autoSaved.periods[0].targetDays,100);assert(autoSaved.periods[0].end>'2027-06-01');assert.equal(autoSaved.periods[1].targetDays,100);
  const vacationState={...definitive.state,teacherVacations:{julyStart:'2027-07-05',evidence:'Synthetic campus decision',julyEnd:'2027-12-31',total:999}};
  assert.equal((await call('/api/calendars/'+definitive.id,'PUT',{version:1,catalogueRevision:1,state:vacationState},campus)).status,200);
  const vacationSaved=(await call('/api/calendars/'+definitive.id,'GET',null,campus)).data;

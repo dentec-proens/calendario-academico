@@ -1,4 +1,4 @@
-import {durationEnd} from '/duration.mjs';
+import {durationEnd,recalculatePeriods} from '/duration.mjs';
 import {proposedDates} from '/history-dates.mjs';
 import {historyCandidateKey,includedHistoryCandidate,existingHistoryEvent} from '/history-progress.mjs';
 import {suggestStages,isFirstStageStart} from '/stage-suggestions.mjs';
@@ -14,7 +14,7 @@ import {monthSaturdays,saturdayEvents} from '/saturdays.mjs';
 import {proensLayout} from '/print.mjs';
 const $=id=>document.getElementById(id);
 const eventFormHome=document.createComment('event-form-home');$('event-form').before(eventFormHome);
-let inlineHistoryIndex=null;
+let inlineHistoryIndex=null,inlineActivityId=null;
 let state={schemaVersion:1,campus:'',year:2027,offer:'',regime:'anual',weekdays:[],weekEvidence:'',weekConfirmed:false,periods:[],events:[]};
 let dirty=false, result=null;
 let historicalSource=null,historyAnalysis=null,analyzedHistory=null;
@@ -31,6 +31,9 @@ function identified(){if(!state.campus || !state.offer)throw Error('Abra um cale
 function interval(start,end){datesBetween(start,end);if(Number(start.slice(0,4))!==state.year || Number(end.slice(0,4))!==state.year)throw Error('As datas devem pertencer ao ano selecionado.');}
 function engineInput(){return {year:state.year,offerId:state.offer,periods:state.periods,weekPattern:{weekdays:state.weekdays,confirmed:state.weekConfirmed,evidenceId:state.weekEvidence},inclusions:allEvents().filter(e=>e.kind==='include').map(e=>({...e,offerIds:[state.offer],confirmed:true,evidenceId:e.evidence})),exclusions:allEvents().filter(e=>e.kind==='exclude').map(e=>({...e,offerIds:[state.offer],confirmed:true,evidenceId:e.evidence})),thresholds:{annual:state.year===2027?200:null,byPeriod:Object.fromEntries(state.periods.map(p=>[p.id,state.year===2027&&state.regime!=='anual'?100:null]))}};}
 function render(){
+ const activeActivity=inlineActivityId;if(activeActivity)restoreEventForm();
+ try{const periods=recalculatePeriods(state,allEvents());const changes=periods.filter((p,i)=>p.end!==state.periods[i].end);if(changes.length){state.periods=periods;dirty=true;$('period-auto-status').textContent='Término atualizado automaticamente: '+changes.map(p=>p.name+' — '+dateLabel(p.end)+' ('+p.targetDays+' dias letivos)').join('; ')+'. Salve no sistema.';}else $('period-auto-status').textContent=periods.some(p=>p.targetDays)?'Metas de dias letivos ativas: términos recalculados ao alterar os impedimentos.':'';}catch(error){$('period-auto-status').textContent=error.message;}
+ periodDurationPreview();
  $('regime-summary').textContent='Organização: '+regimeLabels[state.regime];
 
  if(dirty)message('Alteração aplicada ao rascunho. Use Salvar no sistema para registrar a versão.');
@@ -41,7 +44,7 @@ function render(){
  const selected=$('event-requirement').value;
  $('event-requirement').innerHTML='<option value="">Outro evento / sem vínculo</option>'+requirements.map(r=>`<option value="${r.id}">${escape(r.name)}</option>`).join('');
  $('event-requirement').value=selected;
- $('activity-checklist').innerHTML=requirements.map(r=>`<li><div><strong>${escape(r.name)}</strong><small>${state.events.some(e=>e.requirementId===r.id)?'Evento vinculado — sujeito à conferência':'Pendente de data e fonte'}</small></div><button type="button" data-prepare-activity="${r.id}">Preencher atividade</button></li>`).join('');
+ $('activity-checklist').innerHTML=requirements.map(r=>`<li data-activity-row="${r.id}"><div><strong>${escape(r.name)}</strong><small>${state.events.some(e=>e.requirementId===r.id)?'✓ Preenchido — sujeito à conferência':'Pendente de data e fonte'}</small></div><button type="button" data-prepare-activity="${r.id}" ${state.events.some(e=>e.requirementId===r.id)?'disabled':''}>${state.events.some(e=>e.requirementId===r.id)?'✓ Preenchido':'Preencher atividade'}</button></li>`).join('');
 
   result=null;const issues=[];
   if(!state.campus||!state.offer)issues.push(['Pendente','Identificação','Informe campus e oferta.']);
@@ -58,14 +61,14 @@ function render(){
   $('total').textContent=result?result.total:'—';$('goal').textContent=result?('Marcação dos dias: '+modalityLabels[calendarModalities(state)[0]]+'. ')+(state.year===2027?'Referência: mínimo anual de 200 dias.':'Sem meta normativa cadastrada para este ano.'):'Configure identificação, semana e períodos.';
   $('period-count').textContent=state.periods.length;
   $('period-summary').textContent=result?Object.entries(result.byModality).map(([m,r])=>modalityLabels[m]+': '+r.total+' dias — '+state.periods.map(p=>`${p.name}: ${r.byPeriod[p.id]}`).join(' · ')).join(' | '):'Aguardando dados para contagem';
-  $('period-list').innerHTML=state.periods.length?state.periods.map(p=>`<li><div><strong>${escape(p.name)}</strong><small>${dateLabel(p.start)} a ${dateLabel(p.end)}</small></div><button data-remove-period="${escape(p.id)}" aria-label="Remover ${escape(p.name)}">Remover</button></li>`).join(''):'<li class="help">Nenhum período cadastrado.</li>';
+  $('period-list').innerHTML=state.periods.length?state.periods.map(p=>`<li><div><strong>${escape(p.name)}</strong><small>${dateLabel(p.start)} a ${dateLabel(p.end)}${p.targetDays?` · Meta: ${p.targetDays} dias letivos · término automático`:""}</small></div><button data-remove-period="${escape(p.id)}" aria-label="Remover ${escape(p.name)}">Remover</button></li>`).join(''):'<li class="help">Nenhum período cadastrado.</li>';
   $('event-list').innerHTML=allEvents().length?allEvents().sort((a,b)=>a.start.localeCompare(b.start)).map(e=>`<li><div><strong>${escape(e.name)}</strong><small>${dateLabel(e.start)} a ${dateLabel(e.end)} · ${{include:'Inclusão letiva',exclude:'Exclusão',note:'Sem efeito na contagem'}[e.kind]}</small><small>Fonte: ${escape(e.evidence)}</small>${e.historicalSource?`<small>Origem histórica: página ${e.historicalSource.page} do <a href="/api/history/${escape(e.historicalSource.historyId)}">calendário anterior</a></small>`:""}<small>${escape(categoryLabel(e))}</small></div>${e.institutional?'<span class="institution-label">Base PROENS</span>':`<label>Categoria e cor<select data-category-event="${escape(e.id)}">${categories.map(([key,label])=>`<option value="${key}" ${eventCategory(e)===key?'selected':''}>${label}</option>`).join('')}</select></label><label>Atividade do roteiro<select data-link-activity="${escape(e.id)}"><option value="">Sem vínculo</option>${activityChecklist(state).map(r=>`<option value="${r.id}" ${e.requirementId===r.id?'selected':''}>${escape(r.name)}</option>`).join('')}</select></label><button data-remove-event="${escape(e.id)}" aria-label="Remover ${escape(e.name)}">Remover</button>`}</li>`).join(''):'<li class="help">Nenhum evento registrado. Confira a base para este ano.</li>';
   if(record?.purpose!=='test'){issues.push([!dirty&&record?.readiness?.ready?'Atendido':'Pendente','Geração definitiva',dirty?'Salve as alterações para atualizar a conferência.':record?.readiness?.ready?'Conferência registrada. Não representa aprovação oficial.':'A geração exige revisão completa.']);if(!dirty)for(const issue of record?.readiness?.issues||[])issues.push(['Pendente','Exigência obrigatória',issue]);}
   $('issue-count').textContent=issues.filter(i=>i[0]!=='Atendido').length;
   $('issue-list').innerHTML=issues.map(([mark,title,detail])=>`<li class="issue-item"><span class="issue-mark">${mark}</span><div><strong>${escape(title)}</strong><small>${escape(detail)}</small></div></li>`).join('');
   $('calendar-title').textContent=`${state.year} · ${state.campus || 'Campus não informado'}${state.offer?' · '+calendarModalities(state).map(m=>modalityLabels[m]).join(' + '):''}`;
   $('months').innerHTML=proensLayout(state,allEvents(),result,record);
-  renderSaturdays();updateStageSuggestion();renderHistorySuggestions();
+  renderSaturdays();updateStageSuggestion();renderHistorySuggestions();if(activeActivity){if(!state.events.some(e=>e.requirementId===activeActivity))openInlineActivity(activeActivity);else document.querySelector('[data-activity-row="'+activeActivity+'"]')?.scrollIntoView({block:'nearest'});}
 }
 function sync(){for(const [field,id] of [['firstStart','vacation-first-start'],['firstEnd','vacation-first-end'],['secondStart','vacation-second-start'],['secondEnd','vacation-second-end']])$(id).value=state.teacherVacations?.[field]||'';$('vacation-evidence').value=state.teacherVacations?.evidence||'';vacationPreview();if(['integrado','subsequente','posgraduacao'].includes(state.offer)&&!Array.from($('offer').options).some(o=>o.value===state.offer))$('offer').add(new Option(modalityLabels[state.offer],state.offer));for(const key of ['campus','year','offer','regime'])$(key).value=state[key];document.querySelectorAll('#weekdays input').forEach(el=>el.checked=state.weekdays.includes(Number(el.value)));$('week-evidence').value=state.weekEvidence;$('week-confirmed').checked=state.weekConfirmed;}
 $('identity').onsubmit=e=>e.preventDefault();
@@ -76,11 +79,11 @@ $('week-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
   Object.assign(state,{weekdays,weekEvidence:$('week-evidence').value.trim(),weekConfirmed:$('week-confirmed').checked});dirty=true;render();message('Semana letiva confirmada. Contagem atualizada.');
 });});
 $('period-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
-  if(isStageRequest()){applyStageSuggestion();return;}
+  if($('period-days').value)$('period-end').value=durationEnd($('period-start').value,$('period-days').value,state,allEvents());
   identified();const start=$('period-start').value,end=$('period-end').value,name=$('period-name').value.trim();interval(start,end);
   if(!name)throw Error('Informe o nome do período.');
   if(state.periods.some(p=>p.start<=end&&p.end>=start))throw Error('Este período se sobrepõe a outro. Ajuste as datas.');
-  state.periods.push({id:crypto.randomUUID(),name,start,end});dirty=true;e.target.reset();render();message('Período adicionado.');
+  state.periods.push({id:crypto.randomUUID(),name,start,end,...($('period-days').value?{targetDays:Number($('period-days').value)}:{})});dirty=true;e.target.reset();render();message('Período adicionado.');
 });});
 $('event-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
   identified();const start=$('event-start').value,end=$('event-end').value,kind=$('event-kind').value,name=$('event-name').value.trim(),evidence=$('event-evidence').value.trim();interval(start,end);
@@ -188,7 +191,7 @@ $('download-pdf-top').onclick=()=>$('download-pdf').click();
 openRecord();
 
 $('assessment-stages').onchange=()=>{const value=Number($('assessment-stages').value);if(![2,3,4].includes(value))return;state.assessmentStages=value;const ids=new Set(activityChecklist(state).map(r=>r.id));for(const event of state.events)if(!ids.has(event.requirementId))delete event.requirementId;dirty=true;render();};
-function prepareActivity(id){restoreEventForm();historicalSource=null;$('historical-event-source').hidden=true;const item=activityChecklist(state).find(r=>r.id===id);if(!item){updateStageSuggestion();return;}$('event-requirement').value=id;$('event-name').value=item.name;$('event-category').value=id.includes('council')?'conselho':id.startsWith('stage-')?'limite':'prazo';$('event-kind').value='note';$('event-start').value='';$('event-end').value='';$('event-evidence').value='';$('event-confirmed').checked=false;updateStageSuggestion();$('event-form').scrollIntoView({behavior:'smooth'});$('event-start').focus();}
+function prepareActivity(id){restoreEventForm();historicalSource=null;$('historical-event-source').hidden=true;const item=activityChecklist(state).find(r=>r.id===id);if(!item){updateStageSuggestion();return;}$('event-requirement').value=id;$('event-name').value=item.name;$('event-category').value=id.includes('council')?'conselho':id.startsWith('stage-')?'limite':'prazo';$('event-kind').value='note';$('event-start').value='';$('event-end').value='';$('event-evidence').value='';$('event-confirmed').checked=false;updateStageSuggestion();openInlineActivity(id);$('event-start').focus({preventScroll:true});}
 $('event-requirement').onchange=()=>prepareActivity($('event-requirement').value);
 document.addEventListener('click',e=>{const b=e.target.closest('[data-prepare-activity]');if(b)prepareActivity(b.dataset.prepareActivity);});
 document.addEventListener('change',e=>{if(!e.target.dataset.linkActivity)return;const event=state.events.find(x=>x.id===e.target.dataset.linkActivity);if(event){event.requirementId=e.target.value||undefined;dirty=true;render();}});
@@ -233,7 +236,7 @@ function renderHistorySuggestions(){
  let progress=$('history-progress');if(!progress){progress=document.createElement('p');progress.id='history-progress';progress.setAttribute('role','status');$('history-suggestions').before(progress);}progress.textContent=`${count} itens incluídos a partir do PDF; ${existingCount} sugestões já atendidas por eventos cadastrados. Itens ambíguos continuam disponíveis para revisão. Salve o calendário para guardar as novas inclusões.`;
 }
 
-function restoreEventForm(){eventFormHome.after($('event-form'));$('event-form').classList.remove('inline-history-review');$('cancel-inline-history')?.remove();inlineHistoryIndex=null;}
+function restoreEventForm(){inlineActivityId=null;eventFormHome.after($('event-form'));$('event-form').classList.remove('inline-history-review');$('cancel-inline-history')?.remove();inlineHistoryIndex=null;}
 function openInlineHistory(index,scroll=true){
  const row=document.querySelector('[data-history-item="'+index+'"]');if(!row)return;
  restoreEventForm();inlineHistoryIndex=index;row.append($('event-form'));$('event-form').classList.add('inline-history-review');
@@ -245,6 +248,10 @@ $('new-event').onclick=()=>{restoreEventForm();historicalSource=null;$('event-fo
 
 $('show-existing-history').onchange=renderHistorySuggestions;
 
-function periodDurationPreview(){if(!$('period-days').value)return;try{$('period-end').value=durationEnd($('period-start').value,$('period-days').value,state,allEvents());$('period-duration-status').textContent='Término sugerido: '+dateLabel($('period-end').value)+'. A contagem considera os impedimentos já cadastrados; confira novamente se incluir novos eventos.';}catch(e){$('period-end').value='';$('period-duration-status').textContent=e.message;}}
+function periodDurationPreview(){if(!$('period-days').value)return;try{const pending=!state.weekConfirmed;const checked=[...document.querySelectorAll('#weekdays input:checked')].map(el=>Number(el.value));const preview=pending?{...state,weekConfirmed:true,weekdays:checked.length?checked:[1,2,3,4,5]}:state;$('period-end').value=durationEnd($('period-start').value,$('period-days').value,preview,allEvents());$('period-duration-status').textContent=(pending?'Estimativa provisória ('+(checked.length?'dias marcados':'segunda a sexta')+'). Confirme e aplique a semana letiva no item 2 para adicionar o período. ':'')+'Término previsto: '+dateLabel($('period-end').value)+'. Após adicionar, a meta será mantida e o término recalculado com os impedimentos.';}catch(e){$('period-end').value='';$('period-duration-status').textContent=e.message;}}
 for(const id of ['period-start','period-days'])$(id).addEventListener('input',periodDurationPreview);
 for(const part of ['first','second']){const start=$('vacation-'+part+'-start'),days=$('vacation-'+part+'-days'),end=$('vacation-'+part+'-end');const calculate=()=>{if(!days.value)return;try{end.value=durationEnd(start.value,days.value);vacationPreview();}catch(e){end.value='';$('vacation-preview').textContent=e.message;}};start.addEventListener('input',calculate);days.addEventListener('input',calculate);end.addEventListener('input',()=>{days.value='';vacationPreview();});}
+
+document.querySelector('#weekdays').addEventListener('change',periodDurationPreview);
+
+function openInlineActivity(id){const row=document.querySelector('[data-activity-row="'+id+'"]');if(!row)return;restoreEventForm();inlineActivityId=id;row.append($('event-form'));$('event-form').classList.add('inline-history-review');const close=document.createElement('button');close.id='cancel-inline-history';close.type='button';close.className='secondary';close.textContent='Fechar preenchimento';close.onclick=()=>{restoreEventForm();$('event-form').reset();row.scrollIntoView({block:'nearest'});};$('event-form').append(close);row.scrollIntoView({block:'nearest',behavior:'smooth'});}
