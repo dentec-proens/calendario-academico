@@ -1,5 +1,5 @@
 import {proposedDates} from '/history-dates.mjs';
-import {historyCandidateKey,includedHistoryCandidate} from '/history-progress.mjs';
+import {historyCandidateKey,includedHistoryCandidate,existingHistoryEvent} from '/history-progress.mjs';
 import {suggestStages,isFirstStageStart} from '/stage-suggestions.mjs';
 import {teacherVacations} from '/teacher-vacations.mjs';
 import {regimeLabels} from '/calendar-label.mjs';
@@ -141,7 +141,7 @@ document.addEventListener('click',async e=>{
  const discard=e.target.closest('[data-history-discard]');if(discard&&historyAnalysis){const c=historyAnalysis.candidates[Number(discard.dataset.historyDiscard)],key=analyzedHistory.id+':'+historyCandidateKey(c);state.ignoredHistory??=[];if(state.ignoredHistory.includes(key))state.ignoredHistory=state.ignoredHistory.filter(k=>k!==key);else state.ignoredHistory.push(key);historicalSource=null;restoreEventForm();$('event-form').reset();$('historical-event-source').hidden=true;dirty=true;render();message('Decisão sobre o evento atualizada. Salve no sistema.');return;}
  const candidateButton=e.target.closest('[data-history-candidate]');if(!candidateButton||!historyAnalysis)return;
  const c=historyAnalysis.candidates[Number(candidateButton.dataset.historyCandidate)];if(!c)return;
- if(includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates))return;
+ if(includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates)||existingHistoryEvent(allEvents(),c,state))return;
  historicalSource={historyId:analyzedHistory.id,page:c.page,candidateKey:historyCandidateKey(c)};
  $('historical-event-source').hidden=false;$('historical-event-source').textContent=`Origem histórica: ${analyzedHistory.filename}, página ${c.page}. Confira a descrição, informe as datas de ${state.year} e a fonte vigente. O PDF anterior não comprova a vigência do feriado.`;
  $('event-requirement').value='';$('event-name').value=c.name;$('event-category').value=c.category;$('event-kind').value='note';
@@ -226,10 +226,10 @@ $('event-start').addEventListener('change',updateStageSuggestion);
 function renderHistorySuggestions(){
  if(!historyAnalysis||!analyzedHistory)return;
  const reopenIndex=inlineHistoryIndex;restoreEventForm();
- let count=0;
- $('history-suggestions').innerHTML=historyAnalysis.candidates.map((c,i)=>{const done=includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates),ignored=state.ignoredHistory?.includes(analyzedHistory.id+':'+historyCandidateKey(c));if(done)count++;return `<li data-history-item="${i}" class="${done?'history-included':''}"><div><strong>${i+1}. ${escape(c.name)}</strong><small>Página ${c.page} · texto do ano anterior: ${escape(c.excerpt)}</small>${done?'<span class="history-check">✓ Revisado e incluído</span>':ignored?'<span class="history-check">Não será utilizado</span>':''}</div><div class="history-actions"><button type="button" data-history-candidate="${i}" ${done||ignored?'disabled':''}>${done?'✓ Incluído':'Revisar e incluir'}</button>${!done?`<button type="button" data-history-discard="${i}">${ignored?'Desfazer descarte':'Não utilizar este evento'}</button>`:''}</div></li>`;}).join('');
+ let count=0,existingCount=0;
+ $('history-suggestions').innerHTML=historyAnalysis.candidates.map((c,i)=>{const done=includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates),ignored=state.ignoredHistory?.includes(analyzedHistory.id+':'+historyCandidateKey(c));if(done)count++;const existing=!done&&existingHistoryEvent(allEvents(),c,state);if(existing)existingCount++;if(existing&&!$('show-existing-history').checked)return '';return `<li data-history-item="${i}" class="${done?'history-included':''}"><div><strong>${i+1}. ${escape(c.name)}</strong><small>Página ${c.page} · texto do ano anterior: ${escape(c.excerpt)}</small>${existing?'<span class="history-check">✓ Já cadastrado: '+escape(existing.name)+'</span>':done?'<span class="history-check">✓ Revisado e incluído</span>':ignored?'<span class="history-check">Não será utilizado</span>':''}</div><div class="history-actions"><button type="button" data-history-candidate="${i}" ${done||ignored||existing?'disabled':''}>${existing?'✓ Já cadastrado':done?'✓ Incluído':'Revisar e incluir'}</button>${!done&&!existing?`<button type="button" data-history-discard="${i}">${ignored?'Desfazer descarte':'Não utilizar este evento'}</button>`:''}</div></li>`;}).join('');
  if(reopenIndex!==null&&historicalSource){const candidate=historyAnalysis.candidates[reopenIndex];if(candidate&&!includedHistoryCandidate(state.events,analyzedHistory.id,candidate,historyAnalysis.candidates))openInlineHistory(reopenIndex,false);}
- let progress=$('history-progress');if(!progress){progress=document.createElement('p');progress.id='history-progress';progress.setAttribute('role','status');$('history-suggestions').before(progress);}progress.textContent=`${count} de ${historyAnalysis.candidates.length} itens incluídos. A ordem da lista é mantida. Salve o calendário para guardar as novas inclusões.`;
+ let progress=$('history-progress');if(!progress){progress=document.createElement('p');progress.id='history-progress';progress.setAttribute('role','status');$('history-suggestions').before(progress);}progress.textContent=`${count} itens incluídos a partir do PDF; ${existingCount} sugestões já atendidas por eventos cadastrados. Itens ambíguos continuam disponíveis para revisão. Salve o calendário para guardar as novas inclusões.`;
 }
 
 function restoreEventForm(){eventFormHome.after($('event-form'));$('event-form').classList.remove('inline-history-review');$('cancel-inline-history')?.remove();inlineHistoryIndex=null;}
@@ -241,3 +241,5 @@ function openInlineHistory(index,scroll=true){
 }
 
 $('new-event').onclick=()=>{restoreEventForm();historicalSource=null;$('event-form').reset();$('historical-event-source').hidden=true;updateStageSuggestion();$('event-form').scrollIntoView({block:'center',behavior:'smooth'});$('event-name').focus({preventScroll:true});};
+
+$('show-existing-history').onchange=renderHistorySuggestions;
