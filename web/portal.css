@@ -32,3 +32,20 @@
 #event-list > li > .institution-label{justify-self:start}
 #event-list a{display:inline;background:transparent;color:var(--green);padding:0;border-radius:0;text-decoration:underline;text-underline-offset:3px;white-space:normal;overflow-wrap:anywhere;line-height:inherit}
 @media(max-width:800px){#event-list > li{grid-template-columns:minmax(0,1fr);gap:14px}#event-list > li > button{justify-self:start}#event-list > li > div{grid-column:1}}
+
+#history-batch{margin:24px 0}
+#history-batch-rows{display:grid;gap:18px;margin:20px 0}
+#history-batch-rows > fieldset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;min-width:0;margin:0;padding:20px;border:1px solid var(--line);border-radius:10px;background:#f8faf9}
+#history-batch-rows > fieldset > legend{padding:0 8px;font-size:1rem}
+#history-batch-rows > fieldset > legend > label{display:flex;flex-direction:row;align-items:center;gap:10px;margin:0;font-size:1rem;font-weight:650}
+#history-batch-rows input[type="checkbox"]{width:20px;height:20px;flex:0 0 20px;accent-color:var(--green)}
+#history-batch-rows > fieldset > label{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0;margin:0;font-size:1rem;font-weight:600}
+#history-batch-rows > fieldset > label:first-of-type,#history-batch-rows > fieldset > small,#history-batch-rows > fieldset > p{grid-column:1/-1}
+#history-batch-rows > fieldset > small{display:block;line-height:1.6;color:#52665c;overflow-wrap:anywhere}
+#history-batch-rows > fieldset > p{margin:0;line-height:1.6;font-size:.9rem;color:#52665c}
+#history-batch-rows input:not([type="checkbox"]),#history-batch-rows select{width:100%;max-width:100%;min-width:0;min-height:46px;font:inherit;font-weight:400}
+#history-batch > label{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:18px 0}
+#history-batch > label:has(input[type="checkbox"]){flex-direction:row;align-items:flex-start;line-height:1.6}
+#history-batch > label > input[type="checkbox"]{width:20px;height:20px;flex:0 0 20px;margin-top:3px}
+#history-batch > button{white-space:normal;max-width:100%;line-height:1.5}
+@media(max-width:650px){#history-batch-rows > fieldset{grid-template-columns:minmax(0,1fr);padding:16px;gap:14px}#history-batch-rows > fieldset > *{grid-column:1}}
