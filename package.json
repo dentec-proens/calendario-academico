@@ -1,0 +1,18 @@
+{
+  "name": "dentec-calendarios",
+  "version": "0.11.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "dev": "node server.mjs",
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@sparticuz/chromium": "153.0.0",
+    "@supabase/supabase-js": "2.116.0",
+    "pdfjs-dist": "6.3.289",
+    "pg": "8.23.0",
+    "puppeteer-core": "25.11.0"
+  }
+}

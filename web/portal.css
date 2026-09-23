@@ -1,0 +1,17 @@
+.auth{max-width:550px;margin:40px auto}.auth h1{margin-top:12px}.auth p{color:#52665c}.records a{background:#0c503a;color:white;padding:10px 14px;border-radius:5px;text-decoration:none;white-space:nowrap}.portal-note{font-size:.875rem}.link-button{color:#0c503a!important;border-color:#0c503a!important}.history-area{margin-top:24px}.history-area textarea{width:100%;font:inherit;padding:10px;min-height:90px;border:1px solid #b8c9bf;border-radius:6px}.institution-label{display:inline-block;background:#dceaf6;color:#154666;padding:3px 6px;font-size:.8rem;border-radius:4px}.portal-back{color:#0c503a;font-size:.875rem}.history-area a{overflow-wrap:anywhere}#user-password{max-width:400px}
+[hidden]{display:none!important} #saturday-dates{display:grid;gap:10px} #campus-filter{max-width:420px}
+.review-item{display:block!important}.review-item h3{margin:0 0 6px}.review-item p{font-size:.9rem}.review-item details{margin:12px 0}.review-item details li{display:block}.review-item textarea,#review-conclusion{width:100%;font:inherit;padding:10px;border:1px solid #b8c9bf;border-radius:5px}.review-item select{max-width:440px}#review-message{position:sticky;top:0;background:#fff;padding:10px;color:#164d37;z-index:2}#review-year-warning{white-space:normal}
+.review-item fieldset{display:block;border:0;padding:0;margin:12px 0}.review-item fieldset:disabled textarea,.review-item fieldset:disabled select,#review-conclusion:disabled{opacity:1;color:#243d32;background:#f3f6f4}.review-export-actions{margin:24px 0;flex-wrap:wrap}#review-preview{padding:25px;border:1px solid #aebbb2;margin-top:24px;background:white;color:#111}#review-preview h1,#review-preview h2{text-align:center;font-size:1rem}#review-preview table{border-collapse:collapse;width:100%;table-layout:fixed}#review-preview td,#review-preview th{border:1px solid #555;padding:8px;vertical-align:top;overflow-wrap:anywhere}#review-preview th{background:#eee}
+#review-preview{scroll-margin-top:80px}
+
+/* Keep calendar actions aligned regardless of the length of the course names. */
+#calendar-list > li[data-calendar-campus]{display:grid;grid-template-columns:minmax(0,1fr) 11rem 16rem;gap:16px;align-items:center}
+#calendar-list > li[data-calendar-campus] > div{min-width:0}
+#calendar-list > li[data-calendar-campus] > a{display:flex;align-items:center;justify-content:center;min-height:46px;text-align:center;white-space:normal}
+@media(max-width:850px){
+  #calendar-list > li[data-calendar-campus]{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+  #calendar-list > li[data-calendar-campus] > div{grid-column:1 / -1}
+}
+@media(max-width:480px){
+  #calendar-list > li[data-calendar-campus]{grid-template-columns:minmax(0,1fr);gap:12px}
+}

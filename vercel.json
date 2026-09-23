@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "server.mjs": {
+      "maxDuration": 60,
+      "includeFiles": "{web/**,src/**,node_modules/@sparticuz/chromium/bin/**,node_modules/pdfjs-dist/legacy/build/**}"
+    }
+  }
+}
