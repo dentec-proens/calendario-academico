@@ -146,20 +146,23 @@ $('server-save').onclick=async()=>{try{if(!record)throw Error('Abra um calendár
 $('history-form').onsubmit=async e=>{e.preventDefault();$('history-submit').disabled=true;try{const file=$('history-file').files[0];if(!file||file.size>8_000_000)throw Error('Envie um PDF de até 8 MB.');$('history-status').textContent='Enviando calendário anterior…';const payload=await filePayload(file,'history',calendarId);const uploaded=await api('/api/calendars/'+calendarId+'/history','POST',{filename:file.name,year:state.year-1,...payload,notes:$('history-notes').value});const fresh=await api('/api/calendars/'+calendarId);record.histories=fresh.histories;showHistory();e.target.reset();message('Calendário anterior guardado neste campus.');await analyzeUploadedHistory(uploaded.id);}catch(err){$('history-status').textContent=err.message;message(err.message,true);}finally{$('history-submit').disabled=false;}};
 const extra=document.createElement('link');extra.rel='stylesheet';extra.href='/portal.css';document.head.append(extra);const printStyle=document.createElement('link');printStyle.rel='stylesheet';printStyle.href='/proens.css';document.head.append(printStyle);
 const monthNames=Array.from({length:12},(_,m)=>new Date(Date.UTC(2027,m,1)).toLocaleDateString('pt-BR',{month:'long',timeZone:'UTC'}));
+const selectedSaturdays=new Set();
 $('saturday-month').innerHTML=monthNames.map((name,m)=>`<option value="${m+1}">${name}</option>`).join('');
 function renderSaturdays(){
  const dates=monthSaturdays(state.year,Number($('saturday-month').value));
  $('saturday-dates').innerHTML='<legend>Sábados de '+monthNames[Number($('saturday-month').value)-1]+'</legend>'+dates.map(date=>{
   const inside=state.periods.some(p=>p.start<=date&&date<=p.end),included=allEvents().some(e=>e.kind==='include'&&e.start<=date&&date<=e.end),blocked=allEvents().some(e=>e.kind==='exclude'&&e.start<=date&&date<=e.end);
-  return `<label class="check"><input type="checkbox" value="${date}" ${!inside||included?'disabled':''} ${included?'checked':''}>${dateLabel(date)}${!inside?' · fora dos períodos':included?' · já registrado':''}${blocked?' · feriado/recesso: conflito se incluído':''}</label>`;
+  if(included)selectedSaturdays.delete(date);
+  return `<label class="check"><input type="checkbox" value="${date}" ${included?'disabled':''} ${included||selectedSaturdays.has(date)?'checked':''}>${dateLabel(date)}${included?' · já registrado':!inside?' · ajuste o período letivo antes de adicionar':''}${blocked?' · feriado/recesso: conflito se incluído':''}</label>`;
  }).join('');
  const count=dates.filter(date=>allEvents().some(e=>e.kind==='include'&&e.start<=date&&date<=e.end)).length;
- $('saturday-summary').textContent=`${count} sábado(s) registrado(s) neste mês. Para remover, use a lista de eventos abaixo.`;
+ $('saturday-summary').textContent=(state.periods.length?'':'Primeiro, cadastre o início e o término na seção 3. Períodos letivos. Você já pode selecionar os sábados, mas só poderá adicioná-los dentro de um período. ')+`${count} sábado(s) registrado(s) neste mês. Caixas marcadas e desativadas indicam datas já registradas; para removê-las, use a lista de eventos abaixo.`;
 }
+$('saturday-dates').addEventListener('change',e=>{const input=e.target;if(input.matches('input[type="checkbox"]')&&!input.disabled){if(input.checked)selectedSaturdays.add(input.value);else selectedSaturdays.delete(input.value);}});
 $('saturday-month').onchange=renderSaturdays;
 $('saturday-form').onsubmit=e=>{e.preventDefault();act(()=>{
  identified();const dates=[...document.querySelectorAll('#saturday-dates input:checked:not(:disabled)')].map(el=>el.value);
- const additions=saturdayEvents(state,dates,$('saturday-name').value,$('saturday-evidence').value,()=>crypto.randomUUID());state.events.push(...additions);dirty=true;render();message(`${additions.length} sábado(s) adicionado(s). Confira a contagem e salve no sistema.`);
+ const additions=saturdayEvents(state,dates,$('saturday-name').value,$('saturday-evidence').value,()=>crypto.randomUUID());state.events.push(...additions);for(const date of dates)selectedSaturdays.delete(date);dirty=true;render();message(`${additions.length} sábado(s) adicionado(s). Confira a contagem e salve no sistema.`);
 });};
 $('download-pdf').onclick=async()=>{const button=$('download-pdf');try{
  if(dirty)throw Error('Salve no sistema antes de baixar o PDF.');

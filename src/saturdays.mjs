@@ -10,7 +10,7 @@ export function saturdayEvents(state,dates,name,evidence,id){
  const selected=[...new Set(dates)];
  for(const date of selected){
   if(new Date(parseDate(date)).getUTCDay()!==6||Number(date.slice(0,4))!==state.year)throw Error('Selecione sábados do ano do calendário.');
-  if(!state.periods.some(p=>p.start<=date&&date<=p.end))throw Error('O sábado '+date.split('-').reverse().join('/')+' está fora dos períodos letivos.');
+  if(!state.periods.some(p=>p.start<=date&&date<=p.end))throw Error('O sábado '+date.split('-').reverse().join('/')+' está fora dos períodos letivos. Cadastre ou ajuste o início e o término na seção 3. Períodos letivos e tente adicionar novamente.');
  }
  return selected.filter(date=>!state.events.some(e=>e.kind==='include'&&e.start<=date&&date<=e.end)).map(date=>({id:id(),name:name.trim(),evidence:evidence.trim(),kind:'include',category:'sabado',start:date,end:date}));
 }
