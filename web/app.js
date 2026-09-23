@@ -1,6 +1,6 @@
 import {proposedDates} from '/history-dates.mjs';
 import {historyCandidateKey,includedHistoryCandidate} from '/history-progress.mjs';
-import {suggestStages} from '/stage-suggestions.mjs';
+import {suggestStages,isFirstStageStart} from '/stage-suggestions.mjs';
 import {teacherVacations} from '/teacher-vacations.mjs';
 import {regimeLabels} from '/calendar-label.mjs';
 import {evaluateCalendar} from '/evaluation.mjs';
@@ -31,7 +31,7 @@ function interval(start,end){datesBetween(start,end);if(Number(start.slice(0,4))
 function engineInput(){return {year:state.year,offerId:state.offer,periods:state.periods,weekPattern:{weekdays:state.weekdays,confirmed:state.weekConfirmed,evidenceId:state.weekEvidence},inclusions:allEvents().filter(e=>e.kind==='include').map(e=>({...e,offerIds:[state.offer],confirmed:true,evidenceId:e.evidence})),exclusions:allEvents().filter(e=>e.kind==='exclude').map(e=>({...e,offerIds:[state.offer],confirmed:true,evidenceId:e.evidence})),thresholds:{annual:state.year===2027?200:null,byPeriod:Object.fromEntries(state.periods.map(p=>[p.id,state.year===2027&&state.regime!=='anual'?100:null]))}};}
 function render(){
  $('regime-summary').textContent='Organização: '+regimeLabels[state.regime];
- $('vacation-january').textContent=`Janeiro: 02/01/${state.year} a 31/01/${state.year} — 30 dias.`;$('vacation-july').min=state.year+'-07-01';$('vacation-july').max=state.year+'-07-17';
+
  if(dirty)message('Alteração aplicada ao rascunho. Use Salvar no sistema para registrar a versão.');
  $('selected-modalities').textContent='Forma de oferta/nível: '+calendarModalities(state).filter(Boolean).map(m=>modalityLabels[m]).join(' + ');
  const requirements=activityChecklist(state);
@@ -66,7 +66,7 @@ function render(){
   $('months').innerHTML=proensLayout(state,allEvents(),result,record);
   renderSaturdays();updateStageSuggestion();renderHistorySuggestions();
 }
-function sync(){$('vacation-july').value=state.teacherVacations?.julyStart||'';$('vacation-evidence').value=state.teacherVacations?.evidence||'';vacationPreview();if(['integrado','subsequente','posgraduacao'].includes(state.offer)&&!Array.from($('offer').options).some(o=>o.value===state.offer))$('offer').add(new Option(modalityLabels[state.offer],state.offer));for(const key of ['campus','year','offer','regime'])$(key).value=state[key];document.querySelectorAll('#weekdays input').forEach(el=>el.checked=state.weekdays.includes(Number(el.value)));$('week-evidence').value=state.weekEvidence;$('week-confirmed').checked=state.weekConfirmed;}
+function sync(){for(const [field,id] of [['firstStart','vacation-first-start'],['firstEnd','vacation-first-end'],['secondStart','vacation-second-start'],['secondEnd','vacation-second-end']])$(id).value=state.teacherVacations?.[field]||'';$('vacation-evidence').value=state.teacherVacations?.evidence||'';vacationPreview();if(['integrado','subsequente','posgraduacao'].includes(state.offer)&&!Array.from($('offer').options).some(o=>o.value===state.offer))$('offer').add(new Option(modalityLabels[state.offer],state.offer));for(const key of ['campus','year','offer','regime'])$(key).value=state[key];document.querySelectorAll('#weekdays input').forEach(el=>el.checked=state.weekdays.includes(Number(el.value)));$('week-evidence').value=state.weekEvidence;$('week-confirmed').checked=state.weekConfirmed;}
 $('identity').onsubmit=e=>e.preventDefault();
 $('week-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
   identified();const weekdays=[...document.querySelectorAll('#weekdays input:checked')].map(el=>Number(el.value));
@@ -75,6 +75,7 @@ $('week-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
   Object.assign(state,{weekdays,weekEvidence:$('week-evidence').value.trim(),weekConfirmed:$('week-confirmed').checked});dirty=true;render();message('Semana letiva confirmada. Contagem atualizada.');
 });});
 $('period-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
+  if(isStageRequest()){applyStageSuggestion();return;}
   identified();const start=$('period-start').value,end=$('period-end').value,name=$('period-name').value.trim();interval(start,end);
   if(!name)throw Error('Informe o nome do período.');
   if(state.periods.some(p=>p.start<=end&&p.end>=start))throw Error('Este período se sobrepõe a outro. Ajuste as datas.');
@@ -137,6 +138,7 @@ async function analyzeUploadedHistory(id){
 }
 document.addEventListener('click',async e=>{
  const b=e.target.closest('[data-analyze-history]');if(b){b.disabled=true;await analyzeUploadedHistory(b.dataset.analyzeHistory);b.disabled=false;}
+ const discard=e.target.closest('[data-history-discard]');if(discard&&historyAnalysis){const c=historyAnalysis.candidates[Number(discard.dataset.historyDiscard)],key=analyzedHistory.id+':'+historyCandidateKey(c);state.ignoredHistory??=[];if(state.ignoredHistory.includes(key))state.ignoredHistory=state.ignoredHistory.filter(k=>k!==key);else state.ignoredHistory.push(key);historicalSource=null;restoreEventForm();$('event-form').reset();$('historical-event-source').hidden=true;dirty=true;render();message('Decisão sobre o evento atualizada. Salve no sistema.');return;}
  const candidateButton=e.target.closest('[data-history-candidate]');if(!candidateButton||!historyAnalysis)return;
  const c=historyAnalysis.candidates[Number(candidateButton.dataset.historyCandidate)];if(!c)return;
  if(includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates))return;
@@ -144,7 +146,7 @@ document.addEventListener('click',async e=>{
  $('historical-event-source').hidden=false;$('historical-event-source').textContent=`Origem histórica: ${analyzedHistory.filename}, página ${c.page}. Confira a descrição, informe as datas de ${state.year} e a fonte vigente. O PDF anterior não comprova a vigência do feriado.`;
  $('event-requirement').value='';$('event-name').value=c.name;$('event-category').value=c.category;$('event-kind').value='note';
  const proposed=proposedDates(c,state.year);$('event-start').value=proposed.start;$('event-end').value=proposed.end;$('event-evidence').value='';$('event-confirmed').checked=false;
- openInlineHistory(Number(candidateButton.dataset.historyCandidate));$('event-name').focus({preventScroll:true});
+ updateStageSuggestion();openInlineHistory(Number(candidateButton.dataset.historyCandidate));$('event-name').focus({preventScroll:true});
  message('Sugestão aberta para revisão. Confira também o efeito na contagem e a forma de oferta/nível.');
 });
 $('server-save').onclick=async()=>{try{if(!record)throw Error('Abra um calendário registrado.');const saved=await api('/api/calendars/'+calendarId,'PUT',{version:record.version,catalogueRevision:record.currentCatalogueRevision,state});record.version=saved.version;record.catalogueRevision=record.currentCatalogueRevision;dirty=false;record=await api('/api/calendars/'+calendarId);state=record.state;sync();render();message(`Versão ${saved.version} salva no sistema em ${new Date(record.updatedAt).toLocaleString('pt-BR')}.`);}catch(e){message(e.message,true);}};
@@ -190,21 +192,34 @@ $('event-requirement').onchange=()=>prepareActivity($('event-requirement').value
 document.addEventListener('click',e=>{const b=e.target.closest('[data-prepare-activity]');if(b)prepareActivity(b.dataset.prepareActivity);});
 document.addEventListener('change',e=>{if(!e.target.dataset.linkActivity)return;const event=state.events.find(x=>x.id===e.target.dataset.linkActivity);if(event){event.requirementId=e.target.value||undefined;dirty=true;render();}});
 
-function vacationPreview(){try{const v=teacherVacations(state.year,$('vacation-july').value,$('vacation-evidence').value||'Prévia');$('vacation-preview').textContent=`Julho: ${dateLabel(v.julyStart)} a ${dateLabel(v.julyEnd)} — 15 dias. Total: ${v.total} dias (30 + 15).`;}catch{$('vacation-preview').textContent='Escolha o início em julho, entre os dias 1 e 17, para calcular o término e o total de 45 dias.';}}
-$('vacation-july').onchange=vacationPreview;
-$('vacation-form').onsubmit=e=>{e.preventDefault();act(()=>{const vacation=teacherVacations(state.year,$('vacation-july').value,$('vacation-evidence').value);state.teacherVacations={julyStart:vacation.julyStart,evidence:$('vacation-evidence').value.trim()};state.events=state.events.filter(e=>!['teacher-vacation-january','teacher-vacation-july'].includes(e.id)).concat(vacation.events);dirty=true;render();vacationPreview();message('Férias docentes aplicadas: 30 dias em janeiro + 15 dias em julho = 45 dias. Salve no sistema.');});};
+function vacationValues(){return Object.fromEntries([['firstStart','vacation-first-start'],['firstEnd','vacation-first-end'],['secondStart','vacation-second-start'],['secondEnd','vacation-second-end']].map(([key,id])=>[key,$(id).value]));}
+function vacationPreview(){try{const v=teacherVacations(state.year,vacationValues(),$('vacation-evidence').value||'Prévia');$('vacation-preview').textContent='Total informado: '+v.total+' dias. Confira o quantitativo e a decisão do campus.';}catch(e){$('vacation-preview').textContent=e.message;}}
+$('vacation-form').addEventListener('change',vacationPreview);
+$('vacation-form').onsubmit=e=>{e.preventDefault();act(()=>{const values=vacationValues(),evidence=$('vacation-evidence').value.trim(),vacation=teacherVacations(state.year,values,evidence);state.teacherVacations={...values,evidence};state.events=state.events.filter(e=>!['teacher-vacation-january','teacher-vacation-july'].includes(e.id)).concat(vacation.events);dirty=true;render();vacationPreview();message('Férias docentes registradas nas datas informadas pelo campus. Salve no sistema.');});};
 document.addEventListener('input',e=>{if(e.target.closest('form'))message('Formulário alterado. Aplique a alteração no botão correspondente e depois salve no sistema.');});
 
+function isStageRequest(){return $('event-requirement').value==='stage-1'||(!$('event-requirement').value&&isFirstStageStart($('event-name').value));}
+function applyStageSuggestion(){
+ identified();const evidence=$('event-evidence').value.trim();if(!evidence||!$('event-confirmed').checked)throw Error('Informe a fonte e confirme as datas antes de aplicar as etapas.');
+ const modalities=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value);if(!modalities.length)throw Error('Selecione uma forma de oferta/nível.');
+ const fresh=suggestStages({...state,modalities,offer:modalities[0]},allEvents(),$('event-start').value),completed=inlineHistoryIndex;
+ state.events.push(...fresh.stages.map((s,i)=>({id:crypto.randomUUID(),name:s.name,requirementId:s.requirementId,start:s.start,end:s.end,kind:'note',category:'limite',evidence,modalities,historicalSource:i===0?historicalSource:undefined})));
+ dirty=true;historicalSource=null;$('event-form').reset();$('historical-event-source').hidden=true;render();
+ if(completed!==null)document.querySelector('[data-history-item="'+completed+'"]')?.scrollIntoView({block:'nearest'});
+ message(fresh.stages.length+' etapas incluídas. Confira e clique em Salvar no sistema.');
+}
 function updateStageSuggestion(){
  let panel=$('stage-suggestion');if(!panel){panel=document.createElement('section');panel.id='stage-suggestion';panel.className='notice';panel.setAttribute('aria-live','polite');$('event-form').append(panel);}
- panel.hidden=$('event-requirement').value!=='stage-1';if(panel.hidden)return;
+ panel.hidden=!isStageRequest();if(panel.hidden)return;
  panel.replaceChildren();
  if(!$('event-start').value){panel.textContent='Informe o início da primeira etapa. O sistema usará o número de etapas já cadastrado e os dias letivos até o final dos períodos para sugerir todos os intervalos.';return;}
- try{const suggestion=suggestStages(state,allEvents(),$('event-start').value);$('event-end').value=suggestion.stages[0].end;
-  panel.innerHTML='<strong>Sugestão de distribuição das etapas</strong><p>Distribuição equilibrada dos dias letivos cadastrados'+(suggestion.byPeriod?', respeitando os limites de cada período':'')+'. Confira as datas e a norma vigente antes de aplicar. Não representa aprovação institucional.</p><ul>'+suggestion.stages.map(s=>`<li>${escape(s.name)}: ${dateLabel(s.start)} a ${dateLabel(s.end)} — ${s.days} dias letivos</li>`).join('')+'</ul><p>Preencha a fonte da decisão e marque a confirmação do formulário. Este botão inclui todas as etapas para todas as formas de oferta/níveis deste calendário.</p><button type="button" id="apply-stage-suggestion">Aplicar todas as etapas sugeridas</button>';
-  $('apply-stage-suggestion').onclick=()=>act(()=>{const evidence=$('event-evidence').value.trim();if(!evidence||!$('event-confirmed').checked)throw Error('Informe a fonte e confirme as datas antes de aplicar as etapas.');const fresh=suggestStages(state,allEvents(),$('event-start').value);state.events.push(...fresh.stages.map(s=>({id:crypto.randomUUID(),name:s.name,requirementId:s.requirementId,start:s.start,end:s.end,kind:'note',category:'limite',evidence,modalities:calendarModalities(state)})));dirty=true;historicalSource=null;$('event-form').reset();$('historical-event-source').hidden=true;render();message(`${fresh.stages.length} etapas incluídas. Confira e clique em Salvar no sistema.`);});
+ try{const modalities=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value);const suggestion=suggestStages({...state,modalities,offer:modalities[0]},allEvents(),$('event-start').value);$('event-end').value=suggestion.stages[0].end;
+  panel.innerHTML='<strong>Sugestão de distribuição das etapas</strong><p>Distribuição equilibrada dos dias letivos cadastrados'+(suggestion.byPeriod?', respeitando os limites de cada período':'')+'. Confira as datas e a norma vigente antes de aplicar. Não representa aprovação institucional.</p><ul>'+suggestion.stages.map(s=>`<li>${escape(s.name)}: ${dateLabel(s.start)} a ${dateLabel(s.end)} — ${s.days} dias letivos</li>`).join('')+'</ul><p>Preencha a fonte da decisão e marque a confirmação do formulário. Este botão inclui todas as etapas para as formas de oferta/níveis selecionadas.</p><button type="button" id="apply-stage-suggestion">Aplicar todas as etapas sugeridas</button>';
+  $('apply-stage-suggestion').onclick=()=>act(applyStageSuggestion);
  }catch(error){panel.textContent=error.message;}
 }
+$('event-name').addEventListener('input',updateStageSuggestion);
+document.querySelector('#event-modalities').addEventListener('change',updateStageSuggestion);
 $('event-start').addEventListener('input',updateStageSuggestion);
 $('event-start').addEventListener('change',updateStageSuggestion);
 
@@ -212,7 +227,7 @@ function renderHistorySuggestions(){
  if(!historyAnalysis||!analyzedHistory)return;
  const reopenIndex=inlineHistoryIndex;restoreEventForm();
  let count=0;
- $('history-suggestions').innerHTML=historyAnalysis.candidates.map((c,i)=>{const done=includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates);if(done)count++;return `<li data-history-item="${i}" class="${done?'history-included':''}"><div><strong>${i+1}. ${escape(c.name)}</strong><small>Página ${c.page} · texto do ano anterior: ${escape(c.excerpt)}</small>${done?'<span class="history-check">✓ Revisado e incluído</span>':''}</div><button type="button" data-history-candidate="${i}" ${done?'disabled':''}>${done?'✓ Incluído':'Revisar e incluir'}</button></li>`;}).join('');
+ $('history-suggestions').innerHTML=historyAnalysis.candidates.map((c,i)=>{const done=includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates),ignored=state.ignoredHistory?.includes(analyzedHistory.id+':'+historyCandidateKey(c));if(done)count++;return `<li data-history-item="${i}" class="${done?'history-included':''}"><div><strong>${i+1}. ${escape(c.name)}</strong><small>Página ${c.page} · texto do ano anterior: ${escape(c.excerpt)}</small>${done?'<span class="history-check">✓ Revisado e incluído</span>':ignored?'<span class="history-check">Não será utilizado</span>':''}</div><button type="button" data-history-candidate="${i}" ${done||ignored?'disabled':''}>${done?'✓ Incluído':'Revisar e incluir'}</button>${!done?`<button type="button" data-history-discard="${i}">${ignored?'Desfazer descarte':'Não utilizar este evento'}</button>`:''}</li>`;}).join('');
  if(reopenIndex!==null&&historicalSource){const candidate=historyAnalysis.candidates[reopenIndex];if(candidate&&!includedHistoryCandidate(state.events,analyzedHistory.id,candidate,historyAnalysis.candidates))openInlineHistory(reopenIndex,false);}
  let progress=$('history-progress');if(!progress){progress=document.createElement('p');progress.id='history-progress';progress.setAttribute('role','status');$('history-suggestions').before(progress);}progress.textContent=`${count} de ${historyAnalysis.candidates.length} itens incluídos. A ordem da lista é mantida. Salve o calendário para guardar as novas inclusões.`;
 }
@@ -224,3 +239,5 @@ function openInlineHistory(index,scroll=true){
  const close=document.createElement('button');close.id='cancel-inline-history';close.type='button';close.className='secondary';close.textContent='Fechar revisão';close.onclick=()=>{historicalSource=null;$('historical-event-source').hidden=true;$('event-form').reset();restoreEventForm();row.scrollIntoView({block:'nearest'});};$('event-form').append(close);
  if(scroll)row.scrollIntoView({behavior:'smooth',block:'start'});
 }
+
+$('new-event').onclick=()=>{restoreEventForm();historicalSource=null;$('event-form').reset();$('historical-event-source').hidden=true;updateStageSuggestion();$('event-form').scrollIntoView({block:'center',behavior:'smooth'});$('event-name').focus({preventScroll:true});};

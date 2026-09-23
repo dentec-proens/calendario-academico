@@ -1,6 +1,12 @@
 import {evaluateCalendar} from './evaluation.mjs';
 import {parseDate} from './calendar.mjs';
 import {calendarModalities} from './modalities.mjs';
+export function isFirstStageStart(name){
+ const text=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ if(!/\binicio\b/.test(text))return false;
+ if(/(?:[2-4]\s*[ºªo°]?|segund[oa]|terceir[oa]|quart[oa])\s*(?:bimestre|trimestre|semestre|etapa)/.test(text))return false;
+ return /(?:1\s*[ºªo°]?|primeir[oa])\s*(?:bimestre|trimestre|semestre|etapa)/.test(text)||/inicio\s+(?:do\s+)?(?:periodo|ano)\s+letivo/.test(text);
+}
 export function suggestStages(state,events,start){
  const count=Number(state.assessmentStages);
  if(![2,3,4].includes(count))throw Error('Informe o número de etapas de avaliação.');
