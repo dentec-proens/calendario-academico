@@ -1,3 +1,4 @@
+import {requestRecovery,checkRecovery,completeRecovery,recoveryMessage} from './password-recovery.mjs';
 import {analyzeHistory} from './history-analysis.mjs';
 import {auditLog} from './audit-log.mjs';
 import {calendarName} from './calendar-label.mjs';
@@ -39,10 +40,12 @@ function normalize(s){
  for(let i=0;i<s.periods.length;i++)for(let j=i+1;j<s.periods.length;j++)if(s.periods[i].start<=s.periods[j].end&&s.periods[i].end>=s.periods[j].start)fail('Períodos sobrepostos.');
  return {schemaVersion:1,teacherVacations:s.teacherVacations?{julyStart:s.teacherVacations.julyStart,evidence:s.teacherVacations.evidence}:undefined,modalities:calendarModalities(s),assessmentStages:s.assessmentStages===undefined?undefined:Number(s.assessmentStages),campus:String(s.campus||''),year:s.year,offer:s.offer,regime:s.regime,weekdays:s.weekdays,weekEvidence:String(s.weekEvidence||'').slice(0,240),weekConfirmed:s.weekConfirmed,periods:s.periods.map(({id,name,start,end})=>({id,name,start,end})),events:s.events.map(e=>({historicalSource:e.historicalSource?{historyId:e.historicalSource.historyId,page:e.historicalSource.page}:undefined,modalities:e.modalities,requirementId:e.requirementId||undefined,id:e.id,name:e.name,start:e.start,end:e.end,kind:e.kind,evidence:e.evidence,category:eventCategory(e)}))};
 }
-export async function createApp({directory,setupEmail=null,files=null,store:providedStore=null,setupCode=randomBytes(16).toString('hex'),pdfRenderer=renderCalendarPdf,googleAuth=createGoogleAuth(null),publicOrigin=null}){
+export async function createApp({directory,setupEmail=null,files=null,store:providedStore=null,setupCode=randomBytes(16).toString('hex'),pdfRenderer=renderCalendarPdf,googleAuth=createGoogleAuth(null),publicOrigin=null,recoveryMail=null}){
  const store=providedStore||await openStore(directory),sessions=persistentSessions(store);
  if(!(await store.read()).campuses.some(c=>c.name.toLocaleLowerCase('pt-BR')==='reitoria'))await store.change(db=>{if(!db.campuses.some(c=>c.name.toLocaleLowerCase('pt-BR')==='reitoria'))db.campuses.push({id:randomUUID(),name:'Reitoria'});});
  const routes=new Map([['/',['web/portal.html','text/html']],['/calendar-label.mjs',['src/calendar-label.mjs','text/javascript']],['/teacher-vacations.mjs',['src/teacher-vacations.mjs','text/javascript']],['/src/modalities.mjs',['src/modalities.mjs','text/javascript']],['/evaluation.mjs',['src/evaluation.mjs','text/javascript']],['/modalities.mjs',['src/modalities.mjs','text/javascript']],['/obligations.mjs',['src/obligations.mjs','text/javascript']],['/upload.js',['web/upload.js','text/javascript']],['/documents.js',['web/documents.js','text/javascript']],['/logs',['web/logs.html','text/html']],['/logs.js',['web/logs.js','text/javascript']],['/portal.js',['web/portal.js','text/javascript']],['/ativar',['web/activate.html','text/html']],['/activate.js',['web/activate.js','text/javascript']],['/review.js',['web/review.js','text/javascript']],['/portal.css',['web/portal.css','text/css']],['/editor',['web/index.html','text/html']],['/app.js',['web/app.js','text/javascript']],['/style.css',['web/style.css','text/css']],['/calendar.mjs',['src/calendar.mjs','text/javascript']],['/saturdays.mjs',['src/saturdays.mjs','text/javascript']],['/print.mjs',['web/print.mjs','text/javascript']],['/categories.mjs',['src/categories.mjs','text/javascript']],['/src/categories.mjs',['src/categories.mjs','text/javascript']],['/ifpr-logo.png',['web/ifpr-logo.png','image/png']],['/proens.css',['web/proens.css','text/css']]]);
+ routes.set('/recuperar-senha',['web/recover.html','text/html']);
+ routes.set('/recover.js',['web/recover.js','text/javascript']);
  const handle=async(req,res)=>{
   const send=(status,body)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};
   try{
@@ -81,6 +84,14 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
    }
    if(path==='/api/status'&&method==='GET'){send(200,{setupRequired:!(await store.read()).users.length,hosted:!!files,googleEnabled:googleAuth.enabled,user:user?safeUser(user):null});return;}
    if(path==='/api/setup'&&method==='POST'){if(body.code!==setupCode||(setupEmail&&String(body.email).trim().toLowerCase()!==setupEmail))fail('Código ou e-mail de instalação incorreto.',403);const credentials=await password(body.password),mail=email(body.email),name=text(body.name);await store.change(db=>{if(db.users.length)fail('Conta ADMIN já criada.',409);db.users.push({id:randomUUID(),name,email:mail,role:'ADMIN',campusId:null,active:true,...credentials});audit(db,'CREATE_ADMIN',mail);});send(201,{ok:true});return;}
+   if(path==='/api/password/request'&&method==='POST'){
+    await requestRecovery(store,body.email,canonicalOrigin,recoveryMail);send(200,{message:recoveryMessage});return;
+   }
+   if(path==='/api/password/reset'&&method==='POST'){
+    checkRecovery(await store.read(),body.token);const credentials=await password(body.password);
+    await store.change(db=>completeRecovery(db,body.token,credentials));
+    send(200,{message:'Senha alterada. Entre novamente com seu e-mail e a nova senha.'});return;
+   }
    if(path==='/api/login'&&method==='POST'){
     const key=String(body.email||'').trim().toLowerCase(),now=Date.now();if(!await consumeLoginAttempt(store,key,now))fail('Muitas tentativas para esta conta. Aguarde 15 minutos.',429);
     const u=(await store.read()).users.find(u=>u.email===String(body.email).toLowerCase().trim()&&u.active);if(typeof body.password!=='string'||body.password.length>128)fail('Credenciais inválidas.',401);const hash=await scrypt(body.password,u?.salt||'invalid',64);if(!u||!u.hash||!timingSafeEqual(hash,Buffer.from(u.hash,'hex')))fail('E-mail ou senha incorretos.',401);

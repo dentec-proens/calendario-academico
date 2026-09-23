@@ -1,3 +1,4 @@
+import {recoveryMailer} from './src/recovery-mail.mjs';
 import {retryingResource} from './src/retrying-resource.mjs';
 import {fileURLToPath} from 'node:url';
 import http from 'node:http';
@@ -21,7 +22,7 @@ async function prepare(){
   startupStage='database';const endpoint=new URL(database);console.info('DENTEC_DB_TRANSPORT',endpoint.hostname.includes('pooler')?'POOLER':'DIRECT',endpoint.port||'5432');const store=await openPostgresStore(database);startupStage='files';const files=await cloudFiles(storageUrl,key);
   options={...options,store,files,pdfRenderer:cloudPdf,setupCode,setupEmail};
  }
- startupStage='application';return createApp(options);
+ startupStage='application';return createApp({...options,recoveryMail:recoveryMailer()});
 }
 const getApp=retryingResource(prepare,{onError:e=>{const m=String(e.message||'');const category=/timeout|timed out/i.test(m)?'TIMEOUT':/tenant|user not found/i.test(m)?'TENANT':/password|authentication/i.test(m)?'AUTH':/certificate|ssl/i.test(m)?'TLS':/terminated/i.test(m)?'TERMINATED':/invalid.*url/i.test(m)?'URL':/connection/i.test(m)?'CONNECTION':'OTHER';console.error('DENTEC_STARTUP',startupStage,/^[A-Z0-9_]{2,60}$/.test(String(e.code))?e.code:category);}});
 getApp().catch(()=>{});

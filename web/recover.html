@@ -1,0 +1,6 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Recuperar senha · DENTEC/PROENS</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/portal.css"></head><body>
+<header><div class="brand">D/P</div><strong>DENTEC / PROENS</strong></header>
+<main><section class="auth panel"><h1 id="title">Recuperar senha</h1><p id="help">Informe seu e-mail institucional para receber um link de redefinição de senha.</p><div id="message" role="status" aria-live="polite"></div>
+<form id="request-form"><label>E-mail institucional<input id="email" type="email" autocomplete="email" required maxlength="240"></label><button>Enviar link de recuperação</button></form>
+<form id="reset-form" hidden><label>Nova senha do calendário<input id="password" type="password" autocomplete="new-password" required minlength="12" maxlength="128"></label><label>Confirme a nova senha<input id="confirmation" type="password" autocomplete="new-password" required minlength="12" maxlength="128"></label><p>Use de 12 a 128 caracteres. Não precisa ser a senha do seu e-mail.</p><button>Salvar nova senha</button></form>
+<p><a href="/">Voltar para entrar</a></p></section></main><script type="module" src="/recover.js"></script></body></html>

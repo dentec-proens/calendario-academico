@@ -1,0 +1,6 @@
+const $=id=>document.getElementById(id);
+let token=new URLSearchParams(location.hash.slice(1)).get('token');
+if(token){history.replaceState(null,'',location.pathname);$('request-form').hidden=true;$('reset-form').hidden=false;$('title').textContent='Definir nova senha';$('help').textContent='Escolha uma nova senha para acessar o calendário.';}
+async function submit(form,path,body){const button=form.querySelector('button');button.disabled=true;$('message').textContent='Aguarde…';try{const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Dentec-Request':'1'},body:JSON.stringify(body)});const data=await r.json();if(!r.ok)throw Error(data.error||'Não foi possível concluir.');$('message').textContent=data.message;return true;}catch(e){$('message').textContent=e.message;return false;}finally{button.disabled=false;}}
+$('request-form').onsubmit=async e=>{e.preventDefault();await submit(e.target,'/api/password/request',{email:$('email').value});};
+$('reset-form').onsubmit=async e=>{e.preventDefault();if($('password').value!==$('confirmation').value){$('message').textContent='As senhas precisam ser iguais.';return;}if(await submit(e.target,'/api/password/reset',{token,password:$('password').value})){token=null;$('password').value='';$('confirmation').value='';$('reset-form').hidden=true;}};
