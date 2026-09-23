@@ -38,6 +38,9 @@
 .editor-navigation + .intro .eyebrow{margin-top:0}
 #history-suggestions > li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:18px 0}
 #history-suggestions > li > div{min-width:0}
+#history-suggestions .history-actions{display:flex;flex-direction:column;gap:8px;width:200px;max-width:100%;justify-self:end}
+#history-suggestions .history-actions button{width:100%;min-height:44px;margin:0;white-space:normal}
+@media(max-width:600px){#history-suggestions .history-actions{justify-self:start}}
 #history-suggestions > li > button{white-space:nowrap;min-height:44px}
 @media(max-width:600px){.editor-navigation{align-items:flex-start;flex-direction:column;gap:4px;margin-bottom:24px}#history-suggestions > li{grid-template-columns:minmax(0,1fr)}#history-suggestions > li > button{justify-self:start}}
 
