@@ -12,6 +12,8 @@ import {countCalendar, datesBetween, parseDate} from '/calendar.mjs';
 import {monthSaturdays,saturdayEvents} from '/saturdays.mjs';
 import {proensLayout} from '/print.mjs';
 const $=id=>document.getElementById(id);
+const eventFormHome=document.createComment('event-form-home');$('event-form').before(eventFormHome);
+let inlineHistoryIndex=null;
 let state={schemaVersion:1,campus:'',year:2027,offer:'',regime:'anual',weekdays:[],weekEvidence:'',weekConfirmed:false,periods:[],events:[]};
 let dirty=false, result=null;
 let historicalSource=null,historyAnalysis=null,analyzedHistory=null;
@@ -84,7 +86,7 @@ $('event-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
   if(kind==='include'&&datesBetween(start,end).some(date=>!state.periods.some(p=>p.start<=date&&p.end>=date)))throw Error('Inclusões letivas devem estar dentro dos períodos cadastrados.');
   const modalities=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value);if(!modalities.length)throw Error('Selecione ao menos uma forma de oferta/nível para o evento.');
   if(state.events.some(ev=>ev.name.toLocaleLowerCase()===name.toLocaleLowerCase()&&ev.start===start&&ev.end===end))throw Error('Este evento já foi incluído com as mesmas datas.');
-  state.events.push({historicalSource,modalities,requirementId:$('event-requirement').value||undefined,id:crypto.randomUUID(),name,start,end,kind,evidence,category:$('event-category').value});historicalSource=null;$('historical-event-source').hidden=true;dirty=true;e.target.reset();$('event-category').value='recesso';render();message('Evento registrado. Contagem atualizada.');
+  const completedHistoryIndex=inlineHistoryIndex;state.events.push({historicalSource,modalities,requirementId:$('event-requirement').value||undefined,id:crypto.randomUUID(),name,start,end,kind,evidence,category:$('event-category').value});historicalSource=null;$('historical-event-source').hidden=true;dirty=true;e.target.reset();$('event-category').value='recesso';render();if(completedHistoryIndex!==null){const row=document.querySelector('[data-history-item="'+completedHistoryIndex+'"]');row?.scrollIntoView({block:'nearest'});}message('Evento registrado. Contagem atualizada. Salve no sistema para guardar.');
 });});
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
@@ -142,7 +144,7 @@ document.addEventListener('click',async e=>{
  $('historical-event-source').hidden=false;$('historical-event-source').textContent=`Origem histórica: ${analyzedHistory.filename}, página ${c.page}. Confira a descrição, informe as datas de ${state.year} e a fonte vigente. O PDF anterior não comprova a vigência do feriado.`;
  $('event-requirement').value='';$('event-name').value=c.name;$('event-category').value=c.category;$('event-kind').value='note';
  const proposed=proposedDates(c,state.year);$('event-start').value=proposed.start;$('event-end').value=proposed.end;$('event-evidence').value='';$('event-confirmed').checked=false;
- $('event-form').scrollIntoView({behavior:'smooth'});$('event-name').focus({preventScroll:true});
+ openInlineHistory(Number(candidateButton.dataset.historyCandidate));$('event-name').focus({preventScroll:true});
  message('Sugestão aberta para revisão. Confira também o efeito na contagem e a forma de oferta/nível.');
 });
 $('server-save').onclick=async()=>{try{if(!record)throw Error('Abra um calendário registrado.');const saved=await api('/api/calendars/'+calendarId,'PUT',{version:record.version,catalogueRevision:record.currentCatalogueRevision,state});record.version=saved.version;record.catalogueRevision=record.currentCatalogueRevision;dirty=false;record=await api('/api/calendars/'+calendarId);state=record.state;sync();render();message(`Versão ${saved.version} salva no sistema em ${new Date(record.updatedAt).toLocaleString('pt-BR')}.`);}catch(e){message(e.message,true);}};
@@ -183,7 +185,7 @@ $('download-pdf-top').onclick=()=>$('download-pdf').click();
 openRecord();
 
 $('assessment-stages').onchange=()=>{const value=Number($('assessment-stages').value);if(![2,3,4].includes(value))return;state.assessmentStages=value;const ids=new Set(activityChecklist(state).map(r=>r.id));for(const event of state.events)if(!ids.has(event.requirementId))delete event.requirementId;dirty=true;render();};
-function prepareActivity(id){historicalSource=null;$('historical-event-source').hidden=true;const item=activityChecklist(state).find(r=>r.id===id);if(!item){updateStageSuggestion();return;}$('event-requirement').value=id;$('event-name').value=item.name;$('event-category').value=id.includes('council')?'conselho':id.startsWith('stage-')?'limite':'prazo';$('event-kind').value='note';$('event-start').value='';$('event-end').value='';$('event-evidence').value='';$('event-confirmed').checked=false;updateStageSuggestion();$('event-form').scrollIntoView({behavior:'smooth'});$('event-start').focus();}
+function prepareActivity(id){restoreEventForm();historicalSource=null;$('historical-event-source').hidden=true;const item=activityChecklist(state).find(r=>r.id===id);if(!item){updateStageSuggestion();return;}$('event-requirement').value=id;$('event-name').value=item.name;$('event-category').value=id.includes('council')?'conselho':id.startsWith('stage-')?'limite':'prazo';$('event-kind').value='note';$('event-start').value='';$('event-end').value='';$('event-evidence').value='';$('event-confirmed').checked=false;updateStageSuggestion();$('event-form').scrollIntoView({behavior:'smooth'});$('event-start').focus();}
 $('event-requirement').onchange=()=>prepareActivity($('event-requirement').value);
 document.addEventListener('click',e=>{const b=e.target.closest('[data-prepare-activity]');if(b)prepareActivity(b.dataset.prepareActivity);});
 document.addEventListener('change',e=>{if(!e.target.dataset.linkActivity)return;const event=state.events.find(x=>x.id===e.target.dataset.linkActivity);if(event){event.requirementId=e.target.value||undefined;dirty=true;render();}});
@@ -208,7 +210,17 @@ $('event-start').addEventListener('change',updateStageSuggestion);
 
 function renderHistorySuggestions(){
  if(!historyAnalysis||!analyzedHistory)return;
+ const reopenIndex=inlineHistoryIndex;restoreEventForm();
  let count=0;
- $('history-suggestions').innerHTML=historyAnalysis.candidates.map((c,i)=>{const done=includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates);if(done)count++;return `<li class="${done?'history-included':''}"><div><strong>${i+1}. ${escape(c.name)}</strong><small>Página ${c.page} · texto do ano anterior: ${escape(c.excerpt)}</small>${done?'<span class="history-check">✓ Revisado e incluído</span>':''}</div><button type="button" data-history-candidate="${i}" ${done?'disabled':''}>${done?'✓ Incluído':'Revisar e incluir'}</button></li>`;}).join('');
+ $('history-suggestions').innerHTML=historyAnalysis.candidates.map((c,i)=>{const done=includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates);if(done)count++;return `<li data-history-item="${i}" class="${done?'history-included':''}"><div><strong>${i+1}. ${escape(c.name)}</strong><small>Página ${c.page} · texto do ano anterior: ${escape(c.excerpt)}</small>${done?'<span class="history-check">✓ Revisado e incluído</span>':''}</div><button type="button" data-history-candidate="${i}" ${done?'disabled':''}>${done?'✓ Incluído':'Revisar e incluir'}</button></li>`;}).join('');
+ if(reopenIndex!==null&&historicalSource){const candidate=historyAnalysis.candidates[reopenIndex];if(candidate&&!includedHistoryCandidate(state.events,analyzedHistory.id,candidate,historyAnalysis.candidates))openInlineHistory(reopenIndex,false);}
  let progress=$('history-progress');if(!progress){progress=document.createElement('p');progress.id='history-progress';progress.setAttribute('role','status');$('history-suggestions').before(progress);}progress.textContent=`${count} de ${historyAnalysis.candidates.length} itens incluídos. A ordem da lista é mantida. Salve o calendário para guardar as novas inclusões.`;
+}
+
+function restoreEventForm(){eventFormHome.after($('event-form'));$('event-form').classList.remove('inline-history-review');$('cancel-inline-history')?.remove();inlineHistoryIndex=null;}
+function openInlineHistory(index,scroll=true){
+ const row=document.querySelector('[data-history-item="'+index+'"]');if(!row)return;
+ restoreEventForm();inlineHistoryIndex=index;row.append($('event-form'));$('event-form').classList.add('inline-history-review');
+ const close=document.createElement('button');close.id='cancel-inline-history';close.type='button';close.className='secondary';close.textContent='Fechar revisão';close.onclick=()=>{historicalSource=null;$('historical-event-source').hidden=true;$('event-form').reset();restoreEventForm();row.scrollIntoView({block:'nearest'});};$('event-form').append(close);
+ if(scroll)row.scrollIntoView({behavior:'smooth',block:'start'});
 }

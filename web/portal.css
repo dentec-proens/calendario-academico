@@ -45,3 +45,13 @@
 .history-check{display:inline-block;margin-top:8px;color:var(--green);font-weight:650;font-size:.9rem}
 #history-suggestions button:disabled{background:#e3eee8;border-color:#cadbd1;color:#285641;opacity:1;cursor:default}
 #history-progress{padding:12px 16px;background:#edf5f0;border-radius:6px;line-height:1.6}
+
+#history-suggestions > li{scroll-margin-top:85px}
+#history-suggestions .inline-history-review{grid-column:1/-1;width:100%;min-width:0;padding:20px;border:1px solid var(--line);border-radius:8px;background:#f8faf9;margin-top:4px}
+#history-suggestions .inline-history-review label{align-items:stretch;font-size:.95rem}
+#history-suggestions .inline-history-review label.check{align-items:center}
+#history-suggestions .inline-history-review > button{display:inline-block;margin:8px 10px 0 0;white-space:normal}
+#history-suggestions .inline-history-review .row-form{gap:16px}
+#history-suggestions .inline-history-review .row-form label{min-width:0;flex:1 1 200px}
+#history-suggestions .inline-history-review input:not([type="checkbox"]),#history-suggestions .inline-history-review select{width:100%;min-width:0}
+@media(max-width:600px){#history-suggestions .inline-history-review{padding:14px}#history-suggestions .inline-history-review .row-form{display:block}}
