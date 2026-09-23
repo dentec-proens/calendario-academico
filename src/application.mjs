@@ -1,4 +1,4 @@
-import {requestRecovery,checkRecovery,completeRecovery,recoveryMessage} from './password-recovery.mjs';
+import {requestRecovery,checkRecovery,completeRecovery,recoveryMessage,manualRecovery} from './password-recovery.mjs';
 import {analyzeHistory} from './history-analysis.mjs';
 import {auditLog} from './audit-log.mjs';
 import {calendarName} from './calendar-label.mjs';
@@ -84,6 +84,7 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
    }
    if(path==='/api/status'&&method==='GET'){send(200,{setupRequired:!(await store.read()).users.length,hosted:!!files,googleEnabled:googleAuth.enabled,user:user?safeUser(user):null});return;}
    if(path==='/api/setup'&&method==='POST'){if(body.code!==setupCode||(setupEmail&&String(body.email).trim().toLowerCase()!==setupEmail))fail('Código ou e-mail de instalação incorreto.',403);const credentials=await password(body.password),mail=email(body.email),name=text(body.name);await store.change(db=>{if(db.users.length)fail('Conta ADMIN já criada.',409);db.users.push({id:randomUUID(),name,email:mail,role:'ADMIN',campusId:null,active:true,...credentials});audit(db,'CREATE_ADMIN',mail);});send(201,{ok:true});return;}
+   if(path==='/api/password/options'&&method==='GET'){send(200,{emailEnabled:!!recoveryMail});return;}
    if(path==='/api/password/request'&&method==='POST'){
     await requestRecovery(store,body.email,canonicalOrigin,recoveryMail);send(200,{message:recoveryMessage});return;
    }
@@ -130,6 +131,8 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
    }
    if(path==='/api/campuses'&&method==='POST'){admin();const c={id:randomUUID(),name:text(body.name,120)};await store.change(db=>{if(db.campuses.some(x=>x.name.toLowerCase()===c.name.toLowerCase()))fail('Unidade já cadastrada.',409);db.campuses.push(c);audit(db,'CREATE_CAMPUS',c.id);});send(201,c);return;}
    if(path==='/api/users'&&method==='POST'){admin();const role=body.role===undefined?'CAMPUS':body.role;if(!['ADMIN','CAMPUS'].includes(role))fail('Perfil inválido.');const loginMethod=body.loginMethod||'local';if(!['local','google','invite'].includes(loginMethod))fail('Forma de acesso inválida.');const mail=email(body.email),name=text(body.name),credentials=loginMethod==='local'?await password(body.password):{};const created=await store.change(db=>{if(role==='CAMPUS'&&!db.campuses.some(c=>c.id===body.campusId))fail('Campus inválido.');if(db.users.some(u=>u.email===mail&&!u.removedAt))fail('E-mail já cadastrado.',409);const u={id:randomUUID(),name,email:mail,role,campusId:role==='ADMIN'?null:body.campusId,loginMethod,active:loginMethod!=='invite',...credentials};db.users.push(u);audit(db,'CREATE_USER',u.id);if(loginMethod==='invite'){const invitation=issueInvitation(db,u.id,user.id);return {...safeUser(u),inviteUrl:canonicalOrigin+'/ativar#token='+invitation.token};}return safeUser(u);});send(201,created);return;}
+   const recoveryMatch=path.match(/^\/api\/users\/([\w-]+)\/password-recovery$/);
+   if(recoveryMatch&&method==='POST'){admin();const result=await store.change(db=>manualRecovery(db,recoveryMatch[1],user.id,canonicalOrigin));send(201,result);return;}
    const memberMatch=path.match(/^\/api\/users\/([\w-]+)$/);
    if(memberMatch&&method==='DELETE'){admin();await store.change(db=>removeMember(db,memberMatch[1],user.id));send(200,{ok:true});return;}
    const inviteMatch=path.match(/^\/api\/users\/([\w-]+)\/invitation$/);

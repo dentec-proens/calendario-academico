@@ -17,3 +17,9 @@ Tokens aleatórios de 256 bits, armazenados somente como hash, com validade de 3
 Respostas não revelam se a conta existe. Limites persistentes: três pedidos por endereço a cada 15 minutos e 60 por hora no sistema. Falhas de envio invalidam o token e registram `PASSWORD_RECOVERY_DELIVERY_FAILED`, sem conteúdo do provedor nem link. Sucesso registra `RESET_PASSWORD`. O limite global pode afetar disponibilidade sob abuso; considerar controle adicional na borda em produção.
 
 Esta alteração implementa recuperação de senha, não envio automático dos convites de cadastro. Convites continuam sendo links compartilhados manualmente.
+
+## Uso manual sem serviço de e-mail
+
+Na administração, contas ativas com senha local têm “Gerar link de recuperação”. Confirme o destinatário, copie o link e envie pelo e-mail institucional. O sistema não envia e-mail nesse modo. Gerar outro link invalida os anteriores. Feche o painel depois de copiar. A página pública oferece um atalho para abrir o aplicativo de e-mail e solicitar ajuda; clicar não envia mensagem sozinho.
+
+A recuperação do único administrador que perdeu a senha precisa do responsável autenticado pela infraestrutura, com registro de auditoria. Não existe recuperação pública por código de instalação, e-mail informado ou pergunta pessoal.

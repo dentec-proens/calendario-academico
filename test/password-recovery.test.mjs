@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {requestRecovery,completeRecovery,checkRecovery} from '../src/password-recovery.mjs';
+import {requestRecovery,completeRecovery,checkRecovery,manualRecovery} from '../src/password-recovery.mjs';
 import {recoveryMailer} from '../src/recovery-mail.mjs';
 import {createApp} from '../src/application.mjs';
 function fixture(){const db={users:[{id:'admin',email:'admin@ifpr.edu.br',active:true,role:'ADMIN',hash:'old',salt:'old'},{id:'disabled',email:'disabled@ifpr.edu.br',active:false,hash:'old'}],sessions:[{userId:'admin'},{userId:'other'}],invitations:[{userId:'admin',revoked:false}],audit:[],campuses:[{name:'Reitoria'}],calendars:[{id:'keep'}]};return {db,store:{read:async()=>structuredClone(db),change:async fn=>fn(db)}};}
@@ -26,6 +26,7 @@ test('mail adapter requires configuration and fails closed on provider rejection
  const mail=recoveryMailer({RESEND_API_KEY:'synthetic',DENTEC_MAIL_FROM:'test@example.org'},async(url,options)=>{assert.equal(url,'https://api.resend.com/emails');body=JSON.parse(options.body);return {ok:false};});
  await assert.rejects(mail({to:'test@ifpr.edu.br',url:'https://calendar.example/recuperar-senha#token=synthetic'}));assert.deepEqual(body.to,['test@ifpr.edu.br']);
 });
+test('manual links replace previous links, keep disabled users blocked and never enter audit logs',()=>{const {db}=fixture();const first=manualRecovery(db,'admin','admin','https://calendar.example');const second=manualRecovery(db,'admin','admin','https://calendar.example');const token=url=>new URL(url).hash.split('=')[1];assert.throws(()=>checkRecovery(db,token(first.url)));checkRecovery(db,token(second.url));assert.throws(()=>manualRecovery(db,'disabled','admin','https://calendar.example'));assert(!JSON.stringify(db).includes(token(second.url)));});
 test('HTTP recovery rejects replay, invalid passwords and cross-origin calls; old login stops working',async t=>{
  const {store}=fixture();await store.change(db=>{db.users=[];});let sent;
  const app=await createApp({store,setupCode:'synthetic',recoveryMail:async m=>sent=m});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.server.close(r)));
@@ -33,6 +34,10 @@ test('HTTP recovery rejects replay, invalid passwords and cross-origin calls; ol
  const call=async(path,body,headers={})=>{const r=await fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json','X-Dentec-Request':'1',...headers},body:JSON.stringify(body)});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')};};
  const email='admin@ifpr.edu.br',password='synthetic-password-old';await call('/api/setup',{code:'synthetic',name:'Admin test',email,password});
  const login=await call('/api/login',{email,password});assert.equal(login.status,200);
+ const manualPath='/api/users/'+login.data.user.id+'/password-recovery';
+ assert.equal((await call(manualPath,{})).status,401);
+ const manual=await call(manualPath,{}, {Cookie:login.cookie.split(';')[0]});assert.equal(manual.status,201);assert.match(manual.data.url,/recuperar-senha#token=/);
+ await store.change(db=>{db.users[0].role='CAMPUS';});assert.equal((await call(manualPath,{}, {Cookie:login.cookie.split(';')[0]})).status,403);await store.change(db=>{db.users[0].role='ADMIN';});
  assert.equal((await call('/api/password/request',{email},{Origin:'https://evil.example'})).status,403);
  const known=await call('/api/password/request',{email}),unknown=await call('/api/password/request',{email:'unknown@ifpr.edu.br'});assert.deepEqual(known.data,unknown.data);
  const token=new URL(sent.url).hash.split('=')[1];assert.equal((await call('/api/password/reset',{token,password:'short'})).status,400);

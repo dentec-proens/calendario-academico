@@ -1,6 +1,15 @@
 import {createHash,randomBytes} from 'node:crypto';
 const digest=value=>createHash('sha256').update(value).digest('hex');
 export const recoveryMessage='Se houver uma conta ativa com esse e-mail, você receberá um link para redefinir a senha. Confira também a pasta de spam.';
+export function manualRecovery(db,userId,actor,origin,now=Date.now()){
+ const user=db.users.find(u=>u.id===userId&&u.active&&!u.removedAt&&u.hash&&u.loginMethod!=='google');
+ if(!user)throw Object.assign(Error('A recuperação exige uma conta ativa com senha local. Para novos usuários, gere um convite.'),{status:400});
+ const token=randomBytes(32).toString('hex'),expiresAt=now+1800000;
+ db.passwordResets=(db.passwordResets||[]).filter(r=>r.expires>now&&r.userId!==userId);
+ db.passwordResets.push({hash:digest(token),userId,expires:expiresAt});
+ db.audit.push({at:new Date(now).toISOString(),actor,action:'ISSUE_PASSWORD_RECOVERY',id:userId});
+ return {url:origin+'/recuperar-senha#token='+token,expiresAt,email:user.email};
+}
 function valid(db,token,now){
  if(typeof token!=='string'||!/^[a-f0-9]{64}$/.test(token))return;
  const item=(db.passwordResets||[]).find(r=>r.hash===digest(token)&&r.expires>now&&!r.usedAt);
