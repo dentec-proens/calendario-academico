@@ -1,5 +1,5 @@
 import {calendarName} from './calendar-label.mjs';
-const labels={ANALYZE_HISTORY:'Calendário anterior analisado',SAVE_CALENDAR:'Calendário salvo',CREATE_CALENDAR:'Calendário criado',SAVE_HUMAN_REVIEW:'Parecer salvo',UPLOAD_HISTORY:'Calendário anterior enviado',CREATE_USER:'Membro cadastrado',REMOVE_MEMBER:'Acesso removido',REISSUE_INVITATION:'Convite renovado',ACCEPT_INVITATION:'Convite aceito',UPDATE_CATALOGUE:'Base institucional alterada',CREATE_CAMPUS:'Unidade cadastrada',CREATE_ADMIN:'Administração criada'};
+const labels={DELETE_CALENDAR:'Calendário movido para a lixeira',RESTORE_CALENDAR:'Calendário restaurado',ANALYZE_HISTORY:'Calendário anterior analisado',SAVE_CALENDAR:'Calendário salvo',CREATE_CALENDAR:'Calendário criado',SAVE_HUMAN_REVIEW:'Parecer salvo',UPLOAD_HISTORY:'Calendário anterior enviado',CREATE_USER:'Membro cadastrado',REMOVE_MEMBER:'Acesso removido',REISSUE_INVITATION:'Convite renovado',ACCEPT_INVITATION:'Convite aceito',UPDATE_CATALOGUE:'Base institucional alterada',CREATE_CAMPUS:'Unidade cadastrada',CREATE_ADMIN:'Administração criada'};
 export function auditLog(db,user,offset=0){
  const visible=(db.audit||[]).map(entry=>{
   const history=(db.histories||[]).find(h=>h.id===entry.id);

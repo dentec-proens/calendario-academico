@@ -15,3 +15,8 @@
 @media(max-width:480px){
   #calendar-list > li[data-calendar-campus]{grid-template-columns:minmax(0,1fr);gap:12px}
 }
+
+#calendar-list > li[data-calendar-campus]{grid-template-columns:minmax(0,1fr) 11rem 16rem 10rem}
+#calendar-list > li[data-calendar-campus] > button{min-height:46px}
+@media(max-width:1100px){#calendar-list > li[data-calendar-campus]{grid-template-columns:repeat(3,minmax(0,1fr))}#calendar-list > li[data-calendar-campus] > div{grid-column:1/-1}}
+@media(max-width:600px){#calendar-list > li[data-calendar-campus]{grid-template-columns:minmax(0,1fr)}}

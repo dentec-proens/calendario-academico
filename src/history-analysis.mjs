@@ -1,4 +1,5 @@
 import {getDocument} from 'pdfjs-dist/legacy/build/pdf.mjs';
+import {extractHistoricalDates,monthHeading} from './history-dates.mjs';
 
 // Extract only text, never execute document scripts or interpret its contents as instructions.
 export async function analyzeHistory(bytes) {
@@ -30,11 +31,13 @@ export async function analyzeHistory(bytes) {
 export function suggestionsFromPages(pages){
  const candidates=[],seen=new Set();
  const keywords=/feriado|municipal|padroeir|anivers[aá]rio|emancipa|funda[çc][aã]o|evento|semana|feira|mostra|jornada|festival|encontro|reuni[aã]o|conselho|forma[çc][aã]o|planejamento|recesso|jogos|gincana|olimp[ií]ada|s[aã]o jo[aã]o|santo ant[oô]nio|nossa senhora/i;
- for(const p of pages)for(const line of p.text.split('\n')){
-  if(line.length<8||!keywords.test(line)||/^legenda|^dia da semana|^domingo|^segunda-feira|^terça-feira|^quarta-feira|^quinta-feira|^sexta-feira|^sábado/i.test(line))continue;
-  const key=line.toLocaleLowerCase('pt-BR');if(seen.has(key))continue;seen.add(key);
+ for(const p of pages){let month=null;const lines=p.text.split('\n');for(let index=0;index<lines.length;index++){let line=lines[index];
+  if(/^\d{1,2}(?:[/.]\d{1,2})?(?:\s*(?:a|até|–|-)\s*\d{1,2}(?:[/.]\d{1,2})?)?$/.test(line)&&lines[index+1]&&/^[A-Za-zÀ-ÿ]/.test(lines[index+1])&&!monthHeading(lines[index+1])&&!/^(?:Descrição|Dia\(s\)|D S T)/i.test(lines[index+1]))line+=' '+lines[++index];
+  const heading=monthHeading(line);if(heading){month=heading;continue;}const dates=extractHistoricalDates(line,month);
+  if(line.length<8||(!dates&&!keywords.test(line))||/^legenda|^dia da semana|^domingo|^segunda-feira|^terça-feira|^quarta-feira|^quinta-feira|^sexta-feira|^sábado/i.test(line))continue;
+  const key=line.toLocaleLowerCase('pt-BR')+JSON.stringify(dates);if(seen.has(key))continue;seen.add(key);
   const holiday=/feriado|padroeir|emancipa/i.test(line);
-  candidates.push({page:p.page,excerpt:line.slice(0,650),name:line.replace(/^(?:\d{1,2}\s+){2,}/,'').replace(/^\d{1,2}(?:[\/.]\d{1,2}(?:[\/.]\d{2,4})?)?(?:\s*(?:a|até|-)\s*\d{1,2}(?:[\/.]\d{1,2})?)?\s*[-–:]?\s+/, '').slice(0,160),likelyLocal:/municipal|padroeir|anivers[aá]rio|emancipa/i.test(line),category:holiday?'feriado':/conselho/i.test(line)?'conselho':/recesso/i.test(line)?'recesso':/forma[çc][aã]o/i.test(line)?'formacao':'evento'});
- }
- return {version:1,pages,candidates:candidates.sort((a,b)=>Number(b.likelyLocal)-Number(a.likelyLocal)).slice(0,150),truncated:candidates.length>150,needsText:pages.every(p=>p.text.trim().length<25),analyzedAt:new Date().toISOString()};
+  candidates.push({dates,page:p.page,excerpt:line.slice(0,650),name:(dates?.name||line.replace(/^(?:\d{1,2}\s+){2,}/,'').replace(/^\d{1,2}(?:[\/.]\d{1,2}(?:[\/.]\d{2,4})?)?(?:\s*(?:a|até|-)\s*\d{1,2}(?:[\/.]\d{1,2})?)?\s*[-–:]?\s+/, '')).slice(0,160),likelyLocal:/municipal|padroeir|anivers[aá]rio|emancipa/i.test(line),category:holiday?'feriado':/conselho/i.test(line)?'conselho':/recesso/i.test(line)?'recesso':/forma[çc][aã]o/i.test(line)?'formacao':'evento'});
+ }}
+ return {version:2,pages,candidates:candidates.sort((a,b)=>Number(b.likelyLocal)-Number(a.likelyLocal)).slice(0,150),truncated:candidates.length>150,needsText:pages.every(p=>p.text.trim().length<25),analyzedAt:new Date().toISOString()};
 }
