@@ -1,4 +1,5 @@
 import {proposedDates} from '/history-dates.mjs';
+import {suggestStages} from '/stage-suggestions.mjs';
 import {teacherVacations} from '/teacher-vacations.mjs';
 import {regimeLabels} from '/calendar-label.mjs';
 import {evaluateCalendar} from '/evaluation.mjs';
@@ -60,7 +61,7 @@ function render(){
   $('issue-list').innerHTML=issues.map(([mark,title,detail])=>`<li class="issue-item"><span class="issue-mark">${mark}</span><div><strong>${escape(title)}</strong><small>${escape(detail)}</small></div></li>`).join('');
   $('calendar-title').textContent=`${state.year} · ${state.campus || 'Campus não informado'}${state.offer?' · '+calendarModalities(state).map(m=>modalityLabels[m]).join(' + '):''}`;
   $('months').innerHTML=proensLayout(state,allEvents(),result,record);
-  renderSaturdays();
+  renderSaturdays();updateStageSuggestion();
 }
 function sync(){$('vacation-july').value=state.teacherVacations?.julyStart||'';$('vacation-evidence').value=state.teacherVacations?.evidence||'';vacationPreview();if(['integrado','subsequente','posgraduacao'].includes(state.offer)&&!Array.from($('offer').options).some(o=>o.value===state.offer))$('offer').add(new Option(modalityLabels[state.offer],state.offer));for(const key of ['campus','year','offer','regime'])$(key).value=state[key];document.querySelectorAll('#weekdays input').forEach(el=>el.checked=state.weekdays.includes(Number(el.value)));$('week-evidence').value=state.weekEvidence;$('week-confirmed').checked=state.weekConfirmed;}
 $('identity').onsubmit=e=>e.preventDefault();
@@ -180,7 +181,7 @@ $('download-pdf-top').onclick=()=>$('download-pdf').click();
 openRecord();
 
 $('assessment-stages').onchange=()=>{const value=Number($('assessment-stages').value);if(![2,3,4].includes(value))return;state.assessmentStages=value;const ids=new Set(activityChecklist(state).map(r=>r.id));for(const event of state.events)if(!ids.has(event.requirementId))delete event.requirementId;dirty=true;render();};
-function prepareActivity(id){historicalSource=null;$('historical-event-source').hidden=true;const item=activityChecklist(state).find(r=>r.id===id);if(!item)return;$('event-requirement').value=id;$('event-name').value=item.name;$('event-category').value=id.includes('council')?'conselho':id.startsWith('stage-')?'limite':'prazo';$('event-kind').value='note';$('event-start').value='';$('event-end').value='';$('event-evidence').value='';$('event-confirmed').checked=false;$('event-form').scrollIntoView({behavior:'smooth'});$('event-start').focus();}
+function prepareActivity(id){historicalSource=null;$('historical-event-source').hidden=true;const item=activityChecklist(state).find(r=>r.id===id);if(!item){updateStageSuggestion();return;}$('event-requirement').value=id;$('event-name').value=item.name;$('event-category').value=id.includes('council')?'conselho':id.startsWith('stage-')?'limite':'prazo';$('event-kind').value='note';$('event-start').value='';$('event-end').value='';$('event-evidence').value='';$('event-confirmed').checked=false;updateStageSuggestion();$('event-form').scrollIntoView({behavior:'smooth'});$('event-start').focus();}
 $('event-requirement').onchange=()=>prepareActivity($('event-requirement').value);
 document.addEventListener('click',e=>{const b=e.target.closest('[data-prepare-activity]');if(b)prepareActivity(b.dataset.prepareActivity);});
 document.addEventListener('change',e=>{if(!e.target.dataset.linkActivity)return;const event=state.events.find(x=>x.id===e.target.dataset.linkActivity);if(event){event.requirementId=e.target.value||undefined;dirty=true;render();}});
@@ -207,3 +208,16 @@ function renderHistoryBatch(){
   state.events.push(...additions);dirty=true;render();$('history-batch-confirm').checked=false;message(`${additions.length} atividade(s) incluída(s); ${duplicates} repetida(s) ignorada(s). Clique em Salvar para gravar o calendário.`);
  }catch(error){message(error.message,true);}};
 }
+
+function updateStageSuggestion(){
+ let panel=$('stage-suggestion');if(!panel){panel=document.createElement('section');panel.id='stage-suggestion';panel.className='notice';panel.setAttribute('aria-live','polite');$('event-form').append(panel);}
+ panel.hidden=$('event-requirement').value!=='stage-1';if(panel.hidden)return;
+ panel.replaceChildren();
+ if(!$('event-start').value){panel.textContent='Informe o início da primeira etapa. O sistema usará o número de etapas já cadastrado e os dias letivos até o final dos períodos para sugerir todos os intervalos.';return;}
+ try{const suggestion=suggestStages(state,allEvents(),$('event-start').value);$('event-end').value=suggestion.stages[0].end;
+  panel.innerHTML='<strong>Sugestão de distribuição das etapas</strong><p>Distribuição equilibrada dos dias letivos cadastrados'+(suggestion.byPeriod?', respeitando os limites de cada período':'')+'. Confira as datas e a norma vigente antes de aplicar. Não representa aprovação institucional.</p><ul>'+suggestion.stages.map(s=>`<li>${escape(s.name)}: ${dateLabel(s.start)} a ${dateLabel(s.end)} — ${s.days} dias letivos</li>`).join('')+'</ul><p>Preencha a fonte da decisão e marque a confirmação do formulário. Este botão inclui todas as etapas para todas as formas de oferta/níveis deste calendário.</p><button type="button" id="apply-stage-suggestion">Aplicar todas as etapas sugeridas</button>';
+  $('apply-stage-suggestion').onclick=()=>act(()=>{const evidence=$('event-evidence').value.trim();if(!evidence||!$('event-confirmed').checked)throw Error('Informe a fonte e confirme as datas antes de aplicar as etapas.');const fresh=suggestStages(state,allEvents(),$('event-start').value);state.events.push(...fresh.stages.map(s=>({id:crypto.randomUUID(),name:s.name,requirementId:s.requirementId,start:s.start,end:s.end,kind:'note',category:'limite',evidence,modalities:calendarModalities(state)})));dirty=true;historicalSource=null;$('event-form').reset();$('historical-event-source').hidden=true;render();message(`${fresh.stages.length} etapas incluídas. Confira e clique em Salvar no sistema.`);});
+ }catch(error){panel.textContent=error.message;}
+}
+$('event-start').addEventListener('input',updateStageSuggestion);
+$('event-start').addEventListener('change',updateStageSuggestion);
