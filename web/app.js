@@ -1,3 +1,4 @@
+import {durationEnd} from '/duration.mjs';
 import {proposedDates} from '/history-dates.mjs';
 import {historyCandidateKey,includedHistoryCandidate,existingHistoryEvent} from '/history-progress.mjs';
 import {suggestStages,isFirstStageStart} from '/stage-suggestions.mjs';
@@ -243,3 +244,7 @@ function openInlineHistory(index,scroll=true){
 $('new-event').onclick=()=>{restoreEventForm();historicalSource=null;$('event-form').reset();$('historical-event-source').hidden=true;updateStageSuggestion();$('event-form').scrollIntoView({block:'center',behavior:'smooth'});$('event-name').focus({preventScroll:true});};
 
 $('show-existing-history').onchange=renderHistorySuggestions;
+
+function periodDurationPreview(){if(!$('period-days').value)return;try{$('period-end').value=durationEnd($('period-start').value,$('period-days').value,state,allEvents());$('period-duration-status').textContent='Término sugerido: '+dateLabel($('period-end').value)+'. A contagem considera os impedimentos já cadastrados; confira novamente se incluir novos eventos.';}catch(e){$('period-end').value='';$('period-duration-status').textContent=e.message;}}
+for(const id of ['period-start','period-days'])$(id).addEventListener('input',periodDurationPreview);
+for(const part of ['first','second']){const start=$('vacation-'+part+'-start'),days=$('vacation-'+part+'-days'),end=$('vacation-'+part+'-end');const calculate=()=>{if(!days.value)return;try{end.value=durationEnd(start.value,days.value);vacationPreview();}catch(e){end.value='';$('vacation-preview').textContent=e.message;}};start.addEventListener('input',calculate);days.addEventListener('input',calculate);end.addEventListener('input',()=>{days.value='';vacationPreview();});}

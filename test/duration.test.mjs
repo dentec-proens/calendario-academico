@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {durationEnd} from '../src/duration.mjs';
+const state={year:2027,modalities:['integrado'],weekConfirmed:true,weekdays:[1,2,3,4,5]};
+test('inclusive vacation duration crosses months and leap day',()=>{assert.equal(durationEnd('2027-01-02',30),'2027-01-31');assert.equal(durationEnd('2028-02-20',15),'2028-03-05');assert.throws(()=>durationEnd('2027-01-02',0));assert.throws(()=>durationEnd('2027-02-30',30));});
+test('teaching duration excludes holidays and includes explicit Saturdays',()=>{assert.equal(durationEnd('2027-03-01',5,state),'2027-03-05');const events=[{start:'2027-03-05',end:'2027-03-05',kind:'exclude'},{start:'2027-03-06',end:'2027-03-06',kind:'include'}];assert.equal(durationEnd('2027-03-01',5,state,events),'2027-03-06');assert.throws(()=>durationEnd('2027-03-01',5,{...state,weekConfirmed:false}));assert.throws(()=>durationEnd('2027-12-31',3,state));});
