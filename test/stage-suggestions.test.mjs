@@ -6,3 +6,17 @@ test('respects semester boundaries for four stages and rejects unknown or confli
 
 import {isFirstStageStart} from '../src/stage-suggestions.mjs';
 test('recognizes imported first stage without guessing later stages',()=>{for(const name of ['Início do Período Letivo/1º Semestre/1º Bimestre','Início do 1º trimestre','Início da primeira etapa'])assert.equal(isFirstStageStart(name),true);for(const name of ['Término do 1º bimestre','Início do 2º semestre','Início do terceiro trimestre'])assert.equal(isFirstStageStart(name),false);});
+import {suggestStageEnd} from '../src/stage-suggestions.mjs';
+test('later stages receive an end date without replacing earlier stages',()=>{
+ const events=[{id:'first',kind:'note',requirementId:'stage-1',start:'2027-03-01',end:'2027-03-05'}];
+ const before=JSON.stringify(events);
+ assert.equal(suggestStageEnd(state,events,'2027-03-08',2).end,'2027-03-12');
+ assert.equal(JSON.stringify(events),before);
+ assert.throws(()=>suggestStageEnd(state,events,'2027-03-05',2),/sobrepõe/);
+ assert.throws(()=>suggestStageEnd(state,events,'2027-03-09',2),/suficientes/);
+ assert.throws(()=>suggestStageEnd(state,events,'2027-03-01',1),/registrada/);
+});
+test('single stage suggestion counts holidays and explicit Saturdays',()=>{
+ const events=[{id:'h',kind:'exclude',start:'2027-03-05',end:'2027-03-05',evidence:'Lei'},{id:'s',kind:'include',start:'2027-03-06',end:'2027-03-06',evidence:'Ata'}];
+ assert.equal(suggestStageEnd(state,events,'2027-03-01',1).end,'2027-03-06');
+});

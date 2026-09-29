@@ -1,7 +1,7 @@
 import {durationEnd,recalculatePeriods} from '/duration.mjs';
 import {proposedDates} from '/history-dates.mjs';
 import {historyCandidateKey,includedHistoryCandidate,existingHistoryEvent} from '/history-progress.mjs';
-import {suggestStages,isFirstStageStart} from '/stage-suggestions.mjs';
+import {suggestStages,suggestStageEnd,isFirstStageStart} from '/stage-suggestions.mjs';
 import {teacherVacations} from '/teacher-vacations.mjs';
 import {regimeLabels} from '/calendar-label.mjs';
 import {evaluateCalendar} from '/evaluation.mjs';
@@ -202,7 +202,7 @@ $('vacation-form').addEventListener('change',vacationPreview);
 $('vacation-form').onsubmit=e=>{e.preventDefault();act(()=>{const values=vacationValues(),evidence=$('vacation-evidence').value.trim(),vacation=teacherVacations(state.year,values,evidence);state.teacherVacations={...values,evidence};state.events=state.events.filter(e=>!['teacher-vacation-january','teacher-vacation-july'].includes(e.id)).concat(vacation.events);dirty=true;render();vacationPreview();message('Férias docentes registradas nas datas informadas pelo campus. Salve no sistema.');});};
 document.addEventListener('input',e=>{if(e.target.closest('form'))message('Formulário alterado. Aplique a alteração no botão correspondente e depois salve no sistema.');});
 
-function isStageRequest(){return $('event-requirement').value==='stage-1'||(!$('event-requirement').value&&isFirstStageStart($('event-name').value));}
+function isStageRequest(){return /^stage-[1-4]$/.test($('event-requirement').value)||(!$('event-requirement').value&&isFirstStageStart($('event-name').value));}
 function applyStageSuggestion(){
  identified();const evidence=$('event-evidence').value.trim();if(!evidence||!$('event-confirmed').checked)throw Error('Informe a fonte e confirme as datas antes de aplicar as etapas.');
  const modalities=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value);if(!modalities.length)throw Error('Selecione uma forma de oferta/nível.');
@@ -216,8 +216,18 @@ function updateStageSuggestion(){
  let panel=$('stage-suggestion');if(!panel){panel=document.createElement('section');panel.id='stage-suggestion';panel.className='notice';panel.setAttribute('aria-live','polite');$('event-form').append(panel);}
  panel.hidden=!isStageRequest();if(panel.hidden)return;
  panel.replaceChildren();
- if(!$('event-start').value){panel.textContent='Informe o início da primeira etapa. O sistema usará o número de etapas já cadastrado e os dias letivos até o final dos períodos para sugerir todos os intervalos.';return;}
- try{const modalities=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value);const suggestion=suggestStages({...state,modalities,offer:modalities[0]},allEvents(),$('event-start').value);$('event-end').value=suggestion.stages[0].end;
+ $('event-end').value='';
+ if(!$('event-start').value){panel.textContent='Informe o início da etapa. O sistema usará o número de etapas já cadastrado e os dias letivos até o final dos períodos para sugerir todos os intervalos.';return;}
+ try{const modalities=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value);if(!modalities.length)throw Error('Selecione uma forma de oferta/nível.');
+ const scopedState={...state,modalities,offer:modalities[0]};
+ const number=Number($('event-requirement').value.match(/^stage-([1-4])$/)?.[1]||1);
+ if(number!==1||allEvents().some(e=>/^stage-[1-4]$/.test(e.requirementId||''))){
+  const stage=suggestStageEnd(scopedState,allEvents(),$('event-start').value,number);
+  $('event-end').value=stage.end;
+  panel.textContent='Término sugerido: '+dateLabel(stage.end)+' — '+stage.days+' dias letivos, descontando os impedimentos cadastrados. Confira e use Adicionar evento para registrar esta etapa.';
+  return;
+ }
+ const suggestion=suggestStages(scopedState,allEvents(),$('event-start').value);$('event-end').value=suggestion.stages[0].end;
   panel.innerHTML='<strong>Sugestão de distribuição das etapas</strong><p>Distribuição equilibrada dos dias letivos cadastrados'+(suggestion.byPeriod?', respeitando os limites de cada período':'')+'. Confira as datas e a norma vigente antes de aplicar. Não representa aprovação institucional.</p><ul>'+suggestion.stages.map(s=>`<li>${escape(s.name)}: ${dateLabel(s.start)} a ${dateLabel(s.end)} — ${s.days} dias letivos</li>`).join('')+'</ul><p>Preencha a fonte da decisão e marque a confirmação do formulário. Este botão inclui todas as etapas para as formas de oferta/níveis selecionadas.</p><button type="button" id="apply-stage-suggestion">Aplicar todas as etapas sugeridas</button>';
   $('apply-stage-suggestion').onclick=()=>act(applyStageSuggestion);
  }catch(error){panel.textContent=error.message;}

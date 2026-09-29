@@ -33,3 +33,17 @@ test('initial analysis identifies a measurable deficit without assuming document
  const doc=reviewDocument(record,{entries:result.criteria.map(c=>c.initial),reviewer:{name:'Revisor <teste>'},revision:1,calendarVersion:1,catalogueRevision:1,conclusion:'Texto humano <script>alert(1)</script>',processNumber:'23411.000001/2026-00',applicableNorm:'Norma confirmada pelo revisor'});
  assert.equal((doc.html.match(/<tr>/g)||[]).length,31);assert(doc.html.includes('proposta automática, não confirmada'));assert(doc.html.includes('23411.000001/2026-00'));assert(doc.html.includes('2. PARECER'));assert(doc.html.includes('&lt;script&gt;'));assert(!doc.html.includes('<script>'));assert(doc.text.includes('Texto humano <script>'));assert(!doc.html.includes('Documento assinado eletronicamente'));assert(doc.html.includes('Não é documento assinado'));
 });
+test('review displays separate registered totals and provisional counts without approving them',()=>{
+ const record={id:'r',name:'Teste',version:1,state:{year:2026,campus:'Foz',modalities:['integrado','graduacao'],offer:'integrado',regime:'semestral',weekdays:[1,2,3,4,5],weekConfirmed:true,weekEvidence:'Ata',periods:[{id:'a',name:'1º semestre',start:'2026-03-02',end:'2026-03-06'}]}};
+ const events=[{id:'h',name:'Feriado',kind:'exclude',start:'2026-03-03',end:'2026-03-03',evidence:'Lei',modalities:['graduacao']}];
+ let r=reviewSupport(record,events);
+ assert.deepEqual(r.teachingDays.map(c=>c.total),[5,4]);
+ assert.match(r.criteria.find(c=>c.id==='annual').signal,/Graduação: 4 dias/);
+ assert.match(r.criteria.find(c=>c.id==='semester').signal,/1º semestre: 4 dias/);
+ record.state.weekConfirmed=false;r=reviewSupport(record,events);
+ assert(r.teachingDays.every(c=>c.provisional));
+ assert.equal(r.criteria.find(c=>c.id==='annual').initial.status,'PENDENTE');
+ record.state.weekdays=[];r=reviewSupport(record,events);assert.equal(r.teachingDays.length,0);
+ record.state.weekdays=[1,2,3,4,5];record.state.periods.push({...record.state.periods[0],id:'b'});
+ assert.equal(reviewSupport(record,events).teachingDays.length,0);
+});

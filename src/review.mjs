@@ -1,4 +1,4 @@
-import {calendarModalities} from './modalities.mjs';
+import {calendarModalities,modalityLabels} from './modalities.mjs';
 import {calendarResult} from './pdf.mjs';
 export const reviewSource={id:'SEI 3959640',year:2026,title:'Parecer técnico-pedagógico de calendário acadêmico e administrativo',norm:'Resolução Consup/IFPR 259, de 27/11/2025'};
 const rows=[
@@ -36,13 +36,23 @@ const rows=[
 const normalize=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 export const reviewCriteria=rows.map(([id,title,page,item,pattern])=>({id,title,page,item,pattern}));
 export function reviewSupport(record,events){
- let result=null,error=null;try{result=calendarResult(record.state,events);}catch{error='Contagem indisponível: confira semana letiva, períodos e evidências no editor.';}
+ let result=null,error=null,provisional=false;
+ try{result=calendarResult(record.state,events);}catch(cause){
+  error='Contagem indisponível: '+cause.message;
+  // A numerical preview uses only registered weekdays and events, never an assumed week.
+  if(record.state.weekdays?.length){try{
+   result=calendarResult({...record.state,weekConfirmed:true,weekEvidence:record.state.weekEvidence||'Prévia de dados cadastrados'},events.map(e=>({...e,evidence:e.evidence||'Prévia de dados cadastrados'})));
+   provisional=true;error='Contagem provisória: confirme a semana letiva e as fontes dos eventos no editor.';
+  }catch{/* Invalid periods or dates must not produce a misleading total. */}}
+ }
+ const counts=result?Object.entries(result.byModality):[];
+ const countLabel=provisional?'Contagem provisória dos dados cadastrados. ':'';
  const sameYear=record.state.year===reviewSource.year;
  return {source:reviewSource,sameYear,officialApproval:false,calendar:{id:record.id,name:record.name,campus:record.state.campus,year:record.state.year,offer:record.state.offer,modalities:calendarModalities(record.state),regime:record.state.regime,version:record.version},criteria:reviewCriteria.map(c=>{
   let signal='Conferência documental necessária.',candidates=[];
   if(c.pattern){const pattern=new RegExp(c.pattern);candidates=events.filter(e=>pattern.test(normalize(e.name+' '+(e.category||'')))&&(c.id!=='III'||!(/docent|professor/.test(normalize(e.name))||String(e.id).startsWith('teacher-vacation')))).map(e=>({id:e.id,name:e.name,start:e.start,end:e.end,evidence:e.evidence}));signal=candidates.length?`${candidates.length} registro(s) possivelmente relacionado(s). A presença não comprova atendimento.`:'Nenhum registro localizado por nome/categoria. Isso não comprova ausência no processo.';}
-  if(c.id==='annual')signal=result?`${result.total} dias calculados; ${result.total>=200?'alcança':'não alcança'} a referência de 200 do parecer. Carga horária do PPC exige análise.`:error;
-  if(c.id==='semester')signal=record.state.regime==='anual'?'Oferta registrada como anual. Confira a aplicabilidade.':result?record.state.periods.map(p=>`${p.name}: ${result.byPeriod[p.id]} dias`).join('; ')+' — confira 100 dias em cada semestre.':error;
+  if(c.id==='annual')signal=result?countLabel+counts.map(([m,r])=>`${modalityLabels[m]||m}: ${r.total} dias letivos registrados; ${r.total>=200?'alcança':'não alcança'} a referência de 200 dias`).join('; ')+'. Carga horária do PPC exige análise.'+(provisional?' '+error:''):error;
+  if(c.id==='semester')signal=(record.state.regime==='anual'?'Regime anual: confira a aplicabilidade do mínimo semestral. ':'')+(result?countLabel+counts.map(([m,r])=>`${modalityLabels[m]||m}: `+record.state.periods.map(p=>`${p.name||p.id}: ${r.byPeriod[p.id]} dias letivos`).join('; ')).join(' | '):error);
   if(c.id==='I')signal=record.state.periods.map(p=>`${p.name}: ${p.start} a ${p.end}`).join('; ')||'Nenhum período cadastrado. Confira também as etapas internas.';
   if(c.id==='window'){
    const starts=record.state.periods.map(p=>p.start).sort(),ends=record.state.periods.map(p=>p.end).sort();
@@ -51,16 +61,14 @@ export function reviewSupport(record,events){
   if(['V','VII'].includes(c.id)&&calendarModalities(record.state).every(m=>m==='integrado'))signal+=' O texto do parecer menciona subsequentes e graduação: confira se não se aplica.';
   if(['XXIV','XXV'].includes(c.id)&&calendarModalities(record.state).every(m=>m==='graduacao'))signal+=' O parecer de 2026 considera esse evento facultativo para graduação.';
   if(['IV','XXII','XXIII'].includes(c.id))signal+=' A quantidade de dias/horas não está comprovada pela identificação do evento.';
-  if(!sameYear)signal+=' Critério extraído de parecer de 2026; confirme a exigência na norma vigente.';
   let status='PENDENTE',finding=candidates.length?'REGISTROS_LOCALIZADOS':'CONFERENCIA_NECESSARIA';
   if(c.pattern&&!candidates.length)finding='NAO_LOCALIZADO';
-  if(c.id==='annual'&&result){finding=result.total<200?'CONTAGEM_INSUFICIENTE':'CONTAGEM_ALCANCADA';if(sameYear&&result.total<200)status='NAO_ATENDIDO';}
+  if(c.id==='annual'&&result&&!provisional){finding=counts.some(([,r])=>r.total<200)?'CONTAGEM_INSUFICIENTE':'CONTAGEM_ALCANCADA';if(sameYear&&counts.some(([,r])=>r.total<200))status='NAO_ATENDIDO';}
   if(c.id==='semester'&&record.state.regime==='anual'){finding='APLICABILIDADE';if(sameYear)status='NAO_APLICAVEL';}
-  if(c.id==='semester'&&record.state.regime!=='anual'&&result){const valid=record.state.periods.length===2&&record.state.periods.every(p=>result.byPeriod[p.id]>=100);finding=valid?'CONTAGEM_ALCANCADA':'CONTAGEM_INSUFICIENTE';if(sameYear)status=valid?'ATENDIDO':'NAO_ATENDIDO';}
+  if(c.id==='semester'&&record.state.regime!=='anual'&&result&&!provisional){const valid=record.state.periods.length===2&&counts.every(([,r])=>record.state.periods.every(p=>r.byPeriod[p.id]>=100));finding=valid?'CONTAGEM_ALCANCADA':'CONTAGEM_INSUFICIENTE';if(sameYear)status=valid?'ATENDIDO':'NAO_ATENDIDO';}
   if(c.id==='window'&&sameYear&&record.state.periods.length){const starts=record.state.periods.map(p=>p.start).sort(),ends=record.state.periods.map(p=>p.end).sort();status=starts[0]>='2026-02-04'&&starts[0]<='2026-02-28'&&ends.at(-1)<='2026-12-18'?'ATENDIDO':'NAO_ATENDIDO';finding='DATAS_COMPARADAS';}
-  const notes=(signal+(candidates.length?' Registros: '+candidates.slice(0,3).map(e=>`${e.name} (${e.start} a ${e.end}); fonte: ${e.evidence||'não informada'}`).join(' | '):'')).slice(0,1950);
   return {...c,signal,candidates,initial:{id:c.id,status,notes:'',reviewed:false,finding}};
- }),conflicts:result?.conflicts||[],countError:error};
+ }),teachingDays:counts.map(([modality,r])=>({modality,total:r.total,byPeriod:r.byPeriod,provisional})),conflicts:result?.conflicts||[],countError:error};
 }
 export const reviewStatuses=['PENDENTE','ATENDIDO','NAO_ATENDIDO','NAO_APLICAVEL'];
 export function initialConclusion(support){

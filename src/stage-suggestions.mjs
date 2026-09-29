@@ -1,6 +1,6 @@
 import {evaluateCalendar} from './evaluation.mjs';
 import {parseDate} from './calendar.mjs';
-import {calendarModalities} from './modalities.mjs';
+import {calendarModalities,appliesTo} from './modalities.mjs';
 export function isFirstStageStart(name){
  const text=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
  if(!/\binicio\b/.test(text))return false;
@@ -28,4 +28,26 @@ export function suggestStages(state,events,start){
  const stages=[];
  for(const chunk of chunks){let offset=0;for(let i=0;i<perChunk;i++){const size=Math.floor(chunk.length/perChunk)+(i<chunk.length%perChunk?1:0),part=chunk.slice(offset,offset+size);offset+=size;stages.push({requirementId:`stage-${stages.length+1}`,name:`${stages.length+1}ª etapa de avaliação — início e término`,start:part[0],end:part.at(-1),days:size});}}
  return {stages,total:days.length,byPeriod};
+}
+
+/** Suggest one stage without replacing any registered stage. */
+export function suggestStageEnd(state,events,start,number){
+ if(!Number.isInteger(number)||number<1||number>Number(state.assessmentStages))throw Error('Etapa inválida para o número de etapas cadastrado.');
+ const modalities=calendarModalities(state);
+ const scoped=events.filter(e=>modalities.some(m=>appliesTo(e,m)));
+ const existing=scoped.filter(e=>/^stage-(?:[1-4]|start-[1-4]|end-[1-4])$/.test(e.requirementId||''));
+ if(existing.some(e=>e.requirementId===`stage-${number}`))throw Error('Esta etapa já está registrada. Revise o registro existente.');
+ const result=evaluateCalendar(state,scoped);
+ const lists=modalities.map(m=>result.byModality[m].ledger.filter(d=>d.counted).map(d=>d.date));
+ if(lists.some(list=>JSON.stringify(list)!==JSON.stringify(lists[0])))throw Error('As ofertas possuem dias letivos diferentes. Selecione uma oferta para calcular a etapa.');
+ const days=lists[0];
+ if(!days.includes(start))throw Error('O início da etapa precisa ser um dia letivo cadastrado.');
+ const baseline=suggestStages(state,scoped.filter(e=>!existing.includes(e)),days[0]);
+ const target=baseline.stages[number-1];
+ const period=state.periods.find(p=>target.start>=p.start&&target.start<=p.end);
+ const available=days.filter(d=>d>=start&&(!baseline.byPeriod||(d>=period.start&&d<=period.end)));
+ if(available[0]!==start||available.length<target.days)throw Error('Não há dias letivos suficientes neste período para manter a distribuição. Revise o início ou os períodos letivos.');
+ const end=available[target.days-1];
+ if(existing.some(e=>e.start<=end&&e.end>=start))throw Error('A sugestão sobrepõe uma etapa já registrada. Revise as datas.');
+ return {...target,start,end};
 }
