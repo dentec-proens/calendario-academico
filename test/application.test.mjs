@@ -35,7 +35,7 @@ test('accounts, campus isolation, history, propagation, versioning and persisten
  const createdAdmin=await call('/api/users','POST',newAdmin,admin);assert.equal(createdAdmin.status,201);assert.equal(createdAdmin.data.role,'ADMIN');assert.equal(createdAdmin.data.campusId,null);assert(!('hash' in createdAdmin.data));
  assert.equal((await call('/api/users','POST',newAdmin,admin)).status,409);
  const reviewer=(await call('/api/login','POST',{email:newAdmin.email,password:newAdmin.password})).cookie;
- const reviewerPanel=(await call('/api/bootstrap','GET',null,reviewer)).data;assert.equal(reviewerPanel.user.role,'ADMIN');assert.equal(reviewerPanel.campuses.length,27);
+ const reviewerPanel=(await call('/api/bootstrap','GET',null,reviewer)).data;assert.equal(reviewerPanel.user.role,'ADMIN');assert.equal(reviewerPanel.campuses.length,28);
  assert.equal((await call('/api/campuses','POST',{name:'Unauthorized'},campus)).status,403);
  assert.equal((await call('/api/catalogue','POST',{},campus)).status,403);
  const c=(await call('/api/calendars','POST',{campusId:foz.id,purpose:'test',name:'Synthetic calendar',courses:'Synthetic course',year:2027,offer:'integrado',regime:'anual'},campus)).data;assert(c.id);
@@ -43,7 +43,7 @@ test('accounts, campus isolation, history, propagation, versioning and persisten
  const before=(await call('/api/calendars/'+c.id,'GET',null,campus)).data;
  assert.equal((await call('/api/calendars/'+c.id,'GET',null,reviewer)).status,200);
  const campusPanel=(await call('/api/bootstrap','GET',null,campus)).data;assert.deepEqual(campusPanel.campuses.map(x=>x.id),[foz.id]);assert.equal(campusPanel.users.length,0);assert(campusPanel.calendars.every(x=>x.campusId===foz.id));
- const adminPanel=(await call('/api/bootstrap','GET',null,admin)).data;assert.equal(adminPanel.campuses.length,27);assert(adminPanel.calendars.some(x=>x.id===c.id));
+ const adminPanel=(await call('/api/bootstrap','GET',null,admin)).data;assert.equal(adminPanel.campuses.length,28);assert(adminPanel.calendars.some(x=>x.id===c.id));
  assert.equal((await call('/api/calendars','POST',{campusId:other.id,name:'Denied',courses:'Denied',year:2027,offer:'integrado',regime:'anual'},campus)).status,404);
  assert.equal((await call('/api/calendars/'+c.id,'PUT',{version:1,catalogueRevision:1,state:c.state},foreign)).status,404);
  const definitive=(await call('/api/calendars','POST',{campusId:foz.id,name:'Definitive fixture',courses:'Synthetic',year:2027,modalities:['subsequente','graduacao'],regime:'misto',purpose:'definitive'},campus)).data;
@@ -61,7 +61,7 @@ test('accounts, campus isolation, history, propagation, versioning and persisten
  assert.equal(vacationSaved.state.events.find(e=>e.id==='teacher-vacation-july').end,'2027-07-19');assert.equal(vacationSaved.state.teacherVacations.total,undefined);
  assert.equal((await call('/api/calendars/'+definitive.id,'PUT',{version:2,catalogueRevision:1,state:{...vacationState,teacherVacations:{julyStart:'2027-07-18',evidence:'Synthetic'}}},campus)).status,400);
  const savedLog=(await call('/api/logs','GET',null,campus)).data.entries;assert(savedLog.some(e=>e.version===2&&e.action==='Calendário salvo'));
- const reitoria=bootstrap.data.campuses.filter(c=>c.name==='Reitoria');assert.equal(reitoria.length,1);
+ const reitoria=bootstrap.data.campuses.filter(c=>c.name==='Reitoria');assert.equal(reitoria.length,0);assert(bootstrap.data.campuses.some(c=>c.name==='Ponta Grossa'));assert(bootstrap.data.campuses.some(c=>c.name==='Toledo'));assert.equal(bootstrap.data.campuses[0].name,'Arapongas');
  const removable=(await call('/api/users','POST',{name:'Remove fixture',email:'remove-fixture@ifpr.edu.br',role:'CAMPUS',campusId:foz.id,loginMethod:'invite'},admin)).data;
  assert.equal((await call('/api/users/'+removable.id,'DELETE',{},campus)).status,403);
  assert.equal((await call('/api/users/'+removable.id,'DELETE',{},admin)).status,200);

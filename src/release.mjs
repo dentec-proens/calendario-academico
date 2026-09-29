@@ -29,12 +29,27 @@ export function releaseReadiness(record,db){
  if(![2,3,4].includes(record.state.assessmentStages))issues.push('Informe a quantidade de etapas de avaliação (2, 3 ou 4).');
  for(const modality of calendarModalities(record.state))for(const activity of activityChecklist(record.state))if(!events.some(e=>appliesTo(e,modality)&&e.requirementId===activity.id&&e.evidence?.trim()))issues.push(`${modalityLabels[modality]} — ${activity.name}: vincule um evento com datas e fonte no roteiro de atividades.`);
  for(const modality of calendarModalities(record.state)){
+ for(const activity of activityChecklist(record.state)){
+  const linked=events.filter(e=>e.requirementId===activity.id&&appliesTo(e,modality));
+  const prefix=`${modalityLabels[modality]} — ${activity.name}`;
+  if(activity.minHours&&linked.reduce((sum,e)=>sum+(Number.isFinite(e.hours)&&e.hours>0?e.hours:0),0)<activity.minHours)issues.push(`${prefix}: registre pelo menos ${activity.minHours} horas.`);
+  if(activity.deadline&&linked.some(e=>e.end>activity.deadline))issues.push(`${prefix}: data posterior ao prazo de ${activity.deadline}.`);
+  if(activity.month&&linked.some(e=>Number(e.start.slice(5,7))!==activity.month||Number(e.end.slice(5,7))!==activity.month))issues.push(`${prefix}: confira o mês exigido.`);
+  if(activity.id.startsWith('admission-notice-')){
+   const term=Number(activity.id.split('-').at(-1));
+   const periods=[...record.state.periods].sort((a,b)=>a.start.localeCompare(b.start));
+   const start=periods[term===0?0:term-1]?.start;
+   if(linked.length&&(!start||linked.some(e=>e.end>=start)))issues.push(`${prefix}: publique antes do início do período letivo.`);
+  }
+ }
  const eventFor=id=>events.find(e=>e.requirementId===id&&appliesTo(e,modality));
  for(let n=1;n<=(record.state.assessmentStages||0);n++){
   const start=eventFor('stage-'+n),end=eventFor('stage-'+n),results=eventFor('results-'+n),council=eventFor('council-'+n);
   if(start&&end&&start.start>end.end)issues.push(`${n}ª etapa: término anterior ao início.`);
   if(end&&results&&results.end<end.end)issues.push(`${n}ª etapa: prazo de lançamento de resultados anterior ao término.`);
   if(results&&council&&council.start<results.end)issues.push(`${n}ª etapa: conselho anterior ao prazo de lançamento dos resultados.`);
+  const meeting=eventFor('pedagogical-meeting-'+n);
+  if(results&&meeting&&meeting.start<results.end)issues.push(`${n}ª etapa: reunião pedagógica anterior ao prazo de lançamento dos resultados.`);
  }
  }
 

@@ -2,12 +2,13 @@
 // Historical dates are deliberately excluded. Applicability is reviewed separately.
 export function activityChecklist(state){
  const rows=[];
- const add=(id,name)=>rows.push({id,name});
+ const add=(id,name,extra={})=>rows.push({id,name,...extra});
  const stages=Number(state.assessmentStages);
  if([2,3,4].includes(stages))for(let n=1;n<=stages;n++){
   add(`stage-${n}`,`${n}ª etapa de avaliação — início e término`);
   add(`results-${n}`,`Prazo de lançamento dos resultados (rendimento e frequência) da ${n}ª etapa`);
   add(`council-${n}`,`Conselho de classe/coletivo pedagógico da ${n}ª etapa`);
+  add(`pedagogical-meeting-${n}`,`Reunião pedagógica após os resultados parciais da ${n}ª etapa`);
  }
  const terms=state.regime==='misto'?[0,1,2]:state.regime==='semestral'?[1,2]:[0];
  for(const n of terms){
@@ -16,6 +17,9 @@ export function activityChecklist(state){
   add(`diary-${n}`,`Prazo de fechamento e entrega dos diários de classe do ${label}`);
   add(`teaching-plan-${n}`,`Prazo de entrega do Plano de Ensino do ${label}`);
   add(`recognition-${n}`,`Aproveitamento de estudos, certificação de conhecimentos e equivalência de estágio — ${label}`);
+  add(`registration-${n}`,`Período destinado à matrícula — ${label}`);
+  add(`admission-notice-${n}`,`Publicação dos editais de transferência interna e externa, reingresso e portadores de diploma — antes do início do ${label}`);
+  add(`final-appeal-${n}`,`Prazo para estudantes solicitarem revisão de resultados finais — ${label}`);
  }
  for(const n of [1,2]){
   add(`pit-${n}`,`Prazo de entrega do PIT — ${n}º semestre`);
@@ -24,6 +28,16 @@ export function activityChecklist(state){
   add(`withdrawal-${n}`,`Prazo de trancamento de curso e cancelamento de matrícula em componente — ${n}º semestre`);
  }
  add('extraordinary-council','Conselho de classe/coletivo pedagógico extraordinário para revisão dos resultados finais');
+ add('family-meeting','Reunião com familiares, responsáveis e comunidade');
+ add('campus-events','Eventos de ensino, pesquisa, extensão e inovação do campus');
+ add('alumni-meeting','Encontro dos egressos');
+ add('internship-event','Evento sobre a temática de estágios');
+ add('robotics','Fase local da Olimpíada Brasileira de Robótica'+(Number(state.year)===2026?' — até 31/08/2026':''),Number(state.year)===2026?{deadline:'2026-08-31'}:{});
+ add('course-showcase','Mostra de Cursos do campus'+(Number(state.year)===2026?' — até 30/09/2026':''),Number(state.year)===2026?{deadline:'2026-09-30'}:{});
+ add('pedagogical-training','Formação pedagógica — mínimo de 40 horas anuais',{minHours:40});
+ add('collective-planning','Planejamento/replanejamento coletivo — mínimo de 20 horas anuais',{minHours:20});
+ add('women-week','Semana de Valorização de Mulheres que Fizeram História — março',{month:3});
+ add('cultural-week','Semana Cultural Interescolar — outubro, aberta a estudantes, famílias e comunidade',{month:10});
  return rows;
 }
 

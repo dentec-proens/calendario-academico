@@ -20,13 +20,22 @@ test('removal revokes invitations and sessions while retaining historical author
 });
 
 test('definitive release requires every reviewed criterion, current versions and adequate teaching days',()=>{
- const record={id:'c',version:1,catalogueRevision:1,institutionalSnapshot:[],state:{assessmentStages:4,year:2027,offer:'tecnico',regime:'anual',weekdays:[1,2,3,4,5],weekConfirmed:true,weekEvidence:'Synthetic fixture',periods:[{id:'year',name:'Ano',start:'2027-01-01',end:'2027-12-31'}],events:[]}};
+ const record={id:'c',version:1,catalogueRevision:1,institutionalSnapshot:[],state:{assessmentStages:4,year:2027,offer:'tecnico',regime:'anual',weekdays:[1,2,3,4,5],weekConfirmed:true,weekEvidence:'Synthetic fixture',periods:[{id:'year',name:'Ano',start:'2027-01-04',end:'2027-12-31'}],events:[]}};
  record.state.events=[...reviewCriteria.map(c=>c.title),...requiredActivities.map(c=>c[1])].map((name,i)=>({id:'e'+i,name,start:'2027-02-01',end:'2027-02-01',kind:'note',category:'institucional',evidence:'Synthetic fixture'}));
  record.state.events.push(...activityChecklist(record.state).map(r=>({id:r.id,requirementId:r.id,name:r.name,start:'2027-02-01',end:'2027-02-01',kind:'note',evidence:'Synthetic fixture'})));
  const db={catalogue:{revision:1},reviews:[]};
  assert.equal(releaseReadiness(record,db).ready,false);
  const review={calendarId:'c',calendarVersion:1,catalogueRevision:1,applicableNorm:'Synthetic normative reference',entries:reviewCriteria.map(c=>({id:c.id,reviewed:true,status:'ATENDIDO',notes:''}))};db.reviews=[review];
+ assert(releaseReadiness(record,db).issues.some(i=>i.includes('40 horas')));
+ for(const r of activityChecklist(record.state)){
+  const event=record.state.events.find(e=>e.requirementId===r.id);
+  if(r.minHours)event.hours=r.minHours;
+  if(r.month)event.start=event.end=`2027-${String(r.month).padStart(2,'0')}-10`;
+  if(r.id.startsWith('admission-notice-'))event.start=event.end='2027-01-01';
+ }
  assert.deepEqual(releaseReadiness(record,db).issues,[]);
+ const training=record.state.events.find(e=>e.requirementId==='pedagogical-training');training.hours=39;
+ assert(releaseReadiness(record,db).issues.some(i=>i.includes('40 horas')));training.hours=40;
  const extraordinary=record.state.events.find(e=>e.requirementId==='extraordinary-council');record.state.events=record.state.events.filter(e=>e!==extraordinary);assert(releaseReadiness(record,db).issues.some(i=>i.includes('extraordinário')));record.state.events.push(extraordinary);
  for(const id of ['IX','X','XI','XII']){const entry=review.entries.find(e=>e.id===id);entry.status='PENDENTE';assert.equal(releaseReadiness(record,db).ready,false);entry.status='ATENDIDO';}
  review.calendarVersion=0;assert.equal(releaseReadiness(record,db).ready,false);review.calendarVersion=1;
