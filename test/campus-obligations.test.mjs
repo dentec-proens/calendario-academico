@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import {updateCampuses,selectableCampuses} from '../src/campuses.mjs';
 import {activityChecklist} from '../src/obligations.mjs';
 test('campus migration is idempotent and preserves historical Reitoria references',()=>{
- const db={campuses:[{id:'r',name:'Reitoria'},{id:'ass',name:'Assis Chateaubriand'},{id:'ara',name:'Arapongas'},{id:'ast',name:'Astorga'}],calendars:[{campusId:'r'}]};
+ const db={campuses:[{id:'r',name:'Reitoria',archived:true},{id:'ass',name:'Assis Chateaubriand'},{id:'ara',name:'Arapongas'},{id:'ast',name:'Astorga'}],calendars:[{campusId:'r'}]};
  updateCampuses(db);const first=structuredClone(db);updateCampuses(db);assert.deepEqual(db,first);
- assert.equal(db.calendars[0].campusId,'r');assert(db.campuses.find(c=>c.id==='r').archived);
- assert.deepEqual(selectableCampuses(db.campuses).map(c=>c.name),['Arapongas','Assis Chateaubriand','Astorga','Ponta Grossa','Toledo']);
+ assert.equal(db.calendars[0].campusId,'r');assert.equal(db.campuses.find(c=>c.id==='r').archived,false);
+ assert.deepEqual(selectableCampuses(db.campuses).map(c=>c.name),['Arapongas','Assis Chateaubriand','Astorga','Ponta Grossa','Reitoria','Toledo']);
 });
 test('mandatory checklist includes annual and semester notices, stage results, hours and year-specific deadlines',()=>{
  for(const [regime,count] of [['anual',1],['semestral',2],['misto',3]]){
