@@ -2,6 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {reviewSupport,reviewCriteria} from '../src/review.mjs';
 import {reviewDocument} from '../src/review-export.mjs';
+
+test('school vacation suggestions exclude teacher vacations and leave notes blank',()=>{
+ const record={id:'test',name:'Teste',version:1,state:{year:2027,campus:'Foz',offer:'integrado',regime:'anual',weekdays:[],weekConfirmed:false,periods:[],events:[]}};
+ const events=[
+  {id:'school',name:'Férias dos estudantes',category:'ferias'},
+  {id:'teachers',name:'Férias docentes',category:'ferias'},
+  {id:'professors',name:'Férias dos professores',category:'ferias'},
+  {id:'teacher-vacation-january',name:'Férias',category:'ferias'},
+ ].map(e=>({...e,start:'2027-01-02',end:'2027-01-31',evidence:'Fonte'}));
+ const support=reviewSupport(record,events);
+ assert.deepEqual(support.criteria.find(c=>c.id==='III').candidates.map(e=>e.id),['school']);
+ assert(support.criteria.find(c=>c.id==='IV').candidates.some(e=>e.id==='teachers'));
+ assert(support.criteria.every(c=>c.initial.notes===''));
+});
 test('review extracts all 30 criteria, flags other years and treats name matches only as clues',()=>{
  const record={id:'test',name:'Teste',version:1,state:{year:2027,campus:'Foz',offer:'graduacao',regime:'anual',weekdays:[],weekConfirmed:false,periods:[],events:[]}};
  const result=reviewSupport(record,[{id:'f',name:'Formação pedagógica',category:'formacao',start:'2027-02-01',end:'2027-02-01',evidence:'Ata'}]);

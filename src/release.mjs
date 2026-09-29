@@ -58,7 +58,7 @@ export function releaseReadiness(record,db){
  if(!review?.applicableNorm?.trim())issues.push('Identifique a norma vigente aplicável na revisão.');
  for(const c of reviewCriteria){
   const entry=current&&review.entries.find(e=>e.id===c.id);
-  if(!entry?.reviewed||!['ATENDIDO','NAO_APLICAVEL'].includes(entry.status)||!entry.notes?.trim())issues.push(`${c.item}: ${c.title} — atendimento ou não aplicabilidade fundamentada pendente.`);
+  if(!entry?.reviewed||!['ATENDIDO','NAO_APLICAVEL'].includes(entry.status))issues.push(`${c.item}: ${c.title} — atendimento ou não aplicabilidade aguardando confirmação.`);
   if(c.pattern&&entry?.status==='ATENDIDO'&&!events.some(e=>e.evidence?.trim()&&new RegExp(c.pattern).test(plain(e.name+' '+(e.category||'')))))issues.push(`${c.item}: ${c.title} — nenhum evento com data e fonte localizado no calendário; confira o cadastro.`);
  }
  return {ready:issues.length===0,issues,officialApproval:false};

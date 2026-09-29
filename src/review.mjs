@@ -40,7 +40,7 @@ export function reviewSupport(record,events){
  const sameYear=record.state.year===reviewSource.year;
  return {source:reviewSource,sameYear,officialApproval:false,calendar:{id:record.id,name:record.name,campus:record.state.campus,year:record.state.year,offer:record.state.offer,modalities:calendarModalities(record.state),regime:record.state.regime,version:record.version},criteria:reviewCriteria.map(c=>{
   let signal='Conferência documental necessária.',candidates=[];
-  if(c.pattern){const pattern=new RegExp(c.pattern);candidates=events.filter(e=>pattern.test(normalize(e.name+' '+(e.category||'')))).map(e=>({id:e.id,name:e.name,start:e.start,end:e.end,evidence:e.evidence}));signal=candidates.length?`${candidates.length} registro(s) possivelmente relacionado(s). A presença não comprova atendimento.`:'Nenhum registro localizado por nome/categoria. Isso não comprova ausência no processo.';}
+  if(c.pattern){const pattern=new RegExp(c.pattern);candidates=events.filter(e=>pattern.test(normalize(e.name+' '+(e.category||'')))&&(c.id!=='III'||!(/docent|professor/.test(normalize(e.name))||String(e.id).startsWith('teacher-vacation')))).map(e=>({id:e.id,name:e.name,start:e.start,end:e.end,evidence:e.evidence}));signal=candidates.length?`${candidates.length} registro(s) possivelmente relacionado(s). A presença não comprova atendimento.`:'Nenhum registro localizado por nome/categoria. Isso não comprova ausência no processo.';}
   if(c.id==='annual')signal=result?`${result.total} dias calculados; ${result.total>=200?'alcança':'não alcança'} a referência de 200 do parecer. Carga horária do PPC exige análise.`:error;
   if(c.id==='semester')signal=record.state.regime==='anual'?'Oferta registrada como anual. Confira a aplicabilidade.':result?record.state.periods.map(p=>`${p.name}: ${result.byPeriod[p.id]} dias`).join('; ')+' — confira 100 dias em cada semestre.':error;
   if(c.id==='I')signal=record.state.periods.map(p=>`${p.name}: ${p.start} a ${p.end}`).join('; ')||'Nenhum período cadastrado. Confira também as etapas internas.';
@@ -59,7 +59,7 @@ export function reviewSupport(record,events){
   if(c.id==='semester'&&record.state.regime!=='anual'&&result){const valid=record.state.periods.length===2&&record.state.periods.every(p=>result.byPeriod[p.id]>=100);finding=valid?'CONTAGEM_ALCANCADA':'CONTAGEM_INSUFICIENTE';if(sameYear)status=valid?'ATENDIDO':'NAO_ATENDIDO';}
   if(c.id==='window'&&sameYear&&record.state.periods.length){const starts=record.state.periods.map(p=>p.start).sort(),ends=record.state.periods.map(p=>p.end).sort();status=starts[0]>='2026-02-04'&&starts[0]<='2026-02-28'&&ends.at(-1)<='2026-12-18'?'ATENDIDO':'NAO_ATENDIDO';finding='DATAS_COMPARADAS';}
   const notes=(signal+(candidates.length?' Registros: '+candidates.slice(0,3).map(e=>`${e.name} (${e.start} a ${e.end}); fonte: ${e.evidence||'não informada'}`).join(' | '):'')).slice(0,1950);
-  return {...c,signal,candidates,initial:{id:c.id,status,notes,reviewed:false,finding}};
+  return {...c,signal,candidates,initial:{id:c.id,status,notes:'',reviewed:false,finding}};
  }),conflicts:result?.conflicts||[],countError:error};
 }
 export const reviewStatuses=['PENDENTE','ATENDIDO','NAO_ATENDIDO','NAO_APLICAVEL'];

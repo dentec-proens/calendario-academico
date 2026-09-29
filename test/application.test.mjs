@@ -94,11 +94,13 @@ test('accounts, campus isolation, history, propagation, versioning and persisten
  const support=(await call(reviewPath,'GET',null,reviewer)).data;assert.equal(support.criteria.length,30);assert.equal(support.sameYear,false);
  const entries=support.criteria.map(x=>({id:x.id,status:'PENDENTE',notes:''}));
  const reviewPayload={calendarVersion:2,catalogueRevision:2,revision:0,entries,conclusion:'Análise inicial'};
- assert.equal((await call(reviewPath,'PUT',{...reviewPayload,entries:entries.map((e,i)=>i?e:{...e,status:'ATENDIDO'})},reviewer)).status,400);
- entries[0]={...entries[0],status:'NAO_ATENDIDO',notes:'Semana não confirmada; solicitar complementação.'};
+ assert.equal((await call(reviewPath,'PUT',{...reviewPayload,entries:entries.map((e,i)=>i?e:{...e,status:'PENDENTE',reviewed:true})},reviewer)).status,400);
+ entries[0]={...entries[0],status:'NAO_ATENDIDO',notes:'Semana não confirmada; solicitar complementação.',reviewed:true};
+ entries[1]={...entries[1],status:'ATENDIDO',notes:'',reviewed:true};
+ entries[2]={...entries[2],status:'NAO_APLICAVEL',notes:'',reviewed:true};
  assert.equal((await call(reviewPath,'PUT',reviewPayload,reviewer)).status,200);
  assert.equal((await call(reviewPath,'PUT',reviewPayload,admin)).status,409);
- const reviewSaved=(await call(reviewPath,'GET',null,admin)).data;assert.equal(reviewSaved.review.reviewer.name,newAdmin.name);assert.equal(reviewSaved.review.officialApproval,false);assert.equal(reviewSaved.review.entries[0].status,'NAO_ATENDIDO');
+ const reviewSaved=(await call(reviewPath,'GET',null,admin)).data;assert.equal(reviewSaved.review.reviewer.name,newAdmin.name);assert.equal(reviewSaved.review.officialApproval,false);assert.equal(reviewSaved.review.entries[0].status,'NAO_ATENDIDO');assert.equal(reviewSaved.review.entries[1].notes,'');assert.equal(reviewSaved.review.entries[1].reviewed,true);assert.equal(reviewSaved.review.entries[2].reviewed,true);assert.equal(reviewSaved.review.entries[3].reviewed,false);
  assert.equal((await call(reviewPath+'/export','POST',{revision:1},campus)).status,403);
  assert.equal((await call(reviewPath+'/export','POST',{revision:0},admin)).status,409);
  const exported=await call(reviewPath+'/export','POST',{revision:1},reviewer);assert.equal(exported.status,200);assert(exported.data.html.includes('ANÁLISE TÉCNICO-PEDAGÓGICA'));assert(exported.data.text.includes('Análise inicial'));

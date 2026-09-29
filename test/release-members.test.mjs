@@ -25,7 +25,7 @@ test('definitive release requires every reviewed criterion, current versions and
  record.state.events.push(...activityChecklist(record.state).map(r=>({id:r.id,requirementId:r.id,name:r.name,start:'2027-02-01',end:'2027-02-01',kind:'note',evidence:'Synthetic fixture'})));
  const db={catalogue:{revision:1},reviews:[]};
  assert.equal(releaseReadiness(record,db).ready,false);
- const review={calendarId:'c',calendarVersion:1,catalogueRevision:1,applicableNorm:'Synthetic normative reference',entries:reviewCriteria.map(c=>({id:c.id,reviewed:true,status:'ATENDIDO',notes:'Synthetic documentary evidence'}))};db.reviews=[review];
+ const review={calendarId:'c',calendarVersion:1,catalogueRevision:1,applicableNorm:'Synthetic normative reference',entries:reviewCriteria.map(c=>({id:c.id,reviewed:true,status:'ATENDIDO',notes:''}))};db.reviews=[review];
  assert.deepEqual(releaseReadiness(record,db).issues,[]);
  const extraordinary=record.state.events.find(e=>e.requirementId==='extraordinary-council');record.state.events=record.state.events.filter(e=>e!==extraordinary);assert(releaseReadiness(record,db).issues.some(i=>i.includes('extraordinário')));record.state.events.push(extraordinary);
  for(const id of ['IX','X','XI','XII']){const entry=review.entries.find(e=>e.id===id);entry.status='PENDENTE';assert.equal(releaseReadiness(record,db).ready,false);entry.status='ATENDIDO';}
