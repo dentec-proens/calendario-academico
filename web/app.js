@@ -14,7 +14,7 @@ import {monthSaturdays,saturdayEvents} from '/saturdays.mjs';
 import {proensLayout} from '/print.mjs';
 const $=id=>document.getElementById(id);
 const eventFormHome=document.createComment('event-form-home');$('event-form').before(eventFormHome);
-let inlineHistoryIndex=null,inlineActivityId=null;
+let inlineHistoryIndex=null,inlineActivityId=null,editingEventId=null;
 let state={schemaVersion:1,campus:'',year:2027,offer:'',regime:'anual',weekdays:[],weekEvidence:'',weekConfirmed:false,periods:[],events:[]};
 let dirty=false, result=null;
 let historicalSource=null,historyAnalysis=null,analyzedHistory=null;
@@ -44,7 +44,7 @@ function render(){
  const selected=$('event-requirement').value;
  $('event-requirement').innerHTML='<option value="">Outro evento / sem vínculo</option>'+requirements.map(r=>`<option value="${r.id}">${escape(r.name)}</option>`).join('');
  $('event-requirement').value=selected;
- $('activity-checklist').innerHTML=requirements.map(r=>`<li data-activity-row="${r.id}"><div><strong>${escape(r.name)}</strong><small>${state.events.some(e=>e.requirementId===r.id)?'✓ Preenchido — sujeito à conferência':'Pendente de data e fonte'}</small></div><button type="button" data-prepare-activity="${r.id}" ${state.events.some(e=>e.requirementId===r.id)?'disabled':''}>${state.events.some(e=>e.requirementId===r.id)?'✓ Preenchido':'Preencher atividade'}</button></li>`).join('');
+ $('activity-checklist').innerHTML=requirements.map(r=>`<li data-activity-row="${r.id}"><div><strong>${escape(r.name)}</strong><small>${state.events.some(e=>e.requirementId===r.id)?'✓ Registrado no calendário — '+state.events.filter(e=>e.requirementId===r.id).map(e=>dateLabel(e.start)+' a '+dateLabel(e.end)).join('; ')+(dirty?' · Salve no sistema para guardar.':''):'Pendente de data e fonte'}</small></div><button type="button" data-prepare-activity="${r.id}" >${state.events.some(e=>e.requirementId===r.id)?'Editar evento':'Preencher atividade'}</button></li>`).join('');
 
   result=null;const issues=[];
   if(!state.campus||!state.offer)issues.push(['Pendente','Identificação','Informe campus e oferta.']);
@@ -62,13 +62,13 @@ function render(){
   $('period-count').textContent=state.periods.length;
   $('period-summary').textContent=result?Object.entries(result.byModality).map(([m,r])=>modalityLabels[m]+': '+r.total+' dias — '+state.periods.map(p=>`${p.name}: ${r.byPeriod[p.id]}`).join(' · ')).join(' | '):'Aguardando dados para contagem';
   $('period-list').innerHTML=state.periods.length?state.periods.map(p=>`<li><div><strong>${escape(p.name)}</strong><small>${dateLabel(p.start)} a ${dateLabel(p.end)}${p.targetDays?` · Meta: ${p.targetDays} dias letivos · término automático`:""}</small></div><button data-remove-period="${escape(p.id)}" aria-label="Remover ${escape(p.name)}">Remover</button></li>`).join(''):'<li class="help">Nenhum período cadastrado.</li>';
-  $('event-list').innerHTML=allEvents().length?allEvents().sort((a,b)=>a.start.localeCompare(b.start)).map(e=>`<li><div><strong>${escape(e.name)}</strong><small>${dateLabel(e.start)} a ${dateLabel(e.end)} · ${{include:'Inclusão letiva',exclude:'Exclusão',note:'Sem efeito na contagem'}[e.kind]}</small><small>Fonte: ${escape(e.evidence)}</small>${e.historicalSource?`<small>Origem histórica: página ${e.historicalSource.page} do <a href="/api/history/${escape(e.historicalSource.historyId)}">calendário anterior</a></small>`:""}<small>${escape(categoryLabel(e))}</small></div>${e.institutional?'<span class="institution-label">Base PROENS</span>':`<label>Categoria e cor<select data-category-event="${escape(e.id)}">${categories.map(([key,label])=>`<option value="${key}" ${eventCategory(e)===key?'selected':''}>${label}</option>`).join('')}</select></label><label>Atividade do roteiro<select data-link-activity="${escape(e.id)}"><option value="">Sem vínculo</option>${activityChecklist(state).map(r=>`<option value="${r.id}" ${e.requirementId===r.id?'selected':''}>${escape(r.name)}</option>`).join('')}</select></label><button data-remove-event="${escape(e.id)}" aria-label="Remover ${escape(e.name)}">Remover</button>`}</li>`).join(''):'<li class="help">Nenhum evento registrado. Confira a base para este ano.</li>';
+  $('event-list').innerHTML=allEvents().length?allEvents().sort((a,b)=>a.start.localeCompare(b.start)).map(e=>`<li><div><strong>${escape(e.name)}</strong><small>${dateLabel(e.start)} a ${dateLabel(e.end)} · ${{include:'Inclusão letiva',exclude:'Exclusão',note:'Sem efeito na contagem'}[e.kind]}</small><small>Fonte: ${escape(e.evidence)}</small>${e.historicalSource?`<small>Origem histórica: página ${e.historicalSource.page} do <a href="/api/history/${escape(e.historicalSource.historyId)}">calendário anterior</a></small>`:""}<small>${escape(categoryLabel(e))}</small></div>${e.institutional?'<span class="institution-label">Base PROENS</span>':`<label>Categoria e cor<select data-category-event="${escape(e.id)}">${categories.map(([key,label])=>`<option value="${key}" ${eventCategory(e)===key?'selected':''}>${label}</option>`).join('')}</select></label><label>Atividade do roteiro<select data-link-activity="${escape(e.id)}"><option value="">Sem vínculo</option>${activityChecklist(state).map(r=>`<option value="${r.id}" ${e.requirementId===r.id?'selected':''}>${escape(r.name)}</option>`).join('')}</select></label><button type="button" data-edit-event="${escape(e.id)}">Editar evento</button><button data-remove-event="${escape(e.id)}" aria-label="Remover ${escape(e.name)}">Remover</button>`}</li>`).join(''):'<li class="help">Nenhum evento registrado. Confira a base para este ano.</li>';
   if(record?.purpose!=='test'){issues.push([!dirty&&record?.readiness?.ready?'Atendido':'Pendente','Geração definitiva',dirty?'Salve as alterações para atualizar a conferência.':record?.readiness?.ready?'Conferência registrada. Não representa aprovação oficial.':'A geração exige revisão completa.']);if(!dirty)for(const issue of record?.readiness?.issues||[])issues.push(['Pendente','Exigência obrigatória',issue]);}
   $('issue-count').textContent=issues.filter(i=>i[0]!=='Atendido').length;
   $('issue-list').innerHTML=issues.map(([mark,title,detail])=>`<li class="issue-item"><span class="issue-mark">${mark}</span><div><strong>${escape(title)}</strong><small>${escape(detail)}</small></div></li>`).join('');
   $('calendar-title').textContent=`${state.year} · ${state.campus || 'Campus não informado'}${state.offer?' · '+calendarModalities(state).map(m=>modalityLabels[m]).join(' + '):''}`;
   $('months').innerHTML=proensLayout(state,allEvents(),result,record);
-  renderSaturdays();updateStageSuggestion();renderHistorySuggestions();if(activeActivity){if(!state.events.some(e=>e.requirementId===activeActivity))openInlineActivity(activeActivity);else document.querySelector('[data-activity-row="'+activeActivity+'"]')?.scrollIntoView({block:'nearest'});}
+  renderSaturdays();updateStageSuggestion();renderHistorySuggestions();if(activeActivity)openInlineActivity(activeActivity);
 }
 function sync(){for(const [field,id] of [['firstStart','vacation-first-start'],['firstEnd','vacation-first-end'],['secondStart','vacation-second-start'],['secondEnd','vacation-second-end']])$(id).value=state.teacherVacations?.[field]||'';$('vacation-evidence').value=state.teacherVacations?.evidence||'';vacationPreview();if(['integrado','subsequente','posgraduacao'].includes(state.offer)&&!Array.from($('offer').options).some(o=>o.value===state.offer))$('offer').add(new Option(modalityLabels[state.offer],state.offer));for(const key of ['campus','year','offer','regime'])$(key).value=state[key];document.querySelectorAll('#weekdays input').forEach(el=>el.checked=state.weekdays.includes(Number(el.value)));$('week-evidence').value=state.weekEvidence;$('week-confirmed').checked=state.weekConfirmed;}
 $('identity').onsubmit=e=>e.preventDefault();
@@ -90,14 +90,21 @@ $('event-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
   if(!name||!evidence)throw Error('Informe descrição e fonte.');
   if(kind==='include'&&datesBetween(start,end).some(date=>!state.periods.some(p=>p.start<=date&&p.end>=date)))throw Error('Inclusões letivas devem estar dentro dos períodos cadastrados.');
   const modalities=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value);if(!modalities.length)throw Error('Selecione ao menos uma forma de oferta/nível para o evento.');
-  if(state.events.some(ev=>ev.name.toLocaleLowerCase()===name.toLocaleLowerCase()&&ev.start===start&&ev.end===end))throw Error('Este evento já foi incluído com as mesmas datas.');
-  const completedHistoryIndex=inlineHistoryIndex;state.events.push({hours:$('event-hours').value?Number($('event-hours').value):undefined,historicalSource,modalities,requirementId:$('event-requirement').value||undefined,id:crypto.randomUUID(),name,start,end,kind,evidence,category:$('event-category').value});historicalSource=null;$('historical-event-source').hidden=true;dirty=true;e.target.reset();$('event-category').value='recesso';render();if(completedHistoryIndex!==null){const row=document.querySelector('[data-history-item="'+completedHistoryIndex+'"]');row?.scrollIntoView({block:'nearest'});}message('Evento registrado. Contagem atualizada. Salve no sistema para guardar.');
+  if(state.events.some(ev=>ev.id!==editingEventId&&ev.name.toLocaleLowerCase()===name.toLocaleLowerCase()&&ev.start===start&&ev.end===end))throw Error('Este evento já foi incluído com as mesmas datas.');
+  const completedHistoryIndex=inlineHistoryIndex;
+  const previous=editingEventId?state.events.find(ev=>ev.id===editingEventId):null;
+  if(editingEventId&&!previous)throw Error('O evento não existe mais. Abra outro evento ou clique em Adicionar novo evento.');
+  const updated={...previous,hours:$('event-hours').value?Number($('event-hours').value):undefined,historicalSource:previous?.historicalSource||historicalSource,modalities,requirementId:$('event-requirement').value||undefined,id:previous?.id||crypto.randomUUID(),name,start,end,kind,evidence,category:$('event-category').value};
+  if(previous)state.events=state.events.map(ev=>ev.id===previous.id?updated:ev);else state.events.push(updated);
+  editingEventId=updated.id;setEventSubmitLabel();
+  historicalSource=null;$('historical-event-source').hidden=true;dirty=true;render();document.querySelectorAll('input[name=event-modality]').forEach(el=>el.checked=modalities.includes(el.value));if(completedHistoryIndex!==null){const row=document.querySelector('[data-history-item="'+completedHistoryIndex+'"]');row?.scrollIntoView({block:'nearest'});}message('Evento registrado: '+name+' — '+dateLabel(start)+' a '+dateLabel(end)+'. Os dados continuam visíveis. Clique em Salvar no sistema para guardar.');
 });});
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.view){document.querySelectorAll('.view').forEach(v=>v.hidden=v.id!==b.dataset.view);document.querySelectorAll('.tab').forEach(t=>{t.classList.toggle('active',t===b);if(t===b)t.setAttribute('aria-current','page');else t.removeAttribute('aria-current');});}
   if(b.dataset.removePeriod){state.periods=state.periods.filter(p=>p.id!==b.dataset.removePeriod);dirty=true;render();message('Período removido. Confira os eventos que dependiam dele.');}
-  if(b.dataset.removeEvent){if(['teacher-vacation-january','teacher-vacation-july'].includes(b.dataset.removeEvent)){delete state.teacherVacations;state.events=state.events.filter(ev=>!['teacher-vacation-january','teacher-vacation-july'].includes(ev.id));sync();}state.events=state.events.filter(ev=>ev.id!==b.dataset.removeEvent);dirty=true;render();message('Evento removido.');}
+  if(b.dataset.editEvent)editEvent(b.dataset.editEvent);
+  if(b.dataset.removeEvent){if(editingEventId===b.dataset.removeEvent){$('event-form').reset();restoreEventForm();}if(['teacher-vacation-january','teacher-vacation-july'].includes(b.dataset.removeEvent)){delete state.teacherVacations;state.events=state.events.filter(ev=>!['teacher-vacation-january','teacher-vacation-july'].includes(ev.id));sync();}state.events=state.events.filter(ev=>ev.id!==b.dataset.removeEvent);dirty=true;render();message('Evento removido.');}
 });
 $('save').onclick=()=>{
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`rascunho-calendario-${state.year}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);message('Download solicitado. Guarde o arquivo para continuar depois. Somente dados aplicados aos formulários foram incluídos.');
@@ -146,6 +153,7 @@ document.addEventListener('click',async e=>{
  const candidateButton=e.target.closest('[data-history-candidate]');if(!candidateButton||!historyAnalysis)return;
  const c=historyAnalysis.candidates[Number(candidateButton.dataset.historyCandidate)];if(!c)return;
  if(includedHistoryCandidate(state.events,analyzedHistory.id,c,historyAnalysis.candidates)||existingHistoryEvent(allEvents(),c,state))return;
+ editingEventId=null;setEventSubmitLabel();
  historicalSource={historyId:analyzedHistory.id,page:c.page,candidateKey:historyCandidateKey(c)};
  $('historical-event-source').hidden=false;$('historical-event-source').textContent=`Origem histórica: ${analyzedHistory.filename}, página ${c.page}. Confira a descrição, informe as datas de ${state.year} e a fonte vigente. O PDF anterior não comprova a vigência do feriado.`;
  $('event-requirement').value='';$('event-name').value=c.name;$('event-category').value=c.category;$('event-kind').value='note';
@@ -191,8 +199,8 @@ $('download-pdf-top').onclick=()=>$('download-pdf').click();
 openRecord();
 
 $('assessment-stages').onchange=()=>{const value=Number($('assessment-stages').value);if(![2,3,4].includes(value))return;state.assessmentStages=value;const ids=new Set(activityChecklist(state).map(r=>r.id));for(const event of state.events)if(!ids.has(event.requirementId))delete event.requirementId;dirty=true;render();};
-function prepareActivity(id){restoreEventForm();historicalSource=null;$('historical-event-source').hidden=true;const item=activityChecklist(state).find(r=>r.id===id);if(!item){updateStageSuggestion();return;}$('event-requirement').value=id;$('event-name').value=item.name;$('event-category').value=id.includes('council')?'conselho':id.startsWith('stage-')?'limite':'prazo';$('event-kind').value='note';$('event-start').value='';$('event-end').value='';$('event-evidence').value='';$('event-hours').value='';$('event-confirmed').checked=false;updateStageSuggestion();openInlineActivity(id);$('event-start').focus({preventScroll:true});}
-$('event-requirement').onchange=()=>prepareActivity($('event-requirement').value);
+function prepareActivity(id){const existing=state.events.find(e=>e.requirementId===id);if(existing){editEvent(existing.id);return;}editingEventId=null;setEventSubmitLabel();restoreEventForm();historicalSource=null;$('historical-event-source').hidden=true;const item=activityChecklist(state).find(r=>r.id===id);if(!item){updateStageSuggestion();return;}$('event-requirement').value=id;$('event-name').value=item.name;$('event-category').value=id.includes('council')?'conselho':id.startsWith('stage-')?'limite':id==='cultural-week'?'evento':'prazo';$('event-kind').value='note';$('event-start').value='';$('event-end').value='';$('event-evidence').value='';$('event-hours').value='';$('event-confirmed').checked=false;updateStageSuggestion();openInlineActivity(id);$('event-start').focus({preventScroll:true});}
+$('event-requirement').onchange=()=>{if(!editingEventId)prepareActivity($('event-requirement').value);};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-prepare-activity]');if(b)prepareActivity(b.dataset.prepareActivity);});
 document.addEventListener('change',e=>{if(!e.target.dataset.linkActivity)return;const event=state.events.find(x=>x.id===e.target.dataset.linkActivity);if(event){event.requirementId=e.target.value||undefined;dirty=true;render();}});
 
@@ -214,8 +222,9 @@ function applyStageSuggestion(){
 }
 function updateStageSuggestion(){
  let panel=$('stage-suggestion');if(!panel){panel=document.createElement('section');panel.id='stage-suggestion';panel.className='notice';panel.setAttribute('aria-live','polite');$('event-form').append(panel);}
- panel.hidden=!isStageRequest();if(panel.hidden)return;
+ panel.hidden=!!editingEventId||!isStageRequest();if(panel.hidden)return;
  panel.replaceChildren();
+ if(state.events.some(e=>e.requirementId===$('event-requirement').value&&e.start===$('event-start').value&&e.end===$('event-end').value)){panel.textContent='Etapa registrada no calendário. Salve no sistema para guardar.';return;}
  $('event-end').value='';
  if(!$('event-start').value){panel.textContent='Informe o início da etapa. O sistema usará o número de etapas já cadastrado e os dias letivos até o final dos períodos para sugerir todos os intervalos.';return;}
  try{const modalities=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value);if(!modalities.length)throw Error('Selecione uma forma de oferta/nível.');
@@ -265,3 +274,17 @@ for(const part of ['first','second']){const start=$('vacation-'+part+'-start'),d
 document.querySelector('#weekdays').addEventListener('change',periodDurationPreview);
 
 function openInlineActivity(id){const row=document.querySelector('[data-activity-row="'+id+'"]');if(!row)return;restoreEventForm();inlineActivityId=id;row.append($('event-form'));$('event-form').classList.add('inline-history-review');const close=document.createElement('button');close.id='cancel-inline-history';close.type='button';close.className='secondary';close.textContent='Fechar preenchimento';close.onclick=()=>{restoreEventForm();$('event-form').reset();row.scrollIntoView({block:'nearest'});};$('event-form').append(close);row.scrollIntoView({block:'nearest',behavior:'smooth'});}
+
+function setEventSubmitLabel(){$('event-form').querySelector('button:not([type]), button[type="submit"]').textContent=editingEventId?'Aplicar alterações do evento':'Adicionar evento';}
+$('event-form').addEventListener('reset',()=>{editingEventId=null;setEventSubmitLabel();});
+function editEvent(id){
+ const event=state.events.find(e=>e.id===id);if(!event)return;
+ if(['teacher-vacation-january','teacher-vacation-july'].includes(id)){$('vacation-form').scrollIntoView({block:'center'});message('Edite as férias docentes no formulário próprio e clique em Aplicar férias docentes.');return;}
+ restoreEventForm();editingEventId=id;historicalSource=event.historicalSource||null;$('historical-event-source').hidden=true;
+ for(const [field,value] of Object.entries({name:event.name,start:event.start,end:event.end,kind:event.kind,category:eventCategory(event),evidence:event.evidence,hours:event.hours??'',requirement:event.requirementId||''}))$('event-'+field).value=value;
+ document.querySelectorAll('input[name=event-modality]').forEach(el=>el.checked=(event.modalities?.length?event.modalities:calendarModalities(state)).includes(el.value));
+ $('event-confirmed').checked=false;setEventSubmitLabel();updateStageSuggestion();
+ if(event.requirementId&&document.querySelector('[data-activity-row="'+event.requirementId+'"]'))openInlineActivity(event.requirementId);
+ else $('event-form').scrollIntoView({block:'center',behavior:'smooth'});
+ message('Editando '+event.name+'. Confira os dados, confirme e clique em Aplicar alterações do evento. Depois salve no sistema.');
+}
