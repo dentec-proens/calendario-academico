@@ -44,7 +44,10 @@ function render(){
  const selected=$('event-requirement').value;
  $('event-requirement').innerHTML='<option value="">Outro evento / sem vínculo</option>'+requirements.map(r=>`<option value="${r.id}">${escape(r.name)}</option>`).join('');
  $('event-requirement').value=selected;
- $('activity-checklist').innerHTML=requirements.map(r=>`<li data-activity-row="${r.id}"><div><strong>${escape(r.name)}</strong><small>${state.events.some(e=>e.requirementId===r.id)?'✓ Registrado no calendário — '+state.events.filter(e=>e.requirementId===r.id).map(e=>dateLabel(e.start)+' a '+dateLabel(e.end)).join('; ')+(dirty?' · Salve no sistema para guardar.':''):'Pendente de data e fonte'}</small></div><button type="button" data-prepare-activity="${r.id}" >${state.events.some(e=>e.requirementId===r.id)?'Editar evento':'Preencher atividade'}</button></li>`).join('');
+ const activityRow=r=>`<li data-activity-row="${r.id}"><div><strong>${escape(r.name)}</strong><small>${state.events.some(e=>e.requirementId===r.id)?'✓ Registrado no calendário — '+state.events.filter(e=>e.requirementId===r.id).map(e=>dateLabel(e.start)+' a '+dateLabel(e.end)).join('; ')+(dirty?' · Salve no sistema para guardar.':''):'Pendente de data e fonte'}</small></div><button type="button" data-prepare-activity="${r.id}" >${state.events.some(e=>e.requirementId===r.id)?'Editar evento':'Preencher atividade'}</button></li>`;
+ $('assessment-checklist').innerHTML=requirements.filter(r=>/^stage-[1-4]$/.test(r.id)).map(activityRow).join('');
+ $('activity-checklist').innerHTML=requirements.filter(r=>!/^stage-[1-4]$/.test(r.id)).map(activityRow).join('');
+ $('assessment-status').textContent=state.assessmentStages?'Os intervalos registrados aparecem abaixo. Use Preencher atividade para calcular as datas ou Editar evento para ajustá-las.':'Selecione o número de etapas para visualizar e preencher seus intervalos.';
 
   result=null;const issues=[];
   if(!state.campus||!state.offer)issues.push(['Pendente','Identificação','Informe campus e oferta.']);

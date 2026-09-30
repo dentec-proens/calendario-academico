@@ -61,9 +61,9 @@
 
 .workspace.sequential-editor{display:block}
 
-#activity-checklist > li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px}
-#activity-checklist .inline-history-review{grid-column:1/-1;width:100%;min-width:0;padding:20px;border:1px solid var(--line);border-radius:8px;background:#f8faf9}
-#activity-checklist .inline-history-review .row-form{gap:16px}
-#activity-checklist .inline-history-review label{min-width:0}
-#activity-checklist button:disabled{background:#e3eee8;color:#285641;border-color:#cadbd1;opacity:1}
-@media(max-width:600px){#activity-checklist > li{grid-template-columns:minmax(0,1fr)}#activity-checklist .inline-history-review{padding:12px}}
+:is(#activity-checklist, #assessment-checklist) > li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px}
+:is(#activity-checklist, #assessment-checklist) .inline-history-review{grid-column:1/-1;width:100%;min-width:0;padding:20px;border:1px solid var(--line);border-radius:8px;background:#f8faf9}
+:is(#activity-checklist, #assessment-checklist) .inline-history-review .row-form{gap:16px}
+:is(#activity-checklist, #assessment-checklist) .inline-history-review label{min-width:0}
+:is(#activity-checklist, #assessment-checklist) button:disabled{background:#e3eee8;color:#285641;border-color:#cadbd1;opacity:1}
+@media(max-width:600px){:is(#activity-checklist, #assessment-checklist) > li{grid-template-columns:minmax(0,1fr)}:is(#activity-checklist, #assessment-checklist) .inline-history-review{padding:12px}}
