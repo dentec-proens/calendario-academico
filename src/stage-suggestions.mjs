@@ -1,4 +1,4 @@
-import {assessmentCount,scopedRequirement} from './obligations.mjs';
+import {assessmentCount,scopedRequirement,stageRequirement} from './obligations.mjs';
 import {evaluateCalendar} from './evaluation.mjs';
 import {parseDate} from './calendar.mjs';
 import {calendarModalities,appliesTo} from './modalities.mjs';
@@ -53,4 +53,34 @@ export function suggestStageEnd(state,events,start,number){
  const end=available[target.days-1];
  if(existing.some(e=>e.start<=end&&e.end>=start))throw Error('A sugestão sobrepõe uma etapa já registrada. Revise as datas.');
  return {...target,start,end};
+}
+
+// Only explicitly automatic, complete groups may have their dates moved.
+export function recalculateAssessmentStages(state,events){
+ const replacements=new Map();
+ const groups=state.assessmentStagesByModality?calendarModalities(state).map(m=>[m]):[calendarModalities(state)];
+ for(const modalities of groups){
+  const stages=state.events.filter(e=>stageRequirement(e.requirementId)&&modalities.some(m=>appliesTo(e,m)));
+  if(!stages.some(e=>e.assessmentAutoStart))continue;
+  const count=assessmentCount(state,modalities[0]);
+  if(stages.length!==count||stages.some(e=>!e.assessmentAutoStart)||new Set(stages.map(e=>e.requirementId)).size!==count)continue;
+  const anchors=new Set(stages.map(e=>e.assessmentAutoStart));
+  if(anchors.size!==1)throw Error('Confira o início da distribuição automática das etapas.');
+  const scopedState={...state,modalities,offer:modalities[0]};
+  const withoutStages=events.filter(e=>!stageRequirement(e.requirementId));
+  const result=evaluateCalendar(scopedState,withoutStages);
+  const start=result.byModality[modalities[0]].ledger.find(d=>d.counted&&d.date>=[...anchors][0])?.date;
+  if(!start)throw Error('Não há dias letivos para recalcular as etapas.');
+  const suggested=suggestStages(scopedState,withoutStages,start);
+  for(const stage of stages){const next=suggested.stages.find(s=>s.requirementId===stage.requirementId);if(next)replacements.set(stage.id,{...stage,start:next.start,end:next.end});}
+ }
+ return state.events.map(e=>replacements.get(e.id)||e);
+}
+
+export function assessmentDayCounts(state,events){
+ const result=evaluateCalendar(state,events);
+ return Object.fromEntries(state.events.filter(e=>stageRequirement(e.requirementId)).map(e=>[e.id,calendarModalities(state).filter(m=>appliesTo(e,m)).map(m=>{
+  const ledger=result.byModality[m].ledger.filter(d=>d.date>=e.start&&d.date<=e.end);
+  return {modality:m,days:ledger.filter(d=>d.counted).length,saturdays:ledger.filter(d=>d.counted&&d.weekday===6).length,excluded:ledger.filter(d=>d.reason==='EXCLUDED').length};
+ })]));
 }

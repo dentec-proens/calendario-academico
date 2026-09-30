@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {activityChecklist,migrateAssessmentEvents} from '../src/obligations.mjs';
-import {suggestStages,suggestStageEnd} from '../src/stage-suggestions.mjs';
+import {activityChecklist,migrateAssessmentEvents,assessmentCount} from '../src/obligations.mjs';
+import {suggestStages,suggestStageEnd,recalculateAssessmentStages,assessmentDayCounts} from '../src/stage-suggestions.mjs';
 import {evaluateCalendar} from '../src/evaluation.mjs';
 import {proensLayout} from '../web/print.mjs';
 import {createApp} from '../src/application.mjs';
@@ -10,6 +10,39 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 const state={year:2027,offer:'integrado',modalities:['integrado','graduacao'],regime:'semestral',assessmentStagesByModality:{integrado:4,graduacao:2},weekdays:[1,2,3,4,5],weekConfirmed:true,weekEvidence:'Ata',periods:[{id:'p',name:'1º semestre',start:'2027-03-01',end:'2027-03-12'},{id:'q',name:'2º semestre',start:'2027-04-01',end:'2027-04-14'}],events:[]};
 const scoped=m=>({...state,offer:m,modalities:[m]});
+test('automatic stages update after holidays and Saturdays, scoped by offer',()=>{
+ const original=['integrado','graduacao'].flatMap(m=>suggestStages(scoped(m),[],'2027-03-01').stages.map((s,i)=>({...s,id:m+i,kind:'note',modalities:[m],assessmentAutoStart:'2027-03-01'})));
+ const holiday={id:'h',kind:'exclude',start:'2027-03-05',end:'2027-03-05',evidence:'Lei',modalities:['integrado']};
+ const saturday={id:'s',kind:'include',start:'2027-03-06',end:'2027-03-06',evidence:'Ata',modalities:['integrado']};
+ const current={...state,events:[...original,holiday,saturday]};
+ const changed=recalculateAssessmentStages(current,current.events);
+ assert.equal(changed.find(e=>e.id==='integrado0').end,'2027-03-06');
+ assert.equal(changed.find(e=>e.id==='graduacao0').end,'2027-03-12');
+ const counts=assessmentDayCounts({...current,events:changed},changed);
+ assert.deepEqual(counts.integrado0,[{modality:'integrado',days:5,saturdays:1,excluded:1}]);
+ assert.equal(original[0].end,'2027-03-05');
+ const blocked=[...changed,{id:'block',kind:'exclude',start:'2027-03-06',end:'2027-03-06',evidence:'Lei',modalities:['integrado']}];
+ const next=recalculateAssessmentStages({...state,events:blocked},blocked);
+ assert.equal(next.find(e=>e.id==='integrado0').end,'2027-03-08');
+ assert.equal(assessmentDayCounts({...state,events:next},next).integrado0[0].saturdays,0);
+ const restored=recalculateAssessmentStages({...state,events:original},original);
+ assert.equal(restored[0].end,'2027-03-05');
+});
+test('manual dates and deleted stages are not overwritten or recreated',()=>{
+ const original=suggestStages(scoped('integrado'),[],'2027-03-01').stages.map((s,i)=>({...s,id:'t'+i,kind:'note',modalities:['integrado']}));
+ const holiday={id:'h',kind:'exclude',start:'2027-03-05',end:'2027-03-05',evidence:'Lei'};
+ const events=[...original,holiday];assert.deepEqual(recalculateAssessmentStages({...state,events},events),events);
+ const incomplete=original.slice(1).map(e=>({...e,assessmentAutoStart:'2027-03-01'}));
+ assert.deepEqual(recalculateAssessmentStages({...state,events:incomplete},incomplete),incomplete);
+});
+test('cleared offer does not inherit the old shared count or affect another offer',()=>{
+ const cleared={...state,assessmentStages:4,assessmentStagesByModality:{graduacao:2}};
+ assert(Number.isNaN(assessmentCount(cleared,'integrado')));
+ assert.equal(assessmentCount(cleared,'graduacao'),2);
+ const stages=activityChecklist(cleared).filter(r=>r.id.startsWith('stage-'));
+ assert.equal(stages.length,2);assert(stages.every(r=>r.modality==='graduacao'));
+ assert.equal(activityChecklist({...cleared,assessmentStagesByModality:{}}).filter(r=>r.id.startsWith('stage-')).length,0);
+});
 test('three trimesters coexist with undergraduate semesters',()=>{
  const configuration={integrado:3,graduacao:2};
  const stages=suggestStages({...scoped('integrado'),assessmentStagesByModality:configuration},[],'2027-03-01').stages;

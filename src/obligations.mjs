@@ -1,5 +1,5 @@
 import {calendarModalities,modalityLabels,appliesTo} from './modalities.mjs';
-export const assessmentCount=(state,modality)=>Number(state.assessmentStagesByModality?.[modality]??state.assessmentStages);
+export const assessmentCount=(state,modality)=>Number(state.assessmentStagesByModality?state.assessmentStagesByModality[modality]:state.assessmentStages);
 export const stageRequirement=id=>/^stage-[1-4](?::[a-z]+)?$/.test(id||'');
 export const scopedRequirement=(state,id,modality)=>state.assessmentStagesByModality?`${id}:${modality}`:id;
 export function migrateAssessmentEvents(state){
@@ -7,7 +7,7 @@ export function migrateAssessmentEvents(state){
  return state.events.flatMap(e=>{
   if(!/^(stage|results|council|pedagogical-meeting)-[1-4]$/.test(e.requirementId||''))return [e];
   const number=Number(e.requirementId.split('-').at(-1));
-  return calendarModalities(state).filter(m=>appliesTo(e,m)).map((m,i)=>({...e,id:i?`${e.id.slice(0,70)}:${m}`:e.id,modalities:[m],name:`${e.name.slice(0,110)} — ${modalityLabels[m]}`,requirementId:number<=assessmentCount(state,m)?`${e.requirementId}:${m}`:undefined}));
+  return calendarModalities(state).filter(m=>appliesTo(e,m)).map((m,i)=>({...e,id:i?`${e.id.slice(0,70)}:${m}`:e.id,modalities:[m],assessmentAutoStart:number<=assessmentCount(state,m)?e.assessmentAutoStart:undefined,name:`${e.name.slice(0,110)} — ${modalityLabels[m]}`,requirementId:number<=assessmentCount(state,m)?`${e.requirementId}:${m}`:undefined}));
  });
 }
 // Undated PROENS operational checklist. Campus histories are separate references.
