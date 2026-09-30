@@ -8,8 +8,22 @@ import {createApp} from '../src/application.mjs';
 import {mkdtemp} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {recalculatePeriods} from '../src/duration.mjs';
 const state={year:2027,offer:'integrado',modalities:['integrado','graduacao'],regime:'semestral',assessmentStagesByModality:{integrado:4,graduacao:2},weekdays:[1,2,3,4,5],weekConfirmed:true,weekEvidence:'Ata',periods:[{id:'p',name:'1º semestre',start:'2027-03-01',end:'2027-03-12'},{id:'q',name:'2º semestre',start:'2027-04-01',end:'2027-04-14'}],events:[]};
 const scoped=m=>({...state,offer:m,modalities:[m]});
+test('100-day semesters control 50-day bimesters even when the last entered stage exceeds the old period',()=>{
+ let s={...state,periods:[{id:'p',name:'First',start:'2027-02-15',end:'2027-06-01',targetDays:100},{id:'q',name:'Second',start:'2027-08-02',end:'2027-12-01',targetDays:100}]};
+ s.periods=recalculatePeriods(s,[]);
+ const stages=['integrado','graduacao'].flatMap(m=>suggestStages({...s,offer:m,modalities:[m]},[],s.periods[0].start).stages.map((e,i)=>({...e,id:m+i,kind:'note',modalities:[m],evidence:'Ata'})));
+ stages.find(e=>e.requirementId==='stage-4:integrado').end='2027-12-31';
+ s.events=stages;
+ const check=events=>{s.periods=recalculatePeriods(s,events);s.events=recalculateAssessmentStages({...s,events},events);const totals=assessmentDayCounts(s,s.events);for(const row of s.events.filter(e=>e.requirementId?.startsWith('stage-')))assert.equal(totals[row.id][0].days,row.modalities[0]==='integrado'?50:100);assert.equal(s.events.find(e=>e.requirementId==='stage-4:integrado').end,s.periods[1].end);for(const r of Object.values(evaluateCalendar(s,s.events).byModality))assert.equal(r.total,200);};
+ check(stages);const before=s.periods[0].end;
+ check([...s.events,{id:'h',kind:'exclude',start:'2027-03-01',end:'2027-03-05',evidence:'Lei'},{id:'sat',kind:'include',start:'2027-03-06',end:'2027-03-06',evidence:'Ata'}]);
+ assert(s.periods[0].end>before);
+ const partial={...s,events:s.events.filter(e=>e.requirementId!=='stage-2:integrado')};
+ assert(!recalculateAssessmentStages(partial,partial.events).some(e=>e.requirementId==='stage-2:integrado'));
+});
 test('automatic stages update after holidays and Saturdays, scoped by offer',()=>{
  const original=['integrado','graduacao'].flatMap(m=>suggestStages(scoped(m),[],'2027-03-01').stages.map((s,i)=>({...s,id:m+i,kind:'note',modalities:[m],assessmentAutoStart:'2027-03-01'})));
  const holiday={id:'h',kind:'exclude',start:'2027-03-05',end:'2027-03-05',evidence:'Lei',modalities:['integrado']};

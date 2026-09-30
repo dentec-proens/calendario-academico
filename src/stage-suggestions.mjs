@@ -64,16 +64,18 @@ export function recalculateAssessmentStages(state,events){
  const groups=state.assessmentStagesByModality?calendarModalities(state).map(m=>[m]):[calendarModalities(state)];
  for(const modalities of groups){
   const stages=state.events.filter(e=>stageRequirement(e.requirementId)&&modalities.some(m=>appliesTo(e,m)));
-  if(!stages.some(e=>e.assessmentAutoStart))continue;
+  const followsTargets=state.periods.length>0&&state.periods.every(p=>Number.isInteger(p.targetDays)&&p.targetDays>0);
+  if(!stages.length||(!followsTargets&&!stages.some(e=>e.assessmentAutoStart)))continue;
   const count=assessmentCount(state,modalities[0]);
-  if(stages.length!==count||stages.some(e=>!e.assessmentAutoStart)||new Set(stages.map(e=>e.requirementId)).size!==count)continue;
+  if(new Set(stages.map(e=>e.requirementId)).size!==stages.length)throw Error('Há etapas duplicadas para a mesma oferta. Confira os registros antes de reorganizar.');
+  if(!followsTargets&&(stages.length!==count||stages.some(e=>!e.assessmentAutoStart)))continue;
   const anchors=new Set(stages.map(e=>e.assessmentAutoStart));
-  if(anchors.size!==1)throw Error('Confira o início da distribuição automática das etapas.');
+  if(!followsTargets&&anchors.size!==1)throw Error('Confira o início da distribuição automática das etapas.');
   const scopedState={...state,modalities,offer:modalities[0]};
   const withoutStages=events.filter(e=>!stageRequirement(e.requirementId));
-  const start=[...anchors][0];
+  const start=followsTargets?state.periods.map(p=>p.start).sort()[0]:[...anchors][0];
   const suggested=suggestStages(scopedState,withoutStages,start);
-  for(const stage of stages){const next=suggested.stages.find(s=>s.requirementId===stage.requirementId);if(next)replacements.set(stage.id,{...stage,start:next.start,end:next.end});}
+  for(const stage of stages){const next=suggested.stages.find(s=>s.requirementId===stage.requirementId);if(next)replacements.set(stage.id,{...stage,start:next.start,end:next.end,assessmentAutoStart:start});}
  }
  return state.events.map(e=>replacements.get(e.id)||e);
 }

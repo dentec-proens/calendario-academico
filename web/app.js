@@ -17,7 +17,7 @@ const $=id=>document.getElementById(id);
 const eventFormHome=document.createComment('event-form-home');$('event-form').before(eventFormHome);
 let inlineHistoryIndex=null,inlineActivityId=null,editingEventId=null;
 let state={schemaVersion:1,campus:'',year:2027,offer:'',regime:'anual',weekdays:[],weekEvidence:'',weekConfirmed:false,periods:[],events:[]};
-let dirty=false, result=null;
+let dirty=false, result=null,editingPeriodId=null;
 let historicalSource=null,historyAnalysis=null,analyzedHistory=null;
 let record=null,institutional=[];
 const calendarId=new URLSearchParams(location.search).get('id');
@@ -34,7 +34,7 @@ function engineInput(){return {year:state.year,offerId:state.offer,periods:state
 function render(){
  const activeActivity=inlineActivityId;if(activeActivity)restoreEventForm();
  try{const periods=recalculatePeriods(state,allEvents());const changes=periods.filter((p,i)=>p.end!==state.periods[i].end);if(changes.length){state.periods=periods;dirty=true;$('period-auto-status').textContent='Término atualizado automaticamente: '+changes.map(p=>p.name+' — '+dateLabel(p.end)+' ('+p.targetDays+' dias letivos)').join('; ')+'. Salve no sistema.';}else $('period-auto-status').textContent=periods.some(p=>p.targetDays)?'Metas de dias letivos ativas: términos recalculados ao alterar os impedimentos.':'';}catch(error){$('period-auto-status').textContent=error.message;}
- let stageCounts={};try{const adjusted=recalculateAssessmentStages(state,allEvents());if(adjusted.some((e,i)=>e.start!==state.events[i].start||e.end!==state.events[i].end)){state.events=adjusted;dirty=true;}stageCounts=assessmentDayCounts(state,allEvents());$('assessment-auto-status').textContent='Contagem atualizada com sábados letivos e exclusões cadastradas. As etapas com ajuste automático acompanham as alterações.';}catch(error){$('assessment-auto-status').textContent='Contagem das etapas: '+error.message;}
+ let stageCounts={};try{const adjusted=recalculateAssessmentStages(state,allEvents());if(adjusted.some((e,i)=>e.start!==state.events[i].start||e.end!==state.events[i].end)){state.events=adjusted;dirty=true;}stageCounts=assessmentDayCounts(state,allEvents());$('assessment-auto-status').textContent='Contagem atualizada com sábados letivos e exclusões cadastradas. Períodos com meta de dias letivos reorganizam suas etapas automaticamente.';}catch(error){$('assessment-auto-status').textContent='Contagem das etapas: '+error.message;}
  periodDurationPreview();
  $('regime-summary').textContent='Organização: '+regimeLabels[state.regime];
 
@@ -66,7 +66,7 @@ function render(){
   $('total').textContent=result?result.total:'—';$('goal').textContent=result?('Marcação dos dias: '+modalityLabels[calendarModalities(state)[0]]+'. ')+(state.year===2027?'Referência: mínimo anual de 200 dias.':'Sem meta normativa cadastrada para este ano.'):'Configure identificação, semana e períodos.';
   $('period-count').textContent=state.periods.length;
   $('period-summary').textContent=result?Object.entries(result.byModality).map(([m,r])=>modalityLabels[m]+': '+r.total+' dias — '+state.periods.map(p=>`${p.name}: ${r.byPeriod[p.id]}`).join(' · ')).join(' | '):'Aguardando dados para contagem';
-  $('period-list').innerHTML=state.periods.length?state.periods.map(p=>`<li><div><strong>${escape(p.name)}</strong><small>${dateLabel(p.start)} a ${dateLabel(p.end)}${p.targetDays?` · Meta: ${p.targetDays} dias letivos · término automático`:""}</small></div><button data-remove-period="${escape(p.id)}" aria-label="Remover ${escape(p.name)}">Remover</button></li>`).join(''):'<li class="help">Nenhum período cadastrado.</li>';
+  $('period-list').innerHTML=state.periods.length?state.periods.map(p=>`<li><div><strong>${escape(p.name)}</strong><small>${dateLabel(p.start)} a ${dateLabel(p.end)}${p.targetDays?` · Meta: ${p.targetDays} dias letivos · término automático`:""}</small></div><div class="actions"><button type="button" data-edit-period="${escape(p.id)}">Editar período</button><button type="button" data-remove-period="${escape(p.id)}" aria-label="Remover ${escape(p.name)}">Remover</button></div></li>`).join(''):'<li class="help">Nenhum período cadastrado.</li>';
   $('event-list').innerHTML=allEvents().length?allEvents().sort((a,b)=>a.start.localeCompare(b.start)).map(e=>`<li><div><strong>${escape(e.name)}</strong><small>${dateLabel(e.start)} a ${dateLabel(e.end)} · ${{include:'Inclusão letiva',exclude:'Exclusão',note:'Sem efeito na contagem'}[e.kind]}</small><small>Fonte: ${escape(e.evidence)}</small>${e.historicalSource?`<small>Origem histórica: página ${e.historicalSource.page} do <a href="/api/history/${escape(e.historicalSource.historyId)}">calendário anterior</a></small>`:""}<small>${escape(categoryLabel(e))}</small></div>${e.institutional?'<span class="institution-label">Base PROENS</span>':`<label>Categoria e cor<select data-category-event="${escape(e.id)}">${categories.map(([key,label])=>`<option value="${key}" ${eventCategory(e)===key?'selected':''}>${label}</option>`).join('')}</select></label><label>Atividade do roteiro<select data-link-activity="${escape(e.id)}"><option value="">Sem vínculo</option>${activityChecklist(state).map(r=>`<option value="${r.id}" ${e.requirementId===r.id?'selected':''}>${escape(r.name)}</option>`).join('')}</select></label><button type="button" data-edit-event="${escape(e.id)}">Editar evento</button><button data-remove-event="${escape(e.id)}" aria-label="Remover ${escape(e.name)}">Remover</button>`}</li>`).join(''):'<li class="help">Nenhum evento registrado. Confira a base para este ano.</li>';
   if(record?.purpose!=='test'){issues.push([!dirty&&record?.readiness?.ready?'Atendido':'Pendente','Geração definitiva',dirty?'Salve as alterações para atualizar a conferência.':record?.readiness?.ready?'Conferência registrada. Não representa aprovação oficial.':'A geração exige revisão completa.']);if(!dirty)for(const issue of record?.readiness?.issues||[])issues.push(['Pendente','Exigência obrigatória',issue]);}
   $('issue-count').textContent=issues.filter(i=>i[0]!=='Atendido').length;
@@ -87,8 +87,11 @@ $('period-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
   if($('period-days').value)$('period-end').value=durationEnd($('period-start').value,$('period-days').value,state,allEvents());
   identified();const start=$('period-start').value,end=$('period-end').value,name=$('period-name').value.trim();interval(start,end);
   if(!name)throw Error('Informe o nome do período.');
-  if(state.periods.some(p=>p.start<=end&&p.end>=start))throw Error('Este período se sobrepõe a outro. Para bimestres ou etapas de outra oferta, use Etapas de avaliação logo abaixo; os períodos letivos comuns não devem se sobrepor.');
-  state.periods.push({id:crypto.randomUUID(),name,start,end,...($('period-days').value?{targetDays:Number($('period-days').value)}:{})});dirty=true;e.target.reset();render();message('Período adicionado.');
+  if(state.periods.some(p=>p.id!==editingPeriodId&&p.start<=end&&p.end>=start))throw Error('Este período se sobrepõe a outro. Para bimestres ou etapas de outra oferta, use Etapas de avaliação logo abaixo; os períodos letivos comuns não devem se sobrepor.');
+  const previous=editingPeriodId?state.periods.find(p=>p.id===editingPeriodId):null;if(editingPeriodId&&!previous)throw Error('O período não existe mais. Reabra o calendário.');
+  const updated={id:previous?.id||crypto.randomUUID(),name,start,end,...($('period-days').value?{targetDays:Number($('period-days').value)}:{})};
+  if(previous)state.periods=state.periods.map(p=>p.id===previous.id?updated:p);else state.periods.push(updated);
+  dirty=true;resetPeriodForm();render();message(previous?'Período atualizado. Confira as etapas e os eventos relacionados. O salvamento automático registrará a alteração.':'Período adicionado.');
 });});
 $('event-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
   identified();const start=$('event-start').value,end=$('event-end').value,kind=$('event-kind').value,name=$('event-name').value.trim(),evidence=$('event-evidence').value.trim();interval(start,end);
@@ -108,7 +111,8 @@ $('event-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.view){document.querySelectorAll('.view').forEach(v=>v.hidden=v.id!==b.dataset.view);document.querySelectorAll('.tab').forEach(t=>{t.classList.toggle('active',t===b);if(t===b)t.setAttribute('aria-current','page');else t.removeAttribute('aria-current');});}
-  if(b.dataset.removePeriod){state.periods=state.periods.filter(p=>p.id!==b.dataset.removePeriod);dirty=true;render();message('Período removido. Confira os eventos que dependiam dele.');}
+  if(b.dataset.editPeriod)editPeriod(b.dataset.editPeriod);
+  if(b.dataset.removePeriod){if(editingPeriodId===b.dataset.removePeriod)resetPeriodForm();state.periods=state.periods.filter(p=>p.id!==b.dataset.removePeriod);dirty=true;render();message('Período removido. Confira os eventos que dependiam dele.');}
   if(b.dataset.editEvent)editEvent(b.dataset.editEvent);
   if(b.dataset.removeEvent){if(editingEventId===b.dataset.removeEvent){$('event-form').reset();restoreEventForm();}if(['teacher-vacation-january','teacher-vacation-july'].includes(b.dataset.removeEvent)){delete state.teacherVacations;state.events=state.events.filter(ev=>!['teacher-vacation-january','teacher-vacation-july'].includes(ev.id));sync();}state.events=state.events.filter(ev=>ev.id!==b.dataset.removeEvent);dirty=true;render();message('Evento removido do rascunho. Salve no sistema para confirmar a exclusão.');}
 });
@@ -285,7 +289,7 @@ $('new-event').onclick=()=>{restoreEventForm();historicalSource=null;$('event-fo
 
 $('show-existing-history').onchange=renderHistorySuggestions;
 
-function periodDurationPreview(){if(!$('period-days').value)return;try{const pending=!state.weekConfirmed;const checked=[...document.querySelectorAll('#weekdays input:checked')].map(el=>Number(el.value));const preview=pending?{...state,weekConfirmed:true,weekdays:checked.length?checked:[1,2,3,4,5]}:state;$('period-end').value=durationEnd($('period-start').value,$('period-days').value,preview,allEvents());$('period-duration-status').textContent=(pending?'Estimativa provisória ('+(checked.length?'dias marcados':'segunda a sexta')+'). Confirme e aplique a semana letiva no item 2 para adicionar o período. ':'')+'Término previsto: '+dateLabel($('period-end').value)+'. Após adicionar, a meta será mantida e o término recalculado com os impedimentos.';}catch(e){$('period-end').value='';$('period-duration-status').textContent=e.message;}}
+function periodDurationPreview(){$('period-end').readOnly=!!$('period-days').value;if(!$('period-days').value){$('period-duration-status').textContent=$('period-end').value?'Término definido manualmente. Informe uma quantidade de dias para voltar ao cálculo automático.':'Informe início e quantidade para sugerir o término usando os impedimentos já registrados.';return;}try{const pending=!state.weekConfirmed;const checked=[...document.querySelectorAll('#weekdays input:checked')].map(el=>Number(el.value));const preview=pending?{...state,weekConfirmed:true,weekdays:checked.length?checked:[1,2,3,4,5]}:state;$('period-end').value=durationEnd($('period-start').value,$('period-days').value,preview,allEvents());$('period-duration-status').textContent=(pending?'Estimativa provisória ('+(checked.length?'dias marcados':'segunda a sexta')+'). Confirme e aplique a semana letiva no item 2 para adicionar o período. ':'')+'Término previsto: '+dateLabel($('period-end').value)+'. Após adicionar, a meta será mantida e o término recalculado com os impedimentos.';}catch(e){$('period-end').value='';$('period-duration-status').textContent=e.message;}}
 for(const id of ['period-start','period-days'])$(id).addEventListener('input',periodDurationPreview);
 for(const part of ['first','second']){const start=$('vacation-'+part+'-start'),days=$('vacation-'+part+'-days'),end=$('vacation-'+part+'-end');const calculate=()=>{if(!days.value)return;try{end.value=durationEnd(start.value,days.value);vacationPreview();}catch(e){end.value='';$('vacation-preview').textContent=e.message;}};start.addEventListener('input',calculate);days.addEventListener('input',calculate);end.addEventListener('input',()=>{days.value='';vacationPreview();});}
 
@@ -306,3 +310,8 @@ function editEvent(id){
  else $('event-form').scrollIntoView({block:'center',behavior:'smooth'});
  message('Editando '+event.name+'. Confira os dados, confirme e clique em Aplicar alterações do evento. Depois salve no sistema.');
 }
+
+function resetPeriodForm(){editingPeriodId=null;$('period-form').reset();$('period-submit').textContent='Adicionar período';$('cancel-period-edit').hidden=true;periodDurationPreview();}
+function editPeriod(id){const period=state.periods.find(p=>p.id===id);if(!period)return;editingPeriodId=id;for(const [key,value] of Object.entries({name:period.name,start:period.start,end:period.end,days:period.targetDays??''}))$('period-'+key).value=value;$('period-submit').textContent='Aplicar alterações do período';$('cancel-period-edit').hidden=false;periodDurationPreview();$('period-form').scrollIntoView({block:'center',behavior:'smooth'});$('period-start').focus({preventScroll:true});message('Edite o período e clique em Aplicar alterações do período. A meta de dias letivos continua ativa: o término do período e as etapas vinculadas serão recalculados juntos.');}
+$('cancel-period-edit').onclick=resetPeriodForm;
+$('period-end').addEventListener('input',periodDurationPreview);
