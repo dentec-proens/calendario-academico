@@ -1,5 +1,5 @@
 import {calendarModalities,modalityLabels,appliesTo} from './modalities.mjs';
-import {activityChecklist} from './obligations.mjs';
+import {activityChecklist,assessmentCount,scopedRequirement} from './obligations.mjs';
 import {calendarResult} from './pdf.mjs';
 import {reviewCriteria} from './review.mjs';
 
@@ -26,10 +26,10 @@ const plain=value=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'')
 export function releaseReadiness(record,db){
  const issues=[];
  const events=[...record.institutionalSnapshot,...record.state.events];
- if(![2,3,4].includes(record.state.assessmentStages))issues.push('Informe a quantidade de etapas de avaliação (2, 3 ou 4).');
- for(const modality of calendarModalities(record.state))for(const activity of activityChecklist(record.state))if(!events.some(e=>appliesTo(e,modality)&&e.requirementId===activity.id&&e.evidence?.trim()))issues.push(`${modalityLabels[modality]} — ${activity.name}: vincule um evento com datas e fonte no roteiro de atividades.`);
+ if(calendarModalities(record.state).some(m=>![2,3,4].includes(assessmentCount(record.state,m))))issues.push('Informe a quantidade de etapas de avaliação (2, 3 ou 4).');
+ for(const modality of calendarModalities(record.state))for(const activity of activityChecklist(record.state).filter(a=>!a.modality||a.modality===modality))if(!events.some(e=>appliesTo(e,modality)&&e.requirementId===activity.id&&e.evidence?.trim()))issues.push(`${modalityLabels[modality]} — ${activity.name}: vincule um evento com datas e fonte no roteiro de atividades.`);
  for(const modality of calendarModalities(record.state)){
- for(const activity of activityChecklist(record.state)){
+ for(const activity of activityChecklist(record.state).filter(a=>!a.modality||a.modality===modality)){
   const linked=events.filter(e=>e.requirementId===activity.id&&appliesTo(e,modality));
   const prefix=`${modalityLabels[modality]} — ${activity.name}`;
   if(activity.minHours&&linked.reduce((sum,e)=>sum+(Number.isFinite(e.hours)&&e.hours>0?e.hours:0),0)<activity.minHours)issues.push(`${prefix}: registre pelo menos ${activity.minHours} horas.`);
@@ -42,8 +42,8 @@ export function releaseReadiness(record,db){
    if(linked.length&&(!start||linked.some(e=>e.end>=start)))issues.push(`${prefix}: publique antes do início do período letivo.`);
   }
  }
- const eventFor=id=>events.find(e=>e.requirementId===id&&appliesTo(e,modality));
- for(let n=1;n<=(record.state.assessmentStages||0);n++){
+ const eventFor=id=>events.find(e=>e.requirementId===scopedRequirement(record.state,id,modality)&&appliesTo(e,modality));
+ for(let n=1;n<=(assessmentCount(record.state,modality)||0);n++){
   const start=eventFor('stage-'+n),end=eventFor('stage-'+n),results=eventFor('results-'+n),council=eventFor('council-'+n);
   if(start&&end&&start.start>end.end)issues.push(`${n}ª etapa: término anterior ao início.`);
   if(end&&results&&results.end<end.end)issues.push(`${n}ª etapa: prazo de lançamento de resultados anterior ao término.`);

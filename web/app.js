@@ -6,7 +6,7 @@ import {teacherVacations} from '/teacher-vacations.mjs';
 import {regimeLabels} from '/calendar-label.mjs';
 import {evaluateCalendar} from '/evaluation.mjs';
 import {calendarModalities,modalityLabels} from '/modalities.mjs';
-import {activityChecklist} from '/obligations.mjs';
+import {activityChecklist,assessmentCount,stageRequirement,migrateAssessmentEvents} from '/obligations.mjs';
 import {filePayload} from './upload.js';
 import {categories,eventCategory,categoryLabel} from '/categories.mjs';
 import {countCalendar, datesBetween, parseDate} from '/calendar.mjs';
@@ -39,15 +39,15 @@ function render(){
  if(dirty)message('Alteração aplicada ao rascunho. Use Salvar no sistema para registrar a versão.');
  $('selected-modalities').textContent='Forma de oferta/nível: '+calendarModalities(state).filter(Boolean).map(m=>modalityLabels[m]).join(' + ');
  const requirements=activityChecklist(state);
- $('assessment-stages').value=state.assessmentStages||'';
+ $('assessment-settings').innerHTML=calendarModalities(state).map(m=>`<label>${escape(modalityLabels[m])} — etapas de avaliação no ano<select data-assessment-modality="${m}"><option value="">Selecione</option>${[[2,'2 etapas / semestres'],[3,'3 etapas / trimestres'],[4,'4 etapas / bimestres']].map(([n,label])=>`<option value="${n}" ${assessmentCount(state,m)===n?'selected':''}>${label}</option>`).join('')}</select></label>`).join('');
  $('event-modalities').innerHTML=calendarModalities(state).filter(Boolean).map(m=>`<label class="check"><input type="checkbox" name="event-modality" value="${m}" checked>${escape(modalityLabels[m])}</label>`).join('');
  const selected=$('event-requirement').value;
  $('event-requirement').innerHTML='<option value="">Outro evento / sem vínculo</option>'+requirements.map(r=>`<option value="${r.id}">${escape(r.name)}</option>`).join('');
  $('event-requirement').value=selected;
  const activityRow=r=>`<li data-activity-row="${r.id}"><div><strong>${escape(r.name)}</strong><small>${state.events.some(e=>e.requirementId===r.id)?'✓ Registrado no calendário — '+state.events.filter(e=>e.requirementId===r.id).map(e=>dateLabel(e.start)+' a '+dateLabel(e.end)).join('; ')+(dirty?' · Salve no sistema para guardar.':''):'Pendente de data e fonte'}</small></div><button type="button" data-prepare-activity="${r.id}" >${state.events.some(e=>e.requirementId===r.id)?'Editar evento':'Preencher atividade'}</button></li>`;
- $('assessment-checklist').innerHTML=requirements.filter(r=>/^stage-[1-4]$/.test(r.id)).map(activityRow).join('');
- $('activity-checklist').innerHTML=requirements.filter(r=>!/^stage-[1-4]$/.test(r.id)).map(activityRow).join('');
- $('assessment-status').textContent=state.assessmentStages?'Os intervalos registrados aparecem abaixo. Use Preencher atividade para calcular as datas ou Editar evento para ajustá-las.':'Selecione o número de etapas para visualizar e preencher seus intervalos.';
+ $('assessment-checklist').innerHTML=requirements.filter(r=>stageRequirement(r.id)).map(activityRow).join('');
+ $('activity-checklist').innerHTML=requirements.filter(r=>!stageRequirement(r.id)).map(activityRow).join('');
+ $('assessment-status').textContent=calendarModalities(state).every(m=>[2,3,4].includes(assessmentCount(state,m)))?'Os intervalos registrados aparecem abaixo. Use Preencher atividade para calcular as datas ou Editar evento para ajustá-las.':'Selecione o número de etapas para visualizar e preencher seus intervalos.';
 
   result=null;const issues=[];
   if(!state.campus||!state.offer)issues.push(['Pendente','Identificação','Informe campus e oferta.']);
@@ -85,14 +85,14 @@ $('period-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
   if($('period-days').value)$('period-end').value=durationEnd($('period-start').value,$('period-days').value,state,allEvents());
   identified();const start=$('period-start').value,end=$('period-end').value,name=$('period-name').value.trim();interval(start,end);
   if(!name)throw Error('Informe o nome do período.');
-  if(state.periods.some(p=>p.start<=end&&p.end>=start))throw Error('Este período se sobrepõe a outro. Ajuste as datas.');
+  if(state.periods.some(p=>p.start<=end&&p.end>=start))throw Error('Este período se sobrepõe a outro. Para bimestres ou etapas de outra oferta, use Etapas de avaliação logo abaixo; os períodos letivos comuns não devem se sobrepor.');
   state.periods.push({id:crypto.randomUUID(),name,start,end,...($('period-days').value?{targetDays:Number($('period-days').value)}:{})});dirty=true;e.target.reset();render();message('Período adicionado.');
 });});
 $('event-form').addEventListener('submit',e=>{e.preventDefault();act(()=>{
   identified();const start=$('event-start').value,end=$('event-end').value,kind=$('event-kind').value,name=$('event-name').value.trim(),evidence=$('event-evidence').value.trim();interval(start,end);
   if(!name||!evidence)throw Error('Informe descrição e fonte.');
   if(kind==='include'&&datesBetween(start,end).some(date=>!state.periods.some(p=>p.start<=date&&p.end>=date)))throw Error('Inclusões letivas devem estar dentro dos períodos cadastrados.');
-  const modalities=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value);if(!modalities.length)throw Error('Selecione ao menos uma forma de oferta/nível para o evento.');
+  const modalities=selectedEventModalities();if(!modalities.length)throw Error('Selecione ao menos uma forma de oferta/nível para o evento.');
   if(state.events.some(ev=>ev.id!==editingEventId&&ev.name.toLocaleLowerCase()===name.toLocaleLowerCase()&&ev.start===start&&ev.end===end))throw Error('Este evento já foi incluído com as mesmas datas.');
   const completedHistoryIndex=inlineHistoryIndex;
   const previous=editingEventId?state.events.find(ev=>ev.id===editingEventId):null;
@@ -127,7 +127,7 @@ function validateImport(s){
     if(event&&(!['include','exclude','note'].includes(x.kind)||!str(x.evidence,240)||!x.evidence.trim()))throw Error('Evento sem tipo ou referência válida.');
   }
   for(let i=0;i<s.periods.length;i++)for(let j=i+1;j<s.periods.length;j++)if(s.periods[i].start<=s.periods[j].end&&s.periods[i].end>=s.periods[j].start)throw Error('Rascunho com períodos sobrepostos.');
-  return {schemaVersion:1,modalities:s.modalities,assessmentStages:s.assessmentStages,teacherVacations:s.teacherVacations,campus:s.campus,year:s.year,offer:s.offer,regime:s.regime,weekdays:s.weekdays,weekEvidence:s.weekEvidence,weekConfirmed:s.weekConfirmed,periods:s.periods.map(({id,name,start,end})=>({id,name,start,end})),events:s.events.map(e=>({...e,category:eventCategory(e)}))};
+  return {schemaVersion:1,modalities:s.modalities,assessmentStages:s.assessmentStages,assessmentStagesByModality:s.assessmentStagesByModality,teacherVacations:s.teacherVacations,campus:s.campus,year:s.year,offer:s.offer,regime:s.regime,weekdays:s.weekdays,weekEvidence:s.weekEvidence,weekConfirmed:s.weekConfirmed,periods:s.periods.map(({id,name,start,end})=>({id,name,start,end})),events:s.events.map(e=>({...e,category:eventCategory(e)}))};
 }
 $('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>2_000_000)throw Error('O rascunho excede o limite de 2 MB.');const next=validateImport(JSON.parse(await f.text()));if(record&&(next.year!==record.state.year||next.offer!==record.state.offer||next.campus!==record.state.campus))throw Error('O rascunho deve corresponder ao campus, ano e oferta deste registro.');state=next;dirty=true;sync();render();message('Rascunho importado. Clique em Salvar no sistema para registrar uma versão.');}catch(err){message('Não foi possível abrir: '+err.message,true);}finally{e.target.value='';}};
 $('print').onclick=async()=>{try{if(dirty)throw Error('Salve no sistema antes de imprimir, para identificar corretamente a versão.');const fresh=await api('/api/calendars/'+calendarId);if(fresh.version!==record.version||fresh.currentCatalogueRevision!==record.currentCatalogueRevision)throw Error('O calendário ou a base institucional mudou. Reabra e confira antes de imprimir.');if(fresh.purpose!=='test'&&!fresh.readiness?.ready)throw Error('Impressão definitiva bloqueada. '+(fresh.readiness?.issues||[]).join('\n'));window.print();}catch(e){message(e.message,true);}};
@@ -201,8 +201,8 @@ $('proens-color-guide').innerHTML=categories.filter(c=>c[2]).map(([key,label])=>
 $('download-pdf-top').onclick=()=>$('download-pdf').click();
 openRecord();
 
-$('assessment-stages').onchange=()=>{const value=Number($('assessment-stages').value);if(![2,3,4].includes(value))return;state.assessmentStages=value;const ids=new Set(activityChecklist(state).map(r=>r.id));for(const event of state.events)if(!ids.has(event.requirementId))delete event.requirementId;dirty=true;render();};
-function prepareActivity(id){const existing=state.events.find(e=>e.requirementId===id);if(existing){editEvent(existing.id);return;}editingEventId=null;setEventSubmitLabel();restoreEventForm();historicalSource=null;$('historical-event-source').hidden=true;const item=activityChecklist(state).find(r=>r.id===id);if(!item){updateStageSuggestion();return;}$('event-requirement').value=id;$('event-name').value=item.name;$('event-category').value=id.includes('council')?'conselho':id.startsWith('stage-')?'limite':id==='cultural-week'?'evento':'prazo';$('event-kind').value='note';$('event-start').value='';$('event-end').value='';$('event-evidence').value='';$('event-hours').value='';$('event-confirmed').checked=false;updateStageSuggestion();openInlineActivity(id);$('event-start').focus({preventScroll:true});}
+$('assessment-settings').addEventListener('change',e=>{const modality=e.target.dataset.assessmentModality,value=Number(e.target.value);if(!modality||![2,3,4].includes(value))return;state.assessmentStagesByModality=Object.fromEntries(calendarModalities(state).map(m=>[m,m===modality?value:assessmentCount(state,m)]).filter(([,n])=>[2,3,4].includes(n)));state.events=migrateAssessmentEvents(state);const ids=new Set(activityChecklist(state).map(r=>r.id));for(const event of state.events)if(event.requirementId&&!ids.has(event.requirementId))delete event.requirementId;dirty=true;render();message('Etapas da oferta atualizadas. Os eventos existentes foram preservados; confira os intervalos e salve no sistema.');});
+function prepareActivity(id){const existing=state.events.find(e=>e.requirementId===id);if(existing){editEvent(existing.id);return;}editingEventId=null;setEventSubmitLabel();restoreEventForm();historicalSource=null;$('historical-event-source').hidden=true;const item=activityChecklist(state).find(r=>r.id===id);if(!item){updateStageSuggestion();return;}$('event-requirement').value=id;document.querySelectorAll('input[name=event-modality]').forEach(el=>{el.checked=!item.modality||el.value===item.modality;});$('event-name').value=item.name;$('event-category').value=id.includes('council')?'conselho':id.startsWith('stage-')?'limite':id==='cultural-week'?'evento':'prazo';$('event-kind').value='note';$('event-start').value='';$('event-end').value='';$('event-evidence').value='';$('event-hours').value='';$('event-confirmed').checked=false;updateStageSuggestion();openInlineActivity(id);$('event-start').focus({preventScroll:true});}
 $('event-requirement').onchange=()=>{if(!editingEventId)prepareActivity($('event-requirement').value);};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-prepare-activity]');if(b)prepareActivity(b.dataset.prepareActivity);});
 document.addEventListener('change',e=>{if(!e.target.dataset.linkActivity)return;const event=state.events.find(x=>x.id===e.target.dataset.linkActivity);if(event){event.requirementId=e.target.value||undefined;dirty=true;render();}});
@@ -213,12 +213,13 @@ $('vacation-form').addEventListener('change',vacationPreview);
 $('vacation-form').onsubmit=e=>{e.preventDefault();act(()=>{const values=vacationValues(),evidence=$('vacation-evidence').value.trim(),vacation=teacherVacations(state.year,values,evidence);state.teacherVacations={...values,evidence};state.events=state.events.filter(e=>!['teacher-vacation-january','teacher-vacation-july'].includes(e.id)).concat(vacation.events);dirty=true;render();vacationPreview();message('Férias docentes registradas nas datas informadas pelo campus. Salve no sistema.');});};
 document.addEventListener('input',e=>{if(e.target.closest('form'))message('Formulário alterado. Aplique a alteração no botão correspondente e depois salve no sistema.');});
 
-function isStageRequest(){return /^stage-[1-4]$/.test($('event-requirement').value)||(!$('event-requirement').value&&isFirstStageStart($('event-name').value));}
+function selectedEventModalities(){const selected=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value),activity=activityChecklist(state).find(r=>r.id===$('event-requirement').value);if(activity?.modality&&(selected.length!==1||selected[0]!==activity.modality))throw Error('Selecione somente '+modalityLabels[activity.modality]+' para esta atividade.');return selected;}
+function isStageRequest(){return stageRequirement($('event-requirement').value)||(!$('event-requirement').value&&isFirstStageStart($('event-name').value));}
 function applyStageSuggestion(){
  identified();const evidence=$('event-evidence').value.trim();if(!evidence||!$('event-confirmed').checked)throw Error('Informe a fonte e confirme as datas antes de aplicar as etapas.');
- const modalities=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value);if(!modalities.length)throw Error('Selecione uma forma de oferta/nível.');
+ const modalities=selectedEventModalities();if(!modalities.length)throw Error('Selecione uma forma de oferta/nível.');
  const fresh=suggestStages({...state,modalities,offer:modalities[0]},allEvents(),$('event-start').value),completed=inlineHistoryIndex;
- state.events.push(...fresh.stages.map((s,i)=>({id:crypto.randomUUID(),name:s.name,requirementId:s.requirementId,start:s.start,end:s.end,kind:'note',category:'limite',evidence,modalities,historicalSource:i===0?historicalSource:undefined})));
+ state.events.push(...fresh.stages.map((s,i)=>({id:crypto.randomUUID(),name:activityChecklist(state).find(r=>r.id===s.requirementId)?.name||s.name,requirementId:s.requirementId,start:s.start,end:s.end,kind:'note',category:'limite',evidence,modalities,historicalSource:i===0?historicalSource:undefined})));
  dirty=true;historicalSource=null;$('event-form').reset();$('historical-event-source').hidden=true;render();
  if(completed!==null)document.querySelector('[data-history-item="'+completed+'"]')?.scrollIntoView({block:'nearest'});
  message(fresh.stages.length+' etapas incluídas. Confira e clique em Salvar no sistema.');
@@ -230,10 +231,10 @@ function updateStageSuggestion(){
  if(state.events.some(e=>e.requirementId===$('event-requirement').value&&e.start===$('event-start').value&&e.end===$('event-end').value)){panel.textContent='Etapa registrada no calendário. Salve no sistema para guardar.';return;}
  $('event-end').value='';
  if(!$('event-start').value){panel.textContent='Informe o início da etapa. O sistema usará o número de etapas já cadastrado e os dias letivos até o final dos períodos para sugerir todos os intervalos.';return;}
- try{const modalities=[...document.querySelectorAll('input[name=event-modality]:checked')].map(el=>el.value);if(!modalities.length)throw Error('Selecione uma forma de oferta/nível.');
+ try{const modalities=selectedEventModalities();if(!modalities.length)throw Error('Selecione uma forma de oferta/nível.');
  const scopedState={...state,modalities,offer:modalities[0]};
- const number=Number($('event-requirement').value.match(/^stage-([1-4])$/)?.[1]||1);
- if(number!==1||allEvents().some(e=>/^stage-[1-4]$/.test(e.requirementId||''))){
+ const number=Number($('event-requirement').value.match(/^stage-([1-4])(?::[a-z]+)?$/)?.[1]||1);
+ if(number!==1||allEvents().some(e=>stageRequirement(e.requirementId)&&(!e.modalities?.length||e.modalities.some(m=>modalities.includes(m))))){
   const stage=suggestStageEnd(scopedState,allEvents(),$('event-start').value,number);
   $('event-end').value=stage.end;
   panel.textContent='Término sugerido: '+dateLabel(stage.end)+' — '+stage.days+' dias letivos, descontando os impedimentos cadastrados. Confira e use Adicionar evento para registrar esta etapa.';

@@ -1,6 +1,23 @@
+import {calendarModalities,modalityLabels,appliesTo} from './modalities.mjs';
+export const assessmentCount=(state,modality)=>Number(state.assessmentStagesByModality?.[modality]??state.assessmentStages);
+export const stageRequirement=id=>/^stage-[1-4](?::[a-z]+)?$/.test(id||'');
+export const scopedRequirement=(state,id,modality)=>state.assessmentStagesByModality?`${id}:${modality}`:id;
+export function migrateAssessmentEvents(state){
+ if(!state.assessmentStagesByModality)return state.events;
+ return state.events.flatMap(e=>{
+  if(!/^(stage|results|council|pedagogical-meeting)-[1-4]$/.test(e.requirementId||''))return [e];
+  const number=Number(e.requirementId.split('-').at(-1));
+  return calendarModalities(state).filter(m=>appliesTo(e,m)).map((m,i)=>({...e,id:i?`${e.id.slice(0,70)}:${m}`:e.id,modalities:[m],name:`${e.name.slice(0,110)} — ${modalityLabels[m]}`,requirementId:number<=assessmentCount(state,m)?`${e.requirementId}:${m}`:undefined}));
+ });
+}
 // Undated PROENS operational checklist. Campus histories are separate references.
 // Historical dates are deliberately excluded. Applicability is reviewed separately.
 export function activityChecklist(state){
+ if(state.assessmentStagesByModality){
+  const common=activityChecklist({...state,assessmentStagesByModality:undefined,assessmentStages:undefined});
+  const stages=calendarModalities(state).flatMap(m=>activityChecklist({...state,assessmentStagesByModality:undefined,assessmentStages:assessmentCount(state,m)}).filter(r=>/^(stage|results|council|pedagogical-meeting)-[1-4]$/.test(r.id)).map(r=>({...r,id:`${r.id}:${m}`,modality:m,name:`${r.name} — ${modalityLabels[m]} (${assessmentCount(state,m)===4?'bimestral':assessmentCount(state,m)===3?'trimestral':'semestral'})`})));
+  return [...stages,...common];
+ }
  const rows=[];
  const add=(id,name,extra={})=>rows.push({id,name,...extra});
  const stages=Number(state.assessmentStages);
