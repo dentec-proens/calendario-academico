@@ -1,3 +1,4 @@
+import {createAutosaver} from './autosave.js';
 import {durationEnd,recalculatePeriods} from '/duration.mjs';
 import {proposedDates} from '/history-dates.mjs';
 import {historyCandidateKey,includedHistoryCandidate,existingHistoryEvent} from '/history-progress.mjs';
@@ -37,7 +38,7 @@ function render(){
  periodDurationPreview();
  $('regime-summary').textContent='Organização: '+regimeLabels[state.regime];
 
- if(dirty)message('Alteração aplicada ao rascunho. Use Salvar no sistema para registrar a versão.');
+ if(dirty){message('Alteração aplicada. O salvamento automático será feito em até 30 segundos.');$('autosave-status').textContent='Alterações aguardando salvamento automático. Você também pode usar Salvar no sistema.';}
  $('selected-modalities').textContent='Forma de oferta/nível: '+calendarModalities(state).filter(Boolean).map(m=>modalityLabels[m]).join(' + ');
  const requirements=activityChecklist(state);
  $('assessment-settings').innerHTML=calendarModalities(state).map(m=>`<label>${escape(modalityLabels[m])} — etapas de avaliação no ano<select data-assessment-modality="${m}"><option value="">Selecione</option>${[[2,'2 etapas / semestres'],[3,'3 etapas / trimestres'],[4,'4 etapas / bimestres']].map(([n,label])=>`<option value="${n}" ${assessmentCount(state,m)===n?'selected':''}>${label}</option>`).join('')}</select></label>`).join('');
@@ -166,7 +167,16 @@ document.addEventListener('click',async e=>{
  updateStageSuggestion();openInlineHistory(Number(candidateButton.dataset.historyCandidate));$('event-name').focus({preventScroll:true});
  message('Sugestão aberta para revisão. Confira também o efeito na contagem e a forma de oferta/nível.');
 });
-$('server-save').onclick=async()=>{try{if(!record)throw Error('Abra um calendário registrado.');const saved=await api('/api/calendars/'+calendarId,'PUT',{version:record.version,catalogueRevision:record.currentCatalogueRevision,state});record.version=saved.version;record.catalogueRevision=record.currentCatalogueRevision;dirty=false;record=await api('/api/calendars/'+calendarId);state=record.state;sync();render();message(`Versão ${saved.version} salva no sistema em ${new Date(record.updatedAt).toLocaleString('pt-BR')}.`);}catch(e){message(e.message,true);}};
+const autosaver=createAutosaver({
+ isDirty:()=>!!record&&dirty,
+ snapshot:()=>({version:record.version,catalogueRevision:record.currentCatalogueRevision,state}),
+ write:async body=>{const response=await fetch('/api/calendars/'+calendarId,{method:'PUT',headers:{'Content-Type':'application/json','X-Dentec-Request':'1'},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw Object.assign(Error(data.error||'Não foi possível salvar.'),{status:response.status});return data;},
+ onSaved:(saved,sent)=>{const unchanged=JSON.stringify(state)===JSON.stringify(sent.state);record.version=saved.version;record.updatedAt=saved.updatedAt;record.catalogueRevision=sent.catalogueRevision;record.readiness=saved.readiness;if(unchanged){state=saved.state;dirty=false;}},
+ onStatus:(status,data)=>{const labels={saving:'Salvando alterações…',pending:'Última versão salva. Há novas alterações aguardando o próximo salvamento.',saved:'Salvo no sistema às '+new Date(data?.updatedAt||Date.now()).toLocaleTimeString('pt-BR')+'.',error:'Não foi possível salvar: '+(data?.message||'Confira a conexão.')+' Tentaremos novamente em até 30 segundos.',blocked:'Salvamento pausado: '+(data?.message||'Reabra o calendário para conferir a versão atual.')+' Suas alterações continuam nesta tela. Use Baixar cópia antes de reabrir.'};$('autosave-status').textContent=labels[status];$('autosave-status').className=['error','blocked'].includes(status)?'notice':'';$('server-save').disabled=status==='saving';}
+});
+$('server-save').onclick=()=>{if(!record){message('Abra um calendário registrado.',true);return;}autosaver.save(true);};
+setInterval(()=>{if(record)autosaver.save();},30000);
+
 $('history-form').onsubmit=async e=>{e.preventDefault();$('history-submit').disabled=true;try{const file=$('history-file').files[0];if(!file||file.size>8_000_000)throw Error('Envie um PDF de até 8 MB.');$('history-status').textContent='Enviando calendário anterior…';const payload=await filePayload(file,'history',calendarId);const uploaded=await api('/api/calendars/'+calendarId+'/history','POST',{filename:file.name,year:state.year-1,...payload,notes:$('history-notes').value});const fresh=await api('/api/calendars/'+calendarId);record.histories=fresh.histories;showHistory();e.target.reset();message('Calendário anterior guardado neste campus.');await analyzeUploadedHistory(uploaded.id);}catch(err){$('history-status').textContent=err.message;message(err.message,true);}finally{$('history-submit').disabled=false;}};
 const extra=document.createElement('link');extra.rel='stylesheet';extra.href='/portal.css';document.head.append(extra);const printStyle=document.createElement('link');printStyle.rel='stylesheet';printStyle.href='/proens.css';document.head.append(printStyle);
 const monthNames=Array.from({length:12},(_,m)=>new Date(Date.UTC(2027,m,1)).toLocaleDateString('pt-BR',{month:'long',timeZone:'UTC'}));
