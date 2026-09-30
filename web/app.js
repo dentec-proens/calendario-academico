@@ -229,7 +229,8 @@ function applyStageSuggestion(){
 }
 function updateStageSuggestion(){
  let panel=$('stage-suggestion');if(!panel){panel=document.createElement('section');panel.id='stage-suggestion';panel.className='notice';panel.setAttribute('aria-live','polite');$('event-form').append(panel);}
- panel.hidden=!!editingEventId||!isStageRequest();if(panel.hidden)return;
+ const stageRequest=isStageRequest();$('event-hours').closest('label').hidden=stageRequest;if(stageRequest)$('event-hours').value='';
+ panel.hidden=!!editingEventId||!stageRequest;if(panel.hidden)return;
  panel.replaceChildren();
  if(state.events.some(e=>e.requirementId===$('event-requirement').value&&e.start===$('event-start').value&&e.end===$('event-end').value)){panel.textContent='Etapa registrada no calendário. Salve no sistema para guardar.';return;}
  $('event-end').value='';
@@ -240,11 +241,11 @@ function updateStageSuggestion(){
  if(number!==1||allEvents().some(e=>stageRequirement(e.requirementId)&&(!e.modalities?.length||e.modalities.some(m=>modalities.includes(m))))){
   const stage=suggestStageEnd(scopedState,allEvents(),$('event-start').value,number);
   $('event-end').value=stage.end;
-  panel.textContent='Término sugerido: '+dateLabel(stage.end)+' — '+stage.days+' dias letivos, descontando os impedimentos cadastrados. Confira e use Adicionar evento para registrar esta etapa.';
+  panel.textContent='Feriados, recessos e dias sem aula não entram na contagem; sábados letivos cadastrados entram. Término sugerido: '+dateLabel(stage.end)+' — '+stage.days+' dias letivos, descontando os impedimentos cadastrados. Confira e use Adicionar evento para registrar esta etapa.';
   return;
  }
  const suggestion=suggestStages(scopedState,allEvents(),$('event-start').value);$('event-end').value=suggestion.stages[0].end;
-  panel.innerHTML='<strong>Sugestão de distribuição das etapas</strong><p>Distribuição equilibrada dos dias letivos cadastrados'+(suggestion.byPeriod?', respeitando os limites de cada período':'')+'. Confira as datas e a norma vigente antes de aplicar. Não representa aprovação institucional.</p><ul>'+suggestion.stages.map(s=>`<li>${escape(s.name)}: ${dateLabel(s.start)} a ${dateLabel(s.end)} — ${s.days} dias letivos</li>`).join('')+'</ul><p>Preencha a fonte da decisão e marque a confirmação do formulário. Este botão inclui todas as etapas para as formas de oferta/níveis selecionadas.</p><button type="button" id="apply-stage-suggestion">Aplicar todas as etapas sugeridas</button>';
+  panel.innerHTML='<strong>Sugestão de distribuição das etapas</strong><p>O início pode ser uma data sem aula. Feriados, recessos e dias sem aula não contam; sábados letivos cadastrados contam.</p><p>Distribuição equilibrada dos dias letivos cadastrados'+(suggestion.byPeriod?', respeitando os limites de cada período':'')+'. Confira as datas e a norma vigente antes de aplicar. Não representa aprovação institucional.</p><ul>'+suggestion.stages.map(s=>`<li>${escape(s.name)}: ${dateLabel(s.start)} a ${dateLabel(s.end)} — ${s.days} dias letivos</li>`).join('')+'</ul><p>Preencha a fonte da decisão e marque a confirmação do formulário. Este botão inclui todas as etapas para as formas de oferta/níveis selecionadas.</p><button type="button" id="apply-stage-suggestion">Aplicar todas as etapas sugeridas</button>';
   $('apply-stage-suggestion').onclick=()=>act(applyStageSuggestion);
  }catch(error){panel.textContent=error.message;}
 }

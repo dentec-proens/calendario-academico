@@ -20,7 +20,8 @@ export function suggestStages(state,events,start){
  const result=evaluateCalendar(state,events);
  const lists=modalities.map(m=>result.byModality[m].ledger.filter(d=>d.counted&&d.date>=start).map(d=>d.date));
  const days=lists[0];
- if(!days?.includes(start))throw Error('O início da primeira etapa precisa ser um dia letivo conforme a semana, os períodos e os eventos cadastrados.');
+ if(!state.periods.some(p=>p.start<=start&&start<=p.end))throw Error('O início da etapa está fora dos períodos letivos cadastrados no item 3. Confira o início e o término desses períodos.');
+ if(!days?.length)throw Error('Não há dias letivos disponíveis a partir desse início. Confira a semana letiva e os impedimentos cadastrados.');
  if(lists.some(list=>JSON.stringify(list)!==JSON.stringify(days)))throw Error('As formas de oferta possuem dias letivos diferentes. Defina as etapas por oferta; uma distribuição única não seria adequada.');
  if(days.length<count)throw Error('Não há dias letivos suficientes para todas as etapas.');
  // Preserve semester boundaries when the number of stages divides evenly across periods.
@@ -30,6 +31,7 @@ export function suggestStages(state,events,start){
  if(chunks.some(g=>g.length<perChunk))throw Error('Um dos períodos não possui dias suficientes para distribuir as etapas.');
  const stages=[];
  for(const chunk of chunks){let offset=0;for(let i=0;i<perChunk;i++){const size=Math.floor(chunk.length/perChunk)+(i<chunk.length%perChunk?1:0),part=chunk.slice(offset,offset+size);offset+=size;stages.push({requirementId:scopedRequirement(state,`stage-${stages.length+1}`,modalities[0]),name:`${stages.length+1}ª etapa de avaliação — início e término`,start:part[0],end:part.at(-1),days:size});}}
+ stages[0].start=start;
  return {stages,total:days.length,byPeriod};
 }
 
@@ -44,12 +46,13 @@ export function suggestStageEnd(state,events,start,number){
  const lists=modalities.map(m=>result.byModality[m].ledger.filter(d=>d.counted).map(d=>d.date));
  if(lists.some(list=>JSON.stringify(list)!==JSON.stringify(lists[0])))throw Error('As ofertas possuem dias letivos diferentes. Selecione uma oferta para calcular a etapa.');
  const days=lists[0];
- if(!days.includes(start))throw Error('O início da etapa precisa ser um dia letivo cadastrado.');
+ parseDate(start);if(!state.periods.some(p=>p.start<=start&&start<=p.end))throw Error('O início da etapa está fora dos períodos letivos cadastrados no item 3.');
+ if(!days.length)throw Error('Não há dias letivos disponíveis. Confira a semana letiva e os impedimentos.');
  const baseline=suggestStages(state,scoped.filter(e=>!existing.includes(e)),days[0]);
  const target=baseline.stages[number-1];
  const period=state.periods.find(p=>target.start>=p.start&&target.start<=p.end);
  const available=days.filter(d=>d>=start&&(!baseline.byPeriod||(d>=period.start&&d<=period.end)));
- if(available[0]!==start||available.length<target.days)throw Error('Não há dias letivos suficientes neste período para manter a distribuição. Revise o início ou os períodos letivos.');
+ if((baseline.byPeriod&&(start<period.start||start>period.end))||available.length<target.days)throw Error('Não há dias letivos suficientes neste período para manter a distribuição. Revise o início ou os períodos letivos.');
  const end=available[target.days-1];
  if(existing.some(e=>e.start<=end&&e.end>=start))throw Error('A sugestão sobrepõe uma etapa já registrada. Revise as datas.');
  return {...target,start,end};
@@ -68,9 +71,7 @@ export function recalculateAssessmentStages(state,events){
   if(anchors.size!==1)throw Error('Confira o início da distribuição automática das etapas.');
   const scopedState={...state,modalities,offer:modalities[0]};
   const withoutStages=events.filter(e=>!stageRequirement(e.requirementId));
-  const result=evaluateCalendar(scopedState,withoutStages);
-  const start=result.byModality[modalities[0]].ledger.find(d=>d.counted&&d.date>=[...anchors][0])?.date;
-  if(!start)throw Error('Não há dias letivos para recalcular as etapas.');
+  const start=[...anchors][0];
   const suggested=suggestStages(scopedState,withoutStages,start);
   for(const stage of stages){const next=suggested.stages.find(s=>s.requirementId===stage.requirementId);if(next)replacements.set(stage.id,{...stage,start:next.start,end:next.end});}
  }
