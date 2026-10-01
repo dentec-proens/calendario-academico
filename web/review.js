@@ -7,7 +7,7 @@ async function api(path,method='GET',body){const response=await fetch(path,{meth
 document.addEventListener('review-calendars',e=>{$('review-calendar').innerHTML=e.detail.map(c=>`<option value="${esc(c.id)}">${esc(c.name)} · ${c.year} · ${esc((c.modalities||[c.offer]).map(m=>modalityLabels[m]||m).join(' + '))}</option>`).join('');$('open-review').disabled=!e.detail.length;if(!e.detail.length)message('Nenhum calendário disponível para revisão.');});
 function progress(){$('review-progress').textContent=`${opened.criteria.length} critérios analisados inicialmente pelo sistema · ${reviewed.size} conferidos pelo parecerista. Isso não representa aprovação institucional.`;}
 function render(){
- const d=opened;reviewed.clear();for(const e of d.review?.entries||[])if(e.reviewed===true&&e.status!=='PENDENTE')reviewed.add(e.id);$('review-content').hidden=false;$('review-preview').hidden=true;
+ const d=opened;reviewed.clear();for(const e of d.review?.entries||[])if(e.reviewed===true&&e.status!=='PENDENTE'&&d.criteria.some(c=>c.id===e.id))reviewed.add(e.id);$('review-content').hidden=false;$('review-preview').hidden=true;
  $('review-heading').textContent=`${d.calendar.campus} · ${d.calendar.name} · Calendário versão ${d.calendar.version}`;
  $('review-year-warning').hidden=true;
  $('review-conflicts').textContent=d.conflicts.length?`${d.conflicts.length} conflito(s) de inclusão/exclusão: ${d.conflicts.map(c=>c.date).join(', ')}. Confira no editor.`:d.countError||'Nenhum conflito de inclusão/exclusão identificado pelo cálculo disponível. Isso não é uma validação integral.';

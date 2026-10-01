@@ -4,7 +4,6 @@ export const reviewSource={id:'SEI 3959640',year:2026,title:'Parecer técnico-pe
 const rows=[
  ['annual','Mínimo de 200 dias letivos anuais e carga horária do PPC',1,'Análise técnico-pedagógica',null],
  ['semester','100 dias por semestre para oferta semestral',1,'Análise técnico-pedagógica',null],
- ['institution','Atividades acadêmicas e administrativas previstas na norma',1,'Art. 2º','institucional'],
  ['window','Janela do ano letivo: 04/02 a 18/12/2026; início até 28/02/2026',1,'Análise técnico-pedagógica',null],
  ['minutes','Extratos das atas de aprovação pelo CGPC e Codic',1,'Instrução processual','cgpc|codic|ata'],
  ['I','Início e término de cada período: bimestre/trimestre, semestre e ano',1,'Art. 7º, I',null],

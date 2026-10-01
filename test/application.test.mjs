@@ -91,7 +91,7 @@ test('accounts, campus isolation, history, propagation, versioning and persisten
  const reviewPath='/api/reviews/'+c.id;
  assert.equal((await call(reviewPath,'GET',null,campus)).status,403);
  assert.equal((await call(reviewPath,'PUT',{},campus)).status,403);
- const support=(await call(reviewPath,'GET',null,reviewer)).data;assert.equal(support.criteria.length,30);assert.equal(support.sameYear,false);
+ const support=(await call(reviewPath,'GET',null,reviewer)).data;assert.equal(support.criteria.length,29);assert.ok(!support.criteria.some(c=>c.id==='institution'));assert.equal(support.sameYear,false);
  const entries=support.criteria.map(x=>({id:x.id,status:'PENDENTE',notes:''}));
  const reviewPayload={calendarVersion:2,catalogueRevision:2,revision:0,entries,conclusion:'Análise inicial'};
  assert.equal((await call(reviewPath,'PUT',{...reviewPayload,entries:entries.map((e,i)=>i?e:{...e,status:'PENDENTE',reviewed:true})},reviewer)).status,400);
