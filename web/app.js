@@ -141,7 +141,8 @@ $('print').onclick=async()=>{try{if(dirty)throw Error('Salve no sistema antes de
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 // Structured read tool only: no mutation or automatic confirmation by agents.
 if(navigator.modelContext?.registerTool)navigator.modelContext.registerTool({name:'read_calendar_summary',description:'Read the local calendar totals and pending checks; never certifies institutional approval.',inputSchema:{type:'object',properties:{}},execute:async()=>({content:[{type:'text',text:JSON.stringify({campus:state.campus,year:state.year,offer:state.offer,total:result?.total??null,officialApproval:false,institutionalValidation:'INCOMPLETE'})}]})});
-async function openRecord(){if(!calendarId){location.href='/';return;}try{record=await api('/api/calendars/'+calendarId);state=record.state;institutional=record.institutionalEvents;sync();for(const key of ['campus','year','offer'])$(key).disabled=true;$('record-heading').textContent=`${record.purpose==='test'?'[TESTE]':'[DEFINITIVO]'} ${record.name} · ${record.courses}${record.classes?' · '+record.classes:''}${record.shifts?' · '+record.shifts:''}`;showHistory();render();if(location.hash==='#history-area')openHistory();}catch(e){message(e.message,true);}}
+function updateRecordHeading(){$('make-definitive').hidden=record.purpose!=='test';$('record-heading').textContent=`${record.purpose==='test'?'[TESTE]':'[DEFINITIVO]'} ${record.name} · ${record.courses}${record.classes?' · '+record.classes:''}${record.shifts?' · '+record.shifts:''}`;}
+async function openRecord(){if(!calendarId){location.href='/';return;}try{record=await api('/api/calendars/'+calendarId);state=record.state;institutional=record.institutionalEvents;sync();for(const key of ['campus','year','offer'])$(key).disabled=true;updateRecordHeading();showHistory();render();if(location.hash==='#history-area')openHistory();}catch(e){message(e.message,true);}}
 function openHistory(){document.querySelector('[data-view="edit"]').click();$('history-area').scrollIntoView({behavior:'smooth'});$('history-file').focus({preventScroll:true});}
 $('open-history').onclick=openHistory;
 function showHistory(){$('history-list').innerHTML=record.histories.length?record.histories.map(h=>`<li><div><strong>${h.year} · ${escape(h.filename)}</strong><small>Referência histórica deste campus</small><small>${escape(h.notes||'Sem observações registradas.')}</small><a href="/api/history/${escape(h.id)}">Consultar PDF original</a></div><button type="button" data-analyze-history="${escape(h.id)}">Identificar datas e atividades</button></li>`).join(''):'<li>Envie o calendário anterior para consultar seus feriados e eventos locais.</li>';}
@@ -171,6 +172,7 @@ document.addEventListener('click',async e=>{
  updateStageSuggestion();openInlineHistory(Number(candidateButton.dataset.historyCandidate));$('event-name').focus({preventScroll:true});
  message('Sugestão aberta para revisão. Confira também o efeito na contagem e a forma de oferta/nível.');
 });
+let converting=false;
 const autosaver=createAutosaver({
  isDirty:()=>!!record&&dirty,
  snapshot:()=>({version:record.version,catalogueRevision:record.currentCatalogueRevision,state}),
@@ -178,8 +180,23 @@ const autosaver=createAutosaver({
  onSaved:(saved,sent)=>{const unchanged=JSON.stringify(state)===JSON.stringify(sent.state);record.version=saved.version;record.updatedAt=saved.updatedAt;record.catalogueRevision=sent.catalogueRevision;record.readiness=saved.readiness;if(unchanged){state=saved.state;dirty=false;}},
  onStatus:(status,data)=>{const labels={saving:'Salvando alterações…',pending:'Última versão salva. Há novas alterações aguardando o próximo salvamento.',saved:'Salvo no sistema às '+new Date(data?.updatedAt||Date.now()).toLocaleTimeString('pt-BR')+'.',error:'Não foi possível salvar: '+(data?.message||'Confira a conexão.')+' Tentaremos novamente em até 30 segundos.',blocked:'Salvamento pausado: '+(data?.message||'Reabra o calendário para conferir a versão atual.')+' Suas alterações continuam nesta tela. Use Baixar cópia antes de reabrir.'};$('autosave-status').textContent=labels[status];$('autosave-status').className=['error','blocked'].includes(status)?'notice':'';$('server-save').disabled=status==='saving';$('server-save').textContent=status==='saving'?'Salvando…':'Salvar no sistema';$('server-save').title=labels[status];}
 });
-$('server-save').onclick=()=>{if(!record){message('Abra um calendário registrado.',true);return;}autosaver.save(true);};
-setInterval(()=>{if(record)autosaver.save();},30000);
+$('server-save').onclick=()=>{if(converting)return;if(!record){message('Abra um calendário registrado.',true);return;}autosaver.save(true);};
+setInterval(()=>{if(record&&!converting)autosaver.save();},30000);
+$('make-definitive').onclick=async()=>{
+ if(!record||record.purpose!=='test'||converting)return;
+ if(!confirm('Tornar este calendário definitivo? Os dados e o histórico serão mantidos. Isso não representa aprovação institucional; a geração definitiva exige a revisão prevista no sistema.'))return;
+ converting=true;$('make-definitive').disabled=true;
+ try{
+  await autosaver.save();
+  if(dirty)throw Error('Não foi possível concluir o salvamento. Confira a mensagem e salve as alterações antes de tornar definitivo.');
+  $('server-save').disabled=true;
+  const saved=await api('/api/calendars/'+calendarId+'/make-definitive','POST',{version:record.version});
+  Object.assign(record,saved);updateRecordHeading();render();
+  message('Calendário convertido para definitivo. Os dados e o histórico foram mantidos. Você pode continuar editando. Confira as pendências antes de gerar o PDF definitivo.');
+ }catch(error){message(error.message,true);}
+ finally{converting=false;$('make-definitive').disabled=false;$('server-save').disabled=false;}
+};
+
 
 $('history-form').onsubmit=async e=>{e.preventDefault();$('history-submit').disabled=true;try{const file=$('history-file').files[0];if(!file||file.size>8_000_000)throw Error('Envie um PDF de até 8 MB.');$('history-status').textContent='Enviando calendário anterior…';const payload=await filePayload(file,'history',calendarId);const uploaded=await api('/api/calendars/'+calendarId+'/history','POST',{filename:file.name,year:state.year-1,...payload,notes:$('history-notes').value});const fresh=await api('/api/calendars/'+calendarId);record.histories=fresh.histories;showHistory();e.target.reset();message('Calendário anterior guardado neste campus.');await analyzeUploadedHistory(uploaded.id);}catch(err){$('history-status').textContent=err.message;message(err.message,true);}finally{$('history-submit').disabled=false;}};
 const extra=document.createElement('link');extra.rel='stylesheet';extra.href='/portal.css';document.head.append(extra);const printStyle=document.createElement('link');printStyle.rel='stylesheet';printStyle.href='/proens.css';document.head.append(printStyle);

@@ -1,3 +1,4 @@
+import {updateConclusion} from './review-conclusion.mjs';
 import {recalculateAssessmentStages} from './stage-suggestions.mjs';
 import {updateCampuses,selectableCampuses} from './campuses.mjs';
 import {recalculatePeriods} from './duration.mjs';
@@ -52,6 +53,7 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
  const routes=new Map([['/',['web/portal.html','text/html']],['/calendar-label.mjs',['src/calendar-label.mjs','text/javascript']],['/teacher-vacations.mjs',['src/teacher-vacations.mjs','text/javascript']],['/src/modalities.mjs',['src/modalities.mjs','text/javascript']],['/evaluation.mjs',['src/evaluation.mjs','text/javascript']],['/modalities.mjs',['src/modalities.mjs','text/javascript']],['/obligations.mjs',['src/obligations.mjs','text/javascript']],['/upload.js',['web/upload.js','text/javascript']],['/documents.js',['web/documents.js','text/javascript']],['/logs',['web/logs.html','text/html']],['/logs.js',['web/logs.js','text/javascript']],['/portal.js',['web/portal.js','text/javascript']],['/ativar',['web/activate.html','text/html']],['/activate.js',['web/activate.js','text/javascript']],['/review.js',['web/review.js','text/javascript']],['/portal.css',['web/portal.css','text/css']],['/editor',['web/index.html','text/html']],['/app.js',['web/app.js','text/javascript']],['/style.css',['web/style.css','text/css']],['/calendar.mjs',['src/calendar.mjs','text/javascript']],['/saturdays.mjs',['src/saturdays.mjs','text/javascript']],['/print.mjs',['web/print.mjs','text/javascript']],['/categories.mjs',['src/categories.mjs','text/javascript']],['/src/categories.mjs',['src/categories.mjs','text/javascript']],['/ifpr-logo.png',['web/ifpr-logo.png','image/png']],['/proens.css',['web/proens.css','text/css']]]);
  routes.set('/recuperar-senha',['web/recover.html','text/html']);
  routes.set('/duration.mjs',['src/duration.mjs','text/javascript']);
+ routes.set('/review-conclusion.mjs',['src/review-conclusion.mjs','text/javascript']);
  routes.set('/autosave.js',['web/autosave.js','text/javascript']);
  routes.set('/stage-suggestions.mjs',['src/stage-suggestions.mjs','text/javascript']);
  routes.set('/history-progress.mjs',['src/history-progress.mjs','text/javascript']);
@@ -179,7 +181,7 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
      const support=reviewSupport(record,[...inheritedEvents(db.catalogue,record.state.year,calendarModalities(record.state)),...record.state.events]);
      if(!Array.isArray(body.entries)||body.entries.length!==reviewCriteria.length||new Set(body.entries.map(e=>e.id)).size!==reviewCriteria.length)fail('Confira todos os critérios da revisão.');
      const entries=body.entries.map(e=>{if(!reviewCriteria.some(c=>c.id===e.id)||!reviewStatuses.includes(e.status))fail('Critério ou situação inválidos.');const notes=String(e.notes||'');if(notes.length>2000)fail('Observação muito longa.');if(e.status==='PENDENTE'&&e.reviewed===true)fail('Selecione Atendido, Não atendido ou Não aplicável antes de confirmar a análise.');return {id:e.id,status:e.status,notes,reviewed:e.reviewed===true&&e.status!=='PENDENTE'};});
-     const conclusion=String(body.conclusion||'');if(conclusion.length>8000)fail('Síntese muito longa.');const processNumber=String(body.processNumber||''),applicableNorm=String(body.applicableNorm||'');if(processNumber.length>100||applicableNorm.length>1000)fail('Identificação do processo ou norma muito longa.');
+     const conclusion=updateConclusion(body.conclusion,reviewCriteria,entries);if(conclusion.length>8000)fail('Síntese muito longa.');const processNumber=String(body.processNumber||''),applicableNorm=String(body.applicableNorm||'');if(processNumber.length>100||applicableNorm.length>1000)fail('Identificação do processo ou norma muito longa.');
      const saved=await store.change(db=>{
       const current=owns(db.calendars.find(c=>c.id===id));db.reviews??=[];const prior=db.reviews.find(r=>r.calendarId===id);
       if(body.calendarVersion!==current.version||body.catalogueRevision!==db.catalogue.revision)fail('O calendário ou a base mudou. Reabra a revisão.',409);
@@ -190,6 +192,19 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
       if(prior)db.reviews[db.reviews.indexOf(prior)]=next;else db.reviews.push(next);audit(db,'SAVE_HUMAN_REVIEW',id);return {revision:next.revision};
      });send(200,saved);return;
     }
+   }
+   const definitiveMatch=path.match(/^\/api\/calendars\/([\w-]+)\/make-definitive$/);
+   if(definitiveMatch&&method==='POST'){
+    const saved=await store.change(db=>{
+     const c=owns(db.calendars.find(c=>c.id===definitiveMatch[1]));
+     if(c.version!==body.version)fail('Há versão mais recente. Reabra o calendário antes de torná-lo definitivo.',409);
+     if(c.purpose==='test'){
+      c.versions.push({version:c.version,state:c.state,purpose:c.purpose,at:c.updatedAt,catalogueRevision:c.catalogueRevision,institutionalEvents:c.institutionalSnapshot,documentSnapshot:c.documentSnapshot||[]});
+      c.purpose='definitive';c.version++;c.updatedAt=new Date().toISOString();
+      audit(db,'MAKE_CALENDAR_DEFINITIVE',c.id);
+     }
+     return {purpose:c.purpose,version:c.version,updatedAt:c.updatedAt,readiness:releaseReadiness(c,db)};
+    });send(200,saved);return;
    }
    const match=path.match(/^\/api\/calendars\/([\w-]+)(?:\/(history|pdf))?$/);
    if(match){const id=match[1],db=(await store.read()),record=owns(db.calendars.find(c=>c.id===id));

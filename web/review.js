@@ -1,3 +1,4 @@
+import {updateConclusion} from '/review-conclusion.mjs';
 import {modalityLabels} from '/modalities.mjs';
 const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let opened=null,dirty=false;const reviewed=new Set();
@@ -5,7 +6,8 @@ const labels={PENDENTE:'Pendente de análise',ATENDIDO:'Atendido',NAO_ATENDIDO:'
 const message=s=>{$('review-message').textContent=new Date().toLocaleTimeString('pt-BR')+' — '+s;};
 async function api(path,method='GET',body){const response=await fetch(path,{method,headers:body?{'Content-Type':'application/json','X-Dentec-Request':'1'}:{},body:body?JSON.stringify(body):undefined});const data=await response.json();if(!response.ok)throw Error(data.error);return data;}
 document.addEventListener('review-calendars',e=>{$('review-calendar').innerHTML=e.detail.map(c=>`<option value="${esc(c.id)}">${esc(c.name)} · ${c.year} · ${esc((c.modalities||[c.offer]).map(m=>modalityLabels[m]||m).join(' + '))}</option>`).join('');$('open-review').disabled=!e.detail.length;if(!e.detail.length)message('Nenhum calendário disponível para revisão.');});
-function progress(){$('review-progress').textContent=`${opened.criteria.length} critérios analisados inicialmente pelo sistema · ${reviewed.size} conferidos pelo parecerista. Isso não representa aprovação institucional.`;}
+function currentEntries(){return opened.criteria.map(c=>({id:c.id,status:document.querySelector(`[data-criterion="${c.id}"]`).value,reviewed:reviewed.has(c.id)}));}
+function progress(){const field=$('review-conclusion'),next=updateConclusion(field.value,opened.criteria,currentEntries());if(next!==field.value){field.value=next;dirty=true;}$('review-progress').textContent=`${opened.criteria.length} critérios analisados inicialmente pelo sistema · ${reviewed.size} conferidos pelo parecerista. Isso não representa aprovação institucional.`;}
 function render(){
  const d=opened;reviewed.clear();for(const e of d.review?.entries||[])if(e.reviewed===true&&e.status!=='PENDENTE'&&d.criteria.some(c=>c.id===e.id))reviewed.add(e.id);$('review-content').hidden=false;$('review-preview').hidden=true;
  $('review-heading').textContent=`${d.calendar.campus} · ${d.calendar.name} · Calendário versão ${d.calendar.version}`;
