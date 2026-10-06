@@ -1,15 +1,16 @@
 import {datesBetween} from './calendar.mjs';
 
-// Scheduling rule explicitly configured by DENTEC; the campus supplies July's start.
+// Campus-defined intervals; the string form preserves older two-period records.
 export function teacherVacations(year,julyStart,evidence){
  if(julyStart&&typeof julyStart==='object'){
   if(typeof evidence!=='string'||!evidence.trim()||evidence.length>240)throw Error('Informe a fonte ou decisão das férias docentes.');
-  const {firstStart,firstEnd,secondStart,secondEnd}=julyStart;
-  const periods=[[firstStart,firstEnd]];if(secondStart||secondEnd)periods.push([secondStart,secondEnd]);
+  const {firstStart,firstEnd,secondStart,secondEnd,thirdStart,thirdEnd}=julyStart;
+  const periods=[[firstStart,firstEnd]];if(secondStart||secondEnd)periods.push([secondStart,secondEnd]);if(thirdStart||thirdEnd){if(!secondStart||!secondEnd)throw Error('Preencha o segundo período antes do terceiro.');periods.push([thirdStart,thirdEnd]);}
   const seen=new Set();const events=periods.map(([start,end],i)=>{
    if(!start||!end)throw Error('Informe início e término de cada período de férias.');
+   if(!String(start).startsWith(`${year}-`)||!String(end).startsWith(`${year}-`))throw Error('As férias devem estar no ano do calendário.');
    const days=datesBetween(start,end);for(const d of days){if(seen.has(d))throw Error('Os períodos de férias não podem se sobrepor.');seen.add(d);}
-   return {id:`teacher-vacation-${i?'july':'january'}`,name:`Férias docentes — ${days.length} dias`,start,end,kind:'note',category:'ferias',evidence:evidence.trim()};
+   return {id:`teacher-vacation-${['january','july','third'][i]}`,name:`Férias docentes — ${days.length} dias`,start,end,kind:'note',category:'ferias',evidence:evidence.trim()};
   });return {...julyStart,events,total:seen.size};
  }
  if(!Number.isInteger(year)||year<1900||year>9999)throw Error('Ano inválido.');

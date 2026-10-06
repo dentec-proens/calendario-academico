@@ -51,6 +51,14 @@ test('accounts, campus isolation, history, propagation, versioning and persisten
  assert.deepEqual(reopened.state,stored.state);assert.equal(reopened.versions.length,2);assert.equal(reopened.id,promotion.id);
  assert.equal((await call(promotionPath,'POST',{version:promoted.data.version},campus)).data.version,promoted.data.version);
  assert.equal(reopened.readiness.ready,false);
+ const threeVacation={firstStart:'2027-01-02',firstEnd:'2027-01-16',secondStart:'2027-07-01',secondEnd:'2027-07-15',thirdStart:'2027-12-01',thirdEnd:'2027-12-15',evidence:'Decisão de teste'};
+ const vacationPromotion=await call('/api/calendars/'+promotion.id,'PUT',{version:reopened.version,catalogueRevision:1,state:{...reopened.state,teacherVacations:threeVacation}},campus);
+ assert.equal(vacationPromotion.status,200);
+ const vacationReopened=(await call('/api/calendars/'+promotion.id,'GET',null,campus)).data;
+ assert.deepEqual(vacationReopened.state.teacherVacations,threeVacation);
+ assert.equal(vacationReopened.state.events.filter(e=>e.id.startsWith('teacher-vacation-')).length,3);
+ assert(vacationReopened.state.events.some(e=>e.id==='fixture-event'));
+
  assert.equal((await call('/api/calendars/'+promotion.id+'/pdf','POST',{version:reopened.version},campus)).status,409);
  const c=(await call('/api/calendars','POST',{campusId:foz.id,purpose:'test',name:'Synthetic calendar',courses:'Synthetic course',year:2027,offer:'integrado',regime:'anual'},campus)).data;assert(c.id);
  assert.equal((await call('/api/calendars/'+c.id,'GET',null,foreign)).status,404);
