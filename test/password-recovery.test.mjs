@@ -7,7 +7,9 @@ function fixture(){const db={users:[{id:'admin',email:'admin@ifpr.edu.br',active
 test('recovery expires, is single-use, revokes sessions and preserves account scope and calendars',async()=>{
  const {db,store}=fixture();let message;await requestRecovery(store,'ADMIN@ifpr.edu.br','https://calendar.example',async m=>message=m,1000);
  const token=new URL(message.url).hash.split('=')[1];assert(!JSON.stringify(db).includes(token));
- assert.throws(()=>checkRecovery(db,token,1801000));checkRecovery(db,token,1001);
+ assert.equal(db.passwordResets[0].expires,1000+86_400_000);
+ checkRecovery(db,token,1000+1_800_000);checkRecovery(db,token,1000+86_400_000-1);
+ assert.throws(()=>checkRecovery(db,token,1000+86_400_000));checkRecovery(db,token,1001);
  completeRecovery(db,token,{hash:'new',salt:'new'},1002);assert.throws(()=>completeRecovery(db,token,{},1003));
  assert.equal(db.users[0].role,'ADMIN');assert.equal(db.users[0].hash,'new');assert.equal(db.users[1].active,false);
  assert.deepEqual(db.sessions,[{userId:'other'}]);assert.equal(db.invitations[0].revoked,true);assert.deepEqual(db.calendars,[{id:'keep'}]);
@@ -24,9 +26,16 @@ test('disabled account cannot redeem an already issued link',async()=>{const {db
 test('mail adapter requires configuration and fails closed on provider rejection',async()=>{
  assert.equal(recoveryMailer({}),null);let body;
  const mail=recoveryMailer({RESEND_API_KEY:'synthetic',DENTEC_MAIL_FROM:'test@example.org'},async(url,options)=>{assert.equal(url,'https://api.resend.com/emails');body=JSON.parse(options.body);return {ok:false};});
- await assert.rejects(mail({to:'test@ifpr.edu.br',url:'https://calendar.example/recuperar-senha#token=synthetic'}));assert.deepEqual(body.to,['test@ifpr.edu.br']);
+ await assert.rejects(mail({to:'test@ifpr.edu.br',url:'https://calendar.example/recuperar-senha#token=synthetic'}));assert.deepEqual(body.to,['test@ifpr.edu.br']);assert.match(body.text,/24 horas/);assert.doesNotMatch(body.text,/30 minutos/);
 });
 test('manual links replace previous links, keep disabled users blocked and never enter audit logs',()=>{const {db}=fixture();const first=manualRecovery(db,'admin','admin','https://calendar.example');const second=manualRecovery(db,'admin','admin','https://calendar.example');const token=url=>new URL(url).hash.split('=')[1];assert.throws(()=>checkRecovery(db,token(first.url)));checkRecovery(db,token(second.url));assert.throws(()=>manualRecovery(db,'disabled','admin','https://calendar.example'));assert(!JSON.stringify(db).includes(token(second.url)));});
+
+test('manual recovery is valid for exactly 24 hours and remains single-use',()=>{
+ const {db}=fixture(),now=Date.UTC(2026,9,19,12),issued=manualRecovery(db,'admin','admin','https://calendar.example',now);
+ const token=new URL(issued.url).hash.split('=')[1];assert.equal(issued.expiresAt,now+86_400_000);
+ checkRecovery(db,token,now+86_400_000-1);assert.throws(()=>checkRecovery(db,token,now+86_400_000));
+ completeRecovery(db,token,{hash:'new',salt:'new'},now+86_400_000-1);assert.throws(()=>checkRecovery(db,token,now+86_400_000-1));
+});
 test('HTTP recovery rejects replay, invalid passwords and cross-origin calls; old login stops working',async t=>{
  const {store}=fixture();await store.change(db=>{db.users=[];});let sent;
  const app=await createApp({store,setupCode:'synthetic',recoveryMail:async m=>sent=m});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.server.close(r)));
