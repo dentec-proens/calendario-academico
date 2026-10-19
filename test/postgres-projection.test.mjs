@@ -3,7 +3,16 @@ import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
 import {openPostgresStore} from '../src/postgres-store.mjs';
 import {createApp} from '../src/application.mjs';
-import {statePatches} from '../src/postgres-projection.mjs';
+import {statePatches,selectState} from '../src/postgres-projection.mjs';
+
+test('scoped projections bind only parameters present in the SQL query',()=>{
+ for(const fields of [['users'],['sessions'],['catalogue'],['histories'],['reviews'],['calendars']])for(const full of [false,true]){
+  const query=selectState({fields,campusId:'campus1',calendarId:'c1',full});
+  const used=[...query.text.matchAll(/\$(\d+)/g)].map(m=>Number(m[1]));
+  assert.equal(Math.max(0,...used),query.values.length,JSON.stringify({fields,full}));
+  for(let i=1;i<=query.values.length;i++)assert(used.includes(i),`unused parameter ${i}: ${query.text}`);
+ }
+});
 
 async function fixture(t){
  const pg=new PGlite();await pg.waitReady;t.after(()=>pg.close());let queue=Promise.resolve();
@@ -56,6 +65,8 @@ test('HTTP with PostgreSQL projections: login, campus isolation, save, reopen an
  for(let i=0;i<2;i++)await call('/api/users','POST',{name:'Campus '+i,email:`campus${i}@ifpr.edu.br`,password:'synthetic-test-only-password',campusId:campuses[i].id},admin);
  const own=(await call('/api/login','POST',{email:'campus0@ifpr.edu.br',password:'synthetic-test-only-password'})).cookie;
  const other=(await call('/api/login','POST',{email:'campus1@ifpr.edu.br',password:'synthetic-test-only-password'})).cookie;
+ assert.equal((await call('/api/status','GET',null,own)).status,200);
+ assert.equal((await call('/api/status','GET',null,other)).status,200);
  const created=await call('/api/calendars','POST',{campusId:campuses[0].id,year:2027,offer:'integrado',regime:'anual',courses:'Synthetic',purpose:'test'},own);assert.equal(created.status,201);
  const id=created.data.id,path='/api/calendars/'+id;
  assert.equal((await call(path,'GET',null,other)).status,404);

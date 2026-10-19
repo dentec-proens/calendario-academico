@@ -5,14 +5,17 @@ import {isDeepStrictEqual} from 'node:util';
 export function selectState({fields,calendarId,campusId,sessionHash,userId,email,summary=false,full=false,lock=false}={}){
  const values=[],bind=value=>{values.push(value);return '$'+values.length;};
  const root=fields?`(SELECT coalesce(jsonb_object_agg(key,value),'{}'::jsonb) FROM jsonb_each(payload) WHERE key = ANY(${bind(fields)}::text[]))`:'payload';
+ const projectCalendars=!full&&(!fields||fields.includes('calendars'));
  const conditions=[];
- if(calendarId)conditions.push(`c->>'id'=${bind(calendarId)}`);
- if(campusId)conditions.push(`c->>'campusId'=${bind(campusId)}`);
+ // Bind calendar filters only when this SELECT actually includes calendars.
+ // PostgreSQL rejects unused parameters in narrow campus/session/user reads.
+ if(projectCalendars&&calendarId)conditions.push(`c->>'id'=${bind(calendarId)}`);
+ if(projectCalendars&&campusId)conditions.push(`c->>'campusId'=${bind(campusId)}`);
  const versionMetadata=`coalesce((SELECT jsonb_agg(jsonb_build_object('version',v->'version','at',v->'at','catalogueRevision',v->'catalogueRevision') ORDER BY n) FROM jsonb_array_elements(coalesce(c->'versions','[]'::jsonb)) WITH ORDINALITY AS versions(v,n)),'[]'::jsonb)`;
  const current=summary?`(c-'versions'-'state'-'institutionalSnapshot'-'documentSnapshot') || jsonb_build_object('state',jsonb_build_object('year',c#>'{state,year}','offer',c#>'{state,offer}','modalities',c#>'{state,modalities}','campus',c#>'{state,campus}'))`:`(c-'versions') || jsonb_build_object('versions',${versionMetadata})`;
  const calendars=`(SELECT coalesce(jsonb_agg(${current} ORDER BY pos),'[]'::jsonb) FROM jsonb_array_elements(coalesce(payload->'calendars','[]'::jsonb)) WITH ORDINALITY AS calendars(c,pos)${conditions.length?' WHERE '+conditions.join(' AND '):''})`;
  let result=root;
- if(!full&&(!fields||fields.includes('calendars')))result=`(${result} || jsonb_build_object('calendars',${calendars}))`;
+ if(projectCalendars)result=`(${result} || jsonb_build_object('calendars',${calendars}))`;
  for(const collection of ['histories','reviews'])if(!lock&&(calendarId||campusId)&&(!fields||fields.includes(collection))){
   const filter=[];if(calendarId)filter.push(`item->>'calendarId'=${bind(calendarId)}`);if(campusId&&collection==='histories')filter.push(`item->>'campusId'=${bind(campusId)}`);
   if(filter.length)result=`(${result} || jsonb_build_object('${collection}',(SELECT coalesce(jsonb_agg(item ORDER BY n),'[]'::jsonb) FROM jsonb_array_elements(coalesce(payload->'${collection}','[]'::jsonb)) WITH ORDINALITY AS items(item,n) WHERE ${filter.join(' AND ')})))`;
