@@ -38,7 +38,7 @@ export function activityChecklist(state){
   add(`diary-${n}`,`Prazo de fechamento e entrega dos diários de classe do ${label}`);
   add(`teaching-plan-${n}`,`Prazo de entrega do Plano de Ensino do ${label}`);
   add(`recognition-${n}`,`Aproveitamento de estudos, certificação de conhecimentos e equivalência de estágio — ${label}`);
-  add(`registration-${n}`,`Período destinado à matrícula — ${label}`);
+  add(`registration-${n}`,`Período destinado à matrícula — ${label}`+(n===2&&state.secondSemesterIntake===false?' (não exigido: sem ingresso neste semestre)':''),n===2&&state.secondSemesterIntake===false?{required:false}:{});
   add(`admission-notice-${n}`,`Publicação dos editais de transferência interna e externa, reingresso e portadores de diploma — antes do início do ${label}`);
   add(`final-appeal-${n}`,`Prazo para estudantes solicitarem revisão de resultados finais — ${label}`);
  }

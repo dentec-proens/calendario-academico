@@ -100,8 +100,9 @@ test('server persists per-offer stages and rejects mismatched event scope',async
  await call('/api/setup','POST',{...credentials,code:'fixture',name:'Fixture'});await call('/api/login','POST',credentials);
  const bootstrap=(await call('/api/bootstrap')).data;
  const record=(await call('/api/calendars','POST',{campusId:bootstrap.campuses[0].id,purpose:'test',courses:'Fixture',year:2027,modalities:state.modalities,regime:'semestral'})).data;
- const payload={...record.state,...state,campus:record.state.campus,events:[{id:'event',name:'Graduação',requirementId:'stage-1:graduacao',modalities:['graduacao'],start:'2027-03-01',end:'2027-03-12',kind:'note',category:'limite',evidence:'Ata'}]};
+ const payload={...record.state,...state,secondSemesterIntake:false,campus:record.state.campus,events:[{id:'event',name:'Graduação',requirementId:'stage-1:graduacao',modalities:['graduacao'],start:'2027-03-01',end:'2027-03-12',kind:'note',category:'limite',evidence:'Ata'}]};
  const saved=await call('/api/calendars/'+record.id,'PUT',{version:record.version,catalogueRevision:bootstrap.catalogue.revision,state:payload});assert.equal(saved.status,200,JSON.stringify(saved.data));
- const loaded=(await call('/api/calendars/'+record.id)).data;assert.deepEqual(loaded.state.assessmentStagesByModality,state.assessmentStagesByModality);assert.equal(loaded.state.events[0].requirementId,'stage-1:graduacao');
+ const loaded=(await call('/api/calendars/'+record.id)).data;assert.deepEqual(loaded.state.assessmentStagesByModality,state.assessmentStagesByModality);assert.equal(loaded.state.events[0].requirementId,'stage-1:graduacao');assert.equal(loaded.state.secondSemesterIntake,false);
+ assert.equal((await call('/api/calendars/'+record.id,'PUT',{version:loaded.version,catalogueRevision:bootstrap.catalogue.revision,state:{...payload,secondSemesterIntake:'false'}})).status,400);
  payload.events[0].modalities=['integrado'];assert.equal((await call('/api/calendars/'+record.id,'PUT',{version:loaded.version,catalogueRevision:bootstrap.catalogue.revision,state:payload})).status,400);
 });

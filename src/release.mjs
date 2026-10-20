@@ -3,28 +3,11 @@ import {activityChecklist,assessmentCount,scopedRequirement} from './obligations
 import {calendarResult} from './pdf.mjs';
 import {reviewCriteria} from './review.mjs';
 
-// Operational requirements explicitly requested by DENTEC. Dates must be supplied
-// by the campus/current reference; keyword matches are only presence checks.
-export const requiredActivities=[
- ['supervisao','Atividades de supervisão obrigatórias','supervisao'],
- ['segunda-chamada','Período da segunda chamada do processo seletivo','segunda chamada|2[ªa°º]? chamada'],
- ['resultado-chamada','Resultado final da segunda chamada','resultado.*(segunda|2[ªa°º]?) chamada'],
- ['confirmacao','Confirmação de matrícula dos ingressantes','confirmacao.*matricula'],
- ['rematricula','Rematrícula dos estudantes','rematricula'],
- ['ajuste','Ajuste das matrículas dos veteranos','ajuste.*matricula'],
- ['plano','Entrega do Plano de Ensino','plano.*ensino'],
- ['pit','Entrega do PIT','\\bpit\\b|plano individual de trabalho'],
- ['formacao','Formação pedagógica','formacao.*pedagogica'],
- ['planejamento','Planejamento/replanejamento coletivo','planejamento.*coletivo'],
- ['transferencia','Publicação dos editais de transferência, reingresso e portador de diploma','edita.*(transferencia|reingresso|diploma)'],
- ['trancamento','Trancamento de curso','trancamento'],
- ['cancelamento','Cancelamento de matrícula em componente curricular','cancelamento']
-];
 const plain=value=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 
 // Fail closed: machine checks never replace a current, evidenced human review.
 export function releaseReadiness(record,db){
- const issues=[];
+ const issues=[],warnings=[];
  const events=[...record.institutionalSnapshot,...record.state.events];
  if(calendarModalities(record.state).some(m=>![2,3,4].includes(assessmentCount(record.state,m))))issues.push('Informe a quantidade de etapas de avaliação (2, 3 ou 4).');
  for(const modality of calendarModalities(record.state))for(const activity of activityChecklist(record.state).filter(a=>a.required!==false&&(!a.modality||a.modality===modality)))if(!events.some(e=>appliesTo(e,modality)&&e.requirementId===activity.id&&e.evidence?.trim()))issues.push(`${modalityLabels[modality]} — ${activity.name}: vincule um evento com datas e fonte no roteiro de atividades.`);
@@ -46,17 +29,16 @@ export function releaseReadiness(record,db){
  for(let n=1;n<=(assessmentCount(record.state,modality)||0);n++){
   const start=eventFor('stage-'+n),end=eventFor('stage-'+n),results=eventFor('results-'+n),council=eventFor('council-'+n);
   if(start&&end&&start.start>end.end)issues.push(`${n}ª etapa: término anterior ao início.`);
-  if(end&&results&&results.end<end.end)issues.push(`${n}ª etapa: prazo de lançamento de resultados anterior ao término.`);
+  if(end&&results&&results.end<end.end)warnings.push(`${modalityLabels[modality]} — ${n}ª etapa: o prazo de lançamento de resultados antecede o término da etapa. Confira a organização definida pelo campus.`);
   const councilRequired=activityChecklist(record.state).find(a=>a.id===scopedRequirement(record.state,'council-'+n,modality))?.required!==false;
-  if(councilRequired&&results&&council&&council.start<results.end)issues.push(`${n}ª etapa: conselho anterior ao prazo de lançamento dos resultados.`);
+  if(councilRequired&&results&&council&&council.start<results.end)warnings.push(`${modalityLabels[modality]} — ${n}ª etapa: o conselho antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.`);
   const meeting=eventFor('pedagogical-meeting-'+n);
-  if(results&&meeting&&meeting.start<results.end)issues.push(`${n}ª etapa: reunião pedagógica anterior ao prazo de lançamento dos resultados.`);
+  if(results&&meeting&&meeting.start<results.end)warnings.push(`${modalityLabels[modality]} — ${n}ª etapa: a reunião pedagógica antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.`);
  }
  }
 
- for(const [,title,pattern] of requiredActivities){
-  if(!events.some(e=>e.evidence?.trim()&&new RegExp(pattern).test(plain(e.name))))issues.push(`${title}: cadastre a data ou o período e a fonte.`);
- }
+ // Campus event requirements come from the same checklist displayed in the editor.
+ // Do not add hidden, duplicate keyword requirements when generating the calendar.
  if(record.catalogueRevision!==db.catalogue.revision)issues.push('Salve o calendário com a base institucional atualizada.');
  try{
   const result=calendarResult(record.state,[...record.institutionalSnapshot,...record.state.events]);
@@ -77,5 +59,5 @@ export function releaseReadiness(record,db){
   if(!entry?.reviewed||!['ATENDIDO','NAO_APLICAVEL'].includes(entry.status))issues.push(`${c.item}: ${c.title} — atendimento ou não aplicabilidade aguardando confirmação.`);
   if(c.pattern&&entry?.status==='ATENDIDO'&&!events.some(e=>e.evidence?.trim()&&new RegExp(c.pattern).test(plain(e.name+' '+(e.category||'')))))issues.push(`${c.item}: ${c.title} — nenhum evento com data e fonte localizado no calendário; confira o cadastro.`);
  }
- return {ready:issues.length===0,issues,officialApproval:false};
+ return {ready:issues.length===0,issues,warnings,officialApproval:false};
 }

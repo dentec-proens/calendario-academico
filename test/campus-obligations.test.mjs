@@ -4,6 +4,22 @@ import {updateCampuses,selectableCampuses} from '../src/campuses.mjs';
 import {activityChecklist} from '../src/obligations.mjs';
 import {releaseReadiness} from '../src/release.mjs';
 
+test('explicit absence of second semester intake waives new-student registration only',()=>{
+ const base={year:2027,offer:'graduacao',regime:'semestral',assessmentStages:2,events:[],periods:[],weekdays:[],weekConfirmed:false};
+ for(const secondSemesterIntake of [undefined,true,false]){
+  const state={...base,secondSemesterIntake},rows=activityChecklist(state);
+  assert.equal(rows.find(r=>r.id==='registration-2').required===false,secondSemesterIntake===false);
+  for(const id of ['registration-1','enrolment-1','enrolment-2','admission-notice-2'])assert.notEqual(rows.find(r=>r.id===id).required,false);
+  const issues=releaseReadiness({id:'test',state,institutionalSnapshot:[],catalogueRevision:1},{catalogue:{revision:1},reviews:[]}).issues;
+  assert.equal(issues.some(i=>i.includes('Período destinado à matrícula — 2º semestre')&&i.includes('vincule um evento')),secondSemesterIntake!==false);
+  assert(issues.some(i=>i.includes('Rematrícula dos estudantes — 2º semestre')&&i.includes('vincule um evento')));
+ }
+ const existing={id:'registered',requirementId:'registration-2',name:'Matrícula cadastrada'};
+ const state={...base,secondSemesterIntake:false,events:[existing]};
+ activityChecklist(state);assert.deepEqual(state.events,[existing]);
+ assert(!activityChecklist({...state,regime:'anual'}).some(r=>r.id==='registration-2'));
+});
+
 test('family meetings and class councils are required only for integrated secondary education',()=>{
  const base={year:2027,offer:'graduacao',regime:'semestral',assessmentStages:2};
  for(const modalities of [['graduacao'],['subsequente'],['posgraduacao'],['graduacao','subsequente']])for(const scoped of [false,true]){
