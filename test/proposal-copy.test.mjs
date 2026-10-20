@@ -1,0 +1,43 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {createApp} from '../src/application.mjs';
+import {proensLayout} from '../web/print.mjs';
+
+test('campus can download an identified proposal before review without approving or changing its calendar',async t=>{
+ let rendered;
+ const app=await createApp({directory:await mkdtemp(join(tmpdir(),'proposal-copy-')),setupCode:'fixture',pdfRenderer:async record=>{rendered=record;return Buffer.from('%PDF-1.4 fixture');}});
+ await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.server.close(r)));
+ const base=`http://127.0.0.1:${app.server.address().port}`;
+ const call=async(path,method='GET',body,cookie='')=>{
+  const response=await fetch(base+path,{method,headers:{'Content-Type':'application/json','X-Dentec-Request':'1',Cookie:cookie},body:body?JSON.stringify(body):undefined});
+  const data=response.headers.get('content-type')?.includes('application/pdf')?await response.text():await response.json();
+  return {status:response.status,data,cookie:response.headers.get('set-cookie')?.split(';')[0]};
+ };
+ const password='synthetic-password-only';
+ await call('/api/setup','POST',{code:'fixture',name:'Fixture',email:'copy-admin@ifpr.edu.br',password});
+ const admin=(await call('/api/login','POST',{email:'copy-admin@ifpr.edu.br',password})).cookie;
+ const campuses=(await call('/api/bootstrap','GET',null,admin)).data.campuses;
+ for(let n=0;n<2;n++)await call('/api/users','POST',{name:'Campus '+n,email:`copy-${n}@ifpr.edu.br`,password,campusId:campuses[n].id},admin);
+ const campus=(await call('/api/login','POST',{email:'copy-0@ifpr.edu.br',password})).cookie;
+ const foreign=(await call('/api/login','POST',{email:'copy-1@ifpr.edu.br',password})).cookie;
+ const record=(await call('/api/calendars','POST',{campusId:campuses[0].id,purpose:'definitive',courses:'Fixture',year:2027,offer:'graduacao',regime:'semestral'},campus)).data;
+ const path='/api/calendars/'+record.id,body={version:record.version,catalogueRevision:record.catalogueRevision};
+ const before=structuredClone(app.store.read());
+ assert.equal((await call(path+'/pdf','POST',body,campus)).status,409);
+ assert.equal((await call(path+'/pdf','POST',{...body,copy:'true'},campus)).status,409);
+ assert.equal((await call(path+'/pdf','POST',{...body,copy:true},foreign)).status,404);
+ assert.equal((await call(path+'/pdf','POST',{...body,copy:true,version:0},campus)).status,409);
+ assert.equal((await call(path+'/pdf','POST',{...body,copy:true})).status,401);
+ const proposal=await call(path+'/pdf','POST',{...body,copy:true},campus);
+ assert.equal(proposal.status,200);assert.match(proposal.data,/^%PDF-/);
+ assert.equal(rendered.proposalCopy,true);assert.equal(rendered.readiness.ready,false);assert.equal(rendered.readiness.officialApproval,false);
+ const html=proensLayout(rendered.state,[],null,rendered);
+ assert.match(html,/CÓPIA DA PROPOSTA PARA ANÁLISE DA PROENS/);assert.match(html,/Sem aprovação oficial/);
+ assert.deepEqual(app.store.read(),before);
+ const reopened=(await call(path,'GET',null,campus)).data;
+ assert.equal(reopened.readiness.ready,false);assert.deepEqual(reopened.state,record.state);assert.equal(reopened.version,record.version);
+ assert(!proensLayout(record.state,[],null,{...record,purpose:'test',proposalCopy:true}).includes('CÓPIA DA PROPOSTA PARA ANÁLISE DA PROENS'));
+});

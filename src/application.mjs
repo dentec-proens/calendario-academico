@@ -215,8 +215,9 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
    if(match){const id=match[1],db=(await read({fields:['calendars','catalogue','documents','histories','reviews']})),record=owns(db.calendars.find(c=>c.id===id));
     if(match[2]==='pdf'&&method==='POST'){
      if(body.version!==record.version||body.catalogueRevision!==db.catalogue.revision||record.catalogueRevision!==db.catalogue.revision)fail('Salve a versão atual com a base institucional atualizada antes de baixar.',409);
-     const readiness=releaseReadiness(record,db);if(record.purpose!=='test'&&!readiness.ready)fail('Geração definitiva bloqueada. '+readiness.issues.join('\n'),409);
-     const pdf=await pdfRenderer({...record,currentCatalogueRevision:db.catalogue.revision},[...record.institutionalSnapshot,...record.state.events]);
+     const readiness=releaseReadiness(record,db),proposalCopy=body.copy===true&&record.purpose!=='test';
+     if(record.purpose!=='test'&&!readiness.ready&&!proposalCopy)fail('Geração definitiva bloqueada. '+readiness.issues.join('\n'),409);
+     const pdf=await pdfRenderer({...record,proposalCopy,readiness,currentCatalogueRevision:db.catalogue.revision},[...record.institutionalSnapshot,...record.state.events]);
      if(files&&pdf.length>4_000_000){const key='exports/'+randomUUID()+'.pdf';await files.write(key,pdf);await download({objectKey:key,filename:`${record.purpose==='test'?'teste-':''}calendario-${record.state.year}-v${record.version}.pdf`});return;}
      res.writeHead(200,{'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="${record.purpose==='test'?'teste-':''}calendario-${record.state.year}-v${record.version}.pdf"`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(pdf);return;
     }
