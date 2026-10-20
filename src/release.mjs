@@ -27,7 +27,7 @@ export function releaseReadiness(record,db){
  const issues=[];
  const events=[...record.institutionalSnapshot,...record.state.events];
  if(calendarModalities(record.state).some(m=>![2,3,4].includes(assessmentCount(record.state,m))))issues.push('Informe a quantidade de etapas de avaliação (2, 3 ou 4).');
- for(const modality of calendarModalities(record.state))for(const activity of activityChecklist(record.state).filter(a=>!a.modality||a.modality===modality))if(!events.some(e=>appliesTo(e,modality)&&e.requirementId===activity.id&&e.evidence?.trim()))issues.push(`${modalityLabels[modality]} — ${activity.name}: vincule um evento com datas e fonte no roteiro de atividades.`);
+ for(const modality of calendarModalities(record.state))for(const activity of activityChecklist(record.state).filter(a=>a.required!==false&&(!a.modality||a.modality===modality)))if(!events.some(e=>appliesTo(e,modality)&&e.requirementId===activity.id&&e.evidence?.trim()))issues.push(`${modalityLabels[modality]} — ${activity.name}: vincule um evento com datas e fonte no roteiro de atividades.`);
  for(const modality of calendarModalities(record.state)){
  for(const activity of activityChecklist(record.state).filter(a=>!a.modality||a.modality===modality)){
   const linked=events.filter(e=>e.requirementId===activity.id&&appliesTo(e,modality));
@@ -47,7 +47,8 @@ export function releaseReadiness(record,db){
   const start=eventFor('stage-'+n),end=eventFor('stage-'+n),results=eventFor('results-'+n),council=eventFor('council-'+n);
   if(start&&end&&start.start>end.end)issues.push(`${n}ª etapa: término anterior ao início.`);
   if(end&&results&&results.end<end.end)issues.push(`${n}ª etapa: prazo de lançamento de resultados anterior ao término.`);
-  if(results&&council&&council.start<results.end)issues.push(`${n}ª etapa: conselho anterior ao prazo de lançamento dos resultados.`);
+  const councilRequired=activityChecklist(record.state).find(a=>a.id===scopedRequirement(record.state,'council-'+n,modality))?.required!==false;
+  if(councilRequired&&results&&council&&council.start<results.end)issues.push(`${n}ª etapa: conselho anterior ao prazo de lançamento dos resultados.`);
   const meeting=eventFor('pedagogical-meeting-'+n);
   if(results&&meeting&&meeting.start<results.end)issues.push(`${n}ª etapa: reunião pedagógica anterior ao prazo de lançamento dos resultados.`);
  }

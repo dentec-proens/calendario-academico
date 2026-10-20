@@ -15,11 +15,15 @@ export function migrateAssessmentEvents(state){
 export function activityChecklist(state){
  if(state.assessmentStagesByModality){
   const common=activityChecklist({...state,assessmentStagesByModality:undefined,assessmentStages:undefined});
-  const stages=calendarModalities(state).flatMap(m=>activityChecklist({...state,assessmentStagesByModality:undefined,assessmentStages:assessmentCount(state,m)}).filter(r=>/^(stage|results|council|pedagogical-meeting)-[1-4]$/.test(r.id)).map(r=>({...r,id:`${r.id}:${m}`,modality:m,name:`${r.name} — ${modalityLabels[m]} (${assessmentCount(state,m)===4?'bimestral':assessmentCount(state,m)===3?'trimestral':'semestral'})`})));
+  const stages=calendarModalities(state).flatMap(m=>activityChecklist({...state,offer:m,modalities:[m],assessmentStagesByModality:undefined,assessmentStages:assessmentCount(state,m)}).filter(r=>/^(stage|results|council|pedagogical-meeting)-[1-4]$/.test(r.id)).map(r=>({...r,id:`${r.id}:${m}`,modality:m,name:`${r.name} — ${modalityLabels[m]} (${assessmentCount(state,m)===4?'bimestral':assessmentCount(state,m)===3?'trimestral':'semestral'})`})));
   return [...stages,...common];
  }
  const rows=[];
- const add=(id,name,extra={})=>rows.push({id,name,...extra});
+ const optionalSchoolMeetings=calendarModalities(state).every(m=>['graduacao','subsequente','posgraduacao'].includes(m));
+ const add=(id,name,extra={})=>{
+  const optional=optionalSchoolMeetings&&(id==='family-meeting'||id==='extraordinary-council'||/^council-[1-4]$/.test(id));
+  rows.push({id,name:name+(optional?' (opcional para esta oferta)':''),...extra,...(optional?{required:false}:{})});
+ };
  const stages=Number(state.assessmentStages);
  if([2,3,4].includes(stages))for(let n=1;n<=stages;n++){
   add(`stage-${n}`,`${n}ª etapa de avaliação — início e término`);
