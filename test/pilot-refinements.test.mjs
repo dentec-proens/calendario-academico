@@ -6,7 +6,7 @@ import {auditLog} from '../src/audit-log.mjs';
 import {evaluateCalendar} from '../src/evaluation.mjs';
 
 test('teacher vacations count inclusive days, including leap years, and reject July overflow',()=>{
- for(const year of [2027,2028]){const v=teacherVacations(year,`${year}-07-17`,'Decisão de teste');assert.equal(v.januaryStart,`${year}-01-02`);assert.equal(v.januaryEnd,`${year}-01-31`);assert.equal(v.julyEnd,`${year}-07-31`);assert.equal(v.total,45);assert(v.events.every(e=>e.kind==='note'));}
+ for(const year of [2027,2028]){const v=teacherVacations(year,`${year}-07-17`,'Decisão de teste');assert.equal(v.januaryStart,`${year}-01-02`);assert.equal(v.januaryEnd,`${year}-01-31`);assert.equal(v.julyEnd,`${year}-07-31`);assert.equal(v.total,45);assert(v.events.every(e=>e.kind==='exclude'));}
  assert.throws(()=>teacherVacations(2027,'2027-07-18','Fonte'));assert.throws(()=>teacherVacations(2027,'2026-07-01','Fonte'));assert.throws(()=>teacherVacations(2027,'2027-07-01',''));
 });
 test('mixed calendar includes annual and semester obligations plus extraordinary council',()=>{

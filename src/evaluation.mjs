@@ -1,6 +1,8 @@
 import {countCalendar} from './calendar.mjs';
+import {withVacationExclusions} from './teacher-vacations.mjs';
 import {calendarModalities,appliesTo} from './modalities.mjs';
 export function evaluateCalendar(s,events){
+ events=withVacationExclusions(events);
  const byModality={};
  for(const modality of calendarModalities(s)){
   const scoped=events.filter(e=>appliesTo(e,modality));

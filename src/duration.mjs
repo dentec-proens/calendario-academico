@@ -1,4 +1,5 @@
 import {parseDate,datesBetween} from './calendar.mjs';
+import {withVacationExclusions} from './teacher-vacations.mjs';
 import {calendarModalities,appliesTo} from './modalities.mjs';
 export function recalculatePeriods(state,events){
  const periods=state.periods.map(p=>p.targetDays===undefined?{...p}:{...p,end:durationEnd(p.start,p.targetDays,state,events)});
@@ -7,6 +8,7 @@ export function recalculatePeriods(state,events){
  return periods;
 }
 export function durationEnd(start,quantity,state,events=[]){
+ events=withVacationExclusions(events);
  const count=Number(quantity),time=parseDate(start);
  if(!Number.isInteger(count)||count<1||count>366)throw Error('Informe uma quantidade inteira entre 1 e 366 dias.');
  if(!state)return new Date(time+(count-1)*86400000).toISOString().slice(0,10);

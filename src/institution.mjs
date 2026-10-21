@@ -1,3 +1,4 @@
+import {campusInstitutionalEvents} from './teacher-day.mjs';
 import {appliesTo} from './modalities.mjs';
 // User-supplied campus list, with Foz added by explicit request. Admin may extend it.
 export const campusNames=['Assis Chateaubriand','Arapongas','Astorga','Barracão','Campo Largo','Capanema','Cascavel','Colombo','Coronel Vivida','Curitiba','Foz do Iguaçu','Goioerê','Irati','Ivaiporã','Jacarezinho','Jaguariaíva','Londrina','Palmas','Paranaguá','Paranavaí','Pinhais','Pitanga','Quedas do Iguaçu','Telêmaco Borba','Umuarama','União da Vitória'];
@@ -10,4 +11,4 @@ export function initialCatalogue(){
  for(const [id,name,start,end]of [['science','Mês Nacional da Ciência, Tecnologia e Inovações','10-01','10-31'],['library','Semana Nacional do Livro e da Biblioteca','10-23','10-29']])events.push({id:`ifpr2027-${id}`,name,start:`2027-${start}`,end:`2027-${end}`,kind:'note',category:'comemorativo',evidence:'Resolução IFPR 2027 — SEI 4354987, art. 2º',offers:['integrado','subsequente','graduacao'],active:true});
  return {revision:1,events};
 }
-export function inheritedEvents(catalogue,year,offer){const modalities=Array.isArray(offer)?offer:[offer];return catalogue.events.filter(e=>e.active&&Number(e.start.slice(0,4))===year&&modalities.some(m=>appliesTo(e,m))).map(e=>({...e,id:`inst:${e.id}`,institutional:true}));}
+export function inheritedEvents(catalogue,year,offer,state={year}){const modalities=Array.isArray(offer)?offer:[offer];return campusInstitutionalEvents(catalogue.events.filter(e=>e.active&&Number(e.start.slice(0,4))===year&&modalities.some(m=>appliesTo(e,m))).map(e=>({...e,id:`inst:${e.id}`,institutional:true})),state);}
