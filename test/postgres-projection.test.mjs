@@ -19,7 +19,7 @@ async function fixture(t){
  const measurements=[];
  const query=async(text,values=[])=>{const result=await pg.query(text,values);measurements.push({text,received:Buffer.byteLength(JSON.stringify(result.rows)),sent:Buffer.byteLength(JSON.stringify(values))});return result;};
  const pool={query,async connect(){let release;const prior=queue;queue=new Promise(r=>release=r);await prior;return {query,release};}};
- const store=await openPostgresStore('postgres://unused',{pool});return {pg,store,measurements};
+ const store=await openPostgresStore('postgres://unused',{pool});return {pg,store,pool,measurements};
 }
 
 test('SQL projections and delta writes preserve every old snapshot, including unknown fields and PDF data',async t=>{
@@ -73,6 +73,10 @@ test('HTTP with PostgreSQL projections: login, campus isolation, save, reopen an
  let opened=await call(path,'GET',null,own);assert.equal(opened.status,200);
  const state={...opened.data.state,weekdays:[1,2,3,4,5],weekConfirmed:true,weekEvidence:'Synthetic decision'};
  const saved=await call(path,'PUT',{version:opened.data.version,catalogueRevision:opened.data.catalogueRevision,state},own);assert.equal(saved.status,200);
+ const same=await call(path,'PUT',{version:saved.data.version,catalogueRevision:opened.data.catalogueRevision,state:saved.data.state},own);
+ assert.equal(same.status,200);assert.equal(same.data.unchanged,true);assert.equal(same.data.version,saved.data.version);assert.equal(same.data.updatedAt,saved.data.updatedAt);
+ const unchangedDb=await store.read({full:true});assert.equal(unchangedDb.calendars[0].versions.length,1);
+ assert.equal(unchangedDb.audit.filter(e=>e.action==='SAVE_CALENDAR').length,1);
  assert.equal((await call(path,'PUT',{version:opened.data.version,catalogueRevision:opened.data.catalogueRevision,state},own)).status,409);
  opened=await call(path,'GET',null,own);assert.equal(opened.data.state.weekConfirmed,true);assert.equal(opened.data.versions.length,1);
  const full=await store.read({full:true});assert.equal(full.calendars[0].versions[0].state.weekConfirmed,false);
@@ -80,4 +84,30 @@ test('HTTP with PostgreSQL projections: login, campus isolation, save, reopen an
  assert.equal((await call('/api/bootstrap','GET',null,other)).data.calendars.length,0);
  assert(measurements.some(m=>m.text.includes("s->>'id'=")));assert(measurements.some(m=>m.text.includes("c->>'campusId'=")));
  await call('/api/logout','POST',{},own);assert.equal((await call(path,'GET',null,own)).status,401);
+});
+
+test('history migration keeps equal versions, unknown fields and original backup; restart is idempotent',async t=>{
+ const {pg,pool}=await fixture(t);
+ const original={users:[],campuses:[],histories:[{data:'original PDF'}],catalogue:{revision:1},audit:[],custom:{preserve:true},calendars:[{id:'archive-fixture',campusId:'one',state:{year:2027},version:4,versions:[{version:1,at:'a',state:{same:true},unknown:{keep:1}},{version:2,at:'b',state:{same:true},unknown:{keep:1}},{version:3,at:'c',state:{changed:true},unknown:{keep:2}}]}]};
+ await pg.query('UPDATE dentec_private.app_state SET payload=$1::jsonb WHERE id=1',[JSON.stringify(original)]);
+ const migrated=await openPostgresStore('postgres://unused',{pool});
+ assert.deepEqual(await migrated.read({full:true}),original);
+ const raw=(await pg.query('SELECT payload FROM dentec_private.app_state WHERE id=1')).rows[0].payload;
+ assert.deepEqual(raw.calendars[0].versions,[{version:1,at:'a'},{version:2,at:'b'},{version:3,at:'c'}]);
+ assert.deepEqual((await pg.query('SELECT snapshot FROM dentec_private.calendar_versions ORDER BY ordinal')).rows.map(r=>r.snapshot),original.calendars[0].versions);
+ assert.deepEqual((await pg.query('SELECT payload FROM dentec_private.history_migration_backups')).rows[0].payload,original);
+ const restarted=await openPostgresStore('postgres://unused',{pool});assert.deepEqual(await restarted.read({full:true}),original);
+ assert.equal((await pg.query('SELECT count(*)::integer n FROM dentec_private.calendar_versions')).rows[0].n,3);
+ assert.equal((await pg.query('SELECT count(*)::integer n FROM dentec_private.history_migration_backups')).rows[0].n,1);
+ // An older deployment can append an inline snapshot during rollout. The next
+ // startup archives it too, without losing earlier ordinals or equal content.
+ const legacy={version:4,state:{legacyWrite:true},at:'d'};
+ await pg.query("UPDATE dentec_private.app_state SET payload=jsonb_set(payload,'{calendars,0,versions}',(payload#>'{calendars,0,versions}') || $1::jsonb) WHERE id=1",[JSON.stringify([legacy])]);
+ const compatible=await openPostgresStore('postgres://unused',{pool});
+ assert.deepEqual((await compatible.read({full:true})).calendars[0].versions,[...original.calendars[0].versions,legacy]);
+ await pg.query("UPDATE dentec_private.app_state SET payload=jsonb_set(payload,'{calendars,0,versions,0}', $1::jsonb) WHERE id=1",[JSON.stringify({version:1,state:{conflicting:true}})]);
+ await assert.rejects(openPostgresStore('postgres://unused',{pool}),/Conferência/);
+ assert.deepEqual((await pg.query('SELECT snapshot FROM dentec_private.calendar_versions WHERE ordinal=1')).rows[0].snapshot,original.calendars[0].versions[0]);
+ const security=(await pg.query("SELECT relname,relrowsecurity FROM pg_class WHERE relname IN ('calendar_versions','history_migration_backups')")).rows;
+ assert.equal(security.length,2);assert(security.every(r=>r.relrowsecurity));
 });

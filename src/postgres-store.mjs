@@ -2,6 +2,7 @@ import {readFile} from 'node:fs/promises';
 import {rootCertificates} from 'node:tls';
 import {initialCatalogue,campusNames} from './institution.mjs';
 import {selectState,statePatches,patchState} from './postgres-projection.mjs';
+import {prepareHistoryTables,archiveInlineHistory} from './postgres-history.mjs';
 
 // Transitional storage: retain the versioned local document structure, but
 // serialize writes in PostgreSQL so independent server instances cannot lose updates.
@@ -11,6 +12,8 @@ export async function openPostgresStore(connectionString,{pool:providedPool}={})
  if(!providedPool){const endpoint=new URL(connectionString);if(endpoint.hostname.endsWith('.supabase.co')||endpoint.hostname.endsWith('.pooler.supabase.com')){for(const key of ['sslmode','sslrootcert','sslcert','sslkey','uselibpqcompat','ssl'])endpoint.searchParams.delete(key);connectionString=endpoint.toString();ssl={rejectUnauthorized:true,ca:[...rootCertificates,await readFile(new URL('./supabase-ca.crt',import.meta.url),'utf8')]};}}
  const pool=providedPool||new Pool({connectionString,ssl,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:10000,allowExitOnIdle:true});
  try{
+  const exists=await pool.query("SELECT to_regclass('dentec_private.app_state') AS state");
+  if(!exists.rows[0]?.state){
   await pool.query('CREATE SCHEMA IF NOT EXISTS dentec_private');
   await pool.query('REVOKE ALL ON SCHEMA dentec_private FROM PUBLIC');
   await pool.query('CREATE TABLE IF NOT EXISTS dentec_private.app_state (id integer PRIMARY KEY CHECK (id = 1), payload jsonb NOT NULL)');
@@ -18,11 +21,18 @@ export async function openPostgresStore(connectionString,{pool:providedPool}={})
   await pool.query('ALTER TABLE dentec_private.app_state ENABLE ROW LEVEL SECURITY');
   const initial={users:[],campuses:campusNames.map((name,i)=>({id:`campus-${i+1}`,name})),calendars:[],histories:[],audit:[],catalogue:initialCatalogue()};
   await pool.query('INSERT INTO dentec_private.app_state (id,payload) VALUES (1,$1::jsonb) ON CONFLICT (id) DO NOTHING',[JSON.stringify(initial)]);
+  }
+  await prepareHistoryTables(pool);
+  const migration=await pool.connect();try{
+   await migration.query('BEGIN');await migration.query("SET LOCAL lock_timeout = '10s'");await migration.query("SET LOCAL statement_timeout = '25s'");
+   await migration.query('SELECT id FROM dentec_private.app_state WHERE id=1 FOR UPDATE');
+   await archiveInlineHistory(migration);await migration.query('COMMIT');
+  }catch(e){await migration.query('ROLLBACK').catch(()=>{});throw e;}finally{migration.release();}
  }catch(e){if(!providedPool)await pool.end();throw e;}
  return {
-  async read(options){const query=selectState(options);const {rows}=await pool.query(query.text,query.values);if(!rows.length)throw Error('Base indisponível.');return rows[0].payload;},
+  async read(options){const query=selectState({...options,archived:true});const {rows}=await pool.query(query.text,query.values);if(!rows.length)throw Error('Base indisponível.');return rows[0].payload;},
   async change(fn,{fields,calendarId}={}){const client=await pool.connect();try{
-   await client.query('BEGIN');await client.query("SET LOCAL lock_timeout = '10s'");
+   await client.query('BEGIN');await client.query("SET LOCAL lock_timeout = '10s'");await client.query("SET LOCAL statement_timeout = '25s'");
    const query=selectState({lock:true,fields,calendarId});const {rows}=await client.query(query.text,query.values);if(!rows.length)throw Error('Base indisponível.');
    const before=rows[0].payload,next=structuredClone(before),result=await fn(next);
    // Existing snapshots remain in PostgreSQL. Reject structural replacement of
@@ -34,6 +44,7 @@ export async function openPostgresStore(connectionString,{pool:providedPool}={})
     patch.path[1]=String(rows[0].calendar_positions[Number(patch.path[1])]);
    }
    for(let i=0;i<patches.length;i+=30){const patch=patchState(patches.slice(i,i+30));await client.query(patch.text,patch.values);}
+   if(patches.some(p=>p.path[0]==='calendars'))await archiveInlineHistory(client);
    await client.query('COMMIT');return result;
   }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}finally{client.release();}},
   close:()=>pool.end()

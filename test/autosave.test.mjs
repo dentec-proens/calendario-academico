@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createAutosaver} from '../web/autosave.js';
+import {createAutosaver,saveCalendarSnapshot} from '../web/autosave.js';
 test('autosave serializes writes and preserves edits made during a request',async()=>{
  let state={value:1},dirty=true,version=1,resolve,calls=0,status;
  const saver=createAutosaver({isDirty:()=>dirty,snapshot:()=>({state,version}),write:sent=>{calls++;assert.equal(sent.state.value,1);return new Promise(r=>resolve=r);},onSaved:(saved,sent)=>{version=saved.version;dirty=JSON.stringify(state)!==JSON.stringify(sent.state);},onStatus:s=>status=s});
@@ -12,5 +12,15 @@ test('no-change ticks do not write; failures keep edits and conflicts stop retri
 });
 test('connection failures retry and a successful save clears pending changes',async()=>{
  let dirty=true,calls=0,status;const saver=createAutosaver({isDirty:()=>dirty,snapshot:()=>({state:{value:1}}),write:async()=>{if(++calls===1)throw Error('Offline');return {version:2};},onSaved:()=>dirty=false,onStatus:s=>status=s});
- await saver.save();assert.equal(status,'error');assert(dirty);await saver.save();assert.equal(status,'saved');assert(!dirty);await saver.save();assert.equal(calls,2);
+ await saver.save();assert.equal(status,'error');assert(dirty);await saver.save();await saver.save();assert.equal(calls,1);assert(dirty);await saver.save(true);assert.equal(status,'saved');assert(!dirty);await saver.save();assert.equal(calls,2);
+});
+
+test('gateway HTML errors preserve HTTP status and never report a save',async()=>{
+ await assert.rejects(saveCalendarSnapshot('/api/calendars/test',{}, {fetcher:async()=>new Response('<html>Gateway timeout</html>',{status:504})}),error=>error.status===504&&/indisponível/.test(error.message));
+ await assert.rejects(saveCalendarSnapshot('/api/calendars/test',{}, {fetcher:async()=>new Response('{}')}),/não confirmou/);
+});
+
+test('unresponsive saves time out rather than remaining pending indefinitely',async()=>{
+ const keepAlive=setTimeout(()=>{},200);
+ try{await assert.rejects(saveCalendarSnapshot('/api/calendars/test',{}, {timeoutMs:5,fetcher:(_url,{signal})=>new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}))}),/a tempo/);}finally{clearTimeout(keepAlive);}
 });

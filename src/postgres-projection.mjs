@@ -1,8 +1,9 @@
 import {isDeepStrictEqual} from 'node:util';
+import {completeCalendarsSql} from './postgres-history.mjs';
 
 // Keep the canonical document and its complete history in PostgreSQL. Only a
 // projection crosses the network; archived snapshots never accompany normal reads.
-export function selectState({fields,calendarId,campusId,sessionHash,userId,email,summary=false,full=false,lock=false}={}){
+export function selectState({fields,calendarId,campusId,sessionHash,userId,email,summary=false,full=false,lock=false,archived=false}={}){
  const values=[],bind=value=>{values.push(value);return '$'+values.length;};
  const root=fields?`(SELECT coalesce(jsonb_object_agg(key,value),'{}'::jsonb) FROM jsonb_each(payload) WHERE key = ANY(${bind(fields)}::text[]))`:'payload';
  const projectCalendars=!full&&(!fields||fields.includes('calendars'));
@@ -15,6 +16,7 @@ export function selectState({fields,calendarId,campusId,sessionHash,userId,email
  const current=summary?`(c-'versions'-'state'-'institutionalSnapshot'-'documentSnapshot') || jsonb_build_object('state',jsonb_build_object('year',c#>'{state,year}','offer',c#>'{state,offer}','modalities',c#>'{state,modalities}','campus',c#>'{state,campus}'))`:`(c-'versions') || jsonb_build_object('versions',${versionMetadata})`;
  const calendars=`(SELECT coalesce(jsonb_agg(${current} ORDER BY pos),'[]'::jsonb) FROM jsonb_array_elements(coalesce(payload->'calendars','[]'::jsonb)) WITH ORDINALITY AS calendars(c,pos)${conditions.length?' WHERE '+conditions.join(' AND '):''})`;
  let result=root;
+ if(full&&archived&&(!fields||fields.includes('calendars')))result=`(${result} || jsonb_build_object('calendars',${completeCalendarsSql}))`;
  if(projectCalendars)result=`(${result} || jsonb_build_object('calendars',${calendars}))`;
  for(const collection of ['histories','reviews'])if(!lock&&(calendarId||campusId)&&(!fields||fields.includes(collection))){
   const filter=[];if(calendarId)filter.push(`item->>'calendarId'=${bind(calendarId)}`);if(campusId&&collection==='histories')filter.push(`item->>'campusId'=${bind(campusId)}`);

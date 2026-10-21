@@ -1,5 +1,5 @@
 import {campusInstitutionalEvents,teacherDayId,validateTeacherDay,teacherDayWeek} from '/teacher-day.mjs';
-import {createAutosaver} from './autosave.js';
+import {createAutosaver,saveCalendarSnapshot} from './autosave.js';
 import {durationEnd,recalculatePeriods} from '/duration.mjs';
 import {proposedDates} from '/history-dates.mjs';
 import {historyCandidateKey,includedHistoryCandidate,existingHistoryEvent} from '/history-progress.mjs';
@@ -181,9 +181,9 @@ let converting=false;
 const autosaver=createAutosaver({
  isDirty:()=>!!record&&dirty,
  snapshot:()=>({version:record.version,catalogueRevision:record.currentCatalogueRevision,state}),
- write:async body=>{const response=await fetch('/api/calendars/'+calendarId,{method:'PUT',headers:{'Content-Type':'application/json','X-Dentec-Request':'1'},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw Object.assign(Error(data.error||'Não foi possível salvar.'),{status:response.status});return data;},
+ write:body=>saveCalendarSnapshot('/api/calendars/'+calendarId,body),
  onSaved:(saved,sent)=>{const unchanged=JSON.stringify(state)===JSON.stringify(sent.state);record.version=saved.version;record.updatedAt=saved.updatedAt;record.catalogueRevision=sent.catalogueRevision;record.readiness=saved.readiness;if(unchanged){state=saved.state;dirty=false;}},
- onStatus:(status,data)=>{const labels={saving:'Salvando alterações…',pending:'Última versão salva. Há novas alterações aguardando o próximo salvamento.',saved:'Salvo no sistema às '+new Date(data?.updatedAt||Date.now()).toLocaleTimeString('pt-BR')+'.',error:'Não foi possível salvar: '+(data?.message||'Confira a conexão.')+' Tentaremos novamente em até 30 segundos.',blocked:'Salvamento pausado: '+(data?.message||'Reabra o calendário para conferir a versão atual.')+' Suas alterações continuam nesta tela. Use Baixar cópia antes de reabrir.'};$('autosave-status').textContent=labels[status];$('autosave-status').className=['error','blocked'].includes(status)?'notice':'';$('server-save').disabled=status==='saving';$('server-save').textContent=status==='saving'?'Salvando…':'Salvar no sistema';$('server-save').title=labels[status];}
+ onStatus:(status,data)=>{const labels={saving:'Salvando alterações…',pending:'Última versão salva. Há novas alterações aguardando o próximo salvamento.',saved:'Salvo no sistema às '+new Date(data?.updatedAt||Date.now()).toLocaleTimeString('pt-BR')+'.',error:'Não foi possível salvar: '+(data?.message||'Confira a conexão.')+' Salvamento automático pausado. Use Baixar cópia para guardar suas alterações e Salvar no sistema para tentar novamente.',blocked:'Salvamento pausado: '+(data?.message||'Reabra o calendário para conferir a versão atual.')+' Suas alterações continuam nesta tela. Use Baixar cópia antes de reabrir.'};$('autosave-status').textContent=labels[status];$('autosave-status').className=['error','blocked'].includes(status)?'notice':'';$('server-save').disabled=status==='saving';$('server-save').textContent=status==='saving'?'Salvando…':'Salvar no sistema';$('server-save').title=labels[status];}
 });
 $('server-save').onclick=()=>{if(converting)return;if(!record){message('Abra um calendário registrado.',true);return;}autosaver.save(true);};
 setInterval(()=>{if(record&&!converting)autosaver.save();},30000);
