@@ -4,10 +4,7 @@ import {activityChecklist,migrateAssessmentEvents,assessmentCount} from '../src/
 import {suggestStages,suggestStageEnd,recalculateAssessmentStages,assessmentDayCounts} from '../src/stage-suggestions.mjs';
 import {evaluateCalendar} from '../src/evaluation.mjs';
 import {proensLayout} from '../web/print.mjs';
-import {createApp} from '../src/application.mjs';
-import {mkdtemp} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {createTestApp} from './helpers/database.mjs';
 import {recalculatePeriods} from '../src/duration.mjs';
 const state={year:2027,offer:'integrado',modalities:['integrado','graduacao'],regime:'semestral',assessmentStagesByModality:{integrado:4,graduacao:2},weekdays:[1,2,3,4,5],weekConfirmed:true,weekEvidence:'Ata',periods:[{id:'p',name:'1º semestre',start:'2027-03-01',end:'2027-03-12'},{id:'q',name:'2º semestre',start:'2027-04-01',end:'2027-04-14'}],events:[]};
 const scoped=m=>({...state,offer:m,modalities:[m]});
@@ -92,7 +89,7 @@ test('legacy shared stages retain dates and split into scoped records once',()=>
  assert.deepEqual(migrateAssessmentEvents({...state,events}),events);assert.equal(original.events.length,1);
 });
 test('server persists per-offer stages and rejects mismatched event scope',async t=>{
- const app=await createApp({directory:await mkdtemp(join(tmpdir(),'assessment-test-')),setupCode:'fixture'});
+ const app=await createTestApp(t,{setupCode:'fixture'});
  await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.server.close(r)));
  const base=`http://127.0.0.1:${app.server.address().port}`;let cookie='';
  const call=async(path,method='GET',body)=>{const r=await fetch(base+path,{method,headers:{'Content-Type':'application/json','X-Dentec-Request':'1',Cookie:cookie},body:body?JSON.stringify(body):undefined});if(r.headers.get('set-cookie'))cookie=r.headers.get('set-cookie').split(';')[0];return {status:r.status,data:await r.json()};};

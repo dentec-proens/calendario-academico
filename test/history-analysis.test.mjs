@@ -2,10 +2,7 @@ import {historyCandidateKey} from '../src/history-progress.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {analyzeHistory,suggestionsFromPages} from '../src/history-analysis.mjs';
-import {createApp} from '../src/application.mjs';
-import {mkdtemp} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {createTestApp} from './helpers/database.mjs';
 function fixture(text='24 FERIADO MUNICIPAL - Padroeiro'){
  const stream=`BT /F1 12 Tf 50 750 Td (${text}) Tj ET`;
  const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Kids [3 0 R] /Count 1 >>','<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`];
@@ -18,7 +15,7 @@ test('PDF text extraction preserves page evidence and never assigns dates or con
  const multi=suggestionsFromPages([{page:1,text:'10 11 12 13 Feira de cursos\n24 Feriado municipal\n24 Feriado municipal'}]);assert.equal(multi.candidates.length,2);assert.equal(multi.candidates[0].name,'Feriado municipal');assert.equal(multi.candidates[1].name,'Feira de cursos');
 });
 test('Campus uploads, analyzes and confirms its historical event, while foreign campus cannot read or analyze it',async t=>{
- const app=await createApp({directory:await mkdtemp(join(tmpdir(),'dentec-history-')),setupCode:'fixture'});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.server.close(r)));
+ const app=await createTestApp(t,{setupCode:'fixture'});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.server.close(r)));
  const base='http://127.0.0.1:'+app.server.address().port;
  async function call(path,method='GET',body,cookie=''){const response=await fetch(base+path,{method,headers:{'Content-Type':'application/json','X-Dentec-Request':'1',Cookie:cookie},body:body?JSON.stringify(body):undefined});return {status:response.status,data:await response.json(),cookie:response.headers.get('set-cookie')?.split(';')[0]};}
  await call('/api/setup','POST',{code:'fixture',name:'Admin ficticio',email:'fixture@ifpr.edu.br',password:'synthetic-test-only-password'});

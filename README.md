@@ -1,13 +1,14 @@
 # Assistente de Calendários Acadêmicos DENTEC/PROENS
 
-Versão 0.5 — contas locais, base institucional compartilhada e histórico por campus.
+Portal em React + Vite, com ícones Lucide. O editor de calendário continua em JavaScript modular, usando as mesmas APIs e dados.
 
 ## Iniciar sem confusão de pastas
 
-1. Extraia o pacote v05 em uma nova pasta.
-2. Na pasta extraída, dê dois cliques em INICIAR.cmd.
-3. Mantenha a janela aberta e acesse http://127.0.0.1:4173.
-4. Na primeira execução, copie o código exibido no terminal para o formulário de criação da administração. Cadastre seu nome, e-mail @ifpr.edu.br e uma senha LOCAL com pelo menos 12 caracteres. Não use a senha institucional do IFPR.
+1. Instale Node.js 24 LTS (mínimo aceito: 22.13) e execute `npm ci` na pasta que contém `package.json`.
+2. Copie `.env.example` para `.env` e configure `POSTGRES_URL` (ou `DATABASE_URL`) de um PostgreSQL de desenvolvimento, local ou Supabase. A credencial de aplicação precisa acessar as tabelas da instalação. O aplicativo usa PostgreSQL também fora da Vercel; sem a conexão ele informa o erro e não inicia.
+3. Em uma instalação nova, configure a credencial administrativa em `DENTEC_MIGRATION_DATABASE_URL`, informe em `DENTEC_DATABASE_ROLE` a role restrita de aplicação já provisionada e execute `npm run db:migrate` para preparar as tabelas e os acessos. O servidor não cria tabelas nem executa migrações com a credencial de aplicação. Para preservar uma instalação anterior, siga primeiro [a migração de dados](docs/postgresql.md).
+4. No Windows, dê dois cliques em INICIAR.cmd. Ele compila o portal e inicia o servidor. Mantenha a janela aberta e acesse http://127.0.0.1:4173.
+5. Enquanto não houver usuários, copie o código exibido no terminal para criar a primeira administração. Cadastre seu nome, e-mail @ifpr.edu.br e uma senha própria do aplicativo com pelo menos 12 caracteres. Não use a senha institucional do IFPR. Contas importadas mantêm suas senhas e dispensam esse cadastro.
 
 No VS Code, também é possível abrir a pasta que contém package.json e executar:
 
@@ -15,7 +16,16 @@ No VS Code, também é possível abrir a pasta que contém package.json e execut
 npm.cmd run dev
 ```
 
-Se houver conflito de porta, encerre a versão anterior com Ctrl+C. Não é necessário instalar dependências. Para verificar o código, execute `npm.cmd test` (18 testes).
+`npm run dev` compila o portal com Vite antes de iniciar o servidor e recompila os componentes quando forem alterados. Recarregue o navegador para ver as mudanças. Portal, API e editor continuam na mesma origem e porta; nenhuma configuração de cookies ou CORS é necessária. Encerre com Ctrl+C.
+
+Para executar uma versão compilada:
+
+```sh
+npm run build
+npm start
+```
+
+O build grava somente o portal em `dist/portal/`; esse diretório é gerado e não deve ser versionado. Após mudar os componentes, execute o build novamente antes de `npm start`. Sem o build, o portal mostra um erro 503 com a instrução para compilá-lo. Se houver conflito de porta, encerre a versão anterior com Ctrl+C. Para verificar o código, execute `npm test`.
 
 ## Usar como ADMIN
 
@@ -36,13 +46,17 @@ Se houver conflito de porta, encerre a versão anterior com Ctrl+C. Não é nece
 
 ## Onde os dados ficam
 
-O servidor cria a pasta data ao lado de server.mjs. Ela contém contas, calendários, versões e PDFs históricos. Os PDFs estão codificados no arquivo database.json nesta versão local. Pare o servidor antes de copiar a pasta data para backup. Guarde-a em local restrito; não a envie ao GitHub, não a inclua em pacotes de código e não a substitua ao atualizar o aplicativo.
+PostgreSQL é o banco de desenvolvimento e produção. Contas, sessões, campi, calendários, eventos, versões, pareceres, documentos e auditoria ficam em tabelas próprias no schema privado `dentec`. A conexão é configurada explicitamente e não depende da variável `VERCEL`. Não existe fallback para arquivo JSON. Computadores apontados para o mesmo banco compartilham a mesma instalação; utilize bancos separados para testes e dados institucionais.
 
-O código do primeiro ADMIN aparece apenas enquanto não há usuário cadastrado. Depois, use o login normal. As sessões expiram após oito horas e também terminam ao reiniciar o servidor. Ainda não há recuperação de senha nem redefinição pelo painel; guarde sua senha local.
+Em desenvolvimento, sem credenciais de Storage, os PDFs ficam no PostgreSQL. Ao configurar `SUPABASE_URL` e uma chave secreta do servidor, novos arquivos usam o bucket privado `dentec-private`; PDFs importados que já estavam no banco continuam disponíveis. Produção exige esse armazenamento privado. Não configure chaves secretas em `VITE_*` ou nos arquivos de `web/`.
+
+Arquivos JSON servem para importação/exportação e migração de instalações antigas. O servidor não abre nem modifica `data/database.json`. Preserve esse arquivo como cópia original até conferir a migração; copiar a pasta `data` deixou de ser o procedimento de backup da instalação em uso. Veja [migração, exportação e backup](docs/postgresql.md).
+
+O código do primeiro ADMIN aparece apenas enquanto não há usuário cadastrado. Depois, use o login normal. As sessões expiram após oito horas, permanecem no PostgreSQL entre reinícios e são revogadas pelas ações de segurança existentes. Recuperação de senha depende do remetente e chave de envio configurados no servidor; consulte [o procedimento de recuperação](docs/recuperacao-de-senha.md).
 
 ## O que esta versão não faz ainda
 
-- Não oferece acesso remoto: todos os usuários precisam acessar a mesma instalação. Copiar o ZIP para computadores diferentes não sincroniza suas bases.
+- A execução de desenvolvimento aceita conexões HTTP somente no próprio computador. Acesso remoto exige uma implantação HTTPS e a configuração de produção descrita em [implantação](docs/implantacao-vercel.md). Copiar o ZIP não copia o PostgreSQL nem os arquivos do Storage.
 - Não integra o login do IFPR. O domínio do e-mail não é verificado por um provedor institucional.
 - Não extrai automaticamente dados do PDF histórico. Ele pode ser baixado e consultado; as datas não são copiadas para o ano novo.
 - Não pesquisa nem confirma feriados municipais automaticamente. O PDF comercial de Foz recebido é uma pista, não prova oficial de aplicabilidade.

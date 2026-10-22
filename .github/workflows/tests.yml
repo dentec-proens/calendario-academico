@@ -28,4 +28,9 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
+      - run: npm run build
+      - name: Preparar PostgreSQL de teste
+        run: npm run db:migrate
+        env:
+          POSTGRES_URL: ${{ env.DENTEC_TEST_POSTGRES_URL }}
       - run: npm test

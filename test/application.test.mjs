@@ -1,9 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
-import {createApp} from '../src/application.mjs';
+import {createTestDatabase,createTestApp} from './helpers/database.mjs';
 import {initialCatalogue,inheritedEvents,campusNames} from '../src/institution.mjs';
 import {proensLayout} from '../web/print.mjs';
 
@@ -17,7 +14,7 @@ test('base 2027 includes Foz, national holidays, and correctly scoped institutio
 });
 
 test('accounts, campus isolation, history, propagation, versioning and persistence',async t=>{
- let rendered=0;const directory=await mkdtemp(join(tmpdir(),'dentec-test-'));const app=await createApp({directory,setupCode:'test-setup',pdfRenderer:async()=>{rendered++;return Buffer.from('%PDF-1.4 synthetic');}});await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>app.server.close(resolve)));
+ let rendered=0;const database=await createTestDatabase(t);const app=await createTestApp(t,{store:database.store,setupCode:'test-setup',pdfRenderer:async()=>{rendered++;return Buffer.from('%PDF-1.4 synthetic');}});await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>app.server.close(resolve)));
  const base=`http://127.0.0.1:${app.server.address().port}`;
  async function call(path,method='GET',body,cookie=''){const r=await fetch(base+path,{method,headers:{'Content-Type':'application/json','X-Dentec-Request':'1',Cookie:cookie},body:body?JSON.stringify(body):undefined});const data=await r.json();return {status:r.status,data,cookie:r.headers.get('set-cookie')?.split(';')[0]};}
  assert.equal((await call('/api/bootstrap')).status,401);
@@ -109,7 +106,7 @@ test('accounts, campus isolation, history, propagation, versioning and persisten
  assert.equal((await fetch(base+'/api/history/'+history.id,{headers:{Cookie:campus}})).status,200);
  assert.equal((await fetch(base+'/data/database.json')).status,404);
  assert.equal((await fetch(base+'/api/campuses',{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://external.example',Cookie:admin,'X-Dentec-Request':'1'},body:'{"name":"Bad"}'})).status,403);
- const restored=await createApp({directory});assert.equal(restored.store.read().histories.length,1);assert.equal(restored.store.read().calendars.find(item=>item.id===c.id).version,2);assert.equal(restored.store.read().calendars.find(item=>item.id===c.id).versions[0].institutionalEvents.length,before.institutionalEvents.length);
+ const restored=await createTestApp(t,{store:await database.reopen()});assert.equal((await restored.store.read({full:true})).histories.length,1);assert.equal((await restored.store.read({full:true})).calendars.find(item=>item.id===c.id).version,2);assert.equal((await restored.store.read({full:true})).calendars.find(item=>item.id===c.id).versions[0].institutionalEvents.length,before.institutionalEvents.length);
  const reviewPath='/api/reviews/'+c.id;
  assert.equal((await call(reviewPath,'GET',null,campus)).status,403);
  assert.equal((await call(reviewPath,'PUT',{},campus)).status,403);
@@ -126,17 +123,17 @@ test('accounts, campus isolation, history, propagation, versioning and persisten
  assert.equal((await call(reviewPath+'/export','POST',{revision:1},campus)).status,403);
  assert.equal((await call(reviewPath+'/export','POST',{revision:0},admin)).status,409);
  const exported=await call(reviewPath+'/export','POST',{revision:1},reviewer);assert.equal(exported.status,200);assert(exported.data.html.includes('ANÁLISE TÉCNICO-PEDAGÓGICA'));assert(exported.data.text.includes('Análise inicial'));
- const reviewReload=await createApp({directory});assert.equal(reviewReload.store.read().reviews[0].revision,1);
+ const reviewReload=await createTestApp(t,{store:await database.reopen()});assert.equal((await reviewReload.store.read({full:true})).reviews[0].revision,1);
  assert.equal((await call('/api/catalogue','POST',{...event,revision:2},admin)).status,200);
  assert.equal((await call(reviewPath,'GET',null,admin)).data.stale,true);
  assert.equal((await call(reviewPath+'/export','POST',{revision:1},admin)).status,409);
  assert.equal((await call(reviewPath,'PUT',{...reviewPayload,revision:1,catalogueRevision:3},reviewer)).status,409);
  assert.equal((await call(reviewPath,'PUT',{...reviewPayload,revision:1,catalogueRevision:3,acknowledgeStale:true},reviewer)).status,200);
- assert.equal(app.store.read().reviews[0].history.length,1);
+ assert.equal((await app.store.read({full:true})).reviews[0].history.length,1);
  const invitationUser={name:'Synthetic invited colleague',email:'invited-test@ifpr.edu.br',role:'CAMPUS',campusId:foz.id,loginMethod:'invite'};
  assert.equal((await call('/api/users','POST',invitationUser,campus)).status,403);
  const invited=await call('/api/users','POST',invitationUser,admin);assert.equal(invited.status,201);assert.equal(invited.data.active,false);assert(invited.data.inviteUrl.includes('/ativar#token='));
- const inviteToken=new URLSearchParams(new URL(invited.data.inviteUrl).hash.slice(1)).get('token');assert(!JSON.stringify(app.store.read()).includes(inviteToken));
+ const inviteToken=new URLSearchParams(new URL(invited.data.inviteUrl).hash.slice(1)).get('token');assert(!JSON.stringify((await app.store.read({full:true}))).includes(inviteToken));
  assert.equal((await call('/api/login','POST',{email:invitationUser.email,password:'synthetic-test-only-password'})).status,401);
  assert.equal((await call('/api/invitations/check','POST',{token:inviteToken})).data.email,invitationUser.email);
  const replacement=await call('/api/users/'+invited.data.id+'/invitation','POST',{},admin);assert.equal(replacement.status,200);

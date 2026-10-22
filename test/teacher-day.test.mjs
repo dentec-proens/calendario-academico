@@ -3,10 +3,7 @@ import assert from 'node:assert/strict';
 import {initialCatalogue,inheritedEvents} from '../src/institution.mjs';
 import {campusInstitutionalEvents,teacherDayId,validateTeacherDay,teacherDayWeek} from '../src/teacher-day.mjs';
 import {durationEnd} from '../src/duration.mjs';
-import {createApp} from '../src/application.mjs';
-import {mkdtemp} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {createTestApp} from './helpers/database.mjs';
 
 test('campus may choose every day of the Monday-to-Sunday week containing October 15',()=>{
  assert.deepEqual(teacherDayWeek(2027),{start:'2027-10-11',end:'2027-10-17'});
@@ -35,7 +32,7 @@ test('only teacher day moves; original date is restored and other calendars stay
 
 test('server saves teacher day, snapshots it for PDF, restores it and rejects protected event tampering',async t=>{
  let printed;
- const app=await createApp({directory:await mkdtemp(join(tmpdir(),'teacher-day-')),setupCode:'fixture',pdfRenderer:async(record,events)=>{printed=events;return Buffer.from('%PDF-fixture');}});
+ const app=await createTestApp(t,{setupCode:'fixture',pdfRenderer:async(record,events)=>{printed=events;return Buffer.from('%PDF-fixture');}});
  await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.server.close(r)));
  const base=`http://127.0.0.1:${app.server.address().port}`;let cookie='';
  const call=async(path,method='GET',body)=>{const r=await fetch(base+path,{method,headers:{'Content-Type':'application/json','X-Dentec-Request':'1',Cookie:cookie},body:body?JSON.stringify(body):undefined});if(r.headers.get('set-cookie'))cookie=r.headers.get('set-cookie').split(';')[0];return {status:r.status,data:r.headers.get('content-type')?.includes('json')?await r.json():await r.text()};};
@@ -57,5 +54,5 @@ test('server saves teacher day, snapshots it for PDF, restores it and rejects pr
  assert.equal((await save({...loaded.state,events:[{id:'inst:national-0',name:'Tamper',start:'2027-01-02',end:'2027-01-02',kind:'exclude',evidence:'Fixture'}]},loaded.version)).status,400);
  saved=await save({...loaded.state,teacherDayDate:null},loaded.version);assert.equal(saved.status,200);
  loaded=(await call(path)).data;assert.equal(loaded.institutionalEvents.find(e=>e.id===teacherDayId).start,'2027-10-15');
- assert.equal((await app.store.read()).catalogue.events.find(e=>'inst:'+e.id===teacherDayId).start,'2027-10-15');
+ assert.equal((await app.store.read({full:true})).catalogue.events.find(e=>'inst:'+e.id===teacherDayId).start,'2027-10-15');
 });

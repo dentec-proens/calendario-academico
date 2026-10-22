@@ -1,36 +1,48 @@
 # Implantação: GitHub e Vercel
 
-Status: aplicativo local validado; adaptação para a Vercel ainda pendente. Não importar a versão local como se já fosse uma aplicação de produção compatível.
+O portal usa React, Vite e Lucide. Portal, editor e API são servidos pelo backend Node. Desenvolvimento e produção usam PostgreSQL; publicar exige preparar e conferir o banco de destino e o armazenamento privado de PDFs.
 
-## Repositório
+## Repositório e build
 
-Repositório sugerido: `dentec-calendarios`, privado, na conta escolhida pela responsável. Versionar código, testes e documentação. Excluir banco, PDFs enviados, configurações secretas e logs. Os testes serão executados pelo GitHub Actions em cada envio e pull request.
+Versionar código, testes e documentação. Excluir banco, PDFs enviados, configurações secretas e logs. `npm ci` instala as dependências e `npm run build` gera `dist/portal/portal.html`, os arquivos JavaScript/CSS com hash e o manifesto Vite. A pasta `dist/` não é versionada.
 
-## Adaptações necessárias antes de publicar
+`vercel.json` mantém explicitamente o preset `node` e executa `npm run build`. Os arquivos de `dist/portal/**` são incluídos no pacote de `server.mjs`. O servidor atende `/` e `/assets/*`, preservando `/api/*`, `/editor`, `/ativar`, `/recuperar-senha` e `/logs`. O backend Node atende autenticação, autorização e dados; o diretório gerado pelo Vite contém apenas o portal. A política de conteúdo exige scripts e estilos da própria origem.
 
-1. Persistência: substituir o arquivo JSON local por banco transacional externo. As leituras devem ver alterações de outras instâncias; atualizações devem manter as verificações de versão e o isolamento por campus. Não usar `/tmp` como banco permanente.
-2. Arquivos: guardar PDFs em armazenamento privado com autorização no download. O upload atual de até 8 MB em JSON/base64 precisa ser substituído por envio direto autorizado ou mecanismo compatível com os limites da plataforma. Não tornar documentos públicos para contornar o limite de upload.
-3. Autenticação: persistir sessões, limites de tentativas e estados temporários de autenticação em serviço compartilhado. O primeiro ADMIN precisa de segredo de instalação protegido. Manter convites de uso único, expiração, autenticação e autorização no servidor.
-4. Servidor: disponibilizar o manipulador HTTP como função, configurar roteamento dos arquivos do aplicativo e validar a origem pública HTTPS. Não depender de porta local ou de processo permanentemente ativo.
-5. PDF: preparar renderizador compatível com a hospedagem, preservando logo, cores e layout PROENS. O Chrome instalado no Windows não existe na Vercel.
-6. Dados existentes: planejar importação protegida separada do GitHub, após escolha do banco e armazenamento. Não enviar `data/database.json` ao repositório.
-7. Validação de publicação: verificar login, convites, separação de campi, revisão concorrente, upload/download, PDF e persistência entre duas publicações. Configurar backup e testar restauração antes do uso institucional.
+## Banco e dados existentes
 
-A Vercel hospeda o aplicativo; o banco e os arquivos persistentes precisam de serviços associados. A escolha de serviços, contas, regiões e planos deve ser definida antes de configurar credenciais ou contratar recursos.
+O servidor usa `POSTGRES_URL` ou `DATABASE_URL`, tanto localmente quanto na Vercel. O schema privado `dentec` contém tabelas por entidade. Contas, sessões e limites de tentativas são compartilhados entre instâncias. Alterações usam transações e preservam as verificações de versão e isolamento por campus.
 
-Referências oficiais consultadas:
-- https://vercel.com/docs/functions/limitations
-- https://vercel.com/docs/functions/runtimes/node-js
-- https://vercel.com/docs/storage
+Execute `npm run db:migrate` antes da publicação, com uma credencial separada em `DENTEC_MIGRATION_DATABASE_URL` que possa preparar o schema e ler o legado quando necessário. Informe `DENTEC_DATABASE_ROLE` com o nome da role de aplicação já provisionada para configurar os acessos e políticas. A credencial usada pelo servidor deve ser restrita aos acessos de aplicação e às políticas de RLS. O servidor não executa DDL e responde 503 se o banco não estiver preparado. Não use armazenamento temporário da plataforma como banco permanente.
 
+Para migrar a antiga linha `dentec_private.app_state` ou importar `data/database.json`, consulte [o procedimento de preservação](postgresql.md). Originais não são apagados. Pare escritores antigos durante o corte e confira o resultado antes de liberar acesso. Não execute a aplicação antiga simultaneamente após a migração: ela continuaria escrevendo no estado legado.
 
-## Implementação em preparação
-A branch `prepara-vercel` acrescenta PostgreSQL privado com atualizações transacionais, sessões com tokens armazenados somente como hash, limite compartilhado por conta nas tentativas de login, upload direto para bucket privado Supabase e geração de PDF com Chromium para Linux. A estrutura JSON versionada é mantida em uma linha PostgreSQL nesta transição; isso limita a escalabilidade e deve evoluir para tabelas por entidade antes de carga institucional elevada.
+O schema da aplicação é privado, sem acesso por `PUBLIC`, `anon`, `authenticated` ou `service_role` da API Supabase, e com RLS para a role restrita do backend. O frontend fala com a API Node e nunca recebe a credencial PostgreSQL nem chaves secretas do Storage.
 
-Variáveis em Production: POSTGRES_URL, NEXT_PUBLIC_SUPABASE_URL (ou SUPABASE_URL), SUPABASE_SECRET_KEY (ou SUPABASE_SERVICE_ROLE_KEY), DENTEC_SETUP_EMAIL e DENTEC_SETUP_CODE (segredo de pelo menos 32 caracteres). O e-mail inicial precisa ser institucional. Sem a configuração completa, o servidor responde 503 e não permite criar contas. As chaves fornecidas pela integração permanecem somente no servidor. Login Google permanece desativado na Vercel; senha e convite são os meios previstos.
+## Variáveis de produção
 
-O bucket `dentec-private` é criado como privado. Uploads recebem autorização temporária vinculada ao usuário e ao destino; o conteúdo PDF é verificado antes de registrar o documento. Downloads são autorizados no servidor e usam links de um minuto. Não há acesso público ao banco via API Supabase: o estado fica no schema privado `dentec_private`, sem permissões PUBLIC e com RLS habilitado.
+- `POSTGRES_URL` (ou `DATABASE_URL`): credencial restrita de aplicação. Na Vercel/serverless, use a conexão Transaction pooler do Supabase; o backend não usa prepared statements nomeados.
+- `SUPABASE_URL` (ou `NEXT_PUBLIC_SUPABASE_URL`) e `SUPABASE_SECRET_KEY` (ou `SUPABASE_SERVICE_ROLE_KEY`): somente servidor.
+- `DENTEC_SETUP_EMAIL`: e-mail institucional da primeira administração.
+- `DENTEC_SETUP_CODE`: segredo de pelo menos 32 caracteres.
+- `DENTEC_PUBLIC_URL`: origem HTTPS pública estável; na ausência, a Vercel fornece o domínio de produção ou de deployment.
+- `RESEND_API_KEY` e `DENTEC_MAIL_FROM`: necessários para o envio da recuperação de senha.
 
-Não houve importação dos dados locais. O banco online começa vazio. A primeira administração deve ser criada pela responsável após configurar o segredo de instalação. Backups, migração dos dados locais, limpeza periódica de uploads não concluídos e PDFs grandes de exportação ainda precisam de procedimento operacional. Não há promessa de disponibilidade permanente no plano gratuito.
+Sem a configuração obrigatória completa, o servidor responde 503 e não permite criar contas. Login Google permanece desativado na Vercel; senha e convite mantêm os meios previstos. O segredo de instalação não recria uma administração se o banco já tiver contas.
 
-Testes locais não executam PostgreSQL real nem Chromium Linux. O workflow GitHub usa PostgreSQL 16 descartável e executa também o PDF em Linux. Publicação definitiva exige essas verificações e teste no ambiente hospedado.
+## Documentos e PDF
+
+O bucket `dentec-private` precisa ser privado. Uploads recebem autorização temporária vinculada ao usuário e ao destino; o conteúdo PDF é verificado antes de registrar o documento. Downloads são autorizados no servidor e usam links de um minuto. Não torne documentos públicos para contornar limites de upload.
+
+A validação da privacidade do bucket ocorre na operação com arquivos. Falhas do Storage não bloqueiam login ou edição de calendários quando o PostgreSQL está disponível. PDFs antigos importados continuam acessíveis no banco até uma migração de arquivos explícita; novos uploads em produção usam o Storage. A exportação de PDF usa Chromium compatível com Linux da hospedagem.
+
+## Verificação antes de liberar o uso
+
+1. Executar build e suíte de testes; os testes locais usam PGlite descartável com SQL real. A integração PostgreSQL externa usa somente um banco de testes explícito.
+2. Conferir migração, contas existentes, calendários e snapshots anteriores; validar duas instâncias concorrentes e conflitos de versão.
+3. Na implantação, verificar login, convites, recuperação, separação de campi, upload/download, geração de PDF e persistência após nova publicação.
+4. Conferir carregamento de JavaScript/CSS e navegação portal → editor → portal. A ausência do build resulta em 503 com instrução para compilá-lo.
+5. Configurar backup de PostgreSQL e objetos privados e testar restauração antes do uso institucional. Definir também retenção e limpeza de uploads incompletos.
+
+As instruções não publicam a aplicação nem contratam recursos. O plano gratuito não oferece garantia de disponibilidade permanente.
+
+Referências: [conexões PostgreSQL do Supabase](https://supabase.com/docs/guides/database/connecting-to-postgres), [limites de Functions](https://vercel.com/docs/functions/limitations) e [runtime Node.js](https://vercel.com/docs/functions/runtimes/node-js).

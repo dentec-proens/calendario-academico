@@ -1,5 +1,7 @@
 # Históricos de calendário em tabela separada
 
+Este documento registra a transição anterior em JSONB. O armazenamento atual usa entidades relacionais no schema `dentec`; veja [PostgreSQL e migração](postgresql.md). O leitor das versões legadas está em `src/database-transfer.mjs` e só é usado na importação.
+
 Esta alteração não exclui calendários nem versões iguais. Cada posição original
 continua existindo em `dentec_private.calendar_versions`, com o JSON completo,
 o identificador do calendário e a posição original. Não há deduplicação automática.
@@ -36,7 +38,7 @@ Novos snapshots podem ter sido acrescentados após o backup.
 
 Para voltar ao formato embutido, recompor **o estado atual** com os snapshots
 arquivados sob a mesma transação e bloqueio usados na migração. O SQL de
-recomposição está em `completeCalendarsSql`, em `src/postgres-history.mjs`.
+recomposição daquela versão estava em `completeCalendarsSql`. A migração atual recompõe e confere as posições em `readLegacyPostgres`, em `src/database-transfer.mjs`.
 Não restaurar cegamente o backup inicial: isso descartaria edições posteriores.
 Manter tabelas e backup até validação e autorização expressa para limpeza.
 

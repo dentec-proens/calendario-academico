@@ -1,5 +1,7 @@
 # Recuperação do tráfego de dados — 19/10/2026
 
+Registro histórico da recuperação de 19/10. A persistência descrita abaixo foi substituída pela migração relacional; para operação e backup atuais, consulte [PostgreSQL](postgresql.md). As cópias antigas permanecem preservadas para conferência.
+
 A indisponibilidade foi causada pela restrição de quota de egress da organização
 Supabase. O processo de inicialização também dependia da disponibilidade do
 Storage, fazendo uma falha de PDFs impedir a abertura do sistema inteiro.

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {requestRecovery,completeRecovery,checkRecovery,manualRecovery} from '../src/password-recovery.mjs';
 import {recoveryMailer} from '../src/recovery-mail.mjs';
-import {createApp} from '../src/application.mjs';
+import {createTestApp} from './helpers/database.mjs';
 function fixture(){const db={users:[{id:'admin',email:'admin@ifpr.edu.br',active:true,role:'ADMIN',hash:'old',salt:'old'},{id:'disabled',email:'disabled@ifpr.edu.br',active:false,hash:'old'}],sessions:[{userId:'admin'},{userId:'other'}],invitations:[{userId:'admin',revoked:false}],audit:[],campuses:[{name:'Reitoria'}],calendars:[{id:'keep'}]};return {db,store:{read:async()=>structuredClone(db),change:async fn=>fn(db)}};}
 test('recovery expires, is single-use, revokes sessions and preserves account scope and calendars',async()=>{
  const {db,store}=fixture();let message;await requestRecovery(store,'ADMIN@ifpr.edu.br','https://calendar.example',async m=>message=m,1000);
@@ -37,8 +37,8 @@ test('manual recovery is valid for exactly 24 hours and remains single-use',()=>
  completeRecovery(db,token,{hash:'new',salt:'new'},now+86_400_000-1);assert.throws(()=>checkRecovery(db,token,now+86_400_000-1));
 });
 test('HTTP recovery rejects replay, invalid passwords and cross-origin calls; old login stops working',async t=>{
- const {store}=fixture();await store.change(db=>{db.users=[];});let sent;
- const app=await createApp({store,setupCode:'synthetic',recoveryMail:async m=>sent=m});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.server.close(r)));
+ let sent;
+ const app=await createTestApp(t,{setupCode:'synthetic',recoveryMail:async m=>sent=m}),{store}=app;await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.server.close(r)));
  const base='http://127.0.0.1:'+app.server.address().port;
  const call=async(path,body,headers={})=>{const r=await fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json','X-Dentec-Request':'1',...headers},body:JSON.stringify(body)});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')};};
  const email='admin@ifpr.edu.br',password='synthetic-password-old';await call('/api/setup',{code:'synthetic',name:'Admin test',email,password});
@@ -54,5 +54,7 @@ test('HTTP recovery rejects replay, invalid passwords and cross-origin calls; ol
  assert.equal((await call('/api/password/reset',{token,password:'synthetic-password-new'})).status,400);
  assert.equal((await call('/api/login',{email,password})).status,401);assert.equal((await call('/api/login',{email,password:'synthetic-password-new'})).status,200);
  const status=await fetch(base+'/api/status',{headers:{Cookie:login.cookie.split(';')[0]}});assert.equal((await status.json()).user,null);
- assert.match(await (await fetch(base+'/')).text(),/Recuperar senha/);
+ const recoveryPage=await fetch(base+'/recuperar-senha');assert.equal(recoveryPage.status,200);
+ const recoveryHtml=await recoveryPage.text();assert.match(recoveryHtml,/Recuperar senha/);assert.match(recoveryHtml,/id="reset-form"/);
+ assert.equal((await fetch(base+'/recover.js')).status,200);
 });

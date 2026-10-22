@@ -1,52 +1,86 @@
 import {readFile} from 'node:fs/promises';
 import {rootCertificates} from 'node:tls';
+import {isDeepStrictEqual} from 'node:util';
 import {initialCatalogue,campusNames} from './institution.mjs';
-import {selectState,statePatches,patchState} from './postgres-projection.mjs';
-import {prepareHistoryTables,archiveInlineHistory} from './postgres-history.mjs';
+import {relationalStatements} from './relational-schema.mjs';
+import {readRelational,writeRelational,changedLockKeys} from './relational-mapper.mjs';
 
-// Transitional storage: retain the versioned local document structure, but
-// serialize writes in PostgreSQL so independent server instances cannot lose updates.
-export async function openPostgresStore(connectionString,{pool:providedPool}={}){
- const {Pool}=providedPool?{}:await import('pg');
- let ssl;
- if(!providedPool){const endpoint=new URL(connectionString);if(endpoint.hostname.endsWith('.supabase.co')||endpoint.hostname.endsWith('.pooler.supabase.com')){for(const key of ['sslmode','sslrootcert','sslcert','sslkey','uselibpqcompat','ssl'])endpoint.searchParams.delete(key);connectionString=endpoint.toString();ssl={rejectUnauthorized:true,ca:[...rootCertificates,await readFile(new URL('./supabase-ca.crt',import.meta.url),'utf8')]};}}
- const pool=providedPool||new Pool({connectionString,ssl,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:10000,allowExitOnIdle:true});
+const schemaError=()=>Object.assign(Error('Esquema PostgreSQL ausente ou incompatível. Execute npm run db:migrate antes de iniciar o aplicativo.'),{code:'DENTEC_SCHEMA'});
+export async function createPostgresPool(connectionString){
+ if(!connectionString)throw Object.assign(Error('Configure POSTGRES_URL ou DATABASE_URL para usar o PostgreSQL.'),{code:'DENTEC_CONFIG'});
+ const {Pool}=await import('pg');let ssl;
+ const endpoint=new URL(connectionString);
+ if(endpoint.hostname.endsWith('.supabase.co')||endpoint.hostname.endsWith('.pooler.supabase.com')){
+  for(const key of ['sslmode','sslrootcert','sslcert','sslkey','uselibpqcompat','ssl'])endpoint.searchParams.delete(key);
+  connectionString=endpoint.toString();ssl={rejectUnauthorized:true,ca:[...rootCertificates,await readFile(new URL('./supabase-ca.crt',import.meta.url),'utf8')]};
+ }
+ const pool=new Pool({connectionString,ssl,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:10000,allowExitOnIdle:true});
+ pool.on('error',()=>console.error('DENTEC_POSTGRES_IDLE_CONNECTION_ERROR'));
+ return pool;
+}
+export async function initializeSchema(pool){
+ const client=await pool.connect();
  try{
-  const exists=await pool.query("SELECT to_regclass('dentec_private.app_state') AS state");
-  if(!exists.rows[0]?.state){
-  await pool.query('CREATE SCHEMA IF NOT EXISTS dentec_private');
-  await pool.query('REVOKE ALL ON SCHEMA dentec_private FROM PUBLIC');
-  await pool.query('CREATE TABLE IF NOT EXISTS dentec_private.app_state (id integer PRIMARY KEY CHECK (id = 1), payload jsonb NOT NULL)');
-  await pool.query('REVOKE ALL ON dentec_private.app_state FROM PUBLIC');
-  await pool.query('ALTER TABLE dentec_private.app_state ENABLE ROW LEVEL SECURITY');
-  const initial={users:[],campuses:campusNames.map((name,i)=>({id:`campus-${i+1}`,name})),calendars:[],histories:[],audit:[],catalogue:initialCatalogue()};
-  await pool.query('INSERT INTO dentec_private.app_state (id,payload) VALUES (1,$1::jsonb) ON CONFLICT (id) DO NOTHING',[JSON.stringify(initial)]);
+  await client.query('BEGIN');
+  await client.query("SELECT pg_advisory_xact_lock(hashtext('dentec:schema:v1'))");
+  for(const sql of relationalStatements)await client.query(sql);
+  await client.query('COMMIT');
+ }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
+}
+const seedState=()=>({users:[],campuses:campusNames.map((name,i)=>({id:`campus-${i+1}`,name})),calendars:[],histories:[],audit:[],catalogue:initialCatalogue()});
+
+// No runtime DDL or fallback backend: schema creation and imports are explicit.
+// Each transaction reads only its requested domain; persisted deltas touch the
+// affected entity rows. Session writes do not lock calendars or their history.
+export async function openPostgresStore(connectionString,{pool:providedPool,initialize=false,seed=true}={}){
+ const pool=providedPool||await createPostgresPool(connectionString);
+ try{
+  if(initialize)await initializeSchema(pool);
+  const exists=await pool.query("SELECT to_regclass('dentec.schema_migrations') AS state");
+  if(!exists.rows[0]?.state)throw schemaError();
+  const marker=await pool.query('SELECT version FROM dentec.schema_migrations ORDER BY version DESC LIMIT 1');
+  if(marker.rows[0]?.version!==1)throw schemaError();
+ }catch(error){if(!providedPool)await pool.end();throw error;}
+ const transact=async(fn,{readOnly=false,retries=8}={})=>{
+  for(let attempt=0;;attempt++){
+   const client=await pool.connect();
+   try{
+    await client.query(readOnly?'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY':'BEGIN ISOLATION LEVEL SERIALIZABLE');
+    await client.query("SET LOCAL lock_timeout = '10s'");await client.query("SET LOCAL statement_timeout = '25s'");
+    const result=await fn(client);await client.query('COMMIT');return result;
+   }catch(error){
+    await client.query('ROLLBACK').catch(()=>{});
+    if(!readOnly&&['40001','40P01'].includes(error.code)&&attempt<retries){await new Promise(resolve=>setTimeout(resolve,Math.min(10*2**attempt,150)));continue;}
+    throw error;
+   }finally{client.release();}
   }
-  await prepareHistoryTables(pool);
-  const migration=await pool.connect();try{
-   await migration.query('BEGIN');await migration.query("SET LOCAL lock_timeout = '10s'");await migration.query("SET LOCAL statement_timeout = '25s'");
-   await migration.query('SELECT id FROM dentec_private.app_state WHERE id=1 FOR UPDATE');
-   await archiveInlineHistory(migration);await migration.query('COMMIT');
-  }catch(e){await migration.query('ROLLBACK').catch(()=>{});throw e;}finally{migration.release();}
- }catch(e){if(!providedPool)await pool.end();throw e;}
- return {
-  async read(options){const query=selectState({...options,archived:true});const {rows}=await pool.query(query.text,query.values);if(!rows.length)throw Error('Base indisponível.');return rows[0].payload;},
-  async change(fn,{fields,calendarId}={}){const client=await pool.connect();try{
-   await client.query('BEGIN');await client.query("SET LOCAL lock_timeout = '10s'");await client.query("SET LOCAL statement_timeout = '25s'");
-   const query=selectState({lock:true,fields,calendarId});const {rows}=await client.query(query.text,query.values);if(!rows.length)throw Error('Base indisponível.');
-   const before=rows[0].payload,next=structuredClone(before),result=await fn(next);
-   // Existing snapshots remain in PostgreSQL. Reject structural replacement of
-   // calendars rather than accidentally writing projected history over full data.
-   if(before.calendars&&(next.calendars?.length<before.calendars.length||before.calendars.some((c,i)=>next.calendars?.[i]?.id!==c.id)))throw Error('Os calendários existentes devem ser preservados.');
-   const patches=statePatches(before,next);
-   if(calendarId)for(const patch of patches)if(patch.path[0]==='calendars'){
-    if(patch.path.length<2||rows[0].calendar_positions[Number(patch.path[1])]===undefined)throw Error('Alteração fora do calendário selecionado.');
-    patch.path[1]=String(rows[0].calendar_positions[Number(patch.path[1])]);
-   }
-   for(let i=0;i<patches.length;i+=30){const patch=patchState(patches.slice(i,i+30));await client.query(patch.text,patch.values);}
-   if(patches.some(p=>p.path[0]==='calendars'))await archiveInlineHistory(client);
-   await client.query('COMMIT');return result;
-  }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}finally{client.release();}},
-  close:()=>pool.end()
  };
+ const store={
+  read:options=>transact(async client=>(await readRelational(client,options)).state,{readOnly:true}),
+  exportState:()=>transact(async client=>(await readRelational(client,{full:true})).state,{readOnly:true}),
+  async importState(state){
+   if(!state||typeof state!=='object'||Array.isArray(state))throw Error('Documento de importação inválido.');
+   return transact(async client=>{
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('dentec:import'))");
+    const before=await readRelational(client,{full:true});
+    if(Object.keys(before.state).length)throw Error('A importação exige um banco vazio para preservar os dados existentes.');
+    await writeRelational(client,{},state);
+    const after=(await readRelational(client,{full:true})).state;
+    if(!isDeepStrictEqual(after,state))throw Error('Conferência da importação falhou. Nenhum dado foi substituído.');
+    return after;
+   });
+  },
+  change:(fn,options={})=>transact(async client=>{
+   const {state:before,keys}=await readRelational(client,options),next=structuredClone(before),result=await fn(next);
+   for(const key of changedLockKeys(before,next,options))await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',['dentec:'+key]);
+   if(options.calendarId&&next.calendars?.some(calendar=>calendar.id!==options.calendarId))throw Error('Alteração fora do calendário selecionado.');
+   await writeRelational(client,before,next,keys,options);return result;
+  }),
+  close:()=>pool.end?.()
+ };
+ if(initialize&&seed){
+  const fields=await pool.query('SELECT name FROM dentec.root_fields LIMIT 1');
+  if(!fields.rows.length)await store.importState(seedState());
+ }
+ return store;
 }

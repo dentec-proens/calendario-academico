@@ -20,11 +20,11 @@ Enviar PDF disponibiliza o documento para consulta; NÃO extrai automaticamente 
 Nenhum documento é registrado automaticamente nesta atualização: a equipe seleciona o arquivo e informa explicitamente o ano de aplicação.
 
 ## Preservação e continuidade
-Os PDFs e metadados ficam persistidos em `data/database.json`, juntamente com os dados da instalação. Reiniciar o aplicativo não os apaga. A instalação de atualizações preserva `data` e `.env`.
+Metadados e versões ficam no PostgreSQL. Em desenvolvimento os PDFs podem permanecer no banco; com Storage configurado, novos arquivos ficam no bucket privado `dentec-private`. PDFs importados de instalações anteriores continuam disponíveis. Reiniciar o aplicativo não apaga os registros.
 
-Para cópia completa: encerre o servidor, copie a pasta `data` inteira para um local de backup protegido e reinicie o servidor. Guarde também a versão do aplicativo correspondente. Faça cópias periódicas e antes de trocar de computador. O banco contém contas e dados institucionais e deve permanecer com pessoas autorizadas. Para restaurar, com o servidor parado e após preservar a instalação atual, recoloque a pasta `data` da cópia na instalação compatível. Não misture bancos de duas instalações.
+Para cópia completa, mantenha backup do PostgreSQL e dos objetos privados do Storage, além da versão correspondente do aplicativo. Faça cópias periódicas e teste a restauração. O banco contém contas e dados institucionais e deve permanecer com pessoas autorizadas. Copiar a pasta `data` preserva apenas a base JSON antiga, que o servidor não utiliza mais. Consulte [migração e backup](postgresql.md); não misture bancos de duas instalações.
 
-Esta versão continua local: a disponibilidade pela internet, armazenamento de produção e backups automáticos ainda dependem de implantação. Persistência local não é garantia de disponibilidade permanente ou proteção contra perda do computador.
+A disponibilidade pela internet e os backups automáticos dependem da configuração da implantação. Uma conexão PostgreSQL válida não é, por si só, garantia de disponibilidade permanente ou de backup.
 
 ## Desenvolvimento
 GET /api/documents: metadados, sem conteúdo dos arquivos; rascunhos exclusivos do ADMIN.
@@ -32,6 +32,6 @@ POST /api/documents: upload ADMIN, versão crescente por ano/tipo, conteúdo e S
 GET /api/documents/:id: download autenticado; campi somente documentos já publicados.
 POST /api/documents/:id/status: ADMIN, revisão otimista e confirmação de aplicabilidade para vigência; arquivamento preserva arquivo.
 
-Persistência utiliza a fila transacional existente do armazenamento local. Campos opcionais permitem abrir bases anteriores sem sobrescrever dados. A biblioteca no banco JSON é apropriada para esta instalação pequena; na implantação de produção, migrar arquivos para armazenamento dedicado e metadados para banco transacional, com backups e testes de restauração.
+Persistência utiliza transações PostgreSQL com entidades separadas, preservando a revisão otimista e os snapshots. JSON é formato de importação/exportação; nenhuma gravação operacional usa `data/database.json`. Migrações são comandos explícitos, separados da inicialização do servidor.
 
 Verificação: testes de autorização, publicação, conflitos de revisão, separação por ano, preservação dos PDFs, referências históricas e reabertura do armazenamento.

@@ -1,3 +1,4 @@
+import {portalAsset,portalBuildDirectory} from './portal-assets.mjs';
 import {validateTeacherDay} from './teacher-day.mjs';
 import {updateConclusion} from './review-conclusion.mjs';
 import {recalculateAssessmentStages} from './stage-suggestions.mjs';
@@ -26,7 +27,6 @@ import {renderCalendarPdf} from './pdf.mjs';
 import {readFile} from 'node:fs/promises';
 import {randomBytes,randomUUID,scrypt as scryptCallback,timingSafeEqual,createHash} from 'node:crypto';
 import {promisify} from 'node:util';
-import {openStore} from './store.mjs';
 import {inheritedEvents} from './institution.mjs';
 import {datesBetween} from './calendar.mjs';
 const scrypt=promisify(scryptCallback);
@@ -50,10 +50,11 @@ function normalize(s){
  for(let i=0;i<s.periods.length;i++)for(let j=i+1;j<s.periods.length;j++)if(s.periods[i].start<=s.periods[j].end&&s.periods[i].end>=s.periods[j].start)fail('Períodos sobrepostos.');
  return {schemaVersion:1,secondSemesterIntake:s.secondSemesterIntake,teacherDayDate:validateTeacherDay(s.teacherDayDate,s.year),ignoredHistory:Array.isArray(s.ignoredHistory)?s.ignoredHistory.filter(k=>typeof k==='string'&&k.length<=3000).slice(0,2000):[],teacherVacations:s.teacherVacations?(s.teacherVacations.firstStart?{firstStart:s.teacherVacations.firstStart,firstEnd:s.teacherVacations.firstEnd,secondStart:s.teacherVacations.secondStart,secondEnd:s.teacherVacations.secondEnd,thirdStart:s.teacherVacations.thirdStart,thirdEnd:s.teacherVacations.thirdEnd,evidence:s.teacherVacations.evidence}:{julyStart:s.teacherVacations.julyStart,evidence:s.teacherVacations.evidence}):undefined,modalities:calendarModalities(s),assessmentStagesByModality:s.assessmentStagesByModality,assessmentStages:s.assessmentStages===undefined?undefined:Number(s.assessmentStages),campus:String(s.campus||''),year:s.year,offer:s.offer,regime:s.regime,weekdays:s.weekdays,weekEvidence:String(s.weekEvidence||'').slice(0,240),weekConfirmed:s.weekConfirmed,periods:s.periods.map(({id,name,start,end,targetDays})=>({id,name,start,end,...(targetDays===undefined?{}:{targetDays})})),events:s.events.map(e=>({assessmentAutoStart:e.assessmentAutoStart,hours:e.hours,historicalSource:e.historicalSource?{historyId:e.historicalSource.historyId,page:e.historicalSource.page,candidateKey:e.historicalSource.candidateKey}:undefined,modalities:e.modalities,requirementId:e.requirementId||undefined,id:e.id,name:e.name,start:e.start,end:e.end,kind:e.kind,evidence:e.evidence,category:eventCategory(e)}))};
 }
-export async function createApp({directory,setupEmail=null,files=null,store:providedStore=null,setupCode=randomBytes(16).toString('hex'),pdfRenderer=renderCalendarPdf,googleAuth=createGoogleAuth(null),publicOrigin=null,recoveryMail=null}){
- const store=providedStore||await openStore(directory),sessions=persistentSessions(store);
+export async function createApp({setupEmail=null,files=null,store,setupCode=randomBytes(16).toString('hex'),pdfRenderer=renderCalendarPdf,googleAuth=createGoogleAuth(null),publicOrigin=null,recoveryMail=null,portalDirectory=portalBuildDirectory}={}){
+ if(!store?.read||!store?.change)throw Error('PostgreSQL obrigatório. Configure POSTGRES_URL e execute npm run db:migrate antes de iniciar.');
+ const sessions=persistentSessions(store);
  await store.change(updateCampuses,{fields:['campuses']});
- const routes=new Map([['/',['web/portal.html','text/html']],['/calendar-label.mjs',['src/calendar-label.mjs','text/javascript']],['/teacher-vacations.mjs',['src/teacher-vacations.mjs','text/javascript']],['/src/modalities.mjs',['src/modalities.mjs','text/javascript']],['/evaluation.mjs',['src/evaluation.mjs','text/javascript']],['/modalities.mjs',['src/modalities.mjs','text/javascript']],['/obligations.mjs',['src/obligations.mjs','text/javascript']],['/upload.js',['web/upload.js','text/javascript']],['/documents.js',['web/documents.js','text/javascript']],['/logs',['web/logs.html','text/html']],['/logs.js',['web/logs.js','text/javascript']],['/portal.js',['web/portal.js','text/javascript']],['/ativar',['web/activate.html','text/html']],['/activate.js',['web/activate.js','text/javascript']],['/review.js',['web/review.js','text/javascript']],['/portal.css',['web/portal.css','text/css']],['/editor',['web/index.html','text/html']],['/app.js',['web/app.js','text/javascript']],['/style.css',['web/style.css','text/css']],['/calendar.mjs',['src/calendar.mjs','text/javascript']],['/saturdays.mjs',['src/saturdays.mjs','text/javascript']],['/print.mjs',['web/print.mjs','text/javascript']],['/categories.mjs',['src/categories.mjs','text/javascript']],['/src/categories.mjs',['src/categories.mjs','text/javascript']],['/ifpr-logo.png',['web/ifpr-logo.png','image/png']],['/proens.css',['web/proens.css','text/css']]]);
+ const routes=new Map([['/calendar-label.mjs',['src/calendar-label.mjs','text/javascript']],['/teacher-vacations.mjs',['src/teacher-vacations.mjs','text/javascript']],['/src/modalities.mjs',['src/modalities.mjs','text/javascript']],['/evaluation.mjs',['src/evaluation.mjs','text/javascript']],['/modalities.mjs',['src/modalities.mjs','text/javascript']],['/obligations.mjs',['src/obligations.mjs','text/javascript']],['/upload.js',['web/upload.js','text/javascript']],['/logs',['web/logs.html','text/html']],['/logs.js',['web/logs.js','text/javascript']],['/ativar',['web/activate.html','text/html']],['/activate.js',['web/activate.js','text/javascript']],['/portal.css',['web/portal.css','text/css']],['/editor',['web/index.html','text/html']],['/app.js',['web/app.js','text/javascript']],['/style.css',['web/style.css','text/css']],['/calendar.mjs',['src/calendar.mjs','text/javascript']],['/saturdays.mjs',['src/saturdays.mjs','text/javascript']],['/print.mjs',['web/print.mjs','text/javascript']],['/categories.mjs',['src/categories.mjs','text/javascript']],['/src/categories.mjs',['src/categories.mjs','text/javascript']],['/ifpr-logo.png',['web/ifpr-logo.png','image/png']],['/proens.css',['web/proens.css','text/css']]]);
  routes.set('/recuperar-senha',['web/recover.html','text/html']);
  routes.set('/teacher-day.mjs',['src/teacher-day.mjs','text/javascript']);
  routes.set('/duration.mjs',['src/duration.mjs','text/javascript']);
@@ -69,7 +70,14 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
    const origin=`http://127.0.0.1:${(server.address()?.port||app.localPort||4173)}`,canonicalOrigin=publicOrigin||googleAuth.config?.origin||origin;
    if(![`127.0.0.1:${(server.address()?.port||app.localPort||4173)}`,`localhost:${(server.address()?.port||app.localPort||4173)}`,new URL(canonicalOrigin).host].includes(req.headers.host))fail('Host inválido.',403);
    const path=new URL(req.url,origin).pathname,method=req.method;
-   if(!path.startsWith('/api/')){const a=routes.get(path);if(!a||method!=='GET')fail('Não encontrado.',404);const content=await readFile(new URL('../'+a[0],import.meta.url));res.writeHead(200,{'Content-Type':a[1]+'; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});res.end(content);return;}
+   if(!path.startsWith('/api/')){
+    if(method!=='GET')fail('Não encontrado.',404);
+    const portal=await portalAsset(path,portalDirectory),a=routes.get(path);
+    if(!portal&&!a)fail('Não encontrado.',404);
+    const content=portal?.content||await readFile(new URL('../'+a[0],import.meta.url));
+    res.writeHead(200,{'Content-Type':portal?.type||a[1]+'; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});
+    res.end(content);return;
+   }
    let body={};if(!['GET','HEAD'].includes(method)){
     if(req.headers.origin&&![origin,origin.replace('127.0.0.1','localhost'),canonicalOrigin].includes(req.headers.origin))fail('Origem inválida.',403);
     if(req.headers['x-dentec-request']!=='1'||!String(req.headers['content-type']).startsWith('application/json'))fail('Requisição inválida.',403);
@@ -80,7 +88,7 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
    const calendarId=path.match(/^\/api\/(?:calendars|reviews)\/([\w-]+)/)?.[1];
    const reads=new Map();
    const read=(options={})=>{const key=JSON.stringify(options);if(!reads.has(key))reads.set(key,Promise.resolve(store.read({calendarId,campusId:user?.role==='CAMPUS'?user.campusId:undefined,...options})));return reads.get(key);};
-   const change=(fn,options)=>store.change(fn,calendarId?{fields:['calendars','histories','audit','catalogue','documents','reviews','uploads'],calendarId,...options}:options);
+   const change=(fn,options)=>store.change(fn,calendarId?{fields:['calendars','histories','audit','catalogue','documents','reviews','uploads'],calendarId,appendOnlyAudit:true,...options}:options);
    const audit=(db,action,id)=>{const calendar=db.calendars.find(c=>c.id===id);db.audit.push({at:new Date().toISOString(),actor:user?.id||'setup',action,id,version:calendar?.version,campusId:calendar?.campusId});};
    const admin=()=>{if(user.role!=='ADMIN')fail('Acesso exclusivo da administração.',403);};
    const owns=c=>{if(!c||c.deletedAt||(user.role!=='ADMIN'&&c.campusId!==user.campusId))fail('Registro não encontrado.',404);if(c.state)c.name=calendarName(c.state.year,c.state.campus);return c;};
@@ -143,7 +151,7 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
    if(path==='/api/logout'&&method==='POST'){await sessions.delete(token);res.setHeader('Set-Cookie','dentec_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');send(200,{ok:true});return;}
    if(path==='/api/logs'&&method==='GET'){const offset=Number(new URL(req.url,origin).searchParams.get('offset')||0);if(!Number.isSafeInteger(offset)||offset<0)fail('Página inválida.');send(200,auditLog(await read(),user,offset));return;}
    if(path==='/api/bootstrap'&&method==='GET'){const db=(await read({fields:['users','campuses','catalogue','calendars'],summary:true}));send(200,{user:safeUser(user),campuses:selectableCampuses(db.campuses).filter(c=>user.role==='ADMIN'||c.id===user.campusId),catalogue:db.catalogue,calendars:db.calendars.filter(c=>!c.deletedAt&&(user.role==='ADMIN'||c.campusId===user.campusId)).map(({state,versions,...c})=>({...c,name:calendarName(state.year,state.campus),year:state.year,offer:state.offer,modalities:calendarModalities(state)})),users:user.role==='ADMIN'?db.users.filter(u=>!u.removedAt).map(safeUser):[]});return;}
-   if(path==='/api/calendar-trash'&&method==='GET'){const db=await read();send(200,{calendars:db.calendars.filter(c=>c.deletedAt&&(user.role==='ADMIN'||c.campusId===user.campusId)).map(c=>({id:c.id,name:calendarName(c.state.year,c.state.campus),campusId:c.campusId,deletedAt:c.deletedAt,version:c.version}))});return;}
+   if(path==='/api/calendar-trash'&&method==='GET'){const db=await read({fields:['calendars'],summary:true});send(200,{calendars:db.calendars.filter(c=>c.deletedAt&&(user.role==='ADMIN'||c.campusId===user.campusId)).map(c=>({id:c.id,name:calendarName(c.state.year,c.state.campus),campusId:c.campusId,deletedAt:c.deletedAt,version:c.version}))});return;}
    const lifecycle=path.match(/^\/api\/calendars\/([\w-]+)(?:\/(restore))?$/);
    if(lifecycle&&((method==='DELETE'&&!lifecycle[2])||(method==='POST'&&lifecycle[2]==='restore'))){
     await change(db=>{const c=db.calendars.find(c=>c.id===lifecycle[1]);if(!c||(user.role!=='ADMIN'&&c.campusId!==user.campusId))fail('Registro não encontrado.',404);
@@ -151,7 +159,7 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
      else{if(c.deletedAt)fail('Calendário já está na lixeira.',409);if(body.version!==c.version)fail('O calendário foi alterado. Atualize a lista antes de excluir.',409);c.deletedAt=new Date().toISOString();c.deletedBy=user.id;audit(db,'DELETE_CALENDAR',c.id);}
     });send(200,{ok:true});return;
    }
-   if(path==='/api/documents'&&method==='GET'){const db=(await read());send(200,{revision:db.catalogue.revision,documents:(db.documents||[]).filter(d=>user.role==='ADMIN'||d.publishedAt).map(documentMetadata)});return;}
+   if(path==='/api/documents'&&method==='GET'){const db=(await read({fields:['catalogue','documents']}));send(200,{revision:db.catalogue.revision,documents:(db.documents||[]).filter(d=>user.role==='ADMIN'||d.publishedAt).map(documentMetadata)});return;}
    if(path==='/api/documents'&&method==='POST'){admin();const item=await change(db=>{const metadata=registerDocument(db,body,user.id);attachFile(db,db.documents.find(d=>d.id===metadata.id));return metadata;});send(201,item);return;}
    const documentMatch=path.match(/^\/api\/documents\/([\w-]+)(?:\/(status))?$/);
    if(documentMatch){

@@ -1,14 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
-import {createApp} from '../src/application.mjs';
+import {createTestApp} from './helpers/database.mjs';
 import {proensLayout} from '../web/print.mjs';
 
 test('campus can download an identified proposal before review without approving or changing its calendar',async t=>{
  let rendered;
- const app=await createApp({directory:await mkdtemp(join(tmpdir(),'proposal-copy-')),setupCode:'fixture',pdfRenderer:async record=>{rendered=record;return Buffer.from('%PDF-1.4 fixture');}});
+ const app=await createTestApp(t,{setupCode:'fixture',pdfRenderer:async record=>{rendered=record;return Buffer.from('%PDF-1.4 fixture');}});
  await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.server.close(r)));
  const base=`http://127.0.0.1:${app.server.address().port}`;
  const call=async(path,method='GET',body,cookie='')=>{
@@ -25,7 +22,7 @@ test('campus can download an identified proposal before review without approving
  const foreign=(await call('/api/login','POST',{email:'copy-1@ifpr.edu.br',password})).cookie;
  const record=(await call('/api/calendars','POST',{campusId:campuses[0].id,purpose:'definitive',courses:'Fixture',year:2027,offer:'graduacao',regime:'semestral'},campus)).data;
  const path='/api/calendars/'+record.id,body={version:record.version,catalogueRevision:record.catalogueRevision};
- const before=structuredClone(app.store.read());
+ const before=await app.store.read({full:true});
  assert.equal((await call(path+'/pdf','POST',body,campus)).status,409);
  assert.equal((await call(path+'/pdf','POST',{...body,copy:'true'},campus)).status,409);
  assert.equal((await call(path+'/pdf','POST',{...body,copy:true},foreign)).status,404);
@@ -36,7 +33,7 @@ test('campus can download an identified proposal before review without approving
  assert.equal(rendered.proposalCopy,true);assert.equal(rendered.readiness.ready,false);assert.equal(rendered.readiness.officialApproval,false);
  const html=proensLayout(rendered.state,[],null,rendered);
  assert.match(html,/CÓPIA DA PROPOSTA PARA ANÁLISE DA PROENS/);assert.match(html,/Sem aprovação oficial/);
- assert.deepEqual(app.store.read(),before);
+ assert.deepEqual((await app.store.read({full:true})),before);
  const reopened=(await call(path,'GET',null,campus)).data;
  assert.equal(reopened.readiness.ready,false);assert.deepEqual(reopened.state,record.state);assert.equal(reopened.version,record.version);
  assert(!proensLayout(record.state,[],null,{...record,purpose:'test',proposalCopy:true}).includes('CÓPIA DA PROPOSTA PARA ANÁLISE DA PROENS'));

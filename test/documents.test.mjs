@@ -1,13 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
-import {createApp} from '../src/application.mjs';
-import {openStore} from '../src/store.mjs';
+import {createTestDatabase,createTestApp} from './helpers/database.mjs';
 
 test('institutional documents preserve versions, enforce admin publication, year scope and persisted snapshots',async t=>{
- const directory=await mkdtemp(join(tmpdir(),'dentec-documents-test-')),app=await createApp({directory,setupCode:'synthetic'});
+ const database=await createTestDatabase(t),app=await createTestApp(t,{store:database.store,setupCode:'synthetic'});
  await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.server.close(r)));
  const base=`http://127.0.0.1:${app.server.address().port}`;
  async function call(path,method='GET',body,cookie=''){const r=await fetch(base+path,{method,headers:{Cookie:cookie,'Content-Type':'application/json','X-Dentec-Request':'1'},body:body?JSON.stringify(body):undefined});return {status:r.status,data:r.headers.get('content-type')?.includes('application/json')?await r.json():await r.text(),cookie:r.headers.get('set-cookie')?.split(';')[0]};}
@@ -41,7 +37,7 @@ test('institutional documents preserve versions, enforce admin publication, year
  assert.equal((await call('/api/calendars/'+calendar.id+'/pdf','POST',{version:1,catalogueRevision:2},campus)).status,409);
  assert.equal((await call('/api/calendars/'+calendar.id,'PUT',{version:1,catalogueRevision:2,state:calendar.state},campus)).status,409);
  assert.equal((await call('/api/calendars/'+calendar.id,'PUT',{version:1,catalogueRevision:3,state:calendar.state},campus)).status,200);
- const reopened=(await openStore(directory)).read(),saved=reopened.calendars.find(c=>c.id===calendar.id);
+ const reopened=(await (await database.reopen()).read({full:true})),saved=reopened.calendars.find(c=>c.id===calendar.id);
  assert.equal(reopened.documents.length,2);assert.equal(reopened.documents[0].data,doc.data);
  assert.equal(saved.documentSnapshot[0].id,second.id);assert.equal(saved.versions[0].documentSnapshot[0].id,first.id);
  assert.equal((await call(nextPublish,'POST',{revision:3,status:'arquivado'},admin)).status,200);

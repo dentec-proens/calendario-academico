@@ -1,4 +1,7 @@
 @echo off
 cd /d "%~dp0"
-node server.mjs
+call npm.cmd run build
+if errorlevel 1 goto end
+call npm.cmd start
+:end
 pause
