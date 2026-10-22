@@ -1,5 +1,6 @@
 import {validateTeacherDay} from './teacher-day.mjs';
 import {updateConclusion} from './review-conclusion.mjs';
+import {reviewNorm,presentReviewText} from './review-presentation.mjs';
 import {recalculateAssessmentStages} from './stage-suggestions.mjs';
 import {updateCampuses,selectableCampuses} from './campuses.mjs';
 import {recalculatePeriods} from './duration.mjs';
@@ -57,6 +58,7 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
  routes.set('/recuperar-senha',['web/recover.html','text/html']);
  routes.set('/teacher-day.mjs',['src/teacher-day.mjs','text/javascript']);
  routes.set('/duration.mjs',['src/duration.mjs','text/javascript']);
+ routes.set('/review-presentation.mjs',['src/review-presentation.mjs','text/javascript']);
  routes.set('/review-conclusion.mjs',['src/review-conclusion.mjs','text/javascript']);
  routes.set('/autosave.js',['web/autosave.js','text/javascript']);
  routes.set('/stage-suggestions.mjs',['src/stage-suggestions.mjs','text/javascript']);
@@ -189,7 +191,7 @@ export async function createApp({directory,setupEmail=null,files=null,store:prov
      const support=reviewSupport(record,[...inheritedEvents(db.catalogue,record.state.year,calendarModalities(record.state),record.state),...record.state.events]);
      if(!Array.isArray(body.entries)||body.entries.length!==reviewCriteria.length||new Set(body.entries.map(e=>e.id)).size!==reviewCriteria.length)fail('Confira todos os critérios da revisão.');
      const entries=body.entries.map(e=>{if(!reviewCriteria.some(c=>c.id===e.id)||!reviewStatuses.includes(e.status))fail('Critério ou situação inválidos.');const notes=String(e.notes||'');if(notes.length>2000)fail('Observação muito longa.');if(e.status==='PENDENTE'&&e.reviewed===true)fail('Selecione Atendido, Não atendido ou Não aplicável antes de confirmar a análise.');return {id:e.id,status:e.status,notes,reviewed:e.reviewed===true&&e.status!=='PENDENTE'};});
-     const conclusion=updateConclusion(body.conclusion,reviewCriteria,entries);if(conclusion.length>8000)fail('Síntese muito longa.');const processNumber=String(body.processNumber||''),applicableNorm=String(body.applicableNorm||'');if(processNumber.length>100||applicableNorm.length>1000)fail('Identificação do processo ou norma muito longa.');
+     const conclusion=updateConclusion(presentReviewText(body.conclusion,record.state.year),reviewCriteria,entries,reviewNorm(record.state.year,support.sameYear?support.source.norm:''));if(conclusion.length>8000)fail('Síntese muito longa.');const processNumber=String(body.processNumber||''),applicableNorm=presentReviewText(body.applicableNorm,record.state.year)||reviewNorm(record.state.year);if(processNumber.length>100||applicableNorm.length>1000)fail('Identificação do processo ou norma muito longa.');
      const saved=await change(db=>{
       const current=owns(db.calendars.find(c=>c.id===id));db.reviews??=[];const prior=db.reviews.find(r=>r.calendarId===id);
       if(body.calendarVersion!==current.version||body.catalogueRevision!==db.catalogue.revision)fail('O calendário ou a base mudou. Reabra a revisão.',409);
