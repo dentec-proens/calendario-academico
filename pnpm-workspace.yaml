@@ -1,0 +1,3 @@
+# The optional macOS watcher can use its JavaScript fallback.
+allowBuilds:
+  fsevents: false

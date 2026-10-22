@@ -4,15 +4,17 @@ O portal usa React, Vite e Lucide. Portal, editor e API são servidos pelo backe
 
 ## Repositório e build
 
-Versionar código, testes e documentação. Excluir banco, PDFs enviados, configurações secretas e logs. `npm ci` instala as dependências e `npm run build` gera `dist/portal/portal.html`, os arquivos JavaScript/CSS com hash e o manifesto Vite. A pasta `dist/` não é versionada.
+Versionar código, testes, documentação e `pnpm-lock.yaml`. Excluir banco, PDFs enviados, configurações secretas e logs. O projeto fixa pnpm 12.15.0 em `packageManager`; `pnpm install --frozen-lockfile` instala as dependências e `pnpm run build` gera `dist/portal/portal.html`, os arquivos JavaScript/CSS com hash e o manifesto Vite. A pasta `dist/` não é versionada.
 
-`vercel.json` mantém explicitamente o preset `node` e executa `npm run build`. Os arquivos de `dist/portal/**` são incluídos no pacote de `server.mjs`. O servidor atende `/` e `/assets/*`, preservando `/api/*`, `/editor`, `/ativar`, `/recuperar-senha` e `/logs`. O backend Node atende autenticação, autorização e dados; o diretório gerado pelo Vite contém apenas o portal. A política de conteúdo exige scripts e estilos da própria origem.
+`vercel.json` mantém explicitamente o preset `node` e usa `npx --yes pnpm@12.15.0 install --frozen-lockfile` na instalação e `npx --yes pnpm@12.15.0 run build` no build. O npx apenas inicia a versão fixada da ferramenta; as dependências são instaladas pelo pnpm usando seu lockfile. Esses comandos não dependem de um pnpm global na hospedagem.
+
+Os arquivos de `dist/portal/**` são incluídos no pacote de `server.mjs`. O servidor atende `/` e `/assets/*`, preservando `/api/*`, `/editor`, `/ativar`, `/recuperar-senha` e `/logs`. O backend Node atende autenticação, autorização e dados; o diretório gerado pelo Vite contém apenas o portal. A política de conteúdo exige scripts e estilos da própria origem.
 
 ## Banco e dados existentes
 
 O servidor usa `POSTGRES_URL` ou `DATABASE_URL`, tanto localmente quanto na Vercel. O schema privado `dentec` contém tabelas por entidade. Contas, sessões e limites de tentativas são compartilhados entre instâncias. Alterações usam transações e preservam as verificações de versão e isolamento por campus.
 
-Execute `npm run db:migrate` antes da publicação, com uma credencial separada em `DENTEC_MIGRATION_DATABASE_URL` que possa preparar o schema e ler o legado quando necessário. Informe `DENTEC_DATABASE_ROLE` com o nome da role de aplicação já provisionada para configurar os acessos e políticas. A credencial usada pelo servidor deve ser restrita aos acessos de aplicação e às políticas de RLS. O servidor não executa DDL e responde 503 se o banco não estiver preparado. Não use armazenamento temporário da plataforma como banco permanente.
+Execute `pnpm run db:migrate` antes da publicação, com uma credencial separada em `DENTEC_MIGRATION_DATABASE_URL` que possa preparar o schema e ler o legado quando necessário. Informe `DENTEC_DATABASE_ROLE` com o nome da role de aplicação já provisionada para configurar os acessos e políticas. A credencial usada pelo servidor deve ser restrita aos acessos de aplicação e às políticas de RLS. O servidor não executa DDL e responde 503 se o banco não estiver preparado. Não use armazenamento temporário da plataforma como banco permanente.
 
 Para migrar a antiga linha `dentec_private.app_state` ou importar `data/database.json`, consulte [o procedimento de preservação](postgresql.md). Originais não são apagados. Pare escritores antigos durante o corte e confira o resultado antes de liberar acesso. Não execute a aplicação antiga simultaneamente após a migração: ela continuaria escrevendo no estado legado.
 

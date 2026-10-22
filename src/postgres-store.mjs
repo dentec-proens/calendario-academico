@@ -5,7 +5,7 @@ import {initialCatalogue,campusNames} from './institution.mjs';
 import {relationalStatements} from './relational-schema.mjs';
 import {readRelational,writeRelational,changedLockKeys} from './relational-mapper.mjs';
 
-const schemaError=()=>Object.assign(Error('Esquema PostgreSQL ausente ou incompatível. Execute npm run db:migrate antes de iniciar o aplicativo.'),{code:'DENTEC_SCHEMA'});
+const schemaError=()=>Object.assign(Error('Esquema PostgreSQL ausente ou incompatível. Execute pnpm run db:migrate antes de iniciar o aplicativo.'),{code:'DENTEC_SCHEMA'});
 export async function createPostgresPool(connectionString){
  if(!connectionString)throw Object.assign(Error('Configure POSTGRES_URL ou DATABASE_URL para usar o PostgreSQL.'),{code:'DENTEC_CONFIG'});
  const {Pool}=await import('pg');let ssl;

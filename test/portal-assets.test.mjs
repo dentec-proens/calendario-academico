@@ -53,7 +53,7 @@ test('missing portal build gives an actionable error while API and editor remain
  const base=await fixture(t,{portalDirectory:pathToFileURL(output+'/')});
  const page=await fetch(base+'/');
  assert.equal(page.status,503);
- assert.match((await page.json()).error,/npm run build.*npm start.*npm run dev/);
+ assert.match((await page.json()).error,/pnpm run build.*pnpm start.*pnpm run dev/);
  assert.equal((await fetch(base+'/api/status')).status,200);
  assert.equal((await fetch(base+'/editor')).status,200);
 });

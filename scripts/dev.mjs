@@ -23,7 +23,8 @@ try{
   if(event.code==='BUNDLE_END')built=true;
   if(event.code==='ERROR')console.error('Falha ao compilar o portal:',event.error.message);
   if(event.code==='END'&&built&&!backend&&!stopping){
-   backend=spawn(process.execPath,['server.mjs'],{cwd:root,stdio:'inherit',env:process.env});
+   // Vite's build sets NODE_ENV=production; the local backend must stay in development.
+   backend=spawn(process.execPath,['server.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,NODE_ENV:'development'}});
    backend.once('error',error=>{console.error('Não foi possível iniciar o servidor:',error.message);stop(1);});
    backend.once('exit',(code,signal)=>stop(signal?0:code??1));
    console.log('Portal React: alterações são recompiladas; recarregue o navegador para vê-las.');

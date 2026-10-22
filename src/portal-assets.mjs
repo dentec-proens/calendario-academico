@@ -14,6 +14,6 @@ export async function portalAsset(path,directory=portalBuildDirectory){
  }catch(error){
   if(error.code!=='ENOENT')throw error;
   if(!html)return null;
-  throw Object.assign(Error('Portal não compilado. Execute npm run build antes de npm start, ou use npm run dev.'),{status:503});
+  throw Object.assign(Error('Portal não compilado. Execute pnpm run build antes de pnpm start, ou use pnpm run dev.'),{status:503});
  }
 }

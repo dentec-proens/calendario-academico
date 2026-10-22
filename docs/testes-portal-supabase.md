@@ -27,7 +27,7 @@ Os testes de gravação utilizaram campi, usuários, calendário e parecer tempo
 Após o build, com `.env` apontando para o projeto pessoal de testes:
 
 ```sh
-npm run build
+pnpm run build
 node --env-file=.env scripts/lib/portal-supabase-qa.mjs
 ```
 
@@ -61,8 +61,18 @@ Na validação real pelo Chrome, preencher o formulário sem Aplicar não gerou 
 
 ## Instalação limpa e CI antes do commit
 
-O projeto mantém somente `package-lock.json` como lockfile e usa npm. `supabase/.temp/` fica ignorado pelo Git. O workflow executa instalação, build, migração explícita do PostgreSQL descartável e suíte de testes, nessa ordem. A migração usa exclusivamente a URL do serviço de testes da CI.
+Na preparação do commit `5f7c21c`, o projeto usava npm e `package-lock.json`. `supabase/.temp/` foi incluído no Gitignore. O workflow passou a executar instalação, build, migração explícita do PostgreSQL descartável e suíte de testes, nessa ordem. A migração usa exclusivamente a URL do serviço de testes da CI. A adoção posterior do pnpm é descrita abaixo.
 
 A validação foi repetida em uma cópia limpa dos arquivos candidatos, sem `node_modules`, build, `.env` ou dados locais. `npm ci` instalou as dependências do lockfile sem alterá-lo e informou zero vulnerabilidades. `npm run build` passou. Um PostgreSQL 16.15 novo, em container local acessível somente em `127.0.0.1`, reproduziu a falha de schema ausente; `npm run db:migrate` preparou esse banco e a suíte passou com 140 testes, 139 aprovados, uma ausência opcional de Chromium serverless no macOS e nenhuma falha. A integração PostgreSQL de concorrência, rollback e sessões foi executada nessa rodada.
 
 Os arquivos da cópia validada foram comparados por hash com o workspace. O container de testes e seus volumes foram removidos. Nenhuma credencial remota foi carregada e a produção não foi acessada nesta validação.
+
+## Adoção do pnpm 12.15.0
+
+O projeto passou a fixar pnpm 12.15.0 em `packageManager`, com `pnpm-lock.yaml` como único lockfile. A importação preservou as versões e os hashes de integridade dos 123 pacotes da aplicação, sem atualizar dependências. CI, configuração de build da Vercel, instruções e inicializador Windows usam pnpm.
+
+Em outra cópia limpa, sem `.env`, dados ou dependências preexistentes, passaram os comandos configurados para a Vercel: `npx --yes pnpm@12.15.0 install --frozen-lockfile` e `npx --yes pnpm@12.15.0 run build`. O lockfile permaneceu intacto. `pnpm audit` informou zero vulnerabilidades. Com PostgreSQL 16.15 descartável e migração explícita, `pnpm test` passou: 140 testes, 139 aprovados, uma ausência opcional de Chromium serverless no macOS e nenhuma falha.
+
+O teste de `pnpm run dev` identificou que o build do Vite alterava `NODE_ENV` antes de iniciar o backend. O processo filho agora recebe explicitamente `development`. Sem configuração de hospedagem, o teste confirmou início local, respostas do portal e da API, recompilação após alterar CSS e entrega do novo arquivo, mantendo uma única instância do backend. O CSS original foi restaurado. Essa rodada também verificou o watcher sem executar o script opcional do `fsevents`, desabilitado em `pnpm-workspace.yaml`.
+
+Os avisos `MODULE_LEVEL_DIRECTIVE` do Lucide continuam sem impedir o build. A instalação do workspace foi sincronizada com pnpm; os testes usaram somente o banco descartável local. Não houve publicação nem acesso ao Supabase de produção.

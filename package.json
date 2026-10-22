@@ -3,6 +3,7 @@
   "version": "0.11.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.15.0",
   "scripts": {
     "test": "node --test --test-concurrency=1 test/*.test.mjs",
     "test:supabase": "node --env-file=.env.supabase-test --test test/postgres.test.mjs",

@@ -4,28 +4,30 @@ Portal em React + Vite, com ícones Lucide. O editor de calendário continua em 
 
 ## Iniciar sem confusão de pastas
 
-1. Instale Node.js 24 LTS (mínimo aceito: 22.13) e execute `npm ci` na pasta que contém `package.json`.
+1. Instale Node.js 24 LTS (mínimo aceito: 22.13) e o pnpm 12.15.0 com `npm install --global pnpm@12.15.0`. Confira `pnpm --version` e execute `pnpm install --frozen-lockfile` na pasta que contém `package.json`.
 2. Copie `.env.example` para `.env` e configure `POSTGRES_URL` (ou `DATABASE_URL`) de um PostgreSQL de desenvolvimento, local ou Supabase. A credencial de aplicação precisa acessar as tabelas da instalação. O aplicativo usa PostgreSQL também fora da Vercel; sem a conexão ele informa o erro e não inicia.
-3. Em uma instalação nova, configure a credencial administrativa em `DENTEC_MIGRATION_DATABASE_URL`, informe em `DENTEC_DATABASE_ROLE` a role restrita de aplicação já provisionada e execute `npm run db:migrate` para preparar as tabelas e os acessos. O servidor não cria tabelas nem executa migrações com a credencial de aplicação. Para preservar uma instalação anterior, siga primeiro [a migração de dados](docs/postgresql.md).
+3. Em uma instalação nova, configure a credencial administrativa em `DENTEC_MIGRATION_DATABASE_URL`, informe em `DENTEC_DATABASE_ROLE` a role restrita de aplicação já provisionada e execute `pnpm run db:migrate` para preparar as tabelas e os acessos. O servidor não cria tabelas nem executa migrações com a credencial de aplicação. Para preservar uma instalação anterior, siga primeiro [a migração de dados](docs/postgresql.md).
 4. No Windows, dê dois cliques em INICIAR.cmd. Ele compila o portal e inicia o servidor. Mantenha a janela aberta e acesse http://127.0.0.1:4173.
 5. Enquanto não houver usuários, copie o código exibido no terminal para criar a primeira administração. Cadastre seu nome, e-mail @ifpr.edu.br e uma senha própria do aplicativo com pelo menos 12 caracteres. Não use a senha institucional do IFPR. Contas importadas mantêm suas senhas e dispensam esse cadastro.
+
+O projeto fixa a versão do pnpm em `packageManager` e versiona `pnpm-lock.yaml`. O npm do primeiro passo serve somente para instalar a ferramenta; as dependências e os comandos do projeto usam pnpm. Preserve o lockfile e use `--frozen-lockfile` para reproduzir a instalação.
 
 No VS Code, também é possível abrir a pasta que contém package.json e executar:
 
 ```powershell
-npm.cmd run dev
+pnpm.cmd run dev
 ```
 
-`npm run dev` compila o portal com Vite antes de iniciar o servidor e recompila os componentes quando forem alterados. Recarregue o navegador para ver as mudanças. Portal, API e editor continuam na mesma origem e porta; nenhuma configuração de cookies ou CORS é necessária. Encerre com Ctrl+C.
+`pnpm run dev` compila o portal com Vite antes de iniciar o servidor e recompila os componentes quando forem alterados. Recarregue o navegador para ver as mudanças. Portal, API e editor continuam na mesma origem e porta; nenhuma configuração de cookies ou CORS é necessária. Encerre com Ctrl+C.
 
 Para executar uma versão compilada:
 
 ```sh
-npm run build
-npm start
+pnpm run build
+pnpm start
 ```
 
-O build grava somente o portal em `dist/portal/`; esse diretório é gerado e não deve ser versionado. Após mudar os componentes, execute o build novamente antes de `npm start`. Sem o build, o portal mostra um erro 503 com a instrução para compilá-lo. Se houver conflito de porta, encerre a versão anterior com Ctrl+C. Para verificar o código, execute `npm test`.
+O build grava somente o portal em `dist/portal/`; esse diretório é gerado e não deve ser versionado. Após mudar os componentes, execute o build novamente antes de `pnpm start`. Sem o build, o portal mostra um erro 503 com a instrução para compilá-lo. Se houver conflito de porta, encerre a versão anterior com Ctrl+C. Para verificar o código, execute `pnpm test`.
 
 ## Usar como ADMIN
 

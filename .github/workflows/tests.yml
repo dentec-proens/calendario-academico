@@ -27,10 +27,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm ci
-      - run: npm run build
+      - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
       - name: Preparar PostgreSQL de teste
-        run: npm run db:migrate
+        run: pnpm run db:migrate
         env:
           POSTGRES_URL: ${{ env.DENTEC_TEST_POSTGRES_URL }}
-      - run: npm test
+      - run: pnpm test

@@ -24,26 +24,26 @@ Não execute as versões antiga e nova ao mesmo tempo após o corte, pois elas g
 
 ## Configuração local
 
-O `.env` local ignorado pelo Git está configurado com `POSTGRES_URL` da role restrita do projeto de testes. Portanto, `npm run dev` e `npm start` usam esse PostgreSQL; não usam `data/database.json`. Sem conexão PostgreSQL válida ou sem o schema preparado, o servidor recusa a inicialização local com uma instrução de configuração.
+O `.env` local ignorado pelo Git está configurado com `POSTGRES_URL` da role restrita do projeto de testes. Portanto, `pnpm run dev` e `pnpm start` usam esse PostgreSQL; não usam `data/database.json`. Sem conexão PostgreSQL válida ou sem o schema preparado, o servidor recusa a inicialização local com uma instrução de configuração.
 
 O arquivo `.env.supabase-test`, também ignorado, contém `DENTEC_TEST_POSTGRES_URL` para a integração externa. Esse nome seleciona somente o banco da suíte de testes. O arquivo `.env` seleciona o banco usado normalmente pela aplicação. As credenciais ficam em arquivos protegidos com permissão `600`, sem senhas no histórico de migrações.
 
 O bucket `dentec-private` foi criado como privado, aceitando somente PDFs até 8.000.000 bytes. Sem `SUPABASE_URL` e chave secreta no desenvolvimento, os PDFs permanecem no PostgreSQL em colunas binárias. Quando ambas são configuradas, novos uploads usam o bucket privado, preservando o acesso aos arquivos anteriores já importados. Produção exige esse par de configurações. Não use variáveis `VITE_*` para credenciais secretas.
 
-Para preparar outra instalação, use `.env.example`, uma credencial administrativa em `DENTEC_MIGRATION_DATABASE_URL` e o nome de uma role de aplicação já provisionada em `DENTEC_DATABASE_ROLE`. `npm run db:migrate` prepara tabelas e acessos, reconhece o legado e confere a importação. O servidor usa somente `POSTGRES_URL` ou `DATABASE_URL`, sem criar tabelas no início. Não execute migrações ou testes contra o banco institucional sem o procedimento específico de preservação.
+Para preparar outra instalação, use `.env.example`, uma credencial administrativa em `DENTEC_MIGRATION_DATABASE_URL` e o nome de uma role de aplicação já provisionada em `DENTEC_DATABASE_ROLE`. `pnpm run db:migrate` prepara tabelas e acessos, reconhece o legado e confere a importação. O servidor usa somente `POSTGRES_URL` ou `DATABASE_URL`, sem criar tabelas no início. Não execute migrações ou testes contra o banco institucional sem o procedimento específico de preservação.
 
 ## Reproduzir e verificar
 
 As migrações foram geradas com a CLI oficial Supabase, após conferir sua ajuda. Para alterar o schema, crie uma nova migração; preserve os arquivos já aplicados.
 
 ```sh
-npx --yes supabase@2.121.0 migration new nome_da_alteracao
+pnpm dlx supabase@2.121.0 migration new nome_da_alteracao
 ```
 
 Testes locais usam PostgreSQL embutido PGlite descartável e não precisam de credenciais remotas:
 
 ```sh
-npm test
+pnpm test
 ```
 
 Eles verificam entidades, colunas tipadas, preservação de versões e PDFs, importação/exportação, rollback, reabertura, autorização, RLS e bloqueio das roles da Data API. Os testes de migração exercitam a importação do formato anterior e recusam substituição silenciosa de dados existentes.
@@ -51,7 +51,7 @@ Eles verificam entidades, colunas tipadas, preservação de versões e PDFs, imp
 Para validar transações reais, concorrência, sessões compartilhadas e independência entre gravação de sessão e bloqueios de calendário no projeto separado:
 
 ```sh
-npm run test:supabase
+pnpm run test:supabase
 ```
 
 Esse comando carrega `.env.supabase-test`, usa a URL explícita de testes e limpa os registros sintéticos que cria. Não use credenciais do banco institucional. O schema precisa estar preparado antes do teste, que não executa DDL.

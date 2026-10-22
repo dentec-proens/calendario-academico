@@ -38,7 +38,7 @@ const getApp=retryingResource(prepare,{onError:error=>{
  const category=/timeout|timed out/i.test(message)?'TIMEOUT':/tenant|user not found/i.test(message)?'TENANT':/password|authentication/i.test(message)?'AUTH':/certificate|ssl/i.test(message)?'TLS':/terminated/i.test(message)?'TERMINATED':/invalid.*url/i.test(message)?'URL':/connection/i.test(message)?'CONNECTION':'OTHER';
  console.error('DENTEC_STARTUP',startupStage,/^[A-Z0-9_]{2,60}$/.test(String(error.code))?error.code:category);
  if(['DENTEC_CONFIG','DENTEC_SCHEMA'].includes(error.code))console.error(message);
- else if(!production)console.error('Não foi possível iniciar. Confira a conexão PostgreSQL e execute npm run db:migrate com a credencial de migração. Nenhum arquivo JSON será usado como banco.');
+ else if(!production)console.error('Não foi possível iniciar. Confira a conexão PostgreSQL e execute pnpm run db:migrate com a credencial de migração. Nenhum arquivo JSON será usado como banco.');
 }});
 
 // Fail before listening locally. Hosted requests retain the retry mechanism for

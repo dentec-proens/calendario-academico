@@ -4,7 +4,7 @@ function invalid(message){throw Object.assign(Error(message),{code:'DENTEC_CONFI
 // choose deployment requirements, never a different persistence format.
 export function databaseConnectionString(env=process.env){
  const connectionString=(env.POSTGRES_URL||env.DATABASE_URL||'').trim();
- if(!connectionString)invalid('Configure POSTGRES_URL (ou DATABASE_URL) no arquivo .env ou no ambiente. PostgreSQL é obrigatório; execute npm run db:migrate antes de iniciar.');
+ if(!connectionString)invalid('Configure POSTGRES_URL (ou DATABASE_URL) no arquivo .env ou no ambiente. PostgreSQL é obrigatório; execute pnpm run db:migrate antes de iniciar.');
  let endpoint;
  try{endpoint=new URL(connectionString);}catch{invalid('POSTGRES_URL/DATABASE_URL deve ser uma URL PostgreSQL válida.');}
  if(!['postgres:','postgresql:'].includes(endpoint.protocol)||!endpoint.hostname)invalid('POSTGRES_URL/DATABASE_URL deve ser uma URL PostgreSQL válida.');
