@@ -158,6 +158,17 @@ test('HTTP recovery rejects replay, invalid passwords and cross-origin calls; ol
   };
   const email = 'admin@ifpr.edu.br',
     password = 'synthetic-password-old';
+  assert.equal(
+    (
+      await call('/api/setup', {
+        code: 'synthetic',
+        name: 'Admin test',
+        email,
+        password: '123456789',
+      })
+    ).status,
+    400,
+  );
   await call('/api/setup', { code: 'synthetic', name: 'Admin test', email, password });
   const login = await call('/api/login', { email, password });
   assert.equal(login.status, 200);
@@ -181,20 +192,14 @@ test('HTTP recovery rejects replay, invalid passwords and cross-origin calls; ol
     unknown = await call('/api/password/request', { email: 'unknown@ifpr.edu.br' });
   assert.deepEqual(known.data, unknown.data);
   const token = new URL(sent.url).hash.split('=')[1];
-  assert.equal((await call('/api/password/reset', { token, password: 'short' })).status, 400);
-  assert.equal(
-    (await call('/api/password/reset', { token, password: 'synthetic-password-new' })).status,
-    200,
-  );
-  assert.equal(
-    (await call('/api/password/reset', { token, password: 'synthetic-password-new' })).status,
-    400,
-  );
+  assert.equal((await call('/api/password/reset', { token, password: '123456789' })).status, 400);
+  assert.equal((await call('/api/password/reset', { token, password: '1234567890' })).status, 200);
+  assert.equal((await call('/api/password/reset', { token, password: '1234567890' })).status, 400);
   assert.equal((await call('/api/login', { email, password })).status, 401);
-  assert.equal(
-    (await call('/api/login', { email, password: 'synthetic-password-new' })).status,
-    200,
-  );
+  const shortLogin = await call('/api/login', { email, password: '123456789' });
+  assert.equal(shortLogin.status, 401);
+  assert.equal(shortLogin.data.error, 'Credenciais inválidas.');
+  assert.equal((await call('/api/login', { email, password: '1234567890' })).status, 200);
   const status = await fetch(base + '/api/status', {
     headers: { Cookie: login.cookie.split(';')[0] },
   });

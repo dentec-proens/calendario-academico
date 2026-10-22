@@ -67,8 +67,8 @@ function email(v) {
 }
 
 async function password(v) {
-  if (typeof v !== 'string' || v.length < 12 || v.length > 128)
-    fail('A senha deve ter entre 12 e 128 caracteres.');
+  if (typeof v !== 'string' || v.length < 10 || v.length > 128)
+    fail('A senha deve ter entre 10 e 128 caracteres.');
   const salt = randomBytes(16).toString('hex');
   return { salt, hash: (await scrypt(v, salt, 64)).toString('hex') };
 }
@@ -585,7 +585,11 @@ export async function createApp({
         const u = (await read({ fields: ['users'], email: key })).users.find(
           (u) => u.email === String(body.email).toLowerCase().trim() && u.active,
         );
-        if (typeof body.password !== 'string' || body.password.length > 128)
+        if (
+          typeof body.password !== 'string' ||
+          body.password.length < 10 ||
+          body.password.length > 128
+        )
           fail('Credenciais inválidas.', 401);
         const hash = await scrypt(body.password, u?.salt || 'invalid', 64);
         if (!u || !u.hash || !timingSafeEqual(hash, Buffer.from(u.hash, 'hex')))

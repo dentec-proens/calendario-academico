@@ -83,7 +83,7 @@ export default function AuthPanel({ status, onLogin, notify }) {
               name="password"
               type="password"
               required
-              minLength={12}
+              minLength={10}
               maxLength={128}
               autoComplete={setup ? 'new-password' : 'current-password'}
             />

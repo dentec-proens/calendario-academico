@@ -280,7 +280,7 @@ export default function AdministrationPanel({ info, googleEnabled, onRefresh, on
                   id="user-password"
                   name="password"
                   type="password"
-                  minLength={12}
+                  minLength={10}
                   maxLength={128}
                   required
                   autoComplete="new-password"

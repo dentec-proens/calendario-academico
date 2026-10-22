@@ -122,6 +122,8 @@ test(
     async function login(email, password) {
       await page.waitForSelector('#auth', { visible: true });
       await fill('#email', email);
+      await fill('#password', '123456789');
+      assert.equal(await page.$eval('#password', (input) => input.validity.tooShort), true);
       await fill('#password', password);
       await click('#auth-submit');
       await page.waitForSelector('#workspace', { visible: true });
@@ -162,7 +164,9 @@ test(
     await fill('#admin-name', 'Synthetic Browser Admin');
     await fill('#setup-code', 'synthetic-browser-setup');
     await fill('#email', 'browser-admin@ifpr.edu.br');
-    await fill('#password', 'synthetic-browser-password');
+    await fill('#password', '123456789');
+    assert.equal(await page.$eval('#password', (input) => input.validity.tooShort), true);
+    await fill('#password', '1234567890');
     await click('#auth-submit');
     await contains('#account', 'Synthetic Browser Admin · ADMIN');
     await page.waitForSelector('#workspace', { visible: true });
@@ -211,7 +215,7 @@ test(
     await page.select('#user-campus', campus.id);
     await fill('#user-name', 'Synthetic Browser Campus User');
     await fill('#user-email', 'browser-campus@ifpr.edu.br');
-    await fill('#user-password', 'synthetic-campus-password');
+    await fill('#user-password', '1234567890');
     await submit('#create-user-button', '/api/users');
     await contains('#user-list', 'browser-campus@ifpr.edu.br');
     await page.waitForSelector('#user-password', { hidden: true });
@@ -282,7 +286,7 @@ test(
     await logout();
     await contains('#auth-title', 'Entrar');
     assert.equal(await page.$('#setup-fields'), null);
-    await login('browser-campus@ifpr.edu.br', 'synthetic-campus-password');
+    await login('browser-campus@ifpr.edu.br', '1234567890');
     await contains('#account', 'Synthetic Browser Campus User · CAMPUS');
     assert.equal(await page.$('#admin-tab'), null);
     assert.equal(await page.$('#review-tab'), null);

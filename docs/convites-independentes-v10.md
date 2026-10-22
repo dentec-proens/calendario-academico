@@ -4,7 +4,7 @@
 
 Em Campi e contas, selecione “Convite por link · A pessoa cria a senha”. Informe nome, e-mail @ifpr.edu.br, perfil e campus quando aplicável. O ADMIN recebe o link e o envia manualmente à pessoa convidada pelo canal que escolher. O sistema não envia mensagens.
 
-A pessoa abre o link, confirma o e-mail cadastrado e cria uma senha de pelo menos 12 caracteres, repetindo-a para confirmação. A conta permanece inativa até essa etapa. Depois, entra pelo login normal. O ADMIN não precisa conhecer a senha. A senha é armazenada com scrypt e salt individual.
+A pessoa abre o link, confirma o e-mail cadastrado e cria uma senha de pelo menos 10 caracteres, repetindo-a para confirmação. A conta permanece inativa até essa etapa. Depois, entra pelo login normal. O ADMIN não precisa conhecer a senha. A senha é armazenada com scrypt e salt individual.
 
 O convite dura 48 horas, é de uso único e fica vinculado à conta e às permissões estabelecidas pelo ADMIN. “Gerar novo convite” invalida os links anteriores. Contas já ativas não podem ser redefinidas por essa função. Somente ADMIN pode gerar convites. O token aleatório tem 256 bits; apenas seu hash fica persistido. O link usa fragmento, que não é enviado em URLs de requisição ou cabeçalhos de referência. A ativação valida novamente o convite na gravação, impedindo reuso concorrente. O token é removido da barra após abrir a página; se ela for recarregada antes da conclusão, reabra o convite original.
 
