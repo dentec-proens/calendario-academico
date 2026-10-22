@@ -106,6 +106,10 @@ test('React portal preserves document publication, human review, exports and acc
   await click('[data-page="review-panel"]'); await click('#open-review');
   await page.waitForSelector('#review-content');
   assert.equal(await page.$$eval('.review-item', elements => elements.length), 29);
+  const approvedNorm = 'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026';
+  assert.equal(await page.$eval('#review-norm', element => element.value), approvedNorm);
+  assert(!/Calendário versão/i.test(await page.$eval('#review-heading', element => element.textContent)));
+  assert((await page.$eval('#review-conclusion', element => element.value)).includes(approvedNorm));
   await click('#preview-review'); await waitText('#review-message', 'Salve a análise');
   const criterion = await page.$eval('[data-edit-criterion]', element => element.dataset.editCriterion);
   await click(`[data-edit-criterion="${criterion}"]`);
@@ -113,17 +117,27 @@ test('React portal preserves document publication, human review, exports and acc
   await fill(`[data-notes="${criterion}"]`, 'Necessário ajustar os dias letivos.');
   await click(`[data-confirm-criterion="${criterion}"]`);
   await page.waitForFunction(() => document.querySelector('#review-conclusion').value.includes('atende apenas parcialmente'));
+  const draftConclusion = await page.$eval('#review-conclusion', element => element.value);
+  assert(draftConclusion.includes(approvedNorm));
+  assert(!draftConclusion.includes('XXX/2026'));
   await click('[data-page="calendars"]'); await click('[data-page="review-panel"]');
   assert.equal(await page.$eval(`[data-notes="${criterion}"]`, element => element.value), 'Necessário ajustar os dias letivos.');
   await click('button[form="review-form"]'); await waitText('#review-message', 'Revisão humana salva');
-  assert.equal((await call('/api/reviews/' + calendar.id)).review.entries.find(e => e.id === criterion).reviewed, true);
+  const savedReview = (await call('/api/reviews/' + calendar.id)).review;
+  assert.equal(savedReview.entries.find(e => e.id === criterion).reviewed, true);
+  assert.equal(savedReview.applicableNorm, approvedNorm);
+  assert.equal(savedReview.calendarVersion, calendar.version);
+  assert.equal((savedReview.conclusion.match(/atende apenas parcialmente/g) || []).length, 1);
   await click('#preview-review'); await page.waitForSelector('#review-preview table');
   assert.equal(await page.$$eval('#review-preview table tr', elements => elements.length), 30);
   for (const [id, extension] of [['download-review-html', 'html'], ['download-review-txt', 'txt']]) {
     await click('#' + id); await waitText('#review-message', 'Download solicitado');
     const filename = `parecer-2027-revisao-1.${extension}`;
     for (let attempt = 0; attempt < 30 && !(await readdir(directory)).includes(filename); attempt++) await new Promise(resolve => setTimeout(resolve, 100));
-    assert.match(await readFile(join(directory, filename), 'utf8'), /Necessário ajustar os dias letivos/);
+    const exported = await readFile(join(directory, filename), 'utf8');
+    assert.match(exported, /Necessário ajustar os dias letivos/);
+    assert(exported.includes(approvedNorm));
+    assert(!/XXX\/2026|calendário versão/i.test(exported));
   }
   await click(`[data-edit-criterion="${criterion}"]`); await fill(`[data-notes="${criterion}"]`, 'Novo ajuste pendente');
   await click('#preview-review'); await waitText('#review-message', 'Salve a análise');

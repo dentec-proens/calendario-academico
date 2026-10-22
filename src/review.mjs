@@ -1,4 +1,5 @@
 import {calendarModalities,modalityLabels} from './modalities.mjs';
+import {reviewNorm} from './review-presentation.mjs';
 import {calendarResult} from './pdf.mjs';
 export const reviewSource={id:'SEI 3959640',year:2026,title:'Parecer técnico-pedagógico de calendário acadêmico e administrativo',norm:'Resolução Consup/IFPR 259, de 27/11/2025'};
 const rows=[
@@ -71,6 +72,6 @@ export function reviewSupport(record,events){
 }
 export const reviewStatuses=['PENDENTE','ATENDIDO','NAO_ATENDIDO','NAO_APLICAVEL'];
 export function initialConclusion(support){
- const missing=support.criteria.filter(c=>c.initial.finding==='NAO_LOCALIZADO').length;
- return `A análise inicial do Calendário Acadêmico e Administrativo ${support.calendar.year}, campus ${support.calendar.campus}, versão ${support.calendar.version}, foi organizada conforme critérios institucionais. Foram examinados ${support.criteria.length} critérios com os dados cadastrados. ${missing} critério(s) não tiveram registros localizados pela busca de nomes/categorias e necessitam conferência documental. ${support.countError||'A contagem e os conflitos identificados estão registrados na análise técnica.'} Esta é uma minuta de apoio, sujeita à revisão e à conclusão do parecerista. Não constitui aprovação oficial.`;
+ const missing=support.criteria.filter(c=>c.initial.finding==='NAO_LOCALIZADO').length,norm=reviewNorm(support.calendar.year,support.sameYear?support.source.norm:'');
+ return `A análise inicial do Calendário Acadêmico e Administrativo ${support.calendar.year}, campus ${support.calendar.campus}, foi organizada conforme critérios institucionais${norm?', observada a '+norm:''}. Foram examinados ${support.criteria.length} critérios com os dados cadastrados. ${missing} critério(s) não tiveram registros localizados pela busca de nomes/categorias e necessitam conferência documental. ${support.countError||'A contagem e os conflitos identificados estão registrados na análise técnica.'} Esta é uma minuta de apoio, sujeita à revisão e à conclusão do parecerista. Não constitui aprovação oficial.`;
 }

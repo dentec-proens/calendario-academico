@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from 'react';
 import {CheckCheck, ClipboardCopy, Download, ExternalLink, Eye, Pencil, Save} from 'lucide-react';
 import {modalityLabels} from '../../src/modalities.mjs';
 import {updateConclusion} from '../../src/review-conclusion.mjs';
+import {reviewNorm, presentReviewText} from '../../src/review-presentation.mjs';
 import {api} from './api.js';
 
 const statusLabels = {
@@ -23,13 +24,13 @@ function initialDraft(opened) {
     };
   });
   const previousConclusion = opened.review?.conclusion || opened.initialConclusion;
-  const conclusion = updateConclusion(previousConclusion, opened.criteria, entries);
+  const conclusion = updateConclusion(presentReviewText(previousConclusion, opened.calendar.year), opened.criteria, entries, reviewNorm(opened.calendar.year, opened.sameYear ? opened.source.norm : ''));
   return {
     opened,
     entries,
     conclusion,
     processNumber: opened.review?.processNumber || '',
-    applicableNorm: opened.review?.applicableNorm || (opened.sameYear ? opened.source.norm : ''),
+    applicableNorm: presentReviewText(opened.review?.applicableNorm, opened.calendar.year) || reviewNorm(opened.calendar.year, opened.sameYear ? opened.source.norm : ''),
     acknowledgeStale: false,
     editing: {},
     changed: {},
@@ -176,21 +177,21 @@ export default function ReviewPanel({calendars}) {
   function changeField(field, value) {
     setDraft(current => {
       const next = {...current, [field]: value, dirty: true};
-      return {...next, conclusion: updateConclusion(next.conclusion, next.opened.criteria, next.entries)};
+      return {...next, conclusion: updateConclusion(next.conclusion, next.opened.criteria, next.entries, reviewNorm(next.opened.calendar.year, next.opened.sameYear ? next.opened.source.norm : ''))};
     });
   }
 
   function changeEntry(id, field, value) {
     setDraft(current => {
       const entries = current.entries.map(entry => entry.id === id ? {...entry, [field]: value, reviewed: false} : entry);
-      return {...current, entries, changed: {...current.changed, [id]: true}, conclusion: updateConclusion(current.conclusion, current.opened.criteria, entries), dirty: true};
+      return {...current, entries, changed: {...current.changed, [id]: true}, conclusion: updateConclusion(current.conclusion, current.opened.criteria, entries, reviewNorm(current.opened.calendar.year, current.opened.sameYear ? current.opened.source.norm : '')), dirty: true};
     });
   }
 
   function confirmEntry(id) {
     setDraft(current => {
       const entries = current.entries.map(entry => entry.id === id && entry.status !== 'PENDENTE' ? {...entry, reviewed: true} : entry);
-      return {...current, entries, conclusion: updateConclusion(current.conclusion, current.opened.criteria, entries), dirty: true};
+      return {...current, entries, conclusion: updateConclusion(current.conclusion, current.opened.criteria, entries, reviewNorm(current.opened.calendar.year, current.opened.sameYear ? current.opened.source.norm : '')), dirty: true};
     });
   }
 
@@ -306,7 +307,7 @@ export default function ReviewPanel({calendars}) {
         <p id="review-message" role="status" aria-live="polite">{message || (!calendars.length ? 'Nenhum calendário disponível para revisão.' : '')}</p>
         {opened ? (
           <div id="review-content">
-            <h3 id="review-heading">{opened.calendar.campus} · {opened.calendar.name} · Calendário versão {opened.calendar.version}</h3>
+            <h3 id="review-heading">{opened.calendar.campus} · {opened.calendar.name}</h3>
             <p id="review-progress">{opened.criteria.length} critérios analisados inicialmente pelo sistema · {reviewedCount} conferidos pelo parecerista. Isso não representa aprovação institucional.</p>
             <p id="review-conflicts">{opened.conflicts.length
               ? `${opened.conflicts.length} conflito(s) de inclusão/exclusão: ${opened.conflicts.map(conflict => conflict.date).join(', ')}. Confira no editor.`
