@@ -19,26 +19,26 @@ paths:
               additionalProperties: false
               required: [campusId, offerId, year, mode, rulePackId]
               properties:
-                campusId: {type: string, format: uuid}
-                offerId: {type: string, format: uuid}
-                year: {type: integer, minimum: 1900, maximum: 9999}
-                mode: {type: string, enum: [BUILD, REVIEW, CHECK, PREPARE_SUBMISSION]}
-                rulePackId: {type: string, format: uuid}
+                campusId: { type: string, format: uuid }
+                offerId: { type: string, format: uuid }
+                year: { type: integer, minimum: 1900, maximum: 9999 }
+                mode: { type: string, enum: [BUILD, REVIEW, CHECK, PREPARE_SUBMISSION] }
+                rulePackId: { type: string, format: uuid }
       responses:
         '201':
           description: Rascunho criado
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Calendar'}
-        '401': {description: Não autenticado}
-        '403': {description: Campus não autorizado}
-        '422': {description: Dados ou pacote incompatíveis}
+              schema: { $ref: '#/components/schemas/Calendar' }
+        '401': { description: Não autenticado }
+        '403': { description: Campus não autorizado }
+        '422': { description: Dados ou pacote incompatíveis }
   /calendars/{calendarId}:
     parameters:
       - name: calendarId
         in: path
         required: true
-        schema: {type: string, format: uuid}
+        schema: { type: string, format: uuid }
     get:
       summary: Consultar calendário no escopo autorizado
       operationId: getCalendar
@@ -47,15 +47,15 @@ paths:
           description: Calendário
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Calendar'}
-        '401': {description: Não autenticado}
-        '404': {description: Não encontrado ou fora do escopo}
+              schema: { $ref: '#/components/schemas/Calendar' }
+        '401': { description: Não autenticado }
+        '404': { description: Não encontrado ou fora do escopo }
   /calendars/{calendarId}/validations:
     parameters:
       - name: calendarId
         in: path
         required: true
-        schema: {type: string, format: uuid}
+        schema: { type: string, format: uuid }
     post:
       summary: Validar versão imutável usando dados resolvidos no servidor
       operationId: validateCalendar
@@ -68,7 +68,7 @@ paths:
               additionalProperties: false
               required: [versionId]
               properties:
-                versionId: {type: string, format: uuid}
+                versionId: { type: string, format: uuid }
       responses:
         '201':
           description: Conferência preliminar persistida
@@ -78,24 +78,28 @@ paths:
                 type: object
                 required: [id, versionId, inputHash, status, findings, officialApproval]
                 properties:
-                  id: {type: string, format: uuid}
-                  versionId: {type: string, format: uuid}
-                  inputHash: {type: string}
-                  status: {type: string, enum: [INCOMPLETE, ISSUES, READY_FOR_SUBMISSION]}
-                  officialApproval: {type: boolean, const: false}
+                  id: { type: string, format: uuid }
+                  versionId: { type: string, format: uuid }
+                  inputHash: { type: string }
+                  status: { type: string, enum: [INCOMPLETE, ISSUES, READY_FOR_SUBMISSION] }
+                  officialApproval: { type: boolean, const: false }
                   findings:
                     type: array
                     items:
                       type: object
                       required: [ruleId, result, severity, evidenceIds]
                       properties:
-                        ruleId: {type: string}
-                        result: {type: string, enum: [MET, NOT_MET, NOT_VERIFIABLE, HUMAN_REVIEW, NOT_APPLICABLE]}
-                        severity: {type: string, enum: [BLOCK, WARNING, INFO]}
-                        evidenceIds: {type: array, items: {type: string, format: uuid}}
-        '401': {description: Não autenticado}
-        '404': {description: Calendário ou versão inexistente ou fora do escopo}
-        '409': {description: Versão não é a versão corrente}
+                        ruleId: { type: string }
+                        result:
+                          {
+                            type: string,
+                            enum: [MET, NOT_MET, NOT_VERIFIABLE, HUMAN_REVIEW, NOT_APPLICABLE],
+                          }
+                        severity: { type: string, enum: [BLOCK, WARNING, INFO] }
+                        evidenceIds: { type: array, items: { type: string, format: uuid } }
+        '401': { description: Não autenticado }
+        '404': { description: Calendário ou versão inexistente ou fora do escopo }
+        '409': { description: Versão não é a versão corrente }
 components:
   securitySchemes:
     institutionalSession:
@@ -108,9 +112,9 @@ components:
       type: object
       required: [id, campusId, offerId, year, state, versionId]
       properties:
-        id: {type: string, format: uuid}
-        campusId: {type: string, format: uuid}
-        offerId: {type: string, format: uuid}
-        year: {type: integer}
-        state: {type: string, enum: [DRAFT, IN_REVIEW, HAS_ISSUES, READY_FOR_SUBMISSION]}
-        versionId: {type: string, format: uuid}
+        id: { type: string, format: uuid }
+        campusId: { type: string, format: uuid }
+        offerId: { type: string, format: uuid }
+        year: { type: integer }
+        state: { type: string, enum: [DRAFT, IN_REVIEW, HAS_ISSUES, READY_FOR_SUBMISSION] }
+        versionId: { type: string, format: uuid }

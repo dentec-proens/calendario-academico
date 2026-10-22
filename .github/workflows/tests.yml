@@ -29,6 +29,8 @@ jobs:
           node-version: '22'
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
       - run: pnpm install --frozen-lockfile
+      - run: pnpm run format:check
+      - run: pnpm run lint
       - run: pnpm run build
       - name: Preparar PostgreSQL de teste
         run: pnpm run db:migrate

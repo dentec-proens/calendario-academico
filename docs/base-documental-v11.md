@@ -1,6 +1,7 @@
 # Base documental da PROENS — versão 0.11
 
 ## Uso pela administração
+
 1. Entre como ADMIN e abra **Base institucional**.
 2. Em **Documentos da PROENS por ano**, informe ano, tipo, título e identificação da fonte (número SEI, resolução e fundamento da vigência).
 3. Envie o PDF de até 8 MB. Ele será registrado como rascunho, visível somente ao ADMIN.
@@ -11,6 +12,7 @@
 Tipos: resolução/norma, calendário de referência e modelo de parecer/checklist. A identificação da fonte deve registrar a aprovação informada mesmo quando o nome original do PDF ainda contenha “minuta”. O sistema não presume aprovação pelo nome do arquivo.
 
 ## Efeitos e limites
+
 A alteração da vigência aumenta a revisão da base compartilhada. Calendários precisam incorporar a revisão antes de baixar PDF; análises salvas ficam desatualizadas e exigem reconferência antes da exportação. A revisão compartilhada é global: a mudança pode exigir reconferência inclusive em outros anos.
 
 Cada versão salva do calendário e do parecer guarda metadados, identificadores e hashes dos documentos vigentes do seu ano. Versões antigas preservam a referência anterior. A migração não inventa vínculos documentais para registros criados antes desta funcionalidade.
@@ -20,6 +22,7 @@ Enviar PDF disponibiliza o documento para consulta; NÃO extrai automaticamente 
 Nenhum documento é registrado automaticamente nesta atualização: a equipe seleciona o arquivo e informa explicitamente o ano de aplicação.
 
 ## Preservação e continuidade
+
 Metadados e versões ficam no PostgreSQL. Em desenvolvimento os PDFs podem permanecer no banco; com Storage configurado, novos arquivos ficam no bucket privado `dentec-private`. PDFs importados de instalações anteriores continuam disponíveis. Reiniciar o aplicativo não apaga os registros.
 
 Para cópia completa, mantenha backup do PostgreSQL e dos objetos privados do Storage, além da versão correspondente do aplicativo. Faça cópias periódicas e teste a restauração. O banco contém contas e dados institucionais e deve permanecer com pessoas autorizadas. Copiar a pasta `data` preserva apenas a base JSON antiga, que o servidor não utiliza mais. Consulte [migração e backup](postgresql.md); não misture bancos de duas instalações.
@@ -27,6 +30,7 @@ Para cópia completa, mantenha backup do PostgreSQL e dos objetos privados do St
 A disponibilidade pela internet e os backups automáticos dependem da configuração da implantação. Uma conexão PostgreSQL válida não é, por si só, garantia de disponibilidade permanente ou de backup.
 
 ## Desenvolvimento
+
 GET /api/documents: metadados, sem conteúdo dos arquivos; rascunhos exclusivos do ADMIN.
 POST /api/documents: upload ADMIN, versão crescente por ano/tipo, conteúdo e SHA-256 imutáveis.
 GET /api/documents/:id: download autenticado; campi somente documentos já publicados.

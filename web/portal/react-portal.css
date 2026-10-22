@@ -1,16 +1,58 @@
 /* Scoped additions: the editor and its print styles keep their existing CSS. */
-#root .form-fields{display:block;min-width:0;margin:0;padding:0;border:0}
-#root .row-form.form-fields{display:flex}
-#root button,#root .records a{display:inline-flex;align-items:center;justify-content:center;gap:8px}
-#root button svg,#root a svg{flex-shrink:0}
-#root button:disabled{cursor:wait;opacity:.65}
-#root .calendar-trash{margin:24px 0 0}
-#root summary{cursor:pointer;font-weight:600}
-#root .private-link{margin-top:24px;background:#f5faf7}
-#root textarea:focus-visible,#root a:focus-visible,#root summary:focus-visible{outline:3px solid #c38620;outline-offset:3px}
-#root .records .actions{justify-content:flex-end}
-@media(max-width:700px){
-  #root header{flex-wrap:wrap}
-  #root .records:not(#calendar-list)>li{flex-wrap:wrap;align-items:flex-start}
-  #root .records .actions{justify-content:flex-start}
+#root .form-fields {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+#root .row-form.form-fields {
+  display: flex;
+}
+#root button,
+#root .records a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+#root button svg,
+#root a svg {
+  flex-shrink: 0;
+}
+#root button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+#root .calendar-trash {
+  margin: 24px 0 0;
+}
+#root summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+#root .private-link {
+  margin-top: 24px;
+  background: #f5faf7;
+}
+#root textarea:focus-visible,
+#root a:focus-visible,
+#root summary:focus-visible {
+  outline: 3px solid #c38620;
+  outline-offset: 3px;
+}
+#root .records .actions {
+  justify-content: flex-end;
+}
+@media (max-width: 700px) {
+  #root header {
+    flex-wrap: wrap;
+  }
+  #root .records:not(#calendar-list) > li {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  #root .records .actions {
+    justify-content: flex-start;
+  }
 }

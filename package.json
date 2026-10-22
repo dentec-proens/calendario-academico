@@ -5,6 +5,10 @@
   "type": "module",
   "packageManager": "pnpm@12.15.0",
   "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix --max-warnings=0",
     "test": "node --test --test-concurrency=1 test/*.test.mjs",
     "test:supabase": "node --env-file=.env.supabase-test --test test/postgres.test.mjs",
     "dev": "node scripts/dev.mjs",
@@ -29,6 +33,12 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.10",
+    "@eslint/js": "10.0.1",
+    "@stylistic/eslint-plugin": "5.10.0",
+    "eslint": "10.13.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
     "vite": "8.3.5"
   }
 }

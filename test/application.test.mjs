@@ -1,152 +1,802 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createTestDatabase,createTestApp} from './helpers/database.mjs';
-import {initialCatalogue,inheritedEvents,campusNames} from '../src/institution.mjs';
-import {proensLayout} from '../web/print.mjs';
+import { createTestDatabase, createTestApp } from './helpers/database.mjs';
+import { initialCatalogue, inheritedEvents, campusNames } from '../src/institution.mjs';
+import { proensLayout } from '../web/print.mjs';
 
-test('base 2027 includes Foz, national holidays, and correctly scoped institutional events',()=>{
- const cat=initialCatalogue();assert(campusNames.includes('Foz do Iguaçu'));
- assert.equal(cat.events.filter(e=>e.id.startsWith('national-')).length,9);
- assert.equal(inheritedEvents(cat,2028,'integrado').length,0);
- assert(inheritedEvents(cat,2027,'integrado').some(e=>e.start==='2027-11-20'&&e.kind==='exclude'));
- assert(inheritedEvents(cat,2027,'integrado').some(e=>e.start==='2027-02-09'&&e.category==='recesso'));
- assert(!cat.events.some(e=>e.name.includes('São João')));
+test('base 2027 includes Foz, national holidays, and correctly scoped institutional events', () => {
+  const cat = initialCatalogue();
+  assert(campusNames.includes('Foz do Iguaçu'));
+  assert.equal(cat.events.filter((e) => e.id.startsWith('national-')).length, 9);
+  assert.equal(inheritedEvents(cat, 2028, 'integrado').length, 0);
+  assert(
+    inheritedEvents(cat, 2027, 'integrado').some(
+      (e) => e.start === '2027-11-20' && e.kind === 'exclude',
+    ),
+  );
+  assert(
+    inheritedEvents(cat, 2027, 'integrado').some(
+      (e) => e.start === '2027-02-09' && e.category === 'recesso',
+    ),
+  );
+  assert(!cat.events.some((e) => e.name.includes('São João')));
 });
 
-test('accounts, campus isolation, history, propagation, versioning and persistence',async t=>{
- let rendered=0;const database=await createTestDatabase(t);const app=await createTestApp(t,{store:database.store,setupCode:'test-setup',pdfRenderer:async()=>{rendered++;return Buffer.from('%PDF-1.4 synthetic');}});await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>app.server.close(resolve)));
- const base=`http://127.0.0.1:${app.server.address().port}`;
- async function call(path,method='GET',body,cookie=''){const r=await fetch(base+path,{method,headers:{'Content-Type':'application/json','X-Dentec-Request':'1',Cookie:cookie},body:body?JSON.stringify(body):undefined});const data=await r.json();return {status:r.status,data,cookie:r.headers.get('set-cookie')?.split(';')[0]};}
- assert.equal((await call('/api/bootstrap')).status,401);
- assert.equal((await call('/api/setup','POST',{code:'wrong',name:'Test',email:'test@ifpr.edu.br',password:'synthetic-test-only-password'})).status,403);
- assert.equal((await call('/api/setup','POST',{code:'test-setup',name:'Test admin',email:'admin-test@ifpr.edu.br',password:'synthetic-test-only-password'})).status,201);
- const admin=(await call('/api/login','POST',{email:'admin-test@ifpr.edu.br',password:'synthetic-test-only-password'})).cookie;assert(admin);
- const bootstrap=await call('/api/bootstrap','GET',null,admin),foz=bootstrap.data.campuses.find(c=>c.name==='Foz do Iguaçu'),other=bootstrap.data.campuses[0];
- for(const [n,c]of [[1,foz],[2,other]])assert.equal((await call('/api/users','POST',{name:'Synthetic campus '+n,email:`campus-test${n}@ifpr.edu.br`,password:'synthetic-test-only-password',campusId:c.id},admin)).status,201);
- const campus=(await call('/api/login','POST',{email:'campus-test1@ifpr.edu.br',password:'synthetic-test-only-password'})).cookie;
- const foreign=(await call('/api/login','POST',{email:'campus-test2@ifpr.edu.br',password:'synthetic-test-only-password'})).cookie;
- const newAdmin={name:'Synthetic PROENS reviewer',email:'reviewer-test@ifpr.edu.br',password:'synthetic-test-only-password',role:'ADMIN'};
- assert.equal((await call('/api/users','POST',newAdmin)).status,401);
- assert.equal((await call('/api/users','POST',newAdmin,campus)).status,403);
- assert.equal((await call('/api/users','POST',{...newAdmin,role:'INVALID'},admin)).status,400);
- const createdAdmin=await call('/api/users','POST',newAdmin,admin);assert.equal(createdAdmin.status,201);assert.equal(createdAdmin.data.role,'ADMIN');assert.equal(createdAdmin.data.campusId,null);assert(!('hash' in createdAdmin.data));
- assert.equal((await call('/api/users','POST',newAdmin,admin)).status,409);
- const reviewer=(await call('/api/login','POST',{email:newAdmin.email,password:newAdmin.password})).cookie;
- const reviewerPanel=(await call('/api/bootstrap','GET',null,reviewer)).data;assert.equal(reviewerPanel.user.role,'ADMIN');assert.equal(reviewerPanel.campuses.length,29);
- assert.equal((await call('/api/campuses','POST',{name:'Unauthorized'},campus)).status,403);
- assert.equal((await call('/api/catalogue','POST',{},campus)).status,403);
- const promotion=(await call('/api/calendars','POST',{campusId:foz.id,purpose:'test',courses:'Promotion fixture',year:2027,offer:'integrado',regime:'anual'},campus)).data;
- const promotionState={...promotion.state,events:[{id:'fixture-event',name:'Evento preservado',start:'2027-03-01',end:'2027-03-01',kind:'note',category:'evento',evidence:'Decisão de teste'}]};
- const stored=(await call('/api/calendars/'+promotion.id,'PUT',{version:1,catalogueRevision:1,state:promotionState},campus)).data;
- const promotionPath='/api/calendars/'+promotion.id+'/make-definitive';
- assert.equal((await call(promotionPath,'POST',{version:stored.version})).status,401);
- assert.equal((await call(promotionPath,'POST',{version:stored.version},foreign)).status,404);
- assert.equal((await call(promotionPath,'POST',{version:1},campus)).status,409);
- const promoted=await call(promotionPath,'POST',{version:stored.version},campus);
- assert.equal(promoted.status,200);assert.equal(promoted.data.purpose,'definitive');assert.equal(promoted.data.version,stored.version+1);
- const reopened=(await call('/api/calendars/'+promotion.id,'GET',null,campus)).data;
- assert.deepEqual(reopened.state,stored.state);assert.equal(reopened.versions.length,2);assert.equal(reopened.id,promotion.id);
- assert.equal((await call(promotionPath,'POST',{version:promoted.data.version},campus)).data.version,promoted.data.version);
- assert.equal(reopened.readiness.ready,false);
- const threeVacation={firstStart:'2027-01-02',firstEnd:'2027-01-16',secondStart:'2027-07-01',secondEnd:'2027-07-15',thirdStart:'2027-12-01',thirdEnd:'2027-12-15',evidence:'Decisão de teste'};
- const vacationPromotion=await call('/api/calendars/'+promotion.id,'PUT',{version:reopened.version,catalogueRevision:1,state:{...reopened.state,teacherVacations:threeVacation}},campus);
- assert.equal(vacationPromotion.status,200);
- const vacationReopened=(await call('/api/calendars/'+promotion.id,'GET',null,campus)).data;
- assert.deepEqual(vacationReopened.state.teacherVacations,threeVacation);
- assert.equal(vacationReopened.state.events.filter(e=>e.id.startsWith('teacher-vacation-')).length,3);
- assert(vacationReopened.state.events.some(e=>e.id==='fixture-event'));
+test('accounts, campus isolation, history, propagation, versioning and persistence', async (t) => {
+  let rendered = 0;
+  const database = await createTestDatabase(t);
+  const app = await createTestApp(t, {
+    store: database.store,
+    setupCode: 'test-setup',
+    pdfRenderer: async () => {
+      rendered++;
+      return Buffer.from('%PDF-1.4 synthetic');
+    },
+  });
+  await new Promise((resolve) => app.server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => app.server.close(resolve)));
+  const base = `http://127.0.0.1:${app.server.address().port}`;
 
- assert.equal((await call('/api/calendars/'+promotion.id+'/pdf','POST',{version:reopened.version},campus)).status,409);
- const c=(await call('/api/calendars','POST',{campusId:foz.id,purpose:'test',name:'Synthetic calendar',courses:'Synthetic course',year:2027,offer:'integrado',regime:'anual'},campus)).data;assert(c.id);
- assert.equal((await call('/api/calendars/'+c.id,'GET',null,foreign)).status,404);
- const before=(await call('/api/calendars/'+c.id,'GET',null,campus)).data;
- assert.equal((await call('/api/calendars/'+c.id,'GET',null,reviewer)).status,200);
- const campusPanel=(await call('/api/bootstrap','GET',null,campus)).data;assert.deepEqual(campusPanel.campuses.map(x=>x.id),[foz.id]);assert.equal(campusPanel.users.length,0);assert(campusPanel.calendars.every(x=>x.campusId===foz.id));
- const adminPanel=(await call('/api/bootstrap','GET',null,admin)).data;assert.equal(adminPanel.campuses.length,29);assert(adminPanel.calendars.some(x=>x.id===c.id));
- assert.equal((await call('/api/calendars','POST',{campusId:other.id,name:'Denied',courses:'Denied',year:2027,offer:'integrado',regime:'anual'},campus)).status,404);
- assert.equal((await call('/api/calendars/'+c.id,'PUT',{version:1,catalogueRevision:1,state:c.state},foreign)).status,404);
- const definitive=(await call('/api/calendars','POST',{campusId:foz.id,name:'Definitive fixture',courses:'Synthetic',year:2027,modalities:['subsequente','graduacao'],regime:'misto',purpose:'definitive'},campus)).data;
- assert.deepEqual(definitive.state.modalities,['subsequente','graduacao']);assert.equal(definitive.state.regime,'misto');assert.equal(definitive.name,'Calendário 2027 - Campus Foz do Iguaçu');
- assert.equal((await call('/api/logs','GET')).status,401);const log=(await call('/api/logs','GET',null,campus)).data;assert(log.entries.every(e=>e.calendar.includes('Foz do Iguaçu')));assert(log.entries.some(e=>e.version===1));
- const blocked=await call('/api/calendars/'+definitive.id+'/pdf','POST',{version:1,catalogueRevision:1},campus);assert.equal(blocked.status,409);assert.match(blocked.data.error,/bloqueada/);assert.equal(rendered,0);
- const automatic=(await call('/api/calendars','POST',{campusId:foz.id,courses:'Synthetic',year:2027,offer:'integrado',regime:'semestral',purpose:'test'},campus)).data;
- const autoState={...automatic.state,weekdays:[1,2,3,4,5],weekConfirmed:true,weekEvidence:'Ata',periods:[{id:'first',name:'1º semestre',start:'2027-02-09',end:'2027-02-10',targetDays:100},{id:'second',name:'2º semestre',start:'2027-07-20',end:'2027-07-21',targetDays:100}]};
- assert.equal((await call('/api/calendars/'+automatic.id,'PUT',{version:1,catalogueRevision:1,state:autoState},campus)).status,200);
- const autoSaved=(await call('/api/calendars/'+automatic.id,'GET',null,campus)).data.state;
- assert.equal(autoSaved.periods[0].targetDays,100);assert(autoSaved.periods[0].end>'2027-06-01');assert.equal(autoSaved.periods[1].targetDays,100);
- const vacationState={...definitive.state,teacherVacations:{julyStart:'2027-07-05',evidence:'Synthetic campus decision',julyEnd:'2027-12-31',total:999}};
- assert.equal((await call('/api/calendars/'+definitive.id,'PUT',{version:1,catalogueRevision:1,state:vacationState},campus)).status,200);
- const vacationSaved=(await call('/api/calendars/'+definitive.id,'GET',null,campus)).data;
- assert.equal(vacationSaved.state.events.find(e=>e.id==='teacher-vacation-july').end,'2027-07-19');assert.equal(vacationSaved.state.teacherVacations.total,undefined);
- assert.equal((await call('/api/calendars/'+definitive.id,'PUT',{version:2,catalogueRevision:1,state:{...vacationState,teacherVacations:{julyStart:'2027-07-18',evidence:'Synthetic'}}},campus)).status,400);
- const savedLog=(await call('/api/logs','GET',null,campus)).data.entries;assert(savedLog.some(e=>e.version===2&&e.action==='Calendário salvo'));
- const reitoria=bootstrap.data.campuses.filter(c=>c.name==='Reitoria');assert.equal(reitoria.length,1);assert(bootstrap.data.campuses.some(c=>c.name==='Ponta Grossa'));assert(bootstrap.data.campuses.some(c=>c.name==='Toledo'));assert.equal(bootstrap.data.campuses[0].name,'Arapongas');
- const removable=(await call('/api/users','POST',{name:'Remove fixture',email:'remove-fixture@ifpr.edu.br',role:'CAMPUS',campusId:foz.id,loginMethod:'invite'},admin)).data;
- assert.equal((await call('/api/users/'+removable.id,'DELETE',{},campus)).status,403);
- assert.equal((await call('/api/users/'+removable.id,'DELETE',{},admin)).status,200);
- assert.equal((await call('/api/users/'+removable.id+'/invitation','POST',{},admin)).status,400);
- assert(!(await call('/api/bootstrap','GET',null,admin)).data.users.some(u=>u.id===removable.id));
- const pdfPath='/api/calendars/'+c.id+'/pdf';
- assert.equal((await call(pdfPath,'POST',{version:1,catalogueRevision:1},foreign)).status,404);assert.equal(rendered,0);
- const pdf=await fetch(base+pdfPath,{method:'POST',headers:{Cookie:campus,'Content-Type':'application/json','X-Dentec-Request':'1'},body:JSON.stringify({version:1,catalogueRevision:1})});assert.equal(pdf.status,200);assert.equal(pdf.headers.get('content-type'),'application/pdf');assert((await pdf.text()).startsWith('%PDF-'));assert.equal(rendered,1);
- const event={name:'Synthetic shared event',start:'2027-02-03',end:'2027-02-03',kind:'note',category:'institucional',offers:['integrado'],evidence:'Synthetic source',revision:bootstrap.data.catalogue.revision};
- assert.equal((await call('/api/catalogue','POST',event,admin)).status,200);
- assert.equal((await call(pdfPath,'POST',{version:1,catalogueRevision:1},campus)).status,409);assert.equal(rendered,1);
- const after=(await call('/api/calendars/'+c.id,'GET',null,campus)).data;
- assert.equal(after.institutionalEvents.length,before.institutionalEvents.length+1);
- assert.equal((await call('/api/calendars/'+c.id,'PUT',{version:1,catalogueRevision:1,state:c.state},campus)).status,409);
- assert.equal((await call('/api/calendars/'+c.id,'PUT',{version:1,catalogueRevision:2,state:{...c.state,events:[{id:'formacao',name:'Formação',start:'2027-02-01',end:'2027-02-01',kind:'note',evidence:'Ata',category:'formacao'}]}},campus)).status,200);assert.equal((await call('/api/calendars/'+c.id,'GET',null,campus)).data.state.events[0].category,'formacao');
- assert.equal((await call('/api/calendars/'+c.id,'PUT',{version:1,catalogueRevision:2,state:c.state},campus)).status,409);
- const spoof=structuredClone(c.state);spoof.events=[{id:'inst:spoof',name:'Spoof',start:'2027-01-01',end:'2027-01-01',kind:'include',evidence:'fake'}];assert.equal((await call('/api/calendars/'+c.id,'PUT',{version:2,catalogueRevision:2,state:spoof},campus)).status,400);
- const payload={filename:'synthetic.pdf',year:2026,data:Buffer.from('%PDF-1.4\n% synthetic upload test only').toString('base64'),notes:'Historical test'};
- assert.equal((await call('/api/calendars/'+c.id+'/history','POST',{...payload,year:2025},campus)).status,400);
- assert.equal((await call('/api/calendars/'+c.id+'/history','POST',{...payload,data:Buffer.from('not pdf').toString('base64')},campus)).status,400);
- const history=(await call('/api/calendars/'+c.id+'/history','POST',payload,campus)).data;
- assert.equal((await fetch(base+'/api/history/'+history.id,{headers:{Cookie:foreign}})).status,404);
- assert.equal((await fetch(base+'/api/history/'+history.id,{headers:{Cookie:campus}})).status,200);
- assert.equal((await fetch(base+'/data/database.json')).status,404);
- assert.equal((await fetch(base+'/api/campuses',{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://external.example',Cookie:admin,'X-Dentec-Request':'1'},body:'{"name":"Bad"}'})).status,403);
- const restored=await createTestApp(t,{store:await database.reopen()});assert.equal((await restored.store.read({full:true})).histories.length,1);assert.equal((await restored.store.read({full:true})).calendars.find(item=>item.id===c.id).version,2);assert.equal((await restored.store.read({full:true})).calendars.find(item=>item.id===c.id).versions[0].institutionalEvents.length,before.institutionalEvents.length);
- const reviewPath='/api/reviews/'+c.id;
- assert.equal((await call(reviewPath,'GET',null,campus)).status,403);
- assert.equal((await call(reviewPath,'PUT',{},campus)).status,403);
- const support=(await call(reviewPath,'GET',null,reviewer)).data;assert.equal(support.criteria.length,29);assert.ok(!support.criteria.some(c=>c.id==='institution'));assert.equal(support.sameYear,false);
- const entries=support.criteria.map(x=>({id:x.id,status:'PENDENTE',notes:''}));
- const reviewPayload={calendarVersion:2,catalogueRevision:2,revision:0,entries,conclusion:'Análise inicial'};
- assert.equal((await call(reviewPath,'PUT',{...reviewPayload,entries:entries.map((e,i)=>i?e:{...e,status:'PENDENTE',reviewed:true})},reviewer)).status,400);
- entries[0]={...entries[0],status:'NAO_ATENDIDO',notes:'Semana não confirmada; solicitar complementação.',reviewed:true};
- entries[1]={...entries[1],status:'ATENDIDO',notes:'',reviewed:true};
- entries[2]={...entries[2],status:'NAO_APLICAVEL',notes:'',reviewed:true};
- assert.equal((await call(reviewPath,'PUT',reviewPayload,reviewer)).status,200);
- assert.equal((await call(reviewPath,'PUT',reviewPayload,admin)).status,409);
- const reviewSaved=(await call(reviewPath,'GET',null,admin)).data;assert.equal(reviewSaved.review.reviewer.name,newAdmin.name);assert.equal(reviewSaved.review.officialApproval,false);assert.equal(reviewSaved.review.entries[0].status,'NAO_ATENDIDO');assert.equal(reviewSaved.review.entries[1].notes,'');assert.equal(reviewSaved.review.entries[1].reviewed,true);assert.equal(reviewSaved.review.entries[2].reviewed,true);assert.equal(reviewSaved.review.entries[3].reviewed,false);
- assert.equal((await call(reviewPath+'/export','POST',{revision:1},campus)).status,403);
- assert.equal((await call(reviewPath+'/export','POST',{revision:0},admin)).status,409);
- const exported=await call(reviewPath+'/export','POST',{revision:1},reviewer);assert.equal(exported.status,200);assert(exported.data.html.includes('ANÁLISE TÉCNICO-PEDAGÓGICA'));assert(exported.data.text.includes('Análise inicial'));
- const reviewReload=await createTestApp(t,{store:await database.reopen()});assert.equal((await reviewReload.store.read({full:true})).reviews[0].revision,1);
- assert.equal((await call('/api/catalogue','POST',{...event,revision:2},admin)).status,200);
- assert.equal((await call(reviewPath,'GET',null,admin)).data.stale,true);
- assert.equal((await call(reviewPath+'/export','POST',{revision:1},admin)).status,409);
- assert.equal((await call(reviewPath,'PUT',{...reviewPayload,revision:1,catalogueRevision:3},reviewer)).status,409);
- assert.equal((await call(reviewPath,'PUT',{...reviewPayload,revision:1,catalogueRevision:3,acknowledgeStale:true},reviewer)).status,200);
- assert.equal((await app.store.read({full:true})).reviews[0].history.length,1);
- const invitationUser={name:'Synthetic invited colleague',email:'invited-test@ifpr.edu.br',role:'CAMPUS',campusId:foz.id,loginMethod:'invite'};
- assert.equal((await call('/api/users','POST',invitationUser,campus)).status,403);
- const invited=await call('/api/users','POST',invitationUser,admin);assert.equal(invited.status,201);assert.equal(invited.data.active,false);assert(invited.data.inviteUrl.includes('/ativar#token='));
- const inviteToken=new URLSearchParams(new URL(invited.data.inviteUrl).hash.slice(1)).get('token');assert(!JSON.stringify((await app.store.read({full:true}))).includes(inviteToken));
- assert.equal((await call('/api/login','POST',{email:invitationUser.email,password:'synthetic-test-only-password'})).status,401);
- assert.equal((await call('/api/invitations/check','POST',{token:inviteToken})).data.email,invitationUser.email);
- const replacement=await call('/api/users/'+invited.data.id+'/invitation','POST',{},admin);assert.equal(replacement.status,200);
- assert.equal((await call('/api/users/'+invited.data.id+'/invitation','POST',{},campus)).status,403);
- const newInviteToken=new URLSearchParams(new URL(replacement.data.inviteUrl).hash.slice(1)).get('token');assert.equal((await call('/api/invitations/check','POST',{token:inviteToken})).status,400);
- assert.equal((await call('/api/invitations/accept','POST',{token:newInviteToken,email:invitationUser.email,password:'short'})).status,400);
- assert.equal((await call('/api/invitations/accept','POST',{token:newInviteToken,email:invitationUser.email,password:'synthetic-invited-password'})).status,200);
- assert.equal((await call('/api/invitations/accept','POST',{token:newInviteToken,email:invitationUser.email,password:'replacement-password'})).status,400);
- const accepted=(await call('/api/login','POST',{email:invitationUser.email,password:'synthetic-invited-password'})).cookie;assert(accepted);
- const acceptedPanel=(await call('/api/bootstrap','GET',null,accepted)).data;assert.equal(acceptedPanel.user.role,'CAMPUS');assert.deepEqual(acceptedPanel.campuses.map(c=>c.id),[foz.id]);
+  async function call(path, method = 'GET', body, cookie = '') {
+    const r = await fetch(base + path, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'X-Dentec-Request': '1', Cookie: cookie },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await r.json();
+    return { status: r.status, data, cookie: r.headers.get('set-cookie')?.split(';')[0] };
+  }
+
+  assert.equal((await call('/api/bootstrap')).status, 401);
+  assert.equal(
+    (
+      await call('/api/setup', 'POST', {
+        code: 'wrong',
+        name: 'Test',
+        email: 'test@ifpr.edu.br',
+        password: 'synthetic-test-only-password',
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await call('/api/setup', 'POST', {
+        code: 'test-setup',
+        name: 'Test admin',
+        email: 'admin-test@ifpr.edu.br',
+        password: 'synthetic-test-only-password',
+      })
+    ).status,
+    201,
+  );
+  const admin = (
+    await call('/api/login', 'POST', {
+      email: 'admin-test@ifpr.edu.br',
+      password: 'synthetic-test-only-password',
+    })
+  ).cookie;
+  assert(admin);
+  const bootstrap = await call('/api/bootstrap', 'GET', null, admin),
+    foz = bootstrap.data.campuses.find((c) => c.name === 'Foz do Iguaçu'),
+    other = bootstrap.data.campuses[0];
+  for (const [n, c] of [
+    [1, foz],
+    [2, other],
+  ])
+    assert.equal(
+      (
+        await call(
+          '/api/users',
+          'POST',
+          {
+            name: 'Synthetic campus ' + n,
+            email: `campus-test${n}@ifpr.edu.br`,
+            password: 'synthetic-test-only-password',
+            campusId: c.id,
+          },
+          admin,
+        )
+      ).status,
+      201,
+    );
+  const campus = (
+    await call('/api/login', 'POST', {
+      email: 'campus-test1@ifpr.edu.br',
+      password: 'synthetic-test-only-password',
+    })
+  ).cookie;
+  const foreign = (
+    await call('/api/login', 'POST', {
+      email: 'campus-test2@ifpr.edu.br',
+      password: 'synthetic-test-only-password',
+    })
+  ).cookie;
+  const newAdmin = {
+    name: 'Synthetic PROENS reviewer',
+    email: 'reviewer-test@ifpr.edu.br',
+    password: 'synthetic-test-only-password',
+    role: 'ADMIN',
+  };
+  assert.equal((await call('/api/users', 'POST', newAdmin)).status, 401);
+  assert.equal((await call('/api/users', 'POST', newAdmin, campus)).status, 403);
+  assert.equal(
+    (await call('/api/users', 'POST', { ...newAdmin, role: 'INVALID' }, admin)).status,
+    400,
+  );
+  const createdAdmin = await call('/api/users', 'POST', newAdmin, admin);
+  assert.equal(createdAdmin.status, 201);
+  assert.equal(createdAdmin.data.role, 'ADMIN');
+  assert.equal(createdAdmin.data.campusId, null);
+  assert(!('hash' in createdAdmin.data));
+  assert.equal((await call('/api/users', 'POST', newAdmin, admin)).status, 409);
+  const reviewer = (
+    await call('/api/login', 'POST', { email: newAdmin.email, password: newAdmin.password })
+  ).cookie;
+  const reviewerPanel = (await call('/api/bootstrap', 'GET', null, reviewer)).data;
+  assert.equal(reviewerPanel.user.role, 'ADMIN');
+  assert.equal(reviewerPanel.campuses.length, 29);
+  assert.equal((await call('/api/campuses', 'POST', { name: 'Unauthorized' }, campus)).status, 403);
+  assert.equal((await call('/api/catalogue', 'POST', {}, campus)).status, 403);
+  const promotion = (
+    await call(
+      '/api/calendars',
+      'POST',
+      {
+        campusId: foz.id,
+        purpose: 'test',
+        courses: 'Promotion fixture',
+        year: 2027,
+        offer: 'integrado',
+        regime: 'anual',
+      },
+      campus,
+    )
+  ).data;
+  const promotionState = {
+    ...promotion.state,
+    events: [
+      {
+        id: 'fixture-event',
+        name: 'Evento preservado',
+        start: '2027-03-01',
+        end: '2027-03-01',
+        kind: 'note',
+        category: 'evento',
+        evidence: 'Decisão de teste',
+      },
+    ],
+  };
+  const stored = (
+    await call(
+      '/api/calendars/' + promotion.id,
+      'PUT',
+      { version: 1, catalogueRevision: 1, state: promotionState },
+      campus,
+    )
+  ).data;
+  const promotionPath = '/api/calendars/' + promotion.id + '/make-definitive';
+  assert.equal((await call(promotionPath, 'POST', { version: stored.version })).status, 401);
+  assert.equal(
+    (await call(promotionPath, 'POST', { version: stored.version }, foreign)).status,
+    404,
+  );
+  assert.equal((await call(promotionPath, 'POST', { version: 1 }, campus)).status, 409);
+  const promoted = await call(promotionPath, 'POST', { version: stored.version }, campus);
+  assert.equal(promoted.status, 200);
+  assert.equal(promoted.data.purpose, 'definitive');
+  assert.equal(promoted.data.version, stored.version + 1);
+  const reopened = (await call('/api/calendars/' + promotion.id, 'GET', null, campus)).data;
+  assert.deepEqual(reopened.state, stored.state);
+  assert.equal(reopened.versions.length, 2);
+  assert.equal(reopened.id, promotion.id);
+  assert.equal(
+    (await call(promotionPath, 'POST', { version: promoted.data.version }, campus)).data.version,
+    promoted.data.version,
+  );
+  assert.equal(reopened.readiness.ready, false);
+  const threeVacation = {
+    firstStart: '2027-01-02',
+    firstEnd: '2027-01-16',
+    secondStart: '2027-07-01',
+    secondEnd: '2027-07-15',
+    thirdStart: '2027-12-01',
+    thirdEnd: '2027-12-15',
+    evidence: 'Decisão de teste',
+  };
+  const vacationPromotion = await call(
+    '/api/calendars/' + promotion.id,
+    'PUT',
+    {
+      version: reopened.version,
+      catalogueRevision: 1,
+      state: { ...reopened.state, teacherVacations: threeVacation },
+    },
+    campus,
+  );
+  assert.equal(vacationPromotion.status, 200);
+  const vacationReopened = (await call('/api/calendars/' + promotion.id, 'GET', null, campus)).data;
+  assert.deepEqual(vacationReopened.state.teacherVacations, threeVacation);
+  assert.equal(
+    vacationReopened.state.events.filter((e) => e.id.startsWith('teacher-vacation-')).length,
+    3,
+  );
+  assert(vacationReopened.state.events.some((e) => e.id === 'fixture-event'));
+
+  assert.equal(
+    (
+      await call(
+        '/api/calendars/' + promotion.id + '/pdf',
+        'POST',
+        { version: reopened.version },
+        campus,
+      )
+    ).status,
+    409,
+  );
+  const c = (
+    await call(
+      '/api/calendars',
+      'POST',
+      {
+        campusId: foz.id,
+        purpose: 'test',
+        name: 'Synthetic calendar',
+        courses: 'Synthetic course',
+        year: 2027,
+        offer: 'integrado',
+        regime: 'anual',
+      },
+      campus,
+    )
+  ).data;
+  assert(c.id);
+  assert.equal((await call('/api/calendars/' + c.id, 'GET', null, foreign)).status, 404);
+  const before = (await call('/api/calendars/' + c.id, 'GET', null, campus)).data;
+  assert.equal((await call('/api/calendars/' + c.id, 'GET', null, reviewer)).status, 200);
+  const campusPanel = (await call('/api/bootstrap', 'GET', null, campus)).data;
+  assert.deepEqual(
+    campusPanel.campuses.map((x) => x.id),
+    [foz.id],
+  );
+  assert.equal(campusPanel.users.length, 0);
+  assert(campusPanel.calendars.every((x) => x.campusId === foz.id));
+  const adminPanel = (await call('/api/bootstrap', 'GET', null, admin)).data;
+  assert.equal(adminPanel.campuses.length, 29);
+  assert(adminPanel.calendars.some((x) => x.id === c.id));
+  assert.equal(
+    (
+      await call(
+        '/api/calendars',
+        'POST',
+        {
+          campusId: other.id,
+          name: 'Denied',
+          courses: 'Denied',
+          year: 2027,
+          offer: 'integrado',
+          regime: 'anual',
+        },
+        campus,
+      )
+    ).status,
+    404,
+  );
+  assert.equal(
+    (
+      await call(
+        '/api/calendars/' + c.id,
+        'PUT',
+        { version: 1, catalogueRevision: 1, state: c.state },
+        foreign,
+      )
+    ).status,
+    404,
+  );
+  const definitive = (
+    await call(
+      '/api/calendars',
+      'POST',
+      {
+        campusId: foz.id,
+        name: 'Definitive fixture',
+        courses: 'Synthetic',
+        year: 2027,
+        modalities: ['subsequente', 'graduacao'],
+        regime: 'misto',
+        purpose: 'definitive',
+      },
+      campus,
+    )
+  ).data;
+  assert.deepEqual(definitive.state.modalities, ['subsequente', 'graduacao']);
+  assert.equal(definitive.state.regime, 'misto');
+  assert.equal(definitive.name, 'Calendário 2027 - Campus Foz do Iguaçu');
+  assert.equal((await call('/api/logs', 'GET')).status, 401);
+  const log = (await call('/api/logs', 'GET', null, campus)).data;
+  assert(log.entries.every((e) => e.calendar.includes('Foz do Iguaçu')));
+  assert(log.entries.some((e) => e.version === 1));
+  const blocked = await call(
+    '/api/calendars/' + definitive.id + '/pdf',
+    'POST',
+    { version: 1, catalogueRevision: 1 },
+    campus,
+  );
+  assert.equal(blocked.status, 409);
+  assert.match(blocked.data.error, /bloqueada/);
+  assert.equal(rendered, 0);
+  const automatic = (
+    await call(
+      '/api/calendars',
+      'POST',
+      {
+        campusId: foz.id,
+        courses: 'Synthetic',
+        year: 2027,
+        offer: 'integrado',
+        regime: 'semestral',
+        purpose: 'test',
+      },
+      campus,
+    )
+  ).data;
+  const autoState = {
+    ...automatic.state,
+    weekdays: [1, 2, 3, 4, 5],
+    weekConfirmed: true,
+    weekEvidence: 'Ata',
+    periods: [
+      { id: 'first', name: '1º semestre', start: '2027-02-09', end: '2027-02-10', targetDays: 100 },
+      {
+        id: 'second',
+        name: '2º semestre',
+        start: '2027-07-20',
+        end: '2027-07-21',
+        targetDays: 100,
+      },
+    ],
+  };
+  assert.equal(
+    (
+      await call(
+        '/api/calendars/' + automatic.id,
+        'PUT',
+        { version: 1, catalogueRevision: 1, state: autoState },
+        campus,
+      )
+    ).status,
+    200,
+  );
+  const autoSaved = (await call('/api/calendars/' + automatic.id, 'GET', null, campus)).data.state;
+  assert.equal(autoSaved.periods[0].targetDays, 100);
+  assert(autoSaved.periods[0].end > '2027-06-01');
+  assert.equal(autoSaved.periods[1].targetDays, 100);
+  const vacationState = {
+    ...definitive.state,
+    teacherVacations: {
+      julyStart: '2027-07-05',
+      evidence: 'Synthetic campus decision',
+      julyEnd: '2027-12-31',
+      total: 999,
+    },
+  };
+  assert.equal(
+    (
+      await call(
+        '/api/calendars/' + definitive.id,
+        'PUT',
+        { version: 1, catalogueRevision: 1, state: vacationState },
+        campus,
+      )
+    ).status,
+    200,
+  );
+  const vacationSaved = (await call('/api/calendars/' + definitive.id, 'GET', null, campus)).data;
+  assert.equal(
+    vacationSaved.state.events.find((e) => e.id === 'teacher-vacation-july').end,
+    '2027-07-19',
+  );
+  assert.equal(vacationSaved.state.teacherVacations.total, undefined);
+  assert.equal(
+    (
+      await call(
+        '/api/calendars/' + definitive.id,
+        'PUT',
+        {
+          version: 2,
+          catalogueRevision: 1,
+          state: {
+            ...vacationState,
+            teacherVacations: { julyStart: '2027-07-18', evidence: 'Synthetic' },
+          },
+        },
+        campus,
+      )
+    ).status,
+    400,
+  );
+  const savedLog = (await call('/api/logs', 'GET', null, campus)).data.entries;
+  assert(savedLog.some((e) => e.version === 2 && e.action === 'Calendário salvo'));
+  const reitoria = bootstrap.data.campuses.filter((c) => c.name === 'Reitoria');
+  assert.equal(reitoria.length, 1);
+  assert(bootstrap.data.campuses.some((c) => c.name === 'Ponta Grossa'));
+  assert(bootstrap.data.campuses.some((c) => c.name === 'Toledo'));
+  assert.equal(bootstrap.data.campuses[0].name, 'Arapongas');
+  const removable = (
+    await call(
+      '/api/users',
+      'POST',
+      {
+        name: 'Remove fixture',
+        email: 'remove-fixture@ifpr.edu.br',
+        role: 'CAMPUS',
+        campusId: foz.id,
+        loginMethod: 'invite',
+      },
+      admin,
+    )
+  ).data;
+  assert.equal((await call('/api/users/' + removable.id, 'DELETE', {}, campus)).status, 403);
+  assert.equal((await call('/api/users/' + removable.id, 'DELETE', {}, admin)).status, 200);
+  assert.equal(
+    (await call('/api/users/' + removable.id + '/invitation', 'POST', {}, admin)).status,
+    400,
+  );
+  assert(
+    !(await call('/api/bootstrap', 'GET', null, admin)).data.users.some(
+      (u) => u.id === removable.id,
+    ),
+  );
+  const pdfPath = '/api/calendars/' + c.id + '/pdf';
+  assert.equal(
+    (await call(pdfPath, 'POST', { version: 1, catalogueRevision: 1 }, foreign)).status,
+    404,
+  );
+  assert.equal(rendered, 0);
+  const pdf = await fetch(base + pdfPath, {
+    method: 'POST',
+    headers: { Cookie: campus, 'Content-Type': 'application/json', 'X-Dentec-Request': '1' },
+    body: JSON.stringify({ version: 1, catalogueRevision: 1 }),
+  });
+  assert.equal(pdf.status, 200);
+  assert.equal(pdf.headers.get('content-type'), 'application/pdf');
+  assert((await pdf.text()).startsWith('%PDF-'));
+  assert.equal(rendered, 1);
+  const event = {
+    name: 'Synthetic shared event',
+    start: '2027-02-03',
+    end: '2027-02-03',
+    kind: 'note',
+    category: 'institucional',
+    offers: ['integrado'],
+    evidence: 'Synthetic source',
+    revision: bootstrap.data.catalogue.revision,
+  };
+  assert.equal((await call('/api/catalogue', 'POST', event, admin)).status, 200);
+  assert.equal(
+    (await call(pdfPath, 'POST', { version: 1, catalogueRevision: 1 }, campus)).status,
+    409,
+  );
+  assert.equal(rendered, 1);
+  const after = (await call('/api/calendars/' + c.id, 'GET', null, campus)).data;
+  assert.equal(after.institutionalEvents.length, before.institutionalEvents.length + 1);
+  assert.equal(
+    (
+      await call(
+        '/api/calendars/' + c.id,
+        'PUT',
+        { version: 1, catalogueRevision: 1, state: c.state },
+        campus,
+      )
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await call(
+        '/api/calendars/' + c.id,
+        'PUT',
+        {
+          version: 1,
+          catalogueRevision: 2,
+          state: {
+            ...c.state,
+            events: [
+              {
+                id: 'formacao',
+                name: 'Formação',
+                start: '2027-02-01',
+                end: '2027-02-01',
+                kind: 'note',
+                evidence: 'Ata',
+                category: 'formacao',
+              },
+            ],
+          },
+        },
+        campus,
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await call('/api/calendars/' + c.id, 'GET', null, campus)).data.state.events[0].category,
+    'formacao',
+  );
+  assert.equal(
+    (
+      await call(
+        '/api/calendars/' + c.id,
+        'PUT',
+        { version: 1, catalogueRevision: 2, state: c.state },
+        campus,
+      )
+    ).status,
+    409,
+  );
+  const spoof = structuredClone(c.state);
+  spoof.events = [
+    {
+      id: 'inst:spoof',
+      name: 'Spoof',
+      start: '2027-01-01',
+      end: '2027-01-01',
+      kind: 'include',
+      evidence: 'fake',
+    },
+  ];
+  assert.equal(
+    (
+      await call(
+        '/api/calendars/' + c.id,
+        'PUT',
+        { version: 2, catalogueRevision: 2, state: spoof },
+        campus,
+      )
+    ).status,
+    400,
+  );
+  const payload = {
+    filename: 'synthetic.pdf',
+    year: 2026,
+    data: Buffer.from('%PDF-1.4\n% synthetic upload test only').toString('base64'),
+    notes: 'Historical test',
+  };
+  assert.equal(
+    (await call('/api/calendars/' + c.id + '/history', 'POST', { ...payload, year: 2025 }, campus))
+      .status,
+    400,
+  );
+  assert.equal(
+    (
+      await call(
+        '/api/calendars/' + c.id + '/history',
+        'POST',
+        { ...payload, data: Buffer.from('not pdf').toString('base64') },
+        campus,
+      )
+    ).status,
+    400,
+  );
+  const history = (await call('/api/calendars/' + c.id + '/history', 'POST', payload, campus)).data;
+  assert.equal(
+    (await fetch(base + '/api/history/' + history.id, { headers: { Cookie: foreign } })).status,
+    404,
+  );
+  assert.equal(
+    (await fetch(base + '/api/history/' + history.id, { headers: { Cookie: campus } })).status,
+    200,
+  );
+  assert.equal((await fetch(base + '/data/database.json')).status, 404);
+  assert.equal(
+    (
+      await fetch(base + '/api/campuses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'https://external.example',
+          Cookie: admin,
+          'X-Dentec-Request': '1',
+        },
+        body: '{"name":"Bad"}',
+      })
+    ).status,
+    403,
+  );
+  const restored = await createTestApp(t, { store: await database.reopen() });
+  assert.equal((await restored.store.read({ full: true })).histories.length, 1);
+  assert.equal(
+    (await restored.store.read({ full: true })).calendars.find((item) => item.id === c.id).version,
+    2,
+  );
+  assert.equal(
+    (await restored.store.read({ full: true })).calendars.find((item) => item.id === c.id)
+      .versions[0].institutionalEvents.length,
+    before.institutionalEvents.length,
+  );
+  const reviewPath = '/api/reviews/' + c.id;
+  assert.equal((await call(reviewPath, 'GET', null, campus)).status, 403);
+  assert.equal((await call(reviewPath, 'PUT', {}, campus)).status, 403);
+  const support = (await call(reviewPath, 'GET', null, reviewer)).data;
+  assert.equal(support.criteria.length, 29);
+  assert.ok(!support.criteria.some((c) => c.id === 'institution'));
+  assert.equal(support.sameYear, false);
+  const entries = support.criteria.map((x) => ({ id: x.id, status: 'PENDENTE', notes: '' }));
+  const reviewPayload = {
+    calendarVersion: 2,
+    catalogueRevision: 2,
+    revision: 0,
+    entries,
+    conclusion: 'Análise inicial',
+  };
+  assert.equal(
+    (
+      await call(
+        reviewPath,
+        'PUT',
+        {
+          ...reviewPayload,
+          entries: entries.map((e, i) => (i ? e : { ...e, status: 'PENDENTE', reviewed: true })),
+        },
+        reviewer,
+      )
+    ).status,
+    400,
+  );
+  entries[0] = {
+    ...entries[0],
+    status: 'NAO_ATENDIDO',
+    notes: 'Semana não confirmada; solicitar complementação.',
+    reviewed: true,
+  };
+  entries[1] = { ...entries[1], status: 'ATENDIDO', notes: '', reviewed: true };
+  entries[2] = { ...entries[2], status: 'NAO_APLICAVEL', notes: '', reviewed: true };
+  assert.equal((await call(reviewPath, 'PUT', reviewPayload, reviewer)).status, 200);
+  assert.equal((await call(reviewPath, 'PUT', reviewPayload, admin)).status, 409);
+  const reviewSaved = (await call(reviewPath, 'GET', null, admin)).data;
+  assert.equal(reviewSaved.review.reviewer.name, newAdmin.name);
+  assert.equal(reviewSaved.review.officialApproval, false);
+  assert.equal(reviewSaved.review.entries[0].status, 'NAO_ATENDIDO');
+  assert.equal(reviewSaved.review.entries[1].notes, '');
+  assert.equal(reviewSaved.review.entries[1].reviewed, true);
+  assert.equal(reviewSaved.review.entries[2].reviewed, true);
+  assert.equal(reviewSaved.review.entries[3].reviewed, false);
+  assert.equal((await call(reviewPath + '/export', 'POST', { revision: 1 }, campus)).status, 403);
+  assert.equal((await call(reviewPath + '/export', 'POST', { revision: 0 }, admin)).status, 409);
+  const exported = await call(reviewPath + '/export', 'POST', { revision: 1 }, reviewer);
+  assert.equal(exported.status, 200);
+  assert(exported.data.html.includes('ANÁLISE TÉCNICO-PEDAGÓGICA'));
+  assert(exported.data.text.includes('Análise inicial'));
+  const reviewReload = await createTestApp(t, { store: await database.reopen() });
+  assert.equal((await reviewReload.store.read({ full: true })).reviews[0].revision, 1);
+  assert.equal(
+    (await call('/api/catalogue', 'POST', { ...event, revision: 2 }, admin)).status,
+    200,
+  );
+  assert.equal((await call(reviewPath, 'GET', null, admin)).data.stale, true);
+  assert.equal((await call(reviewPath + '/export', 'POST', { revision: 1 }, admin)).status, 409);
+  assert.equal(
+    (
+      await call(
+        reviewPath,
+        'PUT',
+        { ...reviewPayload, revision: 1, catalogueRevision: 3 },
+        reviewer,
+      )
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await call(
+        reviewPath,
+        'PUT',
+        { ...reviewPayload, revision: 1, catalogueRevision: 3, acknowledgeStale: true },
+        reviewer,
+      )
+    ).status,
+    200,
+  );
+  assert.equal((await app.store.read({ full: true })).reviews[0].history.length, 1);
+  const invitationUser = {
+    name: 'Synthetic invited colleague',
+    email: 'invited-test@ifpr.edu.br',
+    role: 'CAMPUS',
+    campusId: foz.id,
+    loginMethod: 'invite',
+  };
+  assert.equal((await call('/api/users', 'POST', invitationUser, campus)).status, 403);
+  const invited = await call('/api/users', 'POST', invitationUser, admin);
+  assert.equal(invited.status, 201);
+  assert.equal(invited.data.active, false);
+  assert(invited.data.inviteUrl.includes('/ativar#token='));
+  const inviteToken = new URLSearchParams(new URL(invited.data.inviteUrl).hash.slice(1)).get(
+    'token',
+  );
+  assert(!JSON.stringify(await app.store.read({ full: true })).includes(inviteToken));
+  assert.equal(
+    (
+      await call('/api/login', 'POST', {
+        email: invitationUser.email,
+        password: 'synthetic-test-only-password',
+      })
+    ).status,
+    401,
+  );
+  assert.equal(
+    (await call('/api/invitations/check', 'POST', { token: inviteToken })).data.email,
+    invitationUser.email,
+  );
+  const replacement = await call(
+    '/api/users/' + invited.data.id + '/invitation',
+    'POST',
+    {},
+    admin,
+  );
+  assert.equal(replacement.status, 200);
+  assert.equal(
+    (await call('/api/users/' + invited.data.id + '/invitation', 'POST', {}, campus)).status,
+    403,
+  );
+  const newInviteToken = new URLSearchParams(new URL(replacement.data.inviteUrl).hash.slice(1)).get(
+    'token',
+  );
+  assert.equal((await call('/api/invitations/check', 'POST', { token: inviteToken })).status, 400);
+  assert.equal(
+    (
+      await call('/api/invitations/accept', 'POST', {
+        token: newInviteToken,
+        email: invitationUser.email,
+        password: 'short',
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await call('/api/invitations/accept', 'POST', {
+        token: newInviteToken,
+        email: invitationUser.email,
+        password: 'synthetic-invited-password',
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (
+      await call('/api/invitations/accept', 'POST', {
+        token: newInviteToken,
+        email: invitationUser.email,
+        password: 'replacement-password',
+      })
+    ).status,
+    400,
+  );
+  const accepted = (
+    await call('/api/login', 'POST', {
+      email: invitationUser.email,
+      password: 'synthetic-invited-password',
+    })
+  ).cookie;
+  assert(accepted);
+  const acceptedPanel = (await call('/api/bootstrap', 'GET', null, accepted)).data;
+  assert.equal(acceptedPanel.user.role, 'CAMPUS');
+  assert.deepEqual(
+    acceptedPanel.campuses.map((c) => c.id),
+    [foz.id],
+  );
 });
 
-test('PROENS layout renders all months, event descriptions and escaped course names',()=>{
- const html=proensLayout({year:2027,campus:'Foz',periods:[]},inheritedEvents(initialCatalogue(),2027,'integrado'),null,{version:1,currentCatalogueRevision:1,courses:'<script>test</script>'});
- assert.equal((html.match(/class="proens-month"/g)||[]).length,12);assert(html.includes('&lt;script&gt;'));assert(!html.includes('<script>'));assert(html.includes('Confraternização'));assert(html.includes('Sem aprovação oficial'));
+test('PROENS layout renders all months, event descriptions and escaped course names', () => {
+  const html = proensLayout(
+    { year: 2027, campus: 'Foz', periods: [] },
+    inheritedEvents(initialCatalogue(), 2027, 'integrado'),
+    null,
+    { version: 1, currentCatalogueRevision: 1, courses: '<script>test</script>' },
+  );
+  assert.equal((html.match(/class="proens-month"/g) || []).length, 12);
+  assert(html.includes('&lt;script&gt;'));
+  assert(!html.includes('<script>'));
+  assert(html.includes('Confraternização'));
+  assert(html.includes('Sem aprovação oficial'));
 });

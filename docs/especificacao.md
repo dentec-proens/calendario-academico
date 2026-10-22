@@ -62,26 +62,26 @@ Os quatro modos reutilizam essas telas: construir parte da identificação; revi
 
 Identificadores são UUID; datas civis usam DATE no banco e YYYY-MM-DD na API; instantes de auditoria usam UTC. Não armazenar datas letivas como timestamps sujeitos à conversão de fuso. A apresentação de instantes considera America/Sao_Paulo. Todo registro mutável tem versão de concorrência.
 
-| Entidade | Campos principais e relações |
-|---|---|
-| Campus | id, nome oficial, município, UF, código municipal, ativo |
-| Usuário e vínculo | id, subject do provedor, e-mail, papel, ativo; vínculo usuário–campus |
-| Oferta e curso | id, campusId, nível, forma, modalidade, regime; cursos vinculados e referência PPC |
-| Documento | id, categoria, campusId opcional para institucional, título, nome original, hash SHA-256, armazenamento, ano/escopo, versão, situação, emitente |
-| Evidência documental | documentId, página/artigo/inciso, trecho, localizador, origem, conferente, data; confirmação da aprovação separada do nome do arquivo |
-| Pacote de regras | id, ano, ofertas aplicáveis, versão, estado, documentos fixados, revisão humana e data de ativação |
-| Regra | id estável, versão, pacoteId, predicado de escopo, parâmetros, severidade, evidência, algoritmo ou verificação humana |
-| Calendário | id, campusId, ano, ofertaId, cursos abrangidos, modo, estado e versão corrente |
-| Versão de calendário | id, calendarId, número, pai, pacoteId, autor, instante e hash dos dados; imutável após consolidação |
-| Período | id, versionId, nome, tipo, início/fim inclusivos e organização; etapas podem ser filhas de semestre |
-| Evento | id, versionId, início/fim, natureza, classificação, ofertas/cursos, status de confirmação, efeito acadêmico/administrativo, horas e evidências |
-| Feriado local | id, município, ano/data, natureza, documento oficial, aplicabilidade e confirmação; relacionado ao evento |
-| Item histórico | id, documento anterior, trecho/localização, categoria sugerida e decisão de manter/atualizar/descartar; não conta como evento |
-| Validação | id, versionId, pacoteId, versão do motor, hash de entrada, data, totais e conclusão preliminar |
-| Achado | id, validationId, ruleId, escopo, resultado, severidade, observado/esperado, evidências e resolução |
-| Exceção | id, achado, justificativa, documento de deliberação, responsável, escopo, validade e situação; não sobrescreve a regra |
-| Exportação | id, versionId, validationId, templateVersion, hashes dos arquivos e autor |
-| Auditoria | ator, ação, entidade, antes/depois ou hashes, instante e correlação; sem segredo ou texto sensível desnecessário |
+| Entidade             | Campos principais e relações                                                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Campus               | id, nome oficial, município, UF, código municipal, ativo                                                                                        |
+| Usuário e vínculo    | id, subject do provedor, e-mail, papel, ativo; vínculo usuário–campus                                                                           |
+| Oferta e curso       | id, campusId, nível, forma, modalidade, regime; cursos vinculados e referência PPC                                                              |
+| Documento            | id, categoria, campusId opcional para institucional, título, nome original, hash SHA-256, armazenamento, ano/escopo, versão, situação, emitente |
+| Evidência documental | documentId, página/artigo/inciso, trecho, localizador, origem, conferente, data; confirmação da aprovação separada do nome do arquivo           |
+| Pacote de regras     | id, ano, ofertas aplicáveis, versão, estado, documentos fixados, revisão humana e data de ativação                                              |
+| Regra                | id estável, versão, pacoteId, predicado de escopo, parâmetros, severidade, evidência, algoritmo ou verificação humana                           |
+| Calendário           | id, campusId, ano, ofertaId, cursos abrangidos, modo, estado e versão corrente                                                                  |
+| Versão de calendário | id, calendarId, número, pai, pacoteId, autor, instante e hash dos dados; imutável após consolidação                                             |
+| Período              | id, versionId, nome, tipo, início/fim inclusivos e organização; etapas podem ser filhas de semestre                                             |
+| Evento               | id, versionId, início/fim, natureza, classificação, ofertas/cursos, status de confirmação, efeito acadêmico/administrativo, horas e evidências  |
+| Feriado local        | id, município, ano/data, natureza, documento oficial, aplicabilidade e confirmação; relacionado ao evento                                       |
+| Item histórico       | id, documento anterior, trecho/localização, categoria sugerida e decisão de manter/atualizar/descartar; não conta como evento                   |
+| Validação            | id, versionId, pacoteId, versão do motor, hash de entrada, data, totais e conclusão preliminar                                                  |
+| Achado               | id, validationId, ruleId, escopo, resultado, severidade, observado/esperado, evidências e resolução                                             |
+| Exceção              | id, achado, justificativa, documento de deliberação, responsável, escopo, validade e situação; não sobrescreve a regra                          |
+| Exportação           | id, versionId, validationId, templateVersion, hashes dos arquivos e autor                                                                       |
+| Auditoria            | ator, ação, entidade, antes/depois ou hashes, instante e correlação; sem segredo ou texto sensível desnecessário                                |
 
 Restrições: fim >= início; unicidade do número de versão por calendário; evento pertence à mesma versão/campus autorizado; regra sempre aponta para evidência; vínculo de oferta e calendário deve ser do mesmo campus; referências imutáveis impedem alteração retroativa de relatório. Totais são derivados, nunca valores editáveis no formulário.
 
@@ -107,29 +107,29 @@ Para cada dia contado, retornar motivo e evidência; para cada exclusão, devolv
 
 Regras extraídas do documento SEI 4354987, a serem implementadas e conferidas com o pacote completo:
 
-| Código | Verificação e fundamento |
-|---|---|
-| NOR 01 | Datas do art. 2º obrigatórias, com exceções do art. 3º; distinguir feriados, recessos, comemorações e prazos, sem excluir todas as datas indiscriminadamente |
-| NOR 02 | Dia do Professor ajustável pelo campus, art. 3º § 1º; demais alterações excepcionais exigem justificativa e deliberação PROENS, § 3º |
+| Código | Verificação e fundamento                                                                                                                                                                      |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NOR 01 | Datas do art. 2º obrigatórias, com exceções do art. 3º; distinguir feriados, recessos, comemorações e prazos, sem excluir todas as datas indiscriminadamente                                  |
+| NOR 02 | Dia do Professor ajustável pelo campus, art. 3º § 1º; demais alterações excepcionais exigem justificativa e deliberação PROENS, § 3º                                                          |
 | NOR 03 | Prazo da referência coincidente com feriado municipal ou recesso decorrente vai ao primeiro dia letivo subsequente, art. 3º § 2º; não deslocar todo evento e não usar simplesmente “dia útil” |
-| NOR 04 | Mínimo de 200 dias anuais por curso, art. 4º; mínimo de 100 em cada semestre para organização semestral, § 1º |
-| NOR 05 | Atividade letiva requer enquadramento pedagógico e participação efetiva de professores e estudantes, art. 5º; formação de servidores não é automaticamente letiva |
-| NOR 06 | Recessos acadêmicos e acadêmico-administrativos têm efeitos distintos, arts. 6º e 7º |
-| NOR 07 | Período de referência entre 01/02/2027 e 17/12/2027; início letivo até 15/02/2027, art. 8º |
-| NOR 08 | Cursos/vagas até 31/05/2027, art. 9º; editais de ingresso até 15/06/2027, com ajuste PROENS previsto no art. 10 |
-| NOR 09 | Presença de todos os itens aplicáveis do art. 11, incisos I a XXVI; não tratar o resumo desta tabela como checklist integral |
-| NOR 10 | Férias docentes de 45 dias, art. 11 IV; contar datas únicas, distinguir férias escolares/docentes e não inferir férias individuais de lacunas |
-| NOR 11 | Matrículas, ajustes, trancamento e cancelamento dos incisos V e VII aplicáveis a subsequentes/graduação; não exigir indistintamente de integrado |
-| NOR 12 | Aproveitamento/certificação/equivalência de estágio pelo menos uma vez para anual e duas para semestral, art. 11 VI; editais de ingresso antes do período e na periodicidade do inciso VIII |
-| NOR 13 | Resultados, diários, planos, PIT/RIT, conselhos e revisão na sequência dos incisos IX a XV; conselhos ordinários após divulgação de resultados parciais |
-| NOR 14 | Reuniões com familiares/comunidade, eventos, egressos e estágios, incisos XVI a XIX; fase local OBR até 31/08 e Mostra até 30/09, XX e XXI |
-| NOR 15 | Formação pedagógica >= 40 horas anuais e planejamento/replanejamento >= 20 horas, art. 11 XXII e XXIII; exigir horas explícitas, não converter dias em horas presumidas |
-| NOR 16 | Semanas dos incisos XXIV a XXVI obrigatórias nos técnicos, facultativas na graduação; operacionalizar “segunda semana”/“primeira semana” com convenção institucional registrada |
-| NOR 17 | JIFPR, SE²PIN e outros eventos institucionais incorporados quando definidos, art. 12; data ainda desconhecida permanece pendente |
-| NOR 18 | Sábados letivos vinculados às finalidades do art. 13, sem inserção automática para fechar meta |
-| NOR 19 | Modelo PROENS e apreciação CGPC/Codic, art. 14; envio SEI ao menos 60 dias antes do início, com extratos de atas, art. 15 |
-| NOR 20 | Alteração posterior exige novo encaminhamento e documentos; antecedência de 30 dias salvo hipótese do § 2º, art. 16; validar contra data de alteração explicitamente informada |
-| NOR 21 | Reposição e carga de trabalho têm análise própria, art. 17; feriados oficiais da sede sem expediente, art. 19; casos omissos vão à PROENS, art. 20 |
+| NOR 04 | Mínimo de 200 dias anuais por curso, art. 4º; mínimo de 100 em cada semestre para organização semestral, § 1º                                                                                 |
+| NOR 05 | Atividade letiva requer enquadramento pedagógico e participação efetiva de professores e estudantes, art. 5º; formação de servidores não é automaticamente letiva                             |
+| NOR 06 | Recessos acadêmicos e acadêmico-administrativos têm efeitos distintos, arts. 6º e 7º                                                                                                          |
+| NOR 07 | Período de referência entre 01/02/2027 e 17/12/2027; início letivo até 15/02/2027, art. 8º                                                                                                    |
+| NOR 08 | Cursos/vagas até 31/05/2027, art. 9º; editais de ingresso até 15/06/2027, com ajuste PROENS previsto no art. 10                                                                               |
+| NOR 09 | Presença de todos os itens aplicáveis do art. 11, incisos I a XXVI; não tratar o resumo desta tabela como checklist integral                                                                  |
+| NOR 10 | Férias docentes de 45 dias, art. 11 IV; contar datas únicas, distinguir férias escolares/docentes e não inferir férias individuais de lacunas                                                 |
+| NOR 11 | Matrículas, ajustes, trancamento e cancelamento dos incisos V e VII aplicáveis a subsequentes/graduação; não exigir indistintamente de integrado                                              |
+| NOR 12 | Aproveitamento/certificação/equivalência de estágio pelo menos uma vez para anual e duas para semestral, art. 11 VI; editais de ingresso antes do período e na periodicidade do inciso VIII   |
+| NOR 13 | Resultados, diários, planos, PIT/RIT, conselhos e revisão na sequência dos incisos IX a XV; conselhos ordinários após divulgação de resultados parciais                                       |
+| NOR 14 | Reuniões com familiares/comunidade, eventos, egressos e estágios, incisos XVI a XIX; fase local OBR até 31/08 e Mostra até 30/09, XX e XXI                                                    |
+| NOR 15 | Formação pedagógica >= 40 horas anuais e planejamento/replanejamento >= 20 horas, art. 11 XXII e XXIII; exigir horas explícitas, não converter dias em horas presumidas                       |
+| NOR 16 | Semanas dos incisos XXIV a XXVI obrigatórias nos técnicos, facultativas na graduação; operacionalizar “segunda semana”/“primeira semana” com convenção institucional registrada               |
+| NOR 17 | JIFPR, SE²PIN e outros eventos institucionais incorporados quando definidos, art. 12; data ainda desconhecida permanece pendente                                                              |
+| NOR 18 | Sábados letivos vinculados às finalidades do art. 13, sem inserção automática para fechar meta                                                                                                |
+| NOR 19 | Modelo PROENS e apreciação CGPC/Codic, art. 14; envio SEI ao menos 60 dias antes do início, com extratos de atas, art. 15                                                                     |
+| NOR 20 | Alteração posterior exige novo encaminhamento e documentos; antecedência de 30 dias salvo hipótese do § 2º, art. 16; validar contra data de alteração explicitamente informada                |
+| NOR 21 | Reposição e carga de trabalho têm análise própria, art. 17; feriados oficiais da sede sem expediente, art. 19; casos omissos vão à PROENS, art. 20                                            |
 
 A aprovação da resolução não equivale à aprovação de um calendário de campus. O sistema deve conservar essa distinção em telas e relatórios. A publicação do calendário depende do trâmite institucional descrito no art. 15.
 

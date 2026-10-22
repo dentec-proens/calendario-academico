@@ -29,6 +29,19 @@ pnpm start
 
 O build grava somente o portal em `dist/portal/`; esse diretório é gerado e não deve ser versionado. Após mudar os componentes, execute o build novamente antes de `pnpm start`. Sem o build, o portal mostra um erro 503 com a instrução para compilá-lo. Se houver conflito de porta, encerre a versão anterior com Ctrl+C. Para verificar o código, execute `pnpm test`.
 
+## Formatação e análise de código
+
+O projeto usa Prettier para formatar JavaScript, JSX, HTML, CSS, JSON, Markdown e YAML, e ESLint para analisar JavaScript e JSX. A formatação adota dois espaços, aspas simples em JavaScript e largura preferencial de 100 caracteres. Uma linha vazia separa as funções. Strings e templates podem ultrapassar essa largura para preservar seu conteúdo; quebrá-los exige uma refatoração própria. As migrações SQL existentes, os lockfiles, os dados e os arquivos gerados ficam fora da formatação.
+
+```sh
+pnpm format
+pnpm run format:check
+pnpm run lint
+pnpm run lint:fix
+```
+
+`format` aplica a formatação; `format:check` apenas verifica. `lint` identifica problemas e `lint:fix` aplica as correções automáticas disponíveis, que devem ser revisadas. A configuração distingue os ambientes Node.js e navegador e verifica as regras de chamada dos Hooks e as dependências dos efeitos do React. A CI executa as verificações de formatação e lint antes do build e dos testes.
+
 ## Usar como ADMIN
 
 - A lista de campi da imagem já vem cadastrada, incluindo Foz do Iguaçu. Em Campi e contas, cadastre unidades adicionais e contas CAMPUS vinculadas à unidade correta.
@@ -76,7 +89,6 @@ O botão Baixar calendário em PDF fica no topo do editor e também na aba Calen
 Em Campi e contas > Criar conta de acesso, um ADMIN pode escolher ADMIN · Equipe DENTEC/PROENS ou CAMPUS · Apenas sua unidade. ADMIN não é vinculado a um campus: acessa todos os calendários, a base institucional e a criação de contas. CAMPUS exige uma unidade válida. O servidor rejeita criação por usuários CAMPUS, perfis desconhecidos e e-mails duplicados. Nenhuma conta real é criada pela atualização. As contas existentes continuam compatíveis. O recurso não implementa a emissão formal de pareceres nem aprovação oficial.
 
 Validação: 18 testes passaram, incluindo criação de segundo ADMIN, login, acesso a todos os campi, acesso ao calendário de um campus e bloqueio de criação de ADMIN por conta CAMPUS.
-
 
 ## Base documental — v11
 
