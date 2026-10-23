@@ -1,3 +1,4 @@
+import { confirmAction } from '../components/confirmation.ts';
 import { useRef, useState } from 'react';
 import {
   Building2,
@@ -124,31 +125,35 @@ export default function AdministrationPanel({ info, googleEnabled, onCampus, not
   }
 
   function removeMember(member) {
-    if (
-      !window.confirm(
-        `Excluir o acesso de ${member.name}? Os convites e sessões serão cancelados. Calendários e pareceres serão preservados.`,
-      )
-    )
-      return;
-    run(async () => {
-      await accounts.removeMember(member.id);
-      setInvite(null);
-      setRecovery(null);
-      notify('Acesso excluído; histórico preservado.');
+    void confirmAction({
+      title: 'Excluir acesso?',
+      description: `O acesso de ${member.name} será excluído. Os convites e sessões serão cancelados.`,
+      consequence: 'Calendários e pareceres serão preservados.',
+      intent: 'danger',
+      confirmLabel: 'Excluir acesso',
+      pendingLabel: 'Excluindo…',
+      onConfirm: async () => {
+        await accounts.removeMember(member.id);
+        setInvite(null);
+        setRecovery(null);
+        notify('Acesso excluído; histórico preservado.');
+      },
     });
   }
 
   function recoverPassword(member) {
-    if (
-      !window.confirm(
-        `Gerar um link de recuperação para ${member.email}? Links de recuperação anteriores dessa conta deixarão de funcionar. A senha só muda quando o titular concluir.`,
-      )
-    )
-      return;
-    run(async () => {
-      setRecovery(await accounts.passwordRecovery(member.id));
-      requestAnimationFrame(() => recoveryRef.current?.scrollIntoView({ behavior: 'smooth' }));
-      notify('Link de recuperação gerado. Copie e envie pelo seu e-mail institucional.');
+    void confirmAction({
+      title: 'Gerar link de recuperação?',
+      description: `Será gerado um link de recuperação para ${member.email}. A senha só muda quando o titular concluir.`,
+      consequence: 'Links de recuperação anteriores dessa conta deixarão de funcionar.',
+      intent: 'primary',
+      confirmLabel: 'Gerar link de recuperação',
+      pendingLabel: 'Gerando link…',
+      onConfirm: async () => {
+        setRecovery(await accounts.passwordRecovery(member.id));
+        requestAnimationFrame(() => recoveryRef.current?.scrollIntoView({ behavior: 'smooth' }));
+        notify('Link de recuperação gerado. Copie e envie pelo seu e-mail institucional.');
+      },
     });
   }
 

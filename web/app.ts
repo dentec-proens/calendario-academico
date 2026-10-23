@@ -1,60 +1,78 @@
-import logoUrl from './ifpr-logo.png?url';
-import './proens.css';
+import { validateImport } from './editor-import.ts';
+import type {
+  CalendarRecord,
+  CalendarState,
+  CalendarEvent,
+  Modality,
+  History,
+  HistoryAnalysis,
+} from './editor-types.ts';
 import {
   campusInstitutionalEvents,
-  teacherDayId,
-  validateTeacherDay,
-  teacherDayWeek,
-} from '/teacher-day.mjs';
+  withVacationExclusions,
+  calendarModalities,
+  modalityLabels,
+  recalculateAssessmentStages,
+  saturdayEvents,
+  teacherVacations,
+  suggestStages,
+  isModality,
+} from './editor-domain.ts';
+import { confirmAction } from './components/confirmation.ts';
+import { editorElement as $, editorControl } from './editor-dom.ts';
+import type { AutosaveStatus } from './autosave.ts';
+import logoUrl from './ifpr-logo.png?url';
+import './proens.css';
+import { teacherDayId, validateTeacherDay, teacherDayWeek } from '../src/teacher-day.mjs';
 import { createAutosaver } from './autosave.ts';
-import { durationEnd, recalculatePeriods } from '/duration.mjs';
-import { proposedDates } from '/history-dates.mjs';
+import { durationEnd, recalculatePeriods } from '../src/duration.mjs';
+import { proposedDates } from '../src/history-dates.ts';
 import {
   historyCandidateKey,
   includedHistoryCandidate,
   existingHistoryEvent,
-} from '/history-progress.mjs';
+} from '../src/history-progress.mjs';
 import {
-  suggestStages,
   suggestStageEnd,
   isFirstStageStart,
-  recalculateAssessmentStages,
   assessmentDayCounts,
-} from '/stage-suggestions.mjs';
-import { teacherVacations, withVacationExclusions } from '/teacher-vacations.mjs';
-import { regimeLabels } from '/calendar-label.mjs';
-import { evaluateCalendar } from '/evaluation.mjs';
-import { calendarModalities, modalityLabels } from '/modalities.mjs';
+} from '../src/stage-suggestions.mjs';
+import { regimeLabels } from '../src/calendar-label.mjs';
+import { evaluateCalendar } from '../src/evaluation.mjs';
 import {
   activityChecklist,
   assessmentCount,
   stageRequirement,
   migrateAssessmentEvents,
-} from '/obligations.mjs';
+} from '../src/obligations.mjs';
 import { filePayload } from './upload.ts';
-import { categories, eventCategory, categoryLabel } from '/categories.mjs';
-import { datesBetween } from '/calendar.mjs';
-import { monthSaturdays, saturdayEvents } from '/saturdays.mjs';
-import { proensLayout } from '/print.mjs';
+import { categories, eventCategory, categoryLabel } from '../src/categories.mjs';
+import { datesBetween } from '../src/calendar.ts';
+import { monthSaturdays } from '../src/saturdays.mjs';
+import { proensLayout } from './print.mjs';
 import {
   accounts,
   calendars,
   subscribeCalendar,
   subscribeNativeConnection,
   downloadLink,
+  nativeError,
 } from './native/client.ts';
 
-const $ = (id) => document.getElementById(id);
+type HistoricalSource = NonNullable<CalendarEvent['historicalSource']>;
 const eventFormHome = document.createComment('event-form-home');
 $('event-form').before(eventFormHome);
-let inlineHistoryIndex = null,
-  inlineActivityId = null,
-  editingEventId = null;
-let state = {
+let inlineHistoryIndex: number | null = null;
+let inlineActivityId: string | null = null;
+let editingEventId: string | null = null;
+let state: CalendarState = {
   schemaVersion: 1,
   campus: '',
   year: 2027,
-  offer: '',
+  offer: 'tecnico',
+  modalities: [],
+  ignoredHistory: [],
+  assessmentStagesByModality: {},
   regime: 'anual',
   weekdays: [],
   weekEvidence: '',
@@ -62,36 +80,36 @@ let state = {
   periods: [],
   events: [],
 };
-let dirty = false,
-  result = null,
-  editingPeriodId = null;
-let historicalSource = null,
-  historyAnalysis = null,
-  analyzedHistory = null;
-let record = null,
-  institutional = [],
-  isAdmin = false;
-const restoringHistories = new Set();
-const calendarId = new URLSearchParams(location.search).get('id');
+let dirty = false;
+let result: ReturnType<typeof evaluateCalendar> | null = null;
+let editingPeriodId: string | null = null;
+let historicalSource: HistoricalSource | null = null;
+let historyAnalysis: HistoryAnalysis | null = null;
+let analyzedHistory: History | null = null;
+let record: CalendarRecord;
+let institutional: CalendarRecord['institutionalEvents'] = [];
+let isAdmin = false;
+const restoringHistories = new Set<string>();
+const calendarId = new URLSearchParams(location.search).get('id') ?? '';
 const campusEvents = () => campusInstitutionalEvents(institutional, state);
 const allEvents = () => withVacationExclusions([...campusEvents(), ...state.events]);
 
-const escape = (s) =>
+const escape = (s: unknown) =>
   String(s).replace(
     /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? c,
   );
-const dateLabel = (s) => s.split('-').reverse().join('/');
-const message = (text, error = false) => {
+const dateLabel = (s: string) => s.split('-').reverse().join('/');
+const message = (text: string, error = false) => {
   $('message').textContent = new Date().toLocaleTimeString('pt-BR') + ' — ' + text;
   $('message').className = error ? 'error' : '';
 };
 
-function act(fn) {
+function act(fn: () => void) {
   try {
     fn();
   } catch (e) {
-    message(e.message, true);
+    message(nativeError(e).message, true);
   }
 }
 
@@ -102,7 +120,7 @@ function identified() {
     );
 }
 
-function interval(start, end) {
+function interval(start: string, end: string) {
   datesBetween(start, end);
   if (Number(start.slice(0, 4)) !== state.year || Number(end.slice(0, 4)) !== state.year)
     throw Error('As datas devem pertencer ao ano selecionado.');
@@ -111,14 +129,20 @@ function interval(start, end) {
 function render({ recalculate = false } = {}) {
   const activeActivity = inlineActivityId;
   const draftModalities = unappliedForms.has('event-form')
-    ? [...document.querySelectorAll('input[name=event-modality]:checked')].map((el) => el.value)
+    ? [...document.querySelectorAll<HTMLInputElement>('input[name=event-modality]:checked')].map(
+        (el) => el.value,
+      )
     : null;
-  const draftTeacherDay = unappliedForms.has('teacher-day') ? $('teacher-day-date')?.value : null;
+  const draftTeacherDay = unappliedForms.has('teacher-day')
+    ? document.querySelector<HTMLInputElement>('#teacher-day-date')?.value
+    : null;
   if (activeActivity) restoreEventForm();
   // Loading a saved record is read-only. Recalculate dates only after the user
   // applies an edit; current institutional rules may differ from its last save.
   try {
-    const periods = recalculate ? recalculatePeriods(state, allEvents()) : state.periods;
+    const periods: CalendarState['periods'] = recalculate
+      ? recalculatePeriods(state, allEvents())
+      : state.periods;
     const changes = periods.filter((p, i) => p.end !== state.periods[i].end);
     if (changes.length) {
       state.periods = periods;
@@ -134,11 +158,16 @@ function render({ recalculate = false } = {}) {
         ? 'Metas de dias letivos ativas: términos recalculados ao alterar os impedimentos.'
         : '';
   } catch (error) {
-    $('period-auto-status').textContent = error.message;
+    $('period-auto-status').textContent = nativeError(error).message;
   }
-  let stageCounts = {};
+  let stageCounts: Record<
+    string,
+    { modality: string; days: number; saturdays: number; excluded: number }[]
+  > = {};
   try {
-    const adjusted = recalculate ? recalculateAssessmentStages(state, allEvents()) : state.events;
+    const adjusted: CalendarEvent[] = recalculate
+      ? recalculateAssessmentStages(state, allEvents())
+      : state.events;
     if (
       adjusted.some((e, i) => e.start !== state.events[i].start || e.end !== state.events[i].end)
     ) {
@@ -149,7 +178,7 @@ function render({ recalculate = false } = {}) {
     $('assessment-auto-status').textContent =
       'Períodos com meta de dias letivos ajustam suas etapas automaticamente.';
   } catch (error) {
-    $('assessment-auto-status').textContent = 'Contagem das etapas: ' + error.message;
+    $('assessment-auto-status').textContent = 'Contagem das etapas: ' + nativeError(error).message;
   }
   periodDurationPreview();
   $('regime-summary').textContent = 'Organização: ' + regimeLabels[state.regime];
@@ -192,7 +221,7 @@ function render({ recalculate = false } = {}) {
     '<option value="">Outro evento / sem vínculo</option>' +
     requirements.map((r) => `<option value="${r.id}">${escape(r.name)}</option>`).join('');
   $('event-requirement').value = selected;
-  const activityRow = (r) =>
+  const activityRow = (r: ReturnType<typeof activityChecklist>[number]) =>
     `<li data-activity-row="${r.id}"><div><strong>${escape(r.name)}</strong><small>${
       state.events.some((e) => e.requirementId === r.id)
         ? '✓ Registrado no calendário — ' +
@@ -276,7 +305,7 @@ function render({ recalculate = false } = {}) {
     try {
       result = evaluateCalendar(state, allEvents());
     } catch (e) {
-      issues.push(['Corrigir', 'Dados do calendário', e.message]);
+      issues.push(['Corrigir', 'Dados do calendário', nativeError(e).message]);
     }
   }
   if (result) {
@@ -284,7 +313,9 @@ function render({ recalculate = false } = {}) {
       for (const c of detail.checks) {
         if (c.scope !== 'annual' && state.regime === 'anual') continue;
         const name =
-          c.scope === 'annual' ? 'Total anual' : state.periods.find((p) => p.id === c.scope).name;
+          c.scope === 'annual'
+            ? 'Total anual'
+            : (state.periods.find((p) => p.id === c.scope)?.name ?? c.scope);
         issues.push([
           c.status === 'MET' ? 'Atendido' : c.status === 'NOT_MET' ? 'Corrigir' : 'Pendente',
           modalityLabels[modality] + ' — ' + name,
@@ -323,7 +354,7 @@ function render({ recalculate = false } = {}) {
       'Base institucional',
       `Esta tela incorpora a revisão ${record.currentCatalogueRevision}. O último salvamento usava a revisão ${record.catalogueRevision}. Confira o impacto e use Confirmar atualização da base para registrar a nova revisão neste calendário.`,
     ]);
-  $('total').textContent = result ? result.total : '—';
+  $('total').textContent = result ? String(result.total) : '—';
   $('goal').textContent = result
     ? 'Marcação dos dias: ' +
       modalityLabels[calendarModalities(state)[0]] +
@@ -332,7 +363,7 @@ function render({ recalculate = false } = {}) {
         ? 'Referência: mínimo anual de 200 dias.'
         : 'Sem meta normativa cadastrada para este ano.')
     : 'Configure identificação, semana e períodos.';
-  $('period-count').textContent = state.periods.length;
+  $('period-count').textContent = String(state.periods.length);
   $('period-summary').textContent = result
     ? Object.entries(result.byModality)
         .map(
@@ -379,8 +410,8 @@ function render({ recalculate = false } = {}) {
         )
         .join('')
     : '<li class="help">Nenhum evento registrado. Confira a base para este ano.</li>';
-  if (draftTeacherDay !== null && $('teacher-day-date'))
-    $('teacher-day-date').value = draftTeacherDay;
+  if (draftTeacherDay !== null && document.getElementById('teacher-day-date'))
+    $('teacher-day-date').value = draftTeacherDay ?? '';
   if (record?.purpose !== 'test') {
     issues.push([
       !dirty && record?.readiness?.ready ? 'Atendido' : 'Pendente',
@@ -398,7 +429,9 @@ function render({ recalculate = false } = {}) {
   if (!dirty)
     for (const warning of record?.readiness?.warnings || [])
       issues.push(['Aviso', 'Organização dos prazos — sem bloqueio', warning]);
-  $('issue-count').textContent = issues.filter((i) => !['Atendido', 'Aviso'].includes(i[0])).length;
+  $('issue-count').textContent = String(
+    issues.filter((i) => !['Atendido', 'Aviso'].includes(i[0])).length,
+  );
   $('issue-list').innerHTML = issues
     .map(
       ([mark, title, detail]) =>
@@ -430,8 +463,8 @@ function sync() {
     ['secondEnd', 'vacation-second-end'],
     ['thirdStart', 'vacation-third-start'],
     ['thirdEnd', 'vacation-third-end'],
-  ])
-    $(id).value = state.teacherVacations?.[field] || '';
+  ] as const)
+    editorControl(id).value = state.teacherVacations?.[field] || '';
   $('vacation-evidence').value = state.teacherVacations?.evidence || '';
   vacationPreview();
   if (
@@ -439,9 +472,10 @@ function sync() {
     !Array.from($('offer').options).some((o) => o.value === state.offer)
   )
     $('offer').add(new Option(modalityLabels[state.offer], state.offer));
-  for (const key of ['campus', 'year', 'offer', 'regime']) $(key).value = state[key];
+  for (const key of ['campus', 'year', 'offer', 'regime'] as const)
+    editorControl(key).value = String(state[key]);
   document
-    .querySelectorAll('#weekdays input')
+    .querySelectorAll<HTMLInputElement>('#weekdays input')
     .forEach((el) => (el.checked = state.weekdays.includes(Number(el.value))));
   $('week-evidence').value = state.weekEvidence;
   $('week-confirmed').checked = state.weekConfirmed;
@@ -452,9 +486,9 @@ $('week-form').addEventListener('submit', (e) => {
   e.preventDefault();
   act(() => {
     identified();
-    const weekdays = [...document.querySelectorAll('#weekdays input:checked')].map((el) =>
-      Number(el.value),
-    );
+    const weekdays = [
+      ...document.querySelectorAll<HTMLInputElement>('#weekdays input:checked'),
+    ].map((el) => Number(el.value));
     if (!weekdays.length) throw Error('Selecione pelo menos um dia regular.');
     if (!$('week-evidence').value.trim()) throw Error('Informe a referência da semana letiva.');
     Object.assign(state, {
@@ -519,6 +553,8 @@ $('event-form').addEventListener('submit', (e) => {
       kind = $('event-kind').value,
       name = $('event-name').value.trim(),
       evidence = $('event-evidence').value.trim();
+    if (kind !== 'include' && kind !== 'exclude' && kind !== 'note')
+      throw new Error('Tipo de evento inválido.');
     interval(start, end);
     if (!name || !evidence) throw Error('Informe descrição e fonte.');
     if (
@@ -547,10 +583,10 @@ $('event-form').addEventListener('submit', (e) => {
       throw Error(
         'O evento não existe mais. Abra outro evento ou clique em Adicionar novo evento.',
       );
-    const updated = {
+    const updated: CalendarEvent = {
       ...previous,
       hours: $('event-hours').value ? Number($('event-hours').value) : undefined,
-      historicalSource: previous?.historicalSource || historicalSource,
+      historicalSource: previous?.historicalSource || historicalSource || undefined,
       modalities,
       requirementId: $('event-requirement').value || undefined,
       id: previous?.id || crypto.randomUUID(),
@@ -580,8 +616,8 @@ $('event-form').addEventListener('submit', (e) => {
     render({ recalculate: true });
     markAppliedForm('event-form');
     document
-      .querySelectorAll('input[name=event-modality]')
-      .forEach((el) => (el.checked = modalities.includes(el.value)));
+      .querySelectorAll<HTMLInputElement>('input[name=event-modality]')
+      .forEach((el) => (el.checked = modalities.some((modality) => modality === el.value)));
     if (completedHistoryIndex !== null) {
       const row = document.querySelector('[data-history-item="' + completedHistoryIndex + '"]');
       row?.scrollIntoView({ block: 'nearest' });
@@ -598,11 +634,14 @@ $('event-form').addEventListener('submit', (e) => {
   });
 });
 document.addEventListener('click', (e) => {
+  if (!(e.target instanceof Element)) return;
   const b = e.target.closest('button');
   if (!b) return;
   if (b.dataset.view) {
-    document.querySelectorAll('.view').forEach((v) => (v.hidden = v.id !== b.dataset.view));
-    document.querySelectorAll('.tab').forEach((t) => {
+    document
+      .querySelectorAll<HTMLElement>('.view')
+      .forEach((v) => (v.hidden = v.id !== b.dataset.view));
+    document.querySelectorAll<HTMLElement>('.tab').forEach((t) => {
       t.classList.toggle('active', t === b);
       if (t === b) t.setAttribute('aria-current', 'page');
       else t.removeAttribute('aria-current');
@@ -654,93 +693,10 @@ $('save').onclick = () => {
     'Download solicitado. Guarde o arquivo para continuar depois. Somente dados aplicados aos formulários foram incluídos.',
   );
 };
-$('load').onclick = () => {
-  if (
-    !dirty ||
-    confirm('Abrir outro rascunho substituirá os dados desta sessão. Você já baixou o atual?')
-  )
-    $('file').click();
-};
+$('load').onclick = () => $('file').click();
 
-function validateImport(s) {
-  if (
-    !s ||
-    s.schemaVersion !== 1 ||
-    !Number.isInteger(s.year) ||
-    s.year < 1900 ||
-    s.year > 9999 ||
-    !['', 'posgraduacao', 'tecnico', 'integrado', 'subsequente', 'graduacao'].includes(s.offer) ||
-    !['anual', 'semestral', 'misto'].includes(s.regime)
-  )
-    throw Error('Formato de rascunho incompatível.');
-  const str = (v, max) => typeof v === 'string' && v.length <= max;
-  if (
-    !str(s.campus, 120) ||
-    !str(s.weekEvidence, 240) ||
-    typeof s.weekConfirmed !== 'boolean' ||
-    !Array.isArray(s.weekdays) ||
-    s.weekdays.length > 5 ||
-    new Set(s.weekdays).size !== s.weekdays.length ||
-    s.weekdays.some((d) => !Number.isInteger(d) || d < 1 || d > 5)
-  )
-    throw Error('Identificação ou semana inválida.');
-  if (s.weekConfirmed && (!s.weekEvidence.trim() || !s.weekdays.length))
-    throw Error('Semana confirmada sem referência ou dias.');
-  if (
-    !Array.isArray(s.periods) ||
-    s.periods.length > 50 ||
-    !Array.isArray(s.events) ||
-    s.events.length > 1000
-  )
-    throw Error('Quantidade ou formato de registros inválido.');
-  const ids = new Set();
-  for (const [arr, event] of [
-    [s.periods, false],
-    [s.events, true],
-  ])
-    for (const x of arr) {
-      if (!x || !str(x.id, 100) || !x.id || ids.has(x.id) || !str(x.name, 160) || !x.name.trim())
-        throw Error('Registro inválido ou duplicado.');
-      ids.add(x.id);
-      datesBetween(x.start, x.end);
-      if (Number(x.start.slice(0, 4)) !== s.year || Number(x.end.slice(0, 4)) !== s.year)
-        throw Error('Data fora do ano do rascunho.');
-      if (event && x.category !== undefined && !categories.some(([key]) => key === x.category))
-        throw Error('Categoria PROENS inválida.');
-      if (
-        event &&
-        (!['include', 'exclude', 'note'].includes(x.kind) ||
-          !str(x.evidence, 240) ||
-          !x.evidence.trim())
-      )
-        throw Error('Evento sem tipo ou referência válida.');
-    }
-  for (let i = 0; i < s.periods.length; i++)
-    for (let j = i + 1; j < s.periods.length; j++)
-      if (s.periods[i].start <= s.periods[j].end && s.periods[i].end >= s.periods[j].start)
-        throw Error('Rascunho com períodos sobrepostos.');
-  return {
-    schemaVersion: 1,
-    secondSemesterIntake: s.secondSemesterIntake,
-    teacherDayDate: validateTeacherDay(s.teacherDayDate, s.year),
-    modalities: s.modalities,
-    assessmentStages: s.assessmentStages,
-    assessmentStagesByModality: s.assessmentStagesByModality,
-    teacherVacations: s.teacherVacations,
-    campus: s.campus,
-    year: s.year,
-    offer: s.offer,
-    regime: s.regime,
-    weekdays: s.weekdays,
-    weekEvidence: s.weekEvidence,
-    weekConfirmed: s.weekConfirmed,
-    periods: s.periods.map(({ id, name, start, end }) => ({ id, name, start, end })),
-    events: s.events.map((e) => ({ ...e, category: eventCategory(e) })),
-  };
-}
-
-$('file').onchange = async (e) => {
-  const f = e.target.files[0];
+$('file').onchange = async () => {
+  const f = $('file').files?.[0];
   if (!f) return;
   try {
     if (f.size > 2_000_000) throw Error('O rascunho excede o limite de 2 MB.');
@@ -752,19 +708,45 @@ $('file').onchange = async (e) => {
         next.campus !== record.state.campus)
     )
       throw Error('O rascunho deve corresponder ao campus, ano e oferta deste registro.');
+    if (
+      (dirty || unappliedInputs) &&
+      !(await confirmAction({
+        title: 'Substituir o rascunho atual?',
+        description: `Abrir “${f.name}” substituirá os dados desta sessão, incluindo os campos ainda não aplicados.`,
+        consequence:
+          'Baixe uma cópia das alterações aplicadas antes de continuar se precisar preservá-las.',
+        intent: 'danger',
+        confirmLabel: 'Substituir rascunho',
+        cancelLabel: 'Manter rascunho atual',
+      }))
+    )
+      return;
+    // Discard unapplied form fields only after the user accepts the replacement.
+    for (const id of appliedFormIds) {
+      const form = document.getElementById(id);
+      if (form instanceof HTMLFormElement) form.reset();
+    }
+    resetPeriodForm();
+    restoreEventForm();
+    historicalSource = null;
+    $('historical-event-source').hidden = true;
+    selectedSaturdays.clear();
+    unappliedForms.clear();
+    unappliedInputs = false;
     state = next;
     dirty = true;
     sync();
     render({ recalculate: true });
     message('Rascunho importado.');
   } catch (err) {
-    message('Não foi possível abrir: ' + err.message, true);
+    message('Não foi possível abrir: ' + nativeError(err).message, true);
   } finally {
-    e.target.value = '';
+    $('file').value = '';
   }
 };
 $('print').onclick = async () => {
   try {
+    if (!record) throw new Error('Abra um calendário registrado.');
     await autosaver.save();
     if (dirty)
       throw Error('O salvamento ainda não foi confirmado. Confira o indicador antes de imprimir.');
@@ -781,7 +763,7 @@ $('print').onclick = async () => {
     $('months').innerHTML = proensLayout(state, allEvents(), result, record, logoUrl);
     window.print();
   } catch (e) {
-    message(e.message, true);
+    message(nativeError(e).message, true);
   }
 };
 window.addEventListener('beforeunload', (e) => {
@@ -790,9 +772,18 @@ window.addEventListener('beforeunload', (e) => {
     e.returnValue = '';
   }
 });
+type ReadTool = {
+  name: string;
+  description: string;
+  inputSchema: { type: string; properties: Record<string, never> };
+  execute: () => Promise<{ content: { type: string; text: string }[] }>;
+};
+const modelContext = (
+  navigator as Navigator & { modelContext?: { registerTool: (tool: ReadTool) => void } }
+).modelContext;
 // Structured read tool only: no mutation or automatic confirmation by agents.
-if (navigator.modelContext?.registerTool)
-  navigator.modelContext.registerTool({
+if (modelContext?.registerTool)
+  modelContext.registerTool({
     name: 'read_calendar_summary',
     description:
       'Read the local calendar totals and pending checks; never certifies institutional approval.',
@@ -815,6 +806,7 @@ if (navigator.modelContext?.registerTool)
   });
 
 function updateRecordHeading() {
+  if (!record) return;
   $('make-definitive').hidden = record.purpose !== 'test';
   $('record-title').textContent = record.name;
   $('record-heading').textContent =
@@ -833,21 +825,21 @@ async function openRecord() {
     state = record.state;
     institutional = record.institutionalEvents;
     sync();
-    for (const key of ['campus', 'year', 'offer']) $(key).disabled = true;
+    for (const key of ['campus', 'year', 'offer']) editorControl(key).disabled = true;
     updateRecordHeading();
     showHistory();
     render();
     observeRecord();
     if (location.hash === '#history-area') openHistory();
   } catch (e) {
-    message(e.message, true);
+    message(nativeError(e).message, true);
   }
 }
 
-let stopRecordSubscription;
+let stopRecordSubscription: (() => void) | undefined;
 let unappliedInputs = false;
 let saveInFlight = false;
-const unappliedForms = new Set();
+const unappliedForms = new Set<string>();
 const appliedFormIds = new Set([
   'week-form',
   'period-form',
@@ -857,16 +849,18 @@ const appliedFormIds = new Set([
   'history-form',
 ]);
 
-function markAppliedForm(formId) {
+function markAppliedForm(formId: string) {
   unappliedForms.delete(formId);
   unappliedInputs = unappliedForms.size > 0;
   refreshSaveStatus();
 }
 
-function trackUnappliedForm(event) {
+function trackUnappliedForm(event: Event) {
+  if (!(event.target instanceof HTMLElement)) return;
   const formId =
     event.target.id === 'teacher-day-date' ? 'teacher-day' : event.target.closest('form')?.id;
   if (
+    !formId ||
     (!appliedFormIds.has(formId) && formId !== 'teacher-day') ||
     event.target.id === 'saturday-month'
   )
@@ -907,22 +901,23 @@ function observeRecord() {
       render();
       message('Calendário atualizado com as alterações recebidas de outra sessão.');
     },
-    (error) => message(error.message, true),
+    (error) => message(nativeError(error).message, true),
   );
 }
 
 document.addEventListener('click', (event) => {
-  const link = event.target.closest('a[data-history-id]');
+  if (!(event.target instanceof Element)) return;
+  const link = event.target.closest<HTMLAnchorElement>('a[data-history-id]');
   if (link)
     downloadLink(
       event,
-      { kind: 'history', id: link.dataset.historyId },
+      { kind: 'history', id: link.dataset.historyId ?? '' },
       'calendario-anterior.pdf',
-    ).catch((error) => message(error.message, true));
+    ).catch((error) => message(nativeError(error).message, true));
 });
 
 function openHistory() {
-  document.querySelector('[data-view="edit"]').click();
+  document.querySelector<HTMLButtonElement>('[data-view="edit"]')?.click();
   $('history-area').scrollIntoView({ behavior: 'smooth' });
   $('history-file').focus({ preventScroll: true });
 }
@@ -930,6 +925,7 @@ function openHistory() {
 $('open-history').onclick = openHistory;
 
 function showHistory() {
+  if (!record) return;
   $('history-list').innerHTML = record.histories.length
     ? record.histories
         .map((h) => {
@@ -941,30 +937,37 @@ function showHistory() {
     : '<li>Envie o calendário anterior para consultar seus feriados e eventos locais.</li>';
 }
 
-$('history-list').addEventListener('submit', async (event) => {
-  const form = event.target.closest('form[data-restore-history]');
+$('history-list').addEventListener('submit', (event) => {
+  void restoreHistoryOriginal(event);
+});
+
+async function restoreHistoryOriginal(event: Event) {
+  if (!(event.target instanceof Element)) return;
+  const form = event.target.closest<HTMLFormElement>('form[data-restore-history]');
   if (!form) return;
   event.preventDefault();
   const id = form.dataset.restoreHistory;
+  if (!id || !record) return;
   if (!isAdmin || restoringHistories.has(id)) return;
-  const file = form.querySelector('input[type="file"]').files[0];
+  const file = form.querySelector<HTMLInputElement>('input[type="file"]')?.files?.[0];
   restoringHistories.add(id);
   showHistory();
   try {
+    if (!file) throw new Error('Escolha o PDF original.');
     const payload = await filePayload(file);
     await calendars.restoreHistoryOriginal(id, payload.uploadId);
     const fresh = await calendars.get(calendarId);
     record.histories = fresh.histories;
     message('PDF original restaurado. Os dados e análises foram preservados.');
   } catch (error) {
-    message(error.message, true);
+    message(nativeError(error).message, true);
   } finally {
     restoringHistories.delete(id);
     showHistory();
   }
-});
+}
 
-async function analyzeUploadedHistory(id) {
+async function analyzeUploadedHistory(id: string) {
   $('history-status').textContent =
     'PDF guardado. Lendo o texto para identificar possíveis feriados e eventos…';
   $('history-analysis').hidden = true;
@@ -973,7 +976,7 @@ async function analyzeUploadedHistory(id) {
   try {
     const analysis = await calendars.analyzeHistory(id);
     historyAnalysis = analysis;
-    analyzedHistory = record.histories.find((h) => h.id === id);
+    analyzedHistory = record.histories.find((h) => h.id === id) ?? null;
     $('history-analysis').hidden = false;
     $('history-analysis-help').textContent = analysis.needsText
       ? 'Este PDF parece ser uma imagem digitalizada. Ainda não há leitura de imagens (OCR). Envie uma versão com texto selecionável ou consulte o original e preencha os eventos manualmente.'
@@ -984,20 +987,25 @@ async function analyzeUploadedHistory(id) {
       .join('\n\n');
     $('history-status').textContent = 'Leitura concluída.';
   } catch (err) {
-    $('history-status').textContent = err.message;
-    message(err.message, true);
+    $('history-status').textContent = nativeError(err).message;
+    message(nativeError(err).message, true);
   }
 }
 
-document.addEventListener('click', async (e) => {
-  const b = e.target.closest('[data-analyze-history]');
+document.addEventListener('click', (event) => {
+  void handleHistoryClick(event);
+});
+
+async function handleHistoryClick(e: MouseEvent) {
+  if (!(e.target instanceof Element)) return;
+  const b = e.target.closest<HTMLButtonElement>('[data-analyze-history]');
   if (b) {
     b.disabled = true;
-    await analyzeUploadedHistory(b.dataset.analyzeHistory);
+    await analyzeUploadedHistory(b.dataset.analyzeHistory ?? '');
     b.disabled = false;
   }
-  const discard = e.target.closest('[data-history-discard]');
-  if (discard && historyAnalysis) {
+  const discard = e.target.closest<HTMLButtonElement>('[data-history-discard]');
+  if (discard && historyAnalysis && analyzedHistory) {
     const c = historyAnalysis.candidates[Number(discard.dataset.historyDiscard)],
       key = analyzedHistory.id + ':' + historyCandidateKey(c);
     state.ignoredHistory ??= [];
@@ -1013,8 +1021,8 @@ document.addEventListener('click', async (e) => {
     message('Decisão sobre o evento aplicada.');
     return;
   }
-  const candidateButton = e.target.closest('[data-history-candidate]');
-  if (!candidateButton || !historyAnalysis) return;
+  const candidateButton = e.target.closest<HTMLButtonElement>('[data-history-candidate]');
+  if (!candidateButton || !historyAnalysis || !analyzedHistory) return;
   const c = historyAnalysis.candidates[Number(candidateButton.dataset.historyCandidate)];
   if (!c) return;
   if (
@@ -1048,11 +1056,12 @@ document.addEventListener('click', async (e) => {
   message(
     'Sugestão aberta para revisão. Confira também o efeito na contagem e a forma de oferta/nível.',
   );
-});
+}
+
 let converting = false;
-let saveStatus = 'idle',
-  saveStatusData,
-  nativeConnected = true;
+let saveStatus: AutosaveStatus | 'idle' = 'idle';
+let saveStatusData: { updatedAt?: string; message?: string; status?: number } | undefined;
+let nativeConnected = true;
 
 function refreshSaveStatus() {
   const outdatedBase = record && record.catalogueRevision !== record.currentCatalogueRevision;
@@ -1122,7 +1131,12 @@ const autosaver = createAutosaver({
   onStatus: (status, data) => {
     saveInFlight = status === 'saving';
     saveStatus = status;
-    saveStatusData = data;
+    saveStatusData =
+      status === 'error' || status === 'blocked'
+        ? nativeError(data)
+        : record
+          ? { updatedAt: record.updatedAt }
+          : undefined;
     refreshSaveStatus();
   },
 });
@@ -1139,46 +1153,53 @@ $('server-save').onclick = () => {
   }
   void autosaver.save(true);
 };
-$('make-definitive').onclick = async () => {
+$('make-definitive').onclick = () => {
   if (!record || record.purpose !== 'test' || converting) return;
-  if (
-    !confirm(
-      'Tornar este calendário definitivo? Os dados e o histórico serão mantidos. Isso não representa aprovação institucional; a geração definitiva exige a revisão prevista no sistema.',
-    )
-  )
-    return;
-  converting = true;
-  $('make-definitive').disabled = true;
-  refreshSaveStatus();
-  try {
-    await autosaver.save();
-    if (dirty)
-      throw Error(
-        'Não foi possível concluir o salvamento. Resolva a pendência indicada antes de tornar definitivo.',
-      );
-    $('server-save').disabled = true;
-    const saved = await calendars.makeDefinitive(calendarId, record.version);
-    Object.assign(record, saved);
-    updateRecordHeading();
-    render();
-    message(
-      'Calendário convertido para definitivo. Os dados e o histórico foram mantidos. Você pode continuar editando. Confira as pendências antes de gerar o PDF definitivo.',
-    );
-  } catch (error) {
-    message(error.message, true);
-  } finally {
-    converting = false;
-    $('make-definitive').disabled = false;
-    refreshSaveStatus();
-    if (dirty) autosaver.schedule();
-  }
+  void confirmAction({
+    title: 'Tornar calendário definitivo?',
+    description:
+      'Os dados e o histórico serão mantidos. Você poderá continuar editando o calendário.',
+    consequence:
+      'Isso não representa aprovação institucional. A geração definitiva exige a revisão prevista no sistema.',
+    intent: 'primary',
+    confirmLabel: 'Tornar definitivo',
+    pendingLabel: 'Convertendo…',
+    onConfirm: async () => {
+      if (!record || record.purpose !== 'test')
+        throw new Error('Reabra o calendário para conferir a situação atual.');
+      converting = true;
+      $('make-definitive').disabled = true;
+      refreshSaveStatus();
+      try {
+        await autosaver.save();
+        if (dirty)
+          throw new Error(
+            'Não foi possível concluir o salvamento. Resolva a pendência indicada antes de tornar definitivo.',
+          );
+        $('server-save').disabled = true;
+        const saved = await calendars.makeDefinitive(calendarId, record.version);
+        Object.assign(record, saved);
+        updateRecordHeading();
+        render();
+        message(
+          'Calendário convertido para definitivo. Os dados e o histórico foram mantidos. Você pode continuar editando. Confira as pendências antes de gerar o PDF definitivo.',
+        );
+      } finally {
+        converting = false;
+        $('make-definitive').disabled = false;
+        refreshSaveStatus();
+        if (dirty) autosaver.schedule();
+      }
+    },
+  });
 };
 
 $('history-form').onsubmit = async (e) => {
   e.preventDefault();
+  if (!record) return;
   $('history-submit').disabled = true;
   try {
-    const file = $('history-file').files[0];
+    const file = $('history-file').files?.[0];
     if (!file || file.size > 8_000_000) throw Error('Envie um PDF de até 8 MB.');
     $('history-status').textContent = 'Enviando calendário anterior…';
     const payload = await filePayload(file);
@@ -1191,13 +1212,13 @@ $('history-form').onsubmit = async (e) => {
     const fresh = await calendars.get(calendarId);
     record.histories = fresh.histories;
     showHistory();
-    e.target.reset();
+    $('history-form').reset();
     markAppliedForm('history-form');
     message('Calendário anterior guardado neste campus.');
     await analyzeUploadedHistory(uploaded.id);
   } catch (err) {
-    $('history-status').textContent = err.message;
-    message(err.message, true);
+    $('history-status').textContent = nativeError(err).message;
+    message(nativeError(err).message, true);
   } finally {
     $('history-submit').disabled = false;
   }
@@ -1205,7 +1226,7 @@ $('history-form').onsubmit = async (e) => {
 const monthNames = Array.from({ length: 12 }, (_, m) =>
   new Date(Date.UTC(2027, m, 1)).toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' }),
 );
-const selectedSaturdays = new Set();
+const selectedSaturdays = new Set<string>();
 $('saturday-month').innerHTML = monthNames
   .map((name, m) => `<option value="${m + 1}">${name}</option>`)
   .join('');
@@ -1241,6 +1262,7 @@ function renderSaturdays() {
 
 $('saturday-dates').addEventListener('change', (e) => {
   const input = e.target;
+  if (!(input instanceof HTMLInputElement)) return;
   if (input.matches('input[type="checkbox"]') && !input.disabled) {
     if (input.checked) selectedSaturdays.add(input.value);
     else selectedSaturdays.delete(input.value);
@@ -1252,7 +1274,9 @@ $('saturday-form').onsubmit = (e) => {
   act(() => {
     identified();
     const dates = [
-      ...document.querySelectorAll('#saturday-dates input:checked:not(:disabled)'),
+      ...document.querySelectorAll<HTMLInputElement>(
+        '#saturday-dates input:checked:not(:disabled)',
+      ),
     ].map((el) => el.value);
     const additions = saturdayEvents(
       state,
@@ -1270,6 +1294,7 @@ $('saturday-form').onsubmit = (e) => {
   });
 };
 $('download-pdf').onclick = async () => {
+  if (!record) return;
   const button = $('download-pdf');
   try {
     button.disabled = true;
@@ -1301,7 +1326,7 @@ $('download-pdf').onclick = async () => {
     setTimeout(() => URL.revokeObjectURL(url), 30000);
     message('PDF gerado. Confira o arquivo antes do encaminhamento institucional.');
   } catch (e) {
-    message(e.message, true);
+    message(nativeError(e).message, true);
   } finally {
     button.disabled = false;
     $('download-pdf-top').disabled = false;
@@ -1314,8 +1339,10 @@ $('event-category').innerHTML = categories
   .join('');
 $('event-category').value = 'recesso';
 document.addEventListener('change', (e) => {
-  if (!e.target.dataset.categoryEvent) return;
-  const event = state.events.find((x) => x.id === e.target.dataset.categoryEvent);
+  if (!(e.target instanceof HTMLSelectElement)) return;
+  const target = e.target;
+  if (!target.dataset.categoryEvent) return;
+  const event = state.events.find((x) => x.id === target.dataset.categoryEvent);
   if (!event) return;
   event.category = e.target.value;
   dirty = true;
@@ -1366,6 +1393,7 @@ $('recalculate-stages').onclick = () =>
     );
   });
 $('assessment-settings').addEventListener('change', (e) => {
+  if (!(e.target instanceof HTMLSelectElement)) return;
   const modality = e.target.dataset.assessmentModality,
     value = Number(e.target.value);
   if (!modality || (e.target.value !== '' && ![2, 3, 4].includes(value))) return;
@@ -1373,8 +1401,8 @@ $('assessment-settings').addEventListener('change', (e) => {
   $('event-form').reset();
   state.assessmentStagesByModality = Object.fromEntries(
     calendarModalities(state)
-      .map((m) => [m, m === modality ? value : assessmentCount(state, m)])
-      .filter(([, n]) => [2, 3, 4].includes(n)),
+      .map((m): [Modality, number] => [m, m === modality ? value : assessmentCount(state, m)])
+      .filter((row): row is [Modality, 2 | 3 | 4] => [2, 3, 4].includes(row[1])),
   );
   state.events = migrateAssessmentEvents(state);
   const ids = new Set(activityChecklist(state).map((r) => r.id));
@@ -1394,7 +1422,7 @@ $('assessment-settings').addEventListener('change', (e) => {
   );
 });
 
-function prepareActivity(id) {
+function prepareActivity(id: string) {
   const existing = state.events.find((e) => e.requirementId === id);
   if (existing) {
     editEvent(existing.id);
@@ -1411,7 +1439,7 @@ function prepareActivity(id) {
     return;
   }
   $('event-requirement').value = id;
-  document.querySelectorAll('input[name=event-modality]').forEach((el) => {
+  document.querySelectorAll<HTMLInputElement>('input[name=event-modality]').forEach((el) => {
     el.checked = !item.modality || el.value === item.modality;
   });
   $('event-name').value = item.name;
@@ -1437,12 +1465,15 @@ $('event-requirement').onchange = () => {
   if (!editingEventId) prepareActivity($('event-requirement').value);
 };
 document.addEventListener('click', (e) => {
-  const b = e.target.closest('[data-prepare-activity]');
-  if (b) prepareActivity(b.dataset.prepareActivity);
+  if (!(e.target instanceof Element)) return;
+  const b = e.target.closest<HTMLButtonElement>('[data-prepare-activity]');
+  if (b) prepareActivity(b.dataset.prepareActivity ?? '');
 });
 document.addEventListener('change', (e) => {
-  if (!e.target.dataset.linkActivity) return;
-  const event = state.events.find((x) => x.id === e.target.dataset.linkActivity);
+  if (!(e.target instanceof HTMLSelectElement)) return;
+  const target = e.target;
+  if (!target.dataset.linkActivity) return;
+  const event = state.events.find((x) => x.id === target.dataset.linkActivity);
   if (event) {
     event.requirementId = e.target.value || undefined;
     delete event.assessmentAutoStart;
@@ -1451,17 +1482,15 @@ document.addEventListener('change', (e) => {
   }
 });
 
-function vacationValues() {
-  return Object.fromEntries(
-    [
-      ['firstStart', 'vacation-first-start'],
-      ['firstEnd', 'vacation-first-end'],
-      ['secondStart', 'vacation-second-start'],
-      ['secondEnd', 'vacation-second-end'],
-      ['thirdStart', 'vacation-third-start'],
-      ['thirdEnd', 'vacation-third-end'],
-    ].map(([key, id]) => [key, $(id).value]),
-  );
+function vacationValues(): Omit<NonNullable<CalendarState['teacherVacations']>, 'evidence'> {
+  return {
+    firstStart: $('vacation-first-start').value,
+    firstEnd: $('vacation-first-end').value,
+    secondStart: $('vacation-second-start').value,
+    secondEnd: $('vacation-second-end').value,
+    thirdStart: $('vacation-third-start').value,
+    thirdEnd: $('vacation-third-end').value,
+  };
 }
 
 function vacationPreview() {
@@ -1474,7 +1503,7 @@ function vacationPreview() {
     $('vacation-preview').textContent =
       'Total informado: ' + v.total + ' dias. Confira o quantitativo e a decisão do campus.';
   } catch (e) {
-    $('vacation-preview').textContent = e.message;
+    $('vacation-preview').textContent = nativeError(e).message;
   }
 }
 
@@ -1502,16 +1531,19 @@ $('vacation-form').onsubmit = (e) => {
   });
 };
 document.addEventListener('input', (e) => {
-  if (appliedFormIds.has(e.target.closest('form')?.id) && e.target.id !== 'saturday-month')
+  if (!(e.target instanceof HTMLElement)) return;
+  if (appliedFormIds.has(e.target.closest('form')?.id ?? '') && e.target.id !== 'saturday-month')
     message(
       'Formulário alterado. Use Adicionar ou Aplicar para incluir o preenchimento no calendário e iniciar o salvamento automático.',
     );
 });
 
 function selectedEventModalities() {
-  const selected = [...document.querySelectorAll('input[name=event-modality]:checked')].map(
-      (el) => el.value,
-    ),
+  const selected = [
+      ...document.querySelectorAll<HTMLInputElement>('input[name=event-modality]:checked'),
+    ]
+      .map((el) => el.value)
+      .filter(isModality),
     activity = activityChecklist(state).find((r) => r.id === $('event-requirement').value);
   if (activity?.modality && (selected.length !== 1 || selected[0] !== activity.modality))
     throw Error('Selecione somente ' + modalityLabels[activity.modality] + ' para esta atividade.');
@@ -1539,7 +1571,7 @@ function applyStageSuggestion() {
     ),
     completed = inlineHistoryIndex;
   state.events.push(
-    ...fresh.stages.map((s, i) => ({
+    ...fresh.stages.map((s, i): CalendarEvent => ({
       id: crypto.randomUUID(),
       name: activityChecklist(state).find((r) => r.id === s.requirementId)?.name || s.name,
       requirementId: s.requirementId,
@@ -1550,7 +1582,7 @@ function applyStageSuggestion() {
       evidence,
       modalities,
       assessmentAutoStart: $('event-start').value,
-      historicalSource: i === 0 ? historicalSource : undefined,
+      historicalSource: i === 0 ? (historicalSource ?? undefined) : undefined,
     })),
   );
   dirty = true;
@@ -1566,7 +1598,7 @@ function applyStageSuggestion() {
 }
 
 function updateStageSuggestion() {
-  let panel = $('stage-suggestion');
+  let panel = document.getElementById('stage-suggestion');
   if (!panel) {
     panel = document.createElement('section');
     panel.id = 'stage-suggestion';
@@ -1575,7 +1607,7 @@ function updateStageSuggestion() {
     $('event-form').append(panel);
   }
   const stageRequest = isStageRequest();
-  $('event-hours').closest('label').hidden = stageRequest;
+  $('event-hours').closest('label')!.hidden = stageRequest;
   if (stageRequest) $('event-hours').value = '';
   panel.hidden = !!editingEventId || !stageRequest;
   if (panel.hidden) return;
@@ -1637,28 +1669,32 @@ function updateStageSuggestion() {
       '</ul><p>Preencha a fonte da decisão e marque a confirmação do formulário. Este botão inclui todas as etapas para as formas de oferta/níveis selecionadas.</p><button type="button" id="apply-stage-suggestion">Aplicar todas as etapas sugeridas</button>';
     $('apply-stage-suggestion').onclick = () => act(applyStageSuggestion);
   } catch (error) {
-    panel.textContent = error.message;
+    panel.textContent = nativeError(error).message;
   }
 }
 
 $('event-name').addEventListener('input', updateStageSuggestion);
-document.querySelector('#event-modalities').addEventListener('change', updateStageSuggestion);
+document
+  .querySelector<HTMLElement>('#event-modalities')!
+  .addEventListener('change', updateStageSuggestion);
 $('event-start').addEventListener('input', updateStageSuggestion);
 $('event-start').addEventListener('change', updateStageSuggestion);
 
 function renderHistorySuggestions() {
   if (!historyAnalysis || !analyzedHistory) return;
+  const analysis = historyAnalysis;
+  const history = analyzedHistory;
   const reopenIndex = inlineHistoryIndex;
   restoreEventForm();
   let count = 0,
     existingCount = 0;
-  $('history-suggestions').innerHTML = historyAnalysis.candidates
+  $('history-suggestions').innerHTML = analysis.candidates
     .map((c, i) => {
       const included = state.events.filter((event) =>
-          includedHistoryCandidate([event], analyzedHistory.id, c, historyAnalysis.candidates),
+          includedHistoryCandidate([event], history.id, c, analysis.candidates),
         ),
         done = included.length > 0,
-        ignored = state.ignoredHistory?.includes(analyzedHistory.id + ':' + historyCandidateKey(c));
+        ignored = state.ignoredHistory?.includes(history.id + ':' + historyCandidateKey(c));
       if (done) count++;
       const existing = !done && existingHistoryEvent(allEvents(), c, state);
       if (existing) existingCount++;
@@ -1667,19 +1703,14 @@ function renderHistorySuggestions() {
     })
     .join('');
   if (reopenIndex !== null && historicalSource) {
-    const candidate = historyAnalysis.candidates[reopenIndex];
+    const candidate = analysis.candidates[reopenIndex];
     if (
       candidate &&
-      !includedHistoryCandidate(
-        state.events,
-        analyzedHistory.id,
-        candidate,
-        historyAnalysis.candidates,
-      )
+      !includedHistoryCandidate(state.events, history.id, candidate, analysis.candidates)
     )
       openInlineHistory(reopenIndex, false);
   }
-  let progress = $('history-progress');
+  let progress = document.getElementById('history-progress');
   if (!progress) {
     progress = document.createElement('p');
     progress.id = 'history-progress';
@@ -1693,11 +1724,11 @@ function restoreEventForm() {
   inlineActivityId = null;
   eventFormHome.after($('event-form'));
   $('event-form').classList.remove('inline-history-review');
-  $('cancel-inline-history')?.remove();
+  document.getElementById('cancel-inline-history')?.remove();
   inlineHistoryIndex = null;
 }
 
-function openInlineHistory(index, scroll = true) {
+function openInlineHistory(index: number, scroll = true) {
   const row = document.querySelector('[data-history-item="' + index + '"]');
   if (!row) return;
   restoreEventForm();
@@ -1742,8 +1773,8 @@ function periodDurationPreview() {
   }
   try {
     const pending = !state.weekConfirmed;
-    const checked = [...document.querySelectorAll('#weekdays input:checked')].map((el) =>
-      Number(el.value),
+    const checked = [...document.querySelectorAll<HTMLInputElement>('#weekdays input:checked')].map(
+      (el) => Number(el.value),
     );
     const preview = pending
       ? { ...state, weekConfirmed: true, weekdays: checked.length ? checked : [1, 2, 3, 4, 5] }
@@ -1765,16 +1796,16 @@ function periodDurationPreview() {
       '. Após adicionar, a meta será mantida e o término recalculado com os impedimentos.';
   } catch (e) {
     $('period-end').value = '';
-    $('period-duration-status').textContent = e.message;
+    $('period-duration-status').textContent = nativeError(e).message;
   }
 }
 
 for (const id of ['period-start', 'period-days'])
   $(id).addEventListener('input', periodDurationPreview);
 for (const part of ['first', 'second', 'third']) {
-  const start = $('vacation-' + part + '-start'),
-    days = $('vacation-' + part + '-days'),
-    end = $('vacation-' + part + '-end');
+  const start = editorControl('vacation-' + part + '-start'),
+    days = editorControl('vacation-' + part + '-days'),
+    end = editorControl('vacation-' + part + '-end');
   const calculate = () => {
     if (!days.value) return;
     try {
@@ -1782,7 +1813,7 @@ for (const part of ['first', 'second', 'third']) {
       vacationPreview();
     } catch (e) {
       end.value = '';
-      $('vacation-preview').textContent = e.message;
+      $('vacation-preview').textContent = nativeError(e).message;
     }
   };
   start.addEventListener('input', calculate);
@@ -1793,9 +1824,9 @@ for (const part of ['first', 'second', 'third']) {
   });
 }
 
-document.querySelector('#weekdays').addEventListener('change', periodDurationPreview);
+document.querySelector<HTMLElement>('#weekdays')!.addEventListener('change', periodDurationPreview);
 
-function openInlineActivity(id) {
+function openInlineActivity(id: string) {
   const row = document.querySelector('[data-activity-row="' + id + '"]');
   if (!row) return;
   restoreEventForm();
@@ -1817,8 +1848,9 @@ function openInlineActivity(id) {
 }
 
 function setEventSubmitLabel() {
-  $('event-form').querySelector('button:not([type]), button[type="submit"]').textContent =
-    editingEventId ? 'Aplicar alterações do evento' : 'Adicionar evento';
+  $('event-form').querySelector<HTMLButtonElement>(
+    'button:not([type]), button[type="submit"]',
+  )!.textContent = editingEventId ? 'Aplicar alterações do evento' : 'Adicionar evento';
 }
 
 $('event-form').addEventListener('reset', () => {
@@ -1827,7 +1859,7 @@ $('event-form').addEventListener('reset', () => {
   markAppliedForm('event-form');
 });
 
-function editEvent(id) {
+function editEvent(id: string) {
   const event = state.events.find((e) => e.id === id);
   if (!event) return;
   if (
@@ -1851,14 +1883,14 @@ function editEvent(id) {
     hours: event.hours ?? '',
     requirement: event.requirementId || '',
   }))
-    $('event-' + field).value = value;
+    editorControl('event-' + field).value = value;
   document
-    .querySelectorAll('input[name=event-modality]')
+    .querySelectorAll<HTMLInputElement>('input[name=event-modality]')
     .forEach(
       (el) =>
         (el.checked = (
           event.modalities?.length ? event.modalities : calendarModalities(state)
-        ).includes(el.value)),
+        ).some((modality) => modality === el.value)),
     );
   $('event-confirmed').checked = false;
   setEventSubmitLabel();
@@ -1885,7 +1917,7 @@ function resetPeriodForm() {
   markAppliedForm('period-form');
 }
 
-function editPeriod(id) {
+function editPeriod(id: string) {
   const period = state.periods.find((p) => p.id === id);
   if (!period) return;
   editingPeriodId = id;
@@ -1895,7 +1927,7 @@ function editPeriod(id) {
     end: period.end,
     days: period.targetDays ?? '',
   }))
-    $('period-' + key).value = value;
+    editorControl('period-' + key).value = String(value);
   $('period-submit').textContent = 'Aplicar alterações do período';
   $('cancel-period-edit').hidden = false;
   periodDurationPreview();
@@ -1910,10 +1942,12 @@ $('cancel-period-edit').onclick = resetPeriodForm;
 $('period-end').addEventListener('input', periodDurationPreview);
 
 $('event-list').addEventListener('click', (event) => {
-  if (!['apply-teacher-day', 'reset-teacher-day'].includes(event.target.id)) return;
+  if (!(event.target instanceof Element)) return;
+  const target = event.target;
+  if (!['apply-teacher-day', 'reset-teacher-day'].includes(target.id)) return;
   act(() => {
-    const date = event.target.id === 'reset-teacher-day' ? undefined : $('teacher-day-date').value;
-    if (event.target.id === 'apply-teacher-day' && !date)
+    const date = target.id === 'reset-teacher-day' ? undefined : $('teacher-day-date').value;
+    if (target.id === 'apply-teacher-day' && !date)
       throw Error('Informe a data do Dia do Professor.');
     validateTeacherDay(date, state.year);
     state.teacherDayDate = date;
@@ -1925,6 +1959,7 @@ $('event-list').addEventListener('click', (event) => {
 });
 
 $('second-semester-intake').addEventListener('change', (e) => {
+  if (!(e.target instanceof HTMLSelectElement)) return;
   state.secondSemesterIntake = e.target.value === '' ? undefined : e.target.value === 'yes';
   dirty = true;
   render({ recalculate: true });

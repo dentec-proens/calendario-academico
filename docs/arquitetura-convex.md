@@ -4,19 +4,22 @@ O frontend é uma aplicação React e Vite. Convex concentra identidade, sessõe
 
 ## Componentes
 
-| Componente                | Responsabilidade                                                            |
-| ------------------------- | --------------------------------------------------------------------------- |
-| `web/portal/`             | Listas, criação, administração, documentos e revisão em React               |
-| `web/native/`             | Autenticação, montagem das páginas, subscriptions e cliente Convex          |
-| `web/app.js`              | Edição do calendário, aplicação dos formulários e coordenação do salvamento |
-| `web/print.mjs`           | Renderização compartilhada entre prévia anual e PDF                         |
-| `src/`                    | Contagem por oferta, períodos, eventos, sugestões e verificações de geração |
-| `convex/native.ts`        | Operações de calendários, catálogo, documentos e revisão                    |
-| `convex/nativeAuth.ts`    | Convex Auth, membros ativos, convites e recuperação                         |
-| `convex/nativeFiles.ts`   | Validação de uploads, autorização e tickets de arquivos                     |
-| `convex/nativeActions.ts` | Extração de texto e geração de PDF em actions Node                          |
+| Componente                | Responsabilidade                                                             |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| `web/portal/`             | Listas, criação, administração, documentos e revisão em React                |
+| `web/native/`             | Autenticação, montagem das páginas, subscriptions e cliente Convex           |
+| `web/components/`         | Diálogo React compartilhado, confirmação assíncrona e apresentação semântica |
+| `web/app.ts`              | Edição do calendário, aplicação dos formulários e coordenação do salvamento  |
+| `web/print.mjs`           | Renderização compartilhada entre prévia anual e PDF                          |
+| `src/`                    | Contagem por oferta, períodos, eventos, sugestões e verificações de geração  |
+| `convex/native.ts`        | Operações de calendários, catálogo, documentos e revisão                     |
+| `convex/nativeAuth.ts`    | Convex Auth, membros ativos, convites e recuperação                          |
+| `convex/nativeFiles.ts`   | Validação de uploads, autorização e tickets de arquivos                      |
+| `convex/nativeActions.ts` | Extração de texto e geração de PDF em actions Node                           |
 
 `web/native/client.ts` adapta as operações da interface a funções Convex específicas, como criação, salvamento, análise e download. Os caminhos `/api/...` que ainda aparecem no editor pertencem a esse adaptador de interface; o backend recebe argumentos validados para cada função. Os contratos públicos estão nos validadores, nos tipos gerados e nos DTOs do cliente.
+
+O portal e o editor usam `confirmAction` para decisões que exigem confirmação. O `ConfirmationDialogHost`, montado no provider comum, apresenta um `<dialog>` React com fundo escurecido, foco contido, cancelamento por Escape e restauração de foco. Remoções e descarte usam vermelho; ações operacionais usam azul; consequências recebem destaque âmbar. O módulo também oferece variantes âmbar e verde. O callback `onConfirm` mantém o diálogo aberto durante a operação, bloqueia execução duplicada e apresenta falhas para nova tentativa. A importação abre o seletor de arquivos diretamente e pede confirmação somente após validar o conteúdo.
 
 ## Persistência e autorização
 

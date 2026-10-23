@@ -1,3 +1,4 @@
+import { confirmAction } from '../components/confirmation.ts';
 import { useState } from 'react';
 import { ArchiveRestore, CalendarPlus, ExternalLink, FileUp, Trash2 } from 'lucide-react';
 import { calendarName } from '../../src/calendar-label.mjs';
@@ -60,15 +61,17 @@ export default function CalendarsPanel({
   }
 
   function remove(calendar) {
-    if (
-      !window.confirm(
-        `Mover ${calendar.name} para a lixeira? Ele sairá das listas de trabalho e pareceres. Seus dados e documentos serão preservados para restauração.`,
-      )
-    )
-      return;
-    run(async () => {
-      await calendarClient.remove(calendar.id, calendar.version);
-      notify('Calendário movido para a lixeira. Você pode restaurá-lo abaixo.');
+    void confirmAction({
+      title: 'Mover calendário para a lixeira?',
+      description: `O calendário “${calendar.name}” sairá das listas de trabalho e pareceres.`,
+      consequence: 'Seus dados e documentos serão preservados para restauração.',
+      intent: 'danger',
+      confirmLabel: 'Mover para a lixeira',
+      pendingLabel: 'Movendo…',
+      onConfirm: async () => {
+        await calendarClient.remove(calendar.id, calendar.version);
+        notify('Calendário movido para a lixeira. Você pode restaurá-lo abaixo.');
+      },
     });
   }
 

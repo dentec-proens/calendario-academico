@@ -1,3 +1,4 @@
+import { confirmAction } from '../components/confirmation.ts';
 import { useEffect, useRef, useState } from 'react';
 import { CheckCheck, ClipboardCopy, Download, ExternalLink, Eye, Pencil, Save } from 'lucide-react';
 import { calendarName } from '../../src/calendar-label.mjs';
@@ -354,21 +355,30 @@ function ReviewContent({ calendars, liveReview, onOpened, pagination }) {
 
   async function openReview() {
     if (actionPending.current) return;
+    const selectedCalendarId = calendarId;
     if (
       dirty &&
-      !window.confirm('Há observações não salvas. Deseja descartá-las e abrir outra revisão?')
+      !(await confirmAction({
+        title: 'Descartar observações não salvas?',
+        description: 'Abrir outra revisão descartará as observações que ainda não foram salvas.',
+        consequence: 'As observações descartadas não poderão ser recuperadas.',
+        intent: 'danger',
+        confirmLabel: 'Descartar e abrir revisão',
+        cancelLabel: 'Continuar editando',
+      }))
     )
       return;
-    if (!calendarId) {
+    if (actionPending.current) return;
+    if (!selectedCalendarId) {
       notify('Selecione um calendário.');
       return;
     }
-    const operation = beginOperation(calendarId, 'open');
+    const operation = beginOperation(selectedCalendarId, 'open');
     try {
-      const opened = await reviews.get(calendarId);
+      const opened = await reviews.get(selectedCalendarId);
       if (operationRef.current !== operation) return;
       setDraft(initialDraft(opened));
-      onOpened?.(calendarId);
+      onOpened?.(selectedCalendarId);
       setPreview(null);
       notify('Indicações automáticas disponíveis para conferência.');
     } catch (error) {

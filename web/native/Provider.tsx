@@ -1,5 +1,6 @@
 import { useEffect, type PropsWithChildren } from 'react';
 import { ConvexAuthProvider, useAuthActions } from '@convex-dev/auth/react';
+import ConfirmationDialogHost from '../components/ConfirmationDialog.tsx';
 import { convex, setAuthActions } from './client.ts';
 
 function AuthBridge({ children }: PropsWithChildren) {
@@ -11,7 +12,10 @@ function AuthBridge({ children }: PropsWithChildren) {
 export default function NativeProvider({ children }: PropsWithChildren) {
   return (
     <ConvexAuthProvider client={convex}>
-      <AuthBridge>{children}</AuthBridge>
+      <AuthBridge>
+        {children}
+        <ConfirmationDialogHost />
+      </AuthBridge>
     </ConvexAuthProvider>
   );
 }

@@ -11,5 +11,5 @@ mountNativePage(async () => {
       window.history.replaceState(window.history.state, '', url);
     }
   }
-  return import('../app.js');
+  return import('../app.ts');
 });

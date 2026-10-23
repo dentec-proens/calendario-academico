@@ -125,10 +125,8 @@ test(
     // Trash only the synthetic calendar produced by this run.
     await editor.goto(base);
     await editor.waitForSelector(`[data-delete-calendar="${id}"]`);
-    editor.once('dialog', (dialog) => {
-      void dialog.accept();
-    });
     await editor.locator(`[data-delete-calendar="${id}"]`).click();
+    await editor.locator('.confirmation-dialog__confirm').click();
     await editor.waitForFunction(
       (id) => !document.querySelector(`[data-delete-calendar="${id}"]`),
       {},
@@ -242,6 +240,7 @@ test(
       'invited CAMPUS account keeps its access scope',
     );
     await page.locator(`[data-password-recovery="${memberId}"]`).click();
+    await page.locator('.confirmation-dialog__confirm').click();
     await page.waitForSelector('#recovery-link');
     const recovery = await page.$eval('input#recovery-link', (element) => element.value);
     await guest.locator('#logout').click();
@@ -255,6 +254,7 @@ test(
     );
     await login(guest, memberEmail, memberPassword + 'Reset');
     await page.locator(`[data-remove-member="${memberId}"]`).click();
+    await page.locator('.confirmation-dialog__confirm').click();
     await contains('#message', 'Acesso excluído');
     await guestContext.close();
 
@@ -392,6 +392,7 @@ test(
     await contains('#document-message', 'Vigência atualizada');
     await page.locator('[data-page="calendars"]').click();
     await page.locator(`[data-delete-calendar="${calendarId}"]`).click();
+    await page.locator('.confirmation-dialog__confirm').click();
     await contains('#message', 'movido para a lixeira');
     await page.locator('.calendar-trash summary').click();
     await page.locator(`[data-restore-calendar="${calendarId}"]`).click();
@@ -413,6 +414,7 @@ test(
     );
     await page.locator('[data-page="calendars"]').click();
     await page.locator(`[data-delete-calendar="${calendarId}"]`).click();
+    await page.locator('.confirmation-dialog__confirm').click();
     await contains('#message', 'movido para a lixeira');
     assert.deepEqual(
       errors,
