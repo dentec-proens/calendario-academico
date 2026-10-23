@@ -25,7 +25,7 @@
     "check": "pnpm run format:check && pnpm run lint && pnpm run lint:types && pnpm run typecheck && pnpm test && pnpm run build"
   },
   "engines": {
-    "node": ">=24.0.0",
+    "node": "24.x",
     "pnpm": ">=12.15.0 <13"
   },
   "dependencies": {
