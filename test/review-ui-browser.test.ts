@@ -191,7 +191,29 @@ test(
     );
     await page.locator(notes).fill('Nova observação precisa de confirmação.');
     await page.focus(notes);
+    await page.waitForFunction(
+      (notes) => {
+        const control = document.querySelector(notes)!;
+        const label = control.closest('.ui-field')!.querySelector('.ui-field__label')!;
+        return getComputedStyle(label).color === getComputedStyle(control).borderTopColor;
+      },
+      {},
+      notes,
+    );
     assert.notEqual(await page.$eval(notes, (node) => getComputedStyle(node).boxShadow), 'none');
+    await page.locator('#edit-conclusion').click();
+    await page.hover('#review-conclusion');
+    await page.waitForFunction(() => {
+      const control = document.querySelector('#review-conclusion')!;
+      return (
+        getComputedStyle(control.closest('label')!).color ===
+        getComputedStyle(control).borderTopColor
+      );
+    });
+    assert.notEqual(
+      await page.$eval('#review-conclusion', (node) => getComputedStyle(node).boxShadow),
+      'none',
+    );
     await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
     assert.equal(
       await page.$eval(choice, (node) => getComputedStyle(node.parentElement!).transitionDuration),

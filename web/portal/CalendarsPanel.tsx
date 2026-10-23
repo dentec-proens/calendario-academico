@@ -118,7 +118,7 @@ export default function CalendarsPanel({
               </p>
             ) : null}
             <fieldset className="form-fields" disabled={pending || !campus}>
-              <div className="row-form">
+              <div className="calendar-identity-fields">
                 <label>
                   Campus
                   <select
@@ -147,15 +147,6 @@ export default function CalendarsPanel({
                     required
                   />
                 </label>
-                <fieldset id="calendar-modalities">
-                  <legend>Forma de oferta/nível — marque uma ou várias</legend>
-                  {selectableModalities.map((m) => (
-                    <label className="check" key={m}>
-                      <input type="checkbox" name="calendar-modality" value={m} />
-                      {modalityLabels[m]}
-                    </label>
-                  ))}
-                </fieldset>
                 <label>
                   Organização do calendário
                   <select id="calendar-regime" name="regime" defaultValue="anual">
@@ -165,6 +156,20 @@ export default function CalendarsPanel({
                   </select>
                 </label>
               </div>
+              <fieldset id="calendar-modalities" aria-describedby="calendar-modalities-help">
+                <legend>Forma de oferta/nível</legend>
+                <p id="calendar-modalities-help" className="help">
+                  Selecione uma ou mais opções.
+                </p>
+                <div className="calendar-modality-options">
+                  {selectableModalities.map((m) => (
+                    <label className="check" key={m}>
+                      <input type="checkbox" name="calendar-modality" value={m} />
+                      {modalityLabels[m]}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <div className="row-form">
                 <label>
                   Nome do calendário
@@ -189,7 +194,9 @@ export default function CalendarsPanel({
               </div>
               <div className="row-form">
                 <label>
-                  Turmas, se aplicável
+                  <span>
+                    Turmas <span className="field-optional">(opcional)</span>
+                  </span>
                   <input
                     id="calendar-classes"
                     name="classes"
@@ -198,7 +205,9 @@ export default function CalendarsPanel({
                   />
                 </label>
                 <label>
-                  Turnos, se aplicável
+                  <span>
+                    Turnos <span className="field-optional">(opcional)</span>
+                  </span>
                   <input
                     id="calendar-shifts"
                     name="shifts"

@@ -79,12 +79,86 @@ test(
     );
     await page.waitForSelector('#create-calendar', { hidden: true });
     await page.locator('#calendars .collection-heading button').click();
+    const identityLayout = await page.$$eval(
+      '.calendar-identity-fields :is(input, select)',
+      (nodes) => nodes.map((node) => node.getBoundingClientRect().top),
+    );
+    assert.equal(identityLayout.length, 3);
+    assert(
+      identityLayout.every((top) => Math.abs(top - identityLayout[0]) < 1),
+      'campus, year and organization align on one row',
+    );
+    assert(
+      await page.$eval(
+        '#calendar-modalities',
+        (node) =>
+          node.getBoundingClientRect().top >
+          document.querySelector('.calendar-identity-fields')!.getBoundingClientRect().bottom - 1,
+      ),
+      'modalities have their own group below identification',
+    );
+    for (const selector of [
+      '#calendar-campus',
+      '#calendar-year',
+      '#calendar-name',
+      '#calendar-courses',
+    ]) {
+      const label = await page.$eval(selector, (node) => {
+        const label = node.closest('label')!;
+        const style = getComputedStyle(label);
+        return {
+          weight: style.fontWeight,
+          align: style.alignItems,
+          textAlign: style.textAlign,
+          gap: style.gap,
+          left: label.getBoundingClientRect().left,
+          controlLeft: node.getBoundingClientRect().left,
+        };
+      });
+      assert.deepEqual(
+        { weight: label.weight, align: label.align, textAlign: label.textAlign, gap: label.gap },
+        { weight: '600', align: 'stretch', textAlign: 'left', gap: '8px' },
+      );
+      assert(Math.abs(label.left - label.controlLeft) < 1);
+    }
     await page.locator('#calendar-courses').fill('Curso em preenchimento');
+    await page.hover('#calendar-courses');
+    await page.waitForFunction(() => {
+      const input = document.querySelector('#calendar-courses')!;
+      return (
+        getComputedStyle(input.closest('label')!).color === getComputedStyle(input).borderTopColor
+      );
+    });
+    assert.notEqual(
+      await page.$eval('#calendar-courses', (node) => getComputedStyle(node).boxShadow),
+      'none',
+      'hover preserves the focus highlight',
+    );
+    await page.locator('input[name="calendar-modality"]').click();
+    assert.equal(
+      await page.$eval(
+        '#calendar-modalities .check',
+        (node) => getComputedStyle(node).flexDirection,
+      ),
+      'row',
+    );
+    assert.equal(
+      await page.$eval(
+        '#create-calendar',
+        (node) => new FormData(node as HTMLFormElement).getAll('calendar-modality').length,
+      ),
+      1,
+      'moving the group preserves submitted modalities',
+    );
     await page.locator('[data-page="accounts"]').click();
     await page.waitForSelector('#user-list', { visible: true });
     await page.waitForSelector('#campus-list', { hidden: true });
     await page.waitForSelector('#user-form', { hidden: true });
     await page.locator('#accounts .collection-heading button').click();
+    assert.equal(
+      await page.$eval('#user-name', (node) => getComputedStyle(node.closest('label')!).fontWeight),
+      '600',
+    );
     await page.locator('#user-name').fill('Nome ainda não enviado');
     await page.locator('[data-page="campuses"]').click();
     await page.waitForSelector('#campus-list', { visible: true });
@@ -118,6 +192,13 @@ test(
     await page.locator('#document-year-filter').fill('');
     await page.select('#document-status-filter', '');
     await page.locator('#institution .collection-heading button').click();
+    assert.equal(
+      await page.$eval(
+        '#document-title',
+        (node) => getComputedStyle(node.closest('label')!).textAlign,
+      ),
+      'left',
+    );
     await page.locator('#document-title').fill('Documento em preenchimento');
     await page.locator('[data-page="calendars"]').click();
     await page.waitForSelector('#document-form', { hidden: true });
@@ -128,6 +209,13 @@ test(
     );
     await page.locator('[data-page="institution-events"]').click();
     await page.locator('[data-edit="synthetic-event"]').click();
+    assert.equal(
+      await page.$eval(
+        '#catalogue-name',
+        (node) => getComputedStyle(node.closest('label')!).fontWeight,
+      ),
+      '600',
+    );
     await page.locator('#catalogue-name').fill('Evento em edição');
     await page.locator('[data-page="institution"]').click();
     await page.waitForSelector('#catalogue-form', { hidden: true });
@@ -144,6 +232,24 @@ test(
     await page.locator('[data-page="campuses"]').click();
     await page.waitForSelector('.portal-sidebar', { hidden: true });
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+
+    await page.locator('.sidebar-toggle').click();
+    await page.locator('[data-page="calendars"]').click();
+    for (const width of [768, 390, 320]) {
+      await page.setViewport({ width, height: 900 });
+      assert(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+        `calendar form fits at ${width}px`,
+      );
+    }
+    const mobileLayout = await page.$$eval(
+      '.calendar-identity-fields :is(input, select)',
+      (nodes) => nodes.map((node) => node.getBoundingClientRect().top),
+    );
+    assert(
+      mobileLayout[0] < mobileLayout[1] && mobileLayout[1] < mobileLayout[2],
+      'identification fields stack on mobile',
+    );
 
     await page.goto(origin + '?role=CAMPUS&page=accounts');
     await page.waitForSelector('#calendar-list', { visible: true });

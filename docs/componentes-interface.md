@@ -11,4 +11,8 @@ Os componentes compartilhados ficam em `web/components/ui/` e usam Base UI com C
 
 Mantenha rótulos visíveis, foco por teclado, alvos de toque de pelo menos 44px e suporte a `prefers-reduced-motion`. Botões bloqueados não devem aparentar estar carregando, salvo quando a operação estiver efetivamente em andamento.
 
+Labels de campos ficam acima do controle, alinhados à esquerda, com fonte de 14px, peso 600 e espaço de 8px até o campo. Legendas de grupos seguem a mesma hierarquia. No foco, o label ou a legenda do grupo ganha o verde de foco, e campos editáveis recebem borda verde e halo suave. O hover não deve sobrepor o destaque de foco. Textos auxiliares e `.field-optional` mantêm peso normal e cor secundária. Labels de checkbox e radio ficam ao lado do controle; não aplique centralização ou peso normal a todos os labels de um fieldset.
+
+Essas regras pertencem ao CSS compartilhado e alcançam também controles HTML nativos, filtros e formulários adicionados dinamicamente pelo editor. Na criação de calendários, Campus, Ano e Organização formam uma linha quando houver espaço; as formas de oferta ficam em grupo próprio, com opções que se reorganizam pela largura disponível do formulário.
+
 Na revisão técnico-pedagógica, a indicação automática é uma evidência para conferência. Escolher uma avaliação, confirmar o critério e salvar a análise são ações distintas. Alterar a avaliação ou as observações invalida a confirmação anterior; a interface deve indicar quando a conferência ainda está por salvar. O teste `test/review-ui-browser.test.ts` cobre essas transições com dados sintéticos, sem acessar um deployment real.

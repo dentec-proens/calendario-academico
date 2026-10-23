@@ -179,6 +179,12 @@
 }
 
 @media screen {
+  label:focus-within,
+  fieldset:focus-within > legend,
+  .ui-field:focus-within > .ui-field__label,
+  .ui-choice-field:focus-within > .ui-field__label {
+    color: var(--ui-focus);
+  }
   :is(button, input, select, textarea) {
     transition:
       background-color var(--ui-motion),
@@ -236,7 +242,7 @@
         input:not([type='checkbox'], [type='radio'], [type='hidden']),
         select,
         textarea
-      ):enabled:not([readonly]):hover {
+      ):enabled:not([readonly]):not(:focus):hover {
       border-color: var(--ui-muted);
     }
     .ui-choice:not(:has([data-disabled])):hover {

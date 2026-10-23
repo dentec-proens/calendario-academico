@@ -144,14 +144,18 @@ h2 {
 label {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  align-items: stretch;
+  text-align: left;
+  gap: var(--ui-space-2);
   font-size: 0.875rem;
   font-weight: 600;
+  color: var(--ui-text);
   margin-bottom: 16px;
   min-width: 0;
 }
 input,
-select {
+select,
+textarea {
   font: inherit;
   font-weight: 400;
   min-width: 0;
@@ -168,9 +172,12 @@ input[type='checkbox'] {
   accent-color: var(--green);
   flex-shrink: 0;
 }
-.check {
+.check,
+label:has(> input:is([type='checkbox'], [type='radio'])) {
   flex-direction: row;
   align-items: center;
+  justify-content: flex-start;
+  min-height: 44px;
   font-weight: 400;
   line-height: 1.4;
 }
@@ -190,13 +197,21 @@ fieldset {
 }
 fieldset legend {
   font-size: 0.875rem;
-  margin-bottom: 10px;
+  font-weight: 600;
+  color: var(--ui-text);
+  text-align: left;
+  line-height: 1.5;
+  padding: 0;
+  margin-bottom: var(--ui-space-2);
 }
-fieldset label {
-  align-items: center;
+label small,
+.field-optional {
+  color: var(--ui-muted);
   font-weight: 400;
-  font-size: 0.875rem;
-  gap: 4px;
+}
+label small {
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 .metrics {
   display: grid;

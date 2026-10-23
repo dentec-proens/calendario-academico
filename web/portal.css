@@ -24,7 +24,6 @@
 }
 .history-area textarea {
   width: 100%;
-  font: inherit;
   padding: 10px;
   min-height: 90px;
   border: 1px solid #b8c9bf;
@@ -76,9 +75,7 @@
 .review-item textarea,
 #review-conclusion {
   width: 100%;
-  font: inherit;
   padding: 10px;
-  border: 1px solid #b8c9bf;
   border-radius: 5px;
 }
 .review-item select {
@@ -446,7 +443,6 @@
 }
 #history-suggestions .inline-history-review label {
   align-items: stretch;
-  font-size: 0.95rem;
 }
 #history-suggestions .inline-history-review label.check {
   align-items: center;

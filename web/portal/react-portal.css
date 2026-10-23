@@ -9,6 +9,46 @@
 #root .row-form.form-fields {
   display: flex;
 }
+#create-calendar {
+  container: calendar-form / inline-size;
+}
+.calendar-identity-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 var(--ui-space-4);
+}
+#calendar-modalities {
+  display: block;
+  min-width: 0;
+  margin: 0 0 var(--ui-space-5);
+}
+#calendar-modalities-help {
+  margin-bottom: var(--ui-space-2);
+  font-weight: 400;
+}
+.calendar-modality-options {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ui-space-2) var(--ui-space-4);
+}
+.calendar-modality-options .check {
+  margin: 0;
+}
+@container calendar-form (min-width: 480px) {
+  .calendar-modality-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container calendar-form (min-width: 640px) {
+  .calendar-identity-fields {
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.5fr) minmax(0, 1fr);
+  }
+}
+@container calendar-form (min-width: 840px) {
+  .calendar-modality-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
 #root button,
 #root .records a {
   display: inline-flex;

@@ -229,6 +229,19 @@ test(
     await page.setViewport({ width: 1440, height: 1100 });
     await page.locator('[data-view="periods"]').click();
     await page.locator('#period-name').fill('Preenchimento a preservar');
+    assert.equal(
+      await page.$eval(
+        '#period-name',
+        (node) => getComputedStyle(node.closest('label')!).fontWeight,
+      ),
+      '600',
+    );
+    await page.waitForFunction(() => {
+      const input = document.querySelector('#period-name')!;
+      return (
+        getComputedStyle(input.closest('label')!).color === getComputedStyle(input).borderTopColor
+      );
+    });
     for (const section of ['edit', 'days', 'events', 'history', 'issues', 'periods']) {
       await page.locator(`[data-view="${section}"]`).click();
       assert.equal(
