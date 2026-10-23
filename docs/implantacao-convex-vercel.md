@@ -58,8 +58,8 @@ O backup deve incluir a exportação completa do Convex e o Storage quando houve
 
 Ensaiar a restauração completa em outro deployment antes de operar sobre produção. Conferir destino, conteúdo, referências entre documentos e disponibilidade dos arquivos. Importações isoladas de tabelas podem quebrar relações. Não substituir dados de produção sem backup atual e conferência explícita do destino.
 
-## Arquivos indisponíveis
+## Restauração dos originais concluída
 
-A pendência conhecida de transferência de 13 PDFs originais permanece explícita nos registros. Metadados e análises cadastradas não comprovam que os bytes estejam no Storage. Quando os originais estiverem disponíveis, a administração pode usar **Restaurar PDF original** no registro existente; o servidor exige o mesmo SHA-256 e preserva IDs, análises e referências. Veja [Restauração dos originais](restauracao-de-originais.md). Não recrie registros nem substitua o arquivo por uma amostra.
+Em 23/10/2026, os 13 PDFs originais recuperados da Supabase foram restaurados em produção (`exuberant-cheetah-138`) e no desenvolvimento de Gustavo (`oceanic-gazelle-652`). Não restaram originais indisponíveis nesses ambientes. Os bytes e os hashes foram conferidos nas exportações finais com Storage, e os downloads dos calendários ativos também foram verificados.
 
-Quando os originais estiverem disponíveis, siga [Restauração dos PDFs originais](restauracao-de-originais.md). A interface ADMIN exige correspondência exata do SHA-256 e preserva os registros existentes.
+IDs, metadados, análises, calendários, versões e pareceres foram preservados, assim como os calendários que já estavam na lixeira. O registro da operação, as evidências privadas e o procedimento para novas restaurações estão em [Restauração dos PDFs originais](restauracao-de-originais.md).

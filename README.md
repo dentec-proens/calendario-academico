@@ -118,5 +118,5 @@ Segredos de autenticação e provedores pertencem ao ambiente Convex. Somente co
 - [Acesso e contas](docs/recuperacao-de-senha.md): convites, recuperação e Google institucional.
 - [Implantação e operação](docs/implantacao-convex-vercel.md): ambientes, configuração, publicação e backups.
 - [Migração do schema](docs/migracao-schema.md): backup, ensaio, preservação dos históricos e conferência dos dados.
-- [Restauração dos originais](docs/restauracao-de-originais.md): reposição dos PDFs indisponíveis sem alterar IDs ou análises.
+- [Restauração dos originais](docs/restauracao-de-originais.md): registro da restauração dos 13 PDFs em produção e desenvolvimento, sem pendências de transferência, e procedimento para novas reposições.
 - [Revisão da consolidação](docs/revisao-consolidacao-convex.md): achados do Claude Code CLI e correções aplicadas.

@@ -36,7 +36,7 @@ Esse comando acompanha funções Convex e inicia o Vite em http://127.0.0.1:4183
 
 Use dados de teste no seu ambiente. As contas do portal são distintas das contas usadas para administrar Convex e GitHub. Google é opcional; login local permite trabalhar sem configurar esse provedor.
 
-Antes de compartilhar código, execute `pnpm check`. Para conferir o build local, use `pnpm build` e `pnpm start`. Esses comandos não publicam nem importam dados. Os 13 PDFs históricos pendentes ficam para uma migração específica futura.
+Antes de compartilhar código, execute `pnpm check`. Para conferir o build local, use `pnpm build` e `pnpm start`. Esses comandos não publicam nem importam dados. A [restauração dos 13 PDFs históricos](restauracao-de-originais.md) foi concluída em 23/10/2026 em produção e no desenvolvimento de Gustavo, sem pendências de transferência nesses ambientes.
 
 Para alterações visuais, consulte os [componentes compartilhados da interface](componentes-interface.md).
 
