@@ -5,6 +5,7 @@
   },
   "include": [
     "scripts/**/*.ts",
+    "config/**/*.ts",
     "src/app-server.ts",
     "src/app-routes.ts",
     "server.ts",

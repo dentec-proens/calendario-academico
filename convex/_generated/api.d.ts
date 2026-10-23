@@ -12,6 +12,7 @@ import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
 import type * as authContracts from "../authContracts.js";
 import type * as authCrypto from "../authCrypto.js";
+import type * as devSetup from "../devSetup.js";
 import type * as http from "../http.js";
 import type * as model from "../model.js";
 import type * as native from "../native.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authContracts: typeof authContracts;
   authCrypto: typeof authCrypto;
+  devSetup: typeof devSetup;
   http: typeof http;
   model: typeof model;
   native: typeof native;

@@ -1,73 +1,58 @@
 # Assistente de Calendários Acadêmicos DENTEC/PROENS
 
-Aplicação em fase alpha com React, Vite, TypeScript e Convex. Convex executa autenticação, consultas reativas, mutations, armazenamento e processamento de PDFs. O portal usa um único backend; o preview Node serve somente arquivos estáticos.
+Aplicação alpha com React, Vite, TypeScript e Convex. Autenticação, consultas reativas, dados, arquivos e processamento de PDFs ficam no Convex. A Vercel hospeda o portal estático.
 
-## Desenvolvimento
+## Duas rotinas
 
-Requisitos: Node.js 24 LTS e pnpm 12.15.0. As versões das dependências são fixadas no `package.json` e no lockfile.
+Os dois desenvolvedores trabalham nos mesmos teams Dentec e no mesmo repositório. Cada um usa seu próprio deployment Convex de desenvolvimento; ambos podem publicar em produção, sem PR obrigatório ou ambiente intermediário.
+
+Na primeira vez, com Node.js 24 e pnpm 12.15.0:
 
 ```sh
 pnpm install --frozen-lockfile
+pnpm dev:setup
+```
+
+Depois, para trabalhar:
+
+```sh
 pnpm dev
 ```
 
-Na primeira execução, o CLI do Convex pede acesso à conta e ao projeto. Ele grava a seleção de deployment e a URL pública em `.env.local`. Veja `.env.example`; não copie configurações de outra instalação. O comando prepara as funções, inicia o watcher Convex e abre o Vite com atualização automática em http://127.0.0.1:4183. Ctrl+C encerra ambos.
+O portal abre em http://127.0.0.1:4183, com Convex e Vite acompanhando as alterações. Ctrl+C encerra os dois. A configuração individual fica em `.env.local`, ignorado pelo Git. Não copie esse arquivo de outro desenvolvedor. `pnpm env:doctor` confere os destinos locais sem chamadas remotas.
 
-O projeto Convex `calendario-academico` pertence ao team Diretoria de Ensino Técnico — PROENS. Desenvolvimento usa `oceanic-gazelle-652`; produção usa `exuberant-cheetah-138`. O portal de produção fica em https://calendario-academico-phi.vercel.app, no projeto Vercel `dentec-proens/calendario-academico`. O build não publica funções nem inicializa dados. Veja [publicação em produção](docs/implantacao-convex-vercel.md).
-
-Para conferir o build estático:
+Para publicar uma versão commitada em `main`:
 
 ```sh
-pnpm build
-pnpm start
+pnpm deploy:production
 ```
 
-O resultado fica em `dist/app/`. O preview escuta somente em `127.0.0.1:4183`; `PORT` permite outra porta. No Windows, `INICIAR.cmd` executa esse build e preview. Autenticação e dados continuam no Convex; não há API Node local.
+O comando verifica o código, publica as funções no Convex de produção e envia `main` ao GitHub; a integração Git da Vercel publica o portal. `pnpm deploy:production --dry-run` mostra o plano sem chamadas remotas. Os alvos públicos ficam versionados em [`config/environments.ts`](config/environments.ts).
 
-## Qualidade
+[Preparação do desenvolvimento](docs/desenvolvimento.md) · [Publicação em produção](docs/implantacao-convex-vercel.md)
 
-```sh
-pnpm check
-```
+## Qualidade e build local
 
-Esse comando verifica formatação, lint, lint com análise de tipos, TypeScript estrito, testes e build. A CI executa o mesmo processo com uma URL sintética de build e sem credenciais de deployment.
+`pnpm check` executa formatação, lint, lint com análise de tipos, TypeScript estrito, testes e build. A CI usa o mesmo comando, sem credenciais de deployment. TypeScript 7.0.2, Oxlint 1.89.0 e dependências têm versões fixadas; módulos maiores de cálculo e editor continuam em JavaScript durante a conversão progressiva.
 
-- TypeScript **7.0.2** nas fronteiras do backend, cliente Convex, autenticação, entradas React e ferramentas. `strict`, imports de tipos e verificações de símbolos não utilizados estão ativos.
-- Oxlint **1.89.0**, com verificações de correção, Hooks do React e promises; lint tipado usa o engine compatível com TypeScript 7. Regras de imports impedem reintroduzir os antigos provedores.
-- Prettier mantém a formatação de código e documentação. `pnpm format` aplica e `pnpm format:check` confere.
-- Os módulos maiores de cálculo e editor permanecem em JavaScript durante a migração progressiva. São testados e analisados pelo linter; não são declarados artificialmente como código TypeScript já migrado.
-- Testes usam `node:test` e `convex-test`, com fixtures descartáveis e funções reais do backend. E2E em navegador exige explicitamente um deployment descartável; não aponte essa suíte para os dados importados.
+Para conferir o build local, use `pnpm build` e `pnpm start`. A saída fica em `dist/app/`, servida em `127.0.0.1:4183`; `PORT` permite outra porta. `INICIAR.cmd` executa essa sequência no Windows. O build não publica funções nem inicializa dados.
 
-Comandos individuais: `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
+## Fluxos e dados
 
-## Fluxos do portal
+ADMIN gerencia contas, campi, base institucional, documentos e revisão humana. CAMPUS altera somente os calendários da unidade autorizada. O backend verifica identidade e vínculo em cada operação.
 
-ADMIN gerencia contas, campi, base institucional, documentos e revisão humana. CAMPUS consulta a base e altera somente os calendários da unidade autorizada. O backend confere o vínculo em cada operação; esconder controles não substitui autorização.
+**Adicionar/Aplicar** confirma os campos locais. As alterações aplicadas são salvas automaticamente, com indicação de sucesso, falha ou conflito; campos ainda não aplicados ficam protegidos de atualizações remotas. **Baixar cópia** inclui os dados aplicados. A conferência de uma nova base institucional e o salvamento da análise humana permanecem explícitos. Testes e propostas não representam aprovação institucional.
 
-Calendários de teste geram PDF identificado como teste. Propostas definitivas mantêm suas pendências e dependem da revisão prevista; o sistema não concede aprovação institucional. Os cálculos usam datas civis, fontes e ofertas registradas, preservando as regras do domínio.
+IDs, credenciais compatíveis, snapshots e referências da migração foram preservados. Os **13 PDFs originais continuam pendentes de transferência**; os comandos de desenvolvimento e publicação não importam nem reanalisam esses arquivos. `oceanic-gazelle-652` continua sendo o desenvolvimento já configurado de Gustavo.
 
-Alterações entram no calendário com **Adicionar/Aplicar** e são salvas automaticamente após uma breve pausa. O indicador confirma o resultado. Falhas recuperáveis oferecem nova tentativa; conflitos preservam os dados locais e exigem conferir a versão atual. Campos ainda não aplicados ficam protegidos de atualizações remotas. **Baixar cópia** inclui os dados aplicados; **Importar cópia** abre esse JSON compatível.
+Segredos de autenticação pertencem ao ambiente Convex, sem prefixo `VITE_*`. A recuperação de acesso usa links temporários gerados pelo ADMIN; envio automático por e-mail ainda não está implementado.
 
-A confirmação de uma nova base institucional e o salvamento da análise humana continuam explícitos. As consultas Convex atualizam as listas e os editores sem refetch manual.
+## Estrutura
 
-## Dados, acesso e arquivos
-
-Identidades e sessões usam Convex Auth. Membros precisam estar ativos e previamente autorizados. Credenciais importadas compatíveis conservam o vínculo com seus IDs; não há cadastro público irrestrito.
-
-As funções em `convex/` executam transações e ações. Os dados atuais ficam em documentos Convex e as versões completas ficam em snapshots separados. Os IDs de domínio e as referências históricas importadas permanecem estáveis. PDFs são enviados ao Convex Storage, validados no backend e consultados com autorização e tickets temporários. Geração de PDF e extração de texto executam em actions Node do Convex.
-
-Os **13 PDFs originais permanecem pendentes de transferência**, conforme decisão do usuário. Seus metadados e referências estão preservados. A limpeza do código não baixa, reanalisa ou substitui esses arquivos.
-
-Segredos como `JWT_PRIVATE_KEY`, `JWKS` e credenciais Google pertencem ao ambiente do deployment Convex. Nunca entram em variáveis `VITE_*`, bundles, relatórios ou Git. Google depende da configuração do provedor. A recuperação de senha usa links temporários gerados pelo ADMIN; envio automático por e-mail ainda precisa ser implementado. Consulte [recuperação de acesso](docs/recuperacao-de-senha.md).
-
-Para alterar funções do laboratório, use `pnpm convex:dev`; para publicar funções em produção, o comando explícito é `pnpm convex:deploy`. Confira o alvo antes de executar. Backup usa a exportação completa do Convex, incluindo Storage quando necessário; uma importação de restauração deve ser ensaiada em deployment separado.
-
-## Estrutura e documentação
-
-- `convex/`: funções, autenticação, armazenamento e schema.
-- `src/`: regras puras de calendário, snapshots e suporte à renderização.
+- `convex/`: funções, autenticação, arquivos e schema.
+- `src/`: regras do calendário, snapshots e renderização.
 - `web/`: portal React, cliente Convex e editor.
-- `scripts/`: desenvolvimento, build e geração de recursos de impressão.
-- `test/`: regras e funções Convex isoladas.
+- `scripts/`: preparação, desenvolvimento, qualidade e publicação.
+- `test/`: domínio e funções Convex isoladas.
 
-[Arquitetura](docs/arquitetura-convex.md) · [Regras e especificação](docs/especificacao.md) · [Proveniência dos dados](docs/migracao-dados.md) · [Evidências da consolidação](docs/evidencias-convex/consolidation-integrity.json)
+[Arquitetura](docs/arquitetura-convex.md) · [Especificação](docs/especificacao.md) · [Proveniência dos dados](docs/migracao-dados.md) · [Recuperação de acesso](docs/recuperacao-de-senha.md)
