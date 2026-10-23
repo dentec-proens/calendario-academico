@@ -348,12 +348,11 @@ test(
     await page.locator('#open-review').click();
     await page.waitForSelector('#review-content');
     const criterion = await page.$eval(
-      '[data-edit-criterion]',
-      (element) => (element as HTMLElement).dataset.editCriterion,
+      '[data-confirm-criterion]',
+      (element) => (element as HTMLElement).dataset.confirmCriterion,
     );
     assert(criterion);
-    await page.locator(`[data-edit-criterion="${criterion}"]`).click();
-    await page.select(`[data-criterion="${criterion}"]`, 'NAO_ATENDIDO');
+    await page.locator(`[data-fields="${criterion}"] [data-choice="NAO_ATENDIDO"]`).click();
     await page
       .locator(`[data-notes="${criterion}"]`)
       .fill('Observação sintética preservada no Convex.');

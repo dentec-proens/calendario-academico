@@ -1,3 +1,4 @@
+import { Button } from '../components/ui/Button.tsx';
 import { formText } from './form-values.ts';
 import type { Bootstrap, Notify } from '../native/types.ts';
 import type { FormEvent } from 'react';
@@ -211,14 +212,14 @@ export default function CalendarsPanel({
                 revisão dos critérios.
               </p>
               <div className="actions">
-                <button type="submit" name="purpose" value="test">
+                <Button type="submit" name="purpose" value="test">
                   <CalendarPlus aria-hidden="true" size={18} />
                   Criar calendário de teste
-                </button>
-                <button type="submit" name="purpose" value="definitive">
+                </Button>
+                <Button type="submit" name="purpose" value="definitive">
                   <CalendarPlus aria-hidden="true" size={18} />
                   Criar calendário definitivo
-                </button>
+                </Button>
               </div>
             </fieldset>
           </form>
@@ -275,15 +276,16 @@ export default function CalendarsPanel({
                   <FileUp aria-hidden="true" size={18} />
                   Enviar calendário anterior
                 </a>
-                <button
+                <Button
                   type="button"
+                  variant="danger"
                   data-delete-calendar={c.id}
                   disabled={pending}
                   onClick={() => remove(c)}
                 >
                   <Trash2 aria-hidden="true" size={18} />
                   Excluir calendário
-                </button>
+                </Button>
               </li>
             ))
           ) : (
@@ -310,8 +312,9 @@ export default function CalendarsPanel({
                     <strong>{c.name}</strong>
                     <small>Excluído em {new Date(c.deletedAt!).toLocaleString('pt-BR')}</small>
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     data-restore-calendar={c.id}
                     disabled={pending}
                     onClick={() =>
@@ -323,7 +326,7 @@ export default function CalendarsPanel({
                   >
                     <ArchiveRestore aria-hidden="true" size={18} />
                     Restaurar calendário
-                  </button>
+                  </Button>
                 </li>
               ))
             ) : (

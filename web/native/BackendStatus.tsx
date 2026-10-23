@@ -1,3 +1,4 @@
+import { Button } from '../components/ui/Button.tsx';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { useConvexConnectionState } from 'convex/react';
 import './backend-status.css';
@@ -75,9 +76,9 @@ export default function BackendStatus({
         </p>
       ) : null}
       {allowReload && online && loading && !hasLoaded ? (
-        <button type="button" onClick={() => window.location.reload()}>
+        <Button type="button" onClick={() => window.location.reload()}>
           Tentar novamente
-        </button>
+        </Button>
       ) : null}
     </section>
   );

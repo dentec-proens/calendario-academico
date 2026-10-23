@@ -1,3 +1,4 @@
+import { Button } from '../components/ui/Button.tsx';
 import { Component, useState, type PropsWithChildren } from 'react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { nativeError } from './client.ts';
@@ -20,18 +21,18 @@ function AccessError({ error }: { error: unknown }) {
         <h1>Não foi possível acessar o portal</h1>
         <p role="alert">{logoutError || nativeError(error).message}</p>
         <div className="actions">
-          <button type="button" onClick={() => window.location.reload()}>
+          <Button type="button" onClick={() => window.location.reload()}>
             Tentar novamente
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="secondary"
+            variant="secondary"
             onClick={() => {
               void backToLogin();
             }}
           >
             Voltar ao login
-          </button>
+          </Button>
         </div>
       </section>
     </main>

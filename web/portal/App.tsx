@@ -1,3 +1,4 @@
+import { Button } from '../components/ui/Button.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { Bootstrap, Notify, Status } from '../native/types.ts';
@@ -148,7 +149,7 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
 
   function navigationItems(items: Array<[PageId, string, LucideIcon] | AdminPage>) {
     return items.map(([id, label, Icon]) => (
-      <button
+      <Button
         key={id}
         type="button"
         className={'sidebar-link' + (page === id ? ' active' : '')}
@@ -158,7 +159,7 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
         onClick={() => navigate(id)}
       >
         <Icon aria-hidden="true" size={18} /> {label}
-      </button>
+      </Button>
     ));
   }
 
@@ -171,15 +172,16 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
       <a className="skip-navigation" href="#panel-title">
         Ir para o conteúdo
       </a>
-      <button
+      <Button
         type="button"
-        className="secondary sidebar-toggle"
+        variant="secondary"
+        className="sidebar-toggle"
         aria-expanded={menuOpen}
         aria-controls="portal-navigation"
         onClick={() => setMenuOpen(!menuOpen)}
       >
         <Menu size={18} aria-hidden="true" /> Navegação · {title}
-      </button>
+      </Button>
       <aside className="portal-sidebar" data-open={menuOpen}>
         <nav id="portal-navigation" aria-label="Seções do portal">
           <div className="navigation-group shared-navigation">

@@ -1,3 +1,4 @@
+import { Button } from '../components/ui/Button.tsx';
 import { formText } from './form-values.ts';
 import type { Bootstrap, Notify } from '../native/types.ts';
 import type { FormEvent } from 'react';
@@ -46,10 +47,10 @@ export default function CampusesPanel({
                 Nome da unidade
                 <input id="campus-name" name="name" maxLength={120} required />
               </label>
-              <button>
+              <Button type="submit">
                 <Building2 aria-hidden="true" size={18} />
                 Cadastrar
-              </button>
+              </Button>
             </fieldset>
           </form>
         }
@@ -64,10 +65,10 @@ export default function CampusesPanel({
                   carregado(s) · {info.users.filter((u) => u.campusId === c.id).length} conta(s)
                 </small>
               </div>
-              <button type="button" data-campus={c.id} onClick={() => onCampus(c.id)}>
+              <Button type="button" data-campus={c.id} onClick={() => onCampus(c.id)}>
                 <CalendarDays aria-hidden="true" size={18} />
                 Ver calendários
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

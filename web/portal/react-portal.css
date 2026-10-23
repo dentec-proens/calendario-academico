@@ -21,7 +21,7 @@
   flex-shrink: 0;
 }
 #root button:disabled {
-  cursor: wait;
+  cursor: not-allowed;
   opacity: 0.65;
 }
 #root .calendar-trash {
@@ -38,7 +38,7 @@
 #root textarea:focus-visible,
 #root a:focus-visible,
 #root summary:focus-visible {
-  outline: 3px solid #c38620;
+  outline: 3px solid var(--ui-focus);
   outline-offset: 3px;
 }
 #root .records .actions {

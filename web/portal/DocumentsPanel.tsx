@@ -1,3 +1,4 @@
+import { Button } from '../components/ui/Button.tsx';
 import { formText } from './form-values.ts';
 import type { FormEvent } from 'react';
 import type { DocumentsData } from '../native/types.ts';
@@ -217,9 +218,9 @@ export default function DocumentsPanel({
               disabled={pending}
             />
           </label>
-          <button type="submit" disabled={busy}>
+          <Button type="submit" disabled={busy}>
             <Upload size={16} aria-hidden="true" /> Enviar para conferência
-          </button>
+          </Button>
           <p className="help">O arquivo será salvo como rascunho.</p>
         </form>
       }
@@ -313,10 +314,10 @@ export default function DocumentsPanel({
                           Selecione o mesmo PDF original deste registro. O registro e suas versões
                           serão preservados.
                         </p>
-                        <button type="submit" disabled={busy}>
+                        <Button type="submit" disabled={busy}>
                           <Upload size={16} aria-hidden="true" />
                           {pending ? 'Restaurando…' : 'Restaurar PDF original'}
-                        </button>
+                        </Button>
                       </form>
                     ) : null}
                   </>
@@ -341,7 +342,7 @@ export default function DocumentsPanel({
                           Conferi o arquivo, o ano e sua aplicabilidade. Ao definir como vigente, a
                           versão anterior deste tipo e ano será arquivada.
                         </label>
-                        <button
+                        <Button
                           type="button"
                           data-document-status="vigente"
                           data-document-id={document.id}
@@ -351,12 +352,12 @@ export default function DocumentsPanel({
                           }}
                         >
                           <CheckCircle2 size={16} aria-hidden="true" /> Definir como vigente
-                        </button>
+                        </Button>
                       </>
                     ) : (
-                      <button
+                      <Button
                         type="button"
-                        className="secondary"
+                        variant="secondary"
                         data-document-status="arquivado"
                         data-document-id={document.id}
                         disabled={busy}
@@ -365,7 +366,7 @@ export default function DocumentsPanel({
                         }}
                       >
                         <Archive size={16} aria-hidden="true" /> Retirar de vigência
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ) : null}

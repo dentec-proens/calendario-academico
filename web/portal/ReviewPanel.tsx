@@ -1,3 +1,4 @@
+import { Button } from '../components/ui/Button.tsx';
 import type { RefObject, FormEvent } from 'react';
 import type { Bootstrap } from '../native/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
@@ -10,7 +11,7 @@ type Draft = ReturnType<typeof initialDraft>;
 type Operation = { calendarId: Id<'calendars'> };
 import { confirmAction } from '../components/confirmation.ts';
 import { useEffect, useRef, useState } from 'react';
-import { CheckCheck, ClipboardCopy, Download, ExternalLink, Eye, Pencil, Save } from 'lucide-react';
+import { ClipboardCopy, Download, ExternalLink, Eye, Pencil, Save } from 'lucide-react';
 import { calendarName } from '../../src/calendar-label.ts';
 import { modalityLabels } from '../../src/modalities.ts';
 import { updateConclusion } from '../../src/review-conclusion.ts';
@@ -19,13 +20,8 @@ import { reviews } from '../native/client.ts';
 import { usePaginatedQuery, useQuery } from 'convex/react';
 import { functions } from '../native/client.ts';
 import Pagination from './Pagination.tsx';
-
-const statusLabels: Record<ReviewEntry['status'], string> = {
-  PENDENTE: 'Pendente de análise',
-  ATENDIDO: 'Atendido',
-  NAO_ATENDIDO: 'Não atendido',
-  NAO_APLICAVEL: 'Não aplicável',
-};
+import ReviewCriterion from './ReviewCriterion.tsx';
+import { TextField } from '../components/ui/Field.tsx';
 
 function initialDraft(opened: ReviewSupport) {
   const entries = opened.criteria.map((criterion) => {
@@ -55,118 +51,10 @@ function initialDraft(opened: ReviewSupport) {
       presentReviewText(opened.review?.applicableNorm, opened.calendar.year) ||
       reviewNorm(opened.calendar.year, opened.sameYear ? opened.source.norm : ''),
     acknowledgeStale: false,
-    editing: {} as Record<string, boolean>,
     changed: {} as Record<string, boolean>,
     conclusionEditable: false,
     dirty: conclusion !== previousConclusion,
   };
-}
-
-function ReviewCriterion({
-  criterion,
-  entry,
-  editing,
-  changed,
-  busy,
-  onEdit,
-  onChange,
-  onConfirm,
-}: {
-  criterion: ReviewSupport['criteria'][number];
-  entry: ReviewEntry;
-  editing: boolean;
-  changed: boolean;
-  busy: boolean;
-  onEdit: () => void;
-  onChange: <K extends 'status' | 'notes'>(field: K, value: ReviewEntry[K]) => void;
-  onConfirm: () => void;
-}) {
-  const selectRef = useRef<HTMLSelectElement>(null);
-  useEffect(() => {
-    if (editing) selectRef.current?.focus();
-  }, [editing]);
-  const origin = entry.reviewed
-    ? 'Conferido pelo parecerista'
-    : changed
-      ? entry.status === 'PENDENTE'
-        ? 'Pendente de análise'
-        : 'Alteração não confirmada'
-      : 'Indicação automática · não conferida';
-
-  return (
-    <li className="review-item">
-      <h3>{criterion.title}</h3>
-      <p>
-        <strong>Indicação do sistema:</strong>{' '}
-        {(criterion.signal ?? '')
-          .replace(' A presença não comprova atendimento.', '')
-          .replace(' Isso não comprova ausência no processo.', '')}
-      </p>
-      {criterion.candidates.length > 0 ? (
-        <details>
-          <summary>
-            Ver registros possivelmente relacionados ({criterion.candidates.length})
-          </summary>
-          <ul>
-            {criterion.candidates.map((candidate, index) => (
-              <li key={candidate.id || index}>
-                {candidate.start} a {candidate.end} · {candidate.name}
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
-      <p data-origin={criterion.id}>{origin}</p>
-      <div className="actions">
-        <button
-          type="button"
-          className="secondary"
-          data-edit-criterion={criterion.id}
-          disabled={busy}
-          onClick={onEdit}
-        >
-          <Pencil size={16} aria-hidden="true" /> Editar
-        </button>
-        <button
-          type="button"
-          className="secondary"
-          data-confirm-criterion={criterion.id}
-          disabled={busy || entry.status === 'PENDENTE'}
-          onClick={onConfirm}
-        >
-          <CheckCheck size={16} aria-hidden="true" /> Confirmar análise
-        </button>
-      </div>
-      <fieldset disabled={!editing || busy} data-fields={criterion.id}>
-        <label>
-          Avaliação
-          <select
-            ref={selectRef}
-            data-criterion={criterion.id}
-            value={entry.status}
-            onChange={(event) => onChange('status', event.target.value as ReviewEntry['status'])}
-          >
-            {Object.entries(statusLabels).map(([status, label]) => (
-              <option key={status} value={status}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Observações (opcional)
-          <textarea
-            data-notes={criterion.id}
-            maxLength={2000}
-            rows={3}
-            placeholder="Se necessário, descreva o ajuste ou a orientação ao campus."
-            value={entry.notes}
-            onChange={(event) => onChange('notes', event.target.value)}
-          />
-        </label>
-      </fieldset>
-    </li>
-  );
 }
 
 function ReviewPreview({
@@ -198,7 +86,7 @@ function downloadDocument(document: ReviewDocument, draft: Draft, format: 'html'
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
-function ReviewContent({
+export function ReviewContent({
   calendars,
   liveReview,
   onOpened,
@@ -380,6 +268,7 @@ function ReviewContent({
       return {
         ...current,
         entries,
+        changed: { ...current.changed, [id]: true },
         conclusion: updateConclusion(
           current.conclusion,
           current.opened.criteria,
@@ -538,7 +427,7 @@ function ReviewContent({
             ))}
           </select>
         </label>
-        <button
+        <Button
           type="button"
           id="open-review"
           disabled={busy || !calendars.length}
@@ -548,7 +437,7 @@ function ReviewContent({
         >
           <Eye size={18} aria-hidden="true" />{' '}
           {pending === 'open' ? 'Abrindo análise…' : 'Abrir análise'}
-        </button>
+        </Button>
         <Pagination pagination={pagination} label="Carregar mais calendários" />
         <p id="review-message" role="status" aria-live="polite">
           {message || (!calendars.length ? 'Nenhum calendário disponível para revisão.' : '')}
@@ -581,51 +470,62 @@ function ReviewContent({
             >
               <ExternalLink size={16} aria-hidden="true" /> Abrir calendário em outra aba
             </a>
+            <div className="review-save-status" role="status">
+              {dirty
+                ? 'Há alterações por salvar. Confirmar um critério não salva a análise.'
+                : opened.review
+                  ? 'Todas as alterações foram salvas.'
+                  : 'A análise ainda não foi salva.'}
+            </div>
             <div className="actions review-export-actions">
-              <button
+              <Button
                 type="button"
                 id="preview-review"
+                variant="secondary"
                 disabled={busy}
                 onClick={() => {
                   void exportReview('preview');
                 }}
               >
                 <Eye size={18} aria-hidden="true" /> Visualizar parecer
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 id="download-review-html"
+                variant="secondary"
                 disabled={busy}
                 onClick={() => {
                   void exportReview('html');
                 }}
               >
                 <Download size={18} aria-hidden="true" /> Baixar parecer para SEI (HTML)
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 id="download-review-txt"
+                variant="secondary"
                 disabled={busy}
                 onClick={() => {
                   void exportReview('txt');
                 }}
               >
                 <Download size={18} aria-hidden="true" /> Baixar texto
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 id="copy-review"
+                variant="secondary"
                 disabled={busy}
                 onClick={() => {
                   void exportReview('copy');
                 }}
               >
                 <ClipboardCopy size={18} aria-hidden="true" /> Copiar parecer para SEI
-              </button>
-              <button type="submit" form="review-form" disabled={busy}>
+              </Button>
+              <Button type="submit" form="review-form" disabled={busy}>
                 <Save size={18} aria-hidden="true" />{' '}
                 {pending === 'save' ? 'Salvando análise…' : 'Salvar análise'}
-              </button>
+              </Button>
             </div>
             <form
               id="review-form"
@@ -634,28 +534,24 @@ function ReviewContent({
               }}
             >
               <div className="row-form">
-                <label>
-                  Processo SEI nº
-                  <input
-                    id="review-process"
-                    maxLength={100}
-                    placeholder="Informe o número do processo"
-                    disabled={busy}
-                    value={draft.processNumber}
-                    onChange={(event) => changeField('processNumber', event.target.value)}
-                  />
-                </label>
-                <label>
-                  Norma vigente do ano analisado
-                  <input
-                    id="review-norm"
-                    maxLength={1000}
-                    placeholder="Resolução e identificação oficial"
-                    disabled={busy}
-                    value={draft.applicableNorm}
-                    onChange={(event) => changeField('applicableNorm', event.target.value)}
-                  />
-                </label>
+                <TextField
+                  label="Processo SEI nº"
+                  id="review-process"
+                  maxLength={100}
+                  placeholder="Informe o número do processo"
+                  disabled={busy}
+                  value={draft.processNumber}
+                  onValueChange={(value) => changeField('processNumber', value)}
+                />
+                <TextField
+                  label="Norma vigente do ano analisado"
+                  id="review-norm"
+                  maxLength={1000}
+                  placeholder="Resolução e identificação oficial"
+                  disabled={busy}
+                  value={draft.applicableNorm}
+                  onValueChange={(value) => changeField('applicableNorm', value)}
+                />
               </div>
               <p className="help">
                 A busca por nome e categoria pode omitir registros ou relacionar itens indevidos;
@@ -673,28 +569,20 @@ function ReviewContent({
                     key={criterion.id}
                     criterion={criterion}
                     entry={draft.entries[index]}
-                    editing={Boolean(draft.editing[criterion.id])}
                     changed={Boolean(draft.changed[criterion.id])}
+                    saved={Boolean(
+                      opened.review?.entries.some((entry) => entry.id === criterion.id),
+                    )}
                     busy={busy}
-                    onEdit={() =>
-                      setDraft((current) =>
-                        current
-                          ? {
-                              ...current,
-                              editing: { ...current.editing, [criterion.id]: true },
-                            }
-                          : current,
-                      )
-                    }
                     onChange={(field, value) => changeEntry(criterion.id, field, value)}
                     onConfirm={() => confirmEntry(criterion.id)}
                   />
                 ))}
               </ul>
-              <button
+              <Button
                 type="button"
                 id="edit-conclusion"
-                className="secondary"
+                variant="secondary"
                 disabled={busy}
                 onClick={() =>
                   setDraft((current) =>
@@ -703,7 +591,7 @@ function ReviewContent({
                 }
               >
                 <Pencil size={16} aria-hidden="true" /> Editar texto do parecer
-              </button>
+              </Button>
               <label>
                 Conclusão do parecerista — texto proposto
                 <textarea
@@ -730,13 +618,13 @@ function ReviewContent({
                 </label>
               ) : null}
               <p className="help">
-                Para marcar Atendido, Não atendido ou Não aplicável, informe a evidência ou
-                justificativa.
+                Use as observações para registrar evidências ou justificar sua avaliação quando
+                necessário.
               </p>
-              <button disabled={busy}>
+              <Button type="submit" disabled={busy}>
                 <Save size={18} aria-hidden="true" />{' '}
                 {pending === 'save' ? 'Salvando análise…' : 'Salvar análise'}
-              </button>
+              </Button>
             </form>
             <p className="help">
               Salve a análise antes de exportar. Confira a formatação ao colar no SEI.

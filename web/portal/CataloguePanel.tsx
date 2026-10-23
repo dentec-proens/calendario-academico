@@ -1,3 +1,4 @@
+import { Button } from '../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../native/types.ts';
 import type { FormEvent } from 'react';
 import { useRef, useState } from 'react';
@@ -181,19 +182,19 @@ export default function CataloguePanel({
             </label>
             <p className="help">Alterações válidas para todos os campi abrangidos.</p>
             <div className="actions">
-              <button>
+              <Button type="submit">
                 <Save aria-hidden="true" size={18} />
                 Salvar evento institucional
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="secondary"
+                variant="secondary"
                 id="new-catalogue"
                 onClick={() => setEvent(emptyEvent())}
               >
                 <Plus aria-hidden="true" size={18} />
                 Novo registro
-              </button>
+              </Button>
             </div>
           </fieldset>
         </form>
@@ -219,16 +220,16 @@ export default function CataloguePanel({
                 <small>{item.evidence}</small>
               </div>
               {canManage ? (
-                <button
+                <Button
                   type="button"
-                  className="link-button"
+                  variant="secondary"
                   data-edit={item.id}
                   disabled={pending}
                   onClick={() => edit(item)}
                 >
                   <Pencil aria-hidden="true" size={18} />
                   Editar
-                </button>
+                </Button>
               ) : null}
             </li>
           ))}

@@ -1,3 +1,4 @@
+import { Button } from '../components/ui/Button.tsx';
 import { useCallback, useState } from 'react';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
@@ -45,17 +46,17 @@ export default function NativeApp() {
           {info ? `${info.user.name} · ${info.user.role}` : 'Portal PROENS'}
         </span>
         {isAuthenticated ? (
-          <button
+          <Button
             type="button"
             id="logout"
-            className="secondary"
+            variant="secondary"
             disabled={pending}
             onClick={() => {
               void logout();
             }}
           >
             <LogOut aria-hidden="true" size={18} /> Sair
-          </button>
+          </Button>
         ) : null}
       </header>
       <main>

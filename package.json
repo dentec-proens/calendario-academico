@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@auth/core": "0.41.1",
+    "@base-ui/react": "1.9.0",
     "@convex-dev/auth": "0.0.96",
     "@convex-dev/presence": "0.4.0",
     "@noble/hashes": "2.0.1",

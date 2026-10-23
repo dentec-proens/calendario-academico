@@ -1,3 +1,4 @@
+import { Button } from '../components/ui/Button.tsx';
 import { formText } from './form-values.ts';
 import type { Bootstrap, Notify } from '../native/types.ts';
 import type { FormEvent } from 'react';
@@ -43,7 +44,7 @@ function PrivateLink({
         />
       </label>
       <div className="actions">
-        <button
+        <Button
           type="button"
           id={id === 'invite-result' ? 'copy-invite' : 'copy-recovery'}
           disabled={pending}
@@ -61,16 +62,16 @@ function PrivateLink({
         >
           <Copy aria-hidden="true" size={18} />
           Copiar link
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="secondary"
+          variant="secondary"
           id={id === 'invite-result' ? 'close-invite' : 'close-recovery'}
           onClick={onClose}
         >
           <X aria-hidden="true" size={18} />
           Fechar
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -309,10 +310,10 @@ export default function AccountsPanel({
                   />
                 </label>
               ) : null}
-              <button id="create-user-button">
+              <Button type="submit" id="create-user-button">
                 <UserPlus aria-hidden="true" size={18} />
                 Criar conta {role}
-              </button>
+              </Button>
             </fieldset>
           </form>
         }
@@ -334,30 +335,33 @@ export default function AccountsPanel({
               </div>
               <div className="actions">
                 {u.active && u.loginMethod !== 'google' ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     data-password-recovery={u.id}
                     disabled={pending}
                     onClick={() => recoverPassword(u)}
                   >
                     <KeyRound aria-hidden="true" size={18} />
                     Gerar link de recuperação
-                  </button>
+                  </Button>
                 ) : null}
                 {u.id !== info.user.id ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="danger"
                     data-remove-member={u.id}
                     disabled={pending}
                     onClick={() => removeMember(u)}
                   >
                     <Trash2 aria-hidden="true" size={18} />
                     Excluir acesso
-                  </button>
+                  </Button>
                 ) : null}
                 {u.loginMethod === 'invite' && !u.active ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     data-new-invite={u.id}
                     disabled={pending}
                     onClick={() =>
@@ -370,7 +374,7 @@ export default function AccountsPanel({
                   >
                     <MailPlus aria-hidden="true" size={18} />
                     Gerar novo convite
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             </li>

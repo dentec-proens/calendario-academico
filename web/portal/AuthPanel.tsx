@@ -1,3 +1,5 @@
+import { TextField } from '../components/ui/Field.tsx';
+import { Button } from '../components/ui/Button.tsx';
 import type { FormEvent } from 'react';
 import type { Notify, Status } from '../native/types.ts';
 import { LogIn, ShieldCheck } from 'lucide-react';
@@ -41,7 +43,7 @@ export default function AuthPanel({ status, notify }: { status: Status; notify: 
       <h1 id="auth-title">{setup ? 'Criar administração' : 'Entrar'}</h1>
       {setup ? <p id="auth-help">{help}</p> : null}
       {!setup && status.googleEnabled ? (
-        <button
+        <Button
           type="button"
           id="google-login"
           disabled={pending}
@@ -53,7 +55,7 @@ export default function AuthPanel({ status, notify }: { status: Status; notify: 
         >
           <LogIn aria-hidden="true" size={18} />
           Entrar com Google institucional
-        </button>
+        </Button>
       ) : null}
       {status.googleEnabled ? (
         <p id="google-help" className="help">
@@ -64,40 +66,52 @@ export default function AuthPanel({ status, notify }: { status: Status; notify: 
         <fieldset className="form-fields" disabled={pending}>
           {setup ? (
             <div id="setup-fields">
-              <label>
-                Nome do administrador
-                <input id="admin-name" name="name" maxLength={120} required />
-              </label>
-              <label>
-                Código de instalação
-                <input id="setup-code" name="code" autoComplete="off" required />
-              </label>
+              <TextField
+                disabled={pending}
+                label="Nome do administrador"
+                id="admin-name"
+                name="name"
+                maxLength={120}
+                required
+              />
+              <TextField
+                disabled={pending}
+                label="Código de instalação"
+                id="setup-code"
+                name="code"
+                autoComplete="off"
+                required
+              />
             </div>
           ) : null}
-          <label>
-            E-mail institucional
-            <input id="email" name="email" type="email" required autoComplete="username" />
-          </label>
-          <label>
-            Senha local
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minLength={10}
-              maxLength={128}
-              autoComplete={setup ? 'new-password' : 'current-password'}
-            />
-          </label>
-          <button id="auth-submit">
+          <TextField
+            disabled={pending}
+            label="E-mail institucional"
+            id="email"
+            name="email"
+            type="email"
+            required
+            autoComplete="username"
+          />
+          <TextField
+            disabled={pending}
+            label="Senha local"
+            id="password"
+            name="password"
+            type="password"
+            required
+            minLength={10}
+            maxLength={128}
+            autoComplete={setup ? 'new-password' : 'current-password'}
+          />
+          <Button type="submit" id="auth-submit">
             {setup ? (
               <ShieldCheck aria-hidden="true" size={18} />
             ) : (
               <LogIn aria-hidden="true" size={18} />
             )}{' '}
             {pending ? 'Aguarde…' : setup ? 'Criar conta ADMIN' : 'Entrar'}
-          </button>
+          </Button>
         </fieldset>
       </form>
       <p>

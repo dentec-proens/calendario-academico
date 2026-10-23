@@ -1,3 +1,4 @@
+import { Button } from '../components/ui/Button.tsx';
 import { useId, useRef, type ReactNode } from 'react';
 import { ArrowLeft, Plus } from 'lucide-react';
 
@@ -49,28 +50,29 @@ export default function CollectionPanel({
             {title}
           </h2>
           {canCreate ? (
-            <button
+            <Button
               type="button"
               aria-controls={id}
               disabled={busy}
               onClick={() => changeView(true)}
             >
               <Plus size={18} aria-hidden="true" /> {actionLabel}
-            </button>
+            </Button>
           ) : null}
         </div>
         {children}
       </div>
       {canCreate ? (
         <div id={id} className="panel collection-form" hidden={!formOpen}>
-          <button
+          <Button
             type="button"
-            className="secondary collection-back"
+            variant="secondary"
+            className="collection-back"
             disabled={busy}
             onClick={() => changeView(false)}
           >
             <ArrowLeft size={18} aria-hidden="true" /> Voltar à lista
-          </button>
+          </Button>
           <h2 ref={formHeading} tabIndex={-1}>
             {formTitle}
           </h2>

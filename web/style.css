@@ -1,3 +1,6 @@
+@import './components/ui/tokens.css';
+@import './components/ui/ui.css';
+
 :root {
   font-family:
     system-ui,
@@ -7,8 +10,8 @@
   color: #172b25;
   background: #f3f6f5;
   font-size: 16px;
-  --green: #0c503a;
-  --line: #d9e3de;
+  --green: var(--ui-action);
+  --line: var(--ui-border-soft);
 }
 * {
   box-sizing: border-box;
@@ -93,13 +96,13 @@ button {
   border-radius: 7px;
   cursor: pointer;
 }
-button:hover {
+button:enabled:hover {
   filter: brightness(0.93);
 }
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 3px solid #c38620;
+  outline: 3px solid var(--ui-focus);
   outline-offset: 3px;
 }
 .secondary {
@@ -298,9 +301,9 @@ nav {
 .records button {
   font-size: 0.875rem;
   padding: 7px 10px;
-  color: #833d31;
-  border-color: #e1c4bf;
-  background: white;
+  color: var(--ui-action);
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
 }
 .calendar-heading {
   display: flex;
@@ -531,7 +534,11 @@ footer {
 }
 
 @media screen {
-  #review-message:not(:empty),
+  #review-message:not(:empty) {
+    background: var(--ui-action-soft);
+    padding: var(--ui-space-3);
+    white-space: pre-line;
+  }
   #document-message:not(:empty) {
     position: sticky;
     top: 10px;

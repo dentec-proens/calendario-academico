@@ -38,6 +38,8 @@ Use dados de teste no seu ambiente. As contas do portal são distintas das conta
 
 Antes de compartilhar código, execute `pnpm check`. Para conferir o build local, use `pnpm build` e `pnpm start`. Esses comandos não publicam nem importam dados. Os 13 PDFs históricos pendentes ficam para uma migração específica futura.
 
+Para alterações visuais, consulte os [componentes compartilhados da interface](componentes-interface.md).
+
 ## TypeScript
 
 Todo o código manual usa `.ts` ou `.tsx`, incluindo as regras compartilhadas em `src/`, os painéis React e a ferramenta administrativa em `migration/`. A configuração base usa `strict: true` e `allowJs: false`; os comandos de tipos e lint abrangem também esses módulos. As entradas de JSON e `FormData` são validadas antes de entrar nos contratos tipados.
