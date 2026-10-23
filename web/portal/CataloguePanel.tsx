@@ -2,7 +2,7 @@ import { Button } from '../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../native/types.ts';
 import type { FormEvent } from 'react';
 import { useRef, useState } from 'react';
-import { Pencil, Plus, Save } from 'lucide-react';
+import { Pencil, Save, X } from 'lucide-react';
 import { categories } from '../../src/categories.ts';
 import { modalityLabels, selectableModalities } from '../../src/modalities.ts';
 import { institution } from '../native/client.ts';
@@ -32,11 +32,25 @@ export default function CataloguePanel({
   notify: Notify;
 }) {
   const [creating, setCreating] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
   const [event, setEvent] = useState(emptyEvent);
   const { pending, run } = useAction(notify);
   const nameRef = useRef<HTMLInputElement>(null);
-  const change = <K extends keyof CatalogueEvent>(field: K, value: CatalogueEvent[K]) =>
+  const listRef = useRef<HTMLParagraphElement>(null);
+  const change = <K extends keyof CatalogueEvent>(field: K, value: CatalogueEvent[K]) => {
     setEvent((previous) => ({ ...previous, [field]: value }));
+    setHasDraft(true);
+  };
+
+  function closeForm() {
+    setEvent(emptyEvent());
+    setHasDraft(false);
+    setCreating(false);
+    requestAnimationFrame(() => {
+      listRef.current?.focus({ preventScroll: true });
+      listRef.current?.scrollIntoView({ block: 'start' });
+    });
+  }
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -46,8 +60,7 @@ export default function CataloguePanel({
         id: event.id || undefined,
         revision: catalogue.revision,
       });
-      setEvent(emptyEvent());
-      setCreating(false);
+      closeForm();
       notify('Base atualizada. Os campi receberão a nova revisão ao abrir seus calendários.');
     });
   }
@@ -57,6 +70,7 @@ export default function CataloguePanel({
       ...item,
       modalities: selectableModalities.filter((m) => item.modalities.includes(m)),
     });
+    setHasDraft(true);
     setCreating(true);
     requestAnimationFrame(() => nameRef.current?.focus());
   }
@@ -64,7 +78,13 @@ export default function CataloguePanel({
   return (
     <CollectionPanel
       title="Feriados e eventos institucionais"
-      actionLabel={event.id ? 'Continuar edição do evento' : 'Novo evento institucional'}
+      actionLabel={
+        event.id
+          ? 'Continuar edição do evento'
+          : hasDraft
+            ? 'Continuar cadastro do evento'
+            : 'Novo evento institucional'
+      }
       formTitle={event.id ? 'Editar evento institucional' : 'Novo evento institucional'}
       formOpen={creating}
       onFormOpen={setCreating}
@@ -177,26 +197,25 @@ export default function CataloguePanel({
               Registro ativo
             </label>
             <p className="help">Alterações válidas para todos os campi abrangidos.</p>
+            <p className="help">
+              Voltar à lista mantém este formulário. Cancelar {event.id ? 'edição' : 'cadastro'}{' '}
+              descarta as alterações não salvas.
+            </p>
             <div className="actions">
               <Button type="submit">
                 <Save aria-hidden="true" size={18} />
                 Salvar evento institucional
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                id="new-catalogue"
-                onClick={() => setEvent(emptyEvent())}
-              >
-                <Plus aria-hidden="true" size={18} />
-                Novo registro
+              <Button type="button" variant="secondary" id="cancel-catalogue" onClick={closeForm}>
+                <X aria-hidden="true" size={18} />
+                Cancelar {event.id ? 'edição' : 'cadastro'}
               </Button>
             </div>
           </fieldset>
         </form>
       }
     >
-      <p id="catalogue-description">
+      <p id="catalogue-description" ref={listRef} tabIndex={-1}>
         Versão {catalogue.revision} · {catalogue.events.filter((e) => e.active).length} registros
         ativos.
       </p>
