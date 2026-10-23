@@ -31,8 +31,7 @@
       </div>
       <div class="intro">
         <div>
-          <p class="eyebrow">PLANEJAMENTO ACADÊMICO</p>
-          <h1>Seu calendário, dia a dia.</h1>
+          <h1 id="record-title">Calendário</h1>
           <p id="record-heading">
             Organize os períodos, registre as decisões do campus e confira a contagem.
           </p>
@@ -50,27 +49,18 @@
           </button>
         </div>
       </div>
-      <p class="notice">
-        Conferência preliminar. Calendários definitivos exigem contagem válida, roteiro completo e
-        revisão humana atualizada. Calendários de teste são identificados no PDF. O sistema não
-        concede aprovação oficial.
-      </p>
-      <div id="message" role="status" aria-live="polite"></div>
-      <div class="autosave-panel" aria-label="Salvamento do calendário">
-        <p id="autosave-status" role="status" aria-live="polite" data-state="idle">
-          Salvamento automático ativo.
-        </p>
-        <button id="server-save" class="secondary" type="button" hidden>Tentar novamente</button>
-        <p id="unapplied-status" class="help" role="status" aria-live="polite" hidden>
-          Alterações não aplicadas. Use Adicionar ou Aplicar no formulário para incluí-las no
-          calendário.
-        </p>
+      <div class="editor-feedback">
+        <div id="message" role="status" aria-live="polite"></div>
+        <div class="autosave-panel" aria-label="Salvamento do calendário">
+          <p id="autosave-status" role="status" aria-live="polite" data-state="idle">
+            Salvamento automático ativo.
+          </p>
+          <button id="server-save" class="secondary" type="button" hidden>Tentar novamente</button>
+          <p id="unapplied-status" class="help" role="status" aria-live="polite" hidden>
+            Há alterações no formulário. Use Adicionar ou Aplicar para incluí-las.
+          </p>
+        </div>
       </div>
-      <p class="help">
-        Use Adicionar evento ou Aplicar para incluir o preenchimento no calendário. Campos ainda em
-        edição não são enviados automaticamente. Após aplicar, acompanhe a confirmação do salvamento
-        acima.
-      </p>
       <div class="workspace sequential-editor">
         <section class="main-column">
           <div class="metrics">
@@ -166,9 +156,8 @@
             <div class="panel">
               <h2>3. Períodos letivos</h2>
               <p class="help">
-                Cadastre os períodos letivos comuns (ano ou semestres) sem sobreposição. Logo
-                abaixo, configure os bimestres, trimestres ou semestres de avaliação de cada oferta;
-                essas etapas podem ocorrer simultaneamente.
+                Os períodos letivos não podem se sobrepor. As etapas de avaliação são definidas por
+                oferta e podem ocorrer simultaneamente entre ofertas.
               </p>
               <form id="period-form" class="row-form" novalidate>
                 <label
@@ -201,11 +190,8 @@
                 <h3>Etapas de avaliação</h3>
                 <div id="assessment-settings" class="row-form"></div>
                 <p class="help">
-                  Defina separadamente as etapas de cada forma de oferta/nível. Por exemplo: 4
-                  bimestres para Técnico integrado e 2 semestres para Graduação no mesmo calendário.
-                  Ao preencher o início da primeira etapa, o sistema sugere o término e os
-                  intervalos das próximas, descontando feriados e impedimentos cadastrados. Confira
-                  e aplique a sugestão.
+                  Defina as etapas por oferta. O início da primeira etapa permite sugerir os demais
+                  intervalos.
                 </p>
                 <p id="assessment-status" role="status"></p>
                 <p id="assessment-auto-status" role="status"></p>
@@ -221,8 +207,8 @@
             <div class="panel">
               <h2>4. Sábados letivos por mês</h2>
               <p class="help">
-                Escolha o mês e marque somente os sábados definidos pelo campus. Cada data conta uma
-                única vez. Feriados e recessos continuam excluídos e aparecem como conflitos.
+                Selecione os sábados definidos pelo campus. Datas em feriados ou recessos serão
+                sinalizadas como conflito.
               </p>
               <form id="saturday-form">
                 <label>Mês<select id="saturday-month"></select></label>
@@ -251,11 +237,7 @@
             </div>
             <div class="panel">
               <h2>Férias docentes</h2>
-              <p>
-                Informe até três períodos definidos pelo campus, inclusive em caso de alteração do
-                calendário. As datas não são fixadas em janeiro ou julho. Os registros existentes
-                permanecem na lista de eventos até serem alterados.
-              </p>
+              <p>Informe até três períodos de férias e a fonte da decisão do campus.</p>
               <form id="vacation-form">
                 <div class="row-form">
                   <label
@@ -316,23 +298,7 @@
             <div class="panel">
               <h2>5. Eventos e impedimentos — roteiro obrigatório</h2>
               <button type="button" id="new-event">Adicionar novo evento</button>
-              <p class="help">
-                Os feriados e eventos da base PROENS já estão incorporados abaixo. Acrescente os
-                feriados municipais, recessos locais e demais decisões do campus com suas fontes.
-              </p>
-              <p class="help">
-                Escolha a categoria para aplicar a cor da legenda PROENS. A cor não determina se o
-                evento conta como dia letivo: confira também o efeito na contagem.
-              </p>
-              <p class="help">
-                Roteiro institucional PROENS. O calendário anterior enviado por cada campus é apenas
-                referência histórica. Informe as datas vigentes; nenhuma data histórica será
-                copiada. Vincule cada prazo à sua etapa ou semestre. A revisão humana deve conferir
-                a aplicabilidade e as cargas horárias.
-              </p>
-              <p class="help">
-                Para cada etapa de avaliação, informe início e término no mesmo registro.
-              </p>
+              <p class="help">Acrescente os eventos locais e registre suas fontes.</p>
               <ul id="activity-checklist" class="records"></ul>
               <form id="event-form">
                 <p id="historical-event-source" class="notice" hidden></p>
@@ -348,7 +314,9 @@
                       required
                       maxlength="160"
                       placeholder="Nome do evento" /></label
-                  ><label>Categoria e cor PROENS<select id="event-category"></select></label
+                  ><label
+                    >Categoria e cor PROENS<select id="event-category"></select
+                    ><small>A cor não define o efeito na contagem.</small></label
                   ><label
                     >Efeito na contagem<select id="event-kind">
                       <option value="exclude">Excluir dias · feriado ou recesso</option>
@@ -385,15 +353,8 @@
             <div class="panel history-area" id="history-area">
               <h2>6. Complementar com o calendário anterior</h2>
               <p class="help">
-                Primeiro preencha o roteiro obrigatório em Eventos e impedimentos. Depois aproveite
-                apenas as sugestões que ainda faltam. Os itens reconhecidos como já cadastrados
-                ficam ocultos e podem ser consultados.
-              </p>
-              <p class="help">
-                Envie o PDF do ano anterior deste campus. O sistema identifica possíveis feriados e
-                eventos no texto e apresenta sugestões para revisão. Confira a data no novo ano, a
-                legislação municipal vigente e a aplicação à forma de oferta/nível antes de incluir.
-                O histórico não substitui a base PROENS.
+                Use o calendário anterior como referência para eventos locais. Revise datas e fontes
+                do ano atual antes de incluir.
               </p>
               <form id="history-form">
                 <label
@@ -439,10 +400,7 @@
                   ><button id="print" class="secondary">Imprimir</button>
                 </div>
               </div>
-              <p class="help">
-                Estrutura baseada no modelo PROENS enviado: meses, datas e eventos, legenda e
-                contagens. Confira a impressão antes do encaminhamento.
-              </p>
+              <p class="help">Confira a impressão antes do encaminhamento.</p>
               <div id="proens-color-guide" class="print-legend"></div>
               <div id="months"></div>
             </div>
@@ -451,7 +409,8 @@
             <div class="panel">
               <h2>Conferência e pendências</h2>
               <p class="help">
-                Atingir a contagem mínima não comprova o atendimento integral à resolução.
+                A contagem não substitui a revisão humana nem constitui aprovação institucional. O
+                PDF definitivo exige contagem válida, roteiro completo e revisão atualizada.
               </p>
               <ul id="issue-list" class="records"></ul>
             </div>
@@ -459,13 +418,7 @@
         </section>
       </div>
     </main>
-    <footer>
-      Assistente de Calendário PROENS
-      <span
-        >As alterações aplicadas são salvas automaticamente. Baixar cópia guarda os dados aplicados
-        ao calendário.</span
-      >
-    </footer>
+    <footer>Assistente de Calendário PROENS</footer>
     <script type="module" src="/native/editor.tsx"></script>
   </body>
 </html>

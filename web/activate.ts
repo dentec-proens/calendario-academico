@@ -40,8 +40,7 @@ form.onsubmit = async (event) => {
     });
     form.reset();
     form.hidden = true;
-    message.textContent =
-      'Conta ativada. Volte ao login e entre com seu e-mail e a senha que acabou de criar.';
+    message.textContent = 'Conta ativada. Entre com sua nova senha.';
   } catch (error) {
     message.textContent = nativeError(error).message;
   } finally {

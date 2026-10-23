@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheckCheck, ClipboardCopy, Download, ExternalLink, Eye, Pencil, Save } from 'lucide-react';
+import { calendarName } from '../../src/calendar-label.mjs';
 import { modalityLabels } from '../../src/modalities.mjs';
 import { updateConclusion } from '../../src/review-conclusion.mjs';
 import { reviewNorm, presentReviewText } from '../../src/review-presentation.mjs';
@@ -63,18 +64,21 @@ function ReviewCriterion({
     if (editing) selectRef.current?.focus();
   }, [editing]);
   const origin = entry.reviewed
-    ? 'Avaliação conferida pelo parecerista'
+    ? 'Conferido pelo parecerista'
     : changed
       ? entry.status === 'PENDENTE'
         ? 'Pendente de análise'
-        : 'Alteração aguardando confirmação'
-      : 'Análise inicial automática — aguardando conferência';
+        : 'Alteração não confirmada'
+      : 'Indicação automática · não conferida';
 
   return (
     <li className="review-item">
       <h3>{criterion.title}</h3>
       <p>
-        <strong>Indicação do sistema:</strong> {criterion.signal}
+        <strong>Indicação do sistema:</strong>{' '}
+        {criterion.signal
+          .replace(' A presença não comprova atendimento.', '')
+          .replace(' Isso não comprova ausência no processo.', '')}
       </p>
       {criterion.candidates.length > 0 ? (
         <details>
@@ -108,12 +112,12 @@ function ReviewCriterion({
           disabled={busy || entry.status === 'PENDENTE'}
           onClick={onConfirm}
         >
-          <CheckCheck size={16} aria-hidden="true" /> Confirmar leitura e análise
+          <CheckCheck size={16} aria-hidden="true" /> Confirmar análise
         </button>
       </div>
       <fieldset disabled={!editing || busy} data-fields={criterion.id}>
         <label>
-          Situação proposta / avaliação
+          Avaliação
           <select
             ref={selectRef}
             data-criterion={criterion.id}
@@ -364,9 +368,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
       setDraft(initialDraft(opened));
       onOpened?.(calendarId);
       setPreview(null);
-      notify(
-        'Análise inicial preenchida. Use Editar para corrigir um item ou Confirmar leitura e análise para registrar sua conferência. Salve antes de baixar.',
-      );
+      notify('Indicações automáticas disponíveis para conferência.');
     } catch (error) {
       if (operationRef.current === operation) notify(error.message);
     } finally {
@@ -396,9 +398,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
       if (operationRef.current !== operation) return;
       setDraft(initialDraft(updated));
       setPreview(null);
-      notify(
-        'Revisão humana salva com autoria e versão do calendário. Não constitui aprovação oficial.',
-      );
+      notify('Análise salva.');
     } catch (error) {
       if (operationRef.current === operation) notify(error.message);
     } finally {
@@ -466,8 +466,8 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
       <div className="panel">
         <h2>Revisão técnico-pedagógica · DENTEC/PROENS</h2>
         <p>
-          Critérios identificados no Parecer SEI 3959640, páginas 1 e 2. As indicações automáticas
-          são apoio; cada conclusão é registrada pelo revisor.
+          A revisão apoia o parecer; assinatura e tramitação ocorrem no SEI. Não constitui aprovação
+          institucional.
         </p>
         <label>
           Calendário para revisão
@@ -494,7 +494,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
           onClick={openReview}
         >
           <Eye size={18} aria-hidden="true" />{' '}
-          {pending === 'open' ? 'Abrindo análise…' : 'Gerar / abrir análise inicial'}
+          {pending === 'open' ? 'Abrindo análise…' : 'Abrir análise'}
         </button>
         <p id="review-message" role="status" aria-live="polite">
           {message || (!calendars.length ? 'Nenhum calendário disponível para revisão.' : '')}
@@ -502,18 +502,17 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
         {opened ? (
           <div id="review-content">
             <h3 id="review-heading">
-              {opened.calendar.campus} · {opened.calendar.name}
+              {opened.calendar.name === calendarName(opened.calendar.year, opened.calendar.campus)
+                ? opened.calendar.name
+                : `${opened.calendar.campus} · ${opened.calendar.name}`}
             </h3>
             <p id="review-progress">
-              {opened.criteria.length} critérios analisados inicialmente pelo sistema ·{' '}
-              {reviewedCount} conferidos pelo parecerista. Isso não representa aprovação
-              institucional.
+              {reviewedCount} de {opened.criteria.length} critérios conferidos.
             </p>
             <p id="review-conflicts">
               {opened.conflicts.length
                 ? `${opened.conflicts.length} conflito(s) de inclusão/exclusão: ${opened.conflicts.map((conflict) => conflict.date).join(', ')}. Confira no editor.`
-                : opened.countError ||
-                  'Nenhum conflito de inclusão/exclusão identificado pelo cálculo disponível. Isso não é uma validação integral.'}
+                : opened.countError || 'Nenhum conflito de inclusão/exclusão identificado.'}
             </p>
             <p id="review-author">
               {opened.review
@@ -563,7 +562,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
               </button>
               <button type="submit" form="review-form" disabled={busy}>
                 <Save size={18} aria-hidden="true" />{' '}
-                {pending === 'save' ? 'Salvando análise…' : 'Salvar análise / revisão'}
+                {pending === 'save' ? 'Salvando análise…' : 'Salvar análise'}
               </button>
             </div>
             <form id="review-form" onSubmit={saveReview}>
@@ -591,6 +590,16 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
                   />
                 </label>
               </div>
+              <p className="help">
+                A busca por nome e categoria pode omitir registros ou relacionar itens indevidos;
+                confira as evidências antes de concluir.
+              </p>
+              {!opened.sameYear ? (
+                <p id="review-year-warning" className="notice" role="status">
+                  Referência: Parecer SEI 3959640 ({opened.source.year}), páginas 1 e 2. Confira a
+                  norma aplicável a {opened.calendar.year}.
+                </p>
+              ) : null}
               <ul id="review-items" className="records">
                 {opened.criteria.map((criterion, index) => (
                   <ReviewCriterion
@@ -621,7 +630,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
                 <Pencil size={16} aria-hidden="true" /> Editar texto do parecer
               </button>
               <label>
-                2. Parecer — texto proposto e conclusão do parecerista
+                Conclusão do parecerista — texto proposto
                 <textarea
                   id="review-conclusion"
                   ref={conclusionRef}
@@ -646,19 +655,16 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
                 </label>
               ) : null}
               <p className="help">
-                Este registro é apoio à revisão. Não emite parecer assinado nem declara aprovação
-                oficial. Para marcar Atendido, Não atendido ou Não aplicável, informe a evidência ou
+                Para marcar Atendido, Não atendido ou Não aplicável, informe a evidência ou
                 justificativa.
               </p>
               <button disabled={busy}>
                 <Save size={18} aria-hidden="true" />{' '}
-                {pending === 'save' ? 'Salvando análise…' : 'Salvar análise / revisão'}
+                {pending === 'save' ? 'Salvando análise…' : 'Salvar análise'}
               </button>
             </form>
             <p className="help">
-              Salve antes de exportar. O HTML mantém a tabela para copiar no editor do SEI; o texto
-              simples é uma alternativa. Confira a formatação após colar. Assinatura e tramitação
-              ocorrem no SEI.
+              Salve a análise antes de exportar. Confira a formatação ao colar no SEI.
             </p>
             <ReviewPreview document={preview} previewRef={previewRef} />
           </div>

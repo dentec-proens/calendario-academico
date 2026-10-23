@@ -44,25 +44,18 @@ export function Workspace({ info, status, notify, documentsData, trashData }: Wo
     <section id="workspace">
       <div className="intro">
         <div>
-          <p className="eyebrow">CALENDÁRIOS ACADÊMICOS E ADMINISTRATIVOS</p>
           <h1 id="panel-title">
             {isAdmin
               ? 'Painel ADMIN · Todos os campi'
               : 'Painel Campus · ' + (info.campuses[0]?.name || '')}
           </h1>
-          <p id="access-scope">
-            {isAdmin
-              ? 'Visualize os calendários de todos os campi e gerencie a base institucional.'
-              : 'Seu acesso permite consultar e alterar somente os calendários do seu campus.'}
-          </p>
-          <p>Base institucional compartilhada, com decisões locais preservadas.</p>
         </div>
       </div>
-      <p className="notice" id="deployment-note">
-        {status.hosted
-          ? 'Ambiente online. Dados e documentos são armazenados na base compartilhada da instituição.'
-          : 'Ambiente local de desenvolvimento. As contas desta instalação compartilham a mesma base. O acesso remoto dos campi depende da implantação institucional.'}
-      </p>
+      {!status.hosted ? (
+        <p id="deployment-note" className="help">
+          Desenvolvimento
+        </p>
+      ) : null}
       <nav aria-label="Seções do portal">
         {tabs.map(([id, label, Icon]) => (
           <button

@@ -134,7 +134,7 @@ function render({ recalculate = false } = {}) {
         changes
           .map((p) => p.name + ' — ' + dateLabel(p.end) + ' (' + p.targetDays + ' dias letivos)')
           .join('; ') +
-        '. Confira o indicador de salvamento.';
+        '.';
     } else
       $('period-auto-status').textContent = periods.some((p) => p.targetDays)
         ? 'Metas de dias letivos ativas: términos recalculados ao alterar os impedimentos.'
@@ -153,7 +153,7 @@ function render({ recalculate = false } = {}) {
     }
     stageCounts = assessmentDayCounts(state, allEvents());
     $('assessment-auto-status').textContent =
-      'Contagem atualizada com sábados letivos e exclusões cadastradas. Períodos com meta de dias letivos reorganizam suas etapas automaticamente.';
+      'Períodos com meta de dias letivos ajustam suas etapas automaticamente.';
   } catch (error) {
     $('assessment-auto-status').textContent = 'Contagem das etapas: ' + error.message;
   }
@@ -163,8 +163,7 @@ function render({ recalculate = false } = {}) {
   $('second-semester-intake').value =
     state.secondSemesterIntake === false ? 'no' : state.secondSemesterIntake === true ? 'yes' : '';
 
-  if (recalculate && dirty)
-    message('Alteração aplicada. Acompanhe o salvamento automático no indicador.');
+  if (recalculate && dirty) message('Alteração aplicada.');
   $('selected-modalities').textContent =
     'Forma de oferta/nível: ' +
     calendarModalities(state)
@@ -228,8 +227,7 @@ function render({ recalculate = false } = {}) {
                   : '') +
                 (e.assessmentAutoStart ? ' · ajuste automático' : ''),
             )
-            .join('; ') +
-          (dirty ? ' · Alterações locais; confira o indicador de salvamento.' : '')
+            .join('; ')
         : r.required === false
           ? 'Opcional — preencha apenas se houver previsão no calendário.'
           : 'Pendente de data e fonte'
@@ -255,7 +253,7 @@ function render({ recalculate = false } = {}) {
   $('assessment-status').textContent = calendarModalities(state).every((m) =>
     [2, 3, 4].includes(assessmentCount(state, m)),
   )
-    ? 'Os intervalos registrados aparecem abaixo. Use Preencher atividade para calcular as datas ou Editar evento para ajustá-las.'
+    ? 'Intervalos por oferta'
     : 'Selecione o número de etapas para visualizar e preencher seus intervalos.';
 
   result = null;
@@ -394,7 +392,7 @@ function render({ recalculate = false } = {}) {
       !dirty && record?.readiness?.ready ? 'Atendido' : 'Pendente',
       'Geração definitiva',
       dirty
-        ? 'A conferência será atualizada após a confirmação do salvamento. Confira o indicador de salvamento.'
+        ? 'A conferência será atualizada após a confirmação do salvamento.'
         : record?.readiness?.ready
           ? 'Conferência registrada. Não representa aprovação oficial.'
           : 'Cópia da proposta disponível para análise. A validação depende da revisão da PROENS.',
@@ -601,7 +599,7 @@ $('event-form').addEventListener('submit', (e) => {
         dateLabel(start) +
         ' a ' +
         dateLabel(end) +
-        '. Os dados continuam visíveis. Acompanhe o salvamento automático no indicador.',
+        '. Os dados continuam visíveis.',
     );
   });
 });
@@ -764,7 +762,7 @@ $('file').onchange = async (e) => {
     dirty = true;
     sync();
     render({ recalculate: true });
-    message('Rascunho importado. Acompanhe o salvamento automático no indicador.');
+    message('Rascunho importado.');
   } catch (err) {
     message('Não foi possível abrir: ' + err.message, true);
   } finally {
@@ -824,8 +822,9 @@ if (navigator.modelContext?.registerTool)
 
 function updateRecordHeading() {
   $('make-definitive').hidden = record.purpose !== 'test';
+  $('record-title').textContent = record.name;
   $('record-heading').textContent =
-    `${record.purpose === 'test' ? '[TESTE]' : '[DEFINITIVO]'} ${record.name} · ${record.courses}${record.classes ? ' · ' + record.classes : ''}${record.shifts ? ' · ' + record.shifts : ''}`;
+    `${record.purpose === 'test' ? 'Teste · PDF identificado como teste' : 'Definitivo · sujeito à conferência e revisão'} · ${record.courses}${record.classes ? ' · ' + record.classes : ''}${record.shifts ? ' · ' + record.shifts : ''}`;
 }
 
 async function openRecord() {
@@ -937,7 +936,7 @@ function showHistory() {
     ? record.histories
         .map(
           (h) =>
-            `<li><div><strong>${h.year} · ${escape(h.filename)}</strong><small>Referência histórica deste campus</small><small>${escape(h.notes || 'Sem observações registradas.')}</small><a href="/api/history/${escape(h.id)}">Consultar PDF original</a></div><button type="button" data-analyze-history="${escape(h.id)}">Identificar datas e atividades</button></li>`,
+            `<li><div><strong>${h.year} · ${escape(h.filename)}</strong>${h.notes ? '<small>' + escape(h.notes) + '</small>' : ''}<a href="/api/history/${escape(h.id)}">Consultar PDF original</a></div><button type="button" data-analyze-history="${escape(h.id)}">Identificar datas e atividades</button></li>`,
         )
         .join('')
     : '<li>Envie o calendário anterior para consultar seus feriados e eventos locais.</li>';
@@ -956,13 +955,12 @@ async function analyzeUploadedHistory(id) {
     $('history-analysis').hidden = false;
     $('history-analysis-help').textContent = analysis.needsText
       ? 'Este PDF parece ser uma imagem digitalizada. Ainda não há leitura de imagens (OCR). Envie uma versão com texto selecionável ou consulte o original e preencha os eventos manualmente.'
-      : `Foram encontrados ${analysis.candidates.length} possíveis itens${analysis.truncated ? ' (limite de 150)' : ''}. A leitura pode omitir ou juntar trechos. Nem todo feriado é municipal: compare com a base PROENS. Escolha um item, corrija a descrição e confirme as datas e a fonte vigente para ${state.year}.`;
+      : `Foram encontrados ${analysis.candidates.length} possíveis itens${analysis.truncated ? ' (limite de 150)' : ''}. A leitura pode omitir ou juntar trechos. Confira as datas e fontes vigentes antes de incluir.`;
     renderHistorySuggestions();
     $('history-text').textContent = analysis.pages
       .map((p) => `Página ${p.page}\n${p.text}`)
       .join('\n\n');
-    $('history-status').textContent =
-      'Leitura concluída. Use Revisar e incluir para conferir cada atividade e suas datas sugeridas.';
+    $('history-status').textContent = 'Leitura concluída.';
   } catch (err) {
     $('history-status').textContent = err.message;
     message(err.message, true);
@@ -990,7 +988,7 @@ document.addEventListener('click', async (e) => {
     $('historical-event-source').hidden = true;
     dirty = true;
     render({ recalculate: true });
-    message('Decisão sobre o evento aplicada. Acompanhe o salvamento automático no indicador.');
+    message('Decisão sobre o evento aplicada.');
     return;
   }
   const candidateButton = e.target.closest('[data-history-candidate]');
@@ -1248,9 +1246,7 @@ $('saturday-form').onsubmit = (e) => {
     dirty = true;
     render({ recalculate: true });
     if (!selectedSaturdays.size) markAppliedForm('saturday-form');
-    message(
-      `${additions.length} sábado(s) adicionado(s). Confira a contagem e o indicador de salvamento.`,
-    );
+    message(`${additions.length} sábado(s) adicionado(s).`);
   });
 };
 $('download-pdf').onclick = async () => {
@@ -1305,9 +1301,7 @@ document.addEventListener('change', (e) => {
   event.category = e.target.value;
   dirty = true;
   render({ recalculate: true });
-  message(
-    'Categoria e cor aplicadas. O efeito na contagem foi preservado. Confira o indicador de salvamento.',
-  );
+  message('Categoria e cor aplicadas. O efeito na contagem foi preservado.');
 });
 $('event-category').onchange = () => {
   const category = $('event-category').value;
@@ -1374,10 +1368,10 @@ $('assessment-settings').addEventListener('change', (e) => {
   render({ recalculate: true });
   message(
     value
-      ? 'Etapas da oferta aplicadas. Os eventos existentes foram preservados; confira os intervalos e o indicador de salvamento.'
+      ? 'Etapas da oferta aplicadas. Os eventos existentes foram preservados; confira os intervalos.'
       : 'Escolha das etapas desfeita para ' +
           modalityLabels[modality] +
-          '. Se havia eventos preenchidos, eles permanecem na lista de Eventos e impedimentos e podem ser removidos lá. Confira o indicador de salvamento.',
+          '. Se havia eventos preenchidos, eles permanecem na lista de Eventos e impedimentos e podem ser removidos lá.',
   );
 });
 
@@ -1485,9 +1479,7 @@ $('vacation-form').onsubmit = (e) => {
     render({ recalculate: true });
     vacationPreview();
     markAppliedForm('vacation-form');
-    message(
-      'Férias docentes aplicadas nas datas informadas pelo campus. Acompanhe o salvamento automático no indicador.',
-    );
+    message('Férias docentes aplicadas.');
   });
 };
 document.addEventListener('input', (e) => {
@@ -1551,7 +1543,7 @@ function applyStageSuggestion() {
     document
       .querySelector('[data-history-item="' + completed + '"]')
       ?.scrollIntoView({ block: 'nearest' });
-  message(fresh.stages.length + ' etapas incluídas. Confira as datas e o indicador de salvamento.');
+  message(fresh.stages.length + ' etapas incluídas.');
 }
 
 function updateStageSuggestion() {
@@ -1577,7 +1569,7 @@ function updateStageSuggestion() {
         e.end === $('event-end').value,
     )
   ) {
-    panel.textContent = 'Etapa incluída no calendário. Confira o indicador de salvamento.';
+    panel.textContent = 'Etapa incluída no calendário.';
     return;
   }
   $('event-end').value = '';
@@ -1675,7 +1667,7 @@ function renderHistorySuggestions() {
     progress.setAttribute('role', 'status');
     $('history-suggestions').before(progress);
   }
-  progress.textContent = `${count} itens incluídos a partir do PDF; ${existingCount} sugestões já atendidas por eventos cadastrados. Itens ambíguos continuam disponíveis para revisão. Confira o indicador de salvamento das inclusões aplicadas.`;
+  progress.textContent = `${count} itens incluídos a partir do PDF; ${existingCount} sugestões já atendidas por eventos cadastrados. Itens ambíguos aguardam revisão.`;
 }
 
 function restoreEventForm() {
@@ -1909,9 +1901,7 @@ $('event-list').addEventListener('click', (event) => {
     markAppliedForm('teacher-day');
     dirty = true;
     render({ recalculate: true });
-    message(
-      'Data do Dia do Professor aplicada neste calendário. Confira a contagem e o indicador de salvamento.',
-    );
+    message('Data do Dia do Professor aplicada neste calendário.');
   });
 });
 

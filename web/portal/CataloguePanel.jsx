@@ -53,15 +53,7 @@ export default function CataloguePanel({ catalogue, isAdmin, notify }) {
       <h2>Feriados e eventos institucionais</h2>
       <p id="catalogue-description">
         Versão {catalogue.revision} · {catalogue.events.filter((e) => e.active).length} registros
-        ativos.{' '}
-        {isAdmin
-          ? 'Você administra esta base para todos os campi.'
-          : 'Somente a DENTEC/PROENS pode alterar esta base.'}
-      </p>
-      <p className="help">
-        As datas nacionais fixas de 2027 já estão cadastradas. Recessos e eventos de 2027 vêm da
-        resolução SEI 4354987. Alterações centrais são incorporadas quando o calendário é aberto
-        novamente; versões anteriores permanecem registradas.
+        ativos.
       </p>
       {isAdmin ? (
         <form id="catalogue-form" onSubmit={submit}>
@@ -169,10 +161,11 @@ export default function CataloguePanel({ catalogue, isAdmin, notify }) {
               />
               Registro ativo
             </label>
+            <p className="help">Alterações válidas para todos os campi abrangidos.</p>
             <div className="actions">
               <button>
                 <Save aria-hidden="true" size={18} />
-                Salvar na base compartilhada
+                Salvar evento institucional
               </button>
               <button
                 type="button"

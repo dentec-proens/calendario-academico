@@ -12,7 +12,7 @@ export function updatedLabel(value) {
         timeZone: 'America/Sao_Paulo',
         dateStyle: 'short',
         timeStyle: 'short',
-      }) + ' (horário de Brasília)'
+      })
     : 'Data não disponível';
 }
 
@@ -70,9 +70,8 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify
         <form id="create-calendar" onSubmit={createCalendar}>
           {!campus ? (
             <p id="calendar-campus-notice" className="notice" role="status">
-              Esta conta não possui um campus ativo disponível. Solicite à administração PROENS a
-              conferência do campus vinculado ao seu cadastro. O nome do calendário será preenchido
-              automaticamente após a regularização.
+              Nenhum campus ativo vinculado à conta. Solicite a regularização à administração
+              PROENS.
             </p>
           ) : null}
           <fieldset className="form-fields" disabled={pending || !campus}>
@@ -166,9 +165,8 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify
               </label>
             </div>
             <p>
-              Teste: permite experimentar e baixar PDF identificado como teste. Definitivo: o
-              rascunho pode ser editado, mas a geração exige contagem válida e revisão de todos os
-              critérios.
+              Teste: PDF identificado como teste. Definitivo: PDF final sujeito à contagem e à
+              revisão dos critérios.
             </p>
             <div className="actions">
               <button type="submit" name="purpose" value="test">
@@ -185,11 +183,7 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify
       </div>
       <div className="panel">
         <h2>Calendários registrados</h2>
-        <p className="help">
-          Cada linha é um calendário criado separadamente. Os salvamentos manuais e automáticos
-          atualizam o mesmo registro; não criam novos calendários. Para continuar o trabalho, clique
-          em Abrir calendário.
-        </p>
+        <p className="help">Horários de Brasília</p>
         {isAdmin ? (
           <label id="filter-label">
             Filtrar por campus
@@ -213,7 +207,16 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify
                     {c.name}
                   </strong>
                   <small>
-                    {info.campuses.find((campus) => campus.id === c.campusId)?.name} · {c.year} ·{' '}
+                    {c.name ===
+                    calendarName(
+                      c.year,
+                      info.campuses.find((campus) => campus.id === c.campusId)?.name,
+                    ) ? null : (
+                      <>
+                        {info.campuses.find((campus) => campus.id === c.campusId)?.name} · {c.year}{' '}
+                        ·{' '}
+                      </>
+                    )}
                     {(c.modalities || [c.offer]).map((m) => modalityLabels[m] || m).join(' + ')}
                   </small>
                   <small>Última atualização: {updatedLabel(c.updatedAt)}</small>
@@ -252,10 +255,7 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify
         </ul>
         <details className="panel calendar-trash">
           <summary>Lixeira de calendários</summary>
-          <p>
-            Calendários excluídos ficam fora das listas e dos pareceres. Você pode restaurá-los com
-            seus dados e documentos.
-          </p>
+          {trash.length ? <p>Os dados e documentos são preservados para restauração.</p> : null}
           <ul id="calendar-trash-list" className="records">
             {trashLoading ? (
               <li>Carregando lixeira…</li>

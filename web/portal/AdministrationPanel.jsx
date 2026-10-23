@@ -38,7 +38,7 @@ function PrivateLink({ id, title, children, url, onClose, notify }) {
             run(async () => {
               try {
                 await navigator.clipboard.writeText(url);
-                notify('Link copiado. Envie somente ao titular da conta.');
+                notify('Link copiado.');
               } catch {
                 inputRef.current?.select();
                 notify('Selecione o link e use Ctrl+C.');
@@ -56,7 +56,7 @@ function PrivateLink({ id, title, children, url, onClose, notify }) {
           onClick={onClose}
         >
           <X aria-hidden="true" size={18} />
-          Fechar e ocultar link
+          Fechar
         </button>
       </div>
     </div>
@@ -179,10 +179,6 @@ export default function AdministrationPanel({ info, googleEnabled, onCampus, not
       </div>
       <div className="panel">
         <h2>Cadastrar unidade</h2>
-        <p className="help">
-          Foz do Iguaçu está incluído. Acrescente campi avançados ou centros de referência quando
-          necessário.
-        </p>
         <form id="campus-form" onSubmit={createCampus}>
           <fieldset className="row-form form-fields" disabled={pending}>
             <label>
@@ -222,8 +218,7 @@ export default function AdministrationPanel({ info, googleEnabled, onCampus, not
             ) : null}
             {method === 'google' ? (
               <p id="google-account-help" className="help">
-                Cadastre previamente o e-mail @ifpr.edu.br autorizado. O servidor usará sua conta
-                Google institucional. Esta ação não envia convite por e-mail.
+                Autorize um e-mail @ifpr.edu.br para entrar com Google. Nenhum convite será enviado.
               </p>
             ) : null}
             <label>
@@ -233,11 +228,11 @@ export default function AdministrationPanel({ info, googleEnabled, onCampus, not
                 <option value="ADMIN">ADMIN · Equipe DENTEC/PROENS</option>
               </select>
             </label>
-            <p id="user-role-help" className="help">
-              {admin
-                ? 'Equipe DENTEC/PROENS: acesso a todos os calendários, à base institucional e à criação de contas.'
-                : 'A conta terá acesso somente ao campus selecionado.'}
-            </p>
+            {admin ? (
+              <p id="user-role-help" className="help">
+                Pode gerenciar todos os calendários, a base institucional e as contas.
+              </p>
+            ) : null}
             <div className="row-form">
               <label>
                 Nome do responsável

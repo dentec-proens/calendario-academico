@@ -469,3 +469,21 @@
     display: none !important;
   }
 }
+
+@media screen {
+  .calendar-editor .editor-feedback {
+    position: sticky;
+    top: 0;
+    z-index: 31;
+    box-shadow: 0 2px 8px #0002;
+  }
+}
+
+@media screen {
+  .calendar-editor .editor-feedback #message {
+    position: static;
+  }
+  .calendar-editor .editor-feedback {
+    background: #f3f6f5;
+  }
+}

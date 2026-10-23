@@ -9,7 +9,7 @@ export default function AuthPanel({ status, notify }: { status: Status; notify: 
   const setup = status.setupRequired;
   const help = setup
     ? 'Crie a primeira conta ADMIN com o e-mail autorizado e o código privado da implantação. Escolha uma senha exclusiva para este sistema.'
-    : 'Use o e-mail institucional e a senha cadastrada neste sistema.';
+    : '';
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,9 +38,8 @@ export default function AuthPanel({ status, notify }: { status: Status; notify: 
 
   return (
     <section id="auth" className="auth panel" aria-busy={pending}>
-      <p className="eyebrow">ACESSO AO SISTEMA</p>
       <h1 id="auth-title">{setup ? 'Criar administração' : 'Entrar'}</h1>
-      <p id="auth-help">{help}</p>
+      {setup ? <p id="auth-help">{help}</p> : null}
       {!setup && status.googleEnabled ? (
         <button
           type="button"
@@ -58,7 +57,7 @@ export default function AuthPanel({ status, notify }: { status: Status; notify: 
       ) : null}
       {status.googleEnabled ? (
         <p id="google-help" className="help">
-          Use sua conta Google @ifpr.edu.br previamente cadastrada pelo ADMIN.
+          Acesso restrito a contas @ifpr.edu.br autorizadas.
         </p>
       ) : null}
       <form id="auth-form" onSubmit={submit}>

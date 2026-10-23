@@ -15,7 +15,7 @@ if (token) {
   requestForm.hidden = true;
   resetForm.hidden = false;
   element('title', HTMLElement).textContent = 'Definir nova senha';
-  element('help', HTMLElement).textContent = 'Escolha uma nova senha para acessar o calendário.';
+  element('help', HTMLElement).textContent = '';
 } else {
   requestForm.hidden = true;
   api<{ emailEnabled: boolean }>('/api/password/options')
@@ -25,7 +25,7 @@ if (token) {
         return;
       }
       element('help', HTMLElement).textContent =
-        'Solicite à administração DENTEC/PROENS um link de redefinição. Informe seu e-mail cadastrado. O link será enviado manualmente e valerá por 24 horas. Nenhuma solicitação foi enviada por esta página.';
+        'Solicite um link à DENTEC/PROENS informando seu e-mail cadastrado. O envio é manual; o link vale por 24 horas. Esta página não envia a solicitação.';
       const link = document.createElement('a');
       link.href =
         'mailto:dentec.proens@ifpr.edu.br?subject=Recuperar%20senha%20do%20calend%C3%A1rio';

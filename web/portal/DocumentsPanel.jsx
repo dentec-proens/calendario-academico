@@ -92,16 +92,6 @@ export default function DocumentsPanel({ isAdmin, liveData }) {
   return (
     <div className="panel">
       <h2>Documentos da PROENS por ano</h2>
-      <p>
-        Consulte a resolução, o calendário de referência e o modelo de parecer vigentes. Cada
-        substituição preserva o arquivo anterior.
-      </p>
-      <p className="notice">
-        Os PDFs são documentos para consulta. O envio não extrai datas, não muda as cores do
-        calendário nem reprograma a análise automática. Confira e atualize os eventos abaixo;
-        mudanças nas regras de cálculo e no checklist precisam ser implementadas e verificadas. A
-        análise atual usa o parecer de 2026 e sinaliza quando o ano é diferente.
-      </p>
       <label>
         Filtrar documentos por ano
         <input
@@ -121,6 +111,10 @@ export default function DocumentsPanel({ isAdmin, liveData }) {
       {isAdmin ? (
         <form id="document-form" onSubmit={uploadDocument} aria-busy={pending}>
           <h3>Adicionar nova versão</h3>
+          <p className="help">
+            Enviar um PDF não atualiza as datas nem as regras de análise. Revise os eventos e a
+            aplicabilidade da base. Versões anteriores são preservadas.
+          </p>
           <div className="row-form">
             <label>
               Ano de aplicação
@@ -172,11 +166,7 @@ export default function DocumentsPanel({ isAdmin, liveData }) {
           <button type="submit" disabled={busy}>
             <Upload size={16} aria-hidden="true" /> Enviar para conferência
           </button>
-          <p className="help">
-            Após enviar, baixe e confira o arquivo, o ano e sua aplicabilidade. Então marque a
-            conferência e use “Definir como vigente”. Haverá somente uma versão vigente de cada tipo
-            por ano. Isso não declara aprovação oficial de calendários.
-          </p>
+          <p className="help">O arquivo será salvo como rascunho.</p>
         </form>
       ) : null}
       <ul id="document-list" className="records" aria-busy={busy}>
@@ -223,7 +213,8 @@ export default function DocumentsPanel({ isAdmin, liveData }) {
                               }))
                             }
                           />
-                          Conferi o arquivo, o ano e sua aplicabilidade
+                          Conferi o arquivo, o ano e sua aplicabilidade. Ao definir como vigente, a
+                          versão anterior deste tipo e ano será arquivada.
                         </label>
                         <button
                           type="button"
@@ -253,10 +244,7 @@ export default function DocumentsPanel({ isAdmin, liveData }) {
             </li>
           ))
         ) : (
-          <li>
-            Nenhum documento disponível para este ano. A ausência de arquivo não comprova ausência
-            de exigências institucionais.
-          </li>
+          <li>Nenhum documento disponível para este ano.</li>
         )}
       </ul>
     </div>

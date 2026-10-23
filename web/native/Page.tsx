@@ -22,7 +22,7 @@ function Page({ load, requiresLogin }: { load: LoadPage; requiresLogin: boolean 
       if (message) message.textContent = nativeError(error).message;
     });
   }, [isLoading, isAuthenticated, load, requiresLogin]);
-  return isLoading ? <p role="status">Conectando ao Convex…</p> : null;
+  return isLoading ? <p role="status">Carregando…</p> : null;
 }
 
 export function mountNativePage(load: LoadPage, requiresLogin = true) {
