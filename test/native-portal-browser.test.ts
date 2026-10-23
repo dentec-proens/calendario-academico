@@ -448,6 +448,9 @@ test(
     });
     const page = await browser.newPage();
     page.setDefaultTimeout(25_000);
+    page.on('dialog', (dialog) => {
+      void dialog.accept();
+    });
     const errors: string[] = [];
     page.on('pageerror', (error) =>
       errors.push(error instanceof Error ? error.message : String(error)),
@@ -459,10 +462,16 @@ test(
     await page.locator('#password').fill(password);
     await page.locator('#auth-submit').click();
     await page.waitForSelector('#workspace', { visible: true });
-    await page.goto(
-      base + '/editor?id=' + encodeURIComponent(fixture.alias) + '&view=restore-proof#history-area',
-      { waitUntil: 'domcontentloaded' },
-    );
+    // The editor canonicalizes this URL before the load event. Wait for its
+    // visible state rather than a navigation lifecycle tied to the old URL.
+    const navigation = await cdp.send('Page.navigate', {
+      url:
+        base +
+        '/editor?id=' +
+        encodeURIComponent(fixture.alias) +
+        '&view=restore-proof#history-area',
+    });
+    assert.equal(navigation.errorText, undefined);
     await page.waitForSelector(`form[data-restore-history="${fixture.historyId}"]`);
     const canonical = new URL(page.url());
     assert.equal(canonical.searchParams.get('id'), fixture.calendarId);
@@ -489,28 +498,80 @@ test(
       'restored historical original keeps its bytes and stored filename',
     );
     await rm(restored);
-    await page.goto(base);
-    await page.locator('[data-page="institution"]').click();
-    await page.waitForSelector(`form[data-restore-document="${fixture.documentId}"]`);
-    const documentInput = await page.$(
+    await page.close();
+    const documentBrowser = await puppeteer.launch({
+      executablePath,
+      headless: true,
+      args: ['--no-sandbox'],
+    });
+    t.onTestFinished(() => documentBrowser.close());
+    const documentPage = await documentBrowser.newPage();
+    documentPage.setDefaultTimeout(25_000);
+    documentPage.on('dialog', (dialog) => {
+      void dialog.accept();
+    });
+    documentPage.on('pageerror', (error) =>
+      errors.push(error instanceof Error ? error.message : String(error)),
+    );
+    const documentDirectory = join(directory, 'documents');
+    await mkdir(documentDirectory);
+    const documentCdp = await documentPage.createCDPSession();
+    await documentCdp.send('Page.setDownloadBehavior', {
+      behavior: 'allow',
+      downloadPath: documentDirectory,
+    });
+    await documentPage.goto(base);
+    await documentPage.locator('#email').fill(email);
+    await documentPage.locator('#password').fill(password);
+    await documentPage.locator('#auth-submit').click();
+    await documentPage.waitForSelector('#workspace', { visible: true });
+    await documentPage.locator('[data-page="institution"]').click();
+    await documentPage.waitForSelector(`form[data-restore-document="${fixture.documentId}"]`);
+    const documentInput = await documentPage.$(
       `form[data-restore-document="${fixture.documentId}"] input[type="file"]`,
     );
     assert(documentInput);
     await documentInput.uploadFile(original);
-    await page.locator(`form[data-restore-document="${fixture.documentId}"] button`).click();
-    await page.waitForFunction(() =>
+    await documentPage
+      .locator(`form[data-restore-document="${fixture.documentId}"] button`)
+      .click();
+    await documentPage.waitForFunction(() =>
       document.querySelector('#document-message')?.textContent?.includes('PDF original restaurado'),
     );
-    await page.waitForSelector(`form[data-restore-document="${fixture.documentId}"]`, {
+    await documentPage.waitForSelector(`form[data-restore-document="${fixture.documentId}"]`, {
       hidden: true,
     });
-    const documentDirectory = join(directory, 'documents');
-    await mkdir(documentDirectory);
-    await cdp.send('Page.setDownloadBehavior', {
-      behavior: 'allow',
-      downloadPath: documentDirectory,
+    const downloadSelector = `[data-download-document="${fixture.documentId}"]`;
+    await documentPage.$eval(downloadSelector, (element) =>
+      element.scrollIntoView({ block: 'center', behavior: 'instant' }),
+    );
+    const hitAfter = await documentPage.$eval(downloadSelector, (element) => {
+      const rectangle = element.getBoundingClientRect();
+      const hit = document.elementFromPoint(
+        rectangle.x + rectangle.width / 2,
+        rectangle.y + rectangle.height / 2,
+      );
+      return {
+        hit: hit ? hit.tagName + '#' + hit.id : null,
+        receivesClick: hit !== null && element.contains(hit),
+      };
     });
-    await page.locator(`[data-download-document="${fixture.documentId}"]`).click();
+    assert.equal(
+      hitAfter.receivesClick,
+      true,
+      'the download link must receive a real pointer click',
+    );
+    const responsePromise = documentPage.waitForResponse(
+      (response) =>
+        response.request().method() === 'GET' &&
+        /^\/files\/[a-f0-9]{64}$/.test(new URL(response.url()).pathname) &&
+        response.headers()['content-type']?.startsWith('application/pdf') === true,
+      { timeout: 10_000 },
+    );
+    await documentPage.locator(downloadSelector).click();
+    const downloadResponse = await responsePromise;
+    assert.equal(downloadResponse.status(), 200);
+    // Chrome's CDP body is empty for this attachment; compare the saved bytes below.
     const restoredDocument = join(documentDirectory, 'original-e2e.pdf');
     for (let attempt = 0; attempt < 60 && !existsSync(restoredDocument); attempt++)
       await new Promise((resolve) => setTimeout(resolve, 100));

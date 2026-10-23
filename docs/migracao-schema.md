@@ -95,11 +95,12 @@ node --import tsx scripts/migrate-data.ts apply --plan backup-schema/plan.json -
 
 Execute `verify` para exportar e conferir diretamente o destino de produção:
 
-````sh
+```sh
 node --import tsx scripts/migrate-data.ts verify --plan backup-schema/plan.json --snapshot backup-schema/production-after.zip --deployment exuberant-cheetah-138 --project backup-schema/production-maintenance --out backup-schema/production-receipt.json
-``` Execute `finish` com o recibo de produção para remover o checkpoint. Só então publique o schema e as funções finais, mantendo a manutenção até o frontend correspondente estar pronto. Valide os acessos e leituras reais sem criar dados sintéticos em produção. Guarde os dois backups, o plano, os recibos e os logs em local privado.
+```
+
+Execute `finish` com o recibo de produção para remover o checkpoint. Só então publique o schema e as funções finais, mantendo a manutenção até o frontend correspondente estar pronto. Valide os acessos e leituras reais sem criar dados sintéticos em produção. Execute uma vez a mutation interna `nativeFiles:cleanupExpired` para retomar a limpeza de temporários vencidos durante a manutenção. Guarde os dois backups, o plano, os recibos e os logs em local privado.
 
 Se houver divergência de contagem, referência, fingerprint, arquivo, histórico ou schema, interrompa a publicação final. Não apague registros para fazer a validação passar. Enquanto o backend estiver em manutenção, a restauração do ZIP original completo pelo mesmo deployment recupera os IDs, o Auth e os arquivos; restaure também o backend/frontend do mesmo commit anterior antes de reabrir o acesso. Depois da reabertura, novos dados tornam necessária uma análise de conciliação antes de qualquer rollback destrutivo.
 
 A [documentação oficial de importação](https://docs.convex.dev/database/import-export/import) confirma a preservação de `_id`/`_creationTime` e Storage em restaurações ZIP. O ZIP exportado é utilizado sem edição manual; a transformação é feita por mutations no deployment de ensaio e depois, com as mesmas garantias, em produção. O schema final volta a aplicar a [validação estrita do Convex](https://docs.convex.dev/database/schemas).
-````
