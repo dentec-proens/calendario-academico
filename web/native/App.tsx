@@ -6,6 +6,7 @@ import { Workspace } from '../portal/App.tsx';
 import AuthPanel from '../portal/AuthPanel.tsx';
 import { functions, nativeError } from './client.ts';
 import type { Bootstrap, PortalMessage, Status } from './types.ts';
+import BackendStatus from './BackendStatus.tsx';
 
 export default function NativeApp() {
   const { isLoading, isAuthenticated } = useConvexAuth();
@@ -18,6 +19,7 @@ export default function NativeApp() {
   const [message, setMessage] = useState<PortalMessage | null>(null);
   const [pending, setPending] = useState(false);
   const notify = useCallback((text: string, error = false) => setMessage({ text, error }), []);
+  const loading = isLoading || status === undefined || (isAuthenticated && info === undefined);
 
   async function logout() {
     setPending(true);
@@ -65,9 +67,8 @@ export default function NativeApp() {
         >
           {message?.text}
         </div>
-        {isLoading || status === undefined || (isAuthenticated && info === undefined) ? (
-          <p role="status">Carregando portal…</p>
-        ) : isAuthenticated && info ? (
+        <BackendStatus loading={loading} allowReload={!isLoading} />
+        {loading ? null : isAuthenticated && info ? (
           <Workspace key={info.user.id} info={info} status={status} notify={notify} />
         ) : (
           <AuthPanel status={status} notify={notify} />
