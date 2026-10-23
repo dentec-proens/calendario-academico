@@ -2,8 +2,8 @@ import { useRef, useState } from 'react';
 import { Pencil, Plus, Save } from 'lucide-react';
 import { categories } from '../../src/categories.mjs';
 import { modalityLabels, selectableModalities } from '../../src/modalities.mjs';
-import { api } from './api.js';
-import { useAction } from './useAction.js';
+import { api } from './api.ts';
+import { useAction } from './useAction.ts';
 
 const emptyEvent = () => ({
   id: '',
@@ -17,7 +17,7 @@ const emptyEvent = () => ({
   active: true,
 });
 
-export default function CataloguePanel({ catalogue, isAdmin, onRefresh, notify }) {
+export default function CataloguePanel({ catalogue, isAdmin, notify }) {
   const [event, setEvent] = useState(emptyEvent);
   const { pending, run } = useAction(notify);
   const nameRef = useRef(null);
@@ -32,7 +32,6 @@ export default function CataloguePanel({ catalogue, isAdmin, onRefresh, notify }
         revision: catalogue.revision,
       });
       setEvent(emptyEvent());
-      await onRefresh();
       notify('Base atualizada. Os campi receberão a nova revisão ao abrir seus calendários.');
     });
   }

@@ -57,7 +57,13 @@ async function fixture() {
         position,
         appId: user.id,
         email: user.email,
-        value: encodeValue({ ...user, salt, hash }),
+        value: encodeValue(user),
+      });
+      await ctx.db.insert('authAccounts', {
+        userId: id,
+        provider: 'password',
+        providerAccountId: user.email,
+        secret: legacySecret(salt, hash),
       });
       const sessionId = await ctx.db.insert('authSessions', {
         userId: id,
@@ -90,13 +96,8 @@ test('native password crypto verifies the original Node scrypt credentials', asy
   await assert.rejects(passwordCrypto.hashSecret('short'), /10 e 128/);
 });
 
-test('native import preserves application IDs, moves secrets to Auth and reuses existing users on sign-in', async () => {
+test('native sign-in preserves application IDs and keeps secrets exclusively in Convex Auth', async () => {
   const { client, admin, asAdmin } = await fixture();
-  const result = await client.mutation(ref('nativeAuth:initializeImportedAccounts'), {
-    paginationOpts: { cursor: null, numItems: 100 },
-  });
-  assert.equal(result.imported, 2);
-  assert.equal(result.isDone, true);
   const row = await client.run((ctx) => ctx.db.get(admin.id));
   const user = decodeValue(row.value);
   assert.equal(user.id, 'original-admin-uuid');
@@ -155,14 +156,15 @@ test('native auth rejects public registration, unknown users and campus administ
 test('native auth refuses inactive, removed or inconsistent imported identities despite correct passwords', async () => {
   for (const invalid of [
     { active: false },
+    { active: 'true' },
+    { campusId: null },
+    { name: null },
+    { email: 'inconsistent@ifpr.edu.br' },
     { removedAt: '2026-10-23T00:00:00Z' },
     { role: 'UNRECOGNIZED' },
     { id: 'mismatched-application-id' },
   ]) {
     const { client, campus, asCampus } = await fixture();
-    await client.mutation(ref('nativeAuth:initializeImportedAccounts'), {
-      paginationOpts: { cursor: null, numItems: 100 },
-    });
     await client.run(async (ctx) => {
       const row = await ctx.db.get(campus.id);
       await ctx.db.patch(campus.id, {
@@ -240,9 +242,6 @@ test('native invitations activate only the intended member and cannot be reused'
 
 test('native manual recovery replaces credentials atomically and revokes existing sessions immediately', async () => {
   const { client, campus, asAdmin, asCampus } = await fixture();
-  await client.mutation(ref('nativeAuth:initializeImportedAccounts'), {
-    paginationOpts: { cursor: null, numItems: 100 },
-  });
   const oldRecovery = await asAdmin.mutation(ref('nativeAuth:passwordRecovery'), {
     id: campus.user.id,
   });
@@ -294,4 +293,25 @@ test('native member removal preserves audit and blocks valid JWT sessions immedi
   assert.equal(decodeValue(row.value).active, false);
   const audit = await client.run((ctx) => ctx.db.query('audit').withIndex('by_position').take(10));
   assert.equal(decodeValue(audit.at(-1).value).action, 'REMOVE_MEMBER');
+});
+
+test('native account creation checks administrator access before validating credentials or hashing a password', async () => {
+  const { client, asCampus } = await fixture();
+  const data = {
+    name: 'Pedido sintético sem autorização',
+    email: 'not-an-institutional-email',
+    password: 'short',
+    role: 'ADMIN',
+  };
+  await assert.rejects(
+    client.action(ref('nativeAuth:createMember'), { data }),
+    (error) => error.data?.status === 401 && /Entre com sua conta/.test(error.data.error),
+  );
+  await assert.rejects(
+    asCampus.action(ref('nativeAuth:createMember'), { data }),
+    (error) =>
+      error.data?.status === 403 && /Acesso exclusivo da administra/.test(error.data.error),
+  );
+  assert.equal((await client.run((ctx) => ctx.db.query('users').collect())).length, 2);
+  assert.equal((await client.run((ctx) => ctx.db.query('authAccounts').collect())).length, 2);
 });

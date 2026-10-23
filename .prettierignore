@@ -1,11 +1,6 @@
 node_modules/
 dist/
-data/
-uploads/
 coverage/
-.vercel/
-supabase/.temp/
-supabase/migrations/
 pnpm-lock.yaml
 .env
 .env.*

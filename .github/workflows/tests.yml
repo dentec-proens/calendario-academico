@@ -1,46 +1,22 @@
-name: Testes do aplicativo
+name: Qualidade e testes Convex
 on:
   push:
   pull_request:
 permissions:
   contents: read
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: synthetic-ci-password
-          POSTGRES_DB: dentec_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     env:
-      DENTEC_TEST_POSTGRES_URL: postgresql://postgres:synthetic-ci-password@127.0.0.1:5432/dentec_test
+      VITE_CONVEX_URL: https://synthetic-ci.convex.cloud
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
-          node-version: '22'
+          node-version: '24'
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run format:check
-      - run: pnpm run lint
-      - run: pnpm run typecheck:convex
-      - run: pnpm run build
-      - name: Compilar o portal Convex nativo sem credenciais
-        run: pnpm run build:convex:native
-        env:
-          CONVEX_URL: https://synthetic-ci.convex.cloud
-      - name: Preparar PostgreSQL de teste
-        run: pnpm run db:migrate
-        env:
-          POSTGRES_URL: ${{ env.DENTEC_TEST_POSTGRES_URL }}
-      - run: pnpm test
-      - name: Conferir os fluxos com handlers Convex isolados
-        run: pnpm run test:convex
+      - run: pnpm check

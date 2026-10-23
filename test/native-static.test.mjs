@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import http from 'node:http';
-import { nativeStatic } from '../src/native-static.mjs';
+import { staticPortal as nativeStatic } from '../src/app-server.ts';
 
 test('native server serves portal and invitation routes without a Node API or environment access', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'native-static-'));

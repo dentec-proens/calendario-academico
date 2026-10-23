@@ -1,0 +1,509 @@
+{
+  "schemaVersion": 1,
+  "status": "preserved",
+  "capturedAt": "2026-10-23T11:02:57.618Z",
+  "deployment": "oceanic-gazelle-652",
+  "export": {
+    "sha256": "0821fc055d00d857148ae4ddfec8e1563f5e21beca445a03d9139ed4d96df909",
+    "bytes": 1676129,
+    "mode": "600",
+    "fileBytesIncluded": false
+  },
+  "counts": {
+    "nativeUploads": 0,
+    "authVerifiers": 0,
+    "authVerificationCodes": 0,
+    "authRateLimits": 0,
+    "passwordResets": 0,
+    "nativeFileTickets": 0,
+    "documents": 0,
+    "recoveryAttempts": 0,
+    "fileObjects": 1,
+    "authSessions": 2,
+    "uploads": 1,
+    "loginAttempts": 6,
+    "authRefreshTokens": 16,
+    "sessions": 9,
+    "campuses": 29,
+    "authAccounts": 26,
+    "reviews": 4,
+    "rootFields": 13,
+    "users": 34,
+    "invitations": 45,
+    "reviewVersions": 12,
+    "scopeVersions": 424,
+    "calendarVersions": 706,
+    "audit": 937,
+    "histories": 14,
+    "calendars": 61,
+    "calendarSnapshots": 706
+  },
+  "businessDigests": {
+    "users": "f295e23978c7fecfdbfb20404ed652b8ef0411b9d4ba8c2877139e9229849f8d",
+    "campuses": "15b516bdf3044786b4f991042a3591dddfe4af94663e369760073333be424a45",
+    "calendars": "78ac3d50b8fa90301e1a0c56cac33590f9ef358b4708667d96799a313dc90bca",
+    "histories": "865396af54827e84d9680f19ac18f4bf4c34cc09ca53ef49745891db2f09805a",
+    "reviews": "851f229a4ed840fae5ba4576fbaf045fe19bf2a4cb6fd7d4def231bc110ae8e8",
+    "documents": "534affff5dec48de833241f5c16b8a6b908d23ef66e4a28d8400c195c536a7fc",
+    "audit": "50e6d08f2b34f5e0e1f5fbc38c4731bca2f20f5b6e7397f1bf7c04967059faa3",
+    "uploads": "c646a305d597585bc7fdc3041d4c4743ac4d822387634ad3a94f1250d1416f54",
+    "sessions": "cb39adccb719c3fc26d0072aa92840ed5acf279306752cb64afeee321d8b7765",
+    "loginAttempts": "6ca027301cc59b00acf55edeb9ccd6d88b80feb3354e36195b06afba7ddec624",
+    "invitations": "f1cbd7a286016b3c9ee4cc2a929105ff3f61cd9176f6b6ec0a9767e6b792b1bf",
+    "passwordResets": "534affff5dec48de833241f5c16b8a6b908d23ef66e4a28d8400c195c536a7fc",
+    "recoveryAttempts": "534affff5dec48de833241f5c16b8a6b908d23ef66e4a28d8400c195c536a7fc",
+    "calendarVersions": "a6fa849679966735bf141ca56145d14b3d50b8a91b797275abf1f8ca2e0a0a2a",
+    "reviewVersions": "a705399b49e5ec95255bdfa3e102fbcabb5c92072e827dce9c5921a0b321877a",
+    "calendarSnapshots": "99051de30e399231df904ce97820a444a38cf6098e898d99a8795103333edb41",
+    "fileObjects": "3ee77922d9aec0ff773a467d847d05237f4e3575c101553185d55688d95a5027",
+    "rootFields": "16447bf0d1e65861a100ebee43dc3b09f8e3d7282d6f0ebe641f361ce9ce2564",
+    "authAccounts": "ae65fe22a6912b87283299497e89a54c6f185f899a4c44ffc5b4341a3ea3a05a",
+    "scopeVersions": "cfba532c90593a0e6b2e95aefca10abb7661af616c13db21891240baeef006ef"
+  },
+  "originalPreservation": {
+    "users": {
+      "before": 33,
+      "after": 34,
+      "preserved": 33,
+      "missing": 0,
+      "changed": 0,
+      "added": 1
+    },
+    "campuses": {
+      "before": 29,
+      "after": 29,
+      "preserved": 29,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "calendars": {
+      "before": 60,
+      "after": 61,
+      "preserved": 60,
+      "missing": 0,
+      "changed": 0,
+      "added": 1
+    },
+    "histories": {
+      "before": 13,
+      "after": 14,
+      "preserved": 13,
+      "missing": 0,
+      "changed": 0,
+      "added": 1
+    },
+    "reviews": {
+      "before": 3,
+      "after": 4,
+      "preserved": 3,
+      "missing": 0,
+      "changed": 0,
+      "added": 1
+    },
+    "documents": {
+      "before": 0,
+      "after": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "uploads": {
+      "before": 1,
+      "after": 1,
+      "preserved": 1,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "audit": {
+      "before": 919,
+      "after": 937,
+      "preserved": 919,
+      "missing": 0,
+      "changed": 0,
+      "added": 18
+    },
+    "calendarVersions": {
+      "before": 699,
+      "after": 706,
+      "preserved": 699,
+      "missing": 0,
+      "changed": 0,
+      "added": 7
+    },
+    "reviewVersions": {
+      "before": 12,
+      "after": 12,
+      "preserved": 12,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    }
+  },
+  "previousQaComparison": {
+    "users": {
+      "before": 34,
+      "after": 34,
+      "preserved": 34,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "campuses": {
+      "before": 29,
+      "after": 29,
+      "preserved": 29,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "calendars": {
+      "before": 61,
+      "after": 61,
+      "preserved": 61,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "histories": {
+      "before": 14,
+      "after": 14,
+      "preserved": 14,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "reviews": {
+      "before": 4,
+      "after": 4,
+      "preserved": 4,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "documents": {
+      "before": 0,
+      "after": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "uploads": {
+      "before": 1,
+      "after": 1,
+      "preserved": 1,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "audit": {
+      "before": 937,
+      "after": 937,
+      "preserved": 937,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "calendarVersions": {
+      "before": 706,
+      "after": 706,
+      "preserved": 706,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "reviewVersions": {
+      "before": 12,
+      "after": 12,
+      "preserved": 12,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    }
+  },
+  "deferredPdfs": {
+    "expected": 13,
+    "historyReferences": 13,
+    "referencesPreserved": 13,
+    "originalBytesTransferred": 0
+  },
+  "legacyPdfRenderer": {
+    "module": "src/pdf.mjs",
+    "runtimeCallers": 0,
+    "exportedFunctionCallers": 0,
+    "activeRenderer": "src/native-pdf.mjs",
+    "calledBy": "convex/nativeActions.ts",
+    "verification": "Repository-wide search of source, entrypoints, tests, scripts and workflows; the obsolete renderer and its environment variable have no callers."
+  },
+  "consolidationComparison": {
+    "users": {
+      "before": 34,
+      "after": 34,
+      "preserved": 34,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "campuses": {
+      "before": 29,
+      "after": 29,
+      "preserved": 29,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "calendars": {
+      "before": 61,
+      "after": 61,
+      "preserved": 61,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "histories": {
+      "before": 14,
+      "after": 14,
+      "preserved": 14,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "reviews": {
+      "before": 4,
+      "after": 4,
+      "preserved": 4,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "documents": {
+      "before": 0,
+      "after": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "audit": {
+      "before": 937,
+      "after": 937,
+      "preserved": 937,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "uploads": {
+      "before": 1,
+      "after": 1,
+      "preserved": 1,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "sessions": {
+      "before": 9,
+      "after": 9,
+      "preserved": 9,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "loginAttempts": {
+      "before": 6,
+      "after": 6,
+      "preserved": 6,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "invitations": {
+      "before": 45,
+      "after": 45,
+      "preserved": 45,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "passwordResets": {
+      "before": 0,
+      "after": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "recoveryAttempts": {
+      "before": 0,
+      "after": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "calendarVersions": {
+      "before": 706,
+      "after": 706,
+      "preserved": 706,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "reviewVersions": {
+      "before": 12,
+      "after": 12,
+      "preserved": 12,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "calendarSnapshots": {
+      "before": 706,
+      "after": 706,
+      "preserved": 706,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "fileObjects": {
+      "before": 1,
+      "after": 1,
+      "preserved": 1,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "rootFields": {
+      "before": 13,
+      "after": 13,
+      "preserved": 13,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "authAccounts": {
+      "before": 26,
+      "after": 26,
+      "preserved": 26,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "scopeVersions": {
+      "before": 424,
+      "after": 424,
+      "preserved": 424,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    }
+  },
+  "projectionComparison": {
+    "users": {
+      "before": 34,
+      "after": 34,
+      "preserved": 34,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "campuses": {
+      "before": 29,
+      "after": 29,
+      "preserved": 29,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "calendars": {
+      "before": 61,
+      "after": 61,
+      "preserved": 61,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "histories": {
+      "before": 14,
+      "after": 14,
+      "preserved": 14,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "reviews": {
+      "before": 4,
+      "after": 4,
+      "preserved": 4,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "documents": {
+      "before": 0,
+      "after": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "audit": {
+      "before": 937,
+      "after": 937,
+      "preserved": 937,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "uploads": {
+      "before": 1,
+      "after": 1,
+      "preserved": 1,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "sessions": {
+      "before": 9,
+      "after": 9,
+      "preserved": 9,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "loginAttempts": {
+      "before": 6,
+      "after": 6,
+      "preserved": 6,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "invitations": {
+      "before": 45,
+      "after": 45,
+      "preserved": 45,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "passwordResets": {
+      "before": 0,
+      "after": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "recoveryAttempts": {
+      "before": 0,
+      "after": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    }
+  }
+}

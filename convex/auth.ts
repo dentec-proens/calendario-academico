@@ -5,10 +5,11 @@ import { passwordCrypto, validatePassword } from './authCrypto';
 import { institutionalEmail, memberFromRow } from './nativeAuth';
 import { encodeValue } from '../src/convex-codec.mjs';
 import type { MutationCtx } from './_generated/server';
+import type { GenericDataModel } from 'convex/server';
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
-    Password({
+    Password<GenericDataModel>({
       crypto: passwordCrypto,
       validatePasswordRequirements: validatePassword,
       profile(params) {
@@ -16,7 +17,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         // the one-time installation flow, never by arbitrary public sign-up.
         if (params.flow !== 'signIn') throw Error('Solicite seu acesso à administração.');
         validatePassword(params.password);
-        return { email: institutionalEmail(params.email) } as any;
+        return { email: institutionalEmail(params.email) };
       },
     }),
     ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET

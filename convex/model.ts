@@ -1,3 +1,6 @@
+import type { Doc } from './_generated/dataModel';
+import type { Value } from 'convex/values';
+
 export const entityTables = [
   'users',
   'campuses',
@@ -35,27 +38,38 @@ export const identityFields: Partial<Record<EntityTable, string>> = {
   reviews: 'calendarId',
 };
 
-export function scopeKey(field: string, options: Record<string, any>) {
-  if (!options.full && ['calendars', 'histories', 'reviews'].includes(field)) {
-    if (options.calendarId) return `${field}:calendar:${options.calendarId}`;
-    if (options.campusId && field !== 'reviews') return `${field}:campus:${options.campusId}`;
-  }
-  if (field === 'sessions' && options.sessionHash) return `${field}:id:${options.sessionHash}`;
-  if (field === 'users') {
-    if (options.userId) return `${field}:id:${options.userId}`;
-    if (options.email) return `${field}:email:${options.email}`;
-  }
-  return `${field}:all`;
-}
+// The snapshot codec is the compatibility boundary for the existing calendar
+// domain. Convex owns transactions and reactive invalidation; no bridge tokens
+// or application-managed collection revisions are needed here.
+export type EncodedValue = {
+  data: Value;
+  undefinedPaths: string[][];
+};
 
-export function affectedScopes(field: string, value: Record<string, any>) {
-  const keys = [`${field}:all`];
-  if (value.id) keys.push(`${field}:id:${value.id}`);
-  if (value.email) keys.push(`${field}:email:${value.email}`);
-  if (['calendars', 'histories', 'reviews'].includes(field)) {
-    const calendarId = field === 'calendars' ? value.id : value.calendarId;
-    if (calendarId) keys.push(`${field}:calendar:${calendarId}`);
-    if (value.campusId && field !== 'reviews') keys.push(`${field}:campus:${value.campusId}`);
-  }
-  return keys;
-}
+export type SnapshotOptions = {
+  fields?: string[];
+  calendarId?: string;
+  campusId?: string;
+  userId?: string;
+  email?: string;
+  full?: boolean;
+  summary?: boolean;
+  appendOnlyAudit?: boolean;
+};
+
+export type EntityKey = { key: string; position: number };
+export type SnapshotKeys = Record<string, EntityKey[]>;
+export type EntityUpsert = {
+  key: string;
+  position: number | null;
+  value: EncodedValue;
+};
+export type SnapshotChange = {
+  field: string;
+  removeRoot?: boolean;
+  value?: EncodedValue;
+  upserts?: EntityUpsert[];
+  deleteKeys?: string[];
+};
+
+export type EntityRow = Doc<EntityTable>;

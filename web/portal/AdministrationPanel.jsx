@@ -9,8 +9,8 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
-import { api } from './api.js';
-import { useAction } from './useAction.js';
+import { api } from './api.ts';
+import { useAction } from './useAction.ts';
 
 function PrivateLink({ id, title, children, url, onClose, notify }) {
   const inputRef = useRef(null);
@@ -63,7 +63,7 @@ function PrivateLink({ id, title, children, url, onClose, notify }) {
   );
 }
 
-export default function AdministrationPanel({ info, googleEnabled, onRefresh, onCampus, notify }) {
+export default function AdministrationPanel({ info, googleEnabled, onCampus, notify }) {
   const [role, setRole] = useState('CAMPUS');
   const [method, setMethod] = useState('invite');
   const [campusId, setCampusId] = useState('');
@@ -86,7 +86,6 @@ export default function AdministrationPanel({ info, googleEnabled, onRefresh, on
     run(async () => {
       await api('/api/campuses', 'POST', { name: data.get('name') });
       form.reset();
-      await onRefresh();
       notify('Unidade cadastrada.');
     });
   }
@@ -110,7 +109,6 @@ export default function AdministrationPanel({ info, googleEnabled, onRefresh, on
       setCampusId('');
       setInvite(null);
       setRecovery(null);
-      await onRefresh();
       if (created.inviteUrl) {
         showInvite(created);
         notify('Convite criado. A conta ficará pendente até a pessoa cadastrar sua senha.');
@@ -136,7 +134,6 @@ export default function AdministrationPanel({ info, googleEnabled, onRefresh, on
       await api('/api/users/' + member.id, 'DELETE', {});
       setInvite(null);
       setRecovery(null);
-      await onRefresh();
       notify('Acesso excluído; histórico preservado.');
     });
   }

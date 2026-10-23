@@ -13,7 +13,6 @@ import {
 } from '../src/stage-suggestions.mjs';
 import { evaluateCalendar } from '../src/evaluation.mjs';
 import { proensLayout } from '../web/print.mjs';
-import { createTestApp } from './helpers/database.mjs';
 import { recalculatePeriods } from '../src/duration.mjs';
 
 const state = {
@@ -283,84 +282,4 @@ test('legacy shared stages retain dates and split into scoped records once', () 
   assert.equal(events[1].end, '2027-03-05');
   assert.deepEqual(migrateAssessmentEvents({ ...state, events }), events);
   assert.equal(original.events.length, 1);
-});
-test('server persists per-offer stages and rejects mismatched event scope', async (t) => {
-  const app = await createTestApp(t, { setupCode: 'fixture' });
-  await new Promise((r) => app.server.listen(0, '127.0.0.1', r));
-  t.after(() => new Promise((r) => app.server.close(r)));
-  const base = `http://127.0.0.1:${app.server.address().port}`;
-  let cookie = '';
-  const call = async (path, method = 'GET', body) => {
-    const r = await fetch(base + path, {
-      method,
-      headers: { 'Content-Type': 'application/json', 'X-Dentec-Request': '1', Cookie: cookie },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    if (r.headers.get('set-cookie')) cookie = r.headers.get('set-cookie').split(';')[0];
-    return { status: r.status, data: await r.json() };
-  };
-  const credentials = { email: 'assessment-test@ifpr.edu.br', password: 'synthetic-password-only' };
-  await call('/api/setup', 'POST', { ...credentials, code: 'fixture', name: 'Fixture' });
-  await call('/api/login', 'POST', credentials);
-  const bootstrap = (await call('/api/bootstrap')).data;
-  const record = (
-    await call('/api/calendars', 'POST', {
-      campusId: bootstrap.campuses[0].id,
-      purpose: 'test',
-      courses: 'Fixture',
-      year: 2027,
-      modalities: state.modalities,
-      regime: 'semestral',
-    })
-  ).data;
-  const payload = {
-    ...record.state,
-    ...state,
-    secondSemesterIntake: false,
-    campus: record.state.campus,
-    events: [
-      {
-        id: 'event',
-        name: 'Graduação',
-        requirementId: 'stage-1:graduacao',
-        modalities: ['graduacao'],
-        start: '2027-03-01',
-        end: '2027-03-12',
-        kind: 'note',
-        category: 'limite',
-        evidence: 'Ata',
-      },
-    ],
-  };
-  const saved = await call('/api/calendars/' + record.id, 'PUT', {
-    version: record.version,
-    catalogueRevision: bootstrap.catalogue.revision,
-    state: payload,
-  });
-  assert.equal(saved.status, 200, JSON.stringify(saved.data));
-  const loaded = (await call('/api/calendars/' + record.id)).data;
-  assert.deepEqual(loaded.state.assessmentStagesByModality, state.assessmentStagesByModality);
-  assert.equal(loaded.state.events[0].requirementId, 'stage-1:graduacao');
-  assert.equal(loaded.state.secondSemesterIntake, false);
-  assert.equal(
-    (
-      await call('/api/calendars/' + record.id, 'PUT', {
-        version: loaded.version,
-        catalogueRevision: bootstrap.catalogue.revision,
-        state: { ...payload, secondSemesterIntake: 'false' },
-      })
-    ).status,
-    400,
-  );
-  payload.events[0].modalities = ['integrado'];
-  assert.equal(
-    (
-      await call('/api/calendars/' + record.id, 'PUT', {
-        version: loaded.version,
-        catalogueRevision: bootstrap.catalogue.revision,
-        state: payload,
-      })
-    ).status,
-    400,
-  );
 });

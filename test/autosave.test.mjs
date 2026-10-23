@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAutosaver, saveCalendarSnapshot } from '../web/autosave.js';
+import { createAutosaver } from '../web/autosave.js';
 
 const settle = async () => {
   for (let i = 0; i < 8; i++) await Promise.resolve();
@@ -222,41 +222,4 @@ test('connection failures stay paused until an explicit retry saves the latest l
   assert.equal(calls, 2);
   assert.deepEqual(writes, [{ state: { value: 1 } }, { state: { value: 2 } }]);
   assert.deepEqual(statuses, ['scheduled', 'saving', 'error', 'saving', 'saved']);
-});
-
-test('gateway HTML errors preserve HTTP status and never report a save', async () => {
-  await assert.rejects(
-    saveCalendarSnapshot(
-      '/api/calendars/test',
-      {},
-      { fetcher: async () => new Response('<html>Gateway timeout</html>', { status: 504 }) },
-    ),
-    (error) => error.status === 504 && /indisponível/.test(error.message),
-  );
-  await assert.rejects(
-    saveCalendarSnapshot('/api/calendars/test', {}, { fetcher: async () => new Response('{}') }),
-    /não confirmou/,
-  );
-});
-
-test('unresponsive saves time out rather than remaining pending indefinitely', async () => {
-  const keepAlive = setTimeout(() => {}, 200);
-  try {
-    await assert.rejects(
-      saveCalendarSnapshot(
-        '/api/calendars/test',
-        {},
-        {
-          timeoutMs: 5,
-          fetcher: (_url, { signal }) =>
-            new Promise((_resolve, reject) =>
-              signal.addEventListener('abort', () => reject(signal.reason), { once: true }),
-            ),
-        },
-      ),
-      /a tempo/,
-    );
-  } finally {
-    clearTimeout(keepAlive);
-  }
 });

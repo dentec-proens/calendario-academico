@@ -1,13 +1,22 @@
-import { v } from 'convex/values';
-import { paginationOptsValidator } from 'convex/server';
+import { ConvexError, v } from 'convex/values';
 import { getAuthSessionId, getAuthUserId } from '@convex-dev/auth/server';
 import { query, mutation, action, internalMutation, internalQuery } from './_generated/server';
 import type { QueryCtx, MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import { encodeValue, decodeValue } from '../src/convex-codec.mjs';
-import { affectedScopes } from './model';
 import type { EntityTable } from './model';
-import { legacySecret, passwordCrypto, validatePassword } from './authCrypto';
+import type { Doc, Id } from './_generated/dataModel';
+import {
+  publicMember,
+  memberRole,
+  invitationResult,
+  createdMember,
+  memberInput,
+  memberCredentialsInput,
+  setupInput,
+} from './authContracts';
+import type { Member, PublicMember, CreatedMember } from './authContracts';
+import { passwordCrypto, validatePassword } from './authCrypto';
 
 type Context = QueryCtx | MutationCtx;
 const maxMembers = 1000;
@@ -23,23 +32,25 @@ export function institutionalEmail(value: unknown): string {
   return email;
 }
 
-export function memberFromRow(row: any) {
+export function memberFromRow(row: Doc<'users'> | null): Member | null {
   if (!row?.value) return null;
   const user = decodeValue(row.value);
   return user &&
     typeof user.id === 'string' &&
     row.appId === user.id &&
+    typeof user.name === 'string' &&
     typeof user.email === 'string' &&
     row.email === user.email &&
     /^[^\s@]+@ifpr\.edu\.br$/.test(user.email) &&
     ['ADMIN', 'CAMPUS'].includes(user.role) &&
-    user.active &&
+    (user.role === 'ADMIN' || (typeof user.campusId === 'string' && !!user.campusId)) &&
+    user.active === true &&
     !user.removedAt
     ? user
     : null;
 }
 
-export function safeMember(user: any) {
+export function safeMember(user: Member): PublicMember {
   return {
     id: user.id,
     name: user.name,
@@ -55,17 +66,18 @@ export function safeMember(user: any) {
 export async function requireNativeUser(ctx: Context) {
   const id = await getAuthUserId(ctx);
   const sessionId = await getAuthSessionId(ctx);
-  if (!id || !sessionId) throw Error('Entre com sua conta.');
+  if (!id || !sessionId) throw new ConvexError({ status: 401, error: 'Entre com sua conta.' });
   const [row, session] = await Promise.all([ctx.db.get(id), ctx.db.get(sessionId)]);
   const user = memberFromRow(row);
   if (!user || !session || session.userId !== id || session.expirationTime <= Date.now())
-    throw Error('Entre com sua conta.');
+    throw new ConvexError({ status: 401, error: 'Entre com sua conta.' });
   return { row: row!, user };
 }
 
 async function requireAdmin(ctx: Context) {
   const auth = await requireNativeUser(ctx);
-  if (auth.user.role !== 'ADMIN') throw Error('Acesso exclusivo da administração.');
+  if (auth.user.role !== 'ADMIN')
+    throw new ConvexError({ status: 403, error: 'Acesso exclusivo da administração.' });
   return auth;
 }
 
@@ -80,24 +92,13 @@ async function digest(token: string) {
   return Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function touchCollection(ctx: MutationCtx, field: EntityTable, item: any, delta = 0) {
+async function touchCollection(ctx: MutationCtx, field: EntityTable, delta = 0) {
   const root = await ctx.db
     .query('rootFields')
     .withIndex('by_name', (q) => q.eq('name', field))
     .unique();
   if (root && root.count !== undefined) await ctx.db.patch(root._id, { count: root.count + delta });
   if (!root) await ctx.db.insert('rootFields', { name: field, count: delta });
-  for (const key of [
-    ...affectedScopes(field, item),
-    ...(!root ? ['roots:index', `${field}:presence`] : []),
-  ]) {
-    const scope = await ctx.db
-      .query('scopeVersions')
-      .withIndex('by_key', (q) => q.eq('key', key))
-      .unique();
-    if (scope) await ctx.db.patch(scope._id, { revision: scope.revision + 1 });
-    else await ctx.db.insert('scopeVersions', { key, revision: 1 });
-  }
 }
 
 async function appendAudit(ctx: MutationCtx, actor: string, action: string, id: string) {
@@ -108,7 +109,7 @@ async function appendAudit(ctx: MutationCtx, actor: string, action: string, id: 
     position: (last?.position ?? -1) + 1,
     value: encodeValue(value),
   });
-  await touchCollection(ctx, 'audit', value, 1);
+  await touchCollection(ctx, 'audit', 1);
 }
 
 async function memberByAppId(ctx: Context, id: string) {
@@ -118,17 +119,17 @@ async function memberByAppId(ctx: Context, id: string) {
     .unique();
 }
 
-async function patchMember(ctx: MutationCtx, row: any, user: any) {
+async function patchMember(ctx: MutationCtx, row: Doc<'users'>, user: Member) {
   await ctx.db.patch(row._id, {
     value: encodeValue(user),
     email: user.email,
     name: user.name,
     campusId: user.campusId ?? undefined,
   });
-  await touchCollection(ctx, 'users', user);
+  await touchCollection(ctx, 'users');
 }
 
-async function setPassword(ctx: MutationCtx, row: any, secret: string) {
+async function setPassword(ctx: MutationCtx, row: Doc<'users'>, secret: string) {
   const account = await ctx.db
     .query('authAccounts')
     .withIndex('providerAndAccountId', (q) =>
@@ -146,7 +147,7 @@ async function setPassword(ctx: MutationCtx, row: any, secret: string) {
     });
 }
 
-async function revokeSessions(ctx: MutationCtx, userId: any) {
+async function revokeSessions(ctx: MutationCtx, userId: Id<'users'>) {
   const sessions = await ctx.db
     .query('authSessions')
     .withIndex('userId', (q) => q.eq('userId', userId))
@@ -165,7 +166,7 @@ async function revokeSessions(ctx: MutationCtx, userId: any) {
   }
 }
 
-async function issueInvite(ctx: MutationCtx, row: any, actor: string) {
+async function issueInvite(ctx: MutationCtx, row: Doc<'users'>, actor: string) {
   const user = decodeValue(row.value);
   if (user.removedAt || user.active || user.loginMethod !== 'invite') throw Error(inviteError);
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -190,7 +191,7 @@ async function issueInvite(ctx: MutationCtx, row: any, actor: string) {
       revoked: false,
     }),
   });
-  await touchCollection(ctx, 'invitations', { tokenHash, userId: user.id }, 1);
+  await touchCollection(ctx, 'invitations', 1);
   user.inviteExpiresAt = expiresAt;
   user.nativeInviteHash = tokenHash;
   await patchMember(ctx, row, user);
@@ -248,7 +249,7 @@ async function validReset(ctx: Context, token: string) {
 
 export const me = query({
   args: {},
-  returns: v.any(),
+  returns: v.union(publicMember, v.null()),
   handler: async (ctx) => {
     if (!(await getAuthUserId(ctx))) return null;
     try {
@@ -261,7 +262,12 @@ export const me = query({
 
 export const status = query({
   args: {},
-  returns: v.any(),
+  returns: v.object({
+    setupRequired: v.boolean(),
+    hosted: v.boolean(),
+    googleEnabled: v.boolean(),
+    user: v.union(publicMember, v.null()),
+  }),
   handler: async (ctx) => {
     let user = null;
     if (await getAuthUserId(ctx)) {
@@ -288,7 +294,13 @@ export const passwordOptions = query({
 
 export const checkInvitation = query({
   args: { token: v.string() },
-  returns: v.any(),
+  returns: v.object({
+    name: v.string(),
+    email: v.string(),
+    role: memberRole,
+    campus: v.union(v.string(), v.null()),
+    expiresAt: v.number(),
+  }),
   handler: async (ctx, { token }) => {
     const { user, invite } = await validInvitation(ctx, token);
     const campus =
@@ -309,7 +321,7 @@ export const checkInvitation = query({
 
 export const issueInvitation = mutation({
   args: { id: v.string() },
-  returns: v.any(),
+  returns: v.object(invitationResult),
   handler: async (ctx, { id }) => {
     const { user } = await requireAdmin(ctx);
     const row = await memberByAppId(ctx, id);
@@ -320,22 +332,35 @@ export const issueInvitation = mutation({
   },
 });
 
+// Actions authorize before doing CPU-heavy work. The mutation checks again so
+// session revocation or a role change during hashing cannot grant access.
+export const assertAdmin = internalQuery({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    return null;
+  },
+});
+
 export const createMember = action({
-  args: { data: v.any() },
-  returns: v.any(),
-  handler: async (ctx, { data }): Promise<any> => {
-    const secret =
-      (data.loginMethod || 'local') === 'local'
-        ? await passwordCrypto.hashSecret(data.password)
-        : null;
+  args: { data: memberCredentialsInput },
+  returns: createdMember,
+  handler: async (ctx, { data }): Promise<CreatedMember> => {
+    await ctx.runQuery(internal.nativeAuth.assertAdmin, {});
+    let secret: string | null = null;
+    if ((data.loginMethod || 'local') === 'local') {
+      validatePassword(data.password);
+      secret = await passwordCrypto.hashSecret(data.password);
+    }
     const { password: _password, ...profile } = data;
     return ctx.runMutation(internal.nativeAuth.createMemberRecord, { data: profile, secret });
   },
 });
 
 export const createMemberRecord = internalMutation({
-  args: { data: v.any(), secret: v.union(v.string(), v.null()) },
-  returns: v.any(),
+  args: { data: memberInput, secret: v.union(v.string(), v.null()) },
+  returns: createdMember,
   handler: async (ctx, { data, secret }) => {
     const { user: actor } = await requireAdmin(ctx);
     const email = institutionalEmail(data.email);
@@ -352,14 +377,16 @@ export const createMemberRecord = internalMutation({
       .take(2);
     if (prior.length) throw Error('E-mail já cadastrado.');
     if (role === 'CAMPUS') {
+      const campusId = data.campusId;
+      if (!campusId) throw Error('Campus inválido.');
       const campus = await ctx.db
         .query('campuses')
-        .withIndex('by_appId', (q) => q.eq('appId', data.campusId))
+        .withIndex('by_appId', (q) => q.eq('appId', campusId))
         .unique();
       if (!campus || decodeValue(campus.value).archived) throw Error('Campus inválido.');
     }
     if (loginMethod === 'local' && !secret) throw Error('Informe a senha.');
-    const user = {
+    const user: Member = {
       id: crypto.randomUUID(),
       name: data.name.trim(),
       email,
@@ -378,7 +405,7 @@ export const createMemberRecord = internalMutation({
       ...(user.campusId ? { campusId: user.campusId } : {}),
       value: encodeValue(user),
     });
-    await touchCollection(ctx, 'users', user, 1);
+    await touchCollection(ctx, 'users', 1);
     const row = (await ctx.db.get(id))!;
     if (secret) await setPassword(ctx, row, secret);
     await appendAudit(ctx, actor.id, 'CREATE_USER', user.id);
@@ -416,7 +443,7 @@ export const consumeInvitation = internalMutation({
     delete user.salt;
     await patchMember(ctx, row, user);
     await ctx.db.patch(inviteRow._id, { value: encodeValue({ ...invite, usedAt: Date.now() }) });
-    await touchCollection(ctx, 'invitations', invite);
+    await touchCollection(ctx, 'invitations');
     await appendAudit(ctx, user.id, 'ACCEPT_INVITATION', user.id);
     return { ok: true };
   },
@@ -424,7 +451,7 @@ export const consumeInvitation = internalMutation({
 
 export const passwordRecovery = mutation({
   args: { id: v.string() },
-  returns: v.any(),
+  returns: v.object({ url: v.string(), expiresAt: v.number(), email: v.string() }),
   handler: async (ctx, { id }) => {
     const { user: actor } = await requireAdmin(ctx);
     const row = await memberByAppId(ctx, id);
@@ -452,7 +479,7 @@ export const passwordRecovery = mutation({
       position: (last?.position ?? -1) + 1,
       value: encodeValue({ hash, userId: user.id, expires: expiresAt }),
     });
-    await touchCollection(ctx, 'passwordResets', { hash, userId: user.id }, 1);
+    await touchCollection(ctx, 'passwordResets', 1);
     user.nativeResetHash = hash;
     await patchMember(ctx, row, user);
     await appendAudit(ctx, actor.id, 'ISSUE_PASSWORD_RECOVERY', id);
@@ -481,7 +508,7 @@ export const consumeReset = internalMutation({
     delete user.salt;
     await patchMember(ctx, row, user);
     await ctx.db.patch(resetRow._id, { value: encodeValue({ ...reset, usedAt: Date.now() }) });
-    await touchCollection(ctx, 'passwordResets', reset);
+    await touchCollection(ctx, 'passwordResets');
     await revokeSessions(ctx, row._id);
     await appendAudit(ctx, user.id, 'RESET_PASSWORD', user.id);
     return { message: 'Senha alterada. Entre novamente com seu e-mail e a nova senha.' };
@@ -527,7 +554,7 @@ export const removeMember = mutation({
 });
 
 export const setup = action({
-  args: { data: v.any() },
+  args: { data: setupInput },
   returns: v.object({ ok: v.boolean() }),
   handler: async (ctx, { data }): Promise<{ ok: boolean }> => {
     const email = institutionalEmail(data.email);
@@ -552,7 +579,7 @@ export const setupRecord = internalMutation({
     if (await ctx.db.query('users').withIndex('by_position').first())
       throw Error('Conta ADMIN já criada.');
     if (!name.trim() || name.length > 240) throw Error('Informe seu nome.');
-    const user = {
+    const user: Member = {
       id: crypto.randomUUID(),
       name: name.trim(),
       email,
@@ -569,44 +596,10 @@ export const setupRecord = internalMutation({
       name: user.name,
       value: encodeValue(user),
     });
-    await touchCollection(ctx, 'users', user, 1);
+    await touchCollection(ctx, 'users', 1);
     await setPassword(ctx, (await ctx.db.get(id))!, secret);
     await appendAudit(ctx, user.id, 'CREATE_ADMIN', email);
     return { ok: true };
-  },
-});
-
-// Admin-only, internal migration entry point. Never exposes hashes to browsers.
-export const initializeImportedAccounts = internalMutation({
-  args: { paginationOpts: paginationOptsValidator },
-  returns: v.any(),
-  handler: async (ctx, { paginationOpts }) => {
-    const page = await ctx.db
-      .query('users')
-      .withIndex('by_position')
-      .paginate({ ...paginationOpts, numItems: Math.min(paginationOpts.numItems, 100) });
-    let imported = 0,
-      skipped = 0;
-    for (const row of page.page) {
-      const user = decodeValue(row.value);
-      const member = memberFromRow(row);
-      if (member && user.hash && user.salt && user.loginMethod !== 'google') {
-        const account = await ctx.db
-          .query('authAccounts')
-          .withIndex('userIdAndProvider', (q) => q.eq('userId', row._id).eq('provider', 'password'))
-          .unique();
-        if (!account) {
-          await setPassword(ctx, row, legacySecret(user.salt, user.hash));
-          imported++;
-        } else skipped++;
-      } else skipped++;
-      if (user.hash || user.salt) {
-        delete user.hash;
-        delete user.salt;
-        await patchMember(ctx, row, user);
-      }
-    }
-    return { imported, skipped, continueCursor: page.continueCursor, isDone: page.isDone };
   },
 });
 

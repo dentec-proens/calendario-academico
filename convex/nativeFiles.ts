@@ -2,7 +2,6 @@ import { v, ConvexError } from 'convex/values';
 import { mutation, internalMutation, internalQuery, httpAction } from './_generated/server';
 import { internal } from './_generated/api';
 import { requireNativeUser } from './nativeAuth';
-import type { Id } from './_generated/dataModel';
 
 function failure(message: string, status = 400): never {
   throw new ConvexError({ error: message, status });
@@ -16,6 +15,30 @@ const hashToken = async (token: string) =>
     new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))),
     (b) => b.toString(16).padStart(2, '0'),
   ).join('');
+
+const uploadRecord = v.object({
+  _id: v.id('nativeUploads'),
+  _creationTime: v.number(),
+  uploadId: v.string(),
+  ownerId: v.id('users'),
+  filename: v.string(),
+  size: v.number(),
+  expiresAt: v.number(),
+  storageId: v.optional(v.id('_storage')),
+  objectKey: v.optional(v.string()),
+  hash: v.optional(v.string()),
+  completedAt: v.optional(v.number()),
+  consumedAt: v.optional(v.number()),
+});
+const fileTicket = v.object({
+  _id: v.id('nativeFileTickets'),
+  _creationTime: v.number(),
+  tokenHash: v.string(),
+  storageId: v.id('_storage'),
+  filename: v.string(),
+  expiresAt: v.number(),
+  ephemeral: v.boolean(),
+});
 
 export const issueUpload = mutation({
   args: { filename: v.string(), size: v.number() },
@@ -54,7 +77,7 @@ export const issueUpload = mutation({
 
 export const uploadContext = internalQuery({
   args: { uploadId: v.string() },
-  returns: v.any(),
+  returns: uploadRecord,
   handler: async (ctx, { uploadId }) => {
     const { row } = await requireNativeUser(ctx);
     const upload = await ctx.db
@@ -165,7 +188,7 @@ export const ticket = internalMutation({
 });
 export const resolveTicket = internalMutation({
   args: { token: v.string() },
-  returns: v.any(),
+  returns: v.union(fileTicket, v.null()),
   handler: async (ctx, { token }) => {
     if (!/^[a-f0-9]{64}$/.test(token)) return null;
     const tokenHash = await hashToken(token);
@@ -198,7 +221,7 @@ export const downloadHttp = httpAction(async (ctx, request) => {
   };
   if (!ticket)
     return new Response('Arquivo não encontrado ou link expirado.', { status: 404, headers });
-  const file = await ctx.storage.get(ticket.storageId as Id<'_storage'>);
+  const file = await ctx.storage.get(ticket.storageId);
   if (!file) return new Response('Arquivo não encontrado.', { status: 404, headers });
   return new Response(file, {
     headers: {

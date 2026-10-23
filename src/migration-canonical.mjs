@@ -1,5 +1,5 @@
 // Sorting object keys makes migration fingerprints independent of the key
-// ordering chosen by JSON parsers, PostgreSQL JSONB and Convex serialization.
+// ordering chosen by JSON parsers and Convex serialization.
 export function canonicalJson(value) {
   if (Array.isArray(value)) return '[' + value.map(canonicalJson).join(',') + ']';
   if (value && typeof value === 'object')

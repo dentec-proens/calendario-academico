@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-23T11:06:01.444024+00:00",
+  "status": "passed",
+  "deployment": "oceanic-gazelle-652",
+  "tooling": {
+    "typescript": "7.0.2",
+    "oxlint": "1.89.0",
+    "oxlintTsgolint": "7.0.2005"
+  },
+  "localCheck": {
+    "command": "pnpm check",
+    "format": "passed",
+    "lint": "passed",
+    "typedLint": "passed",
+    "strictTypecheck": "passed",
+    "tests": {
+      "total": 111,
+      "passed": 109,
+      "failed": 0,
+      "skipped": 2,
+      "skipReason": "Browser E2E requires an explicitly disposable deployment."
+    },
+    "build": "passed"
+  },
+  "deploymentCheck": {
+    "codegenWithTypecheck": "passed",
+    "devPushWithTypecheck": "passed",
+    "schemaChanged": false
+  },
+  "browserCheck": {
+    "url": "http://127.0.0.1:4183/",
+    "session": "ADMIN",
+    "calendar": "Pinhais 2027",
+    "schoolDays": 200,
+    "logoLoaded": true,
+    "consoleErrors": 0,
+    "institutionalBaseOpened": true,
+    "humanReviewOpened": true,
+    "dataWrites": 0,
+    "screenshot": "consolidation.png"
+  },
+  "integrityReport": "consolidation-integrity.json",
+  "deferredOriginalPdfs": 13,
+  "originalCheckoutModified": false
+}

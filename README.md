@@ -1,95 +1,73 @@
 # Assistente de Calendários Acadêmicos DENTEC/PROENS
 
-Portal em React + Vite, com ícones Lucide. O editor de calendário continua em JavaScript modular, usando as mesmas APIs e dados.
+Aplicação em fase alpha com React, Vite, TypeScript e Convex. Convex executa autenticação, consultas reativas, mutations, armazenamento e processamento de PDFs. O portal usa um único backend; o preview Node serve somente arquivos estáticos.
 
-## Iniciar sem confusão de pastas
+## Desenvolvimento
 
-1. Instale Node.js 24 LTS (mínimo aceito: 22.13) e o pnpm 12.15.0 com `npm install --global pnpm@12.15.0`. Confira `pnpm --version` e execute `pnpm install --frozen-lockfile` na pasta que contém `package.json`.
-2. Copie `.env.example` para `.env` e configure `POSTGRES_URL` (ou `DATABASE_URL`) de um PostgreSQL de desenvolvimento, local ou Supabase. A credencial de aplicação precisa acessar as tabelas da instalação. O aplicativo usa PostgreSQL também fora da Vercel; sem a conexão ele informa o erro e não inicia.
-3. Em uma instalação nova, configure a credencial administrativa em `DENTEC_MIGRATION_DATABASE_URL`, informe em `DENTEC_DATABASE_ROLE` a role restrita de aplicação já provisionada e execute `pnpm run db:migrate` para preparar as tabelas e os acessos. O servidor não cria tabelas nem executa migrações com a credencial de aplicação. Para preservar uma instalação anterior, siga primeiro [a migração de dados](docs/postgresql.md).
-4. No Windows, dê dois cliques em INICIAR.cmd. Ele compila o portal e inicia o servidor. Mantenha a janela aberta e acesse http://127.0.0.1:4173.
-5. Enquanto não houver usuários, copie o código exibido no terminal para criar a primeira administração. Cadastre seu nome, e-mail @ifpr.edu.br e uma senha própria do aplicativo com pelo menos 10 caracteres. Não use a senha institucional do IFPR. Contas importadas mantêm suas senhas e dispensam esse cadastro.
-
-O projeto fixa a versão do pnpm em `packageManager` e versiona `pnpm-lock.yaml`. O npm do primeiro passo serve somente para instalar a ferramenta; as dependências e os comandos do projeto usam pnpm. Preserve o lockfile e use `--frozen-lockfile` para reproduzir a instalação.
-
-No VS Code, também é possível abrir a pasta que contém package.json e executar:
-
-```powershell
-pnpm.cmd run dev
-```
-
-`pnpm run dev` compila o portal com Vite antes de iniciar o servidor e recompila os componentes quando forem alterados. Recarregue o navegador para ver as mudanças. Portal, API e editor continuam na mesma origem e porta; nenhuma configuração de cookies ou CORS é necessária. Encerre com Ctrl+C.
-
-Para executar uma versão compilada:
+Requisitos: Node.js 24 LTS e pnpm 12.15.0. As versões das dependências são fixadas no `package.json` e no lockfile.
 
 ```sh
-pnpm run build
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Na primeira execução, o CLI do Convex pede acesso à conta e ao projeto. Ele grava a seleção de deployment e a URL pública em `.env.local`. Veja `.env.example`; não copie configurações de outra instalação. O comando prepara as funções, inicia o watcher Convex e abre o Vite com atualização automática em http://127.0.0.1:4183. Ctrl+C encerra ambos.
+
+Este worktree usa o deployment de laboratório `oceanic-gazelle-652`, no team Diretoria de Ensino Técnico — PROENS. O checkout original permanece separado. O build não publica funções nem inicializa dados.
+
+Para conferir o build estático:
+
+```sh
+pnpm build
 pnpm start
 ```
 
-O build grava somente o portal em `dist/portal/`; esse diretório é gerado e não deve ser versionado. Após mudar os componentes, execute o build novamente antes de `pnpm start`. Sem o build, o portal mostra um erro 503 com a instrução para compilá-lo. Se houver conflito de porta, encerre a versão anterior com Ctrl+C. Para verificar o código, execute `pnpm test`.
+O resultado fica em `dist/app/`. O preview escuta somente em `127.0.0.1:4183`; `PORT` permite outra porta. No Windows, `INICIAR.cmd` executa esse build e preview. Autenticação e dados continuam no Convex; não há API Node local.
 
-## Formatação e análise de código
-
-O projeto usa Prettier para formatar JavaScript, JSX, HTML, CSS, JSON, Markdown e YAML, e ESLint para analisar JavaScript e JSX. A formatação adota dois espaços, aspas simples em JavaScript e largura preferencial de 100 caracteres. Uma linha vazia separa as funções. Strings e templates podem ultrapassar essa largura para preservar seu conteúdo; quebrá-los exige uma refatoração própria. As migrações SQL existentes, os lockfiles, os dados e os arquivos gerados ficam fora da formatação.
+## Qualidade
 
 ```sh
-pnpm format
-pnpm run format:check
-pnpm run lint
-pnpm run lint:fix
+pnpm check
 ```
 
-`format` aplica a formatação; `format:check` apenas verifica. `lint` identifica problemas e `lint:fix` aplica as correções automáticas disponíveis, que devem ser revisadas. A configuração distingue os ambientes Node.js e navegador e verifica as regras de chamada dos Hooks e as dependências dos efeitos do React. A CI executa as verificações de formatação e lint antes do build e dos testes.
+Esse comando verifica formatação, lint, lint com análise de tipos, TypeScript estrito, testes e build. A CI executa o mesmo processo com uma URL sintética de build e sem credenciais de deployment.
 
-## Usar como ADMIN
+- TypeScript **7.0.2** nas fronteiras do backend, cliente Convex, autenticação, entradas React e ferramentas. `strict`, imports de tipos e verificações de símbolos não utilizados estão ativos.
+- Oxlint **1.89.0**, com verificações de correção, Hooks do React e promises; lint tipado usa o engine compatível com TypeScript 7. Regras de imports impedem reintroduzir os antigos provedores.
+- Prettier mantém a formatação de código e documentação. `pnpm format` aplica e `pnpm format:check` confere.
+- Os módulos maiores de cálculo e editor permanecem em JavaScript durante a migração progressiva. São testados e analisados pelo linter; não são declarados artificialmente como código TypeScript já migrado.
+- Testes usam `node:test` e `convex-test`, com fixtures descartáveis e funções reais do backend. E2E em navegador exige explicitamente um deployment descartável; não aponte essa suíte para os dados importados.
 
-- A lista de campi da imagem já vem cadastrada, incluindo Foz do Iguaçu. Em Campi e contas, cadastre unidades adicionais e contas CAMPUS vinculadas à unidade correta.
-- Em Base institucional, confira os feriados e eventos de 2027. Cadastre novos eventos ou edite os existentes, indicando fonte, datas, ofertas e efeito na contagem. Um evento comemorativo não deve ser marcado como exclusão automaticamente.
-- A base central é compartilhada por todas as contas desta instalação. Não é preciso recadastrar seus eventos em cada calendário. Reabrir um calendário incorpora a revisão mais recente; o sistema impede salvar usando revisão desatualizada.
-- Em Calendários, selecione campus, ano, oferta, regime, nome do calendário e cursos. Turmas e turnos são opcionais. Ofertas ou organizações diferentes devem ter registros separados.
+Comandos individuais: `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 
-## Usar como CAMPUS
+## Fluxos do portal
 
-- Entre com a conta cadastrada pelo ADMIN. Você só verá a unidade autorizada.
-- Crie ou abra seu calendário. As datas centrais serão carregadas pelo sistema.
-- Envie o PDF do ano anterior na seção Calendário anterior do campus, com observações sobre o que precisa ser mantido ou revisto. O arquivo fica vinculado àquele campus, calendário e oferta. Limite: 8 MB por PDF.
-- Selecione os sábados por mês na seção Sábados letivos por mês, indique atividade e fonte e confirme. Datas fora dos períodos não podem ser selecionadas; conflitos com feriados/recessos não contam como dias letivos.
-- Configure a semana letiva e os períodos. Acrescente feriados municipais e eventos locais com fonte. Cada campo precisa ser aplicado pelo respectivo botão antes de salvar.
-- Clique em Salvar no sistema para gravar uma versão. Baixar cópia gera um JSON dos dados locais; a base institucional continua sendo controlada pelo ADMIN. Importação JSON requer campus, ano e oferta compatíveis.
-- Na aba Calendário anual, consulte a grade com tabela de eventos baseada na estrutura do modelo PROENS. Salve antes de imprimir. Clique em Baixar PDF para baixar o documento diretamente. Requer Chrome ou Edge no computador do servidor (Chrome é usado preferencialmente). Imprimir continua disponível.
+ADMIN gerencia contas, campi, base institucional, documentos e revisão humana. CAMPUS consulta a base e altera somente os calendários da unidade autorizada. O backend confere o vínculo em cada operação; esconder controles não substitui autorização.
 
-## Onde os dados ficam
+Calendários de teste geram PDF identificado como teste. Propostas definitivas mantêm suas pendências e dependem da revisão prevista; o sistema não concede aprovação institucional. Os cálculos usam datas civis, fontes e ofertas registradas, preservando as regras do domínio.
 
-PostgreSQL é o banco de desenvolvimento e produção. Contas, sessões, campi, calendários, eventos, versões, pareceres, documentos e auditoria ficam em tabelas próprias no schema privado `dentec`. A conexão é configurada explicitamente e não depende da variável `VERCEL`. Não existe fallback para arquivo JSON. Computadores apontados para o mesmo banco compartilham a mesma instalação; utilize bancos separados para testes e dados institucionais.
+Alterações entram no calendário com **Adicionar/Aplicar** e são salvas automaticamente após uma breve pausa. O indicador confirma o resultado. Falhas recuperáveis oferecem nova tentativa; conflitos preservam os dados locais e exigem conferir a versão atual. Campos ainda não aplicados ficam protegidos de atualizações remotas. **Baixar cópia** inclui os dados aplicados; **Importar cópia** abre esse JSON compatível.
 
-Em desenvolvimento, sem credenciais de Storage, os PDFs ficam no PostgreSQL. Ao configurar `SUPABASE_URL` e uma chave secreta do servidor, novos arquivos usam o bucket privado `dentec-private`; PDFs importados que já estavam no banco continuam disponíveis. Produção exige esse armazenamento privado. Não configure chaves secretas em `VITE_*` ou nos arquivos de `web/`.
+A confirmação de uma nova base institucional e o salvamento da análise humana continuam explícitos. As consultas Convex atualizam as listas e os editores sem refetch manual.
 
-Arquivos JSON servem para importação/exportação e migração de instalações antigas. O servidor não abre nem modifica `data/database.json`. Preserve esse arquivo como cópia original até conferir a migração; copiar a pasta `data` deixou de ser o procedimento de backup da instalação em uso. Veja [migração, exportação e backup](docs/postgresql.md).
+## Dados, acesso e arquivos
 
-O código do primeiro ADMIN aparece apenas enquanto não há usuário cadastrado. Depois, use o login normal. As sessões expiram após oito horas, permanecem no PostgreSQL entre reinícios e são revogadas pelas ações de segurança existentes. Recuperação de senha depende do remetente e chave de envio configurados no servidor; consulte [o procedimento de recuperação](docs/recuperacao-de-senha.md).
+Identidades e sessões usam Convex Auth. Membros precisam estar ativos e previamente autorizados. Credenciais importadas compatíveis conservam o vínculo com seus IDs; não há cadastro público irrestrito.
 
-## O que esta versão não faz ainda
+As funções em `convex/` executam transações e ações. Os dados atuais ficam em documentos Convex e as versões completas ficam em snapshots separados. Os IDs de domínio e as referências históricas importadas permanecem estáveis. PDFs são enviados ao Convex Storage, validados no backend e consultados com autorização e tickets temporários. Geração de PDF e extração de texto executam em actions Node do Convex.
 
-- A execução de desenvolvimento aceita conexões HTTP somente no próprio computador. Acesso remoto exige uma implantação HTTPS e a configuração de produção descrita em [implantação](docs/implantacao-vercel.md). Copiar o ZIP não copia o PostgreSQL nem os arquivos do Storage.
-- Não integra o login do IFPR. O domínio do e-mail não é verificado por um provedor institucional.
-- Não extrai automaticamente dados do PDF histórico. Ele pode ser baixado e consultado; as datas não são copiadas para o ano novo.
-- Não pesquisa nem confirma feriados municipais automaticamente. O PDF comercial de Foz recebido é uma pista, não prova oficial de aplicabilidade.
-- Não valida o checklist completo, horas, todos os eventos condicionais, atas e trâmites. A contagem não concede aprovação institucional.
-- Inclui a logomarca extraída do modelo, as dez cores da legenda e tabelas duplas de eventos. A paginação se adapta ao conteúdo e pode diferir do modelo vazio. Não gera Excel. Requer conferência final da DENTEC.
+Os **13 PDFs originais permanecem pendentes de transferência**, conforme decisão do usuário. Seus metadados e referências estão preservados. A limpeza do código não baixa, reanalisa ou substitui esses arquivos.
 
-Veja docs/entrega-v03.md para fontes, verificações e limitações técnicas. docs/especificacao.md e docs/api.yaml são a especificação inicial e o contrato proposto de produção, não uma descrição exata de todos os endpoints locais implementados nesta versão.
+Segredos como `JWT_PRIVATE_KEY`, `JWKS` e credenciais Google pertencem ao ambiente do deployment Convex. Nunca entram em variáveis `VITE_*`, bundles, relatórios ou Git. Google depende da configuração do provedor. A recuperação de senha usa links temporários gerados pelo ADMIN; envio automático por e-mail ainda precisa ser implementado. Consulte [recuperação de acesso](docs/recuperacao-de-senha.md).
 
-## PDF e cores (v05)
+Para alterar funções do laboratório, use `pnpm convex:dev`; para publicar funções em produção, o comando explícito é `pnpm convex:deploy`. Confira o alvo antes de executar. Backup usa a exportação completa do Convex, incluindo Storage quando necessário; uma importação de restauração deve ser ensaiada em deployment separado.
 
-O botão Baixar calendário em PDF fica no topo do editor e também na aba Calendário anual. Salve no sistema antes do download. Eventos locais têm Categoria e cor PROENS, independente do efeito na contagem. Eventos já registrados podem ter sua categoria corrigida na lista, mantendo as datas e a fonte. A administração dispõe das mesmas categorias na base institucional. Categorias simultâneas aparecem como pequenas faixas adicionais na célula, preservando a identificação do feriado/recesso. Férias, formação e conselhos precisam de datas fornecidas pelo campus; não são inventados.
+## Estrutura e documentação
 
-## Novos administradores (v06)
+- `convex/`: funções, autenticação, armazenamento e schema.
+- `src/`: regras puras de calendário, snapshots e suporte à renderização.
+- `web/`: portal React, cliente Convex e editor.
+- `scripts/`: desenvolvimento, build e geração de recursos de impressão.
+- `test/`: regras e funções Convex isoladas.
 
-Em Campi e contas > Criar conta de acesso, um ADMIN pode escolher ADMIN · Equipe DENTEC/PROENS ou CAMPUS · Apenas sua unidade. ADMIN não é vinculado a um campus: acessa todos os calendários, a base institucional e a criação de contas. CAMPUS exige uma unidade válida. O servidor rejeita criação por usuários CAMPUS, perfis desconhecidos e e-mails duplicados. Nenhuma conta real é criada pela atualização. As contas existentes continuam compatíveis. O recurso não implementa a emissão formal de pareceres nem aprovação oficial.
-
-Validação: 18 testes passaram, incluindo criação de segundo ADMIN, login, acesso a todos os campi, acesso ao calendário de um campus e bloqueio de criação de ADMIN por conta CAMPUS.
-
-## Base documental — v11
-
-Em **Base institucional**, o ADMIN pode enviar PDFs por ano, conferir e definir a versão vigente de resolução, calendário de referência e parecer. Arquivos anteriores ficam preservados. Campi consultam os documentos publicados. Consulte `docs/base-documental-v11.md` para atualização, limites de análise e backup.
+[Arquitetura](docs/arquitetura-convex.md) · [Regras e especificação](docs/especificacao.md) · [Proveniência dos dados](docs/migracao-dados.md) · [Evidências da consolidação](docs/evidencias-convex/consolidation-integrity.json)

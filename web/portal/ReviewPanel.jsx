@@ -3,9 +3,9 @@ import { CheckCheck, ClipboardCopy, Download, ExternalLink, Eye, Pencil, Save } 
 import { modalityLabels } from '../../src/modalities.mjs';
 import { updateConclusion } from '../../src/review-conclusion.mjs';
 import { reviewNorm, presentReviewText } from '../../src/review-presentation.mjs';
-import { api } from './api.js';
+import { api } from './api.ts';
 import { useQuery } from 'convex/react';
-import { functions, nativeEnabled } from '../native/client.js';
+import { functions } from '../native/client.ts';
 
 const statusLabels = {
   PENDENTE: 'Pendente de análise',
@@ -171,6 +171,9 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState('');
+  const [operationCalendarId, setOperationCalendarId] = useState('');
+  const [previousCalendars, setPreviousCalendars] = useState(calendars);
+  const [previousLiveReview, setPreviousLiveReview] = useState(liveReview);
   const [preview, setPreview] = useState(null);
   const previewRef = useRef(null);
   const conclusionRef = useRef(null);
@@ -183,25 +186,50 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
   const busy = Boolean(pending);
   const dirty = draft?.dirty === true;
 
-  useEffect(() => {
-    if (!liveReview || !draft || liveReview.calendar.id !== draft.opened.calendar.id) return;
-    const prior = draft.opened;
-    if (
-      liveReview.calendar.version === prior.calendar.version &&
-      liveReview.catalogueRevision === prior.catalogueRevision &&
-      (liveReview.review?.revision || 0) === (prior.review?.revision || 0)
-    )
-      return;
-    setPreview(null);
-    if (dirty || actionPending.current) {
-      setMessage(
-        'O calendário, a base institucional ou a revisão mudou em outra sessão. Suas alterações foram preservadas. Salve uma cópia das observações e reabra a análise para conferir a versão atual.',
-      );
-    } else {
-      setDraft(initialDraft(liveReview));
-      setMessage('A análise foi atualizada com as alterações recebidas de outra sessão.');
+  // Reconcile a new subscription snapshot before committing the view. This
+  // avoids rendering stale fields first and cascading through a sync effect.
+  if (liveReview !== previousLiveReview) {
+    setPreviousLiveReview(liveReview);
+    if (liveReview && draft && liveReview.calendar.id === draft.opened.calendar.id) {
+      const prior = draft.opened;
+      const changed =
+        liveReview.calendar.version !== prior.calendar.version ||
+        liveReview.catalogueRevision !== prior.catalogueRevision ||
+        (liveReview.review?.revision || 0) !== (prior.review?.revision || 0);
+      if (changed) {
+        setPreview(null);
+        if (dirty || busy) {
+          setMessage(
+            'O calendário, a base institucional ou a revisão mudou em outra sessão. Suas alterações foram preservadas. Salve uma cópia das observações e reabra a análise para conferir a versão atual.',
+          );
+        } else {
+          setDraft(initialDraft(liveReview));
+          setMessage('A análise foi atualizada com as alterações recebidas de outra sessão.');
+        }
+      }
     }
-  }, [liveReview, draft, dirty]);
+  }
+
+  if (calendars !== previousCalendars) {
+    setPreviousCalendars(calendars);
+    const removedOpened =
+      openedCalendarId && !calendars.some((calendar) => calendar.id === openedCalendarId);
+    const removedOperation =
+      operationCalendarId && !calendars.some((calendar) => calendar.id === operationCalendarId);
+    if (removedOpened || removedOperation) {
+      if (removedOpened) {
+        setDraft(null);
+        setPreview(null);
+      }
+      if (removedOperation) {
+        setOperationCalendarId('');
+        setPending('');
+      }
+      setMessage(
+        'O calendário deixou de estar disponível para revisão. Selecione outro calendário para abrir a análise.',
+      );
+    }
+  }
 
   useEffect(() => {
     if (!dirty) return;
@@ -224,25 +252,15 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
   }, [draft?.conclusionEditable]);
 
   useEffect(() => {
-    const removedOpened =
-      openedCalendarId && !calendars.some((calendar) => calendar.id === openedCalendarId);
-    const removedOperation =
+    if (
       operationRef.current &&
-      !calendars.some((calendar) => calendar.id === operationRef.current.calendarId);
-    if (!removedOpened && !removedOperation) return;
-    if (removedOpened) {
-      setDraft(null);
-      setPreview(null);
-    }
-    if (removedOperation) {
+      !calendars.some((calendar) => calendar.id === operationRef.current.calendarId)
+    ) {
+      // Invalidate pending asynchronous results as soon as access is revoked.
       operationRef.current = null;
       actionPending.current = false;
-      setPending('');
     }
-    setMessage(
-      `${new Date().toLocaleTimeString('pt-BR')} — O calendário deixou de estar disponível para revisão. Selecione outro calendário para abrir a análise.`,
-    );
-  }, [calendars, openedCalendarId]);
+  }, [calendars]);
 
   function notify(text) {
     setMessage(`${new Date().toLocaleTimeString('pt-BR')} — ${text}`);
@@ -252,6 +270,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
     const operation = { calendarId };
     operationRef.current = operation;
     actionPending.current = true;
+    setOperationCalendarId(calendarId);
     setPending(kind);
     return operation;
   }
@@ -261,6 +280,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
     operationRef.current = null;
     actionPending.current = false;
     setPending('');
+    setOperationCalendarId('');
   }
 
   function changeField(field, value) {
@@ -648,7 +668,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
   );
 }
 
-function NativeReviewPanel(props) {
+export default function ReviewPanel(props) {
   const [openedId, setOpenedId] = useState(null);
   const available = props.calendars.some((calendar) => calendar.id === openedId);
   const liveReview = useQuery(
@@ -656,8 +676,4 @@ function NativeReviewPanel(props) {
     openedId && available ? { path: `/api/reviews/${encodeURIComponent(openedId)}` } : 'skip',
   );
   return <ReviewContent {...props} liveReview={liveReview} onOpened={setOpenedId} />;
-}
-
-export default function ReviewPanel(props) {
-  return nativeEnabled ? <NativeReviewPanel {...props} /> : <ReviewContent {...props} />;
 }

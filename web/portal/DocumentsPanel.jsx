@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Archive, CheckCircle2, Download, RefreshCw, Upload } from 'lucide-react';
-import { filePayload } from '../upload.js';
-import { api } from './api.js';
-import { downloadLink } from '../native/client.js';
+import { useRef, useState } from 'react';
+import { Archive, CheckCircle2, Download, Upload } from 'lucide-react';
+import { filePayload } from '../upload.ts';
+import { api } from './api.ts';
+import { downloadLink } from '../native/client.ts';
 
 const documentTypes = {
   norma: 'Resolução / norma',
@@ -10,55 +10,15 @@ const documentTypes = {
   parecer: 'Modelo de parecer / checklist',
 };
 
-export default function DocumentsPanel({ isAdmin, onChanged, refreshKey, liveData }) {
-  const [documents, setDocuments] = useState([]);
-  const [revision, setRevision] = useState(0);
+export default function DocumentsPanel({ isAdmin, liveData }) {
+  const documents = liveData?.documents ?? [];
+  const revision = liveData?.revision ?? 0;
   const [yearFilter, setYearFilter] = useState('');
   const [confirmed, setConfirmed] = useState({});
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(true);
+  const loading = liveData === undefined;
   const [pending, setPending] = useState(false);
-  const generation = useRef(0);
   const mutationPending = useRef(false);
-
-  const refresh = useCallback(async () => {
-    const ticket = ++generation.current;
-    setLoading(true);
-    try {
-      const data = await api('/api/documents');
-      if (ticket !== generation.current) return;
-      setRevision(data.revision);
-      setDocuments(data.documents);
-      setConfirmed({});
-    } finally {
-      if (ticket === generation.current) setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (liveData !== undefined) {
-      setRevision(liveData.revision);
-      setDocuments(liveData.documents);
-      setLoading(false);
-      return;
-    }
-    let active = true;
-    refresh().catch((error) => {
-      if (active) setMessage(error.message);
-    });
-    return () => {
-      active = false;
-      generation.current += 1;
-    };
-  }, [refresh, isAdmin, refreshKey, liveData]);
-
-  async function reloadDocuments() {
-    try {
-      await refresh();
-    } catch (error) {
-      setMessage(error.message);
-    }
-  }
 
   async function uploadDocument(event) {
     event.preventDefault();
@@ -71,7 +31,7 @@ export default function DocumentsPanel({ isAdmin, onChanged, refreshKey, liveDat
     setMessage('');
     try {
       if (!file?.name || file.size > 8_000_000) throw Error('Escolha um PDF de até 8 MB.');
-      const payload = await filePayload(file, 'document');
+      const payload = await filePayload(file);
       const year = Number(values.get('year'));
       await api('/api/documents', 'POST', {
         year,
@@ -83,7 +43,7 @@ export default function DocumentsPanel({ isAdmin, onChanged, refreshKey, liveDat
       });
       form.reset();
       setYearFilter(String(year));
-      await refresh();
+      setConfirmed({});
       setMessage(
         'Arquivo preservado como rascunho. Confira e defina como vigente para disponibilizá-lo aos campi.',
       );
@@ -111,7 +71,7 @@ export default function DocumentsPanel({ isAdmin, onChanged, refreshKey, liveDat
         status,
         confirmed: hasConfirmed,
       });
-      await Promise.all([refresh(), onChanged?.()]);
+      setConfirmed({});
       setMessage(
         'Vigência atualizada. Calendários e pareceres existentes deverão ser conferidos com a nova base.',
       );
@@ -154,15 +114,7 @@ export default function DocumentsPanel({ isAdmin, onChanged, refreshKey, liveDat
           onChange={(event) => setYearFilter(event.target.value)}
         />
       </label>
-      <button
-        type="button"
-        id="document-refresh"
-        className="secondary"
-        disabled={busy}
-        onClick={reloadDocuments}
-      >
-        <RefreshCw size={16} aria-hidden="true" /> Atualizar lista
-      </button>
+
       <p id="document-message" role="status" aria-live="polite">
         {message}
       </p>

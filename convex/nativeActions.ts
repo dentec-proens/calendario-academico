@@ -15,13 +15,13 @@ const validate = (bytes: Buffer) => {
     fail('Envie um PDF de até 8 MB.');
   return bytes;
 };
-async function fileBytes(ctx: ActionCtx, item: any) {
+async function fileBytes(ctx: ActionCtx, item: { objectKey?: string; data?: string }) {
   if (item.objectKey) {
     const id = await ctx.runQuery(internal.nativeFiles.fileId, { path: item.objectKey });
     const blob = id ? await ctx.storage.get(id) : null;
     if (!blob)
       fail(
-        'Este PDF original aguarda a importação do Supabase. Seus dados e análises foram preservados.',
+        'Este PDF original aguarda a transferência para o armazenamento atual. Seus dados e análises foram preservados.',
         503,
       );
     if (blob.size < 5 || blob.size > 8_000_000) fail('Envie um PDF de até 8 MB.');
@@ -106,9 +106,11 @@ export const run = action({
     }
     if (analysis) {
       if (context.history.analysis?.version === 2) return context.history.analysis;
+      // Missing deferred files are an availability error, not a corrupt PDF.
+      const bytes = await fileBytes(ctx, context.history);
       let result;
       try {
-        result = await analyzeHistory(await fileBytes(ctx, context.history));
+        result = await analyzeHistory(bytes);
       } catch {
         fail(
           'Não foi possível ler o texto deste PDF. Envie um arquivo sem senha e com texto selecionável. O documento continua guardado para consulta.',

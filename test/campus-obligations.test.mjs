@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { updateCampuses, selectableCampuses } from '../src/campuses.mjs';
 import { activityChecklist } from '../src/obligations.mjs';
 import { releaseReadiness } from '../src/release.mjs';
+import { selectableCampuses } from '../src/campus-selection.mjs';
 
 test('explicit absence of second semester intake waives new-student registration only', () => {
   const base = {
@@ -148,27 +148,6 @@ test('release checks omit optional missing activities without deleting existing 
     ),
   );
 });
-test('campus migration is idempotent and preserves historical Reitoria references', () => {
-  const db = {
-    campuses: [
-      { id: 'r', name: 'Reitoria', archived: true },
-      { id: 'ass', name: 'Assis Chateaubriand' },
-      { id: 'ara', name: 'Arapongas' },
-      { id: 'ast', name: 'Astorga' },
-    ],
-    calendars: [{ campusId: 'r' }],
-  };
-  updateCampuses(db);
-  const first = structuredClone(db);
-  updateCampuses(db);
-  assert.deepEqual(db, first);
-  assert.equal(db.calendars[0].campusId, 'r');
-  assert.equal(db.campuses.find((c) => c.id === 'r').archived, false);
-  assert.deepEqual(
-    selectableCampuses(db.campuses).map((c) => c.name),
-    ['Arapongas', 'Assis Chateaubriand', 'Astorga', 'Ponta Grossa', 'Reitoria', 'Toledo'],
-  );
-});
 test('mandatory checklist includes annual and semester notices, stage results, hours and year-specific deadlines', () => {
   for (const [regime, count] of [
     ['anual', 1],
@@ -198,4 +177,19 @@ test('mandatory checklist includes annual and semester notices, stage results, h
     activityChecklist({ year: 2027, regime: 'anual' }).find((r) => r.id === 'robotics').deadline,
     undefined,
   );
+});
+
+test('campus selection excludes archived units without changing IDs or historical order', () => {
+  const campuses = [
+    { id: 'toledo', name: 'Toledo' },
+    { id: 'archived', name: 'Campus antigo', archived: true },
+    { id: 'arapongas', name: 'Arapongas' },
+    { id: 'reitoria', name: 'Reitoria', archived: false },
+  ];
+  const before = structuredClone(campuses);
+  assert.deepEqual(
+    selectableCampuses(campuses).map((campus) => campus.id),
+    ['arapongas', 'reitoria', 'toledo'],
+  );
+  assert.deepEqual(campuses, before);
 });

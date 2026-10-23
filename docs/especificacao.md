@@ -18,9 +18,9 @@ Adotar inicialmente um monólito modular: interface web, API institucional, moto
 
 Fluxo de dados: navegador → API autenticada → banco e armazenamento privado. A API envia extrações para uma fila; o processador faz leitura/OCR e produz sugestões com evidências. O usuário confirma sugestões. O motor determinístico calcula e valida a versão confirmada. O exportador lê uma fotografia imutável dessa versão e de sua validação.
 
-Proposta tecnológica: interface em TypeScript com framework web a selecionar na implementação, API Node.js, PostgreSQL, armazenamento de objetos privado e identidade institucional via OIDC ou SAML conforme disponibilidade do IFPR. O scaffold usa JavaScript modular para executar o domínio sem instalar bibliotecas. A escolha de hospedagem permanece aberta; não existe dependência funcional de GitHub, Vercel ou conta pessoal de ChatGPT.
+Tecnologia adotada: React e Vite, com migração progressiva para TypeScript; autenticação, funções reativas, transações, arquivos e processamento no Convex. O motor de calendário permanece independente de rede e identidade. A hospedagem do frontend serve arquivos estáticos; não há uma API Node paralela.
 
-O banco deve ter isolamento por campus na API e defesa adicional por políticas de acesso às linhas. A conta de aplicação não deve ser proprietária das tabelas nem ter bypass dessas políticas. A documentação oficial do PostgreSQL alerta que proprietários normalmente não se submetem às políticas: https://www.postgresql.org/docs/current/ddl-rowsecurity.html.
+As funções Convex devem conferir identidade, conta ativa, papel e vínculo de campus em toda operação. O escopo é derivado da sessão no backend; parâmetros do navegador não concedem acesso. Funções auxiliares são internas e arquivos permanecem privados.
 
 Módulos: identidade e vínculos; cadastro de campus/município/ofertas; documentos e extrações; regras por ano; calendários e versões; eventos/feriados; cálculo; checklist; exceções; relatórios e auditoria. O motor de cálculo não chama IA, rede ou relógio do sistema; recebe os dados necessários como entrada e produz sempre o mesmo resultado.
 
@@ -60,7 +60,7 @@ Os quatro modos reutilizam essas telas: construir parte da identificação; revi
 
 ## 5 Modelo de dados
 
-Identificadores são UUID; datas civis usam DATE no banco e YYYY-MM-DD na API; instantes de auditoria usam UTC. Não armazenar datas letivas como timestamps sujeitos à conversão de fuso. A apresentação de instantes considera America/Sao_Paulo. Todo registro mutável tem versão de concorrência.
+Os IDs de domínio importados permanecem estáveis e os documentos usam também IDs internos Convex. Datas civis usam YYYY-MM-DD; instantes de auditoria usam UTC. Não armazenar datas letivas como timestamps sujeitos à conversão de fuso. A apresentação de instantes considera America/Sao_Paulo. Todo registro mutável tem versão de concorrência.
 
 | Entidade             | Campos principais e relações                                                                                                                    |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -151,7 +151,7 @@ Exceções têm fluxo próprio: solicitação → análise → deliberação ext
 
 ## 9 Contratos da API e processamento
 
-O arquivo api.yaml fornece o primeiro contrato de criação, consulta e validação. Os endpoints ainda não estão implementados. Todas as rotas exigem identidade e autorização por campus. Validar tipos, limites, identificadores, datas e referências no backend, independentemente do formulário.
+Os contratos são as funções em convex/ e os tipos de API gerados pelo Convex. As operações protegidas exigem identidade e autorização por campus. Validar tipos, limites, identificadores, datas e referências no backend, independentemente do formulário.
 
 Criação exige campus/oferta autorizados, ano, modo e pacote compatível. Edição exige versão esperada para evitar sobrescrita: concorrência gera HTTP 409 e comparação das alterações. Validação recebe identificador imutável da versão; o servidor resolve os dados, nunca confia em totais enviados pelo cliente.
 

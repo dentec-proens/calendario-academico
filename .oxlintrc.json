@@ -1,0 +1,49 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "oxc", "import"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/ban-ts-comment": "error",
+    "eslint/no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "pg",
+            "message": "O backend desta aplica\u00e7\u00e3o \u00e9 Convex."
+          },
+          {
+            "name": "@supabase/supabase-js",
+            "message": "Use Convex Auth e Convex Storage."
+          },
+          {
+            "name": "@electric-sql/pglite",
+            "message": "Use convex-test para isolar os testes."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.tsx"],
+      "rules": {
+        "typescript/no-floating-promises": "error",
+        "typescript/no-misused-promises": "error"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "convex/_generated/**",
+    "src/native-print-assets.mjs",
+    "dist/**",
+    "node_modules/**",
+    "coverage/**",
+    "backup-*/**"
+  ]
+}

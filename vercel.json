@@ -1,12 +1,37 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "node",
-  "installCommand": "npx --yes pnpm@12.15.0 install --frozen-lockfile",
-  "buildCommand": "npx --yes pnpm@12.15.0 run build",
-  "functions": {
-    "server.mjs": {
-      "maxDuration": 60,
-      "includeFiles": "{web/**,src/**,dist/portal/**,node_modules/@sparticuz/chromium/bin/**,node_modules/pdfjs-dist/legacy/build/**}"
+  "framework": "vite",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist/app",
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/portal",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/editor",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/logs",
+      "destination": "/logs.html"
+    },
+    {
+      "source": "/recuperar-senha",
+      "destination": "/recover.html"
+    },
+    {
+      "source": "/ativar",
+      "destination": "/activate.html"
+    },
+    {
+      "source": "/ativar-conta",
+      "destination": "/activate.html"
     }
-  }
+  ]
 }

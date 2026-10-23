@@ -3,7 +3,7 @@ const fail = (message, status = 400) => {
 };
 export const documentTypes = ['norma', 'referencia', 'parecer'];
 export const documentMetadata = (item) => {
-  const { data, ...metadata } = item;
+  const { data: _data, ...metadata } = item;
   return metadata;
 };
 

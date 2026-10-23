@@ -1,10 +1,12 @@
+import logoUrl from './ifpr-logo.png?url';
+import './proens.css';
 import {
   campusInstitutionalEvents,
   teacherDayId,
   validateTeacherDay,
   teacherDayWeek,
 } from '/teacher-day.mjs';
-import { createAutosaver, saveCalendarSnapshot } from './autosave.js';
+import { createAutosaver } from './autosave.js';
 import { durationEnd, recalculatePeriods } from '/duration.mjs';
 import { proposedDates } from '/history-dates.mjs';
 import {
@@ -29,18 +31,17 @@ import {
   stageRequirement,
   migrateAssessmentEvents,
 } from '/obligations.mjs';
-import { filePayload } from './upload.js';
+import { filePayload } from './upload.ts';
 import { categories, eventCategory, categoryLabel } from '/categories.mjs';
 import { datesBetween } from '/calendar.mjs';
 import { monthSaturdays, saturdayEvents } from '/saturdays.mjs';
 import { proensLayout } from '/print.mjs';
 import {
   nativeApi,
-  nativeEnabled,
   subscribeNative,
   subscribeNativeConnection,
   downloadLink,
-} from './native/client.js';
+} from './native/client.ts';
 
 const $ = (id) => document.getElementById(id);
 const eventFormHome = document.createComment('event-form-home');
@@ -73,26 +74,12 @@ const campusEvents = () => campusInstitutionalEvents(institutional, state);
 const allEvents = () => withVacationExclusions([...campusEvents(), ...state.events]);
 
 async function api(path, method = 'GET', body) {
-  if (nativeEnabled) {
-    try {
-      return await nativeApi(path, method, body);
-    } catch (error) {
-      if (error.status === 401) location.href = '/';
-      throw error;
-    }
+  try {
+    return await nativeApi(path, method, body);
+  } catch (error) {
+    if (error.status === 401) location.href = '/';
+    throw error;
   }
-  const r = await fetch(path, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json', 'X-Dentec-Request': '1' } : {},
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await r.json();
-  if (r.status === 401) {
-    location.href = '/';
-    throw Error('Entre com sua conta.');
-  }
-  if (!r.ok) throw Error(data.error);
-  return data;
 }
 
 const escape = (s) =>
@@ -434,7 +421,7 @@ function render({ recalculate = false } = {}) {
           .join(' + ')
       : ''
   }`;
-  $('months').innerHTML = proensLayout(state, allEvents(), result, record);
+  $('months').innerHTML = proensLayout(state, allEvents(), result, record, logoUrl);
   renderSaturdays();
   updateStageSuggestion();
   renderHistorySuggestions();
@@ -799,7 +786,7 @@ $('print').onclick = async () => {
       );
     record.readiness = fresh.readiness;
     record.proposalCopy = fresh.purpose !== 'test' && !fresh.readiness?.ready;
-    $('months').innerHTML = proensLayout(state, allEvents(), result, record);
+    $('months').innerHTML = proensLayout(state, allEvents(), result, record, logoUrl);
     window.print();
   } catch (e) {
     message(e.message, true);
@@ -855,7 +842,7 @@ async function openRecord() {
     updateRecordHeading();
     showHistory();
     render();
-    if (nativeEnabled) observeRecord();
+    observeRecord();
     if (location.hash === '#history-area') openHistory();
   } catch (e) {
     message(e.message, true);
@@ -929,14 +916,13 @@ function observeRecord() {
   );
 }
 
-if (nativeEnabled)
-  document.addEventListener('click', (event) => {
-    const link = event.target.closest('a[href^="/api/history/"]');
-    if (link)
-      downloadLink(event, link.getAttribute('href'), 'calendario-anterior.pdf').catch((error) =>
-        message(error.message, true),
-      );
-  });
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a[href^="/api/history/"]');
+  if (link)
+    downloadLink(event, link.getAttribute('href'), 'calendario-anterior.pdf').catch((error) =>
+      message(error.message, true),
+    );
+});
 
 function openHistory() {
   document.querySelector('[data-view="edit"]').click();
@@ -1074,7 +1060,7 @@ function refreshSaveStatus() {
   if (outdatedBase && ['idle', 'saved'].includes(saveStatus))
     text +=
       ' A base institucional mudou. Confira o impacto e confirme a atualização neste calendário.';
-  if (nativeEnabled && !nativeConnected && !['error', 'blocked'].includes(saveStatus))
+  if (!nativeConnected && !['error', 'blocked'].includes(saveStatus))
     text =
       dirty || saveInFlight
         ? 'Sem conexão. Alterações aplicadas aguardam sincronização. Mantenha esta tela aberta; o envio continua quando a conexão voltar. Baixar cópia guarda as alterações aplicadas.'
@@ -1101,10 +1087,7 @@ const autosaver = createAutosaver({
     catalogueRevision: record.currentCatalogueRevision,
     state,
   }),
-  write: (body) =>
-    nativeEnabled
-      ? api('/api/calendars/' + calendarId, 'PUT', body)
-      : saveCalendarSnapshot('/api/calendars/' + calendarId, body),
+  write: (body) => api('/api/calendars/' + calendarId, 'PUT', body),
   onSaved: (saved, sent) => {
     const unchanged = JSON.stringify(state) === JSON.stringify(sent.state);
     record.version = saved.version;
@@ -1180,7 +1163,7 @@ $('history-form').onsubmit = async (e) => {
     const file = $('history-file').files[0];
     if (!file || file.size > 8_000_000) throw Error('Envie um PDF de até 8 MB.');
     $('history-status').textContent = 'Enviando calendário anterior…';
-    const payload = await filePayload(file, 'history', calendarId);
+    const payload = await filePayload(file);
     const uploaded = await api('/api/calendars/' + calendarId + '/history', 'POST', {
       filename: file.name,
       year: state.year - 1,
@@ -1201,14 +1184,6 @@ $('history-form').onsubmit = async (e) => {
     $('history-submit').disabled = false;
   }
 };
-const extra = document.createElement('link');
-extra.rel = 'stylesheet';
-extra.href = '/portal.css';
-document.head.append(extra);
-const printStyle = document.createElement('link');
-printStyle.rel = 'stylesheet';
-printStyle.href = '/proens.css';
-document.head.append(printStyle);
 const monthNames = Array.from({ length: 12 }, (_, m) =>
   new Date(Date.UTC(2027, m, 1)).toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' }),
 );
@@ -1297,14 +1272,8 @@ $('download-pdf').onclick = async () => {
       catalogueRevision: record.currentCatalogueRevision,
       copy: record.purpose !== 'test' && !record.readiness?.ready,
     };
-    const nativeFile = nativeEnabled ? await api(pdfPath, 'POST', pdfBody) : null;
-    const response = nativeEnabled
-      ? await fetch(nativeFile.url)
-      : await fetch(pdfPath, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Dentec-Request': '1' },
-          body: JSON.stringify(pdfBody),
-        });
+    const file = await api(pdfPath, 'POST', pdfBody);
+    const response = await fetch(file.url);
     if (!response.ok) {
       const data = await response.json();
       throw Error(data.error);
@@ -1353,7 +1322,7 @@ $('proens-color-guide').innerHTML = categories
   .map(([key, label]) => `<span class="cat-${key}">${label}</span>`)
   .join('');
 $('download-pdf-top').onclick = () => $('download-pdf').click();
-openRecord();
+void openRecord();
 
 $('recalculate-stages').onclick = () =>
   act(() => {
@@ -1367,7 +1336,7 @@ $('recalculate-stages').onclick = () =>
       if (!rows.length) continue;
       if (rows.length !== assessmentCount(state, m))
         throw Error('Preencha todas as etapas de ' + modalityLabels[m] + ' antes de recalcular.');
-      const anchor = rows.map((e) => e.start).sort()[0];
+      const anchor = rows.map((e) => e.start).sort((a, b) => a.localeCompare(b))[0];
       for (const row of rows) row.assessmentAutoStart = anchor;
       groups++;
     }

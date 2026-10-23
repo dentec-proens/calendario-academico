@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["node", "vite/client"]
+  },
+  "include": [
+    "web/**/*.ts",
+    "web/**/*.tsx",
+    "convex/**/*.ts",
+    "scripts/**/*.ts",
+    "src/app-server.ts",
+    "src/app-routes.ts",
+    "server.ts",
+    "vite.config.ts",
+    "test/helpers/**/*.ts"
+  ],
+  "exclude": ["convex/_generated", "node_modules", "dist", "backup-*"]
+}

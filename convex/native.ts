@@ -1,7 +1,9 @@
 import { ConvexError, v } from 'convex/values';
 import { query, mutation, internalQuery, internalMutation } from './_generated/server';
 import type { QueryCtx, MutationCtx } from './_generated/server';
-import { requireNativeUser } from './nativeAuth';
+import { requireNativeUser, safeMember } from './nativeAuth';
+import type { Member } from './authContracts';
+import type { SnapshotOptions } from './model';
 import { readSnapshot, applyChanges } from './store';
 import { readAuditPage } from './audit';
 import { changesBetween, equal } from '../src/convex-diff.mjs';
@@ -36,7 +38,7 @@ import { reviewDocument } from '../src/review-export.mjs';
 import { auditLog } from '../src/audit-log.mjs';
 
 type Context = QueryCtx | MutationCtx;
-type User = Record<string, any>;
+type User = Member;
 const commonFields = [
   'campuses',
   'catalogue',
@@ -46,40 +48,22 @@ const commonFields = [
   'reviews',
   'audit',
 ];
-const json = (value: any) => JSON.parse(JSON.stringify(value ?? null));
+const json = (value: unknown) => JSON.parse(JSON.stringify(value ?? null));
 function fail(message: string, status = 400): never {
   throw Object.assign(Error(message), { status });
 }
-const text = (value: any, maximum = 240): string => {
+const text = (value: unknown, maximum = 240): string => {
   if (typeof value !== 'string' || !value.trim() || value.length > maximum)
     fail('Campo obrigatório ou texto muito longo.');
   return value.trim();
 };
 // Convex seeds Math.random per transaction, including retries.
 const newId = () =>
-  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (letter: any) => {
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (letter) => {
     const n = Math.floor(Math.random() * 16);
     return (letter === 'x' ? n : (n & 3) | 8).toString(16);
   });
-const safeUser = ({
-  id,
-  name,
-  email,
-  role,
-  campusId,
-  loginMethod,
-  active,
-  inviteExpiresAt,
-}: User) => ({
-  id,
-  name,
-  email,
-  role,
-  campusId,
-  active,
-  inviteExpiresAt,
-  loginMethod: loginMethod || 'local',
-});
+const safeUser = safeMember;
 const adminUser = (user: User) => {
   if (user.role !== 'ADMIN') fail('Acesso exclusivo da administração.', 403);
 };
@@ -93,23 +77,34 @@ function guardPath(path: string) {
   if (!path.startsWith('/api/') || path.length > 500) fail('Destino inválido.');
   return new URL(path, 'https://native.invalid');
 }
-function asConvexError(error: any): never {
+function asConvexError(error: unknown): never {
   if (error instanceof ConvexError) throw error;
+  const message = error instanceof Error ? error.message : '';
+  const status =
+    error && typeof error === 'object' && 'status' in error && typeof error.status === 'number'
+      ? error.status
+      : undefined;
+  const unauthenticated = message === 'Entre com sua conta.';
   throw new ConvexError({
-    status: error.status || (error.message === 'Entre com sua conta.' ? 401 : 400),
+    status: status || (unauthenticated ? 401 : 400),
     error:
-      error.status || error.message === 'Entre com sua conta.' || error instanceof RangeError
-        ? error.message
+      status || unauthenticated || error instanceof RangeError
+        ? message
         : 'Não foi possível concluir a operação.',
   });
 }
-async function optionsFor(ctx: Context, user: User, path: string, options: any = {}) {
+async function optionsFor(
+  ctx: Context,
+  user: User,
+  path: string,
+  options: SnapshotOptions = {},
+): Promise<SnapshotOptions> {
   let calendarId = path.match(/^\/api\/(?:calendars|reviews)\/([\w-]+)/)?.[1];
   const historyId = path.match(/^\/api\/history\/([\w-]+)/)?.[1];
   if (!calendarId && historyId) {
     const row = await ctx.db
       .query('histories')
-      .withIndex('by_appId', (q: any) => q.eq('appId', historyId))
+      .withIndex('by_appId', (q) => q.eq('appId', historyId))
       .unique();
     calendarId = owned(user, row ? decodeValue(row.value) : null).calendarId;
   }
@@ -117,7 +112,7 @@ async function optionsFor(ctx: Context, user: User, path: string, options: any =
     fields: commonFields,
     appendOnlyAudit: true,
     ...(calendarId ? { calendarId } : {}),
-    ...(user.role === 'CAMPUS' ? { campusId: user.campusId } : {}),
+    ...(user.role === 'CAMPUS' && user.campusId ? { campusId: user.campusId } : {}),
     ...options,
   };
 }
@@ -136,7 +131,7 @@ export async function loadNativeState(
 async function domain(ctx: Context, path: string, method: string, body: any) {
   const { user } = await requireNativeUser(ctx);
   const reads = new Map<string, Promise<any>>();
-  const read = (options: any = {}) => {
+  const read = (options: SnapshotOptions = {}) => {
     const key = JSON.stringify(options);
     if (!reads.has(key))
       reads.set(
@@ -148,7 +143,7 @@ async function domain(ctx: Context, path: string, method: string, body: any) {
       );
     return reads.get(key)!;
   };
-  const change = async (fn: (db: any) => any, supplied: any = {}) => {
+  const change = async (fn: (db: any) => any, supplied: SnapshotOptions = {}) => {
     if (!('insert' in ctx.db)) fail('Esta operação exige uma mutation.');
     const options = await optionsFor(ctx, user, path, supplied);
     const snapshot = await readSnapshot(ctx, options);
@@ -194,7 +189,7 @@ async function domain(ctx: Context, path: string, method: string, body: any) {
           .filter(
             (c: any) => !c.deletedAt && (user.role === 'ADMIN' || c.campusId === user.campusId),
           )
-          .map(({ state, versions, ...c }: any) => ({
+          .map(({ state, versions: _versions, ...c }: any) => ({
             ...c,
             name: calendarName(state.year, state.campus),
             year: state.year,
@@ -545,7 +540,10 @@ async function domain(ctx: Context, path: string, method: string, body: any) {
           currentDocuments: documentSnapshot(db, record.state.year),
           histories: db.histories
             .filter((h: any) => h.calendarId === id)
-            .map(({ data, analysis, objectKey, ...h }: any) => ({ ...h, analyzed: !!analysis })),
+            .map(({ data: _data, analysis, objectKey: _objectKey, ...h }: any) => ({
+              ...h,
+              analyzed: !!analysis,
+            })),
         });
         return;
       }
@@ -589,8 +587,10 @@ async function domain(ctx: Context, path: string, method: string, body: any) {
               ...inheritedEvents(db.catalogue, state.year, calendarModalities(state), state),
               ...state.events,
             ]);
-          } catch (e: any) {
-            fail(e.message);
+          } catch (error) {
+            fail(
+              error instanceof Error ? error.message : 'Não foi possível recalcular o calendário.',
+            );
           }
           if (
             equal(JSON.parse(JSON.stringify(c.state)), JSON.parse(JSON.stringify(state))) &&
@@ -795,7 +795,7 @@ export const finishAction = internalMutation({
           fail('Arquivo validado ausente.');
         const file = await ctx.db
           .query('fileObjects')
-          .withIndex('by_path', (q: any) => q.eq('path', result.objectKey))
+          .withIndex('by_path', (q) => q.eq('path', result.objectKey))
           .unique();
         if (!file) fail('Arquivo não encontrado.', 404);
         const upload =

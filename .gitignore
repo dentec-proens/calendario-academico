@@ -3,13 +3,12 @@ dist/
 .env
 .env.*
 !.env.example
-!.env.convex.example
 uploads/
 data/
 coverage/
 *.log
 .vercel/
-supabase/.temp/
+**/.temp/
 backup-*/
 *.zip
 *.pem

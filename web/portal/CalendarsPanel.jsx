@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ArchiveRestore, CalendarPlus, ExternalLink, FileUp, Trash2 } from 'lucide-react';
 import { calendarName } from '../../src/calendar-label.mjs';
 import { modalityLabels, selectableModalities } from '../../src/modalities.mjs';
-import { api } from './api.js';
-import { useAction } from './useAction.js';
+import { api } from './api.ts';
+import { useAction } from './useAction.ts';
 
 export function updatedLabel(value) {
   const date = value ? new Date(value) : null;
@@ -16,42 +16,15 @@ export function updatedLabel(value) {
     : 'Data não disponível';
 }
 
-export default function CalendarsPanel({
-  info,
-  isAdmin,
-  filter,
-  onFilter,
-  onRefresh,
-  notify,
-  liveTrash,
-}) {
+export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify, liveTrash }) {
   const [campusId, setCampusId] = useState('');
   const [year, setYear] = useState('2027');
-  const [trash, setTrash] = useState([]);
-  const [trashLoading, setTrashLoading] = useState(true);
+  const trash = liveTrash?.calendars ?? [];
+  const trashLoading = liveTrash === undefined;
   const { pending, run } = useAction(notify);
   const campus = info.campuses.find((c) => c.id === campusId) || info.campuses[0];
   const name = campus ? calendarName(year, campus.name) : '';
   const calendars = info.calendars.filter((c) => !filter || c.campusId === filter);
-
-  useEffect(() => {
-    if (liveTrash !== undefined) {
-      setTrash(liveTrash.calendars);
-      setTrashLoading(false);
-      return;
-    }
-    const controller = new AbortController();
-    setTrashLoading(true);
-    api('/api/calendar-trash', 'GET', undefined, { signal: controller.signal })
-      .then((data) => setTrash(data.calendars))
-      .catch((error) => {
-        if (error.name !== 'AbortError') notify(error.message, true);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setTrashLoading(false);
-      });
-    return () => controller.abort();
-  }, [info, notify, liveTrash]);
 
   function createCalendar(event) {
     event.preventDefault();
@@ -86,7 +59,6 @@ export default function CalendarsPanel({
       return;
     run(async () => {
       await api('/api/calendars/' + calendar.id, 'DELETE', { version: calendar.version });
-      await onRefresh();
       notify('Calendário movido para a lixeira. Você pode restaurá-lo abaixo.');
     });
   }
@@ -301,7 +273,6 @@ export default function CalendarsPanel({
                     onClick={() =>
                       run(async () => {
                         await api('/api/calendars/' + c.id + '/restore', 'POST', {});
-                        await onRefresh();
                         notify('Calendário restaurado.');
                       })
                     }

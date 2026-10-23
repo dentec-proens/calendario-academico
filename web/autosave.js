@@ -58,36 +58,3 @@ export function createAutosaver({ isDirty, snapshot, write, onSaved, onStatus })
 
   return { save, schedule };
 }
-
-export async function saveCalendarSnapshot(url, body, { fetcher = fetch, timeoutMs = 45000 } = {}) {
-  try {
-    const response = await fetcher(url, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Dentec-Request': '1' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    const raw = await response.text();
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      data = null;
-    }
-    if (!response.ok)
-      throw Object.assign(
-        Error(data?.error || 'O servidor está indisponível. Suas alterações continuam nesta tela.'),
-        { status: response.status },
-      );
-    if (!data || typeof data.version !== 'number')
-      throw Error('O servidor não confirmou o salvamento.');
-    return data;
-  } catch (error) {
-    if (error.name === 'TimeoutError' || error.name === 'AbortError')
-      throw Error(
-        'O servidor não confirmou o salvamento a tempo. Antes de tentar novamente, baixe uma cópia de segurança.',
-        { cause: error },
-      );
-    throw error;
-  }
-}

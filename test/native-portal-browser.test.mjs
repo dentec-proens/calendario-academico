@@ -15,8 +15,8 @@ const executablePath = [
   '/usr/bin/chromium',
 ].find((path) => path && existsSync(path));
 const nativeSkip =
-  !base || !email || !password || !executablePath
-    ? 'Requires an isolated native deployment, DENTEC_NATIVE_BROWSER_URL, DENTEC_NATIVE_TEST_EMAIL and DENTEC_NATIVE_TEST_PASSWORD.'
+  process.env.DENTEC_DISPOSABLE_E2E !== '1' || !base || !email || !password || !executablePath
+    ? 'Requires DENTEC_DISPOSABLE_E2E=1 and a disposable deployment with DENTEC_NATIVE_BROWSER_URL, DENTEC_NATIVE_TEST_EMAIL, DENTEC_NATIVE_TEST_PASSWORD and a test browser. Never run against an imported or shared deployment.'
     : false;
 
 test(

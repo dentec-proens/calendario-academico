@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { monthSaturdays, saturdayEvents } from '../src/saturdays.mjs';
-import { calendarResult } from '../src/pdf.mjs';
+import { evaluateCalendar as calendarResult } from '../src/evaluation.mjs';
 
 test('month selection adds only chosen Saturdays, survives serialization, and respects conflicts', () => {
   const s = {

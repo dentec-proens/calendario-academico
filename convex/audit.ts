@@ -1,8 +1,5 @@
-import { v } from 'convex/values';
-import { query } from './_generated/server';
 import type { QueryCtx } from './_generated/server';
-import { requireBridge } from './bridge';
-import { encodedValue } from './schema';
+import type { Member } from './authContracts';
 import { encodeValue, decodeValue } from '../src/convex-codec.mjs';
 
 const pageSize = 100;
@@ -10,28 +7,14 @@ const maximumOffset = 8_000;
 
 // Keep the existing offset UI while bounding backend reads. Calendar/history
 // references are resolved only for the requested page, never whole tables.
-export const page = query({
-  args: {
-    secret: v.string(),
-    role: v.union(v.literal('ADMIN'), v.literal('CAMPUS')),
-    campusId: v.union(v.string(), v.null()),
-    offset: v.number(),
-  },
-  returns: v.object({ state: encodedValue, hasMore: v.boolean() }),
-  handler: async (ctx, { secret, role, campusId, offset }) => {
-    requireBridge(secret);
-    return readAuditPage(ctx, role, campusId, offset);
-  },
-});
-
 export async function readAuditPage(
   ctx: QueryCtx,
-  role: string,
+  role: Member['role'],
   campusId: string | null,
   offset: number,
 ) {
   if (!Number.isSafeInteger(offset) || offset < 0 || offset > maximumOffset)
-    throw Error('Página fora do limite do experimento. Exporte a auditoria em lotes.');
+    throw Error('Página fora do limite permitido. Exporte a auditoria em lotes.');
   if (role === 'CAMPUS' && !campusId) throw Error('Campus obrigatório.');
   const collection = ctx.db.query('audit');
   const rows = await (
@@ -42,9 +25,12 @@ export async function readAuditPage(
     .order('desc')
     .take(offset + pageSize + 1);
   const entries = rows.slice(offset, offset + pageSize).map((row) => decodeValue(row.value));
-  const calendars = new Map<string, any>();
-  const histories = new Map<string, any>();
-  const users = new Map<string, any>();
+  const calendars = new Map<
+    string,
+    { id: string; campusId?: string; state: { year?: number; campus?: string } } | null
+  >();
+  const histories = new Map<string, { id: string; calendarId: string } | null>();
+  const users = new Map<string, { id: string; name?: string; campusId?: string } | null>();
 
   const findHistory = async (id: string) => {
     if (!histories.has(id)) {
