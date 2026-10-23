@@ -27,7 +27,33 @@ const info: Bootstrap = {
   user,
   campuses: [{ id: campusId, name: 'Campus de teste', archived: false }],
   calendars: [],
-  users: [user],
+  users: [
+    user,
+    {
+      ...user,
+      id: 'user-invited' as Id<'users'>,
+      name: 'Pessoa com convite pendente',
+      email: 'convite@example.invalid',
+      active: false,
+      loginMethod: 'invite',
+    },
+    {
+      ...user,
+      id: 'user-campus' as Id<'users'>,
+      name: 'Responsável por campus com nome bastante extenso para conferir a disposição',
+      email: 'responsavel.com.email.institucional.extenso@example.invalid',
+      role: 'CAMPUS',
+      campusId,
+    },
+    {
+      ...user,
+      id: 'user-reviewer' as Id<'users'>,
+      name: 'Pessoa parecerista',
+      email: 'parecer@example.invalid',
+      role: 'PARECERISTA',
+      loginMethod: 'google',
+    },
+  ],
   catalogue: {
     revision: 1,
     events: [

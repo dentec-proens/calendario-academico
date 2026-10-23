@@ -321,74 +321,84 @@ export default function AccountsPanel({
           </form>
         }
       >
-        <ul id="user-list" className="records">
-          {info.users.map((u) => (
-            <li key={u.id}>
-              <div>
-                <strong>{u.name}</strong>
-                <small>
-                  {u.email} · {u.role} ·{' '}
-                  {u.loginMethod === 'invite'
-                    ? 'Convite pendente'
-                    : u.loginMethod === 'google'
-                      ? 'Google institucional'
-                      : 'Senha local'}{' '}
-                  · {info.campuses.find((c) => c.id === u.campusId)?.name || 'Institucional'}
-                </small>
-              </div>
-              <div className="actions">
+        <div className="account-list">
+          <div className="account-list-heading" aria-hidden="true">
+            <span>Conta</span>
+            <span>Perfil de acesso</span>
+            <span>Recuperação / convite</span>
+            <span>Ações</span>
+          </div>
+          <ul id="user-list" className="records">
+            {info.users.map((u) => (
+              <li key={u.id}>
+                <div className="account-identity">
+                  <strong>{u.name}</strong>
+                  <small>
+                    {u.email} · {u.role} ·{' '}
+                    {u.loginMethod === 'invite'
+                      ? 'Convite pendente'
+                      : u.loginMethod === 'google'
+                        ? 'Google institucional'
+                        : 'Senha local'}{' '}
+                    · {info.campuses.find((c) => c.id === u.campusId)?.name || 'Institucional'}
+                  </small>
+                </div>
                 <MemberRoleEditor
                   key={u.role + (u.campusId || '')}
                   member={u}
                   campuses={info.campuses}
                   notify={notify}
                 />
-                {u.active && u.loginMethod !== 'google' ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    data-password-recovery={u.id}
-                    disabled={pending}
-                    onClick={() => recoverPassword(u)}
-                  >
-                    <KeyRound aria-hidden="true" size={18} />
-                    Gerar link de recuperação
-                  </Button>
-                ) : null}
-                {u.id !== info.user.id ? (
-                  <Button
-                    type="button"
-                    variant="danger"
-                    data-remove-member={u.id}
-                    disabled={pending}
-                    onClick={() => removeMember(u)}
-                  >
-                    <Trash2 aria-hidden="true" size={18} />
-                    Excluir acesso
-                  </Button>
-                ) : null}
-                {u.loginMethod === 'invite' && !u.active ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    data-new-invite={u.id}
-                    disabled={pending}
-                    onClick={() =>
-                      run(async () => {
-                        const result = await accounts.issueInvitation(u.id);
-                        showInvite(result);
-                        notify('Novo convite gerado. O link anterior não funciona mais.');
-                      })
-                    }
-                  >
-                    <MailPlus aria-hidden="true" size={18} />
-                    Gerar novo convite
-                  </Button>
-                ) : null}
-              </div>
-            </li>
-          ))}
-        </ul>
+                <div className="account-recovery">
+                  {u.active && u.loginMethod !== 'google' ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      data-password-recovery={u.id}
+                      disabled={pending}
+                      onClick={() => recoverPassword(u)}
+                    >
+                      <KeyRound aria-hidden="true" size={18} />
+                      Gerar link de recuperação
+                    </Button>
+                  ) : null}
+                  {u.loginMethod === 'invite' && !u.active ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      data-new-invite={u.id}
+                      disabled={pending}
+                      onClick={() =>
+                        run(async () => {
+                          const result = await accounts.issueInvitation(u.id);
+                          showInvite(result);
+                          notify('Novo convite gerado. O link anterior não funciona mais.');
+                        })
+                      }
+                    >
+                      <MailPlus aria-hidden="true" size={18} />
+                      Gerar novo convite
+                    </Button>
+                  ) : null}
+                </div>
+                <div className="account-removal">
+                  {u.id !== info.user.id ? (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      data-remove-member={u.id}
+                      disabled={pending}
+                      onClick={() => removeMember(u)}
+                    >
+                      <Trash2 aria-hidden="true" size={18} />
+                      Excluir acesso
+                    </Button>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </CollectionPanel>
     </section>
   );
@@ -409,7 +419,7 @@ function MemberRoleEditor({
   const changed = role !== member.role || (role === 'CAMPUS' && campusId !== member.campusId);
   return (
     <form
-      className="row-form"
+      className="member-role-editor"
       onSubmit={(event) => {
         event.preventDefault();
         run(async () => {
@@ -423,8 +433,9 @@ function MemberRoleEditor({
       }}
     >
       <label>
-        Perfil de {member.name}
+        <span className="member-role-label">Perfil de acesso</span>
         <select
+          aria-label={`Perfil de ${member.name}`}
           value={role}
           disabled={pending}
           onChange={(event) => setRole(event.target.value as typeof role)}
@@ -436,8 +447,9 @@ function MemberRoleEditor({
       </label>
       {role === 'CAMPUS' ? (
         <label>
-          Campus de {member.name}
+          Campus
           <select
+            aria-label={`Campus de ${member.name}`}
             value={campusId}
             required
             disabled={pending}
@@ -452,8 +464,12 @@ function MemberRoleEditor({
           </select>
         </label>
       ) : null}
-      <Button type="submit" disabled={pending || !changed}>
-        Salvar perfil
+      <Button
+        type="submit"
+        variant={changed ? 'primary' : 'secondary'}
+        disabled={pending || !changed}
+      >
+        Salvar
       </Button>
     </form>
   );

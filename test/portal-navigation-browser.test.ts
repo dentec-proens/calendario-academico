@@ -154,6 +154,92 @@ test(
     await page.waitForSelector('#user-list', { visible: true });
     await page.waitForSelector('#campus-list', { hidden: true });
     await page.waitForSelector('#user-form', { hidden: true });
+    const ownRoleForm = '#user-list > li:first-child form';
+    assert(await page.$eval(`${ownRoleForm} button`, (node) => node.disabled));
+    assert(
+      await page.$eval(`${ownRoleForm} button`, (node) =>
+        node.classList.contains('ui-button--secondary'),
+      ),
+    );
+    assert.equal(await page.$$eval('.account-list-heading', (nodes) => nodes.length), 1);
+    await page.select(`${ownRoleForm} select`, 'CAMPUS');
+    await page.waitForSelector(`${ownRoleForm} select[aria-label="Campus de Pessoa de teste"]`);
+    assert.equal(await page.$eval(`${ownRoleForm} button`, (node) => node.disabled), false);
+    assert(
+      await page.$eval(`${ownRoleForm} button`, (node) =>
+        node.classList.contains('ui-button--primary'),
+      ),
+    );
+    for (const width of [1720, 1440, 1024, 768, 390, 320]) {
+      await page.setViewport({ width, height: 1000 });
+      const layout = await page.$$eval('#user-list > li', (rows) =>
+        rows.map((row) => {
+          const bounds = row.getBoundingClientRect();
+          const controls = [row.querySelector('select')!, ...row.querySelectorAll('button')];
+          const controlBounds = controls.map((control) => control.getBoundingClientRect());
+          return {
+            name: row.querySelector('strong')!.textContent,
+            width: bounds.width,
+            columns: ['.member-role-editor', '.account-recovery', '.account-removal'].map(
+              (selector) => {
+                const cell = row.querySelector(selector)!;
+                return cell.childElementCount ? cell.getBoundingClientRect().left : null;
+              },
+            ),
+            repeatedLabelVisible:
+              getComputedStyle(row.querySelector('.member-role-label')!).display !== 'none',
+            oneLine: controlBounds.every(
+              (rect) => Math.abs(rect.bottom - controlBounds[0].bottom) < 2,
+            ),
+            identityAlongside:
+              row.querySelector('strong')!.getBoundingClientRect().bottom >
+              Math.min(...controlBounds.map((rect) => rect.top)),
+            buttons: Array.from(row.querySelectorAll('button')).map((button) => ({
+              text: button.textContent,
+              height: button.getBoundingClientRect().height,
+            })),
+            fits: Array.from(row.querySelectorAll('button, select')).every((control) => {
+              const rect = control.getBoundingClientRect();
+              return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1;
+            }),
+          };
+        }),
+      );
+      const headings = await page.$$eval('.account-list-heading > span', (nodes) =>
+        nodes.map((node) => node.getBoundingClientRect().left),
+      );
+      for (const row of layout) {
+        assert(row.fits, `${row.name}: controls fit the account row at ${width}px`);
+        if (row.width >= 960) {
+          assert(row.oneLine, `${row.name}: profile and actions share one line when there is room`);
+          assert(row.identityAlongside, `${row.name}: identity stays alongside the controls`);
+          assert.equal(row.repeatedLabelVisible, false, 'desktop uses the shared profile heading');
+          row.columns.forEach((left, index) => {
+            if (left !== null)
+              assert(
+                Math.abs(left - headings[index + 1]) < 1,
+                `${row.name}: column ${index + 1} aligns with its heading at ${width}px`,
+              );
+          });
+        } else {
+          assert(row.repeatedLabelVisible, 'stacked fields keep their visible labels');
+        }
+        for (const button of row.buttons) {
+          assert(
+            button.height >= 44 && button.height <= 64,
+            `${row.name}: ${button.text} keeps its natural touch-target height at ${width}px (got ${button.height}px)`,
+          );
+        }
+      }
+      assert(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+        `accounts fit at ${width}px`,
+      );
+    }
+    await page.select(`${ownRoleForm} select`, 'ADMIN');
+    assert.equal(await page.$$eval(`${ownRoleForm} select`, (nodes) => nodes.length), 1);
+    assert(await page.$eval(`${ownRoleForm} button`, (node) => node.disabled));
+    await page.setViewport({ width: 1440, height: 1000 });
     await page.locator('#accounts .collection-heading button').click();
     assert.equal(
       await page.$eval('#user-name', (node) => getComputedStyle(node.closest('label')!).fontWeight),

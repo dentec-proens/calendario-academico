@@ -84,6 +84,106 @@
 #root .records .actions {
   justify-content: flex-end;
 }
+
+/* The shared column widths keep profiles and actions aligned across all accounts. */
+.account-list {
+  container: account-list / inline-size;
+  --account-columns: minmax(0, 1fr) 16rem 15rem 10rem;
+}
+.account-list-heading {
+  display: none;
+  gap: var(--ui-space-4);
+  padding-bottom: var(--ui-space-3);
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+#root #user-list {
+  margin-top: 0;
+}
+#root #user-list > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--ui-space-4);
+}
+.account-identity {
+  min-width: 0;
+}
+.account-recovery,
+.account-removal {
+  min-width: 0;
+}
+.account-recovery:empty,
+.account-removal:empty {
+  display: none;
+}
+.account-recovery > button,
+.account-removal > button {
+  max-width: 100%;
+}
+.member-role-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--ui-space-3);
+  min-width: 0;
+}
+.member-role-editor label {
+  margin: 0;
+}
+.member-role-editor label + label {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+.member-role-editor > button {
+  grid-column: 2;
+  grid-row: 1;
+}
+@container account-list (min-width: 600px) {
+  #root #user-list > li {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .account-identity,
+  .member-role-editor {
+    grid-column: 1 / -1;
+  }
+  .account-recovery {
+    grid-column: 1;
+  }
+  .account-removal {
+    grid-column: 2;
+  }
+}
+@container account-list (min-width: 960px) {
+  .account-list-heading,
+  #root #user-list > li {
+    display: grid;
+    grid-template-columns: var(--account-columns);
+  }
+  .account-identity {
+    grid-column: 1;
+  }
+  .member-role-editor {
+    grid-column: 2;
+  }
+  .account-recovery {
+    grid-column: 3;
+  }
+  .account-removal {
+    grid-column: 4;
+  }
+  #root #user-list > li > * {
+    grid-row: 1;
+  }
+  .member-role-label {
+    display: none;
+  }
+  .account-recovery > button,
+  .account-removal > button {
+    width: 100%;
+  }
+}
 @media (max-width: 700px) {
   #root header {
     flex-wrap: wrap;
