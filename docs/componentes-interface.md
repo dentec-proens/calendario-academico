@@ -17,4 +17,8 @@ Essas regras pertencem ao CSS compartilhado e alcançam também controles HTML n
 
 Na revisão técnico-pedagógica, a indicação automática é uma evidência para conferência. Escolher uma avaliação, confirmar o critério e salvar a análise são ações distintas. Alterar a avaliação ou as observações invalida a confirmação anterior; a interface deve indicar quando a conferência ainda está por salvar. O teste `test/browser/review-ui.spec.ts` cobre essas transições com dados sintéticos, sem acessar um deployment real.
 
+Os critérios formam uma lista contínua, com divisórias simples e avaliação junto ao critério quando houver espaço. A indicação automática aparece como texto de apoio. As observações começam recolhidas, inclusive quando há texto salvo; o resumo indica que existe uma observação registrada. Abrir ou recolher esse campo não altera o conteúdo nem a conferência. As três opções de avaliação continuam acessíveis por teclado, com confirmação e salvamento separados.
+
+A proposta A foi escolhida a partir dos mockups comparativos preservados no branch local `codex/prototipo-revisao-compacta`.
+
 A navegação de seções e formulários usa `web/scroll.ts`: respeita `prefers-reduced-motion`, revela o início de formulários maiores que a tela e reserva a altura real do feedback fixo por meio de `ResizeObserver` e `scroll-padding`. Isso evita offsets fixos que deixam títulos sob avisos quando o texto quebra em mais linhas. Os testes `test/browser/scroll-layout.spec.ts` verificam a visibilidade e a recepção de cliques em desktop e mobile. As capturas visuais não corrigem a rolagem da aplicação antes de comparar as imagens.

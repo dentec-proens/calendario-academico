@@ -39,12 +39,19 @@ test('review with a pending confirmed criterion', async ({ page, cleanup }) => {
   await page.locator('#open-review').click();
   const item = page.locator('#review-items > li').first();
   await expect(item.locator('textarea')).toBeEnabled();
+  await expect(item.locator('textarea')).toBeHidden();
+  await expect(item).toHaveScreenshot('review-criterion-collapsed.png');
   await item.locator('[data-choice="ATENDIDO"]').click();
+  await item.locator('.review-item__notes summary').click();
   await item.locator('textarea').fill('Conferência documental registrada.');
   await item.locator('[data-confirm-criterion]').click();
   await expect(item.locator('[data-origin]')).toContainText('por salvar');
   await assertNoOverflow(page);
   await expect(item).toHaveScreenshot('review-pending-confirmation.png');
+  await item.locator('[data-choice="NAO_ATENDIDO"]').click();
+  await expect(item).toHaveScreenshot('review-not-attended.png');
+  await item.locator('[data-choice="NAO_APLICAVEL"]').click();
+  await expect(item).toHaveScreenshot('review-not-applicable.png');
 });
 
 test('calendar editor and its event form', async ({ page, cleanup }) => {

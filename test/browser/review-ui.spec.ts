@@ -22,22 +22,50 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   const item = '#review-items > li:first-child';
   const confirm = `${item} [data-confirm-criterion]`;
   const notes = `${item} textarea`;
+  const notesToggle = page.locator(`${item} .review-item__notes summary`);
   const choice = `${item} [data-choice="ATENDIDO"]`;
-  await expect(page.locator(notes)).toBeVisible();
+  await expect(page.locator(notes)).toBeHidden();
   await expect(page.locator(`${item} [data-edit-criterion]`)).toHaveCount(0);
   await expect(page.locator(notes)).toBeEnabled();
   await expect(page.locator(confirm)).toBeDisabled();
-  await expect(page.locator(`${item} .ui-notice`)).toContainText(
+  await expect(page.locator(`${item} .review-item__signal`)).toContainText(
     /Contagem automática indisponível/,
   );
+  await notesToggle.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator(notes)).toBeVisible();
+  await expect(page.locator(notes)).toHaveAccessibleName('Observações (opcional)');
+  await expect(
+    page
+      .locator(`${item} .review-item__notes`)
+      .getByText('Selecione uma avaliação para confirmar.', {
+        exact: true,
+      }),
+  ).toHaveCount(0);
   await expect(page.locator(`${item} [role="radio"]`)).toHaveCount(3);
   await page.locator(choice).focus();
   await page.keyboard.press('Space');
+  const selectedBackground = () =>
+    page
+      .locator(`${item} [role="radio"][aria-checked="true"]`)
+      .evaluate((node) => getComputedStyle(node.closest('label')!).backgroundColor);
+  const attendedBackground = await selectedBackground();
   await page.keyboard.press('ArrowRight');
   await expect(page.locator(`${item} [data-choice="NAO_ATENDIDO"]`)).toHaveAttribute(
     'aria-checked',
     'true',
   );
+  const notAttendedBackground = await selectedBackground();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator(`${item} [data-choice="NAO_APLICAVEL"]`)).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  const notApplicableBackground = await selectedBackground();
+  expect(new Set([attendedBackground, notAttendedBackground, notApplicableBackground]).size).toBe(
+    3,
+  );
+  await page.keyboard.press('ArrowLeft');
   await page.locator(confirm).click();
   expect(
     await page.evaluate(() => window.reviewUiTest.calls.saves),
@@ -67,9 +95,14 @@ test('direct review distinguishes automatic indications, confirmation and saved 
       );
     });
   expect(await page.evaluate(() => window.reviewUiTest.calls.saves)).toBe(1);
+  await notesToggle.click();
+  await expect(page.locator(notes)).toBeHidden();
   await page.locator('#open-review').click();
   await expect(page.locator('[data-origin="annual"]')).toHaveText('Conferido e salvo');
+  await expect(notesToggle).toContainText('observação registrada');
+  await expect(page.locator(notes)).toBeHidden();
   await expect(page.locator(notes)).toHaveValue('Conferência documental registrada.');
+  await notesToggle.click();
   await page.locator(notes).fill('Observação alterada e salva sem nova confirmação.');
   await expect(page.locator(notes)).toHaveValue(
     'Observação alterada e salva sem nova confirmação.',
@@ -86,7 +119,9 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   await expect(page.locator(notes)).toHaveValue(
     'Observação alterada e salva sem nova confirmação.',
   );
-  await page.locator(`${item} .review-item__actions button:first-child`).click();
+  const clear = page.locator(item).getByRole('button', { name: 'Limpar avaliação', exact: true });
+  await expect(clear).toHaveText('Limpar');
+  await clear.click();
   await expect(page.locator(`${item} [role="radio"][aria-checked="true"]`)).toHaveCount(0);
   await expect(page.locator(confirm)).toBeDisabled();
   await page.locator(choice).click();
@@ -132,7 +167,7 @@ test('direct review distinguishes automatic indications, confirmation and saved 
       .locator(choice)
       .evaluate((node) => getComputedStyle(node.parentElement!).transitionDuration),
   ).toBe('0s');
-  for (const width of [560, 375, 320]) {
+  for (const width of [1100, 768, 560, 375, 320]) {
     await page.setViewportSize({ width, height: 900 });
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
@@ -141,6 +176,11 @@ test('direct review distinguishes automatic indications, confirmation and saved 
     expect(
       await page.locator(confirm).evaluate((node) => node.getBoundingClientRect().height >= 44),
     ).toBeTruthy();
+    await notesToggle.click();
+    await expect(page.locator(notes)).toBeHidden();
+    await expect(notesToggle).toContainText('observação registrada');
+    await notesToggle.click();
+    await expect(page.locator(notes)).toHaveValue('Nova observação precisa de confirmação.');
   }
   expect(requests, 'isolated UI test cannot contact a real backend').toEqual([]);
   expect(errors).toEqual([]);

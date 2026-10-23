@@ -571,6 +571,7 @@ export function ReviewContent({
                   <ReviewCriterion
                     key={criterion.id}
                     criterion={criterion}
+                    number={index + 1}
                     entry={draft.entries[index]}
                     changed={Boolean(draft.changed[criterion.id])}
                     saved={Boolean(

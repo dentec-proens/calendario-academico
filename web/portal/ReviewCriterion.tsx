@@ -1,9 +1,9 @@
-import { CheckCheck } from 'lucide-react';
+import { CheckCheck, Info, RotateCcw } from 'lucide-react';
 import type { reviews } from '../native/client.ts';
 import { Button } from '../components/ui/Button.tsx';
 import { ChoiceGroup } from '../components/ui/ChoiceGroup.tsx';
 import { TextAreaField } from '../components/ui/Field.tsx';
-import { Notice, StatusBadge } from '../components/ui/Feedback.tsx';
+import { StatusBadge } from '../components/ui/Feedback.tsx';
 
 type Criterion = Awaited<ReturnType<typeof reviews.get>>['criteria'][number];
 type Entry = Parameters<typeof reviews.save>[1]['entries'][number];
@@ -16,6 +16,7 @@ const assessmentOptions = [
 
 export default function ReviewCriterion({
   criterion,
+  number,
   entry,
   changed,
   saved,
@@ -24,6 +25,7 @@ export default function ReviewCriterion({
   onConfirm,
 }: {
   criterion: Criterion;
+  number: number;
   entry: Entry;
   changed: boolean;
   saved: boolean;
@@ -57,37 +59,52 @@ export default function ReviewCriterion({
 
   return (
     <li className="review-item" aria-labelledby={`criterion-title-${criterion.id}`}>
-      <div className="review-item__heading">
-        <h3 id={`criterion-title-${criterion.id}`}>{criterion.title}</h3>
-        <StatusBadge
-          tone={entry.reviewed ? 'success' : changed ? 'warning' : 'neutral'}
-          data-origin={criterion.id}
-        >
-          {origin}
-        </StatusBadge>
+      <span className="review-item__number" aria-hidden="true">
+        {String(number).padStart(2, '0')}
+      </span>
+      <div className="review-item__content">
+        <div className="review-item__heading">
+          <h3 id={`criterion-title-${criterion.id}`}>{criterion.title}</h3>
+          <StatusBadge
+            tone={entry.reviewed ? 'success' : changed ? 'warning' : 'neutral'}
+            data-origin={criterion.id}
+          >
+            {origin}
+          </StatusBadge>
+        </div>
+        <p className="review-item__signal">
+          <Info size={14} aria-hidden="true" />
+          <span>
+            {unavailableCount ? (
+              <>
+                <strong>Contagem automática indisponível.</strong>{' '}
+                {signal.replace('Contagem indisponível: ', '')}. Confira os documentos para avaliar
+                este critério.
+              </>
+            ) : (
+              <>
+                <span className="review-item__accessible-label">Indicação do sistema: </span>
+                {signal}
+              </>
+            )}
+          </span>
+        </p>
+        {criterion.candidates.length > 0 ? (
+          <details className="review-item__records">
+            <summary>
+              Ver registros possivelmente relacionados ({criterion.candidates.length})
+            </summary>
+            <ul>
+              {criterion.candidates.map((candidate, index) => (
+                <li key={candidate.id || index}>
+                  {candidate.start} a {candidate.end} · {candidate.name}
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
       </div>
-      <Notice
-        title={unavailableCount ? 'Contagem automática indisponível' : 'Indicação do sistema'}
-      >
-        {unavailableCount
-          ? `${signal.replace('Contagem indisponível: ', '')}. Confira os documentos para avaliar este critério.`
-          : signal}
-      </Notice>
-      {criterion.candidates.length > 0 ? (
-        <details>
-          <summary>
-            Ver registros possivelmente relacionados ({criterion.candidates.length})
-          </summary>
-          <ul>
-            {criterion.candidates.map((candidate, index) => (
-              <li key={candidate.id || index}>
-                {candidate.start} a {candidate.end} · {candidate.name}
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
-      <div data-fields={criterion.id}>
+      <div className="review-item__evaluation" data-fields={criterion.id}>
         <ChoiceGroup
           label="Sua avaliação"
           value={pending ? null : entry.status}
@@ -95,6 +112,38 @@ export default function ReviewCriterion({
           disabled={busy}
           onValueChange={(value) => onChange('status', value)}
         />
+        <div className="review-item__actions">
+          {!pending ? (
+            <Button
+              variant="secondary"
+              className="review-item__reset"
+              aria-label="Limpar avaliação"
+              disabled={busy}
+              onClick={() => onChange('status', 'PENDENTE')}
+            >
+              <RotateCcw size={16} aria-hidden="true" /> Limpar
+            </Button>
+          ) : null}
+          <Button
+            variant={pending || entry.reviewed ? 'secondary' : 'primary'}
+            className="review-item__confirm"
+            data-confirm-criterion={criterion.id}
+            aria-label={`${entry.reviewed ? 'Conferência confirmada' : 'Confirmar conferência'}: ${criterion.title}`}
+            aria-describedby={`criterion-hint-${criterion.id}`}
+            disabled={busy || pending || entry.reviewed}
+            onClick={onConfirm}
+          >
+            <CheckCheck size={16} aria-hidden="true" /> {entry.reviewed ? 'Conferido' : 'Confirmar'}
+          </Button>
+        </div>
+        <p id={`criterion-hint-${criterion.id}`} className="review-item__hint" role="status">
+          {hint}
+        </p>
+      </div>
+      <details className="review-item__notes">
+        <summary>
+          Observações <span>{entry.notes.trim() ? '· observação registrada' : '(opcional)'}</span>
+        </summary>
         <TextAreaField
           label="Observações (opcional)"
           data-notes={criterion.id}
@@ -105,32 +154,7 @@ export default function ReviewCriterion({
           value={entry.notes}
           onValueChange={(value) => onChange('notes', value)}
         />
-      </div>
-      <div className="review-item__footer">
-        <p id={`criterion-hint-${criterion.id}`} className="review-item__hint" role="status">
-          {hint}
-        </p>
-        <div className="review-item__actions">
-          {!pending ? (
-            <Button
-              variant="secondary"
-              disabled={busy}
-              onClick={() => onChange('status', 'PENDENTE')}
-            >
-              Deixar pendente
-            </Button>
-          ) : null}
-          <Button
-            data-confirm-criterion={criterion.id}
-            aria-describedby={`criterion-hint-${criterion.id}`}
-            disabled={busy || pending || entry.reviewed}
-            onClick={onConfirm}
-          >
-            <CheckCheck size={16} aria-hidden="true" />{' '}
-            {entry.reviewed ? 'Conferência confirmada' : 'Confirmar conferência'}
-          </Button>
-        </div>
-      </div>
+      </details>
     </li>
   );
 }
