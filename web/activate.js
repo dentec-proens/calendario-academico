@@ -4,14 +4,7 @@ const token = new URLSearchParams(location.hash.slice(1)).get('token');
 history.replaceState(null, '', location.pathname);
 
 async function api(path, body) {
-  const response = await fetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Dentec-Request': '1' },
-    body: JSON.stringify(body),
-  });
-  const data = await response.json();
-  if (!response.ok) throw Error(data.error);
-  return data;
+  return request(path, 'POST', body);
 }
 
 try {
@@ -43,3 +36,4 @@ $('activation-form').onsubmit = async (e) => {
     $('activate-button').disabled = false;
   }
 };
+import { api as request } from './portal/api.js';

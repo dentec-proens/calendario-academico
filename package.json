@@ -21,12 +21,17 @@
     "start:convex": "node --env-file=.env.convex.local server.mjs",
     "convex:push": "convex dev --once --typecheck enable",
     "typecheck:convex": "tsc --noEmit -p convex/tsconfig.json",
-    "test:convex": "DENTEC_TEST_BACKEND=convex node --test --test-concurrency=1 test/*.test.mjs"
+    "test:convex": "DENTEC_TEST_BACKEND=convex node --test --test-concurrency=1 test/*.test.mjs",
+    "build:convex:native": "node scripts/build-native.mjs",
+    "start:convex:native": "node --env-file=.env.convex.local server-native.mjs"
   },
   "engines": {
     "node": ">=22.13.0"
   },
   "dependencies": {
+    "@auth/core": "0.41.1",
+    "@convex-dev/auth": "0.0.96",
+    "@noble/hashes": "2.0.1",
     "@sparticuz/chromium": "153.0.0",
     "@supabase/supabase-js": "2.116.0",
     "convex": "1.47.0",

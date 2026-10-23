@@ -132,8 +132,9 @@ async function selectedRows(ctx: Context, table: EntityTable, options: Options) 
             .take(MAX_ROWS + 1),
         )
       : await bounded(
-          collection
-            .withIndex('by_email', (q: any) => q.eq('email', options.email))
+          ctx.db
+            .query('users')
+            .withIndex('email', (q: any) => q.eq('email', options.email))
             .take(MAX_ROWS + 1),
         );
   } else rows = await bounded(collection.withIndex('by_position').take(MAX_ROWS + 1));
@@ -186,46 +187,48 @@ async function hydrate(ctx: Context, table: EntityTable, row: any, options: Opti
   return item;
 }
 
+export async function readSnapshot(ctx: Context, options: Options) {
+  const roots = await bounded(ctx.db.query('rootFields').withIndex('by_name').take(129), 128);
+  const selected: string[] = options.fields || roots.map((entry: any) => entry.name);
+  const state: Record<string, any> = {},
+    keys: Record<string, any> = {},
+    tokens = [];
+  if (!options.fields)
+    tokens.push({ key: 'roots:index', revision: await revision(ctx, 'roots:index') });
+  for (const field of selected) {
+    const presence = `${field}:presence`;
+    tokens.push({ key: presence, revision: await revision(ctx, presence) });
+    if (!roots.some((entry: any) => entry.name === field)) continue;
+    if (!(field === 'audit' && options.appendOnlyAudit)) {
+      const key = scopeKey(field, options);
+      tokens.push({ key, revision: await revision(ctx, key) });
+    }
+    let value;
+    if (isEntityTable(field)) {
+      const rows =
+        field === 'audit' && options.appendOnlyAudit ? [] : await selectedRows(ctx, field, options);
+      value = await Promise.all(rows.map((row: any) => hydrate(ctx, field, row, options)));
+      keys[field] = rows.map((row: any) => ({ key: row.key, position: row.position }));
+    } else value = decodeValue(roots.find((entry: any) => entry.name === field)!.value);
+    Object.defineProperty(state, field, {
+      value,
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+  }
+  const result = { state: encodeValue(state), keys, tokens };
+  if (getConvexSize(result) > 12_000_000)
+    throw new Error('Leitura muito grande; selecione um calendário ou coleção.');
+  return result;
+}
+
 export const snapshot = query({
   args: { secret: v.string(), options: optionsValidator },
   returns: v.object({ state: encodedValue, keys: v.any(), tokens: v.array(tokenValidator) }),
   handler: async (ctx, { secret, options }) => {
     requireBridge(secret);
-    const roots = await bounded(ctx.db.query('rootFields').withIndex('by_name').take(129), 128);
-    const selected: string[] = options.fields || roots.map((entry: any) => entry.name);
-    const state: Record<string, any> = {},
-      keys: Record<string, any> = {},
-      tokens = [];
-    if (!options.fields)
-      tokens.push({ key: 'roots:index', revision: await revision(ctx, 'roots:index') });
-    for (const field of selected) {
-      const presence = `${field}:presence`;
-      tokens.push({ key: presence, revision: await revision(ctx, presence) });
-      if (!roots.some((entry: any) => entry.name === field)) continue;
-      if (!(field === 'audit' && options.appendOnlyAudit)) {
-        const key = scopeKey(field, options);
-        tokens.push({ key, revision: await revision(ctx, key) });
-      }
-      let value;
-      if (isEntityTable(field)) {
-        const rows =
-          field === 'audit' && options.appendOnlyAudit
-            ? []
-            : await selectedRows(ctx, field, options);
-        value = await Promise.all(rows.map((row: any) => hydrate(ctx, field, row, options)));
-        keys[field] = rows.map((row: any) => ({ key: row.key, position: row.position }));
-      } else value = decodeValue(roots.find((entry: any) => entry.name === field)!.value);
-      Object.defineProperty(state, field, {
-        value,
-        enumerable: true,
-        configurable: true,
-        writable: true,
-      });
-    }
-    const result = { state: encodeValue(state), keys, tokens };
-    if (getConvexSize(result) > 12_000_000)
-      throw new Error('Leitura muito grande; selecione um calendário ou coleção.');
-    return result;
+    return readSnapshot(ctx, options);
   },
 });
 
@@ -385,7 +388,7 @@ async function upsertEntity(
   return !prior;
 }
 
-async function applyChanges(ctx: MutationCtx, changes: any[], options: Options) {
+export async function applyChanges(ctx: MutationCtx, changes: any[], options: Options) {
   const scopes = new Set<string>();
   // Targets created in this transaction must exist before audit scope is
   // indexed. Root-field ordering is otherwise unrelated to domain ordering.

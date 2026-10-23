@@ -9,9 +9,17 @@
  */
 
 import type * as audit from "../audit.js";
+import type * as auth from "../auth.js";
+import type * as authCrypto from "../authCrypto.js";
 import type * as bridge from "../bridge.js";
 import type * as files from "../files.js";
+import type * as http from "../http.js";
+import type * as migration from "../migration.js";
 import type * as model from "../model.js";
+import type * as native from "../native.js";
+import type * as nativeActions from "../nativeActions.js";
+import type * as nativeAuth from "../nativeAuth.js";
+import type * as nativeFiles from "../nativeFiles.js";
 import type * as store from "../store.js";
 
 import type {
@@ -22,9 +30,17 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   audit: typeof audit;
+  auth: typeof auth;
+  authCrypto: typeof authCrypto;
   bridge: typeof bridge;
   files: typeof files;
+  http: typeof http;
+  migration: typeof migration;
   model: typeof model;
+  native: typeof native;
+  nativeActions: typeof nativeActions;
+  nativeAuth: typeof nativeAuth;
+  nativeFiles: typeof nativeFiles;
   store: typeof store;
 }>;
 

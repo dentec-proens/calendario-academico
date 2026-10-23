@@ -33,6 +33,10 @@ jobs:
       - run: pnpm run lint
       - run: pnpm run typecheck:convex
       - run: pnpm run build
+      - name: Compilar o portal Convex nativo sem credenciais
+        run: pnpm run build:convex:native
+        env:
+          CONVEX_URL: https://synthetic-ci.convex.cloud
       - name: Preparar PostgreSQL de teste
         run: pnpm run db:migrate
         env:

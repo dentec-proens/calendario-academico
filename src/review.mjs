@@ -1,6 +1,6 @@
 import { calendarModalities, modalityLabels } from './modalities.mjs';
 import { reviewNorm } from './review-presentation.mjs';
-import { calendarResult } from './pdf.mjs';
+import { evaluateCalendar as calendarResult } from './evaluation.mjs';
 
 export const reviewSource = {
   id: 'SEI 3959640',

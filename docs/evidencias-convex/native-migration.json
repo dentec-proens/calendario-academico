@@ -1,0 +1,70 @@
+{
+  "sourceProject": "heqytxslokehuyrlxsza",
+  "target": "https://oceanic-gazelle-652.convex.cloud",
+  "sourceDigest": "1637eae8d5daec7d1b47d2721cf5d4156f574b826eb21da5de53d7703aef4708",
+  "counts": {
+    "users": 33,
+    "campuses": 29,
+    "calendars": 60,
+    "histories": 13,
+    "sessions": 9,
+    "loginAttempts": 6,
+    "invitations": 45,
+    "passwordResets": 0,
+    "recoveryAttempts": 0,
+    "uploads": 1,
+    "documents": 0,
+    "reviews": 3,
+    "audit": 918
+  },
+  "calendarVersions": 699,
+  "reviewVersions": 12,
+  "expectedAccounts": 24,
+  "sourceFiles": 13,
+  "filesPending": 13,
+  "deferredFiles": true,
+  "contentRecords": 1817,
+  "applied": true,
+  "auth": {
+    "imported": 24,
+    "skipped": 9
+  },
+  "completedAt": "2026-10-23T08:27:41.566Z",
+  "cloudCountsAfterImport": {
+    "audit": 918,
+    "authAccounts": 24,
+    "calendarSnapshots": 699,
+    "calendarVersions": 699,
+    "calendars": 60,
+    "campuses": 29,
+    "fileObjects": 0,
+    "histories": 13,
+    "reviewVersions": 12,
+    "reviews": 3,
+    "users": 33
+  },
+  "nativeQueriesOnSourceCopy": {
+    "activeCalendars": 30,
+    "trashedCalendars": 30,
+    "activeCalendarReads": 30,
+    "availableReviewReads": 1,
+    "auditPage": 100,
+    "passed": true
+  },
+  "nativeCloudFlows": {
+    "reactivityTwoSessions": true,
+    "unappliedEditsPreserved": true,
+    "invitationAndActivation": true,
+    "campusIsolation": true,
+    "passwordReset": true,
+    "documentUploadAndPublication": true,
+    "historyUploadAndAnalysis": true,
+    "reviewSaveAndExport": true,
+    "pdfHeader": "%PDF-",
+    "pdfBytes": 382797
+  },
+  "legacyBridgeDisabled": true,
+  "migrationPermissionRemoved": true,
+  "sourceDatabaseChanged": false,
+  "originalCheckoutChangedByThisMigration": false
+}

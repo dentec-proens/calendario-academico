@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Archive, CheckCircle2, Download, RefreshCw, Upload } from 'lucide-react';
 import { filePayload } from '../upload.js';
 import { api } from './api.js';
+import { downloadLink } from '../native/client.js';
 
 const documentTypes = {
   norma: 'Resolução / norma',
@@ -9,7 +10,7 @@ const documentTypes = {
   parecer: 'Modelo de parecer / checklist',
 };
 
-export default function DocumentsPanel({ isAdmin, onChanged, refreshKey }) {
+export default function DocumentsPanel({ isAdmin, onChanged, refreshKey, liveData }) {
   const [documents, setDocuments] = useState([]);
   const [revision, setRevision] = useState(0);
   const [yearFilter, setYearFilter] = useState('');
@@ -35,6 +36,12 @@ export default function DocumentsPanel({ isAdmin, onChanged, refreshKey }) {
   }, []);
 
   useEffect(() => {
+    if (liveData !== undefined) {
+      setRevision(liveData.revision);
+      setDocuments(liveData.documents);
+      setLoading(false);
+      return;
+    }
     let active = true;
     refresh().catch((error) => {
       if (active) setMessage(error.message);
@@ -43,7 +50,7 @@ export default function DocumentsPanel({ isAdmin, onChanged, refreshKey }) {
       active = false;
       generation.current += 1;
     };
-  }, [refresh, isAdmin, refreshKey]);
+  }, [refresh, isAdmin, refreshKey, liveData]);
 
   async function reloadDocuments() {
     try {
@@ -235,7 +242,16 @@ export default function DocumentsPanel({ isAdmin, onChanged, refreshKey }) {
                   Enviado em {new Date(document.createdAt).toLocaleString('pt-BR')} ·{' '}
                   {(document.size / 1024).toFixed(0)} KB
                 </small>
-                <a href={`/api/documents/${encodeURIComponent(document.id)}`}>
+                <a
+                  href={`/api/documents/${encodeURIComponent(document.id)}`}
+                  onClick={(event) =>
+                    downloadLink(
+                      event,
+                      `/api/documents/${encodeURIComponent(document.id)}`,
+                      document.filename,
+                    ).catch((error) => setMessage(error.message))
+                  }
+                >
                   <Download size={16} aria-hidden="true" /> Baixar PDF
                 </a>
                 {isAdmin ? (

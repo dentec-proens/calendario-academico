@@ -45,7 +45,7 @@ export default function AuthPanel({ status, onLogin, notify }) {
           onClick={() =>
             run(async () => {
               const data = await api('/api/google/start', 'POST', {});
-              window.location.assign(data.url);
+              if (data.url) window.location.assign(data.url);
             })
           }
         >

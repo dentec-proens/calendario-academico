@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-23",
+  "baselineCommit": "f6b8f185fd8589101df70ec513136c7674e9deb9",
+  "branch": "codex/convex-migration",
+  "checks": {
+    "postgresReference": {
+      "tests": 206,
+      "passed": 202,
+      "failed": 0,
+      "skipped": 4
+    },
+    "convexApplication": {
+      "tests": 206,
+      "passed": 202,
+      "failed": 0,
+      "skipped": 4
+    },
+    "typescript": true,
+    "eslint": true,
+    "prettier": true,
+    "baselineBuild": true,
+    "nativeBuild": true,
+    "frozenLockfile": true,
+    "nativeCloudReactivityTwoSessions": true,
+    "nativePdfCloud": {
+      "httpStatus": 200,
+      "bytes": 382797,
+      "header": "%PDF-"
+    },
+    "realSourceNativeReadVerification": true,
+    "importHashesAndCountsVerified": true,
+    "bridgeRejectedOldSecret": true
+  },
+  "skips": [
+    "External PostgreSQL integration requires DENTEC_TEST_POSTGRES_URL",
+    "Optional serverless Chromium local test requires its own runtime",
+    "Two native browser suites require an isolated native cloud fixture; reactivity and additional flows were checked separately before real-data import"
+  ],
+  "dataMigration": "complete_except_13_user_deferred_PDFs",
+  "sourceDatabaseChanged": false,
+  "originalCheckoutChangedByThisMigration": false,
+  "limitations": [
+    "Google OAuth requires dedicated provider credentials",
+    "Automatic recovery email is disabled until mail provider configuration",
+    "Prototype collection and document bounds remain documented"
+  ]
+}

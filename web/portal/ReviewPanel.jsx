@@ -4,6 +4,8 @@ import { modalityLabels } from '../../src/modalities.mjs';
 import { updateConclusion } from '../../src/review-conclusion.mjs';
 import { reviewNorm, presentReviewText } from '../../src/review-presentation.mjs';
 import { api } from './api.js';
+import { useQuery } from 'convex/react';
+import { functions, nativeEnabled } from '../native/client.js';
 
 const statusLabels = {
   PENDENTE: 'Pendente de análise',
@@ -164,7 +166,7 @@ function downloadDocument(document, draft, format) {
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
-export default function ReviewPanel({ calendars }) {
+function ReviewContent({ calendars, liveReview, onOpened }) {
   const [selectedCalendar, setSelectedCalendar] = useState('');
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState('');
@@ -180,6 +182,26 @@ export default function ReviewPanel({ calendars }) {
   const openedCalendarId = draft?.opened.calendar.id;
   const busy = Boolean(pending);
   const dirty = draft?.dirty === true;
+
+  useEffect(() => {
+    if (!liveReview || !draft || liveReview.calendar.id !== draft.opened.calendar.id) return;
+    const prior = draft.opened;
+    if (
+      liveReview.calendar.version === prior.calendar.version &&
+      liveReview.catalogueRevision === prior.catalogueRevision &&
+      (liveReview.review?.revision || 0) === (prior.review?.revision || 0)
+    )
+      return;
+    setPreview(null);
+    if (dirty || actionPending.current) {
+      setMessage(
+        'O calendário, a base institucional ou a revisão mudou em outra sessão. Suas alterações foram preservadas. Salve uma cópia das observações e reabra a análise para conferir a versão atual.',
+      );
+    } else {
+      setDraft(initialDraft(liveReview));
+      setMessage('A análise foi atualizada com as alterações recebidas de outra sessão.');
+    }
+  }, [liveReview, draft, dirty]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -320,6 +342,7 @@ export default function ReviewPanel({ calendars }) {
       const opened = await api(`/api/reviews/${encodeURIComponent(calendarId)}`);
       if (operationRef.current !== operation) return;
       setDraft(initialDraft(opened));
+      onOpened?.(calendarId);
       setPreview(null);
       notify(
         'Análise inicial preenchida. Use Editar para corrigir um item ou Confirmar leitura e análise para registrar sua conferência. Salve antes de baixar.',
@@ -623,4 +646,18 @@ export default function ReviewPanel({ calendars }) {
       </div>
     </section>
   );
+}
+
+function NativeReviewPanel(props) {
+  const [openedId, setOpenedId] = useState(null);
+  const available = props.calendars.some((calendar) => calendar.id === openedId);
+  const liveReview = useQuery(
+    functions.native.read,
+    openedId && available ? { path: `/api/reviews/${encodeURIComponent(openedId)}` } : 'skip',
+  );
+  return <ReviewContent {...props} liveReview={liveReview} onOpened={setOpenedId} />;
+}
+
+export default function ReviewPanel(props) {
+  return nativeEnabled ? <NativeReviewPanel {...props} /> : <ReviewContent {...props} />;
 }

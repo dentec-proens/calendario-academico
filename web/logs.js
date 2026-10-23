@@ -7,13 +7,7 @@ async function load(reset = false) {
       next = 0;
       $('log-list').replaceChildren();
     }
-    const response = await fetch('/api/logs?offset=' + next);
-    if (response.status === 401) {
-      location.href = '/';
-      return;
-    }
-    const data = await response.json();
-    if (!response.ok) throw Error(data.error);
+    const data = await api('/api/logs?offset=' + next);
     for (const entry of data.entries) {
       const li = document.createElement('li'),
         box = document.createElement('div'),
@@ -42,3 +36,14 @@ async function load(reset = false) {
 $('refresh-logs').onclick = () => load(true);
 $('more-logs').onclick = () => load();
 load();
+import { api } from './portal/api.js';
+import { nativeEnabled, subscribeNative } from './native/client.js';
+
+if (nativeEnabled)
+  subscribeNative(
+    '/api/logs?offset=0',
+    () => load(true),
+    (error) => {
+      $('log-message').textContent = error.message;
+    },
+  );

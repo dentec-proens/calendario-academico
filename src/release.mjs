@@ -1,6 +1,6 @@
 import { calendarModalities, modalityLabels, appliesTo } from './modalities.mjs';
 import { activityChecklist, assessmentCount, scopedRequirement } from './obligations.mjs';
-import { calendarResult } from './pdf.mjs';
+import { evaluateCalendar as calendarResult } from './evaluation.mjs';
 import { reviewCriteria } from './review.mjs';
 
 const plain = (value) =>

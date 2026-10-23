@@ -1,4 +1,7 @@
+import { nativeApi, nativeEnabled } from '../native/client.js';
+
 export async function api(path, method = 'GET', body, options = {}) {
+  if (nativeEnabled) return nativeApi(path, method, body);
   const response = await fetch(path, {
     ...options,
     method,

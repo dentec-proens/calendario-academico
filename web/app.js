@@ -34,6 +34,7 @@ import { categories, eventCategory, categoryLabel } from '/categories.mjs';
 import { datesBetween } from '/calendar.mjs';
 import { monthSaturdays, saturdayEvents } from '/saturdays.mjs';
 import { proensLayout } from '/print.mjs';
+import { nativeApi, nativeEnabled, subscribeNative, downloadLink } from './native/client.js';
 
 const $ = (id) => document.getElementById(id);
 const eventFormHome = document.createComment('event-form-home');
@@ -66,6 +67,14 @@ const campusEvents = () => campusInstitutionalEvents(institutional, state);
 const allEvents = () => withVacationExclusions([...campusEvents(), ...state.events]);
 
 async function api(path, method = 'GET', body) {
+  if (nativeEnabled) {
+    try {
+      return await nativeApi(path, method, body);
+    } catch (error) {
+      if (error.status === 401) location.href = '/';
+      throw error;
+    }
+  }
   const r = await fetch(path, {
     method,
     headers: body ? { 'Content-Type': 'application/json', 'X-Dentec-Request': '1' } : {},
@@ -830,11 +839,68 @@ async function openRecord() {
     updateRecordHeading();
     showHistory();
     render();
+    if (nativeEnabled) observeRecord();
     if (location.hash === '#history-area') openHistory();
   } catch (e) {
     message(e.message, true);
   }
 }
+
+let stopRecordSubscription;
+let unappliedInputs = false;
+let saveInFlight = false;
+
+document.addEventListener('input', () => {
+  unappliedInputs = true;
+});
+document.addEventListener(
+  'submit',
+  () => {
+    unappliedInputs = false;
+  },
+  true,
+);
+
+function observeRecord() {
+  stopRecordSubscription?.();
+  stopRecordSubscription = subscribeNative(
+    '/api/calendars/' + calendarId,
+    (fresh) => {
+      if (!record) return;
+      const changed =
+        fresh.version !== record.version ||
+        fresh.currentCatalogueRevision !== record.currentCatalogueRevision;
+      record.histories = fresh.histories;
+      showHistory();
+      if (!changed) return;
+      if (dirty || unappliedInputs || saveInFlight || converting) {
+        if (!saveInFlight)
+          message(
+            'O calendário ou a base institucional mudou em outra sessão. Suas alterações foram preservadas. Baixe uma cópia antes de reabrir; o salvamento verificará a versão atual.',
+            true,
+          );
+        return;
+      }
+      record = fresh;
+      state = fresh.state;
+      institutional = fresh.institutionalEvents;
+      sync();
+      updateRecordHeading();
+      render();
+      message('Calendário atualizado com as alterações recebidas de outra sessão.');
+    },
+    (error) => message(error.message, true),
+  );
+}
+
+if (nativeEnabled)
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('a[href^="/api/history/"]');
+    if (link)
+      downloadLink(event, link.getAttribute('href'), 'calendario-anterior.pdf').catch((error) =>
+        message(error.message, true),
+      );
+  });
 
 function openHistory() {
   document.querySelector('[data-view="edit"]').click();
@@ -949,7 +1015,10 @@ const autosaver = createAutosaver({
     catalogueRevision: record.currentCatalogueRevision,
     state,
   }),
-  write: (body) => saveCalendarSnapshot('/api/calendars/' + calendarId, body),
+  write: (body) =>
+    nativeEnabled
+      ? api('/api/calendars/' + calendarId, 'PUT', body)
+      : saveCalendarSnapshot('/api/calendars/' + calendarId, body),
   onSaved: (saved, sent) => {
     const unchanged = JSON.stringify(state) === JSON.stringify(sent.state);
     record.version = saved.version;
@@ -962,6 +1031,7 @@ const autosaver = createAutosaver({
     }
   },
   onStatus: (status, data) => {
+    saveInFlight = status === 'saving';
     const labels = {
       scheduled: 'Alterações aplicadas aguardando salvamento automático…',
       saving: 'Salvando alterações…',
@@ -1140,15 +1210,20 @@ $('download-pdf').onclick = async () => {
     button.textContent = 'Gerando PDF…';
     $('download-pdf-top').textContent = 'Gerando PDF…';
     message('Gerando o calendário em PDF. Aguarde o download.');
-    const response = await fetch('/api/calendars/' + calendarId + '/pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Dentec-Request': '1' },
-      body: JSON.stringify({
-        version: record.version,
-        catalogueRevision: record.currentCatalogueRevision,
-        copy: record.purpose !== 'test' && !record.readiness?.ready,
-      }),
-    });
+    const pdfPath = '/api/calendars/' + calendarId + '/pdf';
+    const pdfBody = {
+      version: record.version,
+      catalogueRevision: record.currentCatalogueRevision,
+      copy: record.purpose !== 'test' && !record.readiness?.ready,
+    };
+    const nativeFile = nativeEnabled ? await api(pdfPath, 'POST', pdfBody) : null;
+    const response = nativeEnabled
+      ? await fetch(nativeFile.url)
+      : await fetch(pdfPath, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Dentec-Request': '1' },
+          body: JSON.stringify(pdfBody),
+        });
     if (!response.ok) {
       const data = await response.json();
       throw Error(data.error);

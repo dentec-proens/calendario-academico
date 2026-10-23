@@ -1,0 +1,3 @@
+{
+  "node": { "externalPackages": ["@sparticuz/chromium", "pdfjs-dist"] }
+}

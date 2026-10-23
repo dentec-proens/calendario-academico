@@ -1,6 +1,29 @@
+import { convex, functions, nativeEnabled, nativeError } from './native/client.js';
+
 export async function filePayload(file, purpose, calendarId) {
   if (!file || file.size > 8_000_000 || !file.name.toLowerCase().endsWith('.pdf'))
     throw Error('Escolha um PDF de até 8 MB.');
+  if (nativeEnabled) {
+    try {
+      const ticket = await convex.mutation(functions.nativeFiles.issueUpload, {
+        filename: file.name,
+        size: file.size,
+      });
+      const response = await fetch(ticket.uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/pdf' },
+        body: file,
+      });
+      if (!response.ok) throw Error('Não foi possível enviar o PDF. Tente novamente.');
+      const { storageId } = await response.json();
+      return await convex.action(functions.nativeActions.completeUpload, {
+        uploadId: ticket.uploadId,
+        storageId,
+      });
+    } catch (error) {
+      throw nativeError(error);
+    }
+  }
   const mode = await fetch('/api/file-mode');
   if (!mode.ok) throw Error('Entre novamente para enviar arquivos.');
   if ((await mode.json()).direct) {

@@ -1,136 +1,125 @@
-# Experimento de persistência com Convex
+# Experimento de integração nativa com Convex
 
-Este worktree parte do commit `f6b8f185fd8589101df70ec513136c7674e9deb9`. O objetivo é testar a troca da persistência por Convex preservando o portal React, o editor, as APIs, as regras de calendário e os fluxos de administração e revisão dessa versão.
+Este worktree parte de `f6b8f185fd8589101df70ec513136c7674e9deb9`, na branch `codex/convex-migration`. Preserva o portal React, o editor e as regras de calendário dessa referência, com autenticação, APIs, persistência e arquivos executados pelo Convex. A instalação atual permanece em seu checkout, com seus próprios processos, configuração e banco.
 
-O worktree e o projeto Convex são exclusivos do experimento. A instalação atual continua usando seus próprios arquivos, configuração, processo e banco. O deployment de desenvolvimento pertence ao team [Diretoria de Ensino Técnico — PROENS](https://dashboard.convex.dev/t/diretoria-de-ensino-tecnico-proens).
+O ambiente é exclusivo do experimento, no team [Diretoria de Ensino Técnico — PROENS](https://dashboard.convex.dev/t/diretoria-de-ensino-tecnico-proens). O projeto é [calendario-academico-convex-lab / oceanic-gazelle-652](https://dashboard.convex.dev/t/diretoria-de-ensino-tecnico-proens/calendario-academico-convex-lab/oceanic-gazelle-652), com backend `https://oceanic-gazelle-652.convex.cloud` e portal local em [http://127.0.0.1:4183](http://127.0.0.1:4183).
 
-O projeto criado é [calendario-academico-convex-lab / oceanic-gazelle-652](https://dashboard.convex.dev/t/diretoria-de-ensino-tecnico-proens/calendario-academico-convex-lab/oceanic-gazelle-652). O backend atende em `https://oceanic-gazelle-652.convex.cloud`; o portal de teste permanece em [http://127.0.0.1:4183](http://127.0.0.1:4183).
+## Estado da migração
 
-## Arquitetura deste teste
+Estado registrado em **23/10/2026: dados estruturados importados e conferidos; 13 PDFs adiados por decisão do usuário**. A conclusão dessa cópia para o laboratório não constitui uma troca do ambiente de produção.
 
-O navegador continua acessando o servidor Node na mesma origem. Login, sessões, autorização por campus, validação e geração de PDF continuam passando pelas APIs existentes. O servidor usa os adaptadores de dados e arquivos do Convex; nesse modo ele não abre conexão PostgreSQL nem inicializa o Storage do Supabase.
+A origem é o projeto Supabase [heqytxslokehuyrlxsza](https://supabase.com/dashboard/project/heqytxslokehuyrlxsza), da conta Dentec. A exportação foi feita somente para leitura, sem alterar o banco de origem. O inventário identificado contém:
 
-As funções do Convex são acessadas pelo servidor com `DENTEC_CONVEX_BRIDGE_SECRET`. Esse segredo precisa ser igual no servidor Node e nas variáveis do deployment Convex. Ele não vai para o bundle React, variáveis `VITE_*`, navegador ou Git. A autorização dos usuários continua sendo conferida no backend Node, como na versão de referência.
+| Conjunto                          | Quantidade |
+| --------------------------------- | ---------: |
+| Membros                           |         33 |
+| Campi                             |         29 |
+| Calendários                       |         60 |
+| Versões anteriores de calendários |        699 |
+| Históricos em PDF                 |         13 |
+| Pareceres                         |          3 |
+| Registros de auditoria            |        918 |
 
-O experimento usa os cookies próprios `dentec_convex_lab_session` e `dentec_convex_lab_google`. Essa separação evita interferência na sessão de uma versão de referência aberta no mesmo host, pois os navegadores compartilham cookies entre portas do mesmo domínio. Os nomes de cookie originais permanecem no modo PostgreSQL.
+A importação preservou os IDs da aplicação, as fotografias completas das versões, os metadados, os vínculos com campi, as referências documentais e as 12 versões dos três pareceres. A estrutura do Convex usa seus próprios IDs internos sem trocar esses identificadores de domínio.
 
-Esta etapa preserva o contrato de persistência usado pela aplicação para permitir comparar comportamentos. A assinatura reativa do React e uma eventual mudança de autenticação são trabalhos posteriores. Manter esse limite ajuda a atribuir diferenças observadas à migração da persistência.
+**Os 13 PDFs permanecem pendentes.** O usuário decidiu adiar a transferência dos arquivos devido à quota de saída do Supabase. Os metadados e as referências aos objetos são preservados; o download e uma nova análise desses PDFs aguardam a importação dos bytes. Um histórico com análise já registrada pode conservar os resultados existentes, mas isso não significa que seu arquivo já esteja disponível no Convex.
 
-Os registros das coleções da aplicação ficam em documentos individuais: contas, campi, calendários, históricos, sessões, convites, documentos, pareceres e auditoria. O catálogo institucional e extensões da raiz são valores próprios. As fotografias completas das versões de calendário ficam separadas dos metadados de histórico; uma leitura comum não transfere todas as fotografias anteriores. O codec conserva propriedades explicitamente `undefined` e nomes de campos reservados, sem converter esses dados silenciosamente em `null`.
+O importador concluiu 67 lotes de dados e 193 de versões, conferiu as contagens de 17 coleções e comparou por SHA-256 o conteúdo de 1.817 registros. Os 33 perfis foram conferidos após a retirada de hashes e salts de suas representações públicas; 24 credenciais scrypt foram vinculadas ao Convex Auth e comparadas com os segredos de origem. As nove contas restantes não possuíam credencial local importável. O relatório sanitizado está em [evidencias-convex/native-migration.json](evidencias-convex/native-migration.json).
 
-Cada alteração lê um snapshot, executa a regra de domínio e envia somente os registros alterados. A mutation confere revisões por escopo, grava o delta e atualiza as revisões na mesma transação. Um conflito refaz a operação sobre um snapshot novo; após as tentativas limitadas, a API recebe um erro 409. As versões de calendário, os históricos de pareceres e os registros anteriores de auditoria continuam protegidos contra substituição.
+Uma verificação local com a cópia real abriu os 30 calendários ativos, a lixeira com outros 30, o parecer disponível e a primeira página de auditoria usando os handlers nativos. Backups anterior e posterior do laboratório e a exportação original permanecem em arquivos locais privados, ignorados pelo Git. A autorização temporária da migração foi removida do deployment após a conclusão. O marcador impede retomar a mesma importação com um manifesto diferente; os PDFs adiados precisarão de uma etapa específica de transferência, sem repetir a substituição dos dados estruturados.
 
-O backend experimental recusa consultas que ultrapassem 1.000 registros de uma coleção, históricos com mais de 5.000 versões e documentos codificados maiores que 800.000 bytes. Essas proteções produzem erro explícito e precisam ser consideradas na avaliação de volume e em uma futura estratégia de paginação. PDFs ficam no armazenamento de arquivos do Convex.
+## Arquitetura nativa
 
-As operações comuns não carregam os registros anteriores da auditoria: acrescentam somente os novos eventos. A tela de logs usa uma consulta própria de 100 entradas, com índice por campus para contas CAMPUS e índice global para ADMIN. Ela preserva os parâmetros `offset` da interface existente; para manter cada consulta limitada, aceita offsets de até 8.000. A tentativa de abrir uma página posterior produz erro explícito. Uma implementação de maior escala deve usar cursores e exportação em lotes. A existência de mais de 1.000 eventos de auditoria não bloqueia login, recuperação de senha, documentos ou edição dos calendários; a exportação integral ainda obedece ao limite geral de leitura deste experimento.
+O servidor `server-native.mjs` na porta 4183 serve somente os arquivos compilados de `dist/native`. Ele não abre PostgreSQL, não inicializa o Supabase e não atende `/api/*`: as chamadas do navegador seguem diretamente para as funções do Convex. A notação de caminhos da API anterior é mantida no cliente para preservar os fluxos da interface, sem um gateway HTTP Node no caminho de dados.
 
-## Configuração isolada
+O portal usa `ConvexAuthProvider` e `ConvexReactClient`. As assinaturas das queries atualizam o portal React quando os dados mudam. O editor também acompanha alterações remotas; o controle da revisão esperada continua necessário para impedir que outra sessão substitua silenciosamente uma edição local. Reatividade não equivale à mesclagem automática dos rascunhos de duas pessoas.
 
-O worktree entregue já contém `.env.convex.local` configurado para o deployment de teste e uma conta sintética criada. Para usá-lo, inicie com `pnpm run dev:convex` e consulte o login no arquivo local ignorado `.env.convex.test-login`. Não substitua a configuração já preparada pelo exemplo.
+| Responsabilidade                                           | Implementação                                                             |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Identidade e sessões                                       | Convex Auth; validação do membro ativo e da sessão no backend             |
+| Consultas do domínio                                       | `convex/native.ts`, com escopo de campus e dados seguros para a interface |
+| Alterações de calendário, catálogo, documentos e pareceres | Mutations Convex; leitura, regra de domínio e gravação na mesma transação |
+| Membros, convites e recuperação manual                     | `convex/nativeAuth.ts`                                                    |
+| Upload e armazenamento de PDF                              | Convex Storage, com tickets e validação dos bytes no backend              |
+| Geração de PDF e análise do histórico                      | Actions Node do próprio Convex, em `convex/nativeActions.ts`              |
+| Portal, editor e páginas de acesso                         | Build Vite nativo; servidor local apenas estático                         |
 
-Os passos abaixo servem para reproduzir a configuração em outra cópia isolada. No diretório dessa nova cópia:
+Cada mutation aplica as regras de negócio e grava somente os registros alterados dentro da mesma transação Convex. O salvamento verifica a versão esperada do calendário e a revisão da base institucional. Pareceres também verificam suas próprias revisões e exigem confirmação ao reaproveitar conclusões após mudanças. Versões anteriores de calendários, históricos de pareceres e auditoria permanecem protegidos contra substituição.
+
+Os registros da aplicação ficam em documentos individuais. As fotografias completas das versões anteriores ficam separadas de seus metadados, evitando transferir todas as fotografias a cada abertura. O codec preserva propriedades explicitamente `undefined` e nomes de campos reservados nos dados persistidos; as respostas públicas mantêm o formato JSON esperado pela interface.
+
+## Autenticação e autorização
+
+O login por senha é nativo do Convex Auth. As contas importadas mantêm os IDs e as credenciais compatíveis da aplicação anterior; a vinculação das 24 credenciais locais foi concluída e conferida. As sessões antigas foram preservadas como dados de origem e não se tornam sessões autenticadas do Convex: os usuários entram novamente no laboratório. Não há cadastro público irrestrito: a administração provisiona os membros e os convites autorizados.
+
+As funções conferem a identidade, a existência da sessão e o cadastro ativo. O perfil e o campus vêm do registro no backend, nunca dos parâmetros enviados pelo navegador. Contas CAMPUS acessam somente seus calendários e históricos; a revisão pela PROENS e a publicação de documentos institucionais exigem ADMIN. As respostas públicas não incluem salts, hashes de senha ou tokens administrativos.
+
+Login por senha, convites e redefinição manual de senha foram implementados no caminho nativo. **Google e envio de e-mail permanecem desativados enquanto faltarem as credenciais dos respectivos provedores.** Isso inclui o envio automático da recuperação de senha. A disponibilidade do login Google de uma conta que só usava esse provedor depende dessa configuração ou de uma redefinição de acesso pela administração.
+
+O deployment usa `JWT_PRIVATE_KEY`, `JWKS` e `SITE_URL` para Convex Auth. Essas variáveis pertencem ao ambiente de backend. `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET`, quando configuradas, também ficam no deployment. Nenhuma chave privada deve entrar em variáveis `VITE_*`, no bundle, em relatórios ou no Git.
+
+## Arquivos e geração de PDF
+
+Um usuário autenticado solicita um ticket de upload, envia ao Convex Storage e conclui a validação pelo backend. São conferidos o limite de 8 MB, o tamanho informado, a assinatura `%PDF-` e o SHA-256 calculado no servidor. O cadastro do documento ou do histórico consome o upload validado na mesma mutation que registra seus metadados, verificando dono, validade e uso anterior.
+
+Os downloads usam tokens aleatórios com apenas seu hash persistido e validade de um minuto. A validade é verificada em uma mutation a cada download. A limpeza preserva os anexos já vinculados e elimina os arquivos temporários gerados para exportação após o prazo de retenção.
+
+O calendário é renderizado em uma action Convex com Puppeteer e Chromium. O renderizador incorpora CSS e logomarca no documento e bloqueia requisições de rede da página. A preparação do Chromium considera ARM64 e x64, incluindo as bibliotecas compartilhadas; a preparação é compartilhada por chamadas concorrentes em um mesmo worker. A geração real no cloud retornou um PDF válido de 382.797 bytes; envio, leitura automática de histórico e exportação do parecer também foram exercitados no backend nativo.
+
+## Executar neste worktree
+
+Use a configuração isolada já existente em `.env.convex.local`; não copie o `.env` da instalação atual. O build nativo precisa de `CONVEX_URL` apontando para o deployment de laboratório e usa a porta indicada por `PORT`, normalmente 4183. A seleção do modo nativo é feita pelo próprio comando de build.
 
 ```sh
-cp .env.convex.example .env.convex.local
 pnpm install --frozen-lockfile
+pnpm run build:convex:native
+pnpm run start:convex:native
 ```
 
-Preencha o arquivo `.env.convex.local`, que é ignorado pelo Git:
+O primeiro comando de build atualiza os recursos de impressão e compila portal, editor, logs, ativação e recuperação de senha em `dist/native`. O segundo inicia apenas o servidor estático. Para reconstruir após mudanças na interface, execute novamente o build e recarregue o navegador.
 
-| Variável                                  | Uso                                                                   |
-| ----------------------------------------- | --------------------------------------------------------------------- |
-| `DENTEC_BACKEND=convex`                   | Seleciona explicitamente o adaptador experimental                     |
-| `CONVEX_URL`                              | URL HTTPS do deployment de desenvolvimento                            |
-| `DENTEC_CONVEX_BRIDGE_SECRET`             | Segredo aleatório de pelo menos 32 caracteres, igual ao do deployment |
-| `PORT=4183`                               | Porta própria do experimento                                          |
-| `DENTEC_PUBLIC_URL=http://127.0.0.1:4183` | Origem usada pelas APIs locais                                        |
-| `DENTEC_SETUP_EMAIL`                      | E-mail institucional opcional da primeira administração               |
-| `DENTEC_SETUP_CODE`                       | Código inicial opcional, de pelo menos 32 caracteres                  |
-| `DENTEC_PDF_BROWSER`                      | Caminho local do Google Chrome/Chromium para exportar PDF             |
-
-O projeto inicia com dados novos de teste e o cadastro de campi da aplicação. Não copie `.env` da instalação atual, credenciais de produção, snapshots institucionais ou bancos existentes para esse ambiente. O arquivo `.env.local` criado pelo CLI do Convex identifica o projeto para seus próprios comandos; o servidor Node carrega somente `.env.convex.local` nos comandos abaixo.
-
-Para rodar com recompilação do portal:
+As funções do backend são implantadas separadamente:
 
 ```sh
-pnpm run dev:convex
+pnpm run typecheck:convex
+pnpm run convex:push
 ```
 
-Para compilar e iniciar sem o observador de arquivos:
+O CLI usa a seleção de deployment da sua configuração Convex, normalmente em `.env.local`. Antes de implantar, confirme que o alvo continua sendo `oceanic-gazelle-652`, no projeto de laboratório. O servidor estático não implanta funções nem inicializa dados ao subir.
 
-```sh
-pnpm run build
-pnpm run start:convex
-```
+Os comandos `dev`, `start` e `db:*` continuam disponíveis para a referência PostgreSQL. `dev:convex` e `start:convex` pertencem à antiga etapa com adaptador Node e não iniciam o runtime nativo. Evite iniciar dois servidores na mesma porta.
 
-Esses comandos usam `node --env-file=.env.convex.local`. Também é possível injetar as variáveis diretamente no ambiente e executar `node server.mjs`. Quando `DENTEC_BACKEND=convex`, o servidor não lê `.env`. Se faltar URL ou segredo, ele encerra com erro de configuração, sem recorrer ao PostgreSQL.
+## Ponte legada
 
-Abra [http://127.0.0.1:4183](http://127.0.0.1:4183). Em uma instalação vazia, o terminal informa o código para criar a primeira conta ADMIN. Se `DENTEC_SETUP_EMAIL` estiver definido, use exatamente esse e-mail institucional. Esse código pertence à instalação de teste.
+A ponte por `DENTEC_CONVEX_BRIDGE_SECRET` foi mantida para compatibilidade com testes e ferramentas da primeira etapa. Ela não participa da autenticação, das consultas ou das mutations do portal nativo.
 
-O login Google e o envio de recuperação de senha são opcionais no desenvolvimento. Para testar Google, configure um cliente próprio com redirect URI `http://127.0.0.1:4183/api/google/callback`. A exportação de PDF usa o renderizador Node existente; no macOS, um caminho comum para `DENTEC_PDF_BROWSER` é `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`.
+A ponte foi desativada neste deployment pela remoção de `DENTEC_CONVEX_BRIDGE_SECRET`: uma chamada com o antigo segredo foi recusada. A configuração nativa continua funcionando sem ele. Preserve credenciais e backups somente em arquivos locais ignorados pelo Git, com acesso restrito.
 
-## Validação funcional
+## Validação e limites atuais
+
+Comandos de verificação:
 
 ```sh
 pnpm run format:check
 pnpm run lint
 pnpm run typecheck:convex
-pnpm run build
+pnpm run build:convex:native
 pnpm test
 pnpm run test:convex
 ```
 
-A suíte da versão de referência continua disponível no caminho PostgreSQL. Os testes de configuração do experimento verificam a seleção explícita, a porta separada, os requisitos de segurança do bridge e a recusa de iniciar no modo Convex sem sua configuração.
+A rodada local final executou **206 testes: 202 passaram, nenhum falhou e quatro foram ignorados**. O ensaio cloud de reatividade com duas sessões passou; os fluxos de autenticação, documentos, histórico, parecer e PDF foram verificados separadamente no Convex real. A suíte completa no modo `test:convex` repetiu o resultado: **206 testes, 202 aprovados, nenhum erro e quatro skips**. Os detalhes estão em [evidencias-convex/native-verification.json](evidencias-convex/native-verification.json). Os testes cloud exigem credenciais de uma conta sintética em ambiente descartável; a fixture anterior não deve ser usada após a importação dos dados reais.
 
-`test:convex` executa a mesma suíte, selecionando handlers Convex reais em bancos descartáveis do `convex-test` para as fixtures da aplicação. Isso inclui os três testes de navegador do portal e do editor. Os testes específicos de SQL continuam usando suas próprias fixtures; nenhum desses comandos precisa de credenciais Convex ou acessa o deployment na nuvem. O CI executa os dois modos.
+Os quatro skips da suíte local são a integração PostgreSQL externa, o Chromium serverless opcional e os dois ensaios browser que exigem um deployment nativo de teste. O Chromium do cloud e a reatividade foram exercitados em verificações próprias antes da substituição das fixtures pelo conjunto real.
 
-Na instalação Convex, os testes representativos devem cobrir:
+Os testes nativos executam handlers reais do Convex em bancos descartáveis do `convex-test`, incluindo autenticação e autorização, concorrência entre revisões, preservação das versões, revisão desatualizada, lixeira, arquivos, hashes, tickets e limpeza. Eles não precisam das credenciais da origem nem alteram o Supabase. A importação dos dados reais e o PDF no cloud exigem evidências próprias; o sucesso da suíte não comprova essas etapas.
 
-1. Criar a administração, entrar, sair e entrar novamente após reiniciar o servidor Node.
-2. Criar membros e contas CAMPUS; conferir acesso permitido e bloqueio entre campi.
-3. Criar um calendário, alterar períodos e eventos, salvar e reabrir em outra sessão.
-4. Abrir o mesmo calendário em duas sessões e conferir o controle de revisões concorrentes.
-5. Preservar e consultar versões anteriores; conferir análise e revisão pela PROENS.
-6. Cadastrar documentos e calendários anteriores em PDF; conferir upload e leitura com sessão autorizada.
-7. Gerar e baixar o PDF do calendário, mantendo nomes, layout e conteúdo da versão de referência.
-8. Conferir registros de auditoria, convites e recuperação de senha conforme os serviços opcionais configurados.
+Permanecem os limites explícitos do experimento: leitura de até **1.000 registros por coleção**, até **5.000 versões por histórico** e até **800.000 bytes por documento codificado**. O importador usa lotes, mas isso não remove os limites das consultas de uso normal. Eles ainda precisam de uma estratégia de paginação e avaliação de volume antes de uma adoção em produção.
 
-Registre separadamente os resultados executados, falhas encontradas e funcionalidades ainda sem validação. Compilar o portal ou publicar funções no Convex não comprova sozinho esses fluxos.
+A auditoria é acrescentada sem carregar todo seu histórico nas operações comuns. A tela de logs lê 100 entradas por página, com índice por campus ou global para ADMIN, e aceita offsets de até 8.000. A exportação integral continua sujeita aos limites de leitura. A arquitetura nativa desta etapa é um experimento funcional, com avaliação de escala e operação ainda necessária.
 
-## Evidência executada no deployment de desenvolvimento
+## Histórico: primeira etapa de persistência
 
-Em 23/10/2026, o script `scripts/convex-smoke.mjs` executou dez verificações com sucesso, passando pelas APIs HTTP reais em `http://127.0.0.1:4183`, pelo deployment [calendario-academico-convex-lab / oceanic-gazelle-652](https://dashboard.convex.dev/t/diretoria-de-ensino-tecnico-proens/calendario-academico-convex-lab/oceanic-gazelle-652) e pela persistência e armazenamento de arquivos do Convex. A URL do backend é `https://oceanic-gazelle-652.convex.cloud`. O relatório sanitizado, com horários e resultados por etapa, está em [evidencias-convex/smoke.json](evidencias-convex/smoke.json).
+O commit local `422667e` registrou a primeira integração: as APIs, a autenticação e o PDF passavam pelo servidor Node, com persistência e arquivos no Convex. O portal ainda não usava assinaturas reativas.
 
-| Verificação               | Resultado observado                                                                                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Instalação e autenticação | Conta ADMIN sintética criada; login e bootstrap autenticados; acesso anônimo bloqueado                                                                 |
-| Calendário de teste       | Criado com `purpose: test` e rótulos explícitos de laboratório                                                                                         |
-| Salvamento sem alteração  | Segundo envio idêntico preservou a versão 2 e informou `unchanged: true`                                                                               |
-| Concorrência              | Dois envios da mesma revisão produziram HTTP 200 e 409; somente um se tornou a versão 3                                                                |
-| Persistência independente | Novo adaptador conectado ao deployment confirmou a versão gravada e duas fotografias anteriores completas; leitura comum trouxe somente seus metadados |
-| PDF real                  | Chrome gerou PDF de 502.272 bytes com assinatura `%PDF-`                                                                                               |
-| Armazenamento Convex      | Ticket, upload pela API local e vinculação ao histórico foram concluídos; download autenticado foi idêntico byte a byte; anônimo recebeu 401           |
-| Parecer                   | 29 critérios sintéticos salvos e minuta exportada; alteração posterior do calendário bloqueou a exportação desatualizada com 409                       |
-| Sessão                    | Logout invalidou o acesso ao bootstrap, que passou a responder 401                                                                                     |
-
-O calendário sintético `a83b5fa5-130b-449a-a508-d8f79d4e7025` e o arquivo de histórico sintético `e2938956-85fb-4b58-b233-5a152e30d855` foram mantidos como fixtures para exploração. O calendário terminou na versão 4 e seu parecer está propositalmente desatualizado para demonstrar a proteção. O PDF gerado no ensaio foi anexado como uma fixture do histórico de 2026; ele não representa um calendário institucional anterior.
-
-O login e a senha aleatória ficam somente em `.env.convex.test-login`, com permissão `0600` e exclusão pelo `.gitignore`. O relatório não contém senha, cookie, código de instalação ou segredo do bridge. Nenhum dado institucional foi importado.
-
-Após reiniciar o servidor com os cookies isolados, uma verificação adicional confirmou login 200 com `dentec_convex_lab_session`, logout 200 limpando o mesmo cookie e recusa 401 ao reutilizar a sessão encerrada. Esse resultado está em `followUpChecks` no relatório. Não foi criado outro calendário nessa verificação.
-
-Para repetir o ensaio no mesmo deployment, com o servidor já iniciado:
-
-```sh
-node scripts/convex-smoke.mjs --allow-test-data
-```
-
-O script lê exclusivamente `.env.convex.local`, exige o modo Convex, a origem local na porta 4183 e o deployment esperado `oceanic-gazelle-652`. Sem a opção de autorização de dados sintéticos, ele recusa as escritas. Uma execução nova cria outro calendário sintético e atualiza o relatório. Para outro deployment de laboratório, é necessário fornecer explicitamente `--expected-deployment=nome-do-deployment` e uma configuração isolada correspondente.
-
-Esse ensaio valida o caminho HTTP → Convex → HTTP e a exportação real de PDF. Ele não substitui a verificação visual da navegação no portal React. Reatividade do React e mudança de autenticação continuam fora do escopo deste experimento controlado de persistência.
-
-## Referência PostgreSQL
-
-Sem `DENTEC_BACKEND`, o servidor preserva a configuração PostgreSQL de referência. Os comandos `dev`, `start` e `db:*` mantêm seu propósito original e não representam o experimento Convex. Isso permite executar a suíte de referência sem alterar suas expectativas de configuração.
-
-Para encerrar o servidor experimental, use Ctrl+C no seu terminal. O worktree pode ser mantido para comparar os resultados com a versão atual.
+Em 23/10/2026, `scripts/convex-smoke.mjs` executou dez verificações desse caminho HTTP → Node → Convex, com dados sintéticos, salvamento, concorrência, versões, revisão e PDF. O relatório preservado está em [evidencias-convex/smoke.json](evidencias-convex/smoke.json). Essa evidência descreve a etapa antiga, não a autenticação e as APIs nativas atuais. Suas fixtures sintéticas podem ser substituídas pela importação autorizada dos dados reais no deployment de laboratório.

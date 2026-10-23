@@ -8,10 +8,8 @@ if (token) {
   $('help').textContent = 'Escolha uma nova senha para acessar o calendário.';
 } else {
   $('request-form').hidden = true;
-  fetch('/api/password/options')
-    .then(async (r) => {
-      if (!r.ok) throw Error();
-      const options = await r.json();
+  api('/api/password/options')
+    .then(async (options) => {
       if (options.emailEnabled) {
         $('request-form').hidden = false;
         return;
@@ -35,13 +33,7 @@ async function submit(form, path, body) {
   button.disabled = true;
   $('message').textContent = 'Aguarde…';
   try {
-    const r = await fetch(path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Dentec-Request': '1' },
-      body: JSON.stringify(body),
-    });
-    const data = await r.json();
-    if (!r.ok) throw Error(data.error || 'Não foi possível concluir.');
+    const data = await api(path, 'POST', body);
     $('message').textContent = data.message;
     return true;
   } catch (e) {
@@ -69,3 +61,4 @@ $('reset-form').onsubmit = async (e) => {
     $('reset-form').hidden = true;
   }
 };
+import { api } from './portal/api.js';

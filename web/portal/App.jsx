@@ -9,7 +9,7 @@ import AdministrationPanel from './AdministrationPanel.jsx';
 import DocumentsPanel from './DocumentsPanel.jsx';
 import ReviewPanel from './ReviewPanel.jsx';
 
-function Workspace({ info, status, onRefresh, notify }) {
+export function Workspace({ info, status, onRefresh, notify, documentsData, trashData }) {
   const [page, setPage] = useState('calendars');
   const [filter, setFilter] = useState('');
   const isAdmin = info.user.role === 'ADMIN';
@@ -85,6 +85,7 @@ function Workspace({ info, status, onRefresh, notify }) {
           onFilter={setFilter}
           onRefresh={onRefresh}
           notify={notify}
+          liveTrash={trashData}
         />
       </div>
       <section id="institution" className="page" hidden={page !== 'institution'}>
@@ -92,6 +93,7 @@ function Workspace({ info, status, onRefresh, notify }) {
           isAdmin={isAdmin}
           onChanged={onRefresh}
           refreshKey={info.catalogue.revision}
+          liveData={documentsData}
         />
         <CataloguePanel
           catalogue={info.catalogue}

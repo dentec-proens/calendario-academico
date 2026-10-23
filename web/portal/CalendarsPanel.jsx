@@ -16,7 +16,15 @@ export function updatedLabel(value) {
     : 'Data não disponível';
 }
 
-export default function CalendarsPanel({ info, isAdmin, filter, onFilter, onRefresh, notify }) {
+export default function CalendarsPanel({
+  info,
+  isAdmin,
+  filter,
+  onFilter,
+  onRefresh,
+  notify,
+  liveTrash,
+}) {
   const [campusId, setCampusId] = useState('');
   const [year, setYear] = useState('2027');
   const [trash, setTrash] = useState([]);
@@ -27,6 +35,11 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, onRefr
   const calendars = info.calendars.filter((c) => !filter || c.campusId === filter);
 
   useEffect(() => {
+    if (liveTrash !== undefined) {
+      setTrash(liveTrash.calendars);
+      setTrashLoading(false);
+      return;
+    }
     const controller = new AbortController();
     setTrashLoading(true);
     api('/api/calendar-trash', 'GET', undefined, { signal: controller.signal })
@@ -38,7 +51,7 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, onRefr
         if (!controller.signal.aborted) setTrashLoading(false);
       });
     return () => controller.abort();
-  }, [info, notify]);
+  }, [info, notify, liveTrash]);
 
   function createCalendar(event) {
     event.preventDefault();

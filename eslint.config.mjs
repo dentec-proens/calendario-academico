@@ -51,7 +51,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['server.mjs', '*.config.mjs', 'src/**/*.mjs', 'scripts/**/*.mjs', 'test/**/*.mjs'],
+    files: ['server*.mjs', '*.config.mjs', 'src/**/*.mjs', 'scripts/**/*.mjs', 'test/**/*.mjs'],
     languageOptions: { globals: globals.node },
   },
   {
