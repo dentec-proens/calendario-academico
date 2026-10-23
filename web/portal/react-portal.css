@@ -56,3 +56,53 @@
     justify-content: flex-start;
   }
 }
+
+#root .online-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  padding: 16px;
+  background: #edf7f1;
+  border: 1px solid #7c9c88;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+#root .online-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+#root .online-filters label {
+  flex: 1 1 240px;
+}
+#root .online-table-scroll {
+  overflow-x: auto;
+}
+#root .online-users table {
+  width: 100%;
+  border-collapse: collapse;
+}
+#root .online-users th,
+#root .online-users td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #acbab1;
+}
+#root .online-users caption {
+  text-align: left;
+  margin-bottom: 12px;
+}
+#root .online-users td small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+#root .online-status {
+  color: #166534;
+  font-weight: 700;
+  white-space: nowrap;
+}
+#root .online-status::before {
+  content: '●';
+  margin-right: 6px;
+}

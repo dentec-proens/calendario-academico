@@ -4,14 +4,15 @@ import type { Bootstrap, Notify, Status } from '../native/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { usePaginatedQuery } from 'convex/react';
 import { functions } from '../native/client.ts';
-import { Building2, CalendarDays, ClipboardCheck, Library } from 'lucide-react';
+import { Building2, CalendarDays, ClipboardCheck, Library, Users } from 'lucide-react';
 import CalendarsPanel from './CalendarsPanel.jsx';
 import CataloguePanel from './CataloguePanel.jsx';
+import OnlineUsersPanel from './OnlineUsersPanel.tsx';
 import AdministrationPanel from './AdministrationPanel.jsx';
 import DocumentsPanel from './DocumentsPanel.jsx';
 import ReviewPanel from './ReviewPanel.jsx';
 
-type PageId = 'calendars' | 'institution' | 'review-panel' | 'administration';
+type PageId = 'calendars' | 'institution' | 'review-panel' | 'administration' | 'online-users';
 interface WorkspaceProps {
   info: Bootstrap;
   status: Status;
@@ -59,6 +60,7 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
       ? [
           ['review-panel', 'Revisão do parecer', ClipboardCheck] as [PageId, string, LucideIcon],
           ['administration', 'Campi e contas', Building2] as [PageId, string, LucideIcon],
+          ['online-users', 'Usuários online', Users] as [PageId, string, LucideIcon],
         ]
       : []),
   ];
@@ -133,6 +135,7 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
       </section>
       {isAdmin ? (
         <>
+          {page === 'online-users' ? <OnlineUsersPanel /> : null}
           <div hidden={page !== 'review-panel'}>
             <ReviewPanel />
           </div>

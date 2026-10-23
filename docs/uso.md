@@ -61,3 +61,9 @@ O PDF de teste é identificado como tal. Um calendário definitivo com pendênci
 **Excluir calendário** move o registro para a lixeira após confirmação. Ele sai das listas de trabalho e revisão; dados, versões e documentos são preservados. A exclusão exige a versão atual. **Restaurar calendário** devolve o registro ao trabalho, dentro do mesmo escopo de acesso. Não há descarte físico automático.
 
 **Histórico de alterações** consulta operações salvas com autoria e contexto autorizado. Campos em edição que ainda não foram gravados não aparecem no histórico.
+
+## Usuários online
+
+A aba **Usuários online**, exclusiva do ADMIN, mostra nome, e-mail, campus e perfil das pessoas conectadas. A lista e os totais de pessoas e campi se atualizam automaticamente; a busca por nome/e-mail e o filtro por campus restringem a lista.
+
+A presença é acompanhada no portal e no editor de calendários. Cada pessoa conta uma vez, mesmo com várias abas ou dispositivos. Fechar a última aba ou sair da conta encerra a presença; em perda abrupta de conexão, a remoção ocorre após cerca de 90 segundos sem confirmação. **Última presença: Agora** indica conexão recente, não interação contínua com o sistema. Uma sessão de login válida, sozinha, não torna a pessoa online.

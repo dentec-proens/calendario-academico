@@ -19,6 +19,7 @@ import type * as native from "../native.js";
 import type * as nativeActions from "../nativeActions.js";
 import type * as nativeAuth from "../nativeAuth.js";
 import type * as nativeFiles from "../nativeFiles.js";
+import type * as presence from "../presence.js";
 import type * as repository from "../repository.js";
 import type * as validators from "../validators.js";
 
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   nativeActions: typeof nativeActions;
   nativeAuth: typeof nativeAuth;
   nativeFiles: typeof nativeFiles;
+  presence: typeof presence;
   repository: typeof repository;
   validators: typeof validators;
 }>;
@@ -70,4 +72,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  presence: import("@convex-dev/presence/_generated/component.js").ComponentApi<"presence">;
+};

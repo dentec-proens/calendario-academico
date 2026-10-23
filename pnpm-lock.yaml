@@ -172,6 +172,9 @@ importers:
       '@convex-dev/auth':
         specifier: 0.0.96
         version: 0.0.96(@auth/core@0.41.1)(convex@1.47.0(react@19.3.1))(react@19.3.1)
+      '@convex-dev/presence':
+        specifier: 0.4.0
+        version: 0.4.0(convex@1.47.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@noble/hashes':
         specifier: 2.0.1
         version: 2.0.1
@@ -256,6 +259,26 @@ packages:
       react: ^18.2.0 || ^19.0.0-0
     peerDependenciesMeta:
       react:
+        optional: true
+
+  '@convex-dev/batch-worker@0.2.2':
+    resolution: {integrity: sha512-3knigElzTVhWw1sN28EYkGBTdrJZ03vMj2PJPuFq3V0Tg41i7tcv/EWDBFQWcUaKzBWWVw693hcJtxCF3CRtEw==}
+    peerDependencies:
+      convex: ^1.36.1
+      react: ^18.3.1 || ^19.0.0
+
+  '@convex-dev/presence@0.4.0':
+    resolution: {integrity: sha512-T1f2aHyS2D2dxvMnvY+qSJBIRG0W7ph8+mgOvZif52JLlLNscCHTangAgNWR4VLYGhXFFDxwSSpdh7vxzA/hPQ==}
+    peerDependencies:
+      convex: ^1.36.1
+      expo-crypto: '>=14.1.0'
+      react: ~18.3.1 || ^19.0.0
+      react-dom: ~18.3.1 || ^19.0.0
+      react-native: '>=0.79.0'
+    peerDependenciesMeta:
+      expo-crypto:
+        optional: true
+      react-native:
         optional: true
 
   '@esbuild/aix-ppc64@0.27.0':
@@ -1696,6 +1719,18 @@ snapshots:
       server-only: 0.0.1
     optionalDependencies:
       react: 19.3.1
+
+  '@convex-dev/batch-worker@0.2.2(convex@1.47.0(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      convex: 1.47.0(react@19.3.1)
+      react: 19.3.1
+
+  '@convex-dev/presence@0.4.0(convex@1.47.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@convex-dev/batch-worker': 0.2.2(convex@1.47.0(react@19.3.1))(react@19.3.1)
+      convex: 1.47.0(react@19.3.1)
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
 
   '@esbuild/aix-ppc64@0.27.0':
     optional: true
