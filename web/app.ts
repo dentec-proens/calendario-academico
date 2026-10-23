@@ -90,6 +90,7 @@ let analyzedHistory: History | null = null;
 let record: CalendarRecord;
 let institutional: CalendarRecord['institutionalEvents'] = [];
 let isAdmin = false;
+let readOnly = false;
 const restoringHistories = new Set<string>();
 const calendarId = new URLSearchParams(location.search).get('id') ?? '';
 const campusEvents = () => campusInstitutionalEvents(institutional, state);
@@ -107,6 +108,7 @@ const message = (text: string, error = false) => {
 };
 
 function act(fn: () => void) {
+  if (readOnly) return;
   try {
     fn();
   } catch (e) {
@@ -838,7 +840,7 @@ if (modelContext?.registerTool)
 
 function updateRecordHeading() {
   if (!record) return;
-  $('make-definitive').hidden = record.purpose !== 'test';
+  $('make-definitive').hidden = readOnly || record.purpose !== 'test';
   $('record-title').textContent = record.name;
   $('record-heading').textContent =
     `${record.purpose === 'test' ? 'Teste · PDF identificado como teste' : 'Definitivo · sujeito à conferência e revisão'} · ${record.courses}${record.classes ? ' · ' + record.classes : ''}${record.shifts ? ' · ' + record.shifts : ''}`;
@@ -851,10 +853,7 @@ async function openRecord() {
   }
   try {
     const [status, opened] = await Promise.all([accounts.status(), calendars.get(calendarId)]);
-    if (status.user?.role === 'PARECERISTA') {
-      location.href = '/?page=review-panel';
-      return;
-    }
+    readOnly = status.user?.role === 'PARECERISTA';
     record = opened;
     isAdmin = status.user?.role === 'ADMIN';
     state = record.state;
@@ -864,6 +863,15 @@ async function openRecord() {
     updateRecordHeading();
     showHistory();
     render();
+    if (readOnly) {
+      const back = document.querySelector<HTMLAnchorElement>('.portal-back')!;
+      back.href = '/?page=review-panel';
+      back.textContent = '← Voltar às revisões e pareceres';
+      document.querySelector<HTMLElement>('.editor-history')!.hidden = true;
+      message('Consulta em modo somente leitura. As alterações são feitas pelo campus.');
+      if (!new URLSearchParams(location.search).has('section'))
+        showEditorView('calendar', false, false);
+    }
     observeRecord();
     if (location.hash === '#history-area' && !new URLSearchParams(location.search).has('section'))
       openHistory();
@@ -971,6 +979,7 @@ function showHistory() {
         })
         .join('')
     : '<li>Envie o calendário anterior para consultar seus feriados e eventos locais.</li>';
+  applyReadOnly();
 }
 
 $('history-list').addEventListener('submit', (event) => {
@@ -1109,7 +1118,52 @@ let saveStatus: AutosaveStatus | 'idle' = 'idle';
 let saveStatusData: { updatedAt?: string; message?: string; status?: number } | undefined;
 let nativeConnected = true;
 
+function applyReadOnly() {
+  if (!readOnly) return;
+  const readActions = new Set([
+    'save',
+    'print',
+    'download-pdf',
+    'download-pdf-top',
+    'export-calendar',
+  ]);
+  document
+    .querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLButtonElement
+    >('main input, main select, main textarea, main button')
+    .forEach((control) => {
+      if (
+        !(control instanceof HTMLButtonElement) ||
+        (!control.dataset.view && !readActions.has(control.id))
+      )
+        control.disabled = true;
+    });
+}
+
+// A read-only calendar can navigate and export, but cannot submit editing forms.
+document.addEventListener(
+  'submit',
+  (event) => {
+    if (!readOnly || !(event.target instanceof HTMLFormElement) || !event.target.closest('main'))
+      return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  },
+  { capture: true },
+);
+
 function refreshSaveStatus() {
+  if (readOnly) {
+    $('autosave-status').textContent = nativeConnected
+      ? 'Modo somente leitura. Alterações do campus são atualizadas automaticamente.'
+      : 'Modo somente leitura. Sem conexão; aguarde para receber alterações do campus.';
+    $('autosave-status').dataset.state = 'readonly';
+    $('autosave-status').className = nativeConnected ? '' : 'notice';
+    $('server-save').hidden = true;
+    $('unapplied-status').hidden = true;
+    applyReadOnly();
+    return;
+  }
   const outdatedBase = record && record.catalogueRevision !== record.currentCatalogueRevision;
   const labels = {
     idle: 'Salvamento automático ativo.',
@@ -1156,7 +1210,7 @@ function refreshSaveStatus() {
 }
 
 const autosaver = createAutosaver({
-  isDirty: () => !!record && dirty,
+  isDirty: () => !readOnly && !!record && dirty,
   snapshot: () => ({
     version: record.version,
     catalogueRevision: record.currentCatalogueRevision,
@@ -1192,7 +1246,7 @@ const stopConnectionSubscription = subscribeNativeConnection((connected) => {
 });
 window.addEventListener('pagehide', () => stopConnectionSubscription());
 $('server-save').onclick = () => {
-  if (converting) return;
+  if (readOnly || converting) return;
   if (!record) {
     message('Abra um calendário registrado.', true);
     return;
@@ -1200,7 +1254,7 @@ $('server-save').onclick = () => {
   void autosaver.save(true);
 };
 $('make-definitive').onclick = () => {
-  if (!record || record.purpose !== 'test' || converting) return;
+  if (readOnly || !record || record.purpose !== 'test' || converting) return;
   void confirmAction({
     title: 'Tornar calendário definitivo?',
     description:
@@ -1242,7 +1296,7 @@ $('make-definitive').onclick = () => {
 
 $('history-form').onsubmit = async (e) => {
   e.preventDefault();
-  if (!record) return;
+  if (readOnly || !record) return;
   $('history-submit').disabled = true;
   try {
     const file = $('history-file').files?.[0];

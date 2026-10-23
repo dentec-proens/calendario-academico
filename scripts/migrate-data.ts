@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { unzipSync, strFromU8 } from 'fflate';
 import {
   chmodSync,
   copyFileSync,
@@ -26,20 +27,16 @@ import { createCanonicalPlan } from '../migration/canonical.ts';
 import type { Document, MigrationPlan, Snapshot } from '../migration/types.ts';
 
 export function readSnapshot(path: string): Snapshot {
-  const files = execFileSync('unzip', ['-Z1', path], {
-    encoding: 'utf8',
-    maxBuffer: 10 * 1024 * 1024,
-  })
-    .trim()
-    .split('\n');
+  const archive = unzipSync(readFileSync(path), {
+    filter: ({ name }) =>
+      /^([A-Za-z_][A-Za-z0-9_]*)\/documents\.jsonl$/.test(name) || name.startsWith('_storage/'),
+  });
+  const files = Object.keys(archive);
   const snapshot: Snapshot = {};
   for (const name of files) {
     const match = /^([A-Za-z_][A-Za-z0-9_]*)\/documents\.jsonl$/.exec(name);
     if (!match) continue;
-    const text = execFileSync('unzip', ['-p', path, name], {
-      encoding: 'utf8',
-      maxBuffer: 100 * 1024 * 1024,
-    });
+    const text = strFromU8(archive[name]!);
     snapshot[match[1]] = text
       .split('\n')
       .filter(Boolean)
@@ -56,7 +53,7 @@ export function readSnapshot(path: string): Snapshot {
   for (const row of snapshot._storage) {
     const filename = stored.find((name) => name.split('/').at(-1)?.split('.')[0] === row._id);
     if (!filename) throw Error('O backup não contém todos os bytes do Storage.');
-    const bytes = execFileSync('unzip', ['-p', path, filename], { maxBuffer: 100 * 1024 * 1024 });
+    const bytes = archive[filename]!;
     const digest = createHash('sha256').update(bytes).digest();
     if (
       bytes.length !== row.size ||

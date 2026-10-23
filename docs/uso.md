@@ -12,6 +12,8 @@ O editor está dividido em **Dados gerais**, **Períodos e avaliações**, **Sá
 
 ADMIN acessa todos os campi, gerencia contas e base institucional e registra a revisão técnico-pedagógica. CAMPUS consulta a base e cria, altera, exporta, exclui e restaura calendários da unidade autorizada. PARECERISTA consulta os calendários de todos os campi e as referências publicadas, registra revisões e emite pareceres, sem alterar calendários, base institucional ou contas. A autorização é conferida no backend.
 
+No painel de revisão, **Abrir calendário em outra aba** permite ao PARECERISTA consultar o calendário anual, os dados, eventos, PDFs anteriores e pendências em modo somente leitura. A navegação, a impressão e a exportação permanecem disponíveis; os controles de edição e o salvamento ficam desativados. Alterações recebidas do campus atualizam a consulta automaticamente.
+
 Em **Contas e acessos**, o ADMIN pode escolher o perfil ao lado de cada conta e clicar em **Salvar perfil**. CAMPUS exige uma unidade ativa; ADMIN e PARECERISTA têm escopo institucional. A troca preserva a senha, fica registrada nos logs e encerra as sessões do usuário, que deverá entrar novamente. O sistema impede retirar o perfil do último administrador ativo. As contas existentes conservam seu perfil até uma alteração explícita.
 
 Em **Calendários → Novo calendário**, informe campus, ano, formas de oferta, organização, cursos e, opcionalmente, turmas e turnos. O nome é preenchido a partir de campus e ano. Um calendário pode combinar Técnico integrado, Técnico subsequente, Graduação e Pós-graduação, com etapas próprias por oferta.
