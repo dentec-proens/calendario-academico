@@ -22,7 +22,7 @@
         <strong>PROENS - Pró-Reitoria de Ensino</strong>
         <div class="muted">Instituto Federal do Paraná</div>
       </div>
-      <span class="badge">Versão local · rascunho</span>
+      <span class="badge">Em elaboração</span>
     </header>
     <main>
       <div class="editor-navigation" aria-label="Navegação do calendário">
@@ -41,8 +41,7 @@
           <button id="open-history">Enviar calendário anterior</button
           ><button id="download-pdf-top">Baixar calendário em PDF</button
           ><button id="make-definitive" type="button" hidden>Tornar definitivo</button
-          ><button id="server-save">Salvar no sistema</button
-          ><button id="load" class="secondary">Abrir calendário salvo</button
+          ><button id="load" class="secondary">Importar cópia</button
           ><input type="file" id="file" accept=".json,application/json" hidden /><button
             id="save"
             class="secondary"
@@ -57,12 +56,20 @@
         concede aprovação oficial.
       </p>
       <div id="message" role="status" aria-live="polite"></div>
-      <p id="autosave-status" role="status" aria-live="polite">
-        Alterações aplicadas são salvas automaticamente após uma breve pausa.
-      </p>
+      <div class="autosave-panel" aria-label="Salvamento do calendário">
+        <p id="autosave-status" role="status" aria-live="polite" data-state="idle">
+          Salvamento automático ativo.
+        </p>
+        <button id="server-save" class="secondary" type="button" hidden>Tentar novamente</button>
+        <p id="unapplied-status" class="help" role="status" aria-live="polite" hidden>
+          Alterações não aplicadas. Use Adicionar ou Aplicar no formulário para incluí-las no
+          calendário.
+        </p>
+      </div>
       <p class="help">
         Use Adicionar evento ou Aplicar para incluir o preenchimento no calendário. Campos ainda em
-        edição não são enviados automaticamente. Salvar no sistema antecipa o salvamento.
+        edição não são enviados automaticamente. Após aplicar, acompanhe a confirmação do salvamento
+        acima.
       </p>
       <div class="workspace sequential-editor">
         <section class="main-column">
@@ -455,8 +462,8 @@
     <footer>
       Assistente de Calendário PROENS
       <span
-        >Use Salvar no sistema para registrar uma versão. Baixar cópia gera um rascunho dos dados
-        locais.</span
+        >As alterações aplicadas são salvas automaticamente. Baixar cópia guarda os dados aplicados
+        ao calendário.</span
       >
     </footer>
     <script type="module" src="/app.js"></script>

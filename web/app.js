@@ -34,7 +34,13 @@ import { categories, eventCategory, categoryLabel } from '/categories.mjs';
 import { datesBetween } from '/calendar.mjs';
 import { monthSaturdays, saturdayEvents } from '/saturdays.mjs';
 import { proensLayout } from '/print.mjs';
-import { nativeApi, nativeEnabled, subscribeNative, downloadLink } from './native/client.js';
+import {
+  nativeApi,
+  nativeEnabled,
+  subscribeNative,
+  subscribeNativeConnection,
+  downloadLink,
+} from './native/client.js';
 
 const $ = (id) => document.getElementById(id);
 const eventFormHome = document.createComment('event-form-home');
@@ -123,6 +129,10 @@ function interval(start, end) {
 
 function render({ recalculate = false } = {}) {
   const activeActivity = inlineActivityId;
+  const draftModalities = unappliedForms.has('event-form')
+    ? [...document.querySelectorAll('input[name=event-modality]:checked')].map((el) => el.value)
+    : null;
+  const draftTeacherDay = unappliedForms.has('teacher-day') ? $('teacher-day-date')?.value : null;
   if (activeActivity) restoreEventForm();
   // Loading a saved record is read-only. Recalculate dates only after the user
   // applies an edit; current institutional rules may differ from its last save.
@@ -137,7 +147,7 @@ function render({ recalculate = false } = {}) {
         changes
           .map((p) => p.name + ' — ' + dateLabel(p.end) + ' (' + p.targetDays + ' dias letivos)')
           .join('; ') +
-        '. Salve no sistema.';
+        '. Confira o indicador de salvamento.';
     } else
       $('period-auto-status').textContent = periods.some((p) => p.targetDays)
         ? 'Metas de dias letivos ativas: términos recalculados ao alterar os impedimentos.'
@@ -167,7 +177,7 @@ function render({ recalculate = false } = {}) {
     state.secondSemesterIntake === false ? 'no' : state.secondSemesterIntake === true ? 'yes' : '';
 
   if (recalculate && dirty)
-    message('Alteração aplicada. O salvamento automático ocorrerá após uma breve pausa.');
+    message('Alteração aplicada. Acompanhe o salvamento automático no indicador.');
   $('selected-modalities').textContent =
     'Forma de oferta/nível: ' +
     calendarModalities(state)
@@ -194,7 +204,7 @@ function render({ recalculate = false } = {}) {
     .filter(Boolean)
     .map(
       (m) =>
-        `<label class="check"><input type="checkbox" name="event-modality" value="${m}" checked>${escape(modalityLabels[m])}</label>`,
+        `<label class="check"><input type="checkbox" name="event-modality" value="${m}" ${!draftModalities || draftModalities.includes(m) ? 'checked' : ''}>${escape(modalityLabels[m])}</label>`,
     )
     .join('');
   const selected = $('event-requirement').value;
@@ -232,7 +242,7 @@ function render({ recalculate = false } = {}) {
                 (e.assessmentAutoStart ? ' · ajuste automático' : ''),
             )
             .join('; ') +
-          (dirty ? ' · Salve no sistema para guardar.' : '')
+          (dirty ? ' · Alterações locais; confira o indicador de salvamento.' : '')
         : r.required === false
           ? 'Opcional — preencha apenas se houver previsão no calendário.'
           : 'Pendente de data e fonte'
@@ -332,7 +342,7 @@ function render({ recalculate = false } = {}) {
     issues.unshift([
       'Atualizado',
       'Base institucional',
-      `Esta tela incorpora a revisão ${record.currentCatalogueRevision}. O último salvamento usava a revisão ${record.catalogueRevision}. Confira o impacto e salve nova versão.`,
+      `Esta tela incorpora a revisão ${record.currentCatalogueRevision}. O último salvamento usava a revisão ${record.catalogueRevision}. Confira o impacto e use Confirmar atualização da base para registrar a nova revisão neste calendário.`,
     ]);
   $('total').textContent = result ? result.total : '—';
   $('goal').textContent = result
@@ -390,12 +400,14 @@ function render({ recalculate = false } = {}) {
         )
         .join('')
     : '<li class="help">Nenhum evento registrado. Confira a base para este ano.</li>';
+  if (draftTeacherDay !== null && $('teacher-day-date'))
+    $('teacher-day-date').value = draftTeacherDay;
   if (record?.purpose !== 'test') {
     issues.push([
       !dirty && record?.readiness?.ready ? 'Atendido' : 'Pendente',
       'Geração definitiva',
       dirty
-        ? 'Salve as alterações para atualizar a conferência.'
+        ? 'A conferência será atualizada após a confirmação do salvamento. Confira o indicador de salvamento.'
         : record?.readiness?.ready
           ? 'Conferência registrada. Não representa aprovação oficial.'
           : 'Cópia da proposta disponível para análise. A validação depende da revisão da PROENS.',
@@ -428,6 +440,7 @@ function render({ recalculate = false } = {}) {
   renderHistorySuggestions();
   if (activeActivity) openInlineActivity(activeActivity);
   if (recalculate && dirty && !converting) autosaver.schedule();
+  refreshSaveStatus();
 }
 
 function sync() {
@@ -472,6 +485,7 @@ $('week-form').addEventListener('submit', (e) => {
     });
     dirty = true;
     render({ recalculate: true });
+    markAppliedForm('week-form');
     message('Semana letiva confirmada. Contagem atualizada.');
   });
 });
@@ -512,7 +526,7 @@ $('period-form').addEventListener('submit', (e) => {
     render({ recalculate: true });
     message(
       previous
-        ? 'Período atualizado. Confira as etapas e os eventos relacionados. O salvamento automático registrará a alteração.'
+        ? 'Período atualizado. Confira as etapas, os eventos relacionados e o indicador de salvamento.'
         : 'Período adicionado.',
     );
   });
@@ -585,6 +599,7 @@ $('event-form').addEventListener('submit', (e) => {
     $('historical-event-source').hidden = true;
     dirty = true;
     render({ recalculate: true });
+    markAppliedForm('event-form');
     document
       .querySelectorAll('input[name=event-modality]')
       .forEach((el) => (el.checked = modalities.includes(el.value)));
@@ -599,7 +614,7 @@ $('event-form').addEventListener('submit', (e) => {
         dateLabel(start) +
         ' a ' +
         dateLabel(end) +
-        '. Os dados continuam visíveis. Clique em Salvar no sistema para guardar.',
+        '. Os dados continuam visíveis. Acompanhe o salvamento automático no indicador.',
     );
   });
 });
@@ -645,7 +660,7 @@ document.addEventListener('click', (e) => {
     state.events = state.events.filter((ev) => ev.id !== b.dataset.removeEvent);
     dirty = true;
     render({ recalculate: true });
-    message('Evento removido do rascunho. Salve no sistema para confirmar a exclusão.');
+    message('Evento removido do rascunho. Acompanhe a confirmação do salvamento no indicador.');
   }
 });
 $('save').onclick = () => {
@@ -762,7 +777,7 @@ $('file').onchange = async (e) => {
     dirty = true;
     sync();
     render({ recalculate: true });
-    message('Rascunho importado. Clique em Salvar no sistema para registrar uma versão.');
+    message('Rascunho importado. Acompanhe o salvamento automático no indicador.');
   } catch (err) {
     message('Não foi possível abrir: ' + err.message, true);
   } finally {
@@ -771,8 +786,9 @@ $('file').onchange = async (e) => {
 };
 $('print').onclick = async () => {
   try {
+    await autosaver.save();
     if (dirty)
-      throw Error('Salve no sistema antes de imprimir, para identificar corretamente a versão.');
+      throw Error('O salvamento ainda não foi confirmado. Confira o indicador antes de imprimir.');
     const fresh = await api('/api/calendars/' + calendarId);
     if (
       fresh.version !== record.version ||
@@ -790,7 +806,7 @@ $('print').onclick = async () => {
   }
 };
 window.addEventListener('beforeunload', (e) => {
-  if (dirty) {
+  if (dirty || unappliedInputs) {
     e.preventDefault();
     e.returnValue = '';
   }
@@ -849,17 +865,37 @@ async function openRecord() {
 let stopRecordSubscription;
 let unappliedInputs = false;
 let saveInFlight = false;
+const unappliedForms = new Set();
+const appliedFormIds = new Set([
+  'week-form',
+  'period-form',
+  'event-form',
+  'saturday-form',
+  'vacation-form',
+  'history-form',
+]);
 
-document.addEventListener('input', () => {
+function markAppliedForm(formId) {
+  unappliedForms.delete(formId);
+  unappliedInputs = unappliedForms.size > 0;
+  refreshSaveStatus();
+}
+
+function trackUnappliedForm(event) {
+  const formId =
+    event.target.id === 'teacher-day-date' ? 'teacher-day' : event.target.closest('form')?.id;
+  if (
+    (!appliedFormIds.has(formId) && formId !== 'teacher-day') ||
+    event.target.id === 'saturday-month'
+  )
+    return;
+  unappliedForms.add(formId);
   unappliedInputs = true;
-});
-document.addEventListener(
-  'submit',
-  () => {
-    unappliedInputs = false;
-  },
-  true,
-);
+  refreshSaveStatus();
+}
+
+document.addEventListener('input', trackUnappliedForm);
+document.addEventListener('change', trackUnappliedForm);
 
 function observeRecord() {
   stopRecordSubscription?.();
@@ -876,7 +912,7 @@ function observeRecord() {
       if (dirty || unappliedInputs || saveInFlight || converting) {
         if (!saveInFlight)
           message(
-            'O calendário ou a base institucional mudou em outra sessão. Suas alterações foram preservadas. Baixe uma cópia antes de reabrir; o salvamento verificará a versão atual.',
+            'O calendário ou a base institucional mudou em outra sessão. Suas alterações foram preservadas. A cópia inclui somente alterações já aplicadas; confira os campos em edição antes de reabrir. O salvamento verificará a versão atual.',
             true,
           );
         return;
@@ -968,7 +1004,7 @@ document.addEventListener('click', async (e) => {
     $('historical-event-source').hidden = true;
     dirty = true;
     render({ recalculate: true });
-    message('Decisão sobre o evento atualizada. Salve no sistema.');
+    message('Decisão sobre o evento aplicada. Acompanhe o salvamento automático no indicador.');
     return;
   }
   const candidateButton = e.target.closest('[data-history-candidate]');
@@ -1008,6 +1044,56 @@ document.addEventListener('click', async (e) => {
   );
 });
 let converting = false;
+let saveStatus = 'idle',
+  saveStatusData,
+  nativeConnected = true;
+
+function refreshSaveStatus() {
+  const outdatedBase = record && record.catalogueRevision !== record.currentCatalogueRevision;
+  const labels = {
+    idle: 'Salvamento automático ativo.',
+    scheduled: 'Alterações aplicadas aguardando salvamento automático…',
+    saving: 'Salvando…',
+    pending: 'Última versão salva. Salvando as alterações seguintes…',
+    saved:
+      'Salvo às ' +
+      new Date(saveStatusData?.updatedAt || record?.updatedAt || Date.now()).toLocaleTimeString(
+        'pt-BR',
+      ) +
+      '.',
+    error:
+      'Não foi possível salvar: ' +
+      (saveStatusData?.message || 'Confira a conexão.') +
+      ' Use Tentar novamente. Baixar cópia guarda as alterações já aplicadas.',
+    blocked:
+      (saveStatusData?.status === 401 ? 'Sessão expirada: ' : 'Conflito de versões: ') +
+      (saveStatusData?.message || 'Reabra o calendário para conferir a versão atual.') +
+      ' Suas alterações continuam nesta tela. Baixe uma cópia das alterações aplicadas antes de sair.',
+  };
+  let text = labels[saveStatus];
+  if (outdatedBase && ['idle', 'saved'].includes(saveStatus))
+    text +=
+      ' A base institucional mudou. Confira o impacto e confirme a atualização neste calendário.';
+  if (nativeEnabled && !nativeConnected && !['error', 'blocked'].includes(saveStatus))
+    text =
+      dirty || saveInFlight
+        ? 'Sem conexão. Alterações aplicadas aguardam sincronização. Mantenha esta tela aberta; o envio continua quando a conexão voltar. Baixar cópia guarda as alterações aplicadas.'
+        : 'Sem conexão. Novas alterações aguardarão sincronização. Mantenha esta tela aberta até a confirmação do salvamento.';
+  $('autosave-status').textContent = text;
+  $('autosave-status').dataset.state = saveStatus;
+  $('autosave-status').className =
+    ['error', 'blocked'].includes(saveStatus) || !nativeConnected ? 'notice' : '';
+  const retry = saveStatus === 'error';
+  const confirmBase = outdatedBase && !dirty && ['idle', 'saved'].includes(saveStatus);
+  $('server-save').hidden = !record || (!retry && !confirmBase);
+  $('server-save').disabled = saveInFlight || converting || !nativeConnected;
+  $('server-save').textContent = retry ? 'Tentar novamente' : 'Confirmar atualização da base';
+  $('server-save').title = retry
+    ? 'Enviar novamente as alterações aplicadas neste calendário.'
+    : 'Registrar a revisão atual da base institucional neste calendário após sua conferência.';
+  $('unapplied-status').hidden = !unappliedInputs;
+}
+
 const autosaver = createAutosaver({
   isDirty: () => !!record && dirty,
   snapshot: () => ({
@@ -1032,30 +1118,16 @@ const autosaver = createAutosaver({
   },
   onStatus: (status, data) => {
     saveInFlight = status === 'saving';
-    const labels = {
-      scheduled: 'Alterações aplicadas aguardando salvamento automático…',
-      saving: 'Salvando alterações…',
-      pending: 'Última versão salva. Há novas alterações aguardando salvamento automático.',
-      saved:
-        'Salvo no sistema às ' +
-        new Date(data?.updatedAt || Date.now()).toLocaleTimeString('pt-BR') +
-        '.',
-      error:
-        'Não foi possível salvar: ' +
-        (data?.message || 'Confira a conexão.') +
-        ' Salvamento automático pausado. Use Baixar cópia para guardar suas alterações e Salvar no sistema para tentar novamente.',
-      blocked:
-        'Salvamento pausado: ' +
-        (data?.message || 'Reabra o calendário para conferir a versão atual.') +
-        ' Suas alterações continuam nesta tela. Use Baixar cópia antes de reabrir.',
-    };
-    $('autosave-status').textContent = labels[status];
-    $('autosave-status').className = ['error', 'blocked'].includes(status) ? 'notice' : '';
-    $('server-save').disabled = status === 'saving';
-    $('server-save').textContent = status === 'saving' ? 'Salvando…' : 'Salvar no sistema';
-    $('server-save').title = labels[status];
+    saveStatus = status;
+    saveStatusData = data;
+    refreshSaveStatus();
   },
 });
+const stopConnectionSubscription = subscribeNativeConnection((connected) => {
+  nativeConnected = connected;
+  refreshSaveStatus();
+});
+window.addEventListener('pagehide', () => stopConnectionSubscription());
 $('server-save').onclick = () => {
   if (converting) return;
   if (!record) {
@@ -1074,11 +1146,12 @@ $('make-definitive').onclick = async () => {
     return;
   converting = true;
   $('make-definitive').disabled = true;
+  refreshSaveStatus();
   try {
     await autosaver.save();
     if (dirty)
       throw Error(
-        'Não foi possível concluir o salvamento. Confira a mensagem e salve as alterações antes de tornar definitivo.',
+        'Não foi possível concluir o salvamento. Resolva a pendência indicada antes de tornar definitivo.',
       );
     $('server-save').disabled = true;
     const saved = await api('/api/calendars/' + calendarId + '/make-definitive', 'POST', {
@@ -1095,7 +1168,7 @@ $('make-definitive').onclick = async () => {
   } finally {
     converting = false;
     $('make-definitive').disabled = false;
-    $('server-save').disabled = false;
+    refreshSaveStatus();
     if (dirty) autosaver.schedule();
   }
 };
@@ -1118,6 +1191,7 @@ $('history-form').onsubmit = async (e) => {
     record.histories = fresh.histories;
     showHistory();
     e.target.reset();
+    markAppliedForm('history-form');
     message('Calendário anterior guardado neste campus.');
     await analyzeUploadedHistory(uploaded.id);
   } catch (err) {
@@ -1198,15 +1272,22 @@ $('saturday-form').onsubmit = (e) => {
     for (const date of dates) selectedSaturdays.delete(date);
     dirty = true;
     render({ recalculate: true });
-    message(`${additions.length} sábado(s) adicionado(s). Confira a contagem e salve no sistema.`);
+    if (!selectedSaturdays.size) markAppliedForm('saturday-form');
+    message(
+      `${additions.length} sábado(s) adicionado(s). Confira a contagem e o indicador de salvamento.`,
+    );
   });
 };
 $('download-pdf').onclick = async () => {
   const button = $('download-pdf');
   try {
-    if (dirty) throw Error('Salve no sistema antes de baixar o PDF.');
     button.disabled = true;
     $('download-pdf-top').disabled = true;
+    await autosaver.save();
+    if (dirty)
+      throw Error(
+        'O salvamento ainda não foi confirmado. Confira o indicador antes de baixar o PDF.',
+      );
     button.textContent = 'Gerando PDF…';
     $('download-pdf-top').textContent = 'Gerando PDF…';
     message('Gerando o calendário em PDF. Aguarde o download.');
@@ -1255,7 +1336,9 @@ document.addEventListener('change', (e) => {
   event.category = e.target.value;
   dirty = true;
   render({ recalculate: true });
-  message('Categoria e cor atualizadas. O efeito na contagem foi preservado. Salve no sistema.');
+  message(
+    'Categoria e cor aplicadas. O efeito na contagem foi preservado. Confira o indicador de salvamento.',
+  );
 });
 $('event-category').onchange = () => {
   const category = $('event-category').value;
@@ -1297,7 +1380,7 @@ $('recalculate-stages').onclick = () =>
     dirty = true;
     render({ recalculate: true });
     message(
-      'Etapas recalculadas com sábados e impedimentos. O ajuste automático está ativo. Confira também os prazos de resultados e reuniões; salve no sistema.',
+      'Etapas recalculadas com sábados e impedimentos. O ajuste automático está ativo. Confira também os prazos de resultados e reuniões e o indicador de salvamento.',
     );
   });
 $('assessment-settings').addEventListener('change', (e) => {
@@ -1322,10 +1405,10 @@ $('assessment-settings').addEventListener('change', (e) => {
   render({ recalculate: true });
   message(
     value
-      ? 'Etapas da oferta atualizadas. Os eventos existentes foram preservados; confira os intervalos e salve no sistema.'
+      ? 'Etapas da oferta aplicadas. Os eventos existentes foram preservados; confira os intervalos e o indicador de salvamento.'
       : 'Escolha das etapas desfeita para ' +
           modalityLabels[modality] +
-          '. Se havia eventos preenchidos, eles permanecem na lista de Eventos e impedimentos e podem ser removidos lá. Salve no sistema.',
+          '. Se havia eventos preenchidos, eles permanecem na lista de Eventos e impedimentos e podem ser removidos lá. Confira o indicador de salvamento.',
   );
 });
 
@@ -1432,13 +1515,16 @@ $('vacation-form').onsubmit = (e) => {
     dirty = true;
     render({ recalculate: true });
     vacationPreview();
-    message('Férias docentes registradas nas datas informadas pelo campus. Salve no sistema.');
+    markAppliedForm('vacation-form');
+    message(
+      'Férias docentes aplicadas nas datas informadas pelo campus. Acompanhe o salvamento automático no indicador.',
+    );
   });
 };
 document.addEventListener('input', (e) => {
-  if (e.target.closest('form'))
+  if (appliedFormIds.has(e.target.closest('form')?.id) && e.target.id !== 'saturday-month')
     message(
-      'Formulário alterado. Aplique a alteração no botão correspondente e depois salve no sistema.',
+      'Formulário alterado. Use Adicionar ou Aplicar para incluir o preenchimento no calendário e iniciar o salvamento automático.',
     );
 });
 
@@ -1496,7 +1582,7 @@ function applyStageSuggestion() {
     document
       .querySelector('[data-history-item="' + completed + '"]')
       ?.scrollIntoView({ block: 'nearest' });
-  message(fresh.stages.length + ' etapas incluídas. Confira e clique em Salvar no sistema.');
+  message(fresh.stages.length + ' etapas incluídas. Confira as datas e o indicador de salvamento.');
 }
 
 function updateStageSuggestion() {
@@ -1522,7 +1608,7 @@ function updateStageSuggestion() {
         e.end === $('event-end').value,
     )
   ) {
-    panel.textContent = 'Etapa registrada no calendário. Salve no sistema para guardar.';
+    panel.textContent = 'Etapa incluída no calendário. Confira o indicador de salvamento.';
     return;
   }
   $('event-end').value = '';
@@ -1620,7 +1706,7 @@ function renderHistorySuggestions() {
     progress.setAttribute('role', 'status');
     $('history-suggestions').before(progress);
   }
-  progress.textContent = `${count} itens incluídos a partir do PDF; ${existingCount} sugestões já atendidas por eventos cadastrados. Itens ambíguos continuam disponíveis para revisão. Salve o calendário para guardar as novas inclusões.`;
+  progress.textContent = `${count} itens incluídos a partir do PDF; ${existingCount} sugestões já atendidas por eventos cadastrados. Itens ambíguos continuam disponíveis para revisão. Confira o indicador de salvamento das inclusões aplicadas.`;
 }
 
 function restoreEventForm() {
@@ -1758,6 +1844,7 @@ function setEventSubmitLabel() {
 $('event-form').addEventListener('reset', () => {
   editingEventId = null;
   setEventSubmitLabel();
+  markAppliedForm('event-form');
 });
 
 function editEvent(id) {
@@ -1805,7 +1892,7 @@ function editEvent(id) {
   message(
     'Editando ' +
       event.name +
-      '. Confira os dados, confirme e clique em Aplicar alterações do evento. Depois salve no sistema.',
+      '. Confira os dados, confirme e clique em Aplicar alterações do evento para iniciar o salvamento automático.',
   );
 }
 
@@ -1815,6 +1902,7 @@ function resetPeriodForm() {
   $('period-submit').textContent = 'Adicionar período';
   $('cancel-period-edit').hidden = true;
   periodDurationPreview();
+  markAppliedForm('period-form');
 }
 
 function editPeriod(id) {
@@ -1849,10 +1937,11 @@ $('event-list').addEventListener('click', (event) => {
       throw Error('Informe a data do Dia do Professor.');
     validateTeacherDay(date, state.year);
     state.teacherDayDate = date;
+    markAppliedForm('teacher-day');
     dirty = true;
     render({ recalculate: true });
     message(
-      'Data do Dia do Professor atualizada neste calendário. Confira a contagem e salve no sistema.',
+      'Data do Dia do Professor aplicada neste calendário. Confira a contagem e o indicador de salvamento.',
     );
   });
 });

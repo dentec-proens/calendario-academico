@@ -85,8 +85,14 @@ test(
       await editor.locator('#period-start').fill(start);
       await editor.locator('#period-end').fill(end);
       await editor.locator('#period-submit').click();
-      await editor.locator('#server-save').click();
-      await contains(editor, '#autosave-status', 'Salvo no sistema');
+      await editor.waitForFunction(
+        () => document.querySelector('#autosave-status')?.dataset.state === 'saved',
+      );
+      assert.equal(
+        await editor.$eval('#server-save', (element) => element.hidden),
+        true,
+        'successful autosave needs no separate save action',
+      );
     }
 
     await addPeriod('Synthetic shared period', '2097-03-01', '2097-03-31');

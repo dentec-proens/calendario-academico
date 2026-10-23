@@ -163,17 +163,24 @@ test(
       await page.$eval('#assessment-checklist', (element) => element.textContent),
       /02\/03\/2027 a 04\/03\/2027/,
     );
-    assert.match(
-      await page.$eval('#autosave-status', (element) => element.textContent),
-      /Alterações aplicadas são salvas automaticamente após uma breve pausa/,
+    assert.equal(
+      await page.$eval('#server-save', (element) => element.hidden),
+      true,
+      'consulting a saved calendar exposes no redundant save action',
     );
     assert.equal(
       await page.evaluate(() => window.__pendingAutosaves.size),
       0,
       'opening a saved calendar never schedules a write',
     );
+    assert.equal(await page.$eval('#unapplied-status', (element) => element.hidden), true);
     await page.locator('[data-edit-period="first"]').click();
     await page.locator('#period-days').fill('6');
+    assert.equal(await page.$eval('#unapplied-status', (element) => element.hidden), false);
+    assert.match(
+      await page.$eval('#unapplied-status', (element) => element.textContent),
+      /Alterações não aplicadas/,
+    );
     assert.equal(
       await page.evaluate(() => window.__pendingAutosaves.size),
       0,
@@ -184,10 +191,44 @@ test(
     const consulted = await call('/api/calendars/' + created.id);
     assert.equal(consulted.version, original.version);
     assert.deepEqual(consulted.state, original.state);
+
+    // A rejected submit cannot clear either its own draft or another form's draft.
+    await page.locator('#new-event').click();
+    await page.locator('#event-name').fill('Synthetic invalid draft');
+    await page.locator('#event-evidence').fill('Synthetic pending source');
+    await page.select('#event-kind', 'note');
+    for (const [id, value] of [
+      ['event-start', '2027-03-02'],
+      ['event-end', '2027-03-01'],
+    ])
+      await page.$eval(
+        '#' + id,
+        (element, value) => {
+          element.value = value;
+          element.dispatchEvent(new Event('input', { bubbles: true }));
+        },
+        value,
+      );
+    await page.locator('#event-confirmed').click();
+    await page.locator('#event-form button').click();
+    assert.equal(await page.$eval('#unapplied-status', (element) => element.hidden), false);
+    assert.equal(
+      await page.$eval('#event-name', (element) => element.value),
+      'Synthetic invalid draft',
+    );
+    assert.equal(await page.$eval('#period-days', (element) => element.value), '6');
+    await page.evaluate(() => window.__flushAutosaves());
+    assert.equal(writes.length, 0, 'a rejected form never schedules a calendar save');
     await page.locator('#cancel-period-edit').click();
+    assert.equal(
+      await page.$eval('#unapplied-status', (element) => element.hidden),
+      false,
+      'canceling one form preserves the pending draft in the other form',
+    );
 
     // Applying an exclusion explicitly retains automatic period/stage updates.
     await page.locator('#new-event').click();
+    assert.equal(await page.$eval('#unapplied-status', (element) => element.hidden), true);
     await page.locator('#event-name').fill('Synthetic local exclusion');
     await page.select('#event-kind', 'exclude');
     for (const id of ['event-start', 'event-end'])
@@ -244,7 +285,10 @@ test(
       const response = page.waitForResponse((response) => response.request().method() === 'PUT');
       await page.evaluate(() => window.__flushAutosaves());
       assert((await response).ok());
-      await page.waitForFunction(() => !document.querySelector('#server-save').disabled);
+      await page.waitForFunction(
+        () => document.querySelector('#autosave-status')?.dataset.state === 'saved',
+      );
+      assert.equal(await page.$eval('#server-save', (element) => element.hidden), true);
       return call('/api/calendars/' + created.id);
     }
 
@@ -263,29 +307,31 @@ test(
     assert.equal(grouped.state.periods[1].targetDays, 6);
     assert.equal(writes.length, 3);
 
-    // Manual save takes over the pending debounce instead of duplicating it.
+    // A further applied edit saves itself without exposing a manual save action.
     await applyPeriodDays('first', 8);
-    const manualResponse = page.waitForResponse(
-      (response) => response.request().method() === 'PUT',
-    );
-    await page.locator('#server-save').click();
-    assert((await manualResponse).ok());
-    await page.waitForFunction(() => !document.querySelector('#server-save').disabled);
+    const automatic = await flushAutosave();
     assert.equal(await page.evaluate(() => window.__pendingAutosaves.size), 0);
     await page.evaluate(() => window.__flushAutosaves());
-    const manual = await call('/api/calendars/' + created.id);
-    assert.equal(manual.version, grouped.version + 1);
-    assert.equal(manual.state.periods[0].targetDays, 8);
+    assert.equal(automatic.version, grouped.version + 1);
+    assert.equal(automatic.state.periods[0].targetDays, 8);
     assert.equal(writes.length, 4);
 
     // Hold one real PUT while another applied action changes the local state.
     // Even when its debounce expires, the second request must wait for the first.
     await page.setRequestInterception(true);
-    let heldRequest, heldConversionRequest, resolveConversion;
+    let heldRequest, heldConversionRequest, resolveConversion, nextSaveFailure;
     let holdConversion = false;
     const held = new Promise((resolve) => {
       page.on('request', (request) => {
-        if (request.method() === 'PUT' && !heldRequest) {
+        if (request.method() === 'PUT' && nextSaveFailure) {
+          const status = nextSaveFailure;
+          nextSaveFailure = null;
+          request.respond({
+            status,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: 'Synthetic temporary connection failure' }),
+          });
+        } else if (request.method() === 'PUT' && !heldRequest) {
           heldRequest = request;
           resolve();
         } else if (
@@ -316,13 +362,13 @@ test(
     assert((await firstResponse).ok());
     await page.waitForFunction(() => window.__pendingAutosaves.size > 0);
     const serial = await flushAutosave();
-    assert.equal(serial.version, manual.version + 2);
+    assert.equal(serial.version, automatic.version + 2);
     assert.equal(serial.state.periods[0].targetDays, 9);
     assert.equal(serial.state.periods[1].targetDays, 8);
     assert.equal(writes.length, 6);
     assert.equal(
       writes[5].version,
-      manual.version + 1,
+      automatic.version + 1,
       'the queued request uses the confirmed server version',
     );
     assert.equal(await page.evaluate(() => window.__pendingAutosaves.size), 0);
@@ -336,7 +382,7 @@ test(
     page.once('dialog', (dialog) => dialog.accept());
     await page.locator('#make-definitive').click();
     await conversionHeld;
-    assert.equal(await page.$eval('#server-save', (element) => element.disabled), true);
+    assert.equal(await page.$eval('#server-save', (element) => element.hidden), true);
     await applyPeriodDays('first', 10);
     await page.evaluate(() => window.__flushAutosaves());
     assert.equal(
@@ -364,6 +410,167 @@ test(
       'the applied edit uses the conversion version',
     );
     assert.equal(await page.evaluate(() => window.__pendingAutosaves.size), 0);
+
+    // A transient failure keeps applied edits local and offers one explicit retry.
+    nextSaveFailure = 503;
+    await applyPeriodDays('first', 11);
+    const failedResponse = page.waitForResponse(
+      (response) => response.request().method() === 'PUT',
+    );
+    await page.evaluate(() => window.__flushAutosaves());
+    assert.equal((await failedResponse).status(), 503);
+    await page.waitForSelector('#server-save', { visible: true });
+    assert.equal(
+      await page.$eval('#server-save', (element) => element.textContent.trim()),
+      'Tentar novamente',
+    );
+    assert.match(
+      await page.$eval('#autosave-status', (element) => element.textContent),
+      /Não foi possível salvar/,
+    );
+    assert.equal((await call('/api/calendars/' + created.id)).version, definitive.version);
+    await applyPeriodDays('second', 9);
+    await page.evaluate(() => window.__flushAutosaves());
+    assert.equal(writes.length, 8, 'a connection error pauses automatic retries');
+    const retryResponse = page.waitForResponse((response) => response.request().method() === 'PUT');
+    await page.locator('#server-save').click();
+    assert((await retryResponse).ok());
+    await page.waitForFunction(
+      () => document.querySelector('#autosave-status')?.dataset.state === 'saved',
+    );
+    assert.equal(await page.$eval('#server-save', (element) => element.hidden), true);
+    const retried = await call('/api/calendars/' + created.id);
+    assert.equal(retried.version, definitive.version + 1);
+    assert.equal(retried.state.periods[0].targetDays, 11);
+    assert.equal(retried.state.periods[1].targetDays, 9);
+    assert.equal(writes.length, 9, 'the explicit retry writes the latest local snapshot once');
+
+    // A real competing write must block retries instead of overwriting its version.
+    const remoteState = structuredClone(retried.state);
+    remoteState.periods[0].targetDays = 12;
+    const competing = await call('/api/calendars/' + created.id, 'PUT', {
+      version: retried.version,
+      catalogueRevision: retried.currentCatalogueRevision,
+      state: remoteState,
+    });
+    await applyPeriodDays('first', 13);
+    const conflictResponse = page.waitForResponse(
+      (response) => response.request().method() === 'PUT',
+    );
+    await page.evaluate(() => window.__flushAutosaves());
+    assert.equal((await conflictResponse).status(), 409);
+    await page.waitForFunction(
+      () => document.querySelector('#autosave-status')?.dataset.state === 'blocked',
+    );
+    assert.match(
+      await page.$eval('#autosave-status', (element) => element.textContent),
+      /Conflito de versões:.*Reabra o calendário/,
+    );
+    assert.equal(await page.$eval('#server-save', (element) => element.hidden), true);
+    await applyPeriodDays('first', 14);
+    await page.evaluate(() => window.__flushAutosaves());
+    assert.equal(writes.length, 10, 'conflicting edits never trigger an overwrite retry');
+    const protectedRecord = await call('/api/calendars/' + created.id);
+    assert.equal(protectedRecord.version, competing.version);
+    assert.deepEqual(protectedRecord.state, competing.state);
+    assert.equal(writes[9].state.periods[0].targetDays, 13);
+
+    // A newer institutional revision must remain an explicit confirmation:
+    // merely consulting it cannot create a calendar revision automatically.
+    await app.store.change((db) => {
+      db.catalogue.revision++;
+    });
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.reload();
+    await page.waitForFunction(() => document.querySelectorAll('#period-list > li').length === 2);
+    await page.waitForSelector('#server-save', { visible: true });
+    assert.equal(
+      await page.$eval('#server-save', (element) => element.textContent.trim()),
+      'Confirmar atualização da base',
+    );
+    assert.equal(await page.evaluate(() => window.__pendingAutosaves.size), 0);
+    await page.evaluate(() => window.__flushAutosaves());
+    assert.equal(writes.length, 10, 'consulting an outdated base never saves it automatically');
+    assert.equal((await call('/api/calendars/' + created.id)).version, competing.version);
+    const confirmationResponse = page.waitForResponse(
+      (response) => response.request().method() === 'PUT',
+    );
+    await page.locator('#server-save').click();
+    assert((await confirmationResponse).ok());
+    await page.waitForFunction(
+      () => document.querySelector('#autosave-status')?.dataset.state === 'saved',
+    );
+    assert.equal(await page.$eval('#server-save', (element) => element.hidden), true);
+    const confirmed = await call('/api/calendars/' + created.id);
+    assert.equal(confirmed.version, competing.version + 1);
+    assert.equal(confirmed.catalogueRevision, confirmed.currentCatalogueRevision);
+    assert.equal(writes.length, 11);
+
+    // The teacher-day date is outside a form but still needs explicit Apply.
+    const teacherDay = await page.$eval('#teacher-day-date', (element) => element.value);
+    await page.locator('[data-edit-period="first"]').click();
+    await page.locator('#period-days').fill('18');
+    await page.$eval('#teacher-day-date', (element) => {
+      element.value = '2027-09-01';
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.locator('#apply-teacher-day').click();
+    assert.match(
+      await page.$eval('#message', (element) => element.textContent),
+      /Escolha uma data na semana de 15 de outubro/,
+    );
+    assert.equal(await page.$eval('#teacher-day-date', (element) => element.value), '2027-09-01');
+    assert.equal(await page.$eval('#unapplied-status', (element) => element.hidden), false);
+    await page.evaluate(() => window.__flushAutosaves());
+    assert.equal(writes.length, 11, 'an invalid teacher-day draft never saves');
+    await page.locator('#cancel-period-edit').click();
+    assert.equal(
+      await page.$eval('#unapplied-status', (element) => element.hidden),
+      false,
+      'canceling another form keeps the teacher-day draft pending',
+    );
+    await page.locator('#reset-teacher-day').click();
+    assert.equal(await page.$eval('#teacher-day-date', (element) => element.value), teacherDay);
+    assert.equal(await page.$eval('#unapplied-status', (element) => element.hidden), true);
+    await flushAutosave();
+
+    // Applying that date clears only its own draft; unrelated local fields and
+    // modality choices survive the resulting calendar render.
+    await page.locator('[data-edit-period="first"]').click();
+    await page.locator('#period-days').fill('18');
+    await page.locator('#new-event').click();
+    await page.locator('#event-name').fill('Synthetic modality draft');
+    await page.locator('input[name="event-modality"]').click();
+    await page.$eval(
+      '#teacher-day-date',
+      (element, value) => {
+        element.value = value;
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+      },
+      teacherDay,
+    );
+    await page.locator('#apply-teacher-day').click();
+    assert.equal(await page.$eval('#period-days', (element) => element.value), '18');
+    assert.equal(
+      await page.$eval('input[name="event-modality"]', (element) => element.checked),
+      false,
+      'an unrelated applied action preserves unapplied modality choices',
+    );
+    assert.equal(
+      await page.$eval('#event-name', (element) => element.value),
+      'Synthetic modality draft',
+    );
+    assert.equal(await page.$eval('#unapplied-status', (element) => element.hidden), false);
+    await page.locator('#cancel-period-edit').click();
+    assert.equal(await page.$eval('#unapplied-status', (element) => element.hidden), false);
+    await page.locator('#new-event').click();
+    assert.equal(await page.$eval('#unapplied-status', (element) => element.hidden), true);
+    const appliedTeacherDay = await flushAutosave();
+    assert.equal(appliedTeacherDay.state.teacherDayDate, teacherDay);
+    assert.equal(
+      appliedTeacherDay.state.periods[0].targetDays,
+      confirmed.state.periods[0].targetDays,
+    );
     assert.deepEqual(errors, []);
   },
 );

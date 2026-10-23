@@ -1,0 +1,139 @@
+{
+  "verifiedAt": "2026-10-23T10:35:21.914324+00:00",
+  "deployment": "oceanic-gazelle-652",
+  "method": "Authenticated Convex CLI read-only exports; SHA-256 canonical fingerprints compared by stable application identities. Private snapshots remain outside Git.",
+  "passed": true,
+  "collections": {
+    "users": {
+      "before": 33,
+      "after": 34,
+      "preserved": 33,
+      "missing": 0,
+      "changed": 0,
+      "added": 1
+    },
+    "campuses": {
+      "before": 29,
+      "after": 29,
+      "preserved": 29,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "calendars": {
+      "before": 60,
+      "after": 61,
+      "preserved": 60,
+      "missing": 0,
+      "changed": 0,
+      "added": 1
+    },
+    "histories": {
+      "before": 13,
+      "after": 14,
+      "preserved": 13,
+      "missing": 0,
+      "changed": 0,
+      "added": 1
+    },
+    "reviews": {
+      "before": 3,
+      "after": 4,
+      "preserved": 3,
+      "missing": 0,
+      "changed": 0,
+      "added": 1
+    },
+    "documents": {
+      "before": 0,
+      "after": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "uploads": {
+      "before": 1,
+      "after": 1,
+      "preserved": 1,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    },
+    "audit": {
+      "before": 919,
+      "after": 937,
+      "preserved": 919,
+      "missing": 0,
+      "changed": 0,
+      "added": 18
+    },
+    "calendarVersions": {
+      "before": 699,
+      "after": 706,
+      "preserved": 699,
+      "missing": 0,
+      "changed": 0,
+      "added": 7
+    },
+    "reviewVersions": {
+      "before": 12,
+      "after": 12,
+      "preserved": 12,
+      "missing": 0,
+      "changed": 0,
+      "added": 0
+    }
+  },
+  "calendarSnapshots": {
+    "before": 699,
+    "after": 706,
+    "missing": 0,
+    "changed": 0
+  },
+  "existingPasswordAccounts": {
+    "before": 25,
+    "after": 26,
+    "missing": 0,
+    "changed": 0
+  },
+  "rootFields": {
+    "before": 13,
+    "after": 13,
+    "allValuesUnchanged": true,
+    "catalogueUnchanged": true,
+    "migrationMarkerUnchanged": true,
+    "onlyCountersChangedFor": ["audit", "calendars", "histories", "reviews", "users"]
+  },
+  "sourcePreservation": {
+    "originalUserIds": 33,
+    "originalCalendars": 60,
+    "originalCalendarVersionsAndSnapshots": 699,
+    "originalHistoriesAndPdfReferences": 13,
+    "originalCampuses": 29,
+    "originalReviews": 3,
+    "originalReviewVersions": 12,
+    "sourceAuditRecords": 918,
+    "originalPdfBytesStillDeferred": 13,
+    "sourceChanged": false
+  },
+  "syntheticAdditions": {
+    "users": 1,
+    "calendars": 1,
+    "calendarVersions": 7,
+    "calendarSnapshots": 7,
+    "histories": 1,
+    "reviews": 1,
+    "auditEntries": 18,
+    "fileObjects": 1,
+    "nativeUploads": 0
+  },
+  "snapshotSha256": {
+    "before": "1622d88b033b60530e71518d63da56f6a192dee0cce392c4b093e6647a5548d4",
+    "after": "1ab4d17f345c5626f19fb530d52b6a6cffb68db9a689bfa41902bb28c9dc366d"
+  },
+  "syntheticFinalState": {
+    "calendarInTrash": true,
+    "originalPdfBytesDeferred": 13
+  }
+}

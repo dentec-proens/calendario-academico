@@ -86,6 +86,14 @@ export function subscribeNative(path, onValue, onError) {
   return stop;
 }
 
+export function subscribeNativeConnection(onChange) {
+  if (!nativeEnabled) return () => {};
+  const update = () => onChange(convex.connectionState().isWebSocketConnected);
+  const stop = convex.subscribeToConnectionState(update);
+  update();
+  return stop;
+}
+
 export async function downloadNative(path, filename) {
   try {
     const result = await convex.action(functions.nativeActions.download, { path });

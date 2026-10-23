@@ -152,11 +152,12 @@ test('conflicts and expired sessions preserve edits and block scheduled or manua
   for (const code of [409, 401]) {
     let dirty = true,
       calls = 0,
+      state = { value: 1 },
       status,
       message;
     const saver = createAutosaver({
       isDirty: () => dirty,
-      snapshot: () => ({ value: 1 }),
+      snapshot: () => state,
       write: async () => {
         calls++;
         throw Object.assign(Error('Reopen before saving'), { status: code });
@@ -170,35 +171,45 @@ test('conflicts and expired sessions preserve edits and block scheduled or manua
     saver.schedule();
     await tick(t, 1500);
     assert.equal(status, 'blocked');
+    state = { value: 2 };
     saver.schedule();
     await tick(t, 30000);
     await saver.save(true);
     assert.equal(calls, 1);
     assert(dirty);
+    assert.deepEqual(state, { value: 2 }, 'later local edits survive the blocked save');
     assert.equal(status, 'blocked');
     assert.equal(message, 'Reopen before saving');
   }
 });
 
-test('connection failures remain paused after further edits until a manual retry succeeds', async (t) => {
+test('connection failures stay paused until an explicit retry saves the latest local snapshot', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   let dirty = true,
     calls = 0,
+    state = { value: 1 },
     status;
+  const statuses = [],
+    writes = [];
   const saver = createAutosaver({
     isDirty: () => dirty,
-    snapshot: () => ({ state: { value: 1 } }),
-    write: async () => {
+    snapshot: () => ({ state }),
+    write: async (sent) => {
+      writes.push(sent);
       if (++calls === 1) throw Error('Offline');
       return { version: 2 };
     },
     onSaved: () => (dirty = false),
-    onStatus: (s) => (status = s),
+    onStatus: (s) => {
+      status = s;
+      statuses.push(s);
+    },
   });
   saver.schedule();
   await tick(t, 1500);
   assert.equal(status, 'error');
   assert(dirty);
+  state.value = 2;
   saver.schedule();
   await tick(t, 30000);
   await saver.save();
@@ -209,6 +220,8 @@ test('connection failures remain paused after further edits until a manual retry
   assert(!dirty);
   await tick(t, 30000);
   assert.equal(calls, 2);
+  assert.deepEqual(writes, [{ state: { value: 1 } }, { state: { value: 2 } }]);
+  assert.deepEqual(statuses, ['scheduled', 'saving', 'error', 'saving', 'saved']);
 });
 
 test('gateway HTML errors preserve HTTP status and never report a save', async () => {

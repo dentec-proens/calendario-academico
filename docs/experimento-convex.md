@@ -48,6 +48,18 @@ Cada mutation aplica as regras de negócio e grava somente os registros alterado
 
 Os registros da aplicação ficam em documentos individuais. As fotografias completas das versões anteriores ficam separadas de seus metadados, evitando transferir todas as fotografias a cada abertura. O codec preserva propriedades explicitamente `undefined` e nomes de campos reservados nos dados persistidos; as respostas públicas mantêm o formato JSON esperado pela interface.
 
+## Salvamento e edição
+
+O calendário salva automaticamente as alterações aplicadas após uma pausa de 1,5 segundo. O indicador informa o envio e mostra **Salvo às…** somente depois da confirmação do backend. O antigo botão permanente **Salvar no sistema** foi retirado. **Tentar novamente** aparece após uma falha recuperável; conflitos de versão preservam a edição local e exigem conferir a versão atual, sem oferecer sobrescrita.
+
+Campos de formulários continuam dependendo de **Adicionar/Aplicar**. Suas pendências são acompanhadas separadamente do estado de salvamento, inclusive após uma validação rejeitada ou quando outro formulário é aplicado. Esses campos impedem que uma atualização remota substitua o preenchimento. A data local do Dia do Professor e as modalidades de um evento também conservam seus valores durante atualizações locais. **Baixar cópia** inclui somente os dados já aplicados; **Importar cópia** abre esse JSON.
+
+O indicador acompanha a conexão do cliente Convex. Durante uma interrupção, as mutations pendentes continuam sob controle do SDK, sem disparar requisições duplicadas ou declarar sucesso. A tela orienta manter a página aberta até a confirmação; isso não implementa armazenamento durável de rascunhos offline. PDF e impressão aguardam o salvamento aplicado antes de usar a versão confirmada.
+
+Há duas confirmações explícitas preservadas: **Confirmar atualização da base**, quando o usuário conferiu uma revisão institucional mais recente neste calendário, e **Salvar análise / revisão**, para registrar a autoria e as conclusões humanas do parecer. Consultar um calendário com uma base mais recente continua sem criar uma versão automaticamente.
+
+Os ensaios de ADMIN e CAMPUS estão registrados em [qa-portal/results.json](evidencias-convex/qa-portal/results.json), com a comparação de integridade em [qa-portal/data-integrity.json](evidencias-convex/qa-portal/data-integrity.json). Foram usados somente um calendário de teste de 2099, uma conta CAMPUS sintética e um PDF fictício. A conta de teste teve o acesso removido e o calendário ficou recuperável na lixeira; os 13 PDFs originais continuam adiados. Os testes de falha transitória, conflito e confirmação da base usam bancos locais isolados, sem modificar o catálogo importado.
+
 ## Autenticação e autorização
 
 O login por senha é nativo do Convex Auth. As contas importadas mantêm os IDs e as credenciais compatíveis da aplicação anterior; a vinculação das 24 credenciais locais foi concluída e conferida. As sessões antigas foram preservadas como dados de origem e não se tornam sessões autenticadas do Convex: os usuários entram novamente no laboratório. Não há cadastro público irrestrito: a administração provisiona os membros e os convites autorizados.
