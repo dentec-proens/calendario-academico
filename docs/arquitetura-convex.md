@@ -1,29 +1,43 @@
-# Arquitetura Convex
+# Arquitetura
 
-O portal usa React e Vite; funções, identidade, sessões e arquivos ficam no Convex. Existe um único caminho de execução. `pnpm dev` combina o watcher Convex com o servidor de desenvolvimento Vite. `pnpm build` emite `dist/app`; `server.ts` é apenas um preview estático e recusa `/api/*`.
+O frontend é uma aplicação React e Vite. Convex concentra identidade, sessões, consultas reativas, transações, arquivos e processamento. `server.ts` serve somente o build estático para preview e recusa `/api/*`.
 
-## Fronteiras
+## Componentes
 
-`web/native/client.ts` adapta as operações do portal ao SDK Convex. A notação interna de caminhos é uma interface do domínio, não um endpoint HTTP Node. Status e membros derivam dos tipos gerados de funções; DTOs tipam os demais dados do cliente. As consultas React são subscriptions e recebem atualizações automaticamente.
+| Componente                | Responsabilidade                                                            |
+| ------------------------- | --------------------------------------------------------------------------- |
+| `web/portal/`             | Listas, criação, administração, documentos e revisão em React               |
+| `web/native/`             | Autenticação, montagem das páginas, subscriptions e cliente Convex          |
+| `web/app.js`              | Edição do calendário, aplicação dos formulários e coordenação do salvamento |
+| `web/print.mjs`           | Renderização compartilhada entre prévia anual e PDF                         |
+| `src/`                    | Contagem por oferta, períodos, eventos, sugestões e verificações de geração |
+| `convex/native.ts`        | Operações de calendários, catálogo, documentos e revisão                    |
+| `convex/nativeAuth.ts`    | Convex Auth, membros ativos, convites e recuperação                         |
+| `convex/nativeFiles.ts`   | Validação de uploads, autorização e tickets de arquivos                     |
+| `convex/nativeActions.ts` | Extração de texto e geração de PDF em actions Node                          |
 
-`convex/native.ts` concentra as operações de calendário, catálogo, documentos e revisão. `nativeAuth.ts` usa Convex Auth e confere o membro ativo e o campus. `nativeFiles.ts` valida tickets, uploads e downloads. `nativeActions.ts` executa extração de texto e geração de PDF. As funções auxiliares de snapshots/auditoria são internas ao backend; não existe uma ponte com segredo compartilhado.
+`web/native/client.ts` adapta as operações da interface ao SDK Convex. Os caminhos `/api/...` usados internamente identificam operações do domínio; não correspondem a uma API HTTP no servidor de preview. Os contratos públicos estão nas funções Convex, nos tipos gerados e nos DTOs do cliente.
 
-As transações usam o controle de concorrência do Convex. A revisão esperada de um calendário continua sendo uma regra de negócio: duas sessões não podem substituir silenciosamente o trabalho uma da outra. Revisões humanas também são associadas à versão conferida e ficam desatualizadas quando o calendário ou a base muda.
+## Persistência e autorização
 
-## Compatibilidade dos dados
+Os dados correntes ficam em documentos Convex. Versões de calendários conservam metadados e referências a snapshots completos; revisões humanas têm seu próprio histórico. Os identificadores de domínio permanecem estáveis nas relações entre registros e arquivos. O codec em `src/convex-codec.mjs` serializa os valores utilizados pelos registros e snapshots.
 
-Os documentos atuais conservam os IDs da aplicação importada. O schema permanece compatível com os dados existentes; fotografias completas ficam separadas dos metadados das versões. O codec preserva propriedades explicitamente indefinidas e nomes reservados do formato original. Essa compatibilidade não exige manter o backend anterior.
+O backend deriva identidade, papel e campus da sessão. Contas CAMPUS só acessam a unidade autorizada; ADMIN possui acesso de gestão e revisão. Validação de permissões ocorre no backend em cada operação protegida.
 
-Membros de CAMPUS recebem somente registros da unidade autorizada. O backend deriva identidade, função e campus da sessão, não de parâmetros de autorização enviados pelo navegador. Uploads são vinculados ao proprietário e consumidos uma única vez. Downloads são privados e temporários. Nenhum segredo administrativo faz parte da resposta pública.
+PDFs ficam no Convex Storage. Uploads exigem proprietário autenticado, limite de tamanho, assinatura PDF e conferência do hash. Um upload validado só pode ser consumido uma vez. Downloads exigem autorização e tickets temporários. A geração de PDF usa recursos de impressão próprios e bloqueia a rede do renderizador durante a renderização.
 
-## Edição e reatividade
+## Edição e concorrência
 
-Formulários têm confirmação local por Adicionar/Aplicar; alterações aplicadas são salvas automaticamente. Campos não aplicados têm um indicador próprio e bloqueiam substituição reativa. Falhas, sessão expirada e conflitos são apresentados sem declarar sucesso. Durante queda de conexão, o SDK controla as mutations pendentes; a página deve permanecer aberta até a confirmação. Não há persistência durável offline implementada.
+As consultas Convex atualizam listas e editores por subscription. Transações protegem a consistência no backend; versões esperadas impedem que uma sessão substitua silenciosamente alterações de outra.
 
-A atualização de uma revisão institucional exige conferência explícita neste calendário. A análise humana possui seu próprio salvamento com autoria. PDF e impressão usam uma versão confirmada. Logo e estilos da visualização são assets do build; a action PDF incorpora seus próprios recursos e bloqueia a rede do renderizador.
+Adicionar/Aplicar transfere o preenchimento do formulário para o calendário. O autosave agrupa alterações próximas e serializa gravações. Só a confirmação do backend produz o estado salvo. Formulários ainda não aplicados impedem a substituição reativa de seus dados. Falhas recuperáveis oferecem nova tentativa; conflito ou sessão expirada bloqueiam novas gravações até a resolução indicada.
 
-## Qualidade e evolução
+Durante perda de conexão, as alterações permanecem na sessão e o SDK gerencia operações pendentes. Não existe persistência durável offline: a página deve ficar aberta até confirmar o salvamento. Baixar cópia preserva somente o estado já aplicado ao calendário.
 
-TypeScript 7 estrito cobre backend, contratos, cliente, autenticação, entradas React e ferramentas. O editor e regras maiores em JavaScript são mantidos durante a evolução incremental, com testes do domínio. Não são usados `ts-nocheck` ou casts gerais para simular uma conversão completa.
+Atualizar a base institucional exige conferência e confirmação no calendário. Revisões humanas são vinculadas à versão do calendário e à revisão da base; mudanças tornam a análise desatualizada. O salvamento da análise é explícito. Impressão e PDF usam uma versão confirmada.
 
-Oxlint verifica JavaScript e TypeScript; o lint com tipos abrange as fronteiras tipadas e o código da aplicação. Os testes de domínio e `convex-test` não precisam de um serviço remoto. A suíte E2E exige um deployment explicitamente descartável. A CI executa o mesmo `pnpm check` usado localmente, sem iniciar um segundo banco nem publicar dados.
+## Qualidade
+
+TypeScript estrito cobre backend, contratos, cliente, autenticação, entradas React e ferramentas. Parte do editor e das regras usa JavaScript, coberto por lint e testes. Oxlint verifica também Hooks e promises; Prettier padroniza código e documentação.
+
+Testes de domínio e `convex-test` executam sem deployment remoto. E2E usa apenas um deployment descartável explicitamente configurado. Os comandos de verificação estão no [README](../README.md).

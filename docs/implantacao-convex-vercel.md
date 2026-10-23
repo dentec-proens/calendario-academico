@@ -1,40 +1,46 @@
-# Publicação em produção
+# Implantação e operação
 
-## Destinos
+## Ambientes configurados
 
-- Repositório: `dentec-proens/calendario-academico`, branch `main`.
-- Convex: team `diretoria-de-ensino-tecnico-proens`, projeto `calendario-academico` (ID `3272722`).
-- Desenvolvimento: `oceanic-gazelle-652`.
-- Produção: `exuberant-cheetah-138`, https://exuberant-cheetah-138.convex.cloud.
-- Vercel: team `dentec-proens`, projeto `calendario-academico` (ID `prj_AlAdqLCrChRgLBS1wRnjif72pF01`).
-- Portal: https://calendario-academico-phi.vercel.app.
+| Serviço                   | Destino                                                                            |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| Repositório               | `dentec-proens/calendario-academico`, branch `main`                                |
+| Convex                    | Team `diretoria-de-ensino-tecnico-proens`, projeto `calendario-academico`          |
+| Convex de desenvolvimento | `oceanic-gazelle-652`                                                              |
+| Convex de produção        | `exuberant-cheetah-138`                                                            |
+| Vercel                    | Team `dentec-proens`, projeto `calendario-academico`                               |
+| Portal                    | [calendario-academico-phi.vercel.app](https://calendario-academico-phi.vercel.app) |
+
+Estes são os destinos registrados para o projeto, não uma verificação de disponibilidade dos serviços. Confira o destino efetivo na CLI e no painel antes de publicar ou restaurar dados.
 
 ## Configuração
 
-No deployment Convex de produção, `SITE_URL` deve ser `https://calendario-academico-phi.vercel.app`. `JWT_PRIVATE_KEY` e `JWKS` pertencem ao ambiente Convex; produção usa seu próprio par de assinatura. Nenhum segredo de autenticação pertence ao build Vite. Google permanece opcional e depende da configuração do provedor.
-
-Na Vercel, as variáveis públicas de **Production**, do tipo Config, são:
+O desenvolvimento usa `.env.local`, criado pelo CLI Convex; `.env.example` lista as variáveis públicas e a porta. Na Vercel, as variáveis de Production são:
 
 ```dotenv
 VITE_CONVEX_URL=https://exuberant-cheetah-138.convex.cloud
 VITE_CONVEX_SITE_URL=https://exuberant-cheetah-138.convex.site
 ```
 
-O preset é Vite e o build usa Node 24. `vercel.json` define instalação com lockfile, `pnpm build`, saída `dist/app`, rotas e cabeçalhos de segurança. A Vercel publica a branch `main`. Previews devem usar um deployment de teste próprio; não atribua automaticamente acesso à base de produção.
+No Convex de produção, `SITE_URL` deve apontar para `https://calendario-academico-phi.vercel.app`. `JWT_PRIVATE_KEY`, `JWKS` e credenciais dos provedores pertencem exclusivamente ao ambiente Convex. Cada ambiente tem sua própria configuração de autenticação. Nunca use prefixo `VITE_` em segredos.
 
-## Sequência de atualização
+`vercel.json` define instalação com lockfile, `pnpm build`, saída `dist/app`, rotas e cabeçalhos de segurança. O runtime de build é Node 24. A integração Git publica a branch `main`. Previews devem usar um deployment Convex de teste próprio; a URL do frontend não isola os dados do backend.
 
-1. Executar `pnpm check` no código que será publicado.
-2. Publicar as funções Convex com `pnpm convex:deploy`, conferindo o destino de produção anunciado pela CLI. Mudanças no schema devem ser compatíveis com os documentos existentes.
-3. Integrar e enviar `main` para o GitHub. A integração Git da Vercel constrói o portal com as variáveis de Production.
-4. Conferir o commit e o estado Ready na Vercel. Validar login, autorização, calendário, subscriptions e arquivos no domínio definitivo.
+## Publicação
 
-A publicação do portal não publica funções Convex. Alterações nas duas partes precisam respeitar essa ordem e manter compatibilidade durante a atualização. Builds também não importam nem reinicializam dados.
+1. Executar `pnpm check` no código a publicar.
+2. Se houver alterações do backend, publicar com `pnpm convex:deploy`, conferindo o destino anunciado pela CLI. Mudanças de schema e funções precisam manter compatibilidade com dados existentes e com o frontend durante a atualização.
+3. Integrar e enviar `main` ao GitHub para a integração Vercel construir o frontend.
+4. Conferir o commit e a conclusão do deployment. Validar login, autorização, abertura de calendários, sincronização e arquivos. Escritas de teste devem usar o ambiente descartável.
 
-## Primeira migração
+O build e a publicação Vercel não publicam funções Convex nem inicializam dados. `pnpm dev` prepara e acompanha o backend de desenvolvimento; não deve ser apontado casualmente para produção.
 
-A produção foi inicializada a partir de um snapshot Convex completo com Storage. Foram preservados IDs, credenciais, snapshots e metadados. Antes da importação, o destino estava vazio. Após a importação, uma nova exportação foi comparada campo a campo; veja [integridade da produção](evidencias-convex/production-integrity.json).
+## Backup e restauração
 
-Os 13 PDFs originais continuam pendentes de transferência. O único arquivo disponível no Storage no momento da migração é o PDF sintético usado nos testes anteriores. Exportações privadas incluem credenciais e não entram no Git; as evidências versionadas são sanitizadas.
+O backup deve incluir a exportação completa do Convex e o Storage quando houver arquivos, usando a opção `--include-file-storage`. Guardar exportações em local privado: elas podem conter credenciais e dados pessoais e não devem ser versionadas no Git.
 
-Para uma futura restauração, exporte com `--include-file-storage` e ensaie a importação do ZIP completo em outro deployment. Importações tabela a tabela podem quebrar referências; nunca execute uma substituição sobre produção sem conferir o conteúdo, o destino e o backup atual.
+Ensaiar a restauração completa em outro deployment antes de operar sobre produção. Conferir destino, conteúdo, referências entre documentos e disponibilidade dos arquivos. Importações isoladas de tabelas podem quebrar relações. Não substituir dados de produção sem backup atual e conferência explícita do destino.
+
+## Arquivos indisponíveis
+
+A pendência conhecida de transferência de 13 PDFs originais não foi resolvida pela atualização de código. Metadados e análises cadastradas não comprovam que os bytes estejam no Storage. Quando um desses arquivos estiver indisponível, preservar sua referência e providenciar o original pelo procedimento autorizado, sem recriar dados estruturados ou substituir o arquivo por uma amostra.

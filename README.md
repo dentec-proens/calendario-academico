@@ -1,73 +1,64 @@
 # Assistente de Calendários Acadêmicos DENTEC/PROENS
 
-Aplicação em fase alpha com React, Vite, TypeScript e Convex. Convex executa autenticação, consultas reativas, mutations, armazenamento e processamento de PDFs. O portal usa um único backend; o preview Node serve somente arquivos estáticos.
+Aplicação web em fase alpha para elaborar calendários acadêmicos e administrativos, conferir dias letivos e registrar a revisão técnico-pedagógica. O frontend usa React, Vite e TypeScript; autenticação, dados, arquivos e processamento de PDFs ficam no Convex.
 
 ## Desenvolvimento
 
-Requisitos: Node.js 24 LTS e pnpm 12.15.0. As versões das dependências são fixadas no `package.json` e no lockfile.
+Requisitos: Node.js 24 e pnpm 12.15.0. As dependências são fixadas em `package.json` e `pnpm-lock.yaml`.
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Na primeira execução, o CLI do Convex pede acesso à conta e ao projeto. Ele grava a seleção de deployment e a URL pública em `.env.local`. Veja `.env.example`; não copie configurações de outra instalação. O comando prepara as funções, inicia o watcher Convex e abre o Vite com atualização automática em http://127.0.0.1:4183. Ctrl+C encerra ambos.
+Na primeira execução, o CLI do Convex solicita acesso à conta e seleção do projeto, gravando a configuração em `.env.local`. Use `.env.example` como referência. `pnpm dev` prepara as funções, inicia o watcher Convex e serve o Vite em [localhost:4183](http://127.0.0.1:4183). Ctrl+C encerra os dois processos. Confira o deployment selecionado antes de executar comandos que alteram o backend.
 
-O projeto Convex `calendario-academico` pertence ao team Diretoria de Ensino Técnico — PROENS. Desenvolvimento usa `oceanic-gazelle-652`; produção usa `exuberant-cheetah-138`. O portal de produção fica em https://calendario-academico-phi.vercel.app, no projeto Vercel `dentec-proens/calendario-academico`. O build não publica funções nem inicializa dados. Veja [publicação em produção](docs/implantacao-convex-vercel.md).
-
-Para conferir o build estático:
+Para testar o build estático:
 
 ```sh
 pnpm build
 pnpm start
 ```
 
-O resultado fica em `dist/app/`. O preview escuta somente em `127.0.0.1:4183`; `PORT` permite outra porta. No Windows, `INICIAR.cmd` executa esse build e preview. Autenticação e dados continuam no Convex; não há API Node local.
+O build gera `dist/app/`. O preview escuta em `127.0.0.1:4183`; `PORT` altera a porta. No Windows, `INICIAR.cmd` executa build e preview. Os dados e o login continuam no Convex; o preview não fornece uma API local.
 
-## Qualidade
+## Uso
+
+ADMIN gerencia campi, contas, documentos, eventos institucionais e revisão humana. CAMPUS consulta a base institucional e trabalha somente nos calendários da unidade autorizada.
+
+No editor, **Adicionar/Aplicar** inclui o preenchimento no calendário e inicia o salvamento automático. O indicador confirma a gravação; campos ainda em edição não são salvos até serem aplicados. Conflitos e falhas preservam as alterações na tela e indicam a ação necessária.
+
+Calendários de teste geram PDFs identificados como teste. Calendários definitivos podem gerar uma cópia da proposta com pendências; a saída definitiva depende das verificações e da revisão humana atualizada. A aplicação não concede aprovação institucional nem assina ou protocola no SEI.
+
+Veja os fluxos e limites em [Uso da aplicação](docs/uso.md).
+
+## Verificação
 
 ```sh
 pnpm check
 ```
 
-Esse comando verifica formatação, lint, lint com análise de tipos, TypeScript estrito, testes e build. A CI executa o mesmo processo com uma URL sintética de build e sem credenciais de deployment.
+Executa formatação, lint, lint com análise de tipos, TypeScript, testes e build. Comandos individuais: `pnpm format:check`, `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test` e `pnpm build`.
 
-- TypeScript **7.0.2** nas fronteiras do backend, cliente Convex, autenticação, entradas React e ferramentas. `strict`, imports de tipos e verificações de símbolos não utilizados estão ativos.
-- Oxlint **1.89.0**, com verificações de correção, Hooks do React e promises; lint tipado usa o engine compatível com TypeScript 7. Regras de imports impedem reintroduzir os antigos provedores.
-- Prettier mantém a formatação de código e documentação. `pnpm format` aplica e `pnpm format:check` confere.
-- Os módulos maiores de cálculo e editor permanecem em JavaScript durante a migração progressiva. São testados e analisados pelo linter; não são declarados artificialmente como código TypeScript já migrado.
-- Testes usam `node:test` e `convex-test`, com fixtures descartáveis e funções reais do backend. E2E em navegador exige explicitamente um deployment descartável; não aponte essa suíte para os dados importados.
+Os testes de domínio e backend usam `node:test` e `convex-test`, com dados descartáveis e sem serviço remoto. Os testes de navegador são opcionais e exigem um deployment descartável, credenciais de teste e navegador, conforme `test/native-portal-browser.test.mjs`. Não devem apontar para produção. A CI executa `pnpm check` com configuração sintética de build, sem publicar funções nem alterar dados remotos.
 
-Comandos individuais: `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
+## Operação
 
-## Fluxos do portal
+O portal está configurado para [calendario-academico-phi.vercel.app](https://calendario-academico-phi.vercel.app). Desenvolvimento e produção usam deployments Convex separados. Build e publicação do frontend não publicam as funções do backend; consulte [Implantação e operação](docs/implantacao-convex-vercel.md).
 
-ADMIN gerencia contas, campi, base institucional, documentos e revisão humana. CAMPUS consulta a base e altera somente os calendários da unidade autorizada. O backend confere o vínculo em cada operação; esconder controles não substitui autorização.
-
-Calendários de teste geram PDF identificado como teste. Propostas definitivas mantêm suas pendências e dependem da revisão prevista; o sistema não concede aprovação institucional. Os cálculos usam datas civis, fontes e ofertas registradas, preservando as regras do domínio.
-
-Alterações entram no calendário com **Adicionar/Aplicar** e são salvas automaticamente após uma breve pausa. O indicador confirma o resultado. Falhas recuperáveis oferecem nova tentativa; conflitos preservam os dados locais e exigem conferir a versão atual. Campos ainda não aplicados ficam protegidos de atualizações remotas. **Baixar cópia** inclui os dados aplicados; **Importar cópia** abre esse JSON compatível.
-
-A confirmação de uma nova base institucional e o salvamento da análise humana continuam explícitos. As consultas Convex atualizam as listas e os editores sem refetch manual.
-
-## Dados, acesso e arquivos
-
-Identidades e sessões usam Convex Auth. Membros precisam estar ativos e previamente autorizados. Credenciais importadas compatíveis conservam o vínculo com seus IDs; não há cadastro público irrestrito.
-
-As funções em `convex/` executam transações e ações. Os dados atuais ficam em documentos Convex e as versões completas ficam em snapshots separados. Os IDs de domínio e as referências históricas importadas permanecem estáveis. PDFs são enviados ao Convex Storage, validados no backend e consultados com autorização e tickets temporários. Geração de PDF e extração de texto executam em actions Node do Convex.
-
-Os **13 PDFs originais permanecem pendentes de transferência**, conforme decisão do usuário. Seus metadados e referências estão preservados. A limpeza do código não baixa, reanalisa ou substitui esses arquivos.
-
-Segredos como `JWT_PRIVATE_KEY`, `JWKS` e credenciais Google pertencem ao ambiente do deployment Convex. Nunca entram em variáveis `VITE_*`, bundles, relatórios ou Git. Google depende da configuração do provedor. A recuperação de senha usa links temporários gerados pelo ADMIN; envio automático por e-mail ainda precisa ser implementado. Consulte [recuperação de acesso](docs/recuperacao-de-senha.md).
-
-Para alterar funções do laboratório, use `pnpm convex:dev`; para publicar funções em produção, o comando explícito é `pnpm convex:deploy`. Confira o alvo antes de executar. Backup usa a exportação completa do Convex, incluindo Storage quando necessário; uma importação de restauração deve ser ensaiada em deployment separado.
+Segredos de autenticação e provedores pertencem ao ambiente Convex. Somente configurações públicas usam prefixo `VITE_`. Contas precisam de autorização prévia; convites e recuperação de senha usam links temporários entregues manualmente. Veja [Acesso e contas](docs/recuperacao-de-senha.md).
 
 ## Estrutura e documentação
 
-- `convex/`: funções, autenticação, armazenamento e schema.
-- `src/`: regras puras de calendário, snapshots e suporte à renderização.
-- `web/`: portal React, cliente Convex e editor.
-- `scripts/`: desenvolvimento, build e geração de recursos de impressão.
-- `test/`: regras e funções Convex isoladas.
+| Diretório  | Conteúdo                                                          |
+| ---------- | ----------------------------------------------------------------- |
+| `web/`     | Portal React, cliente Convex, editor e renderização do calendário |
+| `convex/`  | Autenticação, consultas, transações, arquivos e processamento     |
+| `src/`     | Regras de calendário, contagem, sugestões, revisão e exportação   |
+| `scripts/` | Desenvolvimento, build e recursos de impressão                    |
+| `test/`    | Testes de domínio, backend, build e navegador                     |
 
-[Arquitetura](docs/arquitetura-convex.md) · [Regras e especificação](docs/especificacao.md) · [Proveniência dos dados](docs/migracao-dados.md) · [Evidências da consolidação](docs/evidencias-convex/consolidation-integrity.json)
+- [Uso da aplicação](docs/uso.md): funcionalidades disponíveis, salvamento, revisão e limitações.
+- [Arquitetura](docs/arquitetura-convex.md): componentes, autorização, persistência e concorrência.
+- [Acesso e contas](docs/recuperacao-de-senha.md): convites, recuperação e Google institucional.
+- [Implantação e operação](docs/implantacao-convex-vercel.md): ambientes, configuração, publicação e backups.
