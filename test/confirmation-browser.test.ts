@@ -226,8 +226,26 @@ test(
           { cause: error },
         );
       });
-    await page.locator('[data-view="edit"]').click();
+    await page.setViewport({ width: 1440, height: 1100 });
+    await page.locator('[data-view="periods"]').click();
     await page.locator('#period-name').fill('Preenchimento a preservar');
+    for (const section of ['edit', 'days', 'events', 'history', 'issues', 'periods']) {
+      await page.locator(`[data-view="${section}"]`).click();
+      assert.equal(
+        await page.$eval(`#${section}`, (node) => (node as HTMLElement).hidden),
+        false,
+        section,
+      );
+      assert.equal(
+        await page.$eval('input#period-name', (node) => node.value),
+        'Preenchimento a preservar',
+      );
+    }
+    await page.locator('#open-history').click();
+    await page.waitForSelector('#history', { visible: true });
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'history-file');
+    await page.locator('[data-view="periods"]').click();
+
     const file = join(directory, 'rascunho.json');
     const draft = await page.evaluate(() => ({
       ...window.editorTest.record.state,

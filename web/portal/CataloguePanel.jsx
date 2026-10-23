@@ -4,6 +4,7 @@ import { categories } from '../../src/categories.mjs';
 import { modalityLabels, selectableModalities } from '../../src/modalities.mjs';
 import { institution } from '../native/client.ts';
 import { useAction } from './useAction.ts';
+import CollectionPanel from './CollectionPanel.tsx';
 
 const emptyEvent = () => ({
   id: '',
@@ -17,7 +18,8 @@ const emptyEvent = () => ({
   active: true,
 });
 
-export default function CataloguePanel({ catalogue, isAdmin, notify }) {
+export default function CataloguePanel({ catalogue, canManage, notify }) {
+  const [creating, setCreating] = useState(false);
   const [event, setEvent] = useState(emptyEvent);
   const { pending, run } = useAction(notify);
   const nameRef = useRef(null);
@@ -32,6 +34,7 @@ export default function CataloguePanel({ catalogue, isAdmin, notify }) {
         revision: catalogue.revision,
       });
       setEvent(emptyEvent());
+      setCreating(false);
       notify('Base atualizada. Os campi receberão a nova revisão ao abrir seus calendários.');
     });
   }
@@ -45,17 +48,20 @@ export default function CataloguePanel({ catalogue, isAdmin, notify }) {
           (['integrado', 'subsequente'].includes(m) && item.offers.includes('tecnico')),
       ),
     });
-    nameRef.current?.focus();
+    setCreating(true);
+    requestAnimationFrame(() => nameRef.current?.focus());
   }
 
   return (
-    <div className="panel" aria-busy={pending}>
-      <h2>Feriados e eventos institucionais</h2>
-      <p id="catalogue-description">
-        Versão {catalogue.revision} · {catalogue.events.filter((e) => e.active).length} registros
-        ativos.
-      </p>
-      {isAdmin ? (
+    <CollectionPanel
+      title="Feriados e eventos institucionais"
+      actionLabel={event.id ? 'Continuar edição do evento' : 'Novo evento institucional'}
+      formTitle={event.id ? 'Editar evento institucional' : 'Novo evento institucional'}
+      formOpen={creating}
+      onFormOpen={setCreating}
+      canCreate={canManage}
+      busy={pending}
+      form={
         <form id="catalogue-form" onSubmit={submit}>
           <fieldset className="form-fields" disabled={pending}>
             <input type="hidden" id="catalogue-id" value={event.id} />
@@ -179,7 +185,12 @@ export default function CataloguePanel({ catalogue, isAdmin, notify }) {
             </div>
           </fieldset>
         </form>
-      ) : null}
+      }
+    >
+      <p id="catalogue-description">
+        Versão {catalogue.revision} · {catalogue.events.filter((e) => e.active).length} registros
+        ativos.
+      </p>
       <ul id="catalogue-list" className="records">
         {[...catalogue.events]
           .sort((a, b) => a.start.localeCompare(b.start))
@@ -195,7 +206,7 @@ export default function CataloguePanel({ catalogue, isAdmin, notify }) {
                 </small>
                 <small>{item.evidence}</small>
               </div>
-              {isAdmin ? (
+              {canManage ? (
                 <button
                   type="button"
                   className="link-button"
@@ -210,6 +221,6 @@ export default function CataloguePanel({ catalogue, isAdmin, notify }) {
             </li>
           ))}
       </ul>
-    </div>
+    </CollectionPanel>
   );
 }

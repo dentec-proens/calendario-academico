@@ -71,6 +71,7 @@ test(
 
     await Promise.all([login(editor), login(observer)]);
     const marker = 'Synthetic Convex React ' + Date.now();
+    await editor.locator('.collection-heading button').click();
     await editor.locator('#calendar-year').fill('2097');
     await editor.locator('input[name="calendar-modality"]').click();
     await editor.locator('#calendar-courses').fill(marker);
@@ -93,6 +94,7 @@ test(
     assert.equal(openedUrl.hash, '#history-area');
 
     async function addPeriod(name: string, start: string, end: string) {
+      await editor.locator('[data-view="periods"]').click();
       await editor.locator('#period-name').fill(name);
       await editor.locator('#period-start').fill(start);
       await editor.locator('#period-end').fill(end);
@@ -109,6 +111,7 @@ test(
 
     await addPeriod('Synthetic shared period', '2097-03-01', '2097-03-31');
     await contains(observer, '#period-list', 'Synthetic shared period');
+    await observer.locator('[data-view="periods"]').click();
     await observer.locator('#period-name').fill('Synthetic unapplied field');
     await addPeriod('Synthetic later period', '2097-04-01', '2097-04-30');
     await contains(observer, '#message', 'Suas alterações foram preservadas');
@@ -200,7 +203,8 @@ test(
     }
 
     await login(page, email, password);
-    await page.locator('[data-page="administration"]').click();
+    await page.locator('[data-page="accounts"]').click();
+    await page.locator('#accounts .collection-heading button').click();
     await page.locator('#user-name').fill(marker);
     await page.locator('#user-email').fill(memberEmail);
     await page.locator('#create-user-button').click();
@@ -267,6 +271,7 @@ test(
     await fixture.pdf({ path: pdf, format: 'A4' });
     await fixture.close();
     await page.locator('[data-page="institution"]').click();
+    await page.locator('#institution .collection-heading button').click();
     await page.locator('#document-year').fill('2097');
     await page.locator('#document-title').fill(marker);
     await page.locator('#document-source').fill('Referência sintética exclusiva do laboratório');
@@ -303,6 +308,7 @@ test(
     );
 
     await page.locator('[data-page="calendars"]').click();
+    await page.locator('#calendars .collection-heading button').click();
     await page.locator('#calendar-year').fill('2097');
     await page.locator('input[name="calendar-modality"]').click();
     await page.locator('#calendar-courses').fill(marker);
@@ -313,6 +319,7 @@ test(
     await contains('#record-heading', marker);
     const calendarId = new URL(page.url()).searchParams.get('id');
     assert(calendarId);
+    await page.locator('[data-view="history"]').click();
     const historyInput = await page.$('input#history-file');
     assert(historyInput);
     await historyInput.uploadFile(pdf);

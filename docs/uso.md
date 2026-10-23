@@ -1,10 +1,18 @@
 # Uso da aplicação
 
+## Navegação
+
+A barra lateral reúne **Calendários e referências** (Calendários, Documentos e normas e Feriados e eventos institucionais), com uma única tela por assunto. As ações e os filtros variam conforme as permissões: CAMPUS trabalha em sua unidade e consulta a base disponibilizada; ADMIN pode selecionar outros campi e manter a base. O grupo **Administração**, exclusivo do ADMIN, reúne Revisões e pareceres, Campi, Contas e acessos e Usuários online. Em telas pequenas, use **Navegação** para abrir o menu.
+
+As coleções abrem pela lista. Use **Novo calendário**, **Cadastrar campus**, **Nova conta**, **Adicionar documento** ou **Novo evento institucional** para abrir o formulário correspondente. **Voltar à lista** preserva os campos em preenchimento na sessão. A troca de seções também preserva esses campos; recarregar ou sair da página pode descartá-los.
+
+O editor está dividido em **Dados gerais**, **Períodos e avaliações**, **Sábados e férias**, **Eventos locais**, **Calendário anterior** e **Conferência e exportação**. As seções podem ser acessadas em qualquer ordem. **Visualizar calendário** abre a prévia anual. Campos ainda não aplicados permanecem em memória ao trocar de seção; a troca de seção não os salva.
+
 ## Perfis e criação
 
 ADMIN acessa todos os campi, gerencia contas e base institucional e registra a revisão técnico-pedagógica. CAMPUS consulta a base e cria, altera, exporta, exclui e restaura calendários da unidade autorizada. A autorização é conferida no backend.
 
-Em **Criar calendário**, informe campus, ano, formas de oferta, organização, cursos e, opcionalmente, turmas e turnos. O nome é preenchido a partir de campus e ano. Um calendário pode combinar Técnico integrado, Técnico subsequente, Graduação e Pós-graduação, com etapas próprias por oferta.
+Em **Calendários → Novo calendário**, informe campus, ano, formas de oferta, organização, cursos e, opcionalmente, turmas e turnos. O nome é preenchido a partir de campus e ano. Um calendário pode combinar Técnico integrado, Técnico subsequente, Graduação e Pós-graduação, com etapas próprias por oferta.
 
 Teste e definitivo são finalidades do calendário, não estados de aprovação. Um teste pode ser convertido em definitivo preservando os dados e o histórico e continua editável.
 
@@ -34,7 +42,7 @@ Em falha recuperável, use **Tentar novamente**. Conflito de versões ou sessão
 
 ## Base institucional e documentos
 
-Em **Base institucional**, ADMIN gerencia eventos e documentos por ano. CAMPUS consulta a base publicada. Eventos indicam datas, categoria, efeito, ofertas e fonte. Mudanças na revisão institucional exigem conferir o impacto e confirmar a atualização no calendário; uma análise humana anterior pode ficar desatualizada.
+Em **Documentos e normas** e **Feriados e eventos institucionais**, CAMPUS consulta a base disponibilizada e ADMIN também acessa as ações de manutenção. Em Documentos e normas, ambos podem filtrar por ano; ADMIN pode filtrar por situação (rascunho, vigente ou arquivado). Esses filtros são aplicados antes da paginação. As mesmas telas atendem os dois perfis. Eventos indicam datas, categoria, efeito, ofertas e fonte. Mudanças na revisão institucional exigem conferir o impacto e confirmar a atualização no calendário; uma análise humana anterior pode ficar desatualizada.
 
 Documentos aceitam PDF de até 8 MB, com título, ano, tipo e fundamento de aplicação. O envio cria um rascunho. Após baixar e conferir arquivo, ano e aplicabilidade, marque a conferência e use **Definir como vigente**. Há uma versão vigente por tipo e ano; a anterior é arquivada e preservada.
 
@@ -48,7 +56,7 @@ Use **Revisar e incluir** para conferir descrição, datas do ano atual, fonte v
 
 ## Revisão e saídas
 
-Em **Revisão do parecer**, ADMIN abre a análise, confere as indicações e confirma os critérios. A busca por nome/categoria apenas localiza candidatos; não comprova atendimento ou ausência documental. As situações humanas são Pendente, Atendido, Não atendido e Não aplicável. A conclusão é um texto proposto que o parecerista pode editar.
+Em **Revisões e pareceres**, ADMIN abre a análise, confere as indicações e confirma os critérios. A busca por nome/categoria apenas localiza candidatos; não comprova atendimento ou ausência documental. As situações humanas são Pendente, Atendido, Não atendido e Não aplicável. A conclusão é um texto proposto que o parecerista pode editar.
 
 O roteiro de revisão usa o Parecer SEI 3959640, de 2026; a interface alerta para outro ano. A apresentação da norma de 2027 usa a Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026, mas essa identificação não converte os critérios de 2026 em regras completas para outros anos. A norma aplicável e as evidências devem ser conferidas pelo responsável.
 

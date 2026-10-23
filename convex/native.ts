@@ -166,6 +166,32 @@ function calendarQuery(
           deleted ? q.gt('deletedAt', 0) : q.eq('deletedAt', undefined),
         );
 }
+function documentQuery(
+  ctx: Context,
+  user: Member,
+  year?: number,
+  status?: Infer<typeof validators.documentStatus>,
+) {
+  // Administrative filters never grant access to unpublished documents.
+  if (status !== undefined) {
+    admin(user);
+    if (year !== undefined)
+      return ctx.db
+        .query('documents')
+        .withIndex('by_year_and_status', (q) => q.eq('year', year).eq('status', status));
+    return ctx.db.query('documents').withIndex('by_status', (q) => q.eq('status', status));
+  }
+  if (year === undefined)
+    return user.role === 'ADMIN'
+      ? ctx.db.query('documents')
+      : ctx.db.query('documents').withIndex('by_publishedAt', (q) => q.gt('publishedAt', 0));
+  return ctx.db
+    .query('documents')
+    .withIndex('by_year_and_publishedAt', (q) =>
+      user.role === 'ADMIN' ? q.eq('year', year) : q.eq('year', year).gt('publishedAt', 0),
+    );
+}
+
 function pageBound(numItems: number) {
   if (!Number.isInteger(numItems) || numItems < 1 || numItems > 100)
     fail('Escolha páginas de até 100 registros.');
@@ -221,27 +247,22 @@ export const calendarPage = query({
   },
 });
 export const documentPage = query({
-  args: { paginationOpts: paginationOptsValidator, year: v.optional(v.number()) },
+  args: {
+    paginationOpts: paginationOptsValidator,
+    year: v.optional(v.number()),
+    status: v.optional(validators.documentStatus),
+  },
   returns: v.object({
     page: v.array(validators.documentMetadata),
     isDone: v.boolean(),
     continueCursor: v.string(),
   }),
-  handler: async (ctx, { paginationOpts, year }) => {
+  handler: async (ctx, { paginationOpts, year, status }) => {
     const { user } = await requireNativeUser(ctx);
     pageBound(paginationOpts.numItems);
     if (year !== undefined && (!Number.isInteger(year) || year < 1900 || year > 9999))
       fail('Ano inválido.');
-    const collection =
-      year === undefined
-        ? user.role === 'ADMIN'
-          ? ctx.db.query('documents')
-          : ctx.db.query('documents').withIndex('by_publishedAt', (q) => q.gt('publishedAt', 0))
-        : ctx.db
-            .query('documents')
-            .withIndex('by_year_and_publishedAt', (q) =>
-              user.role === 'ADMIN' ? q.eq('year', year) : q.eq('year', year).gt('publishedAt', 0),
-            );
+    const collection = documentQuery(ctx, user, year, status);
     const result = await collection.order('desc').paginate(paginationOpts);
     return {
       page: result.page.map((row) => documentDto(documentValue(row))),

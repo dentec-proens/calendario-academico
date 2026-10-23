@@ -40,7 +40,9 @@ O schema descreve os campos de cada entidade e usa referências `Id<"tabela">` n
 
 Timestamps operacionais são números em milissegundos. Datas acadêmicas usam `YYYY-MM-DD`, sem conversão de fuso. Os DTOs e snapshots de exportação conservam as representações exigidas pelas regras do editor; campos de compatibilidade de exportação não se tornam índices ou identidades do banco.
 
-O backend deriva identidade, papel e campus da sessão. Contas CAMPUS só acessam a unidade autorizada; ADMIN possui acesso de gestão e revisão. Validação de permissões ocorre no backend em cada operação protegida.
+O backend deriva identidade, papel e campus da sessão. Contas CAMPUS só acessam a unidade autorizada; ADMIN possui acesso de gestão e revisão. Validação de permissões ocorre no backend em cada operação protegida. `requireNativeUser` confere conta e sessão; `admin` e `assertCampus` concentram as verificações de gestão e escopo dos registros. Algumas verificações equivalentes ainda são locais a autenticação, arquivos e presença.
+
+No portal, `web/portal/permissions.ts` traduz o perfil em permissões de apresentação (selecionar campus, manter a base, revisar, gerenciar campi e contas e consultar presença). Os componentes recebem essas permissões; elas controlam a exibição, não autorizam requisições. Documentos e eventos têm uma única entrada e um único componente por assunto. O filtro administrativo de situação dos documentos exige ADMIN também no backend e usa índices antes da paginação.
 
 PDFs ficam no Convex Storage, referenciados diretamente por `storageId`; URLs são obtidas somente no acesso ao arquivo. `nativeUploads` guarda envios temporários: proprietário autenticado, limite de 8 MB, assinatura PDF e hash SHA-256 calculado no servidor. Um envio validado só pode ser consumido uma vez, e a limpeza preserva os bytes já vinculados ao documento. `nativeFileTickets` guarda apenas o hash do token de download e sua expiração. A geração de PDF usa recursos de impressão próprios e bloqueia a rede do renderizador durante a renderização.
 

@@ -41,7 +41,7 @@ export default function NativeApp() {
           <strong>PROENS - Pró-Reitoria de Ensino</strong>
           <div className="muted">Assistente de Calendário PROENS</div>
         </div>
-        <span className="badge" id="account">
+        <span className="badge" id="account" data-profile={info?.user.role}>
           {info ? `${info.user.name} · ${info.user.role}` : 'Portal PROENS'}
         </span>
         {isAuthenticated ? (

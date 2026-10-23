@@ -3,6 +3,7 @@ import { Archive, CheckCircle2, Download, Upload } from 'lucide-react';
 import { filePayload } from '../upload.ts';
 import { downloadLink, institution } from '../native/client.ts';
 import Pagination from './Pagination.tsx';
+import CollectionPanel from './CollectionPanel.tsx';
 
 const documentTypes = {
   norma: 'Resolução / norma',
@@ -11,14 +12,17 @@ const documentTypes = {
 };
 
 export default function DocumentsPanel({
-  isAdmin,
+  canManage,
   liveData,
   pagination,
   yearFilter,
   onYearFilter: setYearFilter,
+  statusFilter = '',
+  onStatusFilter,
 }) {
   const documents = liveData?.documents ?? [];
   const revision = liveData?.revision ?? 0;
+  const [creating, setCreating] = useState(false);
   const [confirmed, setConfirmed] = useState({});
   const [message, setMessage] = useState('');
   const loading = liveData === undefined;
@@ -47,7 +51,9 @@ export default function DocumentsPanel({
         ...payload,
       });
       form.reset();
+      setCreating(false);
       setYearFilter(String(year));
+      onStatusFilter('');
       setConfirmed({});
       setMessage(
         'Arquivo preservado como rascunho. Confira e defina como vigente para disponibilizá-lo aos campi.',
@@ -116,27 +122,21 @@ export default function DocumentsPanel({
   const busy = pending || loading;
 
   return (
-    <div className="panel">
-      <h2>Documentos da PROENS por ano</h2>
-      <label>
-        Filtrar documentos por ano
-        <input
-          id="document-year-filter"
-          type="number"
-          min="1900"
-          max="9999"
-          placeholder="Todos os anos"
-          value={yearFilter}
-          onChange={(event) => setYearFilter(event.target.value)}
-        />
-      </label>
-
-      <p id="document-message" role="status" aria-live="polite">
-        {message}
-      </p>
-      {isAdmin ? (
+    <CollectionPanel
+      title="Documentos e normas"
+      actionLabel="Adicionar documento"
+      formTitle="Adicionar nova versão"
+      formOpen={creating}
+      onFormOpen={setCreating}
+      canCreate={canManage}
+      busy={pending}
+      feedback={
+        <p id="document-message" role="status" aria-live="polite">
+          {message}
+        </p>
+      }
+      form={
         <form id="document-form" onSubmit={uploadDocument} aria-busy={pending}>
-          <h3>Adicionar nova versão</h3>
           <p className="help">
             Enviar um PDF não atualiza as datas nem as regras de análise. Revise os eventos e a
             aplicabilidade da base. Versões anteriores são preservadas.
@@ -194,7 +194,38 @@ export default function DocumentsPanel({
           </button>
           <p className="help">O arquivo será salvo como rascunho.</p>
         </form>
-      ) : null}
+      }
+    >
+      <div className="row-form">
+        <label>
+          Filtrar documentos por ano
+          <input
+            id="document-year-filter"
+            type="number"
+            min="1900"
+            max="9999"
+            placeholder="Todos os anos"
+            value={yearFilter}
+            onChange={(event) => setYearFilter(event.target.value)}
+          />
+        </label>
+
+        {canManage ? (
+          <label>
+            Situação do documento
+            <select
+              id="document-status-filter"
+              value={statusFilter}
+              onChange={(event) => onStatusFilter(event.target.value)}
+            >
+              <option value="">Todas as situações</option>
+              <option value="rascunho">Rascunhos</option>
+              <option value="vigente">Vigentes</option>
+              <option value="arquivado">Arquivados</option>
+            </select>
+          </label>
+        ) : null}
+      </div>
       <ul id="document-list" className="records" aria-busy={busy}>
         {filteredDocuments.length ? (
           filteredDocuments.map((document) => (
@@ -230,7 +261,7 @@ export default function DocumentsPanel({
                     <p className="notice">
                       PDF original aguardando restauração pela administração.
                     </p>
-                    {isAdmin ? (
+                    {canManage ? (
                       <form
                         data-restore-document={document.id}
                         aria-busy={pending}
@@ -258,7 +289,7 @@ export default function DocumentsPanel({
                     ) : null}
                   </>
                 ) : null}
-                {isAdmin ? (
+                {canManage ? (
                   <div>
                     {document.status !== 'vigente' ? (
                       <>
@@ -306,10 +337,18 @@ export default function DocumentsPanel({
             </li>
           ))
         ) : (
-          <li>Nenhum documento disponível para este ano.</li>
+          <li>
+            {loading
+              ? 'Carregando documentos…'
+              : statusFilter
+                ? 'Nenhum documento encontrado para os filtros selecionados.'
+                : year
+                  ? `Nenhum documento disponível para o ano ${year}.`
+                  : 'Nenhum documento PDF cadastrado.'}
+          </li>
         )}
       </ul>
       <Pagination pagination={pagination} label="Carregar mais documentos" />
-    </div>
+    </CollectionPanel>
   );
 }

@@ -6,6 +6,7 @@ import { modalityLabels, selectableModalities } from '../../src/modalities.mjs';
 import { calendars as calendarClient } from '../native/client.ts';
 import { useAction } from './useAction.ts';
 import Pagination from './Pagination.tsx';
+import CollectionPanel from './CollectionPanel.tsx';
 
 export function updatedLabel(value) {
   const date = value ? new Date(value) : null;
@@ -20,7 +21,7 @@ export function updatedLabel(value) {
 
 export default function CalendarsPanel({
   info,
-  isAdmin,
+  canSelectCampus,
   filter,
   onFilter,
   notify,
@@ -28,6 +29,7 @@ export default function CalendarsPanel({
   pagination,
   trashPagination,
 }) {
+  const [creating, setCreating] = useState(false);
   const [campusId, setCampusId] = useState('');
   const [year, setYear] = useState('2027');
   const trash = liveTrash?.calendars ?? [];
@@ -77,126 +79,131 @@ export default function CalendarsPanel({
 
   return (
     <section id="calendars" className="page" aria-busy={pending}>
-      <div className="panel">
-        <h2>Criar calendário</h2>
-        <form id="create-calendar" onSubmit={createCalendar}>
-          {!campus ? (
-            <p id="calendar-campus-notice" className="notice" role="status">
-              Nenhum campus ativo vinculado à conta. Solicite a regularização à administração
-              PROENS.
-            </p>
-          ) : null}
-          <fieldset className="form-fields" disabled={pending || !campus}>
-            <div className="row-form">
-              <label>
-                Campus
-                <select
-                  id="calendar-campus"
-                  required
-                  disabled={!isAdmin || !campus}
-                  value={campus?.id || ''}
-                  onChange={(e) => setCampusId(e.target.value)}
-                >
-                  {info.campuses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
+      <CollectionPanel
+        title="Calendários registrados"
+        actionLabel="Novo calendário"
+        formTitle="Criar calendário"
+        formOpen={creating}
+        onFormOpen={setCreating}
+        busy={pending}
+        form={
+          <form id="create-calendar" onSubmit={createCalendar}>
+            {!campus ? (
+              <p id="calendar-campus-notice" className="notice" role="status">
+                Nenhum campus ativo vinculado à conta. Solicite a regularização à administração
+                PROENS.
+              </p>
+            ) : null}
+            <fieldset className="form-fields" disabled={pending || !campus}>
+              <div className="row-form">
+                <label>
+                  Campus
+                  <select
+                    id="calendar-campus"
+                    required
+                    disabled={!canSelectCampus || !campus}
+                    value={campus?.id || ''}
+                    onChange={(e) => setCampusId(e.target.value)}
+                  >
+                    {info.campuses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Ano
+                  <input
+                    id="calendar-year"
+                    type="number"
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    min="1900"
+                    max="9999"
+                    required
+                  />
+                </label>
+                <fieldset id="calendar-modalities">
+                  <legend>Forma de oferta/nível — marque uma ou várias</legend>
+                  {selectableModalities.map((m) => (
+                    <label className="check" key={m}>
+                      <input type="checkbox" name="calendar-modality" value={m} />
+                      {modalityLabels[m]}
+                    </label>
                   ))}
-                </select>
-              </label>
-              <label>
-                Ano
-                <input
-                  id="calendar-year"
-                  type="number"
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                  min="1900"
-                  max="9999"
-                  required
-                />
-              </label>
-              <fieldset id="calendar-modalities">
-                <legend>Forma de oferta/nível — marque uma ou várias</legend>
-                {selectableModalities.map((m) => (
-                  <label className="check" key={m}>
-                    <input type="checkbox" name="calendar-modality" value={m} />
-                    {modalityLabels[m]}
-                  </label>
-                ))}
-              </fieldset>
-              <label>
-                Organização do calendário
-                <select id="calendar-regime" name="regime" defaultValue="anual">
-                  <option value="anual">Anual</option>
-                  <option value="semestral">Semestral</option>
-                  <option value="misto">Anual e semestral</option>
-                </select>
-              </label>
-            </div>
-            <div className="row-form">
-              <label>
-                Nome do calendário
-                <input
-                  id="calendar-name"
-                  value={name}
-                  readOnly
-                  maxLength={160}
-                  placeholder="Preenchido automaticamente pelo campus e ano"
-                />
-              </label>
-              <label>
-                Nome dos cursos
-                <input
-                  id="calendar-courses"
-                  name="courses"
-                  required
-                  maxLength={1000}
-                  placeholder="Ex.: Técnico em Informática"
-                />
-              </label>
-            </div>
-            <div className="row-form">
-              <label>
-                Turmas, se aplicável
-                <input
-                  id="calendar-classes"
-                  name="classes"
-                  maxLength={500}
-                  placeholder="Ex.: 1º, 2º e 3º anos"
-                />
-              </label>
-              <label>
-                Turnos, se aplicável
-                <input
-                  id="calendar-shifts"
-                  name="shifts"
-                  maxLength={200}
-                  placeholder="Ex.: matutino e vespertino"
-                />
-              </label>
-            </div>
-            <p>
-              Teste: PDF identificado como teste. Definitivo: PDF final sujeito à contagem e à
-              revisão dos critérios.
-            </p>
-            <div className="actions">
-              <button type="submit" name="purpose" value="test">
-                <CalendarPlus aria-hidden="true" size={18} />
-                Criar calendário de teste
-              </button>
-              <button type="submit" name="purpose" value="definitive">
-                <CalendarPlus aria-hidden="true" size={18} />
-                Criar calendário definitivo
-              </button>
-            </div>
-          </fieldset>
-        </form>
-      </div>
-      <div className="panel">
-        <h2>Calendários registrados</h2>
+                </fieldset>
+                <label>
+                  Organização do calendário
+                  <select id="calendar-regime" name="regime" defaultValue="anual">
+                    <option value="anual">Anual</option>
+                    <option value="semestral">Semestral</option>
+                    <option value="misto">Anual e semestral</option>
+                  </select>
+                </label>
+              </div>
+              <div className="row-form">
+                <label>
+                  Nome do calendário
+                  <input
+                    id="calendar-name"
+                    value={name}
+                    readOnly
+                    maxLength={160}
+                    placeholder="Preenchido automaticamente pelo campus e ano"
+                  />
+                </label>
+                <label>
+                  Nome dos cursos
+                  <input
+                    id="calendar-courses"
+                    name="courses"
+                    required
+                    maxLength={1000}
+                    placeholder="Ex.: Técnico em Informática"
+                  />
+                </label>
+              </div>
+              <div className="row-form">
+                <label>
+                  Turmas, se aplicável
+                  <input
+                    id="calendar-classes"
+                    name="classes"
+                    maxLength={500}
+                    placeholder="Ex.: 1º, 2º e 3º anos"
+                  />
+                </label>
+                <label>
+                  Turnos, se aplicável
+                  <input
+                    id="calendar-shifts"
+                    name="shifts"
+                    maxLength={200}
+                    placeholder="Ex.: matutino e vespertino"
+                  />
+                </label>
+              </div>
+              <p>
+                Teste: PDF identificado como teste. Definitivo: PDF final sujeito à contagem e à
+                revisão dos critérios.
+              </p>
+              <div className="actions">
+                <button type="submit" name="purpose" value="test">
+                  <CalendarPlus aria-hidden="true" size={18} />
+                  Criar calendário de teste
+                </button>
+                <button type="submit" name="purpose" value="definitive">
+                  <CalendarPlus aria-hidden="true" size={18} />
+                  Criar calendário definitivo
+                </button>
+              </div>
+            </fieldset>
+          </form>
+        }
+      >
         <p className="help">Horários de Brasília</p>
-        {isAdmin ? (
+        {canSelectCampus ? (
           <label id="filter-label">
             Filtrar por campus
             <select id="campus-filter" value={filter} onChange={(e) => onFilter(e.target.value)}>
@@ -303,7 +310,7 @@ export default function CalendarsPanel({
           </ul>
           <Pagination pagination={trashPagination} label="Carregar mais calendários da lixeira" />
         </details>
-      </div>
+      </CollectionPanel>
     </section>
   );
 }

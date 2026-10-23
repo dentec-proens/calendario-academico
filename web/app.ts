@@ -633,20 +633,48 @@ $('event-form').addEventListener('submit', (e) => {
     );
   });
 });
+const editorSections: Record<string, string> = {
+  edit: 'Dados gerais',
+  periods: 'Períodos e avaliações',
+  days: 'Sábados e férias',
+  events: 'Eventos locais',
+  history: 'Calendário anterior',
+  issues: 'Conferência e exportação',
+  calendar: 'Calendário anual',
+};
+
+function showEditorView(id: string, focus = true, updateUrl = true) {
+  if (!Object.hasOwn(editorSections, id)) return;
+  // An event may be being filled inline in an assessment or historical suggestion.
+  // Bringing it home must preserve its inputs and its original source.
+  if (id === 'events' && $('event-form').closest('.view')?.id !== 'events') restoreEventForm();
+  document.querySelectorAll<HTMLElement>('.editor-section-content > .view').forEach((view) => {
+    view.hidden = view.id !== id;
+  });
+  document.querySelectorAll<HTMLButtonElement>('.editor-sidebar [data-view]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.view === id);
+    if (button.dataset.view === id) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+  const title = $('editor-section-title');
+  title.textContent = editorSections[id];
+  if (focus) {
+    title.focus({ preventScroll: true });
+    title.scrollIntoView({ block: 'start' });
+  }
+  if (updateUrl) {
+    const url = new URL(location.href);
+    url.searchParams.set('section', id);
+    if (id !== 'history') url.hash = '';
+    window.history.replaceState(window.history.state, '', url);
+  }
+}
+
 document.addEventListener('click', (e) => {
   if (!(e.target instanceof Element)) return;
   const b = e.target.closest('button');
   if (!b) return;
-  if (b.dataset.view) {
-    document
-      .querySelectorAll<HTMLElement>('.view')
-      .forEach((v) => (v.hidden = v.id !== b.dataset.view));
-    document.querySelectorAll<HTMLElement>('.tab').forEach((t) => {
-      t.classList.toggle('active', t === b);
-      if (t === b) t.setAttribute('aria-current', 'page');
-      else t.removeAttribute('aria-current');
-    });
-  }
+  if (b.dataset.view) showEditorView(b.dataset.view);
   if (b.dataset.editPeriod) editPeriod(b.dataset.editPeriod);
   if (b.dataset.removePeriod) {
     if (editingPeriodId === b.dataset.removePeriod) resetPeriodForm();
@@ -830,7 +858,8 @@ async function openRecord() {
     showHistory();
     render();
     observeRecord();
-    if (location.hash === '#history-area') openHistory();
+    if (location.hash === '#history-area' && !new URLSearchParams(location.search).has('section'))
+      openHistory();
   } catch (e) {
     message(nativeError(e).message, true);
   }
@@ -917,7 +946,7 @@ document.addEventListener('click', (event) => {
 });
 
 function openHistory() {
-  document.querySelector<HTMLButtonElement>('[data-view="edit"]')?.click();
+  showEditorView('history');
   $('history-area').scrollIntoView({ behavior: 'smooth' });
   $('history-file').focus({ preventScroll: true });
 }
@@ -1256,8 +1285,8 @@ function renderSaturdays() {
   $('saturday-summary').textContent =
     (state.periods.length
       ? ''
-      : 'Primeiro, cadastre o início e o término na seção 3. Períodos letivos. Você já pode selecionar os sábados, mas só poderá adicioná-los dentro de um período. ') +
-    `${count} sábado(s) registrado(s) neste mês. Caixas marcadas e desativadas indicam datas já registradas; para removê-las, use a lista de eventos abaixo.`;
+      : 'Primeiro, cadastre o início e o término em Períodos e avaliações. Você já pode selecionar os sábados, mas só poderá adicioná-los dentro de um período. ') +
+    `${count} sábado(s) registrado(s) neste mês. Caixas marcadas e desativadas indicam datas já registradas; para removê-las, use a seção Eventos locais.`;
 }
 
 $('saturday-dates').addEventListener('change', (e) => {
@@ -1299,6 +1328,7 @@ $('download-pdf').onclick = async () => {
   try {
     button.disabled = true;
     $('download-pdf-top').disabled = true;
+    $('export-calendar').setAttribute('disabled', '');
     await autosaver.save();
     if (dirty)
       throw Error(
@@ -1330,6 +1360,7 @@ $('download-pdf').onclick = async () => {
   } finally {
     button.disabled = false;
     $('download-pdf-top').disabled = false;
+    $('export-calendar').removeAttribute('disabled');
     button.textContent = 'Baixar PDF';
     $('download-pdf-top').textContent = 'Baixar calendário em PDF';
   }
@@ -1362,6 +1393,8 @@ $('proens-color-guide').innerHTML = categories
   .map(([key, label]) => `<span class="cat-${key}">${label}</span>`)
   .join('');
 $('download-pdf-top').onclick = () => $('download-pdf').click();
+$('export-calendar').onclick = () => $('download-pdf').click();
+showEditorView(new URLSearchParams(location.search).get('section') ?? 'edit', false, false);
 void openRecord();
 
 $('recalculate-stages').onclick = () =>
@@ -1457,7 +1490,7 @@ function prepareActivity(id: string) {
   $('event-hours').value = '';
   $('event-confirmed').checked = false;
   updateStageSuggestion();
-  openInlineActivity(id);
+  openInlineActivity(id, true);
   $('event-start').focus({ preventScroll: true });
 }
 
@@ -1789,7 +1822,7 @@ function periodDurationPreview() {
       (pending
         ? 'Estimativa provisória (' +
           (checked.length ? 'dias marcados' : 'segunda a sexta') +
-          '). Confirme e aplique a semana letiva no item 2 para adicionar o período. '
+          '). Confirme e aplique a semana letiva em Dados gerais para adicionar o período. '
         : '') +
       'Término previsto: ' +
       dateLabel($('period-end').value) +
@@ -1826,7 +1859,7 @@ for (const part of ['first', 'second', 'third']) {
 
 document.querySelector<HTMLElement>('#weekdays')!.addEventListener('change', periodDurationPreview);
 
-function openInlineActivity(id: string) {
+function openInlineActivity(id: string, reveal = false) {
   const row = document.querySelector('[data-activity-row="' + id + '"]');
   if (!row) return;
   restoreEventForm();
@@ -1844,7 +1877,10 @@ function openInlineActivity(id: string) {
     row.scrollIntoView({ block: 'nearest' });
   };
   $('event-form').append(close);
-  row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  if (reveal) {
+    showEditorView(row.closest('.view')?.id ?? 'events', false);
+    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
 }
 
 function setEventSubmitLabel() {
@@ -1865,6 +1901,7 @@ function editEvent(id: string) {
   if (
     ['teacher-vacation-january', 'teacher-vacation-july', 'teacher-vacation-third'].includes(id)
   ) {
+    showEditorView('days', false);
     $('vacation-form').scrollIntoView({ block: 'center' });
     message('Edite as férias docentes no formulário próprio e clique em Aplicar férias docentes.');
     return;
@@ -1899,8 +1936,11 @@ function editEvent(id: string) {
     event.requirementId &&
     document.querySelector('[data-activity-row="' + event.requirementId + '"]')
   )
-    openInlineActivity(event.requirementId);
-  else $('event-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
+    openInlineActivity(event.requirementId, true);
+  else {
+    showEditorView('events', false);
+    $('event-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
   message(
     'Editando ' +
       event.name +
@@ -1918,6 +1958,7 @@ function resetPeriodForm() {
 }
 
 function editPeriod(id: string) {
+  showEditorView('periods', false);
   const period = state.periods.find((p) => p.id === id);
   if (!period) return;
   editingPeriodId = id;

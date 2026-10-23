@@ -768,3 +768,54 @@ test('document pagination applies publication access and year filters before its
   assert.equal(admin.page.length, 3);
   assert(admin.page.some((document) => document.id === ids.documents['draft-2027']));
 });
+
+test('document status filters are administrative and paginate within the selected status and year', async () => {
+  const { asClient, ids } = await fixture({
+    documents: [
+      { id: 'draft', year: 2027, type: 'norma', title: 'Rascunho', status: 'rascunho' },
+      { id: 'draft2', year: 2027, type: 'norma', title: 'Outro rascunho', status: 'rascunho' },
+      { id: 'other-year', year: 2028, type: 'norma', title: 'Outro ano', status: 'rascunho' },
+      {
+        id: 'current',
+        year: 2027,
+        type: 'norma',
+        title: 'Vigente',
+        status: 'vigente',
+        publishedAt: 1,
+      },
+    ],
+  });
+  const admin = asClient('admin');
+  const loaded = [];
+  let cursor: string | null = null;
+  for (;;) {
+    const result: FunctionReturnType<typeof api.native.documentPage> = await admin.query(
+      api.native.documentPage,
+      {
+        year: 2027,
+        status: 'rascunho',
+        paginationOpts: { numItems: 1, cursor },
+      },
+    );
+    loaded.push(...result.page);
+    if (result.isDone) break;
+    cursor = result.continueCursor;
+  }
+  assert.deepEqual(
+    new Set(loaded.map((document) => document.id)),
+    new Set([ids.documents.draft, ids.documents.draft2]),
+  );
+  const allYears = await admin.query(api.native.documentPage, {
+    status: 'rascunho',
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  assert.equal(allYears.page.length, 3);
+  for (const status of ['rascunho', 'vigente', 'arquivado'] as const)
+    await assert.rejects(
+      asClient('campus-a').query(api.native.documentPage, {
+        status,
+        paginationOpts: { numItems: 10, cursor: null },
+      }),
+      /Acesso exclusivo/,
+    );
+});

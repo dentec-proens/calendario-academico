@@ -107,6 +107,7 @@ export default defineSchema({
   })
     .index('by_year_and_type_and_status', ['year', 'type', 'status'])
     .index('by_year_and_publishedAt', ['year', 'publishedAt'])
+    .index('by_year_and_status', ['year', 'status'])
     .index('by_status', ['status'])
     .index('by_publishedAt', ['publishedAt'])
     .index('by_storageId', ['storageId']),
