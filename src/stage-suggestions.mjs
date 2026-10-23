@@ -1,6 +1,6 @@
 import { assessmentCount, scopedRequirement, stageRequirement } from './obligations.mjs';
 import { evaluateCalendar } from './evaluation.mjs';
-import { parseDate } from './calendar.mjs';
+import { parseDate } from './calendar.ts';
 import { calendarModalities, appliesTo } from './modalities.mjs';
 
 export function isFirstStageStart(name) {

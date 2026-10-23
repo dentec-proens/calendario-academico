@@ -50,7 +50,7 @@ pnpm check
 
 Executa formatação, lint, lint com análise de tipos, TypeScript, testes e build. Comandos individuais: `pnpm format:check`, `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test` e `pnpm build`.
 
-Os testes de domínio e backend usam `node:test` e `convex-test`, com dados descartáveis e sem serviço remoto. Os testes de navegador são opcionais e exigem um deployment descartável, credenciais de teste e navegador, conforme `test/native-portal-browser.test.mjs`. Não devem apontar para produção. A CI executa `pnpm check` com configuração sintética de build, sem publicar funções nem alterar dados remotos.
+Os testes de domínio e backend usam TypeScript, Vitest e `convex-test`, com dados descartáveis e sem serviço remoto. Eles entram na checagem estrita de tipos (`pnpm typecheck:tests`). Use `pnpm test:unit` para uma execução ou `pnpm test:watch` para executar novamente os testes afetados durante o desenvolvimento. `pnpm test` executa toda a suíte em Vitest, incluindo infraestrutura e autosave; `pnpm test:unit` exclui os testes de navegador e `pnpm test:browser` executa apenas esses testes. Os testes de navegador são opcionais e exigem um deployment descartável, credenciais de teste e navegador, conforme `test/native-portal-browser.test.ts`. Não devem apontar para produção. A CI executa `pnpm check` com configuração sintética de build, sem publicar funções nem alterar dados remotos.
 
 ## Operação
 

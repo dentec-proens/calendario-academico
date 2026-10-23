@@ -1,4 +1,4 @@
-import { parseDate, datesBetween } from './calendar.mjs';
+import { parseDate, datesBetween } from './calendar.ts';
 import { withVacationExclusions } from './teacher-vacations.mjs';
 import { calendarModalities, appliesTo } from './modalities.mjs';
 

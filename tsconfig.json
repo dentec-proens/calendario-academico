@@ -9,11 +9,11 @@
     "web/**/*.tsx",
     "convex/**/*.ts",
     "scripts/**/*.ts",
-    "src/app-server.ts",
-    "src/app-routes.ts",
     "server.ts",
     "vite.config.ts",
-    "test/helpers/**/*.ts"
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "vitest.config.ts"
   ],
   "exclude": ["convex/_generated", "node_modules", "dist", "backup-*"]
 }

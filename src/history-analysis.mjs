@@ -1,5 +1,5 @@
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { extractHistoricalDates, monthHeading } from './history-dates.mjs';
+import { extractHistoricalDates, monthHeading } from './history-dates.ts';
 
 // Extract only text, never execute document scripts or interpret its contents as instructions.
 export async function analyzeHistory(bytes) {

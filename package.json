@@ -11,20 +11,24 @@
     "preview": "tsx server.ts",
     "convex:dev": "tsx scripts/convex-dev.ts",
     "convex:codegen": "convex codegen",
-    "typecheck": "pnpm run typecheck:app && pnpm run typecheck:convex && pnpm run typecheck:tools",
+    "typecheck": "pnpm run typecheck:app && pnpm run typecheck:convex && pnpm run typecheck:tools && pnpm run typecheck:tests",
     "typecheck:app": "tsc --noEmit -p web/tsconfig.json",
     "typecheck:convex": "tsc --noEmit -p convex/tsconfig.json",
     "typecheck:tools": "tsc --noEmit -p tsconfig.tools.json",
     "lint": "oxlint --deny-warnings",
     "lint:fix": "oxlint --fix --deny-warnings",
-    "lint:types": "oxlint --type-aware --deny-warnings convex web scripts config src/app-server.ts src/app-routes.ts server.ts vite.config.ts test/helpers",
+    "lint:types": "oxlint --type-aware --deny-warnings convex web scripts config src/app-server.ts src/app-routes.ts server.ts vite.config.ts test/helpers \"test/**/*.ts\" src/calendar.ts src/history-dates.ts src/domain-types.ts vitest.config.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node --import tsx --test --test-concurrency=1 test/*.test.mjs",
+    "test": "vitest run",
     "check": "pnpm run format:check && pnpm run lint && pnpm run lint:types && pnpm run typecheck && pnpm test && pnpm run build",
     "dev:setup": "tsx scripts/dev-setup.ts",
     "env:doctor": "tsx scripts/doctor.ts",
-    "deploy:production": "tsx scripts/deploy-production.ts"
+    "deploy:production": "tsx scripts/deploy-production.ts",
+    "test:unit": "vitest run --exclude test/native-portal-browser.test.ts",
+    "test:watch": "vitest",
+    "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
+    "test:browser": "vitest run test/native-portal-browser.test.ts"
   },
   "engines": {
     "node": "24.x",
@@ -44,14 +48,15 @@
   },
   "devDependencies": {
     "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "convex-test": "0.0.64",
+    "oxlint": "1.89.0",
+    "oxlint-tsgolint": "7.0.2005",
     "prettier": "3.9.10",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
     "vite": "8.3.5",
-    "@types/react": "19.3.0",
-    "@types/react-dom": "19.3.0",
-    "oxlint": "1.89.0",
-    "oxlint-tsgolint": "7.0.2005"
+    "vitest": "^5.0.5"
   }
 }

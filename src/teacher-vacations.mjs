@@ -1,4 +1,4 @@
-import { datesBetween } from './calendar.mjs';
+import { datesBetween } from './calendar.ts';
 
 // Interpret the stable vacation IDs in old saved calendars without rewriting
 // their stored versions. Other informational events keep their original effect.

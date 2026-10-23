@@ -1,4 +1,4 @@
-import { datesBetween, parseDate } from './calendar.mjs';
+import { datesBetween, parseDate } from './calendar.ts';
 
 export function monthSaturdays(year, month) {
   const prefix = `${year}-${String(month).padStart(2, '0')}`;

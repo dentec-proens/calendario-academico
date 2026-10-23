@@ -1,4 +1,4 @@
-import { datesBetween } from './calendar.mjs';
+import { datesBetween } from './calendar.ts';
 
 // Explicit institutional event identity: no other holiday can be moved by a campus.
 export const teacherDayId = 'inst:ifpr2027-16';
@@ -31,6 +31,7 @@ export function validateTeacherDay(date, year) {
   return date;
 }
 
+/** @param {{ year: number, teacherDayDate?: string | null }} state */
 export function campusInstitutionalEvents(events, state) {
   const date = validateTeacherDay(state.teacherDayDate, state.year);
   if (date && !events.some((e) => e.id === teacherDayId))

@@ -120,6 +120,7 @@ export function initialCatalogue() {
   return { revision: 1, events };
 }
 
+/** @param {{ year: number, teacherDayDate?: string | null }} state */
 export function inheritedEvents(catalogue, year, offer, state = { year }) {
   const modalities = Array.isArray(offer) ? offer : [offer];
   return campusInstitutionalEvents(

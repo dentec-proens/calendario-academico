@@ -1,5 +1,5 @@
 import { convexTest } from 'convex-test';
-import { makeFunctionReference } from 'convex/server';
+import { api, internal } from '../../convex/_generated/api.js';
 import schema from '../../convex/schema';
 import { applyChanges, readSnapshot } from '../../convex/store';
 import { encodeValue, decodeValue } from '../../src/convex-codec.mjs';
@@ -95,14 +95,13 @@ export async function createNativeFixture(overrides: Seed = {}) {
     const account = accounts[id];
     if (!account) throw new Error('Unknown synthetic fixture user.');
     return {
-      read: (path: string) =>
-        account.query(makeFunctionReference<'query'>('native:read'), { path }),
+      read: (path: string) => account.query(api.native.read, { path }),
       write: (path: string, body: Entity = {}, method = 'POST') =>
-        account.mutation(makeFunctionReference<'mutation'>('native:write'), { path, method, body }),
+        account.mutation(api.native.write, { path, method, body }),
       actionContext: (path: string, body: Entity = {}) =>
-        account.query(makeFunctionReference<'query'>('native:actionContext'), { path, body }),
+        account.query(internal.native.actionContext, { path, body }),
       finishAction: (path: string, body: Entity, result: Entity) =>
-        account.mutation(makeFunctionReference<'mutation'>('native:finishAction'), {
+        account.mutation(internal.native.finishAction, {
           path,
           body,
           result,

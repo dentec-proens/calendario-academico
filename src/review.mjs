@@ -8,6 +8,7 @@ export const reviewSource = {
   title: 'Parecer técnico-pedagógico de calendário acadêmico e administrativo',
   norm: 'Resolução Consup/IFPR 259, de 27/11/2025',
 };
+/** @type {[string, string, number, string, number | null][]} */
 const rows = [
   [
     'annual',

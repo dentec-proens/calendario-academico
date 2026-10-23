@@ -32,6 +32,7 @@ export function migrateAssessmentEvents(state) {
 
 // Undated PROENS operational checklist. Campus histories are separate references.
 // Historical dates are deliberately excluded. Applicability is reviewed separately.
+/** @returns {import('./domain-types.ts').ActivityRequirement[]} */
 export function activityChecklist(state) {
   if (state.assessmentStagesByModality) {
     const common = activityChecklist({

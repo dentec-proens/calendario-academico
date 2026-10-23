@@ -1,9 +1,10 @@
-import { countCalendar } from './calendar.mjs';
+import { countCalendar } from './calendar.ts';
 import { withVacationExclusions } from './teacher-vacations.mjs';
 import { calendarModalities, appliesTo } from './modalities.mjs';
 
 export function evaluateCalendar(s, events) {
   events = withVacationExclusions(events);
+  /** @type {Record<string, ReturnType<typeof countCalendar>>} */
   const byModality = {};
   for (const modality of calendarModalities(s)) {
     const scoped = events.filter((e) => appliesTo(e, modality));

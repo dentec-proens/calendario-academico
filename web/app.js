@@ -6,7 +6,7 @@ import {
   validateTeacherDay,
   teacherDayWeek,
 } from '/teacher-day.mjs';
-import { createAutosaver } from './autosave.js';
+import { createAutosaver } from './autosave.ts';
 import { durationEnd, recalculatePeriods } from '/duration.mjs';
 import { proposedDates } from '/history-dates.mjs';
 import {
@@ -1115,7 +1115,7 @@ $('server-save').onclick = () => {
     message('Abra um calendário registrado.', true);
     return;
   }
-  autosaver.save(true);
+  void autosaver.save(true);
 };
 $('make-definitive').onclick = async () => {
   if (!record || record.purpose !== 'test' || converting) return;

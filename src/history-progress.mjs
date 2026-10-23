@@ -1,4 +1,4 @@
-import { proposedDates } from './history-dates.mjs';
+import { proposedDates } from './history-dates.ts';
 import { calendarModalities, appliesTo } from './modalities.mjs';
 
 const normalized = (value) =>

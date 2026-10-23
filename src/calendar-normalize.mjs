@@ -3,7 +3,7 @@ import { teacherVacations } from './teacher-vacations.mjs';
 import { calendarModalities, modalityLabels } from './modalities.mjs';
 import { activityChecklist, mergeLegacyStages, migrateAssessmentEvents } from './obligations.mjs';
 import { eventCategory, validCategory } from './categories.mjs';
-import { datesBetween } from './calendar.mjs';
+import { datesBetween } from './calendar.ts';
 
 const fail = (message, status = 400) => {
   throw Object.assign(Error(message), { status });

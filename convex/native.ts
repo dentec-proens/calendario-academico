@@ -19,7 +19,7 @@ import {
   documentTypes,
 } from '../src/document-state.mjs';
 import { inheritedEvents } from '../src/institution.mjs';
-import { datesBetween } from '../src/calendar.mjs';
+import { datesBetween } from '../src/calendar.ts';
 import { validCategory } from '../src/categories.mjs';
 import { releaseReadiness } from '../src/release.mjs';
 import { mergeLegacyStages } from '../src/obligations.mjs';

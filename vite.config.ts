@@ -49,7 +49,12 @@ export default defineConfig(({ mode }) => {
       alias: Object.fromEntries(
         domainModules.map((name) => [
           `/${name}.mjs`,
-          fileURLToPath(new URL(`./src/${name}.mjs`, import.meta.url)),
+          fileURLToPath(
+            new URL(
+              `./src/${name}.${['calendar', 'history-dates'].includes(name) ? 'ts' : 'mjs'}`,
+              import.meta.url,
+            ),
+          ),
         ]),
       ),
     },
