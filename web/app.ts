@@ -851,6 +851,10 @@ async function openRecord() {
   }
   try {
     const [status, opened] = await Promise.all([accounts.status(), calendars.get(calendarId)]);
+    if (status.user?.role === 'PARECERISTA') {
+      location.href = '/?page=review-panel';
+      return;
+    }
     record = opened;
     isAdmin = status.user?.role === 'ADMIN';
     state = record.state;

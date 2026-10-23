@@ -21,7 +21,7 @@ export default defineSchema({
     ...authTables.users.validator.fields,
     name: v.string(),
     email: v.string(),
-    role: v.union(v.literal('ADMIN'), v.literal('CAMPUS')),
+    role: v.union(v.literal('ADMIN'), v.literal('CAMPUS'), v.literal('PARECERISTA')),
     campusId: v.optional(v.id('campuses')),
     active: v.boolean(),
     loginMethod: v.union(v.literal('local'), v.literal('google'), v.literal('invite')),

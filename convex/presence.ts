@@ -45,7 +45,7 @@ export const online = query({
         id: v.id('users'),
         name: v.string(),
         email: v.string(),
-        role: v.union(v.literal('ADMIN'), v.literal('CAMPUS')),
+        role: v.union(v.literal('ADMIN'), v.literal('CAMPUS'), v.literal('PARECERISTA')),
         campusId: v.union(v.id('campuses'), v.null()),
         campusName: v.string(),
       }),

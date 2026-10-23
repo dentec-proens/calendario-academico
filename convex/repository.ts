@@ -15,6 +15,13 @@ export function fail(message: string, status = 400): never {
 export function admin(user: Member) {
   if (user.role !== 'ADMIN') fail('Acesso exclusivo da administração.', 403);
 }
+export function reviewer(user: Member) {
+  if (user.role !== 'ADMIN' && user.role !== 'PARECERISTA')
+    fail('Acesso exclusivo da administração e dos pareceristas.', 403);
+}
+export function calendarEditor(user: Member) {
+  if (user.role === 'PARECERISTA') fail('Pareceristas não podem alterar calendários.', 403);
+}
 export const iso = (at: number) => new Date(at).toISOString();
 export function clean<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -24,7 +31,7 @@ export function text(value: string, maximum = 240) {
   return value.trim();
 }
 export function assertCampus(user: Member, campusId: Id<'campuses'>) {
-  if (user.role !== 'ADMIN' && user.campusId !== campusId) fail('Registro não encontrado.', 404);
+  if (user.role === 'CAMPUS' && user.campusId !== campusId) fail('Registro não encontrado.', 404);
 }
 export async function calendarRow(ctx: Context, user: Member, id: Id<'calendars'>, trash = false) {
   const row = await ctx.db.get(id);

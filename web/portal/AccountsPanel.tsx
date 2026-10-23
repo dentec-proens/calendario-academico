@@ -87,7 +87,7 @@ export default function AccountsPanel({
   notify: Notify;
 }) {
   const [creating, setCreating] = useState(false);
-  const [role, setRole] = useState<'CAMPUS' | 'ADMIN'>('CAMPUS');
+  const [role, setRole] = useState<Bootstrap['user']['role']>('CAMPUS');
   const [method, setMethod] = useState<'invite' | 'google' | 'local'>('invite');
   const [campusId, setCampusId] = useState('');
   const [invite, setInvite] = useState<Invitation | null>(null);
@@ -115,7 +115,7 @@ export default function AccountsPanel({
         password: method === 'local' ? formText(data, 'password') : '',
         loginMethod: method,
         role,
-        campusId: admin ? null : (formText(data, 'campusId') as Id<'campuses'>),
+        campusId: role !== 'CAMPUS' ? null : (formText(data, 'campusId') as Id<'campuses'>),
       });
       form.reset();
       setCreating(false);
@@ -133,7 +133,9 @@ export default function AccountsPanel({
             ? 'Acesso Google autorizado para o e-mail cadastrado. Nenhum e-mail foi enviado; o login depende da configuração Google pela TI.'
             : admin
               ? 'Conta ADMIN criada para a equipe DENTEC/PROENS, com acesso a todos os campi.'
-              : 'Conta CAMPUS criada com acesso à unidade selecionada.',
+              : role === 'PARECERISTA'
+                ? 'Conta PARECERISTA criada para análise e emissão de pareceres.'
+                : 'Conta CAMPUS criada com acesso à unidade selecionada.',
         );
     });
   }
@@ -253,10 +255,11 @@ export default function AccountsPanel({
                 <select
                   id="user-role"
                   value={role}
-                  onChange={(e) => setRole(e.target.value === 'ADMIN' ? 'ADMIN' : 'CAMPUS')}
+                  onChange={(e) => setRole(e.target.value as Bootstrap['user']['role'])}
                 >
                   <option value="CAMPUS">CAMPUS · Apenas sua unidade</option>
-                  <option value="ADMIN">ADMIN · Equipe DENTEC/PROENS</option>
+                  <option value="ADMIN">ADMIN · Acesso completo</option>
+                  <option value="PARECERISTA">PARECERISTA · Revisões e pareceres</option>
                 </select>
               </label>
               {admin ? (
@@ -273,7 +276,7 @@ export default function AccountsPanel({
                   E-mail institucional
                   <input id="user-email" name="email" type="email" required />
                 </label>
-                {!admin ? (
+                {role === 'CAMPUS' ? (
                   <label id="user-campus-label">
                     Campus autorizado
                     <select
@@ -334,6 +337,12 @@ export default function AccountsPanel({
                 </small>
               </div>
               <div className="actions">
+                <MemberRoleEditor
+                  key={u.role + (u.campusId || '')}
+                  member={u}
+                  campuses={info.campuses}
+                  notify={notify}
+                />
                 {u.active && u.loginMethod !== 'google' ? (
                   <Button
                     type="button"
@@ -382,5 +391,70 @@ export default function AccountsPanel({
         </ul>
       </CollectionPanel>
     </section>
+  );
+}
+
+function MemberRoleEditor({
+  member,
+  campuses,
+  notify,
+}: {
+  member: Bootstrap['users'][number];
+  campuses: Bootstrap['campuses'];
+  notify: Notify;
+}) {
+  const [role, setRole] = useState(member.role);
+  const [campusId, setCampusId] = useState(member.campusId || '');
+  const { pending, run } = useAction(notify);
+  const changed = role !== member.role || (role === 'CAMPUS' && campusId !== member.campusId);
+  return (
+    <form
+      className="row-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        run(async () => {
+          await accounts.updateMemberRole({
+            id: member.id,
+            role,
+            campusId: role === 'CAMPUS' ? (campusId as Id<'campuses'>) : null,
+          });
+          notify('Perfil atualizado. O usuário deverá entrar novamente.');
+        });
+      }}
+    >
+      <label>
+        Perfil de {member.name}
+        <select
+          value={role}
+          disabled={pending}
+          onChange={(event) => setRole(event.target.value as typeof role)}
+        >
+          <option value="ADMIN">Admin</option>
+          <option value="PARECERISTA">Parecerista</option>
+          <option value="CAMPUS">Campus</option>
+        </select>
+      </label>
+      {role === 'CAMPUS' ? (
+        <label>
+          Campus de {member.name}
+          <select
+            value={campusId}
+            required
+            disabled={pending}
+            onChange={(event) => setCampusId(event.target.value)}
+          >
+            <option value="">Selecione o campus</option>
+            {campuses.map((campus) => (
+              <option key={campus.id} value={campus.id}>
+                {campus.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      <Button type="submit" disabled={pending || !changed}>
+        Salvar perfil
+      </Button>
+    </form>
   );
 }

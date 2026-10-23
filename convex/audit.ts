@@ -33,6 +33,7 @@ const labels: Record<string, string> = {
   UPDATE_CATALOGUE: 'Base institucional alterada',
   CREATE_CAMPUS: 'Unidade cadastrada',
   CREATE_ADMIN: 'Administração criada',
+  UPDATE_MEMBER_ROLE: 'Perfil de acesso alterado',
   UPLOAD_INSTITUTIONAL_DOCUMENT: 'Documento institucional enviado',
   SET_INSTITUTIONAL_DOCUMENT_VIGENTE: 'Documento institucional publicado',
   SET_INSTITUTIONAL_DOCUMENT_ARQUIVADO: 'Documento institucional arquivado',

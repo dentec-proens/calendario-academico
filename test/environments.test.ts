@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, writeFile, copyFile, rm, stat, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { environments } from '../config/environments.ts';
 import {
   assertNoTargetOverrides,
@@ -214,12 +214,16 @@ async function childFixture(t: TestContext) {
     if (/^(CONVEX_|VITE_)/.test(key) || key === 'NODE_OPTIONS' || key === 'npm_execpath')
       delete env[key];
   const run = (file: string, args: string[] = [], overrides: NodeJS.ProcessEnv = {}) =>
-    spawnSync(process.execPath, ['--import', preload, join(path, 'scripts', file), ...args], {
-      cwd: path,
-      env: { ...env, ...overrides },
-      encoding: 'utf8',
-      timeout: 15_000,
-    });
+    spawnSync(
+      process.execPath,
+      ['--import', pathToFileURL(preload).href, join(path, 'scripts', file), ...args],
+      {
+        cwd: path,
+        env: { ...env, ...overrides },
+        encoding: 'utf8',
+        timeout: 15_000,
+      },
+    );
   const noEffects = async () => assert.rejects(readFile(log), { code: 'ENOENT' });
   return { path, run, noEffects };
 }

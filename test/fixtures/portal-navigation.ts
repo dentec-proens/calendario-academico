@@ -11,12 +11,13 @@ import '../../web/portal.css';
 import '../../web/portal/react-portal.css';
 
 const campusId = 'campus-a' as Id<'campuses'>;
-const campusRole = new URLSearchParams(location.search).get('role') === 'CAMPUS';
+const requestedRole = new URLSearchParams(location.search).get('role');
+const campusRole = requestedRole === 'CAMPUS';
 const user: Bootstrap['user'] = {
   id: 'user-a' as Id<'users'>,
   name: 'Pessoa de teste',
   email: 'teste@example.invalid',
-  role: campusRole ? 'CAMPUS' : 'ADMIN',
+  role: campusRole ? 'CAMPUS' : requestedRole === 'PARECERISTA' ? 'PARECERISTA' : 'ADMIN',
   campusId: campusRole ? campusId : null,
   active: true,
   inviteExpiresAt: null,
@@ -84,7 +85,7 @@ const client = {
         name === 'native:documentPage'
           ? documents.filter(
               (document) =>
-                (!campusRole || document.publishedAt) &&
+                (user.role === 'ADMIN' || document.publishedAt) &&
                 (!args.year || document.year === args.year) &&
                 (!args.status || document.status === args.status),
             )

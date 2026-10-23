@@ -53,7 +53,7 @@ export function memberFromRow(row: Doc<'users'> | null): Member | null {
     typeof row.name !== 'string' ||
     typeof row.email !== 'string' ||
     !/^[^\s@]+@ifpr\.edu\.br$/.test(row.email) ||
-    !['ADMIN', 'CAMPUS'].includes(row.role) ||
+    !['ADMIN', 'CAMPUS', 'PARECERISTA'].includes(row.role) ||
     (row.role === 'CAMPUS' && !row.campusId) ||
     row.active !== true ||
     row.removedAt !== undefined
@@ -359,7 +359,7 @@ export const createMemberRecord = internalMutation({
     const email = institutionalEmail(data.email);
     const role = data.role ?? 'CAMPUS';
     const loginMethod = data.loginMethod || 'local';
-    if (!['ADMIN', 'CAMPUS'].includes(role)) throw Error('Perfil inválido.');
+    if (!['ADMIN', 'CAMPUS', 'PARECERISTA'].includes(role)) throw Error('Perfil inválido.');
     if (!['local', 'google', 'invite'].includes(loginMethod))
       throw Error('Forma de acesso inválida.');
     if (typeof data.name !== 'string' || !data.name.trim() || data.name.length > 240)
@@ -485,6 +485,38 @@ export const requestPasswordRecovery = action({
     throw Error(
       'A recuperação por e-mail ainda não está configurada. Entre em contato com dentec.proens@ifpr.edu.br.',
     );
+  },
+});
+
+export const updateMemberRole = mutation({
+  args: {
+    id: v.id('users'),
+    role: memberRole,
+    campusId: v.optional(v.union(v.id('campuses'), v.null())),
+  },
+  returns: v.object({ ok: v.boolean() }),
+  handler: async (ctx, { id, role, campusId }) => {
+    const { user: actor } = await requireAdmin(ctx);
+    const row = await memberById(ctx, id);
+    if (!row || row.removedAt !== undefined) throw Error('Membro não encontrado.');
+    const selectedCampus = role === 'CAMPUS' ? (campusId ?? row.campusId) : undefined;
+    if (role === 'CAMPUS') {
+      const campus = selectedCampus ? await ctx.db.get(selectedCampus) : null;
+      if (!campus || campus.archived) throw Error('Selecione um campus ativo.');
+    }
+    if (row.role === role && row.campusId === selectedCampus) return { ok: true };
+    if (row.role === 'ADMIN' && row.active && role !== 'ADMIN') {
+      const admins = await ctx.db
+        .query('users')
+        .withIndex('by_role_and_active', (q) => q.eq('role', 'ADMIN').eq('active', true))
+        .take(2);
+      if (admins.filter((admin) => memberFromRow(admin)).length <= 1)
+        throw Error('É necessário manter um administrador ativo.');
+    }
+    await ctx.db.patch(id, { role, campusId: selectedCampus });
+    await revokeSessions(ctx, id);
+    await appendAudit(ctx, actor.id, 'UPDATE_MEMBER_ROLE', id);
+    return { ok: true };
   },
 });
 

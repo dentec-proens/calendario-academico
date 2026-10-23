@@ -1,7 +1,11 @@
 import { v } from 'convex/values';
 import type { Infer } from 'convex/values';
 
-export const memberRole = v.union(v.literal('ADMIN'), v.literal('CAMPUS'));
+export const memberRole = v.union(
+  v.literal('ADMIN'),
+  v.literal('CAMPUS'),
+  v.literal('PARECERISTA'),
+);
 export const loginMethod = v.union(v.literal('local'), v.literal('google'), v.literal('invite'));
 export const publicMember = v.object({
   id: v.id('users'),

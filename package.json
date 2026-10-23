@@ -54,6 +54,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "convex-test": "0.0.64",
+    "fflate": "0.8.3",
     "oxlint": "1.89.0",
     "oxlint-tsgolint": "7.0.2005",
     "prettier": "3.9.10",

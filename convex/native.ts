@@ -10,6 +10,8 @@ import * as contracts from './contracts';
 import * as validators from './validators';
 import {
   admin,
+  reviewer,
+  calendarEditor,
   fail,
   iso,
   text,
@@ -209,7 +211,7 @@ export const bootstrap = query({
     return {
       user: safeMember(user),
       campuses: rows
-        .filter((c) => !c.archived && (user.role === 'ADMIN' || c._id === user.campusId))
+        .filter((c) => !c.archived && (user.role !== 'CAMPUS' || c._id === user.campusId))
         .map(({ _id, name, archived }) => ({ id: _id, name, archived })),
       catalogue: await catalogue(ctx),
       calendars: includeCalendars === false ? [] : await calendarSummaries(ctx, user),
@@ -354,7 +356,7 @@ export const reviewHistory = query({
   }),
   handler: async (ctx, { id, paginationOpts }) => {
     const { user } = await requireNativeUser(ctx);
-    admin(user);
+    reviewer(user);
     pageBound(paginationOpts.numItems);
     await calendarRow(ctx, user, id);
     const review = await reviewRow(ctx, id);
@@ -400,7 +402,9 @@ export const logs = query({
   }),
   handler: async (ctx, { paginationOpts }) => {
     pageBound(paginationOpts.numItems);
-    return readAuditPage(ctx, (await requireNativeUser(ctx)).user, paginationOpts);
+    const { user } = await requireNativeUser(ctx);
+    calendarEditor(user);
+    return readAuditPage(ctx, user, paginationOpts);
   },
 });
 
@@ -425,6 +429,7 @@ export const createCalendar = mutation({
   returns: contracts.calendarDto,
   handler: async (ctx, { body }) => {
     const { user } = await requireNativeUser(ctx);
+    calendarEditor(user);
     const campus = await ctx.db.get(body.campusId);
     if (!campus || campus.archived) fail('Campus inválido.');
     assertCampus(user, campus._id);
@@ -483,6 +488,7 @@ export const saveCalendar = mutation({
   returns: contracts.saveResult,
   handler: async (ctx, { id, body }) => {
     const { user } = await requireNativeUser(ctx);
+    calendarEditor(user);
     const { row, content, record, base, docs } = await baseRecord(ctx, user, id);
     if (row.version !== body.version) fail('Há versão mais recente. Reabra o calendário.', 409);
     if (body.catalogueRevision !== base.revision)
@@ -574,6 +580,7 @@ export const deleteCalendar = mutation({
   returns: ok,
   handler: async (ctx, { id, version }) => {
     const { user } = await requireNativeUser(ctx);
+    calendarEditor(user);
     const row = await calendarRow(ctx, user, id);
     if (row.version !== version)
       fail('O calendário foi alterado. Atualize a lista antes de excluir.', 409);
@@ -593,6 +600,7 @@ export const restoreCalendar = mutation({
   returns: ok,
   handler: async (ctx, { id }) => {
     const { user } = await requireNativeUser(ctx);
+    calendarEditor(user);
     const row = await calendarRow(ctx, user, id, true);
     if (!row.deletedAt) fail('Calendário já está ativo.', 409);
     await ctx.db.patch(id, { deletedAt: undefined, deletedBy: undefined });
@@ -616,6 +624,7 @@ export const makeDefinitive = mutation({
   }),
   handler: async (ctx, { id, version }) => {
     const { user } = await requireNativeUser(ctx);
+    calendarEditor(user);
     const { row, content } = await baseRecord(ctx, user, id);
     if (row.version !== version)
       fail('Há versão mais recente. Reabra o calendário antes de torná-lo definitivo.', 409);
@@ -737,7 +746,7 @@ export const review = query({
   returns: contracts.reviewSupportDto,
   handler: async (ctx, { id }) => {
     const { user } = await requireNativeUser(ctx);
-    admin(user);
+    reviewer(user);
     const { record, base, review: prior } = await baseRecord(ctx, user, id);
     const support = reviewSupport(record, [
       ...inheritedEvents(base, record.state.year, record.state.modalities, record.state),
@@ -759,7 +768,7 @@ export const saveReview = mutation({
   returns: v.object({ revision: v.number() }),
   handler: async (ctx, { id, body }) => {
     const { user } = await requireNativeUser(ctx);
-    admin(user);
+    reviewer(user);
     const { record, base, docs, review: prior } = await baseRecord(ctx, user, id);
     if (body.calendarVersion !== record.version || body.catalogueRevision !== base.revision)
       fail('O calendário ou a base mudou. Reabra a revisão.', 409);
@@ -832,7 +841,7 @@ export const exportReview = query({
   returns: contracts.exportDto,
   handler: async (ctx, { id, revision }) => {
     const { user } = await requireNativeUser(ctx);
-    admin(user);
+    reviewer(user);
     const { record, base, review: prior } = await baseRecord(ctx, user, id);
     if (!prior) fail('Salve a análise inicial ou a revisão antes de exportar.', 409);
     if (
@@ -958,6 +967,7 @@ export const attachHistory = internalMutation({
   returns: v.object({ id: v.id('histories') }),
   handler: async (ctx, { calendarId, uploadId, filename, year, notes }) => {
     const { user, row: member } = await requireNativeUser(ctx);
+    calendarEditor(user);
     const row = await calendarRow(ctx, user, calendarId);
     if (year !== row.year - 1) fail('Informe o ano anterior ao calendário em elaboração.');
     const files = await ctx.db
@@ -1018,6 +1028,7 @@ export const saveHistoryAnalysis = internalMutation({
   returns: validators.historyAnalysis,
   handler: async (ctx, { id, hash, analysis }) => {
     const { user } = await requireNativeUser(ctx);
+    calendarEditor(user);
     const row = await ownedHistory(ctx, user, id);
     if (row.hash !== hash) fail('O arquivo histórico mudou durante a análise.', 409);
     const prior = await ctx.db

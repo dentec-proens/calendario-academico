@@ -275,6 +275,23 @@ test(
     await page.goto(origin + '?role=CAMPUS&page=manage-events');
     await page.waitForSelector('#catalogue-list', { visible: true });
     assert.equal(await page.$('[data-edit="synthetic-event"]'), null);
+    await page.goto(origin + '?role=PARECERISTA&page=accounts');
+    await page.waitForSelector('#review-panel', { visible: true });
+    assert.equal(await page.$('[data-page="accounts"]'), null);
+    assert.equal(await page.$('[data-page="campuses"]'), null);
+    assert.equal(await page.$('[data-page="calendars"]'), null);
+    assert.equal(await page.$('#create-calendar'), null);
+    assert.equal(await page.$('#user-form'), null);
+    assert(await page.$('#open-review'));
+    await page.goto(origin + '?role=PARECERISTA&page=calendars');
+    await page.waitForSelector('#review-panel', { visible: true });
+    await page.goto(origin + '?role=PARECERISTA&page=institution');
+    await page.waitForSelector('#document-list', { visible: true });
+    assert.equal(await page.$('#document-form'), null);
+    assert.doesNotMatch(
+      await page.$eval('#document-list', (node) => node.textContent ?? ''),
+      /Documento rascunho/,
+    );
     assert.deepEqual(errors, []);
   },
 );

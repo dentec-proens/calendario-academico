@@ -48,6 +48,10 @@ function allowedAdminPages(permissions: PortalPermissions) {
   return adminPages.filter(([, , , permission]) => permissions[permission]);
 }
 
+function allowedSharedPages(permissions: PortalPermissions) {
+  return sharedPages.filter(([id]) => id !== 'calendars' || permissions.editCalendars);
+}
+
 function requestedPage(permissions: PortalPermissions): PageId {
   const requested = new URLSearchParams(location.search).get('page') ?? '';
   const aliases: Record<string, PageId> = {
@@ -57,8 +61,9 @@ function requestedPage(permissions: PortalPermissions): PageId {
   };
   const id = aliases[requested] ?? requested;
   return (
-    [...sharedPages, ...allowedAdminPages(permissions)].find(([page]) => page === id)?.[0] ??
-    'calendars'
+    [...allowedSharedPages(permissions), ...allowedAdminPages(permissions)].find(
+      ([page]) => page === id,
+    )?.[0] ?? (permissions.editCalendars ? 'calendars' : 'review-panel')
   );
 }
 
@@ -75,7 +80,9 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
   const page =
     adminPages.some(([id]) => id === selectedPage) &&
     !administrativePages.some(([id]) => id === selectedPage)
-      ? 'calendars'
+      ? permissions.editCalendars
+        ? 'calendars'
+        : 'review-panel'
       : selectedPage;
   const [menuOpen, setMenuOpen] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -187,7 +194,7 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
           <div className="navigation-group shared-navigation">
             <h2>Calendários e referências</h2>
             {!permissions.selectCampus ? <p>{info.campuses[0]?.name}</p> : null}
-            {navigationItems(sharedPages)}
+            {navigationItems(allowedSharedPages(permissions))}
           </div>
           {administrativePages.length ? (
             <div className="navigation-group admin-navigation">
@@ -214,17 +221,19 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
             </p>
           ) : null}
         </div>
-        <div hidden={page !== 'calendars'}>
-          <CalendarsPanel
-            info={info}
-            canSelectCampus={permissions.selectCampus}
-            filter={filter}
-            onFilter={setFilter}
-            notify={notify}
-            liveTrash={trashData}
-            pagination={calendarPagination}
-            trashPagination={trashPagination}
-          />
+        <div hidden={page !== 'calendars' || !permissions.editCalendars}>
+          {permissions.editCalendars ? (
+            <CalendarsPanel
+              info={info}
+              canSelectCampus={permissions.selectCampus}
+              filter={filter}
+              onFilter={setFilter}
+              notify={notify}
+              liveTrash={trashData}
+              pagination={calendarPagination}
+              trashPagination={trashPagination}
+            />
+          ) : null}
         </div>
         <section id="institution" className="page" hidden={page !== 'institution'}>
           <DocumentsPanel

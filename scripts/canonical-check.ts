@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { unzipSync, strFromU8 } from 'fflate';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -10,7 +10,8 @@ import type { Snapshot, Row } from '../migration/types.ts';
 
 /** Complete component namespaces are intentionally outside the root migration engine. */
 export function componentSnapshot(path: string): Snapshot {
-  const names = execFileSync('unzip', ['-Z1', path], { encoding: 'utf8' }).trim().split('\n');
+  const archive = unzipSync(readFileSync(path));
+  const names = Object.keys(archive);
   const result: Snapshot = {};
   for (const name of names) {
     if (
@@ -18,10 +19,7 @@ export function componentSnapshot(path: string): Snapshot {
       name.endsWith('/_tables/documents.jsonl')
     )
       continue;
-    const rows: Row[] = execFileSync('unzip', ['-p', path, name], {
-      encoding: 'utf8',
-      maxBuffer: 100 * 1024 * 1024,
-    })
+    const rows: Row[] = strFromU8(archive[name]!)
       .split('\n')
       .filter(Boolean)
       .map((line: string) => JSON.parse(line) as Row);
@@ -33,7 +31,7 @@ export function componentSnapshot(path: string): Snapshot {
           (n) => n.startsWith(prefix) && n.split('/').at(-1)?.split('.')[0] === row._id,
         );
         if (!stored) throw Error('Bytes ausentes no Storage do componente.');
-        const bytes = execFileSync('unzip', ['-p', path, stored], { maxBuffer: 100 * 1024 * 1024 });
+        const bytes = archive[stored]!;
         const digest = createHash('sha256').update(bytes).digest();
         if (
           bytes.length !== row.size ||

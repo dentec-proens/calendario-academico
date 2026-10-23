@@ -2,6 +2,7 @@ import { v, ConvexError } from 'convex/values';
 import { mutation, internalMutation, internalQuery, httpAction } from './_generated/server';
 import { internal } from './_generated/api';
 import { requireNativeUser } from './nativeAuth';
+import { calendarEditor } from './repository';
 import type { MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 
@@ -45,7 +46,8 @@ export const issueUpload = mutation({
   args: { filename: v.string(), size: v.number() },
   returns: v.object({ uploadUrl: v.string(), uploadId: v.string() }),
   handler: async (ctx, { filename, size }) => {
-    const { row } = await requireNativeUser(ctx);
+    const { row, user } = await requireNativeUser(ctx);
+    calendarEditor(user);
     if (
       filename.length > 180 ||
       !filename.toLowerCase().endsWith('.pdf') ||
@@ -80,7 +82,8 @@ export const uploadContext = internalQuery({
   args: { uploadId: v.string() },
   returns: uploadRecord,
   handler: async (ctx, { uploadId }) => {
-    const { row } = await requireNativeUser(ctx);
+    const { row, user } = await requireNativeUser(ctx);
+    calendarEditor(user);
     const upload = await ctx.db
       .query('nativeUploads')
       .withIndex('by_uploadId', (q) => q.eq('uploadId', uploadId))
@@ -99,7 +102,8 @@ export const finishUpload = internalMutation({
   args: { uploadId: v.string(), storageId: v.id('_storage'), hash: v.string(), size: v.number() },
   returns: v.object({ uploadId: v.string() }),
   handler: async (ctx, args) => {
-    const { row } = await requireNativeUser(ctx);
+    const { row, user } = await requireNativeUser(ctx);
+    calendarEditor(user);
     const upload = await ctx.db
       .query('nativeUploads')
       .withIndex('by_uploadId', (q) => q.eq('uploadId', args.uploadId))

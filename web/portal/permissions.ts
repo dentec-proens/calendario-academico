@@ -4,9 +4,10 @@ import type { Bootstrap } from '../native/types.ts';
 export function portalPermissions(role: Bootstrap['user']['role']) {
   const admin = role === 'ADMIN';
   return {
-    selectCampus: admin,
+    selectCampus: role !== 'CAMPUS',
+    editCalendars: role !== 'PARECERISTA',
     manageInstitution: admin,
-    reviewCalendars: admin,
+    reviewCalendars: admin || role === 'PARECERISTA',
     manageCampuses: admin,
     manageAccounts: admin,
     viewOnlineUsers: admin,
