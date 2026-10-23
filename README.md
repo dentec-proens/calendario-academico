@@ -50,7 +50,40 @@ pnpm check
 
 Executa formatação, lint, lint com análise de tipos, TypeScript, testes e build. Comandos individuais: `pnpm format:check`, `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test` e `pnpm build`.
 
-Os testes de domínio e backend usam TypeScript, Vitest e `convex-test`, com dados descartáveis e sem serviço remoto. Eles entram na checagem estrita de tipos (`pnpm typecheck:tests`). Use `pnpm test:unit` para uma execução ou `pnpm test:watch` para executar novamente os testes afetados durante o desenvolvimento. `pnpm test` executa toda a suíte em Vitest, incluindo infraestrutura e autosave; `pnpm test:unit` exclui os testes de navegador e `pnpm test:browser` executa apenas esses testes. Os testes de navegador são opcionais e exigem um deployment descartável, credenciais de teste e navegador, conforme `test/native-portal-browser.test.ts`. Não devem apontar para produção. A CI executa `pnpm check` com configuração sintética de build, sem publicar funções nem alterar dados remotos.
+Os testes de domínio, backend, infraestrutura e autosave usam Vitest e `convex-test`, sem serviço remoto. Os testes de UI usam Playwright com Chromium e fixtures sintéticas que carregam os componentes e CSS reais. Todos entram na checagem estrita de tipos (`pnpm typecheck:tests`).
+
+Na primeira execução, instale o navegador:
+
+```sh
+pnpm test:browser:install
+```
+
+| Comando                         | Cobertura                                                                   |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| `pnpm test`                     | Vitest + toda a suíte sintética de navegador, incluindo regressão visual    |
+| `pnpm test:unit`                | Domínio, backend e infraestrutura em Vitest                                 |
+| `pnpm test:watch`               | Vitest em modo contínuo                                                     |
+| `pnpm test:browser`             | Interações e regressão visual em Playwright                                 |
+| `pnpm test:browser:functional`  | Apenas os fluxos de interação                                               |
+| `pnpm test:visual`              | Comparação de screenshots em desktop (1440 × 1000) e mobile (390 × 844)     |
+| `pnpm test:browser:ui`          | Interface interativa do Playwright para investigar testes                   |
+| `pnpm test:visual:update`       | Atualização das referências visuais do sistema local, após revisão          |
+| `pnpm test:browser:linux`       | Toda a suíte de navegador na imagem Docker do CI (Linux amd64)              |
+| `pnpm test:visual:linux:update` | Atualização das referências visuais de Linux na imagem do CI                |
+| `pnpm test:linux`               | PDFs reais + testes de navegador e visuais na imagem Linux do CI            |
+| `pnpm test:runtime`             | Geração real de PDFs com o Chromium serverless (Linux)                      |
+| `pnpm test:runtime:linux`       | A mesma validação de PDF na imagem Docker do CI                             |
+| `pnpm test:e2e`                 | Integração com um deployment Convex descartável, configurado explicitamente |
+
+A suíte visual protege o portal, a criação de calendário, a revisão humana com confirmação pendente, o editor, a edição de evento e o diálogo de confirmação. Dados, relógio, idioma, fuso e viewports são fixos. As referências ficam versionadas em `test/browser/__screenshots__/`, separadas por sistema e viewport. O teste falha quando falta uma referência; os testes obrigatórios não são pulados quando o navegador está ausente.
+
+Para uma mudança visual intencional, execute `pnpm test:visual:update`, confira cada screenshot alterado e execute `pnpm test:visual` novamente. No macOS, atualize também as referências de Linux com `pnpm test:visual:linux:update` (requer Docker). O wrapper usa a mesma imagem e arquitetura do CI, instala as dependências em uma pasta temporária e copia as referências somente se toda a atualização passar; preserva o `node_modules` local. O wrapper lê as versões de Playwright e pnpm do `package.json`. Ao atualizar Playwright, mantenha `playwright-core` e `@playwright/test` na mesma versão, atualize a imagem em `.github/workflows/tests.yml` e regenere as referências. Não aceite alterações de screenshots sem verificar o efeito na interface.
+
+A CI executa formatação, lint, análise de tipos, Vitest e build em um job; outro job instala explicitamente o Chromium, valida a geração real de PDFs e executa todos os testes sintéticos e visuais na imagem Linux fixa. O status `check` só passa quando ambos os jobs passam. O relatório HTML, screenshots de falhas e traces ficam disponíveis no artefato `playwright-report` por 14 dias. Localmente, use `pnpm exec playwright show-report` ou `pnpm exec playwright show-trace <arquivo-trace.zip>` para investigar falhas.
+
+O gerador de PDF usa `playwright-core` para controlar o navegador. `@sparticuz/chromium` é uma dependência de produção: fornece o executável e as bibliotecas Linux necessários às actions Node do Convex, e não participa dos testes de UI. A suíte `test/runtime/` executa esse mesmo gerador sem mocks, verificando concorrência, conteúdo do modelo de impressão, identificação de teste/proposta, papel A4 e escape de conteúdo. Ela é obrigatória no CI e roda separadamente com `pnpm test:runtime:linux` em outros sistemas. Não há seleção de Chrome local nem variáveis de teste no caminho de produção do PDF.
+
+Os testes de integração real ficam em `test/e2e/native-portal.spec.ts` e não fazem parte de `pnpm test`, `pnpm check` ou do CI padrão. `pnpm test:e2e` exige `DENTEC_DISPOSABLE_E2E=1`, `DENTEC_NATIVE_BROWSER_URL`, `DENTEC_NATIVE_TEST_EMAIL` e `DENTEC_NATIVE_TEST_PASSWORD`. Sem essa configuração o comando falha antes de acessar o deployment. Nunca use produção, dados importados ou um ambiente compartilhado. O cenário de restauração exige também `DENTEC_NATIVE_RESTORE_FIXTURE`; apenas esse cenário é pulado quando a fixture opcional não foi informada. Nenhum comando sintético publica funções ou altera dados remotos.
 
 ## Operação
 

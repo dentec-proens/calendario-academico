@@ -1,3 +1,4 @@
+import { scrollIntoView } from '../scroll.ts';
 import { Button } from '../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../native/types.ts';
 import type { FormEvent } from 'react';
@@ -48,7 +49,7 @@ export default function CataloguePanel({
     setCreating(false);
     requestAnimationFrame(() => {
       listRef.current?.focus({ preventScroll: true });
-      listRef.current?.scrollIntoView({ block: 'start' });
+      scrollIntoView(listRef.current, { block: 'start' });
     });
   }
 

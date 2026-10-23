@@ -1,3 +1,4 @@
+import { scrollIntoView, trackScrollInset } from './scroll.ts';
 import { validateImport } from './editor-import.ts';
 import type {
   CalendarRecord,
@@ -55,6 +56,7 @@ import {
 } from './native/client.ts';
 
 type HistoricalSource = NonNullable<CalendarEvent['historicalSource']>;
+trackScrollInset(document.querySelector<HTMLElement>('.editor-feedback')!);
 const eventFormHome = document.createComment('event-form-home');
 $('event-form').before(eventFormHome);
 let inlineHistoryIndex: number | null = null;
@@ -625,7 +627,7 @@ $('event-form').addEventListener('submit', (e) => {
       .forEach((el) => (el.checked = modalities.some((modality) => modality === el.value)));
     if (completedHistoryIndex !== null) {
       const row = document.querySelector('[data-history-item="' + completedHistoryIndex + '"]');
-      row?.scrollIntoView({ block: 'nearest' });
+      scrollIntoView(row, { block: 'nearest' });
     }
     message(
       'Evento registrado: ' +
@@ -665,7 +667,7 @@ function showEditorView(id: string, focus = true, updateUrl = true) {
   title.textContent = editorSections[id];
   if (focus) {
     title.focus({ preventScroll: true });
-    title.scrollIntoView({ block: 'start' });
+    scrollIntoView(title, { block: 'start' });
   }
   if (updateUrl) {
     const url = new URL(location.href);
@@ -962,7 +964,7 @@ document.addEventListener('click', (event) => {
 
 function openHistory() {
   showEditorView('history');
-  $('history-area').scrollIntoView({ behavior: 'smooth' });
+  scrollIntoView($('history-area'), { behavior: 'smooth' });
   $('history-file').focus({ preventScroll: true });
 }
 
@@ -1711,9 +1713,9 @@ function applyStageSuggestion() {
   $('historical-event-source').hidden = true;
   render({ recalculate: true });
   if (completed !== null)
-    document
-      .querySelector('[data-history-item="' + completed + '"]')
-      ?.scrollIntoView({ block: 'nearest' });
+    scrollIntoView(document.querySelector('[data-history-item="' + completed + '"]'), {
+      block: 'nearest',
+    });
   message(fresh.stages.length + ' etapas incluídas.');
 }
 
@@ -1875,7 +1877,7 @@ function closeEventForm() {
   updateEventFormActions();
   const target = row?.querySelector('button') ?? $('resume-event');
   target.focus({ preventScroll: true });
-  target.scrollIntoView({ block: 'center' });
+  scrollIntoView(target, { block: 'center' });
   message('Preenchimento preservado. Retome para continuar ou cancele para descartar.');
 }
 
@@ -1899,7 +1901,7 @@ function resumeEventForm() {
     showEditorView('events', false);
     $('event-form').hidden = false;
     updateEventFormActions();
-    $('event-form').scrollIntoView({ block: 'nearest' });
+    scrollIntoView($('event-form'), { block: 'nearest' });
   }
   $('event-name').focus({ preventScroll: true });
 }
@@ -1913,7 +1915,7 @@ function discardEventForm() {
   updateEventFormActions();
   const target = row?.querySelector('button') ?? $('new-event');
   target.focus({ preventScroll: true });
-  target.scrollIntoView({ block: 'center' });
+  scrollIntoView(target, { block: 'center' });
   message('Preenchimento descartado. Os eventos já aplicados ao calendário foram preservados.');
 }
 
@@ -1934,7 +1936,7 @@ function openInlineHistory(index: number, scroll = true) {
   close.onclick = closeEventForm;
   $('event-form').append(close);
   updateEventFormActions();
-  if (scroll) row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (scroll) scrollIntoView(row, { behavior: 'smooth', block: 'start' });
 }
 
 $('new-event').onclick = () => {
@@ -1950,7 +1952,7 @@ $('new-event').onclick = () => {
   $('historical-event-source').hidden = true;
   updateStageSuggestion();
   updateEventFormActions();
-  $('event-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  scrollIntoView($('event-form'), { block: 'center', behavior: 'smooth' });
   $('event-name').focus({ preventScroll: true });
 };
 
@@ -2042,7 +2044,7 @@ function openInlineActivity(id: string, reveal = false) {
   updateEventFormActions();
   if (reveal) {
     showEditorView(row.closest('.view')?.id ?? 'events', false);
-    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    scrollIntoView(row, { block: 'nearest', behavior: 'smooth' });
   }
 }
 
@@ -2075,7 +2077,7 @@ function editEvent(id: string) {
     ['teacher-vacation-january', 'teacher-vacation-july', 'teacher-vacation-third'].includes(id)
   ) {
     showEditorView('days', false);
-    $('vacation-form').scrollIntoView({ block: 'center' });
+    scrollIntoView($('vacation-form'), { block: 'center' });
     message('Edite as férias docentes no formulário próprio e clique em Aplicar férias docentes.');
     return;
   }
@@ -2109,6 +2111,11 @@ function editEvent(id: string) {
   $('event-confirmed').checked = false;
   setEventSubmitLabel();
   updateStageSuggestion();
+  message(
+    'Editando ' +
+      event.name +
+      '. Confira os dados, confirme e clique em Aplicar alterações do evento para iniciar o salvamento automático.',
+  );
   if (
     event.requirementId &&
     document.querySelector('[data-activity-row="' + event.requirementId + '"]')
@@ -2116,13 +2123,8 @@ function editEvent(id: string) {
     openInlineActivity(event.requirementId, true);
   else {
     showEditorView('events', false);
-    $('event-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
+    scrollIntoView($('event-form'), { block: 'center', behavior: 'smooth' });
   }
-  message(
-    'Editando ' +
-      event.name +
-      '. Confira os dados, confirme e clique em Aplicar alterações do evento para iniciar o salvamento automático.',
-  );
 }
 
 function resetPeriodForm() {
@@ -2149,7 +2151,7 @@ function editPeriod(id: string) {
   $('period-submit').textContent = 'Aplicar alterações do período';
   $('cancel-period-edit').hidden = false;
   periodDurationPreview();
-  $('period-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  scrollIntoView($('period-form'), { block: 'center', behavior: 'smooth' });
   $('period-start').focus({ preventScroll: true });
   message(
     'Edite o período e clique em Aplicar alterações do período. A meta de dias letivos continua ativa: o término do período e as etapas vinculadas serão recalculados juntos.',

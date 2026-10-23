@@ -1,3 +1,4 @@
+import { scrollIntoView } from '../scroll.ts';
 import { Button } from '../components/ui/Button.tsx';
 import type { RefObject, FormEvent } from 'react';
 import type { Bootstrap } from '../native/types.ts';
@@ -176,7 +177,7 @@ export function ReviewContent({
   }, [dirty]);
 
   useEffect(() => {
-    if (preview) previewRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (preview) scrollIntoView(previewRef.current, { behavior: 'smooth' });
   }, [preview]);
 
   useEffect(() => {

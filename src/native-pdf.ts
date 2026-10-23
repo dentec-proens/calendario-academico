@@ -1,6 +1,6 @@
 import type { CalendarActivity, TeachingState } from './domain-types.ts';
 import chromium, { inflate } from '@sparticuz/chromium';
-import puppeteer from 'puppeteer-core';
+import { chromium as playwright } from 'playwright-core';
 import { open, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -67,29 +67,22 @@ export async function nativePdf(
     '</style><body>' +
     proensLayout(record.state, events, result, record, printLogo) +
     '</body></html>';
-  const localBrowser = process.platform === 'darwin' && process.env.DENTEC_DISPOSABLE_E2E === '1';
-  const executablePath = localBrowser ? process.env.DENTEC_TEST_BROWSER : await prepareChromium();
-  if (!executablePath) throw Error('Configure o navegador do ambiente descartável.');
-  const browser = await puppeteer.launch({
-    args: localBrowser ? ['--no-sandbox'] : chromium.args,
-    executablePath,
-    env: localBrowser
-      ? process.env
-      : {
-          ...process.env,
-          LD_LIBRARY_PATH: ['/tmp/al2023/lib', process.env.LD_LIBRARY_PATH]
-            .filter(Boolean)
-            .join(':'),
-          FONTCONFIG_PATH: '/tmp/fonts',
-        },
-    headless: localBrowser ? true : 'shell',
+  const browser = await playwright.launch({
+    args: chromium.args,
+    executablePath: await prepareChromium(),
+    env: {
+      ...process.env,
+      LD_LIBRARY_PATH: ['/tmp/al2023/lib', process.env.LD_LIBRARY_PATH].filter(Boolean).join(':'),
+      FONTCONFIG_PATH: '/tmp/fonts',
+    },
+    headless: true,
   });
   try {
-    const page = await browser.newPage();
-    await page.setRequestInterception(true);
-    page.on('request', (r) => {
-      void (r.url().startsWith('data:') ? r.continue() : r.abort());
+    const context = await browser.newContext({ serviceWorkers: 'block' });
+    await context.route('**/*', (route) => {
+      return route.request().url().startsWith('data:') ? route.continue() : route.abort();
     });
+    const page = await context.newPage();
     await page.setContent(html, { waitUntil: 'load' });
     return Buffer.from(
       await page.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true }),

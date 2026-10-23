@@ -1,3 +1,4 @@
+import { scrollIntoView } from '../scroll.ts';
 import { Button } from '../components/ui/Button.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
@@ -145,7 +146,7 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
     if (id !== page) window.history.pushState(null, '', url);
     requestAnimationFrame(() => {
       headingRef.current?.focus({ preventScroll: true });
-      headingRef.current?.scrollIntoView({ block: 'start' });
+      scrollIntoView(headingRef.current, { block: 'start' });
     });
   }
 

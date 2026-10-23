@@ -206,10 +206,6 @@
 #review-preview th {
   background: #eee;
 }
-#review-preview {
-  scroll-margin-top: 80px;
-}
-
 /* Keep calendar actions aligned regardless of the length of the course names. */
 #calendar-list > li[data-calendar-campus] {
   display: grid;
@@ -428,9 +424,6 @@
   line-height: 1.6;
 }
 
-#history-suggestions > li {
-  scroll-margin-top: 85px;
-}
 #history-suggestions .inline-history-review {
   grid-column: 1/-1;
   width: 100%;
@@ -560,7 +553,7 @@
 }
 .editor-sidebar {
   position: sticky;
-  top: 150px;
+  top: calc(var(--scroll-inset-top, 0px) + 16px);
   padding: 12px;
 }
 .editor-sidebar nav {
@@ -585,7 +578,6 @@
 }
 #editor-section-title {
   font-size: 1.3rem;
-  scroll-margin-top: 180px;
 }
 .editor-section-content .panel h3 {
   font-size: 1.05rem;

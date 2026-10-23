@@ -1,3 +1,4 @@
+import { scrollIntoView } from '../scroll.ts';
 import { Button } from '../components/ui/Button.tsx';
 import { formText } from './form-values.ts';
 import type { Bootstrap, Notify } from '../native/types.ts';
@@ -101,7 +102,7 @@ export default function AccountsPanel({
 
   function showInvite(created: Invitation) {
     setInvite(created);
-    requestAnimationFrame(() => inviteRef.current?.scrollIntoView({ behavior: 'smooth' }));
+    requestAnimationFrame(() => scrollIntoView(inviteRef.current, { behavior: 'smooth' }));
   }
 
   function createUser(e: FormEvent<HTMLFormElement>) {
@@ -167,7 +168,7 @@ export default function AccountsPanel({
       pendingLabel: 'Gerando link…',
       onConfirm: async () => {
         setRecovery(await accounts.passwordRecovery(member.id));
-        requestAnimationFrame(() => recoveryRef.current?.scrollIntoView({ behavior: 'smooth' }));
+        requestAnimationFrame(() => scrollIntoView(recoveryRef.current, { behavior: 'smooth' }));
         notify('Link de recuperação gerado. Copie e envie pelo seu e-mail institucional.');
       },
     });

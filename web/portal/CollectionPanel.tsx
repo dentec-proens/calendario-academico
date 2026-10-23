@@ -1,3 +1,4 @@
+import { scrollIntoView } from '../scroll.ts';
 import { Button } from '../components/ui/Button.tsx';
 import { useId, useRef, type ReactNode } from 'react';
 import { ArrowLeft, Plus } from 'lucide-react';
@@ -37,7 +38,7 @@ export default function CollectionPanel({
     requestAnimationFrame(() => {
       const heading = open ? formHeading.current : listHeading.current;
       heading?.focus({ preventScroll: true });
-      heading?.scrollIntoView({ block: 'start' });
+      scrollIntoView(heading, { block: 'start' });
     });
   }
 

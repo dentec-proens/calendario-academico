@@ -2,7 +2,8 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "types": ["vite/client"]
+    // Convex's generated API types also resolve Node action sources.
+    "types": ["vite/client", "node"]
   },
   "include": ["./**/*.ts", "./**/*.tsx", "../src/**/*.d.ts"],
   "exclude": ["../node_modules", "../dist"]
