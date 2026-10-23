@@ -1,0 +1,103 @@
+{
+  "started": "2026-10-23T07:37:28.509Z",
+  "app": "http://127.0.0.1:4183",
+  "syntheticData": true,
+  "checks": [
+    {
+      "name": "application-ready",
+      "passed": true,
+      "durationMs": 570,
+      "setupRequired": true
+    },
+    {
+      "name": "synthetic-admin-setup-and-login",
+      "passed": true,
+      "durationMs": 1652,
+      "role": "ADMIN",
+      "credentialFile": ".env.convex.test-login",
+      "credentialMode": "0600"
+    },
+    {
+      "name": "authenticated-bootstrap-and-test-calendar",
+      "passed": true,
+      "durationMs": 1469,
+      "campusCount": 29,
+      "calendarId": "a83b5fa5-130b-449a-a508-d8f79d4e7025",
+      "purpose": "test"
+    },
+    {
+      "name": "calendar-save-and-no-op-preservation",
+      "passed": true,
+      "durationMs": 1861,
+      "savedVersion": 2,
+      "noOpVersion": 2,
+      "unchanged": true
+    },
+    {
+      "name": "concurrent-calendar-writes",
+      "passed": true,
+      "durationMs": 1942,
+      "statuses": [200, 409],
+      "persistedVersion": 3,
+      "preservedVersions": 2
+    },
+    {
+      "name": "fresh-convex-adapter-persistence",
+      "passed": true,
+      "durationMs": 694,
+      "version": 3,
+      "fullSnapshots": 2,
+      "normalReadMetadataOnly": true
+    },
+    {
+      "name": "real-chrome-pdf-export",
+      "passed": true,
+      "durationMs": 3412,
+      "bytes": 502272,
+      "signature": "%PDF-",
+      "sha256": "08da5e4a9353be140f7f95200afb630664a9324e99a25a6090a383551008de26"
+    },
+    {
+      "name": "convex-storage-upload-and-authenticated-download",
+      "passed": true,
+      "durationMs": 7400,
+      "historyId": "e2938956-85fb-4b58-b233-5a152e30d855",
+      "bytes": 502272,
+      "byteForByteEqual": true,
+      "anonymousStatus": 401
+    },
+    {
+      "name": "review-save-export-and-stale-protection",
+      "passed": true,
+      "durationMs": 4656,
+      "criteriaCount": 29,
+      "savedRevision": 1,
+      "exported": true,
+      "staleExportStatus": 409,
+      "finalCalendarVersion": 4
+    },
+    {
+      "name": "logout-invalidates-session",
+      "passed": true,
+      "durationMs": 947,
+      "afterLogoutStatus": 401
+    }
+  ],
+  "passed": true,
+  "deployment": "https://oceanic-gazelle-652.convex.cloud",
+  "team": "diretoria-de-ensino-tecnico-proens",
+  "calendarId": "a83b5fa5-130b-449a-a508-d8f79d4e7025",
+  "historyId": "e2938956-85fb-4b58-b233-5a152e30d855",
+  "finished": "2026-10-23T07:37:53.117Z",
+  "followUpChecks": [
+    {
+      "name": "isolated-convex-session-cookie",
+      "passed": true,
+      "at": "2026-10-23T07:39:34.834Z",
+      "cookieName": "dentec_convex_lab_session",
+      "loginStatus": 200,
+      "logoutStatus": 200,
+      "afterLogoutStatus": 401
+    }
+  ]
+}

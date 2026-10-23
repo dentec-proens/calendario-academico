@@ -84,43 +84,49 @@ export async function requestRecovery(store, email, origin, sendMail, now = Date
   const token = randomBytes(32).toString('hex'),
     hash = digest(token),
     key = digest(mail);
-  const recipient = await store.change((db) => {
-    db.recoveryAttempts = (db.recoveryAttempts || []).filter((a) => a.until > now);
-    const global = db.recoveryAttempts.find((a) => a.key === 'global'),
-      local = db.recoveryAttempts.find((a) => a.key === key);
-    if ((global?.count || 0) >= 60 || (local?.count || 0) >= 3) return;
-    for (const [k, ttl] of [
-      ['global', 3600000],
-      [key, 900000],
-    ]) {
-      let a = db.recoveryAttempts.find((a) => a.key === k);
-      if (!a) {
-        a = { key: k, count: 0, until: now + ttl };
-        db.recoveryAttempts.push(a);
+  const recipient = await store.change(
+    (db) => {
+      db.recoveryAttempts = (db.recoveryAttempts || []).filter((a) => a.until > now);
+      const global = db.recoveryAttempts.find((a) => a.key === 'global'),
+        local = db.recoveryAttempts.find((a) => a.key === key);
+      if ((global?.count || 0) >= 60 || (local?.count || 0) >= 3) return;
+      for (const [k, ttl] of [
+        ['global', 3600000],
+        [key, 900000],
+      ]) {
+        let a = db.recoveryAttempts.find((a) => a.key === k);
+        if (!a) {
+          a = { key: k, count: 0, until: now + ttl };
+          db.recoveryAttempts.push(a);
+        }
+        a.count++;
       }
-      a.count++;
-    }
-    const user = db.users.find(
-      (u) => u.email === mail && u.active && !u.removedAt && u.hash && u.loginMethod !== 'google',
-    );
-    db.passwordResets = (db.passwordResets || []).filter((r) => r.expires > now);
-    if (!user) return;
-    db.passwordResets.push({ hash, userId: user.id, expires: now + recoveryLifetime });
-    return user.email;
-  });
+      const user = db.users.find(
+        (u) => u.email === mail && u.active && !u.removedAt && u.hash && u.loginMethod !== 'google',
+      );
+      db.passwordResets = (db.passwordResets || []).filter((r) => r.expires > now);
+      if (!user) return;
+      db.passwordResets.push({ hash, userId: user.id, expires: now + recoveryLifetime });
+      return user.email;
+    },
+    { appendOnlyAudit: true },
+  );
   if (!recipient) return;
   try {
     await sendMail({ to: recipient, url: origin + '/recuperar-senha#token=' + token });
   } catch {
-    await store.change((db) => {
-      db.passwordResets = (db.passwordResets || []).filter((r) => r.hash !== hash);
-      db.audit.push({
-        at: new Date(now).toISOString(),
-        actor: 'system',
-        action: 'PASSWORD_RECOVERY_DELIVERY_FAILED',
-        id: 'mail',
-      });
-    });
+    await store.change(
+      (db) => {
+        db.passwordResets = (db.passwordResets || []).filter((r) => r.hash !== hash);
+        db.audit.push({
+          at: new Date(now).toISOString(),
+          actor: 'system',
+          action: 'PASSWORD_RECOVERY_DELIVERY_FAILED',
+          id: 'mail',
+        });
+      },
+      { appendOnlyAudit: true },
+    );
     console.error('DENTEC_RECOVERY_EMAIL_FAILED');
   }
 }

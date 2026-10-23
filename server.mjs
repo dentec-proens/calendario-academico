@@ -5,29 +5,44 @@ import http from 'node:http';
 import { createApp } from './src/application.mjs';
 import { googleConfiguration, createGoogleAuth } from './src/google-auth.mjs';
 import { runtimeConfiguration } from './src/database-config.mjs';
-import { openPostgresStore } from './src/postgres-store.mjs';
+import { convexRuntimeConfiguration, persistenceBackend } from './src/convex-config.mjs';
 
-try {
-  process.loadEnvFile(fileURLToPath(new URL('./.env', import.meta.url)));
-} catch (e) {
-  if (e.code !== 'ENOENT') throw e;
+// Convex commands load .env.convex.local explicitly with Node's --env-file.
+// Do not mix that isolated deployment with the baseline PostgreSQL credentials.
+if (!process.env.DENTEC_BACKEND || process.env.DENTEC_BACKEND === 'postgres') {
+  try {
+    process.loadEnvFile(fileURLToPath(new URL('./.env', import.meta.url)));
+  } catch (e) {
+    if (e.code !== 'ENOENT') throw e;
+  }
 }
 const production = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
-const port = Number(process.env.PORT || 4173);
 let startupStage = 'config',
+  backend,
+  port,
   readyApp;
 
 async function prepare() {
   startupStage = 'config';
-  const config = runtimeConfiguration();
+  backend = persistenceBackend();
+  const config = backend === 'convex' ? convexRuntimeConfiguration() : runtimeConfiguration();
+  port = config.port;
   startupStage = 'database';
-  const endpoint = new URL(config.connectionString);
-  console.info(
-    'DENTEC_DB_TRANSPORT',
-    endpoint.hostname.includes('pooler') ? 'POOLER' : 'DIRECT',
-    endpoint.port || '5432',
-  );
-  const store = await openPostgresStore(config.connectionString);
+  let store;
+  if (backend === 'convex') {
+    const { openConvexStore } = await import('./src/convex-store.mjs');
+    store = await openConvexStore(config.convexUrl, { secret: config.bridgeSecret });
+    console.info('DENTEC_BACKEND', 'CONVEX_EXPERIMENT');
+  } else {
+    const endpoint = new URL(config.connectionString);
+    console.info(
+      'DENTEC_DB_TRANSPORT',
+      endpoint.hostname.includes('pooler') ? 'POOLER' : 'DIRECT',
+      endpoint.port || '5432',
+    );
+    const { openPostgresStore } = await import('./src/postgres-store.mjs');
+    store = await openPostgresStore(config.connectionString);
+  }
   try {
     let options = {
       store,
@@ -35,8 +50,21 @@ async function prepare() {
       googleAuth: createGoogleAuth(config.hosted ? null : googleConfiguration()),
       setupCode: config.setupCode,
       setupEmail: config.setupEmail,
+      ...(backend === 'convex'
+        ? {
+            sessionCookieName: 'dentec_convex_lab_session',
+            googleCookieName: 'dentec_convex_lab_google',
+          }
+        : {}),
     };
-    if (config.storage) {
+    if (backend === 'convex') {
+      startupStage = 'files';
+      const { createConvexFiles } = await import('./src/convex-files.mjs');
+      options.files = await createConvexFiles({
+        url: config.convexUrl,
+        secret: config.bridgeSecret,
+      });
+    } else if (config.storage) {
       startupStage = 'files';
       const { cloudFiles } = await import('./src/cloud-files.mjs');
       options.files = await cloudFiles(config.storage.url, config.storage.key);
@@ -80,7 +108,9 @@ const getApp = retryingResource(prepare, {
     if (['DENTEC_CONFIG', 'DENTEC_SCHEMA'].includes(error.code)) console.error(message);
     else if (!production)
       console.error(
-        'Não foi possível iniciar. Confira a conexão PostgreSQL e execute pnpm run db:migrate com a credencial de migração. Nenhum arquivo JSON será usado como banco.',
+        backend === 'convex'
+          ? 'Não foi possível iniciar o experimento. Confira CONVEX_URL, DENTEC_CONVEX_BRIDGE_SECRET e o deployment de desenvolvimento do Convex.'
+          : 'Não foi possível iniciar. Confira a conexão PostgreSQL e execute pnpm run db:migrate com a credencial de migração. Nenhum arquivo JSON será usado como banco.',
       );
   },
 });
@@ -122,7 +152,9 @@ if (start) {
   server.listen(port, production ? '0.0.0.0' : '127.0.0.1', async () => {
     if (!production) {
       readyApp.localPort = port;
-      console.log('DENTEC/PROENS — PostgreSQL — abra http://127.0.0.1:' + port);
+      console.log(
+        `DENTEC/PROENS — ${backend === 'convex' ? 'Convex experimental' : 'PostgreSQL'} — abra http://127.0.0.1:${port}`,
+      );
       if (!(await readyApp.store.read({ fields: ['users'] })).users.length)
         console.log('Código para criar a primeira conta ADMIN (uso local): ' + readyApp.setupCode);
     }

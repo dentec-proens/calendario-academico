@@ -1,0 +1,38 @@
+{
+  "baselineCommit": "f6b8f185fd8589101df70ec513136c7674e9deb9",
+  "branch": "codex/convex-migration",
+  "date": "2026-10-23",
+  "checks": {
+    "postgresReference": {
+      "tests": 184,
+      "passed": 182,
+      "failed": 0,
+      "skipped": 2
+    },
+    "convexApplication": {
+      "tests": 184,
+      "passed": 182,
+      "failed": 0,
+      "skipped": 2
+    },
+    "browserSuites": {
+      "executed": 3,
+      "skipped": 0
+    },
+    "cloudSmoke": {
+      "passed": 10,
+      "failed": 0,
+      "cookieIsolation": true
+    },
+    "typescript": true,
+    "eslint": true,
+    "prettier": true,
+    "reactBuild": true
+  },
+  "skips": [
+    "External PostgreSQL integration requires DENTEC_TEST_POSTGRES_URL",
+    "Serverless Chromium requires explicit serverless-browser test environment"
+  ],
+  "originalCheckoutUntouched": true,
+  "realInstitutionalDataImported": false
+}

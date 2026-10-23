@@ -283,7 +283,13 @@ export async function createApp({
   publicOrigin = null,
   recoveryMail = null,
   portalDirectory = portalBuildDirectory,
+  sessionCookieName = 'dentec_session',
+  googleCookieName = 'dentec_google',
 } = {}) {
+  if (![sessionCookieName, googleCookieName].every((name) => /^[A-Za-z0-9_-]{1,60}$/.test(name)))
+    throw Error('Nome de cookie inválido.');
+  const sessionPrefix = sessionCookieName + '=',
+    googlePrefix = googleCookieName + '=';
   if (!store?.read || !store?.change)
     throw Error(
       'PostgreSQL obrigatório. Configure POSTGRES_URL e execute pnpm run db:migrate antes de iniciar.',
@@ -392,8 +398,8 @@ export async function createApp({
       const token = (req.headers.cookie || '')
           .split(';')
           .map((s) => s.trim())
-          .find((s) => s.startsWith('dentec_session='))
-          ?.slice('dentec_session='.length),
+          .find((s) => s.startsWith(sessionPrefix))
+          ?.slice(sessionPrefix.length),
         session = await sessions.get(token);
       const user =
         session && session.expires > Date.now()
@@ -410,6 +416,7 @@ export async function createApp({
             key,
             Promise.resolve(
               store.read({
+                appendOnlyAudit: true,
                 calendarId,
                 campusId: user?.role === 'CAMPUS' ? user.campusId : undefined,
                 ...options,
@@ -419,9 +426,9 @@ export async function createApp({
         return reads.get(key);
       };
       const change = (fn, options) =>
-        store.change(
-          fn,
-          calendarId
+        store.change(fn, {
+          appendOnlyAudit: true,
+          ...(calendarId
             ? {
                 fields: [
                   'calendars',
@@ -433,11 +440,10 @@ export async function createApp({
                   'uploads',
                 ],
                 calendarId,
-                appendOnlyAudit: true,
-                ...options,
               }
-            : options,
-        );
+            : {}),
+          ...options,
+        });
       const audit = (db, action, id) => {
         const calendar = db.calendars.find((c) => c.id === id);
         db.audit.push({
@@ -481,20 +487,20 @@ export async function createApp({
         const start = googleAuth.begin();
         res.setHeader(
           'Set-Cookie',
-          `dentec_google=${start.binding}; HttpOnly; SameSite=Lax; Path=/api/google; Max-Age=600${canonicalOrigin.startsWith('https:') ? '; Secure' : ''}`,
+          `${googlePrefix}${start.binding}; HttpOnly; SameSite=Lax; Path=/api/google; Max-Age=600${canonicalOrigin.startsWith('https:') ? '; Secure' : ''}`,
         );
         send(200, { url: start.url });
         return;
       }
       if (path === '/api/google/callback' && method === 'GET') {
-        const clear = `dentec_google=; HttpOnly; SameSite=Lax; Path=/api/google; Max-Age=0${canonicalOrigin.startsWith('https:') ? '; Secure' : ''}`;
+        const clear = `${googlePrefix}; HttpOnly; SameSite=Lax; Path=/api/google; Max-Age=0${canonicalOrigin.startsWith('https:') ? '; Secure' : ''}`;
         try {
           const query = new URL(req.url, origin).searchParams,
             binding = (req.headers.cookie || '')
               .split(';')
               .map((s) => s.trim())
-              .find((s) => s.startsWith('dentec_google='))
-              ?.slice('dentec_google='.length);
+              .find((s) => s.startsWith(googlePrefix))
+              ?.slice(googlePrefix.length);
           const identity = await googleAuth.finish({
             state: query.get('state'),
             code: query.get('code'),
@@ -510,7 +516,7 @@ export async function createApp({
             'Referrer-Policy': 'no-referrer',
             'Set-Cookie': [
               clear,
-              `dentec_session=${newToken}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800${canonicalOrigin.startsWith('https:') ? '; Secure' : ''}`,
+              `${sessionPrefix}${newToken}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800${canonicalOrigin.startsWith('https:') ? '; Secure' : ''}`,
             ],
           });
           res.end();
@@ -598,7 +604,7 @@ export async function createApp({
         await sessions.set(token, { userId: u.id, expires: now + 28800000 });
         res.setHeader(
           'Set-Cookie',
-          `dentec_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${canonicalOrigin.startsWith('https:') ? '; Secure' : ''}`,
+          `${sessionPrefix}${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${canonicalOrigin.startsWith('https:') ? '; Secure' : ''}`,
         );
         send(200, { user: safeUser(u) });
         return;
@@ -638,11 +644,76 @@ export async function createApp({
             fail('Conclua os envios pendentes ou aguarde uma hora.', 429);
           db.uploads.push(ticket);
         });
-        send(201, { id: ticket.id, url: await files.uploadUrl(ticket.path) });
+        send(
+          201,
+          files.uploadMode === 'proxy'
+            ? { id: ticket.id, url: '/api/uploads/' + ticket.id, encoding: 'base64' }
+            : { id: ticket.id, url: await files.uploadUrl(ticket.path) },
+        );
+        return;
+      }
+      const uploadTarget = path.match(/^\/api\/uploads\/([\w-]+)$/);
+      if (uploadTarget && method === 'POST') {
+        if (files?.uploadMode !== 'proxy') fail('Envio indisponível.', 404);
+        const ticket = (await read()).uploads?.find(
+          (x) => x.id === uploadTarget[1] && x.owner === user.id && x.expires > Date.now(),
+        );
+        if (!ticket) fail('Envio expirado ou incompatível.', 404);
+        if (ticket.purpose === 'document') admin();
+        else owns((await read()).calendars.find((c) => c.id === ticket.calendarId));
+        if (typeof body.data !== 'string') fail('Arquivo inválido.');
+        const bytes = Buffer.from(body.data, 'base64');
+        if (
+          bytes.length !== ticket.size ||
+          bytes.length > 8_000_000 ||
+          bytes.subarray(0, 5).toString() !== '%PDF-'
+        )
+          fail('Arquivo inválido.');
+        await files.write(ticket.path, bytes);
+        send(201, { ok: true });
         return;
       }
       let uploaded = null;
-      if (body.uploadId) {
+      const inlineHistoryTarget = path.match(/^\/api\/calendars\/([\w-]+)\/history$/);
+      if (
+        files?.uploadMode === 'proxy' &&
+        !body.uploadId &&
+        typeof body.data === 'string' &&
+        method === 'POST' &&
+        (path === '/api/documents' || inlineHistoryTarget)
+      ) {
+        if (path === '/api/documents') admin();
+        else owns((await read()).calendars.find((c) => c.id === inlineHistoryTarget[1]));
+        const filename = text(body.filename, 180),
+          bytes = Buffer.from(body.data, 'base64');
+        if (
+          !filename.toLowerCase().endsWith('.pdf') ||
+          body.data.length > 10_666_668 ||
+          !/^[A-Za-z0-9+/]*={0,2}$/.test(body.data) ||
+          bytes.length > 8_000_000 ||
+          bytes.subarray(0, 5).toString() !== '%PDF-'
+        )
+          fail('Envie um PDF de até 8 MB.');
+        const id = randomUUID();
+        uploaded = {
+          id,
+          owner: user.id,
+          purpose: inlineHistoryTarget ? 'history' : 'document',
+          calendarId: inlineHistoryTarget ? inlineHistoryTarget[1] : null,
+          filename,
+          size: bytes.length,
+          expires: Date.now() + 3600000,
+          path: 'uploads/' + id + '.pdf',
+        };
+        await change((db) => {
+          db.uploads = (db.uploads || []).filter((x) => x.expires > Date.now());
+          if (db.uploads.filter((x) => x.owner === user.id).length >= 3)
+            fail('Conclua os envios pendentes ou aguarde uma hora.', 429);
+          db.uploads.push(uploaded);
+        });
+        await files.write(uploaded.path, bytes);
+      }
+      if (body.uploadId && !uploaded) {
         if (!files) fail('Envio direto indisponível.');
         const historyTarget = path.match(/^\/api\/calendars\/([\w-]+)\/history$/);
         if (path === '/api/documents' && method === 'POST') admin();
@@ -676,6 +747,18 @@ export async function createApp({
       };
       const download = async (item) => {
         if (!files || !item.objectKey) return false;
+        if (files.uploadMode === 'proxy') {
+          const bytes = await files.read(item.objectKey);
+          res.writeHead(200, {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition':
+              "attachment; filename*=UTF-8''" + encodeURIComponent(item.filename),
+            'Cache-Control': 'no-store',
+            'X-Content-Type-Options': 'nosniff',
+          });
+          res.end(bytes);
+          return true;
+        }
         const url = await files.signed(item.objectKey, item.filename);
         res.writeHead(302, {
           Location: url,
@@ -689,7 +772,7 @@ export async function createApp({
         await sessions.delete(token);
         res.setHeader(
           'Set-Cookie',
-          'dentec_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0',
+          `${sessionPrefix}; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`,
         );
         send(200, { ok: true });
         return;
@@ -697,7 +780,12 @@ export async function createApp({
       if (path === '/api/logs' && method === 'GET') {
         const offset = Number(new URL(req.url, origin).searchParams.get('offset') || 0);
         if (!Number.isSafeInteger(offset) || offset < 0) fail('Página inválida.');
-        send(200, auditLog(await read(), user, offset));
+        send(
+          200,
+          store.auditPage
+            ? await store.auditPage(user, offset)
+            : auditLog(await read({ appendOnlyAudit: false }), user, offset),
+        );
         return;
       }
       if (path === '/api/bootstrap' && method === 'GET') {

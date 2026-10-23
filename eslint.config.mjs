@@ -17,6 +17,7 @@ const functions = {
 export default defineConfig([
   globalIgnores([
     'node_modules/**',
+    'convex/_generated/**',
     'dist/**',
     'data/**',
     'uploads/**',

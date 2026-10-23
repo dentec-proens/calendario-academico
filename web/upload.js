@@ -11,19 +11,31 @@ export async function filePayload(file, purpose, calendarId) {
       }),
       ticket = await response.json();
     if (!response.ok) throw Error(ticket.error);
-    const uploaded = await fetch(ticket.url, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/pdf', 'x-upsert': 'false' },
-      body: await file.arrayBuffer(),
-    });
+    const uploaded = await fetch(
+      ticket.url,
+      ticket.encoding === 'base64'
+        ? {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Dentec-Request': '1' },
+            body: JSON.stringify({ data: await readBase64(file) }),
+          }
+        : {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/pdf', 'x-upsert': 'false' },
+            body: await file.arrayBuffer(),
+          },
+    );
     if (!uploaded.ok) throw Error('Não foi possível enviar o PDF. Tente novamente.');
     return { uploadId: ticket.id };
   }
-  const data = await new Promise((resolve, reject) => {
+  return { data: await readBase64(file) };
+}
+
+function readBase64(file) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result).split(',')[1]);
     reader.onerror = () => reject(Error('Não foi possível ler o PDF.'));
     reader.readAsDataURL(file);
   });
-  return { data };
 }

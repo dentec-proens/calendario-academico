@@ -16,7 +16,12 @@
     "start": "node server.mjs",
     "db:migrate": "node scripts/database.mjs migrate",
     "db:import": "node scripts/database.mjs import",
-    "db:export": "node scripts/database.mjs export"
+    "db:export": "node scripts/database.mjs export",
+    "dev:convex": "node --env-file=.env.convex.local scripts/dev.mjs",
+    "start:convex": "node --env-file=.env.convex.local server.mjs",
+    "convex:push": "convex dev --once --typecheck enable",
+    "typecheck:convex": "tsc --noEmit -p convex/tsconfig.json",
+    "test:convex": "DENTEC_TEST_BACKEND=convex node --test --test-concurrency=1 test/*.test.mjs"
   },
   "engines": {
     "node": ">=22.13.0"
@@ -24,6 +29,7 @@
   "dependencies": {
     "@sparticuz/chromium": "153.0.0",
     "@supabase/supabase-js": "2.116.0",
+    "convex": "1.47.0",
     "lucide-react": "1.61.0",
     "pdfjs-dist": "6.3.289",
     "pg": "8.23.0",
@@ -35,10 +41,14 @@
     "@electric-sql/pglite": "0.5.10",
     "@eslint/js": "10.0.1",
     "@stylistic/eslint-plugin": "5.10.0",
+    "@types/node": "26.6.5",
+    "convex-test": "0.0.64",
     "eslint": "10.13.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.13.0",
     "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
     "vite": "8.3.5"
   }
 }

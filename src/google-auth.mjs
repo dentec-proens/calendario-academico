@@ -158,30 +158,33 @@ export function createGoogleAuth(config, { fetcher = fetch, now = () => Date.now
 }
 
 export async function authorizeGoogleUser(store, identity) {
-  return store.change((db) => {
-    const user = db.users.find((u) => u.active && u.email === identity.email);
-    if (
-      !user ||
-      !['ADMIN', 'CAMPUS'].includes(user.role) ||
-      (user.googleSubject && user.googleSubject !== identity.subject) ||
-      (user.role === 'CAMPUS' && !db.campuses.some((c) => c.id === user.campusId))
-    )
-      reject();
-    if (db.users.some((u) => u.id !== user.id && u.googleSubject === identity.subject)) reject();
-    user.googleSubject = identity.subject;
-    user.googleLastLoginAt = new Date().toISOString();
-    db.audit.push({
-      at: user.googleLastLoginAt,
-      actor: user.id,
-      action: 'GOOGLE_LOGIN',
-      id: user.id,
-    });
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      campusId: user.campusId,
-    };
-  });
+  return store.change(
+    (db) => {
+      const user = db.users.find((u) => u.active && u.email === identity.email);
+      if (
+        !user ||
+        !['ADMIN', 'CAMPUS'].includes(user.role) ||
+        (user.googleSubject && user.googleSubject !== identity.subject) ||
+        (user.role === 'CAMPUS' && !db.campuses.some((c) => c.id === user.campusId))
+      )
+        reject();
+      if (db.users.some((u) => u.id !== user.id && u.googleSubject === identity.subject)) reject();
+      user.googleSubject = identity.subject;
+      user.googleLastLoginAt = new Date().toISOString();
+      db.audit.push({
+        at: user.googleLastLoginAt,
+        actor: user.id,
+        action: 'GOOGLE_LOGIN',
+        id: user.id,
+      });
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        campusId: user.campusId,
+      };
+    },
+    { appendOnlyAudit: true },
+  );
 }

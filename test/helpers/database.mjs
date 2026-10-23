@@ -40,5 +40,9 @@ export async function createTestDatabase(t, { seed = true } = {}) {
 }
 
 export async function createTestApp(t, { store, ...options } = {}) {
+  if (!store && process.env.DENTEC_TEST_BACKEND === 'convex') {
+    const { createConvexTestDatabase } = await import('./convex-database.mjs');
+    store = (await createConvexTestDatabase(t)).store;
+  }
   return createApp({ ...options, store: store || (await createTestDatabase(t)).store });
 }

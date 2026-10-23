@@ -31,9 +31,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run format:check
       - run: pnpm run lint
+      - run: pnpm run typecheck:convex
       - run: pnpm run build
       - name: Preparar PostgreSQL de teste
         run: pnpm run db:migrate
         env:
           POSTGRES_URL: ${{ env.DENTEC_TEST_POSTGRES_URL }}
       - run: pnpm test
+      - name: Conferir os fluxos com handlers Convex isolados
+        run: pnpm run test:convex
