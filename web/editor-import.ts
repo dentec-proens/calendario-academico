@@ -1,5 +1,5 @@
-import { normalizeCalendar } from '../src/calendar-normalize.mjs';
-import { teacherVacations } from '../src/teacher-vacations.mjs';
+import { normalizeCalendar } from '../src/calendar-normalize.ts';
+import { teacherVacations } from '../src/teacher-vacations.ts';
 import { calendarModalities } from './editor-domain.ts';
 import type { CalendarState } from './editor-types.ts';
 

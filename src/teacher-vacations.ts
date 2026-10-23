@@ -1,0 +1,113 @@
+import type { VacationPeriods } from './domain-types.ts';
+type VacationEvent = {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+  kind: 'exclude';
+  category: string;
+  evidence: string;
+};
+type LegacyVacations = {
+  januaryStart: string;
+  januaryEnd: string;
+  julyStart: string;
+  julyEnd: string;
+  events: VacationEvent[];
+  total: number;
+};
+import { datesBetween } from './calendar.ts';
+
+// Interpret the stable vacation IDs in old saved calendars without rewriting
+// their stored versions. Other informational events keep their original effect.
+export function withVacationExclusions<T extends { id?: string; kind: string }>(events: T[]): T[] {
+  return events.map((event) =>
+    /^teacher-vacation-(january|july|third)$/.test(event.id || '')
+      ? { ...event, kind: 'exclude' }
+      : event,
+  );
+}
+
+// Campus-defined intervals; the string form preserves older two-period records.
+export function teacherVacations(
+  year: number,
+  julyStart: string,
+  evidence: string,
+): LegacyVacations;
+export function teacherVacations(
+  year: number,
+  julyStart: Partial<VacationPeriods>,
+  evidence: string,
+): Partial<VacationPeriods> & { events: VacationEvent[]; total: number };
+export function teacherVacations(
+  year: number,
+  julyStart: string | Partial<VacationPeriods>,
+  evidence: string,
+): LegacyVacations | (Partial<VacationPeriods> & { events: VacationEvent[]; total: number }) {
+  if (julyStart && typeof julyStart === 'object') {
+    if (typeof evidence !== 'string' || !evidence.trim() || evidence.length > 240)
+      throw Error('Informe a fonte ou decisão das férias docentes.');
+    const { firstStart, firstEnd, secondStart, secondEnd, thirdStart, thirdEnd } = julyStart;
+    const periods: [string | undefined, string | undefined][] = [[firstStart, firstEnd]];
+    if (secondStart || secondEnd) periods.push([secondStart, secondEnd]);
+    if (thirdStart || thirdEnd) {
+      if (!secondStart || !secondEnd) throw Error('Preencha o segundo período antes do terceiro.');
+      periods.push([thirdStart, thirdEnd]);
+    }
+    const seen = new Set<string>();
+    const events = periods.map(([start, end], i) => {
+      if (!start || !end) throw Error('Informe início e término de cada período de férias.');
+      if (!String(start).startsWith(`${year}-`) || !String(end).startsWith(`${year}-`))
+        throw Error('As férias devem estar no ano do calendário.');
+      const days = datesBetween(start, end);
+      for (const d of days) {
+        if (seen.has(d)) throw Error('Os períodos de férias não podem se sobrepor.');
+        seen.add(d);
+      }
+      return {
+        id: `teacher-vacation-${['january', 'july', 'third'][i]}`,
+        name: `Férias docentes — ${days.length} dias`,
+        start,
+        end,
+        kind: 'exclude' as const,
+        category: 'ferias',
+        evidence: evidence.trim(),
+      };
+    });
+    return { ...julyStart, events, total: seen.size };
+  }
+  if (!Number.isInteger(year) || year < 1900 || year > 9999) throw Error('Ano inválido.');
+  const januaryStart = `${year}-01-02`,
+    januaryEnd = `${year}-01-31`;
+  if (typeof julyStart !== 'string' || !julyStart.startsWith(`${year}-07-`))
+    throw Error('Escolha o início das férias de julho no ano do calendário.');
+  datesBetween(julyStart, julyStart);
+  const end = new Date(julyStart + 'T00:00:00Z');
+  end.setUTCDate(end.getUTCDate() + 14);
+  const julyEnd = end.toISOString().slice(0, 10);
+  if (!julyEnd.startsWith(`${year}-07-`))
+    throw Error('Os 15 dias devem caber em julho: escolha início entre 01/07 e 17/07.');
+  if (typeof evidence !== 'string' || !evidence.trim() || evidence.length > 240)
+    throw Error('Informe a fonte ou decisão das férias docentes (até 240 caracteres).');
+  const intervals: [string, string, string, number][] = [
+    ['january', januaryStart, januaryEnd, 30],
+    ['july', julyStart, julyEnd, 15],
+  ];
+  const events = intervals.map(([id, start, end, days]) => ({
+    id: `teacher-vacation-${id}`,
+    name: `Férias docentes — ${days} dias`,
+    start,
+    end,
+    kind: 'exclude' as const,
+    category: 'ferias',
+    evidence: evidence.trim(),
+  }));
+  return {
+    januaryStart,
+    januaryEnd,
+    julyStart,
+    julyEnd,
+    total: events.reduce((n, e) => n + datesBetween(e.start, e.end).length, 0),
+    events,
+  };
+}

@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { analyzeHistory, suggestionsFromPages } from '../src/history-analysis.mjs';
+import { analyzeHistory, suggestionsFromPages } from '../src/history-analysis.ts';
 import { syntheticPdf as fixture } from './helpers/synthetic-pdf.ts';
 
 test('PDF text extraction preserves page evidence and never assigns dates or confirms events', async () => {
@@ -9,7 +9,7 @@ test('PDF text extraction preserves page evidence and never assigns dates or con
   assert.equal(result.candidates[0].name, 'FERIADO MUNICIPAL - Padroeiro');
   assert.equal(result.candidates[0].page, 1);
   assert.equal(result.candidates[0].likelyLocal, true);
-  assert.equal(result.candidates[0].start, undefined);
+  assert.equal(Object.hasOwn(result.candidates[0], 'start'), false);
   assert.equal((await analyzeHistory(fixture(''))).needsText, true);
   await assert.rejects(analyzeHistory(Buffer.from('%PDF-broken')));
   const multi = suggestionsFromPages([

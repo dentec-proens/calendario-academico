@@ -7,7 +7,7 @@ import type { Doc, TableNames } from '../convex/_generated/dataModel';
 import { api, internal } from '../convex/_generated/api.js';
 import { environments } from '../config/environments.ts';
 import { generateAuthKeys, validateAuthKeys } from '../scripts/dev-setup.ts';
-import { initialCatalogue } from '../src/institution.mjs';
+import { initialCatalogue } from '../src/institution.ts';
 
 const { default: schema } = await import('../convex/schema.ts');
 const devUrl = 'https://isolated-setup-test.convex.cloud';

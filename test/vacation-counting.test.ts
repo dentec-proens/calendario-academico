@@ -2,11 +2,11 @@ import type { countCalendar } from '../src/calendar.ts';
 import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { teacherVacations, withVacationExclusions } from '../src/teacher-vacations.mjs';
-import { evaluateCalendar } from '../src/evaluation.mjs';
-import { durationEnd } from '../src/duration.mjs';
-import { proensLayout } from '../web/print.mjs';
-import { suggestStages } from '../src/stage-suggestions.mjs';
+import { teacherVacations, withVacationExclusions } from '../src/teacher-vacations.ts';
+import { evaluateCalendar } from '../src/evaluation.ts';
+import { durationEnd } from '../src/duration.ts';
+import { proensLayout } from '../web/print.ts';
+import { suggestStages } from '../src/stage-suggestions.ts';
 
 const state = {
   year: 2027,

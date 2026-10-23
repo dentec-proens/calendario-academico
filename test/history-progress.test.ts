@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { historyCandidateKey, includedHistoryCandidate } from '../src/history-progress.mjs';
+import { historyCandidateKey, includedHistoryCandidate } from '../src/history-progress.ts';
 
 test('progress follows the source even after renaming and resets when event is removed', () => {
   const first = { page: 1, excerpt: '10/05 Feira', name: 'Feira' },
@@ -26,7 +26,7 @@ test('progress follows the source even after renaming and resets when event is r
   );
 });
 
-import { existingHistoryEvent } from '../src/history-progress.mjs';
+import { existingHistoryEvent } from '../src/history-progress.ts';
 
 const setup = { year: 2027, assessmentStages: 4, modalities: ['integrado', 'graduacao'] };
 test('history suppresses existing obligations across changed dates, but preserves different stages and scopes', () => {

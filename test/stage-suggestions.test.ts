@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { suggestStages } from '../src/stage-suggestions.mjs';
+import { suggestStages } from '../src/stage-suggestions.ts';
 
 const state = {
   year: 2027,
@@ -55,7 +55,22 @@ test('respects semester boundaries for four stages and rejects unknown or confli
   assert.equal(r.stages[2].start, '2027-04-01');
   assert.throws(() => suggestStages({ ...state, weekConfirmed: false }, [], '2027-03-01'));
   assert.equal(suggestStages(state, [], '2027-03-07').stages[0].start, '2027-03-07');
-  assert.throws(() => suggestStages(state, [{ requirementId: 'stage-1' }], '2027-03-01'));
+  assert.throws(() =>
+    suggestStages(
+      state,
+      [
+        {
+          id: 'existing',
+          start: '2027-02-01',
+          end: '2027-02-02',
+          kind: 'note',
+          evidence: 'Ata',
+          requirementId: 'stage-1',
+        },
+      ],
+      '2027-03-01',
+    ),
+  );
   assert.throws(() =>
     suggestStages(
       { ...state, modalities: ['integrado', 'graduacao'] },
@@ -74,7 +89,7 @@ test('respects semester boundaries for four stages and rejects unknown or confli
   );
 });
 
-import { isFirstStageStart } from '../src/stage-suggestions.mjs';
+import { isFirstStageStart } from '../src/stage-suggestions.ts';
 
 test('recognizes imported first stage without guessing later stages', () => {
   for (const name of [
@@ -90,7 +105,7 @@ test('recognizes imported first stage without guessing later stages', () => {
   ])
     assert.equal(isFirstStageStart(name), false);
 });
-import { suggestStageEnd } from '../src/stage-suggestions.mjs';
+import { suggestStageEnd } from '../src/stage-suggestions.ts';
 
 test('later stages receive an end date without replacing earlier stages', () => {
   const events = [

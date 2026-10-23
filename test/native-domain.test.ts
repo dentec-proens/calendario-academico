@@ -4,9 +4,9 @@ import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../convex/_generated/api.js';
-import { reviewCriteria } from '../src/review.mjs';
-import { initialCatalogue } from '../src/institution.mjs';
-import { teacherDayId } from '../src/teacher-day.mjs';
+import { reviewCriteria } from '../src/review.ts';
+import { initialCatalogue } from '../src/institution.ts';
+import { teacherDayId } from '../src/teacher-day.ts';
 import { createNativeFixture as fixture } from './helpers/native-database.ts';
 
 const createBody = (campusId = 'a') => ({
@@ -341,7 +341,12 @@ test('native calendar saves validate per-offer stages and preserve the selected 
 });
 
 test('native calendar retains the campus teacher-day choice in immutable PDF inputs and protects institutional events', async () => {
-  const { as, inspect } = await fixture({ catalogue: initialCatalogue() });
+  const { as, inspect } = await fixture({
+    catalogue: {
+      ...initialCatalogue(),
+      events: initialCatalogue().events.map((event) => ({ ...event })),
+    },
+  });
   const campus = as('campus-a');
   const record = await campus.write('/api/calendars', createBody());
   const path = '/api/calendars/' + record.id;

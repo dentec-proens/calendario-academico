@@ -17,7 +17,7 @@
     "typecheck:tools": "tsc --noEmit -p tsconfig.tools.json",
     "lint": "oxlint --deny-warnings",
     "lint:fix": "oxlint --fix --deny-warnings",
-    "lint:types": "oxlint --type-aware --deny-warnings convex web scripts config src/app-server.ts src/app-routes.ts server.ts vite.config.ts test/helpers \"test/**/*.ts\" src/calendar.ts src/history-dates.ts src/domain-types.ts vitest.config.ts",
+    "lint:types": "oxlint --type-aware --deny-warnings convex web scripts config src migration server.ts vite.config.ts vitest.config.ts test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",

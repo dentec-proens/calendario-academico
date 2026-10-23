@@ -1,13 +1,13 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { presentReviewText, reviewNorm } from '../src/review-presentation.mjs';
-import { reviewSupport, initialConclusion } from '../src/review.mjs';
-import { reviewDocument } from '../src/review-export.mjs';
+import { presentReviewText, reviewNorm } from '../src/review-presentation.ts';
+import { reviewSupport, initialConclusion } from '../src/review.ts';
+import { reviewDocument } from '../src/review-export.ts';
 import {
   partialConclusion,
   favorableConclusion,
   updateConclusion,
-} from '../src/review-conclusion.mjs';
+} from '../src/review-conclusion.ts';
 
 const norm2027 = { norm: 'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026' };
 

@@ -1,20 +1,16 @@
 import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import {
-  activityChecklist,
-  migrateAssessmentEvents,
-  assessmentCount,
-} from '../src/obligations.mjs';
+import { activityChecklist, migrateAssessmentEvents, assessmentCount } from '../src/obligations.ts';
 import {
   suggestStages,
   suggestStageEnd,
   recalculateAssessmentStages,
   assessmentDayCounts,
-} from '../src/stage-suggestions.mjs';
-import { evaluateCalendar } from '../src/evaluation.mjs';
-import { proensLayout } from '../web/print.mjs';
-import { recalculatePeriods } from '../src/duration.mjs';
+} from '../src/stage-suggestions.ts';
+import { evaluateCalendar } from '../src/evaluation.ts';
+import { proensLayout } from '../web/print.ts';
+import { recalculatePeriods } from '../src/duration.ts';
 
 const state = {
   year: 2027,
@@ -86,7 +82,7 @@ test('100-day semesters control 50-day bimesters even when the last entered stag
   const partial = { ...s, events: s.events.filter((e) => e.requirementId !== 'stage-2:integrado') };
   assert(
     !recalculateAssessmentStages(partial, partial.events).some(
-      (e: CalendarActivity) => e.requirementId === 'stage-2:integrado',
+      (e) => e.requirementId === 'stage-2:integrado',
     ),
   );
 });
@@ -118,8 +114,8 @@ test('automatic stages update after holidays and Saturdays, scoped by offer', ()
   };
   const current = { ...state, events: [...original, holiday, saturday] };
   const changed = recalculateAssessmentStages(current, current.events);
-  assert.equal(changed.find((e: CalendarActivity) => e.id === 'integrado0')!.end, '2027-03-06');
-  assert.equal(changed.find((e: CalendarActivity) => e.id === 'graduacao0')!.end, '2027-03-12');
+  assert.equal(changed.find((e) => e.id === 'integrado0')!.end, '2027-03-06');
+  assert.equal(changed.find((e) => e.id === 'graduacao0')!.end, '2027-03-12');
   const counts = assessmentDayCounts({ ...current, events: changed }, changed);
   assert.deepEqual(counts.integrado0, [
     { modality: 'integrado', days: 5, saturdays: 1, excluded: 1 },
@@ -137,7 +133,7 @@ test('automatic stages update after holidays and Saturdays, scoped by offer', ()
     },
   ];
   const next = recalculateAssessmentStages({ ...state, events: blocked }, blocked);
-  assert.equal(next.find((e: CalendarActivity) => e.id === 'integrado0')!.end, '2027-03-08');
+  assert.equal(next.find((e) => e.id === 'integrado0')!.end, '2027-03-08');
   assert.equal(assessmentDayCounts({ ...state, events: next }, next).integrado0[0].saturdays, 0);
   const restored = recalculateAssessmentStages({ ...state, events: original }, original);
   assert.equal(restored[0].end, '2027-03-05');

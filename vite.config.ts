@@ -7,21 +7,6 @@ import { validatePortalDeploymentUrl } from './config/client-deployment.ts';
 
 const projectRoot = fileURLToPath(new URL('./', import.meta.url));
 const webRoot = new URL('./web/', import.meta.url);
-const domainModules = [
-  'teacher-day',
-  'duration',
-  'history-dates',
-  'history-progress',
-  'stage-suggestions',
-  'teacher-vacations',
-  'calendar-label',
-  'evaluation',
-  'modalities',
-  'obligations',
-  'categories',
-  'calendar',
-  'saturdays',
-];
 const pageAliases: Plugin = {
   name: 'portal-page-routes',
   configureServer(server) {
@@ -45,19 +30,6 @@ export default defineConfig(({ mode }) => {
     publicDir: false,
     oxc: { jsx: { runtime: 'automatic' } },
     define: { 'import.meta.env.VITE_CONVEX_URL': JSON.stringify(deploymentUrl) },
-    resolve: {
-      alias: Object.fromEntries(
-        domainModules.map((name) => [
-          `/${name}.mjs`,
-          fileURLToPath(
-            new URL(
-              `./src/${name}.${['calendar', 'history-dates'].includes(name) ? 'ts' : 'mjs'}`,
-              import.meta.url,
-            ),
-          ),
-        ]),
-      ),
-    },
     plugins: [pageAliases],
     server: {
       host: '127.0.0.1',

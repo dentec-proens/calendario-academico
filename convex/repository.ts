@@ -5,10 +5,10 @@ import type { QueryCtx, MutationCtx } from './_generated/server';
 import type { Member } from './authContracts';
 import type { DomainState, ContentState } from './validators';
 import type { documentSnapshot, auditTarget } from './validators';
-import { calendarName } from '../src/calendar-label.mjs';
-import { normalizeCalendar } from '../src/calendar-normalize.mjs';
-import { teacherVacations } from '../src/teacher-vacations.mjs';
-import { migrateAssessmentEvents } from '../src/obligations.mjs';
+import { calendarName } from '../src/calendar-label.ts';
+import { normalizeCalendar } from '../src/calendar-normalize.ts';
+import { teacherVacations } from '../src/teacher-vacations.ts';
+import { migrateAssessmentEvents } from '../src/obligations.ts';
 
 export type Context = QueryCtx | MutationCtx;
 export function fail(message: string, status = 400): never {

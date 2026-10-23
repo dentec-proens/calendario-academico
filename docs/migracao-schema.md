@@ -104,3 +104,17 @@ Execute `finish` com o recibo de produção para remover o checkpoint. Só entã
 Se houver divergência de contagem, referência, fingerprint, arquivo, histórico ou schema, interrompa a publicação final. Não apague registros para fazer a validação passar. Enquanto o backend estiver em manutenção, a restauração do ZIP original completo pelo mesmo deployment recupera os IDs, o Auth e os arquivos; restaure também o backend/frontend do mesmo commit anterior antes de reabrir o acesso. Depois da reabertura, novos dados tornam necessária uma análise de conciliação antes de qualquer rollback destrutivo.
 
 A [documentação oficial de importação](https://docs.convex.dev/database/import-export/import) confirma a preservação de `_id`/`_creationTime` e Storage em restaurações ZIP. O ZIP exportado é utilizado sem edição manual; a transformação é feita por mutations no deployment de ensaio e depois, com as mesmas garantias, em produção. O schema final volta a aplicar a [validação estrita do Convex](https://docs.convex.dev/database/schemas).
+
+## Ciclo de vida do codec legado
+
+`migration/legacy-codec.ts` lê o envelope antigo (`data` e `undefinedPaths`), restaura chaves escapadas e preserva a distinção entre propriedades ausentes e propriedades com `undefined`. O único consumidor operacional é `migration/plan.ts`, chamado por `scripts/migrate-data.ts plan`. O encoder é usado somente nas fixtures dos testes de migração. Não há importação do codec no frontend nem nas funções Convex da aplicação.
+
+A migração para o schema nativo já possui recibos locais de `verify` com `result: verified` e `verificationMode: live_export`: produção (`exuberant-cheetah-138`, 23/10/2026 às 13:40 UTC) e desenvolvimento do Gustavo (`oceanic-gazelle-652`, às 14:09 UTC). Esses recibos registram a verificação daquela fotografia; não substituem uma conferência atual dos destinos. Os caminhos privados são `backup-convex-schema-20261023/release-8ea551e/backup-migration/production-receipt.json` e `backup-dev-presence-20261023/receipt.json`. Não versionar esses backups nem seus dados.
+
+O codec permanece no repositório para permitir ler os backups anteriores, repetir um ensaio e recuperar uma instalação que ainda esteja nesse formato. Sua remoção exige encerrar esse suporte:
+
+1. Confirmar que todos os deployments ainda utilizados estão no schema nativo, com a migração concluída e seus checkpoints removidos. Os recibos encontrados cobrem produção e um desenvolvimento, não todas as instalações possíveis.
+2. Preservar os backups, planos, recibos e uma referência Git recuperável da ferramenta anterior (por exemplo, o commit `8ea551e`) em local privado. Decidir que a recuperação de backups antigos será feita por essa versão arquivada, ou converter e verificar os backups que ainda precisarão ser lidos pela versão atual.
+3. Retirar conjuntamente `migration/`, `scripts/migrate-data.ts`, o comando `migrate:data`, os testes exclusivos dessa conversão e as instruções de execução da ferramenta. Excluir apenas o codec deixaria a operação `plan` quebrada.
+
+Os 13 PDFs originais indisponíveis **não impedem a retirada do codec**: seus registros já estão no schema nativo, com `unavailableFile`. A reposição depende de obter os bytes originais com o SHA-256 esperado e usar [Restaurar original](restauracao-de-originais.md), sem passar pelo envelope antigo. A compatibilidade das representações históricas e dos rascunhos importados também é independente deste codec; não deve ser removida junto com a ferramenta administrativa.

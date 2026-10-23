@@ -23,33 +23,33 @@ import { editorElement as $, editorControl } from './editor-dom.ts';
 import type { AutosaveStatus } from './autosave.ts';
 import logoUrl from './ifpr-logo.png?url';
 import './proens.css';
-import { teacherDayId, validateTeacherDay, teacherDayWeek } from '../src/teacher-day.mjs';
+import { teacherDayId, validateTeacherDay, teacherDayWeek } from '../src/teacher-day.ts';
 import { createAutosaver } from './autosave.ts';
-import { durationEnd, recalculatePeriods } from '../src/duration.mjs';
+import { durationEnd, recalculatePeriods } from '../src/duration.ts';
 import { proposedDates } from '../src/history-dates.ts';
 import {
   historyCandidateKey,
   includedHistoryCandidate,
   existingHistoryEvent,
-} from '../src/history-progress.mjs';
+} from '../src/history-progress.ts';
 import {
   suggestStageEnd,
   isFirstStageStart,
   assessmentDayCounts,
-} from '../src/stage-suggestions.mjs';
-import { regimeLabels } from '../src/calendar-label.mjs';
-import { evaluateCalendar } from '../src/evaluation.mjs';
+} from '../src/stage-suggestions.ts';
+import { regimeLabels } from '../src/calendar-label.ts';
+import { evaluateCalendar } from '../src/evaluation.ts';
 import {
   activityChecklist,
   assessmentCount,
   stageRequirement,
   migrateAssessmentEvents,
-} from '../src/obligations.mjs';
+} from '../src/obligations.ts';
 import { filePayload } from './upload.ts';
-import { categories, eventCategory, categoryLabel } from '../src/categories.mjs';
+import { categories, eventCategory, categoryLabel } from '../src/categories.ts';
 import { datesBetween } from '../src/calendar.ts';
-import { monthSaturdays } from '../src/saturdays.mjs';
-import { proensLayout } from './print.mjs';
+import { monthSaturdays } from '../src/saturdays.ts';
+import { proensLayout } from './print.ts';
 import {
   accounts,
   calendars,
@@ -1920,7 +1920,7 @@ function editEvent(id: string) {
     hours: event.hours ?? '',
     requirement: event.requirementId || '',
   }))
-    editorControl('event-' + field).value = value;
+    editorControl('event-' + field).value = String(value);
   document
     .querySelectorAll<HTMLInputElement>('input[name=event-modality]')
     .forEach(

@@ -1,7 +1,6 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "allowJs": true,
     "jsx": "react-jsx",
     "types": ["node"],
     "allowSyntheticDefaultImports": true,
@@ -12,6 +11,6 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["./**/*"],
+  "include": ["./**/*", "../src/**/*.d.ts"],
   "exclude": ["./_generated"]
 }

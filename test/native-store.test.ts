@@ -2,7 +2,7 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
-import { reviewCriteria } from '../src/review.mjs';
+import { reviewCriteria } from '../src/review.ts';
 
 const createBody = {
   year: 2027,

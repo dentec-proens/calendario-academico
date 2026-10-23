@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import type { Infer } from 'convex/values';
 import { environments } from '../config/environments';
-import { campusNames, initialCatalogue } from '../src/institution.mjs';
+import { campusNames, initialCatalogue } from '../src/institution.ts';
 import { internalMutation } from './_generated/server';
 import type { TableNames } from './_generated/dataModel';
 import schema from './schema';

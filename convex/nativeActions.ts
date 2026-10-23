@@ -3,8 +3,8 @@ import { createHash } from 'node:crypto';
 import { v, ConvexError } from 'convex/values';
 import { action } from './_generated/server';
 import { internal } from './_generated/api';
-import { nativePdf } from '../src/native-pdf.mjs';
-import { analyzeHistory as analyzePdfHistory } from '../src/history-analysis.mjs';
+import { nativePdf } from '../src/native-pdf.ts';
+import { analyzeHistory as analyzePdfHistory } from '../src/history-analysis.ts';
 import {
   pdfRequest,
   historyUploadInput,

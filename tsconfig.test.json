@@ -4,6 +4,6 @@
     "types": ["node", "vite/client"],
     "jsx": "react-jsx"
   },
-  "include": ["test/**/*.ts", "vitest.config.ts"],
+  "include": ["test/**/*.ts", "vitest.config.ts", "src/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

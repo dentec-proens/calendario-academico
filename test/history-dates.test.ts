@@ -1,7 +1,7 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { extractHistoricalDates, proposedDates } from '../src/history-dates.ts';
-import { suggestionsFromPages } from '../src/history-analysis.mjs';
+import { suggestionsFromPages } from '../src/history-analysis.ts';
 
 test('extracts full dates, ranges and month headings beyond the old keyword filter', () => {
   const analysis = suggestionsFromPages([

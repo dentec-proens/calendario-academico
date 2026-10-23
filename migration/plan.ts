@@ -1,6 +1,7 @@
+import type { CalendarActivity } from '../src/domain-types.ts';
 import { createHash } from 'node:crypto';
-import { decodeValue } from './legacy-codec.mjs';
-import { mergeLegacyStages, migrateAssessmentEvents } from '../src/obligations.mjs';
+import { decodeValue } from './legacy-codec.ts';
+import { mergeLegacyStages, migrateAssessmentEvents } from '../src/obligations.ts';
 import type { Document, MigrationPlan, Operation, Row, Snapshot } from './types.ts';
 
 type Legacy = Record<string, any>;
@@ -16,7 +17,12 @@ export function stableJson(value: unknown): string {
 }
 export const fingerprint = (value: unknown) => hash(stableJson(value));
 const body = ({ _id, _creationTime, ...document }: Row) => document;
-const decode = (row: Row): Legacy => decodeValue(row.value);
+const decode = (row: Row): Legacy => {
+  const value = decodeValue(row.value);
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw Error('Registro legado inválido.');
+  return value;
+};
 const clean = (value: any): any => {
   if (Array.isArray(value)) return value.map((item) => (item === undefined ? null : clean(item)));
   if (value && typeof value === 'object')
@@ -140,7 +146,8 @@ export function createPlan(source: Snapshot, sourceDigest: string): MigrationPla
         : {});
     const events = migrateAssessmentEvents({
       ...item,
-      events: mergeLegacyStages(item.events),
+      offer: item.offer,
+      events: mergeLegacyStages<CalendarActivity>(item.events),
       modalities,
       assessmentStagesByModality: stages,
     });
@@ -289,12 +296,12 @@ export function createPlan(source: Snapshot, sourceDigest: string): MigrationPla
     const ordinals = versions.map((v) => Number(v.ordinal)).sort((a, b) => a - b);
     if (ordinals.some((n, i) => n !== i))
       throw Error('Lacuna ou duplicata no histórico de calendário.');
-    const versionNumbers = versions.map((v) => decodeValue(v.metadata).version);
+    const versionNumbers = versions.map((v) => decode({ ...v, value: v.metadata }).version);
     if (new Set(versionNumbers).size !== versionNumbers.length)
       throw Error('Número de versão duplicado no histórico de calendário.');
   }
   for (const row of source.calendarVersions ?? []) {
-    const meta = decodeValue(row.metadata);
+    const meta = decode({ ...row, value: row.metadata });
     replace('calendarVersions', row, {
       calendarId: ref('calendars', row.ownerId),
       version: meta.version,

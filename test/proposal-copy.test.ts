@@ -1,7 +1,7 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { createNativeFixture } from './helpers/native-database.ts';
-import { proensLayout } from '../web/print.mjs';
+import { proensLayout } from '../web/print.ts';
 
 test('campus can prepare an identified proposal before review without approving or changing its calendar', async () => {
   const { client, as, inspect } = await createNativeFixture();

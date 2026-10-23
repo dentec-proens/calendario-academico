@@ -2,7 +2,7 @@ import type { Id } from '../convex/_generated/dataModel';
 import { test, vi, afterEach } from 'vitest';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { historyCandidateKey } from '../src/history-progress.mjs';
+import { historyCandidateKey } from '../src/history-progress.ts';
 import { convexTest } from 'convex-test';
 import { api, internal } from '../convex/_generated/api.js';
 

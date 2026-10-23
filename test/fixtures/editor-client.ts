@@ -1,5 +1,5 @@
 import type { CalendarState } from '../../web/editor-types.ts';
-import { teacherDayId } from '../../src/teacher-day.mjs';
+import { teacherDayId } from '../../src/teacher-day.ts';
 
 const state: CalendarState = {
   schemaVersion: 1,

@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { durationEnd } from '../src/duration.mjs';
+import { durationEnd } from '../src/duration.ts';
 
 const state = {
   year: 2027,
@@ -25,7 +25,7 @@ test('teaching duration excludes holidays and includes explicit Saturdays', () =
   assert.throws(() => durationEnd('2027-12-31', 3, state));
 });
 
-import { recalculatePeriods } from '../src/duration.mjs';
+import { recalculatePeriods } from '../src/duration.ts';
 
 test('preserves 100 days per semester as exclusions change and never overlaps periods silently', () => {
   const s = {

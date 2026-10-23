@@ -1,10 +1,10 @@
 import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { teacherVacations } from '../src/teacher-vacations.mjs';
-import { activityChecklist, mergeLegacyStages } from '../src/obligations.mjs';
-import { auditLog } from '../src/audit-log.mjs';
-import { evaluateCalendar } from '../src/evaluation.mjs';
+import { teacherVacations } from '../src/teacher-vacations.ts';
+import { activityChecklist, mergeLegacyStages } from '../src/obligations.ts';
+import { auditLog } from '../src/audit-log.ts';
+import { evaluateCalendar } from '../src/evaluation.ts';
 
 test('teacher vacations count inclusive days, including leap years, and reject July overflow', () => {
   for (const year of [2027, 2028]) {
@@ -96,7 +96,7 @@ test('audit log isolates campi and contains canonical names and saved versions w
 });
 
 test('assessment range colors only endpoints and preserves intervening holiday colors', async () => {
-  const { proensLayout } = await import('../web/print.mjs');
+  const { proensLayout } = await import('../web/print.ts');
   const html = proensLayout(
     { year: 2027, campus: 'Reitoria', modalities: ['integrado'], periods: [] },
     [

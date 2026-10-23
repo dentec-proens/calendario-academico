@@ -1,12 +1,12 @@
 import type { CalendarActivity } from '../src/domain-types.ts';
-import { evaluateCalendar } from '../src/evaluation.mjs';
-import { activityChecklist } from '../src/obligations.mjs';
+import { evaluateCalendar } from '../src/evaluation.ts';
+import { activityChecklist } from '../src/obligations.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { releaseReadiness } from '../src/release.mjs';
-import { reviewCriteria } from '../src/review.mjs';
-import { inheritedEvents } from '../src/institution.mjs';
-import { proensLayout } from '../web/print.mjs';
+import { releaseReadiness } from '../src/release.ts';
+import { reviewCriteria } from '../src/review.ts';
+import { inheritedEvents } from '../src/institution.ts';
+import { proensLayout } from '../web/print.ts';
 
 test('definitive release requires every reviewed criterion, current versions and adequate teaching days', () => {
   const record = {

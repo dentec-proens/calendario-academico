@@ -1,8 +1,7 @@
-import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { reviewSupport, reviewCriteria } from '../src/review.mjs';
-import { reviewDocument } from '../src/review-export.mjs';
+import { reviewSupport, reviewCriteria } from '../src/review.ts';
+import { reviewDocument } from '../src/review-export.ts';
 
 test('school vacation suggestions exclude teacher vacations and leave notes blank', () => {
   const record = {
@@ -28,14 +27,10 @@ test('school vacation suggestions exclude teacher vacations and leave notes blan
   ].map((e) => ({ ...e, start: '2027-01-02', end: '2027-01-31', evidence: 'Fonte' }));
   const support = reviewSupport(record, events);
   assert.deepEqual(
-    support.criteria.find((c) => c.id === 'III')!.candidates.map((e: CalendarActivity) => e.id),
+    support.criteria.find((c) => c.id === 'III')!.candidates.map((e) => e.id),
     ['school'],
   );
-  assert(
-    support.criteria
-      .find((c) => c.id === 'IV')!
-      .candidates.some((e: CalendarActivity) => e.id === 'teachers'),
-  );
+  assert(support.criteria.find((c) => c.id === 'IV')!.candidates.some((e) => e.id === 'teachers'));
   assert(support.criteria.every((c) => c.initial.notes === ''));
 });
 test('review extracts 29 active criteria, flags other years and treats name matches only as clues', () => {

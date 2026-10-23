@@ -10,7 +10,10 @@
     "src/app-routes.ts",
     "server.ts",
     "vite.config.ts",
-    "test/helpers/**/*.ts"
+    "test/helpers/**/*.ts",
+    "src/**/*.ts",
+    "migration/**/*.ts",
+    "web/print.ts"
   ],
   "exclude": ["node_modules", "dist", "backup-*"]
 }

@@ -1,15 +1,15 @@
-/** Typed contracts for the JavaScript domain functions consumed by the editor. */
-import { calendarModalities as modalities, modalityLabels as labels } from '../src/modalities.mjs';
-import { campusInstitutionalEvents as campusEvents } from '../src/teacher-day.mjs';
+/** Editor-facing domain contracts with native calendar IDs and modalities. */
+import { calendarModalities as modalities, modalityLabels as labels } from '../src/modalities.ts';
+import { campusInstitutionalEvents as campusEvents } from '../src/teacher-day.ts';
 import {
   withVacationExclusions as exclusions,
   teacherVacations as vacations,
-} from '../src/teacher-vacations.mjs';
+} from '../src/teacher-vacations.ts';
 import {
   suggestStages as stages,
   recalculateAssessmentStages as recalculate,
-} from '../src/stage-suggestions.mjs';
-import { saturdayEvents as saturdays } from '../src/saturdays.mjs';
+} from '../src/stage-suggestions.ts';
+import { saturdayEvents as saturdays } from '../src/saturdays.ts';
 import type {
   CalendarEvent,
   CalendarRecord,

@@ -1,14 +1,14 @@
 import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { initialCatalogue, inheritedEvents } from '../src/institution.mjs';
+import { initialCatalogue, inheritedEvents } from '../src/institution.ts';
 import {
   campusInstitutionalEvents,
   teacherDayId,
   validateTeacherDay,
   teacherDayWeek,
-} from '../src/teacher-day.mjs';
-import { durationEnd } from '../src/duration.mjs';
+} from '../src/teacher-day.ts';
+import { durationEnd } from '../src/duration.ts';
 
 test('campus may choose every day of the Monday-to-Sunday week containing October 15', () => {
   assert.deepEqual(teacherDayWeek(2027), { start: '2027-10-11', end: '2027-10-17' });

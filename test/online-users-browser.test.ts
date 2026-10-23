@@ -69,8 +69,8 @@ test(
     await page.type('input[type="search"]', 'ana@ifpr');
     await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 1);
     await page.$eval('input', (input) => {
-      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
-      setter.call(input, '');
+      const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!;
+      descriptor.set!.call(input, '');
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await page.select('select', 'institutional');

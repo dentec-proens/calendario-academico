@@ -10,7 +10,7 @@ O frontend é uma aplicação React e Vite. Convex concentra identidade, sessõe
 | `web/native/`             | Autenticação, montagem das páginas, subscriptions e cliente Convex           |
 | `web/components/`         | Diálogo React compartilhado, confirmação assíncrona e apresentação semântica |
 | `web/app.ts`              | Edição do calendário, aplicação dos formulários e coordenação do salvamento  |
-| `web/print.mjs`           | Renderização compartilhada entre prévia anual e PDF                          |
+| `web/print.ts`            | Renderização compartilhada entre prévia anual e PDF                          |
 | `src/`                    | Contagem por oferta, períodos, eventos, sugestões e verificações de geração  |
 | `convex/native.ts`        | Operações de calendários, catálogo, documentos e revisão                     |
 | `convex/nativeAuth.ts`    | Convex Auth, membros ativos, convites e recuperação                          |

@@ -3,7 +3,7 @@ import type { PaginationOptions } from 'convex/server';
 import type { QueryCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
 import type { Member } from './authContracts';
-import { calendarName } from '../src/calendar-label.mjs';
+import { calendarName } from '../src/calendar-label.ts';
 
 export const logEntry = v.object({
   at: v.string(),

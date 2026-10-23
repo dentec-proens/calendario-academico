@@ -38,6 +38,12 @@ Use dados de teste no seu ambiente. As contas do portal são distintas das conta
 
 Antes de compartilhar código, execute `pnpm check`. Para conferir o build local, use `pnpm build` e `pnpm start`. Esses comandos não publicam nem importam dados. Os 13 PDFs históricos pendentes ficam para uma migração específica futura.
 
+## TypeScript
+
+Todo o código manual usa `.ts` ou `.tsx`, incluindo as regras compartilhadas em `src/`, os painéis React e a ferramenta administrativa em `migration/`. A configuração base usa `strict: true` e `allowJs: false`; os comandos de tipos e lint abrangem também esses módulos. As entradas de JSON e `FormData` são validadas antes de entrar nos contratos tipados.
+
+Os arquivos JavaScript restantes são gerados: `convex/_generated/api.js`, `convex/_generated/server.js` e `src/native-print-assets.mjs`. Este último é produzido por `scripts/print-assets.ts` e possui uma declaração de tipos adjacente. Não editar os arquivos gerados manualmente. Os `.mjs` importados de PDF.js pertencem à dependência externa.
+
 ## Compartilhar e publicar
 
 Os dois desenvolvedores podem enviar código para `main` e publicar diretamente; branches são opcionais e PR não é obrigatório. Atualize seu checkout antes de integrar mudanças do colega e combine a publicação para evitar duas atualizações simultâneas.

@@ -1,7 +1,7 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { categories, eventCategory } from '../src/categories.mjs';
-import { proensLayout } from '../web/print.mjs';
+import { categories, eventCategory } from '../src/categories.ts';
+import { proensLayout } from '../web/print.ts';
 import { readFile } from 'node:fs/promises';
 
 test('PROENS palette matches reference and simultaneous classifications remain visible', async () => {

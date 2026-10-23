@@ -3,7 +3,7 @@ import { test } from 'vitest';
 import { defineSchema, defineTable, makeFunctionReference } from 'convex/server';
 import { v } from 'convex/values';
 import { convexTest } from 'convex-test';
-import { encodeValue } from '../migration/legacy-codec.mjs';
+import { encodeValue } from '../migration/legacy-codec.ts';
 import {
   assertPlan,
   assertSourceSnapshot,

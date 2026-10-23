@@ -5,7 +5,7 @@ import {
   updateConclusion,
   partialConclusion,
   favorableConclusion,
-} from '../src/review-conclusion.mjs';
+} from '../src/review-conclusion.ts';
 
 const criteria = [{ id: 'a' }, { id: 'b' }];
 const entries = (a: string, b: string, reviewed = true) => [

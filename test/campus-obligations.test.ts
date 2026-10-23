@@ -1,9 +1,9 @@
 import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { activityChecklist } from '../src/obligations.mjs';
-import { releaseReadiness } from '../src/release.mjs';
-import { selectableCampuses } from '../src/campus-selection.mjs';
+import { activityChecklist } from '../src/obligations.ts';
+import { releaseReadiness } from '../src/release.ts';
+import { selectableCampuses } from '../src/campus-selection.ts';
 
 test('explicit absence of second semester intake waives new-student registration only', () => {
   const base = {
@@ -154,7 +154,7 @@ test('mandatory checklist includes annual and semester notices, stage results, h
     ['anual', 1],
     ['semestral', 2],
     ['misto', 3],
-  ]) {
+  ] as const) {
     const rows = activityChecklist({ year: 2026, regime, assessmentStages: 4 });
     assert.equal(rows.filter((r) => r.id.startsWith('admission-notice-')).length, count);
     assert.equal(rows.filter((r) => r.id.startsWith('registration-')).length, count);

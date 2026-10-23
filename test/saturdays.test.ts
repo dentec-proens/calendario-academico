@@ -1,8 +1,8 @@
 import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { monthSaturdays, saturdayEvents } from '../src/saturdays.mjs';
-import { evaluateCalendar as calendarResult } from '../src/evaluation.mjs';
+import { monthSaturdays, saturdayEvents } from '../src/saturdays.ts';
+import { evaluateCalendar as calendarResult } from '../src/evaluation.ts';
 
 test('month selection adds only chosen Saturdays, survives serialization, and respects conflicts', () => {
   const s = {

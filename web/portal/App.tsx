@@ -13,13 +13,13 @@ import {
   Menu,
   CalendarRange,
 } from 'lucide-react';
-import CalendarsPanel from './CalendarsPanel.jsx';
-import CataloguePanel from './CataloguePanel.jsx';
+import CalendarsPanel from './CalendarsPanel.tsx';
+import CataloguePanel from './CataloguePanel.tsx';
 import OnlineUsersPanel from './OnlineUsersPanel.tsx';
-import CampusesPanel from './CampusesPanel.jsx';
-import AccountsPanel from './AccountsPanel.jsx';
-import DocumentsPanel from './DocumentsPanel.jsx';
-import ReviewPanel from './ReviewPanel.jsx';
+import CampusesPanel from './CampusesPanel.tsx';
+import AccountsPanel from './AccountsPanel.tsx';
+import DocumentsPanel from './DocumentsPanel.tsx';
+import ReviewPanel from './ReviewPanel.tsx';
 import { portalPermissions, type PortalPermissions } from './permissions.ts';
 
 type PageId =

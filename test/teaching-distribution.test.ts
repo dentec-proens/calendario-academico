@@ -1,8 +1,8 @@
 import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { evaluateCalendar } from '../src/evaluation.mjs';
-import { teachingDayBreakdown, proensLayout } from '../web/print.mjs';
+import { evaluateCalendar } from '../src/evaluation.ts';
+import { teachingDayBreakdown, proensLayout } from '../web/print.ts';
 
 const state = {
   year: 2027,
@@ -73,10 +73,10 @@ test('monthly, bimester, semester and annual weekday counts reconcile, respect o
     [10, 10],
   );
   assert.equal(integrated.semesters[0].end, '2027-07-02');
-  assert.equal(integrated.semesters[0].byWeekday[2], 1);
-  assert.equal(degree.semesters[0].byWeekday[2], 2);
-  assert.equal(integrated.semesters[0].byWeekday[6], 1);
-  assert.equal(degree.semesters[0].byWeekday[6], 0);
+  assert.equal(integrated.semesters[0].byWeekday![2], 1);
+  assert.equal(degree.semesters[0].byWeekday![2], 2);
+  assert.equal(integrated.semesters[0].byWeekday![6], 1);
+  assert.equal(degree.semesters[0].byWeekday![6], 0);
   assert.equal(degree.stages.length, 0);
   for (const report of [integrated, degree])
     for (const group of [
@@ -85,13 +85,13 @@ test('monthly, bimester, semester and annual weekday counts reconcile, respect o
       ...(report.stages.length ? [report.stages] : []),
     ]) {
       assert.equal(
-        group.reduce((sum, row) => sum + row.total, 0),
+        group.reduce((sum, row) => sum + row.total!, 0),
         report.annual.total,
       );
       for (let weekday = 0; weekday < 7; weekday++)
         assert.equal(
-          group.reduce((sum, row) => sum + row.byWeekday[weekday], 0),
-          report.annual.byWeekday[weekday],
+          group.reduce((sum, row) => sum + row.byWeekday![weekday], 0),
+          report.annual.byWeekday![weekday],
         );
     }
   const html = proensLayout(input, events, result, { purpose: 'test' });
@@ -173,7 +173,7 @@ test('trimestral offers retain their three assessment intervals alongside monthl
   assert.equal(report.stages.length, 3);
   assert.equal(report.stageLabel, 'trimestre');
   assert.equal(
-    report.stages.reduce((sum, r) => sum + r.total, 0),
+    report.stages.reduce((sum, r) => sum + r.total!, 0),
     report.annual.total,
   );
   assert.deepEqual(

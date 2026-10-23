@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
 import { syntheticPdf } from './helpers/synthetic-pdf.ts';
-import { historyCandidateKey } from '../src/history-progress.mjs';
+import { historyCandidateKey } from '../src/history-progress.ts';
 
 test('native PDF upload, analysis and confirmed historical evidence stay scoped to the owning campus', async () => {
   vi.useFakeTimers({ toFake: ['setTimeout'] });

@@ -58,7 +58,10 @@ export function extractHistoricalDates(line: string, month: number | null = null
 }
 
 export function proposedDates(
-  candidate: { name: string; dates?: HistoricalDates | null },
+  candidate: {
+    name: string;
+    dates?: Pick<HistoricalDates, 'startMonth' | 'startDay' | 'endMonth' | 'endDay'> | null;
+  },
   year: number,
 ) {
   const d = candidate.dates;
