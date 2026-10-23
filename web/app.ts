@@ -60,6 +60,12 @@ $('event-form').before(eventFormHome);
 let inlineHistoryIndex: number | null = null;
 let inlineActivityId: string | null = null;
 let editingEventId: string | null = null;
+type EventDraftContext =
+  | { kind: 'new' }
+  | { kind: 'event'; id: string }
+  | { kind: 'activity'; id: string }
+  | { kind: 'history'; historyId: string; index: number };
+let eventDraftContext: EventDraftContext | null = null;
 let state: CalendarState = {
   schemaVersion: 2,
   campus: '',
@@ -604,6 +610,8 @@ $('event-form').addEventListener('submit', (e) => {
     if (previous) state.events = state.events.map((ev) => (ev.id === previous.id ? updated : ev));
     else state.events.push(updated);
     editingEventId = updated.id;
+    if (eventDraftContext?.kind !== 'activity')
+      eventDraftContext = { kind: 'event', id: updated.id };
     setEventSubmitLabel();
     historicalSource = null;
     $('historical-event-source').hidden = true;
@@ -1046,6 +1054,15 @@ async function handleHistoryClick(e: MouseEvent) {
   }
   const candidateButton = e.target.closest<HTMLButtonElement>('[data-history-candidate]');
   if (!candidateButton || !historyAnalysis || !analyzedHistory) return;
+  const candidateIndex = Number(candidateButton.dataset.historyCandidate);
+  if (
+    eventDraftContext?.kind === 'history' &&
+    eventDraftContext.historyId === analyzedHistory.id &&
+    eventDraftContext.index === candidateIndex
+  ) {
+    resumeEventForm();
+    return;
+  }
   const c = historyAnalysis.candidates[Number(candidateButton.dataset.historyCandidate)];
   if (!c) return;
   if (
@@ -1053,6 +1070,8 @@ async function handleHistoryClick(e: MouseEvent) {
     existingHistoryEvent(allEvents(), c, state)
   )
     return;
+  if (!canReplaceEventDraft()) return;
+  $('event-form').reset();
   editingEventId = null;
   setEventSubmitLabel();
   historicalSource = {
@@ -1448,12 +1467,29 @@ $('assessment-settings').addEventListener('change', (e) => {
   );
 });
 
-function prepareActivity(id: string) {
+function prepareActivity(id: string, fromForm = false) {
+  if (fromForm && (unappliedForms.has('event-form') || !id)) {
+    if (id) openInlineActivity(id, true);
+    else {
+      restoreEventForm();
+      eventDraftContext = { kind: 'new' };
+      $('event-form').hidden = false;
+      updateEventFormActions();
+    }
+    updateStageSuggestion();
+    return;
+  }
+  if (eventDraftContext?.kind === 'activity' && eventDraftContext.id === id) {
+    resumeEventForm();
+    return;
+  }
   const existing = state.events.find((e) => e.requirementId === id);
   if (existing) {
     editEvent(existing.id);
     return;
   }
+  if (!canReplaceEventDraft()) return;
+  $('event-form').reset();
   editingEventId = null;
   setEventSubmitLabel();
   restoreEventForm();
@@ -1488,7 +1524,7 @@ function prepareActivity(id: string) {
 }
 
 $('event-requirement').onchange = () => {
-  if (!editingEventId) prepareActivity($('event-requirement').value);
+  if (!editingEventId) prepareActivity($('event-requirement').value, true);
 };
 document.addEventListener('click', (e) => {
   if (!(e.target instanceof Element)) return;
@@ -1752,6 +1788,75 @@ function restoreEventForm() {
   $('event-form').classList.remove('inline-history-review');
   document.getElementById('cancel-inline-history')?.remove();
   inlineHistoryIndex = null;
+  updateEventFormActions();
+}
+
+function updateEventFormActions() {
+  $('new-event').hidden = eventDraftContext !== null;
+  $('resume-event').hidden = eventDraftContext === null || !$('event-form').hidden;
+  $('resume-event').textContent = editingEventId
+    ? 'Continuar edição do evento'
+    : 'Continuar preenchimento';
+  $('event-form-title').textContent = editingEventId ? 'Editar evento local' : 'Novo evento local';
+  $('close-event-form').hidden = inlineActivityId !== null || inlineHistoryIndex !== null;
+}
+
+function canReplaceEventDraft() {
+  if (!unappliedForms.has('event-form')) return true;
+  message(
+    'Há um preenchimento em andamento. Retome-o ou use Cancelar e descartar antes de abrir outro evento.',
+    true,
+  );
+  return false;
+}
+
+function closeEventForm() {
+  const row = $('event-form').closest('li');
+  restoreEventForm();
+  $('event-form').hidden = true;
+  updateEventFormActions();
+  const target = row?.querySelector('button') ?? $('resume-event');
+  target.focus({ preventScroll: true });
+  target.scrollIntoView({ block: 'center' });
+  message('Preenchimento preservado. Retome para continuar ou cancele para descartar.');
+}
+
+function resumeEventForm() {
+  const context = eventDraftContext;
+  if (!context) return;
+  if (
+    context.kind === 'activity' &&
+    document.querySelector('[data-activity-row="' + context.id + '"]')
+  )
+    openInlineActivity(context.id, true);
+  else if (
+    context.kind === 'history' &&
+    analyzedHistory?.id === context.historyId &&
+    document.querySelector('[data-history-item="' + context.index + '"]')
+  ) {
+    showEditorView('history', false);
+    openInlineHistory(context.index);
+  } else {
+    restoreEventForm();
+    showEditorView('events', false);
+    $('event-form').hidden = false;
+    updateEventFormActions();
+    $('event-form').scrollIntoView({ block: 'nearest' });
+  }
+  $('event-name').focus({ preventScroll: true });
+}
+
+function discardEventForm() {
+  const row = $('event-form').closest('li');
+  restoreEventForm();
+  $('event-form').reset();
+  $('event-form').hidden = true;
+  updateStageSuggestion();
+  updateEventFormActions();
+  const target = row?.querySelector('button') ?? $('new-event');
+  target.focus({ preventScroll: true });
+  target.scrollIntoView({ block: 'center' });
+  message('Preenchimento descartado. Os eventos já aplicados ao calendário foram preservados.');
 }
 
 function openInlineHistory(index: number, scroll = true) {
@@ -1759,33 +1864,41 @@ function openInlineHistory(index: number, scroll = true) {
   if (!row) return;
   restoreEventForm();
   inlineHistoryIndex = index;
+  eventDraftContext = { kind: 'history', historyId: analyzedHistory!.id, index };
   row.append($('event-form'));
+  $('event-form').hidden = false;
   $('event-form').classList.add('inline-history-review');
   const close = document.createElement('button');
   close.id = 'cancel-inline-history';
   close.type = 'button';
   close.className = 'secondary';
   close.textContent = 'Fechar revisão';
-  close.onclick = () => {
-    historicalSource = null;
-    $('historical-event-source').hidden = true;
-    $('event-form').reset();
-    restoreEventForm();
-    row.scrollIntoView({ block: 'nearest' });
-  };
+  close.onclick = closeEventForm;
   $('event-form').append(close);
+  updateEventFormActions();
   if (scroll) row.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 $('new-event').onclick = () => {
+  if (eventDraftContext) {
+    resumeEventForm();
+    return;
+  }
   restoreEventForm();
   historicalSource = null;
   $('event-form').reset();
+  eventDraftContext = { kind: 'new' };
+  $('event-form').hidden = false;
   $('historical-event-source').hidden = true;
   updateStageSuggestion();
+  updateEventFormActions();
   $('event-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
   $('event-name').focus({ preventScroll: true });
 };
+
+$('resume-event').onclick = resumeEventForm;
+$('close-event-form').onclick = closeEventForm;
+$('discard-event-form').onclick = discardEventForm;
 
 $('show-existing-history').onchange = renderHistorySuggestions;
 
@@ -1857,19 +1970,18 @@ function openInlineActivity(id: string, reveal = false) {
   if (!row) return;
   restoreEventForm();
   inlineActivityId = id;
+  eventDraftContext = { kind: 'activity', id };
   row.append($('event-form'));
+  $('event-form').hidden = false;
   $('event-form').classList.add('inline-history-review');
   const close = document.createElement('button');
   close.id = 'cancel-inline-history';
   close.type = 'button';
   close.className = 'secondary';
   close.textContent = 'Fechar preenchimento';
-  close.onclick = () => {
-    restoreEventForm();
-    $('event-form').reset();
-    row.scrollIntoView({ block: 'nearest' });
-  };
+  close.onclick = closeEventForm;
   $('event-form').append(close);
+  updateEventFormActions();
   if (reveal) {
     showEditorView(row.closest('.view')?.id ?? 'events', false);
     row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -1880,10 +1992,16 @@ function setEventSubmitLabel() {
   $('event-form').querySelector<HTMLButtonElement>(
     'button:not([type]), button[type="submit"]',
   )!.textContent = editingEventId ? 'Aplicar alterações do evento' : 'Adicionar evento';
+  updateEventFormActions();
 }
 
 $('event-form').addEventListener('reset', () => {
+  restoreEventForm();
   editingEventId = null;
+  eventDraftContext = null;
+  historicalSource = null;
+  $('historical-event-source').hidden = true;
+  $('event-form').hidden = true;
   setEventSubmitLabel();
   markAppliedForm('event-form');
 });
@@ -1891,6 +2009,10 @@ $('event-form').addEventListener('reset', () => {
 function editEvent(id: string) {
   const event = state.events.find((e) => e.id === id);
   if (!event) return;
+  if (editingEventId === id && eventDraftContext) {
+    resumeEventForm();
+    return;
+  }
   if (
     ['teacher-vacation-january', 'teacher-vacation-july', 'teacher-vacation-third'].includes(id)
   ) {
@@ -1899,8 +2021,12 @@ function editEvent(id: string) {
     message('Edite as férias docentes no formulário próprio e clique em Aplicar férias docentes.');
     return;
   }
+  if (!canReplaceEventDraft()) return;
   restoreEventForm();
+  $('event-form').reset();
   editingEventId = id;
+  eventDraftContext = { kind: 'event', id };
+  $('event-form').hidden = false;
   historicalSource = event.historicalSource || null;
   $('historical-event-source').hidden = true;
   for (const [field, value] of Object.entries({

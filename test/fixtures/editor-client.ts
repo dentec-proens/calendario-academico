@@ -1,4 +1,4 @@
-import type { CalendarState } from '../../web/editor-types.ts';
+import type { CalendarState, History } from '../../web/editor-types.ts';
 import { teacherDayId } from '../../src/teacher-day.ts';
 
 const state: CalendarState = {
@@ -39,7 +39,7 @@ const record = {
       institutional: true,
     },
   ],
-  histories: [],
+  histories: [] as History[],
   readiness: { ready: false, issues: [], warnings: [] },
 };
 const calls = { saves: 0, conversions: 0, failConversion: false };

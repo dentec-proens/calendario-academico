@@ -342,10 +342,14 @@
                 <div class="panel">
                   <h3>Eventos e impedimentos — roteiro obrigatório</h3>
                   <button type="button" id="new-event">Adicionar novo evento</button>
+                  <button type="button" id="resume-event" class="secondary" hidden>
+                    Continuar preenchimento
+                  </button>
                   <p class="help">Acrescente os eventos locais e registre suas fontes.</p>
                   <ul id="activity-checklist" class="records"></ul>
                   <ul id="event-list" class="records"></ul>
-                  <form id="event-form">
+                  <form id="event-form" hidden>
+                    <h3 id="event-form-title" tabindex="-1">Novo evento local</h3>
                     <p id="historical-event-source" class="notice" hidden></p>
                     <fieldset>
                       <legend>Forma de oferta/nível deste evento</legend>
@@ -391,7 +395,20 @@
                     <label class="check"
                       ><input id="event-confirmed" type="checkbox" required />Confirmo as datas, a
                       fonte e a aplicação à oferta selecionada.</label
-                    ><button>Adicionar evento</button>
+                    >
+                    <p class="help">
+                      Fechar mantém o preenchimento para continuar depois. Cancelar e descartar
+                      limpa somente as alterações ainda não aplicadas ao calendário.
+                    </p>
+                    <div class="actions">
+                      <button type="submit">Adicionar evento</button>
+                      <button type="button" id="close-event-form" class="secondary">
+                        Voltar à lista
+                      </button>
+                      <button type="button" id="discard-event-form" class="secondary">
+                        Cancelar e descartar
+                      </button>
+                    </div>
                   </form>
                 </div>
               </section>
