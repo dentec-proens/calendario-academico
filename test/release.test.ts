@@ -15,9 +15,10 @@ test('definitive release requires every reviewed criterion, current versions and
     catalogueRevision: 1,
     institutionalSnapshot: [],
     state: {
-      assessmentStages: 4,
+      assessmentStagesByModality: { integrado: 4 },
       year: 2027,
-      offer: 'tecnico',
+      offer: 'integrado',
+      modalities: ['integrado'],
       regime: 'anual',
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
@@ -85,8 +86,8 @@ test('definitive release requires every reviewed criterion, current versions and
       /supervisão|segunda chamada|confirmação de matrícula/i.test(e.name),
     ),
   );
-  const stage = record.state.events.find((e) => e.requirementId === 'stage-1')!;
-  const results = record.state.events.find((e) => e.requirementId === 'results-1')!;
+  const stage = record.state.events.find((e) => e.requirementId === 'stage-1:integrado')!;
+  const results = record.state.events.find((e) => e.requirementId === 'results-1:integrado')!;
   stage!.end = '2027-02-10';
   results!.end = '2027-02-05';
   const before = structuredClone(record.state.events),
@@ -126,15 +127,15 @@ test('definitive release requires every reviewed criterion, current versions and
   assert.equal(releaseReadiness(record, db).ready, false);
 });
 
-test('technical offer inherits old technical events and test PDF identifies its purpose', () => {
+test('explicit technical modality inherits scoped events and test PDF identifies its purpose', () => {
   const event = {
     id: 'e',
     active: true,
     start: '2027-01-01',
     end: '2027-01-01',
-    offers: ['subsequente'],
+    modalities: ['subsequente'],
   };
-  assert.equal(inheritedEvents({ events: [event] }, 2027, 'tecnico').length, 1);
+  assert.equal(inheritedEvents({ events: [event] }, 2027, 'subsequente').length, 1);
   assert.equal(inheritedEvents({ events: [event] }, 2027, 'graduacao').length, 0);
   const html = proensLayout({ year: 2027, campus: 'Test', periods: [] }, [], null, {
     purpose: 'test',
@@ -174,7 +175,7 @@ test('combined calendars scope exclusions by modality and do not presume a postg
         active: true,
         start: '2027-01-01',
         end: '2027-01-01',
-        offers: ['subsequente', 'graduacao'],
+        modalities: ['subsequente', 'graduacao'],
       },
     ],
   };
@@ -182,7 +183,11 @@ test('combined calendars scope exclusions by modality and do not presume a postg
 });
 
 test('a single linked deadline cannot satisfy every assessment stage or semester', () => {
-  const state = { assessmentStages: 4, regime: 'semestral' };
+  const state = {
+    modalities: ['integrado'],
+    assessmentStagesByModality: { integrado: 4 },
+    regime: 'semestral',
+  };
   const activities = activityChecklist(state);
   assert.equal(activities.filter((a) => a.id.startsWith('results-')).length, 4);
   assert.equal(activities.filter((a) => a.id.startsWith('diary-')).length, 2);

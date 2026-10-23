@@ -1,10 +1,7 @@
 /** Editor-facing domain contracts with native calendar IDs and modalities. */
 import { calendarModalities as modalities, modalityLabels as labels } from '../src/modalities.ts';
 import { campusInstitutionalEvents as campusEvents } from '../src/teacher-day.ts';
-import {
-  withVacationExclusions as exclusions,
-  teacherVacations as vacations,
-} from '../src/teacher-vacations.ts';
+import { teacherVacations as vacations } from '../src/teacher-vacations.ts';
 import {
   suggestStages as stages,
   recalculateAssessmentStages as recalculate,
@@ -24,7 +21,6 @@ export const campusInstitutionalEvents: (
   events: CalendarRecord['institutionalEvents'],
   state: CalendarState,
 ) => EditorEvent[] = campusEvents;
-export const withVacationExclusions: (events: EditorEvent[]) => EditorEvent[] = exclusions;
 export const recalculateAssessmentStages: (
   state: CalendarState,
   events: EditorEvent[],

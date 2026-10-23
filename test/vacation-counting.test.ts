@@ -2,7 +2,7 @@ import type { countCalendar } from '../src/calendar.ts';
 import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { teacherVacations, withVacationExclusions } from '../src/teacher-vacations.ts';
+import { teacherVacations } from '../src/teacher-vacations.ts';
 import { evaluateCalendar } from '../src/evaluation.ts';
 import { durationEnd } from '../src/duration.ts';
 import { proensLayout } from '../web/print.ts';
@@ -14,7 +14,7 @@ const state = {
   offer: 'integrado',
   modalities: ['integrado'],
   regime: 'anual',
-  assessmentStages: 2,
+  assessmentStagesByModality: { integrado: 2 },
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
   weekEvidence: 'Fixture',
@@ -28,7 +28,7 @@ const excluded = (date: string) => ({
   evidence: 'Fixture',
 });
 
-test('third vacation excludes only counted dates; legacy notes, PDF, stages and automatic duration agree', () => {
+test('third vacation excludes only counted dates; PDF, stages and automatic duration agree', () => {
   // Synthetic dates reproduce 16 -> 13; they are not the campus dates.
   const holidays = ['2027-10-11', '2027-10-12', '2027-10-15', '2027-10-28', '2027-10-29'].map(
     excluded,
@@ -47,7 +47,7 @@ test('third vacation excludes only counted dates; legacy notes, PDF, stages and 
   );
   assert(vacation.events.every((e: CalendarActivity) => e.kind === 'exclude'));
   assert.equal(evaluateCalendar(state, holidays).total, 16);
-  for (const kind of ['note', 'exclude']) {
+  for (const kind of ['exclude']) {
     const events = [...holidays, ...vacation.events.map((e: CalendarActivity) => ({ ...e, kind }))],
       original = structuredClone(events);
     const result = evaluateCalendar(state, events);
@@ -79,7 +79,7 @@ test('vacation overlaps never double subtract holidays; Saturdays and offer scop
     id: 'teacher-vacation-third',
     start: '2027-10-11',
     end: '2027-10-17',
-    kind: 'note',
+    kind: 'exclude',
     modalities: ['integrado'],
     evidence: 'Fixture',
   };
@@ -100,7 +100,6 @@ test('vacation overlaps never double subtract holidays; Saturdays and offer scop
     )!.counted,
     false,
   );
-  assert.deepEqual(withVacationExclusions([{ id: 'other', kind: 'note' }]), [
-    { id: 'other', kind: 'note' },
-  ]);
+  const note = { ...vacation, kind: 'note' };
+  assert.equal(evaluateCalendar(state, [note]).total, evaluateCalendar(state, []).total);
 });

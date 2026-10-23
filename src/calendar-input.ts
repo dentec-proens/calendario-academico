@@ -39,6 +39,13 @@ const range = (value: unknown): CalendarPeriod & { name: string } => {
 };
 const activity = (value: unknown): CalendarActivity => {
   const row = object(value);
+  const requirement = optional(row.requirementId, string) ?? '';
+  if (
+    'offers' in row ||
+    /^stage-(start|end)-[1-4]$/.test(requirement) ||
+    /^(stage|results|council|pedagogical-meeting)-[1-4]$/.test(requirement)
+  )
+    return invalidCalendar('Formato de atividade incompatível.');
   const source = optional(row.historicalSource, object);
   return {
     ...range(row),
@@ -53,46 +60,49 @@ const activity = (value: unknown): CalendarActivity => {
       ? {
           historyId: string(source.historyId),
           page: number(source.page),
-          candidateKey: optional(source.candidateKey, string),
+          candidateKey: string(source.candidateKey),
         }
       : undefined,
   };
 };
-export type VacationInput = Partial<VacationPeriods> & { julyStart?: string; evidence: string };
+export type VacationInput = VacationPeriods & { evidence: string };
 export function readCalendarInput(value: unknown) {
   const row = object(value);
+  if (row.schemaVersion !== 2 || 'assessmentStages' in row)
+    return invalidCalendar(
+      'Formato de calendário incompatível. Converta o arquivo para schemaVersion 2.',
+    );
   const vacations = optional(row.teacherVacations, object);
+  if (vacations && 'julyStart' in vacations)
+    return invalidCalendar('Formato de férias incompatível.');
   return {
     year: number(row.year),
     offer: string(row.offer),
     regime: string(row.regime),
     campus: row.campus === undefined ? '' : string(row.campus),
-    modalities: optional(row.modalities, (value) => array(value, string)),
+    modalities: array(row.modalities, string),
     periods: array(row.periods, range),
     events: array(row.events, activity),
     weekdays: array(row.weekdays, number),
     weekConfirmed: boolean(row.weekConfirmed),
     weekEvidence: row.weekEvidence === undefined ? '' : string(row.weekEvidence),
     secondSemesterIntake: optional(row.secondSemesterIntake, boolean),
-    assessmentStages: optional(row.assessmentStages, (value) =>
-      typeof value === 'string' ? Number(value) : number(value),
-    ),
-    assessmentStagesByModality: optional(row.assessmentStagesByModality, (value) =>
-      Object.fromEntries(Object.entries(object(value)).map(([key, value]) => [key, number(value)])),
+    assessmentStagesByModality: Object.fromEntries(
+      Object.entries(object(row.assessmentStagesByModality)).map(([key, value]) => [
+        key,
+        number(value),
+      ]),
     ),
     teacherDayDate: row.teacherDayDate,
-    ignoredHistory: Array.isArray(row.ignoredHistory)
-      ? row.ignoredHistory.filter((key): key is string => typeof key === 'string')
-      : [],
+    ignoredHistory: array(row.ignoredHistory, string),
     teacherVacations: vacations
       ? ({
-          firstStart: optional(vacations.firstStart, string),
-          firstEnd: optional(vacations.firstEnd, string),
+          firstStart: string(vacations.firstStart),
+          firstEnd: string(vacations.firstEnd),
           secondStart: optional(vacations.secondStart, string),
           secondEnd: optional(vacations.secondEnd, string),
           thirdStart: optional(vacations.thirdStart, string),
           thirdEnd: optional(vacations.thirdEnd, string),
-          julyStart: optional(vacations.julyStart, string),
           evidence: string(vacations.evidence),
         } satisfies VacationInput)
       : undefined,

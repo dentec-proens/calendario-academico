@@ -1,66 +1,15 @@
-import type { CalendarActivity, AssessmentSettings, ActivityRequirement } from './domain-types.ts';
-import { calendarModalities, modalityLabels, appliesTo } from './modalities.ts';
+import type { AssessmentSettings, ActivityRequirement } from './domain-types.ts';
+import { calendarModalities, modalityLabels } from './modalities.ts';
 
 export const assessmentCount = (state: AssessmentSettings, modality: string) =>
-  Number(
-    state.assessmentStagesByModality
-      ? state.assessmentStagesByModality[modality]
-      : state.assessmentStages,
-  );
-export const stageRequirement = (id: string | undefined) =>
-  /^stage-[1-4](?::[a-z]+)?$/.test(id || '');
-export const scopedRequirement = (state: AssessmentSettings, id: string, modality: string) =>
-  state.assessmentStagesByModality ? `${id}:${modality}` : id;
-
-export function migrateAssessmentEvents<T extends CalendarActivity>(
-  state: AssessmentSettings & { events: T[] },
-): T[] {
-  if (!state.assessmentStagesByModality) return state.events;
-  return state.events.flatMap((e) => {
-    if (!/^(stage|results|council|pedagogical-meeting)-[1-4]$/.test(e.requirementId || ''))
-      return [e];
-    const number = Number(e.requirementId!.split('-').at(-1));
-    return calendarModalities(state)
-      .filter((m) => appliesTo(e, m))
-      .map((m, i) => ({
-        ...e,
-        id: i ? `${e.id.slice(0, 70)}:${m}` : e.id,
-        modalities: [m],
-        assessmentAutoStart:
-          number <= assessmentCount(state, m) ? e.assessmentAutoStart : undefined,
-        name: `${e.name.slice(0, 110)} — ${modalityLabels[m]}`,
-        requirementId: number <= assessmentCount(state, m) ? `${e.requirementId}:${m}` : undefined,
-      }));
-  });
-}
+  Number(state.assessmentStagesByModality?.[modality]);
+export const stageRequirement = (id: string | undefined) => /^stage-[1-4]:[a-z]+$/.test(id || '');
+export const scopedRequirement = (_state: AssessmentSettings, id: string, modality: string) =>
+  `${id}:${modality}`;
 
 // Undated PROENS operational checklist. Campus histories are separate references.
 // Historical dates are deliberately excluded. Applicability is reviewed separately.
 export function activityChecklist(state: AssessmentSettings): ActivityRequirement[] {
-  if (state.assessmentStagesByModality) {
-    const common = activityChecklist({
-      ...state,
-      assessmentStagesByModality: undefined,
-      assessmentStages: undefined,
-    });
-    const stages = calendarModalities(state).flatMap((m) =>
-      activityChecklist({
-        ...state,
-        offer: m,
-        modalities: [m],
-        assessmentStagesByModality: undefined,
-        assessmentStages: assessmentCount(state, m),
-      })
-        .filter((r) => /^(stage|results|council|pedagogical-meeting)-[1-4]$/.test(r.id))
-        .map((r) => ({
-          ...r,
-          id: `${r.id}:${m}`,
-          modality: m,
-          name: `${r.name} — ${modalityLabels[m]} (${assessmentCount(state, m) === 4 ? 'bimestral' : assessmentCount(state, m) === 3 ? 'trimestral' : 'semestral'})`,
-        })),
-    );
-    return [...stages, ...common];
-  }
   const rows: ActivityRequirement[] = [];
   const optionalSchoolMeetings = calendarModalities(state).every((m) =>
     ['graduacao', 'subsequente', 'posgraduacao'].includes(m),
@@ -76,20 +25,38 @@ export function activityChecklist(state: AssessmentSettings): ActivityRequiremen
       ...(optional ? { required: false } : {}),
     });
   };
-  const stages = Number(state.assessmentStages);
-  if ([2, 3, 4].includes(stages))
+  for (const modality of calendarModalities(state)) {
+    const stages = assessmentCount(state, modality);
+    if (![2, 3, 4].includes(stages)) continue;
+    const cycle = stages === 4 ? 'bimestral' : stages === 3 ? 'trimestral' : 'semestral';
+    const suffix = ` — ${modalityLabels[modality]} (${cycle})`;
     for (let n = 1; n <= stages; n++) {
-      add(`stage-${n}`, `${n}ª etapa de avaliação — início e término`);
-      add(
-        `results-${n}`,
-        `Prazo de lançamento dos resultados (rendimento e frequência) da ${n}ª etapa`,
-      );
-      add(`council-${n}`, `Conselho de classe/coletivo pedagógico da ${n}ª etapa`);
-      add(
-        `pedagogical-meeting-${n}`,
-        `Reunião pedagógica após os resultados parciais da ${n}ª etapa`,
+      const optional = ['graduacao', 'subsequente', 'posgraduacao'].includes(modality);
+      rows.push(
+        {
+          id: `stage-${n}:${modality}`,
+          name: `${n}ª etapa de avaliação — início e término${suffix}`,
+          modality,
+        },
+        {
+          id: `results-${n}:${modality}`,
+          name: `Prazo de lançamento dos resultados (rendimento e frequência) da ${n}ª etapa${suffix}`,
+          modality,
+        },
+        {
+          id: `council-${n}:${modality}`,
+          name: `Conselho de classe/coletivo pedagógico da ${n}ª etapa${optional ? ' (opcional para esta oferta)' : ''}${suffix}`,
+          modality,
+          ...(optional ? { required: false } : {}),
+        },
+        {
+          id: `pedagogical-meeting-${n}:${modality}`,
+          name: `Reunião pedagógica após os resultados parciais da ${n}ª etapa${suffix}`,
+          modality,
+        },
       );
     }
+  }
   const terms = state.regime === 'misto' ? [0, 1, 2] : state.regime === 'semestral' ? [1, 2] : [0];
   for (const n of terms) {
     const label = n ? `${n}º semestre` : 'ano letivo';
@@ -159,30 +126,4 @@ export function activityChecklist(state: AssessmentSettings): ActivityRequiremen
     { month: 10 },
   );
   return rows;
-}
-
-export function mergeLegacyStages<
-  T extends Pick<
-    CalendarActivity,
-    'id' | 'start' | 'end' | 'evidence' | 'requirementId' | 'modalities'
-  > & { name?: string },
->(events: T[]): T[] {
-  const result = events.map((e) => ({ ...e }));
-  for (let n = 1; n <= 4; n++) {
-    const start = result.find((e) => e.requirementId === `stage-start-${n}`),
-      end = result.find((e) => e.requirementId === `stage-end-${n}`);
-    if (
-      !start ||
-      !end ||
-      start.start > end.end ||
-      JSON.stringify(start.modalities || []) !== JSON.stringify(end.modalities || [])
-    )
-      continue;
-    start.requirementId = `stage-${n}`;
-    start.name = `${n}ª etapa de avaliação — início e término`;
-    start.end = end.end;
-    start.evidence = [...new Set([start.evidence, end.evidence])].join(' / ').slice(0, 240);
-    result.splice(result.indexOf(end), 1);
-  }
-  return result;
 }

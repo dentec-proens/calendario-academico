@@ -1,5 +1,7 @@
 # Consolidação do schema Convex
 
+Este procedimento documenta a primeira conversão do armazenamento antigo. Para a unificação posterior dos dados e snapshots no formato 2, consulte [Migração canônica](migracao-canonica.md). A ferramenta antiga permanece administrativa e não faz parte do runtime.
+
 A aplicação usa documentos tipados, referências nativas e mutations por operação. A pasta `migration/` é uma ferramenta administrativa de uso único: não é importada por `convex/` nem pelo frontend. O codec antigo existe somente ali para ler os backups anteriores.
 
 ## O que é preservado

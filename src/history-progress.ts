@@ -17,19 +17,19 @@ const normalized = (value: string) =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
-export function historicalRequirement(name: string, state: { assessmentStages?: number }) {
+export function historicalRequirement(name: string, count: number) {
   const t = normalized(name);
   const stages = [...t.matchAll(/\b([1-4])\s*(?:a|o)?\s*(bimestre|trimestre|semestre|etapa)\b/g)];
   for (const stage of stages) {
     const n = Number(stage[1]),
       unit = stage[2],
-      count = Number(state.assessmentStages);
+      stageCount = count;
     const appropriate =
       unit === 'etapa' ||
-      (unit === 'bimestre' && count === 4) ||
-      (unit === 'trimestre' && count === 3) ||
-      (unit === 'semestre' && count === 2);
-    if (appropriate && n <= count) {
+      (unit === 'bimestre' && stageCount === 4) ||
+      (unit === 'trimestre' && stageCount === 3) ||
+      (unit === 'semestre' && stageCount === 2);
+    if (appropriate && n <= stageCount) {
       if (/\b(inicio|termino|fim)\b/.test(t) && !/(resultado|conselho|prazo)/.test(t))
         return `stage-${n}`;
       if (/resultado/.test(t) && /lancamento/.test(t) && !/final/.test(t)) return `results-${n}`;
@@ -48,16 +48,16 @@ export function historicalRequirement(name: string, state: { assessmentStages?: 
 }
 
 export function existingHistoryEvent<
-  T extends Pick<
-    CalendarActivity,
-    'name' | 'start' | 'end' | 'requirementId' | 'modalities' | 'offers'
-  >,
+  T extends Pick<CalendarActivity, 'name' | 'start' | 'end' | 'requirementId' | 'modalities'>,
 >(
   events: T[],
   candidate: Parameters<typeof proposedDates>[0],
   state: AssessmentSettings & { year: number },
 ) {
-  const requirement = historicalRequirement(candidate.name, state),
+  const requirement = historicalRequirement(
+      candidate.name,
+      Number(state.assessmentStagesByModality?.[calendarModalities(state)[0]]),
+    ),
     dates = proposedDates(candidate, state.year),
     name = normalized(candidate.name);
   const matches = events.filter(
@@ -65,7 +65,7 @@ export function existingHistoryEvent<
       e.start &&
       e.end &&
       (requirement
-        ? e.requirementId === requirement
+        ? e.requirementId === requirement || e.requirementId?.startsWith(requirement + ':')
         : name &&
           normalized(e.name) === name &&
           dates.start &&
@@ -86,17 +86,12 @@ export function includedHistoryCandidate(
   events: Pick<CalendarActivity, 'name' | 'historicalSource'>[],
   historyId: string,
   candidate: HistoryCandidate & { name: string },
-  candidates: (HistoryCandidate & { name: string })[],
+  _candidates: (HistoryCandidate & { name: string })[],
 ) {
   const key = historyCandidateKey(candidate);
   return events.some((e) => {
     const source = e.historicalSource;
     if (!source || source.historyId !== historyId || source.page !== candidate.page) return false;
-    if (source.candidateKey) return source.candidateKey === key;
-    // Legacy records can only be matched when their original name is unambiguous.
-    return (
-      e.name === candidate.name &&
-      candidates.filter((c) => c.page === candidate.page && c.name === candidate.name).length === 1
-    );
+    return source.candidateKey === key;
   });
 }

@@ -9,8 +9,9 @@ test('explicit absence of second semester intake waives new-student registration
   const base = {
     year: 2027,
     offer: 'graduacao',
+    modalities: ['graduacao'],
     regime: 'semestral',
-    assessmentStages: 2,
+    assessmentStagesByModality: { graduacao: 2 },
     events: [] as CalendarActivity[],
     periods: [],
     weekdays: [],
@@ -56,33 +57,36 @@ test('explicit absence of second semester intake waives new-student registration
 });
 
 test('family meetings and class councils are required only for integrated secondary education', () => {
-  const base = { year: 2027, offer: 'graduacao', regime: 'semestral', assessmentStages: 2 };
+  const base = {
+    year: 2027,
+    offer: 'graduacao',
+    modalities: ['graduacao'],
+    regime: 'semestral',
+    assessmentStagesByModality: { graduacao: 2 },
+  };
   for (const modalities of [
     ['graduacao'],
     ['subsequente'],
     ['posgraduacao'],
     ['graduacao', 'subsequente'],
-  ])
-    for (const scoped of [false, true]) {
-      const state = {
-        ...base,
-        offer: modalities[0],
-        modalities,
-        ...(scoped
-          ? { assessmentStagesByModality: Object.fromEntries(modalities.map((m) => [m, 2])) }
-          : {}),
-      };
-      const rows = activityChecklist(state);
-      const optional = rows.filter((r) => r.required === false);
-      assert.equal(optional.length, 2 + (scoped ? modalities.length * 2 : 2));
-      assert(optional.every((r) => /opcional para esta oferta/.test(r.name)));
-      assert(
-        rows
-          .filter((r) => r.id.startsWith('pedagogical-meeting-'))
-          .every((r) => r.required !== false),
-      );
-      assert(rows.filter((r) => r.id.startsWith('results-')).every((r) => r.required !== false));
-    }
+  ]) {
+    const state = {
+      ...base,
+      offer: modalities[0],
+      modalities,
+      assessmentStagesByModality: Object.fromEntries(modalities.map((m) => [m, 2])),
+    };
+    const rows = activityChecklist(state);
+    const optional = rows.filter((r) => r.required === false);
+    assert.equal(optional.length, 2 + modalities.length * 2);
+    assert(optional.every((r) => /opcional para esta oferta/.test(r.name)));
+    assert(
+      rows
+        .filter((r) => r.id.startsWith('pedagogical-meeting-'))
+        .every((r) => r.required !== false),
+    );
+    assert(rows.filter((r) => r.id.startsWith('results-')).every((r) => r.required !== false));
+  }
   for (const modalities of [
     ['integrado'],
     ['graduacao', 'integrado'],
@@ -113,7 +117,7 @@ test('release checks omit optional missing activities without deleting existing 
     offer: 'graduacao',
     modalities: ['graduacao'],
     regime: 'anual',
-    assessmentStages: 2,
+    assessmentStagesByModality: { graduacao: 2 },
     weekdays: [],
     weekConfirmed: false,
     periods: [],
@@ -155,7 +159,12 @@ test('mandatory checklist includes annual and semester notices, stage results, h
     ['semestral', 2],
     ['misto', 3],
   ] as const) {
-    const rows = activityChecklist({ year: 2026, regime, assessmentStages: 4 });
+    const rows = activityChecklist({
+      year: 2026,
+      regime,
+      modalities: ['integrado'],
+      assessmentStagesByModality: { integrado: 4 },
+    });
     assert.equal(rows.filter((r) => r.id.startsWith('admission-notice-')).length, count);
     assert.equal(rows.filter((r) => r.id.startsWith('registration-')).length, count);
     assert.equal(rows.filter((r) => r.id.startsWith('results-')).length, 4);

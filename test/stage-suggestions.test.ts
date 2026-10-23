@@ -7,7 +7,7 @@ const state = {
   offer: 'integrado',
   modalities: ['integrado'],
   regime: 'anual',
-  assessmentStages: 2,
+  assessmentStagesByModality: { integrado: 2 },
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
   weekEvidence: 'Ata',
@@ -47,7 +47,7 @@ test('holidays and included Saturdays change boundaries', () => {
 test('respects semester boundaries for four stages and rejects unknown or conflicting bases', () => {
   const s = {
     ...state,
-    assessmentStages: 4,
+    assessmentStagesByModality: { integrado: 4 },
     periods: [...state.periods, { id: 'q', start: '2027-04-01', end: '2027-04-16' }],
   };
   const r = suggestStages(s, [], '2027-03-01');
@@ -65,7 +65,7 @@ test('respects semester boundaries for four stages and rejects unknown or confli
           end: '2027-02-02',
           kind: 'note',
           evidence: 'Ata',
-          requirementId: 'stage-1',
+          requirementId: 'stage-1:integrado',
         },
       ],
       '2027-03-01',
@@ -109,7 +109,13 @@ import { suggestStageEnd } from '../src/stage-suggestions.ts';
 
 test('later stages receive an end date without replacing earlier stages', () => {
   const events = [
-    { id: 'first', kind: 'note', requirementId: 'stage-1', start: '2027-03-01', end: '2027-03-05' },
+    {
+      id: 'first',
+      kind: 'note',
+      requirementId: 'stage-1:integrado',
+      start: '2027-03-01',
+      end: '2027-03-05',
+    },
   ];
   const before = JSON.stringify(events);
   assert.equal(suggestStageEnd(state, events, '2027-03-08', 2).end, '2027-03-12');

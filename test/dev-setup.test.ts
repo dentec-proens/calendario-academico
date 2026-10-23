@@ -108,10 +108,10 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
     {
       revision: seeded.catalogueRevisions[0].revision,
       events: seeded.institutionalEvents.map(
-        ({ _id, _creationTime, code: id, year: _year, modalities: offers, ...event }) => ({
+        ({ _id, _creationTime, code: id, year: _year, modalities, ...event }) => ({
           id,
           ...event,
-          offers,
+          modalities,
         }),
       ),
     },
@@ -186,7 +186,7 @@ test('dev setup preserves every partial dataset, including isolated snapshots, A
     (ctx) =>
       ctx.db.insert('calendarSnapshots', {
         state: {
-          schemaVersion: 1,
+          schemaVersion: 2,
           year: 2027,
           campus: 'Snapshot original',
           modalities: ['integrado'],

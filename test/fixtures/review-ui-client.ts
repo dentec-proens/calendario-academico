@@ -13,6 +13,7 @@ const support = reviewSupport(
       year: 2027,
       campus: 'Campus de teste',
       offer: 'integrado',
+      modalities: ['integrado'],
       regime: 'anual',
       weekdays: [],
       weekConfirmed: false,

@@ -7,8 +7,6 @@ import type { DomainState, ContentState } from './validators';
 import type { documentSnapshot, auditTarget } from './validators';
 import { calendarName } from '../src/calendar-label.ts';
 import { normalizeCalendar } from '../src/calendar-normalize.ts';
-import { teacherVacations } from '../src/teacher-vacations.ts';
-import { migrateAssessmentEvents } from '../src/obligations.ts';
 
 export type Context = QueryCtx | MutationCtx;
 export function fail(message: string, status = 400): never {
@@ -98,7 +96,7 @@ export async function catalogue(ctx: Context, year?: number) {
         kind,
         category,
         evidence,
-        offers: modalities,
+        modalities,
         active,
       }),
     ),
@@ -128,7 +126,7 @@ export function domainState(
 ): DomainState {
   return {
     ...state,
-    schemaVersion: 1,
+    schemaVersion: 2,
     year: row.year,
     campus: campus.name,
     modalities: row.modalities,
@@ -139,33 +137,13 @@ export function toContent(input: DomainState): ContentState {
   const normalized = normalizeCalendar(input) as DomainState;
   const {
     schemaVersion: _schema,
-    year,
+    year: _year,
     campus: _campus,
     offer: _offer,
-    modalities,
-    assessmentStages,
+    modalities: _modalities,
     ...state
   } = normalized;
-  state.assessmentStagesByModality = Object.fromEntries(
-    modalities.flatMap((m) => {
-      const n = normalized.assessmentStagesByModality?.[m] ?? assessmentStages;
-      return n ? [[m, n]] : [];
-    }),
-  );
-  state.events = migrateAssessmentEvents({ ...normalized, ...state });
-  const vacation = normalized.teacherVacations;
-  if (vacation && !vacation.firstStart) {
-    const legacy = vacation as unknown as { julyStart: string; evidence: string };
-    const converted = teacherVacations(year, legacy.julyStart, legacy.evidence);
-    state.teacherVacations = {
-      firstStart: converted.events[0].start,
-      firstEnd: converted.events[0].end,
-      secondStart: converted.events[1].start,
-      secondEnd: converted.events[1].end,
-      evidence: legacy.evidence,
-    };
-  }
-  return clean({ ...state, ignoredHistory: state.ignoredHistory ?? [] });
+  return clean(state);
 }
 export function documentValue(row: Doc<'documents'>): Infer<typeof documentSnapshot> {
   const { _id, _creationTime: _at, ...fields } = row;

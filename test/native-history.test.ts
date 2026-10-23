@@ -116,7 +116,7 @@ test('native PDF upload, analysis and confirmed historical evidence stay scoped 
         },
         'PUT',
       ),
-      /Referência histórica inválida/,
+      /Referência histórica inválida|Missing required field `candidateKey`/,
     );
   }
   const full = await inspect();

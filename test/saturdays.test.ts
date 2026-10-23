@@ -8,6 +8,7 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
   const s = {
     year: 2027,
     offer: 'integrado',
+    modalities: ['integrado'],
     regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,

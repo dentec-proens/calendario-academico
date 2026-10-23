@@ -38,7 +38,7 @@ const info: Bootstrap = {
         kind: 'exclude',
         category: 'feriado',
         evidence: 'Fonte de teste',
-        offers: ['integrado'],
+        modalities: ['integrado'],
         active: true,
       },
     ],

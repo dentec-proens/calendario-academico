@@ -22,6 +22,7 @@ import {
   fingerprint,
   verifyPlanSnapshot,
 } from '../migration/plan.ts';
+import { createCanonicalPlan } from '../migration/canonical.ts';
 import type { Document, MigrationPlan, Snapshot } from '../migration/types.ts';
 
 export function readSnapshot(path: string): Snapshot {
@@ -66,7 +67,7 @@ export function readSnapshot(path: string): Snapshot {
   return snapshot;
 }
 
-function fileDigest(path: string): string {
+export function fileDigest(path: string): string {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 type ExportedTable = { tableName: string; documentType: any; indexes: unknown };
@@ -137,13 +138,13 @@ function privatePath(path: string): string {
     throw Error('Dados privados devem ficar em backup-*/ dentro do projeto, ignorado pelo Git.');
   return absolute;
 }
-function save(path: string, value: unknown): void {
+export function save(path: string, value: unknown): void {
   const target = privatePath(path);
   mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
   writeFileSync(target, JSON.stringify(value, null, 2) + '\n', { mode: 0o600 });
   chmodSync(target, 0o600);
 }
-function cli(args: string[], project = root, inherit = false): string {
+export function cli(args: string[], project = root, inherit = false): string {
   assertNoTargetOverrides(process.env);
   const target = args.indexOf('--deployment');
   if (target >= 0 && args[target + 1] === 'local') {
@@ -213,6 +214,9 @@ export function prepareProject(plan: MigrationPlan, path: string): void {
   const tables = [
     ...new Set([...plan.tables, ...Object.keys(schema.tables), 'migrationState']),
   ].sort();
+  const componentConfig = join(root, 'convex', 'convex.config.ts');
+  if (existsSync(componentConfig))
+    copyFileSync(componentConfig, join(project, 'convex', 'convex.config.ts'));
   const text = `import { defineSchema, defineTable } from 'convex/server';\nimport { v } from 'convex/values';\n// Temporary maintenance schema: application functions are absent.\nexport default defineSchema({\n${tables.map((table) => `  ${JSON.stringify(table)}: defineTable(v.any()),`).join('\n')}\n});\n`;
   writeFileSync(join(project, 'convex', 'schema.ts'), text);
   copyFileSync(join(root, 'migration', 'engine.ts'), join(project, 'convex', 'migration.ts'));
@@ -229,6 +233,8 @@ export function prepareProject(plan: MigrationPlan, path: string): void {
       type: 'module',
       dependencies: {
         convex: JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).dependencies.convex,
+        '@convex-dev/presence': JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+          .dependencies['@convex-dev/presence'],
       },
     }),
   );
@@ -241,7 +247,9 @@ async function main(): Promise<void> {
     command = args.shift();
   if (command === 'plan') {
     const snapshot = privatePath(option(args, 'snapshot')!);
-    const plan = createPlan(readSnapshot(snapshot), fileDigest(snapshot));
+    const plan = args.includes('--canonical')
+      ? createCanonicalPlan(readSnapshot(snapshot), fileDigest(snapshot))
+      : createPlan(readSnapshot(snapshot), fileDigest(snapshot));
     save(option(args, 'out')!, plan);
     console.log(
       `Plano ${plan.digest}: ${plan.batches.length} lotes; ${plan.missingFiles.length} arquivos indisponíveis preservados por referência.`,
@@ -256,6 +264,8 @@ async function main(): Promise<void> {
     const plan = loadPlan(option(args, 'plan')!),
       deployment = deploymentName(option(args, 'deployment')!),
       project = realpathSync(option(args, 'project')!);
+    if (!plan.batches.length)
+      throw Error('Plano sem alterações: valide o snapshot sem iniciar manutenção.');
     if (option(args, 'confirm') !== plan.digest)
       throw Error('Confirme o digest exato do plano com --confirm.');
     if (deployment === environments.production.deployment) {

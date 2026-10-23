@@ -2,7 +2,7 @@ import { readCalendarInput, invalidCalendar as fail } from './calendar-input.ts'
 import { validateTeacherDay } from './teacher-day.ts';
 import { teacherVacations } from './teacher-vacations.ts';
 import { calendarModalities, modalityLabels } from './modalities.ts';
-import { activityChecklist, mergeLegacyStages, migrateAssessmentEvents } from './obligations.ts';
+import { activityChecklist } from './obligations.ts';
 import { eventCategory, validCategory } from './categories.ts';
 import { datesBetween } from './calendar.ts';
 
@@ -40,8 +40,6 @@ export function normalizeCalendar(input: unknown) {
     text(s.weekEvidence);
     if (!s.weekdays.length) fail('Semana letiva vazia.');
   }
-  if (s.assessmentStages !== undefined && ![2, 3, 4].includes(Number(s.assessmentStages)))
-    fail('Escolha duas, três ou quatro etapas de avaliação.');
   if (
     s.modalities !== undefined &&
     (!Array.isArray(s.modalities) ||
@@ -61,22 +59,10 @@ export function normalizeCalendar(input: unknown) {
       ))
   )
     fail('Etapas por oferta inválidas.');
-  s = { ...s, events: mergeLegacyStages(s.events) };
-  s.events = migrateAssessmentEvents(s);
   if (s.teacherVacations) {
     let vacation;
     try {
-      vacation = s.teacherVacations.firstStart
-        ? teacherVacations(
-            s.year,
-            {
-              ...s.teacherVacations,
-              firstStart: s.teacherVacations.firstStart,
-              firstEnd: s.teacherVacations.firstEnd ?? '',
-            },
-            s.teacherVacations.evidence,
-          )
-        : teacherVacations(s.year, s.teacherVacations.julyStart ?? '', s.teacherVacations.evidence);
+      vacation = teacherVacations(s.year, s.teacherVacations, s.teacherVacations.evidence);
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -126,11 +112,7 @@ export function normalizeCalendar(input: unknown) {
             e.modalities.some((m) => !calendarModalities(s).includes(m)))
         )
           fail('Forma de oferta/nível do evento fora do calendário.');
-        if (
-          e.requirementId &&
-          !/^stage-(start|end)-[1-4]$/.test(e.requirementId) &&
-          !activityChecklist(s).some((r) => r.id === e.requirementId)
-        )
+        if (e.requirementId && !activityChecklist(s).some((r) => r.id === e.requirementId))
           fail('Vínculo de atividade inválido para esta organização.');
         const activity = activityChecklist(s).find((r) => r.id === e.requirementId);
         if (
@@ -149,28 +131,15 @@ export function normalizeCalendar(input: unknown) {
       if (s.periods[i].start <= s.periods[j].end && s.periods[i].end >= s.periods[j].start)
         fail('Períodos sobrepostos.');
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     secondSemesterIntake: s.secondSemesterIntake,
     teacherDayDate: validateTeacherDay(s.teacherDayDate, s.year),
     ignoredHistory: Array.isArray(s.ignoredHistory)
       ? s.ignoredHistory.filter((k) => typeof k === 'string' && k.length <= 3000).slice(0, 2000)
       : [],
-    teacherVacations: s.teacherVacations
-      ? s.teacherVacations.firstStart
-        ? {
-            firstStart: s.teacherVacations.firstStart,
-            firstEnd: s.teacherVacations.firstEnd,
-            secondStart: s.teacherVacations.secondStart,
-            secondEnd: s.teacherVacations.secondEnd,
-            thirdStart: s.teacherVacations.thirdStart,
-            thirdEnd: s.teacherVacations.thirdEnd,
-            evidence: s.teacherVacations.evidence,
-          }
-        : { julyStart: s.teacherVacations.julyStart, evidence: s.teacherVacations.evidence }
-      : undefined,
+    teacherVacations: s.teacherVacations,
     modalities: calendarModalities(s),
     assessmentStagesByModality: s.assessmentStagesByModality,
-    assessmentStages: s.assessmentStages === undefined ? undefined : Number(s.assessmentStages),
     campus: String(s.campus || ''),
     year: s.year,
     offer: s.offer,

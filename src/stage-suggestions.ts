@@ -25,10 +25,7 @@ export function isFirstStageStart(name: string) {
 export function suggestStages(state: TeachingState, events: StageEvent[], start: string) {
   const modalities = calendarModalities(state),
     count = assessmentCount(state, modalities[0]);
-  if (
-    (state.assessmentStagesByModality && modalities.length !== 1) ||
-    modalities.some((m) => assessmentCount(state, m) !== count)
-  )
+  if (modalities.length !== 1 || modalities.some((m) => assessmentCount(state, m) !== count))
     throw Error('Selecione uma oferta para calcular suas etapas separadamente.');
   events = events.filter((e) => modalities.some((m) => appliesTo(e, m)));
   if (![2, 3, 4].includes(count)) throw Error('Informe o número de etapas de avaliação.');
@@ -37,11 +34,7 @@ export function suggestStages(state: TeachingState, events: StageEvent[], start:
   if (!state.weekConfirmed || !state.weekdays.length)
     throw Error('Confirme a semana letiva antes de calcular as etapas.');
   parseDate(start);
-  if (
-    events.some((e) =>
-      /^stage-(?:[1-4]|start-[1-4]|end-[1-4])(?::[a-z]+)?$/.test(e.requirementId || ''),
-    )
-  )
+  if (events.some((e) => /^stage-[1-4]:[a-z]+$/.test(e.requirementId || '')))
     throw Error(
       'Já existem etapas registradas. Revise-as antes de gerar uma nova distribuição; nenhuma data existente será substituída.',
     );
@@ -109,9 +102,7 @@ export function suggestStageEnd(
     throw Error('Etapa inválida para o número de etapas cadastrado.');
   const modalities = calendarModalities(state);
   const scoped = events.filter((e) => modalities.some((m) => appliesTo(e, m)));
-  const existing = scoped.filter((e) =>
-    /^stage-(?:[1-4]|start-[1-4]|end-[1-4])(?::[a-z]+)?$/.test(e.requirementId || ''),
-  );
+  const existing = scoped.filter((e) => /^stage-[1-4]:[a-z]+$/.test(e.requirementId || ''));
   if (
     existing.some(
       (e) => e.requirementId === scopedRequirement(state, `stage-${number}`, modalities[0]),
@@ -161,9 +152,7 @@ export function recalculateAssessmentStages<T extends StageEvent>(
   events: StageEvent[],
 ): T[] {
   const replacements = new Map<string, T>();
-  const groups = state.assessmentStagesByModality
-    ? calendarModalities(state).map((m) => [m])
-    : [calendarModalities(state)];
+  const groups = calendarModalities(state).map((m) => [m]);
   for (const modalities of groups) {
     const stages = state.events.filter(
       (e) => stageRequirement(e.requirementId) && modalities.some((m) => appliesTo(e, m)),

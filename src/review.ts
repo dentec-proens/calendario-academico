@@ -196,7 +196,7 @@ export function reviewSupport<
   record: T,
   events: (Pick<
     CalendarActivity,
-    'id' | 'name' | 'start' | 'end' | 'evidence' | 'category' | 'modalities' | 'offers'
+    'id' | 'name' | 'start' | 'end' | 'evidence' | 'category' | 'modalities'
   > & { kind?: string })[],
 ) {
   let result: ReturnType<typeof calendarResult> | null = null,

@@ -271,7 +271,7 @@ export async function createNativeFixture(overrides: Seed = {}) {
             id: calendar._id,
             state: {
               ...content.state,
-              schemaVersion: 1,
+              schemaVersion: 2,
               year: calendar.year,
               campus: calendar.campusId === ids.campuses.a ? 'A' : 'B',
               modalities: calendar.modalities,
@@ -302,7 +302,11 @@ export async function createNativeFixture(overrides: Seed = {}) {
         })),
         catalogue: {
           revision: settings?.revision ?? 1,
-          events: events.map((event) => ({ ...event, id: event.code, offers: event.modalities })),
+          events: events.map((event) => ({
+            ...event,
+            id: event.code,
+            modalities: event.modalities,
+          })),
         },
         documents: documents.map((document) => ({ ...document, id: document._id })),
         audit: audit.map((entry) => ({ ...entry, at: iso(entry.at) })),

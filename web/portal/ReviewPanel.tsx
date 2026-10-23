@@ -15,7 +15,7 @@ import { ClipboardCopy, Download, ExternalLink, Eye, Pencil, Save } from 'lucide
 import { calendarName } from '../../src/calendar-label.ts';
 import { modalityLabels } from '../../src/modalities.ts';
 import { updateConclusion } from '../../src/review-conclusion.ts';
-import { reviewNorm, presentReviewText } from '../../src/review-presentation.ts';
+import { reviewNorm } from '../../src/review-presentation.ts';
 import { reviews } from '../native/client.ts';
 import { usePaginatedQuery, useQuery } from 'convex/react';
 import { functions } from '../native/client.ts';
@@ -36,19 +36,21 @@ function initialDraft(opened: ReviewSupport) {
     };
   });
   const previousConclusion = opened.review?.conclusion || opened.initialConclusion;
-  const conclusion = updateConclusion(
-    presentReviewText(previousConclusion, opened.calendar.year),
-    opened.criteria,
-    entries,
-    reviewNorm(opened.calendar.year, opened.sameYear ? opened.source.norm : ''),
-  );
+  const conclusion = opened.review
+    ? previousConclusion
+    : updateConclusion(
+        previousConclusion,
+        opened.criteria,
+        entries,
+        reviewNorm(opened.calendar.year, opened.sameYear ? opened.source.norm : ''),
+      );
   return {
     opened,
     entries,
     conclusion,
     processNumber: opened.review?.processNumber || '',
     applicableNorm:
-      presentReviewText(opened.review?.applicableNorm, opened.calendar.year) ||
+      opened.review?.applicableNorm ||
       reviewNorm(opened.calendar.year, opened.sameYear ? opened.source.norm : ''),
     acknowledgeStale: false,
     changed: {} as Record<string, boolean>,

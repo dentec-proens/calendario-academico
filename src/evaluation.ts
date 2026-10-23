@@ -1,10 +1,8 @@
 import type { CountingEvent, TeachingState } from './domain-types.ts';
 import { countCalendar } from './calendar.ts';
-import { withVacationExclusions } from './teacher-vacations.ts';
 import { calendarModalities, appliesTo } from './modalities.ts';
 
 export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
-  events = withVacationExclusions(events);
   const byModality: Record<string, ReturnType<typeof countCalendar>> = {};
   for (const modality of calendarModalities(s)) {
     const scoped = events.filter((e) => appliesTo(e, modality));

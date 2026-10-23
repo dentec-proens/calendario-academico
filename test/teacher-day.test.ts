@@ -35,6 +35,7 @@ test('only teacher day moves; original date is restored and other calendars stay
   const state = {
     year: 2027,
     offer: 'integrado',
+    modalities: ['integrado'],
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     weekEvidence: 'Ata',

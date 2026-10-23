@@ -16,16 +16,7 @@ export const categories: [string, string, string | null][] = [
 export const validCategory = (value: unknown) => categories.some(([key]) => key === value);
 
 export function eventCategory(e: { category?: string; id?: string; name?: string; kind?: string }) {
-  if (e.category && validCategory(e.category)) {
-    // Compatibility with the original seeded institutional record.
-    if (
-      e.category === 'institucional' &&
-      ['ifpr2027-21', 'inst:ifpr2027-21'].includes(e.id ?? '') &&
-      e.name === 'Criação do IFPR e da Rede Federal de EPT'
-    )
-      return 'criacao';
-    return e.category;
-  }
+  if (e.category && validCategory(e.category)) return e.category;
   return e.kind === 'include' ? 'sabado' : e.kind === 'exclude' ? 'recesso' : 'institucional';
 }
 

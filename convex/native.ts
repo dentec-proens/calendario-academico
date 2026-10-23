@@ -41,7 +41,7 @@ import { recalculatePeriods } from '../src/duration.ts';
 import { recalculateAssessmentStages } from '../src/stage-suggestions.ts';
 import { historyCandidateKey } from '../src/history-progress.ts';
 import { reviewSupport, reviewCriteria, initialConclusion } from '../src/review.ts';
-import { reviewNorm, presentReviewText } from '../src/review-presentation.ts';
+import { reviewNorm } from '../src/review-presentation.ts';
 import { updateConclusion } from '../src/review-conclusion.ts';
 import { reviewDocument } from '../src/review-export.ts';
 
@@ -431,11 +431,13 @@ export const createCalendar = mutation({
     if (
       !body.modalities.length ||
       body.modalities.length > 4 ||
-      new Set(body.modalities).size !== body.modalities.length ||
-      body.modalities.includes('tecnico')
+      new Set(body.modalities).size !== body.modalities.length
     )
       fail('Selecione as formas de oferta/níveis do calendário.');
     const state = normalizeCalendar({
+      schemaVersion: 2,
+      ignoredHistory: [],
+      assessmentStagesByModality: {},
       year: body.year,
       campus: campus.name,
       offer: body.modalities[0],
@@ -510,11 +512,9 @@ export const saveCalendar = mutation({
         !Number.isInteger(source.page) ||
         source.page < 1 ||
         !analysis?.analysis.pages.some((p) => p.page === source.page) ||
-        (source.candidateKey &&
-          !analysis.analysis.candidates.some(
-            (item) =>
-              item.page === source.page && historyCandidateKey(item) === source.candidateKey,
-          ))
+        !analysis.analysis.candidates.some(
+          (item) => item.page === source.page && historyCandidateKey(item) === source.candidateKey,
+        )
       )
         fail('Referência histórica inválida para este calendário.');
     }
@@ -656,7 +656,7 @@ export const saveCatalogue = mutation({
     if (
       body.start.slice(0, 4) !== body.end.slice(0, 4) ||
       !validCategory(body.category) ||
-      !body.offers.length
+      !body.modalities.length
     )
       fail('Datas, efeito ou ofertas inválidos.');
     const prior = body.id
@@ -677,7 +677,7 @@ export const saveCatalogue = mutation({
       kind: body.kind,
       category: text(body.category, 40),
       evidence: text(body.evidence),
-      modalities: body.offers,
+      modalities: body.modalities,
       active: body.active,
     };
     const id = prior ? prior._id : await ctx.db.insert('institutionalEvents', fields);
@@ -787,7 +787,7 @@ export const saveReview = mutation({
       ...record.state.events,
     ]);
     const conclusion = updateConclusion(
-      presentReviewText(body.conclusion, record.state.year),
+      body.conclusion,
       reviewCriteria,
       body.entries,
       reviewNorm(record.state.year, support.sameYear ? support.source.norm : ''),
@@ -808,8 +808,7 @@ export const saveReview = mutation({
       entries: body.entries,
       conclusion,
       processNumber: body.processNumber ?? '',
-      applicableNorm:
-        presentReviewText(body.applicableNorm, record.state.year) || reviewNorm(record.state.year),
+      applicableNorm: body.applicableNorm || reviewNorm(record.state.year),
       reviewer: { id: user.id, name: user.name },
       updatedAt: Date.now(),
     };

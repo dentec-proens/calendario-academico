@@ -46,6 +46,12 @@ Todo o código manual usa `.ts` ou `.tsx`, incluindo as regras compartilhadas em
 
 Os arquivos JavaScript restantes são gerados: `convex/_generated/api.js`, `convex/_generated/server.js` e `src/native-print-assets.mjs`. Este último é produzido por `scripts/print-assets.ts` e possui uma declaração de tipos adjacente. Não editar os arquivos gerados manualmente. Os `.mjs` importados de PDF.js pertencem à dependência externa.
 
+## Formato dos dados
+
+O editor, o backend e os snapshots históricos usam `schemaVersion: 2`. As modalidades são explícitas, as etapas são descritas por modalidade e o mapa vazio representa quantidade não informada. Férias usam intervalos explícitos e os eventos carregam seu efeito real na contagem. O catálogo e os snapshots institucionais usam `modalities`.
+
+Rascunhos anteriores não são importados silenciosamente. A conversão de backups é uma operação administrativa, com backup, ensaio e verificação; veja [Migração canônica](migracao-canonica.md). Pareceres salvos são exibidos e exportados literalmente, sem substituir citações ou retirar versões do texto original.
+
 ## Compartilhar e publicar
 
 Os dois desenvolvedores podem enviar código para `main` e publicar diretamente; branches são opcionais e PR não é obrigatório. Atualize seu checkout antes de integrar mudanças do colega e combine a publicação para evitar duas atualizações simultâneas.

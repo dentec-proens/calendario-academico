@@ -35,7 +35,7 @@ type PrintEvent = Pick<
   CalendarActivity,
   'start' | 'end' | 'category' | 'modalities' | 'requirementId'
 > &
-  Partial<Pick<CalendarActivity, 'kind' | 'id' | 'name'>>;
+  Partial<Pick<CalendarActivity, 'kind' | 'id' | 'name'>> & { institutional?: boolean };
 import { calendarModalities, modalityLabels, appliesTo } from '../src/modalities.ts';
 import { categories, eventCategory } from '../src/categories.ts';
 
@@ -81,28 +81,15 @@ export function teachingDayBreakdown(
       { start, end },
     );
   });
-  const count = Number(
-    state.assessmentStagesByModality
-      ? state.assessmentStagesByModality[modality]
-      : state.assessmentStages,
-  );
+  const count = Number(state.assessmentStagesByModality?.[modality]);
   const candidates = (events || []).filter((e) => appliesTo(e, modality));
   const stages = Array.from({ length: [2, 3, 4].includes(count) ? count : 0 }, (_, i) => {
     const id = String(i + 1),
       matches = candidates.filter((e) =>
-        new RegExp(`^stage-${id}(?::${modality})?$`).test(e.requirementId || ''),
+        new RegExp(`^stage-${id}:${modality}$`).test(e.requirementId || ''),
       );
     if (matches.length === 1) return { start: matches[0].start, end: matches[0].end };
-    if (matches.length) return null;
-    const starts = candidates.filter((e) =>
-      new RegExp(`^stage-start-${id}(?::${modality})?$`).test(e.requirementId || ''),
-    );
-    const ends = candidates.filter((e) =>
-      new RegExp(`^stage-end-${id}(?::${modality})?$`).test(e.requirementId || ''),
-    );
-    return starts.length === 1 && ends.length === 1
-      ? { start: starts[0].start, end: ends[0].end }
-      : null;
+    return null;
   });
   const periods = [...(state.periods || [])].sort((a, b) => a.start.localeCompare(b.start));
   let semesters: (DateRange | null)[] = [null, null];
@@ -267,7 +254,7 @@ export function proensLayout(
       .map((e) => {
         const a = e.start.startsWith(prefix) ? Number(e.start.slice(8)) : 1,
           b = e.end.startsWith(prefix) ? Number(e.end.slice(8)) : length;
-        return `<tr><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(e.name)}${e.modalities?.length ? ' [' + esc(e.modalities.map((m) => modalityLabels[m]).join(', ')) + ']' : ''}</td></tr>`;
+        return `<tr><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(e.name)}${!e.institutional && e.modalities?.length ? ' [' + esc(e.modalities.map((m) => modalityLabels[m]).join(', ')) + ']' : ''}</td></tr>`;
       });
     const middle = Math.max(6, Math.ceil(entries.length / 2)),
       columns = [entries.slice(0, middle), entries.slice(middle)];

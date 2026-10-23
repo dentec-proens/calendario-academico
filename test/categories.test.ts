@@ -16,7 +16,7 @@ test('PROENS palette matches reference and simultaneous classifications remain v
     eventCategory({
       id: 'inst:ifpr2027-21',
       name: 'Criação do IFPR e da Rede Federal de EPT',
-      category: 'institucional',
+      category: 'criacao',
     }),
     'criacao',
   );
@@ -37,4 +37,21 @@ test('PROENS palette matches reference and simultaneous classifications remain v
   assert.equal((html.match(/class="event-columns"/g) || []).length, 12);
   assert(html.includes('ifpr-logo'));
   for (const [, label, color] of categories) if (color) assert(html.includes(label!));
+});
+
+test('canonical institutional scopes preserve the printed legend while local scopes remain explicit', () => {
+  const state = { year: 2027, campus: 'Foz', modalities: ['integrado'], periods: [] };
+  const event = {
+    id: 'fixture',
+    name: 'Feriado institucional',
+    start: '2027-02-06',
+    end: '2027-02-06',
+    kind: 'exclude',
+    category: 'feriado',
+    modalities: ['integrado'],
+  };
+  const institutional = proensLayout(state, [{ ...event, institutional: true }]);
+  const local = proensLayout(state, [{ ...event, institutional: false }]);
+  assert(!institutional.includes('Feriado institucional [Técnico integrado]'));
+  assert(local.includes('Feriado institucional [Técnico integrado]'));
 });

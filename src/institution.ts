@@ -1,7 +1,7 @@
 import type { CalendarActivity } from './domain-types.ts';
 export interface CatalogueEvent extends CalendarActivity {
   active: boolean;
-  offers: string[];
+  modalities: string[];
   category: string;
 }
 import { campusInstitutionalEvents } from './teacher-day.ts';
@@ -66,7 +66,7 @@ export function initialCatalogue() {
     kind: 'exclude',
     category: 'feriado',
     evidence,
-    offers: ['integrado', 'subsequente', 'graduacao'],
+    modalities: ['integrado', 'subsequente', 'graduacao'],
     active: true,
   }));
   const fixed = [
@@ -91,7 +91,7 @@ export function initialCatalogue() {
     ['10-29', 'Recesso acadêmico e administrativo', 'recesso'],
     ['11-01', 'Recesso acadêmico e administrativo', 'recesso'],
     ['12-24', 'Recesso acadêmico e administrativo', 'recesso'],
-    ['12-29', 'Criação do IFPR e da Rede Federal de EPT', 'institucional'],
+    ['12-29', 'Criação do IFPR e da Rede Federal de EPT', 'criacao'],
     ['12-31', 'Recesso acadêmico e administrativo', 'recesso'],
   ];
   fixed.forEach(([date, name, category], i) =>
@@ -104,7 +104,7 @@ export function initialCatalogue() {
       category,
       evidence:
         'Resolução IFPR 2027 — SEI 4354987, arts. 2º e 3º; aprovação confirmada pela solicitante',
-      offers: ['integrado', 'subsequente', 'graduacao'],
+      modalities: ['integrado', 'subsequente', 'graduacao'],
       active: true,
     }),
   );
@@ -120,7 +120,7 @@ export function initialCatalogue() {
       kind: 'note',
       category: 'comemorativo',
       evidence: 'Resolução IFPR 2027 — SEI 4354987, art. 2º',
-      offers: ['integrado', 'subsequente', 'graduacao'],
+      modalities: ['integrado', 'subsequente', 'graduacao'],
       active: true,
     });
   return { revision: 1, events };
@@ -132,7 +132,6 @@ export function inheritedEvents<
     start: string;
     end: string;
     active: boolean;
-    offers?: string[];
     modalities?: string[];
   },
 >(

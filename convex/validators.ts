@@ -6,7 +6,6 @@ export const modality = v.union(
   v.literal('subsequente'),
   v.literal('graduacao'),
   v.literal('posgraduacao'),
-  v.literal('tecnico'),
 );
 export const effect = v.union(v.literal('include'), v.literal('exclude'), v.literal('note'));
 export const purpose = v.union(v.literal('test'), v.literal('definitive'));
@@ -22,7 +21,7 @@ export const period = v.object({
 export const historicalSource = v.object({
   historyId: v.id('histories'),
   page: v.number(),
-  candidateKey: v.optional(v.string()),
+  candidateKey: v.string(),
 });
 export const event = v.object({
   id: v.string(),
@@ -51,7 +50,6 @@ export const institutionalEvent = v.object({
 export const institutionalEventSnapshot = v.object({
   ...event.fields,
   active: v.optional(v.boolean()),
-  offers: v.optional(v.array(modality)),
   source: v.optional(v.string()),
   institutional: v.optional(v.boolean()),
   originalStart: v.optional(v.string()),
@@ -81,23 +79,13 @@ export const contentState = v.object({
 });
 export const domainState = v.object({
   ...contentState.fields,
-  schemaVersion: v.literal(1),
+  schemaVersion: v.literal(2),
   year: v.number(),
   campus: v.string(),
   modalities: v.array(modality),
   offer: modality,
-  assessmentStages: v.optional(stages),
 });
-// Historical DTOs retain the representation actually saved at the time.
-export const historicalState = v.object({
-  ...domainState.fields,
-  modalities: v.optional(v.array(modality)),
-  ignoredHistory: v.optional(v.array(v.string())),
-  assessmentStagesByModality: v.optional(v.record(v.string(), stages)),
-  teacherVacations: v.optional(
-    v.union(vacations, v.object({ julyStart: v.string(), evidence: v.string() })),
-  ),
-});
+export const historicalState = domainState;
 export const unavailableFile = v.object({
   sourceReference: v.string(),
   reason: v.literal('not_migrated'),

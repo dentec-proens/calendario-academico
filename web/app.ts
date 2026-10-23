@@ -3,13 +3,13 @@ import type {
   CalendarRecord,
   CalendarState,
   CalendarEvent,
+  EditorEvent,
   Modality,
   History,
   HistoryAnalysis,
 } from './editor-types.ts';
 import {
   campusInstitutionalEvents,
-  withVacationExclusions,
   calendarModalities,
   modalityLabels,
   recalculateAssessmentStages,
@@ -39,12 +39,7 @@ import {
 } from '../src/stage-suggestions.ts';
 import { regimeLabels } from '../src/calendar-label.ts';
 import { evaluateCalendar } from '../src/evaluation.ts';
-import {
-  activityChecklist,
-  assessmentCount,
-  stageRequirement,
-  migrateAssessmentEvents,
-} from '../src/obligations.ts';
+import { activityChecklist, assessmentCount, stageRequirement } from '../src/obligations.ts';
 import { filePayload } from './upload.ts';
 import { categories, eventCategory, categoryLabel } from '../src/categories.ts';
 import { datesBetween } from '../src/calendar.ts';
@@ -66,10 +61,10 @@ let inlineHistoryIndex: number | null = null;
 let inlineActivityId: string | null = null;
 let editingEventId: string | null = null;
 let state: CalendarState = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   campus: '',
   year: 2027,
-  offer: 'tecnico',
+  offer: 'integrado',
   modalities: [],
   ignoredHistory: [],
   assessmentStagesByModality: {},
@@ -92,7 +87,7 @@ let isAdmin = false;
 const restoringHistories = new Set<string>();
 const calendarId = new URLSearchParams(location.search).get('id') ?? '';
 const campusEvents = () => campusInstitutionalEvents(institutional, state);
-const allEvents = () => withVacationExclusions([...campusEvents(), ...state.events]);
+const allEvents = (): EditorEvent[] => [...campusEvents(), ...state.events];
 
 const escape = (s: unknown) =>
   String(s).replace(
@@ -1037,7 +1032,6 @@ async function handleHistoryClick(e: MouseEvent) {
   if (discard && historyAnalysis && analyzedHistory) {
     const c = historyAnalysis.candidates[Number(discard.dataset.historyDiscard)],
       key = analyzedHistory.id + ':' + historyCandidateKey(c);
-    state.ignoredHistory ??= [];
     if (state.ignoredHistory.includes(key))
       state.ignoredHistory = state.ignoredHistory.filter((k) => k !== key);
     else state.ignoredHistory.push(key);
@@ -1437,7 +1431,6 @@ $('assessment-settings').addEventListener('change', (e) => {
       .map((m): [Modality, number] => [m, m === modality ? value : assessmentCount(state, m)])
       .filter((row): row is [Modality, 2 | 3 | 4] => [2, 3, 4].includes(row[1])),
   );
-  state.events = migrateAssessmentEvents(state);
   const ids = new Set(activityChecklist(state).map((r) => r.id));
   for (const event of state.events)
     if (event.requirementId && !ids.has(event.requirementId)) {

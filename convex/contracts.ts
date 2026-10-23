@@ -32,7 +32,7 @@ export const catalogueEventDto = v.object({
   kind: v.union(v.literal('include'), v.literal('exclude'), v.literal('note')),
   category: v.string(),
   evidence: v.string(),
-  offers: v.array(modality),
+  modalities: v.array(modality),
   active: v.boolean(),
 });
 export const catalogueDto = v.object({ revision: v.number(), events: v.array(catalogueEventDto) });
@@ -109,8 +109,6 @@ export const saveInput = v.object({
   state: v.object({
     ...domainState.fields,
     teacherDayDate: v.optional(v.union(v.string(), v.null())),
-    assessmentStagesByModality: v.optional(domainState.fields.assessmentStagesByModality),
-    ignoredHistory: v.optional(v.array(v.string())),
   }),
 });
 export const saveResult = v.object({

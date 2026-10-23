@@ -1,7 +1,7 @@
-import type { CalendarActivity } from '../src/domain-types.ts';
+import type { CalendarActivity } from './legacy-domain-types.ts';
 import { createHash } from 'node:crypto';
 import { decodeValue } from './legacy-codec.ts';
-import { mergeLegacyStages, migrateAssessmentEvents } from '../src/obligations.ts';
+import { mergeLegacyStages, migrateAssessmentEvents } from './legacy-obligations.ts';
 import type { Document, MigrationPlan, Operation, Row, Snapshot } from './types.ts';
 
 type Legacy = Record<string, any>;

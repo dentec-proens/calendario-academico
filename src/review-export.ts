@@ -1,6 +1,6 @@
 import type { AssessmentSettings, ReviewEntry } from './domain-types.ts';
 import { calendarModalities, modalityLabels } from './modalities.ts';
-import { reviewNorm, presentReviewText } from './review-presentation.ts';
+import { reviewNorm } from './review-presentation.ts';
 import { reviewCriteria, reviewSource } from './review.ts';
 
 const esc = (s: string | number | undefined | null) =>
@@ -46,7 +46,7 @@ export function reviewDocument(
     ],
     [
       'Norma do ano analisado',
-      presentReviewText(review.applicableNorm, record.state.year) ||
+      review.applicableNorm ||
         reviewNorm(record.state.year) ||
         'Não informada — conferir antes de concluir',
     ],
@@ -70,9 +70,7 @@ export function reviewDocument(
       assessment: `${statusLabels[e.status] || statusLabels.PENDENTE} — ${e.reviewed !== true || e.status === 'PENDENTE' ? 'proposta automática, não confirmada' : 'avaliação humana'}\n${e.notes}`,
     };
   });
-  const conclusion =
-    presentReviewText(review.conclusion, record.state.year) ||
-    'Conclusão pendente de elaboração pelo parecerista.';
+  const conclusion = review.conclusion || 'Conclusão pendente de elaboração pelo parecerista.';
   const section = '1. ANÁLISE TÉCNICO-PEDAGÓGICA';
   let body = `<article><h1>PARECER</h1><h2>${title}</h2><p class="center">Pró-Reitoria de Ensino — PROENS</p><p class="notice">${esc(notice)}</p>${record.state.year !== 2026 ? `<p><strong>Atenção:</strong> o modelo é de 2026; seus prazos e artigos não substituem a norma de ${record.state.year}.</p>` : ''}${metadata.map(([key, value]) => `<p><strong>${esc(key)}:</strong> ${esc(value)}</p>`).join('')}<h2>${section}</h2><table><thead><tr><th>Itens do calendário — roteiro do parecer</th><th>Situação e observações</th></tr></thead><tbody>${bodyRows.map((r) => `<tr><td>${esc(r.criterion).replace(/\n/g, '<br>')}</td><td>${esc(r.assessment).replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table><h2>2. PARECER</h2><p>${esc(conclusion).replace(/\n/g, '<br>')}</p><p>Responsável pelo registro da análise: ${esc(review.reviewer.name)}.</p><p>A formalização, assinatura e tramitação são realizadas pelas instâncias competentes no SEI.</p></article>`;
   // Inline table formatting also travels with HTML clipboard content.

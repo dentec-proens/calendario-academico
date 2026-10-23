@@ -35,13 +35,13 @@ export const initialize = internalMutation({
     await ctx.db.insert('institutionSettings', { key: 'catalogue', revision: catalogue.revision });
     await ctx.db.insert('catalogueRevisions', { year: 2027, revision: catalogue.revision });
     for (const item of catalogue.events) {
-      const { id: code, offers: modalities, ...fields } = item;
+      const { id: code, ...fields } = item;
       await ctx.db.insert('institutionalEvents', {
         ...fields,
         code,
         year: Number(item.start.slice(0, 4)),
         kind: item.kind as Infer<typeof effect>,
-        modalities: modalities as Infer<typeof modality>[],
+        modalities: item.modalities as Infer<typeof modality>[],
       });
     }
     return { initialized: true, setupRequired: true };

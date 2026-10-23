@@ -18,7 +18,7 @@ test('progress follows the source even after renaming and resets when event is r
   assert(!includedHistoryCandidate([], 'pdf', first, list));
   assert(
     !includedHistoryCandidate(
-      [{ name: 'Feira', historicalSource: { historyId: 'pdf', page: 1 } }],
+      [{ name: 'Feira', historicalSource: { historyId: 'pdf', page: 1, candidateKey: 'invalid' } }],
       'pdf',
       first,
       list,
@@ -28,12 +28,16 @@ test('progress follows the source even after renaming and resets when event is r
 
 import { existingHistoryEvent } from '../src/history-progress.ts';
 
-const setup = { year: 2027, assessmentStages: 4, modalities: ['integrado', 'graduacao'] };
+const setup = {
+  year: 2027,
+  assessmentStagesByModality: { integrado: 4 },
+  modalities: ['integrado', 'graduacao'],
+};
 test('history suppresses existing obligations across changed dates, but preserves different stages and scopes', () => {
   const candidate = { name: 'Início do Período Letivo/1º Semestre/1º Bimestre' };
   const event = {
     name: '1ª etapa',
-    requirementId: 'stage-1',
+    requirementId: 'stage-1:integrado',
     start: '2027-02-09',
     end: '2027-04-20',
   };

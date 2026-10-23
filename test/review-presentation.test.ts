@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { presentReviewText, reviewNorm } from '../src/review-presentation.ts';
+import { reviewNorm } from '../src/review-presentation.ts';
 import { reviewSupport, initialConclusion } from '../src/review.ts';
 import { reviewDocument } from '../src/review-export.ts';
 import {
@@ -20,6 +20,7 @@ const record = {
     year: 2027,
     campus: 'Pinhais',
     offer: 'integrado',
+    modalities: ['integrado'],
     regime: 'anual',
     weekdays: [],
     weekConfirmed: false,
@@ -38,23 +39,6 @@ test('initial review identifies the approved resolution without disclosing the c
   assert.equal(support.calendar.version, 27);
 });
 
-test('legacy text correction preserves human prose and historical fields', () => {
-  const human = 'Observação: o campus revisou a versão 27 em reunião.';
-  const text = oldIntroduction + '\n\n' + human + '\n\n' + partialConclusion;
-  const corrected = presentReviewText(text, 2027);
-  assert(
-    corrected.startsWith(
-      'A análise inicial do Calendário Acadêmico e Administrativo 2027, campus Pinhais, foi organizada conforme critérios institucionais.',
-    ),
-  );
-  assert(corrected.includes(human));
-  assert(corrected.includes(norm2027.norm));
-  assert(!corrected.includes('XXX/2026'));
-  assert.equal(presentReviewText(corrected, 2027), corrected);
-  assert.equal(presentReviewText(partialConclusion, 2028), partialConclusion);
-  assert.equal(reviewNorm(2026, 'Resolução de 2026'), 'Resolução de 2026');
-});
-
 test('both conclusion decisions use the approved reference without duplicated paragraphs', () => {
   const criteria = [{ id: 'a' }];
   for (const [status, standard] of [
@@ -63,7 +47,7 @@ test('both conclusion decisions use the approved reference without duplicated pa
   ]) {
     const entries = [{ id: 'a', status, reviewed: true }];
     const text = updateConclusion(
-      presentReviewText(oldIntroduction + '\n\n' + standard, 2027),
+      oldIntroduction + '\n\n' + standard,
       criteria,
       entries,
       reviewNorm(2027),
@@ -74,7 +58,7 @@ test('both conclusion decisions use the approved reference without duplicated pa
   }
 });
 
-test('HTML and text exports remove generated calendar version labels without rewriting saved review history', () => {
+test('HTML and text exports preserve original saved wording including historical placeholders and version labels', () => {
   const review = {
     entries: reviewSupport(record, []).criteria.map((c) => c.initial),
     reviewer: { name: 'Parecerista' },
@@ -88,9 +72,9 @@ test('HTML and text exports remove generated calendar version labels without rew
   const before = structuredClone(review),
     doc = reviewDocument(record, review);
   for (const text of [doc.html, doc.body, doc.text]) {
-    assert(text.includes(norm2027.norm));
-    assert(!text.includes('XXX/2026'));
-    assert(!/calendário versão|CALENDÁRIO VERSÃO|campus Pinhais, versão 27/.test(text));
+    assert(text.includes('XXX/2026'));
+    assert(text.includes('campus Pinhais, versão 27'));
+    assert(text.includes(partialConclusion));
   }
   assert.deepEqual(review, before);
   assert.equal(review.calendarVersion, 27);

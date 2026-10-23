@@ -9,13 +9,12 @@ export interface CalendarActivity {
   category?: string;
   requirementId?: string;
   modalities?: string[];
-  offers?: string[];
   hours?: number;
   days?: number;
   originalStart?: string;
   originalEnd?: string;
   assessmentAutoStart?: string;
-  historicalSource?: { historyId: string; page: number; candidateKey?: string };
+  historicalSource?: { historyId: string; page: number; candidateKey: string };
 }
 
 export interface ActivityRequirement {
@@ -41,7 +40,6 @@ export interface AssessmentSettings {
   modalities?: string[];
   regime?: string;
   year?: number;
-  assessmentStages?: number;
   assessmentStagesByModality?: Record<string, number>;
   secondSemesterIntake?: boolean;
 }
@@ -82,7 +80,7 @@ export type VacationPeriods = {
 
 export type CountingEvent = Pick<
   CalendarActivity,
-  'id' | 'kind' | 'start' | 'end' | 'modalities' | 'offers'
+  'id' | 'kind' | 'start' | 'end' | 'modalities'
 > & { evidence?: string };
 export type StageEvent = CountingEvent &
   Pick<CalendarActivity, 'requirementId' | 'assessmentAutoStart'>;

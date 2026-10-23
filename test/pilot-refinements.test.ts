@@ -2,25 +2,38 @@ import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { teacherVacations } from '../src/teacher-vacations.ts';
-import { activityChecklist, mergeLegacyStages } from '../src/obligations.ts';
+import { activityChecklist } from '../src/obligations.ts';
 import { auditLog } from '../src/audit-log.ts';
 import { evaluateCalendar } from '../src/evaluation.ts';
 
-test('teacher vacations count inclusive days, including leap years, and reject July overflow', () => {
+test('teacher vacations count explicit inclusive ranges and reject wrong years or missing evidence', () => {
   for (const year of [2027, 2028]) {
-    const v = teacherVacations(year, `${year}-07-17`, 'Decisão de teste');
-    assert.equal(v.januaryStart, `${year}-01-02`);
-    assert.equal(v.januaryEnd, `${year}-01-31`);
-    assert.equal(v.julyEnd, `${year}-07-31`);
+    const v = teacherVacations(
+      year,
+      {
+        firstStart: `${year}-01-02`,
+        firstEnd: `${year}-01-31`,
+        secondStart: `${year}-07-17`,
+        secondEnd: `${year}-07-31`,
+      },
+      'Decisão de teste',
+    );
     assert.equal(v.total, 45);
     assert(v.events.every((e: CalendarActivity) => e.kind === 'exclude'));
   }
-  assert.throws(() => teacherVacations(2027, '2027-07-18', 'Fonte'));
-  assert.throws(() => teacherVacations(2027, '2026-07-01', 'Fonte'));
-  assert.throws(() => teacherVacations(2027, '2027-07-01', ''));
+  assert.throws(() =>
+    teacherVacations(2027, { firstStart: '2026-07-01', firstEnd: '2026-07-15' }, 'Fonte'),
+  );
+  assert.throws(() =>
+    teacherVacations(2027, { firstStart: '2027-07-01', firstEnd: '2027-07-15' }, ''),
+  );
 });
 test('mixed calendar includes annual and semester obligations plus extraordinary council', () => {
-  const rows = activityChecklist({ regime: 'misto', assessmentStages: 4 });
+  const rows = activityChecklist({
+    regime: 'misto',
+    modalities: ['integrado'],
+    assessmentStagesByModality: { integrado: 4 },
+  });
   for (const id of [
     'final-0',
     'final-1',
@@ -29,13 +42,14 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
     'diary-1',
     'diary-2',
     'extraordinary-council',
-    'stage-1',
+    'stage-1:integrado',
   ])
     assert(rows.some((r) => r.id === id));
   assert(!rows.some((r) => r.id.startsWith('stage-start') || r.id.startsWith('stage-end')));
   const state = {
     year: 2027,
     offer: 'subsequente',
+    modalities: ['subsequente'],
     regime: 'misto',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -49,31 +63,6 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
     evaluateCalendar(state, []).checks.map((c) => c.expected),
     [200, 100, 100],
   );
-});
-test('legacy start/end stages combine without changing the original snapshot', () => {
-  const events = [
-    {
-      id: 'a',
-      requirementId: 'stage-start-1',
-      start: '2027-02-01',
-      end: '2027-02-01',
-      evidence: 'Ata 1',
-    },
-    {
-      id: 'b',
-      requirementId: 'stage-end-1',
-      start: '2027-04-20',
-      end: '2027-04-20',
-      evidence: 'Ata 2',
-    },
-  ];
-  const merged = mergeLegacyStages(events);
-  assert.equal(merged.length, 1);
-  assert.equal(merged[0].requirementId, 'stage-1');
-  assert.equal(merged[0].end, '2027-04-20');
-  assert.equal(events.length, 2);
-  assert.equal(events[0].requirementId, 'stage-start-1');
-  assert.deepEqual(mergeLegacyStages(merged), merged);
 });
 test('audit log isolates campi and contains canonical names and saved versions without credentials', () => {
   const db = {

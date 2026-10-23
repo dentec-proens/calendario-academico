@@ -1,7 +1,7 @@
 import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { activityChecklist, migrateAssessmentEvents, assessmentCount } from '../src/obligations.ts';
+import { activityChecklist, assessmentCount } from '../src/obligations.ts';
 import {
   suggestStages,
   suggestStageEnd,
@@ -161,7 +161,7 @@ test('manual dates and deleted stages are not overwritten or recreated', () => {
   );
 });
 test('cleared offer does not inherit the old shared count or affect another offer', () => {
-  const cleared = { ...state, assessmentStages: 4, assessmentStagesByModality: { graduacao: 2 } };
+  const cleared = { ...state, assessmentStagesByModality: { graduacao: 2 } };
   assert(Number.isNaN(assessmentCount(cleared, 'integrado')));
   assert.equal(assessmentCount(cleared, 'graduacao'), 2);
   const stages = activityChecklist(cleared).filter((r) => r.id.startsWith('stage-'));
@@ -271,26 +271,4 @@ test('stage end and holidays are scoped to the selected offer', () => {
   ];
   assert.equal(suggestStageEnd(scoped('integrado'), events, '2027-03-01', 1).end, '2027-03-08');
   assert.equal(suggestStageEnd(scoped('graduacao'), events, '2027-03-01', 1).end, '2027-03-12');
-});
-test('legacy shared stages retain dates and split into scoped records once', () => {
-  const original = {
-    ...state,
-    events: [
-      {
-        id: 'old',
-        name: 'Etapa',
-        requirementId: 'stage-1',
-        start: '2027-03-01',
-        end: '2027-03-05',
-        evidence: 'Ata',
-        kind: 'note',
-      },
-    ],
-  };
-  const events = migrateAssessmentEvents(original);
-  assert.equal(events.length, 2);
-  assert.equal(events[0].id, 'old');
-  assert.equal(events[1].end, '2027-03-05');
-  assert.deepEqual(migrateAssessmentEvents({ ...state, events }), events);
-  assert.equal(original.events.length, 1);
 });

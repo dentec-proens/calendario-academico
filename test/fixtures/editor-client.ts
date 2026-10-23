@@ -2,7 +2,7 @@ import type { CalendarState } from '../../web/editor-types.ts';
 import { teacherDayId } from '../../src/teacher-day.ts';
 
 const state: CalendarState = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   campus: 'Campus de teste',
   year: 2027,
   offer: 'integrado',

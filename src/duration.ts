@@ -1,6 +1,5 @@
 import type { CountingEvent, CalendarPeriod, TeachingState } from './domain-types.ts';
 import { parseDate, datesBetween } from './calendar.ts';
-import { withVacationExclusions } from './teacher-vacations.ts';
 import { calendarModalities, appliesTo } from './modalities.ts';
 
 type DurationEvent = Omit<CountingEvent, 'id'> & { id?: string };
@@ -32,7 +31,6 @@ export function durationEnd(
   state?: DurationState,
   events: DurationEvent[] = [],
 ) {
-  events = withVacationExclusions(events);
   const count = Number(quantity),
     time = parseDate(start);
   if (!Number.isInteger(count) || count < 1 || count > 366)

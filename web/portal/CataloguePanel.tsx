@@ -18,7 +18,7 @@ const emptyEvent = (): CatalogueEvent => ({
   start: '',
   end: '',
   evidence: '',
-  offers: ['integrado', 'subsequente', 'graduacao'],
+  modalities: ['integrado', 'subsequente', 'graduacao'],
   active: true,
 });
 
@@ -55,11 +55,7 @@ export default function CataloguePanel({
   function edit(item: CatalogueEvent) {
     setEvent({
       ...item,
-      offers: selectableModalities.filter(
-        (m) =>
-          item.offers.includes(m) ||
-          (['integrado', 'subsequente'].includes(m) && item.offers.includes('tecnico')),
-      ),
+      modalities: selectableModalities.filter((m) => item.modalities.includes(m)),
     });
     setCreating(true);
     requestAnimationFrame(() => nameRef.current?.focus());
@@ -157,13 +153,13 @@ export default function CataloguePanel({
                     type="checkbox"
                     name="catalogue-offer"
                     value={m}
-                    checked={event.offers.includes(m)}
+                    checked={event.modalities.includes(m)}
                     onChange={(e) =>
                       change(
-                        'offers',
+                        'modalities',
                         e.target.checked
-                          ? [...event.offers, m]
-                          : event.offers.filter((value) => value !== m),
+                          ? [...event.modalities, m]
+                          : event.modalities.filter((value) => value !== m),
                       )
                     }
                   />
@@ -215,7 +211,7 @@ export default function CataloguePanel({
                   {!item.active ? ' · Inativo' : ''}
                 </strong>
                 <small>
-                  {item.start} a {item.end} · {item.category} · {item.offers.join(', ')}
+                  {item.start} a {item.end} · {item.category} · {item.modalities.join(', ')}
                 </small>
                 <small>{item.evidence}</small>
               </div>

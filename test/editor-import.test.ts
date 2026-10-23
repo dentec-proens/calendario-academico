@@ -4,10 +4,13 @@ import { validateImport } from '../web/editor-import.ts';
 
 function draft() {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     campus: 'Campus de teste',
     year: 2027,
     offer: 'integrado',
+    assessmentStagesByModality: {},
+    ignoredHistory: [],
+    modalities: ['integrado'],
     regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekEvidence: 'Ata de teste',
@@ -19,7 +22,7 @@ function draft() {
   };
 }
 
-test('editor imports legacy drafts with current typed defaults and preserves day targets', () => {
+test('editor imports canonical drafts and preserves day targets', () => {
   const state = validateImport(draft());
   assert.deepEqual(state.modalities, ['integrado']);
   assert.deepEqual(state.ignoredHistory, []);
@@ -27,30 +30,25 @@ test('editor imports legacy drafts with current typed defaults and preserves day
   assert.equal(state.periods[0].targetDays, 200);
 });
 
-test('editor upgrades legacy assessment choices and vacations without losing their meaning', () => {
-  const state = validateImport({
-    ...draft(),
-    assessmentStages: 4,
-    teacherVacations: { julyStart: '2027-07-01', evidence: 'Ata de férias' },
-  });
-  assert.deepEqual(state.assessmentStagesByModality, { integrado: 4 });
-  assert.deepEqual(state.teacherVacations, {
-    firstStart: '2027-01-02',
-    firstEnd: '2027-01-31',
-    secondStart: '2027-07-01',
-    secondEnd: '2027-07-15',
-    thirdStart: undefined,
-    thirdEnd: undefined,
-    evidence: 'Ata de férias',
-  });
-  assert.equal(state.events.filter((event) => event.category === 'ferias').length, 2);
+test('editor rejects legacy files and missing canonical fields without inventing history', () => {
+  const legacy: Record<string, unknown> = { ...draft(), schemaVersion: 1 };
+  assert.throws(() => validateImport(legacy), /incompatível/);
+  for (const key of ['modalities', 'assessmentStagesByModality', 'ignoredHistory']) {
+    const incomplete: Record<string, unknown> = { ...draft() };
+    delete incomplete[key];
+    assert.throws(() => validateImport(incomplete));
+  }
+  assert.throws(() => validateImport({ ...draft(), assessmentStages: 4 }));
+  assert.throws(() =>
+    validateImport({ ...draft(), teacherVacations: { julyStart: '2027-07-01', evidence: 'Ata' } }),
+  );
 });
 
 test('editor rejects invalid JSON structures and dates before replacing the current draft', () => {
   for (const value of [
     null,
     {},
-    { ...draft(), schemaVersion: 2 },
+    { ...draft(), schemaVersion: 1 },
     { ...draft(), weekdays: [1, 1] },
     {
       ...draft(),

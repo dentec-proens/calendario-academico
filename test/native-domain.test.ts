@@ -155,7 +155,7 @@ test('native publication gates base revisions and reviews retain concurrent revi
     kind: 'exclude',
     category: 'feriado',
     evidence: 'Lei',
-    offers: ['integrado'],
+    modalities: ['integrado'],
   });
   await assert.rejects(
     campus.write(path, { ...saveBody(await campus.read(path)), catalogueRevision: 1 }, 'PUT'),
@@ -651,7 +651,7 @@ test('institutional revisions affect only calendars and reviews for the changed 
     kind: 'exclude',
     category: 'feriado',
     evidence: 'Norma sintética',
-    offers: ['integrado'],
+    modalities: ['integrado'],
     active: true,
   });
   const unaffected = await campus.read(path);
