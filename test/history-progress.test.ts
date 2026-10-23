@@ -33,30 +33,63 @@ const setup = {
   assessmentStagesByModality: { integrado: 4 },
   modalities: ['integrado', 'graduacao'],
 };
-test('history suppresses existing obligations across changed dates, but preserves different stages and scopes', () => {
-  const candidate = { name: 'Início do Período Letivo/1º Semestre/1º Bimestre' };
-  const event = {
-    name: '1ª etapa',
-    requirementId: 'stage-1:integrado',
+test('history recognizes non-stage obligations while respecting their modality scope', () => {
+  for (const [requirementId, name] of [
+    ['pit-1', 'Prazo final de entrega do PIT do 1º semestre'],
+    ['enrolment-2', 'Rematrícula dos estudantes do 2º semestre'],
+    ['adjustment-1', 'Ajuste de matrícula dos veteranos do 1º semestre'],
+    ['extraordinary-council', 'Conselho extraordinário'],
+  ]) {
+    const event = { name: 'Nome revisado', requirementId, start: '2027-02-09', end: '2027-04-20' };
+    assert.equal(existingHistoryEvent([event], { name }, setup), event);
+    assert.equal(
+      existingHistoryEvent([{ ...event, modalities: ['integrado'] }], { name }, setup),
+      null,
+    );
+    assert.equal(existingHistoryEvent([], { name }, setup), null);
+  }
+});
+
+test('combined bimonthly and semester stages do not hide suggestions inferred from names or links', () => {
+  const state = {
+    year: 2027,
+    modalities: ['integrado', 'subsequente'],
+    assessmentStagesByModality: { integrado: 4, subsequente: 2 },
+  };
+  const events = state.modalities.map((modality) => ({
+    id: modality,
+    name: `1ª etapa — ${modality}`,
+    requirementId: `stage-1:${modality}`,
     start: '2027-02-09',
     end: '2027-04-20',
-  };
-  assert.equal(existingHistoryEvent([event], candidate, setup), event);
-  assert.equal(
-    existingHistoryEvent([{ ...event, modalities: ['integrado'] }], candidate, setup),
-    null,
-  );
-  assert.equal(existingHistoryEvent([event], { name: 'Início do 2º bimestre' }, setup), null);
-  assert.equal(existingHistoryEvent([], candidate, setup), null);
-  assert.equal(
-    existingHistoryEvent(
-      [{ ...event, requirementId: 'pit-1' }],
-      { name: 'Prazo final de entrega do PIT do 1º semestre' },
-      setup,
-    )?.requirementId,
-    'pit-1',
-  );
+    modalities: [modality],
+  }));
+  const before = structuredClone(events);
+  for (const name of ['Início do 1º Bimestre', 'Término do 1º Semestre']) {
+    const candidate = { name, dates: { startMonth: 2, startDay: 9, endMonth: 4, endDay: 20 } };
+    assert.equal(existingHistoryEvent(events, candidate, state), null);
+    assert.equal(
+      existingHistoryEvent(events, candidate, {
+        ...state,
+        modalities: [...state.modalities].reverse(),
+      }),
+      null,
+    );
+    const exact = events.map((event) => ({ ...event, name }));
+    assert.equal(existingHistoryEvent(exact, candidate, state), exact[0]);
+    assert.equal(existingHistoryEvent(exact.slice(0, 1), candidate, state), null);
+    assert.equal(
+      existingHistoryEvent(
+        exact,
+        { ...candidate, dates: { ...candidate.dates, startDay: 10 } },
+        state,
+      ),
+      null,
+    );
+  }
+  assert.deepEqual(events, before);
 });
+
 test('same names require matching dates and keep distinct recurring events', () => {
   const candidate = {
     name: 'FEIRA LOCAL',

@@ -30,7 +30,7 @@ node --import tsx scripts/canonical-check.ts backup-canonical/frozen.zip backup-
 node --import tsx scripts/canonical-runtime-check.ts backup-canonical/frozen.zip backup-canonical/after.zip backup-canonical/baseline backup-canonical/runtime-equivalence.json
 ```
 
-A primeira verificação confere o resultado canônico exato, as invariantes independentes, o schema final, o Storage e todos os namespaces de componentes. A segunda importa o código anterior de uma cópia separada e compara contagem completa, HTML de impressão, apoio ao parecer e prontidão para liberação. Estados cuja contagem está incompleta devem permanecer incompletos com o mesmo erro; falhas de impressão ou de apoio ao parecer bloqueiam a verificação.
+A primeira verificação confere o resultado canônico exato, as invariantes independentes, o schema final, o Storage e todos os namespaces de componentes. A segunda importa o código anterior de uma cópia separada e compara contagem completa, HTML de impressão, apoio ao parecer, prontidão para liberação e a visibilidade e identidade das sugestões históricas. Todos os candidatos de todas as análises salvas são conferidos contra o editor atual. Estados cuja contagem está incompleta devem permanecer incompletos com o mesmo erro; falhas de impressão ou de apoio ao parecer bloqueiam a verificação.
 
 Publique o backend final na cópia convertida e confira as consultas reais de calendários, versões e pareceres, a recusa de acessos anônimos e o escopo das contas. Execute `pnpm check` e revisões independentes antes dos destinos originais.
 

@@ -17,25 +17,8 @@ const normalized = (value: string) =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
-export function historicalRequirement(name: string, count: number) {
+export function historicalRequirement(name: string) {
   const t = normalized(name);
-  const stages = [...t.matchAll(/\b([1-4])\s*(?:a|o)?\s*(bimestre|trimestre|semestre|etapa)\b/g)];
-  for (const stage of stages) {
-    const n = Number(stage[1]),
-      unit = stage[2],
-      stageCount = count;
-    const appropriate =
-      unit === 'etapa' ||
-      (unit === 'bimestre' && stageCount === 4) ||
-      (unit === 'trimestre' && stageCount === 3) ||
-      (unit === 'semestre' && stageCount === 2);
-    if (appropriate && n <= stageCount) {
-      if (/\b(inicio|termino|fim)\b/.test(t) && !/(resultado|conselho|prazo)/.test(t))
-        return `stage-${n}`;
-      if (/resultado/.test(t) && /lancamento/.test(t) && !/final/.test(t)) return `results-${n}`;
-      if (/conselho/.test(t) && !/extraordinario/.test(t)) return `council-${n}`;
-    }
-  }
   if (/conselho/.test(t) && /extraordinario/.test(t)) return 'extraordinary-council';
   const term = t.match(/\b([12])\s*(?:o|a)?\s*semestre\b/);
   if (term) {
@@ -54,10 +37,7 @@ export function existingHistoryEvent<
   candidate: Parameters<typeof proposedDates>[0],
   state: AssessmentSettings & { year: number },
 ) {
-  const requirement = historicalRequirement(
-      candidate.name,
-      Number(state.assessmentStagesByModality?.[calendarModalities(state)[0]]),
-    ),
+  const requirement = historicalRequirement(candidate.name),
     dates = proposedDates(candidate, state.year),
     name = normalized(candidate.name);
   const matches = events.filter(
@@ -65,7 +45,7 @@ export function existingHistoryEvent<
       e.start &&
       e.end &&
       (requirement
-        ? e.requirementId === requirement || e.requirementId?.startsWith(requirement + ':')
+        ? e.requirementId === requirement
         : name &&
           normalized(e.name) === name &&
           dates.start &&
