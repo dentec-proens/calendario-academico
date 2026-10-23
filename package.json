@@ -9,8 +9,7 @@
     "build": "tsx scripts/build.ts",
     "start": "tsx server.ts",
     "preview": "tsx server.ts",
-    "convex:dev": "convex dev",
-    "convex:deploy": "convex deploy",
+    "convex:dev": "tsx scripts/convex-dev.ts",
     "convex:codegen": "convex codegen",
     "typecheck": "pnpm run typecheck:app && pnpm run typecheck:convex && pnpm run typecheck:tools",
     "typecheck:app": "tsc --noEmit -p web/tsconfig.json",
@@ -18,11 +17,14 @@
     "typecheck:tools": "tsc --noEmit -p tsconfig.tools.json",
     "lint": "oxlint --deny-warnings",
     "lint:fix": "oxlint --fix --deny-warnings",
-    "lint:types": "oxlint --type-aware --deny-warnings convex web scripts src/app-server.ts src/app-routes.ts server.ts vite.config.ts test/helpers",
+    "lint:types": "oxlint --type-aware --deny-warnings convex web scripts config src/app-server.ts src/app-routes.ts server.ts vite.config.ts test/helpers",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "node --import tsx --test --test-concurrency=1 test/*.test.mjs",
-    "check": "pnpm run format:check && pnpm run lint && pnpm run lint:types && pnpm run typecheck && pnpm test && pnpm run build"
+    "check": "pnpm run format:check && pnpm run lint && pnpm run lint:types && pnpm run typecheck && pnpm test && pnpm run build",
+    "dev:setup": "tsx scripts/dev-setup.ts",
+    "env:doctor": "tsx scripts/doctor.ts",
+    "deploy:production": "tsx scripts/deploy-production.ts"
   },
   "engines": {
     "node": "24.x",

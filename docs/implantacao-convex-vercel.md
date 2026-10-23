@@ -1,21 +1,23 @@
 # Implantação e operação
 
+Os dois desenvolvedores publicam pelo mesmo fluxo, sem ambiente intermediário nem PR obrigatório. É necessário poder enviar `main` ao GitHub e administrar o projeto Convex, com papel Project Admin ou Team Admin. Cada pessoa usa sua própria conta; a integração Git existente dispensa login na CLI Vercel por desenvolvedor.
+
 ## Ambientes configurados
 
-| Serviço                   | Destino                                                                            |
-| ------------------------- | ---------------------------------------------------------------------------------- |
-| Repositório               | `dentec-proens/calendario-academico`, branch `main`                                |
-| Convex                    | Team `diretoria-de-ensino-tecnico-proens`, projeto `calendario-academico`          |
-| Convex de desenvolvimento | `oceanic-gazelle-652`                                                              |
-| Convex de produção        | `exuberant-cheetah-138`                                                            |
-| Vercel                    | Team `dentec-proens`, projeto `calendario-academico`                               |
-| Portal                    | [calendario-academico-phi.vercel.app](https://calendario-academico-phi.vercel.app) |
+| Serviço                    | Destino                                                                            |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| Repositório                | `dentec-proens/calendario-academico`, branch `main`                                |
+| Convex                     | Team `diretoria-de-ensino-tecnico-proens`, projeto `calendario-academico`          |
+| Desenvolvimento de Gustavo | `oceanic-gazelle-652`                                                              |
+| Convex de produção         | `exuberant-cheetah-138`                                                            |
+| Vercel                     | Team `dentec-proens`, projeto `calendario-academico`                               |
+| Portal                     | [calendario-academico-phi.vercel.app](https://calendario-academico-phi.vercel.app) |
 
-Estes são os destinos registrados para o projeto, não uma verificação de disponibilidade dos serviços. Confira o destino efetivo na CLI e no painel antes de publicar ou restaurar dados.
+Os destinos públicos ficam em [`config/environments.ts`](../config/environments.ts). Cada desenvolvedor tem seu próprio desenvolvimento; `oceanic-gazelle-652` é o já configurado por Gustavo. Esta relação não é uma verificação de disponibilidade dos serviços. Confira o destino efetivo na CLI e no painel antes de publicar ou restaurar dados.
 
 ## Configuração
 
-O desenvolvimento usa `.env.local`, criado pelo CLI Convex; `.env.example` lista as variáveis públicas e a porta. Na Vercel, as variáveis de Production são:
+O desenvolvimento usa `.env.local`, preparado por `pnpm dev:setup`; `.env.example` lista as variáveis públicas e a porta. Esse arquivo é individual e não precisa mudar para publicar. Veja [Desenvolvimento](desenvolvimento.md). Na Vercel, as variáveis de Production são:
 
 ```dotenv
 VITE_CONVEX_URL=https://exuberant-cheetah-138.convex.cloud
@@ -24,16 +26,29 @@ VITE_CONVEX_SITE_URL=https://exuberant-cheetah-138.convex.site
 
 No Convex de produção, `SITE_URL` deve apontar para `https://calendario-academico-phi.vercel.app`. `JWT_PRIVATE_KEY`, `JWKS` e credenciais dos provedores pertencem exclusivamente ao ambiente Convex. Cada ambiente tem sua própria configuração de autenticação. Nunca use prefixo `VITE_` em segredos.
 
-`vercel.json` define instalação com lockfile, `pnpm build`, saída `dist/app`, rotas e cabeçalhos de segurança. O runtime de build é Node 24. A integração Git publica a branch `main`. Previews devem usar um deployment Convex de teste próprio; a URL do frontend não isola os dados do backend.
+`vercel.json` define instalação com lockfile, `pnpm build`, saída `dist/app`, rotas e cabeçalhos de segurança. O runtime de build é Node 24. `index.html` contém o portal e `editor.html` contém o editor. A configuração Git permite implantação automática somente de `main` quando ativa no projeto. O build de Production confere as URLs Convex contra o destino versionado e falha se apontarem para outro ambiente.
 
 ## Publicação
 
-1. Executar `pnpm check` no código a publicar.
-2. Se houver alterações do backend, publicar com `pnpm convex:deploy`, conferindo o destino anunciado pela CLI. Mudanças de schema e funções precisam manter compatibilidade com dados existentes e com o frontend durante a atualização.
-3. Integrar e enviar `main` ao GitHub para a integração Vercel construir o frontend.
-4. Conferir o commit e a conclusão do deployment. Validar login, autorização, abertura de calendários, sincronização e arquivos. Escritas de teste devem usar o ambiente descartável.
+Atualize `main`, integre as mudanças do colega e faça commit do que será publicado. A publicação exige `main` sem alterações ou arquivos novos por commitar.
 
-O build e a publicação Vercel não publicam funções Convex nem inicializam dados. `pnpm dev` prepara e acompanha o backend de desenvolvimento; não deve ser apontado casualmente para produção.
+```sh
+pnpm deploy:production
+```
+
+O comando confere o acesso e a atualização de `main`, executa `pnpm check`, verifica o alvo Convex de produção, publica as funções e só então envia o commit conferido para `origin`. O push aciona o build e a publicação do portal pela Vercel. A conferência do alvo usa a URL fornecida pelo próprio CLI Convex antes da publicação das funções.
+
+Para conferir o plano localmente:
+
+```sh
+pnpm deploy:production --dry-run
+```
+
+A simulação não faz chamadas remotas, não publica funções e não envia commits. Se a CLI Convex falhar, confira o estado no dashboard antes de repetir: a conexão pode falhar após o envio. Se o backend tiver sido publicado e o push ou build Vercel falhar, ele já poderá estar na versão nova. Mudanças de schema e funções precisam manter compatibilidade com os dados existentes e com o frontend durante a atualização.
+
+Confira o commit e o estado Ready na Vercel. Valide login, autorização, abertura de calendários, sincronização e arquivos. Escritas de teste devem usar o desenvolvimento individual ou outro deployment descartável.
+
+O build e a publicação Vercel não publicam funções Convex nem inicializam dados. A publicação de código não importa backups ou arquivos históricos.
 
 ## Backup e restauração
 

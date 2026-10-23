@@ -4,23 +4,33 @@ Aplicação web em fase alpha para elaborar calendários acadêmicos e administr
 
 ## Desenvolvimento
 
-Requisitos: Node.js 24 e pnpm 12.15.0. As dependências são fixadas em `package.json` e `pnpm-lock.yaml`.
+Requisitos: Node.js 24 e pnpm 12.15.0. As dependências são fixadas em `package.json` e `pnpm-lock.yaml`. Os dois desenvolvedores usam os mesmos teams Dentec e repositório, com um deployment Convex de desenvolvimento para cada pessoa.
+
+Na primeira preparação:
 
 ```sh
 pnpm install --frozen-lockfile
+pnpm dev:setup
+```
+
+A preparação seleciona o desenvolvimento do usuário atual no projeto da equipe e grava `.env.local`, ignorado pelo Git. Uma configuração existente é preservada; não copie a de outro desenvolvedor. `pnpm env:doctor` confere a coerência local dos destinos, sem chamadas remotas. Veja a preparação e o primeiro acesso ADMIN em [Desenvolvimento](docs/desenvolvimento.md).
+
+No dia a dia:
+
+```sh
 pnpm dev
 ```
 
-Na primeira execução, o CLI do Convex solicita acesso à conta e seleção do projeto, gravando a configuração em `.env.local`. Use `.env.example` como referência. `pnpm dev` prepara as funções, inicia o watcher Convex e serve o Vite em [localhost:4183](http://127.0.0.1:4183). Ctrl+C encerra os dois processos. Confira o deployment selecionado antes de executar comandos que alteram o backend.
+O comando acompanha funções Convex e serve o Vite em [localhost:4183](http://127.0.0.1:4183). Ctrl+C encerra os dois processos. As alterações do backend vão para o desenvolvimento individual; o deployment `oceanic-gazelle-652` já configurado por Gustavo permanece preservado.
 
-Para testar o build estático:
+Para conferir o build local:
 
 ```sh
 pnpm build
 pnpm start
 ```
 
-O build gera `dist/app/`. O preview escuta em `127.0.0.1:4183`; `PORT` altera a porta. No Windows, `INICIAR.cmd` executa build e preview. Os dados e o login continuam no Convex; o preview não fornece uma API local.
+O build gera `dist/app/`, servido em `127.0.0.1:4183`; `PORT` altera a porta. No Windows, `INICIAR.cmd` executa build e servidor local. Os dados e o login continuam no Convex; esse servidor não fornece uma API local.
 
 ## Uso
 
@@ -44,7 +54,17 @@ Os testes de domínio e backend usam `node:test` e `convex-test`, com dados desc
 
 ## Operação
 
-O portal está configurado para [calendario-academico-phi.vercel.app](https://calendario-academico-phi.vercel.app). Desenvolvimento e produção usam deployments Convex separados. Build e publicação do frontend não publicam as funções do backend; consulte [Implantação e operação](docs/implantacao-convex-vercel.md).
+O portal está configurado para [calendario-academico-phi.vercel.app](https://calendario-academico-phi.vercel.app). Desenvolvimento e produção usam deployments Convex separados. Ambos os desenvolvedores podem publicar diretamente, sem PR obrigatório ou ambiente intermediário.
+
+Para publicar uma versão commitada em `main`:
+
+```sh
+pnpm deploy:production
+```
+
+O comando verifica o código, confirma o destino Convex de produção, publica as funções e envia o commit conferido ao GitHub. A integração Git da Vercel publica o portal. `pnpm deploy:production --dry-run` mostra o plano sem chamadas remotas. Os alvos públicos estão em [`config/environments.ts`](config/environments.ts).
+
+Build e publicação isolada do frontend não publicam funções do backend nem inicializam dados. Consulte [Implantação e operação](docs/implantacao-convex-vercel.md).
 
 Segredos de autenticação e provedores pertencem ao ambiente Convex. Somente configurações públicas usam prefixo `VITE_`. Contas precisam de autorização prévia; convites e recuperação de senha usam links temporários entregues manualmente. Veja [Acesso e contas](docs/recuperacao-de-senha.md).
 
@@ -58,6 +78,7 @@ Segredos de autenticação e provedores pertencem ao ambiente Convex. Somente co
 | `scripts/` | Desenvolvimento, build e recursos de impressão                    |
 | `test/`    | Testes de domínio, backend, build e navegador                     |
 
+- [Desenvolvimento](docs/desenvolvimento.md): preparação individual, primeiro acesso e rotina diária.
 - [Uso da aplicação](docs/uso.md): funcionalidades disponíveis, salvamento, revisão e limitações.
 - [Arquitetura](docs/arquitetura-convex.md): componentes, autorização, persistência e concorrência.
 - [Acesso e contas](docs/recuperacao-de-senha.md): convites, recuperação e Google institucional.

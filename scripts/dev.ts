@@ -1,12 +1,11 @@
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { convexCli, readDevEnvironment, root } from './environment.ts';
 import { createServer } from 'vite';
 import type { ViteDevServer } from 'vite';
 import { writePrintAssets } from './print-assets.ts';
 
-const root = fileURLToPath(new URL('../', import.meta.url));
-const convexCli = fileURLToPath(new URL('../node_modules/convex/bin/main.js', import.meta.url));
 let backend: ChildProcess | undefined;
 let frontend: ViteDevServer | undefined;
 let stopping = false;
@@ -26,12 +25,17 @@ process.once('SIGTERM', () => {
 });
 
 try {
+  Object.assign(process.env, readDevEnvironment());
   await writePrintAssets();
   await new Promise<void>((resolve, reject) => {
-    const setup = spawn(process.execPath, [convexCli, 'dev', '--once'], {
-      cwd: root,
-      stdio: 'inherit',
-    });
+    const setup = spawn(
+      process.execPath,
+      [convexCli, 'dev', '--once', '--env-file', '.env.local'],
+      {
+        cwd: root,
+        stdio: 'inherit',
+      },
+    );
     backend = setup;
     setup.once('error', reject);
     setup.once('exit', (code) =>
@@ -39,7 +43,10 @@ try {
     );
   });
   if (!stopping) {
-    backend = spawn(process.execPath, [convexCli, 'dev'], { cwd: root, stdio: 'inherit' });
+    backend = spawn(process.execPath, [convexCli, 'dev', '--env-file', '.env.local'], {
+      cwd: root,
+      stdio: 'inherit',
+    });
     backend.once('error', (error) => {
       console.error(error.message);
       void stop(1);
