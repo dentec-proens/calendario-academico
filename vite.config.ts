@@ -63,7 +63,7 @@ export default defineConfig(({ mode }) => {
       manifest: true,
       rolldownOptions: {
         input: Object.fromEntries(
-          ['portal', 'index', 'logs', 'recover', 'activate'].map((name) => [
+          ['index', 'portal', 'editor', 'logs', 'recover', 'activate'].map((name) => [
             name,
             fileURLToPath(new URL(`${name}.html`, webRoot)),
           ]),

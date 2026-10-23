@@ -1,7 +1,7 @@
 export const pageRoutes = new Map<string, string>([
-  ['/', 'portal.html'],
+  ['/', 'index.html'],
   ['/portal', 'portal.html'],
-  ['/editor', 'index.html'],
+  ['/editor', 'editor.html'],
   ['/logs', 'logs.html'],
   ['/recuperar-senha', 'recover.html'],
   ['/ativar', 'activate.html'],

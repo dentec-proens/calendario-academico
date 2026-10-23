@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/portal",
@@ -15,7 +15,7 @@
     },
     {
       "source": "/editor",
-      "destination": "/index.html"
+      "destination": "/editor.html"
     },
     {
       "source": "/logs",

@@ -8,13 +8,19 @@ import { staticPortal as nativeStatic } from '../src/app-server.ts';
 
 test('native server serves portal and invitation routes without a Node API or environment access', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'native-static-'));
-  await writeFile(join(directory, 'portal.html'), 'react portal');
+  await writeFile(join(directory, 'index.html'), 'react portal root');
+  await writeFile(join(directory, 'portal.html'), 'react portal alias');
+  await writeFile(join(directory, 'editor.html'), 'calendar editor');
   await writeFile(join(directory, 'activate.html'), 'convex invitation');
   const server = http.createServer(nativeStatic(directory));
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
   try {
-    assert.equal(await (await fetch(origin)).text(), 'react portal');
+    assert.equal(await (await fetch(origin)).text(), 'react portal root');
+    assert.equal(await (await fetch(origin + '/index.html')).text(), 'react portal root');
+    assert.equal(await (await fetch(origin + '/portal')).text(), 'react portal alias');
+    assert.equal(await (await fetch(origin + '/editor?id=fixture')).text(), 'calendar editor');
+    assert.equal(await (await fetch(origin + '/editor.html')).text(), 'calendar editor');
     assert.equal(await (await fetch(origin + '/ativar')).text(), 'convex invitation');
     assert.equal((await fetch(origin + '/api/status')).status, 404);
     assert.equal((await fetch(origin + '/api/login', { method: 'POST' })).status, 404);
