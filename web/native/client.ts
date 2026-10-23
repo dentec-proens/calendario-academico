@@ -1,7 +1,7 @@
 import type { useAuthActions } from '@convex-dev/auth/react';
-import type { Value } from 'convex/values';
+import type { FunctionArgs, FunctionReference, FunctionReturnType } from 'convex/server';
+import type { Id } from '../../convex/_generated/dataModel.js';
 import { convex, functions } from './runtime.ts';
-import type { RequestBody, RequestMethod } from './types.ts';
 
 export { convex, functions };
 
@@ -32,129 +32,163 @@ export function nativeError(error: unknown): Error & { status?: number } {
   });
 }
 
-function text(body: RequestBody, key: string): string {
-  const value = body[key];
-  if (typeof value !== 'string') throw new Error('Informe ' + key + ' para continuar.');
-  return value;
-}
-
-// This compatibility seam maps existing domain route names directly to the
-// Convex SDK. It never issues a request to the retired HTTP application server.
-export async function nativeApi<T = unknown>(
-  path: string,
-  method: RequestMethod = 'GET',
-  body: RequestBody = {},
-): Promise<T> {
+async function request<T>(operation: () => Promise<T>): Promise<T> {
   try {
-    let result: unknown;
-    if (path === '/api/login') {
-      await actions().signIn('password', { flow: 'signIn', ...body });
-      result = { ok: true };
-    } else if (path === '/api/logout') {
-      await actions().signOut();
-      result = { ok: true };
-    } else if (path === '/api/google/start') {
-      await actions().signIn('google', { redirectTo: window.location.origin });
-      result = {};
-    } else if (path === '/api/status') {
-      result = await convex.query(functions.nativeAuth.status, {});
-    } else if (path === '/api/password/options') {
-      result = await convex.query(functions.nativeAuth.passwordOptions, {});
-    } else if (path === '/api/setup') {
-      result = await convex.action(functions.nativeAuth.setup, {
-        data: {
-          name: text(body, 'name'),
-          email: text(body, 'email'),
-          password: text(body, 'password'),
-          code: text(body, 'code'),
-        },
-      });
-    } else if (path === '/api/invitations/check') {
-      result = await convex.query(functions.nativeAuth.checkInvitation, {
-        token: text(body, 'token'),
-      });
-    } else if (path === '/api/invitations/accept') {
-      result = await convex.action(functions.nativeAuth.acceptInvitation, {
-        token: text(body, 'token'),
-        email: text(body, 'email'),
-        password: text(body, 'password'),
-      });
-    } else if (path === '/api/password/reset') {
-      result = await convex.action(functions.nativeAuth.resetPassword, {
-        token: text(body, 'token'),
-        password: text(body, 'password'),
-      });
-    } else if (path === '/api/password/request') {
-      result = await convex.action(functions.nativeAuth.requestPasswordRecovery, {
-        email: text(body, 'email'),
-      });
-    } else if (path === '/api/users' && method === 'POST') {
-      const role = body.role;
-      if (role !== undefined && role !== 'ADMIN' && role !== 'CAMPUS')
-        throw new Error('Perfil inválido.');
-      const loginMethod = body.loginMethod;
-      if (
-        loginMethod !== undefined &&
-        loginMethod !== 'local' &&
-        loginMethod !== 'google' &&
-        loginMethod !== 'invite'
-      )
-        throw new Error('Forma de acesso inválida.');
-      const campusId = body.campusId;
-      if (campusId !== undefined && campusId !== null && typeof campusId !== 'string')
-        throw new Error('Campus inválido.');
-      const password = body.password;
-      if (password !== undefined && typeof password !== 'string')
-        throw new Error('Senha inválida.');
-      result = await convex.action(functions.nativeAuth.createMember, {
-        data: {
-          name: text(body, 'name'),
-          email: text(body, 'email'),
-          role,
-          loginMethod,
-          campusId,
-          password,
-        },
-      });
-    } else {
-      const member = path.match(/^\/api\/users\/([^/]+)(?:\/(invitation|password-recovery))?$/);
-      if (member && method !== 'GET') {
-        const id = decodeURIComponent(member[1]!);
-        if (method === 'DELETE')
-          result = await convex.mutation(functions.nativeAuth.removeMember, { id });
-        else if (member[2] === 'invitation')
-          result = await convex.mutation(functions.nativeAuth.issueInvitation, { id });
-        else if (member[2] === 'password-recovery')
-          result = await convex.mutation(functions.nativeAuth.passwordRecovery, { id });
-        else throw new Error('Operação de conta indisponível.');
-      } else if (
-        /\/(pdf|analysis)$/.test(path) ||
-        (method === 'POST' &&
-          (path === '/api/documents' || /^\/api\/calendars\/[^/]+\/history$/.test(path)))
-      ) {
-        result = await convex.action(functions.nativeActions.run, { path, body });
-      } else if (method === 'GET') {
-        result = await convex.query(functions.native.read, { path });
-      } else {
-        result = await convex.mutation(functions.native.write, { path, method, body });
-      }
-    }
-    return result as T;
+    return await operation();
   } catch (error) {
     throw nativeError(error);
   }
 }
 
-export function subscribeNative<T = Value>(
-  path: string,
-  onValue: (value: T) => void,
+function requiredToken(token: string | null): string {
+  if (!token) throw new Error('Abra o link privado completo para continuar.');
+  return token;
+}
+
+export const accounts = {
+  status: () => request(() => convex.query(functions.nativeAuth.status, {})),
+  signIn: (credentials: { email: string; password: string }) =>
+    request(() => actions().signIn('password', { flow: 'signIn', ...credentials })),
+  signInGoogle: () =>
+    request(() => actions().signIn('google', { redirectTo: window.location.origin })),
+  setup: (data: FunctionArgs<typeof functions.nativeAuth.setup>['data']) =>
+    request(() => convex.action(functions.nativeAuth.setup, { data })),
+  passwordOptions: () => request(() => convex.query(functions.nativeAuth.passwordOptions, {})),
+  checkInvitation: (token: string | null) =>
+    request(() =>
+      convex.query(functions.nativeAuth.checkInvitation, { token: requiredToken(token) }),
+    ),
+  acceptInvitation: (data: { token: string | null; email: string; password: string }) =>
+    request(() =>
+      convex.action(functions.nativeAuth.acceptInvitation, {
+        ...data,
+        token: requiredToken(data.token),
+      }),
+    ),
+  resetPassword: (data: { token: string | null; password: string }) =>
+    request(() =>
+      convex.action(functions.nativeAuth.resetPassword, {
+        ...data,
+        token: requiredToken(data.token),
+      }),
+    ),
+  requestPasswordRecovery: (email: string) =>
+    request(() => convex.action(functions.nativeAuth.requestPasswordRecovery, { email })),
+  createMember: (data: FunctionArgs<typeof functions.nativeAuth.createMember>['data']) =>
+    request(() => convex.action(functions.nativeAuth.createMember, { data })),
+  removeMember: (id: string) =>
+    request(() => convex.mutation(functions.nativeAuth.removeMember, { id: id as Id<'users'> })),
+  issueInvitation: (id: string) =>
+    request(() => convex.mutation(functions.nativeAuth.issueInvitation, { id: id as Id<'users'> })),
+  passwordRecovery: (id: string) =>
+    request(() =>
+      convex.mutation(functions.nativeAuth.passwordRecovery, { id: id as Id<'users'> }),
+    ),
+};
+
+export const calendars = {
+  resolveId: (reference: string) =>
+    request(() => convex.query(functions.native.resolveCalendarId, { reference })),
+  get: (id: string) =>
+    request(() => convex.query(functions.native.calendar, { id: id as Id<'calendars'> })),
+  create: (body: FunctionArgs<typeof functions.native.createCalendar>['body']) =>
+    request(() => convex.mutation(functions.native.createCalendar, { body })),
+  save: (id: string, body: FunctionArgs<typeof functions.native.saveCalendar>['body']) =>
+    request(() =>
+      convex.mutation(functions.native.saveCalendar, { id: id as Id<'calendars'>, body }),
+    ),
+  remove: (id: string, version: number) =>
+    request(() =>
+      convex.mutation(functions.native.deleteCalendar, { id: id as Id<'calendars'>, version }),
+    ),
+  restore: (id: string) =>
+    request(() => convex.mutation(functions.native.restoreCalendar, { id: id as Id<'calendars'> })),
+  makeDefinitive: (id: string, version: number) =>
+    request(() =>
+      convex.mutation(functions.native.makeDefinitive, { id: id as Id<'calendars'>, version }),
+    ),
+  generatePdf: (
+    id: string,
+    options: Omit<FunctionArgs<typeof functions.nativeActions.generatePdf>, 'id'>,
+  ) =>
+    request(() =>
+      convex.action(functions.nativeActions.generatePdf, { id: id as Id<'calendars'>, ...options }),
+    ),
+  uploadHistory: (
+    calendarId: string,
+    file: Omit<FunctionArgs<typeof functions.nativeActions.uploadHistory>, 'calendarId'>,
+  ) =>
+    request(() =>
+      convex.action(functions.nativeActions.uploadHistory, {
+        calendarId: calendarId as Id<'calendars'>,
+        ...file,
+      }),
+    ),
+  restoreHistoryOriginal: (id: string, uploadId: string) =>
+    request(() =>
+      convex.action(functions.nativeActions.restoreHistoryOriginal, {
+        id: id as Id<'histories'>,
+        uploadId,
+      }),
+    ),
+  analyzeHistory: (id: string) =>
+    request(() =>
+      convex.action(functions.nativeActions.analyzeHistory, {
+        id: id as Id<'histories'>,
+      }),
+    ),
+};
+
+export const institution = {
+  createCampus: (name: string) =>
+    request(() => convex.mutation(functions.native.createCampus, { name })),
+  saveCatalogue: (body: FunctionArgs<typeof functions.native.saveCatalogue>['body']) =>
+    request(() => convex.mutation(functions.native.saveCatalogue, { body })),
+  uploadDocument: (file: FunctionArgs<typeof functions.nativeActions.uploadDocument>) =>
+    request(() => convex.action(functions.nativeActions.uploadDocument, file)),
+  restoreDocumentOriginal: (id: string, uploadId: string) =>
+    request(() =>
+      convex.action(functions.nativeActions.restoreDocumentOriginal, {
+        id: id as Id<'documents'>,
+        uploadId,
+      }),
+    ),
+  documentStatus: (
+    id: string,
+    options: Omit<FunctionArgs<typeof functions.native.documentStatus>, 'id'>,
+  ) =>
+    request(() =>
+      convex.mutation(functions.native.documentStatus, {
+        id: id as Id<'documents'>,
+        ...options,
+      }),
+    ),
+};
+
+export const reviews = {
+  get: (id: string) =>
+    request(() => convex.query(functions.native.review, { id: id as Id<'calendars'> })),
+  save: (id: string, body: FunctionArgs<typeof functions.native.saveReview>['body']) =>
+    request(() =>
+      convex.mutation(functions.native.saveReview, { id: id as Id<'calendars'>, body }),
+    ),
+  export: (id: string, revision: number) =>
+    request(() =>
+      convex.query(functions.native.exportReview, { id: id as Id<'calendars'>, revision }),
+    ),
+};
+
+function subscribeQuery<Query extends FunctionReference<'query', 'public'>>(
+  reference: Query,
+  args: FunctionArgs<Query>,
+  onValue: (value: FunctionReturnType<Query>) => void,
   onError?: (error: Error) => void,
 ) {
-  const watch = convex.watchQuery(functions.native.read, { path });
+  const watch = convex.watchQuery(reference, args);
   const update = () => {
     try {
-      const value: unknown = watch.localQueryResult();
-      if (value !== undefined) onValue(value as T);
+      const value = watch.localQueryResult();
+      if (value !== undefined) onValue(value);
     } catch (error) {
       onError?.(nativeError(error));
     }
@@ -164,6 +198,31 @@ export function subscribeNative<T = Value>(
   return stop;
 }
 
+export function subscribeCalendar(
+  id: string,
+  onValue: (value: FunctionReturnType<typeof functions.native.calendar>) => void,
+  onError?: (error: Error) => void,
+) {
+  return subscribeQuery(functions.native.calendar, { id: id as Id<'calendars'> }, onValue, onError);
+}
+
+export const audit = {
+  page: (cursor: string | null = null) =>
+    request(() =>
+      convex.query(functions.native.logs, { paginationOpts: { numItems: 50, cursor } }),
+    ),
+  subscribe: (
+    onValue: (value: FunctionReturnType<typeof functions.native.logs>) => void,
+    onError?: (error: Error) => void,
+  ) =>
+    subscribeQuery(
+      functions.native.logs,
+      { paginationOpts: { numItems: 50, cursor: null } },
+      onValue,
+      onError,
+    ),
+};
+
 export function subscribeNativeConnection(onChange: (connected: boolean) => void) {
   const update = () => onChange(convex.connectionState().isWebSocketConnected);
   const stop = convex.subscribeToConnectionState(update);
@@ -171,15 +230,22 @@ export function subscribeNativeConnection(onChange: (connected: boolean) => void
   return stop;
 }
 
-export async function downloadNative(path: string, filename: string) {
-  try {
-    const result = await convex.action(functions.nativeActions.download, { path });
+type DownloadTarget = { kind: 'history'; id: string } | { kind: 'document'; id: string };
+
+export async function downloadNative(target: DownloadTarget, filename: string) {
+  return request(async () => {
+    const result =
+      target.kind === 'history'
+        ? await convex.action(functions.nativeActions.downloadHistory, {
+            id: target.id as Id<'histories'>,
+          })
+        : await convex.action(functions.nativeActions.downloadDocument, {
+            id: target.id as Id<'documents'>,
+          });
     const response = await fetch(result.url);
     if (!response.ok) throw new Error('Não foi possível baixar o arquivo. Tente novamente.');
     return { blob: await response.blob(), filename: result.filename || filename };
-  } catch (error) {
-    throw nativeError(error);
-  }
+  });
 }
 
 export function saveBlob(blob: Blob, filename: string) {
@@ -193,10 +259,10 @@ export function saveBlob(blob: Blob, filename: string) {
 
 export async function downloadLink(
   event: { preventDefault(): void },
-  path: string,
+  target: DownloadTarget,
   filename: string,
 ) {
   event.preventDefault();
-  const file = await downloadNative(path, filename);
+  const file = await downloadNative(target, filename);
   saveBlob(file.blob, file.filename);
 }

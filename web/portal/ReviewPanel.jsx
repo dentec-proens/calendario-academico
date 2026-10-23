@@ -4,9 +4,10 @@ import { calendarName } from '../../src/calendar-label.mjs';
 import { modalityLabels } from '../../src/modalities.mjs';
 import { updateConclusion } from '../../src/review-conclusion.mjs';
 import { reviewNorm, presentReviewText } from '../../src/review-presentation.mjs';
-import { api } from './api.ts';
-import { useQuery } from 'convex/react';
+import { reviews } from '../native/client.ts';
+import { usePaginatedQuery, useQuery } from 'convex/react';
 import { functions } from '../native/client.ts';
+import Pagination from './Pagination.tsx';
 
 const statusLabels = {
   PENDENTE: 'Pendente de análise',
@@ -149,7 +150,7 @@ function ReviewCriterion({
 
 function ReviewPreview({ document, previewRef }) {
   if (!document) return null;
-  // Only /api/reviews/:id/export supplies this body. review-export.mjs escapes
+  // Only the server's review export supplies this body. review-export.mjs escapes
   // every user field before adding its fixed article/table markup. The preview
   // uses portal.css; inline styles are retained only for downloads/clipboard.
   const body = document.body.replace(/ style="[^"]*"/g, '');
@@ -170,7 +171,7 @@ function downloadDocument(document, draft, format) {
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
-function ReviewContent({ calendars, liveReview, onOpened }) {
+function ReviewContent({ calendars, liveReview, onOpened, pagination }) {
   const [selectedCalendar, setSelectedCalendar] = useState('');
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState('');
@@ -214,7 +215,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
     }
   }
 
-  if (calendars !== previousCalendars) {
+  if (calendars !== previousCalendars && pagination.status === 'Exhausted') {
     setPreviousCalendars(calendars);
     const removedOpened =
       openedCalendarId && !calendars.some((calendar) => calendar.id === openedCalendarId);
@@ -257,6 +258,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
 
   useEffect(() => {
     if (
+      pagination.status === 'Exhausted' &&
       operationRef.current &&
       !calendars.some((calendar) => calendar.id === operationRef.current.calendarId)
     ) {
@@ -264,7 +266,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
       operationRef.current = null;
       actionPending.current = false;
     }
-  }, [calendars]);
+  }, [calendars, pagination.status]);
 
   function notify(text) {
     setMessage(`${new Date().toLocaleTimeString('pt-BR')} — ${text}`);
@@ -363,7 +365,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
     }
     const operation = beginOperation(calendarId, 'open');
     try {
-      const opened = await api(`/api/reviews/${encodeURIComponent(calendarId)}`);
+      const opened = await reviews.get(calendarId);
       if (operationRef.current !== operation) return;
       setDraft(initialDraft(opened));
       onOpened?.(calendarId);
@@ -382,8 +384,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
     const operation = beginOperation(draft.opened.calendar.id, 'save');
     try {
       const { opened } = draft;
-      const path = `/api/reviews/${encodeURIComponent(opened.calendar.id)}`;
-      await api(path, 'PUT', {
+      await reviews.save(opened.calendar.id, {
         entries: draft.entries,
         conclusion: draft.conclusion,
         processNumber: draft.processNumber,
@@ -394,7 +395,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
         acknowledgeStale: draft.acknowledgeStale,
       });
       if (operationRef.current !== operation) return;
-      const updated = await api(path);
+      const updated = await reviews.get(opened.calendar.id);
       if (operationRef.current !== operation) return;
       setDraft(initialDraft(updated));
       setPreview(null);
@@ -418,11 +419,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
     }
     const operation = beginOperation(draft.opened.calendar.id, 'export');
     try {
-      const document = await api(
-        `/api/reviews/${encodeURIComponent(draft.opened.calendar.id)}/export`,
-        'POST',
-        { revision: draft.opened.review.revision },
-      );
+      const document = await reviews.export(draft.opened.calendar.id, draft.opened.review.revision);
       if (operationRef.current !== operation) return;
       if (action === 'preview') {
         setPreview(document);
@@ -496,6 +493,7 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
           <Eye size={18} aria-hidden="true" />{' '}
           {pending === 'open' ? 'Abrindo análise…' : 'Abrir análise'}
         </button>
+        <Pagination pagination={pagination} label="Carregar mais calendários" />
         <p id="review-message" role="status" aria-live="polite">
           {message || (!calendars.length ? 'Nenhum calendário disponível para revisão.' : '')}
         </p>
@@ -674,12 +672,25 @@ function ReviewContent({ calendars, liveReview, onOpened }) {
   );
 }
 
-export default function ReviewPanel(props) {
+export default function ReviewPanel() {
   const [openedId, setOpenedId] = useState(null);
-  const available = props.calendars.some((calendar) => calendar.id === openedId);
-  const liveReview = useQuery(
-    functions.native.read,
-    openedId && available ? { path: `/api/reviews/${encodeURIComponent(openedId)}` } : 'skip',
+  const pagination = usePaginatedQuery(
+    functions.native.calendarPage,
+    { deleted: false },
+    { initialNumItems: 50 },
   );
-  return <ReviewContent {...props} liveReview={liveReview} onOpened={setOpenedId} />;
+  const calendars = pagination.results;
+  const available = calendars.some((calendar) => calendar.id === openedId);
+  const liveReview = useQuery(
+    functions.native.review,
+    openedId && available ? { id: openedId } : 'skip',
+  );
+  return (
+    <ReviewContent
+      calendars={calendars}
+      pagination={pagination}
+      liveReview={liveReview}
+      onOpened={setOpenedId}
+    />
+  );
 }

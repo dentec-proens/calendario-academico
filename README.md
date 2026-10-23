@@ -70,16 +70,20 @@ Segredos de autenticação e provedores pertencem ao ambiente Convex. Somente co
 
 ## Estrutura e documentação
 
-| Diretório  | Conteúdo                                                          |
-| ---------- | ----------------------------------------------------------------- |
-| `web/`     | Portal React, cliente Convex, editor e renderização do calendário |
-| `convex/`  | Autenticação, consultas, transações, arquivos e processamento     |
-| `src/`     | Regras de calendário, contagem, sugestões, revisão e exportação   |
-| `scripts/` | Desenvolvimento, build e recursos de impressão                    |
-| `test/`    | Testes de domínio, backend, build e navegador                     |
+| Diretório    | Conteúdo                                                          |
+| ------------ | ----------------------------------------------------------------- |
+| `web/`       | Portal React, cliente Convex, editor e renderização do calendário |
+| `convex/`    | Autenticação, consultas, transações, arquivos e processamento     |
+| `src/`       | Regras de calendário, contagem, sugestões, revisão e exportação   |
+| `scripts/`   | Desenvolvimento, build e recursos de impressão                    |
+| `test/`      | Testes de domínio, backend, build e navegador                     |
+| `migration/` | Conversão administrativa isolada dos backups anteriores           |
 
 - [Desenvolvimento](docs/desenvolvimento.md): preparação individual, primeiro acesso e rotina diária.
 - [Uso da aplicação](docs/uso.md): funcionalidades disponíveis, salvamento, revisão e limitações.
 - [Arquitetura](docs/arquitetura-convex.md): componentes, autorização, persistência e concorrência.
 - [Acesso e contas](docs/recuperacao-de-senha.md): convites, recuperação e Google institucional.
 - [Implantação e operação](docs/implantacao-convex-vercel.md): ambientes, configuração, publicação e backups.
+- [Migração do schema](docs/migracao-schema.md): backup, ensaio, preservação dos históricos e conferência dos dados.
+- [Restauração dos originais](docs/restauracao-de-originais.md): reposição dos PDFs indisponíveis sem alterar IDs ou análises.
+- [Revisão da consolidação](docs/revisao-consolidacao-convex.md): achados do Claude Code CLI e correções aplicadas.

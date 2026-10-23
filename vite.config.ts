@@ -3,6 +3,7 @@ import type { Plugin } from 'vite';
 import { fileURLToPath } from 'node:url';
 import { pageRoutes } from './src/app-routes.ts';
 import { validateProductionBuild } from './scripts/environment.ts';
+import { validatePortalDeploymentUrl } from './config/client-deployment.ts';
 
 const projectRoot = fileURLToPath(new URL('./', import.meta.url));
 const webRoot = new URL('./web/', import.meta.url);
@@ -37,8 +38,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, projectRoot, '');
   validateProductionBuild({ ...env, ...process.env });
   const deploymentUrl = process.env.VITE_CONVEX_URL || env.VITE_CONVEX_URL;
-  if (!/^https:\/\/[a-z0-9-]+\.convex\.cloud$/.test(deploymentUrl ?? ''))
-    throw Error('Configure VITE_CONVEX_URL em .env.local com a URL do deployment Convex.');
+  validatePortalDeploymentUrl(deploymentUrl, { ...env, ...process.env });
   return {
     root: fileURLToPath(webRoot),
     envDir: projectRoot,

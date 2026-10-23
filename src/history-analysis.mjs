@@ -1,5 +1,10 @@
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { WorkerMessageHandler } from 'pdfjs-dist/legacy/build/pdf.worker.mjs';
 import { extractHistoricalDates, monthHeading } from './history-dates.ts';
+
+// Register the worker in-process so Convex bundles both entry points without
+// shipping the full PDF.js package or resolving a relative worker at runtime.
+globalThis.pdfjsWorker = { WorkerMessageHandler };
 
 // Extract only text, never execute document scripts or interpret its contents as instructions.
 export async function analyzeHistory(bytes) {

@@ -63,16 +63,22 @@ export async function nativePdf(record, events) {
     '</style><body>' +
     proensLayout(record.state, events, result, record, printLogo) +
     '</body></html>';
-  const executablePath = await prepareChromium();
+  const localBrowser = process.platform === 'darwin' && process.env.DENTEC_DISPOSABLE_E2E === '1';
+  const executablePath = localBrowser ? process.env.DENTEC_TEST_BROWSER : await prepareChromium();
+  if (!executablePath) throw Error('Configure o navegador do ambiente descartável.');
   const browser = await puppeteer.launch({
-    args: chromium.args,
+    args: localBrowser ? ['--no-sandbox'] : chromium.args,
     executablePath,
-    env: {
-      ...process.env,
-      LD_LIBRARY_PATH: ['/tmp/al2023/lib', process.env.LD_LIBRARY_PATH].filter(Boolean).join(':'),
-      FONTCONFIG_PATH: '/tmp/fonts',
-    },
-    headless: 'shell',
+    env: localBrowser
+      ? process.env
+      : {
+          ...process.env,
+          LD_LIBRARY_PATH: ['/tmp/al2023/lib', process.env.LD_LIBRARY_PATH]
+            .filter(Boolean)
+            .join(':'),
+          FONTCONFIG_PATH: '/tmp/fonts',
+        },
+    headless: localBrowser ? true : 'shell',
   });
   try {
     const page = await browser.newPage();

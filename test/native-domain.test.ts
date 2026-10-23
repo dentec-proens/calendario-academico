@@ -1,4 +1,5 @@
 import { ConvexError } from 'convex/values';
+import type { FunctionReturnType } from 'convex/server';
 import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
@@ -6,16 +7,15 @@ import { api } from '../convex/_generated/api.js';
 import { reviewCriteria } from '../src/review.mjs';
 import { initialCatalogue } from '../src/institution.mjs';
 import { teacherDayId } from '../src/teacher-day.mjs';
-import { encodeValue } from '../src/convex-codec.mjs';
 import { createNativeFixture as fixture } from './helpers/native-database.ts';
 
 const createBody = (campusId = 'a') => ({
   campusId,
   year: 2027,
-  modalities: ['integrado'],
-  regime: 'anual',
+  modalities: ['integrado' as const],
+  regime: 'anual' as const,
   courses: 'Técnico',
-  purpose: 'test',
+  purpose: 'test' as const,
 });
 const changedState = (state: Record<string, unknown>, name = 'Atividade') => ({
   ...state,
@@ -39,12 +39,9 @@ const saveBody = (
 
 // These tests execute the real native handlers with isolated Convex transactions.
 test('native queries require a live Convex session and return safe campus scoped bootstrap', async () => {
-  const { client, as } = await fixture();
-  await assert.rejects(
-    client.query(api.native.read, { path: '/api/bootstrap' }),
-    /Entre com sua conta/,
-  );
-  const status = await client.query(api.native.read, { path: '/api/status' });
+  const { client, as, ids } = await fixture();
+  await assert.rejects(client.query(api.native.bootstrap, {}), /Entre com sua conta/);
+  const status = await client.query(api.nativeAuth.status, {});
   assert.equal(status.user, null);
   assert.equal(status.setupRequired, false);
   const a = await as('campus-a').write('/api/calendars', createBody('a'));
@@ -57,7 +54,7 @@ test('native queries require a live Convex session and return safe campus scoped
   assert.deepEqual(bootstrap.users, []);
   assert.deepEqual(
     bootstrap.campuses.map((c: { id: string }) => c.id),
-    ['a'],
+    [ids.campuses.a],
   );
   const admin = await as('admin').read('/api/bootstrap');
   assert.equal(admin.calendars.length, 2);
@@ -152,6 +149,7 @@ test('native publication gates base revisions and reviews retain concurrent revi
   await admin.write('/api/catalogue', {
     revision: 1,
     name: 'Feriado',
+    active: true,
     start: '2027-04-21',
     end: '2027-04-21',
     kind: 'exclude',
@@ -193,7 +191,7 @@ test('native calendar trash is scoped and restores without destroying archive me
 });
 
 test('native action boundaries recheck ownership and register only validated storage files', async () => {
-  const { as, client } = await fixture();
+  const { as, client, ids } = await fixture();
   const admin = as('admin'),
     campus = as('campus-a');
   const created = await campus.write('/api/calendars', createBody());
@@ -205,36 +203,26 @@ test('native action boundaries recheck ownership and register only validated sto
   const context = await campus.actionContext(path + '/pdf', { version: 1, catalogueRevision: 1 });
   assert.equal(context.record.id, created.id);
   assert(!JSON.stringify(context).includes('private-'));
-  const result = {
-    objectKey: 'uploads/fixture.pdf',
-    size: 12,
-    hash: 'a'.repeat(64),
-    uploadId: 'history-upload',
-  };
+  const result = { size: 12, hash: 'a'.repeat(64), uploadId: 'history-upload' };
   await assert.rejects(
     campus.finishAction(path + '/history', { year: 2026, filename: 'anterior.pdf' }, result),
-    /Arquivo não encontrado/,
+    /Arquivo não encontrado|Envio expirado/,
   );
   await client.run(async (ctx) => {
     const storageId = await ctx.storage.store(
       new Blob(['%PDF-fixture'], { type: 'application/pdf' }),
     );
-    await ctx.db.insert('fileObjects', { path: result.objectKey, storageId });
-    const owner = await ctx.db
-      .query('users')
-      .withIndex('by_appId', (q) => q.eq('appId', 'campus-a'))
-      .unique();
     await ctx.db.insert('nativeUploads', {
       uploadId: result.uploadId,
-      ownerId: owner!._id,
+      ownerId: ids.users['campus-a'],
       filename: 'anterior.pdf',
       size: result.size,
       expiresAt: Date.now() + 10000,
       storageId,
-      objectKey: result.objectKey,
       hash: result.hash,
       completedAt: Date.now(),
     });
+    return storageId;
   });
   const history = await campus.finishAction(
     path + '/history',
@@ -249,7 +237,14 @@ test('native action boundaries recheck ownership and register only validated sto
     as('campus-b').actionContext('/api/history/' + history.id),
     /Registro não encontrado/,
   );
-  const analyzed = { version: 2, pages: [{ page: 1 }], candidates: [] };
+  const analyzed = {
+    version: 2,
+    pages: [{ page: 1, text: 'Análise sintética' }],
+    candidates: [],
+    truncated: false,
+    needsText: false,
+    analyzedAt: new Date().toISOString(),
+  };
   await campus.finishAction(
     '/api/history/' + history.id + '/analysis',
     { hash: result.hash },
@@ -265,34 +260,25 @@ test('native action boundaries recheck ownership and register only validated sto
     /Acesso exclusivo/,
   );
   const documentResult = { ...result, uploadId: 'admin-upload' };
-  await client.run(async (ctx) => {
-    const file = await ctx.db
-      .query('fileObjects')
-      .withIndex('by_path', (q) => q.eq('path', result.objectKey))
-      .unique();
-    const owner = await ctx.db
-      .query('users')
-      .withIndex('by_appId', (q) => q.eq('appId', 'admin'))
-      .unique();
-    await ctx.db.insert('nativeUploads', {
+  await client.run(async (ctx) =>
+    ctx.db.insert('nativeUploads', {
       uploadId: documentResult.uploadId,
-      ownerId: owner!._id,
+      ownerId: ids.users.admin,
       filename: 'norma.pdf',
       size: result.size,
       expiresAt: Date.now() + 10000,
-      storageId: file!.storageId,
-      objectKey: result.objectKey,
+      storageId: await ctx.storage.store(new Blob(['%PDF-admin--'], { type: 'application/pdf' })),
       hash: result.hash,
       completedAt: Date.now(),
-    });
-  });
-  const doc = await admin.finishAction(
+    }),
+  );
+  const document = await admin.finishAction(
     '/api/documents',
     { year: 2027, type: 'norma', title: 'Norma', source: 'Fonte', filename: 'norma.pdf' },
     documentResult,
   );
   assert.equal((await campus.read('/api/documents')).documents.length, 0);
-  await admin.write('/api/documents/' + doc.id + '/status', {
+  await admin.write('/api/documents/' + document.id + '/status', {
     status: 'vigente',
     confirmed: true,
     revision: 1,
@@ -430,74 +416,54 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
   assert.equal(full.calendars[0].versions[1].state.teacherDayDate, '2027-10-13');
 });
 
-test('native calendar edits and trash preserve all thirteen deferred PDF references without creating file objects', async () => {
-  const { as, asClient, client, inspect } = await fixture();
+test('native calendar edits and trash preserve all thirteen deferred PDF references', async () => {
+  const { as, asClient, client, inspect, ids } = await fixture();
   const campus = as('campus-a');
   const record = await campus.write('/api/calendars', createBody());
   const path = '/api/calendars/' + record.id;
-  const histories: Array<{
-    id: string;
-    calendarId: string;
-    campusId: string;
-    year: number;
-    filename: string;
-    objectKey: string;
-    hash: string;
-    analysis?: unknown;
-  }> = Array.from({ length: 13 }, (_, index) => ({
-    id: 'deferred-' + index,
-    calendarId: record.id,
-    campusId: 'a',
-    year: 2026,
-    filename: 'original-' + index + '.pdf',
-    objectKey: 'uploads/original-' + index + '.pdf',
-    hash: String(index).padStart(64, '0'),
-  }));
-  await client.run(async (ctx) => {
-    for (const [position, history] of histories.entries()) {
-      await ctx.db.insert('histories', {
-        key: 'histories:' + history.id,
-        appId: history.id,
-        calendarId: record.id,
-        campusId: 'a',
-        position,
-        value: encodeValue(history),
-      });
-    }
-    const root = await ctx.db
-      .query('rootFields')
-      .withIndex('by_name', (q) => q.eq('name', 'histories'))
-      .unique();
-    await ctx.db.patch(root!._id, { count: 13 });
+  const historyIds = await client.run(async (ctx) => {
+    const result = [];
+    for (let index = 0; index < 13; index++)
+      result.push(
+        await ctx.db.insert('histories', {
+          calendarId: record.id,
+          campusId: ids.campuses.a,
+          modalities: record.modalities,
+          year: 2026,
+          filename: 'original-' + index + '.pdf',
+          unavailableFile: {
+            sourceReference: 'uploads/original-' + index + '.pdf',
+            reason: 'not_migrated',
+          },
+          hash: String(index).padStart(64, '0'),
+          notes: '',
+          createdAt: Date.now(),
+        }),
+      );
+    return result;
   });
-  histories[0].analysis = {
+  const analysis = {
     version: 2,
     pages: [{ page: 1, text: 'Análise preservada' }],
     candidates: [],
+    truncated: false,
+    needsText: false,
+    analyzedAt: new Date().toISOString(),
   };
-  await client.run(async (ctx) => {
-    const row = await ctx.db
-      .query('histories')
-      .withIndex('by_appId', (q) => q.eq('appId', 'deferred-0'))
-      .unique();
-    await ctx.db.patch(row!._id, { value: encodeValue(histories[0]) });
+  await client.run((ctx) =>
+    ctx.db.insert('historyAnalyses', { historyId: historyIds[0], analysis }),
+  );
+  const historiesBefore = (await inspect()).histories;
+  const cached = await asClient('campus-a').action(api.nativeActions.analyzeHistory, {
+    id: historyIds[0],
   });
-  const cached = await asClient('campus-a').action(api.nativeActions.run, {
-    path: '/api/history/deferred-0/analysis',
-    body: {},
-  });
-  assert.deepEqual(cached, histories[0].analysis);
+  assert.deepEqual(cached, analysis);
   await assert.rejects(
-    asClient('campus-a').action(api.nativeActions.download, {
-      path: '/api/history/deferred-1',
-    }),
+    asClient('campus-a').action(api.nativeActions.downloadHistory, { id: historyIds[1] }),
     /aguarda/,
   );
   await assert.rejects(
-    asClient('campus-a').action(api.nativeActions.run, {
-      path: '/api/history/deferred-1/analysis',
-      body: {},
-    }),
+    asClient('campus-a').action(api.nativeActions.analyzeHistory, { id: historyIds[1] }),
     (error: unknown) =>
       error instanceof ConvexError &&
       error.data?.status === 503 &&
@@ -508,24 +474,23 @@ test('native calendar edits and trash preserve all thirteen deferred PDF referen
   assert.equal(loaded.histories[0].analyzed, true);
   assert(
     loaded.histories.every(
-      (history: { id: string }) => !('objectKey' in history) && !('analysis' in history),
+      (history: { id: string }) => !('storageId' in history) && !('analysis' in history),
     ),
   );
   await campus.write(path, saveBody(loaded), 'PUT');
   await campus.write(path, { version: 2 }, 'DELETE');
   await campus.write(path + '/restore');
-  assert.deepEqual((await inspect()).histories, histories);
+  assert.deepEqual((await inspect()).histories, historiesBefore);
   assert.equal((await campus.read(path)).histories.length, 13);
-  assert.equal(await client.run((ctx) => ctx.db.query('fileObjects').first()), null);
   assert.equal(await client.run((ctx) => ctx.db.query('nativeUploads').first()), null);
   await assert.rejects(
-    as('campus-b').actionContext('/api/history/deferred-0'),
+    as('campus-b').actionContext('/api/history/' + historyIds[0]),
     /Registro não encontrado/,
   );
 });
 
 test('native institutional publication requires admin confirmation and preserves earlier document snapshots', async () => {
-  const { as, inspect } = await fixture({
+  const { as, inspect, ids } = await fixture({
     documents: [
       {
         id: 'prior',
@@ -550,12 +515,12 @@ test('native institutional publication requires admin confirmation and preserves
   const record = await campus.write('/api/calendars', createBody());
   assert.deepEqual(
     record.documentSnapshot.map((doc: { id: string }) => doc.id),
-    ['prior'],
+    [ids.documents.prior],
   );
   assert.equal((await admin.read('/api/documents')).documents.length, 3);
   assert.deepEqual(
     (await campus.read('/api/documents')).documents.map((doc: { id: string }) => doc.id),
-    ['prior'],
+    [ids.documents.prior],
   );
   await assert.rejects(
     campus.write('/api/documents/next/status', {
@@ -589,18 +554,18 @@ test('native institutional publication requires admin confirmation and preserves
   const published = await admin.read('/api/documents');
   assert.equal(published.revision, 2);
   assert.equal(
-    published.documents.find((doc: { id: string }) => doc.id === 'prior')!.status,
+    published.documents.find((doc: { id: string }) => doc.id === ids.documents.prior)!.status,
     'arquivado',
   );
   const path = '/api/calendars/' + record.id;
   const loaded = await campus.read(path);
   assert.deepEqual(
     loaded.documentSnapshot.map((doc: { id: string }) => doc.id),
-    ['prior'],
+    [ids.documents.prior],
   );
   assert.deepEqual(
     loaded.currentDocuments.map((doc: { id: string }) => doc.id),
-    ['next'],
+    [ids.documents.next],
   );
   await assert.rejects(
     campus.actionContext(path + '/pdf', {
@@ -622,12 +587,12 @@ test('native institutional publication requires admin confirmation and preserves
   assert.equal(updated.version, 2);
   assert.deepEqual(
     updated.documentSnapshot.map((doc: { id: string }) => doc.id),
-    ['next'],
+    [ids.documents.next],
   );
   const archived = (await inspect()).calendars[0].versions[0];
   assert.deepEqual(
     archived.documentSnapshot.map((doc: { id: string }) => doc.id),
-    ['prior'],
+    [ids.documents.prior],
   );
   await admin.write('/api/documents/next/status', { revision: 2, status: 'arquivado' });
   assert.equal((await admin.read('/api/documents')).revision, 3);
@@ -635,4 +600,171 @@ test('native institutional publication requires admin confirmation and preserves
   await admin.write('/api/documents/next/status', { revision: 3, status: 'arquivado' });
   assert.equal((await admin.read('/api/documents')).revision, 3, 'repeated status is idempotent');
   assert.deepEqual((await inspect()).calendars[0].versions[0], archived);
+});
+
+test('institutional revisions affect only calendars and reviews for the changed year', async () => {
+  const { as } = await fixture({
+    documents: [
+      { id: 'next-year', year: 2028, type: 'norma', title: 'Norma de 2028', status: 'rascunho' },
+    ],
+  });
+  const admin = as('admin');
+  const campus = as('campus-a');
+  const record = await campus.write('/api/calendars', createBody());
+  const path = '/api/calendars/' + record.id;
+  const reviewPath = '/api/reviews/' + record.id;
+  const support = await admin.read(reviewPath);
+  await admin.write(
+    reviewPath,
+    {
+      revision: 0,
+      calendarVersion: record.version,
+      catalogueRevision: support.catalogueRevision,
+      conclusion: support.initialConclusion,
+      entries: reviewCriteria.map((criterion) => ({
+        id: criterion.id,
+        status: 'PENDENTE',
+        notes: '',
+        reviewed: false,
+      })),
+    },
+    'PUT',
+  );
+  await admin.write('/api/documents/next-year/status', {
+    status: 'vigente',
+    confirmed: true,
+    revision: 1,
+  });
+  assert.equal((await admin.read('/api/documents')).revision, 2);
+  assert.equal((await campus.read(path)).currentCatalogueRevision, record.currentCatalogueRevision);
+  assert.equal((await admin.read(reviewPath)).stale, false);
+  await admin.write('/api/catalogue', {
+    revision: 2,
+    name: 'Evento do outro ano',
+    start: '2028-04-21',
+    end: '2028-04-21',
+    kind: 'exclude',
+    category: 'feriado',
+    evidence: 'Norma sintética',
+    offers: ['integrado'],
+    active: true,
+  });
+  const unaffected = await campus.read(path);
+  assert.equal(unaffected.currentCatalogueRevision, record.currentCatalogueRevision);
+  assert.equal((await admin.read(reviewPath)).stale, false);
+  const saved = await campus.write(path, saveBody(unaffected), 'PUT');
+  assert.equal(saved.version, 2, 'saving the original year still uses its existing base revision');
+});
+
+test('calendar pagination applies campus and trash scope before advancing its cursor', async () => {
+  const { asClient, ids } = await fixture();
+  const admin = asClient('admin');
+  const campus = asClient('campus-a');
+  const created = [];
+  for (let index = 0; index < 5; index++)
+    created.push(
+      await admin.mutation(api.native.createCalendar, {
+        body: { ...createBody(), campusId: ids.campuses.a, courses: 'Campus A ' + index },
+      }),
+    );
+  for (let index = 0; index < 3; index++)
+    await admin.mutation(api.native.createCalendar, {
+      body: { ...createBody(), campusId: ids.campuses.b, courses: 'Campus B ' + index },
+    });
+  await admin.mutation(api.native.deleteCalendar, { id: created[0].id, version: 1 });
+  await admin.mutation(api.native.deleteCalendar, { id: created[1].id, version: 1 });
+  const loaded = [];
+  let cursor: string | null = null;
+  for (;;) {
+    const result: FunctionReturnType<typeof api.native.calendarPage> = await admin.query(
+      api.native.calendarPage,
+      {
+        campusId: ids.campuses.a,
+        deleted: false,
+        paginationOpts: { numItems: 2, cursor },
+      },
+    );
+    loaded.push(...result.page);
+    if (result.isDone) break;
+    cursor = result.continueCursor;
+  }
+  assert.deepEqual(
+    new Set(loaded.map((record) => record.id)),
+    new Set(created.slice(2).map((record) => record.id)),
+  );
+  const trash = await campus.query(api.native.calendarPage, {
+    deleted: true,
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  assert.deepEqual(
+    new Set(trash.page.map((record) => record.id)),
+    new Set(created.slice(0, 2).map((record) => record.id)),
+  );
+  await assert.rejects(
+    campus.query(api.native.calendarPage, {
+      campusId: ids.campuses.b,
+      paginationOpts: { numItems: 2, cursor: null },
+    }),
+    /Registro não encontrado/,
+  );
+});
+
+test('document pagination applies publication access and year filters before its cursor', async () => {
+  const { asClient, ids } = await fixture({
+    documents: [
+      {
+        id: 'draft-2027',
+        year: 2027,
+        type: 'norma',
+        title: 'Rascunho privado',
+        status: 'rascunho',
+      },
+      {
+        id: 'current-2027',
+        year: 2027,
+        type: 'norma',
+        title: 'Norma vigente',
+        status: 'vigente',
+        publishedAt: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: 'archived-2027',
+        year: 2027,
+        type: 'referencia',
+        title: 'Referência preservada',
+        status: 'arquivado',
+        publishedAt: '2026-02-01T00:00:00Z',
+      },
+      {
+        id: 'current-2028',
+        year: 2028,
+        type: 'norma',
+        title: 'Norma de outro ano',
+        status: 'vigente',
+        publishedAt: '2026-03-01T00:00:00Z',
+      },
+    ],
+  });
+  const campus = asClient('campus-a');
+  const loaded = [];
+  let cursor: string | null = null;
+  for (;;) {
+    const result: FunctionReturnType<typeof api.native.documentPage> = await campus.query(
+      api.native.documentPage,
+      { year: 2027, paginationOpts: { numItems: 1, cursor } },
+    );
+    loaded.push(...result.page);
+    if (result.isDone) break;
+    cursor = result.continueCursor;
+  }
+  assert.deepEqual(
+    new Set(loaded.map((document) => document.id)),
+    new Set([ids.documents['current-2027'], ids.documents['archived-2027']]),
+  );
+  const admin = await asClient('admin').query(api.native.documentPage, {
+    year: 2027,
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  assert.equal(admin.page.length, 3);
+  assert(admin.page.some((document) => document.id === ids.documents['draft-2027']));
 });

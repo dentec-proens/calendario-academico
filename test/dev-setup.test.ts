@@ -7,11 +7,9 @@ import type { Doc, TableNames } from '../convex/_generated/dataModel';
 import { api, internal } from '../convex/_generated/api.js';
 import { environments } from '../config/environments.ts';
 import { generateAuthKeys, validateAuthKeys } from '../scripts/dev-setup.ts';
-import { encodeValue, decodeValue } from '../src/convex-codec.mjs';
 import { initialCatalogue } from '../src/institution.mjs';
 
 const { default: schema } = await import('../convex/schema.ts');
-const { entityTables } = await import('../convex/model.ts');
 const devUrl = 'https://isolated-setup-test.convex.cloud';
 const initialize = (client: ReturnType<typeof fixture>, expectedCloudUrl = devUrl) =>
   client.mutation(internal.devSetup.initialize, { expectedCloudUrl });
@@ -95,14 +93,28 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
   }
   assert.deepEqual(await initialize(client), { initialized: true, setupRequired: true });
   const seeded = await snapshot(client);
-  assert.deepEqual(
-    seeded.rootFields.map((row) => row.name).sort(),
-    [...entityTables, 'catalogue'].sort(),
-  );
   assert.equal(seeded.campuses.length, 29);
-  assert.equal(new Set(seeded.campuses.map((row) => decodeValue(row.value).id)).size, 29);
+  assert.equal(new Set(seeded.campuses.map((row) => row._id)).size, 29);
+  assert.equal(new Set(seeded.campuses.map((row) => row.name)).size, 29);
   assert.deepEqual(
-    decodeValue(seeded.rootFields.find((row) => row.name === 'catalogue')!.value),
+    seeded.institutionSettings.map(({ key, revision }) => ({ key, revision })),
+    [{ key: 'catalogue', revision: 1 }],
+  );
+  assert.deepEqual(
+    seeded.catalogueRevisions.map(({ year, revision }) => ({ year, revision })),
+    [{ year: 2027, revision: 1 }],
+  );
+  assert.deepEqual(
+    {
+      revision: seeded.catalogueRevisions[0].revision,
+      events: seeded.institutionalEvents.map(
+        ({ _id, _creationTime, code: id, year: _year, modalities: offers, ...event }) => ({
+          id,
+          ...event,
+          offers,
+        }),
+      ),
+    },
     initialCatalogue(),
   );
   assert.equal(seeded.users.length, 0);
@@ -132,15 +144,13 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
     Buffer.from(signedIn.tokens.token.split('.')[1], 'base64url').toString(),
   );
   const admin = client.withIdentity({ subject: payload.sub });
-  const bootstrap = await admin.query(api.native.read, { path: '/api/bootstrap' });
+  const bootstrap = await admin.query(api.native.bootstrap, {});
   assert.equal(bootstrap.user.role, 'ADMIN');
   assert.equal(bootstrap.campuses.length, 29);
   assert.equal(bootstrap.users.length, 1);
   assert.deepEqual(bootstrap.calendars, []);
   assert.deepEqual(bootstrap.catalogue, initialCatalogue());
-  const calendar = await admin.mutation(api.native.write, {
-    path: '/api/calendars',
-    method: 'POST',
+  const calendar = await admin.mutation(api.native.createCalendar, {
     body: {
       campusId: bootstrap.campuses[0].id,
       year: 2027,
@@ -151,10 +161,7 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
     },
   });
   assert.ok(calendar.id);
-  assert.equal(
-    (await admin.query(api.native.read, { path: '/api/bootstrap' })).calendars.length,
-    1,
-  );
+  assert.equal((await admin.query(api.native.bootstrap, {})).calendars.length, 1);
   const populated = await snapshot(client);
   assert.deepEqual(await initialize(client), { initialized: false, setupRequired: false });
   assert.deepEqual(await snapshot(client), populated);
@@ -175,12 +182,29 @@ test('dev setup preserves every partial dataset, including isolated snapshots, A
   const partials: ((
     ctx: Parameters<Parameters<ReturnType<typeof fixture>['run']>[0]>[0],
   ) => Promise<unknown>)[] = [
+    (ctx) => ctx.db.insert('institutionSettings', { key: 'catalogue', revision: 34 }),
     (ctx) =>
-      ctx.db.insert('rootFields', {
-        name: 'catalogue',
-        value: encodeValue({ revision: 34, events: [] }),
+      ctx.db.insert('calendarSnapshots', {
+        state: {
+          schemaVersion: 1,
+          year: 2027,
+          campus: 'Snapshot original',
+          modalities: ['integrado'],
+          offer: 'integrado',
+          regime: 'anual',
+          weekdays: [1, 2, 3, 4, 5],
+          weekConfirmed: false,
+          weekEvidence: '',
+          periods: [],
+          events: [],
+          ignoredHistory: [],
+          assessmentStagesByModality: {},
+        },
+        at: 1,
+        catalogueRevision: 34,
+        institutionalEvents: [],
+        documentSnapshot: [],
       }),
-    (ctx) => ctx.db.insert('calendarSnapshots', { value: encodeValue({ original: true }) }),
     (ctx) =>
       ctx.db.insert('authRateLimits', {
         identifier: 'synthetic',

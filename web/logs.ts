@@ -1,23 +1,15 @@
-import { api } from './portal/api.ts';
 import { element } from './native/dom.ts';
-import { nativeError, subscribeNative } from './native/client.ts';
+import { audit, nativeError } from './native/client.ts';
+import type { FunctionReturnType } from 'convex/server';
+import type { api } from '../convex/_generated/api.js';
 
-interface LogEntry {
-  action: string;
-  calendar?: string;
-  at: string;
-  actor: string;
-  version?: number;
-}
-interface LogsData {
-  entries: LogEntry[];
-  nextOffset: number | null;
-}
+type LogsData = FunctionReturnType<typeof api.native.logs>;
 
 const list = element('log-list', HTMLElement);
 const more = element('more-logs', HTMLButtonElement);
 const message = element('log-message', HTMLElement);
-let next: number | null = 0;
+let next: string | null = null;
+let loading = false;
 
 function render(data: LogsData, reset = false) {
   if (reset) list.replaceChildren();
@@ -36,7 +28,7 @@ function render(data: LogsData, reset = false) {
     li.append(box);
     list.append(li);
   }
-  next = data.nextOffset;
+  next = data.isDone ? null : data.continueCursor;
   more.hidden = next === null;
   message.textContent = list.children.length
     ? 'Histórico atualizado às ' + new Date().toLocaleTimeString('pt-BR') + '.'
@@ -44,10 +36,16 @@ function render(data: LogsData, reset = false) {
 }
 
 async function load(reset = false) {
+  if (loading) return;
+  loading = true;
+  more.disabled = true;
   try {
-    render(await api<LogsData>('/api/logs?offset=' + (reset ? 0 : (next ?? 0))), reset);
+    render(await audit.page(reset ? null : next), reset);
   } catch (error) {
     message.textContent = nativeError(error).message;
+  } finally {
+    loading = false;
+    more.disabled = false;
   }
 }
 
@@ -57,8 +55,7 @@ element('refresh-logs', HTMLButtonElement).onclick = () => {
 more.onclick = () => {
   void load();
 };
-const stop = subscribeNative<LogsData>(
-  '/api/logs?offset=0',
+const stop = audit.subscribe(
   (data) => render(data, true),
   (error) => {
     message.textContent = error.message;

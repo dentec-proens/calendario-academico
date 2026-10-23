@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import { generateKeyPairSync, scryptSync } from 'node:crypto';
 import { convexTest } from 'convex-test';
 import { api } from '../convex/_generated/api.js';
-import { encodeValue, decodeValue } from '../src/convex-codec.mjs';
 
 const { passwordCrypto, legacySecret } = await import('../convex/authCrypto.ts');
 const { default: schema } = await import('../convex/schema.ts');
@@ -20,44 +19,29 @@ async function fixture() {
     '../convex/auth.ts': () => import('../convex/auth.ts'),
   });
   const ids = await client.run(async (ctx) => {
-    const campus = { id: 'campus-original', name: 'Campus de teste' };
-    await ctx.db.insert('campuses', {
-      key: `campuses:${campus.id}`,
-      position: 0,
-      appId: campus.id,
-      value: encodeValue(campus),
-    });
+    const campusId = await ctx.db.insert('campuses', { name: 'Campus de teste', archived: false });
     const users = [
       {
-        id: 'original-admin-uuid',
         name: 'Admin',
         email: 'admin-native@ifpr.edu.br',
         role: 'ADMIN' as const,
-        campusId: null,
         active: true,
-        loginMethod: 'local',
+        loginMethod: 'local' as const,
       },
       {
-        id: 'original-campus-uuid',
         name: 'Campus',
         email: 'campus-native@ifpr.edu.br',
-        role: 'CAMPUS',
-        campusId: campus.id,
+        role: 'CAMPUS' as const,
+        campusId,
         active: true,
-        loginMethod: 'local',
+        loginMethod: 'local' as const,
       },
     ];
     const result = [];
-    for (const [position, user] of users.entries()) {
+    for (const user of users) {
       const salt = '0123456789abcdef0123456789abcdef';
       const hash = scryptSync('synthetic-password', salt, 64).toString('hex');
-      const id = await ctx.db.insert('users', {
-        key: `users:${user.id}`,
-        position,
-        appId: user.id,
-        email: user.email,
-        value: encodeValue(user),
-      });
+      const id = await ctx.db.insert('users', user);
       await ctx.db.insert('authAccounts', {
         userId: id,
         provider: 'password',
@@ -68,7 +52,7 @@ async function fixture() {
         userId: id,
         expirationTime: Date.now() + 3600000,
       });
-      result.push({ id, sessionId, user });
+      result.push({ id, sessionId, user: { ...user, id } });
     }
     return result;
   });
@@ -95,13 +79,12 @@ test('native password crypto verifies the original Node scrypt credentials', asy
   await assert.rejects(passwordCrypto.hashSecret('short'), /10 e 128/);
 });
 
-test('native sign-in preserves application IDs and keeps secrets exclusively in Convex Auth', async () => {
+test('native sign-in preserves native user IDs and keeps migrated secrets exclusively in Convex Auth', async () => {
   const { client, admin, asAdmin } = await fixture();
   const row = await client.run((ctx) => ctx.db.get(admin.id));
-  const user = decodeValue(row!.value);
-  assert.equal(user.id, 'original-admin-uuid');
-  assert.equal(user.salt, undefined);
-  assert.equal(user.hash, undefined);
+  assert.equal(row!._id, admin.id);
+  assert.equal('salt' in row!, false);
+  assert.equal('hash' in row!, false);
   const account = await client.run((ctx) =>
     ctx.db
       .query('authAccounts')
@@ -109,7 +92,7 @@ test('native sign-in preserves application IDs and keeps secrets exclusively in 
       .unique(),
   );
   assert.equal(await passwordCrypto.verifySecret('synthetic-password', account!.secret!), true);
-  assert.equal((await asAdmin.query(api.nativeAuth.me, {}))!.id, user.id);
+  assert.equal((await asAdmin.query(api.nativeAuth.me, {}))!.id, admin.id);
   const signIn = await client.action(api.auth.signIn, {
     provider: 'password',
     params: { flow: 'signIn', email: ' ADMIN-NATIVE@IFPR.EDU.BR ', password: 'synthetic-password' },
@@ -152,24 +135,15 @@ test('native auth rejects public registration, unknown users and campus administ
   assert.equal((await client.run((ctx) => ctx.db.query('users').take(10))).length, 2);
 });
 
-test('native auth refuses inactive, removed or inconsistent imported identities despite correct passwords', async () => {
+test('native auth refuses inactive, removed, unassigned or noninstitutional identities despite correct passwords', async () => {
   for (const invalid of [
     { active: false },
-    { active: 'true' },
-    { campusId: null },
-    { name: null },
-    { email: 'inconsistent@ifpr.edu.br' },
-    { removedAt: '2026-10-23T00:00:00Z' },
-    { role: 'UNRECOGNIZED' },
-    { id: 'mismatched-application-id' },
+    { campusId: undefined },
+    { email: 'external@example.org' },
+    { removedAt: Date.now() },
   ]) {
     const { client, campus, asCampus } = await fixture();
-    await client.run(async (ctx) => {
-      const row = await ctx.db.get(campus.id);
-      await ctx.db.patch(campus.id, {
-        value: encodeValue({ ...decodeValue(row!.value), ...invalid }),
-      });
-    });
+    await client.run((ctx) => ctx.db.patch(campus.id, invalid));
     assert.equal(await asCampus.query(api.nativeAuth.me, {}), null);
     await assert.rejects(
       client.action(api.auth.signIn, {
@@ -182,13 +156,13 @@ test('native auth refuses inactive, removed or inconsistent imported identities 
 });
 
 test('native invitations activate only the intended member and cannot be reused', async () => {
-  const { client, asAdmin } = await fixture();
+  const { client, asAdmin, campus } = await fixture();
   const invited = await asAdmin.action(api.nativeAuth.createMember, {
     data: {
       name: 'Convidado',
       email: 'invite-native@ifpr.edu.br',
       role: 'CAMPUS',
-      campusId: 'campus-original',
+      campusId: campus.user.campusId!,
       loginMethod: 'invite',
     },
   });
@@ -219,19 +193,13 @@ test('native invitations activate only the intended member and cannot be reused'
     }),
     /Convite inválido/,
   );
-  const row = await client.run((ctx) =>
-    ctx.db
-      .query('users')
-      .withIndex('by_appId', (q) => q.eq('appId', invited.id))
-      .unique(),
-  );
-  const member = decodeValue(row!.value);
-  assert.equal(member.active, true);
-  assert.equal(member.loginMethod, 'local');
-  assert.equal(member.hash, undefined);
+  const member = await client.run((ctx) => ctx.db.get(invited.id));
+  assert.equal(member!.active, true);
+  assert.equal(member!.loginMethod, 'local');
+  assert.equal('hash' in member!, false);
   const signIn = await client.action(api.auth.signIn, {
     provider: 'password',
-    params: { flow: 'signIn', email: member.email, password: 'synthetic-invite-password' },
+    params: { flow: 'signIn', email: member!.email, password: 'synthetic-invite-password' },
   });
   assert.ok(signIn.tokens!.token);
 });
@@ -286,9 +254,10 @@ test('native member removal preserves audit and blocks valid JWT sessions immedi
   assert.equal(await asCampus.query(api.nativeAuth.me, {}), null);
   assert.equal(await client.run((ctx) => ctx.db.get(campus.sessionId)), null);
   const row = await client.run((ctx) => ctx.db.get(campus.id));
-  assert.equal(decodeValue(row!.value).active, false);
-  const audit = await client.run((ctx) => ctx.db.query('audit').withIndex('by_position').take(10));
-  assert.equal(decodeValue(audit.at(-1)!.value).action, 'REMOVE_MEMBER');
+  assert.equal(row!.active, false);
+  const audit = await client.run((ctx) => ctx.db.query('audit').take(10));
+  assert.equal(audit.at(-1)!.action, 'REMOVE_MEMBER');
+  assert.deepEqual(audit.at(-1)!.target, { type: 'user', id: campus.id });
 });
 
 test('native account creation checks administrator access before validating credentials or hashing a password', async () => {
@@ -315,4 +284,44 @@ test('native account creation checks administrator access before validating cred
   );
   assert.equal((await client.run((ctx) => ctx.db.query('users').collect())).length, 2);
   assert.equal((await client.run((ctx) => ctx.db.query('authAccounts').collect())).length, 2);
+});
+
+test('reissued native invitations invalidate earlier tokens and clear activation metadata', async () => {
+  const { client, asAdmin, campus } = await fixture();
+  const invited = await asAdmin.action(api.nativeAuth.createMember, {
+    data: {
+      name: 'Convidado reemitido',
+      email: 'reissued@ifpr.edu.br',
+      role: 'CAMPUS',
+      campusId: campus.user.campusId!,
+      loginMethod: 'invite',
+    },
+  });
+  const oldToken = new URL(invited.inviteUrl!).hash.split('=')[1];
+  const reissued = await asAdmin.mutation(api.nativeAuth.issueInvitation, { id: invited.id });
+  const token = new URL(reissued.inviteUrl).hash.split('=')[1];
+  await assert.rejects(
+    client.query(api.nativeAuth.checkInvitation, { token: oldToken }),
+    /Convite inválido/,
+  );
+  assert.equal(
+    (await client.query(api.nativeAuth.checkInvitation, { token })).campus,
+    'Campus de teste',
+  );
+  await client.action(api.nativeAuth.acceptInvitation, {
+    token,
+    email: invited.email,
+    password: 'synthetic-invite-password',
+  });
+  const row = await client.run((ctx) => ctx.db.get(invited.id));
+  assert.equal(row!.inviteExpiresAt, undefined);
+  assert.equal(row!.nativeInviteHash, undefined);
+  const invitations = await client.run((ctx) =>
+    ctx.db
+      .query('invitations')
+      .withIndex('by_userId', (q) => q.eq('userId', invited.id))
+      .take(3),
+  );
+  assert.equal(invitations.length, 2);
+  assert.equal(invitations.filter((invite) => invite.usedAt !== undefined).length, 1);
 });

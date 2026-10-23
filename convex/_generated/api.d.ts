@@ -12,14 +12,15 @@ import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
 import type * as authContracts from "../authContracts.js";
 import type * as authCrypto from "../authCrypto.js";
+import type * as contracts from "../contracts.js";
 import type * as devSetup from "../devSetup.js";
 import type * as http from "../http.js";
-import type * as model from "../model.js";
 import type * as native from "../native.js";
 import type * as nativeActions from "../nativeActions.js";
 import type * as nativeAuth from "../nativeAuth.js";
 import type * as nativeFiles from "../nativeFiles.js";
-import type * as store from "../store.js";
+import type * as repository from "../repository.js";
+import type * as validators from "../validators.js";
 
 import type {
   ApiFromModules,
@@ -32,14 +33,15 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authContracts: typeof authContracts;
   authCrypto: typeof authCrypto;
+  contracts: typeof contracts;
   devSetup: typeof devSetup;
   http: typeof http;
-  model: typeof model;
   native: typeof native;
   nativeActions: typeof nativeActions;
   nativeAuth: typeof nativeAuth;
   nativeFiles: typeof nativeFiles;
-  store: typeof store;
+  repository: typeof repository;
+  validators: typeof validators;
 }>;
 
 /**

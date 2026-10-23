@@ -1,15 +1,16 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import puppeteer from 'puppeteer-core';
 import type { Browser, Page } from 'puppeteer-core';
 
 const base = process.env.DENTEC_NATIVE_BROWSER_URL;
 const email = process.env.DENTEC_NATIVE_TEST_EMAIL;
 const password = process.env.DENTEC_NATIVE_TEST_PASSWORD;
+const restorationFixture = process.env.DENTEC_NATIVE_RESTORE_FIXTURE;
 const executablePath = [
   process.env.DENTEC_TEST_BROWSER,
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -81,8 +82,15 @@ test(
     const id = new URL(editor.url()).searchParams.get('id');
     assert(id);
     await contains(observer, '#calendar-list', marker);
-    await observer.goto(editor.url());
+    const preservedUrl = new URL(editor.url());
+    preservedUrl.searchParams.set('view', 'synthetic');
+    preservedUrl.hash = 'history-area';
+    await observer.goto(preservedUrl.href);
     await contains(observer, '#record-heading', marker);
+    const openedUrl = new URL(observer.url());
+    assert.equal(openedUrl.searchParams.get('id'), id);
+    assert.equal(openedUrl.searchParams.get('view'), 'synthetic');
+    assert.equal(openedUrl.hash, '#history-area');
 
     async function addPeriod(name: string, start: string, end: string) {
       await editor.locator('#period-name').fill(name);
@@ -117,7 +125,9 @@ test(
     // Trash only the synthetic calendar produced by this run.
     await editor.goto(base);
     await editor.waitForSelector(`[data-delete-calendar="${id}"]`);
-    editor.once('dialog', (dialog) => dialog.accept());
+    editor.once('dialog', (dialog) => {
+      void dialog.accept();
+    });
     await editor.locator(`[data-delete-calendar="${id}"]`).click();
     await editor.waitForFunction(
       (id) => !document.querySelector(`[data-delete-calendar="${id}"]`),
@@ -154,7 +164,9 @@ test(
     });
     const page = await browser.newPage();
     page.setDefaultTimeout(25_000);
-    page.on('dialog', (dialog) => dialog.accept());
+    page.on('dialog', (dialog) => {
+      void dialog.accept();
+    });
     const errors: string[] = [];
     page.on('pageerror', (error) =>
       errors.push(error instanceof Error ? error.message : String(error)),
@@ -281,7 +293,7 @@ test(
       .locator(`[data-document-id="${documentId}"][data-document-status="vigente"]`)
       .click();
     await contains('#document-message', 'Vigência atualizada');
-    await page.locator(`a[href="/api/documents/${documentId}"]`).click();
+    await page.locator(`[data-download-document="${documentId}"]`).click();
     const downloadedDocument = join(directory, 'synthetic-reference.pdf');
     for (let attempt = 0; attempt < 60 && !existsSync(downloadedDocument); attempt++)
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -338,6 +350,29 @@ test(
     await page
       .locator(`[data-notes="${criterion}"]`)
       .fill('Observação sintética preservada no Convex.');
+    await page.locator('[data-page="calendars"]').click();
+    const otherCampus = await page.$$eval(
+      '#campus-filter option',
+      (options) => (options[2] as HTMLOptionElement | undefined)?.value,
+    );
+    if (otherCampus) {
+      await page.select('#campus-filter', otherCampus);
+      await page.waitForFunction(
+        (id) => !document.querySelector(`[data-delete-calendar="${id}"]`),
+        {},
+        calendarId,
+      );
+      await page.select('#campus-filter', '');
+    }
+    await page.locator('[data-page="review-panel"]').click();
+    assert.equal(
+      await page.$eval(
+        `[data-notes="${criterion}"]`,
+        (element) => (element as HTMLTextAreaElement).value,
+      ),
+      'Observação sintética preservada no Convex.',
+      'filtering the paginated calendar list cannot discard an unsaved human review',
+    );
     await page.locator(`[data-confirm-criterion="${criterion}"]`).click();
     if (await page.$('#review-stale')) await page.locator('#review-stale').click();
     // The global status banner is sticky. Center this distant control so an
@@ -346,7 +381,7 @@ test(
       element.scrollIntoView({ block: 'center' }),
     );
     await page.locator('button[form="review-form"]').click();
-    await contains('#review-message', 'Revisão humana salva');
+    await contains('#review-message', 'Análise salva');
     await page.locator('#preview-review').click();
     await page.waitForSelector('#review-preview table');
     await contains('#review-preview', 'Observação sintética preservada no Convex.');
@@ -358,11 +393,137 @@ test(
     await page.locator('[data-page="calendars"]').click();
     await page.locator(`[data-delete-calendar="${calendarId}"]`).click();
     await contains('#message', 'movido para a lixeira');
+    await page.locator('.calendar-trash summary').click();
+    await page.locator(`[data-restore-calendar="${calendarId}"]`).click();
+    await contains('#message', 'Calendário restaurado');
+    await page.goto(base + '/editor?id=' + encodeURIComponent(calendarId));
+    await contains('#history-list', 'synthetic-reference.pdf');
+    await page.goto(base);
+    await page.locator('[data-page="review-panel"]').click();
+    await page.select('#review-calendar', calendarId);
+    await page.locator('#open-review').click();
+    await page.waitForSelector('#review-content');
+    assert.equal(
+      await page.$eval(
+        `[data-notes="${criterion}"]`,
+        (element) => (element as HTMLTextAreaElement).value,
+      ),
+      'Observação sintética preservada no Convex.',
+      'restoring a calendar preserves the saved human review',
+    );
+    await page.locator('[data-page="calendars"]').click();
+    await page.locator(`[data-delete-calendar="${calendarId}"]`).click();
+    await contains('#message', 'movido para a lixeira');
     assert.deepEqual(
       errors,
       [],
       'all native account, file and review screens load without uncaught browser errors',
     );
+  },
+);
+
+test(
+  'admin restores missing originals through the portal and old editor links retain their destination',
+  { skip: Boolean(nativeSkip) || !restorationFixture, timeout: 90_000 },
+  async (t) => {
+    const { base, email, password, executablePath } = browserEnvironment();
+    assert(restorationFixture);
+    const fixture = JSON.parse(await readFile(restorationFixture, 'utf8')) as {
+      calendarId: string;
+      historyId: string;
+      documentId: string;
+      alias: string;
+    };
+    const original = join(dirname(restorationFixture), 'restoration-upload.pdf');
+    const expected = await readFile(original);
+    const directory = await mkdtemp(join(tmpdir(), 'dentec-restoration-browser-'));
+    const browser = await puppeteer.launch({
+      executablePath,
+      headless: true,
+      args: ['--no-sandbox'],
+    });
+    t.onTestFinished(async () => {
+      await browser.close();
+      await rm(directory, { recursive: true, force: true });
+    });
+    const page = await browser.newPage();
+    page.setDefaultTimeout(25_000);
+    const errors: string[] = [];
+    page.on('pageerror', (error) =>
+      errors.push(error instanceof Error ? error.message : String(error)),
+    );
+    const cdp = await page.createCDPSession();
+    await cdp.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: directory });
+    await page.goto(base);
+    await page.locator('#email').fill(email);
+    await page.locator('#password').fill(password);
+    await page.locator('#auth-submit').click();
+    await page.waitForSelector('#workspace', { visible: true });
+    await page.goto(
+      base + '/editor?id=' + encodeURIComponent(fixture.alias) + '&view=restore-proof#history-area',
+      { waitUntil: 'domcontentloaded' },
+    );
+    await page.waitForSelector(`form[data-restore-history="${fixture.historyId}"]`);
+    const canonical = new URL(page.url());
+    assert.equal(canonical.searchParams.get('id'), fixture.calendarId);
+    assert.equal(canonical.searchParams.get('view'), 'restore-proof');
+    assert.equal(canonical.hash, '#history-area');
+    const historyInput = await page.$(
+      `form[data-restore-history="${fixture.historyId}"] input[type="file"]`,
+    );
+    assert(historyInput);
+    await historyInput.uploadFile(original);
+    await page.locator(`form[data-restore-history="${fixture.historyId}"] button`).click();
+    await page.waitForFunction(() =>
+      document.querySelector('#message')?.textContent?.includes('PDF original restaurado'),
+    );
+    await page.waitForSelector(`form[data-restore-history="${fixture.historyId}"]`, {
+      hidden: true,
+    });
+    await page.locator(`a[data-history-id="${fixture.historyId}"]`).click();
+    const restored = join(directory, 'original-e2e.pdf');
+    for (let attempt = 0; attempt < 60 && !existsSync(restored); attempt++)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    assert(
+      (await readFile(restored)).equals(expected),
+      'restored historical original keeps its bytes and stored filename',
+    );
+    await rm(restored);
+    await page.goto(base);
+    await page.locator('[data-page="institution"]').click();
+    await page.waitForSelector(`form[data-restore-document="${fixture.documentId}"]`);
+    const documentInput = await page.$(
+      `form[data-restore-document="${fixture.documentId}"] input[type="file"]`,
+    );
+    assert(documentInput);
+    await documentInput.uploadFile(original);
+    await page.locator(`form[data-restore-document="${fixture.documentId}"] button`).click();
+    await page.waitForFunction(() =>
+      document.querySelector('#document-message')?.textContent?.includes('PDF original restaurado'),
+    );
+    await page.waitForSelector(`form[data-restore-document="${fixture.documentId}"]`, {
+      hidden: true,
+    });
+    const documentDirectory = join(directory, 'documents');
+    await mkdir(documentDirectory);
+    await cdp.send('Page.setDownloadBehavior', {
+      behavior: 'allow',
+      downloadPath: documentDirectory,
+    });
+    await page.locator(`[data-download-document="${fixture.documentId}"]`).click();
+    const restoredDocument = join(documentDirectory, 'original-e2e.pdf');
+    for (let attempt = 0; attempt < 60 && !existsSync(restoredDocument); attempt++)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    assert(
+      existsSync(restoredDocument),
+      'Restored document download missing; received: ' +
+        (await readdir(documentDirectory)).join(', '),
+    );
+    assert(
+      (await readFile(restoredDocument)).equals(expected),
+      'restored institutional original keeps its bytes and stored filename',
+    );
+    assert.deepEqual(errors, []);
   },
 );
 

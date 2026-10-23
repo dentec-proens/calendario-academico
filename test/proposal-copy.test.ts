@@ -20,7 +20,7 @@ test('campus can prepare an identified proposal before review without approving 
   await assert.rejects(campus.actionContext(path + '/pdf', body), /Geração definitiva bloqueada/);
   await assert.rejects(
     campus.actionContext(path + '/pdf', { ...body, copy: 'true' }),
-    /Geração definitiva bloqueada/,
+    /Expected .boolean./,
   );
   await assert.rejects(
     as('campus-b').actionContext(path + '/pdf', { ...body, copy: true }),

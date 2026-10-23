@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { Archive, CheckCircle2, Download, Upload } from 'lucide-react';
 import { filePayload } from '../upload.ts';
-import { api } from './api.ts';
-import { downloadLink } from '../native/client.ts';
+import { downloadLink, institution } from '../native/client.ts';
+import Pagination from './Pagination.tsx';
 
 const documentTypes = {
   norma: 'Resolução / norma',
@@ -10,10 +10,15 @@ const documentTypes = {
   parecer: 'Modelo de parecer / checklist',
 };
 
-export default function DocumentsPanel({ isAdmin, liveData }) {
+export default function DocumentsPanel({
+  isAdmin,
+  liveData,
+  pagination,
+  yearFilter,
+  onYearFilter: setYearFilter,
+}) {
   const documents = liveData?.documents ?? [];
   const revision = liveData?.revision ?? 0;
-  const [yearFilter, setYearFilter] = useState('');
   const [confirmed, setConfirmed] = useState({});
   const [message, setMessage] = useState('');
   const loading = liveData === undefined;
@@ -33,7 +38,7 @@ export default function DocumentsPanel({ isAdmin, liveData }) {
       if (!file?.name || file.size > 8_000_000) throw Error('Escolha um PDF de até 8 MB.');
       const payload = await filePayload(file);
       const year = Number(values.get('year'));
-      await api('/api/documents', 'POST', {
+      await institution.uploadDocument({
         year,
         type: values.get('type'),
         title: values.get('title'),
@@ -55,6 +60,27 @@ export default function DocumentsPanel({ isAdmin, liveData }) {
     }
   }
 
+  async function restoreOriginal(event, document) {
+    event.preventDefault();
+    if (mutationPending.current) return;
+    const form = event.currentTarget;
+    const file = new FormData(form).get('original');
+    mutationPending.current = true;
+    setPending(true);
+    setMessage('');
+    try {
+      const payload = await filePayload(file);
+      await institution.restoreDocumentOriginal(document.id, payload.uploadId);
+      form.reset();
+      setMessage('PDF original restaurado. O registro e suas versões foram preservados.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      mutationPending.current = false;
+      setPending(false);
+    }
+  }
+
   async function changeStatus(document, status) {
     if (mutationPending.current) return;
     const hasConfirmed = confirmed[document.id] === true;
@@ -66,7 +92,7 @@ export default function DocumentsPanel({ isAdmin, liveData }) {
     setPending(true);
     setMessage('');
     try {
-      await api(`/api/documents/${encodeURIComponent(document.id)}/status`, 'POST', {
+      await institution.documentStatus(document.id, {
         revision,
         status,
         confirmed: hasConfirmed,
@@ -182,20 +208,56 @@ export default function DocumentsPanel({ isAdmin, liveData }) {
                 <small>{document.source}</small>
                 <small>
                   Enviado em {new Date(document.createdAt).toLocaleString('pt-BR')} ·{' '}
-                  {(document.size / 1024).toFixed(0)} KB
+                  {document.size
+                    ? `${(document.size / 1024).toFixed(0)} KB`
+                    : 'Tamanho indisponível'}
                 </small>
                 <a
-                  href={`/api/documents/${encodeURIComponent(document.id)}`}
+                  href={`#document-${document.id}`}
+                  data-download-document={document.id}
                   onClick={(event) =>
                     downloadLink(
                       event,
-                      `/api/documents/${encodeURIComponent(document.id)}`,
+                      { kind: 'document', id: document.id },
                       document.filename,
                     ).catch((error) => setMessage(error.message))
                   }
                 >
                   <Download size={16} aria-hidden="true" /> Baixar PDF
                 </a>
+                {document.unavailableFile ? (
+                  <>
+                    <p className="notice">
+                      PDF original aguardando restauração pela administração.
+                    </p>
+                    {isAdmin ? (
+                      <form
+                        data-restore-document={document.id}
+                        aria-busy={pending}
+                        onSubmit={(event) => restoreOriginal(event, document)}
+                      >
+                        <label>
+                          PDF original
+                          <input
+                            type="file"
+                            name="original"
+                            accept="application/pdf,.pdf"
+                            required
+                            disabled={busy}
+                          />
+                        </label>
+                        <p className="help">
+                          Selecione o mesmo PDF original deste registro. O registro e suas versões
+                          serão preservados.
+                        </p>
+                        <button type="submit" disabled={busy}>
+                          <Upload size={16} aria-hidden="true" />
+                          {pending ? 'Restaurando…' : 'Restaurar PDF original'}
+                        </button>
+                      </form>
+                    ) : null}
+                  </>
+                ) : null}
                 {isAdmin ? (
                   <div>
                     {document.status !== 'vigente' ? (
@@ -247,6 +309,7 @@ export default function DocumentsPanel({ isAdmin, liveData }) {
           <li>Nenhum documento disponível para este ano.</li>
         )}
       </ul>
+      <Pagination pagination={pagination} label="Carregar mais documentos" />
     </div>
   );
 }

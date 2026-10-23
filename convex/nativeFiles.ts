@@ -2,6 +2,8 @@ import { v, ConvexError } from 'convex/values';
 import { mutation, internalMutation, internalQuery, httpAction } from './_generated/server';
 import { internal } from './_generated/api';
 import { requireNativeUser } from './nativeAuth';
+import type { MutationCtx } from './_generated/server';
+import type { Id } from './_generated/dataModel';
 
 function failure(message: string, status = 400): never {
   throw new ConvexError({ error: message, status });
@@ -25,7 +27,6 @@ const uploadRecord = v.object({
   size: v.number(),
   expiresAt: v.number(),
   storageId: v.optional(v.id('_storage')),
-  objectKey: v.optional(v.string()),
   hash: v.optional(v.string()),
   completedAt: v.optional(v.number()),
   consumedAt: v.optional(v.number()),
@@ -116,34 +117,27 @@ export const finishUpload = internalMutation({
       if (upload.storageId !== args.storageId) failure('Envio já concluído.', 409);
       return { uploadId: args.uploadId };
     }
-    const collision = await ctx.db
-      .query('fileObjects')
-      .withIndex('by_storageId', (q) => q.eq('storageId', args.storageId))
-      .unique();
-    if (collision) failure('Arquivo já cadastrado.', 409);
-    const objectKey = 'uploads/' + args.uploadId + '.pdf';
-    await ctx.db.insert('fileObjects', { path: objectKey, storageId: args.storageId });
+    const [pending, history, document] = await Promise.all([
+      ctx.db
+        .query('nativeUploads')
+        .withIndex('by_storageId', (q) => q.eq('storageId', args.storageId))
+        .unique(),
+      ctx.db
+        .query('histories')
+        .withIndex('by_storageId', (q) => q.eq('storageId', args.storageId))
+        .first(),
+      ctx.db
+        .query('documents')
+        .withIndex('by_storageId', (q) => q.eq('storageId', args.storageId))
+        .first(),
+    ]);
+    if (pending || history || document) failure('Arquivo já cadastrado.', 409);
     await ctx.db.patch(upload._id, {
       storageId: args.storageId,
-      objectKey,
       hash: args.hash,
       completedAt: Date.now(),
     });
     return { uploadId: args.uploadId };
-  },
-});
-export const fileId = internalQuery({
-  args: { path: v.string() },
-  returns: v.union(v.id('_storage'), v.null()),
-  handler: async (ctx, { path }) => {
-    return (
-      (
-        await ctx.db
-          .query('fileObjects')
-          .withIndex('by_path', (q) => q.eq('path', path))
-          .unique()
-      )?.storageId ?? null
-    );
   },
 });
 export const expireUpload = internalMutation({
@@ -156,11 +150,6 @@ export const expireUpload = internalMutation({
       .unique();
     if (!upload) return null;
     if (!upload.consumedAt && upload.storageId) {
-      const file = await ctx.db
-        .query('fileObjects')
-        .withIndex('by_storageId', (q) => q.eq('storageId', upload.storageId!))
-        .unique();
-      if (file) await ctx.db.delete(file._id);
       await ctx.storage.delete(upload.storageId);
     }
     await ctx.db.delete(upload._id);
@@ -230,4 +219,118 @@ export const downloadHttp = httpAction(async (ctx, request) => {
       'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(ticket.filename),
     },
   });
+});
+
+async function restorationUpload(
+  ctx: MutationCtx,
+  ownerId: Id<'users'>,
+  uploadId: string,
+  hash: string,
+) {
+  const upload = await ctx.db
+    .query('nativeUploads')
+    .withIndex('by_uploadId', (q) => q.eq('uploadId', uploadId))
+    .unique();
+  if (
+    !upload ||
+    upload.ownerId !== ownerId ||
+    upload.expiresAt <= Date.now() ||
+    !upload.completedAt ||
+    upload.consumedAt ||
+    !upload.storageId ||
+    !upload.hash
+  )
+    failure('Envio expirado, já utilizado ou incompatível.', 409);
+  if (upload.hash !== hash) failure('O SHA-256 não corresponde ao PDF original registrado.');
+  const [history, document, stored] = await Promise.all([
+    ctx.db
+      .query('histories')
+      .withIndex('by_storageId', (q) => q.eq('storageId', upload.storageId))
+      .first(),
+    ctx.db
+      .query('documents')
+      .withIndex('by_storageId', (q) => q.eq('storageId', upload.storageId))
+      .first(),
+    ctx.db.system.get(upload.storageId),
+  ]);
+  if (history || document) failure('Arquivo já cadastrado.', 409);
+  if (!stored) failure('Arquivo validado indisponível.', 409);
+  await ctx.db.patch(upload._id, { consumedAt: Date.now() });
+  return upload.storageId;
+}
+
+export const restoreHistoryOriginal = internalMutation({
+  args: { id: v.id('histories'), uploadId: v.string() },
+  returns: v.object({ id: v.id('histories'), restored: v.literal(true) }),
+  handler: async (ctx, { id, uploadId }) => {
+    const { user, row: member } = await requireNativeUser(ctx);
+    if (user.role !== 'ADMIN') failure('Acesso exclusivo da administração.', 403);
+    const row = await ctx.db.get(id);
+    if (!row) failure('PDF histórico não encontrado.', 404);
+    if (row.storageId || !row.unavailableFile) failure('O PDF original já está disponível.', 409);
+    const calendar = await ctx.db.get(row.calendarId);
+    if (!calendar || calendar.campusId !== row.campusId)
+      failure('Vínculo histórico inválido.', 409);
+    const storageId = await restorationUpload(ctx, member._id, uploadId, row.hash);
+    await ctx.db.patch(id, { storageId, unavailableFile: undefined });
+    await ctx.db.insert('audit', {
+      at: Date.now(),
+      actorId: user.id,
+      action: 'RESTORE_HISTORY_ORIGINAL',
+      target: { type: 'history', id },
+      calendarId: row.calendarId,
+      campusId: row.campusId,
+    });
+    return { id, restored: true as const };
+  },
+});
+
+export const restoreDocumentOriginal = internalMutation({
+  args: { id: v.id('documents'), uploadId: v.string() },
+  returns: v.object({ id: v.id('documents'), restored: v.literal(true) }),
+  handler: async (ctx, { id, uploadId }) => {
+    const { user, row: member } = await requireNativeUser(ctx);
+    if (user.role !== 'ADMIN') failure('Acesso exclusivo da administração.', 403);
+    const row = await ctx.db.get(id);
+    if (!row) failure('Documento não encontrado.', 404);
+    if (row.storageId || !row.unavailableFile) failure('O PDF original já está disponível.', 409);
+    const storageId = await restorationUpload(ctx, member._id, uploadId, row.hash);
+    await ctx.db.patch(id, { storageId, unavailableFile: undefined });
+    await ctx.db.insert('audit', {
+      at: Date.now(),
+      actorId: user.id,
+      action: 'RESTORE_DOCUMENT_ORIGINAL',
+      target: { type: 'document', id },
+    });
+    return { id, restored: true as const };
+  },
+});
+
+export const cleanupExpired = internalMutation({
+  args: {},
+  returns: v.object({ uploads: v.number(), tickets: v.number(), continued: v.boolean() }),
+  handler: async (ctx) => {
+    const now = Date.now();
+    const [uploads, tickets] = await Promise.all([
+      ctx.db
+        .query('nativeUploads')
+        .withIndex('by_expiresAt', (q) => q.lte('expiresAt', now))
+        .take(100),
+      ctx.db
+        .query('nativeFileTickets')
+        .withIndex('by_expiresAt', (q) => q.lte('expiresAt', now))
+        .take(100),
+    ]);
+    for (const row of uploads) {
+      if (!row.consumedAt && row.storageId) await ctx.storage.delete(row.storageId);
+      await ctx.db.delete(row._id);
+    }
+    for (const row of tickets) {
+      if (row.ephemeral) await ctx.storage.delete(row.storageId);
+      await ctx.db.delete(row._id);
+    }
+    const continued = uploads.length === 100 || tickets.length === 100;
+    if (continued) await ctx.scheduler.runAfter(0, internal.nativeFiles.cleanupExpired, {});
+    return { uploads: uploads.length, tickets: tickets.length, continued };
+  },
 });

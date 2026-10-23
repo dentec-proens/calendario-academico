@@ -2,9 +2,9 @@ import type { Id } from '../convex/_generated/dataModel';
 import { test, vi, afterEach } from 'vitest';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { historyCandidateKey } from '../src/history-progress.mjs';
 import { convexTest } from 'convex-test';
 import { api, internal } from '../convex/_generated/api.js';
-import { encodeValue } from '../src/convex-codec.mjs';
 
 async function fixture() {
   vi.useFakeTimers({ toFake: ['setTimeout'] });
@@ -19,21 +19,15 @@ async function fixture() {
   });
   const identities = await client.run(async (ctx) => {
     const result = [];
-    for (const id of ['a', 'b']) {
-      const user = {
-        id,
+    for (const id of ['a', 'b', 'admin']) {
+      const campusId = await ctx.db.insert('campuses', { name: id, archived: false });
+      const userId: Id<'users'> = await ctx.db.insert('users', {
         name: id,
         email: `${id}@ifpr.edu.br`,
-        role: 'CAMPUS',
-        campusId: id,
+        role: id === 'admin' ? 'ADMIN' : 'CAMPUS',
+        ...(id === 'admin' ? {} : { campusId }),
         active: true,
-      };
-      const userId: Id<'users'> = await ctx.db.insert('users', {
-        appId: id,
-        email: user.email,
-        key: `users/${id}`,
-        position: result.length,
-        value: encodeValue(user),
+        loginMethod: 'local',
       });
       const sessionId = await ctx.db.insert('authSessions', {
         userId,
@@ -97,7 +91,7 @@ test('native upload completion validates PDF bytes and stores a server computed 
   assert.equal(metadata.hash, createHash('sha256').update('%PDF-fixture').digest('hex'));
   assert.equal(metadata.size, 12);
   assert.equal(metadata.storageId, storageId);
-  assert.equal(metadata.objectKey, 'uploads/' + upload.uploadId + '.pdf');
+  assert.equal('objectKey' in metadata, false);
   assert(metadata.completedAt);
   assert.deepEqual(await complete(upload.uploadId, storageId), { uploadId: upload.uploadId });
   await assert.rejects(complete(upload.uploadId, await put()), /Envio já concluído/);
@@ -151,14 +145,379 @@ test('expired or consumed uploads cannot be reused and cleanup preserves files a
     false,
   );
   assert(await client.run(async (ctx) => (await ctx.storage.get(twoStorage)) !== null));
-  assert.equal(
-    await client.query(internal.nativeFiles.fileId, { path: 'uploads/' + one.uploadId + '.pdf' }),
-    null,
+  assert.equal((await client.run((ctx) => ctx.db.query('nativeUploads').take(10))).length, 0);
+});
+
+test('completed storage IDs stay reserved after their consumed upload ticket is cleaned up', async () => {
+  const { client, issue, put, complete } = await fixture();
+  const upload = await issue();
+  const storageId = await put();
+  await complete(upload.uploadId, storageId);
+  await client.run(async (ctx) => {
+    const ticket = await ctx.db
+      .query('nativeUploads')
+      .withIndex('by_uploadId', (q) => q.eq('uploadId', upload.uploadId))
+      .unique();
+    await ctx.db.insert('documents', {
+      year: 2027,
+      type: 'norma',
+      title: 'Norma de teste',
+      source: 'Teste',
+      filename: 'calendar.pdf',
+      storageId,
+      hash: createHash('sha256').update('%PDF-fixture').digest('hex'),
+      size: 12,
+      status: 'rascunho',
+      version: 1,
+      createdAt: Date.now(),
+    });
+    await ctx.db.patch(ticket!._id, { consumedAt: Date.now() });
+  });
+  await client.mutation(internal.nativeFiles.expireUpload, { uploadId: upload.uploadId });
+  const other = await issue();
+  await assert.rejects(complete(other.uploadId, storageId), /Arquivo já cadastrado/);
+  assert(await client.run(async (ctx) => (await ctx.storage.get(storageId)) !== null));
+});
+
+test('missing originals retain metadata and cached analyses while download and fresh analysis report unavailability', async () => {
+  const { client, users } = await fixture();
+  const seeded = await client.run(async (ctx) => {
+    const member = await ctx.db
+      .query('users')
+      .withIndex('email', (q) => q.eq('email', 'a@ifpr.edu.br'))
+      .unique();
+    const calendarId = await ctx.db.insert('calendars', {
+      campusId: member!.campusId!,
+      year: 2027,
+      modalities: ['integrado'],
+      purpose: 'test',
+      courses: 'Calendário preservado',
+      classes: '',
+      shifts: '',
+      version: 1,
+      updatedAt: 1,
+    });
+    const file = {
+      filename: 'original.pdf',
+      hash: 'a'.repeat(64),
+      unavailableFile: { sourceReference: 'legacy/original.pdf', reason: 'not_migrated' as const },
+    };
+    const documentId = await ctx.db.insert('documents', {
+      ...file,
+      year: 2027,
+      type: 'norma',
+      title: 'Original preservado',
+      source: 'Referência histórica',
+      status: 'vigente',
+      version: 1,
+      createdAt: 1,
+      publishedAt: 1,
+    });
+    const historyFields = {
+      ...file,
+      calendarId,
+      campusId: member!.campusId!,
+      year: 2026,
+      modalities: ['integrado' as const],
+      notes: 'Original pendente',
+      createdAt: 1,
+    };
+    const cachedId = await ctx.db.insert('histories', historyFields);
+    const freshId = await ctx.db.insert('histories', historyFields);
+    const analysis = {
+      version: 2,
+      pages: [{ page: 1, text: 'Texto preservado' }],
+      candidates: [],
+      truncated: false,
+      needsText: false,
+      analyzedAt: '2026-10-23T00:00:00.000Z',
+    };
+    await ctx.db.insert('historyAnalyses', { historyId: cachedId, analysis });
+    return { documentId, cachedId, freshId, analysis };
+  });
+  const before = await client.run((ctx) => ctx.db.get(seeded.cachedId));
+  assert.deepEqual(
+    await users[0].action(api.nativeActions.analyzeHistory, { id: seeded.cachedId }),
+    seeded.analysis,
   );
-  assert.equal(
-    await client.query(internal.nativeFiles.fileId, { path: 'uploads/' + two.uploadId + '.pdf' }),
-    twoStorage,
+  for (const unavailable of [
+    () => users[0].action(api.nativeActions.downloadDocument, { id: seeded.documentId }),
+    () => users[0].action(api.nativeActions.downloadHistory, { id: seeded.cachedId }),
+    () => users[0].action(api.nativeActions.analyzeHistory, { id: seeded.freshId }),
+  ])
+    await assert.rejects(unavailable(), /aguarda a transferência/);
+  await assert.rejects(
+    users[1].action(api.nativeActions.downloadHistory, { id: seeded.cachedId }),
+    /Registro não encontrado/,
   );
+  assert.deepEqual(await client.run((ctx) => ctx.db.get(seeded.cachedId)), before);
+  assert.equal(await client.run((ctx) => ctx.db.query('nativeFileTickets').first()), null);
+});
+
+test('admin restores originals atomically into existing records while retaining identities, metadata and analyses', async () => {
+  const { client, users, issue, put, complete } = await fixture();
+  const expectedHash = createHash('sha256').update('%PDF-fixture').digest('hex');
+  const seeded = await client.run(async (ctx) => {
+    const member = await ctx.db
+      .query('users')
+      .withIndex('email', (q) => q.eq('email', 'a@ifpr.edu.br'))
+      .unique();
+    const calendarId = await ctx.db.insert('calendars', {
+      campusId: member!.campusId!,
+      year: 2027,
+      modalities: ['integrado'],
+      purpose: 'test',
+      courses: 'Preservado',
+      classes: '',
+      shifts: '',
+      version: 1,
+      updatedAt: 1,
+    });
+    const file = {
+      filename: 'original.pdf',
+      hash: expectedHash,
+      unavailableFile: { sourceReference: 'legacy/original.pdf', reason: 'not_migrated' as const },
+    };
+    const historyId = await ctx.db.insert('histories', {
+      ...file,
+      calendarId,
+      campusId: member!.campusId!,
+      year: 2026,
+      modalities: ['integrado'],
+      notes: 'Notas preservadas',
+      createdAt: 1,
+    });
+    const documentId = await ctx.db.insert('documents', {
+      ...file,
+      year: 2027,
+      type: 'norma',
+      title: 'Documento preservado',
+      source: 'Origem preservada',
+      status: 'rascunho',
+      version: 1,
+      createdAt: 1,
+    });
+    const candidate = {
+      dates: null,
+      page: 1,
+      excerpt: 'Feriado preservado',
+      name: 'Feriado preservado',
+      likelyLocal: true,
+      category: 'feriado',
+    };
+    const candidateKey = historyCandidateKey(candidate);
+    const analysis = {
+      version: 1,
+      pages: [{ page: 1, text: 'Análise anterior preservada' }],
+      candidates: [candidate],
+      truncated: false,
+      needsText: false,
+      analyzedAt: '2026-10-23T00:00:00.000Z',
+    };
+    await ctx.db.insert('calendarContents', {
+      calendarId,
+      catalogueRevision: 1,
+      institutionalSnapshot: [],
+      documentSnapshot: [],
+      state: {
+        regime: 'anual',
+        weekdays: [],
+        weekConfirmed: false,
+        weekEvidence: '',
+        periods: [],
+        ignoredHistory: [],
+        assessmentStagesByModality: {},
+        events: [
+          {
+            id: 'preserved-event',
+            name: 'Feriado preservado',
+            start: '2027-04-21',
+            end: '2027-04-21',
+            kind: 'exclude',
+            evidence: 'Fonte histórica',
+            category: 'feriado',
+            historicalSource: { historyId, page: 1, candidateKey },
+          },
+        ],
+      },
+    });
+    const analysisId = await ctx.db.insert('historyAnalyses', { historyId, analysis });
+    return { historyId, documentId, analysisId, analysis, calendarId, candidateKey };
+  });
+  const historyBefore = await client.run((ctx) => ctx.db.get(seeded.historyId));
+  const documentBefore = await client.run((ctx) => ctx.db.get(seeded.documentId));
+  assert.deepEqual(
+    await users[0].action(api.nativeActions.analyzeHistory, { id: seeded.historyId }),
+    seeded.analysis,
+    'missing original keeps older cached analysis available',
+  );
+  const foreign = await issue(0);
+  await complete(foreign.uploadId, await put());
+  await assert.rejects(
+    users[0].action(api.nativeActions.restoreHistoryOriginal, {
+      id: seeded.historyId,
+      uploadId: foreign.uploadId,
+    }),
+    /exclusivo da administra/,
+  );
+  await assert.rejects(
+    users[2].action(api.nativeActions.restoreHistoryOriginal, {
+      id: seeded.historyId,
+      uploadId: foreign.uploadId,
+    }),
+    /Envio expirado/,
+  );
+  const wrong = await issue(2);
+  await complete(wrong.uploadId, await put('%PDF-wrongxx'), 2);
+  await assert.rejects(
+    users[2].action(api.nativeActions.restoreHistoryOriginal, {
+      id: seeded.historyId,
+      uploadId: wrong.uploadId,
+    }),
+    /SHA-256/,
+  );
+  const duplicate = await issue(2),
+    duplicateStorage = await put();
+  await complete(duplicate.uploadId, duplicateStorage, 2);
+  await client.run((ctx) =>
+    ctx.db.insert('documents', {
+      year: 2027,
+      type: 'norma',
+      title: 'Outro',
+      source: 'Teste',
+      filename: 'other.pdf',
+      hash: expectedHash,
+      storageId: duplicateStorage,
+      status: 'rascunho',
+      version: 1,
+      createdAt: 1,
+    }),
+  );
+  await assert.rejects(
+    users[2].action(api.nativeActions.restoreHistoryOriginal, {
+      id: seeded.historyId,
+      uploadId: duplicate.uploadId,
+    }),
+    /Arquivo já cadastrado/,
+  );
+  for (const uploadId of [foreign.uploadId, wrong.uploadId, duplicate.uploadId]) {
+    const upload = await client.run((ctx) =>
+      ctx.db
+        .query('nativeUploads')
+        .withIndex('by_uploadId', (q) => q.eq('uploadId', uploadId))
+        .unique(),
+    );
+    assert.equal(upload!.consumedAt, undefined, 'failed restoration cannot consume its upload');
+  }
+  assert.deepEqual(await client.run((ctx) => ctx.db.get(seeded.historyId)), historyBefore);
+  const valid = await issue(2, 12, 'different-name.pdf'),
+    storageId = await put();
+  await complete(valid.uploadId, storageId, 2);
+  assert.deepEqual(
+    await users[2].action(api.nativeActions.restoreHistoryOriginal, {
+      id: seeded.historyId,
+      uploadId: valid.uploadId,
+    }),
+    { id: seeded.historyId, restored: true },
+  );
+  const { unavailableFile: _historySource, ...historyMetadata } = historyBefore!;
+  assert.deepEqual(await client.run((ctx) => ctx.db.get(seeded.historyId)), {
+    ...historyMetadata,
+    storageId,
+  });
+  assert.deepEqual(
+    (await client.run((ctx) => ctx.db.get(seeded.analysisId)))!.analysis,
+    seeded.analysis,
+  );
+  assert.deepEqual(
+    await users[0].action(api.nativeActions.analyzeHistory, { id: seeded.historyId }),
+    seeded.analysis,
+    'restoring original never implicitly replaces an older analysis',
+  );
+  const reopened = await users[0].query(api.native.calendar, { id: seeded.calendarId });
+  assert.equal(reopened.state.events[0].historicalSource!.candidateKey, seeded.candidateKey);
+  await users[0].mutation(api.native.saveCalendar, {
+    id: seeded.calendarId,
+    body: {
+      version: reopened.version,
+      catalogueRevision: reopened.currentCatalogueRevision,
+      state: reopened.state,
+    },
+  });
+  await assert.rejects(
+    users[2].action(api.nativeActions.restoreHistoryOriginal, {
+      id: seeded.historyId,
+      uploadId: valid.uploadId,
+    }),
+    /já está disponível/,
+  );
+  const docUpload = await issue(2),
+    docStorage = await put();
+  await complete(docUpload.uploadId, docStorage, 2);
+  await users[2].action(api.nativeActions.restoreDocumentOriginal, {
+    id: seeded.documentId,
+    uploadId: docUpload.uploadId,
+  });
+  const { unavailableFile: _documentSource, ...documentMetadata } = documentBefore!;
+  assert.deepEqual(await client.run((ctx) => ctx.db.get(seeded.documentId)), {
+    ...documentMetadata,
+    storageId: docStorage,
+  });
+  const audit = await client.run((ctx) => ctx.db.query('audit').take(10));
+  assert.deepEqual(
+    audit.map((row) => row.action),
+    ['RESTORE_HISTORY_ORIGINAL', 'RESTORE_DOCUMENT_ORIGINAL'],
+  );
+});
+
+test('bounded expiration sweeps remove orphaned temporary files and preserve consumed and permanent storage', async () => {
+  const { client, put } = await fixture();
+  const abandoned = await put(),
+    consumed = await put(),
+    ephemeral = await put(),
+    permanent = await put(),
+    future = await put();
+  await client.run(async (ctx) => {
+    const owner = await ctx.db.query('users').first();
+    for (const [uploadId, storageId, consumedAt] of [
+      ['abandoned', abandoned, undefined],
+      ['consumed', consumed, 1],
+    ] as const)
+      await ctx.db.insert('nativeUploads', {
+        uploadId,
+        storageId,
+        ownerId: owner!._id,
+        filename: 'original.pdf',
+        size: 12,
+        expiresAt: Date.now() - 1,
+        consumedAt,
+      });
+    await ctx.db.insert('nativeUploads', {
+      uploadId: 'future',
+      storageId: future,
+      ownerId: owner!._id,
+      filename: 'future.pdf',
+      size: 12,
+      expiresAt: Date.now() + 60000,
+    });
+    for (let index = 0; index < 101; index++)
+      await ctx.db.insert('nativeFileTickets', {
+        tokenHash: 'expired-' + index,
+        storageId: index === 0 ? ephemeral : permanent,
+        filename: 'original.pdf',
+        expiresAt: Date.now() - 1,
+        ephemeral: index === 0,
+      });
+  });
+  const result = await client.mutation(internal.nativeFiles.cleanupExpired, {});
+  assert.deepEqual(result, { uploads: 2, tickets: 100, continued: true });
+  await client.finishAllScheduledFunctions(vi.runAllTimers);
+  assert.equal((await client.run((ctx) => ctx.db.query('nativeFileTickets').take(2))).length, 0);
+  assert.equal((await client.run((ctx) => ctx.db.query('nativeUploads').take(2))).length, 1);
+  for (const storageId of [abandoned, ephemeral])
+    assert.equal(await client.run((ctx) => ctx.storage.get(storageId)), null);
+  for (const storageId of [consumed, permanent, future])
+    assert(await client.run(async (ctx) => (await ctx.storage.get(storageId)) !== null));
 });
 
 test('download tickets store only token hashes, expire, and delete only ephemeral PDF bytes', async () => {

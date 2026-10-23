@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { ArchiveRestore, CalendarPlus, ExternalLink, FileUp, Trash2 } from 'lucide-react';
 import { calendarName } from '../../src/calendar-label.mjs';
 import { modalityLabels, selectableModalities } from '../../src/modalities.mjs';
-import { api } from './api.ts';
+import { calendars as calendarClient } from '../native/client.ts';
 import { useAction } from './useAction.ts';
+import Pagination from './Pagination.tsx';
 
 export function updatedLabel(value) {
   const date = value ? new Date(value) : null;
@@ -16,7 +17,16 @@ export function updatedLabel(value) {
     : 'Data não disponível';
 }
 
-export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify, liveTrash }) {
+export default function CalendarsPanel({
+  info,
+  isAdmin,
+  filter,
+  onFilter,
+  notify,
+  liveTrash,
+  pagination,
+  trashPagination,
+}) {
   const [campusId, setCampusId] = useState('');
   const [year, setYear] = useState('2027');
   const trash = liveTrash?.calendars ?? [];
@@ -35,11 +45,10 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify
         throw new Error(
           'Nenhum campus ativo está disponível para esta conta. Solicite à administração PROENS a conferência do seu cadastro.',
         );
-      const calendar = await api('/api/calendars', 'POST', {
+      const calendar = await calendarClient.create({
         purpose,
         campusId: campus.id,
         year: Number(year),
-        name,
         modalities: form.getAll('calendar-modality'),
         regime: form.get('regime'),
         courses: form.get('courses'),
@@ -58,7 +67,7 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify
     )
       return;
     run(async () => {
-      await api('/api/calendars/' + calendar.id, 'DELETE', { version: calendar.version });
+      await calendarClient.remove(calendar.id, calendar.version);
       notify('Calendário movido para a lixeira. Você pode restaurá-lo abaixo.');
     });
   }
@@ -247,12 +256,15 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify
             ))
           ) : (
             <li>
-              {filter && info.calendars.length
-                ? 'Nenhum calendário registrado para este campus.'
-                : 'Nenhum calendário registrado nesta conta.'}
+              {pagination.status === 'LoadingFirstPage'
+                ? 'Carregando calendários…'
+                : filter
+                  ? 'Nenhum calendário registrado para este campus.'
+                  : 'Nenhum calendário registrado nesta conta.'}
             </li>
           )}
         </ul>
+        <Pagination pagination={pagination} label="Carregar mais calendários" />
         <details className="panel calendar-trash">
           <summary>Lixeira de calendários</summary>
           {trash.length ? <p>Os dados e documentos são preservados para restauração.</p> : null}
@@ -272,7 +284,7 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify
                     disabled={pending}
                     onClick={() =>
                       run(async () => {
-                        await api('/api/calendars/' + c.id + '/restore', 'POST', {});
+                        await calendarClient.restore(c.id);
                         notify('Calendário restaurado.');
                       })
                     }
@@ -286,6 +298,7 @@ export default function CalendarsPanel({ info, isAdmin, filter, onFilter, notify
               <li>A lixeira está vazia.</li>
             )}
           </ul>
+          <Pagination pagination={trashPagination} label="Carregar mais calendários da lixeira" />
         </details>
       </div>
     </section>

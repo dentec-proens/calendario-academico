@@ -9,7 +9,7 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
-import { api } from './api.ts';
+import { accounts, institution } from '../native/client.ts';
 import { useAction } from './useAction.ts';
 
 function PrivateLink({ id, title, children, url, onClose, notify }) {
@@ -84,7 +84,7 @@ export default function AdministrationPanel({ info, googleEnabled, onCampus, not
     const form = e.currentTarget,
       data = new FormData(form);
     run(async () => {
-      await api('/api/campuses', 'POST', { name: data.get('name') });
+      await institution.createCampus(data.get('name'));
       form.reset();
       notify('Unidade cadastrada.');
     });
@@ -95,7 +95,7 @@ export default function AdministrationPanel({ info, googleEnabled, onCampus, not
     const form = e.currentTarget,
       data = new FormData(form);
     run(async () => {
-      const created = await api('/api/users', 'POST', {
+      const created = await accounts.createMember({
         name: data.get('name'),
         email: data.get('email'),
         password: method === 'local' ? data.get('password') : '',
@@ -131,7 +131,7 @@ export default function AdministrationPanel({ info, googleEnabled, onCampus, not
     )
       return;
     run(async () => {
-      await api('/api/users/' + member.id, 'DELETE', {});
+      await accounts.removeMember(member.id);
       setInvite(null);
       setRecovery(null);
       notify('Acesso excluído; histórico preservado.');
@@ -146,7 +146,7 @@ export default function AdministrationPanel({ info, googleEnabled, onCampus, not
     )
       return;
     run(async () => {
-      setRecovery(await api('/api/users/' + member.id + '/password-recovery', 'POST', {}));
+      setRecovery(await accounts.passwordRecovery(member.id));
       requestAnimationFrame(() => recoveryRef.current?.scrollIntoView({ behavior: 'smooth' }));
       notify('Link de recuperação gerado. Copie e envie pelo seu e-mail institucional.');
     });
@@ -165,8 +165,8 @@ export default function AdministrationPanel({ info, googleEnabled, onCampus, not
               <div>
                 <strong>{c.name}</strong>
                 <small>
-                  {info.calendars.filter((x) => x.campusId === c.id).length} calendário(s) ·{' '}
-                  {info.users.filter((u) => u.campusId === c.id).length} conta(s)
+                  {info.calendars.filter((x) => x.campusId === c.id).length} calendário(s)
+                  carregado(s) · {info.users.filter((u) => u.campusId === c.id).length} conta(s)
                 </small>
               </div>
               <button type="button" data-campus={c.id} onClick={() => onCampus(c.id)}>
@@ -349,7 +349,7 @@ export default function AdministrationPanel({ info, googleEnabled, onCampus, not
                     disabled={pending}
                     onClick={() =>
                       run(async () => {
-                        const result = await api('/api/users/' + u.id + '/invitation', 'POST', {});
+                        const result = await accounts.issueInvitation(u.id);
                         showInvite(result);
                         notify('Novo convite gerado. O link anterior não funciona mais.');
                       })

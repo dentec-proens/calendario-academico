@@ -1,7 +1,6 @@
-import { api } from './portal/api.ts';
+import { accounts } from './native/client.ts';
 import { element } from './native/dom.ts';
 import { nativeError } from './native/client.ts';
-import type { RequestBody } from './native/types.ts';
 
 const requestForm = element('request-form', HTMLFormElement);
 const resetForm = element('reset-form', HTMLFormElement);
@@ -18,7 +17,8 @@ if (token) {
   element('help', HTMLElement).textContent = '';
 } else {
   requestForm.hidden = true;
-  api<{ emailEnabled: boolean }>('/api/password/options')
+  accounts
+    .passwordOptions()
     .then((options) => {
       if (options.emailEnabled) {
         requestForm.hidden = false;
@@ -38,13 +38,13 @@ if (token) {
     });
 }
 
-async function submit(form: HTMLFormElement, path: string, body: RequestBody) {
+async function submit(form: HTMLFormElement, operation: () => Promise<{ message: string }>) {
   const button = form.querySelector('button');
   if (!button) throw new Error('Formulário de recuperação incompleto.');
   button.disabled = true;
   message.textContent = 'Aguarde…';
   try {
-    const data = await api<{ message: string }>(path, 'POST', body);
+    const data = await operation();
     message.textContent = data.message;
     return true;
   } catch (error) {
@@ -57,7 +57,7 @@ async function submit(form: HTMLFormElement, path: string, body: RequestBody) {
 
 requestForm.onsubmit = async (event) => {
   event.preventDefault();
-  await submit(requestForm, '/api/password/request', { email: email.value });
+  await submit(requestForm, () => accounts.requestPasswordRecovery(email.value));
 };
 resetForm.onsubmit = async (event) => {
   event.preventDefault();
@@ -65,7 +65,7 @@ resetForm.onsubmit = async (event) => {
     message.textContent = 'As senhas precisam ser iguais.';
     return;
   }
-  if (await submit(resetForm, '/api/password/reset', { token, password: password.value })) {
+  if (await submit(resetForm, () => accounts.resetPassword({ token, password: password.value }))) {
     token = null;
     password.value = '';
     confirmation.value = '';

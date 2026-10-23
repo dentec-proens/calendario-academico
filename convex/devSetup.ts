@@ -1,32 +1,11 @@
 import { v } from 'convex/values';
+import type { Infer } from 'convex/values';
 import { environments } from '../config/environments';
 import { campusNames, initialCatalogue } from '../src/institution.mjs';
-import { encodeValue } from '../src/convex-codec.mjs';
 import { internalMutation } from './_generated/server';
 import type { TableNames } from './_generated/dataModel';
-import { entityTables } from './model';
-import type { SnapshotChange } from './model';
-import { applyChanges } from './store';
-
-// Check every application/Auth table before seeding. A partially initialized dev
-// is existing data too; setup must never fill, replace or reinterpret its rows.
-const tables = [
-  ...entityTables,
-  'rootFields',
-  'scopeVersions',
-  'calendarVersions',
-  'calendarSnapshots',
-  'reviewVersions',
-  'fileObjects',
-  'nativeUploads',
-  'nativeFileTickets',
-  'authAccounts',
-  'authSessions',
-  'authRefreshTokens',
-  'authVerificationCodes',
-  'authVerifiers',
-  'authRateLimits',
-] satisfies TableNames[];
+import schema from './schema';
+import type { effect, modality } from './validators';
 
 export const initialize = internalMutation({
   args: { expectedCloudUrl: v.string() },
@@ -41,25 +20,30 @@ export const initialize = internalMutation({
     )
       throw Error('A inicialização exige o mesmo deployment dev validado pelo dev:setup.');
 
-    const setupRequired = !(await ctx.db.query('users').withIndex('by_position').first());
-    for (const table of tables) {
+    const setupRequired = !(await ctx.db.query('users').first());
+    // Derive the guard from the schema so a newly added table cannot silently
+    // turn a partially populated deployment into an "empty" installation.
+    for (const table of Object.keys(schema.tables) as TableNames[]) {
       if (await ctx.db.query(table).first()) return { initialized: false, setupRequired };
     }
     if (await ctx.db.system.query('_storage').first()) return { initialized: false, setupRequired };
 
-    const names = [...campusNames, 'Ponta Grossa', 'Toledo', 'Reitoria'];
-    const changes: SnapshotChange[] = entityTables.map((field) => ({
-      field,
-      upserts:
-        field === 'campuses'
-          ? names.map((name, position) => {
-              const id = `campus-${position + 1}`;
-              return { key: `campuses:${id}`, position, value: encodeValue({ id, name }) };
-            })
-          : [],
-    }));
-    changes.push({ field: 'catalogue', value: encodeValue(initialCatalogue()) });
-    await applyChanges(ctx, changes, { full: true });
+    for (const name of [...campusNames, 'Ponta Grossa', 'Toledo', 'Reitoria']) {
+      await ctx.db.insert('campuses', { name, archived: false });
+    }
+    const catalogue = initialCatalogue();
+    await ctx.db.insert('institutionSettings', { key: 'catalogue', revision: catalogue.revision });
+    await ctx.db.insert('catalogueRevisions', { year: 2027, revision: catalogue.revision });
+    for (const item of catalogue.events) {
+      const { id: code, offers: modalities, ...fields } = item;
+      await ctx.db.insert('institutionalEvents', {
+        ...fields,
+        code,
+        year: Number(item.start.slice(0, 4)),
+        kind: item.kind as Infer<typeof effect>,
+        modalities: modalities as Infer<typeof modality>[],
+      });
+    }
     return { initialized: true, setupRequired: true };
   },
 });

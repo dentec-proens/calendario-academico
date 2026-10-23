@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import type { Bootstrap, DocumentsData, Notify, Status, TrashData } from '../native/types.ts';
+import type { Bootstrap, Notify, Status } from '../native/types.ts';
+import type { Id } from '../../convex/_generated/dataModel.js';
+import { usePaginatedQuery } from 'convex/react';
+import { functions } from '../native/client.ts';
 import { Building2, CalendarDays, ClipboardCheck, Library } from 'lucide-react';
 import CalendarsPanel from './CalendarsPanel.jsx';
 import CataloguePanel from './CataloguePanel.jsx';
@@ -13,13 +16,41 @@ interface WorkspaceProps {
   info: Bootstrap;
   status: Status;
   notify: Notify;
-  documentsData: DocumentsData | undefined;
-  trashData: TrashData | undefined;
 }
 
-export function Workspace({ info, status, notify, documentsData, trashData }: WorkspaceProps) {
+export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
   const [page, setPage] = useState<PageId>('calendars');
   const [filter, setFilter] = useState('');
+  const [documentYear, setDocumentYear] = useState('');
+  const calendarPagination = usePaginatedQuery(
+    functions.native.calendarPage,
+    {
+      deleted: false,
+      ...(page === 'calendars' && filter ? { campusId: filter as Id<'campuses'> } : {}),
+    },
+    { initialNumItems: 50 },
+  );
+  const trashPagination = usePaginatedQuery(
+    functions.native.calendarPage,
+    { deleted: true },
+    { initialNumItems: 50 },
+  );
+  const documentPagination = usePaginatedQuery(
+    functions.native.documentPage,
+    Number(documentYear) >= 1900 && Number(documentYear) <= 9999
+      ? { year: Number(documentYear) }
+      : {},
+    { initialNumItems: 50 },
+  );
+  const info = { ...metadata, calendars: calendarPagination.results };
+  const documentsData =
+    documentPagination.status === 'LoadingFirstPage'
+      ? undefined
+      : { revision: info.catalogue.revision, documents: documentPagination.results };
+  const trashData =
+    trashPagination.status === 'LoadingFirstPage'
+      ? undefined
+      : { calendars: trashPagination.results };
   const isAdmin = info.user.role === 'ADMIN';
   const tabs: Array<[PageId, string, LucideIcon]> = [
     ['calendars', 'Calendários', CalendarDays],
@@ -86,16 +117,24 @@ export function Workspace({ info, status, notify, documentsData, trashData }: Wo
           onFilter={setFilter}
           notify={notify}
           liveTrash={trashData}
+          pagination={calendarPagination}
+          trashPagination={trashPagination}
         />
       </div>
       <section id="institution" className="page" hidden={page !== 'institution'}>
-        <DocumentsPanel isAdmin={isAdmin} liveData={documentsData} />
+        <DocumentsPanel
+          isAdmin={isAdmin}
+          liveData={documentsData}
+          pagination={documentPagination}
+          yearFilter={documentYear}
+          onYearFilter={setDocumentYear}
+        />
         <CataloguePanel catalogue={info.catalogue} isAdmin={isAdmin} notify={notify} />
       </section>
       {isAdmin ? (
         <>
           <div hidden={page !== 'review-panel'}>
-            <ReviewPanel calendars={info.calendars} />
+            <ReviewPanel />
           </div>
           <div hidden={page !== 'administration'}>
             <AdministrationPanel

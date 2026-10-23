@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Pencil, Plus, Save } from 'lucide-react';
 import { categories } from '../../src/categories.mjs';
 import { modalityLabels, selectableModalities } from '../../src/modalities.mjs';
-import { api } from './api.ts';
+import { institution } from '../native/client.ts';
 import { useAction } from './useAction.ts';
 
 const emptyEvent = () => ({
@@ -26,7 +26,7 @@ export default function CataloguePanel({ catalogue, isAdmin, notify }) {
   function submit(e) {
     e.preventDefault();
     run(async () => {
-      await api('/api/catalogue', 'POST', {
+      await institution.saveCatalogue({
         ...event,
         id: event.id || undefined,
         revision: catalogue.revision,

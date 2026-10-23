@@ -4,20 +4,17 @@ import type { Infer } from 'convex/values';
 export const memberRole = v.union(v.literal('ADMIN'), v.literal('CAMPUS'));
 export const loginMethod = v.union(v.literal('local'), v.literal('google'), v.literal('invite'));
 export const publicMember = v.object({
-  id: v.string(),
+  id: v.id('users'),
   name: v.string(),
   email: v.string(),
   role: memberRole,
-  campusId: v.union(v.string(), v.null()),
+  campusId: v.union(v.id('campuses'), v.null()),
   active: v.boolean(),
   inviteExpiresAt: v.union(v.number(), v.null()),
   loginMethod,
 });
 
-export const invitationResult = {
-  inviteUrl: v.string(),
-  inviteExpiresAt: v.number(),
-};
+export const invitationResult = { inviteUrl: v.string(), inviteExpiresAt: v.number() };
 export const createdMember = v.object({
   ...publicMember.fields,
   inviteUrl: v.optional(v.string()),
@@ -26,7 +23,7 @@ export const memberInput = v.object({
   name: v.string(),
   email: v.string(),
   role: v.optional(memberRole),
-  campusId: v.optional(v.union(v.string(), v.null())),
+  campusId: v.optional(v.union(v.id('campuses'), v.null())),
   loginMethod: v.optional(loginMethod),
 });
 export const memberCredentialsInput = v.object({
@@ -42,15 +39,11 @@ export const setupInput = v.object({
 
 export type PublicMember = Infer<typeof publicMember>;
 export type CreatedMember = Infer<typeof createdMember>;
-export type Member = Omit<PublicMember, 'campusId' | 'loginMethod' | 'inviteExpiresAt'> & {
-  campusId?: string | null;
-  loginMethod?: Infer<typeof loginMethod>;
+export type Member = Omit<PublicMember, 'inviteExpiresAt'> & {
   inviteExpiresAt?: number;
-  removedAt?: string;
+  removedAt?: number;
   nativeInviteHash?: string;
   nativeResetHash?: string;
   googleSubject?: string;
-  googleLastLoginAt?: string;
-  hash?: string;
-  salt?: string;
+  googleLastLoginAt?: number;
 };

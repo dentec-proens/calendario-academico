@@ -4,8 +4,18 @@ import { v, ConvexError } from 'convex/values';
 import { action } from './_generated/server';
 import { internal } from './_generated/api';
 import { nativePdf } from '../src/native-pdf.mjs';
-import { analyzeHistory } from '../src/history-analysis.mjs';
+import { analyzeHistory as analyzePdfHistory } from '../src/history-analysis.mjs';
+import {
+  pdfRequest,
+  historyUploadInput,
+  documentUploadInput,
+  fileDownload,
+  documentMetadata,
+  historyAnalysis,
+} from './validators';
 import type { ActionCtx } from './_generated/server';
+import type { Id } from './_generated/dataModel';
+import type { Infer } from 'convex/values';
 
 function fail(message: string, status = 400): never {
   throw new ConvexError({ error: message, status });
@@ -15,21 +25,33 @@ const validate = (bytes: Buffer) => {
     fail('Envie um PDF de até 8 MB.');
   return bytes;
 };
-async function fileBytes(ctx: ActionCtx, item: { objectKey?: string; data?: string }) {
-  if (item.objectKey) {
-    const id = await ctx.runQuery(internal.nativeFiles.fileId, { path: item.objectKey });
-    const blob = id ? await ctx.storage.get(id) : null;
-    if (!blob)
-      fail(
-        'Este PDF original aguarda a transferência para o armazenamento atual. Seus dados e análises foram preservados.',
-        503,
-      );
-    if (blob.size < 5 || blob.size > 8_000_000) fail('Envie um PDF de até 8 MB.');
-    return validate(Buffer.from(await blob.arrayBuffer()));
-  }
-  if (typeof item.data === 'string') return validate(Buffer.from(item.data, 'base64'));
-  return fail('Arquivo não encontrado.', 404);
+const missingOriginal = () =>
+  fail(
+    'Este PDF original aguarda a transferência para o armazenamento atual. Seus dados e análises foram preservados.',
+    503,
+  );
+
+type FileSource = { storageId?: Id<'_storage'>; filename: string };
+async function original(ctx: ActionCtx, item: FileSource) {
+  if (!item.storageId) return missingOriginal();
+  const blob = await ctx.storage.get(item.storageId);
+  if (!blob) return missingOriginal();
+  return blob;
 }
+async function fileBytes(ctx: ActionCtx, item: FileSource) {
+  const blob = await original(ctx, item);
+  if (blob.size < 5 || blob.size > 8_000_000) fail('Envie um PDF de até 8 MB.');
+  return validate(Buffer.from(await blob.arrayBuffer()));
+}
+async function downloadOriginal(ctx: ActionCtx, item: FileSource) {
+  await original(ctx, item);
+  return ctx.runMutation(internal.nativeFiles.ticket, {
+    storageId: item.storageId!,
+    filename: item.filename,
+    ephemeral: false,
+  });
+}
+
 export const completeUpload = action({
   args: { uploadId: v.string(), storageId: v.id('_storage') },
   returns: v.object({ uploadId: v.string() }),
@@ -40,7 +62,7 @@ export const completeUpload = action({
     if (blob.size < 5 || blob.size > 8_000_000) fail('Envie um PDF de até 8 MB.');
     const bytes = validate(Buffer.from(await blob.arrayBuffer()));
     if (bytes.length !== upload.size) fail('O tamanho do PDF recebido é diferente do informado.');
-    return await ctx.runMutation(internal.nativeFiles.finishUpload, {
+    return ctx.runMutation(internal.nativeFiles.finishUpload, {
       uploadId,
       storageId,
       size: bytes.length,
@@ -48,81 +70,68 @@ export const completeUpload = action({
     });
   },
 });
-export const download = action({
-  args: { path: v.string() },
-  returns: v.object({ url: v.string(), filename: v.string() }),
-  handler: async (ctx, { path }): Promise<{ url: string; filename: string }> => {
-    if (!/^\/api\/(?:history|documents)\/[\w-]+$/.test(path)) fail('Arquivo não encontrado.', 404);
-    const context = await ctx.runQuery(internal.native.actionContext, { path, body: {} });
-    const item = context.history || context.document;
-    if (!item) fail('Arquivo não encontrado.', 404);
-    let id = item.objectKey
-      ? await ctx.runQuery(internal.nativeFiles.fileId, { path: item.objectKey })
-      : null;
-    let ephemeral = false;
-    if (!id) {
-      id = await ctx.storage.store(
-        new Blob([Uint8Array.from(await fileBytes(ctx, item))], { type: 'application/pdf' }),
-      );
-      ephemeral = true;
-    }
-    try {
-      return await ctx.runMutation(internal.nativeFiles.ticket, {
-        storageId: id,
-        filename: item.filename,
-        ephemeral,
-      });
-    } catch (error) {
-      if (ephemeral) await ctx.storage.delete(id);
-      throw error;
-    }
+
+export const uploadHistory = action({
+  args: historyUploadInput.fields,
+  returns: v.object({ id: v.id('histories') }),
+  handler: async (ctx, args): Promise<{ id: Id<'histories'> }> =>
+    ctx.runMutation(internal.native.attachHistory, args),
+});
+
+export const uploadDocument = action({
+  args: documentUploadInput.fields,
+  returns: documentMetadata,
+  handler: async (ctx, args): Promise<Infer<typeof documentMetadata>> =>
+    ctx.runMutation(internal.native.attachDocument, args),
+});
+
+export const downloadHistory = action({
+  args: { id: v.id('histories') },
+  returns: fileDownload,
+  handler: async (ctx, args): Promise<Infer<typeof fileDownload>> => {
+    const { history } = await ctx.runQuery(internal.native.historyContext, args);
+    return downloadOriginal(ctx, history);
   },
 });
-export const run = action({
-  args: { path: v.string(), body: v.any() },
-  returns: v.any(),
-  handler: async (ctx, { path, body }): Promise<any> => {
-    const pdf = /^\/api\/calendars\/[\w-]+\/pdf$/.test(path),
-      analysis = /^\/api\/history\/[\w-]+\/analysis$/.test(path),
-      upload = path === '/api/documents' || /^\/api\/calendars\/[\w-]+\/history$/.test(path);
-    if (!pdf && !analysis && !upload) fail('Ação inválida.', 404);
-    const context = await ctx.runQuery(internal.native.actionContext, { path, body });
-    if (upload) {
-      if (typeof body.uploadId !== 'string') fail('Envie o PDF antes de concluir o cadastro.');
-      const file = await ctx.runQuery(internal.nativeFiles.uploadContext, {
-        uploadId: body.uploadId,
-      });
-      if (!file.completedAt || !file.objectKey || !file.hash) fail('Envio do PDF incompleto.');
-      return await ctx.runMutation(internal.native.finishAction, {
-        path,
-        body,
-        result: {
-          uploadId: file.uploadId,
-          objectKey: file.objectKey,
-          size: file.size,
-          hash: file.hash,
-        },
-      });
+
+export const downloadDocument = action({
+  args: { id: v.id('documents') },
+  returns: fileDownload,
+  handler: async (ctx, args): Promise<Infer<typeof fileDownload>> => {
+    const { document } = await ctx.runQuery(internal.native.documentContext, args);
+    return downloadOriginal(ctx, document);
+  },
+});
+
+export const analyzeHistory = action({
+  args: { id: v.id('histories') },
+  returns: historyAnalysis,
+  handler: async (ctx, args): Promise<Infer<typeof historyAnalysis>> => {
+    const { history } = await ctx.runQuery(internal.native.historyContext, args);
+    if (history.analysis) return history.analysis;
+    const bytes = await fileBytes(ctx, history);
+    let analysis: Infer<typeof historyAnalysis>;
+    try {
+      analysis = await analyzePdfHistory(bytes);
+    } catch {
+      fail(
+        'Não foi possível ler o texto deste PDF. Envie um arquivo sem senha e com texto selecionável. O documento continua guardado para consulta.',
+        422,
+      );
     }
-    if (analysis) {
-      if (context.history.analysis?.version === 2) return context.history.analysis;
-      // Missing deferred files are an availability error, not a corrupt PDF.
-      const bytes = await fileBytes(ctx, context.history);
-      let result;
-      try {
-        result = await analyzeHistory(bytes);
-      } catch {
-        fail(
-          'Não foi possível ler o texto deste PDF. Envie um arquivo sem senha e com texto selecionável. O documento continua guardado para consulta.',
-          422,
-        );
-      }
-      return await ctx.runMutation(internal.native.finishAction, {
-        path,
-        body: { ...body, hash: context.history.hash },
-        result,
-      });
-    }
+    return ctx.runMutation(internal.native.saveHistoryAnalysis, {
+      id: args.id,
+      hash: history.hash,
+      analysis,
+    });
+  },
+});
+
+export const generatePdf = action({
+  args: pdfRequest.fields,
+  returns: fileDownload,
+  handler: async (ctx, args): Promise<Infer<typeof fileDownload>> => {
+    const context = await ctx.runQuery(internal.native.pdfContext, args);
     const record = {
       ...context.record,
       proposalCopy: context.proposalCopy,
@@ -148,4 +157,18 @@ export const run = action({
       throw error;
     }
   },
+});
+
+export const restoreHistoryOriginal = action({
+  args: { id: v.id('histories'), uploadId: v.string() },
+  returns: v.object({ id: v.id('histories'), restored: v.literal(true) }),
+  handler: async (ctx, args): Promise<{ id: Id<'histories'>; restored: true }> =>
+    ctx.runMutation(internal.nativeFiles.restoreHistoryOriginal, args),
+});
+
+export const restoreDocumentOriginal = action({
+  args: { id: v.id('documents'), uploadId: v.string() },
+  returns: v.object({ id: v.id('documents'), restored: v.literal(true) }),
+  handler: async (ctx, args): Promise<{ id: Id<'documents'>; restored: true }> =>
+    ctx.runMutation(internal.nativeFiles.restoreDocumentOriginal, args),
 });

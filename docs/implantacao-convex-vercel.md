@@ -50,6 +50,8 @@ Confira o commit e o estado Ready na Vercel. Valide login, autorização, abertu
 
 O build e a publicação Vercel não publicam funções Convex nem inicializam dados. A publicação de código não importa backups ou arquivos históricos.
 
+A consolidação do banco anterior para o schema tipado exige executar primeiro o procedimento de [migração do schema](migracao-schema.md). Ele bloqueia as escritas da aplicação, exporta a fotografia final, ensaia esse plano em outro deployment e só então converte os documentos existentes. A publicação normal não substitui essa migração.
+
 ## Backup e restauração
 
 O backup deve incluir a exportação completa do Convex e o Storage quando houver arquivos, usando a opção `--include-file-storage`. Guardar exportações em local privado: elas podem conter credenciais e dados pessoais e não devem ser versionadas no Git.
@@ -58,4 +60,6 @@ Ensaiar a restauração completa em outro deployment antes de operar sobre produ
 
 ## Arquivos indisponíveis
 
-A pendência conhecida de transferência de 13 PDFs originais não foi resolvida pela atualização de código. Metadados e análises cadastradas não comprovam que os bytes estejam no Storage. Quando um desses arquivos estiver indisponível, preservar sua referência e providenciar o original pelo procedimento autorizado, sem recriar dados estruturados ou substituir o arquivo por uma amostra.
+A pendência conhecida de transferência de 13 PDFs originais permanece explícita nos registros. Metadados e análises cadastradas não comprovam que os bytes estejam no Storage. Quando os originais estiverem disponíveis, a administração pode usar **Restaurar PDF original** no registro existente; o servidor exige o mesmo SHA-256 e preserva IDs, análises e referências. Veja [Restauração dos originais](restauracao-de-originais.md). Não recrie registros nem substitua o arquivo por uma amostra.
+
+Quando os originais estiverem disponíveis, siga [Restauração dos PDFs originais](restauracao-de-originais.md). A interface ADMIN exige correspondência exata do SHA-256 e preserva os registros existentes.

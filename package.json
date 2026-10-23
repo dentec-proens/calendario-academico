@@ -28,7 +28,8 @@
     "test:unit": "vitest run --exclude test/native-portal-browser.test.ts",
     "test:watch": "vitest",
     "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
-    "test:browser": "vitest run test/native-portal-browser.test.ts"
+    "test:browser": "vitest run test/native-portal-browser.test.ts",
+    "migrate:data": "tsx scripts/migrate-data.ts"
   },
   "engines": {
     "node": "24.x",

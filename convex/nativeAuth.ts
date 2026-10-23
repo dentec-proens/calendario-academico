@@ -3,8 +3,6 @@ import { getAuthSessionId, getAuthUserId } from '@convex-dev/auth/server';
 import { query, mutation, action, internalMutation, internalQuery } from './_generated/server';
 import type { QueryCtx, MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
-import { encodeValue, decodeValue } from '../src/convex-codec.mjs';
-import type { EntityTable } from './model';
 import type { Doc, Id } from './_generated/dataModel';
 import {
   publicMember,
@@ -19,7 +17,6 @@ import type { Member, PublicMember, CreatedMember } from './authContracts';
 import { passwordCrypto, validatePassword } from './authCrypto';
 
 type Context = QueryCtx | MutationCtx;
-const maxMembers = 1000;
 const inviteError =
   'Convite inválido, expirado ou já utilizado. Solicite um novo ao administrador.';
 const resetError = 'Link inválido, expirado ou já utilizado. Solicite uma nova recuperação.';
@@ -32,22 +29,37 @@ export function institutionalEmail(value: unknown): string {
   return email;
 }
 
+function storedMember(row: Doc<'users'>): Member {
+  return {
+    id: row._id,
+    name: row.name!,
+    email: row.email!,
+    role: row.role,
+    campusId: row.campusId ?? null,
+    active: row.active,
+    loginMethod: row.loginMethod,
+    inviteExpiresAt: row.inviteExpiresAt,
+    removedAt: row.removedAt,
+    nativeInviteHash: row.nativeInviteHash,
+    nativeResetHash: row.nativeResetHash,
+    googleSubject: row.googleSubject,
+    googleLastLoginAt: row.googleLastLoginAt,
+  };
+}
+
 export function memberFromRow(row: Doc<'users'> | null): Member | null {
-  if (!row?.value) return null;
-  const user = decodeValue(row.value);
-  return user &&
-    typeof user.id === 'string' &&
-    row.appId === user.id &&
-    typeof user.name === 'string' &&
-    typeof user.email === 'string' &&
-    row.email === user.email &&
-    /^[^\s@]+@ifpr\.edu\.br$/.test(user.email) &&
-    ['ADMIN', 'CAMPUS'].includes(user.role) &&
-    (user.role === 'ADMIN' || (typeof user.campusId === 'string' && !!user.campusId)) &&
-    user.active === true &&
-    !user.removedAt
-    ? user
-    : null;
+  if (
+    !row ||
+    typeof row.name !== 'string' ||
+    typeof row.email !== 'string' ||
+    !/^[^\s@]+@ifpr\.edu\.br$/.test(row.email) ||
+    !['ADMIN', 'CAMPUS'].includes(row.role) ||
+    (row.role === 'CAMPUS' && !row.campusId) ||
+    row.active !== true ||
+    row.removedAt !== undefined
+  )
+    return null;
+  return storedMember(row);
 }
 
 export function safeMember(user: Member): PublicMember {
@@ -92,41 +104,34 @@ async function digest(token: string) {
   return Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function touchCollection(ctx: MutationCtx, field: EntityTable, delta = 0) {
-  const root = await ctx.db
-    .query('rootFields')
-    .withIndex('by_name', (q) => q.eq('name', field))
-    .unique();
-  if (root && root.count !== undefined) await ctx.db.patch(root._id, { count: root.count + delta });
-  if (!root) await ctx.db.insert('rootFields', { name: field, count: delta });
+async function appendAudit(
+  ctx: MutationCtx,
+  actorId: Id<'users'>,
+  action: string,
+  id: Id<'users'>,
+) {
+  await ctx.db.insert('audit', { at: Date.now(), actorId, action, target: { type: 'user', id } });
 }
 
-async function appendAudit(ctx: MutationCtx, actor: string, action: string, id: string) {
-  const value = { at: new Date().toISOString(), actor, action, id };
-  const last = await ctx.db.query('audit').withIndex('by_position').order('desc').first();
-  await ctx.db.insert('audit', {
-    key: `audit:${crypto.randomUUID()}`,
-    position: (last?.position ?? -1) + 1,
-    value: encodeValue(value),
-  });
-  await touchCollection(ctx, 'audit', 1);
-}
-
-async function memberByAppId(ctx: Context, id: string) {
-  return ctx.db
-    .query('users')
-    .withIndex('by_appId', (q) => q.eq('appId', id))
-    .unique();
+async function memberById(ctx: Context, id: Id<'users'>) {
+  return ctx.db.get(id);
 }
 
 async function patchMember(ctx: MutationCtx, row: Doc<'users'>, user: Member) {
   await ctx.db.patch(row._id, {
-    value: encodeValue(user),
-    email: user.email,
     name: user.name,
+    email: user.email,
+    role: user.role,
     campusId: user.campusId ?? undefined,
+    active: user.active,
+    loginMethod: user.loginMethod,
+    inviteExpiresAt: user.inviteExpiresAt,
+    removedAt: user.removedAt,
+    nativeInviteHash: user.nativeInviteHash,
+    nativeResetHash: user.nativeResetHash,
+    googleSubject: user.googleSubject,
+    googleLastLoginAt: user.googleLastLoginAt,
   });
-  await touchCollection(ctx, 'users');
 }
 
 async function setPassword(ctx: MutationCtx, row: Doc<'users'>, secret: string) {
@@ -166,9 +171,10 @@ async function revokeSessions(ctx: MutationCtx, userId: Id<'users'>) {
   }
 }
 
-async function issueInvite(ctx: MutationCtx, row: Doc<'users'>, actor: string) {
-  const user = decodeValue(row.value);
-  if (user.removedAt || user.active || user.loginMethod !== 'invite') throw Error(inviteError);
+async function issueInvite(ctx: MutationCtx, row: Doc<'users'>, actor: Id<'users'>) {
+  const user = storedMember(row);
+  if (user.removedAt !== undefined || user.active || user.loginMethod !== 'invite')
+    throw Error(inviteError);
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   const token = btoa(String.fromCharCode(...bytes))
     .replace(/\+/g, '-')
@@ -176,22 +182,14 @@ async function issueInvite(ctx: MutationCtx, row: Doc<'users'>, actor: string) {
     .replace(/=+$/, '');
   const tokenHash = await digest(token);
   const expiresAt = Date.now() + 48 * 60 * 60 * 1000;
-  const last = await ctx.db.query('invitations').withIndex('by_position').order('desc').first();
   await ctx.db.insert('invitations', {
-    key: `invitations:${tokenHash}`,
-    position: (last?.position ?? -1) + 1,
-    // Existing invitations are logically invalidated by this unique hash on
-    // the member. Imported invitations without it remain valid until expiry.
-    value: encodeValue({
-      tokenHash,
-      userId: user.id,
-      expiresAt,
-      createdBy: actor,
-      createdAt: Date.now(),
-      revoked: false,
-    }),
+    tokenHash,
+    userId: user.id,
+    expiresAt,
+    createdBy: actor,
+    createdAt: Date.now(),
+    revoked: false,
   });
-  await touchCollection(ctx, 'invitations', 1);
   user.inviteExpiresAt = expiresAt;
   user.nativeInviteHash = tokenHash;
   await patchMember(ctx, row, user);
@@ -203,11 +201,11 @@ async function validInvitation(ctx: Context, token: string) {
   const hash = await digest(token);
   const inviteRow = await ctx.db
     .query('invitations')
-    .withIndex('by_key', (q) => q.eq('key', `invitations:${hash}`))
+    .withIndex('by_tokenHash', (q) => q.eq('tokenHash', hash))
     .unique();
-  const invite = inviteRow && decodeValue(inviteRow.value);
-  const row = invite && (await memberByAppId(ctx, invite.userId));
-  const user = row && decodeValue(row.value);
+  const invite = inviteRow;
+  const row = invite && (await memberById(ctx, invite.userId));
+  const user = row && storedMember(row);
   if (
     !row ||
     !user ||
@@ -216,7 +214,7 @@ async function validInvitation(ctx: Context, token: string) {
     invite.revoked ||
     invite.expiresAt <= Date.now() ||
     user.active ||
-    user.removedAt ||
+    user.removedAt !== undefined ||
     user.loginMethod !== 'invite' ||
     (user.nativeInviteHash && user.nativeInviteHash !== hash)
   )
@@ -229,17 +227,17 @@ async function validReset(ctx: Context, token: string) {
   const hash = await digest(token);
   const resetRow = await ctx.db
     .query('passwordResets')
-    .withIndex('by_key', (q) => q.eq('key', `passwordResets:${hash}`))
+    .withIndex('by_tokenHash', (q) => q.eq('tokenHash', hash))
     .unique();
-  const reset = resetRow && decodeValue(resetRow.value);
-  const row = reset && (await memberByAppId(ctx, reset.userId));
+  const reset = resetRow;
+  const row = reset && (await memberById(ctx, reset.userId));
   const user = row && memberFromRow(row);
   if (
     !reset ||
     !row ||
     !user ||
     reset.usedAt ||
-    reset.expires <= Date.now() ||
+    reset.expiresAt <= Date.now() ||
     user.loginMethod === 'google' ||
     (user.nativeResetHash && user.nativeResetHash !== hash)
   )
@@ -278,7 +276,7 @@ export const status = query({
       }
     }
     return {
-      setupRequired: !(await ctx.db.query('users').withIndex('by_position').first()),
+      setupRequired: !(await ctx.db.query('users').first()),
       hosted: true,
       googleEnabled: !!(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET),
       user,
@@ -303,28 +301,23 @@ export const checkInvitation = query({
   }),
   handler: async (ctx, { token }) => {
     const { user, invite } = await validInvitation(ctx, token);
-    const campus =
-      user.campusId &&
-      (await ctx.db
-        .query('campuses')
-        .withIndex('by_appId', (q) => q.eq('appId', user.campusId))
-        .unique());
+    const campus = user.campusId ? await ctx.db.get(user.campusId) : null;
     return {
       name: user.name,
       email: user.email,
       role: user.role,
-      campus: campus ? decodeValue(campus.value).name : null,
+      campus: campus?.name ?? null,
       expiresAt: invite.expiresAt,
     };
   },
 });
 
 export const issueInvitation = mutation({
-  args: { id: v.string() },
+  args: { id: v.id('users') },
   returns: v.object(invitationResult),
   handler: async (ctx, { id }) => {
     const { user } = await requireAdmin(ctx);
-    const row = await memberByAppId(ctx, id);
+    const row = await memberById(ctx, id);
     if (!row) throw Error('Membro não encontrado.');
     const result = await issueInvite(ctx, row, user.id);
     await appendAudit(ctx, user.id, 'REISSUE_INVITATION', id);
@@ -379,34 +372,20 @@ export const createMemberRecord = internalMutation({
     if (role === 'CAMPUS') {
       const campusId = data.campusId;
       if (!campusId) throw Error('Campus inválido.');
-      const campus = await ctx.db
-        .query('campuses')
-        .withIndex('by_appId', (q) => q.eq('appId', campusId))
-        .unique();
-      if (!campus || decodeValue(campus.value).archived) throw Error('Campus inválido.');
+      const campus = await ctx.db.get(campusId);
+      if (!campus || campus.archived) throw Error('Campus inválido.');
     }
     if (loginMethod === 'local' && !secret) throw Error('Informe a senha.');
-    const user: Member = {
-      id: crypto.randomUUID(),
+    const id = await ctx.db.insert('users', {
       name: data.name.trim(),
       email,
       role,
-      campusId: role === 'ADMIN' ? null : data.campusId,
+      ...(role === 'CAMPUS' && data.campusId ? { campusId: data.campusId } : {}),
       loginMethod,
       active: loginMethod !== 'invite',
-    };
-    const last = await ctx.db.query('users').withIndex('by_position').order('desc').first();
-    const id = await ctx.db.insert('users', {
-      key: `users:${user.id}`,
-      position: (last?.position ?? -1) + 1,
-      appId: user.id,
-      email,
-      name: user.name,
-      ...(user.campusId ? { campusId: user.campusId } : {}),
-      value: encodeValue(user),
     });
-    await touchCollection(ctx, 'users', 1);
     const row = (await ctx.db.get(id))!;
+    const user = storedMember(row);
     if (secret) await setPassword(ctx, row, secret);
     await appendAudit(ctx, actor.id, 'CREATE_USER', user.id);
     if (loginMethod === 'invite')
@@ -432,29 +411,26 @@ export const consumeInvitation = internalMutation({
   args: { token: v.string(), email: v.string(), secret: v.string() },
   returns: v.object({ ok: v.boolean() }),
   handler: async (ctx, { token, email, secret }) => {
-    const { row, user, inviteRow, invite } = await validInvitation(ctx, token);
+    const { row, user, inviteRow } = await validInvitation(ctx, token);
     if (user.email !== email) throw Error(inviteError);
     await setPassword(ctx, row, secret);
     user.active = true;
     user.loginMethod = 'local';
     delete user.inviteExpiresAt;
     delete user.nativeInviteHash;
-    delete user.hash;
-    delete user.salt;
     await patchMember(ctx, row, user);
-    await ctx.db.patch(inviteRow._id, { value: encodeValue({ ...invite, usedAt: Date.now() }) });
-    await touchCollection(ctx, 'invitations');
+    await ctx.db.patch(inviteRow._id, { usedAt: Date.now() });
     await appendAudit(ctx, user.id, 'ACCEPT_INVITATION', user.id);
     return { ok: true };
   },
 });
 
 export const passwordRecovery = mutation({
-  args: { id: v.string() },
+  args: { id: v.id('users') },
   returns: v.object({ url: v.string(), expiresAt: v.number(), email: v.string() }),
   handler: async (ctx, { id }) => {
     const { user: actor } = await requireAdmin(ctx);
-    const row = await memberByAppId(ctx, id);
+    const row = await memberById(ctx, id);
     const user = row && memberFromRow(row);
     const account =
       row &&
@@ -469,17 +445,7 @@ export const passwordRecovery = mutation({
     const token = randomHex(32),
       hash = await digest(token),
       expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-    const last = await ctx.db
-      .query('passwordResets')
-      .withIndex('by_position')
-      .order('desc')
-      .first();
-    await ctx.db.insert('passwordResets', {
-      key: `passwordResets:${hash}`,
-      position: (last?.position ?? -1) + 1,
-      value: encodeValue({ hash, userId: user.id, expires: expiresAt }),
-    });
-    await touchCollection(ctx, 'passwordResets', 1);
+    await ctx.db.insert('passwordResets', { tokenHash: hash, userId: user.id, expiresAt });
     user.nativeResetHash = hash;
     await patchMember(ctx, row, user);
     await appendAudit(ctx, actor.id, 'ISSUE_PASSWORD_RECOVERY', id);
@@ -501,14 +467,11 @@ export const consumeReset = internalMutation({
   args: { token: v.string(), secret: v.string() },
   returns: v.object({ message: v.string() }),
   handler: async (ctx, { token, secret }) => {
-    const { row, user, resetRow, reset } = await validReset(ctx, token);
+    const { row, user, resetRow } = await validReset(ctx, token);
     await setPassword(ctx, row, secret);
     user.nativeResetHash = 'used';
-    delete user.hash;
-    delete user.salt;
     await patchMember(ctx, row, user);
-    await ctx.db.patch(resetRow._id, { value: encodeValue({ ...reset, usedAt: Date.now() }) });
-    await touchCollection(ctx, 'passwordResets');
+    await ctx.db.patch(resetRow._id, { usedAt: Date.now() });
     await revokeSessions(ctx, row._id);
     await appendAudit(ctx, user.id, 'RESET_PASSWORD', user.id);
     return { message: 'Senha alterada. Entre novamente com seu e-mail e a nova senha.' };
@@ -526,25 +489,24 @@ export const requestPasswordRecovery = action({
 });
 
 export const removeMember = mutation({
-  args: { id: v.string() },
+  args: { id: v.id('users') },
   returns: v.object({ ok: v.boolean() }),
   handler: async (ctx, { id }) => {
     const { user: actor } = await requireAdmin(ctx);
     if (id === actor.id) throw Error('Você não pode excluir seu próprio acesso.');
-    const row = await memberByAppId(ctx, id);
-    const user = row && decodeValue(row.value);
-    if (!row || !user || user.removedAt) throw Error('Membro não encontrado.');
+    const row = await memberById(ctx, id);
+    const user = row && storedMember(row);
+    if (!row || !user || user.removedAt !== undefined) throw Error('Membro não encontrado.');
     if (user.role === 'ADMIN' && user.active) {
       const rows = await ctx.db
         .query('users')
-        .withIndex('by_position')
-        .take(maxMembers + 1);
-      if (rows.length > maxMembers) throw Error('Limite de membros excedido.');
-      if (rows.filter((r) => memberFromRow(r)?.role === 'ADMIN').length <= 1)
+        .withIndex('by_role_and_active', (q) => q.eq('role', 'ADMIN').eq('active', true))
+        .take(2);
+      if (rows.filter((r) => memberFromRow(r)).length <= 1)
         throw Error('É necessário manter um administrador ativo.');
     }
     user.active = false;
-    user.removedAt = new Date().toISOString();
+    user.removedAt = Date.now();
     delete user.inviteExpiresAt;
     await patchMember(ctx, row, user);
     await revokeSessions(ctx, row._id);
@@ -576,29 +538,17 @@ export const setupRecord = internalMutation({
   args: { email: v.string(), name: v.string(), secret: v.string() },
   returns: v.object({ ok: v.boolean() }),
   handler: async (ctx, { email, name, secret }) => {
-    if (await ctx.db.query('users').withIndex('by_position').first())
-      throw Error('Conta ADMIN já criada.');
+    if (await ctx.db.query('users').first()) throw Error('Conta ADMIN já criada.');
     if (!name.trim() || name.length > 240) throw Error('Informe seu nome.');
-    const user: Member = {
-      id: crypto.randomUUID(),
+    const id = await ctx.db.insert('users', {
       name: name.trim(),
       email,
       role: 'ADMIN',
-      campusId: null,
       active: true,
       loginMethod: 'local',
-    };
-    const id = await ctx.db.insert('users', {
-      key: `users:${user.id}`,
-      position: 0,
-      appId: user.id,
-      email,
-      name: user.name,
-      value: encodeValue(user),
     });
-    await touchCollection(ctx, 'users', 1);
     await setPassword(ctx, (await ctx.db.get(id))!, secret);
-    await appendAudit(ctx, user.id, 'CREATE_ADMIN', email);
+    await appendAudit(ctx, id, 'CREATE_ADMIN', id);
     return { ok: true };
   },
 });

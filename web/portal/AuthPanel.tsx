@@ -1,7 +1,7 @@
 import type { FormEvent } from 'react';
 import type { Notify, Status } from '../native/types.ts';
 import { LogIn, ShieldCheck } from 'lucide-react';
-import { api } from './api.ts';
+import { accounts } from '../native/client.ts';
 import { useAction } from './useAction.ts';
 
 export default function AuthPanel({ status, notify }: { status: Status; notify: Notify }) {
@@ -25,12 +25,12 @@ export default function AuthPanel({ status, notify }: { status: Status; notify: 
         password: text('password'),
       };
       if (setup)
-        await api('/api/setup', 'POST', {
+        await accounts.setup({
           ...credentials,
           name: text('name'),
           code: text('code'),
         });
-      await api('/api/login', 'POST', credentials);
+      await accounts.signIn(credentials);
       form.reset();
       notify('Acesso realizado.');
     });
@@ -47,7 +47,7 @@ export default function AuthPanel({ status, notify }: { status: Status; notify: 
           disabled={pending}
           onClick={() =>
             run(async () => {
-              await api('/api/google/start', 'POST', {});
+              await accounts.signInGoogle();
             })
           }
         >

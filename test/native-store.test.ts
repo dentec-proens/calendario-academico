@@ -1,142 +1,189 @@
-import type { SnapshotChange } from '../convex/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { applyChanges } from '../convex/store.ts';
-import { encodeValue, decodeValue } from '../src/convex-codec.mjs';
+import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
 import { reviewCriteria } from '../src/review.mjs';
 
 const createBody = {
-  campusId: 'a',
   year: 2027,
-  modalities: ['integrado'],
-  regime: 'anual',
+  modalities: ['integrado' as const],
+  regime: 'anual' as const,
   courses: 'Curso sintético',
-  purpose: 'test',
+  purpose: 'test' as const,
 };
 
-test('Convex persistence rejects calendar removal, rewritten version snapshots and replacement of audit history', async () => {
-  const { client, as, inspect } = await createNativeFixture();
-  const campus = as('campus-a');
-  const record = await campus.write('/api/calendars', createBody);
-  const path = '/api/calendars/' + record.id;
-  const originalState = (await inspect()).calendars[0].state;
-  await campus.write(
-    path,
-    {
-      version: 1,
-      catalogueRevision: 1,
-      state: { ...record.state, weekEvidence: 'Alteração sintética' },
+test('calendar operations append immutable snapshots and roll back stale saves atomically', async () => {
+  const { client, asClient, ids } = await createNativeFixture();
+  const campus = asClient('campus-a');
+  const created = await campus.mutation(api.native.createCalendar, {
+    body: { ...createBody, campusId: ids.campuses.a },
+  });
+  const saved = await campus.mutation(api.native.saveCalendar, {
+    id: created.id,
+    body: {
+      version: created.version,
+      catalogueRevision: created.currentCatalogueRevision,
+      state: { ...created.state, weekEvidence: 'Ata sintética' },
     },
-    'PUT',
-  );
-  const before = await inspect();
-  const rows = await client.run(async (ctx) => ({
-    calendar: await ctx.db.query('calendars').first(),
-    audit: await ctx.db.query('audit').first(),
+  });
+  assert.equal(saved.version, 2);
+  const before = await client.run(async (ctx) => ({
+    snapshots: await ctx.db.query('calendarSnapshots').collect(),
+    versions: await ctx.db.query('calendarVersions').collect(),
+    audit: await ctx.db.query('audit').collect(),
   }));
-  const change = (entry: SnapshotChange) =>
-    client.run((ctx) => applyChanges(ctx, [entry], { full: true }));
-  await assert.rejects(change({ field: 'calendars', removeRoot: true }), /preservado/);
+  assert.equal(before.snapshots.length, 1);
+  assert.equal(before.versions[0].version, 1);
+  assert.deepEqual(before.snapshots[0].state, created.state);
   await assert.rejects(
-    change({ field: 'calendars', deleteKeys: [rows.calendar!.key] }),
-    /preservado/,
-  );
-  const replaceCalendar = (value: unknown) =>
-    change({
-      field: 'calendars',
-      upserts: [
-        {
-          key: rows.calendar!.key,
-          position: rows.calendar!.position,
-          value: encodeValue(value),
-        },
-      ],
-    });
-  await assert.rejects(
-    replaceCalendar({ ...before.calendars[0], versions: [] }),
-    /histórico existente/,
-  );
-  const altered = structuredClone(before.calendars[0]);
-  altered.versions[0].state.weekEvidence = 'Tentativa de sobrescrever o passado';
-  await assert.rejects(replaceCalendar(altered), /histórico existente/);
-  await assert.rejects(
-    change({
-      field: 'audit',
-      upserts: [
-        {
-          key: rows.audit!.key,
-          position: rows.audit!.position,
-          value: encodeValue({ ...decodeValue(rows.audit!.value), action: 'FORGED' }),
-        },
-      ],
+    campus.mutation(api.native.saveCalendar, {
+      id: created.id,
+      body: {
+        version: 1,
+        catalogueRevision: created.currentCatalogueRevision,
+        state: { ...created.state, weekEvidence: 'Tentativa concorrente' },
+      },
     }),
-    /auditoria existente/,
+    /Há versão mais recente/,
   );
+  const after = await client.run(async (ctx) => ({
+    snapshots: await ctx.db.query('calendarSnapshots').collect(),
+    versions: await ctx.db.query('calendarVersions').collect(),
+    audit: await ctx.db.query('audit').collect(),
+  }));
+  assert.deepEqual(after, before, 'a stale writer cannot append history or audit records');
+  await campus.mutation(api.native.deleteCalendar, { id: created.id, version: 2 });
+  await campus.mutation(api.native.restoreCalendar, { id: created.id });
+  await campus.mutation(api.native.makeDefinitive, { id: created.id, version: 2 });
+  const final = await client.run(async (ctx) => ({
+    calendar: await ctx.db.get(created.id),
+    snapshots: await ctx.db.query('calendarSnapshots').collect(),
+    versions: await ctx.db.query('calendarVersions').collect(),
+  }));
   assert.deepEqual(
-    await inspect(),
-    before,
-    'rejected transactions cannot alter live or archived data',
+    final.snapshots[0],
+    before.snapshots[0],
+    'trash, restore and conversion cannot rewrite prior calendar states',
   );
-  const snapshots = await client.run((ctx) => ctx.db.query('calendarSnapshots').collect());
-  assert.equal(snapshots.length, 1);
-  assert.deepEqual(decodeValue(snapshots[0].value).state, originalState);
+  assert.equal(final.snapshots.length, 2);
+  assert.equal(final.calendar?.purpose, 'definitive');
+  assert.deepEqual(
+    final.versions.map((version) => version.version),
+    [1, 2],
+  );
 });
 
-test('Convex persistence keeps review history append-only and preserves archived review authorship', async () => {
-  const { client, as, inspect } = await createNativeFixture();
-  const record = await as('campus-a').write('/api/calendars', createBody);
-  const admin = as('admin');
-  const path = '/api/reviews/' + record.id;
-  const support = await admin.read(path);
+test('review saves preserve earlier authorship and rejected edits append no revision', async () => {
+  const { client, asClient, ids } = await createNativeFixture();
+  const campus = asClient('campus-a');
+  const admin = asClient('admin');
+  const created = await campus.mutation(api.native.createCalendar, {
+    body: { ...createBody, campusId: ids.campuses.a },
+  });
+  const support = await admin.query(api.native.review, { id: created.id });
   const body = {
     revision: 0,
-    calendarVersion: 1,
-    catalogueRevision: 1,
+    calendarVersion: created.version,
+    catalogueRevision: support.catalogueRevision,
     conclusion: support.initialConclusion,
     entries: reviewCriteria.map((criterion) => ({
       id: criterion.id,
-      status: 'PENDENTE',
+      status: 'PENDENTE' as const,
       notes: '',
       reviewed: false,
     })),
   };
-  await admin.write(path, body, 'PUT');
-  await admin.write(path, { ...body, revision: 1 }, 'PUT');
-  const before = await inspect();
-  const row = await client.run((ctx) => ctx.db.query('reviews').first());
-  const replace = (value: unknown) =>
-    client.run((ctx) =>
-      applyChanges(
-        ctx,
-        [
-          {
-            field: 'reviews',
-            upserts: [{ key: row!.key, position: row!.position, value: encodeValue(value) }],
-          },
-        ],
-        { full: true },
-      ),
-    );
-  await assert.rejects(replace({ ...before.reviews[0], history: [] }), /histórico de pareceres/);
-  const altered = structuredClone(before.reviews[0]);
-  altered.history[0].updatedBy = 'forged-reviewer';
-  await assert.rejects(replace(altered), /histórico de pareceres/);
+  await admin.mutation(api.native.saveReview, { id: created.id, body });
+  await admin.mutation(api.native.saveReview, {
+    id: created.id,
+    body: { ...body, revision: 1, processNumber: 'Processo sintético' },
+  });
+  const before = await client.run(async (ctx) => ({
+    review: await ctx.db.query('reviews').first(),
+    versions: await ctx.db.query('reviewVersions').collect(),
+    audit: await ctx.db.query('audit').collect(),
+  }));
+  assert.equal(before.versions.length, 1);
+  assert.equal(before.versions[0].reviewer.id, ids.users.admin);
+  assert.equal(before.versions[0].reviewer.name, 'Admin');
+  assert.equal(before.versions[0].revision, 1);
+  await assert.rejects(
+    admin.mutation(api.native.saveReview, { id: created.id, body }),
+    /Outro revisor/,
+  );
+  await assert.rejects(
+    campus.mutation(api.native.saveReview, { id: created.id, body: { ...body, revision: 2 } }),
+    /Acesso exclusivo/,
+  );
+  const after = await client.run(async (ctx) => ({
+    review: await ctx.db.query('reviews').first(),
+    versions: await ctx.db.query('reviewVersions').collect(),
+    audit: await ctx.db.query('audit').collect(),
+  }));
+  assert.deepEqual(after, before);
+  await client.run((ctx) => ctx.db.patch(ids.users.admin, { active: false }));
+  const archived = await client.run((ctx) => ctx.db.query('reviewVersions').first());
+  assert.deepEqual(
+    archived,
+    before.versions[0],
+    'disabling access retains the reviewer recorded in the archived revision',
+  );
+});
+
+test('typed storage rejects legacy envelopes, invalid relationships and incomplete domain state', async () => {
+  const { client, asClient, ids } = await createNativeFixture();
   await assert.rejects(
     client.run((ctx) =>
-      applyChanges(
-        ctx,
-        [
-          {
-            field: 'reviews',
-            deleteKeys: [row!.key],
-          },
-        ],
-        { full: true },
-      ),
+      ctx.db.insert('campuses', {
+        key: 'campuses:a',
+        appId: 'a',
+        position: 0,
+        value: { data: { name: 'Forged' } },
+      } as never),
     ),
-    /preservado/,
+    /validator|unexpected|missing|required/i,
   );
-  assert.deepEqual(await inspect(), before);
-  assert.equal(before.reviews[0].history.length, 1);
+  await assert.rejects(
+    client.run((ctx) =>
+      ctx.db.insert('calendars', {
+        year: createBody.year,
+        modalities: createBody.modalities,
+        purpose: createBody.purpose,
+        courses: createBody.courses,
+        campusId: ids.users.admin,
+        classes: '',
+        shifts: '',
+        version: 1,
+        updatedAt: Date.now(),
+      } as never),
+    ),
+    /id|validator|unexpected/i,
+  );
+  const record = await asClient('campus-a').mutation(api.native.createCalendar, {
+    body: { ...createBody, campusId: ids.campuses.a },
+  });
+  await assert.rejects(
+    client.run((ctx) =>
+      ctx.db.insert('calendarContents', {
+        calendarId: record.id,
+        state: { events: [] },
+        catalogueRevision: 1,
+        institutionalSnapshot: [],
+        documentSnapshot: [],
+      } as never),
+    ),
+    /validator|missing|required/i,
+  );
+  const row = await client.run((ctx) => ctx.db.get(record.id));
+  assert(row);
+  for (const key of ['appId', 'key', 'value', 'position', 'offer', 'schemaVersion'])
+    assert(!(key in row));
+  const content = await client.run((ctx) =>
+    ctx.db
+      .query('calendarContents')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
+      .unique(),
+  );
+  assert(content);
+  for (const key of ['campus', 'year', 'offer', 'schemaVersion']) assert(!(key in content.state));
 });

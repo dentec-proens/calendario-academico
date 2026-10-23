@@ -3,7 +3,6 @@ import Google from '@auth/core/providers/google';
 import { convexAuth } from '@convex-dev/auth/server';
 import { passwordCrypto, validatePassword } from './authCrypto';
 import { institutionalEmail, memberFromRow } from './nativeAuth';
-import { encodeValue } from '../src/convex-codec.mjs';
 import type { MutationCtx } from './_generated/server';
 import type { GenericDataModel } from 'convex/server';
 
@@ -61,9 +60,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           (member.googleSubject && member.googleSubject !== subject)
         )
           throw Error('Conta Google incompatível com o acesso cadastrado.');
-        member.googleSubject = subject;
-        member.googleLastLoginAt = new Date().toISOString();
-        await db.patch(row._id, { value: encodeValue(member) });
+        await db.patch(row._id, { googleSubject: subject, googleLastLoginAt: Date.now() });
       }
       return row._id;
     },

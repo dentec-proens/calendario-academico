@@ -5,23 +5,15 @@ import { LogOut } from 'lucide-react';
 import { Workspace } from '../portal/App.tsx';
 import AuthPanel from '../portal/AuthPanel.tsx';
 import { functions, nativeError } from './client.ts';
-import type { Bootstrap, DocumentsData, PortalMessage, Status, TrashData } from './types.ts';
+import type { Bootstrap, PortalMessage, Status } from './types.ts';
 
 export default function NativeApp() {
   const { isLoading, isAuthenticated } = useConvexAuth();
   const { signOut } = useAuthActions();
   const status: Status | undefined = useQuery(functions.nativeAuth.status, {});
   const info: Bootstrap | undefined = useQuery(
-    functions.native.read,
-    isAuthenticated ? { path: '/api/bootstrap' } : 'skip',
-  );
-  const documentsData: DocumentsData | undefined = useQuery(
-    functions.native.read,
-    isAuthenticated ? { path: '/api/documents' } : 'skip',
-  );
-  const trashData: TrashData | undefined = useQuery(
-    functions.native.read,
-    isAuthenticated ? { path: '/api/calendar-trash' } : 'skip',
+    functions.native.bootstrap,
+    isAuthenticated ? { includeCalendars: false } : 'skip',
   );
   const [message, setMessage] = useState<PortalMessage | null>(null);
   const [pending, setPending] = useState(false);
@@ -76,14 +68,7 @@ export default function NativeApp() {
         {isLoading || status === undefined || (isAuthenticated && info === undefined) ? (
           <p role="status">Carregando portal…</p>
         ) : isAuthenticated && info ? (
-          <Workspace
-            key={info.user.id}
-            info={info}
-            status={status}
-            notify={notify}
-            documentsData={documentsData}
-            trashData={trashData}
-          />
+          <Workspace key={info.user.id} info={info} status={status} notify={notify} />
         ) : (
           <AuthPanel status={status} notify={notify} />
         )}

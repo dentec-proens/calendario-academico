@@ -8,7 +8,7 @@ import { historyCandidateKey } from '../src/history-progress.mjs';
 
 test('native PDF upload, analysis and confirmed historical evidence stay scoped to the owning campus', async () => {
   vi.useFakeTimers({ toFake: ['setTimeout'] });
-  const { client, as, asClient, inspect } = await createNativeFixture();
+  const { client, as, asClient, inspect, ids } = await createNativeFixture();
   const campus = as('campus-a');
   const actor = asClient('campus-a');
   const foreign = asClient('campus-b');
@@ -29,19 +29,20 @@ test('native PDF upload, analysis and confirmed historical evidence stay scoped 
     ctx.storage.store(new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })),
   );
   await actor.action(api.nativeActions.completeUpload, { uploadId: upload.uploadId, storageId });
-  const uploaded = await actor.action(api.nativeActions.run, {
-    path: '/api/calendars/' + record.id + '/history',
-    body: { filename: 'anterior-sintetico.pdf', year: 2026, uploadId: upload.uploadId },
+  const uploaded = await actor.action(api.nativeActions.uploadHistory, {
+    calendarId: record.id,
+    filename: 'anterior-sintetico.pdf',
+    year: 2026,
+    uploadId: upload.uploadId,
   });
-  const path = '/api/history/' + uploaded.id + '/analysis';
   const analyze = (user: typeof actor | typeof client) =>
-    user.action(api.nativeActions.run, { path, body: {} });
+    user.action(api.nativeActions.analyzeHistory, { id: uploaded.id });
   await assert.rejects(analyze(client), /Entre com sua conta/);
   await assert.rejects(analyze(foreign), /Registro não encontrado/);
   const parsed = await analyze(actor);
   assert.equal(parsed.candidates[0].category, 'feriado');
   assert.equal(parsed.candidates[0].page, 1);
-  assert.equal(parsed.candidates[0].start, undefined);
+  assert(!('start' in parsed.candidates[0]));
   assert.deepEqual(await analyze(actor), parsed);
   const fresh = await campus.read('/api/calendars/' + record.id);
   assert.equal(fresh.state.events.length, 0, 'analysis cannot apply or confirm a suggested event');
@@ -79,8 +80,29 @@ test('native PDF upload, analysis and confirmed historical evidence stay scoped 
   );
   const saved = await campus.read(calendarPath);
   assert.deepEqual(saved.state.events[0].historicalSource, state.events[0].historicalSource);
+  const foreignRecord = await as('campus-b').write('/api/calendars', {
+    campusId: 'b',
+    year: 2027,
+    modalities: ['integrado'],
+    regime: 'anual',
+    purpose: 'test',
+    courses: 'Outro campus',
+  });
+  const foreignHistoryId = await client.run((ctx) =>
+    ctx.db.insert('histories', {
+      calendarId: foreignRecord.id,
+      campusId: ids.campuses.b,
+      modalities: foreignRecord.modalities,
+      year: 2026,
+      filename: 'outro.pdf',
+      hash: '0'.repeat(64),
+      notes: '',
+      createdAt: Date.now(),
+      unavailableFile: { sourceReference: 'test', reason: 'not_migrated' },
+    }),
+  );
   for (const forged of [
-    { historyId: 'foreign-history', page: 1 },
+    { historyId: foreignHistoryId, page: 1 },
     { historyId: uploaded.id, page: 2 },
     { historyId: uploaded.id, page: 1, candidateKey: 'forged' },
   ]) {
@@ -98,7 +120,7 @@ test('native PDF upload, analysis and confirmed historical evidence stay scoped 
     );
   }
   const full = await inspect();
-  assert.equal(full.histories.length, 1);
+  assert.equal(full.histories.filter((history) => history.calendarId === record.id).length, 1);
   assert.equal(full.histories[0].hash, createHash('sha256').update(bytes).digest('hex'));
   assert.equal(
     full.audit.filter((entry: { action: string }) => entry.action === 'ANALYZE_HISTORY').length,
@@ -110,14 +132,10 @@ test('native PDF upload, analysis and confirmed historical evidence stay scoped 
     ),
   );
   await assert.rejects(
-    foreign.action(api.nativeActions.download, {
-      path: '/api/history/' + uploaded.id,
-    }),
+    foreign.action(api.nativeActions.downloadHistory, { id: uploaded.id }),
     /Registro não encontrado/,
   );
-  const ticket = await actor.action(api.nativeActions.download, {
-    path: '/api/history/' + uploaded.id,
-  });
+  const ticket = await actor.action(api.nativeActions.downloadHistory, { id: uploaded.id });
   assert.equal(ticket.filename, 'anterior-sintetico.pdf');
   assert.match(ticket.url, /\/files\/[a-f0-9]{64}$/);
 });

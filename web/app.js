@@ -37,8 +37,9 @@ import { datesBetween } from '/calendar.mjs';
 import { monthSaturdays, saturdayEvents } from '/saturdays.mjs';
 import { proensLayout } from '/print.mjs';
 import {
-  nativeApi,
-  subscribeNative,
+  accounts,
+  calendars,
+  subscribeCalendar,
   subscribeNativeConnection,
   downloadLink,
 } from './native/client.ts';
@@ -68,19 +69,12 @@ let historicalSource = null,
   historyAnalysis = null,
   analyzedHistory = null;
 let record = null,
-  institutional = [];
+  institutional = [],
+  isAdmin = false;
+const restoringHistories = new Set();
 const calendarId = new URLSearchParams(location.search).get('id');
 const campusEvents = () => campusInstitutionalEvents(institutional, state);
 const allEvents = () => withVacationExclusions([...campusEvents(), ...state.events]);
-
-async function api(path, method = 'GET', body) {
-  try {
-    return await nativeApi(path, method, body);
-  } catch (error) {
-    if (error.status === 401) location.href = '/';
-    throw error;
-  }
-}
 
 const escape = (s) =>
   String(s).replace(
@@ -364,7 +358,7 @@ function render({ recalculate = false } = {}) {
         .sort((a, b) => a.start.localeCompare(b.start))
         .map(
           (e) =>
-            `<li><div><strong>${escape(e.name)}</strong><small>${dateLabel(e.start)} a ${dateLabel(e.end)} · ${{ include: 'Inclusão letiva', exclude: 'Exclusão', note: 'Sem efeito na contagem' }[e.kind]}</small><small>Fonte: ${escape(e.evidence)}</small>${e.historicalSource ? `<small>Origem histórica: página ${e.historicalSource.page} do <a href="/api/history/${escape(e.historicalSource.historyId)}">calendário anterior</a></small>` : ''}<small>${escape(categoryLabel(e))}</small></div>${
+            `<li><div><strong>${escape(e.name)}</strong><small>${dateLabel(e.start)} a ${dateLabel(e.end)} · ${{ include: 'Inclusão letiva', exclude: 'Exclusão', note: 'Sem efeito na contagem' }[e.kind]}</small><small>Fonte: ${escape(e.evidence)}</small>${e.historicalSource ? `<small>Origem histórica: página ${e.historicalSource.page} do <a href="#history-${escape(e.historicalSource.historyId)}" data-history-id="${escape(e.historicalSource.historyId)}">calendário anterior</a></small>` : ''}<small>${escape(categoryLabel(e))}</small></div>${
               e.institutional
                 ? e.id === teacherDayId
                   ? `<div><label>Dia do Professor neste calendário<input type="date" id="teacher-day-date" value="${escape(e.start)}" min="${teacherDayWeek(state.year).start}" max="${teacherDayWeek(state.year).end}"></label><button type="button" id="apply-teacher-day">Aplicar data</button><button type="button" id="reset-teacher-day">Restaurar data institucional</button><small>Escolha de ${dateLabel(teacherDayWeek(state.year).start)} a ${dateLabel(teacherDayWeek(state.year).end)}. A alteração vale apenas para este calendário.</small></div>`
@@ -774,7 +768,7 @@ $('print').onclick = async () => {
     await autosaver.save();
     if (dirty)
       throw Error('O salvamento ainda não foi confirmado. Confira o indicador antes de imprimir.');
-    const fresh = await api('/api/calendars/' + calendarId);
+    const fresh = await calendars.get(calendarId);
     if (
       fresh.version !== record.version ||
       fresh.currentCatalogueRevision !== record.currentCatalogueRevision
@@ -833,7 +827,9 @@ async function openRecord() {
     return;
   }
   try {
-    record = await api('/api/calendars/' + calendarId);
+    const [status, opened] = await Promise.all([accounts.status(), calendars.get(calendarId)]);
+    record = opened;
+    isAdmin = status.user?.role === 'ADMIN';
     state = record.state;
     institutional = record.institutionalEvents;
     sync();
@@ -885,8 +881,8 @@ document.addEventListener('change', trackUnappliedForm);
 
 function observeRecord() {
   stopRecordSubscription?.();
-  stopRecordSubscription = subscribeNative(
-    '/api/calendars/' + calendarId,
+  stopRecordSubscription = subscribeCalendar(
+    calendarId,
     (fresh) => {
       if (!record) return;
       const changed =
@@ -916,11 +912,13 @@ function observeRecord() {
 }
 
 document.addEventListener('click', (event) => {
-  const link = event.target.closest('a[href^="/api/history/"]');
+  const link = event.target.closest('a[data-history-id]');
   if (link)
-    downloadLink(event, link.getAttribute('href'), 'calendario-anterior.pdf').catch((error) =>
-      message(error.message, true),
-    );
+    downloadLink(
+      event,
+      { kind: 'history', id: link.dataset.historyId },
+      'calendario-anterior.pdf',
+    ).catch((error) => message(error.message, true));
 });
 
 function openHistory() {
@@ -934,13 +932,37 @@ $('open-history').onclick = openHistory;
 function showHistory() {
   $('history-list').innerHTML = record.histories.length
     ? record.histories
-        .map(
-          (h) =>
-            `<li><div><strong>${h.year} · ${escape(h.filename)}</strong>${h.notes ? '<small>' + escape(h.notes) + '</small>' : ''}<a href="/api/history/${escape(h.id)}">Consultar PDF original</a></div><button type="button" data-analyze-history="${escape(h.id)}">Identificar datas e atividades</button></li>`,
-        )
+        .map((h) => {
+          const missing = h.unavailableFile;
+          const restoring = restoringHistories.has(h.id);
+          return `<li><div><strong>${h.year} · ${escape(h.filename)}</strong>${h.notes ? '<small>' + escape(h.notes) + '</small>' : ''}<a href="#history-${escape(h.id)}" data-history-id="${escape(h.id)}">Consultar PDF original</a>${missing ? `<p class="notice">PDF original aguardando restauração pela administração.</p>${isAdmin ? `<form data-restore-history="${escape(h.id)}" aria-busy="${restoring}"><label>PDF original<input type="file" name="original" accept="application/pdf,.pdf" required ${restoring ? 'disabled' : ''}></label><small>Selecione o mesmo PDF original deste registro. Os dados e análises serão preservados.</small><button type="submit" ${restoring ? 'disabled' : ''}>${restoring ? 'Restaurando…' : 'Restaurar PDF original'}</button></form>` : ''}` : ''}</div><button type="button" data-analyze-history="${escape(h.id)}">Identificar datas e atividades</button></li>`;
+        })
         .join('')
     : '<li>Envie o calendário anterior para consultar seus feriados e eventos locais.</li>';
 }
+
+$('history-list').addEventListener('submit', async (event) => {
+  const form = event.target.closest('form[data-restore-history]');
+  if (!form) return;
+  event.preventDefault();
+  const id = form.dataset.restoreHistory;
+  if (!isAdmin || restoringHistories.has(id)) return;
+  const file = form.querySelector('input[type="file"]').files[0];
+  restoringHistories.add(id);
+  showHistory();
+  try {
+    const payload = await filePayload(file);
+    await calendars.restoreHistoryOriginal(id, payload.uploadId);
+    const fresh = await calendars.get(calendarId);
+    record.histories = fresh.histories;
+    message('PDF original restaurado. Os dados e análises foram preservados.');
+  } catch (error) {
+    message(error.message, true);
+  } finally {
+    restoringHistories.delete(id);
+    showHistory();
+  }
+});
 
 async function analyzeUploadedHistory(id) {
   $('history-status').textContent =
@@ -949,7 +971,7 @@ async function analyzeUploadedHistory(id) {
   historyAnalysis = null;
   analyzedHistory = null;
   try {
-    const analysis = await api('/api/history/' + id + '/analysis', 'POST', {});
+    const analysis = await calendars.analyzeHistory(id);
     historyAnalysis = analysis;
     analyzedHistory = record.histories.find((h) => h.id === id);
     $('history-analysis').hidden = false;
@@ -1085,7 +1107,7 @@ const autosaver = createAutosaver({
     catalogueRevision: record.currentCatalogueRevision,
     state,
   }),
-  write: (body) => api('/api/calendars/' + calendarId, 'PUT', body),
+  write: (body) => calendars.save(calendarId, body),
   onSaved: (saved, sent) => {
     const unchanged = JSON.stringify(state) === JSON.stringify(sent.state);
     record.version = saved.version;
@@ -1135,9 +1157,7 @@ $('make-definitive').onclick = async () => {
         'Não foi possível concluir o salvamento. Resolva a pendência indicada antes de tornar definitivo.',
       );
     $('server-save').disabled = true;
-    const saved = await api('/api/calendars/' + calendarId + '/make-definitive', 'POST', {
-      version: record.version,
-    });
+    const saved = await calendars.makeDefinitive(calendarId, record.version);
     Object.assign(record, saved);
     updateRecordHeading();
     render();
@@ -1162,13 +1182,13 @@ $('history-form').onsubmit = async (e) => {
     if (!file || file.size > 8_000_000) throw Error('Envie um PDF de até 8 MB.');
     $('history-status').textContent = 'Enviando calendário anterior…';
     const payload = await filePayload(file);
-    const uploaded = await api('/api/calendars/' + calendarId + '/history', 'POST', {
+    const uploaded = await calendars.uploadHistory(calendarId, {
       filename: file.name,
       year: state.year - 1,
       ...payload,
       notes: $('history-notes').value,
     });
-    const fresh = await api('/api/calendars/' + calendarId);
+    const fresh = await calendars.get(calendarId);
     record.histories = fresh.histories;
     showHistory();
     e.target.reset();
@@ -1262,13 +1282,12 @@ $('download-pdf').onclick = async () => {
     button.textContent = 'Gerando PDF…';
     $('download-pdf-top').textContent = 'Gerando PDF…';
     message('Gerando o calendário em PDF. Aguarde o download.');
-    const pdfPath = '/api/calendars/' + calendarId + '/pdf';
     const pdfBody = {
       version: record.version,
       catalogueRevision: record.currentCatalogueRevision,
       copy: record.purpose !== 'test' && !record.readiness?.ready,
     };
-    const file = await api(pdfPath, 'POST', pdfBody);
+    const file = await calendars.generatePdf(calendarId, pdfBody);
     const response = await fetch(file.url);
     if (!response.ok) {
       const data = await response.json();
