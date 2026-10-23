@@ -1,0 +1,377 @@
+{
+  "schemaVersion": 1,
+  "status": "preserved",
+  "verifiedAt": "2026-10-23T11:14:22.883Z",
+  "sourceDeployment": "oceanic-gazelle-652",
+  "productionDeployment": "exuberant-cheetah-138",
+  "sourceArchive": {
+    "filename": "production-source.zip",
+    "sha256": "d678e279fe73139ccd11e619a96eea0a0c1f9e4b6712f76f7e9a770a070d8609",
+    "bytes": 1677086,
+    "mode": "600",
+    "includesFileStorage": true
+  },
+  "productionArchive": {
+    "filename": "production-after.zip",
+    "sha256": "082c2e82e340dc3db70b8adee9f776fbb514b693c00d28310f8e1aeae0a3a3d6",
+    "bytes": 1677086,
+    "mode": "600",
+    "includesFileStorage": true
+  },
+  "strictComparison": {
+    "applicationTables": 27,
+    "metadataTables": 2,
+    "applicationDocuments": 3046,
+    "documentIdsPreserved": true,
+    "allFieldsIncludingCredentialsAndCreationTimesPreserved": true,
+    "storageFilesIdentical": true
+  },
+  "tables": {
+    "_tables": {
+      "sourceCount": 27,
+      "productionCount": 27,
+      "preserved": 27,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "c9c1ede3e234192366661afa81cd38da01274d3a186b1129986fb7509a265a32",
+      "productionDigest": "c9c1ede3e234192366661afa81cd38da01274d3a186b1129986fb7509a265a32"
+    },
+    "nativeUploads": {
+      "sourceCount": 0,
+      "productionCount": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "productionDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "authVerifiers": {
+      "sourceCount": 0,
+      "productionCount": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "productionDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "authVerificationCodes": {
+      "sourceCount": 0,
+      "productionCount": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "productionDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "authRateLimits": {
+      "sourceCount": 0,
+      "productionCount": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "productionDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "passwordResets": {
+      "sourceCount": 0,
+      "productionCount": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "productionDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "nativeFileTickets": {
+      "sourceCount": 0,
+      "productionCount": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "productionDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "documents": {
+      "sourceCount": 0,
+      "productionCount": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "productionDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "recoveryAttempts": {
+      "sourceCount": 0,
+      "productionCount": 0,
+      "preserved": 0,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "productionDigest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "fileObjects": {
+      "sourceCount": 1,
+      "productionCount": 1,
+      "preserved": 1,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "1b79a32135a9b4c8dcf03ac5c4e6cd729f6785fa98f2279f559a5b2831bf192a",
+      "productionDigest": "1b79a32135a9b4c8dcf03ac5c4e6cd729f6785fa98f2279f559a5b2831bf192a"
+    },
+    "authSessions": {
+      "sourceCount": 2,
+      "productionCount": 2,
+      "preserved": 2,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "a3c0100398a942c7e73b74fb321d0826d2627ef9b0405958740157029ae855e3",
+      "productionDigest": "a3c0100398a942c7e73b74fb321d0826d2627ef9b0405958740157029ae855e3"
+    },
+    "uploads": {
+      "sourceCount": 1,
+      "productionCount": 1,
+      "preserved": 1,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "730f7153179577fcbef1396395bd50b9003f049c357871153f5a9536244088a5",
+      "productionDigest": "730f7153179577fcbef1396395bd50b9003f049c357871153f5a9536244088a5"
+    },
+    "loginAttempts": {
+      "sourceCount": 6,
+      "productionCount": 6,
+      "preserved": 6,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "ba6a671c93958bd42d278cb92926e3cb98f9f83d91382a785e68b4887bd42c1c",
+      "productionDigest": "ba6a671c93958bd42d278cb92926e3cb98f9f83d91382a785e68b4887bd42c1c"
+    },
+    "authRefreshTokens": {
+      "sourceCount": 16,
+      "productionCount": 16,
+      "preserved": 16,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "fc258fa57f871848f18b615a6eea322d2c90937726b2e26aef0d0b3638355fec",
+      "productionDigest": "fc258fa57f871848f18b615a6eea322d2c90937726b2e26aef0d0b3638355fec"
+    },
+    "sessions": {
+      "sourceCount": 9,
+      "productionCount": 9,
+      "preserved": 9,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "d1dcdf2f1e8a0edc0c46b790699a024dce594b1e5fbb34754b0bcfcc69de435a",
+      "productionDigest": "d1dcdf2f1e8a0edc0c46b790699a024dce594b1e5fbb34754b0bcfcc69de435a"
+    },
+    "campuses": {
+      "sourceCount": 29,
+      "productionCount": 29,
+      "preserved": 29,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "cf71093b61fcd451ad0b311e74e3b10f7d9dbe02bea9a54dcce381a3885206de",
+      "productionDigest": "cf71093b61fcd451ad0b311e74e3b10f7d9dbe02bea9a54dcce381a3885206de"
+    },
+    "authAccounts": {
+      "sourceCount": 26,
+      "productionCount": 26,
+      "preserved": 26,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "23b4b84151d8aef6bef8d7d508aa16e1117c2e8ae6edad29568a43c2572fe456",
+      "productionDigest": "23b4b84151d8aef6bef8d7d508aa16e1117c2e8ae6edad29568a43c2572fe456"
+    },
+    "reviews": {
+      "sourceCount": 4,
+      "productionCount": 4,
+      "preserved": 4,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "8b329b457bbdcd7fd3a43f326b9a40066560b539b5cdafe81f9e8ef4dc7f0ebc",
+      "productionDigest": "8b329b457bbdcd7fd3a43f326b9a40066560b539b5cdafe81f9e8ef4dc7f0ebc"
+    },
+    "rootFields": {
+      "sourceCount": 13,
+      "productionCount": 13,
+      "preserved": 13,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "a6d02db0883ad0a3b6b8e0a77fe9e982f00425a3089fe69e2f13db94502940b5",
+      "productionDigest": "a6d02db0883ad0a3b6b8e0a77fe9e982f00425a3089fe69e2f13db94502940b5"
+    },
+    "users": {
+      "sourceCount": 34,
+      "productionCount": 34,
+      "preserved": 34,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "3a84d8a9f11c2a74d44520e0ecda340c7c77775f444820c84374fb4d683b12c6",
+      "productionDigest": "3a84d8a9f11c2a74d44520e0ecda340c7c77775f444820c84374fb4d683b12c6"
+    },
+    "invitations": {
+      "sourceCount": 45,
+      "productionCount": 45,
+      "preserved": 45,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "16c0fd2b7b9bd4c5e1a15f81550613d9104bd37e5923729a11a830b7b4943df5",
+      "productionDigest": "16c0fd2b7b9bd4c5e1a15f81550613d9104bd37e5923729a11a830b7b4943df5"
+    },
+    "reviewVersions": {
+      "sourceCount": 12,
+      "productionCount": 12,
+      "preserved": 12,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "33cc5b8ca3a928f3fd875b90c5743d0f7362b35c0b518f283e988f80c2913cf7",
+      "productionDigest": "33cc5b8ca3a928f3fd875b90c5743d0f7362b35c0b518f283e988f80c2913cf7"
+    },
+    "scopeVersions": {
+      "sourceCount": 424,
+      "productionCount": 424,
+      "preserved": 424,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "e9c0ba7714fbae073fc853a5c1771aad9c3e5999b61f0ac017b752f329885f2d",
+      "productionDigest": "e9c0ba7714fbae073fc853a5c1771aad9c3e5999b61f0ac017b752f329885f2d"
+    },
+    "calendarVersions": {
+      "sourceCount": 706,
+      "productionCount": 706,
+      "preserved": 706,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "730826bda0876289ffc52960c03a110b36de2f86060e216a582ce6784535c620",
+      "productionDigest": "730826bda0876289ffc52960c03a110b36de2f86060e216a582ce6784535c620"
+    },
+    "audit": {
+      "sourceCount": 937,
+      "productionCount": 937,
+      "preserved": 937,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "86e31d663e949e8b037b3a8eaf01d4fbd191e3ee6bc5937313292d56e3ca61ab",
+      "productionDigest": "86e31d663e949e8b037b3a8eaf01d4fbd191e3ee6bc5937313292d56e3ca61ab"
+    },
+    "histories": {
+      "sourceCount": 14,
+      "productionCount": 14,
+      "preserved": 14,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "14c9e184d1d03821ec3b6b3517dad9e5352077eebb6eda152b07a539f7aa24d1",
+      "productionDigest": "14c9e184d1d03821ec3b6b3517dad9e5352077eebb6eda152b07a539f7aa24d1"
+    },
+    "calendars": {
+      "sourceCount": 61,
+      "productionCount": 61,
+      "preserved": 61,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "301aa4c0389fba788ed93ae149be90c73e75c8c67ced229bacbee1d546ad6115",
+      "productionDigest": "301aa4c0389fba788ed93ae149be90c73e75c8c67ced229bacbee1d546ad6115"
+    },
+    "calendarSnapshots": {
+      "sourceCount": 706,
+      "productionCount": 706,
+      "preserved": 706,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "aaecc33a4fd3b36efbb61cf30166c39cde2500dac9d8ef7d60f2587fcfc28d87",
+      "productionDigest": "aaecc33a4fd3b36efbb61cf30166c39cde2500dac9d8ef7d60f2587fcfc28d87"
+    },
+    "_storage": {
+      "sourceCount": 1,
+      "productionCount": 1,
+      "preserved": 1,
+      "missing": 0,
+      "changed": 0,
+      "added": 0,
+      "sourceDigest": "4f4cab054f69c6d3a93eacb99b3de54e2aaac62f1cb1637fe2f888feec71e95c",
+      "productionDigest": "4f4cab054f69c6d3a93eacb99b3de54e2aaac62f1cb1637fe2f888feec71e95c"
+    }
+  },
+  "storage": {
+    "sourceFiles": 1,
+    "productionFiles": 1,
+    "verifiedPdfBytes": 627,
+    "allPdfHeadersValid": true,
+    "missing": 0,
+    "changed": 0,
+    "added": 0
+  },
+  "originalPreservation": {
+    "users": {
+      "expected": 33,
+      "preserved": 33
+    },
+    "campuses": {
+      "expected": 29,
+      "preserved": 29
+    },
+    "calendars": {
+      "expected": 60,
+      "preserved": 60
+    },
+    "histories": {
+      "expected": 13,
+      "preserved": 13
+    },
+    "reviews": {
+      "expected": 3,
+      "preserved": 3
+    },
+    "documents": {
+      "expected": 0,
+      "preserved": 0
+    },
+    "uploads": {
+      "expected": 1,
+      "preserved": 1
+    },
+    "audit": {
+      "expected": 919,
+      "preserved": 919
+    },
+    "calendarVersions": {
+      "expected": 699,
+      "preserved": 699
+    },
+    "reviewVersions": {
+      "expected": 12,
+      "preserved": 12
+    }
+  },
+  "deferredOriginalPdfs": {
+    "expected": 13,
+    "referencesPreserved": 13,
+    "originalFilesTransferred": 0
+  }
+}

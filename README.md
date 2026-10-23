@@ -13,7 +13,7 @@ pnpm dev
 
 Na primeira execução, o CLI do Convex pede acesso à conta e ao projeto. Ele grava a seleção de deployment e a URL pública em `.env.local`. Veja `.env.example`; não copie configurações de outra instalação. O comando prepara as funções, inicia o watcher Convex e abre o Vite com atualização automática em http://127.0.0.1:4183. Ctrl+C encerra ambos.
 
-Este worktree usa o deployment de laboratório `oceanic-gazelle-652`, no team Diretoria de Ensino Técnico — PROENS. O checkout original permanece separado. O build não publica funções nem inicializa dados.
+O projeto Convex `calendario-academico` pertence ao team Diretoria de Ensino Técnico — PROENS. Desenvolvimento usa `oceanic-gazelle-652`; produção usa `exuberant-cheetah-138`. O portal de produção fica em https://calendario-academico-phi.vercel.app, no projeto Vercel `dentec-proens/calendario-academico`. O build não publica funções nem inicializa dados. Veja [publicação em produção](docs/implantacao-convex-vercel.md).
 
 Para conferir o build estático:
 
