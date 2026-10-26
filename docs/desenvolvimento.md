@@ -51,7 +51,7 @@ O formulário conserva preenchimento ainda não aplicado; comandos atualizam o c
 
 Use dados de teste no desenvolvimento individual. As contas da aplicação são distintas das contas administrativas Convex/GitHub. Antes de integrar mudanças, execute os comandos obrigatórios de [verificação](verificacao.md) e confira os [componentes compartilhados](componentes-interface.md).
 
-A publicação usa o [procedimento operacional](implantacao-convex-vercel.md), com commit conferido, manutenção e verificação dos artefatos Convex/Vercel correspondentes.
+A publicação usa o [procedimento operacional](implantacao-convex-vercel.md), com commit conferido, expansões compatíveis do backend, migrações aditivas com checkpoint e validação dos dois frontends antes da promoção pública.
 
 ## Integração no desenvolvimento atual
 

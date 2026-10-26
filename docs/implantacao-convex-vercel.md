@@ -15,55 +15,80 @@ VITE_CONVEX_SITE_URL=https://exuberant-cheetah-138.convex.site
 
 Vite gera `dist/app/index.html` e chunks. Vite, preview e Vercel encaminham somente os caminhos conhecidos do produto para essa entrada. `vercel.json` mantém headers de segurança, instalação com lockfile e build Node 24. O build Production confere as URLs Convex contra o destino versionado.
 
-## Publicação coordenada
+## Publicação antes da troca pública
+
+`pnpm deploy:production` valida o código, constrói um candidato Production sem domínio público, publica somente expansões compatíveis do Convex e valida os dois frontends antes de promover o ID testado. Não entra em manutenção, não encerra sessões existentes e não restaura dados automaticamente.
 
 Pré-requisitos:
 
-- `main` commitada, sem alterações ou arquivos novos, e `origin` apontando ao repositório configurado.
-- Acesso administrativo ao deployment Convex de produção e permissão de push fast-forward.
-- `VERCEL_TOKEN` no ambiente do processo, com acesso ao projeto e team configurados. Não inserir o token em argumentos, logs, Git ou arquivos de configuração públicos.
-- Controle `operations:pause`, `operations:status` e `operations:resume` instalado no destino, com admissão de mutations/actions instrumentada. Um endpoint inexistente interrompe a publicação antes da troca de contratos; a instalação desse controle requer uma preparação operacional própria no destino conferido.
-- Conta operacional ADMIN com senha local e calendário de teste próprios, identificados no processo por `DENTEC_RELEASE_SMOKE_USER_ID`, `DENTEC_RELEASE_SMOKE_EMAIL`, `DENTEC_RELEASE_SMOKE_PASSWORD` e `DENTEC_RELEASE_SMOKE_CALENDAR_ID`. As credenciais não entram no Git. O calendário deve estar salvo com a base institucional vigente.
-- Chromium local instalado com `pnpm test:browser:install`, inclusive no Windows. O smoke usa esse navegador para acessar o portal publicado e o PDF processado pelo Convex.
-
-O preflight consulta `operations:status`, recusa o bloqueio emergencial, confere a identidade ADMIN local e o calendário operacional, inicia/encerra o Chromium e inventaria os jobs antes de pausar ou substituir funções. O inventário autoritativo é repetido depois da drenagem, em páginas de até 100 registros, sem teto baseado no volume de jobs concluídos. Para conferir o protocolo e os leases no destino explícito:
-
-```sh
-pnpm exec convex run operations:status '{}' --deployment exuberant-cheetah-138 --codegen disable
-pnpm exec convex data operationalControl --limit 10 --format json --deployment exuberant-cheetah-138
-pnpm exec convex data operationalLeases --limit 1001 --format json --deployment exuberant-cheetah-138
-pnpm exec convex run operations:scheduledPage '{"paginationOpts":{"numItems":100,"cursor":null}}' --deployment exuberant-cheetah-138 --codegen disable
-```
-
-Um destino sem esse protocolo não está preparado para o corte. Sua preparação exige instalar a barreira de admissão conservando os contratos em uso e comprovar a conclusão das actions aceitas antes da instrumentação. Não publicar a aplicação reorganizada para instalar o próprio preflight. Sem evidência completa de drenagem, a publicação permanece bloqueada. A pausa nativa do Convex e seus gráficos de máximos de concorrência não substituem essa evidência: valores ausentes e tempo decorrido não demonstram que uma action terminou. A preparação inicial da barreira é uma pendência operacional separada da execução deste comando.
-
-Confira o procedimento sem chamadas remotas:
+- `main` commitada e limpa, `origin` correto e permissão de push fast-forward e de reservar `codex/production-release-lock`.
+- Conta administrativa Convex; nenhum seletor alternativo de deployment. `operations:status` deve estar disponível e sem manutenção.
+- `VERCEL_TOKEN` no ambiente, com acesso ao projeto e permissão de criar/promover deployments e configurar atribuição de domínios. Segredos nunca entram em argumentos, logs ou Git.
+- Conta operacional ADMIN local e calendário exclusivo de teste: `DENTEC_RELEASE_SMOKE_USER_ID`, `DENTEC_RELEASE_SMOKE_EMAIL`, `DENTEC_RELEASE_SMOKE_PASSWORD`, `DENTEC_RELEASE_SMOKE_CALENDAR_ID`. O calendário precisa estar salvo com a revisão institucional vigente.
+- Chromium instalado com `pnpm test:browser:install`, inclusive no Windows.
+- Se o deployment estiver protegido, `VERCEL_OIDC_TOKEN` local e Trusted Sources autorizando desenvolvimento para produção no próprio projeto. A ferramenta não desativa proteção nem altera essa regra. A credencial segue somente para a origem imutável, sem propagação em redirecionamentos.
+- No primeiro uso, `DENTEC_RELEASE_BACKEND_COMMIT` deve conter o SHA comprovado do backend efetivamente instalado. O proprietário de uma manutenção não comprova publicação. Após a primeira expansão concluída, `releases:status` passa a fornecer o recibo persistido do backend.
+- Quando o plano contém migrações, `DENTEC_RELEASE_BACKUP_DIR` deve apontar a uma pasta privada existente, absoluta e fora do repositório. O comando exporta os dados com Storage, confere o ZIP e grava seu SHA-256 e recibo antes de publicar o backend. O backup contém dados e credenciais: no Windows, usar uma pasta com ACL privada. Ensaiar restauração conforme [Operações administrativas de dados](migracao-schema.md); a release nunca importa o backup.
 
 ```sh
 pnpm deploy:production --dry-run
-```
-
-Para publicar:
-
-```sh
 pnpm deploy:production
+pnpm deploy:production --resume
 ```
 
-O comando confere branch, repositório, destino e atualização, executa `pnpm check`, confere o protocolo operacional, entra em manutenção e aguarda a conclusão das actions aceitas. Inventaria as funções agendadas; trabalhos em execução, inventário incompleto ou referências pendentes sem identidade preservada interrompem o corte. Publica as funções Convex, prepara os recursos PDF, envia o SHA conferido ao GitHub e aguarda o deployment Vercel desse commit. Confere que o domínio de produção aponta ao mesmo deployment Ready e verifica seu acesso HTML.
+`--dry-run` não executa subprocessos nem chamadas remotas. A execução normal:
 
-Antes de liberar operações, autoriza somente a conta operacional na janela do commit e executa login no portal, acesso direto ao editor e à visualização, consulta autenticada, mutation de salvamento sem alteração e download de PDF real. O salvamento usa `unchangedOnly`: qualquer diferença de estado ou de base interrompe o smoke antes de gravar, sem criar versão. O PDF e as sessões são recursos operacionais temporários; nenhum calendário definitivo é alterado. A permissão restrita é removida ao concluir ou falhar o smoke. Somente após o smoke e a conferência final dos leases o comando libera o acesso geral.
+1. Confere Git/destinos, executa `pnpm check` e consulta contratos remotos pela Convex CLI. O destino é fixado em arquivo temporário explícito; tokens não são enviados como argumentos.
+2. Quando há mudança de backend, lê `release/plan.json`, extrai a revisão anterior do Git e compara schemas, índices e funções públicas, internas e rotas HTTP. Os metadados remotos precisam corresponder ao baseline. Preserva autenticação, dependências de produção, componentes e runtime existentes.
+3. Reserva a release por referência Git com `force-with-lease` esperando ausência. Confere que o domínio público continua no deployment anterior. Desativa e confirma atribuição automática de domínios; `vercel.json` também desativa auto-deploy por push. Envia o SHA exato e aguarda o candidato Production READY.
+4. Abre uma sessão operacional antes do deploy. Se houver migração, cria primeiro o backup privado. Publica a expansão pelo Convex CLI, confere os contratos efetivamente instalados e registra o plano, SHA, fingerprints e proprietário em `releaseProgress`.
+5. Confere que a mesma sessão continua válida. Executa as migrações em lotes de até 50 registros e depois uma passagem de verificação. Cada mutation grava os campos adicionados e o cursor na mesma transação; falha de um lote não avança seu checkpoint.
+6. Executa login, consulta, salvamento `unchangedOnly` e PDF real na URL imutável do **frontend anterior**, contra o backend expandido e os dados migrados. Repete no candidato novo. O calendário precisa ser de teste e permanecer intacto; sessões e PDFs criados pelo smoke são operacionais. E2E continua proibido em produção.
+7. Confere novamente código, contratos, reserva, plano e a sessão aberta antes do deploy. Marca o candidato validado e promove exatamente esse ID, sem reconstrução. Confirma o ID no domínio e a configuração manual de domínios.
+8. Confere a sessão após a troca, grava o recibo de conclusão, encerra somente sua sessão de conferência e remove a reserva com a identidade exata.
 
-O push não confirma frontend disponível. Build isolado Vercel não publica Convex. Não enviar `main` por outro caminho para contornar a coordenação de contratos. As abas abertas precisam recarregar o código antes de continuar.
+Releases apenas de frontend preservam o backend e não executam migração ou preparação de runtime. As abas antigas continuam atendidas. Push, build ou smoke novo isoladamente não autorizam promoção. A reserva protege execuções cooperantes deste comando; mudanças administrativas externas exigem reconciliação e são bloqueadas quando a divergência é detectada.
 
-Se `origin/main` já contiver exatamente o commit local, o comando exige uma janela pausada pertencente ao mesmo SHA para caracterizar uma repetição. Um commit já publicado sem essa janela exige conferir a correspondência dos artefatos antes de continuar; o comando não presume que a coordenação aconteceu.
+## Plano de expansão e migrações
 
-A confirmação de deployment pela API Vercel e o acesso HTTP não bastam para liberar a manutenção. O smoke autenticado descrito acima faz parte do comando. A suíte E2E completa continua restrita ao destino descartável ou ao desenvolvimento autorizado, conforme o README; não executa em produção.
+`release/plan.json` é versionado junto com o código. `baseline` identifica a revisão anterior do backend, `strategy` deve ser `expand`, e a justificativa e os testes precisam sustentar quatro garantias: clientes antigos, escritores antigos, jobs agendados e sessões. O plano inicial desta automação adiciona somente suas tabelas/funções internas e não transforma dados de negócio.
+
+A barreira estrutural aceita tabelas novas, campos opcionais e argumentos que continuam aceitando todas as entradas antigas. Recusa remoção de tabela, índice ou função, mudança de tipo/visibilidade, argumentos estreitados, retorno alterado e desativação de schemaValidation. Funções internas e callbacks são contratos de compatibilidade, inclusive para actions já iniciadas. Auth tables, usuários, convites, recuperação de senha, código de autenticação e componentes ficam preservados. Atualização de dependências/runtime requer procedimento próprio.
+
+A comparação estrutural **não prova compatibilidade semântica**. Os testes declarados no plano devem cobrir requisições dos clientes antigos e os escritores durante o backfill; `pnpm check` os executa antes da publicação. Um campo opcional novo deve ter leitura com fallback e ser preservado/preenchido pelos escritores novos que atendem clientes antigos. Não mudar a interpretação de argumentos antigos sob o mesmo contrato.
+
+Uma migração automática admite somente preencher um campo novo, opcional e ainda ausente. Exemplo, após adicionar esse campo ao schema e preparar leitores/escritores compatíveis:
+
+```json
+{
+  "id": "campus-release-label-v1",
+  "table": "campuses",
+  "field": "releaseLabel",
+  "source": { "kind": "copy", "field": "name" }
+}
+```
+
+Também há `source: {"kind":"literal","value":"valor padrão"}` para string, número, boolean ou null. As tabelas permitidas estão no validator `convex/releases/plan.ts`; auth e sessões ficam excluídas. IDs não são remapeados, nenhum documento é removido e valores já existentes são preservados, inclusive edições concorrentes. Definições de migração publicadas não podem mudar sob o mesmo ID. A verificação exige o novo campo em todos os registros percorridos; uma fonte ausente ou violação de schema aborta o lote.
+
+Transformações destrutivas, atualizações de valores existentes, mudanças de autenticação e conversões arbitrárias não são aceitas por essa automação. Usar plano administrativo específico com ensaio, conforme [Operações administrativas de dados](migracao-schema.md). Remoção de contratos e campos pertence a uma etapa posterior de **contract**, após comprovar que abas, actions e jobs antigos não dependem deles; não há sinalizador para ignorar a proteção.
+
+## Retomada e recuperação
+
+Falha de build ou incompatibilidade impede o deploy do backend. Falha posterior de sessão, lote, verificação ou smoke impede a promoção e mantém a expansão compatível instalada, seus dados e checkpoints. A reserva Git permanece para investigação. Nenhuma falha autoriza rollback automático de backend ou banco.
+
+Com `releaseProgress` pendente, retomar **o mesmo commit e plano** com `--resume`. O comando substitui por CAS somente o proprietário anterior da reserva e transfere sua propriedade no Convex. Conserva os lotes concluídos e repete verificações e smokes; o proprietário antigo não pode continuar gravando checkpoints. Não republica o backend. Se a promoção já ocorreu e seu ID coincide com o candidato validado, confirma a publicação existente e conclui o recibo sem uma nova promoção.
+
+Uma falha de conexão durante o deploy, antes de registrar a expansão, exige reconciliação manual: não é seguro presumir qual código está instalado. Também não retomar automaticamente uma release com recibo já concluído e falha apenas na limpeza da reserva. Conferir pela API/dashboard os IDs do domínio, candidato, backend e recibos, inclusive em timeouts de promoção. Alterações manuais com os mesmos validators podem não ser detectadas pelos metadados; recibos só certificam operações conduzidas por este procedimento.
+
+Depois de reconciliar uma falha fora da retomada automática, conferir `git ls-remote origin refs/heads/codex/production-release-lock` e remover **somente o proprietário conferido** com `git push --force-with-lease=refs/heads/codex/production-release-lock:SHA_DA_RESERVA origin :refs/heads/codex/production-release-lock`. Nunca usar força sem condição de identidade. Para recuperar o frontend, promover apenas um deployment anterior validado e compatível com o backend instalado; não reconstruir um commit antigo presumindo equivalência de ambiente.
+
+O arquivo da sessão de conferência é temporário e privado; o comando o remove ao terminar. Backup e recibos privados permanecem disponíveis para diagnóstico. Nenhuma credencial é registrada no recibo público de release. Os comandos usam Node/Git e são compatíveis com PowerShell; a execução real no Windows ainda precisa ser validada.
 
 ## Falhas e manutenção
 
 A manutenção é confirmada no backend. `operationalControl` identifica o commit responsável, e `operationalLeases` mostra actions aceitas que ainda não concluíram. A configuração emergencial `DENTEC_MAINTENANCE=1` também bloqueia novas alterações. Não considerar o tempo decorrido como término de uma action.
 
-Uma falha após a pausa mantém o bloqueio. Uma resposta perdida da CLI pode ocorrer após o commit da pausa ou da autorização de smoke; conferir o estado também nesses casos. A revogação do smoke é tentada mesmo quando sua autorização não teve resposta, e uma falha de limpeza preserva o diagnóstico original. Conferir o estado pelo destino explícito, por exemplo:
+Os controles de manutenção permanecem disponíveis para intervenção planejada e recuperação de janelas anteriores; a release online não os aciona. Uma falha após uma pausa explícita mantém o bloqueio. Uma resposta perdida da CLI pode ocorrer após o commit da pausa ou da autorização de smoke; conferir o estado também nesses casos. A revogação do smoke é tentada mesmo quando sua autorização não teve resposta, e uma falha de limpeza preserva o diagnóstico original. Conferir o estado pelo destino explícito, por exemplo:
 
 ```sh
 pnpm exec convex run operations:status '{}' --deployment exuberant-cheetah-138 --codegen disable
@@ -75,11 +100,11 @@ Cada action registra `Operational lease`, o ID do lease e sua operação no pró
 
 Se a falha aconteceu antes de qualquer tentativa de deploy, os contratos não foram substituídos. Depois de confirmar `operations:status` sem leases ativos e a janela do mesmo commit, `operations:resume` com esse commit reabre o acesso. Se houve tentativa de deploy com resultado incerto, conferir os dois artefatos antes de liberar.
 
-Uma mudança de regras pode fazer o calendário operacional deixar de ser um no-op mesmo após um preflight válido. O smoke recusa gravar essa diferença. Para corrigir o registro, manter a janela pausada, usar `operations:authorizeSmoke` com o commit e o ID da conta operacional, entrar no portal com essa conta, conferir e salvar explicitamente o calendário de teste e executar `operations:endSmoke` com o mesmo commit. Repetir a publicação desse SHA somente após essa conferência. A ferramenta não altera automaticamente calendários para obter aprovação do smoke.
+Uma mudança de regras pode fazer o calendário operacional deixar de ser um no-op mesmo após um preflight válido. O smoke recusa gravar essa diferença. Para corrigir o registro, manter a janela pausada, usar `operations:authorizeSmoke` com o commit e o ID da conta operacional, entrar no portal com essa conta, conferir e salvar explicitamente o calendário de teste e executar `operations:endSmoke` com o mesmo commit. Retomar a operação planejada somente após essa conferência. A ferramenta não altera automaticamente calendários para obter aprovação do smoke.
 
 O inventário da aplicação preserva os callbacks de `nativeFiles`. O componente de presença mantém sua versão fixada e seu ciclo próprio: heartbeat e disconnect continuam disponíveis durante manutenção e não alteram calendários, documentos ou acessos. Uma atualização desse componente exige conferir também seus jobs com `convex data _scheduled_functions --component presence` e `--component presence/batchWorker`, além de seu contrato de atualização; não está coberta por presumir que o inventário da aplicação inclui componentes.
 
-A recuperação usa backend e frontend da mesma revisão e mantém IDs e dados. Importar backup exige análise específica: dados criados após a reabertura não podem ser descartados por um rollback automático. Depois de um período de manutenção, a função interna `nativeFiles:cleanupExpired` remove temporários vencidos em lotes e preserva arquivos consumidos.
+A recuperação confere as revisões efetivamente instaladas de backend e frontend e mantém seus contratos compatíveis, IDs e dados. Importar backup exige análise específica: dados criados após a reabertura não podem ser descartados por um rollback automático. Depois de um período de manutenção, a função interna `nativeFiles:cleanupExpired` remove temporários vencidos em lotes e preserva arquivos consumidos.
 
 ## Backup e arquivos
 
@@ -91,6 +116,6 @@ Os testes remotos exigem opt-in de deployment descartável ou do desenvolvimento
 
 ## Recursos operacionais de PDF
 
-A publicação prepara automaticamente recursos gzip das duas arquiteturas do Chromium fixado. A etapa usa os arquivos x64 da dependência verificada pelo lockfile e o pacote oficial ARM64 com SHA-256 fixado, converte no host e envia ao Convex Storage por funções internas. A configuração `DENTEC_CHROMIUM_RUNTIME` só é gravada após os uploads; a conferência exige os mesmos tamanhos e hashes dos metadados do Storage.
+A preparação explícita de runtime gera recursos gzip das duas arquiteturas do Chromium fixado. A etapa usa os arquivos x64 da dependência verificada pelo lockfile e o pacote oficial ARM64 com SHA-256 fixado, converte no host e envia ao Convex Storage por funções internas. A configuração `DENTEC_CHROMIUM_RUNTIME` só é gravada após os uploads; a conferência exige os mesmos tamanhos e hashes dos metadados do Storage.
 
-A preparação ocorre após o deploy do backend e antes do push do frontend. Se falhar, a manutenção permanece ativa. Não libere o acesso enquanto o runtime não estiver confirmado. O comando requer rede para o GitHub e upload de arquivos ao Storage; não usa os fluxos de documentos institucionais. Recursos já conferidos são reutilizados. As actions baixam os recursos por URLs obtidas diretamente do Storage e verificam integridade e arquitetura antes da extração gzip; não executam descompressão Brotli.
+Mudanças de runtime fazem parte do plano específico de backend; a release online preserva a versão instalada. Valide as duas arquiteturas antes de trocar essa configuração. Não substitua o runtime de actions em andamento sem comprovar a compatibilidade. O comando requer rede para o GitHub e upload de arquivos ao Storage; não usa os fluxos de documentos institucionais. Recursos já conferidos são reutilizados. As actions baixam os recursos por URLs obtidas diretamente do Storage e verificam integridade e arquitetura antes da extração gzip; não executam descompressão Brotli.

@@ -47,6 +47,8 @@ import type * as lib_uploads from "../lib/uploads.js";
 import type * as nativeFiles from "../nativeFiles.js";
 import type * as operations from "../operations.js";
 import type * as presence from "../presence.js";
+import type * as releases from "../releases.js";
+import type * as releases_plan from "../releases/plan.js";
 import type * as reviews from "../reviews.js";
 import type * as reviews_model from "../reviews/model.js";
 import type * as runtimeArtifacts from "../runtimeArtifacts.js";
@@ -99,6 +101,8 @@ declare const fullApi: ApiFromModules<{
   nativeFiles: typeof nativeFiles;
   operations: typeof operations;
   presence: typeof presence;
+  releases: typeof releases;
+  "releases/plan": typeof releases_plan;
   reviews: typeof reviews;
   "reviews/model": typeof reviews_model;
   runtimeArtifacts: typeof runtimeArtifacts;

@@ -3,6 +3,7 @@ import { environments } from '../config/environments.ts';
 export type SmokeConfiguration = {
   portalUrl: string;
   backendUrl: string;
+  protection?: { name: string; value: string };
   calendarId: string;
   userId: string;
   email: string;
@@ -20,8 +21,19 @@ export function releaseSmokeConfiguration(environment = process.env): SmokeConfi
     throw Error(
       'Configure conta operacional ADMIN local e calendário de teste explícitos para o smoke da publicação.',
     );
+  const candidate = environment.DENTEC_RELEASE_CANDIDATE_URL;
+  if (candidate && !/^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(candidate))
+    throw Error('O smoke exige a URL imutável do candidato Vercel.');
   return {
-    portalUrl: environments.production.portalUrl,
+    ...(candidate && environment.VERCEL_OIDC_TOKEN
+      ? {
+          protection: {
+            name: 'x-vercel-trusted-oidc-idp-token',
+            value: environment.VERCEL_OIDC_TOKEN,
+          },
+        }
+      : {}),
+    portalUrl: candidate || environments.production.portalUrl,
     backendUrl: environments.production.url,
     calendarId,
     userId,

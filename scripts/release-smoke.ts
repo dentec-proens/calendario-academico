@@ -1,4 +1,4 @@
-import { verifyCalendarPdf } from './release-smoke-browser.ts';
+import { protectCandidate, verifyCalendarPdf } from './release-smoke-browser.ts';
 import { pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
 import { ConvexHttpClient } from 'convex/browser';
@@ -37,6 +37,8 @@ export async function verifyReleaseSmoke(configuration: SmokeConfiguration) {
       throw Error(
         'O smoke exige um calendário de teste operacional, sem alterar calendários definitivos.',
       );
+    if (before.catalogueRevision !== before.currentCatalogueRevision)
+      throw Error('Atualize previamente o calendário operacional; o smoke não sincroniza dados.');
     const saved = await client.mutation(api.calendars.saveCalendar, {
       id,
       body: {
@@ -51,6 +53,8 @@ export async function verifyReleaseSmoke(configuration: SmokeConfiguration) {
     console.log('Smoke: sessão e salvamento sem mudança confirmados.');
     browser = await chromium.launch();
     const page = await browser.newPage({ acceptDownloads: true });
+    if (configuration.protection)
+      await protectCandidate(page, configuration.portalUrl, configuration.protection);
     page.setDefaultTimeout(30_000);
     page.setDefaultNavigationTimeout(30_000);
     const errors: string[] = [];

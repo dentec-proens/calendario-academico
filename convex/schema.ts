@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 import { authTables } from '@convex-dev/auth/server';
+import { releaseTables } from './releases/schema';
 import {
   modality,
   purpose,
@@ -17,6 +18,7 @@ import {
 
 export default defineSchema({
   ...authTables,
+  ...releaseTables,
   users: defineTable({
     ...authTables.users.validator.fields,
     name: v.string(),

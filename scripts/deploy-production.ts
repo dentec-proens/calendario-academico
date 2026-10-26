@@ -4,12 +4,22 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { environments } from '../config/environments.ts';
 import { assertNoTargetOverrides, convexCli, root } from './environment.ts';
-import { parseReleaseStatus, waitForDrain, waitForFrontend } from './release-coordination.ts';
-import { inspectScheduledFunctions } from './release-scheduled.ts';
+import { parseReleaseStatus } from './release-coordination.ts';
+import { productionCandidates } from './release-candidate.ts';
+import { randomUUID } from 'node:crypto';
 import { releaseSmokeConfiguration } from './release-smoke-config.ts';
+import {
+  backupForMigration,
+  changesBackend,
+  inspectBackend,
+  migrateAndVerify,
+} from './release-backend.ts';
+import { assertRemoteFunctions, fingerprint } from './release-contracts.ts';
+import type { Doc } from '../convex/_generated/dataModel.js';
 
 const args = process.argv.slice(2);
 const dryRun = args.length === 1 && args[0] === '--dry-run';
+const resume = args.length === 1 && args[0] === '--resume';
 const branch = environments.git.branch;
 
 function git(...values: string[]): string {
@@ -61,57 +71,50 @@ function assertOrigin(): void {
 }
 
 let temporary: string | undefined;
-let backendPublished = false;
-let backendAttempted = false;
-let maintenanceEntered = false;
-let pauseAttempted = false;
+let lock: string | undefined;
+let completed = false;
+let promotionAttempted = false;
+let closeSession: (() => void) | undefined;
+const lockRef = 'refs/heads/codex/production-release-lock';
 try {
-  if (args.length && !dryRun) throw Error('Uso: pnpm deploy:production [--dry-run]');
+  if (args.length && !dryRun && !resume)
+    throw Error('Uso: pnpm deploy:production [--dry-run|--resume]');
   assertNoTargetOverrides(process.env);
   console.log(`Produção Convex: ${environments.production.deployment}`);
   console.log(
-    `Produção Vercel: ${environments.vercel.team}/${environments.vercel.project} via origin/${branch}`,
-  );
-  console.log(
-    'Ordem: conferir main → pnpm check → manutenção/drenagem → Convex → push → confirmar Vercel → liberar acesso.',
+    'Ordem: conferir código → validar compatibilidade → candidato sem domínio público → smoke → promover.',
   );
   if (dryRun) {
     console.log('Simulação: nenhum comando, conexão remota ou arquivo de ambiente foi alterado.');
   } else {
-    if (git('branch', '--show-current') !== branch)
-      throw Error(`Publique a partir da branch ${branch}.`);
+    if (git('branch', '--show-current') !== branch) throw Error(`Publique pela branch ${branch}.`);
     assertOrigin();
     assertClean();
     const commit = git('rev-parse', 'HEAD');
     run('git', ['fetch', '--no-tags', 'origin', branch]);
-    const alreadyPublished = git('rev-parse', `origin/${branch}`) === commit;
     run('git', ['merge-base', '--is-ancestor', `origin/${branch}`, 'HEAD']);
-    // Falha de acesso ou push não fast-forward deve aparecer antes de alterar o backend.
     run('git', ['push', '--dry-run', 'origin', `HEAD:refs/heads/${branch}`]);
     runChecks();
     assertUnchanged(commit);
-    const env = {
-      ...process.env,
-      CONVEX_DEPLOYMENT: `prod:${environments.production.deployment}`,
-      VITE_CONVEX_URL: environments.production.url,
-      VITE_CONVEX_SITE_URL: environments.production.siteUrl,
-    };
+    const token = process.env.VERCEL_TOKEN;
+    if (!token) throw Error('Configure VERCEL_TOKEN antes da release.');
+    const smoke = releaseSmokeConfiguration();
+    const platform = productionCandidates(token);
+    const previous = await platform.current();
+    run('git', ['merge-base', '--is-ancestor', previous.commit, commit]);
     temporary = mkdtempSync(join(tmpdir(), 'calendario-release-'));
     const targetFile = join(temporary, 'production.env');
     writeFileSync(targetFile, `CONVEX_DEPLOYMENT=prod:${environments.production.deployment}\n`, {
       mode: 0o600,
     });
-    const token = process.env.VERCEL_TOKEN;
-    if (!token)
-      throw Error('Configure VERCEL_TOKEN para confirmar o deployment antes de liberar o acesso.');
-    const smoke = releaseSmokeConfiguration();
-    function control(name: string, values: Record<string, unknown> = {}): string {
-      const result = spawnSync(
+    const env = { ...process.env, CONVEX_DEPLOYMENT: `prod:${environments.production.deployment}` };
+    function call(name: string, values: Record<string, unknown> = {}) {
+      return execFileSync(
         process.execPath,
         [
           convexCli,
           'run',
-          `operations:${name}`,
+          name,
           JSON.stringify(values),
           '--env-file',
           targetFile,
@@ -119,130 +122,261 @@ try {
           'disable',
         ],
         { cwd: root, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-      );
-      if (result.error || result.status !== 0)
-        throw Error(
-          'O controle operacional do Convex não confirmou a operação. Confira operations:status antes de repetir. O deployment precisa ter o controle de admissão e drenagem instalado antes do corte.',
-        );
-      return result.stdout.trim();
+      ).trim();
     }
-    // Verify the protocol before publishing. A destination without admission
-    // tracking needs a separate, proven operational preparation; do not infer
-    // drainage from elapsed time or sparse platform metrics.
-    const initialStatus = parseReleaseStatus(control('status'));
-    if (initialStatus.emergency)
-      throw Error(
-        'O bloqueio emergencial está ativo. Confira DENTEC_MAINTENANCE antes de publicar.',
-      );
-    if (alreadyPublished && !(initialStatus.paused && initialStatus.commit === commit))
-      throw Error(
-        'O commit já está em origin/main sem uma janela de manutenção do mesmo SHA. Confira os artefatos antes de continuar.',
-      );
+    const control = (name: string, values: Record<string, unknown> = {}) =>
+      call(`operations:${name}`, values);
+    function metadata() {
+      return JSON.parse(
+        execFileSync(process.execPath, [convexCli, 'function-spec', '--env-file', targetFile], {
+          cwd: root,
+          env,
+          encoding: 'utf8',
+          maxBuffer: 16 * 1024 * 1024,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }),
+      ) as { url: string; functions: Array<{ identifier?: string }> };
+    }
+    const remote = metadata();
+    const receipt = remote.functions.some((fn) => fn.identifier === 'releases.js:status')
+      ? (JSON.parse(call('releases:status') || 'null') as Doc<'releaseProgress'> | null)
+      : null;
+    if (receipt && receipt.phase !== 'complete' && (!resume || receipt.commit !== commit))
+      throw Error('Há uma expansão pendente. Retome o mesmo commit com --resume.');
+    if (resume && (!receipt || receipt.phase === 'complete' || receipt.commit !== commit))
+      throw Error('Não há expansão deste commit para retomar.');
+    const backendCommit = resume
+      ? receipt!.previousBackend
+      : (receipt?.commit ?? process.env.DENTEC_RELEASE_BACKEND_COMMIT);
+    if (!backendCommit || !/^[a-f0-9]{40}$/.test(backendCommit))
+      throw Error('Configure DENTEC_RELEASE_BACKEND_COMMIT com o SHA comprovado para o bootstrap.');
+    function assertOnline() {
+      const status = parseReleaseStatus(control('status'));
+      if (status.paused || status.emergency)
+        throw Error('Há uma manutenção ativa. Reconcilie-a antes da release online.');
+      if (!receipt && status.commit !== backendCommit)
+        throw Error('O registro operacional diverge do recibo de bootstrap.');
+    }
+    assertOnline();
+    run('git', ['merge-base', '--is-ancestor', backendCommit, commit]);
+    const paths = git('diff', '--no-renames', '--name-only', backendCommit, commit, '--')
+      .split('\n')
+      .filter(Boolean);
+    const expansion = changesBackend(paths)
+      ? await inspectBackend(root, backendCommit, paths, remote, resume)
+      : null;
+    if (
+      resume &&
+      (!expansion ||
+        receipt!.planHash !== expansion.planHash ||
+        receipt!.contractHash !== expansion.contractHash)
+    )
+      throw Error('Código ou plano divergente da expansão pendente.');
     control('smokePreflight', {
       userId: smoke.userId,
       email: smoke.email,
       calendarId: smoke.calendarId,
     });
     run(process.execPath, ['--import', 'tsx', 'scripts/release-smoke.ts', '--check-browser'], env);
-    const inspectJobs = (authoritative: boolean) =>
-      inspectScheduledFunctions(
-        (cursor) => control('scheduledPage', { paginationOpts: { numItems: 100, cursor } }),
-        authoritative,
-      );
-    inspectJobs(false);
-    pauseAttempted = true;
-    control('pause', { commit });
-    maintenanceEntered = true;
-    await waitForDrain(commit, () => parseReleaseStatus(control('status')));
-    inspectJobs(true);
-    assertUnchanged(commit);
-    backendAttempted = true;
-    run(
-      process.execPath,
-      [
-        convexCli,
-        'deploy',
-        '--env-file',
-        targetFile,
-        '--yes',
-        '--codegen',
-        'disable',
-        '--cmd',
-        'node --import tsx scripts/assert-production-target.ts',
-        '--cmd-url-env-var-name',
-        'DENTEC_DEPLOYMENT_URL',
-        '--message',
-        `main ${commit}`,
-      ],
-      env,
-    );
-    backendPublished = true;
-    run(
-      process.execPath,
-      [
-        '--import',
-        'tsx',
-        'scripts/prepare-pdf-runtime.ts',
-        '--production',
-        '--env-file',
-        targetFile,
-      ],
-      env,
-    );
-    assertUnchanged(commit);
-    // Enviar o SHA conferido evita publicar um commit diferente por uma troca local de branch.
-    run('git', ['push', 'origin', `${commit}:refs/heads/${branch}`]);
-    await waitForFrontend(
+    // The empty expected value atomically creates a reservation. Resume replaces
+    // only the exact previous owner, which is also checked by Convex mutations.
+    const owner = git(
+      'commit-tree',
+      `${commit}^{tree}`,
+      '-p',
       commit,
-      { ...environments.vercel, portalUrl: environments.production.portalUrl },
-      token,
+      '-m',
+      `Release ${commit}; owner ${randomUUID()}`,
     );
-    let smokeFailure: { cause: unknown } | undefined;
+    const expectedOwner = resume ? receipt!.owner : '';
+    console.log(`Reserva exclusiva: ${lockRef} (${owner}).`);
     try {
-      control('authorizeSmoke', { commit, userId: smoke.userId });
-      run(process.execPath, ['--import', 'tsx', 'scripts/release-smoke.ts'], env);
-    } catch (cause) {
-      smokeFailure = { cause };
-    } finally {
-      try {
-        control('endSmoke', { commit });
-      } catch (cause) {
-        console.error(
-          'Não foi possível confirmar a revogação da permissão operacional. Confira operations:endSmoke; a conta restrita pode continuar autorizada durante a manutenção.',
-        );
-        smokeFailure ??= { cause };
-      }
+      run('git', [
+        'push',
+        `--force-with-lease=${lockRef}:${expectedOwner}`,
+        'origin',
+        `${owner}:${lockRef}`,
+      ]);
+    } catch {
+      throw Error(
+        `Não foi possível confirmar a reserva. Confira ${lockRef}; uma resposta perdida pode ter reservado ${owner}. Não remova a reserva de outra release.`,
+      );
     }
-    if (smokeFailure) throw smokeFailure.cause;
+    lock = owner;
+    const previousFrontend = resume
+      ? await platform.deployment(receipt!.previousFrontend)
+      : previous;
+    if (resume && previous.id !== previousFrontend.id && previous.id !== receipt!.candidateId)
+      throw Error('O domínio diverge dos dois deployments da release pendente.');
+    if (!resume) await platform.assertCurrent(previous);
+    await platform.keepDomainsManual();
     assertUnchanged(commit);
-    const finalStatus = parseReleaseStatus(control('status'));
-    if (!finalStatus.paused || finalStatus.commit !== commit || finalStatus.active.length !== 0)
-      throw Error('A drenagem não permaneceu válida durante a publicação.');
-    control('resume', { commit });
-    maintenanceEntered = false;
-    pauseAttempted = false;
-    console.log(`Convex e portal confirmados no commit ${commit.slice(0, 8)}. Acesso liberado.`);
-    console.log('Recarregue as abas abertas antes de continuar.');
+    run('git', ['push', 'origin', `${commit}:refs/heads/${branch}`]);
+    const candidate =
+      resume && receipt!.candidateId
+        ? await platform.deployment(receipt!.candidateId)
+        : await platform.stage(commit);
+    if (candidate.commit !== commit) throw Error('O candidato não pertence ao commit retomado.');
+    console.log(`Candidato: ${candidate.id}, ${candidate.url}.`);
+    const sessionFile = join(temporary, 'session.json');
+    if (expansion) {
+      closeSession = () =>
+        run(
+          process.execPath,
+          ['--import', 'tsx', 'scripts/release-session-probe.ts', 'finish', sessionFile],
+          env,
+        );
+      run(
+        process.execPath,
+        ['--import', 'tsx', 'scripts/release-session-probe.ts', 'start', sessionFile],
+        env,
+      );
+      assertOnline();
+      if (!resume) {
+        if (expansion.plan.migrations.length) {
+          const backup = await backupForMigration(root, commit, backendCommit, (path) =>
+            run(
+              process.execPath,
+              [
+                convexCli,
+                'export',
+                '--env-file',
+                targetFile,
+                '--path',
+                path,
+                '--include-file-storage',
+              ],
+              env,
+            ),
+          );
+          console.log(`Backup privado com Storage conferido: ${backup}.`);
+        }
+        run(
+          process.execPath,
+          [
+            convexCli,
+            'deploy',
+            '--env-file',
+            targetFile,
+            '--yes',
+            '--codegen',
+            'disable',
+            '--cmd',
+            'node --import tsx scripts/assert-production-target.ts',
+            '--cmd-url-env-var-name',
+            'DENTEC_DEPLOYMENT_URL',
+            '--message',
+            `expand ${commit}`,
+          ],
+          env,
+        );
+      }
+      assertRemoteFunctions(metadata(), expansion.after, environments.production.url);
+      call('releases:begin', {
+        commit,
+        previousBackend: backendCommit,
+        previousFrontend: previousFrontend.id,
+        owner,
+        ...(resume ? { previousOwner: receipt!.owner } : {}),
+        contractHash: expansion.contractHash,
+        planHash: expansion.planHash,
+        plan: expansion.plan,
+      });
+      run(
+        process.execPath,
+        ['--import', 'tsx', 'scripts/release-session-probe.ts', 'verify', sessionFile],
+        env,
+      );
+      await migrateAndVerify(
+        expansion.plan,
+        (id, verify) =>
+          JSON.parse(call('releases:batch', { owner, id, verify })) as {
+            done: boolean;
+            count: number;
+          },
+      );
+      // Validate the actual previous frontend against expanded/migrated data,
+      // including when an ambiguous prior promotion has already switched aliases.
+      run(process.execPath, ['--import', 'tsx', 'scripts/release-smoke.ts'], {
+        ...env,
+        DENTEC_RELEASE_CANDIDATE_URL: previousFrontend.url,
+      });
+    }
+    run(process.execPath, ['--import', 'tsx', 'scripts/release-smoke.ts'], {
+      ...env,
+      DENTEC_RELEASE_CANDIDATE_URL: candidate.url,
+    });
+    assertUnchanged(commit);
+    assertOnline();
+    if (!expansion && fingerprint(metadata()) !== fingerprint(remote))
+      throw Error('Os contratos do backend mudaram durante a validação.');
+    if (expansion) {
+      assertRemoteFunctions(metadata(), expansion.after, environments.production.url);
+      const current = JSON.parse(call('releases:status')) as Doc<'releaseProgress'>;
+      if (
+        current.owner !== owner ||
+        current.commit !== commit ||
+        current.planHash !== fingerprint(expansion.plan)
+      )
+        throw Error('A reserva ou o plano do backend mudou.');
+      run(
+        process.execPath,
+        ['--import', 'tsx', 'scripts/release-session-probe.ts', 'verify', sessionFile],
+        env,
+      );
+      call('releases:validated', { owner, candidateId: candidate.id });
+    }
+    if (previous.id !== candidate.id) {
+      await platform.assertCurrent(previousFrontend);
+      promotionAttempted = true;
+      await platform.promote(candidate, previousFrontend);
+    } else await platform.assertCurrent(candidate);
+    if (expansion) {
+      run(
+        process.execPath,
+        ['--import', 'tsx', 'scripts/release-session-probe.ts', 'verify', sessionFile],
+        env,
+      );
+      call('releases:complete', { owner, candidateId: candidate.id });
+    }
+    completed = true;
+    console.log(
+      `Release ${commit.slice(0, 8)} confirmada. Deployment anterior para recuperação: ${previous.id}.`,
+    );
   }
 } catch (error) {
-  console.error(error instanceof Error ? error.message : 'Não foi possível publicar.');
-  if (maintenanceEntered)
-    console.error(
-      'A manutenção permanece ativa. Confira operações pendentes e recupere backend e frontend da mesma revisão antes de liberar o acesso.',
-    );
-  else if (pauseAttempted)
-    console.error(
-      'A manutenção pode estar ativa apesar da falha da CLI. Confira operations:status antes de repetir.',
-    );
-  if (backendPublished)
-    console.error(
-      'O Convex já foi publicado; confirme o deployment do portal antes de retomar a publicação.',
-    );
-  else if (backendAttempted)
-    console.error(
-      'A tentativa de publicação no Convex falhou. Confira o estado no dashboard antes de repetir: uma falha de conexão pode ocorrer após o envio.',
-    );
+  // Child-process errors may contain credentials in stderr; do not dump them.
+  console.error(
+    error instanceof Error && !('stderr' in error)
+      ? error.message
+      : 'Uma operação da release falhou. Confira os registros locais e os destinos.',
+  );
+  console.error(
+    promotionAttempted
+      ? 'A promoção pode ter ocorrido. Confira o deployment no domínio público antes de repetir; não restaure dados nem o backend automaticamente.'
+      : 'A release não promoveu o candidato. Confira o domínio público antes de recuperar uma operação ambígua.',
+  );
   process.exitCode = 1;
 } finally {
+  if (closeSession)
+    try {
+      closeSession();
+    } catch {
+      console.error(
+        'Não foi possível encerrar a sessão operacional de conferência. As demais sessões foram preservadas.',
+      );
+      process.exitCode = 1;
+    }
+  if (lock && completed) {
+    try {
+      run('git', ['push', `--force-with-lease=${lockRef}:${lock}`, 'origin', `:${lockRef}`]);
+    } catch {
+      console.error(`Release concluída, mas a reserva ${lockRef} precisa ser reconciliada.`);
+      process.exitCode = 1;
+    }
+  } else if (lock)
+    console.error(
+      `Reserva preservada em ${lockRef} (${lock}). Confira candidato, backend e domínio antes de removê-la com force-with-lease.`,
+    );
   if (temporary) rmSync(temporary, { recursive: true, force: true });
 }

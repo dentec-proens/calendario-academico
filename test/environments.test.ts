@@ -1,3 +1,4 @@
+import { symlink } from 'node:fs/promises';
 import type { TestContext } from 'vitest';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
@@ -197,6 +198,16 @@ async function childFixture(t: TestContext) {
   const path = await localFixture(t);
   await mkdir(join(path, 'scripts'));
   await mkdir(join(path, 'config'));
+  await mkdir(join(path, 'convex/releases'), { recursive: true });
+  await copyFile(
+    join(repository, 'convex/releases/plan.ts'),
+    join(path, 'convex/releases/plan.ts'),
+  );
+  await symlink(
+    join(repository, 'node_modules'),
+    join(path, 'node_modules'),
+    process.platform === 'win32' ? 'junction' : 'dir',
+  );
   await writeFile(join(path, 'package.json'), '{"type":"module"}\n');
   await copyFile(join(repository, 'config/environments.ts'), join(path, 'config/environments.ts'));
   for (const name of [
@@ -204,6 +215,9 @@ async function childFixture(t: TestContext) {
     'doctor.ts',
     'deploy-production.ts',
     'release-coordination.ts',
+    'release-candidate.ts',
+    'release-backend.ts',
+    'release-contracts.ts',
     'release-scheduled.ts',
     'release-smoke-config.ts',
     'assert-production-target.ts',
@@ -255,7 +269,9 @@ test('production dry run executes no child command or network request and leaves
   assert.deepEqual((await readdir(fixture.path)).sort(), [
     '.env.local',
     'config',
+    'convex',
     'no-effects.mjs',
+    'node_modules',
     'package.json',
     'scripts',
   ]);

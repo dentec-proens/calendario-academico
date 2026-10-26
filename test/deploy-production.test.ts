@@ -1,375 +1,291 @@
-type ReleaseCall = {
-  kind:
-    | 'git-read'
-    | 'quality'
-    | 'fetch'
-    | 'fast-forward'
-    | 'push-preflight'
-    | 'push'
-    | 'convex'
-    | 'runtime-prepare'
-    | 'maintenance-pause'
-    | 'maintenance-status'
-    | 'maintenance-resume'
-    | 'vercel-status'
-    | 'portal-smoke'
-    | 'scheduled-inventory'
-    | 'operational-smoke'
-    | 'browser-preflight'
-    | 'maintenance-smokePreflight'
-    | 'maintenance-authorizeSmoke'
-    | 'maintenance-endSmoke';
-  args: string[];
-  command?: string;
-  targetFile?: string;
-  env?: Record<string, string>;
-};
-import { test } from 'vitest';
-import assert from 'node:assert/strict';
+import { test, expect } from 'vitest';
 import { execFile } from 'node:child_process';
-import type { ExecFileException } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { changesBackend } from '../scripts/release-backend.ts';
 
 const execute = promisify(execFile);
-const root = fileURLToPath(new URL('../', import.meta.url));
-const releaseScript = fileURLToPath(new URL('../scripts/deploy-production.ts', import.meta.url));
 const commit = 'a'.repeat(40);
-
-// The child runs the real release script, with every subprocess operation it
-// uses intercepted before the script imports child_process's named exports.
-// Unknown commands fail closed: no Git, pnpm or Convex executable is started.
+const backend = 'b'.repeat(40);
+// Every subprocess and HTTP request is intercepted. Unknown calls fail closed;
+// these tests never invoke Git, publish Convex or access any remote deployment.
 const preloadSource = String.raw`
 import childProcess from 'node:child_process';
 import { syncBuiltinESMExports } from 'node:module';
-import { readFileSync, writeFileSync } from 'node:fs';
-
-const scenario = process.env.DENTEC_TEST_RELEASE_SCENARIO;
-const output = process.env.DENTEC_TEST_RELEASE_LOG;
+import fs, { writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+const scenario = process.env.SCENARIO;
 const calls = [];
-const originalCommit = 'a'.repeat(40);
-let checked = false;
-let maintenance = scenario === 'retry-published';
-function record(call) {
-  calls.push(call);
-  writeFileSync(output, JSON.stringify(calls));
-}
-writeFileSync(output, '[]');
-
+const commit = 'a'.repeat(40), baseline = 'b'.repeat(40);
+const expanded = scenario.startsWith('backend-') && scenario !== 'backend-changed';
+const originalRead = fs.readFileSync;
+const packageContent = originalRead(path.join(process.cwd(),'package.json'),'utf8');
+const plan = {version:1,baseline,strategy:'expand',guarantees:{oldClients:true,oldWriters:true,scheduledFunctions:true,sessions:true},rationale:'Expansão comprovada para clientes antigos, escritores, sessões e migração aditiva.',tests:['test/release-contracts.test.ts'],migrations:[{id:'fill-label',table:'campuses',field:'releaseLabel',source:{kind:'literal',value:'Label'}}]};
+fs.readFileSync = (path,...args) => String(path).replaceAll('\\','/').endsWith('/release/plan.json') && expanded ? JSON.stringify(plan) : originalRead(path,...args);
+const resumed = scenario.includes('resume');
+function canonical(value) {if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';if(value&&typeof value==='object')return '{'+Object.entries(value).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([key,item])=>JSON.stringify(key)+':'+canonical(item)).join(',')+'}';return JSON.stringify(value)??'null';}
+const hash=value=>createHash('sha256').update(canonical(value)).digest('hex');
+const releaseFunction={kind:'query',visibility:'internal',args:{type:'object',value:{}},returns:null};
+function snapshot(candidate) {return {schema:{schemaValidation:true,tables:[{tableName:'campuses',documentType:{type:'object',value:{name:{fieldType:{type:'string'},optional:false},...(candidate?{releaseLabel:{fieldType:{type:'string'},optional:true}}:{})}},indexes:[],searchIndexes:[],vectorIndexes:[]}]},functions:candidate?{'releases.js:status':releaseFunction}:{}};}
+let checked = false, manual = false, promoted = scenario==='backend-resume-promoted', reads = 0, didDeploy = resumed, batchReads = 0;
+let ledger = resumed ? {commit,previousBackend:baseline,previousFrontend:'dpl_old',owner:'f'.repeat(40),planHash:hash(plan),contractHash:hash(snapshot(true)),phase:scenario==='backend-resume-promoted'?'validated':'expanded',...(scenario==='backend-resume-promoted'?{candidateId:'dpl_new'}:{})} : null;
+function record(name) { calls.push(name); writeFileSync(process.env.LOG, JSON.stringify(calls)); }
+writeFileSync(process.env.LOG, '[]');
 childProcess.execFileSync = (command, args) => {
-  if (command !== 'git') throw new Error('Unexpected executable: ' + command);
-  record({ kind: 'git-read', args });
-  const operation = args.join(' ');
-  if (operation === 'branch --show-current') return 'main\n';
-  if (operation === 'remote get-url --push --all origin')
-    return 'https://github.com/dentec-proens/calendario-academico.git\n';
-  if (operation === 'status --porcelain')
-    return scenario === 'untracked' ? '?? src/uncommitted.ts\n' : '';
-  if (operation === 'ls-files --others --ignored --exclude-standard -- convex')
-    return scenario === 'ignored' ? 'convex/backup-local/task.ts\n' : '';
-  if (operation === 'rev-parse HEAD')
-    return (scenario === 'head-changed' && checked ? 'b'.repeat(40) : originalCommit) + '\n';
-  if (operation === 'rev-parse origin/main') return (scenario === 'already-published' || scenario === 'retry-published' ? originalCommit : 'b'.repeat(40)) + '\n';
-  throw new Error('Unexpected Git read: ' + operation);
+  if (command === process.execPath && args.some(arg=>arg.endsWith('release-contract-snapshot.ts'))) {
+    const candidate = fs.realpathSync(args.at(-1)) === fs.realpathSync(process.cwd());
+    return JSON.stringify(snapshot(candidate));
+  }
+  if (command === process.execPath && args[1] === 'function-spec') {record('function-spec'); return JSON.stringify({url:'https://exuberant-cheetah-138.convex.cloud',functions:didDeploy || scenario==='fresh-controls'? [{identifier:'releases.js:status',functionType:'Query',visibility:{kind:'internal'},args:releaseFunction.args,returns:null}]:[]});}
+  if (command === process.execPath && args[1] === 'run') {
+    const name = args[2]; record(name);
+    if (name === 'operations:status') return JSON.stringify({emergency:scenario==='emergency',paused:scenario==='paused',commit:scenario==='missing-baseline'?null:baseline,active:[{id:'busy',operation:'pdf',startedAt:1}]});
+    if (name === 'releases:begin') {ledger={...JSON.parse(args[3]),phase:resumed?ledger.phase:'expanded'};return 'null';}
+    if (name === 'releases:status') return ledger ? JSON.stringify(ledger) : '';
+    if (name === 'releases:batch') {if(scenario==='backend-migration-failed')throw Error('Invalid batch');batchReads++;return JSON.stringify({done:batchReads%2===0,count:2});}
+    if (name === 'releases:validated') {ledger.phase='validated';return 'null';}
+    if (name === 'releases:complete') {ledger.phase='complete';return 'null';}
+    if (name === 'operations:smokePreflight') return 'null';
+    throw Error('Unexpected operational call ' + name);
+  }
+  if (command !== 'git') throw Error('Unexpected executable');
+  const op = args.join(' ');
+  record('git '+op);
+  if (op === 'branch --show-current') return 'main';
+  if (op === 'remote get-url --push --all origin') return 'https://github.com/dentec-proens/calendario-academico.git';
+  if (op === 'status --porcelain') return scenario==='dirty'?' M web/app.ts':'';
+  if (args[0] === 'ls-files') return '';
+  if (op === 'rev-parse HEAD') return checked && scenario==='head-changed'?'c'.repeat(40):commit;
+  if (args[0] === 'diff') return scenario==='backend-changed' || expanded?'convex/calendars.ts':'web/app.ts';
+  if (args[0] === 'show') return packageContent;
+  if (args[0] === 'archive') return Buffer.alloc(1024);
+  if (args[0] === 'commit-tree') return 'd'.repeat(40);
+  throw Error('Unexpected Git read '+op);
 };
-
 childProcess.spawnSync = (command, args, options) => {
-  let kind;
-  let status = 0;
-  if (args.includes('check') || args.includes('pnpm check')) {
-    kind = 'quality';
-    checked = true;
-    if (scenario === 'quality-failed') status = 1;
-  } else if (command === process.execPath && args.includes('scripts/prepare-pdf-runtime.ts')) {
-    kind = 'runtime-prepare';
-    if (scenario === 'runtime-failed') status = 1;
-  } else if (command === process.execPath && args.includes('scripts/release-smoke.ts')) {
-    kind = args.includes('--check-browser') ? 'browser-preflight' : 'operational-smoke';
-    if ((['smoke-failed','smoke-and-cleanup-failed'].includes(scenario) && kind === 'operational-smoke') || (scenario === 'browser-missing' && kind === 'browser-preflight')) status = 1;
-  } else if (command === 'git') {
-    if (args[0] === 'fetch') kind = 'fetch';
-    else if (args[0] === 'merge-base') kind = 'fast-forward';
-    else if (args[0] === 'push') kind = args.includes('--dry-run') ? 'push-preflight' : 'push';
-    else throw new Error('Unexpected Git write: ' + args.join(' '));
-  } else if (command === process.execPath && args[1] === 'run' && /convex[\\/]bin[\\/]main\.js$/.test(args[0])) {
-    const name = args[2].split(':')[1];
-    kind = name === 'scheduledPage' ? 'scheduled-inventory' : 'maintenance-' + name;
-    record({kind, command, args});
-    if (scenario === 'control-unavailable') return {status:1, stdout:'', stderr:'missing control'};
-    if (name === 'smokePreflight' && scenario === 'invalid-smoke-identity') return {status:1, stdout:'', stderr:'invalid smoke identity'};
-    if (name === 'scheduledPage') return {status:0, stdout:JSON.stringify({page:scenario === 'unknown-scheduled' ? [{name:'removed:handler',state:{kind:'pending'}}] : [],isDone:true,continueCursor:''}), stderr:''};
-    if (name === 'pause') maintenance = true;
-    if (name === 'pause' && scenario === 'pause-unknown') return {status:1,stdout:'',stderr:'connection lost after pause'};
-    if (name === 'authorizeSmoke' && scenario === 'smoke-authorization-unknown') return {status:1,stdout:'',stderr:'connection lost after authorization'};
-    if (name === 'endSmoke' && ['smoke-cleanup-failed','smoke-and-cleanup-failed'].includes(scenario)) return {status:1,stdout:'',stderr:'cleanup failed'};
-    if (name === 'resume') maintenance = false;
-    const status = {emergency:scenario === 'emergency',paused: scenario === 'control-lost' ? false : maintenance, commit: originalCommit, active:[]};
-    return {status:0, stdout:JSON.stringify(name === 'status' ? status : null), stderr:''};
-  } else if (command === process.execPath && args[1] === 'deploy' && /convex[\\/]bin[\\/]main\.js$/.test(args[0])) {
-    kind = 'convex';
-    const index = args.indexOf('--env-file');
-    if (index < 0) throw new Error('Release must provide an explicit target file.');
-    if (scenario === 'schema-failed') status = 1;
-    record({
-      kind, command, args,
-      targetFile: readFileSync(args[index + 1], 'utf8'),
-      env: {
-        CONVEX_DEPLOYMENT: options.env.CONVEX_DEPLOYMENT,
-        VITE_CONVEX_URL: options.env.VITE_CONVEX_URL,
-        VITE_CONVEX_SITE_URL: options.env.VITE_CONVEX_SITE_URL,
-      },
-    });
-    return { status, signal: null };
-  } else {
-    throw new Error('Unexpected subprocess: ' + command + ' ' + args.join(' '));
+  if (args.includes('check') || args.includes('pnpm check')) { record('quality'); checked=true; return {status:scenario==='quality-failed'?1:0}; }
+  if (command === 'git' && ['fetch','merge-base','push'].includes(args[0])) {
+    record('git '+args.join(' '));
+    return {status: scenario==='locked' && args.some(a=>a.includes(':refs/heads/codex/production-release-lock')) ? 1:0};
   }
-  record({ kind, command, args });
-  return { status, signal: null };
+  if (command === process.execPath && args[1] === 'deploy') {record('backend-deploy');didDeploy=true;return {status:scenario==='backend-deploy-failed'?1:0};}
+  if (command === process.execPath && args[1] === 'export') {record('backup');fs.writeFileSync(args[args.indexOf('--path')+1],Buffer.concat([Buffer.from([80,75,3,4]),Buffer.alloc(100)]));return {status:scenario==='backend-backup-failed'?1:0};}
+  if (args.includes('scripts/release-session-probe.ts')) {const mode=args[3];record('session '+mode);return {status:mode==='verify'&&scenario==='backend-session-lost'?1:0};}
+  if (args.includes('scripts/release-smoke.ts')) {
+    const preflight = args.includes('--check-browser'); record(preflight?'browser':'smoke '+options.env.DENTEC_RELEASE_CANDIDATE_URL);
+    return {status:!preflight && (scenario==='smoke-failed' || scenario==='backend-old-smoke-failed' && options.env.DENTEC_RELEASE_CANDIDATE_URL==='https://old.vercel.app')?1:0};
+  }
+  throw Error('Unexpected subprocess '+command+' '+args.join(' '));
 };
-globalThis.fetch = async (url) => {
-  if (String(url).startsWith('https://api.vercel.com/')) {
-    record({kind:'vercel-status',args:[String(url)]});
-    const deployment = {uid:'deployment-ready', id:'deployment-ready', state: scenario === 'vercel-failed' ? 'ERROR' : 'READY', readyState: scenario === 'vercel-failed' ? 'ERROR' : 'READY',meta:{githubCommitSha:originalCommit}};
-    return new Response(JSON.stringify(String(url).includes('/v7/deployments?') ? {deployments:[deployment]} : deployment),{headers:{'Content-Type':'application/json'}});
+const projectId='prj_AlAdqLCrChRgLBS1wRnjif72pF01';
+function deployment(id,sha) { return {id,url:id==='dpl_old'?'old.vercel.app':'candidate.vercel.app',projectId:scenario==='wrong-project'?'prj_other':projectId,target:'production',readyState:scenario==='build-failed'&&id==='dpl_new'?'ERROR':'READY',meta:{githubCommitSha:sha}}; }
+globalThis.fetch = async (url, options={}) => {
+  const u = new URL(url); if(u.hostname!=='api.vercel.com') throw Error('Unexpected host');
+  const method=options.method||'GET'; record(method+' '+u.pathname);
+  if(u.pathname==='/v9/projects/'+projectId) {
+    if(method==='PATCH') manual=true;
+    return Response.json({id:projectId,accountId:'team_IEsOK7eMdDWvSxzHFg3re3ZT',name:'calendario-academico',autoAssignCustomDomains:scenario==='auto-alias'?true:!manual,link:{type:'github',org:'dentec-proens',repo:'calendario-academico',productionBranch:'main'}});
   }
-  if (String(url) === 'https://calendario-academico-phi.vercel.app') {
-    record({kind:'portal-smoke',args:[String(url)]});
-    return new Response('<html><script src="/assets/app.js"></script></html>',{status:scenario === 'html-smoke-failed' ? 503 : 200,headers:{'Content-Type':'text/html'}});
-  }
-  throw new Error('Unexpected fetch: '+url);
+  if(u.pathname==='/v13/deployments/calendario-academico-phi.vercel.app') { reads++; return Response.json(deployment(promoted || (scenario==='concurrent' && reads>1)?'dpl_new':'dpl_old',promoted?commit:baseline)); }
+  if(u.pathname==='/v13/deployments'&&method==='POST') { if(!manual) throw Error('Unsafe creation'); return Response.json({id:'dpl_new'}); }
+  if(u.pathname==='/v13/deployments/dpl_old')return Response.json(deployment('dpl_old',baseline));
+  if(u.pathname==='/v13/deployments/dpl_new') {const d=deployment('dpl_new',scenario==='wrong-sha'?'c'.repeat(40):commit);return Response.json(d);}
+  if(u.pathname==='/v10/projects/'+projectId+'/promote/dpl_new'&&method==='POST') {promoted=true;manual=false;if(scenario==='promotion-unknown') throw Error('Lost response');return Response.json({});}
+  throw Error('Unexpected Vercel call '+method+' '+u.pathname);
 };
 syncBuiltinESMExports();
 `;
-
-async function runRelease(scenario: string, args: string[] = []) {
-  const directory = await mkdtemp(join(tmpdir(), 'dentec-release-test-'));
+async function release(scenario: string, args: string[] = []) {
+  const dir = await mkdtemp(join(tmpdir(), 'release-online-test-'));
   try {
-    const preload = join(directory, 'preload.mjs');
-    const log = join(directory, 'calls.json');
+    const preload = join(dir, 'preload.mjs'),
+      log = join(dir, 'calls.json');
     await writeFile(preload, preloadSource);
-    const env = { ...process.env };
+    const env = {
+      ...process.env,
+      SCENARIO: scenario,
+      LOG: log,
+      DENTEC_RELEASE_BACKUP_DIR: dir,
+      npm_execpath: 'pnpm',
+      VERCEL_TOKEN: 'synthetic-token',
+      DENTEC_RELEASE_BACKEND_COMMIT:
+        scenario === 'missing-receipt'
+          ? ''
+          : scenario === 'wrong-receipt'
+            ? 'e'.repeat(40)
+            : backend,
+      DENTEC_RELEASE_SMOKE_USER_ID: 'user',
+      DENTEC_RELEASE_SMOKE_CALENDAR_ID: 'calendar',
+      DENTEC_RELEASE_SMOKE_EMAIL: 'test@example.com',
+      DENTEC_RELEASE_SMOKE_PASSWORD: 'synthetic-password',
+    };
     for (const key of [
       'CONVEX_DEPLOY_KEY',
       'CONVEX_DEPLOYMENT_TOKEN',
       'CONVEX_SELF_HOSTED_URL',
       'CONVEX_SELF_HOSTED_ADMIN_KEY',
     ])
-      delete env[key];
-    Object.assign(env, {
-      npm_execpath: 'pnpm',
-      VERCEL_TOKEN: scenario === 'missing-vercel-token' ? '' : 'synthetic-ci-token',
-      DENTEC_TEST_RELEASE_SCENARIO: scenario,
-      DENTEC_TEST_RELEASE_LOG: log,
-      DENTEC_RELEASE_SMOKE_USER_ID: 'smoke-admin',
-      DENTEC_RELEASE_SMOKE_CALENDAR_ID: 'smoke-calendar',
-      DENTEC_RELEASE_SMOKE_EMAIL: 'smoke@ifpr.edu.br',
-      DENTEC_RELEASE_SMOKE_PASSWORD: 'SyntheticSmokePassword',
-    });
+      delete (env as NodeJS.ProcessEnv)[key];
     const result = await execute(
       process.execPath,
-      ['--import', 'tsx', '--import', pathToFileURL(preload).href, releaseScript, ...args],
-      { cwd: root, env, timeout: 15_000 },
+      [
+        '--import',
+        'tsx',
+        '--import',
+        pathToFileURL(preload).href,
+        fileURLToPath(new URL('../scripts/deploy-production.ts', import.meta.url)),
+        ...args,
+      ],
+      { env, timeout: 15_000 },
     ).then(
       ({ stdout, stderr }) => ({ code: 0, stdout, stderr }),
       (error: unknown) => {
-        const failure = error as ExecFileException & { stdout: string; stderr: string };
-        return { code: failure.code, stdout: failure.stdout, stderr: failure.stderr };
+        const e = error as { code: number; stdout: string; stderr: string };
+        return { code: e.code, stdout: e.stdout, stderr: e.stderr };
       },
     );
-    return { ...result, calls: JSON.parse(await readFile(log, 'utf8')) as ReleaseCall[] };
+    return { ...result, calls: JSON.parse(await readFile(log, 'utf8')) as string[] };
   } finally {
-    await rm(directory, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true });
   }
 }
-
-const published = (calls: ReleaseCall[]) => calls.some((call) => call.kind === 'push');
-const deployed = (calls: ReleaseCall[]) => calls.some((call) => call.kind === 'convex');
-
-test('production release checks quality, deploys the explicit Convex target, then pushes the checked SHA', async () => {
-  const result = await runRelease('success');
-  assert.equal(result.code, 0, result.stderr);
-  const phases = result.calls.map((call) => call.kind);
-  assert.ok(phases.indexOf('push-preflight') < phases.indexOf('quality'));
-  assert.ok(phases.indexOf('quality') < phases.indexOf('convex'));
-  assert.ok(phases.indexOf('convex') < phases.indexOf('runtime-prepare'));
-  assert.ok(phases.indexOf('runtime-prepare') < phases.indexOf('push'));
-  assert.ok(phases.indexOf('maintenance-pause') < phases.indexOf('convex'));
-  assert.ok(phases.indexOf('scheduled-inventory') < phases.indexOf('convex'));
-  assert.ok(phases.indexOf('push') < phases.indexOf('vercel-status'));
-  assert.ok(phases.indexOf('portal-smoke') < phases.indexOf('maintenance-resume'));
-  assert.ok(phases.indexOf('operational-smoke') < phases.indexOf('maintenance-resume'));
-  assert.ok(phases.indexOf('maintenance-authorizeSmoke') < phases.indexOf('operational-smoke'));
-  assert.ok(phases.indexOf('operational-smoke') < phases.indexOf('maintenance-endSmoke'));
-  assert.match(result.stdout, /Acesso liberado/);
-  const convex = result.calls.find((call) => call.kind === 'convex');
-  assert(convex);
-  assert.equal(convex.targetFile, 'CONVEX_DEPLOYMENT=prod:exuberant-cheetah-138\n');
-  assert.deepEqual(convex.env, {
-    CONVEX_DEPLOYMENT: 'prod:exuberant-cheetah-138',
-    VITE_CONVEX_URL: 'https://exuberant-cheetah-138.convex.cloud',
-    VITE_CONVEX_SITE_URL: 'https://exuberant-cheetah-138.convex.site',
-  });
-  assert.equal(
-    convex.args[convex.args.indexOf('--cmd') + 1],
-    'node --import tsx scripts/assert-production-target.ts',
+test('online release stages exact SHA, smokes immutable URL, then promotes; active actions continue', async () => {
+  const result = await release('success');
+  expect(result.code, result.stderr).toBe(0);
+  const calls = result.calls;
+  expect(calls.indexOf('quality')).toBeLessThan(calls.indexOf('POST /v13/deployments'));
+  expect(calls.indexOf('PATCH /v9/projects/prj_AlAdqLCrChRgLBS1wRnjif72pF01')).toBeLessThan(
+    calls.indexOf(`git push origin ${commit}:refs/heads/main`),
   );
-  assert.equal(
-    convex.args[convex.args.indexOf('--cmd-url-env-var-name') + 1],
-    'DENTEC_DEPLOYMENT_URL',
+  expect(calls.indexOf('POST /v13/deployments')).toBeLessThan(
+    calls.indexOf('smoke https://candidate.vercel.app'),
   );
-  assert.equal(convex.args[convex.args.indexOf('--message') + 1], 'main ' + commit);
-  const push = result.calls.find((call) => call.kind === 'push');
-  assert(push);
-  assert.deepEqual(push.args, ['push', 'origin', commit + ':refs/heads/main']);
+  expect(calls.indexOf('smoke https://candidate.vercel.app')).toBeLessThan(
+    calls.indexOf('POST /v10/projects/prj_AlAdqLCrChRgLBS1wRnjif72pF01/promote/dpl_new'),
+  );
+  expect(calls.filter((c) => c.startsWith('PATCH '))).toHaveLength(2);
+  expect(
+    calls.some((c) =>
+      c.includes(`--force-with-lease=refs/heads/codex/production-release-lock:${'d'.repeat(40)}`),
+    ),
+  ).toBe(true);
+  expect(calls.some((c) => /operations:(pause|resume|authorizeSmoke)| deploy /.test(c))).toBe(
+    false,
+  );
 });
-
-test('failed quality checks prevent both Convex deployment and Git publication', async () => {
-  const result = await runRelease('quality-failed');
-  assert.equal(result.code, 1);
-  assert.ok(result.calls.some((call) => call.kind === 'quality'));
-  assert.equal(deployed(result.calls), false);
-  assert.equal(published(result.calls), false);
+test.each([
+  'dirty',
+  'head-changed',
+  'quality-failed',
+  'backend-changed',
+  'missing-baseline',
+  'missing-receipt',
+  'wrong-receipt',
+  'paused',
+  'emergency',
+  'locked',
+  'auto-alias',
+  'build-failed',
+  'wrong-sha',
+  'wrong-project',
+  'smoke-failed',
+  'concurrent',
+])('failure %s never promotes or deploys the backend', async (scenario) => {
+  const result = await release(scenario);
+  expect(result.code, result.stderr).not.toBe(0);
+  expect(result.calls.some((c) => c.startsWith('POST /v10/'))).toBe(false);
+  expect(result.calls.some((c) => /operations:(pause|resume)| deploy /.test(c))).toBe(false);
 });
-
-test('a failed Convex schema deployment prevents Git publication', async () => {
-  const result = await runRelease('schema-failed');
-  assert.equal(result.code, 1);
-  assert.equal(deployed(result.calls), true);
-  assert.equal(published(result.calls), false);
-  assert.match(result.stderr, /Confira o estado no dashboard antes de repetir/);
+test('dry-run has no subprocesses or platform requests', async () => {
+  const result = await release('success', ['--dry-run']);
+  expect(result.code).toBe(0);
+  expect(result.calls).toEqual([]);
 });
-
-test('untracked source code prevents release before any remote subprocess', async () => {
-  const result = await runRelease('untracked');
-  assert.equal(result.code, 1);
-  assert.match(result.stderr, /Faça commit/);
-  assert.ok(result.calls.every((call) => call.kind === 'git-read'));
-});
-
-test('ignored files inside convex prevent release before any remote subprocess', async () => {
-  const result = await runRelease('ignored');
-  assert.equal(result.code, 1);
-  assert.match(result.stderr, /Mova os arquivos ignorados de convex/);
-  assert.ok(result.calls.every((call) => call.kind === 'git-read'));
-});
-
-test('changing HEAD during quality checks blocks deployment and publication', async () => {
-  const result = await runRelease('head-changed');
-  assert.equal(result.code, 1);
-  assert.match(result.stderr, /branch ou o commit mudou/);
-  assert.ok(result.calls.some((call) => call.kind === 'quality'));
-  assert.equal(deployed(result.calls), false);
-  assert.equal(published(result.calls), false);
-});
-
-test('release dry-run does not invoke even a Git or quality subprocess', async () => {
-  const result = await runRelease('success', ['--dry-run']);
-  assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.calls, []);
-});
-
-test('release refuses unavailable or lost admission control before removing backend contracts', async () => {
-  for (const scenario of ['control-unavailable', 'control-lost']) {
-    const result = await runRelease(scenario);
-    assert.equal(result.code, 1);
-    assert.equal(deployed(result.calls), false);
-    assert.equal(published(result.calls), false);
-    assert.equal(
-      result.calls.some((call) => call.kind === 'maintenance-resume'),
-      false,
-    );
-  }
-});
-
-test('frontend build and smoke failures keep maintenance active after backend publication', async () => {
-  for (const scenario of ['vercel-failed', 'smoke-failed', 'html-smoke-failed']) {
-    const result = await runRelease(scenario);
-    assert.equal(result.code, 1);
-    assert.equal(deployed(result.calls), true);
-    assert.equal(published(result.calls), true);
-    assert.equal(
-      result.calls.some((call) => call.kind === 'maintenance-resume'),
-      false,
-    );
-    assert.match(result.stderr, /manutenção permanece ativa/);
-  }
-});
-
-test('unknown scheduled identities prevent removing application contracts', async () => {
-  for (const scenario of ['unknown-scheduled']) {
-    const result = await runRelease(scenario);
-    assert.equal(result.code, 1);
-    assert.equal(deployed(result.calls), false);
-    assert.equal(published(result.calls), false);
-    assert.equal(
-      result.calls.some((call) => call.kind === 'maintenance-resume'),
-      false,
-    );
-  }
-});
-
-test('release preflight rejects emergency, invalid smoke identity, missing browser and an uncoordinated published commit before pause', async () => {
-  for (const scenario of [
-    'emergency',
-    'invalid-smoke-identity',
-    'browser-missing',
-    'already-published',
+test('backend detection includes shared code, schema, runtime and dependencies', () => {
+  expect(changesBackend(['web/editor.tsx', 'docs/uso.md'])).toBe(false);
+  for (const path of [
+    'convex/schema.ts',
+    'src/calendar-base/index.ts',
+    'config/environments.ts',
+    'migration/import.ts',
+    'pnpm-lock.yaml',
+    'package.json',
+    'convex.json',
+    '.npmrc',
   ]) {
-    const result = await runRelease(scenario);
-    assert.equal(result.code, 1);
-    assert.equal(
-      result.calls.some((call) => call.kind === 'maintenance-pause'),
-      false,
-    );
-    assert.equal(deployed(result.calls), false);
+    expect(changesBackend([path])).toBe(true);
   }
-  const retry = await runRelease('retry-published');
-  assert.equal(retry.code, 0, retry.stderr);
 });
 
-test('ambiguous pause or smoke authorization report the remaining gate and always try to revoke smoke', async () => {
-  const paused = await runRelease('pause-unknown');
-  assert.equal(paused.code, 1);
-  assert.match(paused.stderr, /manutenção pode estar ativa/);
-  assert.equal(deployed(paused.calls), false);
-  const authorized = await runRelease('smoke-authorization-unknown');
-  assert.equal(authorized.code, 1);
-  assert.ok(authorized.calls.some((call) => call.kind === 'maintenance-endSmoke'));
-  const cleanup = await runRelease('smoke-cleanup-failed');
-  assert.equal(cleanup.code, 1);
-  assert.match(cleanup.stderr, /conta restrita pode continuar autorizada/);
-  assert.equal(
-    cleanup.calls.some((call) => call.kind === 'maintenance-resume'),
-    false,
-  );
-  const both = await runRelease('smoke-and-cleanup-failed');
-  assert.equal(both.code, 1);
-  assert.match(both.stderr, /Falhou:/);
-  assert.match(both.stderr, /conta restrita pode continuar autorizada/);
+test('ambiguous promotion preserves the reservation and reasserts manual domains without rolling back data', async () => {
+  const result = await release('promotion-unknown');
+  expect(result.code).not.toBe(0);
+  expect(result.stderr).toContain('A promoção pode ter ocorrido');
+  expect(result.calls.filter((c) => c.startsWith('PATCH '))).toHaveLength(2);
+  expect(
+    result.calls.some((c) => c.endsWith('origin :refs/heads/codex/production-release-lock')),
+  ).toBe(false);
 });
 
-test('Vercel confirmation credentials are required before entering maintenance', async () => {
-  const result = await runRelease('missing-vercel-token');
-  assert.equal(result.code, 1);
-  assert.equal(deployed(result.calls), false);
-  assert.equal(
-    result.calls.some((call) => call.kind === 'maintenance-pause'),
-    false,
-  );
-  assert.match(result.stderr, /VERCEL_TOKEN/);
+test('compatible backend release exports first, deploys, migrates and verifies both frontends before promotion', async () => {
+  const result = await release('backend-success');
+  expect(result.code, result.stderr).toBe(0);
+  const calls = result.calls;
+  for (const [first, second] of [
+    ['POST /v13/deployments', 'backup'],
+    ['backup', 'backend-deploy'],
+    ['session start', 'backend-deploy'],
+    ['backend-deploy', 'releases:begin'],
+    ['releases:begin', 'releases:batch'],
+    ['releases:batch', 'smoke https://old.vercel.app'],
+    ['smoke https://old.vercel.app', 'smoke https://candidate.vercel.app'],
+    ['smoke https://candidate.vercel.app', 'releases:validated'],
+    ['releases:validated', 'POST /v10/projects/prj_AlAdqLCrChRgLBS1wRnjif72pF01/promote/dpl_new'],
+    ['POST /v10/projects/prj_AlAdqLCrChRgLBS1wRnjif72pF01/promote/dpl_new', 'releases:complete'],
+  ])
+    expect(calls.indexOf(first!)).toBeLessThan(calls.indexOf(second!));
+  expect(calls.filter((c) => c === 'session verify')).toHaveLength(3);
+  expect(calls.at(-2)).toBe('session finish');
+  expect(calls.some((c) => /operations:(pause|resume)/.test(c))).toBe(false);
+});
+test.each([
+  'backend-backup-failed',
+  'backend-deploy-failed',
+  'backend-migration-failed',
+  'backend-session-lost',
+  'backend-old-smoke-failed',
+])('%s prevents promotion and does not roll back data', async (scenario) => {
+  const result = await release(scenario);
+  expect(result.code).not.toBe(0);
+  expect(result.calls.some((c) => c.startsWith('POST /v10/'))).toBe(false);
+  expect(result.calls.includes('releases:complete')).toBe(false);
+  expect(result.calls.some((c) => /operations:(pause|resume)/.test(c))).toBe(false);
+  expect(result.calls.includes('session finish')).toBe(true);
 });
 
-test('release preserves maintenance when PDF runtime preparation fails after backend deployment', async () => {
-  const result = await runRelease('runtime-failed');
-  assert.notEqual(result.code, 0);
-  assert.equal(deployed(result.calls), true);
-  assert.equal(published(result.calls), false);
-  assert.equal(
-    result.calls.some((call) => call.kind === 'maintenance-resume'),
-    false,
-  );
-  assert.match(result.stderr, /manutenção permanece ativa/);
+test.each(['backend-resume', 'backend-resume-promoted'])(
+  '%s retains checkpoints and verifies the same release without redeploying or rolling back',
+  async (scenario) => {
+    const result = await release(scenario, ['--resume']);
+    expect(result.code, result.stderr).toBe(0);
+    expect(result.calls.includes('backend-deploy')).toBe(false);
+    expect(result.calls.includes('backup')).toBe(false);
+    expect(result.calls.includes('releases:complete')).toBe(true);
+    expect(
+      result.calls.some((c) =>
+        c.includes(`--force-with-lease=refs/heads/codex/production-release-lock:${'f'.repeat(40)}`),
+      ),
+    ).toBe(true);
+    if (scenario === 'backend-resume-promoted')
+      expect(result.calls.some((c) => c.startsWith('POST /v10/'))).toBe(false);
+  },
+);
+
+test('installed controls without a receipt parse the CLI empty null response safely', async () => {
+  const result = await release('fresh-controls');
+  expect(result.code, result.stderr).toBe(0);
 });

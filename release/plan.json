@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "baseline": "35fcfedff0b6d25081d551feaea57a0b75a7910b",
+  "strategy": "expand",
+  "guarantees": {
+    "oldClients": true,
+    "oldWriters": true,
+    "scheduledFunctions": true,
+    "sessions": true
+  },
+  "rationale": "A expans\u00e3o adiciona apenas o controle interno de release e preenchimento de campos novos opcionais. N\u00e3o substitui contratos, sess\u00f5es, tabelas ou componentes existentes.",
+  "tests": ["test/release-contracts.test.ts", "test/release-migrations.test.ts"],
+  "migrations": []
+}
