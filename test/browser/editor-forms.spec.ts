@@ -259,6 +259,27 @@ test('a selected holiday warns that it will not count as a teaching day', async 
   await expect(page.locator('#saturday-impediments')).toContainText('Dia do Trabalho');
 });
 
+test('the Saturday panel shows the teaching-day count and previews the selection', async ({
+  page,
+  cleanup,
+}) => {
+  await openEditor(page, cleanup);
+  await selectEditorSection(page, 'days');
+  const count = page.locator('#saturday-day-count');
+  await expect(count).toContainText(
+    'A contagem aparece depois de confirmar a semana letiva e cadastrar os períodos.',
+  );
+  await addPeriod(page, '2027-03-01', '2027-04-30');
+  await selectEditorSection(page, 'issues');
+  const total = Number(await page.locator('#total').textContent());
+  expect(total).toBeGreaterThan(0);
+  await selectEditorSection(page, 'days');
+  await expect(count).toContainText(`${total} de 200 dias letivos`);
+  await expect(count).not.toContainText('com a seleção');
+  await page.locator('#saturday-dates input[value="2027-03-06"]').check();
+  await expect(count).toContainText(`com a seleção: ${total + 1}`);
+});
+
 test('a registered Saturday is edited and removed from the panel', async ({ page, cleanup }) => {
   await openEditor(page, cleanup);
   await addPeriod(page, '2027-03-01', '2027-04-30');

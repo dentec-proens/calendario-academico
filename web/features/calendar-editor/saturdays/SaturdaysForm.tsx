@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { isYearSaturday, saturdayYear, type YearSaturday } from '../../../../src/saturdays.ts';
+import {
+  isYearSaturday,
+  saturdayGain,
+  saturdayYear,
+  type YearSaturday,
+} from '../../../../src/saturdays.ts';
 import { applySaturdayActivities } from '../../../../src/calendar-edits/commands.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
@@ -7,6 +12,7 @@ import { Input } from '../forms/fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import SaturdayYearGrid from './SaturdayYearGrid.tsx';
 import SaturdayEditForm from './SaturdayEditForm.tsx';
+import SaturdayDayCount from './SaturdayDayCount.tsx';
 import './saturdays.css';
 
 const shortDate = (date: string) => date.slice(5).split('-').reverse().join('/');
@@ -31,7 +37,7 @@ function bySource(days: YearSaturday[]) {
 }
 
 export default function SaturdaysForm() {
-  const { state, events, session, institutional, readOnly } = useCalendarEditor();
+  const { state, events, evaluation, session, institutional, readOnly } = useCalendarEditor();
   // Opening a registered Saturday is local panel state, like the event editor; it never enters the URL.
   const [editingId, setEditingId] = useState<string | null>(null);
   // A control that leaves the panel takes focus with it; this names its successor, which
@@ -136,6 +142,13 @@ export default function SaturdaysForm() {
           </form.Field>
         </form>
         <aside id="saturday-panel" aria-label="Seleção de sábados">
+          <SaturdayDayCount
+            evaluation={evaluation}
+            gain={saturdayGain(
+              months,
+              selection.map((day) => day.date),
+            )}
+          />
           <p id="saturday-summary" role="status" aria-live="polite">
             <strong>
               {selection.length
