@@ -226,6 +226,29 @@ export function applySaturdayActivities<S extends ActivityState>(
   return recalculateCalendar({ ...state, events: [...state.events, ...events] }, institutional);
 }
 
+export function updateSaturdayActivity<S extends ActivityState>(
+  state: S,
+  values: { id: string; name: string; evidence: string },
+  institutional: CalendarActivity[],
+): S {
+  const current = state.events.find((event) => event.id === values.id);
+  if (!current) throw new Error('O sábado não existe mais. Reabra o calendário.');
+  if (current.category !== 'sabado' || current.start !== current.end)
+    throw new Error('Este registro é editado em Atividades e datas do campus.');
+  const name = values.name.trim();
+  const evidence = values.evidence.trim();
+  if (!name || !evidence) throw new Error('Informe a atividade e a fonte da decisão.');
+  return recalculateCalendar(
+    {
+      ...state,
+      events: state.events.map((event) =>
+        event.id === values.id ? { ...event, name, evidence } : event,
+      ),
+    },
+    institutional,
+  );
+}
+
 export function applyVacations<S extends ActivityState>(
   state: S,
   values: VacationPeriods & { evidence: string },

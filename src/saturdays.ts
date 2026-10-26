@@ -1,4 +1,4 @@
-import type { ActivityState } from './domain-types.ts';
+import type { ActivityState, CalendarActivity } from './domain-types.ts';
 import { datesBetween, parseDate } from './calendar.ts';
 
 export function monthSaturdays(year: number, month: number) {
@@ -42,4 +42,110 @@ export function saturdayEvents(
       start: date,
       end: date,
     }));
+}
+
+const monthNames = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+];
+
+export interface YearDay {
+  date: string;
+  day: number;
+  weekday: number;
+  inPeriod: boolean;
+  impediments: string[];
+}
+
+export type SaturdayStatus = 'available' | 'registered' | 'outside';
+
+export interface YearSaturday extends YearDay {
+  status: SaturdayStatus;
+  registration?: CalendarActivity;
+  editable: boolean;
+}
+
+export interface YearMonth {
+  month: number;
+  name: string;
+  leadingBlanks: number;
+  days: Array<YearDay | YearSaturday>;
+  registered: number;
+}
+
+export function isYearSaturday(day: YearDay | YearSaturday): day is YearSaturday {
+  return 'status' in day;
+}
+
+// A registered Saturday stays reachable even when its period was later adjusted away,
+// so it can still be removed: registered takes precedence over outside.
+export function saturdayYear(
+  state: Pick<ActivityState, 'year' | 'periods' | 'events'>,
+  events: Pick<CalendarActivity, 'kind' | 'start' | 'end' | 'name'>[],
+): YearMonth[] {
+  return monthNames.map((name, index) => {
+    const month = index + 1;
+    const prefix = `${state.year}-${String(month).padStart(2, '0')}`;
+    const last = new Date(Date.UTC(state.year, month, 0)).getUTCDate();
+    const days = datesBetween(`${prefix}-01`, `${prefix}-${last}`).map(
+      (date): YearDay | YearSaturday => {
+        const weekday = new Date(parseDate(date)).getUTCDay();
+        const day: YearDay = {
+          date,
+          day: Number(date.slice(8)),
+          weekday,
+          inPeriod: state.periods.some((p) => p.start <= date && date <= p.end),
+          impediments: events
+            .filter((e) => e.kind === 'exclude' && e.start <= date && date <= e.end)
+            .map((e) => e.name),
+        };
+        if (weekday !== 6) return day;
+        const registration = state.events.find(
+          (e) => e.kind === 'include' && e.start <= date && date <= e.end,
+        );
+        const status: SaturdayStatus = registration
+          ? 'registered'
+          : day.inPeriod
+            ? 'available'
+            : 'outside';
+        return {
+          ...day,
+          status,
+          ...(registration && { registration }),
+          editable: registration?.category === 'sabado' && registration.start === registration.end,
+        };
+      },
+    );
+    return {
+      month,
+      name,
+      leadingBlanks: days[0]!.weekday,
+      days,
+      registered: days.filter((d) => isYearSaturday(d) && d.status === 'registered').length,
+    };
+  });
+}
+
+// Preview only: counts selected Saturdays that are open and have no impediment.
+export function saturdayGain(months: YearMonth[], dates: string[]): number {
+  const selected = new Set(dates);
+  return months
+    .flatMap((month) => month.days)
+    .filter(
+      (day) =>
+        selected.has(day.date) &&
+        isYearSaturday(day) &&
+        day.status === 'available' &&
+        !day.impediments.length,
+    ).length;
 }
