@@ -1,7 +1,7 @@
 import { test, expect } from './test.ts';
 import type { Page } from '@playwright/test';
 import { startFixtureServer } from './fixture-server.ts';
-import { selectEditorSection } from './editor-navigation.ts';
+import { addPeriod, selectEditorSection } from './editor-navigation.ts';
 
 // Each case runs in the desktop and mobile projects. Fixtures import production
 // components and CSS, and keep all content, timestamps and backend data local.
@@ -98,25 +98,25 @@ test('destructive confirmation with preserved data explained', async ({ page, cl
   await expect(page).toHaveScreenshot('confirmation.png', { fullPage: true });
 });
 
-test('annual Saturdays keep activity and decision fields readable per date', async ({
+test('annual Saturdays keep the selection panel next to the year grid', async ({
   page,
   cleanup,
 }) => {
   await page.goto(await startFixtureServer('editor', cleanup));
   await expect(page.locator('#record-title')).toBeVisible();
+  await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'days');
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
-  await expect(page.locator('#saturday-name-2027-03-06')).toBeFocused();
-  await page.locator('#saturday-name-2027-03-06').fill('Feira de ciências');
-  await page.locator('#saturday-evidence-2027-03-06').fill('Portaria nº 12/2027');
   await page.locator('#saturday-dates input[value="2027-04-03"]').check();
-  await expect(page.locator('#saturday-name-2027-04-03')).toBeFocused();
-  await page.locator('#saturday-name-2027-04-03').fill('Reposição de aulas');
-  await page.locator('#saturday-evidence-2027-04-03').fill('Ata da reunião de 10/03/2027');
-  await page.locator('#saturday-name-2027-03-06').focus();
+  await page.locator('#saturday-name').fill('Reposição de aulas');
+  await page.locator('#saturday-evidence').fill('Ata da reunião de 10/03/2027');
+  // Mobile full-page captures shift an intermediate scroll position a few pixels per capture;
+  // the end of the page is stable and still shows the panel fields in both layouts.
+  await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+  await page.locator('#saturday-name').focus();
   await expect
     .poll(() =>
-      page.locator('#saturday-name-2027-03-06').evaluate((element) => {
+      page.locator('#saturday-name').evaluate((element) => {
         const bounds = element.getBoundingClientRect();
         const feedback = document.querySelector('.editor-feedback')!.getBoundingClientRect();
         return (

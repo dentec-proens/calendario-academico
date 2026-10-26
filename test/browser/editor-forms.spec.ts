@@ -1,31 +1,13 @@
 import type { Page } from '@playwright/test';
 import { test, expect, type Cleanup } from './test.ts';
 import { startFixtureServer } from './fixture-server.ts';
+import { addPeriod, savedState, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 async function openEditor(page: Page, cleanup: Cleanup) {
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.goto(await startFixtureServer('editor', cleanup));
   await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-}
-
-async function addPeriod(page: Page, start: string, end: string) {
-  await page.locator('[data-view="periods"]').click();
-  await page.locator('#period-name').fill('Período de aulas');
-  await page.locator('#period-start').fill(start);
-  await page.locator('#period-end').fill(end);
-  await page.locator('#period-submit').click();
-  await expect
-    .poll(() => page.evaluate(() => window.editorTest.record.state.periods.length))
-    .toBe(1);
-}
-
-async function savedState(page: Page) {
-  await expect(page.locator('#autosave-status')).toHaveAttribute('data-state', 'saved');
-  return page.evaluate(() => ({
-    state: window.editorTest.record.state,
-    saves: window.editorTest.calls.saves,
-  }));
 }
 
 test('week form applies confirmed weekdays and rejects an empty week atomically', async ({
@@ -171,83 +153,90 @@ test('assessment settings require apply, generate stages and restore automatic d
   ).toEqual(Array<string>(4).fill('2027-03-01'));
 });
 
-test('annual Saturday form includes a selected date once and rejects dates outside teaching periods', async ({
+test('Saturday panel applies one activity and source to the selected dates without moving focus', async ({
+  page,
+  cleanup,
+}) => {
+  await openEditor(page, cleanup);
+  await addPeriod(page, '2027-03-01', '2027-04-30');
+  await page.locator('[data-view="days"]').click();
+  await expect(page.locator('[data-saturday]')).toHaveCount(52);
+  const first = page.locator('#saturday-dates input[value="2027-03-06"]');
+  await first.check();
+  await expect(first).toBeFocused();
+  await expect(page.locator('#saturday-name')).toBeInViewport();
+  await page.locator('#saturday-dates input[value="2027-04-03"]').check();
+  await expect(page.locator('#saturday-summary')).toContainText('2 sábados selecionados');
+  await page.locator('#saturday-name').fill('Reposição de aulas');
+  await page.locator('#saturday-evidence').fill('Resolução nº 12/2026');
+  await expect(page.locator('#saturday-submit')).toHaveText('Adicionar 2 sábados');
+  await page.locator('#saturday-submit').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.editorTest.record.state.events
+          .filter((event) => event.category === 'sabado')
+          .map(({ start, end, name, evidence, kind }) => ({ start, end, name, evidence, kind }))
+          .sort((a, b) => a.start.localeCompare(b.start)),
+      ),
+    )
+    .toEqual(
+      ['2027-03-06', '2027-04-03'].map((date) => ({
+        start: date,
+        end: date,
+        name: 'Reposição de aulas',
+        evidence: 'Resolução nº 12/2026',
+        kind: 'include',
+      })),
+    );
+  await expect(page.locator('[data-saturday="2027-03-06"]')).toHaveAttribute(
+    'data-status',
+    'registered',
+  );
+  await expect(page.locator('#saturday-name')).toHaveCount(0);
+});
+
+test('Saturdays outside teaching periods are shown but not selectable', async ({
   page,
   cleanup,
 }) => {
   await openEditor(page, cleanup);
   await addPeriod(page, '2027-03-01', '2027-03-31');
   await page.locator('[data-view="days"]').click();
-  await page.locator('#saturday-dates input[value="2027-03-06"]').check();
-  await page.locator('#saturday-name-2027-03-06').fill('Feira de ciências');
-  await page.locator('#saturday-evidence-2027-03-06').fill('Plano de reposição aprovado');
-  await page.locator('#saturday-form button[type="submit"]').click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          window.editorTest.record.state.events.filter((event) => event.category === 'sabado')
-            .length,
-      ),
-    )
-    .toBe(1);
-  const before = await savedState(page);
-  expect(before.state.events.find((event) => event.category === 'sabado')).toMatchObject({
-    start: '2027-03-06',
-    end: '2027-03-06',
-    kind: 'include',
-  });
-  await expect(page.locator('#saturday-month')).toHaveCount(0);
-  await expect(page.locator('.saturday-activity')).toHaveCount(0);
-  await expect(page.locator('#saturday-dates input[value="2027-03-06"]')).toBeDisabled();
-  await page.locator('#saturday-dates input[value="2027-04-03"]').check();
-  await page.locator('#saturday-name-2027-04-03').fill('Reposição');
-  await page.locator('#saturday-evidence-2027-04-03').fill('Ata 2/2027');
-  await page.locator('#saturday-form button[type="submit"]').click();
-  await expect(page.locator('#saturday-form [role="alert"]')).toContainText('períodos');
-  expect(await savedState(page)).toEqual(before);
+  const outside = page.locator('[data-saturday="2027-04-03"]');
+  await expect(outside).toHaveAttribute('data-status', 'outside');
+  await expect(outside.locator('input')).toHaveCount(0);
+  await expect(outside).toContainText('fora dos períodos letivos');
 });
 
-test('annual Saturday grid submits selections from different months in one action', async ({
+test('a selected holiday warns that it will not count as a teaching day', async ({
   page,
   cleanup,
 }) => {
   await openEditor(page, cleanup);
-  await addPeriod(page, '2027-03-01', '2027-04-30');
-  await savedState(page);
-  await page.locator('[data-view="days"]').click();
-  await expect(page.locator('#saturday-dates input')).toHaveCount(52);
-  await expect(page.locator('#saturday-form input[type="checkbox"][required]')).toHaveCount(0);
-  const dates = ['2027-03-06', '2027-04-03'];
-  for (const date of dates) await page.locator(`#saturday-dates input[value="${date}"]`).check();
-  await expect(page.locator('#saturday-summary')).toContainText('2 sábados selecionados');
-  for (const [index, date] of dates.entries()) {
-    await page.locator(`#saturday-name-${date}`).fill(`Atividade ${index + 1}`);
-    await page.locator(`#saturday-evidence-${date}`).fill(`Resolução ${index + 1}/2027`);
-  }
-  await page.locator('#saturday-form button[type="submit"]').click();
+  await addPeriod(page, '2027-04-01', '2027-05-31');
+  // The fixture has no Saturday holiday; register one through Activities and dates.
+  await selectEditorSection(page, 'events');
+  await page.locator('#new-event').click();
+  await page.locator('#event-name').fill('Dia do Trabalho');
+  await page.selectOption('#event-category', 'feriado');
+  await page.selectOption('#event-kind', 'exclude');
+  await page.locator('#event-start').fill('2027-05-01');
+  await page.locator('#event-end').fill('2027-05-01');
+  await page.locator('#event-evidence').fill('Calendário de feriados nacionais');
+  await page.locator('#event-confirmed').click();
+  await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
       page.evaluate(() =>
-        window.editorTest.record.state.events
-          .filter((event) => event.category === 'sabado')
-          .map((event) => event.start)
-          .sort(),
+        window.editorTest.record.state.events.some((event) => event.name === 'Dia do Trabalho'),
       ),
     )
-    .toEqual(dates);
-  const saved = await savedState(page);
-  for (const [index, date] of dates.entries()) {
-    expect(
-      saved.state.events.find((event) => event.start === date && event.category === 'sabado'),
-    ).toMatchObject({ name: `Atividade ${index + 1}`, evidence: `Resolução ${index + 1}/2027` });
-  }
-  for (const date of dates) {
-    const checkbox = page.locator(`#saturday-dates input[value="${date}"]`);
-    await expect(checkbox).toBeChecked();
-    await expect(checkbox).toBeDisabled();
-  }
-  await expect(page.locator('#saturday-summary')).toContainText('0 sábados selecionados');
+    .toBe(true);
+  await selectEditorSection(page, 'days');
+  await page.locator('#saturday-dates input[value="2027-05-01"]').check();
+  await expect(page.locator('#saturday-impediments')).toContainText('01/05');
+  await expect(page.locator('#saturday-impediments')).toContainText('Dia do Trabalho');
 });
 
 test('vacation form supports duration and manual end dates and rejects overlapping periods atomically', async ({

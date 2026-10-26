@@ -1,4 +1,4 @@
-import SaturdaysForm from '../forms/SaturdaysForm.tsx';
+import SaturdaysForm from '../saturdays/SaturdaysForm.tsx';
 
 export default function DaysSection() {
   return (
@@ -6,8 +6,8 @@ export default function DaysSection() {
       <div className="panel">
         <h3>Sábados letivos do ano</h3>
         <p className="help">
-          Selecione as datas na grade anual e informe uma atividade e uma fonte da decisão para cada
-          sábado. Datas que coincidem com impedimentos mostram o motivo na própria grade.
+          Selecione sábados no calendário e informe a atividade e a fonte no painel; clique em um
+          sábado registrado para editá-lo.
         </p>
         <SaturdaysForm />
       </div>

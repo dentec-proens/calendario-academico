@@ -1,0 +1,354 @@
+.saturday-step {
+  container: saturday-step / inline-size;
+}
+/* Narrow forms keep the panel after the grid. */
+.saturday-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+#saturday-form {
+  min-width: 0;
+}
+.saturday-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Year grid */
+#saturday-dates {
+  display: block;
+  min-width: 0;
+  margin: 0;
+}
+.saturday-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+}
+.saturday-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.saturday-legend li::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 3px;
+  background: var(--ui-surface);
+}
+.saturday-legend .is-selected::before {
+  border-color: var(--ui-action);
+  background: var(--ui-action);
+}
+.saturday-legend .is-registered::before {
+  border-color: #9cbd5c;
+  background: #c3e184;
+}
+.saturday-legend .has-impediment::before {
+  border-color: var(--ui-warning);
+  background: var(--ui-warning-soft);
+}
+.saturday-legend .is-outside::before {
+  border-color: var(--ui-border-soft);
+  background: var(--ui-surface-muted);
+}
+.saturday-year {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 14px;
+}
+.saturday-month {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--ui-border-soft);
+  border-radius: 8px;
+  background: var(--ui-surface);
+}
+.saturday-month h4 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+}
+.saturday-month h4 small {
+  color: var(--ui-muted);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+.saturday-month-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px 2px;
+  font-size: 0.75rem;
+  text-align: center;
+}
+.saturday-weekday {
+  padding: 2px 0;
+  color: var(--ui-muted);
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+.saturday-weekday.is-saturday {
+  border-radius: 4px;
+  background: var(--ui-action-soft);
+  color: var(--ui-action);
+  font-weight: 700;
+}
+.saturday-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 26px;
+  border-radius: 5px;
+  color: var(--ui-muted);
+}
+.saturday-day.has-impediment:not(.is-saturday) {
+  color: var(--ui-warning);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.saturday-day.is-saturday {
+  font-weight: 650;
+}
+#saturday-dates label.saturday-day {
+  position: relative;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-height: 26px;
+  margin: 0;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font-size: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+#saturday-dates label.saturday-day input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+#saturday-dates label.saturday-day:has(input:focus-visible) {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+#saturday-dates label.saturday-day.has-impediment {
+  border-color: var(--ui-warning);
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+#saturday-dates label.saturday-day:has(input:checked) {
+  border-color: var(--ui-action);
+  background: var(--ui-action);
+  color: var(--ui-action-text);
+}
+#saturday-dates label.saturday-day.has-impediment:has(input:checked) {
+  box-shadow: inset 0 0 0 2px var(--ui-warning-soft);
+}
+#saturday-dates label.saturday-day:has(input:disabled) {
+  opacity: 0.65;
+  cursor: default;
+}
+.saturday-day[data-status='registered'] button {
+  width: 100%;
+  min-width: 0;
+  min-height: 26px;
+  padding: 0;
+  border: 1px solid #9cbd5c;
+  border-radius: 5px;
+  background: #c3e184;
+  color: var(--ui-text);
+  font-size: inherit;
+  font-weight: 650;
+}
+.saturday-day.has-impediment[data-status='registered'] button {
+  border-color: var(--ui-warning);
+}
+.saturday-day.is-editing[data-status='registered'] button {
+  box-shadow:
+    0 0 0 2px var(--ui-surface),
+    0 0 0 4px var(--ui-action);
+}
+.saturday-day[data-status='outside'] {
+  background: var(--ui-surface-muted);
+  color: var(--ui-muted);
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+/* Side panel */
+#saturday-panel {
+  min-width: 0;
+  padding: 20px;
+  overflow-wrap: anywhere;
+}
+/* Beside the grid, the panel stays in view so checking a date keeps its fields visible. */
+@container saturday-step (min-width: 760px) {
+  .saturday-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+  }
+  #saturday-panel {
+    position: sticky;
+    top: calc(var(--scroll-inset-top, 0px) + 16px);
+  }
+}
+#saturday-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 14px;
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+}
+#saturday-summary strong {
+  color: var(--ui-action);
+  font-size: 1rem;
+  font-weight: 650;
+}
+#saturday-panel .saturday-panel-section {
+  display: block;
+  min-width: 0;
+  margin: 0;
+}
+#saturday-panel h5 {
+  margin: 0 0 10px;
+  font-size: 0.875rem;
+}
+#saturday-panel .help {
+  font-size: 0.8125rem;
+}
+.saturday-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+#saturday-panel .saturday-chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 8px 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+}
+#saturday-panel .saturday-chips button.has-impediment {
+  border-color: var(--ui-warning);
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+.saturday-impediments {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--ui-warning);
+  border-radius: 0 6px 6px 0;
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+.saturday-impediments p {
+  margin: 0 0 4px;
+}
+.saturday-impediments ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.saturday-suggestions {
+  margin: -6px 0 16px;
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+}
+.saturday-suggestions ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+#saturday-panel .saturday-suggestions button {
+  min-height: 30px;
+  padding: 4px 10px;
+  border-color: var(--ui-border-soft);
+  border-radius: 999px;
+  background: var(--ui-action-soft);
+  color: var(--ui-action);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: left;
+}
+#saturday-panel #saturday-evidence-help {
+  margin: -8px 0 16px;
+  font-size: 0.75rem;
+}
+.saturday-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#saturday-submit {
+  flex: 1 1 auto;
+}
+.saturday-registration {
+  margin: 0 0 14px;
+  font-size: 0.875rem;
+}
+.saturday-registration dt {
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.saturday-registration dd {
+  margin: 2px 0 10px;
+}
+.saturday-source h6 {
+  margin: 14px 0 6px;
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.saturday-source ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#saturday-panel .saturday-source button {
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-align: left;
+}

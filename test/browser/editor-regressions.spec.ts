@@ -1,6 +1,6 @@
 import { test, expect } from './test.ts';
 import { startFixtureServer } from './fixture-server.ts';
-import { selectEditorSection } from './editor-navigation.ts';
+import { addPeriod, savedState, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 declare global {
@@ -74,16 +74,16 @@ test('reverting a field clears unapplied state and annual Saturday selections su
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await evidence.fill(original);
   await expect(page.locator('#unapplied-status')).toBeHidden();
+  await addPeriod(page, '2027-03-01', '2027-04-30');
+  const { saves } = await savedState(page);
   await page.locator('[data-view="days"]').click();
-  await expect(page.locator('#saturday-dates input')).toHaveCount(52);
+  await expect(page.locator('[data-saturday]')).toHaveCount(52);
   await expect(page.locator('#unapplied-status')).toBeHidden();
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
   await page.locator('#saturday-dates input[value="2027-04-03"]').check();
   await expect(page.locator('#saturday-summary')).toContainText('2 sábados selecionados');
-  await page.locator('#saturday-name-2027-03-06').fill('Feira de ciências');
-  await page.locator('#saturday-evidence-2027-03-06').fill('Portaria 1/2027');
-  await page.locator('#saturday-name-2027-04-03').fill('Reposição');
-  await page.locator('#saturday-evidence-2027-04-03').fill('Ata 2/2027');
+  await page.locator('#saturday-name').fill('Feira de ciências');
+  await page.locator('#saturday-evidence').fill('Portaria 1/2027');
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-view="periods"]').click();
   await page.locator('#period-name').fill('Rascunho preservado');
@@ -94,8 +94,8 @@ test('reverting a field clears unapplied state and annual Saturday selections su
   await page.locator('#period-name').fill('');
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-view="days"]').click();
-  await expect(page.locator('#saturday-name-2027-03-06')).toHaveValue('Feira de ciências');
-  await expect(page.locator('#saturday-evidence-2027-04-03')).toHaveValue('Ata 2/2027');
+  await expect(page.locator('#saturday-name')).toHaveValue('Feira de ciências');
+  await expect(page.locator('#saturday-evidence')).toHaveValue('Portaria 1/2027');
   for (const date of ['2027-03-06', '2027-04-03']) {
     const checkbox = page.locator(`#saturday-dates input[value="${date}"]`);
     await expect(checkbox).toBeChecked();
@@ -105,30 +105,30 @@ test('reverting a field clears unapplied state and annual Saturday selections su
   await page.locator('.portal-back').click();
   await expect(page).toHaveURL(/\/calendarios$/);
   await expect(page.locator('dialog[open]')).toHaveCount(0);
-  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
+  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(saves);
 });
 
-test('a deferred Saturday selection keeps a subsequent field focus', async ({ page, cleanup }) => {
+test('selecting a Saturday by keyboard keeps focus on its checkbox', async ({ page, cleanup }) => {
   await page.goto(await startFixtureServer('editor', cleanup));
+  await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'days');
-  await page.locator('#saturday-dates input[value="2027-03-06"]').check();
-  const firstActivity = page.locator('#saturday-name-2027-03-06');
-  await expect(firstActivity).toBeFocused();
-  // A person can return to a field before the selection's next animation frame.
-  // Keep the click and focus in one browser task to reproduce that ordering.
-  await page.evaluate(() => {
-    document.querySelector<HTMLInputElement>('#saturday-dates input[value="2027-04-03"]')!.click();
-    document.querySelector<HTMLInputElement>('#saturday-name-2027-03-06')!.focus();
-  });
+  const first = page.locator('#saturday-dates input[value="2027-03-06"]');
+  await first.focus();
+  await page.keyboard.press('Space');
+  await expect(first).toBeChecked();
+  // The panel renders its fields after the selection; no later frame may move focus there.
   await page.evaluate(
     () =>
       new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       ),
   );
-  await expect(firstActivity).toBeFocused();
-  await firstActivity.fill('Feira de ciências');
-  await expect(page.locator('#saturday-name-2027-04-03')).toHaveValue('');
+  await expect(first).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#saturday-dates input[value="2027-03-13"]')).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(page.locator('#saturday-summary')).toContainText('2 sábados selecionados');
+  await expect(page.locator('#saturday-name')).toHaveValue('');
 });
 
 test('PDF controls share one pending operation and ignore failure after leaving the calendar', async ({
