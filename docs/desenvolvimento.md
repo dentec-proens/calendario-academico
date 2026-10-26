@@ -31,7 +31,7 @@ pnpm build
 pnpm start
 ```
 
-Instalação, desenvolvimento, build e testes funcionam no PowerShell. O runtime Chromium dos PDFs usa Linux; o fluxo Docker Desktop, pré-requisitos, comandos e referências visuais estão em [Verificação no README](../README.md#verificação).
+Instalação, desenvolvimento, build e testes funcionam no PowerShell. O runtime Chromium dos PDFs usa Linux; o fluxo Docker Desktop, pré-requisitos, comandos e referências visuais estão em [Verificação](verificacao.md).
 
 ## Organização e tipos
 
@@ -49,7 +49,7 @@ O formulário conserva preenchimento ainda não aplicado; comandos atualizam o c
 
 ## Integração do trabalho
 
-Use dados de teste no desenvolvimento individual. As contas da aplicação são distintas das contas administrativas Convex/GitHub. Antes de integrar mudanças, execute os comandos obrigatórios descritos no README e confira os [componentes compartilhados](componentes-interface.md).
+Use dados de teste no desenvolvimento individual. As contas da aplicação são distintas das contas administrativas Convex/GitHub. Antes de integrar mudanças, execute os comandos obrigatórios de [verificação](verificacao.md) e confira os [componentes compartilhados](componentes-interface.md).
 
 A publicação usa o [procedimento operacional](implantacao-convex-vercel.md), com commit conferido, manutenção e verificação dos artefatos Convex/Vercel correspondentes.
 
@@ -57,4 +57,4 @@ A publicação usa o [procedimento operacional](implantacao-convex-vercel.md), c
 
 O modo E2E de desenvolvimento usa somente o dev conferido em `.env.local` e exige opt-in explícito. `pnpm e2e:setup` prepara conta, campus, ano e fontes próprios, preservando registros preexistentes. As credenciais e a fixture ficam em arquivos ignorados pelo Git. Inicie o frontend local e execute `pnpm test:e2e` em outro terminal.
 
-O modo não usa a flag de ambiente descartável e não habilita produção. O frontend precisa apontar ao mesmo backend conferido. Pré-requisitos, variáveis e limites estão em [Verificação no README](../README.md#verificação).
+O modo não usa a flag de ambiente descartável e não habilita produção. O frontend precisa apontar ao mesmo backend conferido. Pré-requisitos, variáveis e limites estão em [Verificação](verificacao.md).

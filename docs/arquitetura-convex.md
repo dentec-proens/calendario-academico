@@ -62,4 +62,4 @@ Prévia, impressão e PDF usam o mesmo modelo de `src/printing/`. O gerador Node
 
 `operationalControl` guarda a manutenção; `operationalLeases` identifica actions admitidas. A admissão e a pausa são transacionais; mutations de domínio e criação de sessões verificam manutenção. Heartbeat e disconnect de presença continuam disponíveis e usam o ciclo próprio do componente fixado, sem alterar o domínio acadêmico. O smoke pode autorizar temporariamente uma conta ADMIN local na janela do commit; as demais contas permanecem bloqueadas. Actions registram o ID do lease no log e o removem em `finally`. Um lease sem conclusão permanece visível e bloqueia publicação: idade não é prova de término. O procedimento de recuperação está em [Implantação e operação](implantacao-convex-vercel.md).
 
-Comandos e ambientes de validação estão em [Verificação no README](../README.md#verificação).
+Comandos e ambientes de validação estão em [Verificação](verificacao.md).

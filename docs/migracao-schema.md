@@ -36,4 +36,4 @@ Conferir conteúdo, contagem, referências, snapshots, análises, texto dos pare
 
 A publicação de código não executa a ferramenta nem importa dados. A recuperação integral usa dados e código correspondentes; dados produzidos após a reabertura exigem conciliação antes de restaurar um backup. Manter recibos e evidências em local privado.
 
-Comandos de desenvolvimento e validação ficam em [Verificação no README](../README.md#verificação); os controles de manutenção e publicação ficam em [Implantação e operação](implantacao-convex-vercel.md).
+Comandos de desenvolvimento e validação ficam em [Verificação](verificacao.md); os controles de manutenção e publicação ficam em [Implantação e operação](implantacao-convex-vercel.md).

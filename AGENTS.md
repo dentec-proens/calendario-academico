@@ -28,7 +28,7 @@ Before editing files for a substantial task:
 
 ## Testes e validação
 
-- Consulte [Verificação no README](README.md#verificação) para instalação, comandos, referências visuais e configuração dos ambientes. Mantenha esses detalhes no README.
+- Consulte [Verificação](docs/verificacao.md) para comandos, referências visuais e configuração dos ambientes de teste. Mantenha o README como apresentação e ponto de entrada; documente procedimentos nos guias de `docs/`.
 - Durante o desenvolvimento, rode a menor suíte que exercite o comportamento afetado. Para corrigir um bug, acrescente uma regressão que reproduza o problema pela mesma interação ou fluxo real e confirme a falha antes da correção quando viável.
 - Antes de concluir ou commitar mudanças de código, execute `pnpm check`. Para alterações apenas de documentação, confira a formatação dos arquivos alterados; a suíte completa é dispensável.
 - Mudanças de UI, CSS, navegação ou infraestrutura de navegador exigem também `pnpm test:linux`, que reproduz o ambiente do CI. Verifique desktop e mobile e, quando afetados, teclado, foco e controles desobstruídos.
