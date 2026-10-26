@@ -239,7 +239,7 @@
   color: var(--ui-muted);
   font-size: 0.875rem;
 }
-.document-reader > .error {
+.document-reader > .document-reader__error {
   margin: 16px 20px;
 }
 .document-reader__footer {

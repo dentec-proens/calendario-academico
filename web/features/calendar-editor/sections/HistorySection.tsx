@@ -14,6 +14,7 @@ import { useHistoryAnalysis } from '../history/useHistoryAnalysis.tsx';
 import HistoryUploadForm from '../history/HistoryUploadForm.tsx';
 import RestoreHistoryForm from '../history/RestoreHistoryForm.tsx';
 import HistoryCandidates from '../history/HistoryCandidates.tsx';
+import { Notice } from '../../../components/ui/Notice.tsx';
 
 export default function HistorySection() {
   const { record, isAdmin, notify, readOnly } = useCalendarEditor();
@@ -76,9 +77,9 @@ export default function HistorySection() {
                   {history.notes && <small>{history.notes}</small>}
                   {history.unavailableFile ? (
                     <>
-                      <p className="notice">
+                      <Notice tone="warning">
                         PDF original aguardando restauração pela administração.
-                      </p>
+                      </Notice>
                       {isAdmin && <RestoreHistoryForm history={history} />}
                     </>
                   ) : (

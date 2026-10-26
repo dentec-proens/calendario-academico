@@ -5,6 +5,7 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
 import { Input } from '../forms/fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
+import { Notice } from '../../../components/ui/Notice.tsx';
 import SaturdayYearGrid from './SaturdayYearGrid.tsx';
 import SaturdayEditForm from './SaturdayEditForm.tsx';
 import SaturdayDayCount from './SaturdayDayCount.tsx';
@@ -220,7 +221,7 @@ export default function SaturdaysForm() {
         ))}
       </ul>
       {selection.some((day) => day.impediments.length) && (
-        <div id="saturday-impediments" className="saturday-impediments">
+        <Notice id="saturday-impediments" tone="warning">
           <p>Não contam como dia letivo enquanto o impedimento permanecer:</p>
           <ul>
             {selection
@@ -231,7 +232,7 @@ export default function SaturdaysForm() {
                 </li>
               ))}
           </ul>
-        </div>
+        </Notice>
       )}
       <form.Field name="name">
         {(field) => (

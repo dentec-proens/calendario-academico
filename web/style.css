@@ -114,13 +114,6 @@ select:focus-visible {
 .wide {
   width: 100%;
 }
-.notice {
-  border-left: 3px solid #b58223;
-  background: #fff7e6;
-  padding: 13px 18px;
-  font-size: 0.875rem;
-  color: #624710;
-}
 .workspace {
   display: grid;
   grid-template-columns: 270px minmax(0, 1fr);
@@ -395,14 +388,10 @@ nav {
   justify-content: start !important;
 }
 #message:not(:empty) {
-  background: #e8f2ed;
-  padding: 12px 16px;
-  border-radius: 6px;
   margin: 15px 0;
 }
-#message.error {
-  background: #fff0ed;
-  color: #813425;
+#message .ui-notice {
+  margin: 0;
 }
 footer {
   max-width: 1550px;
@@ -481,7 +470,6 @@ footer {
 @media print {
   header .badge,
   .intro .actions,
-  .notice,
   aside,
   nav,
   #message,
@@ -545,23 +533,21 @@ footer {
     position: sticky;
     top: 10px;
     z-index: 30;
-    box-shadow: 0 2px 8px #0002;
     white-space: pre-line;
+  }
+  #message .ui-notice {
+    box-shadow: 0 2px 8px #0002;
   }
 }
 
 @media screen {
   #review-message:not(:empty) {
-    background: var(--ui-action-soft);
-    padding: var(--ui-space-3);
     white-space: pre-line;
   }
   #document-message:not(:empty) {
     position: sticky;
     top: 10px;
     z-index: 29;
-    background: #e8f2ed;
-    padding: 12px;
     white-space: pre-line;
   }
 }

@@ -216,43 +216,6 @@
     top: calc(var(--scroll-inset-top, 0px) + 16px);
   }
 }
-/* Pending earlier steps, with links to resolve them. */
-.saturday-prerequisites {
-  display: flex;
-  gap: 12px;
-  margin: 0 0 20px;
-  padding: 14px 16px;
-  border: 1px solid var(--ui-warning);
-  border-radius: var(--ui-radius-panel);
-  background: var(--ui-warning-soft);
-  color: var(--ui-warning);
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-.saturday-prerequisites > svg {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  margin-top: 1px;
-}
-.saturday-prerequisites h4 {
-  margin: 0 0 4px;
-  font-size: 0.9375rem;
-}
-.saturday-prerequisites p {
-  margin: 0 0 6px;
-}
-.saturday-prerequisites ol {
-  margin: 0;
-  padding-left: 20px;
-}
-.saturday-prerequisites li + li {
-  margin-top: 4px;
-}
-.saturday-prerequisites a {
-  color: inherit;
-  font-weight: 650;
-}
 
 /* Narrow step: a sticky bar opens the panel as a dialog. */
 #saturday-compact-bar {
@@ -411,23 +374,6 @@ dialog#saturday-panel::backdrop {
   border-color: var(--ui-warning);
   background: var(--ui-warning-soft);
   color: var(--ui-warning);
-}
-.saturday-impediments {
-  margin: 0 0 16px;
-  padding: 10px 12px;
-  border-left: 3px solid var(--ui-warning);
-  border-radius: 0 6px 6px 0;
-  background: var(--ui-warning-soft);
-  color: var(--ui-warning);
-  font-size: 0.8125rem;
-  line-height: 1.5;
-}
-.saturday-impediments p {
-  margin: 0 0 4px;
-}
-.saturday-impediments ul {
-  margin: 0;
-  padding-left: 18px;
 }
 .saturday-suggestions {
   margin: -6px 0 16px;

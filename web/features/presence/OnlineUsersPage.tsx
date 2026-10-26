@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useFeatureRoute } from '../../app/navigation.ts';
 import { useQuery } from 'convex/react';
 import { functions } from '../../shared/convex/client.ts';
+import { Notice } from '../../components/ui/Notice.tsx';
 
 export default function OnlineUsersPanel() {
   const data = useQuery(functions.presence.online, {});
@@ -52,9 +53,9 @@ export default function OnlineUsersPanel() {
             <span>{campuses.length} campus/campi conectado(s)</span>
           </div>
           {data.truncated ? (
-            <p className="notice">
+            <Notice tone="info">
               Exibindo até 1.000 pessoas. Os totais se referem à lista exibida.
-            </p>
+            </Notice>
           ) : null}
           <div className="online-filters">
             <label>

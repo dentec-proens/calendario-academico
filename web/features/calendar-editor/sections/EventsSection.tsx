@@ -10,6 +10,7 @@ import TeacherDayForm from '../forms/TeacherDayForm.tsx';
 import HistorySection from './HistorySection.tsx';
 import ActivityFilters from '../events/ActivityFilters.tsx';
 import { civilDate } from '../events/activity-query.ts';
+import { Notice } from '../../../components/ui/Notice.tsx';
 
 export default function EventsSection() {
   const { events, state, institutional, applyCommand, readOnly } = useCalendarEditor();
@@ -36,37 +37,44 @@ export default function EventsSection() {
             Acrescente as atividades e datas do campus e registre as fontes das decisões.
           </p>
           {hasPendingEvent && (
-            <section id="pending-event" className="notice" aria-labelledby="pending-event-title">
-              <h4 id="pending-event-title" tabIndex={-1}>
-                Preenchimento pendente
-              </h4>
+            <Notice
+              as="section"
+              id="pending-event"
+              tone="warning"
+              aria-labelledby="pending-event-title"
+              title="Preenchimento pendente"
+              titleAs="h4"
+              titleProps={{ id: 'pending-event-title', tabIndex: -1 }}
+              actions={
+                <>
+                  <button
+                    id="resume-pending-event"
+                    type="button"
+                    disabled={readOnly || editor.pending}
+                    onClick={() => {
+                      void editor.resume();
+                    }}
+                  >
+                    Continuar preenchimento
+                  </button>
+                  <button
+                    id="discard-pending-event"
+                    type="button"
+                    className="secondary"
+                    disabled={readOnly || editor.pending}
+                    onClick={editor.discard}
+                  >
+                    Descartar preenchimento
+                  </button>
+                </>
+              }
+            >
               <p id="pending-event-description">
                 Há alterações ainda não aplicadas em{' '}
                 <strong>{editor.values.name.trim() || 'Novo evento'}</strong>. Continue esse
                 preenchimento ou descarte as alterações antes de adicionar outro evento.
               </p>
-              <div className="actions">
-                <button
-                  id="resume-pending-event"
-                  type="button"
-                  disabled={readOnly || editor.pending}
-                  onClick={() => {
-                    void editor.resume();
-                  }}
-                >
-                  Continuar preenchimento
-                </button>
-                <button
-                  id="discard-pending-event"
-                  type="button"
-                  className="secondary"
-                  disabled={readOnly || editor.pending}
-                  onClick={editor.discard}
-                >
-                  Descartar preenchimento
-                </button>
-              </div>
-            </section>
+            </Notice>
           )}
         </div>
         <ActivityFilters />

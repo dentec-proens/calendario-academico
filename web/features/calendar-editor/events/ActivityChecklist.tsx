@@ -10,6 +10,7 @@ import EventEditor from './EventEditor.tsx';
 import { removeEvent } from '../../../../src/calendar-edits/commands.ts';
 import { activityGroup, activityGroups, civilDate } from './activity-query.ts';
 import { scrollIntoView } from '../../../scroll.ts';
+import { Notice } from '../../../components/ui/Notice.tsx';
 
 export default function ActivityChecklist({ stages = false }: { stages?: boolean }) {
   const { state, events, institutional, applyCommand, readOnly, record, dirty } =
@@ -241,9 +242,9 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
         </ul>
       )}
       {!rows.length && (
-        <p id="activity-empty" className="notice">
+        <Notice tone="info" id="activity-empty">
           Nenhuma atividade corresponde aos filtros. O preenchimento em andamento foi preservado.
-        </p>
+        </Notice>
       )}
       {stages ? (
         <ul id="assessment-checklist" className="records">

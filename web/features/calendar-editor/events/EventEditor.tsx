@@ -12,6 +12,7 @@ import { useEventEditor } from './EventEditorProvider.tsx';
 import { Check, Input, Select } from '../forms/fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { scrollIntoView } from '../../../scroll.ts';
+import { Notice } from '../../../components/ui/Notice.tsx';
 
 export default function EventEditor() {
   const { state, events, readOnly } = useCalendarEditor();
@@ -79,15 +80,15 @@ export default function EventEditor() {
       <h3 id="event-form-title" ref={heading} tabIndex={-1}>
         {editor.eventId ? 'Editar evento local' : 'Novo evento local'}
       </h3>
-      <p id="historical-event-source" className="notice" hidden={!editor.source}>
+      <Notice tone="info" id="historical-event-source" hidden={!editor.source}>
         {editor.source
           ? `Origem histórica: página ${editor.source.page}. ${values.recordType === 'prior-reference' ? 'Conserve as datas reais e confirme a pertinência documental. A referência não altera os dias letivos.' : 'Prepare uma nova ocorrência com datas e fonte próprias; o PDF anterior não comprova sua vigência.'}`
           : ''}
-      </p>
+      </Notice>
       {editor.source && values.historyWarning && (
-        <p id="historical-event-date-warning" className="notice">
+        <Notice tone="warning" id="historical-event-date-warning">
           {values.historyWarning}
-        </p>
+        </Notice>
       )}
       <fieldset disabled={readOnly || editor.pending}>
         <form.Field name="recordType">
@@ -112,11 +113,11 @@ export default function EventEditor() {
           )}
         </form.Field>
         {values.recordType === 'prior-reference' && (
-          <p className="notice">
+          <Notice tone="info">
             Referência anterior comprovada, somente informativa. Não comprova dias, horas, férias ou
             avaliações do ano atual. Informe datas reais e fonte; uma publicação anterior precisa
             estar realizada.
-          </p>
+          </Notice>
         )}
         <legend>Forma de oferta/nível deste evento</legend>
         <form.Field name="modalities">
@@ -302,11 +303,11 @@ export default function EventEditor() {
               </form.Field>
             </div>
             {values.admissionType === 'regular' && state.year === 2027 && (
-              <p className="notice">
+              <Notice tone="info">
                 Art. 10: publicação do processo seletivo de 2028 até 15/06/2027. O prazo não
                 preenche a data de publicação. Cronograma ajustado pela Proens exige fonte e
                 conferência institucional.
-              </p>
+              </Notice>
             )}
             {values.admissionType === 'transfer' && (
               <p className="help">
@@ -447,7 +448,12 @@ export default function EventEditor() {
           ) : null}
         </div>
         {stage && !editor.eventId && (
-          <section id="stage-suggestion" className="notice" aria-live="polite">
+          <Notice
+            as="section"
+            id="stage-suggestion"
+            tone={values.start && suggestion?.error ? 'warning' : 'info'}
+            aria-live="polite"
+          >
             {!values.start
               ? 'Informe o início da etapa. O sistema usará o número de etapas cadastrado e os dias letivos até o final dos períodos.'
               : suggestion?.error || (
@@ -477,7 +483,7 @@ export default function EventEditor() {
                     )}
                   </>
                 )}
-          </section>
+          </Notice>
         )}
       </fieldset>
     </form>

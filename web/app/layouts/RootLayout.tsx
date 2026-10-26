@@ -8,6 +8,7 @@ import { clearPrivateLinkWhenLeaving } from '../private-links.ts';
 import { FormDraftProvider } from '../../shared/forms/drafts.tsx';
 import { DevelopmentTools } from '../devtools.tsx';
 import { parseEditorPath } from '../../../src/app-routes.ts';
+import { Notice } from '../../components/ui/Notice.tsx';
 
 export default function RootLayout() {
   const session = useSessionState();
@@ -52,13 +53,12 @@ export default function RootLayout() {
       </header>
       <main id="app-main">
         {!parseEditorPath(pathname) && (
-          <div
-            id="message"
-            className={session.message?.error ? 'error' : ''}
-            role="status"
-            aria-live="polite"
-          >
-            {session.message?.text}
+          <div id="message" role="status" aria-live="polite">
+            {session.message?.text ? (
+              <Notice tone={session.message.error ? 'danger' : 'success'}>
+                {session.message.text}
+              </Notice>
+            ) : null}
           </div>
         )}
         <BackendStatus
@@ -66,15 +66,15 @@ export default function RootLayout() {
           allowReload={pathname !== '/ativar-conta' && pathname !== '/recuperar-senha'}
         />
         {accessDenied ? (
-          <p className="notice" role="alert">
+          <Notice tone="danger" announce="assertive">
             Seu perfil não permite acessar a área solicitada.
-          </p>
+          </Notice>
         ) : null}
         {session.maintenance ? (
-          <p className="notice" role="alert">
+          <Notice tone="warning" announce="assertive">
             O portal está em manutenção. Mantenha esta página aberta; novas alterações estarão
             disponíveis após a conclusão.
-          </p>
+          </Notice>
         ) : null}
         <fieldset
           className="app-operation-scope"

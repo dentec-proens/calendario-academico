@@ -1,4 +1,5 @@
 import { Button } from '../components/ui/Button.tsx';
+import { Notice } from '../components/ui/Notice.tsx';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { useConvexConnectionState } from 'convex/react';
 import './backend-status.css';
@@ -59,8 +60,23 @@ export default function BackendStatus({
         : 'Portal temporariamente indisponível';
 
   return (
-    <section className="backend-status" role="alert" aria-labelledby={titleId}>
-      <h2 id={titleId}>{title}</h2>
+    <Notice
+      as="section"
+      className="backend-status"
+      tone="warning"
+      announce="assertive"
+      aria-labelledby={titleId}
+      title={title}
+      titleAs="h2"
+      titleProps={{ id: titleId }}
+      actions={
+        allowReload && online && loading && !hasLoaded ? (
+          <Button type="button" onClick={() => window.location.reload()}>
+            Tentar novamente
+          </Button>
+        ) : null
+      }
+    >
       <p>
         {!online
           ? 'Verifique sua conexão para acessar os dados do portal.'
@@ -75,11 +91,6 @@ export default function BackendStatus({
           ter sido salvas.
         </p>
       ) : null}
-      {allowReload && online && loading && !hasLoaded ? (
-        <Button type="button" onClick={() => window.location.reload()}>
-          Tentar novamente
-        </Button>
-      ) : null}
-    </section>
+    </Notice>
   );
 }

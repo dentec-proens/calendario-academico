@@ -7,6 +7,7 @@ import { useRouteForm } from '../../app/navigation.ts';
 import UploadDocumentForm from './UploadDocumentForm.tsx';
 import DocumentRecord from './DocumentRecord.tsx';
 import './documents.css';
+import { Notice } from '../../components/ui/Notice.tsx';
 
 export default function DocumentsPanel({
   canManage,
@@ -43,9 +44,9 @@ export default function DocumentsPanel({
       onFormOpen={setCreating}
       canCreate={canManage}
       feedback={
-        <p id="document-message" role="status" aria-live="polite">
-          {message}
-        </p>
+        <div id="document-message" role="status" aria-live="polite">
+          {message ? <Notice tone="success">{message}</Notice> : null}
+        </div>
       }
       form={<UploadDocumentForm onUploaded={onUploaded} onMessage={setMessage} />}
     >

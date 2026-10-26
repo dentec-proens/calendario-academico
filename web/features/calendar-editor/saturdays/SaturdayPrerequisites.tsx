@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { AlertTriangle } from 'lucide-react';
+import { Notice } from '../../../components/ui/Notice.tsx';
 import { editorPages } from '../editor-steps.ts';
 
 /**
@@ -29,30 +29,28 @@ export default function SaturdayPrerequisites({
   ].filter((item) => item !== false);
   if (!pending.length) return null;
   return (
-    <section
+    <Notice
+      as="section"
       id="saturday-prerequisites"
-      className="saturday-prerequisites"
+      tone="warning"
+      title={
+        hasPeriods ? 'Falta confirmar a semana letiva' : 'Nenhum sábado pode ser selecionado ainda'
+      }
+      titleAs="h4"
+      titleProps={{ id: 'saturday-prerequisites-title' }}
       aria-labelledby="saturday-prerequisites-title"
     >
-      <AlertTriangle aria-hidden="true" />
-      <div>
-        <h4 id="saturday-prerequisites-title">
-          {hasPeriods
-            ? 'Falta confirmar a semana letiva'
-            : 'Nenhum sábado pode ser selecionado ainda'}
-        </h4>
-        <p>Conclua {pending.length === 1 ? 'esta etapa' : 'estas etapas'} e volte para cá:</p>
-        <ol>
-          {pending.map(({ page, action }) => (
-            <li key={page.section}>
-              <Link to={page.path} params={{ calendarId }} data-prerequisite={page.section}>
-                {page.title}
-              </Link>{' '}
-              — {action}
-            </li>
-          ))}
-        </ol>
-      </div>
-    </section>
+      <p>Conclua {pending.length === 1 ? 'esta etapa' : 'estas etapas'} e volte para cá:</p>
+      <ol>
+        {pending.map(({ page, action }) => (
+          <li key={page.section}>
+            <Link to={page.path} params={{ calendarId }} data-prerequisite={page.section}>
+              {page.title}
+            </Link>{' '}
+            — {action}
+          </li>
+        ))}
+      </ol>
+    </Notice>
   );
 }

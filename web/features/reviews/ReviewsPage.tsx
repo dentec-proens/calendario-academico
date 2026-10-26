@@ -13,6 +13,7 @@ import type { ReviewSupport } from './review-values.ts';
 import type { ReviewDraft } from './review-values.ts';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
+import { Notice } from '../../components/ui/Notice.tsx';
 
 export default function ReviewsPage() {
   const route = useFeatureRoute();
@@ -73,6 +74,17 @@ export default function ReviewsPage() {
     setMessage('Indicações automáticas disponíveis para conferência.');
     await navigate({ to: '/revisoes/$calendarId', params: { calendarId } });
   }
+  const reviewMessage =
+    result instanceof Error
+      ? /removido|disponível/i.test(result.message)
+        ? 'O calendário deixou de estar disponível para revisão. Selecione outro calendário para abrir a análise.'
+        : result.message
+      : message ||
+        (!pagination.results.length && pagination.status === 'Exhausted'
+          ? 'Nenhum calendário disponível para revisão.'
+          : requested && !result
+            ? 'Abrindo análise…'
+            : '');
   return (
     <section id="review-panel" className="page" aria-busy={Boolean(requested && !result)}>
       <div className="panel">
@@ -117,18 +129,13 @@ export default function ReviewsPage() {
         </Button>
         <Pagination pagination={pagination} label="Carregar mais calendários" />
         {requested ? <Link to="/revisoes">Voltar à lista de revisões</Link> : null}
-        <p id="review-message" role="status" aria-live="polite">
-          {result instanceof Error
-            ? /removido|disponível/i.test(result.message)
-              ? 'O calendário deixou de estar disponível para revisão. Selecione outro calendário para abrir a análise.'
-              : result.message
-            : message ||
-              (!pagination.results.length && pagination.status === 'Exhausted'
-                ? 'Nenhum calendário disponível para revisão.'
-                : requested && !result
-                  ? 'Abrindo análise…'
-                  : '')}
-        </p>
+        <div id="review-message" role="status" aria-live="polite">
+          {reviewMessage ? (
+            <Notice tone={result instanceof Error ? 'danger' : message ? 'success' : 'info'}>
+              {reviewMessage}
+            </Notice>
+          ) : null}
+        </div>
         {opened ? (
           <ReviewEditor key={opened.calendar.id} opened={opened} onMessage={setMessage} />
         ) : null}

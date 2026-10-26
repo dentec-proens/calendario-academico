@@ -153,3 +153,13 @@ test('annual Saturdays keep the selection panel next to the year grid', async ({
   await assertNoOverflow(page);
   await expect(page).toHaveScreenshot('calendar-saturdays.png', { fullPage: true });
 });
+
+test('notice tones keep their colors, icons and slots readable', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('notice'));
+  await expect(page.locator('#notice-danger')).toBeVisible();
+  await assertNoOverflow(page);
+  await expect(page).toHaveScreenshot('notice-gallery.png', { fullPage: true });
+});

@@ -12,6 +12,7 @@ import { useFeatureRoute } from '../../app/navigation.ts';
 import { useNavigate } from '@tanstack/react-router';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
+import { Notice } from '../../components/ui/Notice.tsx';
 
 type CatalogueEvent = Bootstrap['catalogue']['events'][number];
 const emptyEvent = (revision: number): CatalogueEvent & { revision: number } => ({
@@ -258,11 +259,11 @@ export default function CataloguePanel({
             </div>
           </fieldset>
           {remoteChanged && dirty ? (
-            <p className="notice" role="status">
+            <Notice tone="warning" announce="polite">
               A base mudou em outra sessão. Suas alterações foram preservadas e não substituirão a
               versão atual. Copie os campos necessários, cancele a edição e abra o evento novamente
               para conferir os dados atualizados.
-            </p>
+            </Notice>
           ) : null}
           <FormFeedback error={error} />
         </form>

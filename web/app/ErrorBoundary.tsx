@@ -2,6 +2,7 @@ import { Button } from '../components/ui/Button.tsx';
 import { Component, useState, type PropsWithChildren } from 'react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { nativeError } from '../shared/convex/errors.ts';
+import { Notice } from '../components/ui/Notice.tsx';
 
 function AccessError({ error }: { error: unknown }) {
   const { signOut } = useAuthActions();
@@ -19,7 +20,9 @@ function AccessError({ error }: { error: unknown }) {
     <main>
       <section className="panel">
         <h1>Não foi possível acessar o portal</h1>
-        <p role="alert">{logoutError || nativeError(error).message}</p>
+        <Notice tone="danger" announce="assertive">
+          {logoutError || nativeError(error).message}
+        </Notice>
         <div className="actions">
           <Button type="button" onClick={() => window.location.reload()}>
             Tentar novamente

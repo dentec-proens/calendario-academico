@@ -629,6 +629,7 @@ test('clean fields receive remote defaults while unapplied values survive a late
   });
   await expect(page.locator('#week-evidence')).toHaveValue('Decisão local ainda não aplicada');
   await expect(page.locator('#unapplied-status')).toBeVisible();
-  await expect(page.locator('.editor-feedback .notice')).toContainText('outra sessão');
+  await expect(page.locator('#editor-remote-change')).toContainText('outra sessão');
+  await expect(page.locator('.autosave-panel')).toHaveAttribute('data-tone', 'warning');
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });

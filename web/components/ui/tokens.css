@@ -8,6 +8,7 @@
   --ui-action: #0c503a;
   --ui-action-hover: #083c2b;
   --ui-action-soft: #e8f2ed;
+  --ui-success-border: #b9d4c5;
   --ui-action-text: #fff;
   --ui-focus: #0e7150;
   --ui-focus-ring: #0e715026;
@@ -16,6 +17,7 @@
   --ui-danger-soft: #fff2ef;
   --ui-warning: #795214;
   --ui-warning-soft: #fff5df;
+  --ui-warning-border: #e3c48a;
   --ui-radius: 7px;
   --ui-radius-panel: 12px;
   --ui-space-1: 4px;

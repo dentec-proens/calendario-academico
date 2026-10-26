@@ -4,6 +4,7 @@ import { useAccounts } from '../../shared/convex/accounts.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { useEffect } from 'react';
+import { Notice } from '../../components/ui/Notice.tsx';
 
 export default function MemberRoleEditor({
   member,
@@ -97,10 +98,10 @@ export default function MemberRoleEditor({
         Salvar
       </Button>
       {remoteChanged && dirty ? (
-        <p className="notice" role="status">
+        <Notice tone="warning" announce="polite">
           O perfil mudou em outra sessão. Suas alterações foram preservadas. Copie as informações
           necessárias e atualize a lista para conferir o acesso atual.
-        </p>
+        </Notice>
       ) : null}
       <FormFeedback error={error} />
     </form>

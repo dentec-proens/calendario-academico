@@ -6,6 +6,7 @@ import {
   type ConfirmationRequest,
 } from './confirmation.ts';
 import './confirmation-dialog.css';
+import { Notice } from './ui/Notice.tsx';
 
 const icons = { danger: Trash2, primary: Info, warning: AlertTriangle, success: CheckCircle2 };
 
@@ -92,13 +93,15 @@ function ConfirmationDialog({ request }: { request: ConfirmationRequest }) {
         <div id={`${id}-description`}>
           <p>{request.description}</p>
           {request.consequence ? (
-            <p className="confirmation-dialog__consequence">{request.consequence}</p>
+            <Notice tone="warning" className="confirmation-dialog__consequence">
+              {request.consequence}
+            </Notice>
           ) : null}
         </div>
         {error ? (
-          <p className="confirmation-dialog__error" role="alert">
+          <Notice tone="danger" announce="assertive" className="confirmation-dialog__error">
             {error}
-          </p>
+          </Notice>
         ) : null}
       </div>
       <div className="confirmation-dialog__actions">

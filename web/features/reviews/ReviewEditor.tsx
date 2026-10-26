@@ -15,6 +15,7 @@ import {
   type ReviewEntry,
   type ReviewDocument,
 } from './review-values.ts';
+import { Notice } from '../../components/ui/Notice.tsx';
 
 export default function ReviewEditor({
   opened,
@@ -197,11 +198,11 @@ export default function ReviewEditor({
   return (
     <>
       {remoteChanged && dirty ? (
-        <p className="notice" role="status">
+        <Notice tone="warning" announce="polite">
           O calendário, a base institucional ou a revisão mudou em outra sessão. Suas alterações
           foram preservadas. Salve uma cópia das observações e reabra a análise para conferir a
           versão atual.
-        </p>
+        </Notice>
       ) : null}
       <ReviewFormView
         draft={draft}

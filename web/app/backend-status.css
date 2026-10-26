@@ -1,26 +1,7 @@
-.backend-status {
-  max-width: 1440px;
-  margin: 16px auto;
-  padding: 20px;
-  border: 1px solid #c99b47;
-  border-left-width: 4px;
-  border-radius: 8px;
-  background: #fff8e8;
-  color: #513b12;
-}
-.backend-status h2 {
-  margin: 0 0 10px;
-  font-size: 1.1rem;
-}
-.backend-status p {
-  margin: 8px 0;
-}
-.backend-status button {
-  margin-top: 8px;
-}
+.backend-status.ui-notice,
 .backend-loading {
-  margin: 16px auto;
   max-width: 1440px;
+  margin: 16px auto;
 }
 @media print {
   .backend-status,

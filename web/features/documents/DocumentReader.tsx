@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/Button.tsx';
 import { downloadNative, saveBlob } from '../../shared/convex/files.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
 import type { DocumentsData } from '../../shared/convex/types.ts';
+import { Notice } from '../../components/ui/Notice.tsx';
 
 GlobalWorkerOptions.workerSrc = new URL(
   '../../../node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
@@ -182,12 +183,12 @@ export default function DocumentReader({
         </label>
       </div>
       {error ? (
-        <p className="error" role="alert">
+        <Notice tone="danger" announce="assertive" className="document-reader__error">
           Não foi possível exibir o PDF. {error}
           {file
             ? ' Você pode abrir o original em outra aba.'
             : ' Feche o leitor e tente novamente.'}
-        </p>
+        </Notice>
       ) : null}
       <div ref={stage} className="document-reader__stage" aria-busy={rendering && !error}>
         {rendering && !error ? <p role="status">Preparando página…</p> : null}

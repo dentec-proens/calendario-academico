@@ -8,6 +8,7 @@ import ReviewCriterion from './ReviewCriterion.tsx';
 import { ReviewPreview } from './review-export.tsx';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import type { ReviewDraft, ReviewEntry, ReviewDocument } from './review-values.ts';
+import { Notice } from '../../components/ui/Notice.tsx';
 
 interface Props {
   draft: ReviewDraft;
@@ -163,10 +164,10 @@ export default function ReviewFormView({
           as evidências antes de concluir.
         </p>
         {!opened.sameYear ? (
-          <p id="review-year-warning" className="notice" role="status">
+          <Notice tone="warning" id="review-year-warning" announce="polite">
             Referência: Parecer SEI 3959640 ({opened.source.year}), páginas 1 e 2. Confira a norma
             aplicável a {opened.calendar.year}.
-          </p>
+          </Notice>
         ) : null}
         <ul id="review-items" className="records">
           {opened.criteria.map((criterion, index) => (

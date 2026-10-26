@@ -6,6 +6,7 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Input, Select } from './fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
+import { Notice } from '../../../components/ui/Notice.tsx';
 
 export default function OrganizationForm() {
   const { state, session, institutional, readOnly } = useCalendarEditor();
@@ -42,10 +43,10 @@ export default function OrganizationForm() {
         classificação.
       </p>
       {state.conversion?.organization === 'pending' && (
-        <p className="notice">
+        <Notice tone="warning">
           Organização legada a conferir. A contagem e a conclusão dependem da classificação das
           ofertas e de cada período.
-        </p>
+        </Notice>
       )}
       <fieldset disabled={readOnly}>
         {state.year === 2027 && (

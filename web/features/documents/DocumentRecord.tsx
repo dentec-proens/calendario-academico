@@ -7,6 +7,7 @@ import type { DocumentsData } from '../../shared/convex/types.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { filePayload } from '../../upload.ts';
+import { Notice } from '../../components/ui/Notice.tsx';
 
 type Document = DocumentsData['documents'][number];
 const DocumentReader = lazy(() => import('./DocumentReader.tsx'));
@@ -146,10 +147,10 @@ function DocumentStatusForm({
         )}
       </Button>
       {remoteChanged && dirty ? (
-        <p className="notice" role="status">
+        <Notice tone="warning" announce="polite">
           A base mudou em outra sessão. Atualize a lista e confira novamente o documento antes de
           definir sua vigência.
-        </p>
+        </Notice>
       ) : null}
       <FormFeedback error={error} />
     </form>
@@ -224,7 +225,7 @@ export default function DocumentRecord({
           ) : null}
         </div>
         {document.unavailableFile ? (
-          <p className="notice">PDF original aguardando restauração pela administração.</p>
+          <Notice tone="warning">PDF original aguardando restauração pela administração.</Notice>
         ) : null}
         {reading ? (
           <Suspense fallback={<p role="status">Abrindo leitor de PDF…</p>}>

@@ -42,9 +42,6 @@
 .calendar-editor-content .editor-sidebar {
   align-self: start;
 }
-.calendar-editor-content .error {
-  overflow-wrap: anywhere;
-}
 
 /* The editor is a guided workspace; status is prominent only when action is needed. */
 .calendar-editor-content .editor-navigation {

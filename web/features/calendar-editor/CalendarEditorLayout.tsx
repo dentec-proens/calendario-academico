@@ -28,6 +28,7 @@ import { scrollIntoView, trackScrollInset } from '../../scroll.ts';
 import ImportCalendarForm from './forms/ImportCalendarForm.tsx';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { isCalendarReferenceHash } from '../../../src/calendar-reference.ts';
+import { Notice } from '../../components/ui/Notice.tsx';
 
 function EditorFrame() {
   const {
@@ -95,6 +96,13 @@ function EditorFrame() {
     Boolean(error || remote || unapplied) ||
     status === 'error' ||
     status === 'blocked';
+  const autosaveTone = readOnly
+    ? 'info'
+    : error || status === 'error' || status === 'blocked'
+      ? 'danger'
+      : !connected || remote
+        ? 'warning'
+        : 'info';
   const saveLabel = readOnly
     ? 'Somente leitura'
     : !connected
@@ -221,16 +229,14 @@ function EditorFrame() {
         </div>
       </dl>
       <div className="editor-feedback" ref={feedback}>
-        <div
-          id="message"
-          className={message?.error ? 'error' : ''}
-          role="status"
-          aria-live="polite"
-        >
-          {message?.text}
+        <div id="message" role="status" aria-live="polite">
+          {message?.text ? (
+            <Notice tone={message.error ? 'danger' : 'success'}>{message.text}</Notice>
+          ) : null}
         </div>
-        <div
+        <Notice
           className="autosave-panel"
+          tone={autosaveTone}
           aria-label="Salvamento do calendário"
           hidden={!needsAttention && !readOnly}
         >
@@ -297,7 +303,7 @@ function EditorFrame() {
             calendário.
           </p>
           {remote && (
-            <p className="notice">
+            <p id="editor-remote-change">
               O calendário ou a base mudou em outra sessão. Suas alterações foram preservadas.
               Confira os campos antes de reabrir.
             </p>
@@ -324,7 +330,7 @@ function EditorFrame() {
               Reabrir calendário atualizado
             </button>
           )}
-        </div>
+        </Notice>
       </div>
       <BaseUpdateCard />
       {context && (

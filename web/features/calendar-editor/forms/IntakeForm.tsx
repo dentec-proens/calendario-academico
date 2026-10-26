@@ -5,6 +5,7 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Select, Input, Check } from './fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
+import { Notice } from '../../../components/ui/Notice.tsx';
 
 export default function IntakeForm() {
   const { state, session, readOnly } = useCalendarEditor();
@@ -47,11 +48,11 @@ export default function IntakeForm() {
         regra aplicável e fonte.
       </p>
       {state.secondSemesterIntake !== undefined && (
-        <p className="notice">
+        <Notice tone="warning">
           Contexto legado: ingresso geral no segundo semestre{' '}
           {state.secondSemesterIntake ? 'presente' : 'ausente'}. Confirme cada oferta antes de usar
           essa declaração.
-        </p>
+        </Notice>
       )}
       <fieldset disabled={readOnly}>
         {state.modalities.map((modality) => (

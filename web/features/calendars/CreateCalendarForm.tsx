@@ -8,6 +8,7 @@ import { calendarName } from '../../../src/calendar-label.ts';
 import { modalityLabels, selectableModalities } from '../../../src/modalities.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
+import { Notice } from '../../components/ui/Notice.tsx';
 type Modality = Bootstrap['calendars'][number]['offer'];
 type Regime = Parameters<typeof calendarClient.create>[0]['regime'];
 
@@ -86,9 +87,9 @@ export default function CreateCalendarForm({
   return (
     <form id="create-calendar" onSubmit={createCalendar}>
       {!campus ? (
-        <p id="calendar-campus-notice" className="notice" role="status">
+        <Notice tone="warning" id="calendar-campus-notice" announce="polite">
           Nenhum campus ativo vinculado à conta. Solicite a regularização à administração PROENS.
-        </p>
+        </Notice>
       ) : null}
       <fieldset className="form-fields" disabled={pending || !campus}>
         <div className="calendar-identity-fields">

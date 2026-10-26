@@ -2,6 +2,7 @@ import { Link, useRouter } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { Button } from '../components/ui/Button.tsx';
 import { nativeError } from '../shared/convex/errors.ts';
+import { Notice } from '../components/ui/Notice.tsx';
 
 export function NotFoundPage() {
   return (
@@ -16,9 +17,11 @@ export function NotFoundPage() {
 export function ApplicationError({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   return (
-    <section className="panel" role="alert">
+    <section className="panel">
       <h1>Não foi possível abrir esta página</h1>
-      <p>{nativeError(error).message}</p>
+      <Notice tone="danger" announce="assertive">
+        {nativeError(error).message}
+      </Notice>
       <Button
         type="button"
         onClick={() => {

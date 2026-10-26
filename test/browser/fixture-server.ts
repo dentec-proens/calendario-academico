@@ -15,6 +15,7 @@ type Fixture =
   | 'editor-reviewer-saturdays'
   | 'editor-session'
   | 'confirmation'
+  | 'notice'
   | 'online-users';
 
 export type FixtureServer = (fixture: Fixture) => Promise<string>;
@@ -65,6 +66,7 @@ const fixtures: Record<Fixture, FixtureDefinition> = {
     auth: 'editor-session-auth',
   },
   confirmation: { path: '/test/fixtures/confirmation.html' },
+  notice: { path: '/test/fixtures/notice.html' },
   'online-users': { path: '/test/fixtures/online-users.html' },
 };
 
