@@ -10,6 +10,7 @@ import SaturdayEditForm from './SaturdayEditForm.tsx';
 import SaturdayDayCount from './SaturdayDayCount.tsx';
 import SaturdayPanel from './SaturdayPanel.tsx';
 import SaturdayRegisteredList from './SaturdayRegisteredList.tsx';
+import SaturdayPrerequisites from './SaturdayPrerequisites.tsx';
 import { useDeferredFocus } from './useDeferredFocus.ts';
 import { useNarrowContainer } from './useNarrowContainer.ts';
 import './saturdays.css';
@@ -27,7 +28,8 @@ const dateControl = (date: string) =>
   );
 
 export default function SaturdaysForm() {
-  const { state, events, evaluation, session, institutional, readOnly } = useCalendarEditor();
+  const { state, record, events, evaluation, session, institutional, readOnly } =
+    useCalendarEditor();
   // Opening a registered Saturday is local panel state, like the event editor; it never enters the URL.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -298,6 +300,7 @@ export default function SaturdaysForm() {
   const idleBody = (
     <SaturdayRegisteredList
       registered={registered}
+      hasAvailable={saturdays.some((day) => day.status === 'available')}
       onOpen={(eventId) => {
         // The list leaves the panel; continue on the opened registration.
         openEditing(eventId);
@@ -313,6 +316,11 @@ export default function SaturdaysForm() {
 
   return (
     <div className="saturday-step" ref={step}>
+      <SaturdayPrerequisites
+        calendarId={record.id}
+        hasPeriods={state.periods.length > 0}
+        weekConfirmed={Boolean(state.weekConfirmed)}
+      />
       <div className="saturday-layout">
         {/* The panel's fields join this form through their form attribute, so the panel can
           also host its own forms without nesting them. */}

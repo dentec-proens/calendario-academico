@@ -14,15 +14,20 @@ function bySource(days: YearSaturday[]) {
 /** The panel's resting state: how to start, and the registered Saturdays grouped by source. */
 export default function SaturdayRegisteredList({
   registered,
+  hasAvailable,
   onOpen,
 }: {
   registered: YearSaturday[];
+  /** False when no Saturday can be selected, so the panel doesn't invite an impossible action. */
+  hasAvailable: boolean;
   onOpen: (eventId: string) => void;
 }) {
   return (
     <section className="saturday-panel-section" aria-label="Sábados registrados">
       <p className="help">
-        Selecione sábados disponíveis no calendário para informar a atividade e a fonte da decisão.
+        {hasAvailable
+          ? 'Selecione sábados disponíveis no calendário para informar a atividade e a fonte da decisão.'
+          : 'Não há sábados disponíveis para seleção.'}
       </p>
       {registered.length > 0 && (
         <>

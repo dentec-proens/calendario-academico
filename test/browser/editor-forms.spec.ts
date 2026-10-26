@@ -341,6 +341,28 @@ test('a registered Saturday left open beside the grid does not take over the com
   await expect(page.locator('#saturday-edit-form')).toHaveCount(0);
 });
 
+test('without teaching periods the Saturday step explains what is pending and links to it', async ({
+  page,
+  fixtureServer,
+}) => {
+  await openEditor(page, fixtureServer);
+  await selectEditorSection(page, 'days');
+  const pending = page.locator('#saturday-prerequisites');
+  await expect(pending).toContainText('Nenhum sábado pode ser selecionado ainda');
+  await expect(page.locator('#saturday-dates input')).toHaveCount(0);
+  await expect(page.locator('#saturday-panel')).toContainText(
+    'Não há sábados disponíveis para seleção.',
+  );
+  await pending.getByRole('link', { name: 'Períodos letivos' }).click();
+  await expect(page).toHaveURL(/\/periodos$/);
+  await expect(page.locator('#period-name')).toBeVisible();
+
+  await addPeriod(page, '2027-03-01', '2027-04-30');
+  await selectEditorSection(page, 'days');
+  await expect(page.locator('#saturday-dates input')).not.toHaveCount(0);
+  await expect(pending).toHaveCount(0);
+});
+
 test('Saturdays outside teaching periods are shown but not selectable', async ({
   page,
   fixtureServer,
