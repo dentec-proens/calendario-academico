@@ -279,6 +279,29 @@ test('compact Saturday panel opens as a dialog and keeps focused dates unobstruc
   await expect(page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]')).toBeFocused();
 });
 
+test('resizing across the compact width keeps the Saturday field being filled', async ({
+  page,
+  cleanup,
+}) => {
+  await openEditor(page, cleanup);
+  await addPeriod(page, '2027-03-01', '2027-04-30');
+  await selectEditorSection(page, 'days');
+  await page.locator('#saturday-dates input[value="2027-03-06"]').check();
+  const name = page.locator('#saturday-name');
+  await name.fill('Reposição');
+  await expect(page.locator('aside#saturday-panel')).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('dialog#saturday-panel')).toHaveJSProperty('open', true);
+  await expect(name).toBeFocused();
+  await expect(name).toHaveValue('Reposição');
+
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await expect(page.locator('aside#saturday-panel')).toBeVisible();
+  await expect(name).toBeFocused();
+  await expect(name).toHaveValue('Reposição');
+});
+
 test('Saturdays outside teaching periods are shown but not selectable', async ({
   page,
   cleanup,

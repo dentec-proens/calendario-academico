@@ -1,10 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  isYearSaturday,
-  saturdayGain,
-  saturdayYear,
-  type YearSaturday,
-} from '../../../../src/saturdays.ts';
+import { useMemo, useRef, useState } from 'react';
+import { isYearSaturday, saturdayGain, saturdayYear } from '../../../../src/saturdays.ts';
 import { applySaturdayActivities } from '../../../../src/calendar-edits/commands.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
@@ -14,6 +9,8 @@ import SaturdayYearGrid from './SaturdayYearGrid.tsx';
 import SaturdayEditForm from './SaturdayEditForm.tsx';
 import SaturdayDayCount from './SaturdayDayCount.tsx';
 import SaturdayPanel from './SaturdayPanel.tsx';
+import SaturdayRegisteredList from './SaturdayRegisteredList.tsx';
+import { useDeferredFocus } from './useDeferredFocus.ts';
 import { useNarrowContainer } from './useNarrowContainer.ts';
 import './saturdays.css';
 
@@ -28,34 +25,22 @@ const dateControl = (date: string) =>
     `[data-saturday="${date}"] input, [data-saturday="${date}"] button`,
   );
 
-function focusDate(date: string) {
-  dateControl(date)?.focus();
-}
-
-function bySource(days: YearSaturday[]) {
-  const groups = new Map<string, YearSaturday[]>();
-  for (const day of days) {
-    const source = day.registration!.evidence;
-    groups.set(source, [...(groups.get(source) ?? []), day]);
-  }
-  return groups;
-}
-
 export default function SaturdaysForm() {
   const { state, events, evaluation, session, institutional, readOnly } = useCalendarEditor();
-  const step = useRef<HTMLDivElement>(null);
-  const compact = useNarrowContainer(step, compactWidth);
   // Opening a registered Saturday is local panel state, like the event editor; it never enters the URL.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
-  // A control that leaves the panel takes focus with it; this names its successor, which
-  // only exists after the next render.
-  const pendingFocus = useRef<(() => HTMLElement | null) | null>(null);
-  useEffect(() => {
-    const target = pendingFocus.current?.();
-    if (!target) return;
-    pendingFocus.current = null;
-    target.focus();
+  // A control that leaves the panel takes focus with it; its successor exists after the render.
+  const focusLater = useDeferredFocus();
+  const step = useRef<HTMLDivElement>(null);
+  const compact = useNarrowContainer(step, compactWidth, (narrow) => {
+    // Crossing the width moves the panel between the aside and the dialog. Someone working in
+    // the panel keeps their place: the dialog opens, or the aside returns, on the same field.
+    const active = document.activeElement;
+    const id = active instanceof HTMLElement && active.closest('#saturday-panel') ? active.id : '';
+    setPanelOpen(narrow && Boolean(id));
+    // Returning focus after a layout change must not scroll the page the person is looking at.
+    if (id) focusLater(() => document.getElementById(id), { preventScroll: true });
   });
   const { form, values, submit, pending, error } = useCalendarForm(
     'saturdays',
@@ -81,7 +66,7 @@ export default function SaturdaysForm() {
       });
       setPanelOpen(false);
       // The submit button leaves with the selection: continue from the first registered date.
-      if (first) pendingFocus.current = () => dateControl(first);
+      if (first) focusLater(() => dateControl(first));
       return { dates: [], name: '', evidence: '' };
     },
   );
@@ -110,7 +95,7 @@ export default function SaturdaysForm() {
     form.setFieldValue('evidence', '');
     setPanelOpen(false);
     // A compact panel closes first; the date is reachable only once the dialog is gone.
-    if (focus) pendingFocus.current = () => dateControl(focus);
+    if (focus) focusLater(() => dateControl(focus));
   }
   function toggle(date: string, checked: boolean) {
     // Read the live form value: several toggles can happen before the next render.
@@ -131,7 +116,7 @@ export default function SaturdaysForm() {
     toggle(date, false);
     // Inside the dialog the grid is out of reach; stay with the fields.
     if (compact) document.getElementById('saturday-name')?.focus();
-    else focusDate(date);
+    else dateControl(date)?.focus();
   }
   function openEditing(eventId: string) {
     setEditingId(eventId);
@@ -141,7 +126,7 @@ export default function SaturdaysForm() {
     setEditingId(null);
     setPanelOpen(false);
     // After a removal the date's control becomes a checkbox, which only exists after the render.
-    pendingFocus.current = () => dateControl(date);
+    focusLater(() => dateControl(date));
   }
 
   const overview = (
@@ -306,39 +291,14 @@ export default function SaturdaysForm() {
     </fieldset>
   );
   const idleBody = (
-    <section className="saturday-panel-section" aria-label="Sábados registrados">
-      <p className="help">
-        Selecione sábados disponíveis no calendário para informar a atividade e a fonte da decisão.
-      </p>
-      {registered.length > 0 && (
-        <>
-          <h5>Sábados registrados</h5>
-          {[...bySource(registered)].map(([source, days]) => (
-            <section key={source} className="saturday-source">
-              <h6>{source}</h6>
-              <ul>
-                {days.map((day) => (
-                  <li key={day.date}>
-                    <button
-                      type="button"
-                      className="secondary"
-                      {...(day.editable && { 'data-edit-saturday': day.registration!.id })}
-                      onClick={() => {
-                        // This list leaves the panel; continue on the opened registration.
-                        openEditing(day.registration!.id);
-                        pendingFocus.current = () => document.getElementById('saturday-edit-title');
-                      }}
-                    >
-                      <strong>{shortDate(day.date)}</strong> {day.registration!.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </>
-      )}
-    </section>
+    <SaturdayRegisteredList
+      registered={registered}
+      onOpen={(eventId) => {
+        // The list leaves the panel; continue on the opened registration.
+        openEditing(eventId);
+        focusLater(() => document.getElementById('saturday-edit-title'));
+      }}
+    />
   );
   const activeBody = editBody || selectionBody;
 
