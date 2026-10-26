@@ -573,3 +573,11 @@ footer {
   display: inline-block;
   margin-top: 8px;
 }
+fieldset.app-operation-scope {
+  display: block;
+  inline-size: 100%;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-inline-size: 0;
+}

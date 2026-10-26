@@ -8,20 +8,48 @@
  * @module
  */
 
+import type * as access_identity from "../access/identity.js";
+import type * as access_invitations from "../access/invitations.js";
+import type * as access_members from "../access/members.js";
+import type * as access_passwordRecovery from "../access/passwordRecovery.js";
+import type * as access_session from "../access/session.js";
+import type * as access_setup from "../access/setup.js";
+import type * as access_store from "../access/store.js";
+import type * as actions_documents from "../actions/documents.js";
+import type * as actions_files from "../actions/files.js";
+import type * as actions_history from "../actions/history.js";
+import type * as actions_pdf from "../actions/pdf.js";
+import type * as actions_uploads from "../actions/uploads.js";
 import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
 import type * as authContracts from "../authContracts.js";
 import type * as authCrypto from "../authCrypto.js";
+import type * as calendars from "../calendars.js";
+import type * as calendars_model from "../calendars/model.js";
+import type * as calendars_record from "../calendars/record.js";
+import type * as campuses from "../campuses.js";
+import type * as catalogue from "../catalogue.js";
+import type * as catalogue_model from "../catalogue/model.js";
 import type * as contracts from "../contracts.js";
 import type * as devSetup from "../devSetup.js";
+import type * as documents from "../documents.js";
+import type * as documents_model from "../documents/model.js";
+import type * as histories from "../histories.js";
 import type * as http from "../http.js";
-import type * as native from "../native.js";
-import type * as nativeActions from "../nativeActions.js";
-import type * as nativeAuth from "../nativeAuth.js";
+import type * as lib_audit from "../lib/audit.js";
+import type * as lib_authorization from "../lib/authorization.js";
+import type * as lib_maintenance from "../lib/maintenance.js";
+import type * as lib_pagination from "../lib/pagination.js";
+import type * as lib_shared from "../lib/shared.js";
+import type * as lib_uploads from "../lib/uploads.js";
 import type * as nativeFiles from "../nativeFiles.js";
+import type * as operations from "../operations.js";
 import type * as presence from "../presence.js";
-import type * as repository from "../repository.js";
+import type * as reviews from "../reviews.js";
+import type * as reviews_model from "../reviews/model.js";
+import type * as runtimeArtifacts from "../runtimeArtifacts.js";
 import type * as validators from "../validators.js";
+import type * as workspace from "../workspace.js";
 
 import type {
   ApiFromModules,
@@ -30,20 +58,48 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "access/identity": typeof access_identity;
+  "access/invitations": typeof access_invitations;
+  "access/members": typeof access_members;
+  "access/passwordRecovery": typeof access_passwordRecovery;
+  "access/session": typeof access_session;
+  "access/setup": typeof access_setup;
+  "access/store": typeof access_store;
+  "actions/documents": typeof actions_documents;
+  "actions/files": typeof actions_files;
+  "actions/history": typeof actions_history;
+  "actions/pdf": typeof actions_pdf;
+  "actions/uploads": typeof actions_uploads;
   audit: typeof audit;
   auth: typeof auth;
   authContracts: typeof authContracts;
   authCrypto: typeof authCrypto;
+  calendars: typeof calendars;
+  "calendars/model": typeof calendars_model;
+  "calendars/record": typeof calendars_record;
+  campuses: typeof campuses;
+  catalogue: typeof catalogue;
+  "catalogue/model": typeof catalogue_model;
   contracts: typeof contracts;
   devSetup: typeof devSetup;
+  documents: typeof documents;
+  "documents/model": typeof documents_model;
+  histories: typeof histories;
   http: typeof http;
-  native: typeof native;
-  nativeActions: typeof nativeActions;
-  nativeAuth: typeof nativeAuth;
+  "lib/audit": typeof lib_audit;
+  "lib/authorization": typeof lib_authorization;
+  "lib/maintenance": typeof lib_maintenance;
+  "lib/pagination": typeof lib_pagination;
+  "lib/shared": typeof lib_shared;
+  "lib/uploads": typeof lib_uploads;
   nativeFiles: typeof nativeFiles;
+  operations: typeof operations;
   presence: typeof presence;
-  repository: typeof repository;
+  reviews: typeof reviews;
+  "reviews/model": typeof reviews_model;
+  runtimeArtifacts: typeof runtimeArtifacts;
   validators: typeof validators;
+  workspace: typeof workspace;
 }>;
 
 /**

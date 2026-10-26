@@ -11,99 +11,99 @@
     },
     {
       "source": "/logs",
-      "destination": "/logs.html"
+      "destination": "/index.html"
     },
     {
       "source": "/recuperar-senha",
-      "destination": "/recover.html"
+      "destination": "/index.html"
     },
     {
       "source": "/ativar-conta",
-      "destination": "/activate.html"
+      "destination": "/index.html"
     },
     {
       "source": "/calendarios",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/documentos",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/eventos-institucionais",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/revisoes",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/campi",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/contas",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/usuarios-online",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/calendarios/novo",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/documentos/novo",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/eventos-institucionais/novo",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/campi/novo",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/contas/nova",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/revisoes/:calendarId",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/calendarios/:calendarId/editar",
-      "destination": "/editor.html"
+      "destination": "/index.html"
     },
     {
       "source": "/calendarios/:calendarId/periodos",
-      "destination": "/editor.html"
+      "destination": "/index.html"
     },
     {
       "source": "/calendarios/:calendarId/dias",
-      "destination": "/editor.html"
+      "destination": "/index.html"
     },
     {
       "source": "/calendarios/:calendarId/eventos",
-      "destination": "/editor.html"
+      "destination": "/index.html"
     },
     {
       "source": "/calendarios/:calendarId/historico",
-      "destination": "/editor.html"
+      "destination": "/index.html"
     },
     {
       "source": "/calendarios/:calendarId/pendencias",
-      "destination": "/editor.html"
+      "destination": "/index.html"
     },
     {
       "source": "/calendarios/:calendarId/visualizar",
-      "destination": "/editor.html"
+      "destination": "/index.html"
     },
     {
       "source": "/eventos-institucionais/:eventId/editar",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     }
   ],
   "headers": [

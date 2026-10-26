@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { createServer as createSocketServer } from 'node:net';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,9 +7,11 @@ import type { Cleanup } from './test.ts';
 type Fixture =
   | 'portal'
   | 'review'
+  | 'review-session'
   | 'editor'
   | 'editor-confirmation'
   | 'editor-reviewer'
+  | 'editor-session'
   | 'confirmation'
   | 'online-users';
 
@@ -18,12 +19,19 @@ type FixtureDefinition = {
   path: string;
   entry?: string;
   client?: string;
+  auth?: string;
 };
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const fixtures: Record<Fixture, FixtureDefinition> = {
   portal: { path: '/__portal', entry: 'portal-navigation', client: 'portal-router-client' },
   review: { path: '/__review', entry: 'review-ui', client: 'review-ui-client' },
+  'review-session': {
+    path: '/__review-session',
+    entry: 'review-session',
+    client: 'review-session-client',
+    auth: 'review-session-auth',
+  },
   editor: { path: '/__editor', entry: 'editor', client: 'editor-event-drafts-client' },
   'editor-confirmation': {
     path: '/__editor',
@@ -34,6 +42,12 @@ const fixtures: Record<Fixture, FixtureDefinition> = {
     path: '/__editor',
     entry: 'editor',
     client: 'editor-reviewer-client',
+  },
+  'editor-session': {
+    path: '/__editor-session',
+    entry: 'editor-session',
+    client: 'editor-session-client',
+    auth: 'editor-session-auth',
   },
   confirmation: { path: '/test/fixtures/confirmation.html' },
   'online-users': { path: '/test/fixtures/online-users.html' },
@@ -46,12 +60,7 @@ async function startServer(
   convexUrl = 'https://synthetic.convex.cloud',
 ) {
   let html: string | undefined;
-  if (fixture.path === '/__editor') {
-    html = (await readFile(join(root, 'web/editor.html'), 'utf8'))
-      .replaceAll('href="/style.css"', 'href="/web/style.css"')
-      .replaceAll('href="/portal.css"', 'href="/web/portal.css"')
-      .replace('src="/native/editor.tsx"', `src="/test/fixtures/${fixture.entry}.ts"`);
-  } else if (fixture.entry) {
+  if (fixture.entry) {
     html = `<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"></head><body><div id="root"><main></main></div><script type="module" src="/test/fixtures/${fixture.entry}.ts"></script></body></html>`;
   }
   const server = await createServer({
@@ -62,6 +71,7 @@ async function startServer(
     define: { 'import.meta.env.VITE_CONVEX_URL': JSON.stringify(convexUrl) },
     optimizeDeps: {
       entries: [],
+      exclude: fixture.auth ? ['@convex-dev/auth/react'] : [],
       include: [
         'react',
         'react-dom',
@@ -70,17 +80,31 @@ async function startServer(
         'lucide-react',
         'convex/react',
         'convex/server',
-        '@convex-dev/auth/react',
+        ...(!fixture.auth ? ['@convex-dev/auth/react'] : []),
         '@tanstack/react-router',
+        '@tanstack/react-form',
+        '@base-ui/react/field',
+        '@base-ui/react/button',
+        '@base-ui/react/dialog',
+        '@base-ui/react/radio-group',
+        '@base-ui/react/radio',
+        '@tanstack/react-devtools',
+        '@tanstack/react-form-devtools',
+        '@tanstack/react-router-devtools',
       ],
     },
     oxc: { jsx: { runtime: 'automatic' } },
     resolve: {
+      dedupe: ['react', 'react-dom'],
       alias: fixture.client
         ? [
             {
-              find: /^(?:\.?\.\/native\/client\.ts|.*\/web\/native\/client\.ts)$/,
+              find: /^(?:\.\/client\.ts|.*\/shared\/convex\/client\.ts)$/,
               replacement: join(root, `test/fixtures/${fixture.client}.ts`),
+            },
+            {
+              find: /^@convex-dev\/auth\/react$/,
+              replacement: join(root, `test/fixtures/${fixture.auth ?? 'router-auth-context'}.ts`),
             },
           ]
         : [],

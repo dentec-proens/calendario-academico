@@ -5,7 +5,8 @@ export default function SyntheticAuthProvider({ children }: PropsWithChildren) {
 }
 
 export const useConvexAuth = () => ({ isLoading: false, isAuthenticated: false });
-export const useAuthActions = () => ({ signOut: () => Promise.resolve() });
+const actions = { signOut: () => Promise.resolve(), signIn: () => Promise.resolve() };
+export const useAuthActions = () => actions;
 export const useConvexConnectionState = () => ({
   isWebSocketConnected: true,
   hasEverConnected: true,

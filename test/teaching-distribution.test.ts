@@ -2,7 +2,8 @@ import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { evaluateCalendar } from '../src/evaluation.ts';
-import { teachingDayBreakdown, proensLayout } from '../web/print.ts';
+import { proensLayout } from '../src/printing/calendar-layout.ts';
+import { teachingDayBreakdown } from '../src/printing/teaching-day-breakdown.ts';
 
 const state = {
   year: 2027,

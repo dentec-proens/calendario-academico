@@ -1,0 +1,291 @@
+import { lazy } from 'react';
+import { createRootRouteWithContext, createRoute, redirect } from '@tanstack/react-router';
+import { parseEditorPath, type PortalPageId } from '../../src/app-routes.ts';
+import type { PortalPermissions } from '../portal/permissions.ts';
+import { portalPermissions } from '../portal/permissions.ts';
+import type { SessionState } from './session.tsx';
+import { applicationSearch } from './search.ts';
+import RootLayout from './layouts/RootLayout.tsx';
+import WorkspaceLayout from './layouts/WorkspaceLayout.tsx';
+import AuthenticatedLayout from './layouts/AuthenticatedLayout.tsx';
+import { ApplicationError, NotFoundPage } from './errors.tsx';
+import { loginReturnTarget } from '../../src/login-return.ts';
+
+export interface ApplicationContext {
+  session: SessionState;
+}
+
+declare module '@tanstack/react-router' {
+  interface StaticDataRouteOption {
+    title?: string;
+    page?: PortalPageId;
+    creating?: boolean;
+  }
+}
+
+function permission(permission: keyof PortalPermissions) {
+  return ({
+    context,
+    location,
+  }: {
+    context: ApplicationContext;
+    location: { pathname: string };
+  }) => {
+    const { info, isLoading } = context.session;
+    if (!isLoading && info && !portalPermissions(info.user.role)[permission]) {
+      const to =
+        permission === 'manageInstitution'
+          ? location.pathname.startsWith('/documentos')
+            ? '/documentos'
+            : '/eventos-institucionais'
+          : portalPermissions(info.user.role).editCalendars
+            ? '/calendarios'
+            : '/revisoes';
+      throw redirect({ to, search: { aviso: 'acesso-negado' } });
+    }
+  };
+}
+
+const root = createRootRouteWithContext<ApplicationContext>()({
+  component: RootLayout,
+  validateSearch: applicationSearch,
+  errorComponent: ApplicationError,
+  notFoundComponent: NotFoundPage,
+});
+const access = createRoute({
+  getParentRoute: () => root,
+  path: '/',
+  component: lazy(() => import('../features/access/AccessPage.tsx')),
+  beforeLoad: ({ context, location }) => {
+    if (!context.session.isLoading && context.session.info) {
+      const target = loginReturnTarget(
+        location.searchStr,
+        typeof window === 'undefined' ? 'https://local.invalid' : window.location.origin,
+      );
+      if (target) throw redirect({ href: target });
+      throw redirect({
+        to: portalPermissions(context.session.info.user.role).editCalendars
+          ? '/calendarios'
+          : '/revisoes',
+      });
+    }
+  },
+});
+const activation = createRoute({
+  getParentRoute: () => root,
+  path: '/ativar-conta',
+  component: lazy(() => import('../features/access/ActivatePage.tsx')),
+});
+const recovery = createRoute({
+  getParentRoute: () => root,
+  path: '/recuperar-senha',
+  component: lazy(() => import('../features/access/RecoverPage.tsx')),
+});
+const authenticated = createRoute({
+  getParentRoute: () => root,
+  id: '_authenticated',
+  component: AuthenticatedLayout,
+  beforeLoad: ({ context, location }) => {
+    if (
+      context.session.editorRecovery &&
+      context.session.editorRecovery.calendarId === parseEditorPath(location.pathname)?.id
+    )
+      return;
+    if (!context.session.isLoading && !context.session.isAuthenticated) {
+      throw redirect({ to: '/', search: { retorno: location.pathname + location.searchStr } });
+    }
+  },
+});
+const workspace = createRoute({
+  getParentRoute: () => authenticated,
+  id: '_workspace',
+  component: WorkspaceLayout,
+});
+const calendars = createRoute({
+  getParentRoute: () => workspace,
+  path: '/calendarios',
+  beforeLoad: permission('editCalendars'),
+  component: lazy(() => import('../features/calendars/CalendarsPage.tsx')),
+  staticData: { title: 'Calendários', page: 'calendars' },
+});
+const newCalendar = createRoute({
+  getParentRoute: () => workspace,
+  path: '/calendarios/novo',
+  beforeLoad: permission('editCalendars'),
+  component: lazy(() => import('../features/calendars/CalendarsPage.tsx')),
+  staticData: { title: 'Calendários', page: 'calendars', creating: true },
+});
+const documents = createRoute({
+  getParentRoute: () => workspace,
+  path: '/documentos',
+  component: lazy(() => import('../features/documents/DocumentsPage.tsx')),
+  staticData: { title: 'Documentos e normas', page: 'institution' },
+});
+const newDocument = createRoute({
+  getParentRoute: () => workspace,
+  path: '/documentos/novo',
+  beforeLoad: permission('manageInstitution'),
+  component: lazy(() => import('../features/documents/DocumentsPage.tsx')),
+  staticData: { title: 'Documentos e normas', page: 'institution', creating: true },
+});
+const catalogue = createRoute({
+  getParentRoute: () => workspace,
+  path: '/eventos-institucionais',
+  component: lazy(() => import('../features/catalogue/CataloguePage.tsx')),
+  staticData: { title: 'Feriados e eventos institucionais', page: 'institution-events' },
+});
+const newCatalogue = createRoute({
+  getParentRoute: () => workspace,
+  path: '/eventos-institucionais/novo',
+  beforeLoad: permission('manageInstitution'),
+  component: lazy(() => import('../features/catalogue/CataloguePage.tsx')),
+  staticData: {
+    title: 'Feriados e eventos institucionais',
+    page: 'institution-events',
+    creating: true,
+  },
+});
+const editCatalogue = createRoute({
+  getParentRoute: () => workspace,
+  path: '/eventos-institucionais/$eventId/editar',
+  beforeLoad: permission('manageInstitution'),
+  component: lazy(() => import('../features/catalogue/CataloguePage.tsx')),
+  staticData: {
+    title: 'Feriados e eventos institucionais',
+    page: 'institution-events',
+    creating: true,
+  },
+});
+const reviews = createRoute({
+  getParentRoute: () => workspace,
+  path: '/revisoes',
+  beforeLoad: permission('reviewCalendars'),
+  component: lazy(() => import('../features/reviews/ReviewsPage.tsx')),
+  staticData: { title: 'Revisões e pareceres', page: 'review-panel' },
+});
+const review = createRoute({
+  getParentRoute: () => workspace,
+  path: '/revisoes/$calendarId',
+  beforeLoad: permission('reviewCalendars'),
+  component: lazy(() => import('../features/reviews/ReviewsPage.tsx')),
+  staticData: { title: 'Revisões e pareceres', page: 'review-panel' },
+});
+const campuses = createRoute({
+  getParentRoute: () => workspace,
+  path: '/campi',
+  beforeLoad: permission('manageCampuses'),
+  component: lazy(() => import('../features/campuses/CampusesPage.tsx')),
+  staticData: { title: 'Campi', page: 'campuses' },
+});
+const newCampus = createRoute({
+  getParentRoute: () => workspace,
+  path: '/campi/novo',
+  beforeLoad: permission('manageCampuses'),
+  component: lazy(() => import('../features/campuses/CampusesPage.tsx')),
+  staticData: { title: 'Campi', page: 'campuses', creating: true },
+});
+const accounts = createRoute({
+  getParentRoute: () => workspace,
+  path: '/contas',
+  beforeLoad: permission('manageAccounts'),
+  component: lazy(() => import('../features/accounts/AccountsPage.tsx')),
+  staticData: { title: 'Contas e acessos', page: 'accounts' },
+});
+const newAccount = createRoute({
+  getParentRoute: () => workspace,
+  path: '/contas/nova',
+  beforeLoad: permission('manageAccounts'),
+  component: lazy(() => import('../features/accounts/AccountsPage.tsx')),
+  staticData: { title: 'Contas e acessos', page: 'accounts', creating: true },
+});
+const online = createRoute({
+  getParentRoute: () => workspace,
+  path: '/usuarios-online',
+  beforeLoad: permission('viewOnlineUsers'),
+  component: lazy(() => import('../features/presence/OnlineUsersPage.tsx')),
+  staticData: { title: 'Usuários online', page: 'online-users' },
+});
+const audit = createRoute({
+  getParentRoute: () => workspace,
+  path: '/logs',
+  component: lazy(() => import('../features/audit/AuditPage.tsx')),
+  staticData: { title: 'Registro de operações' },
+});
+const EditorLayout = lazy(() => import('../features/calendar-editor/CalendarEditorLayout.tsx'));
+function CalendarEditor() {
+  const { calendarId } = editor.useParams();
+  return <EditorLayout key={calendarId} calendarId={calendarId} />;
+}
+const editor = createRoute({
+  getParentRoute: () => authenticated,
+  path: '/calendarios/$calendarId',
+  component: CalendarEditor,
+});
+const identity = createRoute({
+  getParentRoute: () => editor,
+  path: '/editar',
+  component: lazy(() => import('../features/calendar-editor/sections/IdentitySection.tsx')),
+  staticData: { title: 'Identificação do calendário' },
+});
+const periods = createRoute({
+  getParentRoute: () => editor,
+  path: '/periodos',
+  component: lazy(() => import('../features/calendar-editor/sections/PeriodsSection.tsx')),
+  staticData: { title: 'Períodos letivos' },
+});
+const days = createRoute({
+  getParentRoute: () => editor,
+  path: '/dias',
+  component: lazy(() => import('../features/calendar-editor/sections/DaysSection.tsx')),
+  staticData: { title: 'Dias e férias' },
+});
+const events = createRoute({
+  getParentRoute: () => editor,
+  path: '/eventos',
+  component: lazy(() => import('../features/calendar-editor/sections/EventsSection.tsx')),
+  staticData: { title: 'Eventos e atividades' },
+});
+const history = createRoute({
+  getParentRoute: () => editor,
+  path: '/historico',
+  component: lazy(() => import('../features/calendar-editor/sections/HistorySection.tsx')),
+  staticData: { title: 'Histórico e documentos' },
+});
+const issues = createRoute({
+  getParentRoute: () => editor,
+  path: '/pendencias',
+  component: lazy(() => import('../features/calendar-editor/sections/IssuesSection.tsx')),
+  staticData: { title: 'Pendências do calendário' },
+});
+const preview = createRoute({
+  getParentRoute: () => editor,
+  path: '/visualizar',
+  component: lazy(() => import('../features/calendar-editor/sections/CalendarPreviewSection.tsx')),
+  staticData: { title: 'Visualizar calendário' },
+});
+
+export const routeTree = root.addChildren([
+  access,
+  activation,
+  recovery,
+  authenticated.addChildren([
+    workspace.addChildren([
+      calendars,
+      newCalendar,
+      documents,
+      newDocument,
+      catalogue,
+      newCatalogue,
+      editCatalogue,
+      reviews,
+      review,
+      campuses,
+      newCampus,
+      accounts,
+      newAccount,
+      online,
+      audit,
+    ]),
+    editor.addChildren([identity, periods, days, events, history, issues, preview]),
+  ]),
+]);

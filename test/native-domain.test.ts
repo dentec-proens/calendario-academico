@@ -40,8 +40,8 @@ const saveBody = (
 // These tests execute the real native handlers with isolated Convex transactions.
 test('native queries require a live Convex session and return safe campus scoped bootstrap', async () => {
   const { client, as, ids } = await fixture();
-  await assert.rejects(client.query(api.native.bootstrap, {}), /Entre com sua conta/);
-  const status = await client.query(api.nativeAuth.status, {});
+  await assert.rejects(client.query(api.workspace.bootstrap, {}), /Entre com sua conta/);
+  const status = await client.query(api.access.session.status, {});
   assert.equal(status.user, null);
   assert.equal(status.setupRequired, false);
   const a = await as('campus-a').write('/api/calendars', createBody('a'));
@@ -459,16 +459,16 @@ test('native calendar edits and trash preserve all thirteen deferred PDF referen
     ctx.db.insert('historyAnalyses', { historyId: historyIds[0], analysis }),
   );
   const historiesBefore = (await inspect()).histories;
-  const cached = await asClient('campus-a').action(api.nativeActions.analyzeHistory, {
+  const cached = await asClient('campus-a').action(api.actions.history.analyzeHistory, {
     id: historyIds[0],
   });
   assert.deepEqual(cached, analysis);
   await assert.rejects(
-    asClient('campus-a').action(api.nativeActions.downloadHistory, { id: historyIds[1] }),
+    asClient('campus-a').action(api.actions.history.downloadHistory, { id: historyIds[1] }),
     /aguarda/,
   );
   await assert.rejects(
-    asClient('campus-a').action(api.nativeActions.analyzeHistory, { id: historyIds[1] }),
+    asClient('campus-a').action(api.actions.history.analyzeHistory, { id: historyIds[1] }),
     (error: unknown) =>
       error instanceof ConvexError &&
       error.data?.status === 503 &&
@@ -668,21 +668,21 @@ test('calendar pagination applies campus and trash scope before advancing its cu
   const created = [];
   for (let index = 0; index < 5; index++)
     created.push(
-      await admin.mutation(api.native.createCalendar, {
+      await admin.mutation(api.calendars.createCalendar, {
         body: { ...createBody(), campusId: ids.campuses.a, courses: 'Campus A ' + index },
       }),
     );
   for (let index = 0; index < 3; index++)
-    await admin.mutation(api.native.createCalendar, {
+    await admin.mutation(api.calendars.createCalendar, {
       body: { ...createBody(), campusId: ids.campuses.b, courses: 'Campus B ' + index },
     });
-  await admin.mutation(api.native.deleteCalendar, { id: created[0].id, version: 1 });
-  await admin.mutation(api.native.deleteCalendar, { id: created[1].id, version: 1 });
+  await admin.mutation(api.calendars.deleteCalendar, { id: created[0].id, version: 1 });
+  await admin.mutation(api.calendars.deleteCalendar, { id: created[1].id, version: 1 });
   const loaded = [];
   let cursor: string | null = null;
   for (;;) {
-    const result: FunctionReturnType<typeof api.native.calendarPage> = await admin.query(
-      api.native.calendarPage,
+    const result: FunctionReturnType<typeof api.calendars.calendarPage> = await admin.query(
+      api.calendars.calendarPage,
       {
         campusId: ids.campuses.a,
         deleted: false,
@@ -697,7 +697,7 @@ test('calendar pagination applies campus and trash scope before advancing its cu
     new Set(loaded.map((record) => record.id)),
     new Set(created.slice(2).map((record) => record.id)),
   );
-  const trash = await campus.query(api.native.calendarPage, {
+  const trash = await campus.query(api.calendars.calendarPage, {
     deleted: true,
     paginationOpts: { numItems: 10, cursor: null },
   });
@@ -706,7 +706,7 @@ test('calendar pagination applies campus and trash scope before advancing its cu
     new Set(created.slice(0, 2).map((record) => record.id)),
   );
   await assert.rejects(
-    campus.query(api.native.calendarPage, {
+    campus.query(api.calendars.calendarPage, {
       campusId: ids.campuses.b,
       paginationOpts: { numItems: 2, cursor: null },
     }),
@@ -754,8 +754,8 @@ test('document pagination applies publication access and year filters before its
   const loaded = [];
   let cursor: string | null = null;
   for (;;) {
-    const result: FunctionReturnType<typeof api.native.documentPage> = await campus.query(
-      api.native.documentPage,
+    const result: FunctionReturnType<typeof api.documents.documentPage> = await campus.query(
+      api.documents.documentPage,
       { year: 2027, paginationOpts: { numItems: 1, cursor } },
     );
     loaded.push(...result.page);
@@ -766,7 +766,7 @@ test('document pagination applies publication access and year filters before its
     new Set(loaded.map((document) => document.id)),
     new Set([ids.documents['current-2027'], ids.documents['archived-2027']]),
   );
-  const admin = await asClient('admin').query(api.native.documentPage, {
+  const admin = await asClient('admin').query(api.documents.documentPage, {
     year: 2027,
     paginationOpts: { numItems: 10, cursor: null },
   });
@@ -794,8 +794,8 @@ test('document status filters are administrative and paginate within the selecte
   const loaded = [];
   let cursor: string | null = null;
   for (;;) {
-    const result: FunctionReturnType<typeof api.native.documentPage> = await admin.query(
-      api.native.documentPage,
+    const result: FunctionReturnType<typeof api.documents.documentPage> = await admin.query(
+      api.documents.documentPage,
       {
         year: 2027,
         status: 'rascunho',
@@ -810,14 +810,14 @@ test('document status filters are administrative and paginate within the selecte
     new Set(loaded.map((document) => document.id)),
     new Set([ids.documents.draft, ids.documents.draft2]),
   );
-  const allYears = await admin.query(api.native.documentPage, {
+  const allYears = await admin.query(api.documents.documentPage, {
     status: 'rascunho',
     paginationOpts: { numItems: 10, cursor: null },
   });
   assert.equal(allYears.page.length, 3);
   for (const status of ['rascunho', 'vigente', 'arquivado'] as const)
     await assert.rejects(
-      asClient('campus-a').query(api.native.documentPage, {
+      asClient('campus-a').query(api.documents.documentPage, {
         status,
         paginationOpts: { numItems: 10, cursor: null },
       }),

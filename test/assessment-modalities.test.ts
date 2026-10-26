@@ -9,7 +9,7 @@ import {
   assessmentDayCounts,
 } from '../src/stage-suggestions.ts';
 import { evaluateCalendar } from '../src/evaluation.ts';
-import { proensLayout } from '../web/print.ts';
+import { proensLayout } from '../src/printing/calendar-layout.ts';
 import { recalculatePeriods } from '../src/duration.ts';
 
 const state = {

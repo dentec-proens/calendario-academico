@@ -31,18 +31,20 @@ test('historical versions are available by native calendar ID, paginated and cam
     ctx.db.insert('calendarAliases', { alias: 'original-editor-uuid', calendarId: created.id }),
   );
   assert.equal(
-    await client.query(api.native.resolveCalendarId, { reference: 'original-editor-uuid' }),
+    await client.query(api.calendars.resolveCalendarId, { reference: 'original-editor-uuid' }),
     created.id,
   );
   assert.equal(
-    await client.query(api.native.resolveCalendarId, { reference: created.id }),
+    await client.query(api.calendars.resolveCalendarId, { reference: created.id }),
     created.id,
   );
   await assert.rejects(
-    asClient('campus-b').query(api.native.resolveCalendarId, { reference: 'original-editor-uuid' }),
+    asClient('campus-b').query(api.calendars.resolveCalendarId, {
+      reference: 'original-editor-uuid',
+    }),
     /Registro não encontrado/,
   );
-  const first = await client.query(api.native.calendarHistory, {
+  const first = await client.query(api.calendars.calendarHistory, {
     id: created.id,
     paginationOpts: { numItems: 2, cursor: null },
   });
@@ -50,7 +52,7 @@ test('historical versions are available by native calendar ID, paginated and cam
     first.page.map((row) => row.version),
     [3, 2],
   );
-  const last = await client.query(api.native.calendarHistory, {
+  const last = await client.query(api.calendars.calendarHistory, {
     id: created.id,
     paginationOpts: { numItems: 2, cursor: first.continueCursor },
   });
@@ -59,16 +61,16 @@ test('historical versions are available by native calendar ID, paginated and cam
     [1],
   );
   assert.equal(last.isDone, true);
-  const initial = await client.query(api.native.calendarVersion, { id: created.id, version: 1 });
+  const initial = await client.query(api.calendars.calendarVersion, { id: created.id, version: 1 });
   assert.equal(initial.state.weekEvidence, '');
-  const second = await client.query(api.native.calendarVersion, { id: created.id, version: 2 });
+  const second = await client.query(api.calendars.calendarVersion, { id: created.id, version: 2 });
   assert.equal(second.state.weekEvidence, 'Registro 1');
   await assert.rejects(
-    asClient('campus-b').query(api.native.calendarVersion, { id: created.id, version: 1 }),
+    asClient('campus-b').query(api.calendars.calendarVersion, { id: created.id, version: 1 }),
     /Registro não encontrado/,
   );
   await assert.rejects(
-    client.query(api.native.calendarHistory, {
+    client.query(api.calendars.calendarHistory, {
       id: created.id,
       paginationOpts: { numItems: 500, cursor: null },
     }),

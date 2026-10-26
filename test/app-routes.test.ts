@@ -17,7 +17,7 @@ describe('application paths', () => {
     for (const page of Object.keys(portalPaths) as PortalPageId[]) {
       expect(portalPageForPath(portalPaths[page])).toBe(page);
       expect(portalFormForPath(portalPaths[page])).toBe(false);
-      expect(pageDocument(portalPaths[page])).toBe('portal.html');
+      expect(pageDocument(portalPaths[page])).toBe('index.html');
       const create = portalCreationPaths[page];
       if (create) {
         expect(portalPageForPath(create)).toBe(page);
@@ -33,7 +33,7 @@ describe('application paths', () => {
       id: 'calendar-a',
       section: 'history',
     });
-    expect(pageDocument('/calendarios/calendar-a/historico')).toBe('editor.html');
+    expect(pageDocument('/calendarios/calendar-a/historico')).toBe('index.html');
     expect(portalPageForPath('/calendarios/calendar-a/historico')).toBeUndefined();
   });
 
@@ -72,7 +72,7 @@ describe('application paths', () => {
       ).toBeDefined();
     const routes = [
       ...Object.values(portalPaths),
-      ...Object.values(portalCreationPaths),
+      ...Object.values(portalCreationPaths).filter((path) => path !== undefined),
       '/revisoes/calendar-a',
       '/eventos-institucionais/event-a/editar',
       '/calendarios/calendar-a/editar',

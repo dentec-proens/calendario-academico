@@ -203,6 +203,9 @@ async function childFixture(t: TestContext) {
     'environment.ts',
     'doctor.ts',
     'deploy-production.ts',
+    'release-coordination.ts',
+    'release-scheduled.ts',
+    'release-smoke-config.ts',
     'assert-production-target.ts',
   ])
     await copyFile(join(repository, 'scripts', name), join(path, 'scripts', name));

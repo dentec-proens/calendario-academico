@@ -1,0 +1,225 @@
+import type { CalendarRecord, CalendarState, CalendarSave } from '../types.ts';
+import { equalValues } from '../../../../src/equal.ts';
+import { createAutosaver } from '../../../autosave.ts';
+import type { AutosaveStatus } from '../../../autosave.ts';
+import { recalculateCalendar } from '../../../../src/calendar-edits/commands.ts';
+
+export interface EditorSnapshot {
+  record: CalendarRecord;
+  state: CalendarState;
+  dirty: boolean;
+  unapplied: boolean;
+  status: AutosaveStatus | 'idle';
+  error: string;
+  remote: CalendarRecord | null;
+  formEpoch: number;
+}
+
+export function createEditorSession(
+  record: CalendarRecord,
+  write: (body: {
+    state: CalendarState;
+    version: number;
+    catalogueRevision: number;
+  }) => Promise<CalendarSave>,
+  readOnly = false,
+) {
+  let current: EditorSnapshot = {
+    record: structuredClone(record),
+    state: structuredClone(record.state),
+    dirty: false,
+    unapplied: false,
+    status: 'idle',
+    error: '',
+    remote: null,
+    formEpoch: 0,
+  };
+  let active = true;
+  let abandoned = false;
+  let accessSuspended = false;
+  let suspendedStatus: Pick<EditorSnapshot, 'status' | 'error'> | null = null;
+  let approvedCatalogueRevision = record.catalogueRevision;
+  const listeners = new Set<() => void>();
+  const forms = new Set<string>();
+  function publish(update: Partial<EditorSnapshot>) {
+    if (!active) return;
+    current = { ...current, ...update };
+    for (const listener of listeners) listener();
+  }
+  const saver = createAutosaver({
+    isDirty: () => current.dirty,
+    snapshot: () => ({
+      state: current.state,
+      version: current.record.version,
+      catalogueRevision: approvedCatalogueRevision,
+    }),
+    write,
+    onSaved: (saved, sent) => {
+      const unchanged = equalValues(current.state, sent.state);
+      const confirmed = { ...current.record, ...saved, catalogueRevision: sent.catalogueRevision };
+      publish({
+        record: confirmed,
+        ...(unchanged ? { state: structuredClone(saved.state) } : {}),
+        dirty: !unchanged,
+        remote:
+          current.remote &&
+          current.remote.version <= saved.version &&
+          current.remote.currentCatalogueRevision === confirmed.currentCatalogueRevision
+            ? null
+            : current.remote,
+      });
+    },
+    onStatus: (status, detail) => {
+      const update = {
+        status,
+        error:
+          status === 'error' || status === 'blocked'
+            ? detail instanceof Error
+              ? detail.message
+              : 'Não foi possível salvar.'
+            : '',
+      };
+      if (accessSuspended) suspendedStatus = update;
+      else publish(update);
+    },
+  });
+  function assertEditing() {
+    if (abandoned || !active) throw new Error('A sessão de edição foi encerrada.');
+    if (accessSuspended) throw new Error('Entre novamente para salvar as alterações.');
+    if (readOnly) throw new Error('Consulta em modo somente leitura.');
+  }
+  return {
+    getSnapshot: () => current,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    apply(command: (state: CalendarState) => CalendarState) {
+      assertEditing();
+      if (current.status === 'blocked')
+        throw new Error(current.error || 'Resolva o conflito antes de aplicar alterações.');
+      const state = command(structuredClone(current.state));
+      publish({ state, dirty: !equalValues(state, current.record.state) });
+      saver.schedule();
+    },
+    replace(state: CalendarState) {
+      assertEditing();
+      if (current.status === 'blocked')
+        throw new Error(current.error || 'Resolva o conflito antes de importar.');
+      forms.clear();
+      publish({
+        state: structuredClone(state),
+        dirty: !equalValues(state, current.record.state),
+        unapplied: false,
+        formEpoch: current.formEpoch + 1,
+      });
+      saver.schedule();
+    },
+    setFormDirty(key: string, dirty: boolean) {
+      if (dirty) forms.add(key);
+      else forms.delete(key);
+      const unapplied = forms.size > 0;
+      if (unapplied !== current.unapplied) publish({ unapplied });
+    },
+    receive(fresh: CalendarRecord) {
+      const changed =
+        fresh.version !== current.record.version ||
+        fresh.currentCatalogueRevision !== current.record.currentCatalogueRevision;
+      if (!changed) {
+        if (!equalValues(fresh, current.record)) publish({ record: fresh });
+        return;
+      }
+      if (fresh.version < current.record.version) return;
+      if (current.dirty || current.unapplied || current.status === 'saving')
+        publish({ remote: fresh, record: { ...current.record, histories: fresh.histories } });
+      else {
+        approvedCatalogueRevision = fresh.catalogueRevision;
+        publish({ record: fresh, state: structuredClone(fresh.state), remote: null });
+      }
+    },
+    async retry() {
+      if (readOnly) return;
+      assertEditing();
+      await saver.save(true);
+    },
+    async flush() {
+      if (!readOnly) await saver.flush();
+      return current.record;
+    },
+    confirmDefinitive(
+      value: Pick<CalendarRecord, 'purpose' | 'version' | 'updatedAt' | 'readiness'>,
+    ) {
+      assertEditing();
+      publish({
+        record: { ...current.record, ...value },
+        remote: current.remote && current.remote.version <= value.version ? null : current.remote,
+      });
+    },
+    async confirmBase() {
+      assertEditing();
+      if (current.unapplied)
+        throw new Error('Aplique ou descarte os campos em edição antes de confirmar a base.');
+      if (current.status === 'saving') await saver.save();
+      const latest = current.remote || current.record;
+      if (latest.version !== current.record.version)
+        throw new Error(
+          'Há uma versão mais recente do calendário. Reabra antes de confirmar a base.',
+        );
+      const state = recalculateCalendar(current.state, latest.institutionalEvents);
+      approvedCatalogueRevision = latest.currentCatalogueRevision;
+      publish({
+        record: {
+          ...current.record,
+          currentCatalogueRevision: latest.currentCatalogueRevision,
+          institutionalEvents: latest.institutionalEvents,
+          currentDocuments: latest.currentDocuments,
+        },
+        state,
+        dirty: true,
+        remote: null,
+      });
+      saver.resume();
+      await saver.save(true);
+      await saver.flush();
+      if (current.status === 'blocked' || current.status === 'error')
+        throw new Error(current.error);
+    },
+    setAccessSuspended(value: boolean) {
+      if (accessSuspended === value) return;
+      accessSuspended = value;
+      if (value) {
+        suspendedStatus = { status: current.status, error: current.error };
+        publish({
+          status: 'blocked',
+          error: 'Sua sessão expirou. Entre novamente ou baixe uma cópia das alterações aplicadas.',
+        });
+      } else {
+        publish(suspendedStatus ?? { status: 'idle', error: '' });
+        suspendedStatus = null;
+      }
+      saver.setSuspended(value);
+    },
+    abandon() {
+      abandoned = true;
+      saver.dispose();
+      forms.clear();
+      publish({
+        state: structuredClone(current.record.state),
+        dirty: false,
+        unapplied: false,
+        status: 'idle',
+        error: '',
+        formEpoch: current.formEpoch + 1,
+      });
+    },
+    dispose() {
+      active = false;
+      saver.dispose();
+      listeners.clear();
+    },
+  };
+}
+
+export type EditorSession = ReturnType<typeof createEditorSession>;

@@ -4,7 +4,7 @@ Identidades, credenciais e sessões pertencem ao Convex Auth. Não há cadastro 
 
 ## Criação e ativação
 
-Em **Campi e contas**, o ADMIN informa responsável, e-mail institucional, perfil e campus, quando aplicável. As formas de acesso são convite por link, senha definida pelo ADMIN ou Google institucional, quando habilitado.
+Em **Contas e acessos**, o ADMIN informa responsável, e-mail institucional, perfil e campus, quando aplicável. As formas de acesso são convite por link, senha definida pelo ADMIN ou Google institucional, quando habilitado.
 
 No convite, a conta fica pendente até o titular confirmar seu e-mail e criar a senha. O link é de uso único e vale por 48 horas. Gerar novo convite invalida o anterior. O sistema exibe o link na geração; o ADMIN deve copiá-lo e entregá-lo somente ao destinatário. Não há envio automático de e-mail.
 
@@ -23,3 +23,9 @@ Remover o acesso de uma conta cancela seus convites e sessões e preserva calend
 A opção depende de `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET` no ambiente Convex e da configuração de retorno do provedor. A conta institucional deve estar previamente autorizada e ativa; autenticar com Google não concede vínculo ou permissões adicionais.
 
 Configurar Google não habilita envio de convites ou recuperação por e-mail. O envio automático permanece indisponível.
+
+## Privacidade dos formulários
+
+Login, primeiro ADMIN, ativação e redefinição usam TanStack Form com submissão e erros explícitos. Senhas, códigos e tokens não entram no registro de rascunhos ou na instrumentação Devtools. O fragmento secreto dos links é retirado antes da criação do Router; o token permanece somente no fluxo temporário. Ao sair, reabra o link privado para continuar.
+
+Logout e mudança de identidade limpam os rascunhos da sessão. Alterar papel/campus ou remover um membro revoga sessões conforme a operação; o backend repete a autorização mesmo quando a tela já estava aberta.

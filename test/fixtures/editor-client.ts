@@ -1,25 +1,32 @@
-import type { CalendarState, History } from '../../web/editor-types.ts';
+import type { CalendarRecord, CalendarState } from '../../web/features/calendar-editor/types.ts';
+import type { Bootstrap } from '../../web/shared/convex/types.ts';
+import type { Id } from '../../convex/_generated/dataModel.js';
+import { api } from '../../convex/_generated/api.js';
+import { getFunctionName, type FunctionReference } from 'convex/server';
 import { teacherDayId } from '../../src/teacher-day.ts';
 
-const state: CalendarState = {
-  schemaVersion: 2,
-  campus: 'Campus de teste',
+export const record: CalendarRecord = {
+  id: 'synthetic-calendar' as Id<'calendars'>,
+  campusId: 'campus-a' as Id<'campuses'>,
+  name: '2027 — Campus de teste',
   year: 2027,
   offer: 'integrado',
   modalities: ['integrado'],
-  regime: 'anual',
-  weekdays: [1, 2, 3, 4, 5],
-  weekEvidence: 'Ata sintética',
-  weekConfirmed: true,
-  periods: [],
-  events: [],
-  ignoredHistory: [],
-  assessmentStagesByModality: {},
-};
-const record = {
-  id: 'synthetic-calendar',
-  name: '2027 — Campus de teste',
-  state,
+  state: {
+    schemaVersion: 2,
+    campus: 'Campus de teste',
+    year: 2027,
+    offer: 'integrado',
+    modalities: ['integrado'],
+    regime: 'anual',
+    weekdays: [1, 2, 3, 4, 5],
+    weekEvidence: 'Ata sintética',
+    weekConfirmed: true,
+    periods: [],
+    events: [],
+    ignoredHistory: [],
+    assessmentStagesByModality: {},
+  },
   purpose: 'test',
   courses: 'Curso sintético',
   classes: '',
@@ -39,38 +46,119 @@ const record = {
       institutional: true,
     },
   ],
-  histories: [] as History[],
-  readiness: { ready: false, issues: [], warnings: [] },
+  histories: [],
+  documentSnapshot: [],
+  institutionalSnapshot: [],
+  versions: [],
+  currentDocuments: [],
+  readiness: { ready: false, issues: [], warnings: [], officialApproval: false },
 };
-const calls = { saves: 0, conversions: 0, failConversion: false };
-export const calendars = {
-  get: () => Promise.resolve(structuredClone(record)),
-  save: (_id: string, body: { state: CalendarState }) => {
-    calls.saves++;
-    record.state = structuredClone(body.state);
-    record.version++;
-    return Promise.resolve(structuredClone(record));
+export const calls = { saves: 0, conversions: 0, failConversion: false };
+export const fixtureProfile: { role: Bootstrap['user']['role'] } = { role: 'ADMIN' };
+export const functions = api;
+const listeners = new Set<() => void>();
+const connection = {
+  isWebSocketConnected: true,
+  hasEverConnected: true,
+  timeOfOldestInflightRequest: null,
+  hasInflightRequests: false,
+  inflightMutations: 0,
+  inflightActions: 0,
+};
+export function publish() {
+  for (const listener of listeners) listener();
+}
+function result(name: string) {
+  switch (name) {
+    case 'calendars:calendar':
+      return structuredClone(record);
+    case 'calendars:calendarPage':
+      return { page: [record], isDone: true, continueCursor: '' };
+    case 'operations:availability':
+      return { maintenance: false };
+    case 'presence:online':
+      return [];
+    default:
+      return { page: [], isDone: true, continueCursor: '' };
+  }
+}
+export const convex = {
+  url: 'http://127.0.0.1',
+  connectionState: () => connection,
+  subscribeToConnectionState: () => () => {},
+  watchQuery(reference: FunctionReference<'query'>) {
+    const name = getFunctionName(reference);
+    let cached = result(name);
+    return {
+      localQueryResult: () => cached,
+      journal: () => undefined,
+      onUpdate(callback: () => void) {
+        const listener = () => {
+          cached = result(name);
+          callback();
+        };
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    };
   },
-  makeDefinitive: () => {
-    calls.conversions++;
-    if (calls.failConversion) return Promise.reject(new Error('Falha sintética ao converter.'));
-    record.purpose = 'definitive';
-    return Promise.resolve(structuredClone(record));
+  query: (reference: FunctionReference<'query'>) =>
+    Promise.resolve(result(getFunctionName(reference))),
+  mutation(reference: FunctionReference<'mutation'>, args: Record<string, unknown>) {
+    switch (getFunctionName(reference)) {
+      case 'calendars:saveCalendar': {
+        const body = args.body as { state: CalendarState; version: number };
+        if (body.version !== record.version)
+          return Promise.reject(
+            Object.assign(new Error('Há versão mais recente. Reabra o calendário.'), {
+              status: 409,
+            }),
+          );
+        calls.saves++;
+        record.state = structuredClone(body.state);
+        record.version++;
+        publish();
+        return Promise.resolve({
+          state: structuredClone(record.state),
+          version: record.version,
+          updatedAt: record.updatedAt,
+          readiness: record.readiness,
+        });
+      }
+      case 'calendars:makeDefinitive':
+        calls.conversions++;
+        if (calls.failConversion) return Promise.reject(new Error('Falha sintética ao converter.'));
+        record.purpose = 'definitive';
+        record.version++;
+        publish();
+        return Promise.resolve({
+          purpose: record.purpose,
+          version: record.version,
+          updatedAt: record.updatedAt,
+          readiness: record.readiness,
+        });
+      default:
+        return Promise.reject(
+          new Error(`Mutação sintética não implementada: ${getFunctionName(reference)}`),
+        );
+    }
+  },
+  action(reference: FunctionReference<'action'>, _args: Record<string, unknown>): Promise<unknown> {
+    return Promise.reject(
+      new Error(`Action sintética não implementada: ${getFunctionName(reference)}`),
+    );
   },
 };
-export const accounts = { status: () => Promise.resolve({ user: { role: 'ADMIN' } }) };
-export const subscribeCalendar = () => () => {};
-export const subscribeNativeConnection = () => () => {};
-export const downloadLink = () => Promise.resolve();
-export const nativeError = (cause: unknown) =>
-  cause instanceof Error ? cause : new Error('Falha sintética.');
-export const convex = {};
-export const functions = {};
-
 window.editorTest = { record, calls };
-
+window.publishReviewerCalendar = () => {
+  publish();
+  return Promise.resolve();
+};
 declare global {
   interface Window {
     editorTest: { record: typeof record; calls: typeof calls };
+    publishReviewerCalendar: () => Promise<void>;
   }
 }

@@ -186,4 +186,16 @@ export default defineSchema({
   })
     .index('by_tokenHash', ['tokenHash'])
     .index('by_expiresAt', ['expiresAt']),
+  operationalControl: defineTable({
+    key: v.literal('release'),
+    paused: v.boolean(),
+    commit: v.string(),
+    changedAt: v.number(),
+    smokeUserId: v.optional(v.id('users')),
+  }).index('by_key', ['key']),
+  operationalLeases: defineTable({
+    operation: v.string(),
+    startedAt: v.number(),
+    actorId: v.optional(v.id('users')),
+  }).index('by_startedAt', ['startedAt']),
 });

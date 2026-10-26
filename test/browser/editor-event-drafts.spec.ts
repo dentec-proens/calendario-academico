@@ -29,7 +29,8 @@ test('editor separates creation from editing and preserves closed activity/histo
   const cancel = async () => {
     await page.locator('#discard-event-form').click();
     await expect(page.locator('#event-form')).toBeHidden();
-    await expect(page.locator('input#event-name')).toHaveValue('');
+    await expect(page.locator('#resume-event')).toBeHidden();
+    await expect(page.locator('#unapplied-status')).toBeHidden();
   };
   const submit = () => page.locator('#event-form button[type="submit"]').click();
 

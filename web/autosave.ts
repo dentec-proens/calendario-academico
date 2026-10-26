@@ -20,6 +20,13 @@ export function createAutosaver<Snapshot, Result>({
   let blocked = false;
   let paused = false;
   let lastError: unknown;
+  let disposed = false;
+  let suspended = false;
+  let authenticationRevision = 0;
+
+  function errorStatus(error: unknown) {
+    return error && typeof error === 'object' && 'status' in error ? error.status : undefined;
+  }
 
   function cancelScheduled() {
     if (timer !== null) {
@@ -30,7 +37,7 @@ export function createAutosaver<Snapshot, Result>({
 
   function schedule() {
     cancelScheduled();
-    if (blocked || paused || !isDirty()) return;
+    if (disposed || suspended || blocked || paused || !isDirty()) return;
     if (!pending) onStatus('scheduled');
     timer = setTimeout(() => {
       timer = null;
@@ -40,6 +47,7 @@ export function createAutosaver<Snapshot, Result>({
 
   function save(manual = false) {
     cancelScheduled();
+    if (disposed || suspended) return Promise.resolve();
     if (pending) return pending;
     if (blocked) {
       onStatus('blocked', lastError);
@@ -49,17 +57,27 @@ export function createAutosaver<Snapshot, Result>({
     if (!isDirty() && !manual) return Promise.resolve();
     paused = false;
     const sent = structuredClone(snapshot());
+    const sentAuthentication = authenticationRevision;
     onStatus('saving');
     pending = Promise.resolve()
       .then(() => write(sent))
       .then((result) => {
+        if (disposed) return;
         onSaved(result, sent);
         onStatus(isDirty() ? 'pending' : 'saved', result);
       })
       .catch((error: unknown) => {
+        if (disposed) return;
         lastError = error;
-        const status =
-          error && typeof error === 'object' && 'status' in error ? error.status : undefined;
+        const status = errorStatus(error);
+        // A response from the expired credentials may arrive after reauthentication.
+        if (status === 401 && sentAuthentication !== authenticationRevision && !suspended) {
+          blocked = false;
+          paused = false;
+          lastError = undefined;
+          onStatus('pending');
+          return;
+        }
         blocked = status === 409 || status === 401;
         paused = !blocked;
         cancelScheduled();
@@ -69,10 +87,50 @@ export function createAutosaver<Snapshot, Result>({
         pending = null;
         // An edit may arrive while a write is pending, even after its timer fires.
         if (!isDirty()) cancelScheduled();
-        else if (timer === null && !blocked && !paused) schedule();
+        else if (!disposed && timer === null && !blocked && !paused) schedule();
       });
     return pending;
   }
 
-  return { save, schedule };
+  async function flush() {
+    if (disposed) throw new Error('A sessão de edição foi encerrada.');
+    if (suspended) throw new Error('Entre novamente para salvar as alterações.');
+    do {
+      await save(isDirty());
+      if (blocked || paused) throw lastError;
+      if (disposed) throw new Error('A sessão de edição foi encerrada.');
+      if (suspended) throw new Error('Entre novamente para salvar as alterações.');
+    } while (isDirty());
+  }
+
+  return {
+    save,
+    schedule,
+    flush,
+    setSuspended: (value: boolean) => {
+      const reauthenticated = suspended && !value;
+      suspended = value;
+      if (value) cancelScheduled();
+      else {
+        if (reauthenticated) authenticationRevision++;
+        if (reauthenticated && blocked && errorStatus(lastError) === 401) {
+          blocked = false;
+          paused = false;
+          lastError = undefined;
+          onStatus(isDirty() ? 'pending' : 'saved');
+        }
+        schedule();
+      }
+    },
+    resume: () => {
+      if (disposed) throw new Error('A sessão de edição foi encerrada.');
+      blocked = false;
+      paused = false;
+      lastError = undefined;
+    },
+    dispose: () => {
+      disposed = true;
+      cancelScheduled();
+    },
+  };
 }

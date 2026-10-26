@@ -1,3 +1,4 @@
+import { convexModules } from './convex-modules.ts';
 import { convexTest } from 'convex-test';
 import type { FunctionReference } from 'convex/server';
 import type { Id } from '../../convex/_generated/dataModel.js';
@@ -57,13 +58,7 @@ const time = (value: unknown) =>
 // These fixtures use real Convex tables and transactions. Synthetic names are
 // resolved only here; the production client and backend use native document IDs.
 export async function createNativeFixture(overrides: Seed = {}) {
-  const client = convexTest(schema, {
-    '../../convex/_generated/server.js': () => import('../../convex/_generated/server.js'),
-    '../../convex/native.ts': () => import('../../convex/native'),
-    '../../convex/nativeAuth.ts': () => import('../../convex/nativeAuth'),
-    '../../convex/nativeFiles.ts': () => import('../../convex/nativeFiles'),
-    '../../convex/nativeActions.ts': () => import('../../convex/nativeActions'),
-  });
+  const client = convexTest(schema, convexModules);
   const ids = {
     campuses: {} as Record<string, Id<'campuses'>>,
     users: {} as Record<string, Id<'users'>>,
@@ -162,70 +157,77 @@ export async function createNativeFixture(overrides: Seed = {}) {
     // scenarios. Each invocation reaches a concrete, validated Convex function.
     return {
       read: async (path: string): Promise<any> => {
-        if (path === '/api/bootstrap') return query(api.native.bootstrap, {});
-        if (path === '/api/status') return query(api.nativeAuth.status, {});
-        if (path === '/api/documents') return query(api.native.documents, {});
-        if (path === '/api/calendar-trash') return query(api.native.trash, {});
+        if (path === '/api/bootstrap') return query(api.workspace.bootstrap, {});
+        if (path === '/api/status') return query(api.access.session.status, {});
+        if (path === '/api/documents') return query(api.documents.documents, {});
+        if (path === '/api/calendar-trash') return query(api.calendars.trash, {});
         if (path.startsWith('/api/logs'))
-          return query(api.native.logs, { paginationOpts: { numItems: 50, cursor: null } });
+          return query(api.workspace.logs, { paginationOpts: { numItems: 50, cursor: null } });
         const match = path.match(/^\/api\/(calendars|reviews)\/([^/]+)$/);
         if (match)
-          return query(match[1] === 'calendars' ? api.native.calendar : api.native.review, {
+          return query(match[1] === 'calendars' ? api.calendars.calendar : api.reviews.review, {
             id: calendarId(match[2]),
           });
         throw new Error('Unknown fixture query: ' + path);
       },
       write: async (path: string, body: Entity = {}, method = 'POST'): Promise<any> => {
         if (path === '/api/calendars')
-          return mutation(api.native.createCalendar, {
+          return mutation(api.calendars.createCalendar, {
             body: { ...body, campusId: ids.campuses[String(body.campusId)] ?? body.campusId },
           });
-        if (path === '/api/catalogue') return mutation(api.native.saveCatalogue, { body });
-        if (path === '/api/campuses') return mutation(api.native.createCampus, { name: body.name });
+        if (path === '/api/catalogue') return mutation(api.catalogue.saveCatalogue, { body });
+        if (path === '/api/campuses')
+          return mutation(api.campuses.createCampus, { name: body.name });
         const document = path.match(/^\/api\/documents\/([^/]+)\/status$/);
         if (document)
-          return mutation(api.native.documentStatus, { id: documentId(document[1]), ...body });
+          return mutation(api.documents.documentStatus, { id: documentId(document[1]), ...body });
         const review = path.match(/^\/api\/reviews\/([^/]+)(\/export)?$/);
         if (review)
           return review[2]
-            ? query(api.native.exportReview, { id: calendarId(review[1]), revision: body.revision })
-            : mutation(api.native.saveReview, { id: calendarId(review[1]), body });
+            ? query(api.reviews.exportReview, {
+                id: calendarId(review[1]),
+                revision: body.revision,
+              })
+            : mutation(api.reviews.saveReview, { id: calendarId(review[1]), body });
         const calendar = path.match(/^\/api\/calendars\/([^/]+)(?:\/(restore|make-definitive))?$/);
         if (calendar) {
           const id = calendarId(calendar[1]);
-          if (calendar[2] === 'restore') return mutation(api.native.restoreCalendar, { id });
+          if (calendar[2] === 'restore') return mutation(api.calendars.restoreCalendar, { id });
           if (calendar[2] === 'make-definitive')
-            return mutation(api.native.makeDefinitive, { id, version: body.version });
+            return mutation(api.calendars.makeDefinitive, { id, version: body.version });
           if (method === 'DELETE')
-            return mutation(api.native.deleteCalendar, { id, version: body.version });
-          return mutation(api.native.saveCalendar, { id, body });
+            return mutation(api.calendars.deleteCalendar, { id, version: body.version });
+          return mutation(api.calendars.saveCalendar, { id, body });
         }
         throw new Error('Unknown fixture mutation: ' + path);
       },
       actionContext: async (path: string, body: Entity = {}): Promise<any> => {
         const calendar = path.match(/^\/api\/calendars\/([^/]+)\/pdf$/);
         if (calendar)
-          return query(internal.native.pdfContext, { id: calendarId(calendar[1]), ...body });
+          return query(internal.calendars.pdfContext, { id: calendarId(calendar[1]), ...body });
         const history = path.match(/^\/api\/history\/([^/]+)(?:\/analysis)?$/);
-        if (history) return query(internal.native.historyContext, { id: history[1] });
+        if (history) return query(internal.histories.historyContext, { id: history[1] });
         const document = path.match(/^\/api\/documents\/([^/]+)$/);
         if (document)
-          return query(internal.native.documentContext, { id: documentId(document[1]) });
+          return query(internal.documents.documentContext, { id: documentId(document[1]) });
         throw new Error('Unknown fixture action context: ' + path);
       },
       finishAction: async (path: string, body: Entity, result: Entity): Promise<any> => {
         const history = path.match(/^\/api\/calendars\/([^/]+)\/history$/);
         if (history)
-          return mutation(internal.native.attachHistory, {
+          return mutation(internal.histories.attachHistory, {
             calendarId: calendarId(history[1]),
             ...body,
             uploadId: result.uploadId,
           });
         if (path === '/api/documents')
-          return mutation(internal.native.attachDocument, { ...body, uploadId: result.uploadId });
+          return mutation(internal.documents.attachDocument, {
+            ...body,
+            uploadId: result.uploadId,
+          });
         const analysis = path.match(/^\/api\/history\/([^/]+)\/analysis$/);
         if (analysis)
-          return mutation(internal.native.saveHistoryAnalysis, {
+          return mutation(internal.histories.saveHistoryAnalysis, {
             id: analysis[1],
             hash: body.hash,
             analysis: result,

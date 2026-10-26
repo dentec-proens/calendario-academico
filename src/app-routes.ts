@@ -11,13 +11,15 @@ export const portalPaths = {
 
 export type PortalPageId = keyof typeof portalPaths;
 
-export const portalCreationPaths: Partial<Record<PortalPageId, string>> = {
+export const portalCreationPaths = {
   calendars: '/calendarios/novo',
   institution: '/documentos/novo',
   'institution-events': '/eventos-institucionais/novo',
   campuses: '/campi/novo',
   accounts: '/contas/nova',
-};
+  'review-panel': undefined,
+  'online-users': undefined,
+} as const;
 
 export const editorSections = {
   edit: 'editar',
@@ -86,23 +88,17 @@ export function catalogueEventId(pathname: string): string | undefined {
 
 export function portalFormForPath(pathname: string) {
   return (
-    Object.values(portalCreationPaths).includes(withoutTrailingSlash(pathname)) ||
+    Object.values(portalCreationPaths).some((path) => path === withoutTrailingSlash(pathname)) ||
     !!catalogueEventId(pathname)
   );
 }
 
-export const pageRoutes = new Map<string, string>([
-  ['/', 'index.html'],
-  ['/logs', 'logs.html'],
-  ['/recuperar-senha', 'recover.html'],
-  ['/ativar-conta', 'activate.html'],
-]);
+const publicPaths = new Set(['/', '/logs', '/recuperar-senha', '/ativar-conta']);
 
 /** Only known application routes receive an HTML shell; assets and APIs keep real 404s. */
-export function pageDocument(pathname: string): string | undefined {
+export function pageDocument(pathname: string): 'index.html' | undefined {
   const path = withoutTrailingSlash(pathname);
-  return (
-    pageRoutes.get(path) ??
-    (portalPageForPath(path) ? 'portal.html' : parseEditorPath(path) ? 'editor.html' : undefined)
-  );
+  return publicPaths.has(path) || portalPageForPath(path) || parseEditorPath(path)
+    ? 'index.html'
+    : undefined;
 }

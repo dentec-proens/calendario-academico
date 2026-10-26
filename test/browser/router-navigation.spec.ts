@@ -54,9 +54,11 @@ test('a delayed campus creation preserves the section selected during the reques
   await expect
     .poll(() => page.evaluate(() => window.portalRouterTest.completedMutation))
     .toBe('createCampus');
-  await expect(page.locator('#campus-name')).toHaveValue('');
   await expect(page).toHaveURL(origin + '/calendarios');
   await expect(page.locator('#calendar-list')).toBeVisible();
+  await page.locator('[data-page="campuses"]').click();
+  await page.getByRole('button', { name: 'Cadastrar campus', exact: true }).click();
+  await expect(page.locator('#campus-name')).toHaveValue('');
 });
 
 test('document upload updates its list filter atomically and cannot navigate away from another section', async ({
@@ -98,7 +100,10 @@ test('document upload updates its list filter atomically and cannot navigate awa
   await expect(page.locator('#calendar-list')).toBeVisible();
   await page.evaluate(() => window.portalRouterTest.resolvePendingMutation());
   await expect.poll(() => page.evaluate(() => window.portalRouterTest.pendingMutation)).toBeNull();
-  await expect(page.locator('#document-message')).toContainText('Arquivo preservado como rascunho');
+  await expect
+    .poll(() => page.evaluate(() => window.portalRouterTest.completedMutation))
+    .toBe('uploadDocument');
+  await expect(page.locator('#document-form')).toHaveCount(0);
   await expect(page).toHaveURL(origin + '/calendarios');
   await expect(page.locator('#calendar-list')).toBeVisible();
 });

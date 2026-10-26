@@ -185,3 +185,81 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   expect(requests, 'isolated UI test cannot contact a real backend').toEqual([]);
   expect(errors).toEqual([]);
 });
+
+test('a review submission remains attached to its form while navigating away and back', async ({
+  page,
+  cleanup,
+}) => {
+  await page.goto(await startFixtureServer('review', cleanup));
+  await page.locator('#open-review').click();
+  await page.locator('#review-process').fill('23354.000004/2027-04');
+  await page.evaluate(() => {
+    window.reviewUiTest.calls.deferNextSave = true;
+  });
+  await page.locator('button[form="review-form"]').click();
+  await expect.poll(() => page.evaluate(() => window.reviewUiTest.calls.pendingSave)).toBe(true);
+  await page.getByRole('link', { name: 'Voltar à lista de revisões' }).click();
+  await expect(page.locator('#review-content')).toHaveCount(0);
+  await page.locator('#open-review').click();
+  await expect(page.locator('#review-process')).toHaveValue('23354.000004/2027-04');
+  await expect(page.locator('button[form="review-form"]')).toBeDisabled();
+  expect(await page.evaluate(() => window.reviewUiTest.calls.saves)).toBe(1);
+  await page.evaluate(() => window.reviewUiTest.resolvePendingSave());
+  await expect(page.locator('button[form="review-form"]')).toBeEnabled();
+  await expect(page.locator('.review-save-status')).toHaveText('Todas as alterações foram salvas.');
+  await expect(page.locator('#review-process')).toHaveValue('23354.000004/2027-04');
+  expect(await page.evaluate(() => window.reviewUiTest.calls.saves)).toBe(1);
+});
+
+test('a failure after a review remount retains values and permits an explicit retry', async ({
+  page,
+  cleanup,
+}) => {
+  await page.goto(await startFixtureServer('review', cleanup));
+  await page.locator('#open-review').click();
+  await page.locator('#review-process').fill('23354.000005/2027-05');
+  await page.evaluate(() => {
+    window.reviewUiTest.calls.deferNextSave = true;
+  });
+  await page.locator('button[form="review-form"]').click();
+  await expect.poll(() => page.evaluate(() => window.reviewUiTest.calls.pendingSave)).toBe(true);
+  await page.getByRole('link', { name: 'Voltar à lista de revisões' }).click();
+  await page.locator('#open-review').click();
+  await expect(page.locator('button[form="review-form"]')).toBeDisabled();
+  await page.evaluate(() => {
+    window.reviewUiTest.calls.failSave = true;
+    window.reviewUiTest.resolvePendingSave();
+  });
+  await expect(page.locator('#review-message')).toContainText('Falha sintética ao salvar');
+  await expect(page.locator('#review-process')).toHaveValue('23354.000005/2027-05');
+  await expect(page.locator('button[form="review-form"]')).toBeEnabled();
+  await page.evaluate(() => {
+    window.reviewUiTest.calls.failSave = false;
+  });
+  await page.locator('button[form="review-form"]').click();
+  await expect(page.locator('.review-save-status')).toHaveText('Todas as alterações foram salvas.');
+  expect(await page.evaluate(() => window.reviewUiTest.calls.saves)).toBe(2);
+});
+
+test('review refreshes a pristine snapshot and rejects a stale draft without losing its process number', async ({
+  page,
+  cleanup,
+}) => {
+  await page.goto(await startFixtureServer('review', cleanup));
+  await page.locator('#open-review').click();
+  await page.locator('#review-process').fill('Processo inicial');
+  await page.locator('button[form="review-form"]').click();
+  await expect.poll(() => page.evaluate(() => window.reviewUiTest.calls.saves)).toBe(1);
+  await expect(page.locator('#review-process')).toBeEnabled();
+  await page.evaluate(() => window.reviewUiTest.publishReview('Processo atualizado na revisão 2'));
+  await expect(page.locator('#review-process')).toHaveValue('Processo atualizado na revisão 2');
+  await page.locator('#review-process').fill('Processo do rascunho local');
+  await page.evaluate(() => window.reviewUiTest.publishReview('Processo atualizado na revisão 3'));
+  await expect(page.locator('#review-process')).toHaveValue('Processo do rascunho local');
+  await page.locator('button[form="review-form"]').click();
+  await expect(page.locator('#review-content [role="alert"]')).toContainText(
+    'Outro revisor atualizou',
+  );
+  expect(await page.evaluate(() => window.reviewUiTest.calls.lastSave?.revision)).toBe(2);
+  await expect(page.locator('#review-process')).toHaveValue('Processo do rascunho local');
+});

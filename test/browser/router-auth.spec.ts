@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { createServer } from 'vite';
@@ -8,19 +7,8 @@ import type {} from '../fixtures/router-auth-client.ts';
 
 async function startAuthServer(cleanup: Cleanup) {
   const root = fileURLToPath(new URL('../../', import.meta.url));
-  const documents = new Map<string, string>();
-  for (const [path, filename] of [
-    ['/ativar-conta', 'activate'],
-    ['/recuperar-senha', 'recover'],
-  ]) {
-    documents.set(
-      path,
-      (await readFile(join(root, `web/${filename}.html`), 'utf8'))
-        .replaceAll('href="/style.css"', 'href="/web/style.css"')
-        .replaceAll('href="/portal.css"', 'href="/web/portal.css"')
-        .replace(`src="/native/${filename}.tsx"`, 'src="/test/fixtures/router-auth.ts"'),
-    );
-  }
+  const html =
+    '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/test/fixtures/router-auth.ts"></script></body></html>';
   const server = await createServer({
     configFile: false,
     envDir: false,
@@ -29,16 +17,24 @@ async function startAuthServer(cleanup: Cleanup) {
     oxc: { jsx: { runtime: 'automatic' } },
     optimizeDeps: {
       entries: [],
-      include: ['react', 'react-dom/client', 'react/jsx-runtime', '@tanstack/react-router'],
+      include: [
+        'react',
+        'react-dom/client',
+        'react/jsx-runtime',
+        '@tanstack/react-router',
+        '@tanstack/react-form',
+        '@base-ui/react/field',
+      ],
     },
     resolve: {
+      dedupe: ['react', 'react-dom'],
       alias: [
         {
-          find: /^(?:\.\/Provider\.tsx|.*\/web\/native\/Provider\.tsx|convex\/react|@convex-dev\/auth\/react)$/,
+          find: /^@convex-dev\/auth\/react$/,
           replacement: join(root, 'test/fixtures/router-auth-context.ts'),
         },
         {
-          find: /^(?:\.\/client\.ts|\.\/native\/client\.ts|.*\/web\/native\/client\.ts)$/,
+          find: /^(?:\.\/client\.ts|.*\/shared\/convex\/client\.ts)$/,
           replacement: join(root, 'test/fixtures/router-auth-client.ts'),
         },
       ],
@@ -53,14 +49,8 @@ async function startAuthServer(cleanup: Cleanup) {
               next();
               return;
             }
-            const path = new URL(request.url ?? '/', 'http://fixture.invalid').pathname;
-            const content =
-              path === '/'
-                ? '<h1>Entrar no portal</h1>'
-                : (documents.get(path) ??
-                  '<main><h1>Conteúdo protegido</h1></main><script type="module" src="/test/fixtures/router-auth.ts"></script>');
             response.setHeader('Content-Type', 'text/html');
-            response.end(content);
+            response.end(html);
           });
         },
       },
@@ -81,7 +71,7 @@ test('unauthenticated editor and audit URLs return to login with the requested d
   const origin = await startAuthServer(cleanup);
   for (const destination of ['/calendarios/calendar-a/historico', '/logs']) {
     await page.goto(origin + destination);
-    await expect(page.getByRole('heading', { name: 'Entrar no portal' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Entrar', exact: true })).toBeVisible();
     const url = new URL(page.url());
     expect(url.pathname).toBe('/');
     expect(url.searchParams.get('retorno')).toBe(destination);
@@ -121,7 +111,7 @@ test('public password reset removes the fragment and retains the token for submi
   await page.locator('#password').fill('senha-sintetica-2027');
   await page.locator('#confirmation').fill('senha-sintetica-2027');
   await page.locator('#reset-form button').click();
-  await expect(page.locator('#message')).toContainText('Senha sintética atualizada');
+  await expect(page.getByText('Senha sintética atualizada.', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => window.routerAuthTest.resetToken)).toBe('private-reset');
   await expect(page.locator('#reset-form')).toBeHidden();
 });

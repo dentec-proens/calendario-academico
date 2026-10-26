@@ -1,4 +1,4 @@
-import type { Bootstrap } from '../native/types.ts';
+import type { Bootstrap } from '../shared/convex/types.ts';
 
 /** Presentation capabilities only. The backend authorizes every request independently. */
 export function portalPermissions(role: Bootstrap['user']['role']) {

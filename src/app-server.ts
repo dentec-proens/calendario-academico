@@ -26,9 +26,17 @@ export function staticPortal(directory = resolve('dist/app')): RequestListener {
         response.writeHead(404).end();
         return;
       }
+      if (path.endsWith('.html')) {
+        response.writeHead(404).end();
+        return;
+      }
       const file = resolve(root, pageDocument(path) ?? decodeURIComponent(path).replace(/^\//, ''));
       const contentType = contentTypes[extname(file)];
-      if (!file.startsWith(root + sep) || !contentType) {
+      if (
+        !file.startsWith(root + sep) ||
+        !contentType ||
+        (extname(file) === '.html' && !pageDocument(path))
+      ) {
         response.writeHead(404).end();
         return;
       }

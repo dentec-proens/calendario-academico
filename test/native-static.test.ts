@@ -37,7 +37,7 @@ test('native server serves portal and invitation routes without a Node API or en
       '/usuarios-online',
       '/revisoes/calendar-a',
     ]) {
-      assert.equal(await (await fetch(origin + route)).text(), 'react portal application', route);
+      assert.equal(await (await fetch(origin + route)).text(), 'react portal root', route);
     }
     for (const section of [
       'editar',
@@ -49,12 +49,12 @@ test('native server serves portal and invitation routes without a Node API or en
       'visualizar',
     ]) {
       const route = `/calendarios/calendar-a/${section}`;
-      assert.equal(await (await fetch(origin + route)).text(), 'calendar editor', route);
+      assert.equal(await (await fetch(origin + route)).text(), 'react portal root', route);
       const head = await fetch(origin + route, { method: 'HEAD' });
       assert.equal(head.status, 200);
       assert.equal(await head.text(), '');
     }
-    assert.equal(await (await fetch(origin + '/ativar-conta')).text(), 'convex invitation');
+    assert.equal(await (await fetch(origin + '/ativar-conta')).text(), 'react portal root');
     assert.equal((await fetch(origin + '/api/status')).status, 404);
     assert.equal((await fetch(origin + '/api/login', { method: 'POST' })).status, 404);
     assert.equal((await fetch(origin + '/.env.convex.local')).status, 404);

@@ -9,7 +9,8 @@ export function loginReturnTarget(search: string, origin: string): string | unde
     const document = pageDocument(url.pathname);
     if (
       url.origin !== origin ||
-      !['portal.html', 'editor.html', 'logs.html'].includes(document ?? '')
+      !document ||
+      ['/', '/ativar-conta', '/recuperar-senha'].includes(url.pathname.replace(/\/+$/, '') || '/')
     )
       return undefined;
     url.searchParams.delete('retorno');

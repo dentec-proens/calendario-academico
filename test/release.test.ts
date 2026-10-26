@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { releaseReadiness } from '../src/release.ts';
 import { reviewCriteria } from '../src/review.ts';
 import { inheritedEvents } from '../src/institution.ts';
-import { proensLayout } from '../web/print.ts';
+import { proensLayout } from '../src/printing/calendar-layout.ts';
 
 test('definitive release requires every reviewed criterion, current versions and adequate teaching days', () => {
   const record = {

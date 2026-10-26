@@ -1,5 +1,6 @@
 import type { Id } from '../convex/_generated/dataModel.js';
-import { convex, functions, nativeError } from './native/client.ts';
+import { convex, functions } from './shared/convex/client.ts';
+import { nativeError } from './shared/convex/errors.ts';
 
 export async function filePayload(file: File) {
   if (!file || file.size > 8_000_000 || !file.name.toLowerCase().endsWith('.pdf'))
@@ -23,7 +24,7 @@ export async function filePayload(file: File) {
       typeof uploaded.storageId !== 'string'
     )
       throw new Error('O armazenamento não confirmou o envio do PDF.');
-    return await convex.action(functions.nativeActions.completeUpload, {
+    return await convex.action(functions.actions.uploads.completeUpload, {
       uploadId: ticket.uploadId,
       storageId: uploaded.storageId as Id<'_storage'>,
     });

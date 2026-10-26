@@ -198,7 +198,7 @@ test('anonymous portal and invitation show backend failures without exposing for
     `${origin}/test/fixtures/backend-availability-token.html#token-sintetico-local`,
   );
   await expect(portal.locator('.backend-loading')).toBeVisible();
-  await expect(portal.locator('body > main')).toBeVisible();
+  await expect(portal.locator('#app-main')).toBeVisible();
   expect(new URL(portal.url()).hash).toBe('');
   await settle(portal);
   await advance(portal, 10_000);
@@ -206,7 +206,7 @@ test('anonymous portal and invitation show backend failures without exposing for
     'Portal temporariamente indisponível',
   );
   await expect(portal.locator('[role="alert"] button')).toHaveCount(0);
-  await expect(portal.locator('body > main h1')).toHaveText('Aceitar convite');
+  await expect(portal.locator('form')).toHaveCount(0);
   expect(unexpectedRequests).toEqual([]);
   expect(portalErrors).toEqual([]);
 });

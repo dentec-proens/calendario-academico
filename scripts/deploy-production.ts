@@ -4,6 +4,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { environments } from '../config/environments.ts';
 import { assertNoTargetOverrides, convexCli, root } from './environment.ts';
+import { parseReleaseStatus, waitForDrain, waitForFrontend } from './release-coordination.ts';
+import { inspectScheduledFunctions } from './release-scheduled.ts';
+import { releaseSmokeConfiguration } from './release-smoke-config.ts';
 
 const args = process.argv.slice(2);
 const dryRun = args.length === 1 && args[0] === '--dry-run';
@@ -60,6 +63,8 @@ function assertOrigin(): void {
 let temporary: string | undefined;
 let backendPublished = false;
 let backendAttempted = false;
+let maintenanceEntered = false;
+let pauseAttempted = false;
 try {
   if (args.length && !dryRun) throw Error('Uso: pnpm deploy:production [--dry-run]');
   assertNoTargetOverrides(process.env);
@@ -67,7 +72,9 @@ try {
   console.log(
     `Produção Vercel: ${environments.vercel.team}/${environments.vercel.project} via origin/${branch}`,
   );
-  console.log('Ordem: conferir main → pnpm check → publicar Convex → git push → build da Vercel.');
+  console.log(
+    'Ordem: conferir main → pnpm check → manutenção/drenagem → Convex → push → confirmar Vercel → liberar acesso.',
+  );
   if (dryRun) {
     console.log('Simulação: nenhum comando, conexão remota ou arquivo de ambiente foi alterado.');
   } else {
@@ -77,6 +84,7 @@ try {
     assertClean();
     const commit = git('rev-parse', 'HEAD');
     run('git', ['fetch', '--no-tags', 'origin', branch]);
+    const alreadyPublished = git('rev-parse', `origin/${branch}`) === commit;
     run('git', ['merge-base', '--is-ancestor', `origin/${branch}`, 'HEAD']);
     // Falha de acesso ou push não fast-forward deve aparecer antes de alterar o backend.
     run('git', ['push', '--dry-run', 'origin', `HEAD:refs/heads/${branch}`]);
@@ -93,6 +101,61 @@ try {
     writeFileSync(targetFile, `CONVEX_DEPLOYMENT=prod:${environments.production.deployment}\n`, {
       mode: 0o600,
     });
+    const token = process.env.VERCEL_TOKEN;
+    if (!token)
+      throw Error('Configure VERCEL_TOKEN para confirmar o deployment antes de liberar o acesso.');
+    const smoke = releaseSmokeConfiguration();
+    function control(name: string, values: Record<string, unknown> = {}): string {
+      const result = spawnSync(
+        process.execPath,
+        [
+          convexCli,
+          'run',
+          `operations:${name}`,
+          JSON.stringify(values),
+          '--env-file',
+          targetFile,
+          '--codegen',
+          'disable',
+        ],
+        { cwd: root, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+      );
+      if (result.error || result.status !== 0)
+        throw Error(
+          'O controle operacional do Convex não confirmou a operação. Confira operations:status antes de repetir. O deployment precisa ter o controle de admissão e drenagem instalado antes do corte.',
+        );
+      return result.stdout.trim();
+    }
+    // Verify the protocol before publishing. A destination without admission
+    // tracking needs a separate, proven operational preparation; do not infer
+    // drainage from elapsed time or sparse platform metrics.
+    const initialStatus = parseReleaseStatus(control('status'));
+    if (initialStatus.emergency)
+      throw Error(
+        'O bloqueio emergencial está ativo. Confira DENTEC_MAINTENANCE antes de publicar.',
+      );
+    if (alreadyPublished && !(initialStatus.paused && initialStatus.commit === commit))
+      throw Error(
+        'O commit já está em origin/main sem uma janela de manutenção do mesmo SHA. Confira os artefatos antes de continuar.',
+      );
+    control('smokePreflight', {
+      userId: smoke.userId,
+      email: smoke.email,
+      calendarId: smoke.calendarId,
+    });
+    run(process.execPath, ['--import', 'tsx', 'scripts/release-smoke.ts', '--check-browser'], env);
+    const inspectJobs = (authoritative: boolean) =>
+      inspectScheduledFunctions(
+        (cursor) => control('scheduledPage', { paginationOpts: { numItems: 100, cursor } }),
+        authoritative,
+      );
+    inspectJobs(false);
+    pauseAttempted = true;
+    control('pause', { commit });
+    maintenanceEntered = true;
+    await waitForDrain(commit, () => parseReleaseStatus(control('status')));
+    inspectJobs(true);
+    assertUnchanged(commit);
     backendAttempted = true;
     run(
       process.execPath,
@@ -114,20 +177,66 @@ try {
       env,
     );
     backendPublished = true;
+    run(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        'scripts/prepare-pdf-runtime.ts',
+        '--production',
+        '--env-file',
+        targetFile,
+      ],
+      env,
+    );
     assertUnchanged(commit);
     // Enviar o SHA conferido evita publicar um commit diferente por uma troca local de branch.
     run('git', ['push', 'origin', `${commit}:refs/heads/${branch}`]);
-    console.log(`Convex publicado. main ${commit.slice(0, 8)} enviada ao GitHub.`);
-    console.log(
-      `Acompanhe o build da Vercel em https://vercel.com/${environments.vercel.team}/${environments.vercel.project}.`,
+    await waitForFrontend(
+      commit,
+      { ...environments.vercel, portalUrl: environments.production.portalUrl },
+      token,
     );
-    console.log(`Após Ready, confira ${environments.production.portalUrl}.`);
+    let smokeFailure: { cause: unknown } | undefined;
+    try {
+      control('authorizeSmoke', { commit, userId: smoke.userId });
+      run(process.execPath, ['--import', 'tsx', 'scripts/release-smoke.ts'], env);
+    } catch (cause) {
+      smokeFailure = { cause };
+    } finally {
+      try {
+        control('endSmoke', { commit });
+      } catch (cause) {
+        console.error(
+          'Não foi possível confirmar a revogação da permissão operacional. Confira operations:endSmoke; a conta restrita pode continuar autorizada durante a manutenção.',
+        );
+        smokeFailure ??= { cause };
+      }
+    }
+    if (smokeFailure) throw smokeFailure.cause;
+    assertUnchanged(commit);
+    const finalStatus = parseReleaseStatus(control('status'));
+    if (!finalStatus.paused || finalStatus.commit !== commit || finalStatus.active.length !== 0)
+      throw Error('A drenagem não permaneceu válida durante a publicação.');
+    control('resume', { commit });
+    maintenanceEntered = false;
+    pauseAttempted = false;
+    console.log(`Convex e portal confirmados no commit ${commit.slice(0, 8)}. Acesso liberado.`);
+    console.log('Recarregue as abas abertas antes de continuar.');
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : 'Não foi possível publicar.');
+  if (maintenanceEntered)
+    console.error(
+      'A manutenção permanece ativa. Confira operações pendentes e recupere backend e frontend da mesma revisão antes de liberar o acesso.',
+    );
+  else if (pauseAttempted)
+    console.error(
+      'A manutenção pode estar ativa apesar da falha da CLI. Confira operations:status antes de repetir.',
+    );
   if (backendPublished)
     console.error(
-      'O Convex já foi publicado; o portal pode continuar na versão anterior. Resolva o erro e repita o comando.',
+      'O Convex já foi publicado; confirme o deployment do portal antes de retomar a publicação.',
     );
   else if (backendAttempted)
     console.error(

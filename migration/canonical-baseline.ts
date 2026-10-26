@@ -33,7 +33,7 @@ async function load(root: string): Promise<Rules> {
   const [count, layout, review, inherited, readiness, existingHistory, includedHistory] =
     await Promise.all([
       exported('src/evaluation.ts', 'evaluateCalendar'),
-      exported('web/print.ts', 'proensLayout'),
+      exported('src/printing/calendar-layout.ts', 'proensLayout'),
       exported('src/review.ts', 'reviewSupport'),
       exported('src/institution.ts', 'inheritedEvents'),
       exported('src/release.ts', 'releaseReadiness'),

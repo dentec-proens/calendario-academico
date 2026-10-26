@@ -23,6 +23,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm lint:types
       - run: pnpm typecheck
+      - run: pnpm agents:check
       - run: pnpm test:unit
       - run: pnpm build
   browser:
@@ -63,6 +64,7 @@ jobs:
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      - run: pnpm agents:check
       - run: pnpm test:unit
       - run: pnpm build
   # Preserve the check gate: every supported environment must pass.

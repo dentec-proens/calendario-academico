@@ -1,3 +1,24 @@
+<!-- intent-skills:start -->
+
+## Skill Loading
+
+Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.
+Before editing files for a substantial task:
+
+- Run `pnpm exec intent list` from the workspace root to see available local skills.
+- If a listed skill matches the task, run `pnpm exec intent load <package>#<skill>` before changing files.
+- Use the loaded `SKILL.md` guidance while making the change.
+- Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
+- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
+
+<!-- intent-skills:end -->
+
+## Formulários e arquitetura
+
+- Ao criar ou alterar formulários, confira os exports e tipos da versão instalada de `@tanstack/react-form` e consulte a [composição oficial](https://tanstack.com/form/latest/docs/framework/react/guides/form-composition) e as [regras de valores assíncronos](https://tanstack.com/form/latest/docs/framework/react/guides/async-initial-values). Essa dependência não distribui uma skill no pacote; a descoberta Intent não substitui essa consulta.
+- Router define rotas em código e valida o estado da URL. TanStack Form possui os valores de preenchimento; comandos puros aplicam alterações ao calendário; somente confirmação Convex representa gravação concluída.
+- Formulários com senhas, códigos, tokens ou arquivos têm identidade privada na instrumentação. Esses valores permanecem efêmeros; formulários mistos podem conservar somente os demais campos com `excludeFromDraft`. Use o hook compartilhado de formulários para preservar esse contrato.
+
 ## Desenvolvimento em Windows
 
 - Toda alteração neste repositório deve preservar o suporte ao desenvolvimento em Windows: instalação, execução local, build, testes e ferramentas auxiliares. Windows é um ambiente de desenvolvimento suportado, inclusive nas decisões sobre dependências e infraestrutura.
@@ -13,7 +34,7 @@
 - Mudanças de UI, CSS, navegação ou infraestrutura de navegador exigem também `pnpm test:linux`, que reproduz o ambiente do CI. Verifique desktop e mobile e, quando afetados, teclado, foco e controles desobstruídos.
 - Mudanças no gerador de PDF, modelo de impressão ou dependências do runtime exigem `pnpm test:runtime:linux`, dispensável se `pnpm test:linux` já passou no mesmo estado do código.
 - Atualize referências visuais somente para mudanças intencionais: inspecione as imagens e diferenças, atualize os sistemas afetados conforme o README e rode novamente a comparação sem atualização. Corrija defeitos na aplicação; preserve a capacidade dos testes de detectar o problema, sem contornos de interação ou tolerâncias ampliadas apenas para obter aprovação.
-- Execute E2E remoto somente com um deployment explicitamente descartável e a configuração exigida no README. Produção, dados importados e ambientes compartilhados ficam fora desses testes.
+- Execute E2E remoto com opt-in explícito: deployment descartável ou desenvolvimento atual autorizado pelo usuário, verificado contra `.env.local` e com conta, campus, ano e registros exclusivos da suíte. Produção fica bloqueada; dados preexistentes não podem ser alterados pela suíte. Consulte no README a configuração e os limites de cada modo.
 - Reutilize resultados obtidos sobre o mesmo código; repita as verificações afetadas após novas alterações. Ao concluir, informe comandos executados, resultados e limitações. Se faltar navegador, Docker ou configuração, registre a verificação pendente e sua causa; testes pulados ou não executados não contam como aprovação.
 
 ## Commits

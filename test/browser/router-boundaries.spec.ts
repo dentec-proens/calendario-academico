@@ -1,78 +1,45 @@
-import { createServer } from 'vite';
-import { fileURLToPath } from 'node:url';
 import { test, expect } from './test.ts';
-import type { Cleanup } from './test.ts';
-import type {} from '../fixtures/router-boundaries.ts';
+import { startFixtureServer } from './fixture-server.ts';
 
-async function startDocuments(cleanup: Cleanup) {
-  const server = await createServer({
-    configFile: false,
-    envDir: false,
-    root: fileURLToPath(new URL('../../', import.meta.url)),
-    cacheDir: 'node_modules/.vite-playwright-router-boundaries',
-    oxc: { jsx: { runtime: 'automatic' } },
-    optimizeDeps: {
-      entries: [],
-      include: ['react', 'react-dom/client', 'react/jsx-runtime', '@tanstack/react-router'],
-    },
-    server: { host: '127.0.0.1', port: 0, hmr: false, watch: null },
-    plugins: [
-      {
-        name: 'synthetic-router-documents',
-        configureServer(server) {
-          server.middlewares.use((request, response, next) => {
-            if (!request.headers.accept?.includes('text/html')) {
-              next();
-              return;
-            }
-            response.setHeader('Content-Type', 'text/html');
-            response.end(
-              '<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><link rel="icon" href="data:,"></head><body><div id="root"></div><script type="module" src="/test/fixtures/router-boundaries.ts"></script></body></html>',
-            );
-          });
-        },
-      },
-    ],
-  });
-  cleanup(() => server.close());
-  await server.listen();
-  const address = server.httpServer?.address();
-  if (!address || typeof address !== 'object')
-    throw new Error('Documentos sintéticos indisponíveis.');
-  return `http://127.0.0.1:${address.port}`;
-}
+test('canceling an editor exit preserves the route, draft and React document', async ({
+  page,
+  cleanup,
+}) => {
+  const fixture = await startFixtureServer('editor', cleanup);
+  const origin = new URL(fixture).origin;
+  await page.goto(fixture);
+  await page.locator('[data-view="events"]').click();
+  await page.locator('#new-event').click();
+  await page.locator('#event-name').fill('Alteração ainda não aplicada');
+  const initial = page.url();
+  const documentOrigin = await page.evaluate(() => performance.timeOrigin);
+  await page.locator('.portal-back').click();
+  await expect(page.getByRole('alertdialog', { name: 'Sair deste calendário?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await expect(page).toHaveURL(initial);
+  await expect(page.locator('#event-name')).toHaveValue('Alteração ainda não aplicada');
+  expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentOrigin);
+  await page.locator('.portal-back').click();
+  await page.getByRole('button', { name: 'Salvar e sair', exact: true }).click();
+  await expect(page).toHaveURL(origin + '/calendarios');
+  await expect(page.locator('#calendar-list')).toBeVisible();
+  expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentOrigin);
+});
 
-for (const control of ['link', 'action']) {
-  test(`${control} navigation preserves the original document and URL when leaving a draft is canceled`, async ({
-    page,
-    cleanup,
-  }) => {
-    const origin = await startDocuments(cleanup);
-    const initial = origin + '/calendarios/calendar-a/eventos';
-    for (const [destination, path, documentName] of [
-      ['logs', '/logs', 'logs.html'],
-      ['calendar', '/calendarios/calendar-b/eventos', 'editor.html'],
-    ]) {
-      await page.goto(initial);
-      await expect(page.getByRole('heading', { name: 'Editor calendar-a' })).toBeVisible();
-      const originalDocument = await page.evaluate(() => window.routerDocumentId);
-      await page.locator('#draft').fill('Alteração ainda não salva');
-      const dialog = page.waitForEvent('dialog');
-      const click = page.locator(`#${destination}-${control}`).click();
-      const confirmation = await dialog;
-      expect(confirmation.type()).toBe('beforeunload');
-      await confirmation.dismiss();
-      await click;
-      await expect(page).toHaveURL(initial);
-      await expect(page.locator('#draft')).toHaveValue('Alteração ainda não salva');
-      expect(await page.evaluate(() => window.routerDocumentId)).toBe(originalDocument);
-      await page.locator('#draft').fill('');
-      await page.locator(`#${destination}-${control}`).click();
-      await expect(page).toHaveURL(origin + path);
-      await expect(page.locator('main')).toHaveAttribute('data-document', documentName);
-      await expect
-        .poll(() => page.evaluate(() => window.routerDocumentId))
-        .not.toBe(originalDocument);
-    }
-  });
-}
+test('sections and browser history preserve an unapplied event without an exit prompt', async ({
+  page,
+  cleanup,
+}) => {
+  const fixture = await startFixtureServer('editor', cleanup);
+  await page.goto(fixture);
+  await page.locator('[data-view="events"]').click();
+  await page.locator('#new-event').click();
+  await page.locator('#event-name').fill('Evento conservado entre seções');
+  const documentOrigin = await page.evaluate(() => performance.timeOrigin);
+  await page.locator('[data-view="periods"]').click();
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  await page.goBack();
+  await expect(page.locator('#event-name')).toHaveValue('Evento conservado entre seções');
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentOrigin);
+});

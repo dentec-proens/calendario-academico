@@ -1,3 +1,4 @@
+import { convexModules } from './helpers/convex-modules.ts';
 import type { Id } from '../convex/_generated/dataModel';
 import { test, vi, afterEach } from 'vitest';
 import assert from 'node:assert/strict';
@@ -10,13 +11,7 @@ async function fixture() {
   vi.useFakeTimers({ toFake: ['setTimeout'] });
   process.env.CONVEX_SITE_URL = 'https://isolated.convex.site';
   const { default: schema } = await import('../convex/schema.ts');
-  const client = convexTest(schema, {
-    '../convex/_generated/server.js': () => import('../convex/_generated/server.js'),
-    '../convex/nativeFiles.ts': () => import('../convex/nativeFiles.ts'),
-    '../convex/nativeActions.ts': () => import('../convex/nativeActions.ts'),
-    '../convex/nativeAuth.ts': () => import('../convex/nativeAuth.ts'),
-    '../convex/native.ts': () => import('../convex/native.ts'),
-  });
+  const client = convexTest(schema, convexModules);
   const identities = await client.run(async (ctx) => {
     const result = [];
     for (const id of ['a', 'b', 'admin']) {
@@ -43,7 +38,7 @@ async function fixture() {
   const issue = (who = 0, size = 12, filename = 'calendar.pdf') =>
     users[who].mutation(api.nativeFiles.issueUpload, { filename, size });
   const complete = (uploadId: string, storageId: Id<'_storage'>, who = 0) =>
-    users[who].action(api.nativeActions.completeUpload, { uploadId, storageId });
+    users[who].action(api.actions.uploads.completeUpload, { uploadId, storageId });
   return { client, users, put, issue, complete };
 }
 
@@ -237,17 +232,17 @@ test('missing originals retain metadata and cached analyses while download and f
   });
   const before = await client.run((ctx) => ctx.db.get(seeded.cachedId));
   assert.deepEqual(
-    await users[0].action(api.nativeActions.analyzeHistory, { id: seeded.cachedId }),
+    await users[0].action(api.actions.history.analyzeHistory, { id: seeded.cachedId }),
     seeded.analysis,
   );
   for (const unavailable of [
-    () => users[0].action(api.nativeActions.downloadDocument, { id: seeded.documentId }),
-    () => users[0].action(api.nativeActions.downloadHistory, { id: seeded.cachedId }),
-    () => users[0].action(api.nativeActions.analyzeHistory, { id: seeded.freshId }),
+    () => users[0].action(api.actions.documents.downloadDocument, { id: seeded.documentId }),
+    () => users[0].action(api.actions.history.downloadHistory, { id: seeded.cachedId }),
+    () => users[0].action(api.actions.history.analyzeHistory, { id: seeded.freshId }),
   ])
     await assert.rejects(unavailable(), /aguarda a transferência/);
   await assert.rejects(
-    users[1].action(api.nativeActions.downloadHistory, { id: seeded.cachedId }),
+    users[1].action(api.actions.history.downloadHistory, { id: seeded.cachedId }),
     /Registro não encontrado/,
   );
   assert.deepEqual(await client.run((ctx) => ctx.db.get(seeded.cachedId)), before);
@@ -347,21 +342,21 @@ test('admin restores originals atomically into existing records while retaining 
   const historyBefore = await client.run((ctx) => ctx.db.get(seeded.historyId));
   const documentBefore = await client.run((ctx) => ctx.db.get(seeded.documentId));
   assert.deepEqual(
-    await users[0].action(api.nativeActions.analyzeHistory, { id: seeded.historyId }),
+    await users[0].action(api.actions.history.analyzeHistory, { id: seeded.historyId }),
     seeded.analysis,
     'missing original keeps older cached analysis available',
   );
   const foreign = await issue(0);
   await complete(foreign.uploadId, await put());
   await assert.rejects(
-    users[0].action(api.nativeActions.restoreHistoryOriginal, {
+    users[0].action(api.actions.history.restoreHistoryOriginal, {
       id: seeded.historyId,
       uploadId: foreign.uploadId,
     }),
     /exclusivo da administra/,
   );
   await assert.rejects(
-    users[2].action(api.nativeActions.restoreHistoryOriginal, {
+    users[2].action(api.actions.history.restoreHistoryOriginal, {
       id: seeded.historyId,
       uploadId: foreign.uploadId,
     }),
@@ -370,7 +365,7 @@ test('admin restores originals atomically into existing records while retaining 
   const wrong = await issue(2);
   await complete(wrong.uploadId, await put('%PDF-wrongxx'), 2);
   await assert.rejects(
-    users[2].action(api.nativeActions.restoreHistoryOriginal, {
+    users[2].action(api.actions.history.restoreHistoryOriginal, {
       id: seeded.historyId,
       uploadId: wrong.uploadId,
     }),
@@ -394,7 +389,7 @@ test('admin restores originals atomically into existing records while retaining 
     }),
   );
   await assert.rejects(
-    users[2].action(api.nativeActions.restoreHistoryOriginal, {
+    users[2].action(api.actions.history.restoreHistoryOriginal, {
       id: seeded.historyId,
       uploadId: duplicate.uploadId,
     }),
@@ -414,7 +409,7 @@ test('admin restores originals atomically into existing records while retaining 
     storageId = await put();
   await complete(valid.uploadId, storageId, 2);
   assert.deepEqual(
-    await users[2].action(api.nativeActions.restoreHistoryOriginal, {
+    await users[2].action(api.actions.history.restoreHistoryOriginal, {
       id: seeded.historyId,
       uploadId: valid.uploadId,
     }),
@@ -430,13 +425,13 @@ test('admin restores originals atomically into existing records while retaining 
     seeded.analysis,
   );
   assert.deepEqual(
-    await users[0].action(api.nativeActions.analyzeHistory, { id: seeded.historyId }),
+    await users[0].action(api.actions.history.analyzeHistory, { id: seeded.historyId }),
     seeded.analysis,
     'restoring original never implicitly replaces an older analysis',
   );
-  const reopened = await users[0].query(api.native.calendar, { id: seeded.calendarId });
+  const reopened = await users[0].query(api.calendars.calendar, { id: seeded.calendarId });
   assert.equal(reopened.state.events[0].historicalSource!.candidateKey, seeded.candidateKey);
-  await users[0].mutation(api.native.saveCalendar, {
+  await users[0].mutation(api.calendars.saveCalendar, {
     id: seeded.calendarId,
     body: {
       version: reopened.version,
@@ -445,7 +440,7 @@ test('admin restores originals atomically into existing records while retaining 
     },
   });
   await assert.rejects(
-    users[2].action(api.nativeActions.restoreHistoryOriginal, {
+    users[2].action(api.actions.history.restoreHistoryOriginal, {
       id: seeded.historyId,
       uploadId: valid.uploadId,
     }),
@@ -454,7 +449,7 @@ test('admin restores originals atomically into existing records while retaining 
   const docUpload = await issue(2),
     docStorage = await put();
   await complete(docUpload.uploadId, docStorage, 2);
-  await users[2].action(api.nativeActions.restoreDocumentOriginal, {
+  await users[2].action(api.actions.documents.restoreDocumentOriginal, {
     id: seeded.documentId,
     uploadId: docUpload.uploadId,
   });

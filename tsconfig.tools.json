@@ -12,8 +12,7 @@
     "vite.config.ts",
     "test/helpers/**/*.ts",
     "src/**/*.ts",
-    "migration/**/*.ts",
-    "web/print.ts"
+    "migration/**/*.ts"
   ],
   "exclude": ["node_modules", "dist", "backup-*"]
 }

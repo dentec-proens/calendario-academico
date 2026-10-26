@@ -13,6 +13,14 @@ export const applicationPages: Plugin = {
     server.middlewares.use((request, response, next) => {
       const url = new URL(request.url ?? '/', 'http://local.invalid');
       const page = pageDocument(url.pathname);
+      if (
+        !['GET', 'HEAD'].includes(request.method ?? '') ||
+        url.pathname.endsWith('.html') ||
+        url.pathname.startsWith('/api/')
+      ) {
+        response.writeHead(404).end();
+        return;
+      }
       if (page) request.url = '/' + page + url.search;
       else if (!url.pathname.startsWith('/@') && !/\.[^/]+$/.test(url.pathname)) {
         // Vite otherwise resolves extensionless requests to matching HTML files.
@@ -46,14 +54,7 @@ export default defineConfig(({ mode }) => {
       outDir: fileURLToPath(new URL('./dist/app', import.meta.url)),
       emptyOutDir: true,
       manifest: true,
-      rolldownOptions: {
-        input: Object.fromEntries(
-          ['index', 'portal', 'editor', 'logs', 'recover', 'activate'].map((name) => [
-            name,
-            fileURLToPath(new URL(`${name}.html`, webRoot)),
-          ]),
-        ),
-      },
+      rolldownOptions: { input: fileURLToPath(new URL('index.html', webRoot)) },
     },
   };
 });

@@ -1,3 +1,4 @@
+import { preparePdfRuntime } from './prepare-pdf-runtime.ts';
 import { spawn } from 'node:child_process';
 import { createPrivateKey, createPublicKey, generateKeyPairSync, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -216,6 +217,7 @@ export async function setupDev(): Promise<void> {
       'Na tela inicial, informe seu nome, este código, seu e-mail institucional e uma senha própria. O código deixa de funcionar após a primeira conta.',
     );
   }
+  await preparePdfRuntime(environment, target);
   console.log(`Execute pnpm dev e abra http://127.0.0.1:${dev.PORT}.`);
 }
 

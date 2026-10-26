@@ -1,10 +1,8 @@
 # Desenvolvimento
 
-Usamos um único projeto Convex, `calendario-academico`, no team `diretoria-de-ensino-tecnico-proens`. Cada desenvolvedor usa sua própria conta e seu deployment de desenvolvimento. O frontend local se conecta a esse deployment. Produção é compartilhada e fica separada.
+O projeto usa Node.js 24 e pnpm 12.15.0. Cada desenvolvedor possui uma conta Convex e um deployment individual no projeto `calendario-academico`, team `diretoria-de-ensino-tecnico-proens`. `.env.local` identifica esse desenvolvimento e permanece fora do Git.
 
-## Primeira preparação
-
-Tenha Node.js 24, pnpm 12.15.0 e acesso ao repositório e ao projeto Convex da Dentec. Na pasta do checkout:
+## Preparação
 
 ```sh
 pnpm install --frozen-lockfile
@@ -12,48 +10,51 @@ pnpm dev:setup
 pnpm env:doctor
 ```
 
-Sem `.env.local`, a preparação solicita login Convex e seleciona o desenvolvimento do usuário atual no projeto da equipe. Os destinos públicos vêm de [`config/environments.ts`](../config/environments.ts). Havendo uma configuração local, ela é mantida e validada; a preparação não troca o destino automaticamente.
+A preparação seleciona o desenvolvimento da conta no projeto da equipe e preserva uma configuração local válida. Não copie `.env.local` de outro desenvolvedor. `env:doctor` confere destinos e URLs sem chamadas remotas.
 
-`.env.local` é individual e não entra no Git. Não o copie de um colega. O deployment `oceanic-gazelle-652` já configurado por Gustavo deve continuar intacto; um novo desenvolvedor usa o seu. `pnpm env:doctor` confere a coerência da seleção e das URLs locais, sem chamadas remotas; não consulta a identidade ou as permissões da conta Convex.
+Em um deployment vazio, `dev:setup` publica as funções e prepara campi, catálogo e autenticação. Gera o par `JWT_PRIVATE_KEY`/`JWKS` somente se ambos estiverem ausentes; um par incompleto interrompe o comando. Define `SITE_URL` local quando ausente. Havendo dados, não os sobrescreve nem importa produção.
 
-### Primeiro acesso a um desenvolvimento vazio
+Se não há usuários, o terminal apresenta um código privado de instalação. Inicie a aplicação e preencha nome, código, e-mail institucional e senha própria para criar o primeiro ADMIN. As demais contas são criadas pela administração. Não há credenciais fixas no código.
 
-`pnpm dev:setup` publica o código no seu desenvolvimento e prepara autenticação. Gera `JWT_PRIVATE_KEY` e `JWKS` somente quando ambos estão ausentes; se o par estiver incompleto, interrompe a preparação. Define `SITE_URL` para o endereço local somente quando essa variável ainda não existe. As chaves permanecem no ambiente Convex.
-
-Em uma base completamente vazia, a preparação cria campi, catálogo e coleções iniciais. Havendo dados, não os sobrescreve. Ela não importa contas, calendários ou documentos de produção.
-
-Se ainda não há usuários, o terminal mostra um código privado de instalação. Execute `pnpm dev`, abra o portal e preencha **Nome**, **Código de instalação**, seu **e-mail @ifpr.edu.br** e uma **senha própria** para criar o primeiro ADMIN. Esse código só permite a instalação antes do primeiro usuário; não o coloque no Git. Depois, esse ADMIN pode criar contas de teste pelo portal. Não há usuário ou senha fixos no código.
-
-Um desenvolvimento já preparado, como o de Gustavo, mantém seus dados e sua autenticação; não repita uma importação para começar a trabalhar.
-
-## Trabalho diário
+## Rotina
 
 ```sh
 pnpm dev
 ```
 
-Esse comando acompanha funções Convex e inicia o Vite em http://127.0.0.1:4183. Alterações no frontend aparecem automaticamente; alterações no backend vão para seu desenvolvimento. Ctrl+C encerra ambos. Os dados de um desenvolvedor não são compartilhados com o outro nem com produção.
+O comando acompanha Convex e serve o Vite em [localhost:4183](http://127.0.0.1:4183). Ctrl+C encerra os dois processos. O frontend é uma SPA; as rotas do editor, revisão e acesso usam a mesma raiz React.
 
-Use dados de teste no seu ambiente. As contas do portal são distintas das contas usadas para administrar Convex e GitHub. Google é opcional; login local permite trabalhar sem configurar esse provedor.
+Para conferir o artefato estático:
 
-Antes de compartilhar código, execute `pnpm check`. Para conferir o build local, use `pnpm build` e `pnpm start`. Esses comandos não publicam nem importam dados. A [restauração dos 13 PDFs históricos](restauracao-de-originais.md) foi concluída em 23/10/2026 em produção e no desenvolvimento de Gustavo, sem pendências de transferência nesses ambientes.
+```sh
+pnpm build
+pnpm start
+```
 
-Para alterações visuais, consulte os [componentes compartilhados da interface](componentes-interface.md).
+Instalação, desenvolvimento, build e testes funcionam no PowerShell. O runtime Chromium dos PDFs usa Linux; o fluxo Docker Desktop, pré-requisitos, comandos e referências visuais estão em [Verificação no README](../README.md#verificação).
 
-## TypeScript
+## Organização e tipos
 
-Todo o código manual usa `.ts` ou `.tsx`, incluindo as regras compartilhadas em `src/`, os painéis React e a ferramenta administrativa em `migration/`. A configuração base usa `strict: true` e `allowJs: false`; os comandos de tipos e lint abrangem também esses módulos. As entradas de JSON e `FormData` são validadas antes de entrar nos contratos tipados.
+`web/app/` reúne navegação e sessão; `web/features/` contém os assuntos da interface; `web/shared/` oferece infraestrutura reutilizável. `src/calendar-edits/` contém comandos puros, e `src/printing/` atende prévia e PDF sem importar a interface. Convex usa funções por domínio e contratos gerados.
 
-Os arquivos JavaScript restantes são gerados: `convex/_generated/api.js`, `convex/_generated/server.js` e `src/native-print-assets.mjs`. Este último é produzido por `scripts/print-assets.ts` e possui uma declaração de tipos adjacente. Não editar os arquivos gerados manualmente. Os `.mjs` importados de PDF.js pertencem à dependência externa.
+Todo código manual usa TypeScript estrito. Valores externos são validados antes de entrar nos contratos. `convex/_generated/` e `src/printing/assets.generated.mjs` são gerados, com tipos adjacentes; não os edite manualmente. `scripts/print-assets.ts` gera os recursos de impressão a partir de `assets/printing/`.
 
-## Formato dos dados
+TanStack Intent carrega a orientação das versões instaladas. Consulte `AGENTS.md`, use `pnpm exec intent list`, carregue a skill pertinente com `pnpm exec intent load IDENTIDADE` e execute `pnpm agents:check`. Devtools está disponível em desenvolvimento por `?devtools=1` nas rotas permitidas; credenciais, tokens e arquivos ficam fora da instrumentação.
 
-O editor, o backend e os snapshots históricos usam `schemaVersion: 2`. As modalidades são explícitas, as etapas são descritas por modalidade e o mapa vazio representa quantidade não informada. Férias usam intervalos explícitos e os eventos carregam seu efeito real na contagem. O catálogo e os snapshots institucionais usam `modalities`.
+## Dados e edição
 
-Rascunhos anteriores não são importados silenciosamente. A conversão de backups é uma operação administrativa, com backup, ensaio e verificação; veja [Migração canônica](migracao-canonica.md). Pareceres salvos são exibidos e exportados literalmente, sem substituir citações ou retirar versões do texto original.
+Calendários usam `schemaVersion: 2`, modalidades explícitas e etapas por modalidade. Datas acadêmicas são `YYYY-MM-DD`. Regras de domínio, transações e validação de formulário possuem responsabilidades distintas.
 
-## Compartilhar e publicar
+O formulário conserva preenchimento ainda não aplicado; comandos atualizam o calendário da sessão; autosave confirma sua gravação no Convex. Rascunhos não sensíveis são isolados por usuário e entidade e limpos ao encerrar a sessão. Não há persistência durável offline.
 
-Os dois desenvolvedores podem enviar código para `main` e publicar diretamente; branches são opcionais e PR não é obrigatório. Atualize seu checkout antes de integrar mudanças do colega e combine a publicação para evitar duas atualizações simultâneas.
+## Integração do trabalho
 
-Para publicar funções e portal, use [`pnpm deploy:production`](implantacao-convex-vercel.md). Enviar `main` isoladamente aciona somente o build do portal na Vercel; não substitui a publicação das funções Convex.
+Use dados de teste no desenvolvimento individual. As contas da aplicação são distintas das contas administrativas Convex/GitHub. Antes de integrar mudanças, execute os comandos obrigatórios descritos no README e confira os [componentes compartilhados](componentes-interface.md).
+
+A publicação usa o [procedimento operacional](implantacao-convex-vercel.md), com commit conferido, manutenção e verificação dos artefatos Convex/Vercel correspondentes.
+
+## Integração no desenvolvimento atual
+
+O modo E2E de desenvolvimento usa somente o dev conferido em `.env.local` e exige opt-in explícito. `pnpm e2e:setup` prepara conta, campus, ano e fontes próprios, preservando registros preexistentes. As credenciais e a fixture ficam em arquivos ignorados pelo Git. Inicie o frontend local e execute `pnpm test:e2e` em outro terminal.
+
+O modo não usa a flag de ambiente descartável e não habilita produção. O frontend precisa apontar ao mesmo backend conferido. Pré-requisitos, variáveis e limites estão em [Verificação no README](../README.md#verificação).

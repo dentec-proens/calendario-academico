@@ -13,6 +13,7 @@ test('reviewer consults the complete calendar and live changes without editing o
   await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
   await expect(page).toHaveURL(/\/calendarios\/synthetic-calendar\/visualizar/);
   await expect(page.locator('#autosave-status')).toContainText(/somente leitura/i);
+  await page.locator('[data-view="edit"]').click();
   await expect(page.locator('input#week-evidence')).toBeDisabled();
   await expect(page.locator('button#make-definitive')).toBeHidden();
   await expect(page.locator('a.editor-history')).toBeHidden();
@@ -26,12 +27,8 @@ test('reviewer consults the complete calendar and live changes without editing o
   await page.locator('[data-view="history"]').click();
   await expect(page.locator('#history-list')).toContainText(/anterior\.pdf/);
   await expect(page.locator('button#history-submit')).toBeDisabled();
-  await page.evaluate(() => {
-    document.querySelector<HTMLButtonElement>('#server-save')!.click();
-    document
-      .querySelector<HTMLFormElement>('#week-form')!
-      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-  });
+  await page.locator('[data-view="edit"]').click();
+  await expect(page.locator('#week-form button[type="submit"]')).toBeDisabled();
   await page.locator('[data-view="issues"]').click();
   await expect(page.locator('#issue-list')).toBeVisible();
   await page.locator('#issues [data-view="calendar"]').click();

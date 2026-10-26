@@ -1,0 +1,74 @@
+import {
+  configureAssessment,
+  enableAutomaticAssessment,
+} from '../../../../src/calendar-edits/commands.ts';
+import { modalityLabels } from '../../../../src/modalities.ts';
+import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
+import { useCalendarForm } from './useCalendarForm.ts';
+import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
+
+export default function AssessmentSettingsForm() {
+  const { state, session, institutional, readOnly, applyCommand } = useCalendarEditor();
+  const { form, submit, error } = useCalendarForm(
+    'assessment',
+    {
+      stages: Object.fromEntries(
+        state.modalities.map((modality) => [
+          modality,
+          String(state.assessmentStagesByModality[modality] || ''),
+        ]),
+      ),
+    },
+    function apply(value) {
+      session.apply((current) => configureAssessment(current, value.stages, institutional));
+    },
+  );
+  return (
+    <form onSubmit={submit}>
+      <fieldset disabled={readOnly}>
+        <div id="assessment-settings" className="row-form">
+          <form.Field name="stages">
+            {(field) => (
+              <>
+                {state.modalities.map((modality) => (
+                  <label key={modality}>
+                    {modalityLabels[modality]} — etapas de avaliação no ano
+                    <select
+                      data-assessment-modality={modality}
+                      value={field.state.value[modality] || ''}
+                      onChange={(event) =>
+                        field.handleChange({ ...field.state.value, [modality]: event.target.value })
+                      }
+                    >
+                      <option value="">Selecione</option>
+                      <option value="2">2 etapas / semestres</option>
+                      <option value="3">3 etapas / trimestres</option>
+                      <option value="4">4 etapas / bimestres</option>
+                    </select>
+                  </label>
+                ))}
+              </>
+            )}
+          </form.Field>
+        </div>
+        <FormFeedback error={error} />
+        <button type="submit">Aplicar organização das etapas</button>
+        <button
+          type="button"
+          id="recalculate-stages"
+          onClick={() =>
+            applyCommand((current) => enableAutomaticAssessment(current, institutional))
+          }
+        >
+          Recalcular datas das etapas
+        </button>
+      </fieldset>
+      <p id="assessment-status" role="status">
+        Intervalos por oferta
+      </p>
+      <p id="assessment-auto-status" role="status">
+        Períodos com meta de dias letivos ajustam suas etapas automaticamente.
+      </p>
+    </form>
+  );
+}

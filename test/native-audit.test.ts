@@ -1,3 +1,4 @@
+import { convexModules } from './helpers/convex-modules.ts';
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
 import { convexTest } from 'convex-test';
@@ -6,11 +7,7 @@ import schema from '../convex/schema';
 import { api } from '../convex/_generated/api';
 
 async function fixture() {
-  const client = convexTest(schema, {
-    '../convex/_generated/server.js': () => import('../convex/_generated/server.js'),
-    '../convex/native.ts': () => import('../convex/native.ts'),
-    '../convex/nativeAuth.ts': () => import('../convex/nativeAuth.ts'),
-  });
+  const client = convexTest(schema, convexModules);
   const identities = await client.run(async (ctx) => {
     const campusA = await ctx.db.insert('campuses', { name: 'Campus A', archived: false });
     const campusB = await ctx.db.insert('campuses', { name: 'Campus B', archived: false });
@@ -119,9 +116,12 @@ test('native audit cursor pages expose only calendar and history operations of t
   let cursor: string | null = null;
   let pages = 0;
   for (;;) {
-    const result: FunctionReturnType<typeof api.native.logs> = await campus.query(api.native.logs, {
-      paginationOpts: { numItems: 2, cursor },
-    });
+    const result: FunctionReturnType<typeof api.workspace.logs> = await campus.query(
+      api.workspace.logs,
+      {
+        paginationOpts: { numItems: 2, cursor },
+      },
+    );
     entries.push(...result.entries);
     pages++;
     if (result.isDone) break;
@@ -142,7 +142,7 @@ test('native audit cursor pages expose only calendar and history operations of t
 
 test('native admin audit preserves imported actor labels and unresolved targets', async () => {
   const { admin } = await fixture();
-  const result = await admin.query(api.native.logs, {
+  const result = await admin.query(api.workspace.logs, {
     paginationOpts: { numItems: 20, cursor: null },
   });
   assert.equal(result.entries.length, 6);

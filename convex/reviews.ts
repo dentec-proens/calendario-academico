@@ -1,0 +1,170 @@
+import { assertWritesOpen } from './lib/maintenance';
+import { inheritedEvents } from '../src/institution';
+import { reviewSupport, reviewCriteria, initialConclusion } from '../src/review';
+import { updateConclusion } from '../src/review-conclusion';
+import { reviewDocument } from '../src/review-export';
+import { reviewNorm } from '../src/review-presentation';
+import { query, mutation } from './_generated/server';
+import { requireNativeUser } from './access/identity';
+import { calendarRow } from './calendars/model';
+import { baseRecord } from './calendars/record';
+import * as contracts from './contracts';
+import { documentDto } from './documents/model';
+import { appendAudit } from './lib/audit';
+import { reviewer } from './lib/authorization';
+import { pageBound } from './lib/pagination';
+import { fail, iso, clean } from './lib/shared';
+import { reviewRow, reviewDto } from './reviews/model';
+import { paginationOptsValidator } from 'convex/server';
+import type { Infer } from 'convex/values';
+import { v } from 'convex/values';
+
+const idArgs = { id: v.id('calendars') };
+
+export const reviewHistory = query({
+  args: { ...idArgs, paginationOpts: paginationOptsValidator },
+  returns: v.object({
+    page: v.array(contracts.reviewDto),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
+  handler: async (ctx, { id, paginationOpts }) => {
+    const { user } = await requireNativeUser(ctx);
+    reviewer(user);
+    pageBound(paginationOpts.numItems);
+    await calendarRow(ctx, user, id);
+    const review = await reviewRow(ctx, id);
+    if (!review) return { page: [], isDone: true, continueCursor: '' };
+    const result = await ctx.db
+      .query('reviewVersions')
+      .withIndex('by_reviewId_and_revision', (q) => q.eq('reviewId', review._id))
+      .order('desc')
+      .paginate(paginationOpts);
+    return {
+      page: result.page.map(({ _id, _creationTime, reviewId: _reviewId, ...fields }) => ({
+        ...fields,
+        updatedAt: iso(fields.updatedAt),
+        documentSnapshot: fields.documentSnapshot.map(documentDto),
+        officialApproval: false as const,
+      })),
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+    };
+  },
+});
+
+export const review = query({
+  args: idArgs,
+  returns: contracts.reviewSupportDto,
+  handler: async (ctx, { id }) => {
+    const { user } = await requireNativeUser(ctx);
+    reviewer(user);
+    const { record, base, review: prior } = await baseRecord(ctx, user, id);
+    const support = reviewSupport(record, [
+      ...inheritedEvents(base, record.state.year, record.state.modalities, record.state),
+      ...record.state.events,
+    ]);
+    return clean({
+      ...support,
+      initialConclusion: initialConclusion(support),
+      catalogueRevision: base.revision,
+      review: prior ? reviewDto(prior) : null,
+      stale:
+        !!prior &&
+        (prior.calendarVersion !== record.version || prior.catalogueRevision !== base.revision),
+    }) as Infer<typeof contracts.reviewSupportDto>;
+  },
+});
+
+export const saveReview = mutation({
+  args: { ...idArgs, body: contracts.reviewInput },
+  returns: v.object({ revision: v.number() }),
+  handler: async (ctx, { id, body }) => {
+    await assertWritesOpen(ctx);
+    const { user } = await requireNativeUser(ctx);
+    reviewer(user);
+    const { record, base, docs, review: prior } = await baseRecord(ctx, user, id);
+    if (body.calendarVersion !== record.version || body.catalogueRevision !== base.revision)
+      fail('O calendário ou a base mudou. Reabra a revisão.', 409);
+    if (body.revision !== (prior?.revision ?? 0))
+      fail('Outro revisor atualizou esta análise. Reabra antes de salvar.', 409);
+    if (
+      prior &&
+      (prior.calendarVersion !== record.version || prior.catalogueRevision !== base.revision) &&
+      !body.acknowledgeStale
+    )
+      fail('Confirme a reavaliação das conclusões anteriores após a mudança de versão.', 409);
+    if (
+      body.entries.length !== reviewCriteria.length ||
+      new Set(body.entries.map((e) => e.id)).size !== reviewCriteria.length
+    )
+      fail('Confira todos os critérios da revisão.');
+    for (const e of body.entries) {
+      if (!reviewCriteria.some((c) => c.id === e.id) || e.notes.length > 2000)
+        fail('Critério ou observação inválidos.');
+      if (e.status === 'PENDENTE' && e.reviewed)
+        fail('Selecione Atendido, Não atendido ou Não aplicável antes de confirmar a análise.');
+    }
+    const support = reviewSupport(record, [
+      ...inheritedEvents(base, record.state.year, record.state.modalities, record.state),
+      ...record.state.events,
+    ]);
+    const conclusion = updateConclusion(
+      body.conclusion,
+      reviewCriteria,
+      body.entries,
+      reviewNorm(record.state.year, support.sameYear ? support.source.norm : ''),
+    );
+    if (
+      conclusion.length > 8000 ||
+      (body.processNumber ?? '').length > 100 ||
+      (body.applicableNorm ?? '').length > 1000
+    )
+      fail('Síntese ou identificação muito longa.');
+    const next = {
+      calendarId: id,
+      calendarVersion: record.version,
+      catalogueRevision: base.revision,
+      revision: (prior?.revision ?? 0) + 1,
+      source: 'SEI 3959640',
+      documentSnapshot: docs,
+      entries: body.entries,
+      conclusion,
+      processNumber: body.processNumber ?? '',
+      applicableNorm: body.applicableNorm || reviewNorm(record.state.year),
+      reviewer: { id: user.id, name: user.name },
+      updatedAt: Date.now(),
+    };
+    if (prior) {
+      const { _id, _creationTime: _creation, ...fields } = prior;
+      await ctx.db.insert('reviewVersions', { reviewId: _id, ...fields });
+      await ctx.db.replace(_id, next);
+    } else await ctx.db.insert('reviews', next);
+    await appendAudit(
+      ctx,
+      user,
+      'SAVE_HUMAN_REVIEW',
+      { type: 'calendar', id },
+      { calendarId: id, campusId: record.campusId, version: record.version },
+    );
+    return { revision: next.revision };
+  },
+});
+
+export const exportReview = query({
+  args: { ...idArgs, revision: v.number() },
+  returns: contracts.exportDto,
+  handler: async (ctx, { id, revision }) => {
+    const { user } = await requireNativeUser(ctx);
+    reviewer(user);
+    const { record, base, review: prior } = await baseRecord(ctx, user, id);
+    if (!prior) fail('Salve a análise inicial ou a revisão antes de exportar.', 409);
+    if (
+      prior.revision !== revision ||
+      prior.calendarVersion !== record.version ||
+      prior.catalogueRevision !== base.revision
+    )
+      fail('A análise está desatualizada. Reabra, confira e salve antes de exportar.', 409);
+    return reviewDocument(record, reviewDto(prior)) as Infer<typeof contracts.exportDto>;
+  },
+});

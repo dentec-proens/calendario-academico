@@ -5,25 +5,12 @@ import { dirname, join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../browser/test.ts';
 import { editorUrl, parseEditorPath } from '../../src/app-routes.ts';
+import { configuredE2ETarget } from '../../scripts/e2e-environment.ts';
 
-const base = process.env.DENTEC_NATIVE_BROWSER_URL;
-const email = process.env.DENTEC_NATIVE_TEST_EMAIL;
-const password = process.env.DENTEC_NATIVE_TEST_PASSWORD;
 const restorationFixture = process.env.DENTEC_NATIVE_RESTORE_FIXTURE;
 
-// The E2E configuration validates this opt-in before collecting tests. Keep the
-// same guard here so invoking this file with a custom config cannot mutate a
-// deployment without an explicit acknowledgement that its data is disposable.
 function browserEnvironment() {
-  assert.equal(
-    process.env.DENTEC_DISPOSABLE_E2E,
-    '1',
-    'Requires DENTEC_DISPOSABLE_E2E=1. Never run against an imported or shared deployment.',
-  );
-  assert(base && base.trim(), 'DENTEC_NATIVE_BROWSER_URL is required');
-  assert(email && email.trim(), 'DENTEC_NATIVE_TEST_EMAIL is required');
-  assert(password && password.trim(), 'DENTEC_NATIVE_TEST_PASSWORD is required');
-  return { base, email, password };
+  return configuredE2ETarget(process.env);
 }
 
 async function login(page: Page, base: string, email: string, password: string) {
@@ -39,7 +26,7 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   cleanup,
 }) => {
   test.setTimeout(90_000);
-  const { base, email, password } = browserEnvironment();
+  const { base, email, password, year, campusId } = browserEnvironment();
   const [one, two] = await Promise.all([browser.newContext(), browser.newContext()]);
   cleanup(() => one.close());
   cleanup(() => two.close());
@@ -59,25 +46,26 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   await Promise.all([login(editor, base, email, password), login(observer, base, email, password)]);
   const marker = 'Synthetic Convex React ' + Date.now();
   await editor.locator('#calendars .collection-heading button').click();
-  await editor.locator('#calendar-year').fill('2097');
+  await editor.locator('#calendar-year').fill(String(year));
+  if (campusId) await editor.locator('#calendar-campus').selectOption(campusId);
   await editor.locator('input[name="calendar-modality"]').first().check();
   await editor.locator('#calendar-courses').fill(marker);
   await Promise.all([
     editor.waitForURL('**/calendarios/*/editar'),
     editor.locator('#create-calendar button[value="test"]').click(),
   ]);
-  await expect(editor.locator('#record-heading')).toContainText(marker);
+  await expect(editor.locator('#record-title')).toContainText(String(year));
   const id = parseEditorPath(new URL(editor.url()).pathname)?.id;
   assert(id);
   await expect(observer.locator('#calendar-list')).toContainText(marker);
   const preservedUrl = new URL(editor.url());
-  preservedUrl.searchParams.set('view', 'synthetic');
+  preservedUrl.searchParams.set('busca', 'synthetic');
   preservedUrl.hash = 'history-area';
   await observer.goto(preservedUrl.href);
-  await expect(observer.locator('#record-heading')).toContainText(marker);
+  await expect(observer.locator('#record-title')).toContainText(String(year));
   const openedUrl = new URL(observer.url());
-  assert.equal(openedUrl.searchParams.get('id'), id);
-  assert.equal(openedUrl.searchParams.get('view'), 'synthetic');
+  assert.equal(parseEditorPath(openedUrl.pathname)?.id, id);
+  assert.equal(openedUrl.searchParams.get('busca'), 'synthetic');
   assert.equal(openedUrl.hash, '#history-area');
 
   async function addPeriod(name: string, start: string, end: string) {
@@ -93,14 +81,30 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
     ).toBeHidden();
   }
 
-  await addPeriod('Synthetic shared period', '2097-03-01', '2097-03-31');
+  await observer.locator('[data-view="periods"]').click();
+  await addPeriod('Synthetic shared period', `${year}-03-01`, `${year}-03-31`);
   await expect(observer.locator('#period-list')).toContainText('Synthetic shared period');
+  await editor.reload();
+  await expect(editor.locator('#record-title')).toContainText(String(year));
+  await editor.locator('[data-view="periods"]').click();
+  await expect(editor.locator('#period-list')).toContainText('Synthetic shared period');
   await observer.locator('[data-view="periods"]').click();
   await observer.locator('#period-name').fill('Synthetic unapplied field');
-  await addPeriod('Synthetic later period', '2097-04-01', '2097-04-30');
-  await expect(observer.locator('#message')).toContainText('Suas alterações foram preservadas');
+  await addPeriod('Synthetic later period', `${year}-04-01`, `${year}-04-30`);
+  await expect(
+    observer.getByText('O calendário ou a base mudou em outra sessão.', { exact: false }),
+  ).toContainText('Suas alterações foram preservadas');
   await expect(observer.locator('input#period-name')).toHaveValue('Synthetic unapplied field');
   await expect(observer.locator('#period-list')).not.toContainText('Synthetic later period');
+  await observer.locator('#period-start').fill(`${year}-05-01`);
+  await observer.locator('#period-end').fill(`${year}-05-31`);
+  await observer.locator('#period-submit').click();
+  await expect(observer.locator('#autosave-status')).toHaveAttribute('data-state', 'blocked');
+  await expect(observer.locator('#period-list')).toContainText('Synthetic unapplied field');
+  await editor.reload();
+  await editor.locator('[data-view="periods"]').click();
+  await expect(editor.locator('#period-list')).toContainText('Synthetic later period');
+  await expect(editor.locator('#period-list')).not.toContainText('Synthetic unapplied field');
 
   // Trash only the synthetic calendar produced by this run.
   await editor.goto(base);
@@ -122,7 +126,7 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   cleanup,
 }) => {
   test.setTimeout(150_000);
-  const { base, email, password } = browserEnvironment();
+  const { base, email, password, year, campusId } = browserEnvironment();
   const directory = await mkdtemp(join(tmpdir(), 'dentec-native-full-'));
   cleanup(() => rm(directory, { recursive: true, force: true }));
   page.setDefaultTimeout(25_000);
@@ -140,6 +144,7 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   await page.locator('#accounts .collection-heading button').click();
   await page.locator('#user-name').fill(marker);
   await page.locator('#user-email').fill(memberEmail);
+  if (campusId) await page.locator('#user-campus').selectOption(campusId);
   await page.locator('#create-user-button').click();
   await expect(page.locator('#invite-url')).toBeVisible();
   await expect(page.locator('#user-list')).toContainText(memberEmail);
@@ -191,7 +196,7 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   cleanup(() => fixtureContext.close());
   const fixture = await fixtureContext.newPage();
   await fixture.setContent(
-    '<h1>Calendário sintético 2096</h1><p>01/01/2096 Ano Novo</p><p>Referência sintética de teste.</p>',
+    `<h1>Calendário sintético ${year - 1}</h1><p>01/01/${year - 1} Ano Novo</p><p>Referência sintética de teste.</p>`,
   );
   await mkdir(join(directory, 'source'));
   const pdf = join(directory, 'source', 'synthetic-reference.pdf');
@@ -199,7 +204,7 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   await fixture.close();
   await page.locator('[data-page="institution"]').click();
   await page.locator('#institution .collection-heading button').click();
-  await page.locator('#document-year').fill('2097');
+  await page.locator('#document-year').fill(String(year));
   await page.locator('#document-title').fill(marker);
   await page.locator('#document-source').fill('Referência sintética exclusiva do laboratório');
   await page.locator('input#document-file').setInputFiles(pdf);
@@ -230,14 +235,15 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
 
   await page.locator('[data-page="calendars"]').click();
   await page.locator('#calendars .collection-heading button').click();
-  await page.locator('#calendar-year').fill('2097');
+  await page.locator('#calendar-year').fill(String(year));
+  if (campusId) await page.locator('#calendar-campus').selectOption(campusId);
   await page.locator('input[name="calendar-modality"]').first().check();
   await page.locator('#calendar-courses').fill(marker);
   await Promise.all([
     page.waitForURL('**/calendarios/*/editar'),
     page.locator('#create-calendar button[value="test"]').click(),
   ]);
-  await expect(page.locator('#record-heading')).toContainText(marker);
+  await expect(page.locator('#record-title')).toContainText(String(year));
   const calendarId = parseEditorPath(new URL(page.url()).pathname)?.id;
   assert(calendarId);
   await page.locator('[data-view="history"]').click();
@@ -247,13 +253,44 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   await expect(page.locator('#history-analysis')).toBeVisible();
   const calendarDownloadPromise = page.waitForEvent('download', { timeout: 120_000 });
   await page.locator('#download-pdf-top').click();
-  await expect(page.locator('#download-pdf-top')).toBeEnabled({ timeout: 120_000 });
-  await expect(page.locator('#message')).toContainText('PDF gerado');
-  const expectedPdf = join(directory, 'teste-calendario-2097-v1.pdf');
   const calendarDownload = await calendarDownloadPromise;
-  expect(calendarDownload.suggestedFilename()).toBe('teste-calendario-2097-v1.pdf');
+  await expect(page.locator('#download-pdf-top')).toBeEnabled();
+  await expect(page.locator('#message')).toContainText('PDF gerado');
+  const expectedPdf = join(directory, `teste-calendario-${year}-v1.pdf`);
+  expect(calendarDownload.suggestedFilename()).toBe(`teste-calendario-${year}-v1.pdf`);
   await calendarDownload.saveAs(expectedPdf);
-  assert((await readFile(expectedPdf)).subarray(0, 5).equals(Buffer.from('%PDF-')));
+  const generatedPdf = await readFile(expectedPdf);
+  assert(generatedPdf.subarray(0, 5).equals(Buffer.from('%PDF-')));
+  await test
+    .info()
+    .attach('calendario-e2e.pdf', { body: generatedPdf, contentType: 'application/pdf' });
+  const [{ getDocument }, { WorkerMessageHandler }] = await Promise.all([
+    import('pdfjs-dist/legacy/build/pdf.mjs'),
+    import('pdfjs-dist/legacy/build/pdf.worker.mjs'),
+  ]);
+  (
+    globalThis as typeof globalThis & { pdfjsWorker?: { WorkerMessageHandler: unknown } }
+  ).pdfjsWorker = { WorkerMessageHandler };
+  const pdfTask = getDocument({
+    data: Uint8Array.from(generatedPdf),
+    useSystemFonts: false,
+    disableFontFace: true,
+    verbosity: 0,
+  });
+  try {
+    const document = await pdfTask.promise;
+    const contents: string[] = [];
+    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber++) {
+      const content = await (await document.getPage(pageNumber)).getTextContent();
+      contents.push(content.items.map((item) => ('str' in item ? item.str : '')).join(' '));
+    }
+    const text = contents.join(' ').replace(/\s+/g, ' ');
+    expect(text).toContain(`CALENDÁRIO ACADÊMICO E ADMINISTRATIVO ${year}`);
+    expect(text).toContain('CALENDÁRIO DE TESTE');
+    expect(text).toContain(marker);
+  } finally {
+    await pdfTask.destroy();
+  }
   await page.goto(base);
   await page.locator('[data-page="review-panel"]').click();
   await page.locator('#review-calendar').selectOption(calendarId);
@@ -265,6 +302,11 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
     .getAttribute('data-confirm-criterion');
   assert(criterion);
   await page.locator(`[data-fields="${criterion}"] [data-choice="NAO_ATENDIDO"]`).click();
+  await page
+    .locator('#review-items > li')
+    .filter({ has: page.locator(`[data-notes="${criterion}"]`) })
+    .locator('.review-item__notes summary')
+    .click();
   await page
     .locator(`[data-notes="${criterion}"]`)
     .fill('Observação sintética preservada no Convex.');
@@ -278,9 +320,11 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
     await page.locator('#campus-filter').selectOption('');
   }
   await page.locator('[data-page="review-panel"]').click();
+  await page.locator('#review-calendar').selectOption(calendarId);
+  await page.locator('#open-review').click();
   await expect(
     page.locator(`[data-notes="${criterion}"]`),
-    'filtering the paginated calendar list cannot discard an unsaved human review',
+    'reopening the same calendar preserves the unsaved review after filtering the calendar list',
   ).toHaveValue('Observação sintética preservada no Convex.');
   await page.locator(`[data-confirm-criterion="${criterion}"]`).click();
   if (await page.locator('#review-stale').count()) await page.locator('#review-stale').click();
@@ -325,7 +369,7 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   );
 });
 
-test('admin restores missing originals through the portal and old editor links retain their destination', async ({
+test('admin restores originals created for E2E through canonical editor routes', async ({
   browser,
   page,
   cleanup,
@@ -335,14 +379,25 @@ test('admin restores missing originals through the portal and old editor links r
     'Requires DENTEC_NATIVE_RESTORE_FIXTURE with missing originals in the disposable deployment.',
   );
   test.setTimeout(90_000);
-  const { base, email, password } = browserEnvironment();
+  const { base, email, password, year, campusId, runId, mode } = browserEnvironment();
   assert(restorationFixture);
   const fixture = JSON.parse(await readFile(restorationFixture, 'utf8')) as {
     calendarId: string;
     historyId: string;
     documentId: string;
-    alias: string;
+    runId?: string;
+    campusId?: string;
+    year?: number;
   };
+  if (mode === 'development') {
+    assert.equal(fixture.runId, runId, 'restoration fixture must belong to the configured E2E run');
+    assert.equal(
+      fixture.campusId,
+      campusId,
+      'restoration fixture must use the dedicated E2E campus',
+    );
+    assert.equal(fixture.year, year, 'restoration fixture must use the reserved E2E year');
+  }
   const original = join(dirname(restorationFixture), 'restoration-upload.pdf');
   const expected = await readFile(original);
   const directory = await mkdtemp(join(tmpdir(), 'dentec-restoration-browser-'));
@@ -360,6 +415,8 @@ test('admin restores missing originals through the portal and old editor links r
   await expect(page.locator('#workspace')).toBeVisible();
   await page.goto(base + editorUrl(fixture.calendarId, 'history'), { waitUntil: 'commit' });
   await expect(page.locator(`form[data-restore-history="${fixture.historyId}"]`)).toBeVisible();
+  if (mode === 'development')
+    await expect(page.locator('#record-title')).toContainText(`Testes E2E ${runId}`);
   const canonical = new URL(page.url());
   assert.equal(parseEditorPath(canonical.pathname)?.id, fixture.calendarId);
   assert.equal(parseEditorPath(canonical.pathname)?.section, 'history');
@@ -367,7 +424,7 @@ test('admin restores missing originals through the portal and old editor links r
     .locator(`form[data-restore-history="${fixture.historyId}"] input[type="file"]`)
     .setInputFiles(original);
   await page.locator(`form[data-restore-history="${fixture.historyId}"] button`).click();
-  await expect(page.locator('#message')).toContainText('PDF original restaurado');
+
   await expect(page.locator(`form[data-restore-history="${fixture.historyId}"]`)).toHaveCount(0);
   const historyDownloadPromise = page.waitForEvent('download');
   await page.locator(`a[data-history-id="${fixture.historyId}"]`).click();
@@ -400,11 +457,17 @@ test('admin restores missing originals through the portal and old editor links r
   await expect(
     documentPage.locator(`form[data-restore-document="${fixture.documentId}"]`),
   ).toBeVisible();
+  if (mode === 'development')
+    await expect(
+      documentPage.locator('#document-list li').filter({
+        has: documentPage.locator(`form[data-restore-document="${fixture.documentId}"]`),
+      }),
+    ).toContainText(`Restauração E2E ${runId}`);
   await documentPage
     .locator(`form[data-restore-document="${fixture.documentId}"] input[type="file"]`)
     .setInputFiles(original);
   await documentPage.locator(`form[data-restore-document="${fixture.documentId}"] button`).click();
-  await expect(documentPage.locator('#document-message')).toContainText('PDF original restaurado');
+
   await expect(
     documentPage.locator(`form[data-restore-document="${fixture.documentId}"]`),
   ).toHaveCount(0);

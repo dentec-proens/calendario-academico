@@ -20,7 +20,7 @@ async function fixture() {
 
 test('reviewer reads across campuses and issues reviews but cannot modify calendars or accounts', async () => {
   const { client, reviewer, admin, campus, ids } = await fixture();
-  const record = await campus.mutation(api.native.createCalendar, {
+  const record = await campus.mutation(api.calendars.createCalendar, {
     body: {
       campusId: ids.campuses.a,
       year: 2027,
@@ -32,11 +32,11 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
       purpose: 'test',
     },
   });
-  const bootstrap = await reviewer.query(api.native.bootstrap, {});
+  const bootstrap = await reviewer.query(api.workspace.bootstrap, {});
   assert.equal(bootstrap.campuses.length, 2);
   assert.equal(bootstrap.users.length, 0);
-  assert.equal((await reviewer.query(api.native.calendar, { id: record.id })).id, record.id);
-  const support = await reviewer.query(api.native.review, { id: record.id });
+  assert.equal((await reviewer.query(api.calendars.calendar, { id: record.id })).id, record.id);
+  const support = await reviewer.query(api.reviews.review, { id: record.id });
   const body = {
     revision: 0,
     calendarVersion: record.version,
@@ -50,16 +50,16 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
     })),
   };
   assert.equal(
-    (await reviewer.mutation(api.native.saveReview, { id: record.id, body })).revision,
+    (await reviewer.mutation(api.reviews.saveReview, { id: record.id, body })).revision,
     1,
   );
   assert.match(
-    (await reviewer.query(api.native.exportReview, { id: record.id, revision: 1 })).text,
+    (await reviewer.query(api.reviews.exportReview, { id: record.id, revision: 1 })).text,
     /minuta/i,
   );
-  await assert.rejects(campus.query(api.native.review, { id: record.id }), /Acesso exclusivo/);
+  await assert.rejects(campus.query(api.reviews.review, { id: record.id }), /Acesso exclusivo/);
   await assert.rejects(
-    reviewer.mutation(api.native.createCalendar, {
+    reviewer.mutation(api.calendars.createCalendar, {
       body: {
         campusId: ids.campuses.b,
         year: 2027,
@@ -74,7 +74,7 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
     /não podem alterar/,
   );
   await assert.rejects(
-    reviewer.mutation(api.native.saveCalendar, {
+    reviewer.mutation(api.calendars.saveCalendar, {
       id: record.id,
       body: {
         state: record.state,
@@ -85,23 +85,24 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
     /não podem alterar/,
   );
   await assert.rejects(
-    reviewer.mutation(api.native.deleteCalendar, { id: record.id, version: record.version }),
+    reviewer.mutation(api.calendars.deleteCalendar, { id: record.id, version: record.version }),
     /não podem alterar/,
   );
   await assert.rejects(
-    reviewer.mutation(api.native.restoreCalendar, { id: record.id }),
+    reviewer.mutation(api.calendars.restoreCalendar, { id: record.id }),
     /não podem alterar/,
   );
   await assert.rejects(
-    reviewer.mutation(api.native.makeDefinitive, { id: record.id, version: record.version }),
+    reviewer.mutation(api.calendars.makeDefinitive, { id: record.id, version: record.version }),
     /não podem alterar/,
   );
   await assert.rejects(
-    reviewer.mutation(api.native.createCampus, { name: 'Outra' }),
+    reviewer.mutation(api.campuses.createCampus, { name: 'Outra' }),
     /Acesso exclusivo/,
   );
   await assert.rejects(
-    reviewer.mutation(api.nativeAuth.updateMemberRole, {
+    reviewer.mutation(api.access.members.updateMemberRole, {
+      expected: { role: 'CAMPUS', campusId: ids.campuses.a },
       id: ids.users['campus-a'],
       role: 'ADMIN',
     }),
@@ -112,14 +113,18 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
     /não podem alterar/,
   );
   await assert.rejects(
-    reviewer.query(api.native.logs, { paginationOpts: { cursor: null, numItems: 10 } }),
+    reviewer.query(api.workspace.logs, { paginationOpts: { cursor: null, numItems: 10 } }),
     /não podem alterar/,
   );
   await assert.rejects(
-    campus.mutation(api.nativeAuth.updateMemberRole, { id: ids.users['campus-a'], role: 'ADMIN' }),
+    campus.mutation(api.access.members.updateMemberRole, {
+      expected: { role: 'CAMPUS', campusId: ids.campuses.a },
+      id: ids.users['campus-a'],
+      role: 'ADMIN',
+    }),
     /Acesso exclusivo/,
   );
-  assert.equal((await admin.query(api.native.review, { id: record.id })).review?.revision, 1);
+  assert.equal((await admin.query(api.reviews.review, { id: record.id })).review?.revision, 1);
   assert.equal((await client.run((ctx) => ctx.db.get(record.id)))?.version, record.version);
 });
 
@@ -133,7 +138,8 @@ test('profile updates preserve credentials, audit changes and revoke prior sessi
       secret: 'synthetic-preserved-hash',
     }),
   );
-  await admin.mutation(api.nativeAuth.updateMemberRole, {
+  await admin.mutation(api.access.members.updateMemberRole, {
+    expected: { role: 'CAMPUS', campusId: ids.campuses.a },
     id: ids.users['campus-a'],
     role: 'PARECERISTA',
   });
@@ -144,16 +150,21 @@ test('profile updates preserve credentials, audit changes and revoke prior sessi
     (await client.run((ctx) => ctx.db.query('authAccounts').first()))?.secret,
     'synthetic-preserved-hash',
   );
-  await assert.rejects(campus.query(api.native.bootstrap, {}), /Entre com sua conta/);
+  await assert.rejects(campus.query(api.workspace.bootstrap, {}), /Entre com sua conta/);
   assert.equal(
     (await client.run((ctx) => ctx.db.query('audit').first()))?.action,
     'UPDATE_MEMBER_ROLE',
   );
   await assert.rejects(
-    admin.mutation(api.nativeAuth.updateMemberRole, { id: ids.users['campus-a'], role: 'CAMPUS' }),
+    admin.mutation(api.access.members.updateMemberRole, {
+      expected: { role: 'PARECERISTA', campusId: null },
+      id: ids.users['campus-a'],
+      role: 'CAMPUS',
+    }),
     /campus ativo/,
   );
-  await admin.mutation(api.nativeAuth.updateMemberRole, {
+  await admin.mutation(api.access.members.updateMemberRole, {
+    expected: { role: 'PARECERISTA', campusId: null },
     id: ids.users['campus-a'],
     role: 'CAMPUS',
     campusId: ids.campuses.b,
@@ -167,23 +178,29 @@ test('profile updates preserve credentials, audit changes and revoke prior sessi
 test('last active administrator cannot lose the ADMIN profile', async () => {
   const { admin, ids } = await fixture();
   await assert.rejects(
-    admin.mutation(api.nativeAuth.updateMemberRole, { id: ids.users.admin, role: 'PARECERISTA' }),
+    admin.mutation(api.access.members.updateMemberRole, {
+      expected: { role: 'ADMIN', campusId: null },
+      id: ids.users.admin,
+      role: 'PARECERISTA',
+    }),
     /manter um administrador ativo/,
   );
-  await admin.mutation(api.nativeAuth.updateMemberRole, {
+  await admin.mutation(api.access.members.updateMemberRole, {
+    expected: { role: 'CAMPUS', campusId: ids.campuses.a },
     id: ids.users['campus-a'],
     role: 'ADMIN',
   });
-  await admin.mutation(api.nativeAuth.updateMemberRole, {
+  await admin.mutation(api.access.members.updateMemberRole, {
+    expected: { role: 'ADMIN', campusId: null },
     id: ids.users.admin,
     role: 'PARECERISTA',
   });
-  await assert.rejects(admin.query(api.native.bootstrap, {}), /Entre com sua conta/);
+  await assert.rejects(admin.query(api.workspace.bootstrap, {}), /Entre com sua conta/);
 });
 
 test('new reviewers have institutional scope without a campus', async () => {
   const { admin } = await fixture();
-  const member = await admin.mutation(internal.nativeAuth.createMemberRecord, {
+  const member = await admin.mutation(internal.access.members.createMemberRecord, {
     data: {
       name: 'Parecerista',
       email: 'parecer@ifpr.edu.br',
@@ -216,24 +233,24 @@ test('campus cannot read or change another campus while admin can manage both', 
     courses: 'Teste isolado',
     purpose: 'test' as const,
   };
-  const other = await admin.mutation(api.native.createCalendar, { body });
+  const other = await admin.mutation(api.calendars.createCalendar, { body });
   await assert.rejects(
-    campus.mutation(api.native.createCalendar, { body }),
+    campus.mutation(api.calendars.createCalendar, { body }),
     /Registro não encontrado/,
   );
   await assert.rejects(
-    campus.query(api.native.calendar, { id: other.id }),
+    campus.query(api.calendars.calendar, { id: other.id }),
     /Registro não encontrado/,
   );
   await assert.rejects(
-    campus.query(api.native.calendarPage, {
+    campus.query(api.calendars.calendarPage, {
       campusId: ids.campuses.b,
       paginationOpts: { numItems: 10, cursor: null },
     }),
     /Registro não encontrado/,
   );
   await assert.rejects(
-    campus.mutation(api.native.saveCalendar, {
+    campus.mutation(api.calendars.saveCalendar, {
       id: other.id,
       body: {
         version: other.version,
@@ -244,22 +261,60 @@ test('campus cannot read or change another campus while admin can manage both', 
     /Registro não encontrado/,
   );
   await assert.rejects(
-    campus.mutation(api.native.deleteCalendar, { id: other.id, version: other.version }),
+    campus.mutation(api.calendars.deleteCalendar, { id: other.id, version: other.version }),
     /Registro não encontrado/,
   );
   await assert.rejects(
-    campus.mutation(api.nativeAuth.removeMember, { id: ids.users['campus-b'] }),
+    campus.mutation(api.access.members.removeMember, { id: ids.users['campus-b'] }),
     /Acesso exclusivo/,
   );
   await assert.rejects(
-    campus.mutation(api.native.createCampus, { name: 'Proibido' }),
+    campus.mutation(api.campuses.createCampus, { name: 'Proibido' }),
     /Acesso exclusivo/,
   );
-  await admin.mutation(api.native.deleteCalendar, { id: other.id, version: other.version });
+  await admin.mutation(api.calendars.deleteCalendar, { id: other.id, version: other.version });
   await assert.rejects(
-    campus.mutation(api.native.restoreCalendar, { id: other.id }),
+    campus.mutation(api.calendars.restoreCalendar, { id: other.id }),
     /Registro não encontrado/,
   );
-  await admin.mutation(api.native.restoreCalendar, { id: other.id });
-  assert.equal((await admin.query(api.native.calendar, { id: other.id })).id, other.id);
+  await admin.mutation(api.calendars.restoreCalendar, { id: other.id });
+  assert.equal((await admin.query(api.calendars.calendar, { id: other.id })).id, other.id);
+});
+
+test('concurrent profile edits compare the original role and campus atomically', async () => {
+  const { client, admin, ids } = await fixture();
+  const expected = { role: 'CAMPUS' as const, campusId: ids.campuses.a };
+  await admin.mutation(api.access.members.updateMemberRole, {
+    id: ids.users['campus-a'],
+    expected,
+    role: 'CAMPUS',
+    campusId: ids.campuses.b,
+  });
+  const afterFirst = await client.run((ctx) => ctx.db.get(ids.users['campus-a']));
+  await assert.rejects(
+    admin.mutation(api.access.members.updateMemberRole, {
+      id: ids.users['campus-a'],
+      expected,
+      role: 'PARECERISTA',
+      campusId: null,
+    }),
+    /perfil mudou em outra sessão/,
+  );
+  assert.deepEqual(await client.run((ctx) => ctx.db.get(ids.users['campus-a'])), afterFirst);
+  await admin.mutation(api.access.members.updateMemberRole, {
+    id: ids.users['campus-a'],
+    expected: { role: 'CAMPUS', campusId: ids.campuses.b },
+    role: 'PARECERISTA',
+    campusId: null,
+  });
+  await assert.rejects(
+    admin.mutation(api.access.members.updateMemberRole, {
+      id: ids.users['campus-a'],
+      expected: { role: 'CAMPUS', campusId: ids.campuses.b },
+      role: 'ADMIN',
+      campusId: null,
+    }),
+    /perfil mudou em outra sessão/,
+  );
+  assert.equal((await client.run((ctx) => ctx.db.get(ids.users['campus-a'])))?.role, 'PARECERISTA');
 });

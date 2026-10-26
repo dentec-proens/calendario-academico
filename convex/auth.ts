@@ -1,8 +1,9 @@
+import { assertWritesOpen } from './lib/maintenance';
 import { Password } from '@convex-dev/auth/providers/Password';
 import Google from '@auth/core/providers/google';
 import { convexAuth } from '@convex-dev/auth/server';
 import { passwordCrypto, validatePassword } from './authCrypto';
-import { institutionalEmail, memberFromRow } from './nativeAuth';
+import { institutionalEmail, memberFromRow } from './access/identity';
 import type { MutationCtx } from './_generated/server';
 import type { GenericDataModel } from 'convex/server';
 
@@ -52,6 +53,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       const member = memberFromRow(row);
       if (!row || !member || member.email !== email)
         throw Error('Solicite seu acesso à administração.');
+      await assertWritesOpen(ctx as MutationCtx, row._id);
       if (args.provider.id === 'google') {
         const subject = args.profile.googleSubject;
         if (
@@ -65,6 +67,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       return row._id;
     },
     async beforeSessionCreation(ctx, { userId }) {
+      await assertWritesOpen(ctx as MutationCtx, userId);
       if (!memberFromRow(await ctx.db.get(userId)))
         throw Error('Solicite seu acesso à administração.');
     },

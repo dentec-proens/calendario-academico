@@ -1,10 +1,13 @@
-import { beforeAll, expect, test } from 'vitest';
+import { afterAll, beforeAll, expect, test } from 'vitest';
 import { createServer } from 'node:http';
-import { readdir } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { WorkerMessageHandler } from 'pdfjs-dist/legacy/build/pdf.worker.mjs';
 import { writePrintAssets } from '../../scripts/print-assets.ts';
+import { prepareChromiumResources } from '../../scripts/chromium-resources.ts';
+import { chromiumArchives, chromiumVersion } from '../../src/printing/chromium-manifest.ts';
+import type { ChromiumRuntime } from '../../src/printing/chromium-manifest.ts';
 import type { nativePdf as NativePdf } from '../../src/native-pdf.ts';
 
 // Parse the real browser output without downloading a PDF.js worker or fonts.
@@ -13,12 +16,43 @@ import type { nativePdf as NativePdf } from '../../src/native-pdf.ts';
 ).pdfjsWorker = { WorkerMessageHandler };
 
 let nativePdf: typeof NativePdf;
+let resourceServer: ReturnType<typeof createServer>;
+let runtime: ChromiumRuntime;
 
 beforeAll(async () => {
   if (process.platform !== 'linux')
     throw new Error('O teste do PDF serverless exige Linux. Use pnpm test:runtime:linux.');
+  const arch = process.arch;
+  if (arch !== 'x64' && arch !== 'arm64') throw Error('Arquitetura de teste PDF não suportada.');
+  const resources = await prepareChromiumResources(arch);
+  resourceServer = createServer((request, response) => {
+    const name = chromiumArchives.find((item) => request.url === `/${item}`);
+    if (!name) {
+      response.writeHead(404).end();
+      return;
+    }
+    void readFile(resources[name].path).then((bytes) => response.end(bytes));
+  });
+  await new Promise<void>((resolve) => resourceServer.listen(0, '127.0.0.1', resolve));
+  const address = resourceServer.address();
+  if (!address || typeof address === 'string') throw Error('Servidor de recursos PDF não iniciou.');
+  runtime = {
+    version: chromiumVersion,
+    arch,
+    archives: chromiumArchives.map((name) => ({
+      name,
+      ...resources[name],
+      url: `http://127.0.0.1:${address.port}/${name}`,
+    })),
+  };
   await writePrintAssets();
   ({ nativePdf } = await import('../../src/native-pdf.ts'));
+});
+afterAll(async () => {
+  if (!resourceServer) return;
+  await new Promise<void>((resolve, reject) =>
+    resourceServer.close((error) => (error ? reject(error) : resolve())),
+  );
 });
 
 const record = {
@@ -73,8 +107,8 @@ test('serverless Chromium prints concurrent calendars through the actual applica
   // browsers. No executable override, Playwright test browser, or remote backend.
   const existingTemporaryFiles = new Set(await readdir(tmpdir()));
   const [testCopy, proposalCopy] = await Promise.all([
-    nativePdf(record, []),
-    nativePdf({ ...record, purpose: 'definitive', proposalCopy: true, version: 2 }, []),
+    nativePdf(record, [], runtime),
+    nativePdf({ ...record, purpose: 'definitive', proposalCopy: true, version: 2 }, [], runtime),
   ]);
   const testText = await inspectPdf(testCopy);
   const proposalText = await inspectPdf(proposalCopy);
@@ -115,16 +149,20 @@ test('print template renders external image markup as text without accessing its
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Missing local fixture address');
     const externalImage = `<img src="http://127.0.0.1:${address.port}/external-image" alt="SENTINELA-EXTERNA">`;
-    const bytes = await nativePdf(record, [
-      {
-        id: 'synthetic-untrusted-label',
-        name: externalImage,
-        start: '2097-03-02',
-        end: '2097-03-02',
-        kind: 'include',
-        evidence: 'Rótulo sintético',
-      },
-    ]);
+    const bytes = await nativePdf(
+      record,
+      [
+        {
+          id: 'synthetic-untrusted-label',
+          name: externalImage,
+          start: '2097-03-02',
+          end: '2097-03-02',
+          kind: 'include',
+          evidence: 'Rótulo sintético',
+        },
+      ],
+      runtime,
+    );
     const text = await inspectPdf(bytes);
     expect(text).toContain('<img src=');
     expect(text).toContain('SENTINELA-EXTERNA');

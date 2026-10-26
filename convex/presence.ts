@@ -3,7 +3,7 @@ import { getAuthSessionId } from '@convex-dev/auth/server';
 import { ConvexError, v } from 'convex/values';
 import { components } from './_generated/api';
 import { mutation, query } from './_generated/server';
-import { memberFromRow, requireNativeUser } from './nativeAuth';
+import { memberFromRow, requireNativeUser } from './access/identity';
 
 const presence = new Presence<'application', string>(components.presence);
 const room = 'application';

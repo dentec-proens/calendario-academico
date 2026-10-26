@@ -1,8 +1,9 @@
+import { assertWritesOpen } from './lib/maintenance';
 import { v, ConvexError } from 'convex/values';
 import { mutation, internalMutation, internalQuery, httpAction } from './_generated/server';
 import { internal } from './_generated/api';
-import { requireNativeUser } from './nativeAuth';
-import { calendarEditor } from './repository';
+import { requireNativeUser } from './access/identity';
+import { calendarEditor } from './lib/authorization';
 import type { MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 
@@ -46,6 +47,7 @@ export const issueUpload = mutation({
   args: { filename: v.string(), size: v.number() },
   returns: v.object({ uploadUrl: v.string(), uploadId: v.string() }),
   handler: async (ctx, { filename, size }) => {
+    await assertWritesOpen(ctx);
     const { row, user } = await requireNativeUser(ctx);
     calendarEditor(user);
     if (

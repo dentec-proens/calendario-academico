@@ -15,10 +15,10 @@ const createBody = {
 test('calendar operations append immutable snapshots and roll back stale saves atomically', async () => {
   const { client, asClient, ids } = await createNativeFixture();
   const campus = asClient('campus-a');
-  const created = await campus.mutation(api.native.createCalendar, {
+  const created = await campus.mutation(api.calendars.createCalendar, {
     body: { ...createBody, campusId: ids.campuses.a },
   });
-  const saved = await campus.mutation(api.native.saveCalendar, {
+  const saved = await campus.mutation(api.calendars.saveCalendar, {
     id: created.id,
     body: {
       version: created.version,
@@ -36,7 +36,7 @@ test('calendar operations append immutable snapshots and roll back stale saves a
   assert.equal(before.versions[0].version, 1);
   assert.deepEqual(before.snapshots[0].state, created.state);
   await assert.rejects(
-    campus.mutation(api.native.saveCalendar, {
+    campus.mutation(api.calendars.saveCalendar, {
       id: created.id,
       body: {
         version: 1,
@@ -52,9 +52,9 @@ test('calendar operations append immutable snapshots and roll back stale saves a
     audit: await ctx.db.query('audit').collect(),
   }));
   assert.deepEqual(after, before, 'a stale writer cannot append history or audit records');
-  await campus.mutation(api.native.deleteCalendar, { id: created.id, version: 2 });
-  await campus.mutation(api.native.restoreCalendar, { id: created.id });
-  await campus.mutation(api.native.makeDefinitive, { id: created.id, version: 2 });
+  await campus.mutation(api.calendars.deleteCalendar, { id: created.id, version: 2 });
+  await campus.mutation(api.calendars.restoreCalendar, { id: created.id });
+  await campus.mutation(api.calendars.makeDefinitive, { id: created.id, version: 2 });
   const final = await client.run(async (ctx) => ({
     calendar: await ctx.db.get(created.id),
     snapshots: await ctx.db.query('calendarSnapshots').collect(),
@@ -77,10 +77,10 @@ test('review saves preserve earlier authorship and rejected edits append no revi
   const { client, asClient, ids } = await createNativeFixture();
   const campus = asClient('campus-a');
   const admin = asClient('admin');
-  const created = await campus.mutation(api.native.createCalendar, {
+  const created = await campus.mutation(api.calendars.createCalendar, {
     body: { ...createBody, campusId: ids.campuses.a },
   });
-  const support = await admin.query(api.native.review, { id: created.id });
+  const support = await admin.query(api.reviews.review, { id: created.id });
   const body = {
     revision: 0,
     calendarVersion: created.version,
@@ -93,8 +93,8 @@ test('review saves preserve earlier authorship and rejected edits append no revi
       reviewed: false,
     })),
   };
-  await admin.mutation(api.native.saveReview, { id: created.id, body });
-  await admin.mutation(api.native.saveReview, {
+  await admin.mutation(api.reviews.saveReview, { id: created.id, body });
+  await admin.mutation(api.reviews.saveReview, {
     id: created.id,
     body: { ...body, revision: 1, processNumber: 'Processo sintético' },
   });
@@ -108,11 +108,11 @@ test('review saves preserve earlier authorship and rejected edits append no revi
   assert.equal(before.versions[0].reviewer.name, 'Admin');
   assert.equal(before.versions[0].revision, 1);
   await assert.rejects(
-    admin.mutation(api.native.saveReview, { id: created.id, body }),
+    admin.mutation(api.reviews.saveReview, { id: created.id, body }),
     /Outro revisor/,
   );
   await assert.rejects(
-    campus.mutation(api.native.saveReview, { id: created.id, body: { ...body, revision: 2 } }),
+    campus.mutation(api.reviews.saveReview, { id: created.id, body: { ...body, revision: 2 } }),
     /Acesso exclusivo/,
   );
   const after = await client.run(async (ctx) => ({
@@ -159,7 +159,7 @@ test('typed storage rejects legacy envelopes, invalid relationships and incomple
     ),
     /id|validator|unexpected/i,
   );
-  const record = await asClient('campus-a').mutation(api.native.createCalendar, {
+  const record = await asClient('campus-a').mutation(api.calendars.createCalendar, {
     body: { ...createBody, campusId: ids.campuses.a },
   });
   await assert.rejects(

@@ -38,9 +38,12 @@ const sources = [
   'test',
   'web',
   'src',
+  'assets',
   'convex',
   'config',
   'scripts/print-assets.ts',
+  'scripts/chromium-resources.ts',
+  'scripts/environment.ts',
 ];
 const work = await mkdtemp(join(tmpdir(), 'calendario-tests-linux-'));
 

@@ -85,7 +85,7 @@ test('audit log isolates campi and contains canonical names and saved versions w
 });
 
 test('assessment range colors only endpoints and preserves intervening holiday colors', async () => {
-  const { proensLayout } = await import('../web/print.ts');
+  const { proensLayout } = await import('../src/printing/calendar-layout.ts');
   const html = proensLayout(
     { year: 2027, campus: 'Reitoria', modalities: ['integrado'], periods: [] },
     [

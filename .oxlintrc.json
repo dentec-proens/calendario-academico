@@ -15,7 +15,7 @@
         "paths": [
           {
             "name": "pg",
-            "message": "O backend desta aplica\u00e7\u00e3o \u00e9 Convex."
+            "message": "O backend desta aplicação é Convex."
           },
           {
             "name": "@supabase/supabase-js",
@@ -40,7 +40,7 @@
   ],
   "ignorePatterns": [
     "convex/_generated/**",
-    "src/native-print-assets.mjs",
+    "src/printing/assets.generated.mjs",
     "dist/**",
     "node_modules/**",
     "coverage/**",

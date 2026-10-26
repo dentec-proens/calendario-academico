@@ -50,6 +50,7 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await expect(page.locator('.portal-sidebar')).not.toContainText(/Todos os campi/);
   await expect(page.locator('#create-calendar')).toBeHidden();
   await page.locator('#calendars .collection-heading button').click();
+  await expect(page.locator('#create-calendar')).toBeVisible();
   const identityLayout = await page
     .locator('.calendar-identity-fields :is(input, select)')
     .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));

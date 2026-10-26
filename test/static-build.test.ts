@@ -2,7 +2,7 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,10 +10,8 @@ import { fileURLToPath } from 'node:url';
 const execute = promisify(execFile);
 const root = fileURLToPath(new URL('../', import.meta.url));
 
-// Static hosts may resolve / to index.html before evaluating rewrite rules.
-// Verify the actual build artifacts, independent of the local route adapter.
 test(
-  'static build puts the React portal at index.html and the editor in its own document',
+  'production build has one HTML entry, split routes and no development panels or Node runtime',
   { timeout: 60_000 },
   async () => {
     const output = await mkdtemp(join(tmpdir(), 'dentec-static-build-'));
@@ -29,26 +27,42 @@ test(
         ],
         {
           cwd: root,
-          env: { ...process.env, VITE_CONVEX_URL: 'https://synthetic-ci.convex.cloud' },
+          env: {
+            ...process.env,
+            NODE_ENV: 'production',
+            VITE_CONVEX_URL: 'https://synthetic-ci.convex.cloud',
+          },
           timeout: 60_000,
         },
       );
-      const [index, alias, editor] = await Promise.all(
-        ['index', 'portal', 'editor'].map((page) => readFile(join(output, page + '.html'), 'utf8')),
+      assert.deepEqual(
+        (await readdir(output)).filter((name) => name.endsWith('.html')),
+        ['index.html'],
       );
-      for (const portal of [index, alias]) {
-        assert.match(portal, /<div id="root"><\/div>/);
-        assert.doesNotMatch(portal, /class="calendar-editor"|id="event-form"/);
-      }
-      assert.match(editor, /class="calendar-editor"/);
-      assert.match(editor, /id="event-form"/);
-      assert.match(editor, /id="autosave-status"/);
-      assert.doesNotMatch(editor, /<div id="root">/);
-      for (const document of [index, alias, editor]) {
-        const assets = [...document.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)];
-        assert.ok(assets.length > 0, 'compiled pages must reference emitted scripts and styles');
-        for (const [, path] of assets)
-          assert.ok((await stat(join(output, path.slice(1)))).isFile());
+      const index = await readFile(join(output, 'index.html'), 'utf8');
+      assert.match(index, /<div id="root"><\/div>/);
+      assert.doesNotMatch(index, /id="event-form"|id="auth-form"/);
+      const assets = [...index.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)];
+      assert.ok(assets.length > 0);
+      for (const [, path] of assets) assert.ok((await stat(join(output, path.slice(1)))).isFile());
+      const manifest = JSON.parse(
+        await readFile(join(output, '.vite/manifest.json'), 'utf8'),
+      ) as Record<string, { file: string; isDynamicEntry?: boolean }>;
+      assert.ok(
+        Object.values(manifest).some((entry) => entry.isDynamicEntry),
+        'route code must remain split',
+      );
+      assert.ok(
+        !Object.keys(manifest).some((key) => /devtools-panel|react-devtools/.test(key)),
+        'development panel must not be emitted',
+      );
+      for (const filename of await readdir(join(output, 'assets'))) {
+        if (!filename.endsWith('.js')) continue;
+        const source = await readFile(join(output, 'assets', filename), 'utf8');
+        assert.doesNotMatch(
+          source,
+          /Open TanStack Devtools|Resize TanStack Devtools panel|@sparticuz\/chromium|node:child_process|node:fs/,
+        );
       }
     } finally {
       await rm(output, { recursive: true, force: true });

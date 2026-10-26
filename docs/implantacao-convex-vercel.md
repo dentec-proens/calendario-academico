@@ -1,65 +1,96 @@
 # Implantação e operação
 
-Os dois desenvolvedores publicam pelo mesmo fluxo, sem ambiente intermediário nem PR obrigatório. É necessário poder enviar `main` ao GitHub e administrar o projeto Convex, com papel Project Admin ou Team Admin. Cada pessoa usa sua própria conta; a integração Git existente dispensa login na CLI Vercel por desenvolvedor.
+## Destinos e configuração
 
-## Ambientes configurados
+Os identificadores públicos ficam em [`config/environments.ts`](../config/environments.ts). Cada desenvolvedor usa sua conta e deployment individual. Produção usa o Convex `exuberant-cheetah-138` e o portal [calendario-academico-phi.vercel.app](https://calendario-academico-phi.vercel.app), no projeto Vercel `dentec-proens/calendario-academico`. O repositório é `dentec-proens/calendario-academico`, branch de publicação `main`.
 
-| Serviço                    | Destino                                                                            |
-| -------------------------- | ---------------------------------------------------------------------------------- |
-| Repositório                | `dentec-proens/calendario-academico`, branch `main`                                |
-| Convex                     | Team `diretoria-de-ensino-tecnico-proens`, projeto `calendario-academico`          |
-| Desenvolvimento de Gustavo | `oceanic-gazelle-652`                                                              |
-| Convex de produção         | `exuberant-cheetah-138`                                                            |
-| Vercel                     | Team `dentec-proens`, projeto `calendario-academico`                               |
-| Portal                     | [calendario-academico-phi.vercel.app](https://calendario-academico-phi.vercel.app) |
-
-Os destinos públicos ficam em [`config/environments.ts`](../config/environments.ts). Cada desenvolvedor tem seu próprio desenvolvimento; `oceanic-gazelle-652` é o já configurado por Gustavo. Esta relação não é uma verificação de disponibilidade dos serviços. Confira o destino efetivo na CLI e no painel antes de publicar ou restaurar dados.
-
-## Configuração
-
-O desenvolvimento usa `.env.local`, preparado por `pnpm dev:setup`; `.env.example` lista as variáveis públicas e a porta. Esse arquivo é individual e não precisa mudar para publicar. Veja [Desenvolvimento](desenvolvimento.md). Na Vercel, as variáveis de Production são:
+O desenvolvimento usa `.env.local`, preparado por `pnpm dev:setup`. Na Vercel, Production usa:
 
 ```dotenv
 VITE_CONVEX_URL=https://exuberant-cheetah-138.convex.cloud
 VITE_CONVEX_SITE_URL=https://exuberant-cheetah-138.convex.site
 ```
 
-No Convex de produção, `SITE_URL` deve apontar para `https://calendario-academico-phi.vercel.app`. `JWT_PRIVATE_KEY`, `JWKS` e credenciais dos provedores pertencem exclusivamente ao ambiente Convex. Cada ambiente tem sua própria configuração de autenticação. Nunca use prefixo `VITE_` em segredos.
+`SITE_URL`, `JWT_PRIVATE_KEY`, `JWKS` e credenciais dos provedores pertencem ao ambiente Convex. Nunca use prefixo `VITE_` em segredo. Cada ambiente tem configuração de autenticação própria.
 
-`vercel.json` define instalação com lockfile, `pnpm build`, saída `dist/app`, rotas e cabeçalhos de segurança. O runtime de build é Node 24. `index.html` e `portal.html` contêm o portal; `editor.html` contém o editor. As regras encaminham URLs como `/calendarios/novo`, `/revisoes/<id>` e `/calendarios/<id>/historico` ao documento correspondente, para que acesso direto e recarregamento funcionem. Os documentos de login, recuperação, ativação e logs também mantêm seus endereços. Caminhos desconhecidos e arquivos ausentes não recebem um fallback indiscriminado para o portal. O modelo compartilhado em `src/app-routes.ts` atende Vite e preview local; um teste confere sua equivalência com os rewrites da Vercel. A configuração Git permite implantação automática somente de `main` quando ativa no projeto. O build de Production confere as URLs Convex contra o destino versionado e falha se apontarem para outro ambiente.
+Vite gera `dist/app/index.html` e chunks. Vite, preview e Vercel encaminham somente os caminhos conhecidos do produto para essa entrada. `vercel.json` mantém headers de segurança, instalação com lockfile e build Node 24. O build Production confere as URLs Convex contra o destino versionado.
 
-## Publicação
+## Publicação coordenada
 
-Atualize `main`, integre as mudanças do colega e faça commit do que será publicado. A publicação exige `main` sem alterações ou arquivos novos por commitar.
+Pré-requisitos:
+
+- `main` commitada, sem alterações ou arquivos novos, e `origin` apontando ao repositório configurado.
+- Acesso administrativo ao deployment Convex de produção e permissão de push fast-forward.
+- `VERCEL_TOKEN` no ambiente do processo, com acesso ao projeto e team configurados. Não inserir o token em argumentos, logs, Git ou arquivos de configuração públicos.
+- Controle `operations:pause`, `operations:status` e `operations:resume` instalado no destino, com admissão de mutations/actions instrumentada. Um endpoint inexistente interrompe a publicação antes da troca de contratos; a instalação desse controle requer uma preparação operacional própria no destino conferido.
+- Conta operacional ADMIN com senha local e calendário de teste próprios, identificados no processo por `DENTEC_RELEASE_SMOKE_USER_ID`, `DENTEC_RELEASE_SMOKE_EMAIL`, `DENTEC_RELEASE_SMOKE_PASSWORD` e `DENTEC_RELEASE_SMOKE_CALENDAR_ID`. As credenciais não entram no Git. O calendário deve estar salvo com a base institucional vigente.
+- Chromium local instalado com `pnpm test:browser:install`, inclusive no Windows. O smoke usa esse navegador para acessar o portal publicado e o PDF processado pelo Convex.
+
+O preflight consulta `operations:status`, recusa o bloqueio emergencial, confere a identidade ADMIN local e o calendário operacional, inicia/encerra o Chromium e inventaria os jobs antes de pausar ou substituir funções. O inventário autoritativo é repetido depois da drenagem, em páginas de até 100 registros, sem teto baseado no volume de jobs concluídos. Para conferir o protocolo e os leases no destino explícito:
 
 ```sh
-pnpm deploy:production
+pnpm exec convex run operations:status '{}' --deployment exuberant-cheetah-138 --codegen disable
+pnpm exec convex data operationalControl --limit 10 --format json --deployment exuberant-cheetah-138
+pnpm exec convex data operationalLeases --limit 1001 --format json --deployment exuberant-cheetah-138
+pnpm exec convex run operations:scheduledPage '{"paginationOpts":{"numItems":100,"cursor":null}}' --deployment exuberant-cheetah-138 --codegen disable
 ```
 
-O comando confere o acesso e a atualização de `main`, executa `pnpm check`, verifica o alvo Convex de produção, publica as funções e só então envia o commit conferido para `origin`. O push aciona o build e a publicação do portal pela Vercel. A conferência do alvo usa a URL fornecida pelo próprio CLI Convex antes da publicação das funções.
+Um destino sem esse protocolo não está preparado para o corte. Sua preparação exige instalar a barreira de admissão conservando os contratos em uso e comprovar a conclusão das actions aceitas antes da instrumentação. Não publicar a aplicação reorganizada para instalar o próprio preflight. Sem evidência completa de drenagem, a publicação permanece bloqueada. A pausa nativa do Convex e seus gráficos de máximos de concorrência não substituem essa evidência: valores ausentes e tempo decorrido não demonstram que uma action terminou. A preparação inicial da barreira é uma pendência operacional separada da execução deste comando.
 
-Para conferir o plano localmente:
+Confira o procedimento sem chamadas remotas:
 
 ```sh
 pnpm deploy:production --dry-run
 ```
 
-A simulação não faz chamadas remotas, não publica funções e não envia commits. Se a CLI Convex falhar, confira o estado no dashboard antes de repetir: a conexão pode falhar após o envio. Se o backend tiver sido publicado e o push ou build Vercel falhar, ele já poderá estar na versão nova. Mudanças de schema e funções precisam manter compatibilidade com os dados existentes e com o frontend durante a atualização.
+Para publicar:
 
-Confira o commit e o estado Ready na Vercel. Valide login, autorização, abertura de calendários, sincronização e arquivos. Escritas de teste devem usar o desenvolvimento individual ou outro deployment descartável.
+```sh
+pnpm deploy:production
+```
 
-O build e a publicação Vercel não publicam funções Convex nem inicializam dados. A publicação de código não importa backups ou arquivos históricos.
+O comando confere branch, repositório, destino e atualização, executa `pnpm check`, confere o protocolo operacional, entra em manutenção e aguarda a conclusão das actions aceitas. Inventaria as funções agendadas; trabalhos em execução, inventário incompleto ou referências pendentes sem identidade preservada interrompem o corte. Publica as funções Convex, prepara os recursos PDF, envia o SHA conferido ao GitHub e aguarda o deployment Vercel desse commit. Confere que o domínio de produção aponta ao mesmo deployment Ready e verifica seu acesso HTML.
 
-A consolidação do banco anterior para o schema tipado exige executar primeiro o procedimento de [migração do schema](migracao-schema.md). Ele bloqueia as escritas da aplicação, exporta a fotografia final, ensaia esse plano em outro deployment e só então converte os documentos existentes. A publicação normal não substitui essa migração.
+Antes de liberar operações, autoriza somente a conta operacional na janela do commit e executa login no portal, acesso direto ao editor e à visualização, consulta autenticada, mutation de salvamento sem alteração e download de PDF real. O salvamento usa `unchangedOnly`: qualquer diferença de estado ou de base interrompe o smoke antes de gravar, sem criar versão. O PDF e as sessões são recursos operacionais temporários; nenhum calendário definitivo é alterado. A permissão restrita é removida ao concluir ou falhar o smoke. Somente após o smoke e a conferência final dos leases o comando libera o acesso geral.
 
-## Backup e restauração
+O push não confirma frontend disponível. Build isolado Vercel não publica Convex. Não enviar `main` por outro caminho para contornar a coordenação de contratos. As abas abertas precisam recarregar o código antes de continuar.
 
-O backup deve incluir a exportação completa do Convex e o Storage quando houver arquivos, usando a opção `--include-file-storage`. Guardar exportações em local privado: elas podem conter credenciais e dados pessoais e não devem ser versionadas no Git.
+Se `origin/main` já contiver exatamente o commit local, o comando exige uma janela pausada pertencente ao mesmo SHA para caracterizar uma repetição. Um commit já publicado sem essa janela exige conferir a correspondência dos artefatos antes de continuar; o comando não presume que a coordenação aconteceu.
 
-Ensaiar a restauração completa em outro deployment antes de operar sobre produção. Conferir destino, conteúdo, referências entre documentos e disponibilidade dos arquivos. Importações isoladas de tabelas podem quebrar relações. Não substituir dados de produção sem backup atual e conferência explícita do destino.
+A confirmação de deployment pela API Vercel e o acesso HTTP não bastam para liberar a manutenção. O smoke autenticado descrito acima faz parte do comando. A suíte E2E completa continua restrita ao destino descartável ou ao desenvolvimento autorizado, conforme o README; não executa em produção.
 
-## Restauração dos originais concluída
+## Falhas e manutenção
 
-Em 23/10/2026, os 13 PDFs originais recuperados da Supabase foram restaurados em produção (`exuberant-cheetah-138`) e no desenvolvimento de Gustavo (`oceanic-gazelle-652`). Não restaram originais indisponíveis nesses ambientes. Os bytes e os hashes foram conferidos nas exportações finais com Storage, e os downloads dos calendários ativos também foram verificados.
+A manutenção é confirmada no backend. `operationalControl` identifica o commit responsável, e `operationalLeases` mostra actions aceitas que ainda não concluíram. A configuração emergencial `DENTEC_MAINTENANCE=1` também bloqueia novas alterações. Não considerar o tempo decorrido como término de uma action.
 
-IDs, metadados, análises, calendários, versões e pareceres foram preservados, assim como os calendários que já estavam na lixeira. O registro da operação, as evidências privadas e o procedimento para novas restaurações estão em [Restauração dos PDFs originais](restauracao-de-originais.md).
+Uma falha após a pausa mantém o bloqueio. Uma resposta perdida da CLI pode ocorrer após o commit da pausa ou da autorização de smoke; conferir o estado também nesses casos. A revogação do smoke é tentada mesmo quando sua autorização não teve resposta, e uma falha de limpeza preserva o diagnóstico original. Conferir o estado pelo destino explícito, por exemplo:
+
+```sh
+pnpm exec convex run operations:status '{}' --deployment exuberant-cheetah-138 --codegen disable
+```
+
+Antes de liberar, conferir o commit que possui a janela, as operações ativas, os contratos Convex, o deployment Ready e o domínio Vercel. Uma falha de conexão durante publicação pode ocorrer após o envio; consultar o destino antes de repetir. Se uma action foi interrompida sem liberar o lease, comprovar sua conclusão na plataforma e tratar o lease por procedimento administrativo revisado. Não apagar leases automaticamente por idade.
+
+Cada action registra `Operational lease`, o ID do lease e sua operação no próprio log de execução. Para um lease pendente, localizar esse registro e conferir o evento terminal da mesma execução no Convex. Somente após comprovar o término, a função interna `operations:finish` pode receber o ID exato desse lease. Sem evento terminal ou prova da plataforma, manter o bloqueio e investigar; não inferir que a action terminou por ter ultrapassado uma duração esperada.
+
+Se a falha aconteceu antes de qualquer tentativa de deploy, os contratos não foram substituídos. Depois de confirmar `operations:status` sem leases ativos e a janela do mesmo commit, `operations:resume` com esse commit reabre o acesso. Se houve tentativa de deploy com resultado incerto, conferir os dois artefatos antes de liberar.
+
+Uma mudança de regras pode fazer o calendário operacional deixar de ser um no-op mesmo após um preflight válido. O smoke recusa gravar essa diferença. Para corrigir o registro, manter a janela pausada, usar `operations:authorizeSmoke` com o commit e o ID da conta operacional, entrar no portal com essa conta, conferir e salvar explicitamente o calendário de teste e executar `operations:endSmoke` com o mesmo commit. Repetir a publicação desse SHA somente após essa conferência. A ferramenta não altera automaticamente calendários para obter aprovação do smoke.
+
+O inventário da aplicação preserva os callbacks de `nativeFiles`. O componente de presença mantém sua versão fixada e seu ciclo próprio: heartbeat e disconnect continuam disponíveis durante manutenção e não alteram calendários, documentos ou acessos. Uma atualização desse componente exige conferir também seus jobs com `convex data _scheduled_functions --component presence` e `--component presence/batchWorker`, além de seu contrato de atualização; não está coberta por presumir que o inventário da aplicação inclui componentes.
+
+A recuperação usa backend e frontend da mesma revisão e mantém IDs e dados. Importar backup exige análise específica: dados criados após a reabertura não podem ser descartados por um rollback automático. Depois de um período de manutenção, a função interna `nativeFiles:cleanupExpired` remove temporários vencidos em lotes e preserva arquivos consumidos.
+
+## Backup e arquivos
+
+Exportar Convex completo com `--include-file-storage` quando houver PDFs. Manter ZIP, recibos e credenciais em local privado, fora do Git. Ensaiar restauração integral em um deployment descartável antes de operar sobre dados compartilhados; importação isolada de tabelas pode quebrar referências.
+
+A aplicação repõe um PDF indisponível pelo fluxo [Restaurar original](restauracao-de-originais.md), com conferência de hash. Operações sobre exportações usam a [ferramenta administrativa de dados](migracao-schema.md).
+
+Os testes remotos exigem opt-in de deployment descartável ou do desenvolvimento atual autorizado, com destino verificado e registros exclusivos da suíte conforme a [Verificação no README](../README.md#verificação). Produção não recebe E2E. A execução Windows precisa de evidência efetiva do CI; resultados macOS/Linux não comprovam esse ambiente.
+
+## Recursos operacionais de PDF
+
+A publicação prepara automaticamente recursos gzip das duas arquiteturas do Chromium fixado. A etapa usa os arquivos x64 da dependência verificada pelo lockfile e o pacote oficial ARM64 com SHA-256 fixado, converte no host e envia ao Convex Storage por funções internas. A configuração `DENTEC_CHROMIUM_RUNTIME` só é gravada após os uploads; a conferência exige os mesmos tamanhos e hashes dos metadados do Storage.
+
+A preparação ocorre após o deploy do backend e antes do push do frontend. Se falhar, a manutenção permanece ativa. Não libere o acesso enquanto o runtime não estiver confirmado. O comando requer rede para o GitHub e upload de arquivos ao Storage; não usa os fluxos de documentos institucionais. Recursos já conferidos são reutilizados. As actions baixam os recursos por URLs obtidas diretamente do Storage e verificam integridade e arquitetura antes da extração gzip; não executam descompressão Brotli.

@@ -28,15 +28,15 @@ test('native PDF upload, analysis and confirmed historical evidence stay scoped 
   const storageId = await client.run((ctx) =>
     ctx.storage.store(new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })),
   );
-  await actor.action(api.nativeActions.completeUpload, { uploadId: upload.uploadId, storageId });
-  const uploaded = await actor.action(api.nativeActions.uploadHistory, {
+  await actor.action(api.actions.uploads.completeUpload, { uploadId: upload.uploadId, storageId });
+  const uploaded = await actor.action(api.actions.history.uploadHistory, {
     calendarId: record.id,
     filename: 'anterior-sintetico.pdf',
     year: 2026,
     uploadId: upload.uploadId,
   });
   const analyze = (user: typeof actor | typeof client) =>
-    user.action(api.nativeActions.analyzeHistory, { id: uploaded.id });
+    user.action(api.actions.history.analyzeHistory, { id: uploaded.id });
   await assert.rejects(analyze(client), /Entre com sua conta/);
   await assert.rejects(analyze(foreign), /Registro não encontrado/);
   const parsed = await analyze(actor);
@@ -132,10 +132,10 @@ test('native PDF upload, analysis and confirmed historical evidence stay scoped 
     ),
   );
   await assert.rejects(
-    foreign.action(api.nativeActions.downloadHistory, { id: uploaded.id }),
+    foreign.action(api.actions.history.downloadHistory, { id: uploaded.id }),
     /Registro não encontrado/,
   );
-  const ticket = await actor.action(api.nativeActions.downloadHistory, { id: uploaded.id });
+  const ticket = await actor.action(api.actions.history.downloadHistory, { id: uploaded.id });
   assert.equal(ticket.filename, 'anterior-sintetico.pdf');
   assert.match(ticket.url, /\/files\/[a-f0-9]{64}$/);
 });

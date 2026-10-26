@@ -1,18 +1,8 @@
-import { calendars as baseCalendars } from './editor-client.ts';
-import type { HistoryAnalysis } from '../../web/editor-types.ts';
+import { record, convex as baseConvex } from './editor-client.ts';
+import type { HistoryAnalysis } from '../../web/features/calendar-editor/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
-
-export {
-  accounts,
-  subscribeCalendar,
-  subscribeNativeConnection,
-  downloadLink,
-  nativeError,
-  convex,
-  functions,
-} from './editor-client.ts';
-
-const { record } = window.editorTest;
+import { getFunctionName, type FunctionReference } from 'convex/server';
+export { functions } from './editor-client.ts';
 record.state.events = [
   {
     id: 'local-event',
@@ -38,8 +28,8 @@ record.state.events = [
 ];
 record.histories.push({
   id: 'history-a' as Id<'histories'>,
-  calendarId: 'synthetic-calendar' as Id<'calendars'>,
-  campusId: 'campus-a' as Id<'campuses'>,
+  calendarId: record.id,
+  campusId: record.campusId,
   year: 2026,
   modalities: ['integrado'],
   hash: 'a'.repeat(64),
@@ -63,7 +53,11 @@ const analysis: HistoryAnalysis = {
   needsText: false,
   analyzedAt: '2026-10-23T12:00:00Z',
 };
-export const calendars = {
-  ...baseCalendars,
-  analyzeHistory: () => Promise.resolve(structuredClone(analysis)),
+export const convex = {
+  ...baseConvex,
+  action(reference: FunctionReference<'action'>, args: Record<string, unknown>) {
+    if (getFunctionName(reference) === 'actions/history:analyzeHistory')
+      return Promise.resolve(structuredClone(analysis));
+    return baseConvex.action(reference, args);
+  },
 };

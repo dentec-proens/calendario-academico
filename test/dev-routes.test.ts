@@ -26,11 +26,11 @@ test('Vite serves direct application URLs and keeps unknown routes and assets as
   ]) {
     const response = await fetch(origin + path);
     expect(response.status, path).toBe(200);
-    expect(await response.text()).toContain('/portal/main.tsx');
+    expect(await response.text()).toContain('/main.tsx');
   }
   const editor = await fetch(origin + '/calendarios/calendar-a/historico');
   expect(editor.status).toBe(200);
-  expect(await editor.text()).toContain('/native/editor.tsx');
+  expect(await editor.text()).toContain('/main.tsx');
   for (const path of [
     '/portal',
     '/editor',

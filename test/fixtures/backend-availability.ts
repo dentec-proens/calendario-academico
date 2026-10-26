@@ -3,7 +3,7 @@ import { createElement, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { ConvexProvider, type ConvexReactClient } from 'convex/react';
-import BackendStatus from '../../web/native/BackendStatus.tsx';
+import BackendStatus from '../../web/app/BackendStatus.tsx';
 import { installAvailabilityClock } from './backend-availability-clock.ts';
 
 type ConnectionState = ReturnType<ConvexReactClient['connectionState']>;

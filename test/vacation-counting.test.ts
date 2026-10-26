@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { teacherVacations } from '../src/teacher-vacations.ts';
 import { evaluateCalendar } from '../src/evaluation.ts';
 import { durationEnd } from '../src/duration.ts';
-import { proensLayout } from '../web/print.ts';
+import { proensLayout } from '../src/printing/calendar-layout.ts';
 import { suggestStages } from '../src/stage-suggestions.ts';
 
 const state = {

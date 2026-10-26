@@ -1,67 +1,65 @@
 # Arquitetura
 
-O frontend é uma aplicação React e Vite. Convex concentra identidade, sessões, consultas reativas, transações, arquivos e processamento. `server.ts` serve somente o build estático para preview e recusa `/api/*`.
+A aplicação é uma SPA React e Vite com uma entrada HTML e TanStack Router. Convex concentra identidade, sessões, consultas reativas, transações, arquivos e processamento. `server.ts` serve o build estático para preview e recusa `/api/*`.
 
-## Componentes
+## Responsabilidades
 
-| Componente                | Responsabilidade                                                             |
-| ------------------------- | ---------------------------------------------------------------------------- |
-| `web/portal/`             | Listas, criação, administração, documentos e revisão em React                |
-| `web/native/`             | Autenticação, montagem das páginas, subscriptions e cliente Convex           |
-| `web/components/`         | Diálogo React compartilhado, confirmação assíncrona e apresentação semântica |
-| `web/app.ts`              | Edição do calendário, aplicação dos formulários e coordenação do salvamento  |
-| `web/print.ts`            | Renderização compartilhada entre prévia anual e PDF                          |
-| `src/`                    | Contagem por oferta, períodos, eventos, sugestões e verificações de geração  |
-| `convex/native.ts`        | Operações de calendários, catálogo, documentos e revisão                     |
-| `convex/nativeAuth.ts`    | Convex Auth, membros ativos, convites e recuperação                          |
-| `convex/nativeFiles.ts`   | Validação de uploads, autorização e tickets de arquivos                      |
-| `convex/nativeActions.ts` | Extração de texto e geração de PDF em actions Node                           |
+| Módulo                                              | Responsabilidade                                                                  |
+| --------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `web/app/`                                          | Árvore tipada de rotas, layouts, sessão, erros e Devtools                         |
+| `web/features/`                                     | Páginas e formulários organizados por assunto                                     |
+| `web/features/calendar-editor/session/`             | Estado confirmado/aplicado, sincronização, autosave e ciclo de vida do calendário |
+| `web/shared/forms/`                                 | Rascunhos em memória, submissão e composição comum de formulários                 |
+| `web/shared/convex/`                                | Cliente, erros, tipos e operações por domínio                                     |
+| `web/components/`                                   | Controles visuais e confirmação acessível                                         |
+| `src/calendar-edits/`                               | Comandos puros que validam e aplicam alterações de calendário                     |
+| `src/printing/`                                     | Modelo puro de impressão e distribuição de dias                                   |
+| `assets/printing/`                                  | CSS e logo usados no documento                                                    |
+| `convex/calendars.ts`, `histories.ts`               | Calendários, versões, lixeira, fontes e análise dos PDFs                          |
+| `convex/catalogue.ts`, `documents.ts`, `reviews.ts` | Base institucional, documentos e revisão humana                                   |
+| `convex/access/`                                    | Sessão, identidade, membros, convites, recuperação e instalação                   |
+| `convex/nativeFiles.ts`                             | Uploads temporários, tickets, restauração e limpeza agendada                      |
+| `convex/actions/`                                   | Processamento Node de arquivos, análise e PDF                                     |
+| `convex/operations.ts`                              | Admissão de trabalho, manutenção e drenagem de actions                            |
 
-`web/native/client.ts` adapta as operações da interface a funções Convex específicas, como criação, salvamento, análise e download. Os caminhos `/api/...` que ainda aparecem no editor pertencem a esse adaptador de interface; o backend recebe argumentos validados para cada função. Os contratos públicos estão nos validadores, nos tipos gerados e nos DTOs do cliente.
+Rotas compõem features; features usam domínio e infraestrutura. Domínio não importa React ou DOM. O runtime Node não entra nos bundles do navegador. Consultas paginadas pertencem às telas que as utilizam.
 
-O portal e o editor usam `confirmAction` para decisões que exigem confirmação. O `ConfirmationDialogHost`, montado no provider comum, apresenta um `<dialog>` React com fundo escurecido, foco contido, cancelamento por Escape e restauração de foco. Remoções e descarte usam vermelho; ações operacionais usam azul; consequências recebem destaque âmbar. O módulo também oferece variantes âmbar e verde. O callback `onConfirm` mantém o diálogo aberto durante a operação, bloqueia execução duplicada e apresenta falhas para nova tentativa. A importação abre o seletor de arquivos diretamente e pede confirmação somente após validar o conteúdo.
+## Navegação e formulários
+
+TanStack Router tipa caminhos, parâmetros e contexto. O contrato puro de caminhos em `src/app-routes.ts` atende Vite, preview e rewrites Vercel; somente rotas conhecidas recebem `index.html`. Arquivos ausentes e destinos desconhecidos mantêm erro.
+
+TanStack Form controla valores, validação e submissão. Filtros efetivos representados na URL pertencem ao Router. Um registro em memória conserva rascunhos não sensíveis por usuário, formulário e entidade para remontar telas. Credenciais e arquivos não são serializados nesse registro; logout limpa os rascunhos.
+
+O diálogo compartilhado `confirmAction` mantém foco contido, cancelamento e retorno de foco. Durante a confirmação, bloqueia duplicidade e apresenta erros sem fechar prematuramente. Navegação, formulários e operações assíncronas preservam a identidade da entidade envolvida.
+
+## Estado do editor e concorrência
+
+1. O snapshot **confirmado** possui versão aceita pelo backend e revisão institucional incorporada.
+2. O calendário **aplicado** contém as ações Aplicar/Adicionar da sessão e pode aguardar gravação.
+3. O **preenchimento** pertence ao formulário e só altera o calendário quando aplicado.
+
+Renderização e seletores apenas derivam apresentação. Comandos de domínio validam e recalculam atomicamente; a transação Convex mantém as garantias de autorização, versão e persistência.
+
+Autosave agrupa alterações próximas e mantém uma gravação pendente por sessão. Cada envio usa um snapshot imutável. Sua confirmação atualiza a versão esperada sem apagar alterações aplicadas durante o envio. `saved` depende de confirmação efetiva; validação local e conexão não comprovam gravação.
+
+Uma atualização reativa pode renovar uma sessão limpa. Com alterações locais, a sessão preserva os dados e sinaliza a resolução necessária. Falha recuperável admite nova tentativa; conflito ou sessão expirada bloqueia novas gravações até resolução. Trocar de calendário encerra o ciclo de vida da sessão; resultados tardios não alteram outra entidade.
+
+Exportações que exigem persistência aguardam a conclusão das alterações aplicadas relevantes e usam a versão confirmada. A cópia local representa o estado aplicado; campos ainda não aplicados não entram no arquivo. Não há persistência durável offline, nem promessa de salvar ao fechar o navegador.
 
 ## Persistência e autorização
 
-O schema descreve os campos de cada entidade e usa referências `Id<"tabela">` nas relações. O `_id` nativo é a identidade dos registros; não há envelope genérico de serialização, cópia em `appId`, posição global ou reconstrução de um banco JSON para aplicar diferenças. Cada mutation lê e altera os documentos necessários em uma transação.
+`users` e `auth*` pertencem ao Convex Auth. `campuses` e `calendars` guardam unidades e metadados; `calendarContents` guarda o estado editável. Versões e snapshots são registros próprios. `reviews` e `reviewVersions` registram análise e revisão; `histories` e `historyAnalyses` guardam fontes e extração. Documentos e catálogo usam revisão por ano. Datas operacionais são timestamps; datas acadêmicas são civis.
 
-| Tabelas                                      | Conteúdo                                                                                     |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `users` e `auth*`                            | Perfil e autorização do membro; contas, credenciais e sessões administradas pelo Convex Auth |
-| `campuses` e `calendars`                     | Unidades e metadados dos calendários, separados do conteúdo editável                         |
-| `calendarContents`                           | Estado atual, revisão da base incorporada e documentos institucionais usados                 |
-| `calendarVersions` e `calendarSnapshots`     | Versões anteriores e seus snapshots completos, inseridos sem regravar o histórico            |
-| `reviews` e `reviewVersions`                 | Parecer atual e versões da revisão humana                                                    |
-| `histories` e `historyAnalyses`              | Metadados dos PDFs anteriores e análise de texto consultada separadamente                    |
-| `documents`                                  | Documentos institucionais, versão, publicação e arquivo                                      |
-| `institutionalEvents` e `catalogueRevisions` | Base institucional tipada e revisão por ano                                                  |
-| `invitations` e `passwordResets`             | Tokens temporários armazenados como hashes, com vínculo ao membro e consumo único            |
-| `audit`                                      | Ação, instante, autor e alvo tipado; campus e calendário quando aplicáveis                   |
+O backend deriva identidade, papel e campus da sessão. CAMPUS só atua na unidade autorizada; ADMIN gerencia o sistema; PARECERISTA revisa sem editar calendários. Guards organizam as telas; cada função Convex autoriza a operação. Tipos gerados e validadores são a referência dos contratos.
 
-Timestamps operacionais são números em milissegundos. Datas acadêmicas usam `YYYY-MM-DD`, sem conversão de fuso. Os DTOs e snapshots de exportação conservam as representações exigidas pelas regras do editor; campos de compatibilidade de exportação não se tornam índices ou identidades do banco.
+Salvar calendário confere versão e base, preserva atributos protegidos e valida fontes históricas; uma gravação sem mudança não cria versão artificial. A revisão humana possui salvamento explícito e depende da versão do calendário, base e revisão do parecer. Atualização institucional exige incorporação explícita.
 
-O backend deriva identidade, papel e campus da sessão. Contas CAMPUS só acessam a unidade autorizada; ADMIN possui acesso de gestão e revisão. Validação de permissões ocorre no backend em cada operação protegida. `requireNativeUser` confere conta e sessão; `admin` e `assertCampus` concentram as verificações de gestão e escopo dos registros. Algumas verificações equivalentes ainda são locais a autenticação, arquivos e presença.
+## Arquivos, impressão e manutenção
 
-No portal, `web/portal/permissions.ts` traduz o perfil em permissões de apresentação (selecionar campus, manter a base, revisar, gerenciar campi e contas e consultar presença). Os componentes recebem essas permissões; elas controlam a exibição, não autorizam requisições. Documentos e eventos têm uma única entrada e um único componente por assunto. O filtro administrativo de situação dos documentos exige ADMIN também no backend e usa índices antes da paginação.
+PDFs ficam no Storage por `storageId`; URLs são obtidas no acesso. Uploads têm proprietário, limite de 8 MB, assinatura PDF, SHA-256 e consumo único. Restauração exige o original exato e preserva ID, análises e vínculos. Tickets e temporários possuem limpeza agendada em funções de identidade estável.
 
-PDFs ficam no Convex Storage, referenciados diretamente por `storageId`; URLs são obtidas somente no acesso ao arquivo. `nativeUploads` guarda envios temporários: proprietário autenticado, limite de 8 MB, assinatura PDF e hash SHA-256 calculado no servidor. Um envio validado só pode ser consumido uma vez, e a limpeza preserva os bytes já vinculados ao documento. `nativeFileTickets` guarda apenas o hash do token de download e sua expiração. A geração de PDF usa recursos de impressão próprios e bloqueia a rede do renderizador durante a renderização.
+Prévia, impressão e PDF usam o mesmo modelo de `src/printing/`. O gerador Node controla Chromium, bloqueia rede do renderizador e mantém recursos locais. Produção não carrega módulos de Devtools nem os recursos de depuração de formulários sensíveis.
 
-Quando um original não está no Storage, o registro conserva `unavailableFile`, com referência à origem e motivo explícito. Seus metadados, análises e vínculos históricos permanecem disponíveis; download ou nova extração retornam indisponibilidade até a transferência autorizada dos bytes. A aplicação não fabrica arquivos substitutos nem mantém PDFs em base64 nos documentos. ADMIN pode restaurar o original no mesmo registro mediante conferência exata do SHA-256, preservando análises e vínculos. Os 13 originais que estavam pendentes foram restaurados em 23/10/2026 em produção e no desenvolvimento de Gustavo, sem originais indisponíveis nas exportações finais; veja [Restauração dos originais](restauracao-de-originais.md).
+`operationalControl` guarda a manutenção; `operationalLeases` identifica actions admitidas. A admissão e a pausa são transacionais; mutations de domínio e criação de sessões verificam manutenção. Heartbeat e disconnect de presença continuam disponíveis e usam o ciclo próprio do componente fixado, sem alterar o domínio acadêmico. O smoke pode autorizar temporariamente uma conta ADMIN local na janela do commit; as demais contas permanecem bloqueadas. Actions registram o ID do lease no log e o removem em `finally`. Um lease sem conclusão permanece visível e bloqueia publicação: idade não é prova de término. O procedimento de recuperação está em [Implantação e operação](implantacao-convex-vercel.md).
 
-## Edição e concorrência
-
-As consultas Convex atualizam listas e editores por subscription. Transações protegem a consistência no backend; versões esperadas impedem que uma sessão substitua silenciosamente alterações de outra.
-
-Adicionar/Aplicar transfere o preenchimento do formulário para o calendário. O autosave agrupa alterações próximas e serializa gravações. Só a confirmação do backend produz o estado salvo. Formulários ainda não aplicados impedem a substituição reativa de seus dados. Falhas recuperáveis oferecem nova tentativa; conflito ou sessão expirada bloqueiam novas gravações até a resolução indicada.
-
-Durante perda de conexão, as alterações permanecem na sessão e o SDK gerencia operações pendentes. Não existe persistência durável offline: a página deve ficar aberta até confirmar o salvamento. Baixar cópia preserva somente o estado já aplicado ao calendário.
-
-Atualizar a base institucional exige conferência e confirmação no calendário. A revisão usada no calendário corresponde ao seu ano; alterações em outro ano não o desatualizam. Revisões humanas são vinculadas à versão do calendário e à revisão da base; mudanças tornam a análise desatualizada. O salvamento da análise é explícito. Impressão e PDF usam uma versão confirmada.
-
-## Qualidade
-
-TypeScript estrito cobre backend, contratos, cliente, autenticação, entradas React e ferramentas. Parte do editor e das regras usa JavaScript, coberto por lint e testes. Oxlint verifica também Hooks e promises; Prettier padroniza código e documentação.
-
-A conversão dos dados existentes deve preservar os `_id` de usuários e os registros `auth*`, remapear as referências antigas para IDs nativos e conservar integralmente os históricos, snapshots, tokens ainda válidos e referências de arquivos. A aplicação do schema consolidado exige backup completo e ensaio da conversão antes de produção.
-
-Testes de domínio e `convex-test` executam sem deployment remoto. E2E usa apenas um deployment descartável explicitamente configurado. Os comandos de verificação estão no [README](../README.md).
+Comandos e ambientes de validação estão em [Verificação no README](../README.md#verificação).

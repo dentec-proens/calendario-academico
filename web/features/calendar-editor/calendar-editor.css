@@ -1,0 +1,47 @@
+.calendar-editor-content {
+  min-width: 0;
+}
+.calendar-editor-content fieldset {
+  min-width: 0;
+}
+.calendar-editor-content form > fieldset {
+  display: block;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.calendar-editor-content .editor-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 650;
+  border: 1px solid var(--green);
+  background: var(--green);
+  color: white;
+  padding: 11px 16px;
+  border-radius: 7px;
+  text-decoration: none;
+}
+.calendar-editor-content .editor-action.secondary {
+  background: white;
+  color: var(--green);
+}
+.calendar-editor-content .editor-action:hover {
+  filter: brightness(0.93);
+}
+.calendar-editor-content .editor-action:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+}
+.calendar-editor-content .row-form > fieldset {
+  display: contents;
+}
+.calendar-editor-content input[type='file'] {
+  max-width: 100%;
+}
+.calendar-editor-content .editor-sidebar {
+  align-self: start;
+}
+.calendar-editor-content .error {
+  overflow-wrap: anywhere;
+}

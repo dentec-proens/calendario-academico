@@ -104,6 +104,7 @@ export const createInput = v.object({
   purpose: v.optional(purpose),
 });
 export const saveInput = v.object({
+  unchangedOnly: v.optional(v.boolean()),
   version: v.number(),
   catalogueRevision: v.number(),
   state: v.object({

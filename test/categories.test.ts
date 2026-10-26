@@ -1,11 +1,11 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { categories, eventCategory } from '../src/categories.ts';
-import { proensLayout } from '../web/print.ts';
+import { proensLayout } from '../src/printing/calendar-layout.ts';
 import { readFile } from 'node:fs/promises';
 
 test('PROENS palette matches reference and simultaneous classifications remain visible', async () => {
-  const css = await readFile(new URL('../web/proens.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../assets/printing/calendar.css', import.meta.url), 'utf8');
   assert.equal(categories.filter((c) => c[2]).length, 10);
   for (const [key, , color] of categories.filter((c) => c[2]))
     assert.match(

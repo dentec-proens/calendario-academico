@@ -154,7 +154,8 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
   for (const section of ['edit', 'days', 'events', 'history', 'issues', 'periods']) {
     await page.locator(`[data-view="${section}"]`).click();
     await expect(page.locator(`#${section}`), section).toBeVisible();
-    await expect(page.locator('input#period-name')).toHaveValue('Preenchimento a preservar');
+    if (section === 'periods')
+      await expect(page.locator('input#period-name')).toHaveValue('Preenchimento a preservar');
   }
   await page.locator('#open-history').click();
   await expect(page.locator('#history')).toBeVisible();

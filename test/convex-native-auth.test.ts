@@ -1,3 +1,4 @@
+import { convexModules } from './helpers/convex-modules.ts';
 import { ConvexError } from 'convex/values';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
@@ -13,11 +14,7 @@ process.env.CONVEX_SITE_URL = 'https://isolated-auth-test.convex.site';
 process.env.SITE_URL = 'http://127.0.0.1:4183';
 
 async function fixture() {
-  const client = convexTest(schema, {
-    '../convex/_generated/server.js': () => import('../convex/_generated/server.js'),
-    '../convex/nativeAuth.ts': () => import('../convex/nativeAuth.ts'),
-    '../convex/auth.ts': () => import('../convex/auth.ts'),
-  });
+  const client = convexTest(schema, convexModules);
   const ids = await client.run(async (ctx) => {
     const campusId = await ctx.db.insert('campuses', { name: 'Campus de teste', archived: false });
     const users = [
@@ -92,7 +89,7 @@ test('native sign-in preserves native user IDs and keeps migrated secrets exclus
       .unique(),
   );
   assert.equal(await passwordCrypto.verifySecret('synthetic-password', account!.secret!), true);
-  assert.equal((await asAdmin.query(api.nativeAuth.me, {}))!.id, admin.id);
+  assert.equal((await asAdmin.query(api.access.session.me, {}))!.id, admin.id);
   const signIn = await client.action(api.auth.signIn, {
     provider: 'password',
     params: { flow: 'signIn', email: ' ADMIN-NATIVE@IFPR.EDU.BR ', password: 'synthetic-password' },
@@ -121,7 +118,7 @@ test('native auth rejects public registration, unknown users and campus administ
     }),
   );
   await assert.rejects(
-    asCampus.action(api.nativeAuth.createMember, {
+    asCampus.action(api.access.members.createMember, {
       data: {
         name: 'Denied',
         email: 'denied@ifpr.edu.br',
@@ -131,7 +128,7 @@ test('native auth rejects public registration, unknown users and campus administ
     }),
     /exclusivo da administra/,
   );
-  assert.equal(await client.query(api.nativeAuth.me, {}), null);
+  assert.equal(await client.query(api.access.session.me, {}), null);
   assert.equal((await client.run((ctx) => ctx.db.query('users').take(10))).length, 2);
 });
 
@@ -144,7 +141,7 @@ test('native auth refuses inactive, removed, unassigned or noninstitutional iden
   ]) {
     const { client, campus, asCampus } = await fixture();
     await client.run((ctx) => ctx.db.patch(campus.id, invalid));
-    assert.equal(await asCampus.query(api.nativeAuth.me, {}), null);
+    assert.equal(await asCampus.query(api.access.session.me, {}), null);
     await assert.rejects(
       client.action(api.auth.signIn, {
         provider: 'password',
@@ -157,7 +154,7 @@ test('native auth refuses inactive, removed, unassigned or noninstitutional iden
 
 test('native invitations activate only the intended member and cannot be reused', async () => {
   const { client, asAdmin, campus } = await fixture();
-  const invited = await asAdmin.action(api.nativeAuth.createMember, {
+  const invited = await asAdmin.action(api.access.members.createMember, {
     data: {
       name: 'Convidado',
       email: 'invite-native@ifpr.edu.br',
@@ -169,25 +166,28 @@ test('native invitations activate only the intended member and cannot be reused'
   assert.equal(new URL(invited.inviteUrl!).pathname, '/ativar-conta');
   const token = new URL(invited.inviteUrl!).hash.split('=')[1];
   assert.equal(
-    (await client.query(api.nativeAuth.checkInvitation, { token })).email,
+    (await client.query(api.access.invitations.checkInvitation, { token })).email,
     'invite-native@ifpr.edu.br',
   );
   await assert.rejects(
-    client.action(api.nativeAuth.acceptInvitation, {
+    client.action(api.access.invitations.acceptInvitation, {
       token,
       email: 'different@ifpr.edu.br',
       password: 'synthetic-invite-password',
     }),
     /Convite inválido/,
   );
-  await client.action(api.nativeAuth.acceptInvitation, {
+  await client.action(api.access.invitations.acceptInvitation, {
     token,
     email: 'invite-native@ifpr.edu.br',
     password: 'synthetic-invite-password',
   });
-  await assert.rejects(client.query(api.nativeAuth.checkInvitation, { token }), /Convite inválido/);
   await assert.rejects(
-    client.action(api.nativeAuth.acceptInvitation, {
+    client.query(api.access.invitations.checkInvitation, { token }),
+    /Convite inválido/,
+  );
+  await assert.rejects(
+    client.action(api.access.invitations.acceptInvitation, {
       token,
       email: 'invite-native@ifpr.edu.br',
       password: 'synthetic-other-password',
@@ -207,29 +207,32 @@ test('native invitations activate only the intended member and cannot be reused'
 
 test('native manual recovery replaces credentials atomically and revokes existing sessions immediately', async () => {
   const { client, campus, asAdmin, asCampus } = await fixture();
-  const oldRecovery = await asAdmin.mutation(api.nativeAuth.passwordRecovery, {
+  const oldRecovery = await asAdmin.mutation(api.access.passwordRecovery.passwordRecovery, {
     id: campus.user.id,
   });
-  const recovery = await asAdmin.mutation(api.nativeAuth.passwordRecovery, {
+  const recovery = await asAdmin.mutation(api.access.passwordRecovery.passwordRecovery, {
     id: campus.user.id,
   });
   const oldToken = new URL(oldRecovery.url).hash.split('=')[1];
   const token = new URL(recovery.url).hash.split('=')[1];
   await assert.rejects(
-    client.action(api.nativeAuth.resetPassword, {
+    client.action(api.access.passwordRecovery.resetPassword, {
       token: oldToken,
       password: 'new-synthetic-password',
     }),
     /Link inválido/,
   );
-  await client.action(api.nativeAuth.resetPassword, {
+  await client.action(api.access.passwordRecovery.resetPassword, {
     token,
     password: 'new-synthetic-password',
   });
-  assert.equal(await asCampus.query(api.nativeAuth.me, {}), null);
+  assert.equal(await asCampus.query(api.access.session.me, {}), null);
   assert.equal(await client.run((ctx) => ctx.db.get(campus.sessionId)), null);
   await assert.rejects(
-    client.action(api.nativeAuth.resetPassword, { token, password: 'other-synthetic-password' }),
+    client.action(api.access.passwordRecovery.resetPassword, {
+      token,
+      password: 'other-synthetic-password',
+    }),
     /Link inválido/,
   );
   await assert.rejects(
@@ -248,11 +251,11 @@ test('native manual recovery replaces credentials atomically and revokes existin
 test('native member removal preserves audit and blocks valid JWT sessions immediately', async () => {
   const { client, campus, admin, asAdmin, asCampus } = await fixture();
   await assert.rejects(
-    asAdmin.mutation(api.nativeAuth.removeMember, { id: admin.user.id }),
+    asAdmin.mutation(api.access.members.removeMember, { id: admin.user.id }),
     /próprio acesso/,
   );
-  await asAdmin.mutation(api.nativeAuth.removeMember, { id: campus.user.id });
-  assert.equal(await asCampus.query(api.nativeAuth.me, {}), null);
+  await asAdmin.mutation(api.access.members.removeMember, { id: campus.user.id });
+  assert.equal(await asCampus.query(api.access.session.me, {}), null);
   assert.equal(await client.run((ctx) => ctx.db.get(campus.sessionId)), null);
   const row = await client.run((ctx) => ctx.db.get(campus.id));
   assert.equal(row!.active, false);
@@ -270,14 +273,14 @@ test('native account creation checks administrator access before validating cred
     role: 'ADMIN' as const,
   };
   await assert.rejects(
-    client.action(api.nativeAuth.createMember, { data }),
+    client.action(api.access.members.createMember, { data }),
     (error: unknown) =>
       error instanceof ConvexError &&
       error.data?.status === 401 &&
       /Entre com sua conta/.test(error.data.error),
   );
   await assert.rejects(
-    asCampus.action(api.nativeAuth.createMember, { data }),
+    asCampus.action(api.access.members.createMember, { data }),
     (error: unknown) =>
       error instanceof ConvexError &&
       error.data?.status === 403 &&
@@ -289,7 +292,7 @@ test('native account creation checks administrator access before validating cred
 
 test('reissued native invitations invalidate earlier tokens and clear activation metadata', async () => {
   const { client, asAdmin, campus } = await fixture();
-  const invited = await asAdmin.action(api.nativeAuth.createMember, {
+  const invited = await asAdmin.action(api.access.members.createMember, {
     data: {
       name: 'Convidado reemitido',
       email: 'reissued@ifpr.edu.br',
@@ -299,17 +302,19 @@ test('reissued native invitations invalidate earlier tokens and clear activation
     },
   });
   const oldToken = new URL(invited.inviteUrl!).hash.split('=')[1];
-  const reissued = await asAdmin.mutation(api.nativeAuth.issueInvitation, { id: invited.id });
+  const reissued = await asAdmin.mutation(api.access.invitations.issueInvitation, {
+    id: invited.id,
+  });
   const token = new URL(reissued.inviteUrl).hash.split('=')[1];
   await assert.rejects(
-    client.query(api.nativeAuth.checkInvitation, { token: oldToken }),
+    client.query(api.access.invitations.checkInvitation, { token: oldToken }),
     /Convite inválido/,
   );
   assert.equal(
-    (await client.query(api.nativeAuth.checkInvitation, { token })).campus,
+    (await client.query(api.access.invitations.checkInvitation, { token })).campus,
     'Campus de teste',
   );
-  await client.action(api.nativeAuth.acceptInvitation, {
+  await client.action(api.access.invitations.acceptInvitation, {
     token,
     email: invited.email,
     password: 'synthetic-invite-password',

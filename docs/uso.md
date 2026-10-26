@@ -18,7 +18,7 @@ ADMIN acessa todos os campi, gerencia contas e base institucional e registra a r
 
 No painel de revisão, **Abrir calendário em outra aba** permite ao PARECERISTA consultar o calendário anual, os dados, eventos, PDFs anteriores e pendências em modo somente leitura. A navegação, a impressão e a exportação permanecem disponíveis; os controles de edição e o salvamento ficam desativados. Alterações recebidas do campus atualizam a consulta automaticamente.
 
-Em **Contas e acessos**, o ADMIN pode escolher o perfil ao lado de cada conta e clicar em **Salvar perfil**. CAMPUS exige uma unidade ativa; ADMIN e PARECERISTA têm escopo institucional. A troca preserva a senha, fica registrada nos logs e encerra as sessões do usuário, que deverá entrar novamente. O sistema impede retirar o perfil do último administrador ativo. As contas existentes conservam seu perfil até uma alteração explícita.
+Em **Contas e acessos**, o ADMIN pode escolher o perfil ao lado de cada conta e clicar em **Salvar perfil**. CAMPUS exige uma unidade ativa; ADMIN e PARECERISTA têm escopo institucional. A troca preserva a senha, fica registrada nos logs e encerra as sessões do usuário, que deverá entrar novamente. O sistema impede retirar o perfil do último administrador ativo. O perfil muda somente por uma alteração explícita.
 
 Em **Calendários → Novo calendário**, informe campus, ano, formas de oferta, organização, cursos e, opcionalmente, turmas e turnos. O nome é preenchido a partir de campus e ano. Um calendário pode combinar Técnico integrado, Técnico subsequente, Graduação e Pós-graduação, com etapas próprias por oferta.
 
@@ -45,6 +45,10 @@ Períodos com meta de dias recalculam o término ao alterar os impedimentos. Eta
 **Adicionar/Aplicar** inclui o formulário no calendário e inicia o autosave. O indicador permanece visível durante a rolagem e distingue gravação pendente, em andamento, confirmada e falha. Campos ainda em edição têm aviso próprio: não fazem parte do estado salvo até serem aplicados.
 
 Em falha recuperável, use **Tentar novamente**. Conflito de versões ou sessão expirada preserva as alterações na tela; siga a orientação para guardar uma cópia e conferir a versão atual antes de continuar. Atualizações recebidas de outra sessão não substituem campos não aplicados. Durante falta de conexão, mantenha a página aberta até a confirmação; não existe armazenamento offline durável.
+
+**Sair**, no cabeçalho, pede confirmação quando há alterações no editor e aguarda o salvamento das alterações aplicadas antes de encerrar a conta. A confirmação informa quando campos ainda não aplicados serão descartados; **Cancelar** mantém o preenchimento.
+
+Se o acesso expirar, o editor permanece bloqueado nesta aba. **Baixar cópia aplicada** guarda o estado aplicado em JSON. **Entrar novamente** permite retomar o preenchimento com a mesma conta; trocar de conta, perfil ou campus limpa os dados locais da identidade anterior. **Descartar e ir para acesso** exige confirmação e remove as alterações locais. Recarregar ou fechar a aba não preserva esses dados.
 
 **Baixar cópia** gera JSON do estado aplicado, não dos campos ainda em edição. **Importar cópia** abre um JSON compatível e substitui o rascunho da sessão após confirmação. A importação também precisa ter seu salvamento confirmado.
 
@@ -83,3 +87,9 @@ O PDF de teste é identificado como tal. Um calendário definitivo com pendênci
 A aba **Usuários online**, exclusiva do ADMIN, mostra nome, e-mail, campus e perfil das pessoas conectadas. A lista e os totais de pessoas e campi se atualizam automaticamente; a busca por nome/e-mail e o filtro por campus restringem a lista.
 
 A presença é acompanhada no portal e no editor de calendários. Cada pessoa conta uma vez, mesmo com várias abas ou dispositivos. Fechar a última aba ou sair da conta encerra a presença; em perda abrupta de conexão, a remoção ocorre após cerca de 90 segundos sem confirmação. **Última presença: Agora** indica conexão recente, não interação contínua com o sistema. Uma sessão de login válida, sozinha, não torna a pessoa online.
+
+## Formulários e manutenção
+
+Erros de campo aparecem junto ao preenchimento; erros de operação preservam os valores para correção ou nova tentativa. Um campo válido não comprova salvamento. Arquivos selecionados não são preservados quando o fluxo é desmontado; selecione-os novamente ao retornar.
+
+Durante manutenção, novas alterações e processamento ficam indisponíveis no backend. Aguarde a liberação e recarregue a página para usar o código publicado. Não repita envios enquanto o resultado anterior estiver incerto; confira o estado do registro após a retomada.
