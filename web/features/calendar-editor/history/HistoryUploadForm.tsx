@@ -1,24 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { calendars } from '../../../shared/convex/calendars.ts';
 import { filePayload } from '../../../upload.ts';
 import { useDraftForm } from '../../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useHistoryAnalysis } from './useHistoryAnalysis.tsx';
-import { scrollIntoView } from '../../../scroll.ts';
 
 export default function HistoryUploadForm() {
   const { record, state, readOnly, notify } = useCalendarEditor();
   const analysis = useHistoryAnalysis();
   const input = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (readOnly) return;
-    const frame = requestAnimationFrame(() => {
-      input.current?.focus({ preventScroll: true });
-      scrollIntoView(input.current, { block: 'start' });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [readOnly]);
   const { form, submit, error, pending } = useDraftForm({
     defaultValues: { file: null as File | null, notes: '' },
     draftKey: `calendar:${record.id}:history-upload`,

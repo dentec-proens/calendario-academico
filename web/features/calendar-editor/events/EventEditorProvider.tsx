@@ -17,13 +17,17 @@ import { suggestStages } from '../../../../src/stage-suggestions.ts';
 import { proposedDates } from '../../../../src/history-dates.ts';
 import { historyCandidateKey } from '../../../../src/history-progress.ts';
 import { scrollIntoView } from '../../../scroll.ts';
+import { calendarReferenceAnchor } from '../../../../src/calendar-reference.ts';
+import { editorPages } from '../editor-steps.ts';
 
 function destination(context: EventContext | null, requirementId: string) {
-  if (context?.kind === 'history') return '/calendarios/$calendarId/historico';
+  if (context?.kind === 'history')
+    return { to: editorPages.events.path, hash: calendarReferenceAnchor };
   const activity = context?.kind === 'activity' ? context.requirementId : requirementId;
-  return stageRequirement(activity)
-    ? '/calendarios/$calendarId/periodos'
-    : '/calendarios/$calendarId/eventos';
+  return {
+    to: stageRequirement(activity) ? editorPages.assessments.path : editorPages.events.path,
+    hash: '',
+  };
 }
 
 function useController() {
@@ -122,8 +126,11 @@ function useController() {
     const same = context && JSON.stringify(context) === JSON.stringify(next);
     if (!canOpen(next) && !same) return;
     if (readOnly) return;
-    const to = destination(next, values.requirementId);
-    void navigate({ to, params: { calendarId: record.id } });
+    void navigate({
+      ...destination(next, values.requirementId),
+      params: { calendarId: record.id },
+      hashScrollIntoView: false,
+    });
     if (same) return;
     result.form.reset(values);
     setContext(next);
@@ -135,7 +142,7 @@ function useController() {
     const event = state.events.find((item) => item.id === id);
     if (!event) return;
     if (id.startsWith('teacher-vacation-')) {
-      void navigate({ to: '/calendarios/$calendarId/dias', params: { calendarId: record.id } });
+      void navigate({ to: '/calendarios/$calendarId/ferias', params: { calendarId: record.id } });
       return;
     }
     const next: EventContext = event.requirementId
@@ -199,10 +206,18 @@ function useController() {
   }
   async function resume() {
     await navigate({
-      to: destination(context, result.form.state.values.requirementId),
+      ...destination(context, result.form.state.values.requirementId),
       params: { calendarId: record.id },
+      hashScrollIntoView: false,
     });
+    if (context?.kind === 'history')
+      document.getElementById(calendarReferenceAnchor)?.setAttribute('open', '');
     setOpen(true);
+    requestAnimationFrame(() => {
+      const heading = document.getElementById('event-form-title');
+      heading?.focus({ preventScroll: true });
+      scrollIntoView(heading, { block: 'start' });
+    });
   }
   function changeRequirement(requirementId: string) {
     result.form.setFieldValue('requirementId', requirementId);
@@ -215,7 +230,11 @@ function useController() {
             ? { kind: 'event', eventId }
             : { kind: 'new' };
     setContext(next);
-    void navigate({ to: destination(next, requirementId), params: { calendarId: record.id } });
+    void navigate({
+      ...destination(next, requirementId),
+      params: { calendarId: record.id },
+      hashScrollIntoView: false,
+    });
   }
   function applyStages() {
     const value = result.form.state.values;

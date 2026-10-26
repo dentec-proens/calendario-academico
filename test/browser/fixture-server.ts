@@ -78,6 +78,7 @@ async function startServer(
         'react-dom/client',
         'react/jsx-runtime',
         'lucide-react',
+        'pdfjs-dist',
         'convex/react',
         'convex/server',
         ...(!fixture.auth ? ['@convex-dev/auth/react'] : []),

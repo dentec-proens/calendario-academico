@@ -1,5 +1,6 @@
 import { test, expect } from './test.ts';
 import { startFixtureServer } from './fixture-server.ts';
+import { selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-reviewer-client.ts';
 
 test('reviewer consults the complete calendar and live changes without editing or saving', async ({
@@ -24,14 +25,14 @@ test('reviewer consults the complete calendar and live changes without editing o
   const eventControls = page.locator('#event-list button, #event-list select, #event-list input');
   await expect(eventControls).not.toHaveCount(0);
   for (const control of await eventControls.all()) await expect(control).toBeDisabled();
-  await page.locator('[data-view="history"]').click();
+  await selectEditorSection(page, 'history');
   await expect(page.locator('#history-list')).toContainText(/anterior\.pdf/);
   await expect(page.locator('button#history-submit')).toBeDisabled();
   await page.locator('[data-view="edit"]').click();
-  await expect(page.locator('#week-form button[type="submit"]')).toBeDisabled();
+  await expect(page.locator('#week-confirmed')).toBeDisabled();
   await page.locator('[data-view="issues"]').click();
   await expect(page.locator('#issue-list')).toBeVisible();
-  await page.locator('#issues [data-view="calendar"]').click();
+  await page.locator('#issues a').click();
   await expect(page.locator('#months .proens-document')).toBeVisible();
   await page.evaluate(() => {
     window.print = () => {
@@ -68,7 +69,7 @@ test('reviewer direct section URLs and reload keep the requested read-only secti
     if (reload) await page.reload();
     await expect(page).toHaveURL(requested);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-    await expect(page.locator('#editor-section-title')).toHaveText('Dados gerais');
+    await expect(page.locator('#editor-section-title')).toHaveText('Semana letiva');
     await expect(page.locator('#edit')).toBeVisible();
     await expect(page.locator('[data-view="edit"]')).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('#week-evidence')).toBeDisabled();

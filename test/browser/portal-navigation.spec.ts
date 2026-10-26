@@ -6,6 +6,19 @@ test('calendar creation presents the generated name as text and explains each pu
   cleanup,
 }) => {
   await page.goto(await startFixtureServer('portal', cleanup));
+  await expect(page.locator('#calendar-list')).toContainText('Criado por: Pessoa autora');
+  await expect(page.locator('#calendar-list')).toContainText(
+    'Última alteração por: Pessoa editora',
+  );
+  const firstCalendar = page.locator('#calendar-list > li[data-calendar-campus]').first();
+  await expect(firstCalendar.locator('.calendar-list-offering')).toContainText('Técnico integrado');
+  await expect(firstCalendar.locator('.calendar-list-courses')).not.toBeEmpty();
+  const coursePosition = await firstCalendar.locator('.calendar-list-courses').boundingBox();
+  const authorshipPosition = await firstCalendar.locator('.calendar-list-authorship').boundingBox();
+  expect(coursePosition).not.toBeNull();
+  expect(authorshipPosition).not.toBeNull();
+  expect(authorshipPosition!.y).toBeGreaterThan(coursePosition!.y + coursePosition!.height);
+  await expect(page.getByText('Horários de Brasília', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Novo calendário' }).click();
   const name = page.getByLabel('Nome do calendário', { exact: true });
   await expect(name).toHaveJSProperty('tagName', 'OUTPUT');

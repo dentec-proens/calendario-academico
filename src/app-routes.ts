@@ -24,7 +24,9 @@ export const portalCreationPaths = {
 export const editorSections = {
   edit: 'editar',
   periods: 'periodos',
+  assessments: 'avaliacoes',
   days: 'dias',
+  vacations: 'ferias',
   events: 'eventos',
   history: 'historico',
   issues: 'pendencias',

@@ -5,6 +5,8 @@ import { dirname, join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../browser/test.ts';
 import { editorUrl, parseEditorPath } from '../../src/app-routes.ts';
+import { calendarReferenceAnchor } from '../../src/calendar-reference.ts';
+import { selectEditorSection } from '../browser/editor-navigation.ts';
 import { configuredE2ETarget } from '../../scripts/e2e-environment.ts';
 
 const restorationFixture = process.env.DENTEC_NATIVE_RESTORE_FIXTURE;
@@ -219,9 +221,16 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
     if (!id) throw new Error('Synthetic document confirmation control was not found');
     return id;
   }, marker);
+  await page
+    .locator('#document-list li')
+    .filter({ has: page.locator(`[data-confirm-document="${documentId}"]`) })
+    .locator('.document-manage summary')
+    .click();
   await page.locator(`[data-confirm-document="${documentId}"]`).click();
   await page.locator(`[data-document-id="${documentId}"][data-document-status="vigente"]`).click();
   await expect(page.locator('#document-message')).toContainText('Vigência atualizada');
+  await page.locator(`[data-view-document="${documentId}"]`).click();
+  await expect(page.locator('.document-reader__stage')).toHaveAttribute('aria-busy', 'false');
   const documentDownloadPromise = page.waitForEvent('download');
   await page.locator(`[data-download-document="${documentId}"]`).click();
   const documentDownload = await documentDownloadPromise;
@@ -232,6 +241,7 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
     (await readFile(downloadedDocument)).equals(await readFile(pdf)),
     'download preserves the uploaded institutional PDF bytes',
   );
+  await page.getByRole('button', { name: 'Voltar à lista' }).click();
 
   await page.locator('[data-page="calendars"]').click();
   await page.locator('#calendars .collection-heading button').click();
@@ -246,15 +256,16 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   await expect(page.locator('#record-title')).toContainText(String(year));
   const calendarId = parseEditorPath(new URL(page.url()).pathname)?.id;
   assert(calendarId);
-  await page.locator('[data-view="history"]').click();
+  await selectEditorSection(page, 'history');
   await page.locator('input#history-file').setInputFiles(pdf);
   await page.locator('#history-submit').click();
   await expect(page.locator('#history-list')).toContainText('synthetic-reference.pdf');
   await expect(page.locator('#history-analysis')).toBeVisible();
+  await page.locator('[data-view="calendar"]').click();
   const calendarDownloadPromise = page.waitForEvent('download', { timeout: 120_000 });
-  await page.locator('#download-pdf-top').click();
+  await page.locator('#download-pdf').click();
   const calendarDownload = await calendarDownloadPromise;
-  await expect(page.locator('#download-pdf-top')).toBeEnabled();
+  await expect(page.locator('#download-pdf')).toBeEnabled();
   await expect(page.locator('#message')).toContainText('PDF gerado');
   const expectedPdf = join(directory, `teste-calendario-${year}-v1.pdf`);
   expect(calendarDownload.suggestedFilename()).toBe(`teste-calendario-${year}-v1.pdf`);
@@ -337,8 +348,14 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   );
   await page.locator('[data-page="institution"]').click();
   await page
+    .locator('#document-list li')
+    .filter({ has: page.locator(`[data-document-id="${documentId}"]`) })
+    .locator('.document-manage summary')
+    .click();
+  await page
     .locator(`[data-document-id="${documentId}"][data-document-status="arquivado"]`)
     .click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Retirar de vigência' }).click();
   await expect(page.locator('#document-message')).toContainText('Vigência atualizada');
   await page.locator('[data-page="calendars"]').click();
   await page.locator(`[data-delete-calendar="${calendarId}"]`).click();
@@ -419,7 +436,8 @@ test('admin restores originals created for E2E through canonical editor routes',
     await expect(page.locator('#record-title')).toContainText(`Testes E2E ${runId}`);
   const canonical = new URL(page.url());
   assert.equal(parseEditorPath(canonical.pathname)?.id, fixture.calendarId);
-  assert.equal(parseEditorPath(canonical.pathname)?.section, 'history');
+  assert.equal(parseEditorPath(canonical.pathname)?.section, 'events');
+  assert.equal(canonical.hash, `#${calendarReferenceAnchor}`);
   await page
     .locator(`form[data-restore-history="${fixture.historyId}"] input[type="file"]`)
     .setInputFiles(original);
@@ -454,6 +472,11 @@ test('admin restores originals created for E2E through canonical editor routes',
   await documentPage.locator('#auth-submit').click();
   await expect(documentPage.locator('#workspace')).toBeVisible();
   await documentPage.locator('[data-page="institution"]').click();
+  await documentPage
+    .locator('#document-list li')
+    .filter({ has: documentPage.locator(`form[data-restore-document="${fixture.documentId}"]`) })
+    .locator('.document-manage summary')
+    .click();
   await expect(
     documentPage.locator(`form[data-restore-document="${fixture.documentId}"]`),
   ).toBeVisible();
@@ -479,10 +502,11 @@ test('admin restores originals created for E2E through canonical editor routes',
       response.headers()['content-type']?.startsWith('application/pdf') === true,
     { timeout: 10_000 },
   );
-  const documentDownloadPromise = documentPage.waitForEvent('download');
-  await documentPage.locator(downloadSelector).click();
+  await documentPage.locator(`[data-view-document="${fixture.documentId}"]`).click();
   const downloadResponse = await responsePromise;
   assert.equal(downloadResponse.status(), 200);
+  const documentDownloadPromise = documentPage.waitForEvent('download');
+  await documentPage.locator(downloadSelector).click();
   const documentDownload = await documentDownloadPromise;
   expect(documentDownload.suggestedFilename()).toBe('original-e2e.pdf');
   const restoredDocument = join(documentDirectory, 'original-e2e.pdf');

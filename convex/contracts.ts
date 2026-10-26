@@ -49,6 +49,8 @@ export const summary = v.object({
   shifts: v.string(),
   version: v.number(),
   updatedAt: v.string(),
+  createdByName: v.optional(v.string()),
+  updatedByName: v.optional(v.string()),
   deletedAt: v.optional(v.string()),
 });
 export const historyDto = v.object({

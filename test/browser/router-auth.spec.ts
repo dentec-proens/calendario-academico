@@ -24,6 +24,8 @@ async function startAuthServer(cleanup: Cleanup) {
         '@tanstack/react-router',
         '@tanstack/react-form',
         '@base-ui/react/field',
+        // Discovering Button after the first request can load a second optimized React instance.
+        '@base-ui/react/button',
       ],
     },
     resolve: {
@@ -69,7 +71,11 @@ test('unauthenticated editor and audit URLs return to login with the requested d
   cleanup,
 }) => {
   const origin = await startAuthServer(cleanup);
-  for (const destination of ['/calendarios/calendar-a/historico', '/logs']) {
+  for (const destination of [
+    '/calendarios/calendar-a/historico',
+    '/calendarios/calendar-a/eventos#calendario-anterior',
+    '/logs',
+  ]) {
     await page.goto(origin + destination);
     await expect(page.getByRole('heading', { name: 'Entrar', exact: true })).toBeVisible();
     const url = new URL(page.url());

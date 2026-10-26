@@ -1,5 +1,6 @@
 import { test, expect } from './test.ts';
 import { startFixtureServer } from './fixture-server.ts';
+import { selectEditorSection } from './editor-navigation.ts';
 
 for (const width of [1440, 390]) {
   test(`editor respects reduced motion and reveals its section heading at ${width}px`, async ({
@@ -10,9 +11,9 @@ for (const width of [1440, 390]) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(`${await startFixtureServer('editor', cleanup)}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-    await page.locator('[data-view="events"]').click();
+    await selectEditorSection(page, 'events');
     const heading = page.locator('#editor-section-title');
-    await expect(heading).toHaveText('Eventos locais');
+    await expect(heading).toHaveText('Atividades e datas do campus');
     const headingVisibility = await heading.evaluate((element) => {
       const bounds = element.getBoundingClientRect();
       const top = Math.max(0, bounds.top);
@@ -51,7 +52,7 @@ for (const width of [1440, 390]) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(`${await startFixtureServer('editor', cleanup)}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-    await page.locator('[data-view="events"]').click();
+    await selectEditorSection(page, 'events');
     await page.locator('[data-edit-event="local-event"]').click();
     const title = page.locator('#event-form-title');
     await expect(title).toBeInViewport({ ratio: 1 });
@@ -80,7 +81,7 @@ for (const width of [1440, 390]) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(`${await startFixtureServer('editor', cleanup)}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-    await page.locator('[data-view="events"]').click();
+    await selectEditorSection(page, 'events');
     await page.locator('[data-edit-event="local-event"]').click();
     const originalHeight = await page
       .locator('.editor-feedback')
@@ -98,8 +99,8 @@ for (const width of [1440, 390]) {
           .evaluate((element) => element.getBoundingClientRect().height),
       )
       .toBeGreaterThan(originalHeight);
-    await page.locator('[data-view="periods"]').click();
-    await expect(page.locator('#editor-section-title')).toHaveText('Períodos e avaliações');
+    await selectEditorSection(page, 'periods');
+    await expect(page.locator('#editor-section-title')).toHaveText('Períodos letivos');
     await expect
       .poll(() =>
         page.locator('#editor-section-title').evaluate((element) => {
@@ -130,7 +131,7 @@ for (const width of [1440, 390]) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(`${await startFixtureServer('editor', cleanup)}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-    await page.locator('[data-view="periods"]').click();
+    await selectEditorSection(page, 'periods');
     await page.locator('#period-name').fill('1º semestre');
     await page.locator('#period-start').fill('2027-02-01');
     await page.locator('#period-end').fill('2027-06-30');
@@ -152,7 +153,7 @@ for (const width of [1440, 390]) {
         }),
       )
       .toBe(true);
-    await page.locator('[data-view="events"]').click();
+    await selectEditorSection(page, 'events');
     await page.locator('[data-edit-event="local-event"]').click();
     await page.locator('#event-name').fill('Rascunho para continuar depois');
     await page.locator('#close-event-form').click();
@@ -194,7 +195,18 @@ for (const width of [1440, 390]) {
         }),
       )
       .toBe(true);
-    await page.locator('#open-history').click();
+    await selectEditorSection(page, 'history');
+    await expect(page.locator('#history-file')).toBeVisible();
+    // The reference is now an optional disclosure. Opening it keeps focus on
+    // its summary; keyboard users reach the PDF input after the existing file actions.
+    await expect(page.locator('#open-history')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('link', { name: 'Consultar PDF original' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(
+      page.getByRole('button', { name: 'Identificar datas e atividades' }),
+    ).toBeFocused();
+    await page.keyboard.press('Tab');
     await expect(page.locator('#history-file')).toBeFocused();
     await expect(page.locator('#history-file')).toBeInViewport({ ratio: 1 });
   });

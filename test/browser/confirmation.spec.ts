@@ -3,6 +3,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startFixtureServer } from './fixture-server.ts';
+import { selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/confirmation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -151,15 +152,24 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
       getComputedStyle(input.closest('label')!).color === getComputedStyle(input).borderTopColor
     );
   });
-  for (const section of ['edit', 'days', 'events', 'history', 'issues', 'periods']) {
-    await page.locator(`[data-view="${section}"]`).click();
+  for (const section of [
+    'edit',
+    'days',
+    'vacations',
+    'events',
+    'history',
+    'issues',
+    'assessments',
+    'periods',
+  ] as const) {
+    await selectEditorSection(page, section);
     await expect(page.locator(`#${section}`), section).toBeVisible();
     if (section === 'periods')
       await expect(page.locator('input#period-name')).toHaveValue('Preenchimento a preservar');
   }
-  await page.locator('#open-history').click();
+  await selectEditorSection(page, 'history');
   await expect(page.locator('#history')).toBeVisible();
-  await expect(page.locator('#history-file')).toBeFocused();
+  await expect(page.locator('#history-file')).toBeVisible();
   await page.locator('[data-view="periods"]').click();
 
   const file = join(directory, 'rascunho.json');
@@ -173,6 +183,7 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
 
   // Opening the picker is still a direct user gesture. The decision follows validation.
   const chooserPromise = page.waitForEvent('filechooser');
+  await page.locator('.editor-more > summary').click();
   await page.locator('#load').click();
   await (await chooserPromise).setFiles([file]);
   await expect(page.locator('dialog[open]')).toBeVisible();
@@ -208,6 +219,7 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
   await expect(page.locator('dialog[open]')).toHaveCount(0);
   await expect(page.locator('input#period-name')).toHaveValue('Outro preenchimento');
 
+  await page.locator('[data-view="issues"]').click();
   await page.locator('#make-definitive').click();
   await expect(page.locator('dialog.confirmation-dialog--primary[open]')).toBeVisible();
   await page.setViewportSize({ width: 1280, height: 900 });

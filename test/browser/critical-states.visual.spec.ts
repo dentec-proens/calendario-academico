@@ -1,6 +1,7 @@
 import { test, expect } from './test.ts';
 import type { Page } from '@playwright/test';
 import { startFixtureServer } from './fixture-server.ts';
+import { selectEditorSection } from './editor-navigation.ts';
 
 // Each case runs in the desktop and mobile projects. Fixtures import production
 // components and CSS, and keep all content, timestamps and backend data local.
@@ -59,7 +60,7 @@ test('calendar editor and its event form', async ({ page, cleanup }) => {
   await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
   await assertNoOverflow(page);
   await expect(page).toHaveScreenshot('calendar-editor.png', { fullPage: true });
-  await page.locator('[data-view="events"]').click();
+  await selectEditorSection(page, 'events');
   await page.locator('[data-edit-event="local-event"]').click();
   await expect(page.locator('#event-form')).toBeVisible();
   await assertNoOverflow(page);
@@ -95,4 +96,39 @@ test('destructive confirmation with preserved data explained', async ({ page, cl
   await expect(dialog).toContainText('Seus dados e documentos serão preservados');
   await assertNoOverflow(page);
   await expect(page).toHaveScreenshot('confirmation.png', { fullPage: true });
+});
+
+test('annual Saturdays keep activity and decision fields readable per date', async ({
+  page,
+  cleanup,
+}) => {
+  await page.goto(await startFixtureServer('editor', cleanup));
+  await expect(page.locator('#record-title')).toBeVisible();
+  await selectEditorSection(page, 'days');
+  await page.locator('#saturday-dates input[value="2027-03-06"]').check();
+  await expect(page.locator('#saturday-name-2027-03-06')).toBeFocused();
+  await page.locator('#saturday-name-2027-03-06').fill('Feira de ciências');
+  await page.locator('#saturday-evidence-2027-03-06').fill('Portaria nº 12/2027');
+  await page.locator('#saturday-dates input[value="2027-04-03"]').check();
+  await expect(page.locator('#saturday-name-2027-04-03')).toBeFocused();
+  await page.locator('#saturday-name-2027-04-03').fill('Reposição de aulas');
+  await page.locator('#saturday-evidence-2027-04-03').fill('Ata da reunião de 10/03/2027');
+  await page.locator('#saturday-name-2027-03-06').focus();
+  await expect
+    .poll(() =>
+      page.locator('#saturday-name-2027-03-06').evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        const feedback = document.querySelector('.editor-feedback')!.getBoundingClientRect();
+        return (
+          bounds.top >= feedback.bottom &&
+          document.elementFromPoint(
+            bounds.left + bounds.width / 2,
+            bounds.top + bounds.height / 2,
+          ) === element
+        );
+      }),
+    )
+    .toBe(true);
+  await assertNoOverflow(page);
+  await expect(page).toHaveScreenshot('calendar-saturdays.png', { fullPage: true });
 });

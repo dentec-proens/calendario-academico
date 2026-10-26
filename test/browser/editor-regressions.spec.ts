@@ -1,5 +1,6 @@
 import { test, expect } from './test.ts';
 import { startFixtureServer } from './fixture-server.ts';
+import { selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 declare global {
@@ -50,7 +51,7 @@ test('a blocked save offers an explicit discard path without trapping navigation
       Promise.reject(Object.assign(new Error('Há uma versão mais recente.'), { status: 409 }));
   });
   await page.locator('#week-evidence').fill('Decisão da sessão desatualizada');
-  await page.locator('#week-form button[type="submit"]').click();
+  await page.locator('#editor-continue').click();
   await expect(page.locator('#autosave-status')).toHaveAttribute('data-state', 'blocked');
   await page.locator('.portal-back').click();
   await page.locator('.confirmation-dialog__confirm').click();
@@ -62,7 +63,7 @@ test('a blocked save offers an explicit discard path without trapping navigation
   await expect(page.locator('dialog[open]')).toHaveCount(0);
 });
 
-test('reverting a field clears unapplied state while month browsing stays a harmless preference', async ({
+test('reverting a field clears unapplied state and annual Saturday selections survive navigation', async ({
   page,
   cleanup,
 }) => {
@@ -74,8 +75,16 @@ test('reverting a field clears unapplied state while month browsing stays a harm
   await evidence.fill(original);
   await expect(page.locator('#unapplied-status')).toBeHidden();
   await page.locator('[data-view="days"]').click();
-  await page.locator('#saturday-month').selectOption('3');
+  await expect(page.locator('#saturday-dates input')).toHaveCount(52);
   await expect(page.locator('#unapplied-status')).toBeHidden();
+  await page.locator('#saturday-dates input[value="2027-03-06"]').check();
+  await page.locator('#saturday-dates input[value="2027-04-03"]').check();
+  await expect(page.locator('#saturday-summary')).toContainText('2 sábados selecionados');
+  await page.locator('#saturday-name-2027-03-06').fill('Feira de ciências');
+  await page.locator('#saturday-evidence-2027-03-06').fill('Portaria 1/2027');
+  await page.locator('#saturday-name-2027-04-03').fill('Reposição');
+  await page.locator('#saturday-evidence-2027-04-03').fill('Ata 2/2027');
+  await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-view="periods"]').click();
   await page.locator('#period-name').fill('Rascunho preservado');
   await page.locator('[data-view="events"]').click();
@@ -83,13 +92,43 @@ test('reverting a field clears unapplied state while month browsing stays a harm
   await expect(page.locator('#period-name')).toHaveValue('Rascunho preservado');
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('#period-name').fill('');
-  await expect(page.locator('#unapplied-status')).toBeHidden();
+  await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-view="days"]').click();
-  await expect(page.locator('#saturday-month')).toHaveValue('3');
+  await expect(page.locator('#saturday-name-2027-03-06')).toHaveValue('Feira de ciências');
+  await expect(page.locator('#saturday-evidence-2027-04-03')).toHaveValue('Ata 2/2027');
+  for (const date of ['2027-03-06', '2027-04-03']) {
+    const checkbox = page.locator(`#saturday-dates input[value="${date}"]`);
+    await expect(checkbox).toBeChecked();
+    await checkbox.uncheck();
+  }
+  await expect(page.locator('#unapplied-status')).toBeHidden();
   await page.locator('.portal-back').click();
   await expect(page).toHaveURL(/\/calendarios$/);
   await expect(page.locator('dialog[open]')).toHaveCount(0);
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
+});
+
+test('a deferred Saturday selection keeps a subsequent field focus', async ({ page, cleanup }) => {
+  await page.goto(await startFixtureServer('editor', cleanup));
+  await selectEditorSection(page, 'days');
+  await page.locator('#saturday-dates input[value="2027-03-06"]').check();
+  const firstActivity = page.locator('#saturday-name-2027-03-06');
+  await expect(firstActivity).toBeFocused();
+  // A person can return to a field before the selection's next animation frame.
+  // Keep the click and focus in one browser task to reproduce that ordering.
+  await page.evaluate(() => {
+    document.querySelector<HTMLInputElement>('#saturday-dates input[value="2027-04-03"]')!.click();
+    document.querySelector<HTMLInputElement>('#saturday-name-2027-03-06')!.focus();
+  });
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  await expect(firstActivity).toBeFocused();
+  await firstActivity.fill('Feira de ciências');
+  await expect(page.locator('#saturday-name-2027-04-03')).toHaveValue('');
 });
 
 test('PDF controls share one pending operation and ignore failure after leaving the calendar', async ({
@@ -110,7 +149,7 @@ test('PDF controls share one pending operation and ignore failure after leaving 
       });
     };
   });
-  await page.locator('#download-pdf-top').click();
+  await page.locator('#download-pdf').click();
   await page.waitForFunction(() => window.exportTest.calls === 1);
   await expect(page.locator('#download-pdf')).toBeDisabled();
   await expect(page.locator('#print')).toBeDisabled();
@@ -167,7 +206,7 @@ test('removing a historical exclusion recalculates the teaching-day target', asy
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0]?.end))
     .toBe('2027-03-05');
-  await page.locator('[data-view="history"]').click();
+  await selectEditorSection(page, 'history');
   await page.locator('[data-analyze-history="history-a"]').click();
   await page.locator('[data-history-candidate="0"]').click();
   await page.locator('#event-kind').selectOption('exclude');
@@ -200,7 +239,7 @@ test('event removal clears its metadata draft and grouped teacher vacations', as
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-remove-event="local-event"]').click();
   await expect(page.locator('#unapplied-status')).toBeHidden();
-  await page.locator('[data-view="days"]').click();
+  await page.locator('[data-view="vacations"]').click();
   await page.locator('#vacation-first-start').fill('2027-01-04');
   await page.locator('#vacation-first-end').fill('2027-01-20');
   await page.locator('#vacation-second-start').fill('2027-07-01');
@@ -230,7 +269,7 @@ test('event removal clears its metadata draft and grouped teacher vacations', as
   expect(
     await page.evaluate(() => window.editorTest.record.state.teacherVacations),
   ).toBeUndefined();
-  await page.locator('[data-view="days"]').click();
+  await page.locator('[data-view="vacations"]').click();
   await expect(page.locator('#vacation-first-start')).toHaveValue('');
 });
 
@@ -258,7 +297,7 @@ test('stage editing and activity changes always reveal the same draft in its des
   });
   await page.locator('[data-view="events"]').click();
   await page.locator('[data-edit-event="stage-existing"]').click();
-  await expect(page).toHaveURL(/\/periodos$/);
+  await expect(page).toHaveURL(/\/avaliacoes$/);
   await expect(page.locator('#event-form')).toBeVisible();
   await page.locator('#event-name').fill('Etapa com rascunho');
   await page.locator('#event-requirement').selectOption('family-meeting');
@@ -269,7 +308,7 @@ test('stage editing and activity changes always reveal the same draft in its des
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Novo preenchimento');
   await page.locator('#event-requirement').selectOption('stage-2:integrado');
-  await expect(page).toHaveURL(/\/periodos$/);
+  await expect(page).toHaveURL(/\/avaliacoes$/);
   await page.locator('#event-requirement').selectOption('family-meeting');
   await expect(page).toHaveURL(/\/eventos$/);
   await expect(page.locator('#event-form')).toBeVisible();

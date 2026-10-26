@@ -8,9 +8,13 @@ As coleções abrem pela lista. Use **Novo calendário**, **Cadastrar campus**, 
 
 Seções, formulários e análises têm URLs próprias: por exemplo, `/calendarios`, `/calendarios/novo`, `/documentos`, `/campi/novo`, `/contas/nova` e `/revisoes/<id>`. A edição de um evento institucional usa `/eventos-institucionais/<id>/editar`. Copie o endereço para compartilhar a tela com outra pessoa autorizada ou salve-o nos favoritos. Voltar e Avançar do navegador percorrem essas telas. Recarregar mantém o destino da URL, mas não os campos ainda não aplicados. Abrir um link continua exigindo autenticação e as permissões correspondentes.
 
-O editor está dividido em **Dados gerais**, **Períodos e avaliações**, **Sábados e férias**, **Eventos locais**, **Calendário anterior** e **Conferência e exportação**. As seções podem ser acessadas em qualquer ordem. **Visualizar calendário** abre a prévia anual. Campos ainda não aplicados permanecem em memória ao trocar de seção; a troca de seção não os salva.
+O editor orienta a elaboração em sete etapas: **Semana letiva**, **Períodos letivos**, **Etapas de avaliação**, **Sábados letivos**, **Férias docentes**, **Atividades e datas do campus** e **Revisão e conclusão**. Os títulos da navegação, do conteúdo e dos botões de avanço vêm da mesma definição de etapas. Use **Continuar para…**, seguido do título da próxima etapa, para seguir o percurso ou a navegação lateral para revisar outra etapa. Em telas pequenas, toque no nome da etapa para abrir o seletor. **Visualizar calendário**, no topo, abre a prévia anual. Campos ainda não aplicados permanecem em memória ao trocar de seção; a navegação lateral não os salva.
 
-Cada seção do editor usa um endereço sob `/calendarios/<id>/`, terminando em `editar`, `periodos`, `dias`, `eventos`, `historico`, `pendencias` ou `visualizar`.
+Campus, ano, forma de oferta e organização aparecem no cabeçalho do calendário, disponíveis em todas as etapas. A primeira etapa, **Semana letiva**, concentra os dias regulares e a referência da decisão. **Referência da decisão** identifica o documento ou registro que definiu a semana letiva da oferta: por exemplo, uma resolução, portaria ou ata, com número, ano ou outra identificação consultável. **Continuar para períodos letivos** valida e aplica a semana letiva antes de avançar. As contagens de dias e períodos, as pendências, a exportação e **Concluir e tornar definitivo** ficam na etapa **Revisão e conclusão**. A conversão mantém os dados editáveis e não representa aprovação institucional. O menu **Mais ações**, no topo, reúne o histórico de alterações, a importação e o download de cópias, com descrições das opções.
+
+Cada seção do editor usa um endereço sob `/calendarios/<id>/`, terminando em `editar`, `periodos`, `avaliacoes`, `dias`, `ferias`, `eventos`, `pendencias` ou `visualizar`. Endereços antigos terminados em `historico` continuam válidos e abrem a referência ao calendário anterior dentro de **Atividades e datas do campus**.
+
+Na lista de calendários, **Editar** abre a edição, e **Usar calendário anterior** leva diretamente à referência opcional na etapa de atividades. **Criado por** identifica a autoria original e **Última alteração por** identifica quem alterou a versão atual, junto da data e hora. A atribuição vem do histórico de operações do próprio calendário; uploads, pareceres e operações de lixeira não substituem a autoria da última alteração de conteúdo. Quando a evidência não existe para a criação ou para a versão atual, aparece **Autoria não registrada**.
 
 ## Perfis e criação
 
@@ -28,11 +32,13 @@ Teste e definitivo são finalidades do calendário, não estados de aprovação.
 
 Confirme a semana letiva e registre os períodos, eventos locais e fontes das decisões. Cada evento possui categoria/cor, ofertas abrangidas e efeito: incluir dias, excluir dias ou somente registrar. A cor não determina se ele entra na contagem.
 
-O cálculo usa datas civis, intervalos inclusivos e o escopo de cada oferta. Dias não são contados duas vezes. Uma exclusão prevalece sobre uma inclusão na mesma data e gera conflito para conferência. Sábados letivos devem ser escolhidos e confirmados pelo campus, com fonte; não são incluídos automaticamente para completar metas.
+O cálculo usa datas civis, intervalos inclusivos e o escopo de cada oferta. Dias não são contados duas vezes. Uma exclusão prevalece sobre uma inclusão na mesma data e gera conflito para conferência. Em **Sábados letivos**, a grade anual reúne as datas por mês, com indicação de sábados já registrados e o nome dos impedimentos que tornam uma data não letiva. Ao selecionar um sábado, preencha sua própria atividade e fonte da decisão na ficha correspondente; cada data pode ter informações diferentes. Selecione datas de vários meses e use **Adicionar sábados selecionados** para confirmar a inclusão. A seleção fica em preenchimento até esse clique; sábados não são incluídos automaticamente para completar metas.
 
 As metas automáticas de 200 dias anuais e 100 por período semestral estão configuradas para 2027, exceto Pós-graduação. Outros anos e ofertas sem meta não recebem conformidade presumida. Os totais por oferta, período e dia da semana ajudam na conferência; não comprovam carga horária curricular nem atendimento integral à norma.
 
 Informe até três períodos de férias docentes, com datas e fonte. A prévia mostra o total de dias corridos; não há imposição de janeiro ou julho no formulário. Férias excluem os dias correspondentes da contagem.
+
+Em calendários semestrais, a configuração de ingresso de novos estudantes no segundo semestre fica em **Períodos letivos**.
 
 ## Etapas de avaliação
 
@@ -42,7 +48,7 @@ Períodos com meta de dias recalculam o término ao alterar os impedimentos. Eta
 
 ## Salvamento, cópias e conflitos
 
-**Adicionar/Aplicar** inclui o formulário no calendário e inicia o autosave. O indicador permanece visível durante a rolagem e distingue gravação pendente, em andamento, confirmada e falha. Campos ainda em edição têm aviso próprio: não fazem parte do estado salvo até serem aplicados.
+**Adicionar/Aplicar**, ou **Continuar para períodos letivos** na primeira etapa, inclui o formulário no calendário e inicia o salvamento. O rodapé da etapa distingue gravação pendente, em andamento, confirmada e falha. A confirmação **Alterações salvas** aparece somente após a resposta do servidor. Falhas, conflitos e campos ainda em edição recebem aviso na área superior, que permanece visível durante a rolagem. Campos ainda em edição não fazem parte do estado salvo até serem aplicados.
 
 Em falha recuperável, use **Tentar novamente**. Conflito de versões ou sessão expirada preserva as alterações na tela; siga a orientação para guardar uma cópia e conferir a versão atual antes de continuar. Atualizações recebidas de outra sessão não substituem campos não aplicados. Durante falta de conexão, mantenha a página aberta até a confirmação; não existe armazenamento offline durável.
 
@@ -56,13 +62,15 @@ Se o acesso expirar, o editor permanece bloqueado nesta aba. **Baixar cópia apl
 
 Em **Documentos e normas** e **Feriados e eventos institucionais**, CAMPUS consulta a base disponibilizada e ADMIN também acessa as ações de manutenção. Em Documentos e normas, ambos podem filtrar por ano; ADMIN pode filtrar por situação (rascunho, vigente ou arquivado). Esses filtros são aplicados antes da paginação. As mesmas telas atendem os dois perfis. Eventos indicam datas, categoria, efeito, ofertas e fonte. Mudanças na revisão institucional exigem conferir o impacto e confirmar a atualização no calendário; uma análise humana anterior pode ficar desatualizada.
 
-Documentos aceitam PDF de até 8 MB, com título, ano, tipo e fundamento de aplicação. O envio cria um rascunho. Após baixar e conferir arquivo, ano e aplicabilidade, marque a conferência e use **Definir como vigente**. Há uma versão vigente por tipo e ano; a anterior é arquivada e preservada.
+Na lista, cada documento destaca título, situação, ano, tipo, versão e origem. **Visualizar PDF** abre o leitor na própria aplicação, com paginação, ampliação e texto extraído da página quando disponível. **Voltar à lista** ou Escape fecha a leitura e preserva os filtros. O leitor também permite abrir o original em outra aba e baixar uma cópia como ação secundária. **Detalhes** reúne nome do arquivo, tamanho e data de envio. Um original aguardando restauração é sinalizado e não pode ser aberto até sua recuperação.
+
+Documentos aceitam PDF de até 8 MB, com título, ano, tipo e fundamento de aplicação. O envio cria um rascunho. ADMIN encontra as ações em **Gerenciar**: após visualizar e conferir arquivo, ano e aplicabilidade, marque a conferência e use **Definir como vigente**. Há uma versão vigente por tipo e ano; a anterior é arquivada e preservada. **Retirar de vigência** exige confirmação e preserva o documento no histórico. A restauração de originais indisponíveis também fica em **Gerenciar**.
 
 Enviar um documento não atualiza automaticamente datas, regras de cálculo ou critérios de revisão. Eventos são mantidos no catálogo; mudanças no motor exigem implementação e verificação.
 
-## Calendário anterior
+## Referência ao calendário anterior
 
-**Enviar calendário anterior** vincula o PDF ao calendário e inicia a identificação de datas e atividades. São aceitos PDFs de até 8 MB e 30 páginas, com texto selecionável. A extração apresenta até 150 sugestões, com origem e página, e pode omitir ou juntar trechos. Não há OCR de imagens nem uso de um modelo de IA para validar o conteúdo.
+Na etapa **Atividades e datas do campus**, use a referência opcional **Usar calendário anterior** para consultar PDFs já enviados ou enviar um arquivo e identificar datas e atividades locais. Essa consulta auxilia a preparação de feriados municipais e atividades do campus; confira sempre as datas e as fontes aplicáveis ao ano atual. O cadastro manual continua disponível na mesma etapa. O atalho **Usar calendário anterior**, na listagem, abre diretamente essa referência. São aceitos PDFs de até 8 MB e 30 páginas, com texto selecionável. A extração apresenta até 150 sugestões, com origem e página, e pode omitir ou juntar trechos. Não há OCR de imagens nem uso de um modelo de IA para validar o conteúdo.
 
 Use **Revisar e incluir** para conferir descrição, datas do ano atual, fonte vigente, ofertas e efeito na contagem. A inclusão depende de confirmação; o documento anterior não comprova vigência atual. Sugestões já atendidas por eventos podem ser consultadas pelo filtro correspondente. Falha na leitura não remove o arquivo enviado.
 

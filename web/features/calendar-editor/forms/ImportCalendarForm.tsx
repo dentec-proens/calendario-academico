@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { Upload } from 'lucide-react';
 import { useDraftForm } from '../../../shared/forms/useDraftForm.ts';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
@@ -113,9 +114,16 @@ export default function ImportCalendarForm() {
           id="load"
           type="button"
           className="secondary"
+          aria-label="Importar cópia"
+          aria-describedby="import-copy-description"
+          title="Abra uma cópia editável (.json) deste mesmo calendário. Os dados atuais serão substituídos após sua confirmação."
           onClick={() => input.current?.click()}
         >
-          Importar cópia
+          <Upload aria-hidden="true" />
+          <span className="editor-menu-copy">
+            <span>Importar cópia</span>
+            <small id="import-copy-description">Restaurar uma cópia editável (.json)</small>
+          </span>
         </button>
         <FormFeedback error={error} />
       </fieldset>

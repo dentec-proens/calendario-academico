@@ -1,5 +1,6 @@
 import { test, expect } from './test.ts';
 import { startFixtureServer } from './fixture-server.ts';
+import { selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 test('editor separates creation from editing and preserves closed activity/history drafts until explicit discard', async ({
@@ -34,7 +35,7 @@ test('editor separates creation from editing and preserves closed activity/histo
   };
   const submit = () => page.locator('#event-form button[type="submit"]').click();
 
-  await page.locator('[data-view="events"]').click();
+  await selectEditorSection(page, 'events');
   await expect(page.locator('#event-form')).toBeHidden();
   await page.locator('[data-edit-event="local-event"]').click();
   await expect(page.locator('#new-event')).toBeHidden();
@@ -109,7 +110,7 @@ test('editor separates creation from editing and preserves closed activity/histo
   await cancel();
   expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(3);
 
-  await page.locator('[data-view="history"]').click();
+  await selectEditorSection(page, 'history');
   await page.locator('[data-analyze-history="history-a"]').click();
   await expect(page.locator('[data-history-candidate="0"]')).toBeVisible();
   await page.locator('[data-history-candidate="0"]').click();
@@ -122,6 +123,19 @@ test('editor separates creation from editing and preserves closed activity/histo
   const provenance = await page
     .locator('#historical-event-source')
     .evaluate((node) => node.textContent);
+  await page.locator('#open-history').click();
+  await expect(page.locator('#event-form')).toBeHidden();
+  await page.locator('#resume-event').click();
+  await expect(page.locator('#calendario-anterior')).toHaveAttribute('open', '');
+  await expect(page.locator('#event-form-title')).toBeFocused();
+  await expect(page.locator('#event-form')).toHaveCount(1);
+  expect(await fields()).toEqual(historyDraft);
+  await selectEditorSection(page, 'periods');
+  await page.locator('#resume-event').click();
+  await expect(page).toHaveURL(/\/eventos#calendario-anterior$/);
+  await expect(page.locator('#calendario-anterior')).toHaveAttribute('open', '');
+  await expect(page.locator('#event-form-title')).toBeFocused();
+  expect(await fields()).toEqual(historyDraft);
   const savesBeforeClose = await page.evaluate(() => window.editorTest.calls.saves);
   await page.locator('#cancel-inline-history').click();
   await expect(page.locator('#event-form')).toBeHidden();
@@ -152,9 +166,9 @@ test('editor separates creation from editing and preserves closed activity/histo
   expect(saved?.historicalSource?.historyId).toBe('history-a');
   expect(saved?.historicalSource?.page).toBe(1);
   expect(saved?.historicalSource?.candidateKey).toBeTruthy();
-  await page.locator('[data-view="events"]').click();
+  await selectEditorSection(page, 'events');
   await cancel();
-  await page.locator('[data-view="history"]').click();
+  await selectEditorSection(page, 'history');
   await page.locator('[data-history-candidate="1"]').click();
   await page.locator('#event-evidence').fill('Este preenchimento será descartado');
   const savesBeforeCancel = await page.evaluate(() => window.editorTest.calls.saves);

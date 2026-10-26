@@ -21,7 +21,7 @@ export function useCalendarForm<T extends object>(
       pendingDefaults.current = null;
       result.form.reset(next === undefined ? values : next);
       session.setFormDirty(id, false);
-      notify(successMessage?.(values) ?? 'Alteração aplicada. Confira o indicador de salvamento.');
+      notify(successMessage?.(values) ?? '');
     },
   });
   const dirty = result.dirty;

@@ -26,7 +26,7 @@ export function saturdayEvents(
       throw Error(
         'O sábado ' +
           date.split('-').reverse().join('/') +
-          ' está fora dos períodos letivos. Cadastre ou ajuste o início e o término na seção 3. Períodos letivos e tente adicionar novamente.',
+          ' está fora dos períodos letivos. Cadastre ou ajuste o início e o término na etapa Períodos letivos e tente adicionar novamente.',
       );
   }
   return selected

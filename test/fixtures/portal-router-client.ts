@@ -167,6 +167,11 @@ export const convex = {
   },
   action: (reference: FunctionReference<'action'>, args: Record<string, unknown>) => {
     switch (getFunctionName(reference)) {
+      case 'actions/documents:downloadDocument':
+        return finishMutation('downloadDocument', {
+          url: window.location.origin + '/__synthetic-document.pdf',
+          filename: 'teste.pdf',
+        });
       case 'actions/uploads:completeUpload':
         return Promise.resolve({ uploadId: 'synthetic-upload' });
       case 'actions/documents:uploadDocument':

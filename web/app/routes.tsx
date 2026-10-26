@@ -10,6 +10,8 @@ import WorkspaceLayout from './layouts/WorkspaceLayout.tsx';
 import AuthenticatedLayout from './layouts/AuthenticatedLayout.tsx';
 import { ApplicationError, NotFoundPage } from './errors.tsx';
 import { loginReturnTarget } from '../../src/login-return.ts';
+import { editorPages } from '../features/calendar-editor/editor-steps.ts';
+import { calendarReferenceAnchor, isCalendarReferenceHash } from '../../src/calendar-reference.ts';
 
 export interface ApplicationContext {
   session: SessionState;
@@ -92,7 +94,15 @@ const authenticated = createRoute({
     )
       return;
     if (!context.session.isLoading && !context.session.isAuthenticated) {
-      throw redirect({ to: '/', search: { retorno: location.pathname + location.searchStr } });
+      const hash =
+        parseEditorPath(location.pathname)?.section === 'events' &&
+        isCalendarReferenceHash(location.hash)
+          ? `#${calendarReferenceAnchor}`
+          : '';
+      throw redirect({
+        to: '/',
+        search: { retorno: location.pathname + location.searchStr + hash },
+      });
     }
   },
 });
@@ -224,44 +234,65 @@ const editor = createRoute({
 const identity = createRoute({
   getParentRoute: () => editor,
   path: '/editar',
-  component: lazy(() => import('../features/calendar-editor/sections/IdentitySection.tsx')),
-  staticData: { title: 'Identificação do calendário' },
+  component: lazy(() => import('../features/calendar-editor/sections/WeekSection.tsx')),
+  staticData: { title: editorPages.edit.title },
 });
 const periods = createRoute({
   getParentRoute: () => editor,
   path: '/periodos',
   component: lazy(() => import('../features/calendar-editor/sections/PeriodsSection.tsx')),
-  staticData: { title: 'Períodos letivos' },
+  staticData: { title: editorPages.periods.title },
 });
 const days = createRoute({
   getParentRoute: () => editor,
   path: '/dias',
   component: lazy(() => import('../features/calendar-editor/sections/DaysSection.tsx')),
-  staticData: { title: 'Dias e férias' },
+  staticData: { title: editorPages.days.title },
+});
+const assessments = createRoute({
+  getParentRoute: () => editor,
+  path: '/avaliacoes',
+  component: lazy(() => import('../features/calendar-editor/sections/AssessmentsSection.tsx')),
+  staticData: { title: editorPages.assessments.title },
+});
+const vacations = createRoute({
+  getParentRoute: () => editor,
+  path: '/ferias',
+  component: lazy(() => import('../features/calendar-editor/sections/VacationsSection.tsx')),
+  staticData: { title: editorPages.vacations.title },
 });
 const events = createRoute({
   getParentRoute: () => editor,
   path: '/eventos',
   component: lazy(() => import('../features/calendar-editor/sections/EventsSection.tsx')),
-  staticData: { title: 'Eventos e atividades' },
+  staticData: { title: editorPages.events.title },
 });
 const history = createRoute({
   getParentRoute: () => editor,
   path: '/historico',
-  component: lazy(() => import('../features/calendar-editor/sections/HistorySection.tsx')),
-  staticData: { title: 'Histórico e documentos' },
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: editorPages.events.path,
+      params,
+      hash: calendarReferenceAnchor,
+      replace: true,
+      search: (previous) => previous,
+      hashScrollIntoView: false,
+    });
+  },
+  staticData: { title: editorPages.events.title },
 });
 const issues = createRoute({
   getParentRoute: () => editor,
   path: '/pendencias',
   component: lazy(() => import('../features/calendar-editor/sections/IssuesSection.tsx')),
-  staticData: { title: 'Pendências do calendário' },
+  staticData: { title: editorPages.issues.title },
 });
 const preview = createRoute({
   getParentRoute: () => editor,
   path: '/visualizar',
   component: lazy(() => import('../features/calendar-editor/sections/CalendarPreviewSection.tsx')),
-  staticData: { title: 'Visualizar calendário' },
+  staticData: { title: editorPages.calendar.title },
 });
 
 export const routeTree = root.addChildren([
@@ -286,6 +317,16 @@ export const routeTree = root.addChildren([
       online,
       audit,
     ]),
-    editor.addChildren([identity, periods, days, events, history, issues, preview]),
+    editor.addChildren([
+      identity,
+      periods,
+      assessments,
+      days,
+      vacations,
+      events,
+      history,
+      issues,
+      preview,
+    ]),
   ]),
 ]);

@@ -11,6 +11,7 @@ interface CollectionPanelProps {
   onFormOpen: (open: boolean) => void;
   busy?: boolean;
   canCreate?: boolean;
+  actionVariant?: 'primary' | 'secondary';
   children: ReactNode;
   form: ReactNode;
   feedback?: ReactNode;
@@ -24,6 +25,7 @@ export default function CollectionPanel({
   onFormOpen,
   busy = false,
   canCreate = true,
+  actionVariant = 'primary',
   children,
   form,
   feedback,
@@ -60,6 +62,7 @@ export default function CollectionPanel({
             </h2>
             {canCreate ? (
               <Button
+                variant={actionVariant}
                 type="button"
                 aria-controls={id}
                 disabled={busy}

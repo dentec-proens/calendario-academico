@@ -1,0 +1,69 @@
+.calendar-reference {
+  margin: 18px 0 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--ui-surface);
+}
+.calendar-reference > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--green);
+}
+.calendar-reference > summary::-webkit-details-marker {
+  display: none;
+}
+.calendar-reference > summary:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+}
+.calendar-reference > summary strong,
+.calendar-reference > summary small {
+  display: block;
+}
+.calendar-reference > summary strong {
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+.calendar-reference > summary small {
+  margin-top: 3px;
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+}
+.calendar-reference-optional {
+  margin-left: auto;
+  padding: 3px 7px;
+  border-radius: 4px;
+  color: var(--ui-muted);
+  background: var(--ui-surface-muted);
+  font-size: 0.6875rem;
+}
+.calendar-reference[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.calendar-reference[open] .calendar-reference-chevron {
+  transform: rotate(180deg);
+}
+.calendar-reference > #history {
+  padding: 0 16px 18px;
+}
+@media (max-width: 480px) {
+  .calendar-reference > summary {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .calendar-reference > summary > span:first-of-type {
+    flex: 1;
+    min-width: 0;
+  }
+  .calendar-reference-optional {
+    display: none;
+  }
+  .calendar-reference > #history {
+    padding: 0 12px 16px;
+  }
+}

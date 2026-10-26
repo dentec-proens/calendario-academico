@@ -1,3 +1,4 @@
+import { editorPages } from '../editor-steps.ts';
 import { useEffect, useRef } from 'react';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
@@ -161,7 +162,7 @@ export default function PeriodForm() {
       </form>
       <p id="period-duration-status" role="status">
         {preview
-          ? `${state.weekConfirmed ? '' : 'Estimativa provisória. Confirme e aplique a semana letiva em Dados gerais. '}Término previsto: ${preview}`
+          ? `${state.weekConfirmed ? '' : `Estimativa provisória. Confirme e aplique a semana letiva em ${editorPages.edit.title}. `}Término previsto: ${preview}`
           : 'Informe início e quantidade para sugerir o término usando os impedimentos já registrados.'}
       </p>
       <p id="period-auto-status" role="status">

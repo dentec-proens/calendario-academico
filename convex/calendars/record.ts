@@ -24,7 +24,7 @@ export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>
     ]);
   if (!campus) fail('Campus não encontrado.', 404);
   const record = {
-    ...summary(row, campus),
+    ...(await summary(ctx, row, campus)),
     state: domainState(row, campus, content.state),
     catalogueRevision: content.catalogueRevision,
     documentSnapshot: content.documentSnapshot.map(documentDto),
@@ -115,7 +115,7 @@ export async function calendarSummaries(ctx: Context, user: Member, deleted = fa
       .map(async (row) => {
         const campus = await ctx.db.get(row.campusId);
         if (!campus) fail('Campus não encontrado.', 404);
-        return summary(row, campus);
+        return summary(ctx, row, campus);
       }),
   );
 }

@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarExport } from '../export/CalendarExportProvider.tsx';
 import { modalityLabels } from '../../../../src/modalities.ts';
+import { Download, Eye } from 'lucide-react';
 
 export default function IssuesSection() {
   const { state, record, dirty, evaluation } = useCalendarEditor();
@@ -72,8 +73,28 @@ export default function IssuesSection() {
       });
   return (
     <section id="issues" className="view">
+      <div className="metrics editor-review-metrics">
+        <article>
+          <span>Dias letivos calculados</span>
+          <strong id="total">{evaluation?.total ?? '—'}</strong>
+          <small id="goal">
+            {state.year === 2027
+              ? 'Referência: mínimo anual de 200 dias.'
+              : 'Sem meta normativa cadastrada para este ano.'}
+          </small>
+        </article>
+        <article>
+          <span>Períodos cadastrados</span>
+          <strong id="period-count">{state.periods.length}</strong>
+          <small id="period-summary">
+            {state.periods.length
+              ? state.periods.map((period) => period.name).join(' · ')
+              : 'Nenhum período definido'}
+          </small>
+        </article>
+      </div>
       <div className="panel">
-        <h3>Conferência e exportação</h3>
+        <h3>Conferência do calendário</h3>
         <p>A saída definitiva depende das verificações e da revisão humana atualizada.</p>
         <ul id="issue-list" className="records">
           {issues.map((issue, index) => (
@@ -90,19 +111,20 @@ export default function IssuesSection() {
           <Link
             to="/calendarios/$calendarId/visualizar"
             params={{ calendarId: record.id }}
-            data-view="calendar"
+            className="editor-action secondary"
           >
-            Visualizar calendário
+            <Eye aria-hidden="true" /> Visualizar calendário
           </Link>
           <button
             type="button"
             id="export-calendar"
+            className="secondary"
             disabled={exporting.pending}
             onClick={() => {
               void exporting.pdf();
             }}
           >
-            Baixar calendário em PDF
+            <Download aria-hidden="true" /> Baixar calendário em PDF
           </button>
         </div>
       </div>

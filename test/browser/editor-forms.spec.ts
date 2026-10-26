@@ -35,10 +35,11 @@ test('week form applies confirmed weekdays and rejects an empty week atomically'
   await openEditor(page, cleanup);
   await page.locator('[data-view="edit"]').click();
   const weekdays = page.locator('#weekdays input');
+  await expect(weekdays).toHaveCount(5);
   for (const checkbox of await weekdays.all()) await checkbox.uncheck();
   await page.locator('#week-evidence').fill('Resolução da semana letiva');
   await page.locator('#week-confirmed').check();
-  await page.locator('#week-form button[type="submit"]').click();
+  await page.locator('#editor-continue').click();
   await expect(page.locator('#week-form [role="alert"]')).toHaveText(
     'Selecione pelo menos um dia regular.',
   );
@@ -47,7 +48,7 @@ test('week form applies confirmed weekdays and rejects an empty week atomically'
   ]);
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
   for (const day of [1, 3, 5]) await page.locator(`#weekdays input[value="${day}"]`).check();
-  await page.locator('#week-form button[type="submit"]').click();
+  await page.locator('#editor-continue').click();
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.weekdays))
     .toEqual([1, 3, 5]);
@@ -100,6 +101,7 @@ test('assessment settings require apply, generate stages and restore automatic d
   await openEditor(page, cleanup);
   await addPeriod(page, '2027-03-01', '2027-03-26');
   await savedState(page);
+  await page.locator('[data-view="assessments"]').click();
   await page.locator('[data-assessment-modality="integrado"]').selectOption('4');
   expect(
     await page.evaluate(() => window.editorTest.record.state.assessmentStagesByModality),
@@ -169,17 +171,16 @@ test('assessment settings require apply, generate stages and restore automatic d
   ).toEqual(Array<string>(4).fill('2027-03-01'));
 });
 
-test('Saturday form includes a selected date once and rejects dates outside teaching periods', async ({
+test('annual Saturday form includes a selected date once and rejects dates outside teaching periods', async ({
   page,
   cleanup,
 }) => {
   await openEditor(page, cleanup);
   await addPeriod(page, '2027-03-01', '2027-03-31');
   await page.locator('[data-view="days"]').click();
-  await page.locator('#saturday-month').selectOption('3');
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
-  await page.locator('#saturday-evidence').fill('Plano de reposição aprovado');
-  await page.locator('#saturday-form input[type="checkbox"][required]').check();
+  await page.locator('#saturday-name-2027-03-06').fill('Feira de ciências');
+  await page.locator('#saturday-evidence-2027-03-06').fill('Plano de reposição aprovado');
   await page.locator('#saturday-form button[type="submit"]').click();
   await expect
     .poll(() =>
@@ -196,15 +197,57 @@ test('Saturday form includes a selected date once and rejects dates outside teac
     end: '2027-03-06',
     kind: 'include',
   });
-  await expect(page.locator('#saturday-month')).toHaveValue('3');
-  await expect(page.locator('#saturday-evidence')).toHaveValue('Plano de reposição aprovado');
+  await expect(page.locator('#saturday-month')).toHaveCount(0);
+  await expect(page.locator('.saturday-activity')).toHaveCount(0);
   await expect(page.locator('#saturday-dates input[value="2027-03-06"]')).toBeDisabled();
-  await page.locator('#saturday-month').selectOption('4');
   await page.locator('#saturday-dates input[value="2027-04-03"]').check();
-  await page.locator('#saturday-form input[type="checkbox"][required]').check();
+  await page.locator('#saturday-name-2027-04-03').fill('Reposição');
+  await page.locator('#saturday-evidence-2027-04-03').fill('Ata 2/2027');
   await page.locator('#saturday-form button[type="submit"]').click();
   await expect(page.locator('#saturday-form [role="alert"]')).toContainText('períodos');
   expect(await savedState(page)).toEqual(before);
+});
+
+test('annual Saturday grid submits selections from different months in one action', async ({
+  page,
+  cleanup,
+}) => {
+  await openEditor(page, cleanup);
+  await addPeriod(page, '2027-03-01', '2027-04-30');
+  await savedState(page);
+  await page.locator('[data-view="days"]').click();
+  await expect(page.locator('#saturday-dates input')).toHaveCount(52);
+  await expect(page.locator('#saturday-form input[type="checkbox"][required]')).toHaveCount(0);
+  const dates = ['2027-03-06', '2027-04-03'];
+  for (const date of dates) await page.locator(`#saturday-dates input[value="${date}"]`).check();
+  await expect(page.locator('#saturday-summary')).toContainText('2 sábados selecionados');
+  for (const [index, date] of dates.entries()) {
+    await page.locator(`#saturday-name-${date}`).fill(`Atividade ${index + 1}`);
+    await page.locator(`#saturday-evidence-${date}`).fill(`Resolução ${index + 1}/2027`);
+  }
+  await page.locator('#saturday-form button[type="submit"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.editorTest.record.state.events
+          .filter((event) => event.category === 'sabado')
+          .map((event) => event.start)
+          .sort(),
+      ),
+    )
+    .toEqual(dates);
+  const saved = await savedState(page);
+  for (const [index, date] of dates.entries()) {
+    expect(
+      saved.state.events.find((event) => event.start === date && event.category === 'sabado'),
+    ).toMatchObject({ name: `Atividade ${index + 1}`, evidence: `Resolução ${index + 1}/2027` });
+  }
+  for (const date of dates) {
+    const checkbox = page.locator(`#saturday-dates input[value="${date}"]`);
+    await expect(checkbox).toBeChecked();
+    await expect(checkbox).toBeDisabled();
+  }
+  await expect(page.locator('#saturday-summary')).toContainText('0 sábados selecionados');
 });
 
 test('vacation form supports duration and manual end dates and rejects overlapping periods atomically', async ({
@@ -212,7 +255,7 @@ test('vacation form supports duration and manual end dates and rejects overlappi
   cleanup,
 }) => {
   await openEditor(page, cleanup);
-  await page.locator('[data-view="days"]').click();
+  await page.locator('[data-view="vacations"]').click();
   await page.locator('#vacation-first-start').fill('2027-01-04');
   await page.locator('#vacation-first-days').fill('10');
   await expect(page.locator('#vacation-first-end')).toHaveValue('2027-01-13');

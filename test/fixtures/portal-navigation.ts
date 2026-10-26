@@ -94,6 +94,8 @@ const calendar: Bootstrap['calendars'][number] = {
   shifts: '',
   version: 1,
   updatedAt: '2026-10-23T12:00:00Z',
+  createdByName: 'Pessoa autora',
+  updatedByName: 'Pessoa editora',
 };
 const documents: DocumentsData['documents'] = (['rascunho', 'vigente', 'arquivado'] as const).map(
   (status, i) => ({
@@ -107,6 +109,14 @@ const documents: DocumentsData['documents'] = (['rascunho', 'vigente', 'arquivad
     status,
     version: 1,
     createdAt: '2026-10-23T12:00:00Z',
+    ...(i === 0 && new URLSearchParams(location.search).has('missing-document')
+      ? {
+          unavailableFile: {
+            reason: 'not_migrated' as const,
+            sourceReference: 'synthetic-original',
+          },
+        }
+      : {}),
     ...(status !== 'rascunho' ? { publishedAt: '2026-10-23T12:00:00Z' } : {}),
   }),
 );

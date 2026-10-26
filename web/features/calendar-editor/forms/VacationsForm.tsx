@@ -68,7 +68,9 @@ export default function VacationsForm() {
               {(field) => (
                 <Input
                   field={field}
-                  label="Quantidade de dias corridos"
+                  label="Dias corridos"
+                  aria-label="Quantidade de dias corridos"
+                  className="vacation-day-count"
                   id={`vacation-${part}-days`}
                   type="number"
                   min="1"

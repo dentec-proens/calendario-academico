@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import {
   catalogueEventId,
   editorUrl,
+  editorSections,
   pageDocument,
   parseEditorPath,
   portalCreationPaths,
@@ -13,6 +14,15 @@ import {
 } from '../src/app-routes.ts';
 
 describe('application paths', () => {
+  test('assessment and vacation steps have independent direct URLs', () => {
+    for (const section of ['assessments', 'vacations'] as const) {
+      const path = editorUrl('calendar-a', section);
+      expect(path).toBe(`/calendarios/calendar-a/${editorSections[section]}`);
+      expect(parseEditorPath(path)).toEqual({ id: 'calendar-a', section });
+      expect(parseEditorPath(path + '/')).toEqual({ id: 'calendar-a', section });
+      expect(pageDocument(path)).toBe('index.html');
+    }
+  });
   test('matches collection and creation routes without confusing calendar IDs with collections', () => {
     for (const page of Object.keys(portalPaths) as PortalPageId[]) {
       expect(portalPageForPath(portalPaths[page])).toBe(page);
@@ -77,7 +87,9 @@ describe('application paths', () => {
       '/eventos-institucionais/event-a/editar',
       '/calendarios/calendar-a/editar',
       '/calendarios/calendar-a/periodos',
+      '/calendarios/calendar-a/avaliacoes',
       '/calendarios/calendar-a/dias',
+      '/calendarios/calendar-a/ferias',
       '/calendarios/calendar-a/eventos',
       '/calendarios/calendar-a/historico',
       '/calendarios/calendar-a/pendencias',

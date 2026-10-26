@@ -1,15 +1,16 @@
-import { useEffect, useRef } from 'react';
-import { Archive, CheckCircle2, Download, Upload } from 'lucide-react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { Archive, CheckCircle2, ChevronDown, Ellipsis, Eye, FileText, Upload } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
-import { downloadLink } from '../../shared/convex/files.ts';
 import { institution } from '../../shared/convex/institution.ts';
-import { nativeError } from '../../shared/convex/errors.ts';
+import { confirmAction } from '../../components/confirmation.ts';
 import type { DocumentsData } from '../../shared/convex/types.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { filePayload } from '../../upload.ts';
 
 type Document = DocumentsData['documents'][number];
+const DocumentReader = lazy(() => import('./DocumentReader.tsx'));
+const documentStatuses = { rascunho: 'Rascunho', vigente: 'Vigente', arquivado: 'Arquivado' };
 export const documentTypes = {
   norma: 'Resolução / norma',
   referencia: 'Calendário de referência',
@@ -78,6 +79,18 @@ function DocumentStatusForm({
       const status = value.status === 'vigente' ? 'arquivado' : 'vigente';
       if (status === 'vigente' && !value.confirmed)
         throw new Error('Marque a conferência do documento antes de definir a vigência.');
+      if (
+        status === 'arquivado' &&
+        !(await confirmAction({
+          title: 'Retirar documento de vigência?',
+          description: `${document.title} · ${document.year} · versão ${document.version}`,
+          consequence:
+            'O documento será preservado no histórico. Calendários e pareceres existentes deverão ser conferidos com a nova base.',
+          confirmLabel: 'Retirar de vigência',
+          intent: 'warning',
+        }))
+      )
+        return;
       await institution.documentStatus(document.id, {
         revision: value.revision,
         status,
@@ -96,7 +109,10 @@ function DocumentStatusForm({
     form.reset({ confirmed: false, revision, status: document.status });
   }, [dirty, document.status, form, pending, remoteChanged, revision]);
   return (
-    <form onSubmit={submit}>
+    <form className="document-status-form" onSubmit={submit}>
+      <h4>
+        {values.status === 'vigente' ? 'Vigência do documento' : 'Conferir e definir vigência'}
+      </h4>
       {values.status !== 'vigente' ? (
         <label className="check">
           <input
@@ -115,7 +131,7 @@ function DocumentStatusForm({
         variant={values.status === 'vigente' ? 'secondary' : 'primary'}
         data-document-status={values.status === 'vigente' ? 'arquivado' : 'vigente'}
         data-document-id={document.id}
-        disabled={pending}
+        disabled={pending || (values.status !== 'vigente' && !values.confirmed)}
       >
         {values.status === 'vigente' ? (
           <>
@@ -151,41 +167,69 @@ export default function DocumentRecord({
   revision: number;
   onMessage: (message: string) => void;
 }) {
+  const [reading, setReading] = useState(false);
   return (
-    <li>
-      <div>
-        <strong>{document.title}</strong>
-        <small>
-          {document.year} · {documentTypes[document.type]} · versão {document.version} ·{' '}
-          {document.status}
-        </small>
-        <small>{document.source}</small>
-        <small>
-          Enviado em {new Date(document.createdAt).toLocaleString('pt-BR')} ·{' '}
-          {document.size ? `${(document.size / 1024).toFixed(0)} KB` : 'Tamanho indisponível'}
-        </small>
-        <a
-          href={`#document-${document.id}`}
-          data-download-document={document.id}
-          onClick={(event) =>
-            void downloadLink(
-              event,
-              { kind: 'document', id: document.id },
-              document.filename,
-            ).catch((cause) => onMessage(nativeError(cause).message))
-          }
-        >
-          <Download size={16} aria-hidden="true" />
-          Baixar PDF
-        </a>
+    <li className="document-record">
+      <FileText className="document-record__icon" size={24} aria-hidden="true" />
+      <div className="document-record__body">
+        <div className="document-record__heading">
+          <h3>{document.title}</h3>
+          <span className="document-status" data-status={document.status}>
+            {documentStatuses[document.status]}
+          </span>
+        </div>
+        <p className="document-record__meta">
+          {document.year} · {documentTypes[document.type]} · Versão {document.version}
+        </p>
+        <p className="document-record__meta">{document.source}</p>
+        <div className="document-record__actions">
+          <Button
+            data-view-document={document.id}
+            disabled={Boolean(document.unavailableFile)}
+            onClick={() => setReading(true)}
+          >
+            <Eye size={16} aria-hidden="true" /> Visualizar PDF
+          </Button>
+          <details className="document-details">
+            <summary>
+              Detalhes <ChevronDown size={14} aria-hidden="true" />
+            </summary>
+            <dl>
+              <div>
+                <dt>Enviado em</dt>
+                <dd>{new Date(document.createdAt).toLocaleString('pt-BR')}</dd>
+              </div>
+              <div>
+                <dt>Arquivo</dt>
+                <dd>{document.filename}</dd>
+              </div>
+              <div>
+                <dt>Tamanho</dt>
+                <dd>
+                  {document.size ? `${(document.size / 1024).toFixed(0)} KB` : 'Indisponível'}
+                </dd>
+              </div>
+            </dl>
+          </details>
+          {canManage ? (
+            <details className="document-manage">
+              <summary>
+                <Ellipsis size={16} aria-hidden="true" /> Gerenciar
+              </summary>
+              <DocumentStatusForm document={document} revision={revision} onMessage={onMessage} />
+              {document.unavailableFile ? (
+                <RestoreDocumentForm document={document} onMessage={onMessage} />
+              ) : null}
+            </details>
+          ) : null}
+        </div>
         {document.unavailableFile ? (
-          <>
-            <p className="notice">PDF original aguardando restauração pela administração.</p>
-            {canManage ? <RestoreDocumentForm document={document} onMessage={onMessage} /> : null}
-          </>
+          <p className="notice">PDF original aguardando restauração pela administração.</p>
         ) : null}
-        {canManage ? (
-          <DocumentStatusForm document={document} revision={revision} onMessage={onMessage} />
+        {reading ? (
+          <Suspense fallback={<p role="status">Abrindo leitor de PDF…</p>}>
+            <DocumentReader document={document} onClose={() => setReading(false)} />
+          </Suspense>
         ) : null}
       </div>
     </li>

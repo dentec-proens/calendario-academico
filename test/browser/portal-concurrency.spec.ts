@@ -70,6 +70,11 @@ test('document applicability confirmation stays attached to its catalogue revisi
 }) => {
   const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
   await page.goto(origin + '/documentos');
+  await page
+    .locator('#document-list li')
+    .filter({ hasText: 'Documento rascunho' })
+    .getByText('Gerenciar', { exact: true })
+    .click();
   await page.locator('[data-confirm-document="document-0"]').check();
   await remoteCatalogue(page);
   await page.locator('[data-document-id="document-0"]').click();

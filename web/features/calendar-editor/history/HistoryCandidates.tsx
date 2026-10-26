@@ -16,8 +16,14 @@ export default function HistoryCandidates() {
   const { value } = useHistoryAnalysis();
   const [showExisting, setShowExisting] = useState(false);
   const history = record.histories.find((item) => item.id === value?.historyId);
-  if (!value || !history) return null;
+  const historicalContext = editor.context?.kind === 'history' ? editor.context : null;
+  if (!value || !history) return historicalContext ? <EventEditor /> : null;
   const { analysis } = value;
+  const draftInAnalysis =
+    historicalContext?.historyId === history.id &&
+    analysis.candidates.some(
+      (candidate) => historyCandidateKey(candidate) === historicalContext.candidateKey,
+    );
   const count = analysis.candidates.filter((candidate) =>
     includedHistoryCandidate(state.events, history.id, candidate, analysis.candidates),
   ).length;
@@ -49,7 +55,9 @@ export default function HistoryCandidates() {
           );
           const existing = !included.length && existingHistoryEvent(events, candidate, state);
           const ignored = state.ignoredHistory.includes(`${history.id}:${key}`);
-          if (existing && !showExisting) return null;
+          const editing =
+            historicalContext?.historyId === history.id && historicalContext.candidateKey === key;
+          if (existing && !showExisting && !editing) return null;
           return (
             <li
               key={key}
@@ -119,13 +127,12 @@ export default function HistoryCandidates() {
                   </button>
                 ))}
               </div>
-              {editor.context?.kind === 'history' &&
-                editor.context.historyId === history.id &&
-                editor.context.candidateKey === key && <EventEditor />}
+              {editing && <EventEditor />}
             </li>
           );
         })}
       </ul>
+      {historicalContext && !draftInAnalysis && <EventEditor />}
       <details>
         <summary>Consultar todo o texto identificado no PDF</summary>
         <pre id="history-text">

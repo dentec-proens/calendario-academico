@@ -4,7 +4,7 @@ import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 import type { TrashData } from '../../shared/convex/types.ts';
 import type { PaginationState } from '../../shared/forms/Pagination.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
-import { ArchiveRestore, ExternalLink, FileUp, Trash2 } from 'lucide-react';
+import { ArchiveRestore, Pencil, FileUp, Trash2 } from 'lucide-react';
 import { calendarName } from '../../../src/calendar-label.ts';
 import { modalityLabels } from '../../../src/modalities.ts';
 import { calendars as calendarClient } from '../../shared/convex/calendars.ts';
@@ -13,6 +13,8 @@ import Pagination from '../../shared/forms/Pagination.tsx';
 import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
 import { useRouteForm } from '../../app/navigation.ts';
 import { Link } from '@tanstack/react-router';
+import { editorPages } from '../calendar-editor/editor-steps.ts';
+import { calendarReferenceAnchor } from '../../../src/calendar-reference.ts';
 
 export function updatedLabel(value: string | null | undefined) {
   const date = value ? new Date(value) : null;
@@ -76,7 +78,6 @@ export default function CalendarsPanel({
         busy={pending}
         form={<CreateCalendarForm info={info} canSelectCampus={canSelectCampus} />}
       >
-        <p className="help">Horários de Brasília</p>
         {canSelectCampus ? (
           <label id="filter-label">
             Filtrar por campus
@@ -94,12 +95,12 @@ export default function CalendarsPanel({
           {calendars.length ? (
             calendars.map((c) => (
               <li key={c.id} data-calendar-campus={c.campusId}>
-                <div>
+                <div className="calendar-list-details">
                   <strong>
                     {c.purpose === 'test' ? '[TESTE] ' : '[DEFINITIVO] '}
                     {c.name}
                   </strong>
-                  <small>
+                  <p className="calendar-list-offering">
                     {c.name ===
                     calendarName(
                       c.year,
@@ -111,21 +112,35 @@ export default function CalendarsPanel({
                       </>
                     )}
                     {(c.modalities || [c.offer]).map((m) => modalityLabels[m] || m).join(' + ')}
-                  </small>
-                  <small>Última atualização: {updatedLabel(c.updatedAt)}</small>
-                  <small>
-                    {c.courses}
-                    {c.classes ? ' · ' + c.classes : ''}
-                    {c.shifts ? ' · ' + c.shifts : ''}
-                  </small>
+                  </p>
+                  {(c.courses || c.classes || c.shifts) && (
+                    <p className="calendar-list-courses">
+                      {c.courses}
+                      {(c.classes || c.shifts) && (
+                        <span>{[c.classes, c.shifts].filter(Boolean).join(' · ')}</span>
+                      )}
+                    </p>
+                  )}
+                  <div className="calendar-list-authorship">
+                    <small>Criado por: {c.createdByName || 'Autoria não registrada'}</small>
+                    <small>
+                      Última alteração por: {c.updatedByName || 'Autoria não registrada'} ·{' '}
+                      {updatedLabel(c.updatedAt)}
+                    </small>
+                  </div>
                 </div>
                 <Link to="/calendarios/$calendarId/editar" params={{ calendarId: c.id }}>
-                  <ExternalLink aria-hidden="true" size={18} />
-                  Abrir calendário
+                  <Pencil aria-hidden="true" size={18} />
+                  Editar
                 </Link>
-                <Link to="/calendarios/$calendarId/historico" params={{ calendarId: c.id }}>
+                <Link
+                  to={editorPages.events.path}
+                  params={{ calendarId: c.id }}
+                  hash={calendarReferenceAnchor}
+                  hashScrollIntoView={false}
+                >
                   <FileUp aria-hidden="true" size={18} />
-                  Enviar calendário anterior
+                  Usar calendário anterior
                 </Link>
                 <Button
                   type="button"

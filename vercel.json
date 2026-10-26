@@ -82,7 +82,15 @@
       "destination": "/index.html"
     },
     {
+      "source": "/calendarios/:calendarId/avaliacoes",
+      "destination": "/index.html"
+    },
+    {
       "source": "/calendarios/:calendarId/dias",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/calendarios/:calendarId/ferias",
       "destination": "/index.html"
     },
     {

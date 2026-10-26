@@ -42,7 +42,9 @@ test('native server serves portal and invitation routes without a Node API or en
     for (const section of [
       'editar',
       'periodos',
+      'avaliacoes',
       'dias',
+      'ferias',
       'eventos',
       'historico',
       'pendencias',

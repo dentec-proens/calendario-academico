@@ -1,4 +1,5 @@
-import { pageDocument } from './app-routes.ts';
+import { pageDocument, parseEditorPath } from './app-routes.ts';
+import { calendarReferenceAnchor, isCalendarReferenceHash } from './calendar-reference.ts';
 
 /** Only application work pages on this origin may be resumed after signing in. */
 export function loginReturnTarget(search: string, origin: string): string | undefined {
@@ -14,7 +15,11 @@ export function loginReturnTarget(search: string, origin: string): string | unde
     )
       return undefined;
     url.searchParams.delete('retorno');
-    return url.pathname + url.search;
+    const hash =
+      parseEditorPath(url.pathname)?.section === 'events' && isCalendarReferenceHash(url.hash)
+        ? `#${calendarReferenceAnchor}`
+        : '';
+    return url.pathname + url.search + hash;
   } catch {
     return undefined;
   }

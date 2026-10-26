@@ -49,7 +49,7 @@ export const calendarPage = query({
       result.page.map(async (row) => {
         const campus = await ctx.db.get(row.campusId);
         if (!campus) fail('Campus não encontrado.', 404);
-        return summary(row, campus);
+        return summary(ctx, row, campus);
       }),
     );
     return { page, isDone: result.isDone, continueCursor: result.continueCursor };

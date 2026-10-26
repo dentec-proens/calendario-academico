@@ -7,6 +7,7 @@ import ActivityChecklist from '../events/ActivityChecklist.tsx';
 import EventEditor from '../events/EventEditor.tsx';
 import EventMetadataForm from '../events/EventMetadataForm.tsx';
 import TeacherDayForm from '../forms/TeacherDayForm.tsx';
+import HistorySection from './HistorySection.tsx';
 
 export default function EventsSection() {
   const { events, state, institutional, applyCommand, readOnly } = useCalendarEditor();
@@ -17,7 +18,7 @@ export default function EventsSection() {
   return (
     <section id="events" className="view">
       <div className="panel">
-        <h3>Eventos e impedimentos — roteiro obrigatório</h3>
+        <h3>Atividades, prazos e impedimentos</h3>
         <button
           id="new-event"
           type="button"
@@ -27,7 +28,10 @@ export default function EventsSection() {
         >
           Adicionar novo evento
         </button>
-        <p className="help">Acrescente os eventos locais e registre suas fontes.</p>
+        <p className="help">
+          Acrescente as atividades e datas do campus e registre as fontes das decisões.
+        </p>
+        <HistorySection />
         <ActivityChecklist />
         <ul id="event-list" className="records">
           {[...events]

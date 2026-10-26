@@ -161,7 +161,8 @@ export default defineSchema({
     version: v.optional(v.number()),
   })
     .index('by_at', ['at'])
-    .index('by_campusId_and_at', ['campusId', 'at']),
+    .index('by_campusId_and_at', ['campusId', 'at'])
+    .index('by_calendarId_and_action_and_at', ['calendarId', 'action', 'at']),
   nativeUploads: defineTable({
     uploadId: v.string(),
     ownerId: v.id('users'),

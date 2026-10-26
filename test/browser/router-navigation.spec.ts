@@ -182,7 +182,7 @@ test('section and record links keep native browser shortcuts and canonical URLs'
   );
   await expect(page.locator('#calendar-list a').nth(1)).toHaveAttribute(
     'href',
-    '/calendarios/calendar-a/historico',
+    '/calendarios/calendar-a/eventos#calendario-anterior',
   );
 });
 
@@ -338,6 +338,27 @@ test('direct restricted URLs respect the current role and unknown URLs show a re
   await expect(page.getByRole('heading', { name: 'Página não encontrada' })).toBeVisible();
   await page.getByRole('link', { name: 'Voltar aos calendários' }).click();
   await expect(page.locator('#calendar-list')).toBeVisible();
+});
+
+test('focused assessment and vacation steps support direct URLs and reload', async ({
+  page,
+  cleanup,
+}) => {
+  const origin = new URL(await startFixtureServer('editor', cleanup)).origin;
+  for (const [segment, visible, absent] of [
+    ['avaliacoes', '#assessment-area', '#period-form'],
+    ['ferias', '#vacation-form', '#saturday-form'],
+  ]) {
+    const url = origin + '/calendarios/synthetic-calendar/' + segment;
+    await page.goto(url);
+    await expect(page.locator(visible)).toBeVisible();
+    await expect(page.locator(absent)).toHaveCount(0);
+    await page.reload();
+    await expect(page).toHaveURL(url);
+    await expect(page.locator(visible)).toBeVisible();
+    await expect(page.locator(absent)).toHaveCount(0);
+  }
+  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });
 
 test('editor sections support direct URLs, reload and Back/Forward without discarding a draft', async ({

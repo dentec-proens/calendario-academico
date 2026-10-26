@@ -6,6 +6,7 @@ import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
 import { useRouteForm } from '../../app/navigation.ts';
 import UploadDocumentForm from './UploadDocumentForm.tsx';
 import DocumentRecord from './DocumentRecord.tsx';
+import './documents.css';
 
 export default function DocumentsPanel({
   canManage,
@@ -34,8 +35,9 @@ export default function DocumentsPanel({
     .sort((a, b) => b.year - a.year || a.type.localeCompare(b.type) || b.version - a.version);
   return (
     <CollectionPanel
-      title="Documentos e normas"
+      title="Base institucional"
       actionLabel="Adicionar documento"
+      actionVariant="secondary"
       formTitle="Adicionar nova versão"
       formOpen={creating}
       onFormOpen={setCreating}
@@ -47,9 +49,12 @@ export default function DocumentsPanel({
       }
       form={<UploadDocumentForm onUploaded={onUploaded} onMessage={setMessage} />}
     >
-      <div className="row-form">
+      <p className="documents-description">
+        Consulte as normas e os documentos que orientam a elaboração do calendário acadêmico.
+      </p>
+      <div className="documents-filters">
         <label>
-          Filtrar documentos por ano
+          Ano
           <input
             id="document-year-filter"
             type="number"
@@ -62,7 +67,7 @@ export default function DocumentsPanel({
         </label>
         {canManage ? (
           <label>
-            Situação do documento
+            Situação
             <select
               id="document-status-filter"
               value={statusFilter}
@@ -77,8 +82,16 @@ export default function DocumentsPanel({
             </select>
           </label>
         ) : null}
+        {liveData ? (
+          <p className="documents-count" role="status">
+            {documents.length} documento{documents.length === 1 ? '' : 's'}
+            {pagination.status !== 'Exhausted'
+              ? ` carregado${documents.length === 1 ? '' : 's'}`
+              : ''}
+          </p>
+        ) : null}
       </div>
-      <ul id="document-list" className="records" aria-busy={!liveData}>
+      <ul id="document-list" className="document-list" aria-busy={!liveData}>
         {documents.length ? (
           documents.map((document) => (
             <DocumentRecord

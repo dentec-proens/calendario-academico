@@ -6,6 +6,7 @@ import { assertCampus } from '../lib/authorization';
 import type { Context } from '../lib/shared';
 import { clean, fail, iso } from '../lib/shared';
 import type { DomainState, ContentState } from '../validators';
+import { calendarAuthorship } from './authorship';
 
 export async function calendarRow(ctx: Context, user: Member, id: Id<'calendars'>, trash = false) {
   const row = await ctx.db.get(id);
@@ -23,7 +24,7 @@ export async function contents(ctx: Context, id: Id<'calendars'>) {
   return row;
 }
 
-export function summary(row: Doc<'calendars'>, campus: Doc<'campuses'>) {
+export async function summary(ctx: Context, row: Doc<'calendars'>, campus: Doc<'campuses'>) {
   return {
     id: row._id,
     name: calendarName(row.year, campus.name),
@@ -37,6 +38,7 @@ export function summary(row: Doc<'calendars'>, campus: Doc<'campuses'>) {
     shifts: row.shifts,
     version: row.version,
     updatedAt: iso(row.updatedAt),
+    ...(await calendarAuthorship(ctx, row)),
     ...(row.deletedAt ? { deletedAt: iso(row.deletedAt) } : {}),
   };
 }

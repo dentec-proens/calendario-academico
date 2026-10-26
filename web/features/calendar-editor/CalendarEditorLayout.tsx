@@ -1,10 +1,24 @@
 import { Suspense, useEffect, useRef } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Download,
+  Ellipsis,
+  Eye,
+  History,
+  CalendarDays,
+} from 'lucide-react';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { CalendarEditorProvider, useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import { EventEditorProvider, useEventEditor } from './events/EventEditorProvider.tsx';
 import { CalendarExportProvider, useCalendarExport } from './export/CalendarExportProvider.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
 import { editorSections } from '../../../src/app-routes.ts';
+import { editorPages, editorSteps, editorNavigation, continueLabel } from './editor-steps.ts';
+import { modalityLabels } from '../../../src/modalities.ts';
+import { regimeLabels } from '../../../src/calendar-label.ts';
+import EditorSteps from './EditorSteps.tsx';
 import { useCalendarSummaryTool } from '../../shared/integrations/webmcp.ts';
 import './calendar-editor.css';
 import { HistoryAnalysisProvider } from './history/useHistoryAnalysis.tsx';
@@ -12,6 +26,7 @@ import { useSessionState } from '../../app/session.tsx';
 import { scrollIntoView, trackScrollInset } from '../../scroll.ts';
 import ImportCalendarForm from './forms/ImportCalendarForm.tsx';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
+import { isCalendarReferenceHash } from '../../../src/calendar-reference.ts';
 
 function EditorFrame() {
   const {
@@ -29,12 +44,13 @@ function EditorFrame() {
     notify,
     formEpoch,
   } = useCalendarEditor();
-  const { context, resume } = useEventEditor();
+  const { context, resume, open: eventEditorOpen } = useEventEditor();
   const { message } = useSessionState();
   const exporting = useCalendarExport();
   const navigate = useNavigate();
   const drafts = useFormDrafts();
   const pathname = useRouterState({ select: (router) => router.matches.at(-1)?.pathname });
+  const hash = useRouterState({ select: (router) => router.location.hash });
   const feedback = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const previousPath = useRef(pathname);
@@ -48,8 +64,11 @@ function EditorFrame() {
   }, []);
   useEffect(() => {
     if (previousPath.current === pathname) return;
-    // The history form reveals and focuses its file control when it mounts.
-    if (!readOnly && pathname?.endsWith('/historico')) {
+    // Reference entries and historical drafts manage their own focus inside the disclosure.
+    if (
+      pathname?.endsWith('/eventos') &&
+      (isCalendarReferenceHash(hash) || (context?.kind === 'history' && eventEditorOpen))
+    ) {
       previousPath.current = pathname;
       return;
     }
@@ -59,90 +78,145 @@ function EditorFrame() {
       previousPath.current = pathname;
     });
     return () => cancelAnimationFrame(frame);
-  }, [pathname, readOnly]);
-  const labels = {
-    edit: 'Dados gerais',
-    periods: 'Períodos e avaliações',
-    days: 'Sábados e férias',
-    events: 'Eventos locais',
-    history: 'Calendário anterior',
-    issues: 'Conferência e exportação',
-    calendar: 'Visualizar calendário',
-  };
-  const paths = {
-    edit: '/calendarios/$calendarId/editar',
-    periods: '/calendarios/$calendarId/periodos',
-    days: '/calendarios/$calendarId/dias',
-    events: '/calendarios/$calendarId/eventos',
-    history: '/calendarios/$calendarId/historico',
-    issues: '/calendarios/$calendarId/pendencias',
-    calendar: '/calendarios/$calendarId/visualizar',
-  } as const;
-  const current =
+  }, [pathname, hash, context?.kind, eventEditorOpen]);
+  const currentSection =
     (Object.keys(editorSections) as (keyof typeof editorSections)[]).find((key) =>
       pathname?.endsWith('/' + editorSections[key]),
     ) || 'edit';
+  const {
+    current,
+    active: activeStep,
+    stepIndex,
+    previous,
+    next,
+  } = editorNavigation(currentSection);
+  const needsAttention =
+    !connected ||
+    Boolean(error || remote || unapplied) ||
+    status === 'error' ||
+    status === 'blocked' ||
+    record.catalogueRevision !==
+      (remote?.currentCatalogueRevision ?? record.currentCatalogueRevision);
+  const saveLabel = readOnly
+    ? 'Somente leitura'
+    : !connected
+      ? 'Sem conexão'
+      : unapplied
+        ? 'Campos ainda em preenchimento'
+        : {
+            idle: '',
+            scheduled: 'Alterações ainda não salvas',
+            saving: 'Salvando…',
+            pending: 'Alterações ainda não salvas',
+            saved: 'Alterações salvas',
+            blocked: 'Alterações não salvas',
+            error: 'Alterações não salvas',
+          }[status];
   return (
     <div className="calendar-editor-content">
       <div className="editor-navigation" aria-label="Navegação do calendário">
+        <span className="editor-brand">
+          <CalendarDays aria-hidden="true" /> Calendários acadêmicos
+        </span>
         <Link to={readOnly ? '/revisoes' : '/calendarios'} className="portal-back">
-          ← {readOnly ? 'Voltar às revisões e pareceres' : 'Voltar aos calendários'}
+          <ArrowLeft aria-hidden="true" />{' '}
+          {readOnly ? 'Voltar às revisões e pareceres' : 'Todos os calendários'}
         </Link>
-        {!readOnly && (
-          <Link to="/logs" className="editor-history">
-            Histórico de alterações
-          </Link>
-        )}
       </div>
-      <div className="intro">
+      <div className="editor-intro">
         <div>
-          <h1 id="record-title">{record.name}</h1>
+          <div className="editor-title-row">
+            <h1 id="record-title">{record.name}</h1>
+            <span className="editor-purpose">
+              {record.purpose === 'test' ? 'Calendário de teste' : 'Calendário definitivo'}
+            </span>
+          </div>
           <p id="record-heading">
-            {record.purpose === 'test' ? 'Calendário de teste' : 'Calendário definitivo'} · Versão{' '}
-            {record.version}
+            Versão {record.version} ·{' '}
+            {record.readiness.ready && !dirty ? 'Conferência registrada' : 'Em elaboração'}
           </p>
         </div>
-        <div className="actions">
-          <ImportCalendarForm />
+        <div className="editor-header-actions">
           <Link
             className="editor-action secondary"
-            to="/calendarios/$calendarId/visualizar"
+            to={editorPages.calendar.path}
             params={{ calendarId: record.id }}
+            data-view="calendar"
+            aria-label={editorPages.calendar.title}
           >
-            Visualizar calendário
+            <Eye aria-hidden="true" /> <span>{editorPages.calendar.title}</span>
           </Link>
-          <Link
-            id="open-history"
-            className="editor-action"
-            to="/calendarios/$calendarId/historico"
-            params={{ calendarId: record.id }}
-          >
-            Enviar calendário anterior
-          </Link>
-          <button
-            id="download-pdf-top"
-            disabled={exporting.pending}
-            onClick={() => {
-              void exporting.pdf();
+          <details
+            className="editor-more"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.currentTarget.open = false;
+                event.currentTarget.querySelector('summary')?.focus();
+              }
             }}
           >
-            Baixar calendário em PDF
-          </button>
-          {!readOnly && record.purpose === 'test' && (
-            <button
-              id="make-definitive"
-              type="button"
-              disabled={exporting.pending}
-              onClick={exporting.makeDefinitive}
+            <summary aria-label="Mais ações">
+              <Ellipsis aria-hidden="true" />
+            </summary>
+            <div
+              className="editor-more-content"
+              onClick={(event) => {
+                if ((event.target as HTMLElement).closest('a, button')) {
+                  const menu = event.currentTarget.closest('details');
+                  menu?.removeAttribute('open');
+                  menu?.querySelector('summary')?.focus();
+                }
+              }}
             >
-              Tornar definitivo
-            </button>
-          )}
-          <button id="save" className="secondary" onClick={exporting.copy}>
-            Baixar cópia
-          </button>
+              {!readOnly && (
+                <Link
+                  to="/logs"
+                  className="editor-history"
+                  aria-label="Histórico de alterações"
+                  aria-describedby="calendar-history-description"
+                  title="Consulte as operações registradas e a autoria das alterações."
+                >
+                  <History aria-hidden="true" />
+                  <span className="editor-menu-copy">
+                    <span>Histórico de alterações</span>
+                    <small id="calendar-history-description">Consultar operações registradas</small>
+                  </span>
+                </Link>
+              )}
+              {!readOnly && <ImportCalendarForm />}
+              <button
+                id="save"
+                type="button"
+                className="secondary"
+                onClick={exporting.copy}
+                aria-label="Baixar cópia"
+                aria-describedby="download-copy-description"
+                title="Baixe uma cópia editável (.json) dos dados já incluídos no calendário para importar depois. Campos ainda em preenchimento não entram nessa cópia; o PDF fica na revisão."
+              >
+                <Download aria-hidden="true" />
+                <span className="editor-menu-copy">
+                  <span>Baixar cópia</span>
+                  <small id="download-copy-description">
+                    Guardar os dados já incluídos (.json)
+                  </small>
+                </span>
+              </button>
+            </div>
+          </details>
         </div>
       </div>
+      <dl className="editor-calendar-details" aria-label="Dados gerais do calendário">
+        <div>
+          <dt>Forma de oferta/nível</dt>
+          <dd id="selected-modalities">
+            {state.modalities.map((item) => modalityLabels[item]).join(' + ')}
+          </dd>
+        </div>
+        <div>
+          <dt>Organização</dt>
+          <dd id="regime-summary">{regimeLabels[state.regime]}</dd>
+        </div>
+      </dl>
       <div className="editor-feedback" ref={feedback}>
         <div
           id="message"
@@ -152,16 +226,26 @@ function EditorFrame() {
         >
           {message?.text}
         </div>
-        <div className="autosave-panel" aria-label="Salvamento do calendário">
-          <p id="autosave-status" role="status" aria-live="polite" data-state={status}>
+        <div
+          className="autosave-panel"
+          aria-label="Salvamento do calendário"
+          hidden={!needsAttention && !readOnly}
+        >
+          <p
+            id="autosave-status"
+            role="status"
+            aria-live="polite"
+            data-state={status}
+            hidden={!readOnly && connected && !error && (status === 'idle' || status === 'saved')}
+          >
             {readOnly
               ? 'Consulta em modo somente leitura.'
               : !connected
                 ? 'Conexão interrompida. Mantenha a página aberta até confirmar o salvamento.'
                 : error ||
                   {
-                    idle: 'Salvamento automático ativo.',
-                    scheduled: 'Alterações aplicadas. Salvamento agendado…',
+                    idle: '',
+                    scheduled: 'As alterações ainda não foram salvas.',
                     saving: 'Salvando calendário…',
                     pending: 'Há alterações aplicadas aguardando salvamento.',
                     saved: 'Calendário salvo e confirmado.',
@@ -206,7 +290,8 @@ function EditorFrame() {
             </div>
           )}
           <p id="unapplied-status" className="help" role="status" hidden={!unapplied}>
-            Há alterações no formulário. Use Adicionar ou Aplicar para incluí-las.
+            Há campos em preenchimento. Confirme o formulário para incluir essas alterações no
+            calendário.
           </p>
           {remote && (
             <p className="notice">
@@ -271,62 +356,77 @@ function EditorFrame() {
           Continuar preenchimento
         </button>
       )}
-      <div className="workspace sequential-editor">
-        <section className="main-column">
-          <div className="metrics">
-            <article>
-              <span>Dias letivos calculados</span>
-              <strong id="total">{evaluation?.total ?? '—'}</strong>
-              <small id="goal">
-                {state.year === 2027
-                  ? 'Referência: mínimo anual de 200 dias.'
-                  : 'Sem meta normativa cadastrada para este ano.'}
-              </small>
-            </article>
-            <article>
-              <span>Períodos cadastrados</span>
-              <strong id="period-count">{state.periods.length}</strong>
-              <small id="period-summary">
-                {state.periods.length
-                  ? state.periods.map((period) => period.name).join(' · ')
-                  : 'Nenhum período definido'}
-              </small>
-            </article>
-            <article>
-              <span>Situação</span>
-              <strong className="status-title">
-                {record.readiness.ready && !dirty ? 'Conferência registrada' : 'Em elaboração'}
-              </strong>
-              <small>Não representa aprovação institucional</small>
-            </article>
+      <div
+        className={`editor-sections-layout ${currentSection === 'calendar' ? 'editor-preview-layout' : ''}`}
+      >
+        <EditorSteps calendarId={record.id} current={currentSection} />
+        <div className="editor-section-content">
+          <div className="editor-section-heading">
+            <p className="editor-eyebrow">
+              {activeStep
+                ? `Etapa ${stepIndex + 1} de ${editorSteps.length}`
+                : 'Visualização do calendário'}
+            </p>
+            <h2 id="editor-section-title" ref={heading} tabIndex={-1}>
+              {current.title}
+            </h2>
+            <p className="editor-section-description">{current.description}</p>
           </div>
-          <div className="editor-sections-layout">
-            <aside className="editor-sidebar">
-              <nav aria-label="Seções do editor">
-                {(Object.keys(paths) as (keyof typeof paths)[]).map((key, index) => (
-                  <Link
-                    key={key}
-                    to={paths[key]}
-                    params={{ calendarId: record.id }}
-                    className={`tab ${current === key ? 'active' : ''}`}
-                    data-view={key}
-                    aria-current={current === key ? 'page' : undefined}
-                  >
-                    {index + 1}. {labels[key]}
-                  </Link>
-                ))}
-              </nav>
-            </aside>
-            <div className="editor-section-content">
-              <h2 id="editor-section-title" ref={heading} tabIndex={-1}>
-                {labels[current]}
-              </h2>
-              <Suspense fallback={<p role="status">Carregando seção…</p>}>
-                <Outlet key={formEpoch} />
-              </Suspense>
+          <Suspense fallback={<p role="status">Carregando seção…</p>}>
+            <Outlet key={formEpoch} />
+          </Suspense>
+          <div className="editor-step-footer">
+            <div className="editor-footer-leading">
+              {previous && (
+                <Link
+                  className="editor-previous"
+                  to={previous.path}
+                  params={{ calendarId: record.id }}
+                >
+                  <ArrowLeft aria-hidden="true" /> Voltar
+                </Link>
+              )}
+              <span className="editor-save-indicator" role="status" aria-live="polite">
+                {status === 'saved' && connected && !readOnly && !unapplied && (
+                  <Check aria-hidden="true" />
+                )}
+                {saveLabel}
+              </span>
             </div>
+            {currentSection === 'edit' && !readOnly && next ? (
+              <button id="editor-continue" type="submit" form="week-form">
+                {continueLabel(next)} <ArrowRight aria-hidden="true" />
+              </button>
+            ) : next ? (
+              <Link
+                id="editor-continue"
+                className="editor-action"
+                to={next.path}
+                params={{ calendarId: record.id }}
+              >
+                {continueLabel(next)}
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            ) : currentSection === 'calendar' ? (
+              <Link
+                className="editor-action secondary"
+                to={editorPages.issues.path}
+                params={{ calendarId: record.id }}
+              >
+                <ArrowLeft aria-hidden="true" /> Voltar à revisão
+              </Link>
+            ) : !readOnly && record.purpose === 'test' ? (
+              <button
+                id="make-definitive"
+                type="button"
+                disabled={exporting.pending}
+                onClick={exporting.makeDefinitive}
+              >
+                <Check aria-hidden="true" /> Concluir e tornar definitivo
+              </button>
+            ) : null}
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );

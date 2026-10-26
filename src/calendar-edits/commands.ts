@@ -197,6 +197,35 @@ export function applySaturdays<S extends ActivityState>(
   return recalculateCalendar({ ...state, events: [...state.events, ...events] }, institutional);
 }
 
+export function applySaturdayActivities<S extends ActivityState>(
+  state: S,
+  activities: { date: string; name: string; evidence: string }[],
+  institutional: CalendarActivity[],
+  id: () => string,
+): S {
+  if (!activities.length) throw new Error('Selecione pelo menos um sábado.');
+  // Build the entire batch before applying it, so an invalid date cannot partially change state.
+  const events: CalendarActivity[] = [];
+  for (const activity of activities) {
+    try {
+      events.push(
+        ...saturdayEvents(
+          { ...state, events: [...state.events, ...events] },
+          [activity.date],
+          activity.name,
+          activity.evidence,
+          id,
+        ),
+      );
+    } catch (error) {
+      throw new Error(
+        `${activity.date.split('-').reverse().join('/')}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+  return recalculateCalendar({ ...state, events: [...state.events, ...events] }, institutional);
+}
+
 export function applyVacations<S extends ActivityState>(
   state: S,
   values: VacationPeriods & { evidence: string },

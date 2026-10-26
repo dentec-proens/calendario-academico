@@ -23,6 +23,8 @@ test('Vite serves direct application URLs and keeps unknown routes and assets as
     '/documentos',
     '/revisoes/calendar-a',
     '/eventos-institucionais/event-a/editar',
+    '/calendarios/calendar-a/avaliacoes',
+    '/calendarios/calendar-a/ferias',
   ]) {
     const response = await fetch(origin + path);
     expect(response.status, path).toBe(200);
