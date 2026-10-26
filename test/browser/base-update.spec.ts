@@ -1,14 +1,13 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import { publishBaseUpdate } from './base-update.ts';
 
 for (const width of [1440, 390]) {
   test(`institutional changes can be reviewed and incorporated at ${width}px`, async ({
     page,
-    cleanup,
+    fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
-    await page.goto(await startFixtureServer('editor', cleanup));
+    await page.goto(await fixtureServer('editor'));
     await publishBaseUpdate(page);
     const card = page.locator('.base-update-card');
     const summary = card.locator('summary');
@@ -52,9 +51,9 @@ for (const width of [1440, 390]) {
 
 test('a document-only update explains that calendar events did not change', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await publishBaseUpdate(page, true);
   const card = page.locator('.base-update-card');
   await card.locator('summary').click();

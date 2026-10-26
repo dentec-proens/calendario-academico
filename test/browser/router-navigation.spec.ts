@@ -1,10 +1,9 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import type {} from '../fixtures/editor-client.ts';
 import type {} from '../fixtures/portal-router-client.ts';
 
-test('each collection form supports a direct URL and reload', async ({ page, cleanup }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+test('each collection form supports a direct URL and reload', async ({ page, fixtureServer }) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
   const forms = [
     ['/calendarios/novo', '#create-calendar'],
     ['/documentos/novo', '#document-form'],
@@ -23,9 +22,9 @@ test('each collection form supports a direct URL and reload', async ({ page, cle
 
 test('a trailing slash resolves to the same canonical form and review', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/calendarios/novo/');
   await expect(page).toHaveURL(origin + '/calendarios/novo');
   await expect(page.locator('#create-calendar')).toBeVisible();
@@ -36,9 +35,9 @@ test('a trailing slash resolves to the same canonical form and review', async ({
 
 test('a delayed campus creation preserves the section selected during the request', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/campi/novo');
   await page.locator('#campus-name').fill('Campus cadastrado de forma assíncrona');
   await page.evaluate(() => {
@@ -63,9 +62,9 @@ test('a delayed campus creation preserves the section selected during the reques
 
 test('document upload updates its list filter atomically and cannot navigate away from another section', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.route('**/__synthetic-upload', (route) =>
     route.fulfill({ json: { storageId: 'synthetic-file' } }),
   );
@@ -108,8 +107,11 @@ test('document upload updates its list filter atomically and cannot navigate awa
   await expect(page.locator('#calendar-list')).toBeVisible();
 });
 
-test('URL, browser history and collection drafts stay synchronized', async ({ page, cleanup }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+test('URL, browser history and collection drafts stay synchronized', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/calendarios');
   await page.getByRole('button', { name: 'Novo calendário' }).click();
   await expect(page).toHaveURL(origin + '/calendarios/novo');
@@ -135,9 +137,9 @@ test('URL, browser history and collection drafts stay synchronized', async ({ pa
 
 test('institutional event editing has a stable record URL and reload restores the saved event', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   const editPath = '/eventos-institucionais/synthetic-event/editar';
   await page.goto(origin + '/eventos-institucionais');
   await page.locator('[data-edit="synthetic-event"]').click();
@@ -161,9 +163,9 @@ test('institutional event editing has a stable record URL and reload restores th
 test('section and record links keep native browser shortcuts and canonical URLs', async ({
   page,
   context,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/calendarios');
   const documents = page.locator('[data-page="institution"]');
   await expect(documents).toHaveJSProperty('tagName', 'A');
@@ -188,9 +190,9 @@ test('section and record links keep native browser shortcuts and canonical URLs'
 
 test('mobile keyboard navigation changes route, closes the menu and focuses the heading', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(origin + '/calendarios');
   await page.locator('.sidebar-toggle').click();
@@ -207,9 +209,9 @@ test('mobile keyboard navigation changes route, closes the menu and focuses the 
 
 test('review analysis has a direct URL and browser back returns to its list', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/revisoes');
   await page.locator('#open-review').click();
   await expect(page).toHaveURL(origin + '/revisoes/calendar-a');
@@ -226,9 +228,9 @@ test('review analysis has a direct URL and browser back returns to its list', as
 
 test('review deep links work beyond the first result page and missing records never show another calendar', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/revisoes/calendar-offpage');
   await expect(page.locator('#review-heading')).toContainText('Calendário calendar-offpage');
   await expect(page.locator('#review-calendar')).toHaveValue('calendar-offpage');
@@ -237,8 +239,11 @@ test('review deep links work beyond the first result page and missing records ne
   await expect(page.locator('#review-content')).toBeHidden();
 });
 
-test('review drafts survive browser navigation between records', async ({ page, cleanup }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+test('review drafts survive browser navigation between records', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/revisoes/calendar-b?multiple-reviews=1');
   await expect(page.locator('#review-heading')).toContainText('Calendário calendar-b');
   await page.locator('#review-calendar').selectOption('calendar-a');
@@ -255,9 +260,9 @@ test('review drafts survive browser navigation between records', async ({ page, 
 
 test('a removed review record disappears without opening an unrelated analysis', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   for (const id of ['calendar-a', 'calendar-offpage']) {
     await page.goto(origin + '/revisoes/' + id);
     await expect(page.locator('#review-content')).toBeVisible();
@@ -270,9 +275,9 @@ test('a removed review record disappears without opening an unrelated analysis',
 
 test('opening another review requires explicit discard and never restores the discarded values', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/revisoes/calendar-a?multiple-reviews=1');
   await expect(page.locator('#review-content')).toBeVisible();
   await page.locator('#review-process').fill('23354.000003/2027-03');
@@ -291,9 +296,9 @@ test('opening another review requires explicit discard and never restores the di
 
 test('a delayed review response cannot reopen a section the user already left', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/revisoes');
   await expect(page.locator('#open-review')).toBeVisible();
   await page.evaluate(() => {
@@ -312,9 +317,9 @@ test('a delayed review response cannot reopen a section the user already left', 
 
 test('direct restricted URLs respect the current role and unknown URLs show a recovery link', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   for (const path of ['/contas/nova', '/campi/novo', '/revisoes/calendar-a']) {
     await page.goto(origin + path + '?role=CAMPUS');
     await expect(page.locator('#calendar-list')).toBeVisible();
@@ -342,9 +347,9 @@ test('direct restricted URLs respect the current role and unknown URLs show a re
 
 test('focused assessment and vacation steps support direct URLs and reload', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('editor', cleanup)).origin;
+  const origin = new URL(await fixtureServer('editor')).origin;
   for (const [segment, visible, absent] of [
     ['avaliacoes', '#assessment-area', '#period-form'],
     ['ferias', '#vacation-form', '#saturday-form'],
@@ -363,9 +368,9 @@ test('focused assessment and vacation steps support direct URLs and reload', asy
 
 test('editor sections support direct URLs, reload and Back/Forward without discarding a draft', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('editor', cleanup)).origin;
+  const origin = new URL(await fixtureServer('editor')).origin;
   const editor = origin + '/calendarios/synthetic-calendar/';
   await page.goto(editor + 'eventos');
   await expect(page.locator('#event-list')).toBeVisible();

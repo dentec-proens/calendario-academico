@@ -6,6 +6,7 @@ import type { Cleanup } from './test.ts';
 
 type Fixture =
   | 'portal'
+  | 'router-auth'
   | 'review'
   | 'review-session'
   | 'editor'
@@ -15,6 +16,8 @@ type Fixture =
   | 'editor-session'
   | 'confirmation'
   | 'online-users';
+
+export type FixtureServer = (fixture: Fixture) => Promise<string>;
 
 type FixtureDefinition = {
   path: string;
@@ -26,6 +29,12 @@ type FixtureDefinition = {
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const fixtures: Record<Fixture, FixtureDefinition> = {
   portal: { path: '/__portal', entry: 'portal-navigation', client: 'portal-router-client' },
+  'router-auth': {
+    path: '/__auth',
+    entry: 'router-auth',
+    client: 'router-auth-client',
+    auth: 'router-auth-context',
+  },
   review: { path: '/__review', entry: 'review-ui', client: 'review-ui-client' },
   'review-session': {
     path: '/__review-session',
@@ -73,20 +82,27 @@ async function startServer(
     configFile: false,
     envDir: false,
     root,
-    cacheDir: `node_modules/.vite-playwright-${name}`,
+    cacheDir: `node_modules/.vite-playwright-${name}-worker-${process.env.TEST_WORKER_INDEX ?? '0'}`,
     define: { 'import.meta.env.VITE_CONVEX_URL': JSON.stringify(convexUrl) },
     optimizeDeps: {
       entries: [],
+      // Keep React's optimized module graph stable for the entire worker.
+      // Discovering another dependency after navigation can replace shared
+      // chunks and mix two React instances in an already loaded page.
+      noDiscovery: true,
       exclude: fixture.auth ? ['@convex-dev/auth/react'] : [],
       include: [
         'react',
         'react-dom',
         'react-dom/client',
         'react/jsx-runtime',
+        'react/jsx-dev-runtime',
         'lucide-react',
         'pdfjs-dist',
         'convex/react',
         'convex/server',
+        '@noble/hashes/sha2.js',
+        '@noble/hashes/utils.js',
         ...(!fixture.auth ? ['@convex-dev/auth/react'] : []),
         '@tanstack/react-router',
         '@tanstack/react-form',

@@ -1,13 +1,12 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import { selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 test('editor separates creation from editing and preserves closed activity/history drafts until explicit discard', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const fixtureUrl = await startFixtureServer('editor', cleanup);
+  const fixtureUrl = await fixtureServer('editor');
   await page.setViewportSize({ width: 1440, height: 1100 });
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(String(error)));

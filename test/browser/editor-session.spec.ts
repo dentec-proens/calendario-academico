@@ -1,7 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import type {} from '../fixtures/editor-session-client.ts';
 
 async function editAppliedEvent(page: Page, name = 'Evento aplicado sem confirmação') {
@@ -15,9 +14,9 @@ async function editAppliedEvent(page: Page, name = 'Evento aplicado sem confirma
 
 test('portal logout redirects to the access form without an active editor recovery', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor-session', cleanup));
+  await page.goto(await fixtureServer('editor-session'));
   await expect(page.locator('#record-title')).toBeVisible();
   await page.locator('.portal-back').click();
   await expect(page.locator('#calendar-list')).toBeVisible();
@@ -29,9 +28,9 @@ test('portal logout redirects to the access form without an active editor recove
 
 test('a new login in the same tab protects the editor on its next expiration', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor-session', cleanup));
+  await page.goto(await fixtureServer('editor-session'));
   await expect(page.locator('#record-title')).toBeVisible();
   await page.locator('#logout').click();
   await expect(page.locator('#auth-title')).toHaveText('Entrar');
@@ -47,9 +46,9 @@ test('a new login in the same tab protects the editor on its next expiration', a
 
 test('header logout can be cancelled and waits for an in-flight save before sign-out', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor-session', cleanup));
+  await page.goto(await fixtureServer('editor-session'));
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => window.editorSessionTest.holdSaves());
   await editAppliedEvent(page);
@@ -77,9 +76,9 @@ test('header logout can be cancelled and waits for an in-flight save before sign
 
 test('expired editor keeps applied data for a local copy and same-account reauthentication', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor-session', cleanup));
+  await page.goto(await fixtureServer('editor-session'));
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => window.editorSessionTest.holdSaves());
   await editAppliedEvent(page, 'Evento preservado após expiração');
@@ -112,9 +111,9 @@ test('expired editor keeps applied data for a local copy and same-account reauth
 
 test('expired editor requires explicit discard and never carries local changes to a different identity', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor-session', cleanup));
+  await page.goto(await fixtureServer('editor-session'));
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => window.editorSessionTest.holdSaves());
   await editAppliedEvent(page, 'Alteração exclusiva da primeira conta');

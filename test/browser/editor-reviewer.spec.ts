@@ -1,13 +1,12 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import { selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-reviewer-client.ts';
 
 test('reviewer consults the complete calendar and live changes without editing or saving', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const fixtureUrl = await startFixtureServer('editor-reviewer', cleanup);
+  const fixtureUrl = await fixtureServer('editor-reviewer');
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(String(error)));
   await page.goto(new URL('/calendarios/synthetic-calendar/visualizar', fixtureUrl).href);
@@ -60,9 +59,9 @@ test('reviewer consults the complete calendar and live changes without editing o
 
 test('reviewer direct section URLs and reload keep the requested read-only section', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('editor-reviewer', cleanup)).origin;
+  const origin = new URL(await fixtureServer('editor-reviewer')).origin;
   const requested = origin + '/calendarios/synthetic-calendar/editar';
   await page.goto(requested);
   for (const reload of [false, true]) {
@@ -80,9 +79,9 @@ test('reviewer direct section URLs and reload keep the requested read-only secti
 
 test('reviewer reads a registered Saturday without selecting, editing or removing it', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('editor-reviewer-saturdays', cleanup)).origin;
+  const origin = new URL(await fixtureServer('editor-reviewer-saturdays')).origin;
   await page.goto(origin + '/calendarios/synthetic-calendar/dias');
   await expect(page.locator('#autosave-status')).toContainText(/somente leitura/i);
   const available = page.locator('#saturday-dates input');

@@ -1,13 +1,12 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import { documentPdf } from '../fixtures/document-pdf.ts';
 
 test('consulta de documentos, gerenciamento recolhido e leitura de PDF', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
   await page.clock.setFixedTime(new Date('2026-10-23T12:00:00-03:00'));
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.route('**/__synthetic-document.pdf', (route) =>
     route.fulfill({ contentType: 'application/pdf', body: documentPdf() }),
   );

@@ -1,13 +1,12 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import type {} from '../fixtures/review-session-client.ts';
 
 for (const loading of ['bootstrap', 'authentication'] as const) {
   test(`review observations survive calendar campus filters and transient ${loading} loading`, async ({
     page,
-    cleanup,
+    fixtureServer,
   }) => {
-    await page.goto(await startFixtureServer('review-session', cleanup));
+    await page.goto(await fixtureServer('review-session'));
     await page.locator('#open-review').click();
     const criterion = page.locator('#review-items > li').first();
     await criterion.locator('[data-choice="NAO_ATENDIDO"]').click();

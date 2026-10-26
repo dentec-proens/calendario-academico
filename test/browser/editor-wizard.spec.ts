@@ -1,15 +1,14 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import { selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
   test(`guided editor validates the first step and exposes contextual actions at ${width}px`, async ({
     page,
-    cleanup,
+    fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
-    await page.goto(await startFixtureServer('editor', cleanup));
+    await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#record-title')).toBeVisible();
     await expect(page.locator('.editor-step-number')).toHaveCount(7);
     await expect(page.locator('.autosave-panel')).toBeHidden();
@@ -108,9 +107,9 @@ for (const width of [1440, 390]) {
 
 test('secondary actions support the keyboard and the mobile step picker follows the URL', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   const toggle = page.locator('.editor-more > summary');
   await toggle.focus();
   await page.keyboard.press('Enter');

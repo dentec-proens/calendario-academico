@@ -1,11 +1,10 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 
 test('development tools require explicit opt-in and can open and close with keyboard', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(origin + '/campi/novo');

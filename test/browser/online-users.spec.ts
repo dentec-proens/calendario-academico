@@ -1,12 +1,11 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import type {} from '../fixtures/online-users.ts';
 
 test('online users renders live totals, search, campus filters and mobile layout', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const fixtureUrl = await startFixtureServer('online-users', cleanup);
+  const fixtureUrl = await fixtureServer('online-users');
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(String(error)));
   await page.goto(fixtureUrl);

@@ -1,5 +1,4 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import type {} from '../fixtures/portal-router-client.ts';
 import type { Page } from '@playwright/test';
 
@@ -19,9 +18,9 @@ async function remoteCatalogue(page: Page) {
 
 test('dirty institutional event keeps its original revision and cannot overwrite a remote update, even after remount', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/eventos-institucionais/synthetic-event/editar');
   await page.locator('#catalogue-name').fill('Edição local em andamento');
   await remoteCatalogue(page);
@@ -42,9 +41,9 @@ test('dirty institutional event keeps its original revision and cannot overwrite
 
 test('pristine institutional event refreshes its fields and revision before another edit is saved', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/eventos-institucionais/synthetic-event/editar');
   await expect(page.locator('#catalogue-name')).toHaveValue('Evento institucional de teste');
   await remoteCatalogue(page);
@@ -66,9 +65,9 @@ test('pristine institutional event refreshes its fields and revision before anot
 
 test('document applicability confirmation stays attached to its catalogue revision', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/documentos');
   await page
     .locator('#document-list li')
@@ -88,9 +87,9 @@ test('document applicability confirmation stays attached to its catalogue revisi
 
 test('dirty account profile keeps its original expected role and campus when another ADMIN changes the member', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/contas');
   const row = page
     .locator('#user-list li')
@@ -115,9 +114,9 @@ test('dirty account profile keeps its original expected role and campus when ano
 
 test('pristine account profile refreshes when the member is changed remotely', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/contas');
   const row = page
     .locator('#user-list li')

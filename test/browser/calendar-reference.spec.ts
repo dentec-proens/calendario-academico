@@ -1,13 +1,12 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import { selectEditorSection } from './editor-navigation.ts';
 import { calendarReferenceAnchor } from '../../src/calendar-reference.ts';
 
 test('campus activities show first and optional PDF files survive disclosure toggles', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await selectEditorSection(page, 'events');
   await expect(page.locator('#editor-section-title')).toHaveText('Atividades e datas do campus');
   await expect(page.locator('#editor-section-title')).toBeFocused();
@@ -32,9 +31,9 @@ test('campus activities show first and optional PDF files survive disclosure tog
 
 test('legacy history URLs open the optional reference and preserve search and focus', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('editor', cleanup)).origin;
+  const origin = new URL(await fixtureServer('editor')).origin;
   await page.goto(origin + '/calendarios/synthetic-calendar/historico?busca=referencia');
   await expect(page).toHaveURL(
     origin + '/calendarios/synthetic-calendar/eventos?busca=referencia#' + calendarReferenceAnchor,
@@ -49,9 +48,9 @@ test('legacy history URLs open the optional reference and preserve search and fo
 
 test('read-only reference entries focus the disclosure instead of the disabled upload control', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('editor-reviewer', cleanup)).origin;
+  const origin = new URL(await fixtureServer('editor-reviewer')).origin;
   await page.goto(origin + '/calendarios/synthetic-calendar/historico');
   await expect(page.locator('#history-file')).toBeDisabled();
   await expect(page.locator('#open-history')).toBeFocused();

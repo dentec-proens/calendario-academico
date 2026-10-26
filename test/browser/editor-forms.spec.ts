@@ -1,20 +1,20 @@
+import type { FixtureServer } from './fixture-server.ts';
 import type { Page } from '@playwright/test';
-import { test, expect, type Cleanup } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
+import { test, expect } from './test.ts';
 import { addPeriod, savedState, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
-async function openEditor(page: Page, cleanup: Cleanup) {
+async function openEditor(page: Page, fixtureServer: FixtureServer) {
   await page.setViewportSize({ width: 1440, height: 1100 });
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
 }
 
 test('week form applies confirmed weekdays and rejects an empty week atomically', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await page.locator('[data-view="edit"]').click();
   const weekdays = page.locator('#weekdays input');
   await expect(weekdays).toHaveCount(5);
@@ -39,9 +39,9 @@ test('week form applies confirmed weekdays and rejects an empty week atomically'
 
 test('period form calculates a teaching-day target, edits the same period and rejects overlap', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await page.locator('[data-view="periods"]').click();
   await page.locator('#period-name').fill('Primeiro período');
   await page.locator('#period-start').fill('2027-02-01');
@@ -78,9 +78,9 @@ test('period form calculates a teaching-day target, edits the same period and re
 
 test('assessment settings require apply, generate stages and restore automatic dates after a manual edit', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-03-01', '2027-03-26');
   await savedState(page);
   await page.locator('[data-view="assessments"]').click();
@@ -155,9 +155,9 @@ test('assessment settings require apply, generate stages and restore automatic d
 
 test('Saturday panel applies one activity and source to the selected dates without moving focus', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await page.locator('[data-view="days"]').click();
   await expect(page.locator('[data-saturday]')).toHaveCount(52);
@@ -214,9 +214,9 @@ test('Saturday panel applies one activity and source to the selected dates witho
 
 test('the Saturday panel stays beside the grid while dates near the end of the year are checked', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   // A shorter desktop window keeps the end of the year and the top of the panel apart.
   await page.setViewportSize({ width: 1440, height: 800 });
   await addPeriod(page, '2027-03-01', '2027-12-17');
@@ -229,10 +229,10 @@ test('the Saturday panel stays beside the grid while dates near the end of the y
 
 test('compact Saturday panel opens as a dialog and keeps focused dates unobstructed', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
   await addPeriod(page, '2027-03-01', '2027-12-17');
   await selectEditorSection(page, 'days');
@@ -292,9 +292,9 @@ test('compact Saturday panel opens as a dialog and keeps focused dates unobstruc
 
 test('resizing across the compact width keeps the Saturday field being filled', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'days');
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
@@ -321,9 +321,9 @@ test('resizing across the compact width keeps the Saturday field being filled', 
 
 test('a registered Saturday left open beside the grid does not take over the compact bar', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'days');
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
@@ -343,9 +343,9 @@ test('a registered Saturday left open beside the grid does not take over the com
 
 test('Saturdays outside teaching periods are shown but not selectable', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-03-01', '2027-03-31');
   await page.locator('[data-view="days"]').click();
   const outside = page.locator('[data-saturday="2027-04-03"]');
@@ -356,9 +356,9 @@ test('Saturdays outside teaching periods are shown but not selectable', async ({
 
 test('a selected holiday warns that it will not count as a teaching day', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-04-01', '2027-05-31');
   // The fixture has no Saturday holiday; register one through Activities and dates.
   await selectEditorSection(page, 'events');
@@ -386,9 +386,9 @@ test('a selected holiday warns that it will not count as a teaching day', async 
 
 test('the Saturday panel shows the teaching-day count and previews the selection', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await selectEditorSection(page, 'days');
   const count = page.locator('#saturday-day-count');
   await expect(count).toContainText(
@@ -405,8 +405,11 @@ test('the Saturday panel shows the teaching-day count and previews the selection
   await expect(count).toContainText(`com a seleção: ${total + 1}`);
 });
 
-test('a registered Saturday is edited and removed from the panel', async ({ page, cleanup }) => {
-  await openEditor(page, cleanup);
+test('a registered Saturday is edited and removed from the panel', async ({
+  page,
+  fixtureServer,
+}) => {
+  await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await page.locator('[data-view="days"]').click();
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
@@ -451,9 +454,9 @@ test('a registered Saturday is edited and removed from the panel', async ({ page
 
 test('multi-day inclusions over a Saturday are registered but edited in Activities and dates', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'events');
   await page.locator('#new-event').click();
@@ -485,9 +488,9 @@ test('multi-day inclusions over a Saturday are registered but edited in Activiti
 
 test('vacation form supports duration and manual end dates and rejects overlapping periods atomically', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await page.locator('[data-view="vacations"]').click();
   await page.locator('#vacation-first-start').fill('2027-01-04');
   await page.locator('#vacation-first-days').fill('10');
@@ -516,9 +519,9 @@ test('vacation form supports duration and manual end dates and rejects overlappi
 
 test('Teacher Day is applied and restored explicitly and its native date bounds prevent saving outside the week', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await page.locator('[data-view="events"]').click();
   await page.locator('#teacher-day-date').fill('2027-10-14');
   expect(await page.evaluate(() => window.editorTest.record.state.teacherDayDate)).toBeUndefined();
@@ -545,9 +548,9 @@ test('Teacher Day is applied and restored explicitly and its native date bounds 
 
 test('event metadata commits category and activity together without changing event identity or dates', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await page.locator('[data-view="events"]').click();
   const original = await page.evaluate(() =>
     window.editorTest.record.state.events.find((event) => event.id === 'local-event'),
@@ -576,9 +579,9 @@ test('event metadata commits category and activity together without changing eve
 
 test('clean fields receive remote defaults while unapplied values survive a later remote update', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await openEditor(page, cleanup);
+  await openEditor(page, fixtureServer);
   await page.evaluate(async () => {
     window.editorTest.record.version++;
     window.editorTest.record.state.weekEvidence = 'Semana atualizada em outra sessão';

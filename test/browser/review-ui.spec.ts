@@ -1,12 +1,11 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import type {} from '../fixtures/review-ui-client.ts';
 
 test('direct review distinguishes automatic indications, confirmation and saved decisions on keyboard and mobile', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const fixtureUrl = await startFixtureServer('review', cleanup);
+  const fixtureUrl = await fixtureServer('review');
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(String(error)));
   page.on('console', (message) => {
@@ -188,9 +187,9 @@ test('direct review distinguishes automatic indications, confirmation and saved 
 
 test('a review submission remains attached to its form while navigating away and back', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('review', cleanup));
+  await page.goto(await fixtureServer('review'));
   await page.locator('#open-review').click();
   await page.locator('#review-process').fill('23354.000004/2027-04');
   await page.evaluate(() => {
@@ -213,9 +212,9 @@ test('a review submission remains attached to its form while navigating away and
 
 test('a failure after a review remount retains values and permits an explicit retry', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('review', cleanup));
+  await page.goto(await fixtureServer('review'));
   await page.locator('#open-review').click();
   await page.locator('#review-process').fill('23354.000005/2027-05');
   await page.evaluate(() => {
@@ -243,9 +242,9 @@ test('a failure after a review remount retains values and permits an explicit re
 
 test('review refreshes a pristine snapshot and rejects a stale draft without losing its process number', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('review', cleanup));
+  await page.goto(await fixtureServer('review'));
   await page.locator('#open-review').click();
   await page.locator('#review-process').fill('Processo inicial');
   await page.locator('button[form="review-form"]').click();

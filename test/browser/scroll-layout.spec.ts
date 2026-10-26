@@ -1,15 +1,14 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import { selectEditorSection } from './editor-navigation.ts';
 
 for (const width of [1440, 390]) {
   test(`editor respects reduced motion and reveals its section heading at ${width}px`, async ({
     page,
-    cleanup,
+    fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto(`${await startFixtureServer('editor', cleanup)}?id=synthetic-calendar`);
+    await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
     const heading = page.locator('#editor-section-title');
@@ -46,11 +45,11 @@ for (const width of [1440, 390]) {
   });
   test(`editor opens the event form heading below its feedback at ${width}px`, async ({
     page,
-    cleanup,
+    fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto(`${await startFixtureServer('editor', cleanup)}?id=synthetic-calendar`);
+    await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
     await page.locator('[data-edit-event="local-event"]').click();
@@ -75,11 +74,11 @@ for (const width of [1440, 390]) {
   });
   test(`editor reserves space after a long status wraps at ${width}px`, async ({
     page,
-    cleanup,
+    fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto(`${await startFixtureServer('editor', cleanup)}?id=synthetic-calendar`);
+    await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
     await page.locator('[data-edit-event="local-event"]').click();
@@ -125,11 +124,11 @@ for (const width of [1440, 390]) {
   });
   test(`editor reveals period editing and event draft actions below feedback at ${width}px`, async ({
     page,
-    cleanup,
+    fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto(`${await startFixtureServer('editor', cleanup)}?id=synthetic-calendar`);
+    await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'periods');
     await page.locator('#period-name').fill('1º semestre');

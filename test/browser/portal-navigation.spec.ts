@@ -1,11 +1,10 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 
 test('calendar creation presents the generated name as text and explains each purpose', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('portal', cleanup));
+  await page.goto(await fixtureServer('portal'));
   await expect(page.locator('#calendar-list')).toContainText('Criado por: Pessoa autora');
   await expect(page.locator('#calendar-list')).toContainText(
     'Última alteração por: Pessoa editora',
@@ -41,9 +40,9 @@ test('calendar creation presents the generated name as text and explains each pu
 
 test('portal shares each subject across roles while preserving drafts, scoped controls, history and mobile menus', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const fixtureUrl = await startFixtureServer('portal', cleanup);
+  const fixtureUrl = await fixtureServer('portal');
   await page.setViewportSize({ width: 1440, height: 1000 });
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(String(error)));

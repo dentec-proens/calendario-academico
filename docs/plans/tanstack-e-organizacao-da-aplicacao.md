@@ -1,5 +1,7 @@
 # Plano de adoção TanStack e organização da aplicação
 
+> Plano histórico: a validação vigente de release é local, com `pnpm check`, conforme [Verificação](../verificacao.md). As referências abaixo a CI e à suíte Linux/Docker foram substituídas por essa diretriz.
+
 ## Objetivo e decisões
 
 Entregar uma aplicação React com entrada única, navegação tipada com TanStack Router, todos os fluxos de preenchimento e edição em TanStack Form, Devtools de desenvolvimento e orientação oficial das bibliotecas para agentes. A entrega abrange interface, domínio, integração Convex, autenticação, arquivos, impressão, build, servidores, testes e documentação.

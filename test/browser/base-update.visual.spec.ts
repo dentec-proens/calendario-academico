@@ -1,10 +1,9 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import { publishBaseUpdate } from './base-update.ts';
 
-test('institutional base changes collapsed and expanded', async ({ page, cleanup }) => {
+test('institutional base changes collapsed and expanded', async ({ page, fixtureServer }) => {
   await page.clock.setFixedTime(new Date('2026-10-23T12:00:00-03:00'));
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await publishBaseUpdate(page);
   const card = page.locator('.base-update-card');
   await expect(card).toBeVisible();

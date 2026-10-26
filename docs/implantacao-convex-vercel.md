@@ -87,7 +87,7 @@ Exportar Convex completo com `--include-file-storage` quando houver PDFs. Manter
 
 A aplicação repõe um PDF indisponível pelo fluxo [Restaurar original](restauracao-de-originais.md), com conferência de hash. Operações sobre exportações usam a [ferramenta administrativa de dados](migracao-schema.md).
 
-Os testes remotos exigem opt-in de deployment descartável ou do desenvolvimento atual autorizado, com destino verificado e registros exclusivos da suíte conforme a [Verificação](verificacao.md). Produção não recebe E2E. A execução Windows precisa de evidência efetiva do CI; resultados macOS/Linux não comprovam esse ambiente.
+Os testes remotos exigem opt-in de deployment descartável ou do desenvolvimento atual autorizado, com destino verificado e registros exclusivos da suíte conforme a [Verificação](verificacao.md). Produção não recebe E2E. A release depende do `pnpm check` local, executado automaticamente pelo comando de publicação. A execução Windows precisa de evidência local; resultados macOS/Linux não comprovam esse ambiente.
 
 ## Recursos operacionais de PDF
 

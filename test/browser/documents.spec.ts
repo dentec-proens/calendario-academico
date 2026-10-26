@@ -1,18 +1,17 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import { documentPdf } from '../fixtures/document-pdf.ts';
 import type {} from '../fixtures/portal-router-client.ts';
 
 for (const width of [1440, 390]) {
   test(`consultar PDF, paginar, ampliar e voltar aos filtros em ${width}px`, async ({
     page,
-    cleanup,
+    fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.route('**/__synthetic-document.pdf', (route) =>
       route.fulfill({ contentType: 'application/pdf', body: documentPdf() }),
     );
-    const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+    const origin = new URL(await fixtureServer('portal')).origin;
     await page.goto(origin + '/documentos?ano=2027&situacao=vigente');
     const trigger = page.getByRole('button', { name: 'Visualizar PDF' });
     await trigger.focus();
@@ -52,9 +51,9 @@ for (const width of [1440, 390]) {
 
 test('ações de vigência ficam recolhidas e arquivar exige confirmação', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/documentos');
   const draft = page.locator('#document-list li').filter({ hasText: 'Documento rascunho' });
   await expect(draft.getByRole('button', { name: 'Definir como vigente' })).toBeHidden();
@@ -77,9 +76,9 @@ test('ações de vigência ficam recolhidas e arquivar exige confirmação', asy
 
 test('falha no arquivo permite fechar e tentar novamente; original ausente não abre o leitor', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.route('**/__synthetic-document.pdf', (route) => route.fulfill({ status: 503 }));
   await page.goto(origin + '/documentos?missing-document=1');
   const missing = page.locator('#document-list li').filter({ hasText: 'Documento rascunho' });
@@ -100,9 +99,9 @@ test('falha no arquivo permite fechar e tentar novamente; original ausente não 
 
 test('fechar enquanto o PDF carrega impede que uma resposta tardia reabra o leitor', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const origin = new URL(await startFixtureServer('portal', cleanup)).origin;
+  const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/documentos?role=CAMPUS');
   await expect(page.getByText('Gerenciar', { exact: true })).toHaveCount(0);
   await page.evaluate(() => {

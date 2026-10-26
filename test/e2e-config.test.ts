@@ -59,6 +59,7 @@ test('explicit disposable credentials enable isolated E2E collection', async () 
   const { default: config } = await import('../playwright.e2e.config.ts');
   expect(config.testDir).toBe('./test/e2e');
   expect(config.workers).toBe(1);
+  expect(config.fullyParallel).toBe(false);
 });
 
 test('default browser collection stays local even when disposable credentials exist', async () => {

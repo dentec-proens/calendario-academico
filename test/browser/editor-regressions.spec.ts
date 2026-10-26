@@ -1,5 +1,4 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 import { addPeriod, savedState, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -11,9 +10,9 @@ declare global {
 
 test('reverting a dirty metadata field adopts a newer confirmed event value', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="events"]').click();
   const category = page.locator('[data-category-event="local-event"]');
   await category.selectOption('feriado');
@@ -38,9 +37,9 @@ test('reverting a dirty metadata field adopts a newer confirmed event value', as
 
 test('a blocked save offers an explicit discard path without trapping navigation', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await expect(page.locator('#week-evidence')).toBeVisible();
   await page.evaluate(async () => {
     const modulePath = '/test/fixtures/editor-event-drafts-client.ts';
@@ -65,9 +64,9 @@ test('a blocked save offers an explicit discard path without trapping navigation
 
 test('reverting a field clears unapplied state and annual Saturday selections survive navigation', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   const evidence = page.locator('#week-evidence');
   const original = await evidence.inputValue();
   await evidence.fill('Preenchimento temporário');
@@ -108,8 +107,11 @@ test('reverting a field clears unapplied state and annual Saturday selections su
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(saves);
 });
 
-test('selecting a Saturday by keyboard keeps focus on its checkbox', async ({ page, cleanup }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+test('selecting a Saturday by keyboard keeps focus on its checkbox', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('editor'));
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'days');
   const first = page.locator('#saturday-dates input[value="2027-03-06"]');
@@ -133,9 +135,9 @@ test('selecting a Saturday by keyboard keeps focus on its checkbox', async ({ pa
 
 test('PDF controls share one pending operation and ignore failure after leaving the calendar', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="calendar"]').click();
   await expect(page.locator('#download-pdf')).toBeVisible();
   await page.evaluate(async () => {
@@ -165,9 +167,9 @@ test('PDF controls share one pending operation and ignore failure after leaving 
 
 test('metadata rejects an activity for another modality before applying or saving', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
@@ -195,9 +197,9 @@ test('metadata rejects an activity for another modality before applying or savin
 
 test('removing a historical exclusion recalculates the teaching-day target', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="periods"]').click();
   await page.locator('#period-name').fill('Cinco dias letivos');
   await page.locator('#period-start').fill('2027-03-01');
@@ -231,9 +233,9 @@ test('removing a historical exclusion recalculates the teaching-day target', asy
 
 test('event removal clears its metadata draft and grouped teacher vacations', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="events"]').click();
   await page.locator('[data-category-event="local-event"]').selectOption('feriado');
   await expect(page.locator('#unapplied-status')).toBeVisible();
@@ -275,9 +277,9 @@ test('event removal clears its metadata draft and grouped teacher vacations', as
 
 test('stage editing and activity changes always reveal the same draft in its destination', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await page.evaluate(() => {
     const { record } = window.editorTest;
     record.state.assessmentStagesByModality = { integrado: 2 };

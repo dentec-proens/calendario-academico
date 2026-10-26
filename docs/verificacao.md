@@ -16,40 +16,57 @@ Na primeira execução, instale o navegador:
 pnpm test:browser:install
 ```
 
-| Comando                         | Cobertura                                                                    |
-| ------------------------------- | ---------------------------------------------------------------------------- |
-| `pnpm test`                     | Vitest + toda a suíte sintética de navegador, incluindo regressão visual     |
-| `pnpm test:unit`                | Domínio, backend e infraestrutura em Vitest                                  |
-| `pnpm test:watch`               | Vitest em modo contínuo                                                      |
-| `pnpm test:browser`             | Interações e regressão visual em Playwright                                  |
-| `pnpm test:browser:functional`  | Apenas os fluxos de interação                                                |
-| `pnpm test:visual`              | Comparação de screenshots em desktop (1440 × 1000) e mobile (390 × 844)      |
-| `pnpm test:browser:ui`          | Interface interativa do Playwright para investigar testes                    |
-| `pnpm test:visual:update`       | Atualização das referências visuais do sistema local, após revisão           |
-| `pnpm test:browser:linux`       | Toda a suíte de navegador na imagem Docker do CI (Linux amd64)               |
-| `pnpm test:visual:linux:update` | Atualização das referências visuais de Linux na imagem do CI                 |
-| `pnpm test:linux`               | PDFs reais + testes de navegador e visuais na imagem Linux do CI             |
-| `pnpm test:runtime`             | Geração real de PDFs com o Chromium serverless (Linux)                       |
-| `pnpm test:runtime:linux`       | A mesma validação de PDF na imagem Docker do CI                              |
-| `pnpm test:e2e`                 | Integração Convex com destino descartável ou dev verificado e dados próprios |
+| Comando                        | Cobertura                                                                              |
+| ------------------------------ | -------------------------------------------------------------------------------------- |
+| `pnpm check`                   | Validação local completa antes de uma release: formatação, lint, tipos, testes e build |
+| `pnpm test`                    | Vitest + toda a suíte sintética de navegador, incluindo regressão visual               |
+| `pnpm test:unit`               | Domínio, backend e infraestrutura em Vitest                                            |
+| `pnpm test:watch`              | Vitest em modo contínuo                                                                |
+| `pnpm test:browser`            | Interações e regressão visual em Playwright                                            |
+| `pnpm test:browser:functional` | Apenas os fluxos de interação                                                          |
+| `pnpm test:visual`             | Comparação de screenshots em desktop (1440 × 1000) e mobile (390 × 844)                |
+| `pnpm test:browser:ui`         | Interface interativa do Playwright para investigar testes                              |
+| `pnpm test:browser:trace`      | Suíte local com gravação de traces, preservados nas falhas                             |
+| `pnpm test:visual:update`      | Atualização das referências visuais do sistema local, após revisão                     |
+| `pnpm test:runtime`            | Geração real de PDFs com o Chromium serverless, em Linux local                         |
+| `pnpm test:runtime:linux`      | Teste específico do runtime PDF em Docker local, também no Windows/macOS               |
+| `pnpm test:e2e`                | Integração Convex com destino descartável ou dev verificado e dados próprios           |
 
-## Referências visuais e CI
+## Validação local e release
+
+O repositório não executa GitHub Actions. `pnpm check` é o bloqueio local de release: `pnpm deploy:production` executa essa checagem antes de entrar em manutenção ou publicar o backend. A suíte local inclui os fluxos de navegador e as referências visuais desktop e mobile; não há execução adicional obrigatória desses testes em Linux/Docker.
+
+O E2E com Convex continua separado e exige o opt-in descrito abaixo. Execute-o quando a mudança exigir integração real, em destino de desenvolvimento autorizado ou descartável, antes da release. Os testes sintéticos de `check` não acessam o backend remoto. O smoke operacional de publicação mantém suas verificações de login, navegação e PDF no portal publicado.
+
+## Desempenho e diagnóstico
+
+Os testes sintéticos usam até quatro workers, limitados ao paralelismo disponível da máquina, e distribuem os casos independentes dentro dos arquivos. Para comparar ou limitar o consumo, use `pnpm test:browser --workers=2` ou `--workers=1`. O E2E com Convex mantém um worker e execução sequencial, pois utiliza registros compartilhados da própria suíte.
+
+Cada worker reutiliza um servidor Vite por tipo de fixture. Os testes continuam recebendo contextos de navegador novos: memória dos módulos da aplicação, cookies e armazenamento do navegador ficam isolados. As variantes de perfil e os testes de indisponibilidade de backend têm servidores separados; os caches Vite são separados por worker.
+
+A execução normal não grava traces. Casos marcados com `.only` são recusados também na validação local. Para investigar uma falha, execute `pnpm test:browser:trace`, acrescentando o arquivo ou `--grep` desejado; o trace é gravado durante o teste e preservado somente em caso de falha. Não há retry automático. O relatório HTML e as screenshots de falhas continuam disponíveis em `playwright-report/` e `test-results/`. Use `pnpm exec playwright show-report` ou `pnpm exec playwright show-trace <arquivo-trace.zip>` para inspecioná-los.
+
+Para executar validações simultâneas no mesmo checkout, separe os artefatos: configure `DENTEC_TEST_OUTPUT_DIR` e `PLAYWRIGHT_HTML_OUTPUT_DIR` com diretórios distintos por execução (no PowerShell, use `$env:NOME = "caminho"`). Isso evita que uma suíte apague os traces ou screenshots de outra.
+
+Durante o desenvolvimento, rode primeiro os arquivos afetados, por exemplo `pnpm test:browser test/browser/editor-forms.spec.ts`. Antes de concluir ou publicar, execute `pnpm check` completo e registre comando, resultado e duração. Uma execução parcial não substitui a validação de release.
+
+## Referências visuais
 
 A suíte visual protege o portal, a criação de calendário, a consulta de documentos e seu leitor PDF, a revisão humana com confirmação pendente, o editor, a edição de evento e o diálogo de confirmação. Dados, relógio, idioma, fuso e viewports são fixos. As referências ficam versionadas em `test/browser/__screenshots__/`, separadas por sistema e viewport. O teste falha quando falta uma referência; os testes obrigatórios não são pulados quando o navegador está ausente.
 
-Para uma mudança visual intencional, execute `pnpm test:visual:update`, confira cada screenshot alterado e execute `pnpm test:visual` novamente. No macOS, atualize também as referências de Linux com `pnpm test:visual:linux:update` (requer Docker). O wrapper usa a mesma imagem e arquitetura do CI, instala as dependências em uma pasta temporária e copia as referências somente se toda a atualização passar; preserva o `node_modules` local. O wrapper lê as versões de Playwright e pnpm do `package.json`. Ao atualizar Playwright, mantenha `playwright-core` e `@playwright/test` na mesma versão, atualize a imagem em `.github/workflows/tests.yml` e regenere as referências. Não aceite alterações de screenshots sem verificar o efeito na interface.
+Para uma mudança visual intencional, execute `pnpm test:visual:update`, confira cada screenshot alterado e execute `pnpm test:visual` novamente, sem atualização. Valide as referências do sistema local em uso; ao passar a outro sistema, gere e revise as referências correspondentes, sem copiar imagens entre sistemas. As referências Linux já versionadas podem ser usadas quando o desenvolvimento local ocorrer em Linux. Ao atualizar Playwright, mantenha `playwright-core` e `@playwright/test` na mesma versão e confira as referências afetadas. Não aceite alterações de screenshots sem verificar o efeito na interface.
 
-A CI executa formatação, lint, análise de tipos, Vitest e build em um job; outro job instala explicitamente o Chromium, valida a geração real de PDFs e executa todos os testes sintéticos e visuais na imagem Linux fixa. Um terceiro job em `windows-latest` valida instalação com lockfile, TypeScript, testes unitários (incluindo os servidores de rotas) e build no PowerShell. Os testes de navegador e PDF no Windows usam o fluxo Docker Desktop com containers Linux e as referências Linux descritas acima. O status `check` só passa quando os três jobs passam. Adicionar o job não comprova execução: a validação Windows depende do resultado efetivo da CI. O relatório HTML, screenshots de falhas e traces ficam disponíveis no artefato `playwright-report` por 14 dias. Localmente, use `pnpm exec playwright show-report` ou `pnpm exec playwright show-trace <arquivo-trace.zip>` para investigar falhas.
+No Windows, instalação, TypeScript, testes unitários, navegador e build executam localmente pelo PowerShell. A primeira execução visual exige referências `win32` revisadas; resultados em macOS ou Linux não comprovam essa plataforma. Para executar o teste específico do runtime PDF fora de Linux, instale o Docker (Docker Desktop com containers Linux no Windows/macOS), inicie o daemon e permita acesso à imagem `mcr.microsoft.com/playwright` e ao registro npm. Esse teste é independente do navegador local e mantém suas dependências em uma pasta temporária.
 
 ## Runtime de PDF
 
 O gerador de PDF usa `playwright-core` e o Chromium serverless fixado em `@sparticuz/chromium`. A preparação converte os recursos oficiais para gzip no computador de desenvolvimento ou publicação e os armazena no Convex Storage, separados dos documentos da aplicação. O pacote ARM64 tem digest SHA-256 fixado; os arquivos x64 vêm da dependência com integridade no lockfile. `dev:setup`, `e2e:setup` e `deploy:production` preparam e conferem automaticamente as duas arquiteturas, com acesso ao GitHub e ao Storage. `pnpm runtime:prepare` repete a preparação somente no dev selecionado. A configuração operacional `DENTEC_CHROMIUM_RUNTIME` identifica versão, arquivos e hashes; o runtime confere tamanho, hash e arquitetura antes de extrair e executar. As actions usam apenas gzip, mantendo o bloqueio de Brotli do Convex.
 
-Os recursos ficam em cache por versão no `.temp/` local e na pasta temporária do worker. Eles não entram no bundle do navegador nem no catálogo institucional. A suíte `test/runtime/` executa esse mesmo caminho de download, verificação, extração e geração sem mocks, com recursos servidos localmente. Confere concorrência, conteúdo do modelo, identificação de teste/proposta, papel A4 e escape de conteúdo; é obrigatória no CI e pode ser executada separadamente com `pnpm test:runtime:linux`. Não há seleção de Chrome local nem variáveis de teste no caminho de produção do PDF.
+Os recursos ficam em cache por versão no `.temp/` local e na pasta temporária do worker. Eles não entram no bundle do navegador nem no catálogo institucional. A suíte `test/runtime/` executa esse mesmo caminho de download, verificação, extração e geração sem mocks, com recursos servidos localmente. Confere concorrência, conteúdo do modelo, identificação de teste/proposta, papel A4 e escape de conteúdo; é executada localmente quando houver mudanças no gerador, modelo de impressão ou dependências do runtime, com `pnpm test:runtime` em Linux ou `pnpm test:runtime:linux` pelo Docker. Não há seleção de Chrome local nem variáveis de teste no caminho de produção do PDF.
 
 ## E2E com Convex
 
-Os testes de integração real ficam em `test/e2e/native-portal.spec.ts` e não fazem parte de `pnpm test`, `pnpm check` ou do CI padrão. Há dois modos de opt-in: `DENTEC_DISPOSABLE_E2E=1` para um deployment descartável e `DENTEC_DEVELOPMENT_E2E=1` para o desenvolvimento atual explicitamente autorizado. Os modos são mutuamente exclusivos; o portal de produção é sempre recusado.
+Os testes de integração real ficam em `test/e2e/native-portal.spec.ts` e não fazem parte de `pnpm test` ou `pnpm check`. Há dois modos de opt-in: `DENTEC_DISPOSABLE_E2E=1` para um deployment descartável e `DENTEC_DEVELOPMENT_E2E=1` para o desenvolvimento atual explicitamente autorizado. Os modos são mutuamente exclusivos; o portal de produção é sempre recusado.
 
 Para preparar os testes no desenvolvimento selecionado em `.env.local`:
 

@@ -1,5 +1,7 @@
 # Plano: Sábados letivos com calendário anual e painel de seleção
 
+> Plano histórico: a validação vigente de release é local, com `pnpm check`, conforme [Verificação](../verificacao.md). As referências abaixo a CI e à suíte Linux/Docker foram substituídas por essa diretriz.
+
 > **Para agentes:** use superpowers:subagent-driven-development ou superpowers:executing-plans para executar tarefa por tarefa. Os passos usam caixas (`- [ ]`) para acompanhamento.
 
 **Objetivo:** substituir a etapa 4 do editor (grade de checkboxes + uma ficha por data abaixo da tabela) por um calendário anual com um painel ao lado. O painel aplica uma atividade e uma fonte a todos os sábados selecionados, permite editar e remover sábados registrados e mostra a contagem de dias letivos.

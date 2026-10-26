@@ -2,16 +2,15 @@ import { test, expect } from './test.ts';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { startFixtureServer } from './fixture-server.ts';
 import { selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/confirmation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 test('React confirmation handles focus, keyboard, backdrop, async failure and duplicate actions', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const fixtureUrl = await startFixtureServer('confirmation', cleanup);
+  const fixtureUrl = await fixtureServer('confirmation');
   const errors: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(message.text());
@@ -110,9 +109,10 @@ test('React confirmation handles focus, keyboard, backdrop, async failure and du
 
 test('TypeScript editor preserves cancelled imports and saves before converting to definitive', async ({
   page,
+  fixtureServer,
   cleanup,
 }) => {
-  const fixtureUrl = await startFixtureServer('editor-confirmation', cleanup);
+  const fixtureUrl = await fixtureServer('editor-confirmation');
   const directory = await mkdtemp(join(tmpdir(), 'editor-confirmation-'));
   cleanup(() => rm(directory, { recursive: true, force: true }));
   const errors: string[] = [];

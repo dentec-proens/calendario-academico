@@ -1,6 +1,5 @@
 import { test, expect } from './test.ts';
 import type { Page } from '@playwright/test';
-import { startFixtureServer } from './fixture-server.ts';
 import { addPeriod, selectEditorSection } from './editor-navigation.ts';
 
 // Each case runs in the desktop and mobile projects. Fixtures import production
@@ -16,15 +15,15 @@ async function assertNoOverflow(page: Page) {
     .toBe(true);
 }
 
-test('portal calendar dashboard', async ({ page, cleanup }) => {
-  await page.goto(await startFixtureServer('portal', cleanup));
+test('portal calendar dashboard', async ({ page, fixtureServer }) => {
+  await page.goto(await fixtureServer('portal'));
   await expect(page.locator('#calendar-list')).toContainText('Calendário de teste');
   await assertNoOverflow(page);
   await expect(page).toHaveScreenshot('portal-dashboard.png', { fullPage: true });
 });
 
-test('calendar creation form', async ({ page, cleanup }) => {
-  await page.goto(await startFixtureServer('portal', cleanup));
+test('calendar creation form', async ({ page, fixtureServer }) => {
+  await page.goto(await fixtureServer('portal'));
   await expect(page.locator('#calendar-list')).toBeVisible();
   await page.locator('#calendars .collection-heading button').click();
   await page.locator('#calendar-courses').fill('Técnico em Informática');
@@ -35,8 +34,8 @@ test('calendar creation form', async ({ page, cleanup }) => {
   await expect(page).toHaveScreenshot('calendar-creation.png', { fullPage: true });
 });
 
-test('review with a pending confirmed criterion', async ({ page, cleanup }) => {
-  await page.goto(await startFixtureServer('review', cleanup));
+test('review with a pending confirmed criterion', async ({ page, fixtureServer }) => {
+  await page.goto(await fixtureServer('review'));
   await page.locator('#open-review').click();
   const item = page.locator('#review-items > li').first();
   await expect(item.locator('textarea')).toBeEnabled();
@@ -55,8 +54,8 @@ test('review with a pending confirmed criterion', async ({ page, cleanup }) => {
   await expect(item).toHaveScreenshot('review-not-applicable.png');
 });
 
-test('calendar editor and its event form', async ({ page, cleanup }) => {
-  await page.goto(`${await startFixtureServer('editor', cleanup)}?id=synthetic-calendar`);
+test('calendar editor and its event form', async ({ page, fixtureServer }) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
   await assertNoOverflow(page);
   await expect(page).toHaveScreenshot('calendar-editor.png', { fullPage: true });
@@ -88,8 +87,8 @@ test('calendar editor and its event form', async ({ page, cleanup }) => {
   await expect(eventHeading).toBeInViewport({ ratio: 1 });
 });
 
-test('destructive confirmation with preserved data explained', async ({ page, cleanup }) => {
-  await page.goto(await startFixtureServer('confirmation', cleanup));
+test('destructive confirmation with preserved data explained', async ({ page, fixtureServer }) => {
+  await page.goto(await fixtureServer('confirmation'));
   await page.locator('#trigger').click();
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toBeVisible();
@@ -100,9 +99,9 @@ test('destructive confirmation with preserved data explained', async ({ page, cl
 
 test('annual Saturdays keep the selection panel next to the year grid', async ({
   page,
-  cleanup,
+  fixtureServer,
 }, testInfo) => {
-  await page.goto(await startFixtureServer('editor', cleanup));
+  await page.goto(await fixtureServer('editor'));
   await expect(page.locator('#record-title')).toBeVisible();
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'days');

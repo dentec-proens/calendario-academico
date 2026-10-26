@@ -1,11 +1,10 @@
 import { test, expect } from './test.ts';
-import { startFixtureServer } from './fixture-server.ts';
 
 test('canceling an editor exit preserves the route, draft and React document', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const fixture = await startFixtureServer('editor', cleanup);
+  const fixture = await fixtureServer('editor');
   const origin = new URL(fixture).origin;
   await page.goto(fixture);
   await page.locator('[data-view="events"]').click();
@@ -28,9 +27,9 @@ test('canceling an editor exit preserves the route, draft and React document', a
 
 test('sections and browser history preserve an unapplied event without an exit prompt', async ({
   page,
-  cleanup,
+  fixtureServer,
 }) => {
-  const fixture = await startFixtureServer('editor', cleanup);
+  const fixture = await fixtureServer('editor');
   await page.goto(fixture);
   await page.locator('[data-view="events"]').click();
   await page.locator('#new-event').click();
