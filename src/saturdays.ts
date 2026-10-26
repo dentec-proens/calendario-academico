@@ -83,6 +83,11 @@ export interface YearMonth {
   registered: number;
 }
 
+/** A single-day Saturday activity, the only kind of inclusion the Saturdays step edits. */
+export function isSaturdayRecord(event: Pick<CalendarActivity, 'category' | 'start' | 'end'>) {
+  return event.category === 'sabado' && event.start === event.end;
+}
+
 export function isYearSaturday(day: YearDay | YearSaturday): day is YearSaturday {
   return 'status' in day;
 }
@@ -110,9 +115,11 @@ export function saturdayYear(
             .map((e) => e.name),
         };
         if (weekday !== 6) return day;
-        const registration = state.events.find(
+        const covering = state.events.filter(
           (e) => e.kind === 'include' && e.start <= date && date <= e.end,
         );
+        // A Saturday's own record wins over a wider inclusion, so it stays editable here.
+        const registration = covering.find(isSaturdayRecord) ?? covering[0];
         const status: SaturdayStatus = registration
           ? 'registered'
           : day.inPeriod
@@ -122,7 +129,7 @@ export function saturdayYear(
           ...day,
           status,
           ...(registration && { registration }),
-          editable: registration?.category === 'sabado' && registration.start === registration.end,
+          editable: registration ? isSaturdayRecord(registration) : false,
         };
       },
     );

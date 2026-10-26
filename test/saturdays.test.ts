@@ -246,3 +246,18 @@ test('updating a Saturday activity trims values and rejects other records', () =
     /atividade e a fonte/,
   );
 });
+
+test('a Saturday covered by a wider inclusion stays editable through its own record', () => {
+  const own: CalendarActivity = {
+    id: 's3',
+    name: 'Gincana',
+    evidence: 'Ata 3',
+    kind: 'include',
+    category: 'sabado',
+    start: '2027-03-27',
+    end: '2027-03-27',
+  };
+  const months = saturdayYear({ ...yearState, events: [...yearState.events, own] }, []);
+  const saturday = months[2]!.days.find((day) => day.date === '2027-03-27') as YearSaturday;
+  assert.deepEqual([saturday.registration?.id, saturday.editable], ['s3', true]);
+});

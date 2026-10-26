@@ -238,6 +238,32 @@
   margin: 0 0 10px;
   font-size: 0.875rem;
 }
+.saturday-edit-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+#saturday-panel .saturday-edit-heading h5 {
+  margin: 0;
+}
+#saturday-edit-form fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+#saturday-edit-save {
+  flex: 1 1 auto;
+}
+#saturday-panel .saturday-remove {
+  border-color: var(--ui-danger-border);
+  color: var(--ui-danger);
+}
+#saturday-panel .saturday-remove:enabled:hover {
+  background: var(--ui-danger-soft);
+}
 #saturday-edit-title:focus-visible {
   outline: 3px solid var(--ui-focus);
   outline-offset: 3px;

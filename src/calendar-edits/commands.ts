@@ -10,7 +10,7 @@ import { activityChecklist, assessmentCount, stageRequirement } from '../obligat
 import { calendarModalities } from '../modalities.ts';
 import { recalculateAssessmentStages } from '../stage-suggestions.ts';
 import { teacherVacations } from '../teacher-vacations.ts';
-import { saturdayEvents } from '../saturdays.ts';
+import { isSaturdayRecord, saturdayEvents } from '../saturdays.ts';
 import { campusInstitutionalEvents } from '../teacher-day.ts';
 
 const vacationIds = new Set([
@@ -233,7 +233,7 @@ export function updateSaturdayActivity<S extends ActivityState>(
 ): S {
   const current = state.events.find((event) => event.id === values.id);
   if (!current) throw new Error('O sábado não existe mais. Reabra o calendário.');
-  if (current.category !== 'sabado' || current.start !== current.end)
+  if (!isSaturdayRecord(current))
     throw new Error('Este registro é editado em Atividades e datas do campus.');
   const name = values.name.trim();
   const evidence = values.evidence.trim();

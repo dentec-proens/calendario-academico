@@ -6,6 +6,7 @@ import { useCalendarForm } from '../forms/useCalendarForm.ts';
 import { Input } from '../forms/fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import SaturdayYearGrid from './SaturdayYearGrid.tsx';
+import SaturdayEditForm from './SaturdayEditForm.tsx';
 import './saturdays.css';
 
 const shortDate = (date: string) => date.slice(5).split('-').reverse().join('/');
@@ -107,9 +108,10 @@ export default function SaturdaysForm() {
       form.setFieldValue('evidence', lastSource);
     form.setFieldValue('dates', [...rest, date]);
   }
-  function closeEditing(day: YearSaturday) {
+  function closeEditing(date: string) {
     setEditingId(null);
-    focusDate(day.date);
+    // After a removal the date's control becomes a checkbox, which only exists after the render.
+    pendingFocus.current = () => dateControl(date);
   }
 
   return (
@@ -146,26 +148,36 @@ export default function SaturdaysForm() {
           </p>
           {editing ? (
             <section className="saturday-panel-section" aria-labelledby="saturday-edit-title">
-              <h5 id="saturday-edit-title" tabIndex={-1}>
-                Sábado, {shortDate(editing.date)}
-              </h5>
-              <dl className="saturday-registration">
-                <dt>Atividade</dt>
-                <dd>{editing.registration!.name}</dd>
-                <dt>Fonte da decisão</dt>
-                <dd>{editing.registration!.evidence}</dd>
-              </dl>
-              {!editing.editable && (
-                <p className="help">Edite este registro em Atividades e datas do campus.</p>
+              <div className="saturday-edit-heading">
+                <h5 id="saturday-edit-title" tabIndex={-1}>
+                  Sábado, {shortDate(editing.date)}
+                </h5>
+                <button
+                  type="button"
+                  id="saturday-edit-close"
+                  className="secondary"
+                  onClick={() => closeEditing(editing.date)}
+                >
+                  Fechar
+                </button>
+              </div>
+              {editing.editable ? (
+                <SaturdayEditForm
+                  key={editing.registration!.id}
+                  event={editing.registration!}
+                  onClose={closeEditing}
+                />
+              ) : (
+                <>
+                  <dl className="saturday-registration">
+                    <dt>Atividade</dt>
+                    <dd>{editing.registration!.name}</dd>
+                    <dt>Fonte da decisão</dt>
+                    <dd>{editing.registration!.evidence}</dd>
+                  </dl>
+                  <p className="help">Edite este registro em Atividades e datas do campus.</p>
+                </>
               )}
-              <button
-                type="button"
-                id="saturday-edit-close"
-                className="secondary"
-                onClick={() => closeEditing(editing)}
-              >
-                Fechar
-              </button>
             </section>
           ) : selection.length ? (
             <fieldset

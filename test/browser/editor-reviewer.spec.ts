@@ -77,3 +77,22 @@ test('reviewer direct section URLs and reload keep the requested read-only secti
   }
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });
+
+test('reviewer reads a registered Saturday without selecting, editing or removing it', async ({
+  page,
+  cleanup,
+}) => {
+  const origin = new URL(await startFixtureServer('editor-reviewer-saturdays', cleanup)).origin;
+  await page.goto(origin + '/calendarios/synthetic-calendar/dias');
+  await expect(page.locator('#autosave-status')).toContainText(/somente leitura/i);
+  const available = page.locator('#saturday-dates input');
+  await expect(available).not.toHaveCount(0);
+  for (const control of await available.all()) await expect(control).toBeDisabled();
+  await page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]').click();
+  await expect(page.locator('#saturday-edit-name')).toHaveValue('Reposição de aulas');
+  for (const control of ['#saturday-edit-name', '#saturday-edit-evidence', '#saturday-edit-save'])
+    await expect(page.locator(control)).toBeDisabled();
+  await expect(page.locator('#saturday-edit-remove')).toBeDisabled();
+  await expect(page.locator('#saturday-edit-close')).toBeEnabled();
+  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
+});

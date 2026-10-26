@@ -259,6 +259,84 @@ test('a selected holiday warns that it will not count as a teaching day', async 
   await expect(page.locator('#saturday-impediments')).toContainText('Dia do Trabalho');
 });
 
+test('a registered Saturday is edited and removed from the panel', async ({ page, cleanup }) => {
+  await openEditor(page, cleanup);
+  await addPeriod(page, '2027-03-01', '2027-04-30');
+  await page.locator('[data-view="days"]').click();
+  await page.locator('#saturday-dates input[value="2027-03-06"]').check();
+  await page.locator('#saturday-name').fill('Reposição de aulas');
+  await page.locator('#saturday-evidence').fill('Resolução nº 12/2026');
+  await page.locator('#saturday-submit').click();
+  const registered = page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]');
+  await expect(registered).toBeFocused();
+  const saturdays = () =>
+    page.evaluate(() =>
+      window.editorTest.record.state.events
+        .filter((event) => event.category === 'sabado')
+        .map(({ start, name, evidence }) => ({ start, name, evidence })),
+    );
+
+  await registered.click();
+  await expect(page.locator('#saturday-edit-name')).toHaveValue('Reposição de aulas');
+  await page.locator('#saturday-edit-name').fill('Feira de ciências');
+  await page.locator('#saturday-edit-evidence').fill('Ata do colegiado nº 4/2027');
+  await page.locator('#saturday-edit-save').click();
+  await expect
+    .poll(saturdays)
+    .toEqual([
+      { start: '2027-03-06', name: 'Feira de ciências', evidence: 'Ata do colegiado nº 4/2027' },
+    ]);
+  await expect(page.locator('#saturday-edit-form')).toHaveCount(0);
+  await expect(registered).toBeFocused();
+
+  // Closing without saving discards the edit and leaves nothing unapplied.
+  await registered.click();
+  await page.locator('#saturday-edit-name').fill('Rascunho descartado');
+  await page.locator('#saturday-edit-close').click();
+  await expect(registered).toBeFocused();
+  await expect(page.locator('#unapplied-status')).toBeHidden();
+
+  await registered.click();
+  await page.locator('#saturday-edit-remove').click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Remover sábado' }).click();
+  await expect.poll(saturdays).toEqual([]);
+  await expect(page.locator('#saturday-dates input[value="2027-03-06"]')).toBeFocused();
+});
+
+test('multi-day inclusions over a Saturday are registered but edited in Activities and dates', async ({
+  page,
+  cleanup,
+}) => {
+  await openEditor(page, cleanup);
+  await addPeriod(page, '2027-03-01', '2027-04-30');
+  await selectEditorSection(page, 'events');
+  await page.locator('#new-event').click();
+  await page.locator('#event-name').fill('Semana acadêmica');
+  await page.selectOption('#event-category', 'evento');
+  await page.selectOption('#event-kind', 'include');
+  await page.locator('#event-start').fill('2027-03-22');
+  await page.locator('#event-end').fill('2027-03-27');
+  await page.locator('#event-evidence').fill('Ata do colegiado nº 2/2027');
+  await page.locator('#event-confirmed').click();
+  await page.locator('#event-form button[type="submit"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.editorTest.record.state.events.some((event) => event.name === 'Semana acadêmica'),
+      ),
+    )
+    .toBe(true);
+  await selectEditorSection(page, 'days');
+  const saturday = page.locator('[data-saturday="2027-03-27"]');
+  await expect(saturday).toHaveAttribute('data-status', 'registered');
+  await expect(saturday.locator('[data-edit-saturday]')).toHaveCount(0);
+  await saturday.locator('button').click();
+  await expect(page.locator('#saturday-panel')).toContainText(
+    'Edite este registro em Atividades e datas do campus.',
+  );
+  await expect(page.locator('#saturday-edit-form')).toHaveCount(0);
+});
+
 test('vacation form supports duration and manual end dates and rejects overlapping periods atomically', async ({
   page,
   cleanup,
