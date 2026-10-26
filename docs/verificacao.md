@@ -4,7 +4,15 @@
 pnpm check
 ```
 
-Executa formatação, lint, lint com análise de tipos, TypeScript, testes e build. Comandos individuais: `pnpm format:check`, `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test` e `pnpm build`.
+Executa formatação de código e configuração, lint, lint com análise de tipos, TypeScript, testes e build. Comandos individuais: `pnpm format:check`, `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test` e `pnpm build`.
+
+A formatação da documentação é independente de `pnpm check`: arquivos Markdown (`.md`, `.mdx` e `.markdown`), inclusive rascunhos em `docs/plans/`, são verificados com `pnpm format:docs:check` e formatados com `pnpm format:docs`. `pnpm format` e `pnpm format:check` cuidam dos demais arquivos reconhecidos pelo Prettier. Os padrões ficam entre aspas para serem interpretados pelo próprio Prettier, inclusive no Windows/PowerShell.
+
+Para uma alteração apenas documental, confira somente os arquivos alterados, por exemplo:
+
+```sh
+pnpm exec prettier --check docs/verificacao.md
+```
 
 Os testes de domínio, backend, infraestrutura e autosave usam Vitest e `convex-test`, sem serviço remoto. Os testes de UI usam Playwright com Chromium e fixtures sintéticas que carregam os componentes e CSS reais. Todos entram na checagem estrita de tipos (`pnpm typecheck:tests`).
 
@@ -16,21 +24,25 @@ Na primeira execução, instale o navegador:
 pnpm test:browser:install
 ```
 
-| Comando                        | Cobertura                                                                              |
-| ------------------------------ | -------------------------------------------------------------------------------------- |
-| `pnpm check`                   | Validação local completa antes de uma release: formatação, lint, tipos, testes e build |
-| `pnpm test`                    | Vitest + toda a suíte sintética de navegador, incluindo regressão visual               |
-| `pnpm test:unit`               | Domínio, backend e infraestrutura em Vitest                                            |
-| `pnpm test:watch`              | Vitest em modo contínuo                                                                |
-| `pnpm test:browser`            | Interações e regressão visual em Playwright                                            |
-| `pnpm test:browser:functional` | Apenas os fluxos de interação                                                          |
-| `pnpm test:visual`             | Comparação de screenshots em desktop (1440 × 1000) e mobile (390 × 844)                |
-| `pnpm test:browser:ui`         | Interface interativa do Playwright para investigar testes                              |
-| `pnpm test:browser:trace`      | Suíte local com gravação de traces, preservados nas falhas                             |
-| `pnpm test:visual:update`      | Atualização das referências visuais do sistema local, após revisão                     |
-| `pnpm test:runtime`            | Geração real de PDFs com o Chromium serverless, em Linux local                         |
-| `pnpm test:runtime:linux`      | Teste específico do runtime PDF em Docker local, também no Windows/macOS               |
-| `pnpm test:e2e`                | Integração Convex com destino descartável ou dev verificado e dados próprios           |
+| Comando                        | Cobertura                                                                                                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                   | Validação local completa antes de uma release: formatação de código/configuração, lint, tipos, testes e build |
+| `pnpm format`                  | Formatação de código e configuração, sem Markdown                                                             |
+| `pnpm format:check`            | Conferência da formatação de código e configuração, sem Markdown                                              |
+| `pnpm format:docs`             | Formatação da documentação Markdown                                                                           |
+| `pnpm format:docs:check`       | Conferência da formatação da documentação Markdown, fora de `pnpm check`                                      |
+| `pnpm test`                    | Vitest + toda a suíte sintética de navegador, incluindo regressão visual                                      |
+| `pnpm test:unit`               | Domínio, backend e infraestrutura em Vitest                                                                   |
+| `pnpm test:watch`              | Vitest em modo contínuo                                                                                       |
+| `pnpm test:browser`            | Interações e regressão visual em Playwright                                                                   |
+| `pnpm test:browser:functional` | Apenas os fluxos de interação                                                                                 |
+| `pnpm test:visual`             | Comparação de screenshots em desktop (1440 × 1000) e mobile (390 × 844)                                       |
+| `pnpm test:browser:ui`         | Interface interativa do Playwright para investigar testes                                                     |
+| `pnpm test:browser:trace`      | Suíte local com gravação de traces, preservados nas falhas                                                    |
+| `pnpm test:visual:update`      | Atualização das referências visuais do sistema local, após revisão                                            |
+| `pnpm test:runtime`            | Geração real de PDFs com o Chromium serverless, em Linux local                                                |
+| `pnpm test:runtime:linux`      | Teste específico do runtime PDF em Docker local, também no Windows/macOS                                      |
+| `pnpm test:e2e`                | Integração Convex com destino descartável ou dev verificado e dados próprios                                  |
 
 ## Validação local e release
 
