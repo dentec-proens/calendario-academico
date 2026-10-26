@@ -38,7 +38,9 @@ function useController() {
   const [open, setOpen] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
   const [source, setSource] = useState<CalendarEvent['historicalSource']>();
-  const [returnFocus, setReturnFocus] = useState<'resume-event' | 'new-event' | null>(null);
+  const [returnFocus, setReturnFocus] = useState<
+    'resume-event' | 'new-event' | 'pending-event-title' | null
+  >(null);
   const result = useCalendarForm(
     'event',
     emptyEvent(state.modalities),
@@ -103,7 +105,7 @@ function useController() {
   }, [context, session]);
 
   function canOpen(next: EventContext) {
-    if (readOnly) return false;
+    if (readOnly || result.pending) return false;
     if (context && JSON.stringify(context) === JSON.stringify(next)) {
       setOpen(true);
       return false;
@@ -195,6 +197,7 @@ function useController() {
     );
   }
   function discard() {
+    if (result.pending) return;
     result.form.reset(emptyEvent(state.modalities));
     result.clearDraft();
     session.setFormDirty('event', false);
@@ -289,10 +292,22 @@ function useController() {
     applyStages,
     changeRequirement,
     close: () => {
+      if (result.pending) return;
+      if (!dirty) {
+        discard();
+        return;
+      }
       setOpen(false);
       setReturnFocus('resume-event');
     },
-    newEvent: () => begin({ kind: 'new' }, emptyEvent(state.modalities)),
+    newEvent: () => {
+      if (readOnly || result.pending) return;
+      if (context && dirty) {
+        setReturnFocus('pending-event-title');
+        return;
+      }
+      begin({ kind: 'new' }, emptyEvent(state.modalities));
+    },
   };
 }
 type Controller = ReturnType<typeof useController>;

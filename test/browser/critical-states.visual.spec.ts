@@ -87,6 +87,23 @@ test('calendar editor and its event form', async ({ page, fixtureServer }) => {
   await expect(eventHeading).toBeInViewport({ ratio: 1 });
 });
 
+test('event creation explains the pending draft beside the visible action', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await expect(page.locator('#record-title')).toBeVisible();
+  await selectEditorSection(page, 'events');
+  await page.locator('#new-event').click();
+  await page.locator('#event-name').fill('Encontro com as famílias');
+  await page.locator('#close-event-form').click();
+  await page.locator('#new-event').click();
+  await expect(page.locator('#pending-event-title')).toBeFocused();
+  await expect(page.locator('#new-event')).toBeVisible();
+  await assertNoOverflow(page);
+  await expect(page.locator('#event-creation')).toHaveScreenshot('event-pending-draft.png');
+});
+
 test('destructive confirmation with preserved data explained', async ({ page, fixtureServer }) => {
   await page.goto(await fixtureServer('confirmation'));
   await page.locator('#trigger').click();

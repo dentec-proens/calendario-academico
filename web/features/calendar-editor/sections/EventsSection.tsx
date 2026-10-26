@@ -12,6 +12,7 @@ import HistorySection from './HistorySection.tsx';
 export default function EventsSection() {
   const { events, state, institutional, applyCommand, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
+  const hasPendingEvent = Boolean(editor.context && editor.dirty);
   const inActivity =
     editor.context?.kind === 'activity' ||
     (editor.context?.kind === 'new' && Boolean(editor.values.requirementId));
@@ -19,18 +20,53 @@ export default function EventsSection() {
     <section id="events" className="view">
       <div className="panel">
         <h3>Atividades, prazos e impedimentos</h3>
-        <button
-          id="new-event"
-          type="button"
-          hidden={Boolean(editor.context)}
-          disabled={readOnly}
-          onClick={editor.newEvent}
-        >
-          Adicionar novo evento
-        </button>
-        <p className="help">
-          Acrescente as atividades e datas do campus e registre as fontes das decisões.
-        </p>
+        <div id="event-creation">
+          <button
+            id="new-event"
+            type="button"
+            disabled={readOnly || editor.pending}
+            aria-describedby={hasPendingEvent ? 'pending-event-description' : undefined}
+            onClick={editor.newEvent}
+          >
+            Adicionar novo evento
+          </button>
+          <p className="help">
+            Acrescente as atividades e datas do campus e registre as fontes das decisões.
+          </p>
+          {hasPendingEvent && (
+            <section id="pending-event" className="notice" aria-labelledby="pending-event-title">
+              <h4 id="pending-event-title" tabIndex={-1}>
+                Preenchimento pendente
+              </h4>
+              <p id="pending-event-description">
+                Há alterações ainda não aplicadas em{' '}
+                <strong>{editor.values.name.trim() || 'Novo evento'}</strong>. Continue esse
+                preenchimento ou descarte as alterações antes de adicionar outro evento.
+              </p>
+              <div className="actions">
+                <button
+                  id="resume-pending-event"
+                  type="button"
+                  disabled={readOnly || editor.pending}
+                  onClick={() => {
+                    void editor.resume();
+                  }}
+                >
+                  Continuar preenchimento
+                </button>
+                <button
+                  id="discard-pending-event"
+                  type="button"
+                  className="secondary"
+                  disabled={readOnly || editor.pending}
+                  onClick={editor.discard}
+                >
+                  Descartar preenchimento
+                </button>
+              </div>
+            </section>
+          )}
+        </div>
         <HistorySection />
         <ActivityChecklist />
         <ul id="event-list" className="records">
