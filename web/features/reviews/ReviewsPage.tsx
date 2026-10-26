@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { usePaginatedQuery, useQueries, type RequestForQueries } from 'convex/react';
 import { Eye } from 'lucide-react';
@@ -13,12 +13,19 @@ import type { ReviewSupport } from './review-values.ts';
 import type { ReviewDraft } from './review-values.ts';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
-import { Notice } from '../../components/ui/Notice.tsx';
+import { Notice, type NoticeTone } from '../../components/ui/Notice.tsx';
 
 export default function ReviewsPage() {
   const route = useFeatureRoute();
   const navigate = useNavigate();
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ text: string; tone: NoticeTone }>({
+    text: '',
+    tone: 'success',
+  });
+  const report = useCallback(
+    (text: string, tone: NoticeTone = 'success') => setMessage({ text, tone }),
+    [],
+  );
   const [candidate, setCandidate] = useState({ routeId: '', value: '' });
   const drafts = useFormDrafts();
   const pagination = usePaginatedQuery(
@@ -71,7 +78,7 @@ export default function ReviewsPage() {
       drafts?.clear(`review:${requested}`);
     }
     setCandidate({ routeId: calendarId, value: '' });
-    setMessage('Indicações automáticas disponíveis para conferência.');
+    report('Indicações automáticas disponíveis para conferência.', 'info');
     await navigate({ to: '/revisoes/$calendarId', params: { calendarId } });
   }
   const reviewMessage =
@@ -79,7 +86,7 @@ export default function ReviewsPage() {
       ? /removido|disponível/i.test(result.message)
         ? 'O calendário deixou de estar disponível para revisão. Selecione outro calendário para abrir a análise.'
         : result.message
-      : message ||
+      : message.text ||
         (!pagination.results.length && pagination.status === 'Exhausted'
           ? 'Nenhum calendário disponível para revisão.'
           : requested && !result
@@ -131,13 +138,15 @@ export default function ReviewsPage() {
         {requested ? <Link to="/revisoes">Voltar à lista de revisões</Link> : null}
         <div id="review-message" role="status" aria-live="polite">
           {reviewMessage ? (
-            <Notice tone={result instanceof Error ? 'danger' : message ? 'success' : 'info'}>
+            <Notice
+              tone={result instanceof Error ? 'danger' : message.text ? message.tone : 'info'}
+            >
               {reviewMessage}
             </Notice>
           ) : null}
         </div>
         {opened ? (
-          <ReviewEditor key={opened.calendar.id} opened={opened} onMessage={setMessage} />
+          <ReviewEditor key={opened.calendar.id} opened={opened} onMessage={report} />
         ) : null}
       </div>
     </section>

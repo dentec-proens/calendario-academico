@@ -154,6 +154,8 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   });
   await page.locator('button[form="review-form"]').click();
   await expect(page.locator('#review-message')).toContainText('Falha sintética ao salvar');
+  // A failed save must not read as a confirmation.
+  await expect(page.locator('#review-message .ui-notice')).toHaveAttribute('data-tone', 'danger');
   expect(
     await page.locator(`${item} [data-origin]`).evaluate((node) => node.textContent ?? ''),
     'failed persistence must retain the pending-save badge',

@@ -15,14 +15,15 @@ import {
   type ReviewEntry,
   type ReviewDocument,
 } from './review-values.ts';
-import { Notice } from '../../components/ui/Notice.tsx';
+import { Notice, type NoticeTone } from '../../components/ui/Notice.tsx';
 
 export default function ReviewEditor({
   opened,
   onMessage,
 }: {
   opened: ReviewSupport;
-  onMessage: (message: string) => void;
+  /** Reports an outcome; confirmations are the default tone. */
+  onMessage: (message: string, tone?: NoticeTone) => void;
 }) {
   const [previewData, setPreviewData] = useState<{
     document: ReviewDocument;
@@ -57,7 +58,7 @@ export default function ReviewEditor({
       setPreview(null);
       onMessage('Análise salva.');
     },
-    onError: onMessage,
+    onError: (message) => onMessage(message, 'danger'),
   });
   const draft = values.draft;
   const dirty = draft.dirty;
@@ -154,7 +155,7 @@ export default function ReviewEditor({
   async function exportReview(action: 'preview' | 'copy' | 'html' | 'txt') {
     if (busy || exportBusy.current) return;
     if (dirty || !draft.opened.review || remoteChanged) {
-      onMessage('Salve a análise antes de visualizar, copiar ou baixar o parecer.');
+      onMessage('Salve a análise antes de visualizar, copiar ou baixar o parecer.', 'warning');
       return;
     }
     exportBusy.current = true;
@@ -185,11 +186,12 @@ export default function ReviewEditor({
           if (active.current)
             onMessage(
               'O navegador não permitiu copiar automaticamente. Selecione o parecer exibido abaixo e use Ctrl+C, ou baixe o HTML.',
+              'warning',
             );
         }
       }
     } catch (cause) {
-      if (active.current) onMessage(nativeError(cause).message);
+      if (active.current) onMessage(nativeError(cause).message, 'danger');
     } finally {
       exportBusy.current = false;
       if (active.current) setExporting(false);

@@ -55,7 +55,7 @@ export default function RootLayout() {
         {!parseEditorPath(pathname) && (
           <div id="message" role="status" aria-live="polite">
             {session.message?.text ? (
-              <Notice tone={session.message.error ? 'danger' : 'success'}>
+              <Notice tone={session.message.error ? 'danger' : 'success'} elevated>
                 {session.message.text}
               </Notice>
             ) : null}

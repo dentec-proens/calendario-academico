@@ -216,6 +216,7 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
   await writeFile(file, JSON.stringify({ schemaVersion: 99 }));
   await picker.setInputFiles(file);
   await expect(page.locator('#message')).toContainText('Não foi possível abrir');
+  await expect(page.locator('#message .ui-notice')).toHaveAttribute('data-tone', 'danger');
   await expect(page.locator('dialog[open]')).toHaveCount(0);
   await expect(page.locator('input#period-name')).toHaveValue('Outro preenchimento');
 

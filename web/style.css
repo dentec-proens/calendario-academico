@@ -535,9 +535,6 @@ footer {
     z-index: 30;
     white-space: pre-line;
   }
-  #message .ui-notice {
-    box-shadow: 0 2px 8px #0002;
-  }
 }
 
 @media screen {

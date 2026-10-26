@@ -39,5 +39,13 @@ test('notice exposes tone, announcement, title, icon, actions and hidden state a
   await expect(warning.locator('#notice-action')).toBeVisible();
 
   await expect(page.locator('#notice-hidden')).toBeHidden();
+
+  // Inside an always-mounted live region the notice adds no nested live region.
+  const live = page.locator('#notice-in-live');
+  await expect(page.locator('#notice-live')).toHaveAttribute('role', 'status');
+  await expect(live).not.toHaveAttribute('role');
+  await expect(live).toHaveClass(/\bui-notice\b/);
+  await expect(live).toHaveClass(/\bui-notice--elevated\b/);
+  await expect(live).toHaveClass(/\bnotice-position\b/);
   expect(errors).toEqual([]);
 });

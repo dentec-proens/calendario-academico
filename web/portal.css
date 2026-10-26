@@ -656,16 +656,6 @@
 .calendar-editor .autosave-panel {
   margin: 16px 0;
 }
-/* Hidden status lines leave no gap, so the visible ones stay aligned with the icon. */
-.calendar-editor .autosave-panel .ui-notice__content {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
-.calendar-editor .autosave-panel .ui-notice__content p {
-  margin: 0;
-}
 @media print {
   .autosave-panel {
     display: none !important;

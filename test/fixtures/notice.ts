@@ -45,6 +45,16 @@ const gallery = h(
   h(Notice, { id: 'notice-custom-icon', icon: CalendarDays }, 'Ícone escolhido pela tela.'),
   h(Notice, { id: 'notice-no-icon', icon: null }, 'Aviso sem ícone.'),
   h(Notice, { id: 'notice-hidden', hidden: true }, 'Aviso oculto.'),
+  // Transient messages: the live wrapper stays mounted and the notice inside stays silent.
+  h(
+    'div',
+    { id: 'notice-live', role: 'status', 'aria-live': 'polite' },
+    h(
+      Notice,
+      { id: 'notice-in-live', tone: 'success', elevated: true, className: 'notice-position' },
+      'Calendário salvo e confirmado.',
+    ),
+  ),
 );
 
 createRoot(document.getElementById('notice-gallery')!).render(h(StrictMode, null, gallery));

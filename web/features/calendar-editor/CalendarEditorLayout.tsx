@@ -96,9 +96,9 @@ function EditorFrame() {
     Boolean(error || remote || unapplied) ||
     status === 'error' ||
     status === 'blocked';
-  const autosaveTone = readOnly
-    ? 'info'
-    : error || status === 'error' || status === 'blocked'
+  // A change from another session or a lost connection needs attention even in read-only mode.
+  const autosaveTone =
+    !readOnly && (error || status === 'error' || status === 'blocked')
       ? 'danger'
       : !connected || remote
         ? 'warning'
@@ -231,7 +231,9 @@ function EditorFrame() {
       <div className="editor-feedback" ref={feedback}>
         <div id="message" role="status" aria-live="polite">
           {message?.text ? (
-            <Notice tone={message.error ? 'danger' : 'success'}>{message.text}</Notice>
+            <Notice tone={message.error ? 'danger' : 'success'} elevated>
+              {message.text}
+            </Notice>
           ) : null}
         </div>
         <Notice

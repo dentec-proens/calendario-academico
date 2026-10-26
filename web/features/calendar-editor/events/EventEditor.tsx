@@ -449,10 +449,9 @@ export default function EventEditor() {
         </div>
         {stage && !editor.eventId && (
           <Notice
-            as="section"
             id="stage-suggestion"
             tone={values.start && suggestion?.error ? 'warning' : 'info'}
-            aria-live="polite"
+            announce="polite"
           >
             {!values.start
               ? 'Informe o início da etapa. O sistema usará o número de etapas cadastrado e os dias letivos até o final dos períodos.'

@@ -173,7 +173,10 @@
   overflow-wrap: anywhere;
 }
 .ui-notice[hidden] {
-  display: none;
+  display: none !important;
+}
+.ui-notice--elevated {
+  box-shadow: 0 2px 8px #0002;
 }
 .ui-notice--success {
   --ui-notice-text: var(--ui-action);
@@ -214,14 +217,18 @@
   outline: 3px solid var(--ui-focus);
   outline-offset: 3px;
 }
-.ui-notice__content > :first-child {
-  margin-top: 0;
+/* Blocks are spaced by gap, so hidden lines leave no space behind. */
+.ui-notice__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ui-space-2);
 }
-.ui-notice__content > :last-child {
-  margin-bottom: 0;
+.ui-notice__content > * {
+  max-width: 100%;
 }
 .ui-notice__content p {
-  margin: 0 0 var(--ui-space-2);
+  margin: 0;
 }
 .ui-notice__content :is(ol, ul) {
   margin: 0;
