@@ -238,6 +238,10 @@
   margin: 0 0 10px;
   font-size: 0.875rem;
 }
+#saturday-edit-title:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+}
 #saturday-panel .help {
   font-size: 0.8125rem;
 }

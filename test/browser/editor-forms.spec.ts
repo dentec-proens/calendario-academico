@@ -194,6 +194,26 @@ test('Saturday panel applies one activity and source to the selected dates witho
     'registered',
   );
   await expect(page.locator('#saturday-name')).toHaveCount(0);
+  // The submit button leaves with the selection; focus moves to the first registered date.
+  await expect(page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]')).toBeFocused();
+  await page.locator('#saturday-panel [data-edit-saturday]').first().click();
+  await expect(page.locator('#saturday-edit-title')).toBeFocused();
+  await expect(page.locator('#saturday-edit-title')).toContainText('06/03');
+});
+
+test('the Saturday panel stays beside the grid while dates near the end of the year are checked', async ({
+  page,
+  cleanup,
+}) => {
+  await openEditor(page, cleanup);
+  // A shorter desktop window keeps the end of the year and the top of the panel apart.
+  await page.setViewportSize({ width: 1440, height: 800 });
+  await addPeriod(page, '2027-03-01', '2027-12-17');
+  await page.locator('[data-view="days"]').click();
+  const december = page.locator('#saturday-dates input[value="2027-12-04"]');
+  await december.click();
+  await expect(december).toBeFocused();
+  await expect(page.locator('#saturday-name')).toBeInViewport({ ratio: 1 });
 });
 
 test('Saturdays outside teaching periods are shown but not selectable', async ({

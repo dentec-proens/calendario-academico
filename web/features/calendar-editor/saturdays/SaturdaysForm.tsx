@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { isYearSaturday, saturdayYear, type YearSaturday } from '../../../../src/saturdays.ts';
 import { applySaturdayActivities } from '../../../../src/calendar-edits/commands.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -11,10 +11,13 @@ import './saturdays.css';
 const shortDate = (date: string) => date.slice(5).split('-').reverse().join('/');
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
+const dateControl = (date: string) =>
+  document.querySelector<HTMLElement>(
+    `[data-saturday="${date}"] input, [data-saturday="${date}"] button`,
+  );
+
 function focusDate(date: string) {
-  document
-    .querySelector<HTMLElement>(`[data-saturday="${date}"] input, [data-saturday="${date}"] button`)
-    ?.focus();
+  dateControl(date)?.focus();
 }
 
 function bySource(days: YearSaturday[]) {
@@ -30,25 +33,39 @@ export default function SaturdaysForm() {
   const { state, events, session, institutional, readOnly } = useCalendarEditor();
   // Opening a registered Saturday is local panel state, like the event editor; it never enters the URL.
   const [editingId, setEditingId] = useState<string | null>(null);
+  // A control that leaves the panel takes focus with it; this names its successor, which
+  // only exists after the next render.
+  const pendingFocus = useRef<(() => HTMLElement | null) | null>(null);
+  useEffect(() => {
+    const target = pendingFocus.current?.();
+    if (!target) return;
+    pendingFocus.current = null;
+    target.focus();
+  });
   const { form, values, submit, pending, error } = useCalendarForm(
     'saturdays',
     { dates: [] as string[], name: '', evidence: '' },
     function apply(value) {
-      session.apply((current) =>
-        applySaturdayActivities(
+      let first = '';
+      session.apply((current) => {
+        const dates = value.dates
+          .filter(
+            (date) =>
+              !current.events.some(
+                (event) => event.kind === 'include' && event.start <= date && date <= event.end,
+              ),
+          )
+          .sort();
+        first = dates[0] ?? '';
+        return applySaturdayActivities(
           current,
-          value.dates
-            .filter(
-              (date) =>
-                !current.events.some(
-                  (event) => event.kind === 'include' && event.start <= date && date <= event.end,
-                ),
-            )
-            .map((date) => ({ date, name: value.name, evidence: value.evidence })),
+          dates.map((date) => ({ date, name: value.name, evidence: value.evidence })),
           institutional,
           () => crypto.randomUUID(),
-        ),
-      );
+        );
+      });
+      // The submit button leaves with the selection: continue from the first registered date.
+      if (first) pendingFocus.current = () => dateControl(first);
       return { dates: [], name: '', evidence: '' };
     },
   );
@@ -129,7 +146,9 @@ export default function SaturdaysForm() {
           </p>
           {editing ? (
             <section className="saturday-panel-section" aria-labelledby="saturday-edit-title">
-              <h5 id="saturday-edit-title">Sábado, {shortDate(editing.date)}</h5>
+              <h5 id="saturday-edit-title" tabIndex={-1}>
+                Sábado, {shortDate(editing.date)}
+              </h5>
               <dl className="saturday-registration">
                 <dt>Atividade</dt>
                 <dd>{editing.registration!.name}</dd>
@@ -268,7 +287,12 @@ export default function SaturdaysForm() {
                               type="button"
                               className="secondary"
                               {...(day.editable && { 'data-edit-saturday': day.registration!.id })}
-                              onClick={() => setEditingId(day.registration!.id)}
+                              onClick={() => {
+                                // This list leaves the panel; continue on the opened registration.
+                                setEditingId(day.registration!.id);
+                                pendingFocus.current = () =>
+                                  document.getElementById('saturday-edit-title');
+                              }}
                             >
                               <strong>{shortDate(day.date)}</strong> {day.registration!.name}
                             </button>
