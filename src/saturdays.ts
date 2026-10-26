@@ -1,5 +1,7 @@
-import type { ActivityState, CalendarActivity } from './domain-types.ts';
+import type { ActivityState, CalendarActivity, AssessmentSettings } from './domain-types.ts';
 import { datesBetween, parseDate } from './calendar.ts';
+import { periodsForModality } from './calendar-rules/index.ts';
+import { calendarModalities } from './modalities.ts';
 
 export function monthSaturdays(year: number, month: number) {
   const prefix = `${year}-${String(month).padStart(2, '0')}`;
@@ -10,7 +12,7 @@ export function monthSaturdays(year: number, month: number) {
 }
 
 export function saturdayEvents(
-  state: Pick<ActivityState, 'year' | 'periods' | 'events'>,
+  state: Pick<ActivityState, 'year' | 'periods' | 'events'> & AssessmentSettings,
   dates: string[],
   name: string,
   evidence: string,
@@ -22,7 +24,11 @@ export function saturdayEvents(
   for (const date of selected) {
     if (new Date(parseDate(date)).getUTCDay() !== 6 || Number(date.slice(0, 4)) !== state.year)
       throw Error('Selecione sábados do ano do calendário.');
-    if (!state.periods.some((p) => p.start <= date && date <= p.end))
+    if (
+      !calendarModalities(state).every((modality) =>
+        periodsForModality(state, modality).some((p) => p.start <= date && date <= p.end),
+      )
+    )
       throw Error(
         'O sábado ' +
           date.split('-').reverse().join('/') +
@@ -95,7 +101,7 @@ export function isYearSaturday(day: YearDay | YearSaturday): day is YearSaturday
 // A registered Saturday stays reachable even when its period was later adjusted away,
 // so it can still be removed: registered takes precedence over outside.
 export function saturdayYear(
-  state: Pick<ActivityState, 'year' | 'periods' | 'events'>,
+  state: Pick<ActivityState, 'year' | 'periods' | 'events'> & AssessmentSettings,
   events: Pick<CalendarActivity, 'kind' | 'start' | 'end' | 'name'>[],
 ): YearMonth[] {
   return monthNames.map((name, index) => {
@@ -109,7 +115,9 @@ export function saturdayYear(
           date,
           day: Number(date.slice(8)),
           weekday,
-          inPeriod: state.periods.some((p) => p.start <= date && date <= p.end),
+          inPeriod: calendarModalities(state).every((modality) =>
+            periodsForModality(state, modality).some((p) => p.start <= date && date <= p.end),
+          ),
           impediments: events
             .filter((e) => e.kind === 'exclude' && e.start <= date && date <= e.end)
             .map((e) => e.name),

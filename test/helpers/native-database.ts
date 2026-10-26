@@ -273,7 +273,7 @@ export async function createNativeFixture(overrides: Seed = {}) {
             id: calendar._id,
             state: {
               ...content.state,
-              schemaVersion: 2,
+              schemaVersion: content.state.schemaVersion ?? 2,
               year: calendar.year,
               campus: calendar.campusId === ids.campuses.a ? 'A' : 'B',
               modalities: calendar.modalities,

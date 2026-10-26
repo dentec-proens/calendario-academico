@@ -1,27 +1,45 @@
 import type { CountingEvent, CalendarPeriod, TeachingState } from './domain-types.ts';
 import { parseDate, datesBetween } from './calendar.ts';
 import { calendarModalities, appliesTo } from './modalities.ts';
+import { samePeriodScope } from './calendar-rules/index.ts';
 
 type DurationEvent = Omit<CountingEvent, 'id'> & { id?: string };
 type DurationState = Pick<
   TeachingState,
-  'year' | 'weekConfirmed' | 'weekdays' | 'offer' | 'modalities'
+  'year' | 'weekConfirmed' | 'weekdays' | 'offer' | 'modalities' | 'schemaVersion'
 >;
 export function recalculatePeriods<T extends CalendarPeriod>(
   state: DurationState & { periods: T[] },
   events: DurationEvent[],
 ): T[] {
   const periods = state.periods.map((p) =>
-    p.targetDays === undefined
+    p.targetDays === undefined ||
+    p.association?.status === 'a-classificar' ||
+    (state.schemaVersion === 3 && p.association?.status !== 'defined')
       ? { ...p }
-      : { ...p, end: durationEnd(p.start, p.targetDays, state, events) },
+      : {
+          ...p,
+          end: durationEnd(
+            p.start,
+            p.targetDays,
+            p.association?.status === 'defined'
+              ? {
+                  ...state,
+                  modalities: p.association.modalities,
+                  offer: p.association.modalities[0],
+                }
+              : state,
+            events,
+          ),
+        },
   );
   const ordered = [...periods].sort((a, b) => a.start.localeCompare(b.start));
-  for (let i = 1; i < ordered.length; i++)
-    if (ordered[i - 1].end >= ordered[i].start)
-      throw Error(
-        `O término previsto de ${ordered[i - 1].name} (${ordered[i - 1].end}) alcança ${ordered[i].name}. Ajuste o início do período seguinte ou os dias letivos; as datas anteriores foram mantidas.`,
-      );
+  for (let i = 0; i < ordered.length; i++)
+    for (let j = i + 1; j < ordered.length; j++)
+      if (samePeriodScope(ordered[i], ordered[j]) && ordered[i].end >= ordered[j].start)
+        throw Error(
+          `O término previsto de ${ordered[i].name} (${ordered[i].end}) alcança ${ordered[j].name}. Ajuste o início do período seguinte ou os dias letivos; as datas anteriores foram mantidas.`,
+        );
   return periods;
 }
 

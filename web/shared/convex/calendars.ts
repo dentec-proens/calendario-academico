@@ -58,4 +58,18 @@ export const calendars = {
         id: id as Id<'histories'>,
       }),
     ),
+  reanalyzeHistory: (id: string) =>
+    request(() =>
+      convex.action(functions.actions.history.reanalyzeHistory, {
+        id: id as Id<'histories'>,
+        extractorVersion: 3,
+      }),
+    ),
+  historyAnalysisVersions: (id: string, analysisId?: string) =>
+    request(() =>
+      convex.query(functions.histories.analysisVersions, {
+        id: id as Id<'histories'>,
+        ...(analysisId ? { analysisId: analysisId as Id<'historyAnalyses'> } : {}),
+      }),
+    ),
 };

@@ -4,6 +4,7 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { equalValues } from '../equal.ts';
 import type { CalendarActivity } from '../domain-types.ts';
+import { rulesetVersion } from '../calendar-rules/index.ts';
 
 export type BaseEvent = CalendarActivity & { source?: string };
 export interface BaseDocument {
@@ -22,11 +23,13 @@ export interface BaseSnapshot<
   revision: number;
   events: E[];
   documents: D[];
+  rulesetVersion?: string;
 }
 export interface BaseScope {
   year: number;
   modalities?: string[];
   offer?: string;
+  rulesetVersion?: string;
 }
 
 function eventContent(event: BaseEvent, scope: BaseScope) {
@@ -74,7 +77,9 @@ function hasChanges(diff: { added: unknown[]; removed: unknown[]; changed: unkno
 }
 function identity(snapshot: BaseSnapshot, scope: BaseScope) {
   return (
-    'base-v1:' +
+    (snapshot.rulesetVersion?.startsWith('consup-292-2027-')
+      ? `base-v2:${snapshot.rulesetVersion}:`
+      : 'base-v1:') +
     bytesToHex(
       sha256(
         new TextEncoder().encode(
@@ -98,17 +103,27 @@ export function inspect<E extends BaseEvent, D extends BaseDocument>(
 ) {
   const events = changes(previous.events, current.events, (event) => eventContent(event, scope));
   const documents = changes(previous.documents, current.documents, documentContent);
-  const kind = hasChanges(events)
-    ? 'events'
-    : hasChanges(documents)
-      ? 'documents'
-      : previous.revision === current.revision
-        ? 'current'
-        : 'equivalent';
+  const rules = {
+    before: previous.rulesetVersion,
+    after: current.rulesetVersion,
+    changed:
+      current.rulesetVersion?.startsWith('consup-292-2027-') === true &&
+      previous.rulesetVersion !== current.rulesetVersion,
+  };
+  const kind = rules.changed
+    ? 'rules'
+    : hasChanges(events)
+      ? 'events'
+      : hasChanges(documents)
+        ? 'documents'
+        : previous.revision === current.revision
+          ? 'current'
+          : 'equivalent';
   return {
     kind,
     compatible: kind === 'current' || kind === 'equivalent',
     identity: identity(current, scope),
+    rules,
     events,
     documents,
   };
@@ -124,19 +139,29 @@ export function reconcile(assessment: ReturnType<typeof inspect>, acceptance?: s
     throw new Error(
       'Há mudanças aplicáveis na base institucional. Confira e incorpore antes de salvar.',
     );
-  return { incorporate: !assessment.compatible, recalculate: assessment.kind === 'events' };
+  return { incorporate: !assessment.compatible, recalculate: hasChanges(assessment.events) };
 }
 
 export function reviewIsCurrent(
   review:
-    | { calendarVersion: number; catalogueRevision: number; baseIdentity?: string }
+    | {
+        calendarVersion: number;
+        catalogueRevision: number;
+        baseIdentity?: string;
+        rulesetVersion?: string;
+      }
     | null
     | undefined,
   calendarVersion: number | undefined,
-  current: { revision: number; identity?: string },
+  current: { revision: number; identity?: string; rulesetVersion?: string },
 ) {
+  const declaredRules =
+    current.rulesetVersion ??
+    (current.identity?.startsWith('base-v2:') ? current.identity.split(':')[1] : undefined);
+  const requiredRules = declaredRules?.startsWith('consup-292-2027-') ? declaredRules : undefined;
   return Boolean(
     review &&
+    (!requiredRules || review.rulesetVersion === requiredRules) &&
     review.calendarVersion === calendarVersion &&
     (review.baseIdentity && current.identity
       ? review.baseIdentity === current.identity
@@ -152,18 +177,25 @@ export function inspectCalendar<E extends BaseEvent, D extends BaseDocument>(
     institutionalSnapshot: E[];
     documentSnapshot: D[];
   },
-  latest: { currentCatalogueRevision: number; institutionalEvents: E[]; currentDocuments: D[] },
+  latest: {
+    currentCatalogueRevision: number;
+    institutionalEvents: E[];
+    currentDocuments: D[];
+    currentRulesetVersion?: string;
+  },
 ) {
   return inspect(
     {
       revision: record.catalogueRevision,
       events: record.institutionalSnapshot,
       documents: record.documentSnapshot,
+      rulesetVersion: record.state.rulesetVersion,
     },
     {
       revision: latest.currentCatalogueRevision,
       events: latest.institutionalEvents,
       documents: latest.currentDocuments,
+      rulesetVersion: latest.currentRulesetVersion ?? rulesetVersion(record.state),
     },
     record.state,
   );

@@ -3,8 +3,17 @@ import type {
   CalendarActivity,
   CalendarPeriod,
   VacationPeriods,
+  PeriodAssociation,
+  Organization,
 } from '../domain-types.ts';
+import { equalValues } from '../equal.ts';
 import { datesBetween } from '../calendar.ts';
+import {
+  periodsForModality,
+  samePeriodScope,
+  validateActivityRecord,
+  organizationSummary,
+} from '../calendar-rules/index.ts';
 import { durationEnd, recalculatePeriods } from '../duration.ts';
 import { activityChecklist, assessmentCount, stageRequirement } from '../obligations.ts';
 import { calendarModalities } from '../modalities.ts';
@@ -90,20 +99,69 @@ export function applyWeek<S extends ActivityState>(
 
 export function applyPeriod<S extends ActivityState>(
   state: S,
-  values: { id?: string; name: string; start: string; end: string; days: string },
+  values: {
+    id?: string;
+    name: string;
+    start: string;
+    end: string;
+    days: string;
+    association?: PeriodAssociation;
+  },
   institutional: CalendarActivity[],
   id: () => string,
 ): S {
   if (!values.name.trim()) throw new Error('Informe o nome do período.');
   if (values.id && !state.periods.some((period) => period.id === values.id))
     throw new Error('O período não existe mais. Reabra o calendário.');
+  const associated =
+    values.association?.status === 'defined' ? values.association.modalities : undefined;
+  if (
+    associated &&
+    (!associated.length ||
+      new Set(associated).size !== associated.length ||
+      associated.some(
+        (m) =>
+          !calendarModalities(state).includes(m) ||
+          state.organizationByModality?.[m] !==
+            (values.association?.status === 'defined' && values.association.term === 'annual'
+              ? 'anual'
+              : 'semestral'),
+      ))
+  )
+    throw new Error('Associação do período incompatível com a organização por oferta.');
+  if (
+    values.association?.status === 'defined' &&
+    state.periods.some(
+      (p) =>
+        p.id !== values.id &&
+        p.association?.status === 'defined' &&
+        p.association.term ===
+          (values.association?.status === 'defined' ? values.association.term : undefined) &&
+        p.association.modalities.some((m) => associated?.includes(m)),
+    )
+  )
+    throw new Error('Já existe um período para este ciclo da oferta. Edite o período existente.');
+  if (state.schemaVersion === 3 && values.days && !associated)
+    throw new Error('Classifique a oferta e o ciclo do período antes de calcular o término.');
+  const scopedState = associated
+    ? { ...state, modalities: associated, offer: associated[0] }
+    : state;
   const end = values.days
-    ? durationEnd(values.start, values.days, state, [...institutional, ...state.events])
+    ? durationEnd(values.start, values.days, scopedState, [...institutional, ...state.events])
     : values.end;
   validateInterval(state, values.start, end);
   if (
     state.periods.some(
-      (period) => period.id !== values.id && period.start <= end && period.end >= values.start,
+      (period) =>
+        period.id !== values.id &&
+        samePeriodScope(period, {
+          id: values.id ?? 'new',
+          start: values.start,
+          end,
+          association: values.association,
+        }) &&
+        period.start <= end &&
+        period.end >= values.start,
     )
   )
     throw new Error(
@@ -112,6 +170,7 @@ export function applyPeriod<S extends ActivityState>(
   const period: CalendarPeriod = {
     id: values.id || id(),
     name: values.name.trim(),
+    ...(values.association ? { association: values.association } : {}),
     start: values.start,
     end,
     ...(values.days ? { targetDays: Number(values.days) } : {}),
@@ -133,7 +192,7 @@ export function applyEvent<S extends ActivityState>(
   institutional: CalendarActivity[],
   editing = false,
 ): S {
-  validateInterval(state, event.start, event.end);
+  validateActivityRecord(state, event);
   if (!event.name.trim() || !event.evidence.trim()) throw new Error('Informe descrição e fonte.');
   if (!['include', 'exclude', 'note'].includes(event.kind))
     throw new Error('Tipo de evento inválido.');
@@ -157,18 +216,33 @@ export function applyEvent<S extends ActivityState>(
         item.id !== event.id &&
         item.name.toLocaleLowerCase() === event.name.trim().toLocaleLowerCase() &&
         item.start === event.start &&
-        item.end === event.end,
+        item.end === event.end &&
+        (item.recordType ?? 'event') === (event.recordType ?? 'event') &&
+        JSON.stringify(item.admission) === JSON.stringify(event.admission) &&
+        equalValues(item.historicalSource, event.historicalSource) &&
+        JSON.stringify([...(item.modalities ?? [])].sort()) ===
+          JSON.stringify([...(event.modalities ?? [])].sort()),
     )
   )
     throw new Error('Este evento já foi incluído com as mesmas datas.');
   if (
     event.kind === 'include' &&
-    datesBetween(event.start, event.end).some(
-      (date) => !state.periods.some((period) => period.start <= date && period.end >= date),
+    datesBetween(event.start, event.end).some((date) =>
+      modalities.some(
+        (modality) =>
+          !periodsForModality(state, modality).some(
+            (period) => period.start <= date && period.end >= date,
+          ),
+      ),
     )
   )
     throw new Error('Inclusões letivas devem estar dentro dos períodos cadastrados.');
   const updated = { ...event, name: event.name.trim(), evidence: event.evidence.trim() };
+  const existing = state.events.find((item) => item.id === event.id);
+  if (!editing && existing) {
+    if (equalValues(existing, updated)) return state;
+    throw new Error('O identificador do evento já existe. Reabra o registro antes de editar.');
+  }
   let events = editing
     ? state.events.map((item) => (item.id === event.id ? updated : item))
     : [...state.events, updated];
@@ -315,4 +389,52 @@ export function enableAutomaticAssessment<S extends ActivityState>(
   }
   if (!groups) throw new Error('Preencha as etapas antes de recalcular.');
   return recalculateCalendar({ ...state, events }, institutional);
+}
+
+/** Classifying organization never guesses which legacy period belongs to which offer. */
+export function configureOrganization<S extends ActivityState>(
+  state: S,
+  organizationByModality: Record<string, Organization>,
+  institutional: CalendarActivity[],
+): S {
+  const modalities = calendarModalities(state);
+  if (
+    Object.keys(organizationByModality).some((m) => !modalities.includes(m)) ||
+    modalities.some(
+      (m) => !['anual', 'semestral', 'a-classificar'].includes(organizationByModality[m]),
+    )
+  )
+    throw new Error('Informe a organização de cada oferta.');
+  const periods = state.periods.map((p) =>
+    p.association?.status === 'defined' &&
+    p.association.modalities.every(
+      (m) =>
+        organizationByModality[m] ===
+        (p.association?.status === 'defined' && p.association.term === 'annual'
+          ? 'anual'
+          : 'semestral'),
+    )
+      ? p
+      : { ...p, association: { status: 'a-classificar' as const } },
+  );
+  return recalculateCalendar(
+    {
+      ...state,
+      schemaVersion: 3,
+      organizationByModality: { ...organizationByModality },
+      regime: organizationSummary(organizationByModality, modalities),
+      periods,
+      conversion: state.conversion
+        ? {
+            ...state.conversion,
+            organization:
+              periods.every((p) => p.association?.status === 'defined') &&
+              modalities.every((m) => organizationByModality[m] !== 'a-classificar')
+                ? 'classified'
+                : 'pending',
+          }
+        : undefined,
+    },
+    institutional,
+  );
 }

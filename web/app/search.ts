@@ -42,5 +42,24 @@ export function applicationSearch(input: Record<string, unknown>) {
     ...(text(input.retorno) ? { retorno: text(input.retorno) } : {}),
     ...(input.devtools === '1' ? { devtools: '1' } : {}),
     ...(input.aviso === 'acesso-negado' ? { aviso: 'acesso-negado' } : {}),
+    ...(typeof input.atividadeBusca === 'string' && input.atividadeBusca.trim()
+      ? { atividadeBusca: input.atividadeBusca.slice(0, 200) }
+      : {}),
+    ...(['integrado', 'subsequente', 'graduacao', 'posgraduacao'].includes(
+      String(input.atividadeOferta),
+    )
+      ? { atividadeOferta: String(input.atividadeOferta) }
+      : {}),
+    ...(['pending', 'partial', 'complete', 'optional', 'unconfigured'].includes(
+      String(input.atividadeSituacao),
+    )
+      ? { atividadeSituacao: String(input.atividadeSituacao) }
+      : {}),
+    ...(['admission', 'teaching', 'campus', 'other'].includes(String(input.atividadeAssunto))
+      ? { atividadeAssunto: String(input.atividadeAssunto) }
+      : {}),
+    ...(typeof input.atividade === 'string' && /^[a-z0-9:-]{1,100}$/.test(input.atividade)
+      ? { atividade: input.atividade }
+      : {}),
   };
 }

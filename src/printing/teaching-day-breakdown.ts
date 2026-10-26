@@ -1,6 +1,7 @@
 import type { DateRange } from '../domain-types.ts';
 import type { PrintState, PrintResult, PrintEvent, DistributionRow } from './types.ts';
 import { appliesTo } from '../modalities.ts';
+import { periodsForModality } from '../calendar-rules/index.ts';
 
 export function teachingDayBreakdown(
   state: PrintState,
@@ -47,9 +48,20 @@ export function teachingDayBreakdown(
     if (matches.length === 1) return { start: matches[0].start, end: matches[0].end };
     return null;
   });
-  const periods = [...(state.periods || [])].sort((a, b) => a.start.localeCompare(b.start));
+  const periods = [...periodsForModality(state, modality)].sort((a, b) =>
+    a.start.localeCompare(b.start),
+  );
   let semesters: (DateRange | null)[] = [null, null];
-  if (periods.length === 2) semesters = periods.map((p) => ({ start: p.start, end: p.end }));
+  if (state.schemaVersion === 3 || state.organizationByModality) {
+    for (const period of periods) {
+      if (period.association?.status !== 'defined' || period.association.term === 'annual')
+        continue;
+      semesters[period.association.term === 'first' ? 0 : 1] = {
+        start: period.start,
+        end: period.end,
+      };
+    }
+  } else if (periods.length === 2) semesters = periods.map((p) => ({ start: p.start, end: p.end }));
   else if (periods.length === 1 && /\b[12]\s*[ºªo°]?\s*semestre\b/i.test(periods[0].name || ''))
     semesters[Number(periods[0].name!.match(/[12]/)![0]) - 1] = {
       start: periods[0].start,

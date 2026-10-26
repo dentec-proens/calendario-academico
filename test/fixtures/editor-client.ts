@@ -13,7 +13,9 @@ export const record: CalendarRecord = {
   offer: 'integrado',
   modalities: ['integrado'],
   state: {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    rulesetVersion: 'consup-292-2027-v1',
+    organizationByModality: { integrado: 'anual' },
     campus: 'Campus de teste',
     year: 2027,
     offer: 'integrado',

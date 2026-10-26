@@ -3,6 +3,8 @@ import { equalValues } from '../../../../src/equal.ts';
 import { createAutosaver } from '../../../autosave.ts';
 import type { AutosaveStatus } from '../../../autosave.ts';
 import { inspectCalendar, reconcile } from '../../../../src/calendar-base/index.ts';
+import { convertCalendarV2 } from '../../../../src/calendar-rules/conversion.ts';
+import { rulesetVersion } from '../../../../src/calendar-rules/index.ts';
 
 export interface EditorSnapshot {
   record: CalendarRecord;
@@ -33,7 +35,7 @@ export function createEditorSession(
 ) {
   let current: EditorSnapshot = {
     record: structuredClone(record),
-    state: structuredClone(record.state),
+    state: convertCalendarV2(record.state),
     dirty: false,
     unapplied: false,
     status: 'idle',
@@ -155,7 +157,8 @@ export function createEditorSession(
       assertEditing();
       if (current.status === 'blocked')
         throw new Error(current.error || 'Resolva o conflito antes de aplicar alterações.');
-      const state = command(structuredClone(current.state));
+      const changed = command(structuredClone(current.state));
+      const state = { ...convertCalendarV2(changed), rulesetVersion: rulesetVersion(changed) };
       publish({ state, dirty: !equalValues(state, current.record.state) });
       saver.schedule();
     },
@@ -201,7 +204,7 @@ export function createEditorSession(
       } else if (current.dirty || current.unapplied || current.status === 'saving')
         publish({ remote: fresh, record: { ...current.record, histories: fresh.histories } });
       else {
-        publish({ record: fresh, state: structuredClone(fresh.state), remote: null });
+        publish({ record: fresh, state: convertCalendarV2(fresh.state), remote: null });
       }
     },
     async retry() {
@@ -234,7 +237,13 @@ export function createEditorSession(
         );
       reconcile(inspectCalendar(current.record, latest), acceptance);
       baseAcceptance = acceptance;
-      publish({ dirty: true });
+      publish({
+        dirty: true,
+        state: {
+          ...convertCalendarV2(current.state),
+          rulesetVersion: rulesetVersion(current.state),
+        },
+      });
       saver.resume();
       await saver.save(true);
       await saver.flush();

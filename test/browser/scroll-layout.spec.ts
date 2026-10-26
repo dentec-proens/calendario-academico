@@ -153,14 +153,16 @@ for (const width of [1440, 390]) {
       )
       .toBe(true);
     await selectEditorSection(page, 'events');
-    await page.locator('[data-edit-event="local-event"]').click();
+    const opener = page.locator('[data-edit-event="local-event"]');
+    await opener.click();
     await page.locator('#event-name').fill('Rascunho para continuar depois');
     await page.locator('#close-event-form').click();
-    await expect(page.locator('#resume-event')).toBeFocused();
-    await expect(page.locator('#resume-event')).toBeInViewport({ ratio: 1 });
+    // Closing returns to the action that opened this existing record.
+    await expect(opener).toBeFocused();
+    await expect(opener).toBeInViewport({ ratio: 1 });
     await expect
       .poll(() =>
-        page.locator('#resume-event').evaluate((element) => {
+        opener.evaluate((element) => {
           const bounds = element.getBoundingClientRect();
           const feedback = document.querySelector('.editor-feedback')!.getBoundingClientRect();
           const hit = document.elementFromPoint(
@@ -176,11 +178,14 @@ for (const width of [1440, 390]) {
       .toBe(true);
     await page.locator('#resume-event').click();
     await page.locator('#discard-event-form').click();
-    await expect(page.locator('#new-event')).toBeFocused();
-    await expect(page.locator('#new-event')).toBeInViewport({ ratio: 1 });
+    // Resuming does not replace the original edit action as the return destination.
+    await expect(opener).toBeFocused();
+    await expect(page.locator('#event-form')).toBeHidden();
+    await expect(page.locator('#resume-event')).toBeHidden();
+    await expect(opener).toBeInViewport({ ratio: 1 });
     await expect
       .poll(() =>
-        page.locator('#new-event').evaluate((element) => {
+        opener.evaluate((element) => {
           const bounds = element.getBoundingClientRect();
           const feedback = document.querySelector('.editor-feedback')!.getBoundingClientRect();
           const hit = document.elementFromPoint(

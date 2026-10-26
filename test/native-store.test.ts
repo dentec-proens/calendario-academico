@@ -2,7 +2,7 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
-import { reviewCriteria } from '../src/review.ts';
+import { reviewCriteriaFor } from '../src/review.ts';
 
 const createBody = {
   year: 2027,
@@ -82,11 +82,13 @@ test('review saves preserve earlier authorship and rejected edits append no revi
   });
   const support = await admin.query(api.reviews.review, { id: created.id });
   const body = {
+    rulesetVersion: support.rulesetVersion,
+    baseIdentity: support.baseIdentity,
     revision: 0,
     calendarVersion: created.version,
     catalogueRevision: support.catalogueRevision,
     conclusion: support.initialConclusion,
-    entries: reviewCriteria.map((criterion) => ({
+    entries: reviewCriteriaFor(2027).map((criterion) => ({
       id: criterion.id,
       status: 'PENDENTE' as const,
       notes: '',
@@ -185,5 +187,6 @@ test('typed storage rejects legacy envelopes, invalid relationships and incomple
       .unique(),
   );
   assert(content);
-  for (const key of ['campus', 'year', 'offer', 'schemaVersion']) assert(!(key in content.state));
+  for (const key of ['campus', 'year', 'offer']) assert(!(key in content.state));
+  assert.equal(content.state.schemaVersion, 3);
 });

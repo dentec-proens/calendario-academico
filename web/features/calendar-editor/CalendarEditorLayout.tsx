@@ -139,6 +139,7 @@ function EditorFrame() {
             className="editor-action secondary"
             to={editorPages.calendar.path}
             params={{ calendarId: record.id }}
+            search={(previous) => previous}
             data-view="calendar"
             aria-label={editorPages.calendar.title}
           >
@@ -212,7 +213,11 @@ function EditorFrame() {
         </div>
         <div>
           <dt>Organização</dt>
-          <dd id="regime-summary">{regimeLabels[state.regime]}</dd>
+          <dd id="regime-summary">
+            {state.regime === 'a-classificar'
+              ? 'Organização a conferir'
+              : regimeLabels[state.regime]}
+          </dd>
         </div>
       </dl>
       <div className="editor-feedback" ref={feedback}>
@@ -360,6 +365,7 @@ function EditorFrame() {
                   className="editor-previous"
                   to={previous.path}
                   params={{ calendarId: record.id }}
+                  search={(previous) => previous}
                 >
                   <ArrowLeft aria-hidden="true" /> Voltar
                 </Link>
@@ -381,6 +387,7 @@ function EditorFrame() {
                 className="editor-action"
                 to={next.path}
                 params={{ calendarId: record.id }}
+                search={(previous) => previous}
               >
                 {continueLabel(next)}
                 <ArrowRight aria-hidden="true" />
@@ -390,6 +397,7 @@ function EditorFrame() {
                 className="editor-action secondary"
                 to={editorPages.issues.path}
                 params={{ calendarId: record.id }}
+                search={(previous) => previous}
               >
                 <ArrowLeft aria-hidden="true" /> Voltar à revisão
               </Link>

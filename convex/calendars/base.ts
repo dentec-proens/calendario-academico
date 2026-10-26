@@ -1,4 +1,5 @@
 import { applicableEvents, inspectCalendar, reconcile } from '../../src/calendar-base/index';
+import { rulesetVersion } from '../../src/calendar-rules/index';
 import type { DomainState } from '../validators';
 import type { Doc } from '../_generated/dataModel';
 import type { catalogue } from '../catalogue/model';
@@ -17,6 +18,7 @@ export function inspectBase(
   docs: Awaited<ReturnType<typeof currentDocuments>>,
 ) {
   const snapshot = {
+    rulesetVersion: rulesetVersion(state),
     revision: base.revision,
     events: clean(applicableEvents(base, state)),
     documents: docs,
@@ -27,12 +29,18 @@ export function inspectBase(
       currentCatalogueRevision: snapshot.revision,
       institutionalEvents: snapshot.events,
       currentDocuments: snapshot.documents,
+      currentRulesetVersion: snapshot.rulesetVersion,
     },
   );
   return {
     ...assessment,
     snapshot,
-    dto: { revision: snapshot.revision, events: snapshot.events, documents: docs.map(documentDto) },
+    dto: {
+      revision: snapshot.revision,
+      rulesetVersion: snapshot.rulesetVersion,
+      events: snapshot.events,
+      documents: docs.map(documentDto),
+    },
   };
 }
 export function reconcileBase(assessment: ReturnType<typeof inspectBase>, acceptance?: string) {

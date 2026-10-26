@@ -3,6 +3,7 @@
 
 :root {
   scroll-padding-block-start: calc(var(--scroll-inset-top, 0px) + 16px);
+  scroll-padding-block-end: 16px;
   font-family:
     system-ui,
     -apple-system,

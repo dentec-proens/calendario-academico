@@ -29,6 +29,11 @@ export default function EventEditor() {
   const stage =
     stageRequirement(values.requirementId) ||
     (!values.requirementId && isFirstStageStart(values.name));
+  const publication =
+    Boolean(values.admissionType) ||
+    values.requirementId.startsWith('admission-notice-') ||
+    values.requirementId === 'regular-admission-notice';
+  const realDate = values.publicationStatus === 'published';
   const suggestion = useMemo(() => {
     if (!stage || editor.eventId || !values.start) return null;
     try {
@@ -76,10 +81,43 @@ export default function EventEditor() {
       </h3>
       <p id="historical-event-source" className="notice" hidden={!editor.source}>
         {editor.source
-          ? `Origem histórica: página ${editor.source.page}. Confira a descrição, informe as datas de ${state.year} e a fonte vigente. O PDF anterior não comprova a vigência do feriado.`
+          ? `Origem histórica: página ${editor.source.page}. ${values.recordType === 'prior-reference' ? 'Conserve as datas reais e confirme a pertinência documental. A referência não altera os dias letivos.' : 'Prepare uma nova ocorrência com datas e fonte próprias; o PDF anterior não comprova sua vigência.'}`
           : ''}
       </p>
+      {editor.source && values.historyWarning && (
+        <p id="historical-event-date-warning" className="notice">
+          {values.historyWarning}
+        </p>
+      )}
       <fieldset disabled={readOnly || editor.pending}>
+        <form.Field name="recordType">
+          {(field) => (
+            <label>
+              Intenção do registro
+              <select
+                id="event-record-type"
+                name={field.name}
+                value={field.state.value}
+                onChange={(event) => {
+                  const type =
+                    event.target.value === 'prior-reference' ? 'prior-reference' : 'event';
+                  field.handleChange(type);
+                  if (type === 'prior-reference') form.setFieldValue('kind', 'note');
+                }}
+              >
+                <option value="event">Registrar atividade deste calendário</option>
+                <option value="prior-reference">Referenciar fato anterior</option>
+              </select>
+            </label>
+          )}
+        </form.Field>
+        {values.recordType === 'prior-reference' && (
+          <p className="notice">
+            Referência anterior comprovada, somente informativa. Não comprova dias, horas, férias ou
+            avaliações do ano atual. Informe datas reais e fonte; uma publicação anterior precisa
+            estar realizada.
+          </p>
+        )}
         <legend>Forma de oferta/nível deste evento</legend>
         <form.Field name="modalities">
           {(field) => (
@@ -144,7 +182,14 @@ export default function EventEditor() {
           </form.Field>
           <form.Field name="kind">
             {(field) => (
-              <Select field={field} label="Efeito na contagem" id="event-kind">
+              <Select
+                field={field}
+                label="Efeito na contagem"
+                id="event-kind"
+                required
+                disabled={values.recordType === 'prior-reference'}
+              >
+                <option value="">Escolha o efeito</option>
                 <option value="exclude">Excluir dias · feriado ou recesso</option>
                 <option value="include">Incluir dias · sábado ou reposição</option>
                 <option value="note">Somente registrar · sem efeito</option>
@@ -152,14 +197,186 @@ export default function EventEditor() {
             )}
           </form.Field>
         </div>
+        {(values.kind === 'exclude' || values.deadlineExtensionCause) && (
+          <form.Field name="deadlineExtensionCause">
+            {(field) => (
+              <Select
+                field={field}
+                id="event-deadline-extension-cause"
+                label="Prorrogação de prazos por motivo municipal"
+              >
+                <option value="">Sem prorrogação municipal vinculada</option>
+                <option value="municipal-holiday">Feriado municipal</option>
+                <option value="municipal-recess">Recesso decorrente de feriado municipal</option>
+              </Select>
+            )}
+          </form.Field>
+        )}
+        {values.deadlineExtensionCause && (
+          <p className="help">
+            Art. 3º, § 2º: identifique na fonte o feriado municipal ou recesso correspondente. A
+            política confere os prazos afetados por oferta e preserva as datas reais das atividades.
+          </p>
+        )}
+        {(publication ||
+          (!values.requirementId &&
+            ['prazo', 'evento', 'institucional'].includes(values.category))) && (
+          <form.Field name="admissionType">
+            {(field) => (
+              <Select
+                field={field}
+                label="Tipo de edital (quando aplicável)"
+                id="event-admission-type"
+              >
+                <option value="">Não é edital de ingresso / classificação pendente</option>
+                <option value="regular">Processo seletivo regular</option>
+                <option value="transfer">Transferência, reingresso e portador de diploma</option>
+              </Select>
+            )}
+          </form.Field>
+        )}
+        {publication && (
+          <section className="event-publication" aria-label="Finalidade e situação do edital">
+            <p className="help">
+              O ingresso pode ocorrer em outro ano. Informe a data da publicação e identifique a
+              turma/período a que o edital se refere.
+            </p>
+            <div className="row-form">
+              <form.Field name="publicationStatus">
+                {(field) => (
+                  <Select
+                    field={field}
+                    id="event-publication-status"
+                    label="Situação da publicação"
+                    required
+                  >
+                    <option value="">Selecione</option>
+                    <option value="planned">Publicação prevista</option>
+                    <option value="published">Publicação realizada</option>
+                  </Select>
+                )}
+              </form.Field>
+              <form.Field name="admissionYear">
+                {(field) => (
+                  <Input
+                    field={field}
+                    id="event-admission-year"
+                    label="Ano de ingresso"
+                    type="number"
+                    min="1900"
+                    max="9999"
+                    step="1"
+                    required
+                  />
+                )}
+              </form.Field>
+              <form.Field name="admissionTerm">
+                {(field) => (
+                  <Select
+                    field={field}
+                    id="event-admission-term"
+                    label="Período de ingresso"
+                    required
+                  >
+                    <option value="annual">Ciclo anual</option>
+                    <option value="first">Primeiro semestre</option>
+                    <option value="second">Segundo semestre</option>
+                  </Select>
+                )}
+              </form.Field>
+              <form.Field name="admissionPeriodId">
+                {(field) => (
+                  <Select
+                    field={field}
+                    id="event-admission-period"
+                    label="Vínculo ao período cadastrado"
+                  >
+                    <option value="">Ingresso futuro / período ainda não cadastrado</option>
+                    {state.periods.map((period) => (
+                      <option key={period.id} value={period.id}>
+                        {period.name} — {period.start.split('-').reverse().join('/')}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </form.Field>
+            </div>
+            {values.admissionType === 'regular' && state.year === 2027 && (
+              <p className="notice">
+                Art. 10: publicação do processo seletivo de 2028 até 15/06/2027. O prazo não
+                preenche a data de publicação. Cronograma ajustado pela Proens exige fonte e
+                conferência institucional.
+              </p>
+            )}
+            {values.admissionType === 'transfer' && (
+              <p className="help">
+                Art. 11, VIII: publicação antes do início do período de destino. Vincule o período
+                correspondente quando ele já estiver cadastrado.
+              </p>
+            )}
+            <details>
+              <summary>Informar fonte de ajuste do prazo</summary>
+              <p>
+                O registro pelo campus não representa autorização da Proens. A revisão institucional
+                confere sua origem.
+              </p>
+              <form.Field name="adjustedDeadline">
+                {(field) => (
+                  <Input
+                    field={field}
+                    id="event-adjusted-deadline"
+                    label="Prazo ajustado"
+                    type="date"
+                  />
+                )}
+              </form.Field>
+              <form.Field name="adjustmentEvidence">
+                {(field) => (
+                  <Input
+                    field={field}
+                    id="event-adjustment-evidence"
+                    label="Fonte do cronograma ajustado"
+                    maxLength={240}
+                  />
+                )}
+              </form.Field>
+            </details>
+          </section>
+        )}
         <div className="row-form">
           <form.Field name="start">
             {(field) => (
-              <Input field={field} label="Início" id="event-start" type="date" required />
+              <Input
+                field={field}
+                label={
+                  publication
+                    ? realDate
+                      ? 'Data real de início da publicação'
+                      : 'Data prevista de início da publicação'
+                    : 'Início'
+                }
+                id="event-start"
+                type="date"
+                required
+              />
             )}
           </form.Field>
           <form.Field name="end">
-            {(field) => <Input field={field} label="Término" id="event-end" type="date" required />}
+            {(field) => (
+              <Input
+                field={field}
+                label={
+                  publication
+                    ? realDate
+                      ? 'Data real de término da publicação'
+                      : 'Data prevista de término da publicação'
+                    : 'Término'
+                }
+                id="event-end"
+                type="date"
+                required
+              />
+            )}
           </form.Field>
           {!stage && (
             <form.Field name="hours">

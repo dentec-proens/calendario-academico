@@ -23,7 +23,7 @@ for (const width of [1440, 390]) {
 
     await page.locator('[data-edit-event="local-event"]').click();
     await page.locator('#close-event-form').click();
-    await expect(add).toBeFocused();
+    await expect(page.locator('[data-edit-event="local-event"]')).toBeFocused();
     await expect(page.locator('#resume-event')).toBeHidden();
     await add.press('Enter');
     await expect(page.locator('#event-form-title')).toHaveText('Novo evento local');
@@ -74,6 +74,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#event-name')).toHaveValue('');
 
     await page.locator('#event-name').fill('Primeiro evento incluído');
+    await page.locator('#event-kind').selectOption('note');
     await page.locator('#event-evidence').fill('Ata de teste');
     await page.locator('#event-start').fill('2027-04-07');
     await page.locator('#event-end').fill('2027-04-07');
@@ -170,7 +171,7 @@ test('editor separates creation from editing and preserves closed activity/histo
   await expect(page.locator('#event-form-title')).toHaveText('Editar evento local');
   await cancel();
 
-  await page.locator('[data-prepare-activity="cultural-week"]').click();
+  await page.locator('[data-edit-activity-event="activity-event"]').click();
   await page.locator('#event-name').fill('Semana cultural em edição');
   await page.locator('#event-hours').fill('12');
   await page.locator('#event-evidence').fill('Fonte da atividade');
@@ -185,7 +186,7 @@ test('editor separates creation from editing and preserves closed activity/histo
   expect(await fields()).toEqual(activityDraft);
   await page.locator('[data-prepare-activity="family-meeting"]').click();
   expect(await fields()).toEqual(activityDraft);
-  await page.locator('[data-prepare-activity="cultural-week"]').click();
+  await page.locator('[data-edit-activity-event="activity-event"]').click();
   await expect(page.locator('[data-activity-row="cultural-week"] #event-form')).toBeVisible();
   expect(await fields()).toEqual(activityDraft);
   await submit();
@@ -209,6 +210,8 @@ test('editor separates creation from editing and preserves closed activity/histo
   await page.locator('[data-analyze-history="history-a"]').click();
   await expect(page.locator('[data-history-candidate="0"]')).toBeVisible();
   await page.locator('[data-history-candidate="0"]').click();
+  await expect(page.locator('#event-start')).toHaveValue('');
+  await expect(page.locator('#event-end')).toHaveValue('');
   await page.locator('#event-name').fill('Evento histórico conferido');
   await page.locator('#event-evidence').fill('Lei municipal vigente');
   await page.locator('#event-hours').fill('4');

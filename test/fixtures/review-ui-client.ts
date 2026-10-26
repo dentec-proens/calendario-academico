@@ -131,6 +131,7 @@ export const convex = {
       calendarId: snapshot.calendar.id,
       calendarVersion: body.calendarVersion,
       catalogueRevision: body.catalogueRevision,
+      rulesetVersion: body.rulesetVersion,
       revision: body.revision + 1,
       entries: structuredClone(body.entries),
       conclusion: body.conclusion,
@@ -176,6 +177,35 @@ window.reviewUiTest = {
     listeners.forEach((listener) => listener.refresh());
     listeners.forEach((listener) => listener.notify());
   },
+  publishLegacy2027Review() {
+    snapshot.rulesetVersion = 'consup-292-2027-v1';
+    snapshot.review = {
+      calendarId: snapshot.calendar.id,
+      calendarVersion: snapshot.calendar.version,
+      catalogueRevision: snapshot.catalogueRevision,
+      revision: 1,
+      entries: snapshot.criteria.map((criterion) => ({
+        id: criterion.id,
+        status: 'ATENDIDO',
+        reviewed: true,
+        notes:
+          criterion.id === 'XXV'
+            ? 'Semana cultural conforme a regra anterior.'
+            : 'Conferência anterior.',
+      })),
+      conclusion: 'Conclusão anterior: todos os critérios atendidos.',
+      processNumber: '',
+      applicableNorm: 'Norma anterior',
+      source: 'SEI 3959640',
+      documentSnapshot: [],
+      officialApproval: false,
+      reviewer: { id: user.id, name: user.name },
+      updatedAt: '2026-10-23T15:00:00Z',
+    };
+    snapshot.stale = true;
+    listeners.forEach((listener) => listener.refresh());
+    listeners.forEach((listener) => listener.notify());
+  },
   resolvePendingSave() {
     if (!finishPendingSave) throw new Error('Nenhuma gravação pendente.');
     finishPendingSave();
@@ -187,6 +217,7 @@ declare global {
     reviewUiTest: {
       calls: typeof calls;
       publishReview: (processNumber: string) => void;
+      publishLegacy2027Review: () => void;
       resolvePendingSave: () => void;
     };
   }

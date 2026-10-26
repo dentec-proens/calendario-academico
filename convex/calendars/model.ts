@@ -50,7 +50,7 @@ export function domainState(
 ): DomainState {
   return {
     ...state,
-    schemaVersion: 2,
+    schemaVersion: state.schemaVersion ?? 2,
     year: row.year,
     campus: campus.name,
     modalities: row.modalities,
@@ -61,7 +61,6 @@ export function domainState(
 export function toContent(input: DomainState): ContentState {
   const normalized = normalizeCalendar(input) as DomainState;
   const {
-    schemaVersion: _schema,
     year: _year,
     campus: _campus,
     offer: _offer,

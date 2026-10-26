@@ -4,17 +4,41 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { applyPeriod, removePeriod } from '../../../../src/calendar-edits/commands.ts';
 import { durationEnd } from '../../../../src/duration.ts';
-import { Input } from './fields.tsx';
+import { Input, Select } from './fields.tsx';
+import { modalityLabels } from '../../../../src/modalities.ts';
+import { organizationForModality, termLabels } from '../../../../src/calendar-rules/index.ts';
+import type { AcademicTerm } from '../../../../src/domain-types.ts';
+import type { Modality } from '../types.ts';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { scrollIntoView } from '../../../scroll.ts';
 
-const empty = { id: '', name: '', start: '', end: '', days: '' };
 export default function PeriodForm() {
   const name = useRef<HTMLInputElement>(null);
   const { state, session, events, institutional, readOnly, applyCommand } = useCalendarEditor();
+  const empty = {
+    id: '',
+    name: '',
+    start: '',
+    end: '',
+    days: '',
+    modalities: [...state.modalities],
+    term: (state.modalities.every(
+      (modality) => organizationForModality(state, modality) === 'semestral',
+    )
+      ? 'first'
+      : 'annual') as AcademicTerm,
+  };
   const { form, values, submit, error } = useCalendarForm('period', empty, function apply(value) {
     session.apply((current) =>
-      applyPeriod(current, value, institutional, () => crypto.randomUUID()),
+      applyPeriod(
+        current,
+        {
+          ...value,
+          association: { status: 'defined', modalities: value.modalities, term: value.term },
+        },
+        institutional,
+        () => crypto.randomUUID(),
+      ),
     );
     return empty;
   });
@@ -24,7 +48,13 @@ export default function PeriodForm() {
       preview = durationEnd(
         values.start,
         values.days,
-        state.weekConfirmed ? state : { ...state, weekConfirmed: true, weekdays: [1, 2, 3, 4, 5] },
+        {
+          ...(state.weekConfirmed
+            ? state
+            : { ...state, weekConfirmed: true, weekdays: [1, 2, 3, 4, 5] }),
+          modalities: values.modalities,
+          offer: values.modalities[0],
+        },
         events,
       );
   } catch (cause) {
@@ -54,6 +84,9 @@ export default function PeriodForm() {
                 <strong>{period.name}</strong>
                 <small>
                   {period.start} a {period.end}
+                  {period.association?.status === 'defined'
+                    ? ` · ${period.association.modalities.map((modality) => modalityLabels[modality]).join(', ')} · ${termLabels[period.association.term]}`
+                    : ' · Associação a conferir'}
                   {period.targetDays
                     ? ` · Meta: ${period.targetDays} dias letivos · término automático`
                     : ''}
@@ -71,6 +104,18 @@ export default function PeriodForm() {
                       start: period.start,
                       end: period.end,
                       days: period.targetDays ? String(period.targetDays) : '',
+                      modalities:
+                        period.association?.status === 'defined'
+                          ? state.modalities.filter(
+                              (modality) =>
+                                period.association?.status === 'defined' &&
+                                period.association.modalities.includes(modality),
+                            )
+                          : [],
+                      term:
+                        period.association?.status === 'defined'
+                          ? period.association.term
+                          : 'annual',
                     })
                   }
                 >
@@ -99,6 +144,39 @@ export default function PeriodForm() {
       </ul>
       <form id="period-form" className="row-form" onSubmit={submit}>
         <fieldset disabled={readOnly}>
+          <form.Field name="modalities">
+            {(field) => (
+              <fieldset>
+                <legend>Ofertas deste período</legend>
+                {state.modalities.map((modality: Modality) => (
+                  <label className="check" key={modality}>
+                    <input
+                      type="checkbox"
+                      value={modality}
+                      checked={field.state.value.includes(modality)}
+                      onChange={(event) =>
+                        field.handleChange(
+                          event.target.checked
+                            ? [...field.state.value, modality]
+                            : field.state.value.filter((item) => item !== modality),
+                        )
+                      }
+                    />
+                    {modalityLabels[modality]}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </form.Field>
+          <form.Field name="term">
+            {(field) => (
+              <Select field={field} label="Identidade do ciclo/período" id="period-term">
+                <option value="annual">Ciclo anual</option>
+                <option value="first">Primeiro semestre</option>
+                <option value="second">Segundo semestre</option>
+              </Select>
+            )}
+          </form.Field>
           <form.Field name="name">
             {(field) => (
               <Input

@@ -14,6 +14,7 @@ test('reverting a dirty metadata field adopts a newer confirmed event value', as
 }) => {
   await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="events"]').click();
+  await page.locator('[data-event-metadata="local-event"] > summary').click();
   const category = page.locator('[data-category-event="local-event"]');
   await category.selectOption('feriado');
   await page.locator('[data-edit-event="local-event"]').click();
@@ -180,6 +181,7 @@ test('metadata rejects an activity for another modality before applying or savin
     return window.publishReviewerCalendar();
   });
   await page.locator('[data-view="events"]').click();
+  await page.locator('[data-event-metadata="local-event"] > summary').click();
   const link = page.locator('[data-link-activity="local-event"]');
   const form = link.locator('xpath=ancestor::form');
   await link.selectOption('stage-1:graduacao');
@@ -237,6 +239,7 @@ test('event removal clears its metadata draft and grouped teacher vacations', as
 }) => {
   await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="events"]').click();
+  await page.locator('[data-event-metadata="local-event"] > summary').click();
   await page.locator('[data-category-event="local-event"]').selectOption('feriado');
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-remove-event="local-event"]').click();

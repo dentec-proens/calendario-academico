@@ -7,6 +7,7 @@ import { normalizeCalendar } from '../../../../src/calendar-normalize.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { CalendarState } from '../types.ts';
+import type { Id } from '../../../../convex/_generated/dataModel.js';
 
 export default function ImportCalendarForm() {
   const { state, record, session, notify, readOnly } = useCalendarEditor();
@@ -19,17 +20,24 @@ export default function ImportCalendarForm() {
       if (!value.file || value.file.size > 2_000_000)
         throw new Error('Escolha uma cópia JSON de até 2 MB.');
       const imported = normalizeCalendar(JSON.parse(await value.file.text()));
+      const regime = imported.regime;
+      if (
+        regime !== 'anual' &&
+        regime !== 'semestral' &&
+        regime !== 'misto' &&
+        regime !== 'a-classificar'
+      )
+        throw new Error('Organização inválida na cópia.');
       if (
         imported.year !== state.year ||
         imported.campus !== state.campus ||
-        imported.regime !== state.regime ||
         JSON.stringify(imported.modalities) !== JSON.stringify(state.modalities)
       )
         throw new Error('A cópia pertence a outro ano, campus, organização ou oferta.');
       if (!isCurrent()) return;
       await confirmAction({
         title: 'Aplicar cópia ao calendário?',
-        description: 'Os dados aplicados serão substituídos pelo conteúdo conferido do arquivo.',
+        description: `Os dados aplicados serão substituídos pelo conteúdo conferido do arquivo. Formato 3: ${imported.periods.length} períodos e ${imported.events.length} eventos.${imported.conversion?.organization === 'pending' ? ' A organização legada precisa de classificação na etapa 2; as datas e IDs serão conservados.' : ''}`,
         consequence: 'Os campos em preenchimento devem ser conferidos antes de continuar.',
         confirmLabel: 'Aplicar cópia',
         intent: 'warning',
@@ -39,10 +47,24 @@ export default function ImportCalendarForm() {
           const next: CalendarState = {
             ...state,
             ...imported,
-            schemaVersion: 2,
+            schemaVersion: 3,
             offer: state.offer,
             modalities: state.modalities,
-            regime: state.regime,
+            regime,
+            periods: imported.periods.map((period) => ({
+              ...period,
+              association:
+                period.association?.status === 'defined'
+                  ? {
+                      ...period.association,
+                      modalities: state.modalities.filter(
+                        (modality) =>
+                          period.association?.status === 'defined' &&
+                          period.association.modalities.includes(modality),
+                      ),
+                    }
+                  : period.association,
+            })),
             events: imported.events.map((event) => ({
               ...event,
               kind:
@@ -57,6 +79,8 @@ export default function ImportCalendarForm() {
               historicalSource: event.historicalSource
                 ? {
                     ...event.historicalSource,
+                    analysisId: event.historicalSource.analysisId as
+                      Id<'historyAnalyses'> | undefined,
                     historyId:
                       record.histories.find((item) => item.id === event.historicalSource?.historyId)
                         ?.id ||

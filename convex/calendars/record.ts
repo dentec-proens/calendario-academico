@@ -67,14 +67,16 @@ export async function fullRecord(
     currentCatalogueRevision: base.revision,
     currentDocuments: docs.map(documentDto),
     histories: await Promise.all(
-      histories.map(async ({ _id, _creationTime: _creation, ...fields }) => ({
+      histories.map(async ({ _id, _creationTime: _creation, analysisVersions, ...fields }) => ({
         ...fields,
         id: _id,
         createdAt: iso(fields.createdAt),
-        analyzed: !!(await ctx.db
-          .query('historyAnalyses')
-          .withIndex('by_historyId', (q) => q.eq('historyId', _id))
-          .first()),
+        analyzed:
+          Boolean(analysisVersions?.length) ||
+          !!(await ctx.db
+            .query('historyAnalyses')
+            .withIndex('by_historyId', (q) => q.eq('historyId', _id))
+            .first()),
       })),
     ),
   });

@@ -59,8 +59,24 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
       { id: 's2', name: 'S2', start: '2027-08-02', end: '2027-08-06' },
     ],
   };
+  assert.throws(() => evaluateCalendar(state, []), /Organização a conferir/);
+  const classified = {
+    ...state,
+    schemaVersion: 3,
+    regime: 'semestral',
+    organizationByModality: { subsequente: 'semestral' as const },
+    scopeConfirmation: { status: 'covered' as const, source: 'Escopo presencial sintético' },
+    periods: state.periods.map((p, i) => ({
+      ...p,
+      association: {
+        status: 'defined' as const,
+        modalities: ['subsequente'],
+        term: i === 0 ? ('first' as const) : ('second' as const),
+      },
+    })),
+  };
   assert.deepEqual(
-    evaluateCalendar(state, []).checks.map((c) => c.expected),
+    evaluateCalendar(classified, []).checks.map((c) => c.expected),
     [200, 100, 100],
   );
 });

@@ -1,4 +1,24 @@
 /** Shared contracts for calendar activities and the operational checklist. */
+export type AcademicTerm = 'annual' | 'first' | 'second';
+export type Organization = 'anual' | 'semestral' | 'a-classificar';
+export type PeriodAssociation =
+  { status: 'defined'; modalities: string[]; term: AcademicTerm } | { status: 'a-classificar' };
+export interface Admission {
+  type: 'regular' | 'transfer';
+  year: number;
+  term: AcademicTerm;
+  periodId?: string;
+}
+export interface IntakeConfiguration {
+  status: 'unknown' | 'yes' | 'no';
+  source?: string;
+  required?: boolean;
+}
+export interface CalendarConversion {
+  from: 2;
+  organization: 'classified' | 'pending';
+  legacySecondSemesterIntake?: boolean;
+}
 export interface CalendarActivity {
   id: string;
   name: string;
@@ -14,7 +34,12 @@ export interface CalendarActivity {
   originalStart?: string;
   originalEnd?: string;
   assessmentAutoStart?: string;
-  historicalSource?: { historyId: string; page: number; candidateKey: string };
+  deadlineExtensionCause?: 'municipal-holiday' | 'municipal-recess';
+  recordType?: 'event' | 'prior-reference';
+  publicationStatus?: 'planned' | 'published';
+  admission?: Admission;
+  deadlineAdjustment?: { date: string; evidence: string; reviewed: boolean };
+  historicalSource?: { historyId: string; page: number; candidateKey: string; analysisId?: string };
 }
 
 export interface ActivityRequirement {
@@ -22,9 +47,20 @@ export interface ActivityRequirement {
   name: string;
   required?: boolean;
   deadline?: string;
+  deadlinePolicy?: 'reference' | 'fixed';
   minHours?: number;
   month?: number;
   modality?: string;
+  modalities?: string[];
+  term?: AcademicTerm;
+  periodId?: string;
+  basis?: string;
+  reviewCriterionId?: string;
+  reason?: string;
+  acceptsPriorReference?: boolean;
+  applicability?: 'required' | 'optional' | 'unconfigured';
+  reviewInstruction?: string;
+  admissionType?: 'regular' | 'transfer';
 }
 
 /** Structural inputs shared by pure rules, saved historical states and previews. */
@@ -34,6 +70,7 @@ export interface CalendarPeriod {
   start: string;
   end: string;
   targetDays?: number;
+  association?: PeriodAssociation;
 }
 export interface AssessmentSettings {
   offer?: string;
@@ -42,6 +79,12 @@ export interface AssessmentSettings {
   year?: number;
   assessmentStagesByModality?: Record<string, number>;
   secondSemesterIntake?: boolean;
+  schemaVersion?: number;
+  rulesetVersion?: string;
+  organizationByModality?: Record<string, Organization>;
+  intakeByModality?: Record<string, Record<string, IntakeConfiguration>>;
+  conversion?: CalendarConversion;
+  scopeConfirmation?: { status: 'covered' | 'own-regulation'; source: string };
 }
 export interface TeachingState extends AssessmentSettings {
   year: number;
@@ -63,6 +106,7 @@ export interface ReviewEntry {
 }
 export interface CalendarReview {
   baseIdentity?: string;
+  rulesetVersion?: string;
   calendarId: string;
   calendarVersion: number;
   catalogueRevision: number;

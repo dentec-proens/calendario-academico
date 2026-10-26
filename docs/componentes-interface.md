@@ -32,3 +32,11 @@ No editor, os formulários, o estado aplicado e a versão confirmada no Convex s
 TanStack Router controla caminhos e filtros efetivos da URL. Usar links tipados para navegação interna e âncoras próprias para downloads e destinos externos. Mudança de rota deve manter foco visível e anunciar a tela; cancelamento de saída conserva rota e preenchimento.
 
 O painel Devtools só existe em desenvolvimento nas rotas permitidas com `?devtools=1`. Credenciais, links privados, arquivos e tokens ficam fora dos eventos de instrumentação. O teste do painel verifica teclado e ausência de obstrução dos controles em desktop e mobile.
+
+## Atividades e datas do campus
+
+A etapa 6 usa cartões agrupados, resumo e filtros de consulta na URL. `ActivityFilters` valida enums no Router e preserva os demais parâmetros ao navegar. Descrições, fontes e valores do formulário não entram na URL. `ActivityChecklist` consome a cobertura compartilhada por atividade/oferta/período: aplicabilidade, cobertura, revisão humana e execução são dimensões diferentes.
+
+O editor mantém um painel ativo com TanStack Form e o hook compartilhado. A edição identifica explicitamente cada registro; não seleciona automaticamente a primeira ocorrência de uma obrigação. Filtros não mudam os valores do painel. Os campos específicos de edital identificam tipo, ingresso, previsão/realização e eventual fonte do prazo ajustado. A declaração de conferência não representa autorização institucional.
+
+A consulta do calendário anterior oferece referência da ocorrência original e preparação de nova ocorrência com datas vazias. A procedência inclui análise imutável quando disponível. Uploads continuam privados na instrumentação e não entram no rascunho serializável. Controles e mensagens devem permanecer acessíveis com teclado e em uma coluna no mobile.

@@ -4,23 +4,24 @@ A aplicação é uma SPA React e Vite com uma entrada HTML e TanStack Router. Co
 
 ## Responsabilidades
 
-| Módulo                                              | Responsabilidade                                                                  |
-| --------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `web/app/`                                          | Árvore tipada de rotas, layouts, sessão, erros e Devtools                         |
-| `web/features/`                                     | Páginas e formulários organizados por assunto                                     |
-| `web/features/calendar-editor/session/`             | Estado confirmado/aplicado, sincronização, autosave e ciclo de vida do calendário |
-| `web/shared/forms/`                                 | Rascunhos em memória, submissão e composição comum de formulários                 |
-| `web/shared/convex/`                                | Cliente, erros, tipos e operações por domínio                                     |
-| `web/components/`                                   | Controles visuais e confirmação acessível                                         |
-| `src/calendar-edits/`                               | Comandos puros que validam e aplicam alterações de calendário                     |
-| `src/printing/`                                     | Modelo puro de impressão e distribuição de dias                                   |
-| `assets/printing/`                                  | CSS e logo usados no documento                                                    |
-| `convex/calendars.ts`, `histories.ts`               | Calendários, versões, lixeira, fontes e análise dos PDFs                          |
-| `convex/catalogue.ts`, `documents.ts`, `reviews.ts` | Base institucional, documentos e revisão humana                                   |
-| `convex/access/`                                    | Sessão, identidade, membros, convites, recuperação e instalação                   |
-| `convex/nativeFiles.ts`                             | Uploads temporários, tickets, restauração e limpeza agendada                      |
-| `convex/actions/`                                   | Processamento Node de arquivos, análise e PDF                                     |
-| `convex/operations.ts`                              | Admissão de trabalho, manutenção e drenagem de actions                            |
+| Módulo                                              | Responsabilidade                                                                   |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `web/app/`                                          | Árvore tipada de rotas, layouts, sessão, erros e Devtools                          |
+| `web/features/`                                     | Páginas e formulários organizados por assunto                                      |
+| `web/features/calendar-editor/session/`             | Estado confirmado/aplicado, sincronização, autosave e ciclo de vida do calendário  |
+| `web/shared/forms/`                                 | Rascunhos em memória, submissão e composição comum de formulários                  |
+| `web/shared/convex/`                                | Cliente, erros, tipos e operações por domínio                                      |
+| `web/components/`                                   | Controles visuais e confirmação acessível                                          |
+| `src/calendar-edits/`                               | Comandos puros que validam e aplicam alterações de calendário                      |
+| `src/calendar-rules/`                               | Política por ano, oferta e período; cobertura, referências e organização acadêmica |
+| `src/printing/`                                     | Modelo puro de impressão e distribuição de dias                                    |
+| `assets/printing/`                                  | CSS e logo usados no documento                                                     |
+| `convex/calendars.ts`, `histories.ts`               | Calendários, versões, lixeira, fontes e análise dos PDFs                           |
+| `convex/catalogue.ts`, `documents.ts`, `reviews.ts` | Base institucional, documentos e revisão humana                                    |
+| `convex/access/`                                    | Sessão, identidade, membros, convites, recuperação e instalação                    |
+| `convex/nativeFiles.ts`                             | Uploads temporários, tickets, restauração e limpeza agendada                       |
+| `convex/actions/`                                   | Processamento Node de arquivos, análise e PDF                                      |
+| `convex/operations.ts`                              | Admissão de trabalho, manutenção e drenagem de actions                             |
 
 Rotas compõem features; features usam domínio e infraestrutura. Domínio não importa React ou DOM. O runtime Node não entra nos bundles do navegador. Consultas paginadas pertencem às telas que as utilizam.
 
@@ -64,6 +65,22 @@ Prévia, impressão e PDF usam o mesmo modelo de `src/printing/`. O gerador Node
 
 Comandos e ambientes de validação estão em [Verificação](verificacao.md).
 
+## Conteúdo v3 e política de 2027
+
+Novos conteúdos e cópias usam `schemaVersion: 3`. A ausência do discriminador no conteúdo persistido identifica v2; os leitores preservam os snapshots antigos e adaptam o calendário em memória, sem escrita pela consulta. O próximo salvamento válido grava v3 com controle de versão. Um payload v2 não pode rebaixar um calendário já convertido. A importação de cópia passa pelo conversor e pela confirmação local.
+
+`organizationByModality` define organização anual, semestral ou `a-classificar`; `association` vincula períodos a ofertas e ao ciclo `annual`, `first` ou `second`. O resumo global deriva desse mapa. A contagem recebe períodos disjuntos de uma oferta, permitindo coincidência entre ofertas distintas. Conversões ambíguas preservam IDs/datas e exigem classificação antes de comprovar contagem e cobertura. O ingresso usa estados explícitos por oferta/ciclo e fonte local quando fundamenta exigência.
+
+`recordType`, `publicationStatus` e `admission` separam intenção documental, execução e finalidade. A posição temporal também é derivada das datas, impedindo contornar a política trocando apenas o discriminador. Referências anteriores têm efeito informativo; não satisfazem horas, etapas, férias ou dias atuais. Sua validação civil não enumera intervalos antigos. Editais anteriores exigem execução comprovada; previsões podem integrar planejamento, com metadados e fonte, sem comprovar publicação.
+
+`rulesetVersion` registra o conjunto apresentado; o servidor resolve a política vigente pelo ano e escopo e recusa identidades omitidas ou divergentes em novos payloads. O conjunto de 2027 é `consup-292-2027-v1`. O roteiro de 2026 permanece separado; escopos sem norma configurada não recebem conformidade automática. Salvar trabalho estruturalmente válido continua possível com pendências normativas, mas concluir depende da cobertura e revisão adequadas.
+
+`scopeConfirmation` registra a identificação humana do escopo e sua fonte, sem criar nova modalidade. `deadlineExtensionCause` exige causa municipal explícita e fonte antes de derivar a extensão de prazos de referência pelo art. 3º, § 2º. Um ajuste de cronograma declarado não representa autorização da Proens: a cobertura objetiva e a conferência humana atual do critério são verificações separadas. `readiness.humanReview` informa essa conferência sem confundi-la com a existência de outras pendências.
+
+As análises históricas têm identidade imutável, versão do extrator e hash do PDF. A associação legada aponta à análise original, e novas fontes carregam `analysisId`. Reanálise não substitui candidatos utilizados, nem modifica o calendário ao consultar. Autorização, campus, calendário, análise e chave do candidato são conferidos juntos no salvamento.
+
+A atualização da fonte institucional de 2027 foi ensaiada por `preview2027SourceUpdate`: propõe apenas a troca da fonte antiga quando conteúdo, escopo e datas coincidem com a base inicial. O ensaio é puro e idempotente; diferenças locais aparecem como conflitos. Nenhuma atualização de instalações existentes ocorre na inicialização. Uma operação administrativa futura deve apresentar a prévia, usar controle de concorrência e incorporar explicitamente o impacto nos calendários.
+
 ## Compatibilidade da base institucional
 
 `src/calendar-base/` concentra a política de equivalência, comparação e confirmação da base aplicável ao calendário. A revisão numérica é um marcador técnico; a identidade de conteúdo considera eventos, fontes, aplicabilidade e arquivos documentais. Ordem dos registros, ofertas externas ao calendário e metadados operacionais não exigem uma decisão do usuário. O adaptador `convex/calendars/base.ts` seleciona as referências por ano e oferta e adapta os snapshots persistidos para essa interface.
@@ -71,3 +88,5 @@ Comandos e ambientes de validação estão em [Verificação](verificacao.md).
 O editor recebe a análise pela sessão. Uma base equivalente não apresenta card: `synchronizeBase` atualiza somente a referência técnica, sem receber campos locais, recalcular datas, alterar autoria/data editorial ou criar versão. A mesma equivalência permite salvamento e PDF sem exigir essa sincronização antecipada. Durante o smoke autorizado em manutenção, a sincronização não grava nem mesmo a referência técnica; o smoke também verifica que os snapshots e a revisão persistida permanecem intactos. Alterações reais exigem uma confirmação vinculada à identidade do conteúdo exibido; a transação verifica novamente a identidade e a versão do calendário. Mudanças em eventos recalculam o calendário; mudanças apenas documentais preservam as datas. Ambas geram versão editorial quando incorporadas.
 
 Novas revisões humanas guardam `baseIdentity`, além da revisão técnica e dos snapshots documentais originais. Uma mudança irrelevante no contador não invalida a análise; alterações no conteúdo aplicável ou na versão editorial invalidam. Registros anteriores sem essa identidade continuam exigindo a revisão técnica original, pois não há evidência suficiente para declarar equivalência retroativamente. A sincronização nunca reescreve uma revisão humana.
+
+Em 2027, a identidade `base-v2:<conjunto>:<hash canônico>` acrescenta a política à identidade de conteúdo. O hash canônico preserva a comparação anterior; anos sem mudança de regras mantêm `base-v1` e não recebem falsa mudança global. A categoria de comparação `rules` exige incorporação e nova revisão, mesmo com catálogo/datas iguais. Se houver também mudança de eventos, a incorporação recalcula as datas. O rascunho de parecer de outro conjunto perde as confirmações antigas; notas ficam identificadas como contexto, e snapshots permanecem imutáveis.

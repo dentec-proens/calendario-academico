@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { api, internal } from '../convex/_generated/api.js';
 import { inspectCalendar } from '../src/calendar-base/index.ts';
-import { reviewCriteria } from '../src/review.ts';
+import { reviewCriteriaFor } from '../src/review.ts';
 import { createNativeFixture } from './helpers/native-database.ts';
 
 async function opened() {
@@ -47,8 +47,9 @@ test('equivalence sync is idempotent, scoped and preserves version, timestamp, s
       calendarVersion: record.version,
       catalogueRevision: review.catalogueRevision,
       baseIdentity: review.baseIdentity,
+      rulesetVersion: review.rulesetVersion,
       conclusion: '',
-      entries: reviewCriteria.map(({ id }) => ({
+      entries: reviewCriteriaFor(2027).map(({ id }) => ({
         id,
         status: 'PENDENTE' as const,
         reviewed: false,
@@ -126,7 +127,14 @@ test('real changes require the displayed content acceptance and events recalcula
         weekdays: [1, 2, 3, 4, 5],
         weekEvidence: 'Ata',
         periods: [
-          { id: 'p', name: 'Período', start: '2027-03-01', end: '2027-03-03', targetDays: 2 },
+          {
+            id: 'p',
+            name: 'Período',
+            start: '2027-03-01',
+            end: '2027-03-03',
+            targetDays: 2,
+            association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+          },
         ],
       },
     },
@@ -184,8 +192,9 @@ test('document incorporation preserves dates, invalidates the evidenced review a
       calendarVersion: 1,
       catalogueRevision: 1,
       baseIdentity: support.baseIdentity,
+      rulesetVersion: support.rulesetVersion,
       conclusion: '',
-      entries: reviewCriteria.map(({ id }) => ({
+      entries: reviewCriteriaFor(2027).map(({ id }) => ({
         id,
         status: 'PENDENTE' as const,
         notes: '',

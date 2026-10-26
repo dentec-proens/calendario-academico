@@ -86,3 +86,33 @@ test('human reviews follow evidenced content; legacy reviews conservatively foll
     }),
   ).toBe(false);
 });
+
+test('2027 rules adoption is explicit and invalidates reviews without changing dates', () => {
+  const rulesetVersion = 'consup-292-2027-v1';
+  const result = inspect(snapshot, { ...snapshot, rulesetVersion }, scope);
+  expect(result.kind).toBe('rules');
+  expect(result.compatible).toBe(false);
+  expect(result.rules).toEqual({ before: undefined, after: rulesetVersion, changed: true });
+  expect(reconcile(result, result.identity)).toEqual({ incorporate: true, recalculate: false });
+  expect(result.identity).toMatch(/^base-v2:consup-292-2027-v1:/);
+  const current = { revision: 1, identity: result.identity, rulesetVersion };
+  const old = { calendarVersion: 1, catalogueRevision: 1, baseIdentity: result.identity };
+  expect(reviewIsCurrent(old, 1, current)).toBe(false);
+  expect(reviewIsCurrent({ ...old, rulesetVersion }, 1, current)).toBe(true);
+  expect(
+    inspect({ ...snapshot, rulesetVersion }, { ...snapshot, rulesetVersion }, scope).compatible,
+  ).toBe(true);
+});
+
+test('legacy base identities remain stable for years without changed rules', () => {
+  for (const year of [2026, 2028]) {
+    const before = inspect(snapshot, snapshot, { ...scope, year });
+    const after = inspect(
+      snapshot,
+      { ...snapshot, rulesetVersion: year === 2026 ? 'legacy-2026-v1' : 'unconfigured:2028' },
+      { ...scope, year },
+    );
+    expect(after.identity).toBe(before.identity);
+    expect(after.compatible).toBe(true);
+  }
+});

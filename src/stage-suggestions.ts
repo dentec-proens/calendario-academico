@@ -3,6 +3,7 @@ import { assessmentCount, scopedRequirement, stageRequirement } from './obligati
 import { evaluateCalendar } from './evaluation.ts';
 import { parseDate } from './calendar.ts';
 import { calendarModalities, appliesTo } from './modalities.ts';
+import { periodsForModality } from './calendar-rules/index.ts';
 
 export function isFirstStageStart(name: string) {
   const text = String(name || '')
@@ -27,6 +28,7 @@ export function suggestStages(state: TeachingState, events: StageEvent[], start:
     count = assessmentCount(state, modalities[0]);
   if (modalities.length !== 1 || modalities.some((m) => assessmentCount(state, m) !== count))
     throw Error('Selecione uma oferta para calcular suas etapas separadamente.');
+  state = { ...state, periods: periodsForModality(state, modalities[0]) };
   events = events.filter((e) => modalities.some((m) => appliesTo(e, m)));
   if (![2, 3, 4].includes(count)) throw Error('Informe o número de etapas de avaliação.');
   if (!state.periods.length)
@@ -101,6 +103,7 @@ export function suggestStageEnd(
   )
     throw Error('Etapa inválida para o número de etapas cadastrado.');
   const modalities = calendarModalities(state);
+  state = { ...state, periods: periodsForModality(state, modalities[0]) };
   const scoped = events.filter((e) => modalities.some((m) => appliesTo(e, m)));
   const existing = scoped.filter((e) => /^stage-[1-4]:[a-z]+$/.test(e.requirementId || ''));
   if (
@@ -157,12 +160,18 @@ export function recalculateAssessmentStages<T extends StageEvent>(
     const stages = state.events.filter(
       (e) => stageRequirement(e.requirementId) && modalities.some((m) => appliesTo(e, m)),
     );
+    const periods = periodsForModality(state, modalities[0]);
     const followsTargets =
-      state.periods.length > 0 &&
-      state.periods.every(
+      periods.length > 0 &&
+      periods.every(
         (p) => Number.isInteger(p.targetDays) && p.targetDays !== undefined && p.targetDays > 0,
       );
-    if (!stages.length || (!followsTargets && !stages.some((e) => e.assessmentAutoStart))) continue;
+    if (
+      !periods.length ||
+      !stages.length ||
+      (!followsTargets && !stages.some((e) => e.assessmentAutoStart))
+    )
+      continue;
     const count = assessmentCount(state, modalities[0]);
     if (new Set(stages.map((e) => e.requirementId)).size !== stages.length)
       throw Error(
@@ -173,9 +182,9 @@ export function recalculateAssessmentStages<T extends StageEvent>(
     const anchors = new Set(stages.map((e) => e.assessmentAutoStart));
     if (!followsTargets && anchors.size !== 1)
       throw Error('Confira o início da distribuição automática das etapas.');
-    const scopedState = { ...state, modalities, offer: modalities[0] };
+    const scopedState = { ...state, modalities, offer: modalities[0], periods };
     const withoutStages = events.filter((e) => !stageRequirement(e.requirementId));
-    const start = followsTargets ? state.periods.map((p) => p.start).sort()[0] : [...anchors][0];
+    const start = followsTargets ? periods.map((p) => p.start).sort()[0] : [...anchors][0];
     const suggested = suggestStages(scopedState, withoutStages, start!);
     for (const stage of stages) {
       const next = suggested.stages.find((s) => s.requirementId === stage.requirementId);

@@ -56,6 +56,12 @@ export default function ReviewFormView({
       <p id="review-progress">
         {reviewedCount} de {opened.criteria.length} critérios conferidos.
       </p>
+      {opened.rulesetVersion && (
+        <p>
+          Conjunto de regras: {opened.rulesetVersion}. Confira o planejamento e a execução
+          documental separadamente.
+        </p>
+      )}
       <p id="review-conflicts">
         {opened.conflicts.length
           ? `${opened.conflicts.length} conflito(s) de inclusão/exclusão: ${opened.conflicts.map((conflict) => conflict.date).join(', ')}. Confira no editor.`

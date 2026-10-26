@@ -5,7 +5,7 @@ import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../convex/_generated/api.js';
-import { reviewCriteria } from '../src/review.ts';
+import { reviewCriteriaFor } from '../src/review.ts';
 import { initialCatalogue } from '../src/institution.ts';
 import { teacherDayId } from '../src/teacher-day.ts';
 import { createNativeFixture as fixture } from './helpers/native-database.ts';
@@ -118,11 +118,13 @@ test('native publication gates base revisions and reviews retain concurrent revi
     /Salve a análise inicial/,
   );
   const body = {
+    rulesetVersion: support.rulesetVersion,
+    baseIdentity: support.baseIdentity,
     revision: 0,
     calendarVersion: 1,
     catalogueRevision: 1,
     conclusion: support.initialConclusion,
-    entries: reviewCriteria.map((c) => ({
+    entries: reviewCriteriaFor(2027).map((c) => ({
       id: c.id,
       status: 'PENDENTE',
       notes: '',
@@ -239,7 +241,7 @@ test('native action boundaries recheck ownership and register only validated sto
     /Registro não encontrado/,
   );
   const analyzed = {
-    version: 2,
+    version: 3,
     pages: [{ page: 1, text: 'Análise sintética' }],
     candidates: [],
     truncated: false,
@@ -463,7 +465,10 @@ test('native calendar edits and trash preserve all thirteen deferred PDF referen
   const cached = await asClient('campus-a').action(api.actions.history.analyzeHistory, {
     id: historyIds[0],
   });
-  assert.deepEqual(cached, analysis);
+  assert.deepEqual(cached.pages, analysis.pages);
+  assert.deepEqual(cached.candidates, analysis.candidates);
+  assert.equal(cached.version, analysis.version);
+  assert(cached.analysisId);
   await assert.rejects(
     asClient('campus-a').action(api.actions.history.downloadHistory, { id: historyIds[1] }),
     /aguarda/,
@@ -624,11 +629,13 @@ test('institutional revisions affect only calendars and reviews for the changed 
   await admin.write(
     reviewPath,
     {
+      rulesetVersion: support.rulesetVersion,
+      baseIdentity: support.baseIdentity,
       revision: 0,
       calendarVersion: record.version,
       catalogueRevision: support.catalogueRevision,
       conclusion: support.initialConclusion,
-      entries: reviewCriteria.map((criterion) => ({
+      entries: reviewCriteriaFor(2027).map((criterion) => ({
         id: criterion.id,
         status: 'PENDENTE',
         notes: '',

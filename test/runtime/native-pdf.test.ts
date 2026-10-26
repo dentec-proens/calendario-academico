@@ -173,3 +173,61 @@ test('print template renders external image markup as text without accessing its
     );
   }
 });
+
+test('real PDF preserves previous-year notices and distinguishes planned publication from execution', async () => {
+  const bytes = await nativePdf(
+    { ...record, state: { ...record.state, year: 2027, periods: [] } },
+    [
+      {
+        id: 'prior-notice',
+        name: 'Transferência com publicação anterior',
+        start: '2026-12-10',
+        end: '2026-12-10',
+        kind: 'note',
+        evidence: 'Fonte <original> & conferida',
+        recordType: 'prior-reference',
+        publicationStatus: 'published',
+        modalities: ['integrado'],
+        admission: { type: 'transfer', year: 2027, term: 'annual' },
+      },
+      {
+        id: 'planned-notice',
+        name: 'Publicação planejada antes do ano',
+        start: '2026-11-10',
+        end: '2026-11-10',
+        kind: 'note',
+        evidence: 'Planejamento sintético',
+        recordType: 'event',
+        publicationStatus: 'planned',
+        modalities: ['integrado'],
+        admission: { type: 'regular', year: 2028, term: 'annual' },
+      },
+      {
+        id: 'cross-year',
+        name: 'Referência com intervalo integral',
+        start: '2026-12-20',
+        end: '2027-01-10',
+        kind: 'note',
+        evidence: 'Fonte sintética',
+        recordType: 'prior-reference',
+        modalities: ['integrado'],
+      },
+    ],
+    runtime,
+  );
+  const text = await inspectPdf(bytes);
+  for (const expected of [
+    'Atividades e referências de outros anos',
+    'Publicações previstas',
+    'Fatos anteriores com fonte',
+    '10/12/2026',
+    '10/11/2026',
+    '20/12/2026 a 10/01/2027',
+    'Ingresso 2028',
+    'Publicação prevista',
+    'Publicação realizada com fonte',
+    'Fonte <original> & conferida',
+    'consup-292-2027-v1',
+  ])
+    expect(text).toContain(expected);
+});

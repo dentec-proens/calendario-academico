@@ -1,7 +1,8 @@
 import type { AssessmentSettings, ReviewEntry } from './domain-types.ts';
 import { calendarModalities, modalityLabels } from './modalities.ts';
 import { reviewNorm } from './review-presentation.ts';
-import { reviewCriteria, reviewSource } from './review.ts';
+import { reviewCriteriaFor, reviewSourceFor } from './review.ts';
+import { rulesetVersion } from './calendar-rules/index.ts';
 
 const esc = (s: string | number | undefined | null) =>
   String(s ?? '').replace(
@@ -28,6 +29,8 @@ export function reviewDocument(
     conclusion?: string;
   },
 ) {
+  const reviewCriteria = reviewCriteriaFor(record.state.year),
+    reviewSource = reviewSourceFor(record.state.year);
   const title = 'PARECER TÉCNICO-PEDAGÓGICO DE CALENDÁRIO ACADÊMICO E ADMINISTRATIVO';
   const assessed = review.entries.filter(
     (e) =>
@@ -35,6 +38,7 @@ export function reviewDocument(
   ).length;
   const notice = `Minuta para revisão humana e inserção no SEI. ${assessed}/${reviewCriteria.length} critérios conferidos pelo parecerista. Não é documento assinado nem aprovação oficial.`;
   const metadata = [
+    ['Conjunto de regras', rulesetVersion(record.state)],
     ['Processo nº', review.processNumber || 'Não informado'],
     ['Assunto', `Calendário Acadêmico e Administrativo ${record.state.year}`],
     ['Campus', record.state.campus],
@@ -52,7 +56,7 @@ export function reviewDocument(
     ],
     [
       'Modelo de referência',
-      `${reviewSource.id}, páginas 1–2; ${reviewSource.norm} (calendário 2026)`,
+      `${reviewSource.id}; ${reviewSource.norm} (calendário ${reviewSource.year})`,
     ],
     [
       'Registro da análise',
@@ -72,7 +76,7 @@ export function reviewDocument(
   });
   const conclusion = review.conclusion || 'Conclusão pendente de elaboração pelo parecerista.';
   const section = '1. ANÁLISE TÉCNICO-PEDAGÓGICA';
-  let body = `<article><h1>PARECER</h1><h2>${title}</h2><p class="center">Pró-Reitoria de Ensino — PROENS</p><p class="notice">${esc(notice)}</p>${record.state.year !== 2026 ? `<p><strong>Atenção:</strong> o modelo é de 2026; seus prazos e artigos não substituem a norma de ${record.state.year}.</p>` : ''}${metadata.map(([key, value]) => `<p><strong>${esc(key)}:</strong> ${esc(value)}</p>`).join('')}<h2>${section}</h2><table><thead><tr><th>Itens do calendário — roteiro do parecer</th><th>Situação e observações</th></tr></thead><tbody>${bodyRows.map((r) => `<tr><td>${esc(r.criterion).replace(/\n/g, '<br>')}</td><td>${esc(r.assessment).replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table><h2>2. PARECER</h2><p>${esc(conclusion).replace(/\n/g, '<br>')}</p><p>Responsável pelo registro da análise: ${esc(review.reviewer.name)}.</p><p>A formalização, assinatura e tramitação são realizadas pelas instâncias competentes no SEI.</p></article>`;
+  let body = `<article><h1>PARECER</h1><h2>${title}</h2><p class="center">Pró-Reitoria de Ensino — PROENS</p><p class="notice">${esc(notice)}</p>${record.state.year !== reviewSource.year ? `<p><strong>Atenção:</strong> o modelo é de ${reviewSource.year}; seus prazos e artigos não substituem a norma de ${record.state.year}.</p>` : ''}${metadata.map(([key, value]) => `<p><strong>${esc(key)}:</strong> ${esc(value)}</p>`).join('')}<h2>${section}</h2><table><thead><tr><th>Itens do calendário — roteiro do parecer</th><th>Situação e observações</th></tr></thead><tbody>${bodyRows.map((r) => `<tr><td>${esc(r.criterion).replace(/\n/g, '<br>')}</td><td>${esc(r.assessment).replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table><h2>2. PARECER</h2><p>${esc(conclusion).replace(/\n/g, '<br>')}</p><p>Responsável pelo registro da análise: ${esc(review.reviewer.name)}.</p><p>A formalização, assinatura e tramitação são realizadas pelas instâncias competentes no SEI.</p></article>`;
   // Inline table formatting also travels with HTML clipboard content.
   body = body
     .replace('<table>', '<table style="border-collapse:collapse;width:100%;table-layout:fixed">')

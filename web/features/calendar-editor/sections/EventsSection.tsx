@@ -8,6 +8,8 @@ import EventEditor from '../events/EventEditor.tsx';
 import EventMetadataForm from '../events/EventMetadataForm.tsx';
 import TeacherDayForm from '../forms/TeacherDayForm.tsx';
 import HistorySection from './HistorySection.tsx';
+import ActivityFilters from '../events/ActivityFilters.tsx';
+import { civilDate } from '../events/activity-query.ts';
 
 export default function EventsSection() {
   const { events, state, institutional, applyCommand, readOnly } = useCalendarEditor();
@@ -67,72 +69,102 @@ export default function EventsSection() {
             </section>
           )}
         </div>
-        <HistorySection />
+        <ActivityFilters />
         <ActivityChecklist />
-        <ul id="event-list" className="records">
-          {[...events]
-            .sort((a, b) => a.start.localeCompare(b.start))
-            .map((event) => (
-              <li key={event.id}>
-                <div>
-                  <strong>{event.name}</strong>
-                  <small>
-                    {event.start} a {event.end} ·{' '}
-                    {event.kind === 'include'
-                      ? 'Inclusão letiva'
-                      : event.kind === 'exclude'
-                        ? 'Exclusão'
-                        : 'Sem efeito na contagem'}
-                  </small>
-                  <small>Fonte: {event.evidence}</small>
-                  {event.historicalSource && (
+        <HistorySection />
+        <details open className="calendar-records">
+          <summary>Consultar registros do calendário</summary>
+          <ul id="event-list" className="records">
+            {[...events]
+              .sort((a, b) => a.start.localeCompare(b.start))
+              .map((event) => (
+                <li key={event.id}>
+                  <div>
+                    <strong>{event.name}</strong>
                     <small>
-                      Origem histórica: página {event.historicalSource.page} do calendário anterior
+                      {civilDate(event.start)} a {civilDate(event.end)} ·{' '}
+                      {event.kind === 'include'
+                        ? 'Inclusão letiva'
+                        : event.kind === 'exclude'
+                          ? 'Exclusão'
+                          : 'Sem efeito na contagem'}
                     </small>
-                  )}
-                  <small>{categoryLabel(event)}</small>
-                </div>
-                {event.institutional ? (
-                  event.id === teacherDayId ? (
-                    <TeacherDayForm date={event.originalStart || event.start} />
+                    <small>Fonte: {event.evidence}</small>
+                    {event.recordType === 'prior-reference' && (
+                      <small>Referência anterior · sem efeito na contagem</small>
+                    )}
+                    {event.publicationStatus && (
+                      <small>
+                        {event.publicationStatus === 'planned'
+                          ? 'Publicação prevista'
+                          : 'Publicação realizada com fonte'}
+                      </small>
+                    )}
+                    {event.admission && (
+                      <small>
+                        Ingresso: {event.admission.year} ·{' '}
+                        {event.admission.term === 'annual'
+                          ? 'ciclo anual'
+                          : event.admission.term === 'first'
+                            ? 'primeiro semestre'
+                            : 'segundo semestre'}
+                      </small>
+                    )}
+                    {event.historicalSource && (
+                      <small>
+                        Origem histórica: página {event.historicalSource.page} do calendário
+                        anterior
+                      </small>
+                    )}
+                    <small>{categoryLabel(event)}</small>
+                  </div>
+                  {event.institutional ? (
+                    event.id === teacherDayId ? (
+                      <TeacherDayForm date={event.originalStart || event.start} />
+                    ) : (
+                      <span className="institution-label">Base PROENS</span>
+                    )
                   ) : (
-                    <span className="institution-label">Base PROENS</span>
-                  )
-                ) : (
-                  <>
-                    <EventMetadataForm event={state.events.find((item) => item.id === event.id)!} />
-                    <div className="actions">
-                      <button
-                        type="button"
-                        data-edit-event={event.id}
-                        disabled={readOnly}
-                        onClick={() => editor.edit(event.id)}
-                      >
-                        Editar evento
-                      </button>
-                      <button
-                        type="button"
-                        data-remove-event={event.id}
-                        disabled={readOnly}
-                        aria-label={`Remover ${event.name}`}
-                        onClick={() => {
-                          if (
-                            applyCommand((current) =>
-                              removeEvent(current, event.id, institutional),
-                            ) &&
-                            editor.eventId === event.id
-                          )
-                            editor.discard();
-                        }}
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  </>
-                )}
-              </li>
-            ))}
-        </ul>
+                    <>
+                      <details data-event-metadata={event.id}>
+                        <summary>Categoria e vínculo da atividade</summary>
+                        <EventMetadataForm
+                          event={state.events.find((item) => item.id === event.id)!}
+                        />
+                      </details>
+                      <div className="actions">
+                        <button
+                          type="button"
+                          data-edit-event={event.id}
+                          disabled={readOnly}
+                          onClick={() => editor.edit(event.id)}
+                        >
+                          Editar evento
+                        </button>
+                        <button
+                          type="button"
+                          data-remove-event={event.id}
+                          disabled={readOnly}
+                          aria-label={`Remover ${event.name}`}
+                          onClick={() => {
+                            if (
+                              applyCommand((current) =>
+                                removeEvent(current, event.id, institutional),
+                              ) &&
+                              editor.eventId === event.id
+                            )
+                              editor.discard();
+                          }}
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </li>
+              ))}
+          </ul>
+        </details>
         {!inActivity && editor.context?.kind !== 'history' && <EventEditor />}
       </div>
     </section>

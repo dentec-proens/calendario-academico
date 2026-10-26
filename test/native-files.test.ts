@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { historyCandidateKey } from '../src/history-progress.ts';
 import { convexTest } from 'convex-test';
 import { api, internal } from '../convex/_generated/api.js';
+import { inspectCalendar } from '../src/calendar-base/index.ts';
 
 async function fixture() {
   vi.useFakeTimers({ toFake: ['setTimeout'] });
@@ -231,14 +232,20 @@ test('missing originals retain metadata and cached analyses while download and f
     return { documentId, cachedId, freshId, analysis };
   });
   const before = await client.run((ctx) => ctx.db.get(seeded.cachedId));
-  assert.deepEqual(
-    await users[0].action(api.actions.history.analyzeHistory, { id: seeded.cachedId }),
-    seeded.analysis,
-  );
+  const cached = await users[0].action(api.actions.history.analyzeHistory, { id: seeded.cachedId });
+  assert.deepEqual(cached.pages, seeded.analysis.pages);
+  assert.deepEqual(cached.candidates, seeded.analysis.candidates);
+  assert.equal(cached.version, seeded.analysis.version);
+  assert(cached.analysisId);
   for (const unavailable of [
     () => users[0].action(api.actions.documents.downloadDocument, { id: seeded.documentId }),
     () => users[0].action(api.actions.history.downloadHistory, { id: seeded.cachedId }),
     () => users[0].action(api.actions.history.analyzeHistory, { id: seeded.freshId }),
+    () =>
+      users[0].action(api.actions.history.reanalyzeHistory, {
+        id: seeded.cachedId,
+        extractorVersion: 3,
+      }),
   ])
     await assert.rejects(unavailable(), /aguarda a transferência/);
   await assert.rejects(
@@ -341,11 +348,16 @@ test('admin restores originals atomically into existing records while retaining 
   });
   const historyBefore = await client.run((ctx) => ctx.db.get(seeded.historyId));
   const documentBefore = await client.run((ctx) => ctx.db.get(seeded.documentId));
+  const cached = await users[0].action(api.actions.history.analyzeHistory, {
+    id: seeded.historyId,
+  });
   assert.deepEqual(
-    await users[0].action(api.actions.history.analyzeHistory, { id: seeded.historyId }),
-    seeded.analysis,
+    cached.candidates,
+    seeded.analysis.candidates,
     'missing original keeps older cached analysis available',
   );
+  assert.deepEqual(cached.pages, seeded.analysis.pages);
+  assert.equal(cached.analysisId, seeded.analysisId);
   const foreign = await issue(0);
   await complete(foreign.uploadId, await put());
   await assert.rejects(
@@ -426,7 +438,7 @@ test('admin restores originals atomically into existing records while retaining 
   );
   assert.deepEqual(
     await users[0].action(api.actions.history.analyzeHistory, { id: seeded.historyId }),
-    seeded.analysis,
+    cached,
     'restoring original never implicitly replaces an older analysis',
   );
   const reopened = await users[0].query(api.calendars.calendar, { id: seeded.calendarId });
@@ -436,6 +448,7 @@ test('admin restores originals atomically into existing records while retaining 
     body: {
       version: reopened.version,
       catalogueRevision: reopened.currentCatalogueRevision,
+      baseAcceptance: inspectCalendar(reopened, reopened).identity,
       state: reopened.state,
     },
   });
@@ -461,7 +474,7 @@ test('admin restores originals atomically into existing records while retaining 
   const audit = await client.run((ctx) => ctx.db.query('audit').take(10));
   assert.deepEqual(
     audit.map((row) => row.action),
-    ['RESTORE_HISTORY_ORIGINAL', 'RESTORE_DOCUMENT_ORIGINAL'],
+    ['RESTORE_HISTORY_ORIGINAL', 'SAVE_CALENDAR', 'RESTORE_DOCUMENT_ORIGINAL'],
   );
 });
 

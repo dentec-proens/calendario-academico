@@ -19,7 +19,12 @@ export default function WeekForm() {
     },
     function apply(value) {
       session.apply((current) => applyWeek(current, value, institutional));
-      if (next) void navigate({ to: next.path, params: { calendarId: record.id } });
+      if (next)
+        void navigate({
+          to: next.path,
+          params: { calendarId: record.id },
+          search: (previous) => previous,
+        });
     },
     () => 'Semana letiva atualizada.',
   );

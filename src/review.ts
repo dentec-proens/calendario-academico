@@ -2,6 +2,13 @@ import type { CalendarActivity, TeachingState } from './domain-types.ts';
 import { calendarModalities, modalityLabels } from './modalities.ts';
 import { reviewNorm } from './review-presentation.ts';
 import { evaluateCalendar as calendarResult } from './evaluation.ts';
+import {
+  activityCoverage,
+  organizationForModality,
+  periodsForModality,
+  rulesetVersion,
+  calendarWindow,
+} from './calendar-rules/index.ts';
 
 export const reviewSource = {
   id: 'SEI 3959640',
@@ -185,6 +192,78 @@ export const reviewCriteria = rows.map(([id, title, page, item, pattern]) => ({
   pattern,
 }));
 
+export function reviewSourceFor(year: number) {
+  return year === 2027
+    ? {
+        id: 'SEI 4422750',
+        year: 2027,
+        title: 'Resolução de diretrizes para o calendário acadêmico de 2027',
+        norm: 'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026',
+      }
+    : reviewSource;
+}
+export function reviewCriteriaFor(year: number) {
+  if (year !== 2027) return reviewCriteria;
+  return [
+    ...reviewCriteria.map((criterion) => ({
+      ...criterion,
+      page: [
+        'XII',
+        'XIII',
+        'XIV',
+        'XV',
+        'XVI',
+        'XVII',
+        'XVIII',
+        'XIX',
+        'XX',
+        'XXI',
+        'XXII',
+        'XXIII',
+        'XXIV',
+        'XXV',
+      ].includes(criterion.id)
+        ? 4
+        : 3,
+      item:
+        criterion.id === 'annual'
+          ? 'Art. 4º'
+          : criterion.id === 'semester'
+            ? 'Art. 4º, § 1º'
+            : criterion.id === 'window'
+              ? 'Art. 8º'
+              : criterion.item.replace('Art. 7º', 'Art. 11'),
+      title:
+        criterion.id === 'window'
+          ? 'Janela do ano letivo: 01/02 a 17/12/2027; início até 15/02/2027'
+          : criterion.id === 'XII'
+            ? 'Plano de Ensino, PIT e RIT em cada semestre'
+            : criterion.id === 'XXIV'
+              ? 'Semana de Valorização de Mulheres que Fizeram História — segunda semana de março'
+              : criterion.id === 'XXV'
+                ? 'Semana da Ética e da Cidadania — primeira semana de maio'
+                : criterion.title.replaceAll('2026', '2027'),
+      pattern: criterion.id === 'XXV' ? 'etica|cidadania' : criterion.pattern,
+    })),
+    {
+      id: 'XXVI',
+      title:
+        'Semana Cultural Interescolar em outubro: obrigatória nos técnicos e facultativa na graduação',
+      page: 4,
+      item: 'Art. 11, XXVI',
+      pattern: 'cultural|interescolar',
+    },
+    {
+      id: 'admission-regular',
+      title:
+        'Editais do Processo Seletivo 2028 até 15/06/2027; eventual ajuste pela Proens documentado',
+      page: 3,
+      item: 'Art. 10',
+      pattern: 'processo seletivo',
+    },
+  ];
+}
+
 export function reviewSupport<
   T extends {
     id: string;
@@ -197,7 +276,19 @@ export function reviewSupport<
   events: (Pick<
     CalendarActivity,
     'id' | 'name' | 'start' | 'end' | 'evidence' | 'category' | 'modalities'
-  > & { kind?: string })[],
+  > &
+    Partial<
+      Pick<
+        CalendarActivity,
+        | 'kind'
+        | 'requirementId'
+        | 'recordType'
+        | 'publicationStatus'
+        | 'admission'
+        | 'deadlineAdjustment'
+        | 'hours'
+      >
+    >)[],
 ) {
   let result: ReturnType<typeof calendarResult> | null = null,
     error: string | null = null,
@@ -233,9 +324,24 @@ export function reviewSupport<
   }
   const counts = result ? Object.entries(result.byModality) : [];
   const countLabel = provisional ? 'Contagem provisória dos dados cadastrados. ' : '';
-  const sameYear = record.state.year === reviewSource.year;
+  const source = reviewSourceFor(record.state.year);
+  const sameYear = record.state.year === source.year;
+  const normativeScopeConfirmed =
+    record.state.year !== 2027 || record.state.scopeConfirmation?.status === 'covered';
+  const window = calendarWindow(record.state);
+  const windowStart = window?.start ?? '',
+    latestStart = window?.latestStart ?? '',
+    windowEnd = window?.end ?? '';
+  const coverage =
+    record.state.year === 2027
+      ? activityCoverage({
+          ...record.state,
+          events: events.map((event) => ({ ...event, kind: event.kind ?? 'note' })),
+        })
+      : [];
   return {
-    source: reviewSource,
+    source,
+    rulesetVersion: rulesetVersion(record.state),
     sameYear,
     officialApproval: false,
     calendar: {
@@ -248,7 +354,7 @@ export function reviewSupport<
       regime: record.state.regime,
       version: record.version,
     },
-    criteria: reviewCriteria.map((c) => {
+    criteria: reviewCriteriaFor(record.state.year).map((c) => {
       let signal: string = 'Conferência documental necessária.';
       let candidates: Pick<CalendarActivity, 'id' | 'name' | 'start' | 'end' | 'evidence'>[] = [];
       if (c.pattern) {
@@ -278,10 +384,13 @@ export function reviewSupport<
         signal = result
           ? countLabel +
             counts
-              .map(
-                ([m, r]) =>
-                  `${modalityLabels[m] || m}: ${r.total} dias letivos registrados; ${r.total >= 200 ? 'alcança' : 'não alcança'} a referência de 200 dias`,
-              )
+              .map(([m, r]) => {
+                const minimum =
+                  record.state.year === 2026 && m !== 'posgraduacao'
+                    ? 200
+                    : r.checks.find((check) => check.scope === 'annual')?.expected;
+                return `${modalityLabels[m] || m}: ${r.total} dias letivos registrados; ${minimum == null ? 'mínimo normativo não configurado para este escopo' : `${r.total >= minimum ? 'alcança' : 'não alcança'} a referência de ${minimum} dias`}`;
+              })
               .join('; ') +
             '. Carga horária do PPC exige análise.' +
             (provisional ? ' ' + error : '')
@@ -297,7 +406,7 @@ export function reviewSupport<
                 .map(
                   ([m, r]) =>
                     `${modalityLabels[m] || m}: ` +
-                    record.state.periods
+                    periodsForModality(record.state, m)
                       .map((p) => `${p.name || p.id}: ${r.byPeriod[p.id]} dias letivos`)
                       .join('; '),
                 )
@@ -311,10 +420,12 @@ export function reviewSupport<
         const starts = record.state.periods.map((p) => p.start).sort(),
           ends = record.state.periods.map((p) => p.end).sort();
         signal = !sameYear
-          ? 'Datas de 2026 não aplicadas. Consulte a resolução do ano do calendário.'
-          : !starts.length
-            ? 'Nenhum período cadastrado.'
-            : `${starts[0]} a ${ends.at(-1)}. ${starts[0] >= '2026-02-04' && starts[0] <= '2026-02-28' && ends.at(-1)! <= '2026-12-18' ? 'Dentro da janela indicada no parecer.' : 'Fora da janela indicada no parecer; revisar.'}`;
+          ? 'Datas da norma de referência não aplicadas. Consulte a resolução do ano do calendário.'
+          : !normativeScopeConfirmed || !window
+            ? 'Aplicabilidade da janela a conferir; identifique o escopo e a norma própria quando necessária.'
+            : !starts.length
+              ? 'Nenhum período cadastrado.'
+              : `${starts[0]} a ${ends.at(-1)}. ${starts[0] >= windowStart && starts[0] <= latestStart && ends.at(-1)! <= windowEnd ? 'Dentro da janela indicada no parecer.' : 'Fora da janela indicada no parecer; revisar.'}`;
       }
       if (
         ['V', 'VII'].includes(c.id) &&
@@ -323,12 +434,30 @@ export function reviewSupport<
         signal +=
           ' O texto do parecer menciona subsequentes e graduação: confira se não se aplica.';
       if (
-        ['XXIV', 'XXV'].includes(c.id) &&
+        ['XXIV', 'XXV', 'XXVI'].includes(c.id) &&
         calendarModalities(record.state).every((m) => m === 'graduacao')
       )
-        signal += ' O parecer de 2026 considera esse evento facultativo para graduação.';
+        signal += ' A norma de referência considera esse evento facultativo para graduação.';
       if (['IV', 'XXII', 'XXIII'].includes(c.id))
         signal += ' A quantidade de dias/horas não está comprovada pela identificação do evento.';
+      if (record.state.year === 2027) {
+        const linked = coverage.filter((row) => row.requirement.reviewCriterionId === c.id);
+        if (linked.length) {
+          signal =
+            linked
+              .map(
+                (row) =>
+                  `${modalityLabels[row.modality]} — ${row.requirement.name}: ${row.applicability === 'required' ? 'obrigatório' : row.applicability === 'optional' ? 'opcional' : 'escopo a conferir'}; planejamento ${row.coverage === 'complete' ? 'completo' : row.coverage === 'partial' ? 'parcial' : 'pendente'}; ${row.execution === 'published' ? 'execução comprovada' : row.execution === 'planned' ? 'publicação prevista' : 'execução a classificar'}. ${[...row.issues, ...row.warnings].join(' ')}`,
+              )
+              .join(' | ') +
+            ' A presença não comprova atendimento. A conferência humana permanece necessária.';
+          candidates = [
+            ...new Map(
+              [...candidates, ...linked.flatMap((row) => row.events)].map((e) => [e.id, e]),
+            ).values(),
+          ];
+        }
+      }
       let status = 'PENDENTE',
         finding = candidates.length ? 'REGISTROS_LOCALIZADOS' : 'CONFERENCIA_NECESSARIA';
       if (c.pattern && !candidates.length) finding = 'NAO_LOCALIZADO';
@@ -336,27 +465,39 @@ export function reviewSupport<
         finding = counts.some(([, r]) => r.total < 200)
           ? 'CONTAGEM_INSUFICIENTE'
           : 'CONTAGEM_ALCANCADA';
-        if (sameYear && counts.some(([, r]) => r.total < 200)) status = 'NAO_ATENDIDO';
+        if (sameYear && normativeScopeConfirmed && counts.some(([, r]) => r.total < 200))
+          status = 'NAO_ATENDIDO';
       }
       if (c.id === 'semester' && record.state.regime === 'anual') {
         finding = 'APLICABILIDADE';
-        if (sameYear) status = 'NAO_APLICAVEL';
+        if (sameYear && normativeScopeConfirmed) status = 'NAO_APLICAVEL';
       }
       if (c.id === 'semester' && record.state.regime !== 'anual' && result && !provisional) {
         const valid =
-          record.state.periods.length === 2 &&
-          counts.every(([, r]) => record.state.periods.every((p) => r.byPeriod[p.id] >= 100));
+          counts.length > 0 &&
+          counts.every(
+            ([m, r]) =>
+              organizationForModality(record.state, m) !== 'semestral' ||
+              (periodsForModality(record.state, m).length === 2 &&
+                periodsForModality(record.state, m).every((p) => r.byPeriod[p.id] >= 100)),
+          );
         finding = valid ? 'CONTAGEM_ALCANCADA' : 'CONTAGEM_INSUFICIENTE';
-        if (sameYear) status = valid ? 'ATENDIDO' : 'NAO_ATENDIDO';
+        if (sameYear && normativeScopeConfirmed) status = valid ? 'ATENDIDO' : 'NAO_ATENDIDO';
       }
-      if (c.id === 'window' && sameYear && record.state.periods.length) {
+      if (c.id === 'window' && sameYear && normativeScopeConfirmed && record.state.periods.length) {
         const starts = record.state.periods.map((p) => p.start).sort(),
           ends = record.state.periods.map((p) => p.end).sort();
         status =
-          starts[0] >= '2026-02-04' && starts[0] <= '2026-02-28' && ends.at(-1)! <= '2026-12-18'
+          starts[0] >= windowStart && starts[0] <= latestStart && ends.at(-1)! <= windowEnd
             ? 'ATENDIDO'
             : 'NAO_ATENDIDO';
         finding = 'DATAS_COMPARADAS';
+      }
+      if (!normativeScopeConfirmed) {
+        status = 'PENDENTE';
+        signal =
+          (signal.trim() ? signal.trim().replace(/[.!?]+$/, '') + '. ' : '') +
+          'Escopo da norma a confirmar; EaD, qualificação e pós-graduação dependem de calendário próprio.';
       }
       return {
         ...c,

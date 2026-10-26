@@ -46,6 +46,7 @@ export default function ReviewEditor({
         calendarVersion: base.calendar.version,
         catalogueRevision: base.catalogueRevision,
         baseIdentity: base.baseIdentity,
+        rulesetVersion: base.rulesetVersion,
         acknowledgeStale: draft.acknowledgeStale,
       });
       const updated = await reviews.get(base.calendar.id);
@@ -76,9 +77,14 @@ export default function ReviewEditor({
         calendarVersion: draft.opened.calendar.version,
         catalogueRevision: draft.opened.catalogueRevision,
         baseIdentity: draft.opened.baseIdentity,
+        rulesetVersion: draft.opened.rulesetVersion,
       },
       opened.calendar.version,
-      { revision: opened.catalogueRevision, identity: opened.baseIdentity },
+      {
+        revision: opened.catalogueRevision,
+        identity: opened.baseIdentity,
+        rulesetVersion: opened.rulesetVersion,
+      },
     ) || (opened.review?.revision || 0) !== (draft.opened.review?.revision || 0);
   useEffect(() => {
     if (!remoteChanged || dirty || pending || exporting) return;

@@ -56,6 +56,7 @@ export default function EditorSteps({
               <Link
                 to={step.path}
                 params={{ calendarId }}
+                search={(previous) => previous}
                 className="editor-step"
                 data-view={step.section}
                 aria-current={active?.section === step.section ? 'page' : undefined}

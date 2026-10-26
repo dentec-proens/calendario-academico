@@ -1,6 +1,12 @@
 import { reviewIsCurrent } from '../src/calendar-base/index';
+import { rulesetVersion } from '../src/calendar-rules/index';
 import { assertWritesOpen } from './lib/maintenance';
-import { reviewSupport, reviewCriteria, initialConclusion } from '../src/review';
+import {
+  reviewSupport,
+  reviewCriteriaFor,
+  initialConclusion,
+  reviewSourceFor,
+} from '../src/review';
 import { updateConclusion } from '../src/review-conclusion';
 import { reviewDocument } from '../src/review-export';
 import { reviewNorm } from '../src/review-presentation';
@@ -70,11 +76,13 @@ export const review = query({
       catalogueRevision: base.revision,
       review: prior ? reviewDto(prior) : null,
       baseIdentity: compatibility.identity,
+      rulesetVersion: rulesetVersion(record.state),
       stale:
         !!prior &&
         !reviewIsCurrent(prior, record.version, {
           revision: base.revision,
           identity: compatibility.identity,
+          rulesetVersion: rulesetVersion(record.state),
         }),
     }) as Infer<typeof contracts.reviewSupportDto>;
   },
@@ -88,10 +96,23 @@ export const saveReview = mutation({
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
     const { record, base, docs, compatibility, review: prior } = await baseRecord(ctx, user, id);
+    const currentRules = rulesetVersion(record.state);
+    const criteria = reviewCriteriaFor(record.state.year);
+    if (record.state.schemaVersion === 3 && body.rulesetVersion !== currentRules)
+      fail(
+        'O conjunto de regras da revisão mudou. Reabra e confira os critérios antes de salvar.',
+        409,
+      );
+    if (record.state.schemaVersion === 3 && body.baseIdentity !== compatibility.identity)
+      fail(
+        'A identidade da base da revisão mudou. Reabra e confira os critérios antes de salvar.',
+        409,
+      );
     if (
       !reviewIsCurrent(body, record.version, {
         revision: base.revision,
         identity: compatibility.identity,
+        rulesetVersion: currentRules,
       })
     )
       fail('O calendário ou a base mudou. Reabra a revisão.', 409);
@@ -102,17 +123,18 @@ export const saveReview = mutation({
       !reviewIsCurrent(prior, record.version, {
         revision: base.revision,
         identity: compatibility.identity,
+        rulesetVersion: currentRules,
       }) &&
       !body.acknowledgeStale
     )
       fail('Confirme a reavaliação das conclusões anteriores após a mudança de versão.', 409);
     if (
-      body.entries.length !== reviewCriteria.length ||
-      new Set(body.entries.map((e) => e.id)).size !== reviewCriteria.length
+      body.entries.length !== criteria.length ||
+      new Set(body.entries.map((e) => e.id)).size !== criteria.length
     )
       fail('Confira todos os critérios da revisão.');
     for (const e of body.entries) {
-      if (!reviewCriteria.some((c) => c.id === e.id) || e.notes.length > 2000)
+      if (!criteria.some((c) => c.id === e.id) || e.notes.length > 2000)
         fail('Critério ou observação inválidos.');
       if (e.status === 'PENDENTE' && e.reviewed)
         fail('Selecione Atendido, Não atendido ou Não aplicável antes de confirmar a análise.');
@@ -123,7 +145,7 @@ export const saveReview = mutation({
     ]);
     const conclusion = updateConclusion(
       body.conclusion,
-      reviewCriteria,
+      criteria,
       body.entries,
       reviewNorm(record.state.year, support.sameYear ? support.source.norm : ''),
     );
@@ -138,8 +160,9 @@ export const saveReview = mutation({
       calendarVersion: record.version,
       catalogueRevision: base.revision,
       baseIdentity: compatibility.identity,
+      rulesetVersion: currentRules,
       revision: (prior?.revision ?? 0) + 1,
-      source: 'SEI 3959640',
+      source: reviewSourceFor(record.state.year).id,
       documentSnapshot: docs,
       entries: body.entries,
       conclusion,
@@ -177,6 +200,7 @@ export const exportReview = query({
       !reviewIsCurrent(prior, record.version, {
         revision: base.revision,
         identity: compatibility.identity,
+        rulesetVersion: rulesetVersion(record.state),
       })
     )
       fail('A análise está desatualizada. Reabra, confira e salve antes de exportar.', 409);

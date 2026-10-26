@@ -1,6 +1,7 @@
 'use node';
 import { withActionLease } from '../lib/maintenance';
 import { analyzeHistory as analyzePdfHistory } from '../../src/history-analysis';
+import { HISTORY_EXTRACTOR_VERSION } from '../../src/history-dates';
 import { internal } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
 import { action } from '../_generated/server';
@@ -38,10 +39,50 @@ export const analyzeHistory = action({
       const bytes = await fileBytes(ctx, history);
       let analysis: Infer<typeof historyAnalysis>;
       try {
-        analysis = await analyzePdfHistory(bytes);
+        analysis = await analyzePdfHistory(bytes, history.year);
       } catch {
         fail(
           'Não foi possível ler o texto deste PDF. Envie um arquivo sem senha e com texto selecionável. O documento continua guardado para consulta.',
+          422,
+        );
+      }
+      return ctx.runMutation(internal.histories.saveHistoryAnalysis, {
+        id: args.id,
+        hash: history.hash,
+        analysis,
+      });
+    }),
+});
+
+/** Explicit opt-in reanalysis creates another immutable extraction of the same bytes. */
+export const reanalyzeHistory = action({
+  args: { id: v.id('histories'), extractorVersion: v.number() },
+  returns: historyAnalysis,
+  handler: async (ctx, args): Promise<Infer<typeof historyAnalysis>> =>
+    withActionLease(ctx, 'actions.history.reanalyzeHistory', async () => {
+      if (args.extractorVersion !== HISTORY_EXTRACTOR_VERSION)
+        fail('Versão do extrator não suportada. Atualize a aplicação.', 409);
+      const { history } = await ctx.runQuery(internal.histories.historyContext, {
+        id: args.id,
+        reanalyzeVersion: args.extractorVersion,
+      });
+      const cached = history.analyses?.find(
+        (item) => item.pdfHash === history.hash && item.extractorVersion === args.extractorVersion,
+      );
+      if (cached) {
+        const { history: selected } = await ctx.runQuery(internal.histories.historyContext, {
+          id: args.id,
+          analysisId: cached.analysisId,
+        });
+        return selected.analysis!;
+      }
+      const bytes = await fileBytes(ctx, history);
+      let analysis: Infer<typeof historyAnalysis>;
+      try {
+        analysis = await analyzePdfHistory(bytes, history.year);
+      } catch {
+        fail(
+          'Não foi possível reanalisar o PDF. A análise anterior e seus vínculos foram preservados.',
           422,
         );
       }

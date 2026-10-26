@@ -1,5 +1,7 @@
 import type { AssessmentSettings, ActivityRequirement } from './domain-types.ts';
 import { calendarModalities, modalityLabels } from './modalities.ts';
+import { requirements2027 } from './calendar-rules/index.ts';
+import { activityReviewCriterion } from './calendar-rules/review-links.ts';
 
 export const assessmentCount = (state: AssessmentSettings, modality: string) =>
   Number(state.assessmentStagesByModality?.[modality]);
@@ -9,7 +11,7 @@ export const scopedRequirement = (_state: AssessmentSettings, id: string, modali
 
 // Undated PROENS operational checklist. Campus histories are separate references.
 // Historical dates are deliberately excluded. Applicability is reviewed separately.
-export function activityChecklist(state: AssessmentSettings): ActivityRequirement[] {
+export function legacyActivityChecklist(state: AssessmentSettings): ActivityRequirement[] {
   const rows: ActivityRequirement[] = [];
   const optionalSchoolMeetings = calendarModalities(state).every((m) =>
     ['graduacao', 'subsequente', 'posgraduacao'].includes(m),
@@ -125,5 +127,21 @@ export function activityChecklist(state: AssessmentSettings): ActivityRequiremen
     'Semana Cultural Interescolar — outubro, aberta a estudantes, famílias e comunidade',
     { month: 10 },
   );
-  return rows;
+  return rows.map((row) => ({
+    ...row,
+    reviewCriterionId: activityReviewCriterion(state.year, row.id),
+  }));
+}
+
+export function activityChecklist(state: AssessmentSettings): ActivityRequirement[] {
+  return state.year === 2027
+    ? requirements2027(state)
+    : state.year === 2026
+      ? legacyActivityChecklist(state)
+      : legacyActivityChecklist(state).map((row) => ({
+          ...row,
+          required: false,
+          applicability: 'unconfigured',
+          reason: 'Ano ou escopo sem política normativa configurada.',
+        }));
 }

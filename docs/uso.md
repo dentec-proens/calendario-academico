@@ -38,7 +38,11 @@ As metas automáticas de 200 dias anuais e 100 por período semestral estão con
 
 Informe até três períodos de férias docentes, com datas e fonte. A prévia mostra o total de dias corridos; não há imposição de janeiro ou julho no formulário. Férias excluem os dias correspondentes da contagem.
 
-Em calendários semestrais, a configuração de ingresso de novos estudantes no segundo semestre fica em **Períodos letivos**.
+Em **Períodos letivos**, configure a organização anual ou semestral de cada oferta e identifique o ciclo de cada período. Um calendário pode reunir integrado anual e graduação semestral com datas coincidentes entre ofertas. Dentro da mesma oferta, os períodos não podem se sobrepor. Cursos da mesma oferta com organizações distintas precisam de calendários separados.
+
+O ingresso é informado por oferta e período: não informado, há ingresso ou não há ingresso. Uma exigência local de matrícula de ingressantes precisa de fonte. Essa configuração não dispensa matrícula/ajuste de veteranos de subsequente e graduação. Para o integrado, essas atividades continuam disponíveis, sem obrigatoriedade pelo art. 11, V. Uma configuração legada ambígua aparece como **Organização a conferir**; datas e IDs são preservados, mas a contagem depende da classificação.
+
+Confirme também o escopo da norma com fonte: cursos técnicos e graduação presenciais abrangidos ou calendário sujeito a norma própria. A falta dessa identificação permite continuar preenchendo, mas impede afirmar conformidade automática. EaD, qualificação e pós-graduação exigem calendário e norma próprios.
 
 ## Etapas de avaliação
 
@@ -58,6 +62,8 @@ Se o acesso expirar, o editor permanece bloqueado nesta aba. **Baixar cópia apl
 
 **Baixar cópia** gera JSON do estado aplicado, não dos campos ainda em edição. **Importar cópia** abre um JSON compatível e substitui o rascunho da sessão após confirmação. A importação também precisa ter seu salvamento confirmado.
 
+As novas cópias usam o formato v3. Uma cópia v2 é convertida explicitamente, conservando eventos, datas e procedência. Ingresso e publicação não são deduzidos pelo nome do evento. Um cliente antigo não pode sobrescrever conteúdo já salvo como v3; atualize a aplicação e conserve o preenchimento antes de retomar.
+
 ## Base institucional e documentos
 
 Em **Documentos e normas** e **Feriados e eventos institucionais**, CAMPUS consulta a base disponibilizada e ADMIN também acessa as ações de manutenção. Em Documentos e normas, ambos podem filtrar por ano; ADMIN pode filtrar por situação (rascunho, vigente ou arquivado). Esses filtros são aplicados antes da paginação. As mesmas telas atendem os dois perfis. Eventos indicam datas, categoria, efeito, ofertas e fonte. Mudanças na revisão institucional exigem conferir o impacto e confirmar a atualização no calendário; uma análise humana anterior pode ficar desatualizada.
@@ -72,17 +78,35 @@ Enviar um documento não atualiza automaticamente datas, regras de cálculo ou c
 
 Na etapa **Atividades e datas do campus**, use a referência opcional **Usar calendário anterior** para consultar PDFs já enviados ou enviar um arquivo e identificar datas e atividades locais. Essa consulta auxilia a preparação de feriados municipais e atividades do campus; confira sempre as datas e as fontes aplicáveis ao ano atual. O cadastro manual continua disponível na mesma etapa. O atalho **Usar calendário anterior**, na listagem, abre diretamente essa referência. São aceitos PDFs de até 8 MB e 30 páginas, com texto selecionável. A extração apresenta até 150 sugestões, com origem e página, e pode omitir ou juntar trechos. Não há OCR de imagens nem uso de um modelo de IA para validar o conteúdo.
 
-Use **Revisar e incluir** para conferir descrição, datas do ano atual, fonte vigente, ofertas e efeito na contagem. A inclusão depende de confirmação; o documento anterior não comprova vigência atual. Sugestões já atendidas por eventos podem ser consultadas pelo filtro correspondente. Falha na leitura não remove o arquivo enviado.
+Escolha **Referenciar esta ocorrência** para preservar as datas originais comprovadas, ou **Preparar nova ocorrência** para reaproveitar a descrição com datas por preencher. Nenhuma dessas ações muda automaticamente o ano de um fato. Confira descrição, ofertas, fonte e finalidade antes de aplicar. Anos conflitantes ou insuficientes exigem datas completas; não há preenchimento de datas substitutas.
+
+As análises são versionadas e preservadas. Reanalisar um original disponível produz uma nova análise sem substituir a evidência usada por registros anteriores. Sem os bytes originais, permanece a orientação de restauração. Um registro com cobertura parcial não comprova as demais ofertas.
+
+## Atividades, editais e referências
+
+A etapa 6 reúne **Ingresso e vida acadêmica**, **Registros e prazos docentes**, **Atividades e semanas do campus** e **Outros eventos e impedimentos**. Busca, oferta, assunto e situação ficam na URL. Os cartões mostram fundamento, aplicabilidade e cobertura por oferta/período; um evento só atende as ofertas explicitamente abrangidas. Havendo várias ocorrências, escolha o registro a editar.
+
+Para um edital, informe tipo, situação de publicação e destino do ingresso separadamente das datas. **Publicação prevista** pode completar o planejamento após conferência; não comprova execução. **Publicação realizada** conserva data real e fonte. A passagem do tempo não transforma previsão em realização. Referências anteriores são informativas, sem efeito em dias letivos, horas, férias ou etapas atuais.
+
+Exemplos: um edital publicado em dezembro de 2026 para ingresso em 2027 conserva a data de 2026. Uma publicação em dezembro de 2027 para ingresso em 2028 conserva dezembro; no processo seletivo regular, o prazo de referência é 15/06/2027, e o ajuste exige fonte da Proens e conferência. O prazo institucional não é prova de publicação realizada. Intervalos informativos que atravessam a virada conservam as duas datas.
+
+Um feriado municipal ou recesso decorrente pode identificar expressamente a causa e sua fonte. Para prazos do calendário de referência abrangidos pelo art. 3º, § 2º, a política consulta o primeiro dia letivo subsequente por oferta, sem alterar a data cadastrada do fato. Uma exclusão genérica não comprova essa causa; a extensão não é aplicada automaticamente aos prazos do art. 11.
+
+O painel mantém um formulário ativo. Fechar conserva o rascunho em memória; cancelar e descartar limpa o preenchimento ativo. Aplicar altera o calendário local, e somente a confirmação do servidor comprova a gravação. Filtros de consulta não alteram as ofertas preenchidas.
 
 ## Revisão e saídas
 
 Em **Revisões e pareceres**, ADMIN abre a análise, confere as indicações e confirma os critérios. A busca por nome/categoria apenas localiza candidatos; não comprova atendimento ou ausência documental. As situações humanas são Pendente, Atendido, Não atendido e Não aplicável. A conclusão é um texto proposto que o parecerista pode editar.
 
-O roteiro de revisão usa o Parecer SEI 3959640, de 2026; a interface alerta para outro ano. A apresentação da norma de 2027 usa a Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026, mas essa identificação não converte os critérios de 2026 em regras completas para outros anos. A norma aplicável e as evidências devem ser conferidas pelo responsável.
+O roteiro de 2027 usa a Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026, SEI 4422750, com política compartilhada entre editor, revisão, backend e documentos. O roteiro de 2026 continua separado. Pós-graduação depende de norma própria; o modelo ainda não identifica EaD e qualificação separadamente. Não se presume conformidade nesses escopos. A primeira/segunda semana das atividades tem mês validado e conferência humana, pois a resolução não define seu intervalo operacional.
+
+Uma revisão que não avaliou o conjunto vigente de regras de 2027 fica desatualizada mesmo sem alteração das datas ou do número da base. Revisões e snapshots anteriores permanecem preservados.
 
 **Salvar análise** é explícito e registra autoria e versões. Alterações posteriores no calendário ou na base tornam a revisão desatualizada e exigem reavaliação. A exportação do parecer requer revisão salva e atual e oferece prévia, HTML, texto e cópia para a área de transferência. Confira a formatação ao colar no SEI; assinatura e tramitação ocorrem fora da aplicação.
 
 O PDF de teste é identificado como tal. Um calendário definitivo com pendências pode gerar uma **cópia da proposta para análise**, sem aprovação. A saída definitiva depende de contagem válida, ausência de conflitos, base atual, roteiro e fontes completos e revisão humana atualizada com os critérios atendidos ou não aplicáveis confirmados. Os impedimentos e alertas vêm das verificações implementadas; não constituem aprovação institucional.
+
+O PDF conserva a grade do ano do calendário. **Atividades e referências de outros anos** apresenta datas integrais, fontes e finalidade, separando previsões de fatos anteriores. Um intervalo que cruza o ano também mostra suas datas integrais na parte correspondente da grade. A finalidade de ingresso futuro aparece junto da publicação, sem mudar sua data.
 
 ## Lixeira e histórico
 

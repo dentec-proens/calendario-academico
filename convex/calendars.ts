@@ -4,6 +4,8 @@ import { normalizeCalendar } from '../src/calendar-normalize';
 import { recalculateCalendar } from '../src/calendar-edits/commands';
 import { equalValues } from '../src/equal';
 import { historyCandidateKey } from '../src/history-progress';
+import { rulesetVersion } from '../src/calendar-rules/index';
+import { originalAnalysis } from './histories';
 import { inheritedEvents } from '../src/institution';
 import { query, mutation, internalQuery } from './_generated/server';
 import { requireNativeUser } from './access/identity';
@@ -153,7 +155,7 @@ export const createCalendar = mutation({
     )
       fail('Selecione as formas de oferta/níveis do calendário.');
     const state = normalizeCalendar({
-      schemaVersion: 2,
+      schemaVersion: 3,
       ignoredHistory: [],
       assessmentStagesByModality: {},
       year: body.year,
@@ -161,6 +163,12 @@ export const createCalendar = mutation({
       offer: body.modalities[0],
       modalities: body.modalities,
       regime: body.regime,
+      organizationByModality: Object.fromEntries(
+        body.modalities.map((modality) => [
+          modality,
+          body.regime === 'anual' || body.regime === 'semestral' ? body.regime : 'a-classificar',
+        ]),
+      ),
       weekdays: [],
       weekConfirmed: false,
       weekEvidence: '',
@@ -206,6 +214,19 @@ export const saveCalendar = mutation({
     calendarEditor(user);
     const { row, content, record, base, docs, compatibility } = await baseRecord(ctx, user, id);
     if (row.version !== body.version) fail('Há versão mais recente. Reabra o calendário.', 409);
+    if (content.state.schemaVersion === 3 && body.state.schemaVersion !== 3)
+      fail(
+        'Este calendário usa o formato v3. Atualize a aplicação; o preenchimento não foi gravado nem descartado.',
+        409,
+      );
+    if (
+      body.state.schemaVersion === 3 &&
+      body.state.rulesetVersion !== rulesetVersion({ year: row.year, modalities: row.modalities })
+    )
+      fail(
+        'O conjunto de regras mudou. Atualize a aplicação e confira o preenchimento antes de salvar.',
+        409,
+      );
     const reconciliation = reconcileBase(compatibility, body.baseAcceptance);
     if (
       body.state.year !== row.year ||
@@ -219,16 +240,32 @@ export const saveCalendar = mutation({
     for (const event of state.events) {
       const source = event.historicalSource;
       if (!source) continue;
+      const originalSource = record.state.events.find(
+        (item) => item.id === event.id,
+      )?.historicalSource;
+      const preservedLegacySource =
+        originalSource &&
+        !originalSource.analysisId &&
+        originalSource.historyId === source.historyId &&
+        originalSource.page === source.page &&
+        originalSource.candidateKey === source.candidateKey;
+      if (!source.analysisId && !preservedLegacySource)
+        fail(
+          'Referência histórica inválida: selecione a análise imutável que originou o novo registro.',
+        );
       const history = await ctx.db.get(source.historyId);
       const analysis =
         history &&
-        (await ctx.db
-          .query('historyAnalyses')
-          .withIndex('by_historyId', (q) => q.eq('historyId', history._id))
-          .unique());
+        (source.analysisId
+          ? await ctx.db.get(source.analysisId)
+          : await originalAnalysis(ctx, history));
       if (
         !history ||
         history.calendarId !== id ||
+        history.campusId !== row.campusId ||
+        !history.modalities.length ||
+        history.modalities.some((modality) => !row.modalities.includes(modality)) ||
+        analysis?.historyId !== history._id ||
         !Number.isInteger(source.page) ||
         source.page < 1 ||
         !analysis?.analysis.pages.some((p) => p.page === source.page) ||

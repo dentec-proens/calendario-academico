@@ -1,9 +1,16 @@
 import { referenceIsCurrent, reviewIsCurrent } from './calendar-base/index.ts';
 import type { CalendarActivity, ActivityState, CalendarReview } from './domain-types.ts';
 import { calendarModalities, modalityLabels, appliesTo } from './modalities.ts';
-import { activityChecklist, assessmentCount, scopedRequirement } from './obligations.ts';
+import { assessmentCount, scopedRequirement } from './obligations.ts';
 import { evaluateCalendar as calendarResult } from './evaluation.ts';
-import { reviewCriteria } from './review.ts';
+import { reviewCriteriaFor } from './review.ts';
+import {
+  activityCoverage,
+  organizationForModality,
+  periodsForModality,
+  rulesetVersion,
+  calendarWindow,
+} from './calendar-rules/index.ts';
 
 const plain = (value: string) =>
   String(value)
@@ -28,6 +35,15 @@ export function releaseReadiness(
 ) {
   const issues = [],
     warnings = [];
+  if (
+    record.state.year === 2027 &&
+    (!record.state.scopeConfirmation ||
+      record.state.scopeConfirmation.status !== 'covered' ||
+      !record.state.scopeConfirmation.source.trim())
+  )
+    issues.push(
+      'Confirme o escopo da Resolução 292: EaD, qualificação e pós-graduação exigem calendário e norma próprios; a oferta não identifica sozinha essa aplicabilidade.',
+    );
   const events = [...record.institutionalSnapshot, ...record.state.events];
   if (
     calendarModalities(record.state).some(
@@ -35,54 +51,16 @@ export function releaseReadiness(
     )
   )
     issues.push('Informe a quantidade de etapas de avaliação (2, 3 ou 4).');
-  for (const modality of calendarModalities(record.state))
-    for (const activity of activityChecklist(record.state).filter(
-      (a) => a.required !== false && (!a.modality || a.modality === modality),
-    ))
-      if (
-        !events.some(
-          (e) => appliesTo(e, modality) && e.requirementId === activity.id && e.evidence?.trim(),
-        )
-      )
-        issues.push(
-          `${modalityLabels[modality]} — ${activity.name}: vincule um evento com datas e fonte no roteiro de atividades.`,
-        );
+  const coverage = activityCoverage(record.state, events);
+  for (const row of coverage) {
+    const prefix = `${modalityLabels[row.modality]} — ${row.requirement.name}`;
+    if (row.applicability === 'required' && row.coverage === 'pending')
+      issues.push(`${prefix}: vincule um evento com datas e fonte no roteiro de atividades.`);
+    if (row.applicability === 'required' || row.events.length)
+      for (const issue of row.issues) issues.push(`${prefix}: ${issue}`);
+    for (const warning of row.warnings) warnings.push(`${prefix}: ${warning}`);
+  }
   for (const modality of calendarModalities(record.state)) {
-    for (const activity of activityChecklist(record.state).filter(
-      (a) => !a.modality || a.modality === modality,
-    )) {
-      const linked = events.filter(
-        (e) => e.requirementId === activity.id && appliesTo(e, modality),
-      );
-      const prefix = `${modalityLabels[modality]} — ${activity.name}`;
-      if (
-        activity.minHours &&
-        linked.reduce(
-          (sum, e) =>
-            sum + (Number.isFinite(e.hours) && e.hours !== undefined && e.hours > 0 ? e.hours : 0),
-          0,
-        ) < activity.minHours
-      )
-        issues.push(`${prefix}: registre pelo menos ${activity.minHours} horas.`);
-      if (activity.deadline && linked.some((e) => e.end > activity.deadline!))
-        issues.push(`${prefix}: data posterior ao prazo de ${activity.deadline}.`);
-      if (
-        activity.month &&
-        linked.some(
-          (e) =>
-            Number(e.start.slice(5, 7)) !== activity.month ||
-            Number(e.end.slice(5, 7)) !== activity.month,
-        )
-      )
-        issues.push(`${prefix}: confira o mês exigido.`);
-      if (activity.id.startsWith('admission-notice-')) {
-        const term = Number(activity.id.split('-').at(-1));
-        const periods = [...record.state.periods].sort((a, b) => a.start.localeCompare(b.start));
-        const start = periods[term === 0 ? 0 : term - 1]?.start;
-        if (linked.length && (!start || linked.some((e) => e.end >= start)))
-          issues.push(`${prefix}: publique antes do início do período letivo.`);
-      }
-    }
     const eventFor = (id: string) =>
       events.find(
         (e) =>
@@ -100,10 +78,12 @@ export function releaseReadiness(
         warnings.push(
           `${modalityLabels[modality]} — ${n}ª etapa: o prazo de lançamento de resultados antecede o término da etapa. Confira a organização definida pelo campus.`,
         );
-      const councilRequired =
-        activityChecklist(record.state).find(
-          (a) => a.id === scopedRequirement(record.state, 'council-' + n, modality),
-        )?.required !== false;
+      const councilRequired = coverage.some(
+        (row) =>
+          row.requirement.id === scopedRequirement(record.state, 'council-' + n, modality) &&
+          row.modality === modality &&
+          row.applicability === 'required',
+      );
       if (councilRequired && results && council && council.start < results.end)
         warnings.push(
           `${modalityLabels[modality]} — ${n}ª etapa: o conselho antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.`,
@@ -116,6 +96,20 @@ export function releaseReadiness(
     }
   }
 
+  const window = calendarWindow(record.state);
+  if (window && record.state.year === 2027)
+    for (const modality of calendarModalities(record.state).filter((m) => m !== 'posgraduacao')) {
+      const periods = periodsForModality(record.state, modality);
+      const start = periods.map((p) => p.start).sort()[0],
+        end = periods
+          .map((p) => p.end)
+          .sort()
+          .at(-1);
+      if (start && end && (start < window.start || start > window.latestStart || end > window.end))
+        warnings.push(
+          `${modalityLabels[modality]} — Datas fora da referência ${window.start} a ${window.end}, início até ${window.latestStart}. Confira a justificativa e a deliberação institucional antes de concluir a revisão.`,
+        );
+    }
   // Campus event requirements come from the same checklist displayed in the editor.
   // Do not add hidden, duplicate keyword requirements when generating the calendar.
   if (!referenceIsCurrent(record.catalogueRevision, db.catalogue.revision, db.base))
@@ -126,11 +120,22 @@ export function releaseReadiness(
       ...record.state.events,
     ]);
     if (!record.state.periods.length) issues.push('Cadastre os períodos letivos.');
-    if (record.state.regime !== 'anual' && record.state.periods.length !== 2)
-      issues.push('Cadastre os dois semestres letivos.');
+    for (const modality of calendarModalities(record.state)) {
+      const organization = organizationForModality(record.state, modality),
+        periods = periodsForModality(record.state, modality);
+      if (organization === 'a-classificar')
+        issues.push(
+          `${modalityLabels[modality]} — Organização a conferir antes de confirmar contagem e conclusão.`,
+        );
+      else if (periods.length !== (organization === 'anual' ? 1 : 2))
+        issues.push(
+          `${modalityLabels[modality]} — Cadastre ${organization === 'anual' ? 'o ciclo anual' : 'os dois semestres letivos'}.`,
+        );
+    }
     for (const [modality, detail] of Object.entries(result.byModality))
       for (const check of detail.checks) {
-        if (check.scope !== 'annual' && record.state.regime === 'anual') continue;
+        if (check.scope !== 'annual' && organizationForModality(record.state, modality) === 'anual')
+          continue;
         if (check.status !== 'MET')
           issues.push(
             `${modalityLabels[modality]} — ${check.scope === 'annual' ? 'Total anual' : record.state.periods.find((p) => p.id === check.scope)?.name}: mínimo de dias não atendido ou não configurado.`,
@@ -145,18 +150,20 @@ export function releaseReadiness(
   const current = reviewIsCurrent(review, record.version, {
     revision: db.catalogue.revision,
     identity: db.base?.identity,
+    rulesetVersion: record.state.year === 2027 ? rulesetVersion(record.state) : undefined,
   });
   if (!current)
     issues.push('A DENTEC/PROENS precisa salvar a revisão desta versão do calendário e da base.');
   if (!review?.applicableNorm?.trim())
     issues.push('Identifique a norma vigente aplicável na revisão.');
-  for (const c of reviewCriteria) {
+  for (const c of reviewCriteriaFor(record.state.year)) {
     const entry = current ? review?.entries.find((e) => e.id === c.id) : undefined;
     if (!entry?.reviewed || !['ATENDIDO', 'NAO_APLICAVEL'].includes(entry.status))
       issues.push(
         `${c.item}: ${c.title} — atendimento ou não aplicabilidade aguardando confirmação.`,
       );
     if (
+      record.state.year !== 2027 &&
       c.pattern &&
       entry?.status === 'ATENDIDO' &&
       !events.some(
@@ -169,5 +176,18 @@ export function releaseReadiness(
         `${c.item}: ${c.title} — nenhum evento com data e fonte localizado no calendário; confira o cadastro.`,
       );
   }
-  return { ready: issues.length === 0, issues, warnings, officialApproval: false };
+  return {
+    ready: issues.length === 0,
+    issues,
+    warnings,
+    officialApproval: false,
+    humanReview: {
+      current,
+      reviewedCriterionIds: current
+        ? (review?.entries
+            .filter((entry) => entry.reviewed && entry.status !== 'PENDENTE')
+            .map((entry) => entry.id) ?? [])
+        : [],
+    },
+  };
 }

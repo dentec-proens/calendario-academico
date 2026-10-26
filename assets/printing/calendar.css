@@ -322,6 +322,30 @@
 .event-grid th {
   background: #e9f2e5;
 }
+.event-grid small,
+.external-references small {
+  display: block;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+.proens-external-references {
+  margin: 20px 0;
+}
+.proens-external-references h3 {
+  background: #052053;
+  color: white;
+  padding: 5px;
+  font-size: 0.85rem;
+}
+.proens-external-references p {
+  font-size: 0.75rem;
+}
+.external-references th:first-child {
+  width: 24%;
+}
+.external-references td {
+  vertical-align: top;
+}
 @media (max-width: 650px) {
   .event-columns {
     grid-template-columns: 1fr;
@@ -331,6 +355,20 @@
   }
 }
 @media print {
+  .proens-external-references h3,
+  .proens-external-references h4 {
+    break-after: avoid;
+    font-size: 8pt;
+  }
+  .proens-external-references tr {
+    break-inside: avoid;
+  }
+  .proens-external-references thead {
+    display: table-header-group;
+  }
+  .proens-external-references p {
+    font-size: 7pt;
+  }
   .proens-summary {
     break-inside: auto;
   }

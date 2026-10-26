@@ -5,9 +5,9 @@ import { activityChecklist } from '../src/obligations.ts';
 import { releaseReadiness } from '../src/release.ts';
 import { selectableCampuses } from '../src/campus-selection.ts';
 
-test('explicit absence of second semester intake waives new-student registration only', () => {
+test('2026 legacy explicit absence of second semester intake waives new-student registration only', () => {
   const base = {
-    year: 2027,
+    year: 2026,
     offer: 'graduacao',
     modalities: ['graduacao'],
     regime: 'semestral',
@@ -56,9 +56,9 @@ test('explicit absence of second semester intake waives new-student registration
   assert(!activityChecklist({ ...state, regime: 'anual' }).some((r) => r.id === 'registration-2'));
 });
 
-test('family meetings and class councils are required only for integrated secondary education', () => {
+test('2026 legacy family meetings and class councils are required only for integrated secondary education', () => {
   const base = {
-    year: 2027,
+    year: 2026,
     offer: 'graduacao',
     modalities: ['graduacao'],
     regime: 'semestral',
@@ -111,9 +111,9 @@ test('family meetings and class councils are required only for integrated second
   }
 });
 
-test('release checks omit optional missing activities without deleting existing links', () => {
+test('2026 legacy release checks omit optional missing activities without deleting existing links', () => {
   const state = {
-    year: 2027,
+    year: 2026,
     offer: 'graduacao',
     modalities: ['graduacao'],
     regime: 'anual',
@@ -185,7 +185,7 @@ test('mandatory checklist includes annual and semester notices, stage results, h
   }
   assert.equal(
     activityChecklist({ year: 2027, regime: 'anual' }).find((r) => r.id === 'robotics')!.deadline,
-    undefined,
+    '2027-08-31',
   );
 });
 

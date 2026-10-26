@@ -3,11 +3,18 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarExport } from '../export/CalendarExportProvider.tsx';
 import { modalityLabels } from '../../../../src/modalities.ts';
 import { Download, Eye } from 'lucide-react';
+import {
+  activityCoverage,
+  organizationForModality,
+  periodsForModality,
+  rulesetVersion,
+} from '../../../../src/calendar-rules/index.ts';
+import { stageRequirement } from '../../../../src/obligations.ts';
 
 export default function IssuesSection() {
   const { state, record, dirty, evaluation } = useCalendarEditor();
   const exporting = useCalendarExport();
-  const issues: { mark: string; title: string; detail: string }[] = [];
+  const issues: { mark: string; title: string; detail: string; requirementId?: string }[] = [];
   if (!state.weekConfirmed)
     issues.push({
       mark: 'Pendente',
@@ -20,16 +27,40 @@ export default function IssuesSection() {
       title: 'Períodos letivos',
       detail: 'Cadastre pelo menos um período com início e término.',
     });
-  if (state.regime !== 'anual' && state.periods.length !== 2)
-    issues.push({
-      mark: 'Pendente',
-      title: 'Organização semestral',
-      detail: 'Cadastre exatamente dois semestres para a conferência anual.',
-    });
+  for (const modality of state.modalities) {
+    const organization = organizationForModality(state, modality);
+    const periods = periodsForModality(state, modality);
+    if (organization === 'a-classificar' || periods.length !== (organization === 'anual' ? 1 : 2))
+      issues.push({
+        mark: 'Pendente',
+        title: `Organização — ${modalityLabels[modality]}`,
+        detail:
+          organization === 'a-classificar'
+            ? 'Classifique a organização e a associação dos períodos na etapa 2.'
+            : `Cadastre ${organization === 'anual' ? 'um período anual' : 'dois semestres identificados'} para esta oferta.`,
+      });
+  }
+  for (const row of activityCoverage(state)) {
+    if (row.applicability !== 'required' && row.applicability !== 'unconfigured') continue;
+    if (row.coverage !== 'complete' || row.warnings.length)
+      issues.push({
+        mark:
+          row.applicability === 'unconfigured'
+            ? 'Escopo a conferir'
+            : row.coverage === 'complete'
+              ? 'Conferir'
+              : 'Pendente',
+        title: `${modalityLabels[row.modality]} — ${row.requirement.name}`,
+        detail:
+          [...row.issues, ...row.warnings].join(' ') ||
+          'Planejamento pendente de registro, datas e fonte.',
+        requirementId: row.requirement.id,
+      });
+  }
   if (evaluation) {
     for (const [modality, detail] of Object.entries(evaluation.byModality))
       for (const check of detail.checks)
-        if (check.scope === 'annual' || state.regime !== 'anual')
+        if (check.scope === 'annual' || organizationForModality(state, modality) !== 'anual')
           issues.push({
             mark:
               check.status === 'MET'
@@ -78,9 +109,16 @@ export default function IssuesSection() {
           <span>Dias letivos calculados</span>
           <strong id="total">{evaluation?.total ?? '—'}</strong>
           <small id="goal">
-            {state.year === 2027
-              ? 'Referência: mínimo anual de 200 dias.'
-              : 'Sem meta normativa cadastrada para este ano.'}
+            {evaluation
+              ? Object.entries(evaluation.byModality)
+                  .map(([modality, detail]) => {
+                    const target = detail.checks.find(
+                      (check) => check.scope === 'annual',
+                    )?.expected;
+                    return `${modalityLabels[modality]}: ${target == null ? 'sem mínimo normativo confirmado para este escopo' : `mínimo anual de ${target} dias`}`;
+                  })
+                  .join(' · ')
+              : 'A contagem depende da organização e dos períodos por oferta.'}
           </small>
         </article>
         <article>
@@ -96,6 +134,11 @@ export default function IssuesSection() {
       <div className="panel">
         <h3>Conferência do calendário</h3>
         <p>A saída definitiva depende das verificações e da revisão humana atualizada.</p>
+        <p>
+          Conjunto de regras: {rulesetVersion(state)}. Planejamento completo e execução comprovada
+          são conferências distintas. A passagem do tempo não transforma publicação prevista em
+          realizada.
+        </p>
         <ul id="issue-list" className="records">
           {issues.map((issue, index) => (
             <li key={`${issue.title}:${index}`} className="issue-item">
@@ -103,6 +146,20 @@ export default function IssuesSection() {
               <div>
                 <strong>{issue.title}</strong>
                 <small>{issue.detail}</small>
+                {issue.requirementId && (
+                  <Link
+                    to={
+                      stageRequirement(issue.requirementId)
+                        ? '/calendarios/$calendarId/avaliacoes'
+                        : '/calendarios/$calendarId/eventos'
+                    }
+                    params={{ calendarId: record.id }}
+                    search={(previous) => ({ ...previous, atividade: issue.requirementId })}
+                    hashScrollIntoView={false}
+                  >
+                    Conferir esta atividade
+                  </Link>
+                )}
               </div>
             </li>
           ))}

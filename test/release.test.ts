@@ -4,7 +4,9 @@ import { activityChecklist } from '../src/obligations.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { releaseReadiness } from '../src/release.ts';
-import { reviewCriteria } from '../src/review.ts';
+import { reviewCriteriaFor } from '../src/review.ts';
+import { rulesetVersion } from '../src/calendar-rules/index.ts';
+const reviewCriteria = reviewCriteriaFor(2027);
 import { inheritedEvents } from '../src/institution.ts';
 import { proensLayout } from '../src/printing/calendar-layout.ts';
 
@@ -15,6 +17,12 @@ test('definitive release requires every reviewed criterion, current versions and
     catalogueRevision: 1,
     institutionalSnapshot: [],
     state: {
+      schemaVersion: 3,
+      scopeConfirmation: {
+        status: 'covered' as const,
+        source: 'Escopo presencial sintético confirmado',
+      },
+      organizationByModality: { integrado: 'anual' as const },
       assessmentStagesByModality: { integrado: 4 },
       year: 2027,
       offer: 'integrado',
@@ -23,7 +31,19 @@ test('definitive release requires every reviewed criterion, current versions and
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
       weekEvidence: 'Synthetic fixture',
-      periods: [{ id: 'year', name: 'Ano', start: '2027-01-04', end: '2027-12-31' }],
+      periods: [
+        {
+          id: 'year',
+          name: 'Ano',
+          start: '2027-02-01',
+          end: '2027-12-17',
+          association: {
+            status: 'defined' as const,
+            modalities: ['integrado'],
+            term: 'annual' as const,
+          },
+        },
+      ],
       events: [] as CalendarActivity[],
     },
   };
@@ -42,6 +62,7 @@ test('definitive release requires every reviewed criterion, current versions and
     ...activityChecklist(record.state).map((r) => ({
       id: r.id,
       requirementId: r.id,
+      modalities: r.modality ? [r.modality] : ['integrado'],
       name: r.name,
       start: '2027-02-01',
       end: '2027-02-01',
@@ -61,6 +82,7 @@ test('definitive release requires every reviewed criterion, current versions and
   };
   assert.equal(releaseReadiness(record, db).ready, false);
   const review = {
+    rulesetVersion: rulesetVersion(record.state),
     calendarId: 'c',
     calendarVersion: 1,
     catalogueRevision: 1,
@@ -78,6 +100,15 @@ test('definitive release requires every reviewed criterion, current versions and
     const event = record.state.events.find((e) => e.requirementId === r.id)!;
     if (r.minHours) event!.hours = r.minHours;
     if (r.month) event!.start = event!.end = `2027-${String(r.month).padStart(2, '0')}-10`;
+    if (r.admissionType) {
+      event.publicationStatus = 'planned';
+      event.admission = {
+        type: r.admissionType,
+        year: r.admissionType === 'regular' ? 2028 : 2027,
+        term: r.term ?? 'annual',
+        ...(r.admissionType === 'transfer' ? { periodId: 'year' } : {}),
+      };
+    }
     if (r.id.startsWith('admission-notice-')) event!.start = event!.end = '2027-01-01';
   }
   assert.deepEqual(releaseReadiness(record, db).issues, []);
@@ -94,8 +125,11 @@ test('definitive release requires every reviewed criterion, current versions and
     flexible = releaseReadiness(record, db);
   assert.equal(flexible.ready, true);
   assert.deepEqual(flexible.issues, []);
-  assert.equal(flexible.warnings.length, 3);
-  assert(flexible.warnings.every((w) => w.includes('organização definida pelo campus')));
+  assert.equal(
+    flexible.warnings.filter((w) => w.includes('organização definida pelo campus')).length,
+    3,
+  );
+  assert(flexible.warnings.some((w) => w.includes('definição institucional')));
   assert.deepEqual(record.state.events, before);
   record.state.events = record.state.events.filter((e) => e !== results);
   assert(

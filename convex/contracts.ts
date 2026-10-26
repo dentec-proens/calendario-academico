@@ -14,6 +14,12 @@ import {
 } from './validators';
 
 export const readiness = v.object({
+  humanReview: v.optional(
+    v.object({
+      current: v.boolean(),
+      reviewedCriterionIds: v.array(v.string()),
+    }),
+  ),
   ready: v.boolean(),
   issues: v.array(v.string()),
   warnings: v.array(v.string()),
@@ -63,6 +69,7 @@ export const historyDto = v.object({
   notes: v.string(),
   createdAt: v.string(),
   analyzed: v.boolean(),
+  legacyAnalysisId: v.optional(v.id('historyAnalyses')),
 });
 export const versionDto = v.object({
   version: v.number(),
@@ -116,6 +123,7 @@ export const saveInput = v.object({
   }),
 });
 export const baseSnapshotDto = v.object({
+  rulesetVersion: v.optional(v.string()),
   revision: v.number(),
   events: v.array(institutionalEventSnapshot),
   documents: v.array(documentMetadata),
@@ -129,6 +137,7 @@ export const saveResult = v.object({
   readiness,
 });
 export const reviewInput = v.object({
+  rulesetVersion: v.optional(v.string()),
   baseIdentity: v.optional(v.string()),
   revision: v.number(),
   calendarVersion: v.number(),
@@ -162,6 +171,7 @@ const criterion = v.object({
   initial: v.object({ ...reviewEntry.fields, finding: v.string() }),
 });
 export const reviewSupportDto = v.object({
+  rulesetVersion: v.optional(v.string()),
   source: v.object({ id: v.string(), year: v.number(), title: v.string(), norm: v.string() }),
   sameYear: v.boolean(),
   officialApproval: v.literal(false),
@@ -201,5 +211,20 @@ export const reviewSupportDto = v.object({
 });
 export const exportDto = v.object({ html: v.string(), body: v.string(), text: v.string() });
 export const historyContextDto = v.object({
-  history: v.object({ ...historyDto.fields, analysis: v.optional(historyAnalysis) }),
+  history: v.object({
+    ...historyDto.fields,
+    analysis: v.optional(historyAnalysis),
+    latestAnalysisId: v.optional(v.id('historyAnalyses')),
+    originalAnalysisId: v.optional(v.id('historyAnalyses')),
+    analyses: v.optional(
+      v.array(
+        v.object({
+          analysisId: v.id('historyAnalyses'),
+          extractorVersion: v.number(),
+          pdfHash: v.string(),
+          analyzedAt: v.string(),
+        }),
+      ),
+    ),
+  }),
 });

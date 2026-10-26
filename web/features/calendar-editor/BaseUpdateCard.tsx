@@ -45,15 +45,20 @@ export default function BaseUpdateCard() {
   const latest = remote ?? record;
   if (readOnly || baseUpdate.compatible) return null;
   const { events, documents } = baseUpdate;
-  const hasEvents = baseUpdate.kind === 'events';
+  const hasEvents = events.added.length + events.changed.length + events.removed.length > 0;
+  const hasRules = baseUpdate.kind === 'rules';
   const hasDocuments =
     documents.added.length + documents.changed.length + documents.removed.length > 0;
-  const title = hasEvents
-    ? 'Há mudanças que afetam este calendário'
-    : 'Documentos de referência atualizados';
-  const actionLabel = hasEvents
-    ? 'Incorporar mudanças ao calendário'
-    : 'Atualizar referências do calendário';
+  const title = hasRules
+    ? 'Regras de 2027 atualizadas: nova revisão necessária'
+    : hasEvents
+      ? 'Há mudanças que afetam este calendário'
+      : 'Documentos de referência atualizados';
+  const actionLabel = hasRules
+    ? 'Adotar regras e registrar nova versão'
+    : hasEvents
+      ? 'Incorporar mudanças ao calendário'
+      : 'Atualizar referências do calendário';
   const newerCalendar = latest.version !== record.version;
   const blocked = !connected || unapplied || newerCalendar || status === 'saving';
   async function incorporate() {
@@ -61,9 +66,11 @@ export default function BaseUpdateCard() {
     try {
       await session.confirmBase(baseUpdate.identity);
       notify(
-        hasEvents
-          ? 'Mudanças da base institucional incorporadas ao calendário.'
-          : 'Referências documentais atualizadas no calendário.',
+        hasRules
+          ? 'Regras vigentes adotadas em nova versão. Confira as pendências e registre nova revisão.'
+          : hasEvents
+            ? 'Mudanças da base institucional incorporadas ao calendário.'
+            : 'Referências documentais atualizadas no calendário.',
       );
     } catch (cause) {
       notify(
@@ -80,9 +87,11 @@ export default function BaseUpdateCard() {
         <span>
           <strong>{title}</strong>
           <span>
-            {hasEvents
-              ? 'Confira as mudanças nos eventos institucionais antes de incorporá-las.'
-              : 'Confira os documentos atualizados. As datas do calendário permanecem iguais.'}
+            {hasRules
+              ? 'A revisão anterior não avaliou este conjunto de regras. Confira a aplicabilidade por oferta e preserve as datas registradas.'
+              : hasEvents
+                ? 'Confira as mudanças nos eventos institucionais antes de incorporá-las.'
+                : 'Confira os documentos atualizados. As datas do calendário permanecem iguais.'}
           </span>
           <span className="base-update-card__toggle base-update-card__expand">Ver mudanças</span>
           <span className="base-update-card__toggle base-update-card__collapse">
@@ -91,6 +100,13 @@ export default function BaseUpdateCard() {
         </span>
       </summary>
       <div className="base-update-card__content">
+        {hasRules && (
+          <p>
+            A mudança de política invalida a revisão anterior, mesmo quando o catálogo não mudou. A
+            adoção registra nova versão e mantém as evidências existentes; ela não representa
+            aprovação institucional.
+          </p>
+        )}
         {hasEvents && (
           <>
             <h3>Eventos institucionais</h3>
@@ -155,7 +171,9 @@ export default function BaseUpdateCard() {
         <p>
           {hasEvents
             ? 'Incorporar as mudanças recalcula o calendário e salva uma nova versão, incluindo as alterações locais já aplicadas.'
-            : 'Atualizar as referências salva uma nova versão com os documentos atuais, sem recalcular as datas.'}
+            : hasRules
+              ? 'Adotar as regras salva uma nova versão com a política vigente, sem recalcular as datas registradas.'
+              : 'Atualizar as referências salva uma nova versão com os documentos atuais, sem recalcular as datas.'}
         </p>
         <p>Você pode recolher este aviso e atualizar depois.</p>
         {unapplied && (

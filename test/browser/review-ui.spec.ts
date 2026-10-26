@@ -1,6 +1,26 @@
 import { test, expect } from './test.ts';
 import type {} from '../fixtures/review-ui-client.ts';
 
+test('2027 rules invalidate legacy confirmations while preserving their observations as context', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('review'));
+  await expect(page.locator('#open-review')).toBeVisible();
+  await page.evaluate(() => window.reviewUiTest.publishLegacy2027Review());
+  await page.locator('#open-review').click();
+  const ethics = page.locator('#criterion-title-XXV').locator('xpath=ancestor::li');
+  await expect(ethics).toContainText('Ética e da Cidadania');
+  await expect(ethics.locator('[data-origin]')).toHaveText('Pendente de conferência');
+  await expect(ethics.locator('[role="radio"][aria-checked="true"]')).toHaveCount(0);
+  await ethics.locator('.review-item__notes summary').click();
+  await expect(ethics.locator('textarea')).toHaveValue(
+    /Contexto da revisão anterior.*Semana cultural conforme a regra anterior/,
+  );
+  await expect(page.locator('#review-progress')).toContainText(/^0 de/);
+  expect(await page.evaluate(() => window.reviewUiTest.calls.saves)).toBe(0);
+});
+
 test('direct review distinguishes automatic indications, confirmation and saved decisions on keyboard and mobile', async ({
   page,
   fixtureServer,

@@ -72,7 +72,9 @@ test('period form calculates a teaching-day target, edits the same period and re
   await page.locator('#period-start').fill('2027-02-10');
   await page.locator('#period-end').fill('2027-02-15');
   await page.locator('#period-submit').click();
-  await expect(page.locator('#period-form [role="alert"]')).toContainText('se sobrepõe a outro');
+  await expect(page.locator('#period-form [role="alert"]')).toContainText(
+    'Já existe um período para este ciclo da oferta',
+  );
   expect(await savedState(page)).toEqual(before);
 });
 
@@ -116,7 +118,7 @@ test('assessment settings require apply, generate stages and restore automatic d
     ['2027-03-15', '2027-03-19'],
     ['2027-03-22', '2027-03-26'],
   ]);
-  await page.locator('[data-prepare-activity="stage-1:integrado"]').click();
+  await page.locator('[data-activity-row="stage-1:integrado"] [data-edit-activity-event]').click();
   await page.locator('#event-end').fill('2027-03-04');
   await page.locator('#event-confirmed').check();
   await page.locator('#event-form button[type="submit"]').click();
@@ -417,6 +419,11 @@ test('the Saturday panel shows the teaching-day count and previews the selection
     'A contagem aparece depois de confirmar a semana letiva e cadastrar os períodos.',
   );
   await addPeriod(page, '2027-03-01', '2027-04-30');
+  await page.locator('#calendar-scope').selectOption('covered');
+  await page
+    .locator('#calendar-scope-source')
+    .fill('PPC sintético: técnico presencial abrangido pela norma de 2027');
+  await page.locator('#organization-form button[type="submit"]').click();
   await selectEditorSection(page, 'issues');
   const total = Number(await page.locator('#total').textContent());
   expect(total).toBeGreaterThan(0);
@@ -577,6 +584,7 @@ test('event metadata commits category and activity together without changing eve
   const original = await page.evaluate(() =>
     window.editorTest.record.state.events.find((event) => event.id === 'local-event'),
   );
+  await page.locator('[data-event-metadata="local-event"] > summary').click();
   const category = page.locator('[data-category-event="local-event"]');
   await category.selectOption('feriado');
   await page.locator('[data-link-activity="local-event"]').selectOption('family-meeting');

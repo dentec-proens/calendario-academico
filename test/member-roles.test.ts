@@ -2,7 +2,7 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api, internal } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
-import { reviewCriteria } from '../src/review.ts';
+import { reviewCriteriaFor } from '../src/review.ts';
 import { portalPermissions } from '../web/portal/permissions.ts';
 
 async function fixture() {
@@ -38,11 +38,13 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
   assert.equal((await reviewer.query(api.calendars.calendar, { id: record.id })).id, record.id);
   const support = await reviewer.query(api.reviews.review, { id: record.id });
   const body = {
+    rulesetVersion: support.rulesetVersion,
+    baseIdentity: support.baseIdentity,
     revision: 0,
     calendarVersion: record.version,
     catalogueRevision: support.catalogueRevision,
     conclusion: support.initialConclusion,
-    entries: reviewCriteria.map((c) => ({
+    entries: reviewCriteriaFor(2027).map((c) => ({
       id: c.id,
       status: 'PENDENTE' as const,
       notes: '',

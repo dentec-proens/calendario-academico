@@ -1,6 +1,11 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { reviewSupport, reviewCriteria } from '../src/review.ts';
+import {
+  reviewSupport,
+  reviewCriteria,
+  reviewCriteriaFor,
+  reviewSourceFor,
+} from '../src/review.ts';
 import { reviewDocument } from '../src/review-export.ts';
 
 test('school vacation suggestions exclude teacher vacations and leave notes blank', () => {
@@ -40,7 +45,7 @@ test('review extracts 29 active criteria, flags other years and treats name matc
     name: 'Teste',
     version: 1,
     state: {
-      year: 2027,
+      year: 2028,
       campus: 'Foz',
       offer: 'graduacao',
       modalities: ['graduacao'],
@@ -162,4 +167,58 @@ test('review displays separate registered totals and provisional counts without 
   record.state.weekdays = [1, 2, 3, 4, 5];
   record.state.periods.push({ ...record.state.periods[0], id: 'b' });
   assert.equal(reviewSupport(record, events).teachingDays.length, 0);
+});
+
+test('2027 criteria identify the actual article and PDF page of Resolution 292', () => {
+  const criteria = reviewCriteriaFor(2027);
+  assert.equal(reviewSourceFor(2027).id, 'SEI 4422750');
+  assert.equal(criteria.find((c) => c.id === 'annual')?.item, 'Art. 4º');
+  assert.equal(criteria.find((c) => c.id === 'semester')?.item, 'Art. 4º, § 1º');
+  assert.equal(criteria.find((c) => c.id === 'window')?.item, 'Art. 8º');
+  assert.equal(criteria.find((c) => c.id === 'XI')?.page, 3);
+  assert.equal(criteria.find((c) => c.id === 'XII')?.page, 4);
+  assert.equal(criteria.find((c) => c.id === 'XXV')?.page, 4);
+  assert.equal(criteria.find((c) => c.id === 'XXVI')?.page, 4);
+});
+
+test('review coverage follows the criterion identity when its citation text changes', () => {
+  const criterion = reviewCriteria.find((row) => row.id === 'XVI')!;
+  const original = criterion.item;
+  try {
+    criterion.item = 'Fundamento com apresentação editorial revisada';
+    const support = reviewSupport(
+      {
+        id: 'synthetic',
+        name: 'Calendário sintético',
+        version: 1,
+        state: {
+          year: 2027,
+          modalities: ['integrado'],
+          regime: 'anual',
+          weekdays: [],
+          weekConfirmed: false,
+          periods: [],
+          scopeConfirmation: { status: 'covered', source: 'PPC sintético' },
+        },
+      },
+      [
+        {
+          id: 'meeting',
+          name: 'Atividade com ata',
+          start: '2027-03-05',
+          end: '2027-03-05',
+          kind: 'note',
+          evidence: 'Ata sintética',
+          modalities: ['integrado'],
+          requirementId: 'family-meeting',
+        },
+      ],
+    );
+    const result = support.criteria.find((row) => row.id === 'XVI')!;
+    assert(result.signal.includes('planejamento completo'));
+    assert(result.candidates.some((event) => event.id === 'meeting'));
+    assert.equal(result.item, criterion.item);
+  } finally {
+    criterion.item = original;
+  }
 });

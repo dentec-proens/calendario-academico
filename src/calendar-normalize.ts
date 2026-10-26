@@ -5,6 +5,13 @@ import { calendarModalities, modalityLabels } from './modalities.ts';
 import { activityChecklist } from './obligations.ts';
 import { eventCategory, validCategory } from './categories.ts';
 import { datesBetween } from './calendar.ts';
+import { convertCalendarV2 } from './calendar-rules/conversion.ts';
+import {
+  rulesetVersion,
+  organizationSummary,
+  samePeriodScope,
+  validateActivityRecord,
+} from './calendar-rules/index.ts';
 
 const text = (value: unknown, maximum = 240) => {
   if (typeof value !== 'string' || !value.trim() || value.length > maximum)
@@ -13,7 +20,7 @@ const text = (value: unknown, maximum = 240) => {
 };
 
 export function normalizeCalendar(input: unknown) {
-  let s = readCalendarInput(input);
+  let s = convertCalendarV2(readCalendarInput(input));
   if (s?.secondSemesterIntake !== undefined && typeof s.secondSemesterIntake !== 'boolean')
     fail('Informe se há ingresso de novos estudantes no segundo semestre.');
   if (
@@ -22,7 +29,7 @@ export function normalizeCalendar(input: unknown) {
     s.year < 1900 ||
     s.year > 9999 ||
     !Object.keys(modalityLabels).includes(s.offer) ||
-    !['anual', 'semestral', 'misto'].includes(s.regime)
+    !['anual', 'semestral', 'misto', 'a-classificar'].includes(s.regime ?? '')
   )
     fail('Ano ou oferta inválidos.');
   if (
@@ -59,6 +66,54 @@ export function normalizeCalendar(input: unknown) {
       ))
   )
     fail('Etapas por oferta inválidas.');
+  if (
+    s.scopeConfirmation &&
+    (!['covered', 'own-regulation'].includes(s.scopeConfirmation.status) ||
+      !s.scopeConfirmation.source.trim() ||
+      s.scopeConfirmation.source.length > 240)
+  )
+    fail('Identifique o escopo e a fonte da conferência normativa.');
+  if (
+    s.organizationByModality &&
+    Object.entries(s.organizationByModality).some(
+      ([m, value]) =>
+        !calendarModalities(s).includes(m) ||
+        !['anual', 'semestral', 'a-classificar'].includes(value),
+    )
+  )
+    fail('Organização por oferta inválida.');
+  if (
+    s.intakeByModality &&
+    Object.entries(s.intakeByModality).some(
+      ([m, terms]) =>
+        !calendarModalities(s).includes(m) ||
+        Object.entries(terms).some(
+          ([term, value]) =>
+            !['annual', 'first', 'second'].includes(term) ||
+            !['unknown', 'yes', 'no'].includes(value.status) ||
+            (value.source !== undefined && value.source.length > 240) ||
+            (value.required === true && (!value.source?.trim() || value.status !== 'yes')),
+        ),
+    )
+  )
+    fail('Configuração de ingresso por oferta inválida ou sem fonte.');
+  for (const period of s.periods) {
+    const association = period.association;
+    if (!association) continue;
+    if (
+      association.status === 'defined' &&
+      (!association.modalities.length ||
+        new Set(association.modalities).size !== association.modalities.length ||
+        !['annual', 'first', 'second'].includes(association.term) ||
+        association.modalities.some(
+          (m) =>
+            !calendarModalities(s).includes(m) ||
+            s.organizationByModality?.[m] !==
+              (association.term === 'annual' ? 'anual' : 'semestral'),
+        ))
+    )
+      fail('Associação do período incompatível com a oferta e seu ciclo.');
+  }
   if (s.teacherVacations) {
     let vacation;
     try {
@@ -81,6 +136,18 @@ export function normalizeCalendar(input: unknown) {
       (!Number.isInteger(p.targetDays) || p.targetDays < 1 || p.targetDays > 366)
     )
       fail('Meta de dias letivos inválida.');
+  for (let i = 0; i < s.periods.length; i++)
+    for (let j = i + 1; j < s.periods.length; j++) {
+      const a = s.periods[i],
+        b = s.periods[j];
+      if (
+        a.association?.status === 'defined' &&
+        b.association?.status === 'defined' &&
+        a.association.term === b.association.term &&
+        samePeriodScope(a, b)
+      )
+        fail('Há mais de um período para o mesmo ciclo da oferta.');
+    }
   const ids = new Set();
   for (const [rows, event] of [
     [s.periods, false],
@@ -91,10 +158,8 @@ export function normalizeCalendar(input: unknown) {
       text(e.name, 160);
       if (ids.has(e.id) || e.id.startsWith('inst:')) fail('Identificador inválido.');
       ids.add(e.id);
-      datesBetween(e.start, e.end);
-      if (Number(e.start.slice(0, 4)) !== s.year || Number(e.end.slice(0, 4)) !== s.year)
-        fail('Data fora do ano.');
       if (event && 'kind' in e) {
+        validateActivityRecord(s, e);
         if (e.assessmentAutoStart !== undefined) {
           datesBetween(e.assessmentAutoStart, e.assessmentAutoStart);
           if (
@@ -109,6 +174,8 @@ export function normalizeCalendar(input: unknown) {
           e.modalities !== undefined &&
           (!Array.isArray(e.modalities) ||
             !e.modalities.length ||
+            e.modalities.length > 4 ||
+            new Set(e.modalities).size !== e.modalities.length ||
             e.modalities.some((m) => !calendarModalities(s).includes(m)))
         )
           fail('Forma de oferta/nível do evento fora do calendário.');
@@ -124,14 +191,27 @@ export function normalizeCalendar(input: unknown) {
           fail('Categoria PROENS inválida.');
         if (!['include', 'exclude', 'note'].includes(e.kind)) fail('Efeito inválido.');
         text(e.evidence);
+      } else {
+        datesBetween(e.start, e.end);
+        if (Number(e.start.slice(0, 4)) !== s.year || Number(e.end.slice(0, 4)) !== s.year)
+          fail('Data fora do ano.');
       }
     }
   for (let i = 0; i < s.periods.length; i++)
     for (let j = i + 1; j < s.periods.length; j++)
-      if (s.periods[i].start <= s.periods[j].end && s.periods[i].end >= s.periods[j].start)
+      if (
+        samePeriodScope(s.periods[i], s.periods[j]) &&
+        s.periods[i].start <= s.periods[j].end &&
+        s.periods[i].end >= s.periods[j].start
+      )
         fail('Períodos sobrepostos.');
   return {
-    schemaVersion: 2,
+    schemaVersion: 3 as const,
+    rulesetVersion: rulesetVersion(s),
+    organizationByModality: s.organizationByModality,
+    intakeByModality: s.intakeByModality,
+    conversion: s.conversion,
+    scopeConfirmation: s.scopeConfirmation,
     secondSemesterIntake: s.secondSemesterIntake,
     teacherDayDate: validateTeacherDay(s.teacherDayDate, s.year),
     ignoredHistory: Array.isArray(s.ignoredHistory)
@@ -143,25 +223,34 @@ export function normalizeCalendar(input: unknown) {
     campus: String(s.campus || ''),
     year: s.year,
     offer: s.offer,
-    regime: s.regime,
+    regime: s.organizationByModality
+      ? organizationSummary(s.organizationByModality, calendarModalities(s))
+      : ('a-classificar' as const),
     weekdays: s.weekdays,
     weekEvidence: String(s.weekEvidence || '').slice(0, 240),
     weekConfirmed: s.weekConfirmed,
-    periods: s.periods.map(({ id, name, start, end, targetDays }) => ({
+    periods: s.periods.map(({ id, name, start, end, targetDays, association }) => ({
       id,
       name,
       start,
       end,
       ...(targetDays === undefined ? {} : { targetDays }),
+      ...(association ? { association } : {}),
     })),
     events: s.events.map((e) => ({
       assessmentAutoStart: e.assessmentAutoStart,
+      recordType: e.recordType,
+      deadlineExtensionCause: e.deadlineExtensionCause,
+      publicationStatus: e.publicationStatus,
+      admission: e.admission,
+      deadlineAdjustment: e.deadlineAdjustment,
       hours: e.hours,
       historicalSource: e.historicalSource
         ? {
             historyId: e.historicalSource.historyId,
             page: e.historicalSource.page,
             candidateKey: e.historicalSource.candidateKey,
+            analysisId: e.historicalSource.analysisId,
           }
         : undefined,
       modalities: e.modalities,

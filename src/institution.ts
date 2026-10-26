@@ -103,7 +103,7 @@ export function initialCatalogue() {
       kind: ['recesso', 'feriado'].includes(category) ? 'exclude' : 'note',
       category,
       evidence:
-        'Resolução IFPR 2027 — SEI 4354987, arts. 2º e 3º; aprovação confirmada pela solicitante',
+        'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º',
       modalities: ['integrado', 'subsequente', 'graduacao'],
       active: true,
     }),
@@ -119,11 +119,53 @@ export function initialCatalogue() {
       end: `2027-${end}`,
       kind: 'note',
       category: 'comemorativo',
-      evidence: 'Resolução IFPR 2027 — SEI 4354987, art. 2º',
+      evidence: 'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, art. 2º',
       modalities: ['integrado', 'subsequente', 'graduacao'],
       active: true,
     });
   return { revision: 1, events };
+}
+
+/** Read-only rehearsal for an administrator. It never writes on server startup or replaces local dates. */
+export function preview2027SourceUpdate(events: CatalogueEvent[]) {
+  const canonical = initialCatalogue().events.filter((event) => event.id.startsWith('ifpr2027-'));
+  const updates: { id: string; before: string; after: string }[] = [];
+  const conflicts: { id: string; reason: string }[] = [];
+  for (const next of canonical) {
+    const previous = events.find((event) => event.id === next.id);
+    if (!previous) {
+      conflicts.push({
+        id: next.id,
+        reason: 'Evento ausente; conferir inclusão administrativa separadamente.',
+      });
+      continue;
+    }
+    if (
+      previous.start !== next.start ||
+      previous.end !== next.end ||
+      previous.kind !== next.kind ||
+      previous.name !== next.name ||
+      previous.category !== next.category ||
+      previous.active !== next.active ||
+      [...previous.modalities].sort().join(',') !== [...next.modalities].sort().join(',')
+    ) {
+      conflicts.push({
+        id: next.id,
+        reason: 'Conteúdo local diferente da base inicial; nenhuma substituição proposta.',
+      });
+      continue;
+    }
+    if (previous.evidence === next.evidence) continue;
+    if (!previous.evidence.startsWith('Resolução IFPR 2027 — SEI 4354987,')) {
+      conflicts.push({
+        id: next.id,
+        reason: 'Fonte local distinta; conferir antes de qualquer atualização.',
+      });
+      continue;
+    }
+    updates.push({ id: next.id, before: previous.evidence, after: next.evidence });
+  }
+  return { year: 2027, updates, conflicts };
 }
 
 export function inheritedEvents<

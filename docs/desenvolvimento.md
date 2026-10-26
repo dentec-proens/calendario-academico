@@ -43,7 +43,7 @@ TanStack Intent carrega a orientação das versões instaladas. Consulte `AGENTS
 
 ## Dados e edição
 
-Calendários usam `schemaVersion: 2`, modalidades explícitas e etapas por modalidade. Datas acadêmicas são `YYYY-MM-DD`. Regras de domínio, transações e validação de formulário possuem responsabilidades distintas.
+Novos conteúdos e cópias de calendários usam `schemaVersion: 3`, organização e períodos por oferta e modalidades explícitas. A leitura v2 permanece compatível por conversão explícita, sem reescrever snapshots antigos. Datas acadêmicas são `YYYY-MM-DD`. Regras de domínio, transações e validação de formulário possuem responsabilidades distintas. Consulte [Conteúdo v3 e política de 2027](arquitetura-convex.md#conteúdo-v3-e-política-de-2027).
 
 O formulário conserva preenchimento ainda não aplicado; comandos atualizam o calendário da sessão; autosave confirma sua gravação no Convex. Rascunhos não sensíveis são isolados por usuário e entidade e limpos ao encerrar a sessão. Não há persistência durável offline.
 

@@ -3,7 +3,12 @@ import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
 import { inspectCalendar } from '../src/calendar-base/index.ts';
 import { createEditorSession } from '../web/features/calendar-editor/session/editor-session.ts';
-import { applyPeriod, applyWeek, removePeriod } from '../src/calendar-edits/commands.ts';
+import {
+  applyPeriod,
+  applyWeek,
+  configureOrganization,
+  removePeriod,
+} from '../src/calendar-edits/commands.ts';
 import type {
   CalendarSave,
   CalendarEvent,
@@ -292,13 +297,19 @@ test('domain commands reject invalid changes atomically and recalculate teaching
   ).toThrow();
   expect(record.state).toEqual(original);
   const week = applyWeek(
-    record.state,
+    configureOrganization(record.state, { integrado: 'anual' }, []),
     { weekdays: [1, 2, 3, 4, 5], weekEvidence: 'Ata', weekConfirmed: true },
     [],
   );
   const first = applyPeriod(
     week,
-    { name: 'Período', start: '2027-02-01', end: '', days: '5' },
+    {
+      name: 'Período',
+      start: '2027-02-01',
+      end: '',
+      days: '5',
+      association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+    },
     [],
     () => 'period-a',
   );
@@ -306,11 +317,17 @@ test('domain commands reject invalid changes atomically and recalculate teaching
   expect(() =>
     applyPeriod(
       first,
-      { name: 'Sobreposto', start: '2027-02-03', end: '2027-02-06', days: '' },
+      {
+        name: 'Sobreposto',
+        start: '2027-02-03',
+        end: '2027-02-06',
+        days: '',
+        association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+      },
       [],
       () => 'period-b',
     ),
-  ).toThrow('sobrepõe');
+  ).toThrow('Já existe um período para este ciclo');
   expect(first.periods).toHaveLength(1);
 });
 

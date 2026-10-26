@@ -78,8 +78,8 @@ export default function ReviewCriterion({
             {unavailableCount ? (
               <>
                 <strong>Contagem automática indisponível.</strong>{' '}
-                {signal.replace('Contagem indisponível: ', '')}. Confira os documentos para avaliar
-                este critério.
+                {signal.replace('Contagem indisponível: ', '').replace(/[.!?]+\s*$/, '')}. Confira
+                os documentos para avaliar este critério.
               </>
             ) : (
               <>

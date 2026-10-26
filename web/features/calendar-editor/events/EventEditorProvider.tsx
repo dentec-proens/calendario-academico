@@ -15,7 +15,8 @@ import { applyEvent, recalculateCalendar } from '../../../../src/calendar-edits/
 import { activityChecklist, stageRequirement } from '../../../../src/obligations.ts';
 import { suggestStages } from '../../../../src/stage-suggestions.ts';
 import { proposedDates } from '../../../../src/history-dates.ts';
-import { historyCandidateKey } from '../../../../src/history-progress.ts';
+import { applicabilityFor, rulesetVersion } from '../../../../src/calendar-rules/index.ts';
+import { historyCandidateKey, historicalOccurrence } from '../../../../src/history-progress.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { calendarReferenceAnchor } from '../../../../src/calendar-reference.ts';
 import { editorPages } from '../editor-steps.ts';
@@ -38,6 +39,7 @@ function useController() {
   const [open, setOpen] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
   const [source, setSource] = useState<CalendarEvent['historicalSource']>();
+  const opener = useRef<HTMLElement | null>(null);
   const [returnFocus, setReturnFocus] = useState<
     'resume-event' | 'new-event' | 'pending-event-title' | null
   >(null);
@@ -47,6 +49,7 @@ function useController() {
     function apply(value) {
       if (!value.confirmed)
         throw new Error('Confirme as datas, a fonte e a aplicação à oferta selecionada.');
+      if (!value.kind) throw new Error('Escolha o efeito na contagem.');
       const id = eventId || crypto.randomUUID();
       const event: CalendarEvent = {
         id,
@@ -54,16 +57,40 @@ function useController() {
         start: value.start,
         end: value.end,
         kind: value.kind,
+        recordType: value.recordType,
+        publicationStatus: value.publicationStatus || undefined,
+        admission: value.admissionType
+          ? {
+              type: value.admissionType,
+              year: Number(value.admissionYear),
+              term: value.admissionTerm,
+              periodId: value.admissionPeriodId || undefined,
+            }
+          : undefined,
+        deadlineAdjustment:
+          value.adjustedDeadline || value.adjustmentEvidence
+            ? { date: value.adjustedDeadline, evidence: value.adjustmentEvidence, reviewed: false }
+            : undefined,
         category: value.category,
         evidence: value.evidence,
         modalities: value.modalities,
         requirementId: value.requirementId || undefined,
         hours: value.hours ? Number(value.hours) : undefined,
         historicalSource: source,
+        deadlineExtensionCause: value.deadlineExtensionCause || undefined,
       };
-      session.apply((current) => applyEvent(current, event, institutional, Boolean(eventId)));
+      session.apply((current) =>
+        applyEvent(
+          { ...current, rulesetVersion: rulesetVersion(current) },
+          event,
+          institutional,
+          Boolean(eventId),
+        ),
+      );
       setEventId(id);
-      if (context?.kind !== 'activity') setContext({ kind: 'event', eventId: id });
+      setContext(
+        context?.kind === 'activity' ? { ...context, eventId: id } : { kind: 'event', eventId: id },
+      );
     },
     (value) => `Evento “${value.name}” aplicado. Confira o indicador de salvamento.`,
   );
@@ -85,7 +112,12 @@ function useController() {
     if (!returnFocus) return;
     const frame = requestAnimationFrame(() => {
       const target =
-        document.getElementById(returnFocus) ?? document.getElementById('editor-section-title');
+        returnFocus !== 'pending-event-title' &&
+        opener.current?.isConnected &&
+        opener.current.getClientRects().length
+          ? opener.current
+          : (document.getElementById(returnFocus) ??
+            document.getElementById('editor-section-title'));
       target?.focus({ preventScroll: true });
       scrollIntoView(target, { block: 'start' });
       setReturnFocus(null);
@@ -128,9 +160,12 @@ function useController() {
     const same = context && JSON.stringify(context) === JSON.stringify(next);
     if (!canOpen(next) && !same) return;
     if (readOnly) return;
+    if (!same && document.activeElement instanceof HTMLElement)
+      opener.current = document.activeElement;
     void navigate({
       ...destination(next, values.requirementId),
       params: { calendarId: record.id },
+      search: (previous) => previous,
       hashScrollIntoView: false,
     });
     if (same) return;
@@ -139,6 +174,7 @@ function useController() {
     setEventId(id);
     setSource(historicalSource);
     setOpen(true);
+    return true;
   }
   function edit(id: string) {
     const event = state.events.find((item) => item.id === id);
@@ -148,29 +184,53 @@ function useController() {
       return;
     }
     const next: EventContext = event.requirementId
-      ? { kind: 'activity', requirementId: event.requirementId }
+      ? { kind: 'activity', requirementId: event.requirementId, eventId: id }
       : { kind: 'event', eventId: id };
     begin(next, eventValues(event, state.modalities), id, event.historicalSource);
   }
   function prepare(requirementId: string) {
-    const existing = state.events.find((event) => event.requirementId === requirementId);
-    if (existing) {
-      edit(existing.id);
-      return;
-    }
     const requirement = activityChecklist(state).find((item) => item.id === requirementId);
     if (!requirement) return;
+    const pertinent = state.modalities.filter(
+      (modality) => applicabilityFor(state, requirement, modality) === 'required',
+    );
+    const modalities = pertinent.length
+      ? pertinent
+      : requirement.modality
+        ? state.modalities.filter((modality) => modality === requirement.modality)
+        : requirement.modalities?.length
+          ? state.modalities.filter((modality) => requirement.modalities?.includes(modality))
+          : state.modalities;
+    const destinationPeriod = state.periods.find(
+      (period) =>
+        period.association?.status === 'defined' &&
+        period.association.term === requirement.term &&
+        modalities.every(
+          (modality) =>
+            period.association?.status === 'defined' &&
+            period.association.modalities.includes(modality),
+        ),
+    );
     begin(
       { kind: 'activity', requirementId },
       {
-        ...emptyEvent(
-          requirement.modality
-            ? state.modalities.filter((item) => item === requirement.modality)
-            : state.modalities,
-        ),
+        ...emptyEvent(modalities),
         name: requirement.name,
         requirementId,
         kind: 'note',
+        admissionType: requirement.admissionType ?? '',
+        admissionYear: requirementId.startsWith('admission-notice-')
+          ? String(state.year)
+          : requirementId === 'regular-admission-notice'
+            ? String(state.year + 1)
+            : '',
+        admissionTerm: requirement.term ?? 'annual',
+        admissionPeriodId: destinationPeriod?.id ?? '',
+        publicationStatus:
+          requirementId.startsWith('admission-notice-') ||
+          requirementId === 'regular-admission-notice'
+            ? 'planned'
+            : '',
         category: requirementId.includes('council')
           ? 'conselho'
           : stageRequirement(requirementId)
@@ -181,20 +241,79 @@ function useController() {
       },
     );
   }
-  function history(history: History, candidate: HistoryAnalysis['candidates'][number]) {
+  function history(
+    history: History,
+    candidate: HistoryAnalysis['candidates'][number],
+    intent: 'reference' | 'new' = 'new',
+    analysis?: HistoryAnalysis,
+  ) {
     const candidateKey = historyCandidateKey(candidate);
+    const dates =
+      intent === 'reference'
+        ? historicalOccurrence(history, analysis, candidate).dates
+        : proposedDates(candidate, state.year);
     begin(
-      { kind: 'history', historyId: history.id, candidateKey },
+      { kind: 'history', historyId: history.id, candidateKey, intent },
       {
         ...emptyEvent(state.modalities),
-        ...proposedDates(candidate, state.year),
+        ...dates,
+        historyWarning:
+          intent === 'reference' && 'warning' in dates
+            ? String(dates.warning)
+            : 'Nova ocorrência: preencha datas e fonte próprias. Nenhuma data foi deslocada do calendário anterior.',
+        recordType: intent === 'reference' ? 'prior-reference' : 'event',
         name: candidate.name,
         category: candidate.category,
         kind: 'note',
       },
       null,
-      { historyId: history.id, page: candidate.page, candidateKey },
+      {
+        historyId: history.id,
+        page: candidate.page,
+        candidateKey,
+        analysisId: analysis?.analysisId,
+      },
     );
+  }
+  function linkHistory(
+    history: History,
+    candidate: HistoryAnalysis['candidates'][number],
+    existingId: string,
+    analysis: HistoryAnalysis,
+  ) {
+    const existing = state.events.find((event) => event.id === existingId);
+    if (!existing) {
+      notify(
+        'Eventos institucionais não podem receber procedência histórica local. Registre uma referência própria.',
+        true,
+      );
+      return;
+    }
+    const candidateKey = historyCandidateKey(candidate);
+    const source = {
+      historyId: history.id,
+      analysisId: analysis.analysisId,
+      candidateKey,
+      page: candidate.page,
+    };
+    if (
+      begin(
+        {
+          kind: 'history',
+          historyId: history.id,
+          candidateKey,
+          intent: 'link',
+          eventId: existingId,
+        },
+        eventValues(existing, state.modalities),
+        existingId,
+        source,
+      )
+    )
+      result.form.setFieldValue(
+        'provenanceKey',
+        `${history.id}:${analysis.analysisId ?? 'legacy'}:${candidateKey}`,
+      );
   }
   function discard() {
     if (result.pending) return;
@@ -211,6 +330,7 @@ function useController() {
     await navigate({
       ...destination(context, result.form.state.values.requirementId),
       params: { calendarId: record.id },
+      search: (previous) => previous,
       hashScrollIntoView: false,
     });
     if (context?.kind === 'history')
@@ -228,7 +348,7 @@ function useController() {
       context?.kind === 'history' || context?.kind === 'new'
         ? context
         : requirementId
-          ? { kind: 'activity', requirementId }
+          ? { kind: 'activity', requirementId, ...(eventId ? { eventId } : {}) }
           : eventId
             ? { kind: 'event', eventId }
             : { kind: 'new' };
@@ -236,6 +356,7 @@ function useController() {
     void navigate({
       ...destination(next, requirementId),
       params: { calendarId: record.id },
+      search: (previous) => previous,
       hashScrollIntoView: false,
     });
   }
@@ -287,6 +408,7 @@ function useController() {
     edit,
     prepare,
     history,
+    linkHistory,
     discard,
     resume,
     applyStages,

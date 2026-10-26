@@ -1,7 +1,14 @@
 import type { TextItem } from 'pdfjs-dist/types/src/display/api.js';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { WorkerMessageHandler } from 'pdfjs-dist/legacy/build/pdf.worker.mjs';
-import { extractHistoricalDates, monthHeading } from './history-dates.ts';
+import {
+  extractHistoricalDates,
+  monthHeading,
+  headingYear,
+  HISTORY_EXTRACTOR_VERSION,
+} from './history-dates.ts';
 
 // Register the worker in-process so Convex bundles both entry points without
 // shipping the full PDF.js package or resolving a relative worker at runtime.
@@ -10,7 +17,7 @@ import { extractHistoricalDates, monthHeading } from './history-dates.ts';
 ).pdfjsWorker = { WorkerMessageHandler };
 
 // Extract only text, never execute document scripts or interpret its contents as instructions.
-export async function analyzeHistory(bytes: Uint8Array | ArrayBuffer) {
+export async function analyzeHistory(bytes: Uint8Array | ArrayBuffer, documentYear?: number) {
   const task = getDocument({
     data: new Uint8Array(bytes),
     useSystemFonts: false,
@@ -54,7 +61,7 @@ export async function analyzeHistory(bytes: Uint8Array | ArrayBuffer) {
         });
       pages.push({ page, text: lines.join('\n').slice(0, 16000) });
     }
-    return suggestionsFromPages(pages);
+    return suggestionsFromPages(pages, documentYear);
   })();
   try {
     return await Promise.race([
@@ -75,13 +82,17 @@ export async function analyzeHistory(bytes: Uint8Array | ArrayBuffer) {
   }
 }
 
-export function suggestionsFromPages(pages: { page: number; text: string }[]) {
+export function suggestionsFromPages(
+  pages: { page: number; text: string }[],
+  documentYear?: number,
+) {
   const candidates = [],
     seen = new Set();
   const keywords =
     /feriado|municipal|padroeir|anivers[aá]rio|emancipa|funda[çc][aã]o|evento|semana|feira|mostra|jornada|festival|encontro|reuni[aã]o|conselho|forma[çc][aã]o|planejamento|recesso|jogos|gincana|olimp[ií]ada|s[aã]o jo[aã]o|santo ant[oô]nio|nossa senhora/i;
   for (const p of pages) {
     let month = null;
+    let headerYear: number | null = null;
     const lines = p.text.split('\n');
     for (let index = 0; index < lines.length; index++) {
       let line = lines[index];
@@ -96,9 +107,10 @@ export function suggestionsFromPages(pages: { page: number; text: string }[]) {
       const heading = monthHeading(line);
       if (heading) {
         month = heading;
+        headerYear = headingYear(line);
         continue;
       }
-      const dates = extractHistoricalDates(line, month);
+      const dates = extractHistoricalDates(line, month, { headerYear, documentYear });
       if (
         line.length < 8 ||
         (!dates && !keywords.test(line)) ||
@@ -112,6 +124,7 @@ export function suggestionsFromPages(pages: { page: number; text: string }[]) {
       seen.add(key);
       const holiday = /feriado|padroeir|emancipa/i.test(line);
       candidates.push({
+        key: `candidate-v3:${bytesToHex(sha256(new TextEncoder().encode(JSON.stringify([p.page, line, dates]))))}`,
         dates,
         page: p.page,
         excerpt: line.slice(0, 650),
@@ -138,7 +151,9 @@ export function suggestionsFromPages(pages: { page: number; text: string }[]) {
     }
   }
   return {
-    version: 2,
+    version: HISTORY_EXTRACTOR_VERSION,
+    extractorVersion: HISTORY_EXTRACTOR_VERSION,
+    ...(documentYear === undefined ? {} : { documentYear }),
     pages,
     candidates: candidates
       .sort((a, b) => Number(b.likelyLocal) - Number(a.likelyLocal))
