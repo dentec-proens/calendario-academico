@@ -94,7 +94,7 @@ globalThis.fetch = async (url, options={}) => {
   if(u.pathname==='/v13/deployments'&&method==='POST') { if(!manual) throw Error('Unsafe creation'); return Response.json({id:'dpl_new'}); }
   if(u.pathname==='/v13/deployments/dpl_old')return Response.json(deployment('dpl_old',baseline));
   if(u.pathname==='/v13/deployments/dpl_new') {const d=deployment('dpl_new',scenario==='wrong-sha'?'c'.repeat(40):commit);return Response.json(d);}
-  if(u.pathname==='/v10/projects/'+projectId+'/promote/dpl_new'&&method==='POST') {promoted=true;manual=false;if(scenario==='promotion-unknown') throw Error('Lost response');return Response.json({});}
+  if(u.pathname==='/v10/projects/'+projectId+'/promote/dpl_new'&&method==='POST') {promoted=true;manual=false;if(scenario==='promotion-unknown') throw Error('Lost response');if(scenario.endsWith('promotion-empty'))return new Response(null,{status:202});return Response.json({});}
   throw Error('Unexpected Vercel call '+method+' '+u.pathname);
 };
 syncBuiltinESMExports();
@@ -288,4 +288,14 @@ test.each(['backend-resume', 'backend-resume-promoted'])(
 test('installed controls without a receipt parse the CLI empty null response safely', async () => {
   const result = await release('fresh-controls');
   expect(result.code, result.stderr).toBe(0);
+});
+
+test('empty promotion response completes the backend receipt and releases the reservation', async () => {
+  const result = await release('backend-promotion-empty');
+  expect(result.code, result.stderr).toBe(0);
+  expect(result.calls.includes('releases:complete')).toBe(true);
+  expect(result.calls.filter((call) => call.startsWith('POST /v10/'))).toHaveLength(1);
+  expect(
+    result.calls.some((call) => call.endsWith('origin :refs/heads/codex/production-release-lock')),
+  ).toBe(true);
 });

@@ -33,7 +33,7 @@ export function productionCandidates(
     timeoutMs?: number;
   } = {},
 ) {
-  async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  async function send(path: string, method = 'GET', body?: unknown): Promise<Response> {
     const response = await fetcher(
       `https://api.vercel.com${path}${path.includes('?') ? '&' : '?'}teamId=${teamId}`,
       {
@@ -45,7 +45,10 @@ export function productionCandidates(
       },
     );
     if (!response.ok) throw Error(`A Vercel recusou ${method} ${path} (${response.status}).`);
-    return (await response.json()) as T;
+    return response;
+  }
+  async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+    return (await (await send(path, method, body)).json()) as T;
   }
   async function project() {
     const value = await request<{
@@ -125,7 +128,9 @@ export function productionCandidates(
     if (reread.commit !== tested.commit || reread.url !== tested.url)
       throw Error('A identidade do candidato mudou depois da validação.');
     try {
-      await request(`/v10/projects/${projectId}/promote/${tested.id}`, 'POST', {});
+      // Promotion may acknowledge with 202/204 and no JSON. The alias,
+      // rather than the response body, proves that the tested build is public.
+      await send(`/v10/projects/${projectId}/promote/${tested.id}`, 'POST', {});
       const started = now();
       while ((await current()).id !== tested.id) {
         if (now() - started >= timeoutMs)

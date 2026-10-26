@@ -13,7 +13,8 @@ test('candidate uses production backend and origin-scoped OIDC configuration', (
     DENTEC_RELEASE_CANDIDATE_URL: 'https://candidate.vercel.app',
     VERCEL_OIDC_TOKEN: 'synthetic-oidc',
   });
-  expect(value.portalUrl).toBe('https://candidate.vercel.app');
+  expect(value.portalUrl).toBe(environments.production.portalUrl);
+  expect(value).toHaveProperty('deploymentUrl', 'https://candidate.vercel.app');
   expect(value.backendUrl).toBe(environments.production.url);
   expect(value.protection).toEqual({
     name: 'x-vercel-trusted-oidc-idp-token',

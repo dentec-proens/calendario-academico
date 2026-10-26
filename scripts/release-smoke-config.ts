@@ -3,6 +3,7 @@ import { environments } from '../config/environments.ts';
 export type SmokeConfiguration = {
   portalUrl: string;
   backendUrl: string;
+  deploymentUrl?: string;
   protection?: { name: string; value: string };
   calendarId: string;
   userId: string;
@@ -33,7 +34,8 @@ export function releaseSmokeConfiguration(environment = process.env): SmokeConfi
           },
         }
       : {}),
-    portalUrl: candidate || environments.production.portalUrl,
+    portalUrl: environments.production.portalUrl,
+    ...(candidate ? { deploymentUrl: candidate } : {}),
     backendUrl: environments.production.url,
     calendarId,
     userId,

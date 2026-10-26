@@ -1,4 +1,8 @@
-import { protectCandidate, verifyCalendarPdf } from './release-smoke-browser.ts';
+import {
+  assertReleaseOrigin,
+  routeReleaseDeployment,
+  verifyCalendarPdf,
+} from './release-smoke-browser.ts';
 import { pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
 import { ConvexHttpClient } from 'convex/browser';
@@ -53,19 +57,27 @@ export async function verifyReleaseSmoke(configuration: SmokeConfiguration) {
     console.log('Smoke: sessão e salvamento sem mudança confirmados.');
     browser = await chromium.launch();
     const page = await browser.newPage({ acceptDownloads: true });
-    if (configuration.protection)
-      await protectCandidate(page, configuration.portalUrl, configuration.protection);
+    if (configuration.deploymentUrl)
+      await routeReleaseDeployment(page, {
+        portalUrl: configuration.portalUrl,
+        deploymentUrl: configuration.deploymentUrl,
+        protection: configuration.protection,
+      });
     page.setDefaultTimeout(30_000);
     page.setDefaultNavigationTimeout(30_000);
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto(configuration.portalUrl);
+    const loginPage = await page.goto(configuration.portalUrl);
+    if (!loginPage?.ok()) throw Error('O deployment não disponibilizou a tela de acesso.');
+    assertReleaseOrigin(page, configuration.portalUrl);
     await page.locator('#email').fill(configuration.email);
     await page.locator('#password').fill(configuration.password);
     await page.locator('#auth-submit').click();
     await page.locator('#workspace').waitFor();
     console.log('Smoke: login no portal confirmado.');
-    await page.goto(`${configuration.portalUrl}/calendarios/${id}/editar`);
+    const editorPage = await page.goto(`${configuration.portalUrl}/calendarios/${id}/editar`);
+    if (!editorPage?.ok()) throw Error('O deployment não disponibilizou o editor.');
+    assertReleaseOrigin(page, configuration.portalUrl);
     await page.locator('#record-title').waitFor();
     await verifyCalendarPdf(page);
     if (errors.length) throw Error('O portal apresentou um erro de execução durante o smoke.');
