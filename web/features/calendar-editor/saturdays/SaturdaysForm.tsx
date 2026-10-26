@@ -13,7 +13,12 @@ import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import SaturdayYearGrid from './SaturdayYearGrid.tsx';
 import SaturdayEditForm from './SaturdayEditForm.tsx';
 import SaturdayDayCount from './SaturdayDayCount.tsx';
+import SaturdayPanel from './SaturdayPanel.tsx';
+import { useNarrowContainer } from './useNarrowContainer.ts';
 import './saturdays.css';
+
+/** Below this step width the panel no longer fits beside the grid and opens as a dialog. */
+const compactWidth = 760;
 
 const shortDate = (date: string) => date.slice(5).split('-').reverse().join('/');
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
@@ -38,8 +43,11 @@ function bySource(days: YearSaturday[]) {
 
 export default function SaturdaysForm() {
   const { state, events, evaluation, session, institutional, readOnly } = useCalendarEditor();
+  const step = useRef<HTMLDivElement>(null);
+  const compact = useNarrowContainer(step, compactWidth);
   // Opening a registered Saturday is local panel state, like the event editor; it never enters the URL.
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
   // A control that leaves the panel takes focus with it; this names its successor, which
   // only exists after the next render.
   const pendingFocus = useRef<(() => HTMLElement | null) | null>(null);
@@ -71,6 +79,7 @@ export default function SaturdaysForm() {
           () => crypto.randomUUID(),
         );
       });
+      setPanelOpen(false);
       // The submit button leaves with the selection: continue from the first registered date.
       if (first) pendingFocus.current = () => dateControl(first);
       return { dates: [], name: '', evidence: '' };
@@ -92,13 +101,16 @@ export default function SaturdaysForm() {
     (name) => name !== values.name,
   );
   const editing = registered.find((day) => day.registration!.id === editingId);
+  const selectionLabel = plural(selection.length, 'sábado selecionado', 'sábados selecionados');
 
   function clear(focus?: string) {
     // An empty selection returns to the defaults, so nothing remains unapplied.
     form.setFieldValue('dates', []);
     form.setFieldValue('name', '');
     form.setFieldValue('evidence', '');
-    if (focus) focusDate(focus);
+    setPanelOpen(false);
+    // A compact panel closes first; the date is reachable only once the dialog is gone.
+    if (focus) pendingFocus.current = () => dateControl(focus);
   }
   function toggle(date: string, checked: boolean) {
     // Read the live form value: several toggles can happen before the next render.
@@ -114,14 +126,224 @@ export default function SaturdaysForm() {
       form.setFieldValue('evidence', lastSource);
     form.setFieldValue('dates', [...rest, date]);
   }
+  function unselect(date: string) {
+    if (selection.length === 1) return clear(date);
+    toggle(date, false);
+    // Inside the dialog the grid is out of reach; stay with the fields.
+    if (compact) document.getElementById('saturday-name')?.focus();
+    else focusDate(date);
+  }
+  function openEditing(eventId: string) {
+    setEditingId(eventId);
+    if (compact) setPanelOpen(true);
+  }
   function closeEditing(date: string) {
     setEditingId(null);
+    setPanelOpen(false);
     // After a removal the date's control becomes a checkbox, which only exists after the render.
     pendingFocus.current = () => dateControl(date);
   }
 
+  const overview = (
+    <>
+      <SaturdayDayCount
+        evaluation={evaluation}
+        gain={saturdayGain(
+          months,
+          selection.map((day) => day.date),
+        )}
+      />
+      <p id="saturday-summary" role="status" aria-live="polite">
+        <strong>{selection.length ? selectionLabel : 'Nenhum sábado selecionado'}</strong>
+        <span>{plural(registered.length, 'sábado já registrado', 'sábados já registrados')}</span>
+      </p>
+    </>
+  );
+  const editBody = editing && (
+    <section className="saturday-panel-section" aria-labelledby="saturday-edit-title">
+      <div className="saturday-edit-heading">
+        <h5 id="saturday-edit-title" tabIndex={-1}>
+          Sábado, {shortDate(editing.date)}
+        </h5>
+        <button
+          type="button"
+          id="saturday-edit-close"
+          className="secondary"
+          onClick={() => closeEditing(editing.date)}
+        >
+          Fechar
+        </button>
+      </div>
+      {editing.editable ? (
+        <SaturdayEditForm
+          key={editing.registration!.id}
+          event={editing.registration!}
+          onClose={closeEditing}
+        />
+      ) : (
+        <>
+          <dl className="saturday-registration">
+            <dt>Atividade</dt>
+            <dd>{editing.registration!.name}</dd>
+            <dt>Fonte da decisão</dt>
+            <dd>{editing.registration!.evidence}</dd>
+          </dl>
+          <p className="help">Edite este registro em Atividades e datas do campus.</p>
+        </>
+      )}
+    </section>
+  );
+  const selectionBody = selection.length > 0 && (
+    <fieldset
+      className="saturday-panel-section"
+      disabled={readOnly || pending}
+      aria-label="Atividade dos sábados selecionados"
+    >
+      {compact && (
+        <div className="saturday-edit-heading">
+          <h5>{selectionLabel}</h5>
+          <button
+            type="button"
+            id="saturday-close-panel"
+            className="secondary"
+            onClick={() => setPanelOpen(false)}
+          >
+            Fechar
+          </button>
+        </div>
+      )}
+      <ul className="saturday-chips" aria-label="Datas selecionadas">
+        {selection.map((day) => (
+          <li key={day.date}>
+            <button
+              type="button"
+              className={day.impediments.length ? 'has-impediment' : undefined}
+              aria-label={`Remover ${shortDate(day.date)} da seleção`}
+              onClick={() => unselect(day.date)}
+            >
+              {shortDate(day.date)}
+              <span aria-hidden="true">×</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {selection.some((day) => day.impediments.length) && (
+        <div id="saturday-impediments" className="saturday-impediments">
+          <p>Não contam como dia letivo enquanto o impedimento permanecer:</p>
+          <ul>
+            {selection
+              .filter((day) => day.impediments.length)
+              .map((day) => (
+                <li key={day.date}>
+                  <strong>{shortDate(day.date)}</strong> · {day.impediments.join('; ')}
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
+      <form.Field name="name">
+        {(field) => (
+          <Input
+            field={field}
+            label="Atividade"
+            id="saturday-name"
+            form="saturday-form"
+            maxLength={160}
+            required
+          />
+        )}
+      </form.Field>
+      {suggestions.length > 0 && (
+        <div className="saturday-suggestions">
+          <span id="saturday-suggestions-label">Usadas neste calendário:</span>
+          <ul aria-labelledby="saturday-suggestions-label">
+            {suggestions.map((name) => (
+              <li key={name}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    form.setFieldValue('name', name);
+                    document.getElementById('saturday-name')?.focus();
+                  }}
+                >
+                  {name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <form.Field name="evidence">
+        {(field) => (
+          <Input
+            field={field}
+            label="Fonte da decisão"
+            id="saturday-evidence"
+            form="saturday-form"
+            aria-describedby="saturday-evidence-help"
+            maxLength={240}
+            required
+          />
+        )}
+      </form.Field>
+      <p id="saturday-evidence-help" className="help">
+        Documento que definiu a atividade, como uma resolução, portaria ou ata.
+      </p>
+      <FormFeedback error={error} />
+      <div className="saturday-actions">
+        <button type="submit" id="saturday-submit" form="saturday-form">
+          Adicionar {plural(selection.length, 'sábado', 'sábados')}
+        </button>
+        <button
+          type="button"
+          id="saturday-clear"
+          className="secondary"
+          onClick={() => clear(selection[0]!.date)}
+        >
+          Limpar
+        </button>
+      </div>
+    </fieldset>
+  );
+  const idleBody = (
+    <section className="saturday-panel-section" aria-label="Sábados registrados">
+      <p className="help">
+        Selecione sábados disponíveis no calendário para informar a atividade e a fonte da decisão.
+      </p>
+      {registered.length > 0 && (
+        <>
+          <h5>Sábados registrados</h5>
+          {[...bySource(registered)].map(([source, days]) => (
+            <section key={source} className="saturday-source">
+              <h6>{source}</h6>
+              <ul>
+                {days.map((day) => (
+                  <li key={day.date}>
+                    <button
+                      type="button"
+                      className="secondary"
+                      {...(day.editable && { 'data-edit-saturday': day.registration!.id })}
+                      onClick={() => {
+                        // This list leaves the panel; continue on the opened registration.
+                        openEditing(day.registration!.id);
+                        pendingFocus.current = () => document.getElementById('saturday-edit-title');
+                      }}
+                    >
+                      <strong>{shortDate(day.date)}</strong> {day.registration!.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </>
+      )}
+    </section>
+  );
+  const activeBody = editBody || selectionBody;
+
   return (
-    <div className="saturday-step">
+    <div className="saturday-step" ref={step}>
       <div className="saturday-layout">
         {/* The panel's fields join this form through their form attribute, so the panel can
           also host its own forms without nesting them. */}
@@ -136,202 +358,43 @@ export default function SaturdaysForm() {
                 disabled={readOnly || pending}
                 onToggle={toggle}
                 onBlur={field.handleBlur}
-                onEdit={setEditingId}
+                onEdit={openEditing}
               />
             )}
           </form.Field>
         </form>
-        <aside id="saturday-panel" aria-label="Seleção de sábados">
-          <SaturdayDayCount
-            evaluation={evaluation}
-            gain={saturdayGain(
-              months,
-              selection.map((day) => day.date),
-            )}
-          />
-          <p id="saturday-summary" role="status" aria-live="polite">
-            <strong>
-              {selection.length
-                ? plural(selection.length, 'sábado selecionado', 'sábados selecionados')
-                : 'Nenhum sábado selecionado'}
-            </strong>
-            <span>
-              {plural(registered.length, 'sábado já registrado', 'sábados já registrados')}
-            </span>
-          </p>
-          {editing ? (
-            <section className="saturday-panel-section" aria-labelledby="saturday-edit-title">
-              <div className="saturday-edit-heading">
-                <h5 id="saturday-edit-title" tabIndex={-1}>
-                  Sábado, {shortDate(editing.date)}
-                </h5>
-                <button
-                  type="button"
-                  id="saturday-edit-close"
-                  className="secondary"
-                  onClick={() => closeEditing(editing.date)}
-                >
-                  Fechar
-                </button>
-              </div>
-              {editing.editable ? (
-                <SaturdayEditForm
-                  key={editing.registration!.id}
-                  event={editing.registration!}
-                  onClose={closeEditing}
-                />
-              ) : (
-                <>
-                  <dl className="saturday-registration">
-                    <dt>Atividade</dt>
-                    <dd>{editing.registration!.name}</dd>
-                    <dt>Fonte da decisão</dt>
-                    <dd>{editing.registration!.evidence}</dd>
-                  </dl>
-                  <p className="help">Edite este registro em Atividades e datas do campus.</p>
-                </>
-              )}
-            </section>
-          ) : selection.length ? (
-            <fieldset
-              className="saturday-panel-section"
-              disabled={readOnly || pending}
-              aria-label="Atividade dos sábados selecionados"
-            >
-              <ul className="saturday-chips" aria-label="Datas selecionadas">
-                {selection.map((day) => (
-                  <li key={day.date}>
-                    <button
-                      type="button"
-                      className={day.impediments.length ? 'has-impediment' : undefined}
-                      aria-label={`Remover ${shortDate(day.date)} da seleção`}
-                      onClick={() => {
-                        toggle(day.date, false);
-                        focusDate(day.date);
-                      }}
-                    >
-                      {shortDate(day.date)}
-                      <span aria-hidden="true">×</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              {selection.some((day) => day.impediments.length) && (
-                <div id="saturday-impediments" className="saturday-impediments">
-                  <p>Não contam como dia letivo enquanto o impedimento permanecer:</p>
-                  <ul>
-                    {selection
-                      .filter((day) => day.impediments.length)
-                      .map((day) => (
-                        <li key={day.date}>
-                          <strong>{shortDate(day.date)}</strong> · {day.impediments.join('; ')}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              )}
-              <form.Field name="name">
-                {(field) => (
-                  <Input
-                    field={field}
-                    label="Atividade"
-                    id="saturday-name"
-                    form="saturday-form"
-                    maxLength={160}
-                    required
-                  />
-                )}
-              </form.Field>
-              {suggestions.length > 0 && (
-                <div className="saturday-suggestions">
-                  <span id="saturday-suggestions-label">Usadas neste calendário:</span>
-                  <ul aria-labelledby="saturday-suggestions-label">
-                    {suggestions.map((name) => (
-                      <li key={name}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            form.setFieldValue('name', name);
-                            document.getElementById('saturday-name')?.focus();
-                          }}
-                        >
-                          {name}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <form.Field name="evidence">
-                {(field) => (
-                  <Input
-                    field={field}
-                    label="Fonte da decisão"
-                    id="saturday-evidence"
-                    form="saturday-form"
-                    aria-describedby="saturday-evidence-help"
-                    maxLength={240}
-                    required
-                  />
-                )}
-              </form.Field>
-              <p id="saturday-evidence-help" className="help">
-                Documento que definiu a atividade, como uma resolução, portaria ou ata.
-              </p>
-              <FormFeedback error={error} />
-              <div className="saturday-actions">
-                <button type="submit" id="saturday-submit" form="saturday-form">
-                  Adicionar {plural(selection.length, 'sábado', 'sábados')}
-                </button>
-                <button
-                  type="button"
-                  id="saturday-clear"
-                  className="secondary"
-                  onClick={() => clear(selection[0]!.date)}
-                >
-                  Limpar
-                </button>
-              </div>
-            </fieldset>
-          ) : (
-            <section className="saturday-panel-section" aria-label="Sábados registrados">
-              <p className="help">
-                Selecione sábados disponíveis no calendário para informar a atividade e a fonte da
-                decisão.
-              </p>
-              {registered.length > 0 && (
-                <>
-                  <h5>Sábados registrados</h5>
-                  {[...bySource(registered)].map(([source, days]) => (
-                    <section key={source} className="saturday-source">
-                      <h6>{source}</h6>
-                      <ul>
-                        {days.map((day) => (
-                          <li key={day.date}>
-                            <button
-                              type="button"
-                              className="secondary"
-                              {...(day.editable && { 'data-edit-saturday': day.registration!.id })}
-                              onClick={() => {
-                                // This list leaves the panel; continue on the opened registration.
-                                setEditingId(day.registration!.id);
-                                pendingFocus.current = () =>
-                                  document.getElementById('saturday-edit-title');
-                              }}
-                            >
-                              <strong>{shortDate(day.date)}</strong> {day.registration!.name}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  ))}
-                </>
-              )}
-            </section>
-          )}
-        </aside>
+        {compact ? (
+          <section id="saturday-overview" aria-label="Resumo dos sábados">
+            {overview}
+            {idleBody}
+          </section>
+        ) : (
+          <aside id="saturday-panel" aria-label="Seleção de sábados">
+            {overview}
+            {activeBody || idleBody}
+          </aside>
+        )}
       </div>
+      {compact && (
+        <>
+          {/* The bar stays mounted under the modal, so closing the dialog returns focus to it. */}
+          {selection.length > 0 && (
+            <div id="saturday-compact-bar">
+              <strong>{selectionLabel}</strong>
+              <button type="button" id="saturday-open-panel" onClick={() => setPanelOpen(true)}>
+                Preencher atividade
+              </button>
+            </div>
+          )}
+          <SaturdayPanel
+            open={panelOpen && Boolean(activeBody)}
+            label={editing ? `Sábado, ${shortDate(editing.date)}` : 'Seleção de sábados'}
+            onClose={() => (editing ? closeEditing(editing.date) : setPanelOpen(false))}
+          >
+            {activeBody}
+          </SaturdayPanel>
+        </>
+      )}
     </div>
   );
 }

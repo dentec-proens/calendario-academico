@@ -216,6 +216,69 @@ test('the Saturday panel stays beside the grid while dates near the end of the y
   await expect(page.locator('#saturday-name')).toBeInViewport({ ratio: 1 });
 });
 
+test('compact Saturday panel opens as a dialog and keeps focused dates unobstructed', async ({
+  page,
+  cleanup,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(await startFixtureServer('editor', cleanup));
+  await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
+  await addPeriod(page, '2027-03-01', '2027-12-17');
+  await selectEditorSection(page, 'days');
+  await expect(page.locator('#saturday-compact-bar')).toHaveCount(0);
+  const first = page.locator('#saturday-dates input[value="2027-03-06"]');
+  await first.check();
+  await expect(first).toBeFocused();
+  const bar = page.locator('#saturday-compact-bar');
+  await expect(bar).toContainText('1 sábado selecionado');
+  await expect(page.locator('#saturday-name')).toBeHidden();
+
+  // The sticky bar never covers the date that has keyboard focus.
+  const december = page.locator('#saturday-dates input[value="2027-12-11"]');
+  await december.focus();
+  await expect
+    .poll(() =>
+      december.evaluate((input) => {
+        const bounds = input.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          bounds.left + bounds.width / 2,
+          bounds.top + bounds.height / 2,
+        );
+        return hit === input || hit === input.closest('label');
+      }),
+    )
+    .toBe(true);
+
+  const open = page.locator('#saturday-open-panel');
+  await open.click();
+  const panel = page.locator('dialog#saturday-panel');
+  await expect(panel).toHaveJSProperty('open', true);
+  await expect(page.locator('#saturday-name')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(panel).toHaveJSProperty('open', false);
+  await expect(open).toBeFocused();
+
+  await open.click();
+  await page.locator('#saturday-name').fill('Reposição de aulas');
+  await page.locator('#saturday-evidence').fill('Resolução nº 12/2026');
+  await page.locator('#saturday-submit').click();
+  await expect(panel).toHaveJSProperty('open', false);
+  await expect(page.locator('[data-saturday="2027-03-06"]')).toHaveAttribute(
+    'data-status',
+    'registered',
+  );
+  await expect(bar).toHaveCount(0);
+  await expect(page.locator('#saturday-day-count')).toBeVisible();
+
+  // A registered date opens its record in the same dialog.
+  await page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]').click();
+  await expect(panel).toHaveJSProperty('open', true);
+  await expect(page.locator('#saturday-edit-name')).toHaveValue('Reposição de aulas');
+  await page.locator('#saturday-edit-close').click();
+  await expect(panel).toHaveJSProperty('open', false);
+  await expect(page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]')).toBeFocused();
+});
+
 test('Saturdays outside teaching periods are shown but not selectable', async ({
   page,
   cleanup,

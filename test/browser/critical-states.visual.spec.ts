@@ -101,13 +101,18 @@ test('destructive confirmation with preserved data explained', async ({ page, cl
 test('annual Saturdays keep the selection panel next to the year grid', async ({
   page,
   cleanup,
-}) => {
+}, testInfo) => {
   await page.goto(await startFixtureServer('editor', cleanup));
   await expect(page.locator('#record-title')).toBeVisible();
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'days');
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
   await page.locator('#saturday-dates input[value="2027-04-03"]').check();
+  // On a phone the panel opens as a dialog from the sticky bar.
+  if (testInfo.project.name === 'chromium-mobile') {
+    await page.locator('#saturday-open-panel').click();
+    await expect(page.locator('dialog#saturday-panel')).toHaveJSProperty('open', true);
+  }
   await page.locator('#saturday-name').fill('Reposição de aulas');
   await page.locator('#saturday-evidence').fill('Ata da reunião de 10/03/2027');
   // Mobile full-page captures shift an intermediate scroll position a few pixels per capture;
