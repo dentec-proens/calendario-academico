@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { verifyCalendarPdf } from './release-smoke-browser.ts';
 import { pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
 import { ConvexHttpClient } from 'convex/browser';
@@ -63,22 +63,7 @@ export async function verifyReleaseSmoke(configuration: SmokeConfiguration) {
     console.log('Smoke: login no portal confirmado.');
     await page.goto(`${configuration.portalUrl}/calendarios/${id}/editar`);
     await page.locator('#record-title').waitFor();
-    await page.locator('[data-view="calendar"]').click();
-    await page.locator('#months').waitFor();
-    console.log('Smoke: editor e visualização confirmados; aguardando PDF.');
-    const [pdf] = await Promise.all([
-      page.waitForEvent('download', { timeout: 120_000 }),
-      page.locator('#download-pdf-top').click(),
-    ]).catch(async (cause: unknown) => {
-      const message = await page
-        .locator('#message')
-        .textContent()
-        .catch(() => '');
-      throw new Error(`O smoke não recebeu o PDF. ${message ?? ''}`, { cause });
-    });
-    const path = await pdf.path();
-    if (!path || !(await readFile(path)).subarray(0, 5).equals(Buffer.from('%PDF-')))
-      throw Error('O smoke não confirmou um PDF válido.');
+    await verifyCalendarPdf(page);
     if (errors.length) throw Error('O portal apresentou um erro de execução durante o smoke.');
     const after = await client.query(api.calendars.calendar, { id });
     if (
