@@ -199,6 +199,17 @@ test('Saturday panel applies one activity and source to the selected dates witho
   await page.locator('#saturday-panel [data-edit-saturday]').first().click();
   await expect(page.locator('#saturday-edit-title')).toBeFocused();
   await expect(page.locator('#saturday-edit-title')).toContainText('06/03');
+
+  // The next selection starts from the last source and offers the activities already used.
+  await page.locator('#saturday-dates input[value="2027-03-13"]').check();
+  await expect(page.locator('#saturday-evidence')).toHaveValue('Resolução nº 12/2026');
+  await expect(page.locator('#saturday-name')).toHaveValue('');
+  await page
+    .locator('.saturday-suggestions')
+    .getByRole('button', { name: 'Reposição de aulas' })
+    .click();
+  await expect(page.locator('#saturday-name')).toHaveValue('Reposição de aulas');
+  await expect(page.locator('#saturday-name')).toBeFocused();
 });
 
 test('the Saturday panel stays beside the grid while dates near the end of the year are checked', async ({
@@ -300,6 +311,34 @@ test('resizing across the compact width keeps the Saturday field being filled', 
   await expect(page.locator('aside#saturday-panel')).toBeVisible();
   await expect(name).toBeFocused();
   await expect(name).toHaveValue('Reposição');
+
+  // A dialog opened by the resize has no opener; closing it lands on the compact bar.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('dialog#saturday-panel')).toHaveJSProperty('open', true);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#saturday-open-panel')).toBeFocused();
+});
+
+test('a registered Saturday left open beside the grid does not take over the compact bar', async ({
+  page,
+  cleanup,
+}) => {
+  await openEditor(page, cleanup);
+  await addPeriod(page, '2027-03-01', '2027-04-30');
+  await selectEditorSection(page, 'days');
+  await page.locator('#saturday-dates input[value="2027-03-06"]').check();
+  await page.locator('#saturday-name').fill('Reposição de aulas');
+  await page.locator('#saturday-evidence').fill('Resolução nº 12/2026');
+  await page.locator('#saturday-submit').click();
+  await page.locator('#saturday-dates input[value="2027-03-13"]').check();
+  await page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]').click();
+  await expect(page.locator('#saturday-edit-form')).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#saturday-compact-bar')).toContainText('1 sábado selecionado');
+  await page.locator('#saturday-open-panel').click();
+  await expect(page.locator('#saturday-name')).toBeVisible();
+  await expect(page.locator('#saturday-edit-form')).toHaveCount(0);
 });
 
 test('Saturdays outside teaching periods are shown but not selectable', async ({

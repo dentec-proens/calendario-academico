@@ -20,9 +20,10 @@ const compactWidth = 760;
 const shortDate = (date: string) => date.slice(5).split('-').reverse().join('/');
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
+// A date outside the periods has no control; its cell takes focus so keyboard users keep their place.
 const dateControl = (date: string) =>
   document.querySelector<HTMLElement>(
-    `[data-saturday="${date}"] input, [data-saturday="${date}"] button`,
+    `[data-saturday="${date}"] input, [data-saturday="${date}"] button, [data-saturday="${date}"][tabindex]`,
   );
 
 export default function SaturdaysForm() {
@@ -37,8 +38,12 @@ export default function SaturdaysForm() {
     // Crossing the width moves the panel between the aside and the dialog. Someone working in
     // the panel keeps their place: the dialog opens, or the aside returns, on the same field.
     const active = document.activeElement;
-    const id = active instanceof HTMLElement && active.closest('#saturday-panel') ? active.id : '';
-    setPanelOpen(narrow && Boolean(id));
+    const inPanel = active instanceof HTMLElement && Boolean(active.closest('#saturday-panel'));
+    // Controls without an id (chips, suggestions) come back on the panel's main field.
+    const id = inPanel ? active.id || (editingId ? 'saturday-edit-title' : 'saturday-name') : '';
+    setPanelOpen(narrow && inPanel);
+    // A record left open beside the grid would otherwise take over the compact bar.
+    if (narrow && !inPanel) setEditingId(null);
     // Returning focus after a layout change must not scroll the page the person is looking at.
     if (id) focusLater(() => document.getElementById(id), { preventScroll: true });
   });
@@ -301,6 +306,10 @@ export default function SaturdaysForm() {
     />
   );
   const activeBody = editBody || selectionBody;
+  // Remote changes can register the selection or delete the open record: drop panel state that no
+  // longer has content, so a later selection doesn't reopen the dialog on its own.
+  if (editingId && !editing) setEditingId(null);
+  if (panelOpen && !activeBody) setPanelOpen(false);
 
   return (
     <div className="saturday-step" ref={step}>
@@ -348,6 +357,7 @@ export default function SaturdaysForm() {
           )}
           <SaturdayPanel
             open={panelOpen && Boolean(activeBody)}
+            returnFocus={() => document.getElementById('saturday-open-panel')}
             label={editing ? `Sábado, ${shortDate(editing.date)}` : 'Seleção de sábados'}
             onClose={() => (editing ? closeEditing(editing.date) : setPanelOpen(false))}
           >

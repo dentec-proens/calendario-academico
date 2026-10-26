@@ -7,15 +7,22 @@ import { useEffect, useRef, type ReactNode } from 'react';
 export default function SaturdayPanel({
   open,
   label,
+  returnFocus,
   onClose,
   children,
 }: {
   open: boolean;
   label: string;
+  /** Where focus goes on close when the control that opened the dialog is gone. */
+  returnFocus: () => HTMLElement | null;
   onClose: () => void;
   children: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const fallback = useRef(returnFocus);
+  useEffect(() => {
+    fallback.current = returnFocus;
+  });
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!open || !dialog) return;
@@ -23,7 +30,14 @@ export default function SaturdayPanel({
     dialog.showModal();
     return () => {
       dialog.close();
-      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
+      // A resize can open the dialog after the focused aside left, leaving only the body behind.
+      const opener =
+        previousFocus instanceof HTMLElement &&
+        previousFocus.isConnected &&
+        previousFocus !== document.body
+          ? previousFocus
+          : fallback.current();
+      opener?.focus();
     };
   }, [open]);
   return (

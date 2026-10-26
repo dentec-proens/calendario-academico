@@ -75,7 +75,14 @@ export default function SaturdayYearGrid({
       );
     }
     return (
-      <span key={day.date} className={className} data-saturday={day.date} data-status={day.status}>
+      // Not in the tab order; it only receives focus when its registration is removed.
+      <span
+        key={day.date}
+        className={className}
+        data-saturday={day.date}
+        data-status={day.status}
+        tabIndex={-1}
+      >
         <span aria-hidden="true">{day.day}</span>
         <span className="saturday-sr">{label} · fora dos períodos letivos</span>
       </span>
