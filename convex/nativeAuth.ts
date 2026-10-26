@@ -193,7 +193,7 @@ async function issueInvite(ctx: MutationCtx, row: Doc<'users'>, actor: Id<'users
   user.inviteExpiresAt = expiresAt;
   user.nativeInviteHash = tokenHash;
   await patchMember(ctx, row, user);
-  return { inviteUrl: `${origin()}/ativar#token=${token}`, inviteExpiresAt: expiresAt };
+  return { inviteUrl: `${origin()}/ativar-conta#token=${token}`, inviteExpiresAt: expiresAt };
 }
 
 async function validInvitation(ctx: Context, token: string) {

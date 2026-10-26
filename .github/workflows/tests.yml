@@ -51,14 +51,29 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 14
-  # Preserve the existing check gate: it succeeds only when both parallel jobs pass.
+  windows:
+    runs-on: windows-latest
+    env:
+      VITE_CONVEX_URL: https://synthetic-ci.convex.cloud
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test:unit
+      - run: pnpm build
+  # Preserve the check gate: every supported environment must pass.
   check:
     if: ${{ always() }}
-    needs: [quality, browser]
+    needs: [quality, browser, windows]
     runs-on: ubuntu-latest
     steps:
       - name: Confirmar qualidade e testes de navegador
         env:
           QUALITY_RESULT: ${{ needs.quality.result }}
           BROWSER_RESULT: ${{ needs.browser.result }}
-        run: test "$QUALITY_RESULT" = success && test "$BROWSER_RESULT" = success
+          WINDOWS_RESULT: ${{ needs.windows.result }}
+        run: test "$QUALITY_RESULT" = success && test "$BROWSER_RESULT" = success && test "$WINDOWS_RESULT" = success

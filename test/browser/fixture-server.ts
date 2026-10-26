@@ -22,7 +22,7 @@ type FixtureDefinition = {
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const fixtures: Record<Fixture, FixtureDefinition> = {
-  portal: { path: '/__portal', entry: 'portal-navigation' },
+  portal: { path: '/__portal', entry: 'portal-navigation', client: 'portal-router-client' },
   review: { path: '/__review', entry: 'review-ui', client: 'review-ui-client' },
   editor: { path: '/__editor', entry: 'editor', client: 'editor-event-drafts-client' },
   'editor-confirmation': {
@@ -61,6 +61,7 @@ async function startServer(
     cacheDir: `node_modules/.vite-playwright-${name}`,
     define: { 'import.meta.env.VITE_CONVEX_URL': JSON.stringify(convexUrl) },
     optimizeDeps: {
+      entries: [],
       include: [
         'react',
         'react-dom',
@@ -70,6 +71,7 @@ async function startServer(
         'convex/react',
         'convex/server',
         '@convex-dev/auth/react',
+        '@tanstack/react-router',
       ],
     },
     oxc: { jsx: { runtime: 'automatic' } },
@@ -89,7 +91,16 @@ async function startServer(
           {
             name: `playwright-${name}`,
             configureServer(server) {
-              server.middlewares.use(fixture.path, (_request, response) => {
+              server.middlewares.use((request, response, next) => {
+                const pathname = new URL(request.url ?? '/', 'http://fixture.invalid').pathname;
+                // A synthetic document also serves its real application's deep links. Asset
+                // requests still pass through Vite; no test contacts a remote deployment.
+                const navigation =
+                  request.headers.accept?.includes('text/html') && !/\.[^/]+$/.test(pathname);
+                if (pathname !== fixture.path && !navigation) {
+                  next();
+                  return;
+                }
                 response.setHeader('Content-Type', 'text/html');
                 response.end(html);
               });

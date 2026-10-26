@@ -1,3 +1,5 @@
+import { initializeRouter, navigateApp } from './routing.tsx';
+import { editorUrl, parseEditorPath, type EditorSection } from '../src/app-routes.ts';
 import { scrollIntoView, trackScrollInset } from './scroll.ts';
 import { validateImport } from './editor-import.ts';
 import type {
@@ -94,7 +96,12 @@ let institutional: CalendarRecord['institutionalEvents'] = [];
 let isAdmin = false;
 let readOnly = false;
 const restoringHistories = new Set<string>();
-const calendarId = new URLSearchParams(location.search).get('id') ?? '';
+const router = initializeRouter('editor.html');
+const calendarId = parseEditorPath(router.latestLocation.pathname)?.id ?? '';
+let displayedEditorSection: string | undefined;
+for (const link of document.querySelectorAll<HTMLAnchorElement>('.editor-sidebar a[data-view]')) {
+  link.href = editorUrl(calendarId, link.dataset.view as EditorSection);
+}
 const campusEvents = () => campusInstitutionalEvents(institutional, state);
 const allEvents = (): EditorEvent[] => [...campusEvents(), ...state.events];
 
@@ -658,27 +665,32 @@ function showEditorView(id: string, focus = true, updateUrl = true) {
   document.querySelectorAll<HTMLElement>('.editor-section-content > .view').forEach((view) => {
     view.hidden = view.id !== id;
   });
-  document.querySelectorAll<HTMLButtonElement>('.editor-sidebar [data-view]').forEach((button) => {
+  document.querySelectorAll<HTMLElement>('.editor-sidebar [data-view]').forEach((button) => {
     button.classList.toggle('active', button.dataset.view === id);
     if (button.dataset.view === id) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
   });
+  displayedEditorSection = id;
   const title = $('editor-section-title');
   title.textContent = editorSections[id];
+  document.title = `${editorSections[id]} · ${record?.name ?? 'Calendário'} · PROENS`;
   if (focus) {
     title.focus({ preventScroll: true });
     scrollIntoView(title, { block: 'start' });
   }
-  if (updateUrl) {
-    const url = new URL(location.href);
-    url.searchParams.set('section', id);
-    if (id !== 'history') url.hash = '';
-    window.history.replaceState(window.history.state, '', url);
-  }
+  if (updateUrl && parseEditorPath(router.latestLocation.pathname)?.section !== id)
+    void navigateApp(editorUrl(calendarId, id as EditorSection));
 }
 
 document.addEventListener('click', (e) => {
   if (!(e.target instanceof Element)) return;
+  const navigation = e.target.closest<HTMLAnchorElement>('a[data-view]');
+  if (navigation) {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    showEditorView(navigation.dataset.view ?? 'edit');
+    return;
+  }
   const b = e.target.closest('button');
   if (!b) return;
   if (b.dataset.view) showEditorView(b.dataset.view);
@@ -844,13 +856,14 @@ function updateRecordHeading() {
   if (!record) return;
   $('make-definitive').hidden = readOnly || record.purpose !== 'test';
   $('record-title').textContent = record.name;
+  document.title = `${editorSections[displayedEditorSection ?? 'edit']} · ${record.name} · PROENS`;
   $('record-heading').textContent =
     `${record.purpose === 'test' ? 'Teste · PDF identificado como teste' : 'Definitivo · sujeito à conferência e revisão'} · ${record.courses}${record.classes ? ' · ' + record.classes : ''}${record.shifts ? ' · ' + record.shifts : ''}`;
 }
 
 async function openRecord() {
   if (!calendarId) {
-    location.href = '/';
+    void navigateApp('/calendarios', { replace: true, reloadDocument: true });
     return;
   }
   try {
@@ -867,16 +880,12 @@ async function openRecord() {
     render();
     if (readOnly) {
       const back = document.querySelector<HTMLAnchorElement>('.portal-back')!;
-      back.href = '/?page=review-panel';
+      back.href = '/revisoes';
       back.textContent = '← Voltar às revisões e pareceres';
       document.querySelector<HTMLElement>('.editor-history')!.hidden = true;
       message('Consulta em modo somente leitura. As alterações são feitas pelo campus.');
-      if (!new URLSearchParams(location.search).has('section'))
-        showEditorView('calendar', false, false);
     }
     observeRecord();
-    if (location.hash === '#history-area' && !new URLSearchParams(location.search).has('section'))
-      openHistory();
   } catch (e) {
     message(nativeError(e).message, true);
   }
@@ -1467,7 +1476,11 @@ $('proens-color-guide').innerHTML = categories
   .join('');
 $('download-pdf-top').onclick = () => $('download-pdf').click();
 $('export-calendar').onclick = () => $('download-pdf').click();
-showEditorView(new URLSearchParams(location.search).get('section') ?? 'edit', false, false);
+showEditorView(parseEditorPath(router.latestLocation.pathname)?.section ?? 'edit', false, false);
+router.subscribe('onResolved', ({ toLocation }) => {
+  const section = parseEditorPath(toLocation.pathname)?.section;
+  if (section && section !== displayedEditorSection) showEditorView(section, true, false);
+});
 void openRecord();
 
 $('recalculate-stages').onclick = () =>

@@ -9,6 +9,8 @@ import { modalityLabels, selectableModalities } from '../../src/modalities.ts';
 import { institution } from '../native/client.ts';
 import { useAction } from './useAction.ts';
 import CollectionPanel from './CollectionPanel.tsx';
+import { catalogueEventId, portalFormForPath, portalPaths } from '../../src/app-routes.ts';
+import { getAppRouter, navigateApp, useAppLocation } from '../routing.tsx';
 
 type CatalogueEvent = Bootstrap['catalogue']['events'][number];
 const emptyEvent = (): CatalogueEvent => ({
@@ -32,9 +34,35 @@ export default function CataloguePanel({
   canManage: boolean;
   notify: Notify;
 }) {
-  const [creating, setCreating] = useState(false);
+  const { pathname } = useAppLocation();
+  const routeId = catalogueEventId(pathname);
+  const creating =
+    pathname.startsWith(portalPaths['institution-events']) && portalFormForPath(pathname);
   const [hasDraft, setHasDraft] = useState(false);
   const [event, setEvent] = useState(emptyEvent);
+  const [draftKey, setDraftKey] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState(
+    new Map<string, { event: CatalogueEvent; hasDraft: boolean }>(),
+  );
+  const missingEvent =
+    routeId !== undefined && !catalogue.events.some((item) => item.id === routeId);
+  if (creating && (routeId ?? '') !== draftKey) {
+    if (draftKey !== null) setDrafts(new Map(drafts).set(draftKey, { event, hasDraft }));
+    const key = routeId ?? '';
+    const saved = drafts.get(key);
+    const item = catalogue.events.find((item) => item.id === routeId);
+    setDraftKey(key);
+    setEvent(saved?.event ?? (item ? { ...item, modalities: [...item.modalities] } : emptyEvent()));
+    setHasDraft(saved?.hasDraft ?? Boolean(item));
+  }
+  function setCreating(open: boolean) {
+    const href = open
+      ? event.id
+        ? `${portalPaths['institution-events']}/${encodeURIComponent(event.id)}/editar`
+        : `${portalPaths['institution-events']}/novo`
+      : portalPaths['institution-events'];
+    void navigateApp(href);
+  }
   const { pending, run } = useAction(notify);
   const nameRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLParagraphElement>(null);
@@ -43,10 +71,17 @@ export default function CataloguePanel({
     setHasDraft(true);
   };
 
-  function closeForm() {
+  async function closeForm() {
+    const current = getAppRouter().latestLocation.pathname;
+    if (current === pathname) await navigateApp(portalPaths['institution-events']);
+    setDrafts((previous) => {
+      const next = new Map(previous);
+      if (draftKey !== null) next.delete(draftKey);
+      return next;
+    });
+    setDraftKey(null);
     setEvent(emptyEvent());
     setHasDraft(false);
-    setCreating(false);
     requestAnimationFrame(() => {
       listRef.current?.focus({ preventScroll: true });
       scrollIntoView(listRef.current, { block: 'start' });
@@ -61,18 +96,13 @@ export default function CataloguePanel({
         id: event.id || undefined,
         revision: catalogue.revision,
       });
-      closeForm();
+      await closeForm();
       notify('Base atualizada. Os campi receberão a nova revisão ao abrir seus calendários.');
     });
   }
 
   function edit(item: CatalogueEvent) {
-    setEvent({
-      ...item,
-      modalities: selectableModalities.filter((m) => item.modalities.includes(m)),
-    });
-    setHasDraft(true);
-    setCreating(true);
+    void navigateApp(`${portalPaths['institution-events']}/${encodeURIComponent(item.id)}/editar`);
     requestAnimationFrame(() => nameRef.current?.focus());
   }
 
@@ -87,10 +117,13 @@ export default function CataloguePanel({
             : 'Novo evento institucional'
       }
       formTitle={event.id ? 'Editar evento institucional' : 'Novo evento institucional'}
-      formOpen={creating}
+      formOpen={creating && !missingEvent}
       onFormOpen={setCreating}
       canCreate={canManage}
       busy={pending}
+      feedback={
+        missingEvent ? <p role="status">Evento institucional não encontrado.</p> : undefined
+      }
       form={
         <form id="catalogue-form" onSubmit={submit}>
           <fieldset className="form-fields" disabled={pending}>
@@ -207,7 +240,14 @@ export default function CataloguePanel({
                 <Save aria-hidden="true" size={18} />
                 Salvar evento institucional
               </Button>
-              <Button type="button" variant="secondary" id="cancel-catalogue" onClick={closeForm}>
+              <Button
+                type="button"
+                variant="secondary"
+                id="cancel-catalogue"
+                onClick={() => {
+                  void closeForm();
+                }}
+              >
                 <X aria-hidden="true" size={18} />
                 Cancelar {event.id ? 'edição' : 'cadastro'}
               </Button>

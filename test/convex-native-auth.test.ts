@@ -166,6 +166,7 @@ test('native invitations activate only the intended member and cannot be reused'
       loginMethod: 'invite',
     },
   });
+  assert.equal(new URL(invited.inviteUrl!).pathname, '/ativar-conta');
   const token = new URL(invited.inviteUrl!).hash.split('=')[1];
   assert.equal(
     (await client.query(api.nativeAuth.checkInvitation, { token })).email,

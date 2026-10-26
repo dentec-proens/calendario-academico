@@ -9,9 +9,9 @@ test('reviewer consults the complete calendar and live changes without editing o
   const fixtureUrl = await startFixtureServer('editor-reviewer', cleanup);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(String(error)));
-  await page.goto(`${fixtureUrl}?id=synthetic-calendar`);
+  await page.goto(new URL('/calendarios/synthetic-calendar/visualizar', fixtureUrl).href);
   await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-  await expect(page).toHaveURL(/__editor\?id=synthetic-calendar/);
+  await expect(page).toHaveURL(/\/calendarios\/synthetic-calendar\/visualizar/);
   await expect(page.locator('#autosave-status')).toContainText(/somente leitura/i);
   await expect(page.locator('input#week-evidence')).toBeDisabled();
   await expect(page.locator('button#make-definitive')).toBeHidden();
@@ -58,4 +58,24 @@ test('reviewer consults the complete calendar and live changes without editing o
     failConversion: false,
   });
   expect(errors).toEqual([]);
+});
+
+test('reviewer direct section URLs and reload keep the requested read-only section', async ({
+  page,
+  cleanup,
+}) => {
+  const origin = new URL(await startFixtureServer('editor-reviewer', cleanup)).origin;
+  const requested = origin + '/calendarios/synthetic-calendar/editar';
+  await page.goto(requested);
+  for (const reload of [false, true]) {
+    if (reload) await page.reload();
+    await expect(page).toHaveURL(requested);
+    await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
+    await expect(page.locator('#editor-section-title')).toHaveText('Dados gerais');
+    await expect(page.locator('#edit')).toBeVisible();
+    await expect(page.locator('[data-view="edit"]')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('#week-evidence')).toBeDisabled();
+    await expect(page.locator('#autosave-status')).toContainText(/somente leitura/i);
+  }
+  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });

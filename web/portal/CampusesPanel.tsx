@@ -2,11 +2,11 @@ import { Button } from '../components/ui/Button.tsx';
 import { formText } from './form-values.ts';
 import type { Bootstrap, Notify } from '../native/types.ts';
 import type { FormEvent } from 'react';
-import { useState } from 'react';
 import { Building2, CalendarDays } from 'lucide-react';
 import { institution } from '../native/client.ts';
 import { useAction } from './useAction.ts';
 import CollectionPanel from './CollectionPanel.tsx';
+import { useRouteForm } from './route-form.ts';
 
 export default function CampusesPanel({
   info,
@@ -17,7 +17,7 @@ export default function CampusesPanel({
   onCampus: (id: string) => void;
   notify: Notify;
 }) {
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useRouteForm('campuses');
   const { pending, run } = useAction(notify);
   function createCampus(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

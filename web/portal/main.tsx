@@ -5,6 +5,7 @@ import './react-portal.css';
 import NativeProvider from '../native/Provider.tsx';
 import NativeApp from '../native/App.tsx';
 import NativeErrorBoundary from '../native/ErrorBoundary.tsx';
+import { ApplicationRouter } from '../routing.tsx';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('O portal precisa do elemento raiz.');
@@ -12,7 +13,9 @@ if (!root) throw new Error('O portal precisa do elemento raiz.');
 createRoot(root).render(
   <NativeProvider>
     <NativeErrorBoundary>
-      <NativeApp />
+      <ApplicationRouter document="portal.html">
+        <NativeApp />
+      </ApplicationRouter>
     </NativeErrorBoundary>
   </NativeProvider>,
 );

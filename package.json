@@ -53,6 +53,7 @@
     "@convex-dev/presence": "0.4.0",
     "@noble/hashes": "2.0.1",
     "@sparticuz/chromium": "153.0.0",
+    "@tanstack/react-router": "1.170.46",
     "convex": "1.47.0",
     "lucide-react": "1.61.0",
     "pdfjs-dist": "6.3.289",

@@ -1,6 +1,6 @@
 import { scrollIntoView } from '../scroll.ts';
 import { Button } from '../components/ui/Button.tsx';
-import { useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { ArrowLeft, Plus } from 'lucide-react';
 
 interface CollectionPanelProps {
@@ -32,15 +32,23 @@ export default function CollectionPanel({
   const id = useId();
   const listHeading = useRef<HTMLHeadingElement>(null);
   const formHeading = useRef<HTMLHeadingElement>(null);
+  const previousOpen = useRef(false);
 
   function changeView(open: boolean) {
     onFormOpen(open);
-    requestAnimationFrame(() => {
-      const heading = open ? formHeading.current : listHeading.current;
+  }
+
+  useEffect(() => {
+    if (previousOpen.current === formOpen) return;
+    previousOpen.current = formOpen;
+    const frame = requestAnimationFrame(() => {
+      const heading = formOpen ? formHeading.current : listHeading.current;
+      if (heading?.closest('[hidden]')) return;
       heading?.focus({ preventScroll: true });
       scrollIntoView(heading, { block: 'start' });
     });
-  }
+    return () => cancelAnimationFrame(frame);
+  }, [formOpen]);
 
   return (
     <>

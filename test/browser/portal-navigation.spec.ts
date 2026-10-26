@@ -34,8 +34,8 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await page.setViewportSize({ width: 1440, height: 1000 });
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(String(error)));
-  const origin = fixtureUrl;
-  await page.goto(origin);
+  const origin = new URL(fixtureUrl).origin;
+  await page.goto(origin + '/calendarios');
   await expect(page.locator('#calendar-list'))
     .toBeVisible()
     .catch((error: unknown) => {
@@ -227,11 +227,12 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await page.locator('[data-page="campuses"]').click();
   await expect(page.locator('#campus-list')).toBeVisible();
   await expect(page.locator('#user-list')).toBeHidden();
-  expect(new URL(page.url()).searchParams.get('page')).toBe('campuses');
+  expect(new URL(page.url()).pathname).toBe('/campi');
   await page.goBack();
   await expect(page.locator('#user-form')).toBeVisible();
   await expect(page.locator('input#user-name')).toHaveValue('Nome ainda não enviado');
   await page.locator('[data-page="calendars"]').click();
+  await page.getByRole('button', { name: 'Novo calendário' }).click();
   await expect(page.locator('input#calendar-courses')).toHaveValue('Curso em preenchimento');
   await page.locator('[data-page="institution"]').click();
   await expect(page.locator('#document-status-filter')).toBeVisible();
@@ -252,6 +253,7 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await page.locator('[data-page="calendars"]').click();
   await expect(page.locator('#document-form')).toBeHidden();
   await page.locator('[data-page="institution"]').click();
+  await page.getByRole('button', { name: 'Adicionar documento' }).click();
   await expect(page.locator('input#document-title')).toHaveValue('Documento em preenchimento');
   await page.locator('[data-page="institution-events"]').click();
   await page.locator('[data-edit="synthetic-event"]').click();
@@ -264,6 +266,7 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await page.locator('[data-page="institution"]').click();
   await expect(page.locator('#catalogue-form')).toBeHidden();
   await page.locator('[data-page="institution-events"]').click();
+  await page.locator('[data-edit="synthetic-event"]').click();
   await expect(page.locator('input#catalogue-name')).toHaveValue('Evento em edição');
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -278,6 +281,7 @@ test('portal shares each subject across roles while preserving drafts, scoped co
 
   await page.locator('.sidebar-toggle').click();
   await page.locator('[data-page="calendars"]').click();
+  await page.getByRole('button', { name: 'Novo calendário' }).click();
   for (const width of [768, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     expect(
@@ -293,7 +297,7 @@ test('portal shares each subject across roles while preserving drafts, scoped co
     'identification fields stack on mobile',
   ).toBeTruthy();
 
-  await page.goto(origin + '?role=CAMPUS&page=accounts');
+  await page.goto(origin + '/contas?role=CAMPUS');
   await expect(page.locator('#calendar-list')).toBeVisible();
   await expect(page.locator('.admin-navigation')).toHaveCount(0);
   await expect(page.locator('#user-form')).toHaveCount(0);
@@ -306,12 +310,12 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await expect(page.locator('#document-list')).toBeVisible();
   await expect(page.locator('#document-list')).not.toContainText(/Documento rascunho/);
   await expect(page.locator('#document-list')).toContainText(/Documento vigente/);
-  await page.goto(origin + '?page=manage-documents');
+  await page.goto(origin + '/documentos');
   await expect(page.locator('#document-status-filter')).toBeVisible();
-  await page.goto(origin + '?role=CAMPUS&page=manage-events');
+  await page.goto(origin + '/eventos-institucionais?role=CAMPUS');
   await expect(page.locator('#catalogue-list')).toBeVisible();
   await expect(page.locator('[data-edit="synthetic-event"]')).toHaveCount(0);
-  await page.goto(origin + '?role=PARECERISTA&page=accounts');
+  await page.goto(origin + '/contas?role=PARECERISTA');
   await expect(page.locator('#review-panel')).toBeVisible();
   await expect(page.locator('[data-page="accounts"]')).toHaveCount(0);
   await expect(page.locator('[data-page="campuses"]')).toHaveCount(0);
@@ -319,9 +323,9 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await expect(page.locator('#create-calendar')).toHaveCount(0);
   await expect(page.locator('#user-form')).toHaveCount(0);
   expect(await page.locator('#open-review').count()).toBeTruthy();
-  await page.goto(origin + '?role=PARECERISTA&page=calendars');
+  await page.goto(origin + '/calendarios?role=PARECERISTA');
   await expect(page.locator('#review-panel')).toBeVisible();
-  await page.goto(origin + '?role=PARECERISTA&page=institution');
+  await page.goto(origin + '/documentos?role=PARECERISTA');
   await expect(page.locator('#document-list')).toBeVisible();
   await expect(page.locator('#document-form')).toHaveCount(0);
   await expect(page.locator('#document-list')).not.toContainText(/Documento rascunho/);

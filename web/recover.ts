@@ -1,3 +1,4 @@
+import { navigateApp } from './routing.tsx';
 import { accounts } from './native/client.ts';
 import { element } from './native/dom.ts';
 import { nativeError } from './native/client.ts';
@@ -10,7 +11,7 @@ const password = element('password', HTMLInputElement);
 const confirmation = element('confirmation', HTMLInputElement);
 let token = new URLSearchParams(location.hash.slice(1)).get('token');
 if (token) {
-  history.replaceState(null, '', location.pathname);
+  await navigateApp(location.pathname, { replace: true });
   requestForm.hidden = true;
   resetForm.hidden = false;
   element('title', HTMLElement).textContent = 'Definir nova senha';

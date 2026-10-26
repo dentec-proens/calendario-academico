@@ -686,11 +686,17 @@
   margin: 0;
 }
 .editor-sidebar .tab {
+  font-weight: 650;
+  text-decoration: none;
   text-align: left;
   padding: 13px 12px;
   border: 1px solid transparent;
   border-radius: 7px;
   font-size: 0.875rem;
+}
+.editor-sidebar .tab:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
 }
 .editor-sidebar .tab.active {
   border-color: #b5d3c2;

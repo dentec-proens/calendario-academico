@@ -10,14 +10,6 @@
       "destination": "/index.html"
     },
     {
-      "source": "/portal",
-      "destination": "/portal.html"
-    },
-    {
-      "source": "/editor",
-      "destination": "/editor.html"
-    },
-    {
       "source": "/logs",
       "destination": "/logs.html"
     },
@@ -26,12 +18,92 @@
       "destination": "/recover.html"
     },
     {
-      "source": "/ativar",
+      "source": "/ativar-conta",
       "destination": "/activate.html"
     },
     {
-      "source": "/ativar-conta",
-      "destination": "/activate.html"
+      "source": "/calendarios",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/documentos",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/eventos-institucionais",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/revisoes",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/campi",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/contas",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/usuarios-online",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/calendarios/novo",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/documentos/novo",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/eventos-institucionais/novo",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/campi/novo",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/contas/nova",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/revisoes/:calendarId",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/calendarios/:calendarId/editar",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/calendarios/:calendarId/periodos",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/calendarios/:calendarId/dias",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/calendarios/:calendarId/eventos",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/calendarios/:calendarId/historico",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/calendarios/:calendarId/pendencias",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/calendarios/:calendarId/visualizar",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/eventos-institucionais/:eventId/editar",
+      "destination": "/portal.html"
     }
   ],
   "headers": [

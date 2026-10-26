@@ -50,7 +50,11 @@ export const accounts = {
   signIn: (credentials: { email: string; password: string }) =>
     request(() => actions().signIn('password', { flow: 'signIn', ...credentials })),
   signInGoogle: () =>
-    request(() => actions().signIn('google', { redirectTo: window.location.origin })),
+    request(() =>
+      actions().signIn('google', {
+        redirectTo: window.location.origin + window.location.pathname + window.location.search,
+      }),
+    ),
   setup: (data: FunctionArgs<typeof functions.nativeAuth.setup>['data']) =>
     request(() => convex.action(functions.nativeAuth.setup, { data })),
   passwordOptions: () => request(() => convex.query(functions.nativeAuth.passwordOptions, {})),
@@ -89,8 +93,6 @@ export const accounts = {
 };
 
 export const calendars = {
-  resolveId: (reference: string) =>
-    request(() => convex.query(functions.native.resolveCalendarId, { reference })),
   get: (id: string) =>
     request(() => convex.query(functions.native.calendar, { id: id as Id<'calendars'> })),
   create: (body: FunctionArgs<typeof functions.native.createCalendar>['body']) =>

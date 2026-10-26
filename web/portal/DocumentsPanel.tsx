@@ -10,6 +10,7 @@ import { filePayload } from '../upload.ts';
 import { downloadLink, institution } from '../native/client.ts';
 import Pagination from './Pagination.tsx';
 import CollectionPanel from './CollectionPanel.tsx';
+import { useRouteForm } from './route-form.ts';
 
 const documentTypes = {
   norma: 'Resolução / norma',
@@ -25,6 +26,7 @@ export default function DocumentsPanel({
   onYearFilter: setYearFilter,
   statusFilter = '',
   onStatusFilter,
+  onUploaded,
 }: {
   canManage: boolean;
   liveData?: DocumentsData;
@@ -33,10 +35,11 @@ export default function DocumentsPanel({
   onYearFilter: (year: string) => void;
   statusFilter?: string;
   onStatusFilter: (status: '' | 'rascunho' | 'vigente' | 'arquivado') => void;
+  onUploaded: (year: string) => void;
 }) {
   const documents = liveData?.documents ?? [];
   const revision = liveData?.revision ?? 0;
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useRouteForm('institution');
   const [confirmed, setConfirmed] = useState<Record<string, boolean>>({});
   const [message, setMessage] = useState('');
   const loading = liveData === undefined;
@@ -67,9 +70,7 @@ export default function DocumentsPanel({
         ...payload,
       });
       form.reset();
-      setCreating(false);
-      setYearFilter(String(year));
-      onStatusFilter('');
+      onUploaded(String(year));
       setConfirmed({});
       setMessage(
         'Arquivo preservado como rascunho. Confira e defina como vigente para disponibilizá-lo aos campi.',

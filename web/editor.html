@@ -26,7 +26,7 @@
     </header>
     <main>
       <div class="editor-navigation" aria-label="Navegação do calendário">
-        <a href="/" class="portal-back">← Voltar aos calendários</a
+        <a href="/calendarios" class="portal-back">← Voltar aos calendários</a
         ><a href="/logs" class="editor-history">Histórico de alterações</a>
       </div>
       <div class="intro">
@@ -83,30 +83,30 @@
           <div class="editor-sections-layout">
             <aside class="editor-sidebar">
               <nav aria-label="Seções do editor">
-                <button
-                  type="button"
+                <a
+                  href="/calendarios"
                   class="tab active"
                   data-view="edit"
                   aria-controls="edit"
                   aria-current="page"
                 >
                   1. Dados gerais
-                </button>
-                <button type="button" class="tab" data-view="periods" aria-controls="periods">
+                </a>
+                <a href="/calendarios" class="tab" data-view="periods" aria-controls="periods">
                   2. Períodos e avaliações
-                </button>
-                <button type="button" class="tab" data-view="days" aria-controls="days">
+                </a>
+                <a href="/calendarios" class="tab" data-view="days" aria-controls="days">
                   3. Sábados e férias
-                </button>
-                <button type="button" class="tab" data-view="events" aria-controls="events">
+                </a>
+                <a href="/calendarios" class="tab" data-view="events" aria-controls="events">
                   4. Eventos locais
-                </button>
-                <button type="button" class="tab" data-view="history" aria-controls="history">
+                </a>
+                <a href="/calendarios" class="tab" data-view="history" aria-controls="history">
                   5. Calendário anterior
-                </button>
-                <button type="button" class="tab" data-view="issues" aria-controls="issues">
+                </a>
+                <a href="/calendarios" class="tab" data-view="issues" aria-controls="issues">
                   6. Conferência e exportação <span id="issue-count">0</span>
-                </button>
+                </a>
               </nav>
             </aside>
             <div class="editor-section-content">

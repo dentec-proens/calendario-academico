@@ -312,6 +312,7 @@
   color: #214f78;
 }
 #root .sidebar-link {
+  text-decoration: none;
   display: flex;
   justify-content: flex-start;
   width: 100%;

@@ -1,3 +1,3 @@
 import { mountNativePage } from './Page.tsx';
 
-mountNativePage(() => import('../recover.ts'), false);
+mountNativePage(() => import('../recover.ts'), false, 'recover.html');

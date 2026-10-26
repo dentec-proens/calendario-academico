@@ -23,15 +23,16 @@ import AccountsPanel from './AccountsPanel.tsx';
 import DocumentsPanel from './DocumentsPanel.tsx';
 import ReviewPanel from './ReviewPanel.tsx';
 import { portalPermissions, type PortalPermissions } from './permissions.ts';
+import {
+  portalPaths,
+  portalPageForPath,
+  portalFormForPath,
+  type PortalPageId,
+} from '../../src/app-routes.ts';
+import { AppLink, getAppRouter, navigateApp, useAppLocation } from '../routing.tsx';
+import { loginReturnTarget } from '../../src/login-return.ts';
 
-type PageId =
-  | 'calendars'
-  | 'institution'
-  | 'institution-events'
-  | 'review-panel'
-  | 'campuses'
-  | 'accounts'
-  | 'online-users';
+type PageId = PortalPageId;
 const sharedPages: Array<[PageId, string, LucideIcon]> = [
   ['calendars', 'Calendários', CalendarDays],
   ['institution', 'Documentos e normas', Library],
@@ -53,21 +54,6 @@ function allowedSharedPages(permissions: PortalPermissions) {
   return sharedPages.filter(([id]) => id !== 'calendars' || permissions.editCalendars);
 }
 
-function requestedPage(permissions: PortalPermissions): PageId {
-  const requested = new URLSearchParams(location.search).get('page') ?? '';
-  const aliases: Record<string, PageId> = {
-    administration: 'accounts',
-    'manage-documents': 'institution',
-    'manage-events': 'institution-events',
-  };
-  const id = aliases[requested] ?? requested;
-  return (
-    [...allowedSharedPages(permissions), ...allowedAdminPages(permissions)].find(
-      ([page]) => page === id,
-    )?.[0] ?? (permissions.editCalendars ? 'calendars' : 'review-panel')
-  );
-}
-
 interface WorkspaceProps {
   info: Bootstrap;
   status: Status;
@@ -77,21 +63,38 @@ interface WorkspaceProps {
 export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
   const permissions = portalPermissions(metadata.user.role);
   const administrativePages = allowedAdminPages(permissions);
-  const [selectedPage, setPage] = useState<PageId>(() => requestedPage(permissions));
+  const location = useAppLocation();
+  const requested = portalPageForPath(location.pathname);
+  const allowed = [...allowedSharedPages(permissions), ...administrativePages];
   const page =
-    adminPages.some(([id]) => id === selectedPage) &&
-    !administrativePages.some(([id]) => id === selectedPage)
-      ? permissions.editCalendars
-        ? 'calendars'
-        : 'review-panel'
-      : selectedPage;
-  const [menuOpen, setMenuOpen] = useState(false);
+    allowed.find(([id]) => id === requested)?.[0] ??
+    (permissions.editCalendars ? 'calendars' : 'review-panel');
+  const [menu, setMenu] = useState({ open: false, pathname: location.pathname });
+  if (menu.pathname !== location.pathname) setMenu({ open: false, pathname: location.pathname });
+  const menuOpen = menu.open && menu.pathname === location.pathname;
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const [filter, setFilter] = useState('');
-  const [documentYear, setDocumentYear] = useState('');
-  const [documentStatus, setDocumentStatus] = useState<'' | 'rascunho' | 'vigente' | 'arquivado'>(
-    '',
-  );
+  const previousPath = useRef(location.pathname);
+  const parameters = new URLSearchParams(location.searchStr);
+  const filter =
+    permissions.selectCampus &&
+    metadata.campuses.some((campus) => campus.id === parameters.get('campus'))
+      ? parameters.get('campus')!
+      : '';
+  const documentYear = parameters.get('ano') ?? '';
+  const requestedStatus = parameters.get('situacao');
+  const documentStatus =
+    permissions.manageInstitution &&
+    (requestedStatus === 'rascunho' ||
+      requestedStatus === 'vigente' ||
+      requestedStatus === 'arquivado')
+      ? requestedStatus
+      : '';
+  function changeFilter(key: string, value: string) {
+    const url = new URL(window.location.href);
+    if (value) url.searchParams.set(key, value);
+    else url.searchParams.delete(key);
+    void navigateApp(url.pathname + url.search, { replace: true });
+  }
   const calendarPagination = usePaginatedQuery(
     functions.native.calendarPage,
     {
@@ -130,44 +133,65 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
   const title = [...sharedPages, ...adminPages].find(([id]) => id === page)?.[1];
 
   useEffect(() => {
-    const onPopState = () => {
-      setPage(requestedPage(portalPermissions(metadata.user.role)));
-      setMenuOpen(false);
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, [metadata.user.role]);
+    if (location.pathname === '/') {
+      const target = loginReturnTarget(location.searchStr, window.location.origin);
+      if (target) {
+        void navigateApp(target, { replace: true });
+        return;
+      }
+    }
+    const formAllowed =
+      page === 'calendars'
+        ? permissions.editCalendars
+        : page === 'campuses'
+          ? permissions.manageCampuses
+          : page === 'accounts'
+            ? permissions.manageAccounts
+            : permissions.manageInstitution;
+    if (requested !== page || (portalFormForPath(location.pathname) && !formAllowed)) {
+      const url = new URL(window.location.href);
+      url.pathname = portalPaths[page];
+      void navigateApp(url.pathname + url.search, { replace: true });
+    }
+  }, [
+    requested,
+    page,
+    location.pathname,
+    location.searchStr,
+    permissions.editCalendars,
+    permissions.manageCampuses,
+    permissions.manageAccounts,
+    permissions.manageInstitution,
+  ]);
 
-  function navigate(id: PageId) {
-    setPage(id);
-    setMenuOpen(false);
-    const url = new URL(location.href);
-    url.searchParams.set('page', id);
-    if (id !== page) window.history.pushState(null, '', url);
-    requestAnimationFrame(() => {
+  useEffect(() => {
+    document.title = `${title} · PROENS`;
+    if (previousPath.current === location.pathname) return;
+    previousPath.current = location.pathname;
+    const frame = requestAnimationFrame(() => {
+      if (portalFormForPath(location.pathname)) return;
       headingRef.current?.focus({ preventScroll: true });
       scrollIntoView(headingRef.current, { block: 'start' });
     });
-  }
+    return () => cancelAnimationFrame(frame);
+  }, [location.pathname, title]);
 
   function showCampus(id: string) {
-    setFilter(id);
-    navigate('calendars');
+    void navigateApp(portalPaths.calendars + '?campus=' + encodeURIComponent(id));
   }
 
   function navigationItems(items: Array<[PageId, string, LucideIcon] | AdminPage>) {
     return items.map(([id, label, Icon]) => (
-      <Button
+      <AppLink
         key={id}
-        type="button"
-        className={'sidebar-link' + (page === id ? ' active' : '')}
+        href={portalPaths[id]}
+        className={'ui-button ui-button--primary sidebar-link' + (page === id ? ' active' : '')}
         data-page={id}
         id={id === 'accounts' ? 'admin-tab' : id === 'review-panel' ? 'review-tab' : undefined}
         aria-current={page === id ? 'page' : undefined}
-        onClick={() => navigate(id)}
       >
         <Icon aria-hidden="true" size={18} /> {label}
-      </Button>
+      </AppLink>
     ));
   }
 
@@ -186,7 +210,7 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
         className="sidebar-toggle"
         aria-expanded={menuOpen}
         aria-controls="portal-navigation"
-        onClick={() => setMenuOpen(!menuOpen)}
+        onClick={() => setMenu({ open: !menuOpen, pathname: location.pathname })}
       >
         <Menu size={18} aria-hidden="true" /> Navegação · {title}
       </Button>
@@ -225,7 +249,7 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
               info={info}
               canSelectCampus={permissions.selectCampus}
               filter={filter}
-              onFilter={setFilter}
+              onFilter={(id) => changeFilter('campus', id)}
               notify={notify}
               liveTrash={trashData}
               pagination={calendarPagination}
@@ -239,9 +263,17 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
             liveData={documentsData}
             pagination={documentPagination}
             yearFilter={documentYear}
-            onYearFilter={setDocumentYear}
+            onYearFilter={(year) => changeFilter('ano', year)}
             statusFilter={permissions.manageInstitution ? documentStatus : ''}
-            onStatusFilter={setDocumentStatus}
+            onStatusFilter={(status) => changeFilter('situacao', status)}
+            onUploaded={(year) => {
+              if (getAppRouter().latestLocation.pathname !== '/documentos/novo') return;
+              const url = new URL(window.location.href);
+              url.pathname = portalPaths.institution;
+              url.searchParams.set('ano', year);
+              url.searchParams.delete('situacao');
+              void navigateApp(url.pathname + url.search);
+            }}
           />
         </section>
         <section className="page" hidden={page !== 'institution-events'}>

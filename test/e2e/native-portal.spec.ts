@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../browser/test.ts';
+import { editorUrl, parseEditorPath } from '../../src/app-routes.ts';
 
 const base = process.env.DENTEC_NATIVE_BROWSER_URL;
 const email = process.env.DENTEC_NATIVE_TEST_EMAIL;
@@ -62,11 +63,11 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   await editor.locator('input[name="calendar-modality"]').first().check();
   await editor.locator('#calendar-courses').fill(marker);
   await Promise.all([
-    editor.waitForURL('**/editor?**'),
+    editor.waitForURL('**/calendarios/*/editar'),
     editor.locator('#create-calendar button[value="test"]').click(),
   ]);
   await expect(editor.locator('#record-heading')).toContainText(marker);
-  const id = new URL(editor.url()).searchParams.get('id');
+  const id = parseEditorPath(new URL(editor.url()).pathname)?.id;
   assert(id);
   await expect(observer.locator('#calendar-list')).toContainText(marker);
   const preservedUrl = new URL(editor.url());
@@ -233,11 +234,11 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   await page.locator('input[name="calendar-modality"]').first().check();
   await page.locator('#calendar-courses').fill(marker);
   await Promise.all([
-    page.waitForURL('**/editor?**'),
+    page.waitForURL('**/calendarios/*/editar'),
     page.locator('#create-calendar button[value="test"]').click(),
   ]);
   await expect(page.locator('#record-heading')).toContainText(marker);
-  const calendarId = new URL(page.url()).searchParams.get('id');
+  const calendarId = parseEditorPath(new URL(page.url()).pathname)?.id;
   assert(calendarId);
   await page.locator('[data-view="history"]').click();
   await page.locator('input#history-file').setInputFiles(pdf);
@@ -302,7 +303,7 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   await page.locator('.calendar-trash summary').click();
   await page.locator(`[data-restore-calendar="${calendarId}"]`).click();
   await expect(page.locator('#message')).toContainText('Calendário restaurado');
-  await page.goto(base + '/editor?id=' + encodeURIComponent(calendarId));
+  await page.goto(base + editorUrl(calendarId, 'history'));
   await expect(page.locator('#history-list')).toContainText('synthetic-reference.pdf');
   await page.goto(base);
   await page.locator('[data-page="review-panel"]').click();
@@ -357,16 +358,11 @@ test('admin restores missing originals through the portal and old editor links r
   await page.locator('#password').fill(password);
   await page.locator('#auth-submit').click();
   await expect(page.locator('#workspace')).toBeVisible();
-  // Canonicalization may replace this alias before the final load event.
-  await page.goto(
-    base + '/editor?id=' + encodeURIComponent(fixture.alias) + '&view=restore-proof#history-area',
-    { waitUntil: 'commit' },
-  );
+  await page.goto(base + editorUrl(fixture.calendarId, 'history'), { waitUntil: 'commit' });
   await expect(page.locator(`form[data-restore-history="${fixture.historyId}"]`)).toBeVisible();
   const canonical = new URL(page.url());
-  assert.equal(canonical.searchParams.get('id'), fixture.calendarId);
-  assert.equal(canonical.searchParams.get('view'), 'restore-proof');
-  assert.equal(canonical.hash, '#history-area');
+  assert.equal(parseEditorPath(canonical.pathname)?.id, fixture.calendarId);
+  assert.equal(parseEditorPath(canonical.pathname)?.section, 'history');
   await page
     .locator(`form[data-restore-history="${fixture.historyId}"] input[type="file"]`)
     .setInputFiles(original);

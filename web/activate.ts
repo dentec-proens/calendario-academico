@@ -1,3 +1,4 @@
+import { navigateApp } from './routing.tsx';
 import { accounts } from './native/client.ts';
 import { element } from './native/dom.ts';
 import { nativeError } from './native/client.ts';
@@ -9,7 +10,7 @@ const button = element('activate-button', HTMLButtonElement);
 const message = element('invite-message', HTMLElement);
 // The secret stays in the URL fragment, never in request URLs or referrer headers.
 const token = new URLSearchParams(location.hash.slice(1)).get('token');
-history.replaceState(null, '', location.pathname);
+await navigateApp(location.pathname, { replace: true });
 
 try {
   const info = await accounts.checkInvitation(token);

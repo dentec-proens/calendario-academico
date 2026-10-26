@@ -1,3 +1,5 @@
+import { ApplicationRouter, getAppRouter, navigateApp } from '../routing.tsx';
+import { pageDocument } from '../../src/app-routes.ts';
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { useConvexAuth } from 'convex/react';
@@ -14,7 +16,12 @@ function Page({ load, requiresLogin }: { load: LoadPage; requiresLogin: boolean 
   useEffect(() => {
     if (isLoading) return;
     if (requiresLogin && !isAuthenticated) {
-      window.location.replace('/');
+      const target = new URL(getAppRouter().latestLocation.href, window.location.origin);
+      const retorno = target.pathname + target.search;
+      void navigateApp('/?retorno=' + encodeURIComponent(retorno), {
+        replace: true,
+        reloadDocument: true,
+      });
       return;
     }
     const main = document.querySelector<HTMLElement>('body > main');
@@ -37,7 +44,11 @@ function Page({ load, requiresLogin }: { load: LoadPage; requiresLogin: boolean 
   return <BackendStatus loading={isLoading || loadingPage} loadingLabel="Carregando…" />;
 }
 
-export function mountNativePage(load: LoadPage, requiresLogin = true) {
+export function mountNativePage(
+  load: LoadPage,
+  requiresLogin = true,
+  documentName = pageDocument(window.location.pathname),
+) {
   const main = document.querySelector<HTMLElement>('body > main');
   if (main) main.hidden = true;
   const host = document.createElement('div');
@@ -46,7 +57,13 @@ export function mountNativePage(load: LoadPage, requiresLogin = true) {
   createRoot(host).render(
     <NativeProvider>
       <NativeErrorBoundary>
-        <Page load={load} requiresLogin={requiresLogin} />
+        {documentName ? (
+          <ApplicationRouter document={documentName}>
+            <Page load={load} requiresLogin={requiresLogin} />
+          </ApplicationRouter>
+        ) : (
+          <Page load={load} requiresLogin={requiresLogin} />
+        )}
       </NativeErrorBoundary>
     </NativeProvider>,
   );

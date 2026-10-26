@@ -36,6 +36,8 @@ O build gera `dist/app/`, servido em `127.0.0.1:4183`; `PORT` altera a porta. No
 
 ADMIN gerencia campi, contas, documentos, eventos institucionais e revisão humana. CAMPUS consulta a base institucional e trabalha somente nos calendários da unidade autorizada.
 
+A navegação usa TanStack Router. Cada seção e formulário tem endereço próprio, como `/calendarios`, `/calendarios/novo`, `/documentos`, `/contas/nova` e `/revisoes`. As seções do editor usam `/calendarios/<id>/editar`, `/periodos`, `/dias`, `/eventos`, `/historico`, `/pendencias` e `/visualizar` sob o mesmo calendário. É possível abrir esses endereços diretamente, recarregar a tela e percorrer a navegação com Voltar/Avançar do navegador. A URL identifica a tela; campos ainda não aplicados permanecem apenas na sessão e não são recuperados ao recarregar.
+
 No editor, **Adicionar/Aplicar** inclui o preenchimento no calendário e inicia o salvamento automático. O indicador confirma a gravação; campos ainda em edição não são salvos até serem aplicados. Conflitos e falhas preservam as alterações na tela e indicam a ação necessária.
 
 Calendários de teste geram PDFs identificados como teste. Calendários definitivos podem gerar uma cópia da proposta com pendências; a saída definitiva depende das verificações e da revisão humana atualizada. A aplicação não concede aprovação institucional nem assina ou protocola no SEI.
@@ -51,6 +53,8 @@ pnpm check
 Executa formatação, lint, lint com análise de tipos, TypeScript, testes e build. Comandos individuais: `pnpm format:check`, `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test` e `pnpm build`.
 
 Os testes de domínio, backend, infraestrutura e autosave usam Vitest e `convex-test`, sem serviço remoto. Os testes de UI usam Playwright com Chromium e fixtures sintéticas que carregam os componentes e CSS reais. Todos entram na checagem estrita de tipos (`pnpm typecheck:tests`).
+
+Os testes de rotas verificam acesso direto às telas nos servidores Vite e de preview, equivalência com as regras da Vercel e respostas 404 para caminhos desconhecidos e arquivos inexistentes. Os testes de navegador cobrem a sincronização de tela e URL, recarregamento, histórico, permissões e preservação dos formulários ao navegar. Esse fluxo não exige scripts Unix nem geração de rotas por comandos de shell; os comandos de instalação, build e validação acima também se aplicam ao PowerShell.
 
 Na primeira execução, instale o navegador:
 
@@ -79,7 +83,7 @@ A suíte visual protege o portal, a criação de calendário, a revisão humana 
 
 Para uma mudança visual intencional, execute `pnpm test:visual:update`, confira cada screenshot alterado e execute `pnpm test:visual` novamente. No macOS, atualize também as referências de Linux com `pnpm test:visual:linux:update` (requer Docker). O wrapper usa a mesma imagem e arquitetura do CI, instala as dependências em uma pasta temporária e copia as referências somente se toda a atualização passar; preserva o `node_modules` local. O wrapper lê as versões de Playwright e pnpm do `package.json`. Ao atualizar Playwright, mantenha `playwright-core` e `@playwright/test` na mesma versão, atualize a imagem em `.github/workflows/tests.yml` e regenere as referências. Não aceite alterações de screenshots sem verificar o efeito na interface.
 
-A CI executa formatação, lint, análise de tipos, Vitest e build em um job; outro job instala explicitamente o Chromium, valida a geração real de PDFs e executa todos os testes sintéticos e visuais na imagem Linux fixa. O status `check` só passa quando ambos os jobs passam. O relatório HTML, screenshots de falhas e traces ficam disponíveis no artefato `playwright-report` por 14 dias. Localmente, use `pnpm exec playwright show-report` ou `pnpm exec playwright show-trace <arquivo-trace.zip>` para investigar falhas.
+A CI executa formatação, lint, análise de tipos, Vitest e build em um job; outro job instala explicitamente o Chromium, valida a geração real de PDFs e executa todos os testes sintéticos e visuais na imagem Linux fixa. Um terceiro job em `windows-latest` valida instalação com lockfile, TypeScript, testes unitários (incluindo os servidores de rotas) e build no PowerShell. Os testes de navegador e PDF no Windows usam o fluxo Docker Desktop com containers Linux e as referências Linux descritas acima. O status `check` só passa quando os três jobs passam. Adicionar o job não comprova execução: a validação Windows depende do resultado efetivo da CI. O relatório HTML, screenshots de falhas e traces ficam disponíveis no artefato `playwright-report` por 14 dias. Localmente, use `pnpm exec playwright show-report` ou `pnpm exec playwright show-trace <arquivo-trace.zip>` para investigar falhas.
 
 O gerador de PDF usa `playwright-core` para controlar o navegador. `@sparticuz/chromium` é uma dependência de produção: fornece o executável e as bibliotecas Linux necessários às actions Node do Convex, e não participa dos testes de UI. A suíte `test/runtime/` executa esse mesmo gerador sem mocks, verificando concorrência, conteúdo do modelo de impressão, identificação de teste/proposta, papel A4 e escape de conteúdo. Ela é obrigatória no CI e roda separadamente com `pnpm test:runtime:linux` em outros sistemas. Não há seleção de Chrome local nem variáveis de teste no caminho de produção do PDF.
 

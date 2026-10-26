@@ -10,7 +10,7 @@ test('native server serves portal and invitation routes without a Node API or en
   const directory = await mkdtemp(join(tmpdir(), 'native-static-'));
   t.onTestFinished(() => rm(directory, { recursive: true, force: true }));
   await writeFile(join(directory, 'index.html'), 'react portal root');
-  await writeFile(join(directory, 'portal.html'), 'react portal alias');
+  await writeFile(join(directory, 'portal.html'), 'react portal application');
   await writeFile(join(directory, 'editor.html'), 'calendar editor');
   await writeFile(join(directory, 'activate.html'), 'convex invitation');
   const server = http.createServer(nativeStatic(directory));
@@ -26,15 +26,52 @@ test('native server serves portal and invitation routes without a Node API or en
   const origin = 'http://127.0.0.1:' + address.port;
   try {
     assert.equal(await (await fetch(origin)).text(), 'react portal root');
-    assert.equal(await (await fetch(origin + '/index.html')).text(), 'react portal root');
-    assert.equal(await (await fetch(origin + '/portal')).text(), 'react portal alias');
-    assert.equal(await (await fetch(origin + '/editor?id=fixture')).text(), 'calendar editor');
-    assert.equal(await (await fetch(origin + '/editor.html')).text(), 'calendar editor');
-    assert.equal(await (await fetch(origin + '/ativar')).text(), 'convex invitation');
+    for (const route of [
+      '/calendarios',
+      '/calendarios/novo',
+      '/documentos/novo?ano=2027',
+      '/eventos-institucionais',
+      '/eventos-institucionais/event-a/editar',
+      '/campi/novo',
+      '/contas/nova',
+      '/usuarios-online',
+      '/revisoes/calendar-a',
+    ]) {
+      assert.equal(await (await fetch(origin + route)).text(), 'react portal application', route);
+    }
+    for (const section of [
+      'editar',
+      'periodos',
+      'dias',
+      'eventos',
+      'historico',
+      'pendencias',
+      'visualizar',
+    ]) {
+      const route = `/calendarios/calendar-a/${section}`;
+      assert.equal(await (await fetch(origin + route)).text(), 'calendar editor', route);
+      const head = await fetch(origin + route, { method: 'HEAD' });
+      assert.equal(head.status, 200);
+      assert.equal(await head.text(), '');
+    }
+    assert.equal(await (await fetch(origin + '/ativar-conta')).text(), 'convex invitation');
     assert.equal((await fetch(origin + '/api/status')).status, 404);
     assert.equal((await fetch(origin + '/api/login', { method: 'POST' })).status, 404);
     assert.equal((await fetch(origin + '/.env.convex.local')).status, 404);
     assert.equal((await fetch(origin + '/%2e%2e%2fpackage.json')).status, 404);
+    for (const path of [
+      '/portal',
+      '/editor?id=fixture',
+      '/ativar',
+      '/calendarios/calendar-a/desconhecido',
+      '/calendarios/novo/editar/extra',
+      '/revisoes/id/extra',
+      '/assets/inexistente.js',
+      '/calendarios/%2F/editar',
+      '/calendarios/%ZZ/editar',
+    ]) {
+      assert.equal((await fetch(origin + path)).status, 404, path);
+    }
   } finally {
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),

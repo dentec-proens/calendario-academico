@@ -6,7 +6,11 @@ A barra lateral reúne **Calendários e referências** (Calendários, Documentos
 
 As coleções abrem pela lista. Use **Novo calendário**, **Cadastrar campus**, **Nova conta**, **Adicionar documento** ou **Novo evento institucional** para abrir o formulário correspondente. **Voltar à lista** preserva os campos em preenchimento na sessão. A troca de seções também preserva esses campos; recarregar ou sair da página pode descartá-los.
 
+Seções, formulários e análises têm URLs próprias: por exemplo, `/calendarios`, `/calendarios/novo`, `/documentos`, `/campi/novo`, `/contas/nova` e `/revisoes/<id>`. A edição de um evento institucional usa `/eventos-institucionais/<id>/editar`. Copie o endereço para compartilhar a tela com outra pessoa autorizada ou salve-o nos favoritos. Voltar e Avançar do navegador percorrem essas telas. Recarregar mantém o destino da URL, mas não os campos ainda não aplicados. Abrir um link continua exigindo autenticação e as permissões correspondentes.
+
 O editor está dividido em **Dados gerais**, **Períodos e avaliações**, **Sábados e férias**, **Eventos locais**, **Calendário anterior** e **Conferência e exportação**. As seções podem ser acessadas em qualquer ordem. **Visualizar calendário** abre a prévia anual. Campos ainda não aplicados permanecem em memória ao trocar de seção; a troca de seção não os salva.
+
+Cada seção do editor usa um endereço sob `/calendarios/<id>/`, terminando em `editar`, `periodos`, `dias`, `eventos`, `historico`, `pendencias` ou `visualizar`.
 
 ## Perfis e criação
 

@@ -5,6 +5,7 @@ import type { Notify, Status } from '../native/types.ts';
 import { LogIn, ShieldCheck } from 'lucide-react';
 import { accounts } from '../native/client.ts';
 import { useAction } from './useAction.ts';
+import { AppLink } from '../routing.tsx';
 
 export default function AuthPanel({ status, notify }: { status: Status; notify: Notify }) {
   const { pending, run } = useAction(notify);
@@ -115,7 +116,7 @@ export default function AuthPanel({ status, notify }: { status: Status; notify: 
         </fieldset>
       </form>
       <p>
-        <a href="/recuperar-senha">Recuperar senha</a>
+        <AppLink href="/recuperar-senha">Recuperar senha</AppLink>
       </p>
     </section>
   );

@@ -26,7 +26,7 @@ VITE_CONVEX_SITE_URL=https://exuberant-cheetah-138.convex.site
 
 No Convex de produção, `SITE_URL` deve apontar para `https://calendario-academico-phi.vercel.app`. `JWT_PRIVATE_KEY`, `JWKS` e credenciais dos provedores pertencem exclusivamente ao ambiente Convex. Cada ambiente tem sua própria configuração de autenticação. Nunca use prefixo `VITE_` em segredos.
 
-`vercel.json` define instalação com lockfile, `pnpm build`, saída `dist/app`, rotas e cabeçalhos de segurança. O runtime de build é Node 24. `index.html` contém o portal e `editor.html` contém o editor. A configuração Git permite implantação automática somente de `main` quando ativa no projeto. O build de Production confere as URLs Convex contra o destino versionado e falha se apontarem para outro ambiente.
+`vercel.json` define instalação com lockfile, `pnpm build`, saída `dist/app`, rotas e cabeçalhos de segurança. O runtime de build é Node 24. `index.html` e `portal.html` contêm o portal; `editor.html` contém o editor. As regras encaminham URLs como `/calendarios/novo`, `/revisoes/<id>` e `/calendarios/<id>/historico` ao documento correspondente, para que acesso direto e recarregamento funcionem. Os documentos de login, recuperação, ativação e logs também mantêm seus endereços. Caminhos desconhecidos e arquivos ausentes não recebem um fallback indiscriminado para o portal. O modelo compartilhado em `src/app-routes.ts` atende Vite e preview local; um teste confere sua equivalência com os rewrites da Vercel. A configuração Git permite implantação automática somente de `main` quando ativa no projeto. O build de Production confere as URLs Convex contra o destino versionado e falha se apontarem para outro ambiente.
 
 ## Publicação
 

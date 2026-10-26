@@ -15,6 +15,9 @@ import { calendars as calendarClient } from '../native/client.ts';
 import { useAction } from './useAction.ts';
 import Pagination from './Pagination.tsx';
 import CollectionPanel from './CollectionPanel.tsx';
+import { useRouteForm } from './route-form.ts';
+import { AppLink, navigateApp } from '../routing.tsx';
+import { editorUrl } from '../../src/app-routes.ts';
 
 export function updatedLabel(value: string | null | undefined) {
   const date = value ? new Date(value) : null;
@@ -46,7 +49,7 @@ export default function CalendarsPanel({
   pagination: PaginationState;
   trashPagination: PaginationState;
 }) {
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useRouteForm('calendars');
   const [campusId, setCampusId] = useState('');
   const [year, setYear] = useState('2027');
   const trash = liveTrash?.calendars ?? [];
@@ -81,7 +84,7 @@ export default function CalendarsPanel({
         classes: formText(form, 'classes'),
         shifts: formText(form, 'shifts'),
       });
-      window.location.assign('/editor?id=' + encodeURIComponent(calendar.id));
+      await navigateApp(editorUrl(calendar.id));
     });
   }
 
@@ -305,14 +308,14 @@ export default function CalendarsPanel({
                     {c.shifts ? ' · ' + c.shifts : ''}
                   </small>
                 </div>
-                <a href={'/editor?id=' + encodeURIComponent(c.id)}>
+                <AppLink href={editorUrl(c.id)}>
                   <ExternalLink aria-hidden="true" size={18} />
                   Abrir calendário
-                </a>
-                <a href={'/editor?id=' + encodeURIComponent(c.id) + '#history-area'}>
+                </AppLink>
+                <AppLink href={editorUrl(c.id, 'history')}>
                   <FileUp aria-hidden="true" size={18} />
                   Enviar calendário anterior
-                </a>
+                </AppLink>
                 <Button
                   type="button"
                   variant="danger"

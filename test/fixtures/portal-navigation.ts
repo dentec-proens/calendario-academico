@@ -4,6 +4,9 @@ import { ConvexProvider, type ConvexReactClient } from 'convex/react';
 import { getFunctionName } from 'convex/server';
 import type { FunctionReference } from 'convex/server';
 import { Workspace } from '../../web/portal/App.tsx';
+import { ApplicationRouter } from '../../web/routing.tsx';
+import { portalReview } from './portal-router-client.ts';
+import ConfirmationDialogHost from '../../web/components/ConfirmationDialog.tsx';
 import type { Bootstrap, DocumentsData } from '../../web/native/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import '../../web/style.css';
@@ -11,6 +14,18 @@ import '../../web/portal.css';
 import '../../web/portal/react-portal.css';
 
 const campusId = 'campus-a' as Id<'campuses'>;
+if (location.pathname === '/__portal')
+  history.replaceState(null, '', '/calendarios' + location.search);
+const multipleReviews = new URLSearchParams(location.search).has('multiple-reviews');
+const removedCalendars = new Set<string>();
+const queryListeners = new Set<{ refresh: () => void; notify: () => void }>();
+window.portalRouterTest.removeCalendar = (id) => {
+  removedCalendars.add(id);
+  // Convex publishes a consistent snapshot for all queries before notifying hooks.
+  const listeners = [...queryListeners];
+  for (const listener of listeners) listener.refresh();
+  for (const listener of listeners) listener.notify();
+};
 const requestedRole = new URLSearchParams(location.search).get('role');
 const campusRole = requestedRole === 'CAMPUS';
 const user: Bootstrap['user'] = {
@@ -103,25 +118,62 @@ const documents: DocumentsData['documents'] = (['rascunho', 'vigente', 'arquivad
 const client = {
   watchQuery: (
     reference: FunctionReference<'query'>,
-    args: { deleted?: boolean; year?: number; status?: string },
+    args: { deleted?: boolean; year?: number; status?: string; id?: string },
   ) => {
     const name = getFunctionName(reference);
-    const result = {
-      page:
-        name === 'native:documentPage'
-          ? documents.filter(
-              (document) =>
-                (user.role === 'ADMIN' || document.publishedAt) &&
-                (!args.year || document.year === args.year) &&
-                (!args.status || document.status === args.status),
-            )
-          : name === 'native:calendarPage' && !args.deleted
-            ? [calendar]
-            : [],
-      isDone: true,
-      continueCursor: '',
+    let result =
+      name === 'native:review'
+        ? portalReview(args.id ?? '')
+        : {
+            page:
+              name === 'native:documentPage'
+                ? documents.filter(
+                    (document) =>
+                      (user.role === 'ADMIN' || document.publishedAt) &&
+                      (!args.year || document.year === args.year) &&
+                      (!args.status || document.status === args.status),
+                  )
+                : name === 'native:calendarPage' && !args.deleted
+                  ? [
+                      calendar,
+                      ...(multipleReviews
+                        ? [
+                            {
+                              ...calendar,
+                              id: 'calendar-b' as Id<'calendars'>,
+                              name: 'Calendário calendar-b',
+                            },
+                          ]
+                        : []),
+                    ].filter((item) => !removedCalendars.has(item.id))
+                  : [],
+            isDone: true,
+            continueCursor: '',
+          };
+    return {
+      onUpdate: (onUpdate: () => void) => {
+        const listener = {
+          refresh: () => {
+            if ('page' in result && name === 'native:calendarPage')
+              result = {
+                ...result,
+                page: (result.page as Bootstrap['calendars']).filter(
+                  (item) => !removedCalendars.has(item.id),
+                ),
+              };
+          },
+          notify: onUpdate,
+        };
+        queryListeners.add(listener);
+        return () => queryListeners.delete(listener);
+      },
+      localQueryResult: () => {
+        if (name === 'native:review' && args.id && removedCalendars.has(args.id))
+          throw new Error('Calendário removido.');
+        return result;
+      },
+      journal: () => undefined,
     };
-    return { onUpdate: () => () => {}, localQueryResult: () => result, journal: () => undefined };
   },
 };
 createRoot(document.getElementById('root')!).render(
@@ -129,13 +181,18 @@ createRoot(document.getElementById('root')!).render(
     ConvexProvider,
     { client: client as unknown as ConvexReactClient },
     createElement(
-      'main',
-      null,
-      createElement(Workspace, {
-        info,
-        status: { user, hosted: true, setupRequired: false, googleEnabled: false },
-        notify: () => {},
-      }),
+      ApplicationRouter,
+      { document: 'portal.html' },
+      createElement(
+        'main',
+        null,
+        createElement(Workspace, {
+          info,
+          status: { user, hosted: true, setupRequired: false, googleEnabled: false },
+          notify: () => {},
+        }),
+      ),
     ),
+    createElement(ConfirmationDialogHost),
   ),
 );

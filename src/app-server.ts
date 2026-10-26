@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve, sep, extname } from 'node:path';
 import type { RequestListener } from 'node:http';
-import { pageRoutes } from './app-routes.ts';
+import { pageDocument } from './app-routes.ts';
 
 const contentTypes: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -21,12 +21,12 @@ export function staticPortal(directory = resolve('dist/app')): RequestListener {
     response: Parameters<RequestListener>[1],
   ) => Promise<void> = async (request, response) => {
     try {
-      const path = decodeURIComponent(new URL(request.url ?? '/', 'http://local.invalid').pathname);
+      const path = new URL(request.url ?? '/', 'http://local.invalid').pathname;
       if (!['GET', 'HEAD'].includes(request.method ?? '') || path.startsWith('/api/')) {
         response.writeHead(404).end();
         return;
       }
-      const file = resolve(root, pageRoutes.get(path) ?? path.replace(/^\//, ''));
+      const file = resolve(root, pageDocument(path) ?? decodeURIComponent(path).replace(/^\//, ''));
       const contentType = contentTypes[extname(file)];
       if (!file.startsWith(root + sep) || !contentType) {
         response.writeHead(404).end();

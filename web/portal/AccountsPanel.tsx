@@ -12,6 +12,7 @@ import { Copy, KeyRound, MailPlus, Trash2, UserPlus, X } from 'lucide-react';
 import { accounts } from '../native/client.ts';
 import { useAction } from './useAction.ts';
 import CollectionPanel from './CollectionPanel.tsx';
+import { useRouteForm } from './route-form.ts';
 
 function PrivateLink({
   id,
@@ -87,7 +88,7 @@ export default function AccountsPanel({
   googleEnabled: boolean;
   notify: Notify;
 }) {
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useRouteForm('accounts');
   const [role, setRole] = useState<Bootstrap['user']['role']>('CAMPUS');
   const [method, setMethod] = useState<'invite' | 'google' | 'local'>('invite');
   const [campusId, setCampusId] = useState('');

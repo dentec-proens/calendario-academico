@@ -11,18 +11,20 @@ type ReviewDocument = Awaited<ReturnType<typeof reviews.export>>;
 type Draft = ReturnType<typeof initialDraft>;
 type Operation = { calendarId: Id<'calendars'> };
 import { confirmAction } from '../components/confirmation.ts';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ClipboardCopy, Download, ExternalLink, Eye, Pencil, Save } from 'lucide-react';
 import { calendarName } from '../../src/calendar-label.ts';
 import { modalityLabels } from '../../src/modalities.ts';
 import { updateConclusion } from '../../src/review-conclusion.ts';
 import { reviewNorm } from '../../src/review-presentation.ts';
 import { reviews } from '../native/client.ts';
-import { usePaginatedQuery, useQuery } from 'convex/react';
+import { usePaginatedQuery, useQueries, type RequestForQueries } from 'convex/react';
 import { functions } from '../native/client.ts';
 import Pagination from './Pagination.tsx';
 import ReviewCriterion from './ReviewCriterion.tsx';
 import { TextField } from '../components/ui/Field.tsx';
+import { editorUrl } from '../../src/app-routes.ts';
+import { navigateApp, useAppLocation } from '../routing.tsx';
 
 function initialDraft(opened: ReviewSupport) {
   const entries = opened.criteria.map((criterion) => {
@@ -94,35 +96,88 @@ export function ReviewContent({
   liveReview,
   onOpened,
   pagination,
+  routeCalendarId,
+  routeKey,
+  routeUnavailable = false,
+  onRouteCalendar,
 }: {
   calendars: Bootstrap['calendars'];
   liveReview: ReviewSupport | undefined;
   onOpened: (id: Id<'calendars'>) => void;
   pagination: PaginationState;
+  routeCalendarId?: string;
+  routeKey?: string;
+  routeUnavailable?: boolean;
+  onRouteCalendar?: (id: string | null) => void;
 }) {
-  const [selectedCalendar, setSelectedCalendar] = useState<Id<'calendars'> | ''>('');
+  const [selectedCalendar, setSelectedCalendar] = useState<Id<'calendars'> | ''>(
+    () => (routeCalendarId || '') as Id<'calendars'> | '',
+  );
   const [draft, setDraft] = useState<Draft | null>(null);
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState('');
   const [operationCalendarId, setOperationCalendarId] = useState('');
   const [previousCalendars, setPreviousCalendars] = useState(calendars);
   const [previousLiveReview, setPreviousLiveReview] = useState(liveReview);
+  const [previousOpened, setPreviousOpened] = useState<ReviewSupport | undefined>(undefined);
+  const [previousRoute, setPreviousRoute] = useState({ id: routeCalendarId, key: routeKey });
+  const [draftCache, setDraftCache] = useState(() => new Map<string, Draft>());
+  const [removedCalendarId, setRemovedCalendarId] = useState('');
+  const [previousUnavailable, setPreviousUnavailable] = useState(routeUnavailable);
   const [preview, setPreview] = useState<ReviewDocument | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const conclusionRef = useRef<HTMLTextAreaElement>(null);
   const actionPending = useRef(false);
   const operationRef = useRef<Operation | null>(null);
-  const calendarId = calendars.some((calendar) => calendar.id === selectedCalendar)
-    ? selectedCalendar
-    : calendars[0]?.id || '';
+  const routeVersion = useRef(0);
+  const routed = routeCalendarId !== undefined;
+  const calendarId =
+    calendars.some((calendar) => calendar.id === selectedCalendar) ||
+    (routed && !!routeCalendarId && selectedCalendar === routeCalendarId)
+      ? selectedCalendar
+      : calendars[0]?.id || '';
   const openedCalendarId = draft?.opened.calendar.id;
-  const busy = Boolean(pending);
+  const routeLoading = Boolean(routeCalendarId && !draft && !message);
+  const busy = Boolean(pending) || routeLoading;
   const dirty = draft?.dirty === true;
 
   // Reconcile a new subscription snapshot before committing the view. This
   // avoids rendering stale fields first and cascading through a sync effect.
-  if (liveReview !== previousLiveReview) {
+  if (previousRoute.id !== routeCalendarId || previousRoute.key !== routeKey) {
+    setPreviousRoute({ id: routeCalendarId, key: routeKey });
+    const cached = new Map(draftCache);
+    if (draft) cached.set(draft.opened.calendar.id, draft);
+    setDraftCache(cached);
+    setDraft(routeCalendarId ? cached.get(routeCalendarId) || null : null);
+    if (routeCalendarId) setSelectedCalendar(routeCalendarId as Id<'calendars'>);
+    setPreview(null);
+    setPending('');
+    setOperationCalendarId('');
+    setMessage('');
+  }
+
+  if (previousUnavailable !== routeUnavailable) {
+    setPreviousUnavailable(routeUnavailable);
+    setRemovedCalendarId(routeUnavailable ? routeCalendarId || '' : '');
+    if (routeUnavailable) {
+      setDraft(null);
+      setPreview(null);
+      setPending('');
+      setOperationCalendarId('');
+      setDraftCache((cached) => {
+        const next = new Map(cached);
+        if (routeCalendarId) next.delete(routeCalendarId);
+        return next;
+      });
+      setMessage(
+        'O calendário deixou de estar disponível para revisão. Selecione outro calendário para abrir a análise.',
+      );
+    }
+  }
+
+  if (liveReview !== previousLiveReview || draft?.opened !== previousOpened) {
     setPreviousLiveReview(liveReview);
+    setPreviousOpened(draft?.opened);
     if (liveReview && draft && liveReview.calendar.id === draft.opened.calendar.id) {
       const prior = draft.opened;
       const changed =
@@ -145,16 +200,40 @@ export function ReviewContent({
 
   if (calendars !== previousCalendars && pagination.status === 'Exhausted') {
     setPreviousCalendars(calendars);
+    const removedCachedIds = Array.from(draftCache.keys()).filter(
+      (id) =>
+        previousCalendars.some((calendar) => calendar.id === id) &&
+        !calendars.some((calendar) => calendar.id === id),
+    );
+    if (removedCachedIds.length)
+      setDraftCache((cached) => {
+        const next = new Map(cached);
+        for (const id of removedCachedIds) next.delete(id);
+        return next;
+      });
+    // A directly opened record need not appear on the loaded list page. Only a
+    // record previously present in an exhausted list can be inferred removed.
     const removedOpened =
-      openedCalendarId && !calendars.some((calendar) => calendar.id === openedCalendarId);
+      openedCalendarId &&
+      (!routed || previousCalendars.some((calendar) => calendar.id === openedCalendarId)) &&
+      !calendars.some((calendar) => calendar.id === openedCalendarId);
     const removedOperation =
-      operationCalendarId && !calendars.some((calendar) => calendar.id === operationCalendarId);
+      operationCalendarId &&
+      (!routed || previousCalendars.some((calendar) => calendar.id === operationCalendarId)) &&
+      !calendars.some((calendar) => calendar.id === operationCalendarId);
     if (removedOpened || removedOperation) {
       if (removedOpened) {
+        setDraftCache((cached) => {
+          const next = new Map(cached);
+          next.delete(openedCalendarId);
+          return next;
+        });
+        setRemovedCalendarId(openedCalendarId);
         setDraft(null);
         setPreview(null);
       }
       if (removedOperation) {
+        setRemovedCalendarId(operationCalendarId);
         setOperationCalendarId('');
         setPending('');
       }
@@ -165,16 +244,30 @@ export function ReviewContent({
   }
 
   useEffect(() => {
-    if (!dirty) return;
-
     function beforeUnload(event: BeforeUnloadEvent) {
+      if (
+        !dirty &&
+        !Array.from(draftCache.values()).some(
+          (cached) => cached.opened.calendar.id !== openedCalendarId && cached.dirty,
+        )
+      )
+        return;
       event.preventDefault();
       event.returnValue = '';
     }
 
     window.addEventListener('beforeunload', beforeUnload);
     return () => window.removeEventListener('beforeunload', beforeUnload);
-  }, [dirty]);
+  }, [dirty, draftCache, openedCalendarId]);
+
+  useEffect(
+    () => () => {
+      operationRef.current = null;
+      actionPending.current = false;
+      routeVersion.current++;
+    },
+    [],
+  );
 
   useEffect(() => {
     if (preview) scrollIntoView(previewRef.current, { behavior: 'smooth' });
@@ -186,36 +279,74 @@ export function ReviewContent({
 
   useEffect(() => {
     if (
-      pagination.status === 'Exhausted' &&
       operationRef.current &&
-      !calendars.some((calendar) => calendar.id === operationRef.current?.calendarId)
+      (operationRef.current.calendarId === removedCalendarId ||
+        (!routed &&
+          pagination.status === 'Exhausted' &&
+          !calendars.some((calendar) => calendar.id === operationRef.current?.calendarId)))
     ) {
       // Invalidate pending asynchronous results as soon as access is revoked.
       operationRef.current = null;
       actionPending.current = false;
     }
-  }, [calendars, pagination.status]);
+  }, [calendars, pagination.status, routed, removedCalendarId]);
 
   function notify(text: string) {
     setMessage(`${new Date().toLocaleTimeString('pt-BR')} — ${text}`);
   }
 
-  function beginOperation(calendarId: Id<'calendars'>, kind: string) {
+  const beginOperation = useCallback((calendarId: Id<'calendars'>, kind: string) => {
     const operation = { calendarId };
     operationRef.current = operation;
     actionPending.current = true;
     setOperationCalendarId(calendarId);
     setPending(kind);
     return operation;
-  }
+  }, []);
 
-  function finishOperation(operation: Operation) {
+  const finishOperation = useCallback((operation: Operation) => {
     if (operationRef.current !== operation) return;
     operationRef.current = null;
     actionPending.current = false;
     setPending('');
     setOperationCalendarId('');
-  }
+  }, []);
+
+  useEffect(() => {
+    if (routeCalendarId === undefined) return;
+    routeVersion.current++;
+    operationRef.current = null;
+    actionPending.current = false;
+    if (!routeCalendarId || routeUnavailable) return;
+    const id = routeCalendarId as Id<'calendars'>;
+    if (openedCalendarId === id) {
+      onOpened(id);
+      return;
+    }
+    const operation = { calendarId: id };
+    operationRef.current = operation;
+    actionPending.current = true;
+    void Promise.resolve()
+      .then(() => reviews.get(id))
+      .then((opened) => {
+        if (operationRef.current !== operation) return;
+        if (opened.calendar.id !== id)
+          throw new Error('O calendário solicitado não está disponível para revisão.');
+        setDraft(initialDraft(opened));
+        onOpened(id);
+        setMessage('Indicações automáticas disponíveis para conferência.');
+      })
+      .catch((error: unknown) => {
+        if (operationRef.current === operation) setMessage(nativeError(error).message);
+      })
+      .finally(() => finishOperation(operation));
+    return () => {
+      if (operationRef.current === operation) {
+        operationRef.current = null;
+        actionPending.current = false;
+      }
+    };
+  }, [routeCalendarId, routeKey, routeUnavailable, openedCalendarId, onOpened, finishOperation]);
 
   function changeField<
     K extends 'conclusion' | 'processNumber' | 'applicableNorm' | 'acknowledgeStale',
@@ -288,6 +419,7 @@ export function ReviewContent({
 
   async function openReview() {
     if (actionPending.current) return;
+    const requestedVersion = routeVersion.current;
     const selectedCalendarId = calendarId;
     if (
       dirty &&
@@ -301,17 +433,42 @@ export function ReviewContent({
       }))
     )
       return;
-    if (actionPending.current) return;
+    if (actionPending.current || routeVersion.current !== requestedVersion) return;
     if (!selectedCalendarId) {
       notify('Selecione um calendário.');
+      return;
+    }
+    const cached =
+      selectedCalendarId !== draft?.opened.calendar.id
+        ? draftCache.get(selectedCalendarId)
+        : undefined;
+    if (cached) {
+      setDraftCache((current) => {
+        const next = new Map(current);
+        if (draft) next.delete(draft.opened.calendar.id);
+        return next;
+      });
+      setDraft(cached);
+      setPreview(null);
+      onOpened(selectedCalendarId);
+      onRouteCalendar?.(selectedCalendarId);
+      notify('Análise reaberta com o preenchimento preservado nesta sessão.');
       return;
     }
     const operation = beginOperation(selectedCalendarId, 'open');
     try {
       const opened = await reviews.get(selectedCalendarId);
       if (operationRef.current !== operation) return;
+      if (opened.calendar.id !== selectedCalendarId)
+        throw new Error('O calendário solicitado não está disponível para revisão.');
+      setDraftCache((current) => {
+        const next = new Map(current);
+        if (draft) next.delete(draft.opened.calendar.id);
+        return next;
+      });
       setDraft(initialDraft(opened));
       onOpened?.(selectedCalendarId);
+      onRouteCalendar?.(selectedCalendarId);
       setPreview(null);
       notify('Indicações automáticas disponíveis para conferência.');
     } catch (error) {
@@ -402,7 +559,10 @@ export function ReviewContent({
     }
   }
 
-  const opened = draft?.opened;
+  const opened =
+    !routeUnavailable && (!routed || draft?.opened.calendar.id === routeCalendarId)
+      ? draft?.opened
+      : undefined;
   const reviewedCount = draft?.entries.filter((entry) => entry.reviewed).length || 0;
   return (
     <section id="review-panel" className="page" aria-busy={busy}>
@@ -417,9 +577,14 @@ export function ReviewContent({
           <select
             id="review-calendar"
             value={calendarId}
-            disabled={busy || !calendars.length}
+            disabled={busy || (!calendars.length && !routeCalendarId)}
             onChange={(event) => setSelectedCalendar(event.target.value as Id<'calendars'>)}
           >
+            {routeCalendarId && !calendars.some((calendar) => calendar.id === routeCalendarId) ? (
+              <option value={routeCalendarId}>
+                {opened?.calendar.name || 'Calendário solicitado'}
+              </option>
+            ) : null}
             {calendars.map((calendar) => (
               <option key={calendar.id} value={calendar.id}>
                 {calendar.name} · {calendar.year} ·{' '}
@@ -433,7 +598,7 @@ export function ReviewContent({
         <Button
           type="button"
           id="open-review"
-          disabled={busy || !calendars.length}
+          disabled={busy || !calendarId}
           onClick={() => {
             void openReview();
           }}
@@ -442,10 +607,29 @@ export function ReviewContent({
           {pending === 'open' ? 'Abrindo análise…' : 'Abrir análise'}
         </Button>
         <Pagination pagination={pagination} label="Carregar mais calendários" />
+        {routeCalendarId && onRouteCalendar ? (
+          <a
+            href="/revisoes"
+            onClick={(event) => {
+              if (
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+              )
+                return;
+              event.preventDefault();
+              onRouteCalendar(null);
+            }}
+          >
+            Voltar à lista de revisões
+          </a>
+        ) : null}
         <p id="review-message" role="status" aria-live="polite">
           {message || (!calendars.length ? 'Nenhum calendário disponível para revisão.' : '')}
         </p>
-        {opened ? (
+        {opened && draft ? (
           <div id="review-content">
             <h3 id="review-heading">
               {opened.calendar.name === calendarName(opened.calendar.year, opened.calendar.campus)
@@ -467,7 +651,7 @@ export function ReviewContent({
             </p>
             <a
               id="review-editor"
-              href={`/editor?id=${encodeURIComponent(opened.calendar.id)}`}
+              href={editorUrl(opened.calendar.id, 'calendar')}
               target="_blank"
               rel="noopener"
             >
@@ -642,6 +826,9 @@ export function ReviewContent({
 }
 
 export default function ReviewPanel() {
+  const location = useAppLocation();
+  const routeCalendarId = /^\/revisoes\/([^/]+)$/.exec(location.pathname)?.[1];
+  const requestedId = routeCalendarId ? decodeURIComponent(routeCalendarId) : '';
   const [openedId, setOpenedId] = useState<Id<'calendars'> | null>(null);
   const pagination = usePaginatedQuery(
     functions.native.calendarPage,
@@ -649,17 +836,43 @@ export default function ReviewPanel() {
     { initialNumItems: 50 },
   );
   const calendars = pagination.results;
-  const available = calendars.some((calendar) => calendar.id === openedId);
-  const liveReview = useQuery(
-    functions.native.review,
-    openedId && available ? { id: openedId } : 'skip',
+  const [knownCalendarIds, setKnownCalendarIds] = useState(
+    () => new Set(calendars.map((calendar) => calendar.id)),
   );
+  if (calendars.some((calendar) => !knownCalendarIds.has(calendar.id))) {
+    setKnownCalendarIds(
+      new Set([...knownCalendarIds, ...calendars.map((calendar) => calendar.id)]),
+    );
+  }
+  const knownUnavailable = Boolean(
+    requestedId &&
+    pagination.status === 'Exhausted' &&
+    knownCalendarIds.has(requestedId as Id<'calendars'>) &&
+    !calendars.some((calendar) => calendar.id === requestedId),
+  );
+  const liveId = openedId && openedId === requestedId && !knownUnavailable ? openedId : null;
+  const liveQueries = useMemo(() => {
+    const queries: RequestForQueries = {};
+    if (liveId) queries.review = { query: functions.native.review, args: { id: liveId } };
+    return queries;
+  }, [liveId]);
+  // A direct record may be outside every loaded page. Subscription errors must
+  // remain local even when its removal cannot be inferred from the list.
+  const { review: liveResult } = useQueries(liveQueries) as { review?: ReviewSupport | Error };
+  const routeUnavailable = knownUnavailable || liveResult instanceof Error;
+  const liveReview = liveResult instanceof Error ? undefined : liveResult;
   return (
     <ReviewContent
       calendars={calendars}
       pagination={pagination}
       liveReview={liveReview}
       onOpened={setOpenedId}
+      routeCalendarId={requestedId}
+      routeKey={location.pathname}
+      routeUnavailable={routeUnavailable}
+      onRouteCalendar={(id) => {
+        void navigateApp(id ? `/revisoes/${encodeURIComponent(id)}` : '/revisoes');
+      }}
     />
   );
 }
