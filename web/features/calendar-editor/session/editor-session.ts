@@ -2,7 +2,7 @@ import type { CalendarRecord, CalendarState, CalendarSave } from '../types.ts';
 import { equalValues } from '../../../../src/equal.ts';
 import { createAutosaver } from '../../../autosave.ts';
 import type { AutosaveStatus } from '../../../autosave.ts';
-import { recalculateCalendar } from '../../../../src/calendar-edits/commands.ts';
+import { inspectCalendar, reconcile } from '../../../../src/calendar-base/index.ts';
 
 export interface EditorSnapshot {
   record: CalendarRecord;
@@ -13,6 +13,12 @@ export interface EditorSnapshot {
   error: string;
   remote: CalendarRecord | null;
   formEpoch: number;
+  baseUpdate: ReturnType<
+    typeof inspectCalendar<
+      CalendarRecord['institutionalEvents'][number],
+      CalendarRecord['currentDocuments'][number]
+    >
+  >;
 }
 
 export function createEditorSession(
@@ -21,6 +27,7 @@ export function createEditorSession(
     state: CalendarState;
     version: number;
     catalogueRevision: number;
+    baseAcceptance?: string;
   }) => Promise<CalendarSave>,
   readOnly = false,
 ) {
@@ -33,30 +40,78 @@ export function createEditorSession(
     error: '',
     remote: null,
     formEpoch: 0,
+    baseUpdate: inspectCalendar(record, record),
   };
   let active = true;
   let abandoned = false;
   let accessSuspended = false;
   let suspendedStatus: Pick<EditorSnapshot, 'status' | 'error'> | null = null;
-  let approvedCatalogueRevision = record.catalogueRevision;
+  let baseAcceptance: string | undefined;
+  let rejectedBaseAcceptance = false;
   const listeners = new Set<() => void>();
   const forms = new Set<string>();
   function publish(update: Partial<EditorSnapshot>) {
     if (!active) return;
     current = { ...current, ...update };
+    current.baseUpdate = inspectCalendar(current.record, current.remote ?? current.record);
     for (const listener of listeners) listener();
+    if (
+      rejectedBaseAcceptance &&
+      current.status === 'blocked' &&
+      !accessSuspended &&
+      current.baseUpdate.compatible &&
+      (!current.remote || current.remote.version === current.record.version)
+    ) {
+      rejectedBaseAcceptance = false;
+      saver.resume();
+      publish({ status: current.dirty ? 'pending' : 'idle', error: '' });
+      saver.schedule();
+    }
   }
   const saver = createAutosaver({
     isDirty: () => current.dirty,
     snapshot: () => ({
       state: current.state,
       version: current.record.version,
-      catalogueRevision: approvedCatalogueRevision,
+      catalogueRevision: current.record.catalogueRevision,
+      ...(baseAcceptance ? { baseAcceptance } : {}),
     }),
-    write,
+    write: async (sent) => {
+      try {
+        return await write(sent);
+      } catch (cause) {
+        if (
+          sent.baseAcceptance &&
+          cause &&
+          typeof cause === 'object' &&
+          'status' in cause &&
+          cause.status === 409
+        ) {
+          if (baseAcceptance === sent.baseAcceptance) baseAcceptance = undefined;
+          rejectedBaseAcceptance = true;
+        }
+        throw cause;
+      }
+    },
     onSaved: (saved, sent) => {
       const unchanged = equalValues(current.state, sent.state);
-      const confirmed = { ...current.record, ...saved, catalogueRevision: sent.catalogueRevision };
+      const { base, unchanged: _unchanged, ...value } = saved;
+      const confirmed = {
+        ...current.record,
+        ...value,
+        catalogueRevision: base.revision,
+        institutionalSnapshot: base.events,
+        documentSnapshot: base.documents,
+        ...(base.revision >= current.record.currentCatalogueRevision
+          ? {
+              currentCatalogueRevision: base.revision,
+              institutionalEvents: base.events,
+              currentDocuments: base.documents,
+            }
+          : {}),
+      };
+      if (baseAcceptance === sent.baseAcceptance) baseAcceptance = undefined;
+      rejectedBaseAcceptance = false;
       publish({
         record: confirmed,
         ...(unchanged ? { state: structuredClone(saved.state) } : {}),
@@ -124,6 +179,12 @@ export function createEditorSession(
       if (unapplied !== current.unapplied) publish({ unapplied });
     },
     receive(fresh: CalendarRecord) {
+      const newest = current.remote ?? current.record;
+      if (
+        fresh.version < newest.version ||
+        fresh.currentCatalogueRevision < newest.currentCatalogueRevision
+      )
+        return;
       const changed =
         fresh.version !== current.record.version ||
         fresh.currentCatalogueRevision !== current.record.currentCatalogueRevision;
@@ -132,10 +193,14 @@ export function createEditorSession(
         return;
       }
       if (fresh.version < current.record.version) return;
-      if (current.dirty || current.unapplied || current.status === 'saving')
+      if (
+        fresh.version === current.record.version &&
+        inspectCalendar(current.record, fresh).compatible
+      ) {
+        publish({ record: { ...fresh, state: current.record.state }, remote: null });
+      } else if (current.dirty || current.unapplied || current.status === 'saving')
         publish({ remote: fresh, record: { ...current.record, histories: fresh.histories } });
       else {
-        approvedCatalogueRevision = fresh.catalogueRevision;
         publish({ record: fresh, state: structuredClone(fresh.state), remote: null });
       }
     },
@@ -157,7 +222,7 @@ export function createEditorSession(
         remote: current.remote && current.remote.version <= value.version ? null : current.remote,
       });
     },
-    async confirmBase() {
+    async confirmBase(acceptance: string) {
       assertEditing();
       if (current.unapplied)
         throw new Error('Aplique ou descarte os campos em edição antes de confirmar a base.');
@@ -167,19 +232,9 @@ export function createEditorSession(
         throw new Error(
           'Há uma versão mais recente do calendário. Reabra antes de confirmar a base.',
         );
-      const state = recalculateCalendar(current.state, latest.institutionalEvents);
-      approvedCatalogueRevision = latest.currentCatalogueRevision;
-      publish({
-        record: {
-          ...current.record,
-          currentCatalogueRevision: latest.currentCatalogueRevision,
-          institutionalEvents: latest.institutionalEvents,
-          currentDocuments: latest.currentDocuments,
-        },
-        state,
-        dirty: true,
-        remote: null,
-      });
+      reconcile(inspectCalendar(current.record, latest), acceptance);
+      baseAcceptance = acceptance;
+      publish({ dirty: true });
       saver.resume();
       await saver.save(true);
       await saver.flush();

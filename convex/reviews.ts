@@ -1,5 +1,5 @@
+import { reviewIsCurrent } from '../src/calendar-base/index';
 import { assertWritesOpen } from './lib/maintenance';
-import { inheritedEvents } from '../src/institution';
 import { reviewSupport, reviewCriteria, initialConclusion } from '../src/review';
 import { updateConclusion } from '../src/review-conclusion';
 import { reviewDocument } from '../src/review-export';
@@ -59,9 +59,9 @@ export const review = query({
   handler: async (ctx, { id }) => {
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
-    const { record, base, review: prior } = await baseRecord(ctx, user, id);
+    const { record, base, compatibility, review: prior } = await baseRecord(ctx, user, id);
     const support = reviewSupport(record, [
-      ...inheritedEvents(base, record.state.year, record.state.modalities, record.state),
+      ...compatibility.snapshot.events,
       ...record.state.events,
     ]);
     return clean({
@@ -69,9 +69,13 @@ export const review = query({
       initialConclusion: initialConclusion(support),
       catalogueRevision: base.revision,
       review: prior ? reviewDto(prior) : null,
+      baseIdentity: compatibility.identity,
       stale:
         !!prior &&
-        (prior.calendarVersion !== record.version || prior.catalogueRevision !== base.revision),
+        !reviewIsCurrent(prior, record.version, {
+          revision: base.revision,
+          identity: compatibility.identity,
+        }),
     }) as Infer<typeof contracts.reviewSupportDto>;
   },
 });
@@ -83,14 +87,22 @@ export const saveReview = mutation({
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
-    const { record, base, docs, review: prior } = await baseRecord(ctx, user, id);
-    if (body.calendarVersion !== record.version || body.catalogueRevision !== base.revision)
+    const { record, base, docs, compatibility, review: prior } = await baseRecord(ctx, user, id);
+    if (
+      !reviewIsCurrent(body, record.version, {
+        revision: base.revision,
+        identity: compatibility.identity,
+      })
+    )
       fail('O calendário ou a base mudou. Reabra a revisão.', 409);
     if (body.revision !== (prior?.revision ?? 0))
       fail('Outro revisor atualizou esta análise. Reabra antes de salvar.', 409);
     if (
       prior &&
-      (prior.calendarVersion !== record.version || prior.catalogueRevision !== base.revision) &&
+      !reviewIsCurrent(prior, record.version, {
+        revision: base.revision,
+        identity: compatibility.identity,
+      }) &&
       !body.acknowledgeStale
     )
       fail('Confirme a reavaliação das conclusões anteriores após a mudança de versão.', 409);
@@ -106,7 +118,7 @@ export const saveReview = mutation({
         fail('Selecione Atendido, Não atendido ou Não aplicável antes de confirmar a análise.');
     }
     const support = reviewSupport(record, [
-      ...inheritedEvents(base, record.state.year, record.state.modalities, record.state),
+      ...compatibility.snapshot.events,
       ...record.state.events,
     ]);
     const conclusion = updateConclusion(
@@ -125,6 +137,7 @@ export const saveReview = mutation({
       calendarId: id,
       calendarVersion: record.version,
       catalogueRevision: base.revision,
+      baseIdentity: compatibility.identity,
       revision: (prior?.revision ?? 0) + 1,
       source: 'SEI 3959640',
       documentSnapshot: docs,
@@ -157,12 +170,14 @@ export const exportReview = query({
   handler: async (ctx, { id, revision }) => {
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
-    const { record, base, review: prior } = await baseRecord(ctx, user, id);
+    const { record, base, compatibility, review: prior } = await baseRecord(ctx, user, id);
     if (!prior) fail('Salve a análise inicial ou a revisão antes de exportar.', 409);
     if (
       prior.revision !== revision ||
-      prior.calendarVersion !== record.version ||
-      prior.catalogueRevision !== base.revision
+      !reviewIsCurrent(prior, record.version, {
+        revision: base.revision,
+        identity: compatibility.identity,
+      })
     )
       fail('A análise está desatualizada. Reabra, confira e salve antes de exportar.', 409);
     return reviewDocument(record, reviewDto(prior)) as Infer<typeof contracts.exportDto>;

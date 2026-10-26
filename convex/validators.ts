@@ -142,6 +142,7 @@ export const reviewEntry = v.object({
   reviewed: v.boolean(),
 });
 export const reviewFields = {
+  baseIdentity: v.optional(v.string()),
   calendarId: v.id('calendars'),
   calendarVersion: v.number(),
   catalogueRevision: v.number(),

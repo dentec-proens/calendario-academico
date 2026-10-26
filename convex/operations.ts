@@ -4,7 +4,10 @@ import { internalMutation, internalQuery, query } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { assertWritesOpen, maintenanceAccess, maintenancePaused } from './lib/maintenance';
 import { paginationOptsValidator } from 'convex/server';
-import { yearRevision } from './catalogue/model';
+import { catalogue } from './catalogue/model';
+import { inspectBase } from './calendars/base';
+import { domainState } from './calendars/model';
+import { currentDocuments } from './documents/model';
 
 const statusValue = v.object({
   emergency: v.boolean(),
@@ -104,16 +107,20 @@ export const smokePreflight = internalQuery({
       throw Error(
         'Confira identidade, e-mail e acesso local da conta operacional ADMIN antes de publicar.',
       );
-    if (
-      !calendar ||
-      calendar.deletedAt ||
-      calendar.purpose !== 'test' ||
-      !content ||
-      content.catalogueRevision !== (await yearRevision(ctx, calendar.year))
-    )
+    if (!calendar || calendar.deletedAt || calendar.purpose !== 'test' || !content)
       throw Error(
         'Confira o calendário de teste operacional e salve sua base atual antes de publicar.',
       );
+    const campus = await ctx.db.get(calendar.campusId);
+    if (!campus) throw Error('Campus não encontrado.');
+    const assessment = inspectBase(
+      domainState(calendar, campus, content.state),
+      content,
+      await catalogue(ctx, calendar.year),
+      await currentDocuments(ctx, calendar.year),
+    );
+    if (!assessment.compatible)
+      throw Error('Confira a base do calendário operacional antes de publicar.');
     return null;
   },
 });

@@ -107,6 +107,7 @@ export const createInput = v.object({
 });
 export const saveInput = v.object({
   unchangedOnly: v.optional(v.boolean()),
+  baseAcceptance: v.optional(v.string()),
   version: v.number(),
   catalogueRevision: v.number(),
   state: v.object({
@@ -114,7 +115,13 @@ export const saveInput = v.object({
     teacherDayDate: v.optional(v.union(v.string(), v.null())),
   }),
 });
+export const baseSnapshotDto = v.object({
+  revision: v.number(),
+  events: v.array(institutionalEventSnapshot),
+  documents: v.array(documentMetadata),
+});
 export const saveResult = v.object({
+  base: baseSnapshotDto,
   version: v.number(),
   state: domainState,
   updatedAt: v.string(),
@@ -122,6 +129,7 @@ export const saveResult = v.object({
   readiness,
 });
 export const reviewInput = v.object({
+  baseIdentity: v.optional(v.string()),
   revision: v.number(),
   calendarVersion: v.number(),
   catalogueRevision: v.number(),
@@ -189,6 +197,7 @@ export const reviewSupportDto = v.object({
   catalogueRevision: v.number(),
   review: v.union(reviewDto, v.null()),
   stale: v.boolean(),
+  baseIdentity: v.optional(v.string()),
 });
 export const exportDto = v.object({ html: v.string(), body: v.string(), text: v.string() });
 export const historyContextDto = v.object({

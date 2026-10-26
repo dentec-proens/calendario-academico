@@ -26,6 +26,7 @@ import type * as authContracts from "../authContracts.js";
 import type * as authCrypto from "../authCrypto.js";
 import type * as calendars from "../calendars.js";
 import type * as calendars_authorship from "../calendars/authorship.js";
+import type * as calendars_base from "../calendars/base.js";
 import type * as calendars_model from "../calendars/model.js";
 import type * as calendars_record from "../calendars/record.js";
 import type * as campuses from "../campuses.js";
@@ -77,6 +78,7 @@ declare const fullApi: ApiFromModules<{
   authCrypto: typeof authCrypto;
   calendars: typeof calendars;
   "calendars/authorship": typeof calendars_authorship;
+  "calendars/base": typeof calendars_base;
   "calendars/model": typeof calendars_model;
   "calendars/record": typeof calendars_record;
   campuses: typeof campuses;

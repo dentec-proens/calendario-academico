@@ -83,6 +83,10 @@ export async function verifyReleaseSmoke(configuration: SmokeConfiguration) {
     const after = await client.query(api.calendars.calendar, { id });
     if (
       after.version !== before.version ||
+      after.catalogueRevision !== before.catalogueRevision ||
+      JSON.stringify(after.institutionalSnapshot) !==
+        JSON.stringify(before.institutionalSnapshot) ||
+      JSON.stringify(after.documentSnapshot) !== JSON.stringify(before.documentSnapshot) ||
       JSON.stringify(after.state) !== JSON.stringify(before.state)
     )
       throw Error('O calendário operacional mudou durante o smoke.');

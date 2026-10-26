@@ -43,6 +43,35 @@ function useSession(record: CalendarRecord) {
   useEffect(() => {
     session.receive(record);
   }, [record, session]);
+  const synchronization = useRef('');
+  useEffect(() => {
+    if (
+      readOnly ||
+      !connection.isWebSocketConnected ||
+      suspended ||
+      snapshot.baseUpdate.kind !== 'equivalent'
+    )
+      return;
+    const key = `${snapshot.record.version}:${snapshot.remote?.currentCatalogueRevision ?? snapshot.record.currentCatalogueRevision}`;
+    if (synchronization.current === key) return;
+    synchronization.current = key;
+    void calendars
+      .synchronizeBase(record.id, snapshot.record.version)
+      .then((fresh) => session.receive(fresh))
+      .catch(() => {
+        synchronization.current = '';
+      });
+  }, [
+    record.id,
+    snapshot.baseUpdate.kind,
+    snapshot.record.version,
+    snapshot.record.currentCatalogueRevision,
+    snapshot.remote?.currentCatalogueRevision,
+    readOnly,
+    suspended,
+    connection.isWebSocketConnected,
+    session,
+  ]);
   const previousEvents = useRef(new Set(record.state.events.map((event) => event.id)));
   useEffect(() => {
     const present = new Set(snapshot.state.events.map((event) => event.id));
@@ -108,14 +137,13 @@ function useSession(record: CalendarRecord) {
   const institutional = useMemo(
     () =>
       campusInstitutionalEvents(
-        snapshot.record.catalogueRevision === snapshot.record.currentCatalogueRevision
+        snapshot.baseUpdate.compatible
           ? snapshot.record.institutionalEvents
           : snapshot.record.institutionalSnapshot,
         snapshot.state,
       ),
     [
-      snapshot.record.catalogueRevision,
-      snapshot.record.currentCatalogueRevision,
+      snapshot.baseUpdate.compatible,
       snapshot.record.institutionalEvents,
       snapshot.record.institutionalSnapshot,
       snapshot.state,

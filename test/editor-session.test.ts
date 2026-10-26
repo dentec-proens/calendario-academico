@@ -1,9 +1,20 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
+import { inspectCalendar } from '../src/calendar-base/index.ts';
 import { createEditorSession } from '../web/features/calendar-editor/session/editor-session.ts';
 import { applyPeriod, applyWeek, removePeriod } from '../src/calendar-edits/commands.ts';
-import type { CalendarSave, CalendarEvent } from '../web/features/calendar-editor/types.ts';
+import type {
+  CalendarSave,
+  CalendarEvent,
+  CalendarRecord,
+} from '../web/features/calendar-editor/types.ts';
+
+const savedBase = (record: CalendarRecord) => ({
+  revision: record.currentCatalogueRevision,
+  events: record.institutionalEvents,
+  documents: record.currentDocuments,
+});
 
 afterEach(() => vi.useRealTimers());
 
@@ -20,6 +31,7 @@ test.each([401, 409])(
         version: body.version + 1,
         updatedAt: record.updatedAt,
         readiness: record.readiness,
+        base: savedBase(record),
       };
     });
     const session = createEditorSession(record, write);
@@ -54,6 +66,7 @@ test('an unauthorized response from an old request can arrive after reauthentica
       version: body.version + 1,
       updatedAt: record.updatedAt,
       readiness: record.readiness,
+      base: savedBase(record),
     });
   });
   const session = createEditorSession(record, write);
@@ -83,6 +96,7 @@ test('expired access pauses scheduled writes without losing applied state and re
     version: body.version + 1,
     updatedAt: record.updatedAt,
     readiness: record.readiness,
+    base: savedBase(record),
   }));
   const session = createEditorSession(record, write);
   session.apply((state) => ({ ...state, weekEvidence: 'Decisão preservada' }));
@@ -178,6 +192,7 @@ test('flush drains edits applied during a write and advances the expected versio
       state: body.state,
       updatedAt: record.updatedAt,
       readiness: record.readiness,
+      base: savedBase(record),
     };
     return sent.length === 1
       ? new Promise<CalendarSave>((resolve) => {
@@ -190,7 +205,13 @@ test('flush drains edits applied during a write and advances the expected versio
   await Promise.resolve();
   const first = session.getSnapshot().state;
   session.apply((state) => ({ ...state, weekEvidence: 'Decisão aplicada durante a gravação' }));
-  finish({ version: 2, state: first, updatedAt: record.updatedAt, readiness: record.readiness });
+  finish({
+    version: 2,
+    state: first,
+    updatedAt: record.updatedAt,
+    readiness: record.readiness,
+    base: savedBase(record),
+  });
   await flushing;
   expect(sent).toEqual([
     { version: 1, evidence: 'Primeira decisão' },
@@ -244,6 +265,7 @@ test('disposed sessions ignore late save confirmations and cancel scheduled writ
     version: 2,
     updatedAt: record.updatedAt,
     readiness: record.readiness,
+    base: savedBase(record),
   });
   await expect(flushing).rejects.toThrow('encerrada');
   await vi.runAllTimersAsync();
@@ -298,20 +320,21 @@ test('a new institutional revision is saved only after explicit confirmation, pr
   const revisions: number[] = [];
   const session = createEditorSession(record, async (body) => {
     revisions.push(body.catalogueRevision);
-    if (body.catalogueRevision !== 2)
+    if (body.baseAcceptance !== inspectCalendar(record, record).identity)
       throw Object.assign(new Error('A base institucional mudou.'), { status: 409 });
     return {
       state: body.state,
       version: 2,
       updatedAt: record.updatedAt,
       readiness: record.readiness,
+      base: savedBase(record),
     };
   });
   session.apply((state) => ({ ...state, weekEvidence: 'Decisão local preservada' }));
   await expect(session.flush()).rejects.toThrow('base institucional');
   expect(revisions).toEqual([1]);
-  await session.confirmBase();
-  expect(revisions).toEqual([1, 2]);
+  await session.confirmBase(session.getSnapshot().baseUpdate.identity);
+  expect(revisions).toEqual([1, 1]);
   expect(session.getSnapshot()).toMatchObject({
     dirty: false,
     record: { catalogueRevision: 2 },
@@ -319,3 +342,105 @@ test('a new institutional revision is saved only after explicit confirmation, pr
   });
   session.dispose();
 });
+
+test('a delayed equivalence synchronization cannot hide a newer calendar conflict or base change', async () => {
+  const record = await opened();
+  const session = createEditorSession(record, async () => {
+    throw Error('Não deve gravar');
+  });
+  session.setFormDirty('draft', true);
+  const remote = { ...record, version: record.version + 1, currentCatalogueRevision: 3 };
+  session.receive(remote);
+  session.receive({ ...record, catalogueRevision: 2, currentCatalogueRevision: 2 });
+  expect(session.getSnapshot().remote).toEqual(remote);
+  expect(session.getSnapshot().unapplied).toBe(true);
+  session.receive({ ...remote, catalogueRevision: 2, currentCatalogueRevision: 2 });
+  expect(session.getSnapshot().remote).toEqual(remote);
+  session.dispose();
+});
+
+test('confirmation keeps the identity shown to the person instead of accepting a more recent publication', async () => {
+  const record = await opened();
+  const write = vi.fn(async () => {
+    throw Error('Não deve gravar');
+  });
+  const session = createEditorSession(record, write);
+  const displayed = session.getSnapshot().baseUpdate.identity;
+  session.receive({
+    ...record,
+    currentCatalogueRevision: 2,
+    institutionalEvents: [
+      ...record.institutionalEvents,
+      {
+        id: 'inst:new',
+        name: 'Novo feriado',
+        start: '2027-04-01',
+        end: '2027-04-01',
+        kind: 'exclude',
+        evidence: 'Portaria',
+      },
+    ],
+  });
+  await expect(session.confirmBase(displayed)).rejects.toThrow('novamente');
+  expect(write).not.toHaveBeenCalled();
+  expect(session.getSnapshot().dirty).toBe(false);
+  session.dispose();
+});
+
+test.each(['before-failure', 'after-failure'])(
+  'a rejected acceptance is discarded and a reverted equivalent base releases autosave (%s)',
+  async (timing) => {
+    const original = await opened();
+    const record = {
+      ...original,
+      currentCatalogueRevision: 2,
+      institutionalEvents: [
+        ...original.institutionalEvents,
+        {
+          id: 'inst:temporary',
+          name: 'Evento temporário',
+          start: '2027-04-01',
+          end: '2027-04-01',
+          kind: 'note' as const,
+          evidence: 'Portaria',
+        },
+      ],
+    };
+    let writes = 0;
+    const sent: Array<string | undefined> = [];
+    const reverted = { ...original, currentCatalogueRevision: 3 };
+    const session = createEditorSession(record, async (body) => {
+      sent.push(body.baseAcceptance);
+      if (++writes === 1) {
+        if (timing === 'before-failure') session.receive(reverted);
+        throw Object.assign(Error('A base mudou desde a comparação.'), { status: 409 });
+      }
+      return {
+        state: body.state,
+        version: original.version,
+        updatedAt: original.updatedAt,
+        readiness: original.readiness,
+        base: { ...savedBase(original), revision: 3 },
+      };
+    });
+    const accepting = session.confirmBase(session.getSnapshot().baseUpdate.identity);
+    if (timing === 'after-failure') {
+      await expect(accepting).rejects.toThrow('comparação');
+      expect(session.getSnapshot().status).toBe('blocked');
+      session.receive(reverted);
+      await session.flush();
+    } else await accepting;
+    expect(sent).toHaveLength(2);
+    expect(sent[0]).toBeTruthy();
+    expect(sent[1]).toBeUndefined();
+    expect(session.getSnapshot()).toMatchObject({
+      dirty: false,
+      status: 'saved',
+      record: { version: original.version, catalogueRevision: 3 },
+    });
+    session.apply((state) => ({ ...state, weekEvidence: 'Nova alteração permitida' }));
+    await session.flush();
+    expect(sent.at(-1)).toBeUndefined();
+    session.dispose();
+  },
+);

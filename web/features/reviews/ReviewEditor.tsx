@@ -1,3 +1,4 @@
+import { reviewIsCurrent } from '../../../src/calendar-base/index.ts';
 import { useEffect, useRef, useState, type SetStateAction } from 'react';
 import { reviews } from '../../shared/convex/reviews.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
@@ -44,6 +45,7 @@ export default function ReviewEditor({
         revision: base.review?.revision || 0,
         calendarVersion: base.calendar.version,
         catalogueRevision: base.catalogueRevision,
+        baseIdentity: base.baseIdentity,
         acknowledgeStale: draft.acknowledgeStale,
       });
       const updated = await reviews.get(base.calendar.id);
@@ -57,7 +59,7 @@ export default function ReviewEditor({
   });
   const draft = values.draft;
   const dirty = draft.dirty;
-  const previewRevision = `${draft.opened.calendar.version}:${draft.opened.catalogueRevision}:${draft.opened.review?.revision || 0}`;
+  const previewRevision = `${draft.opened.calendar.version}:${draft.opened.baseIdentity ?? draft.opened.catalogueRevision}:${draft.opened.review?.revision || 0}`;
   const preview = previewData?.revision === previewRevision ? previewData.document : null;
   const setPreview = (document: ReviewDocument | null) =>
     setPreviewData(document ? { document, revision: previewRevision } : null);
@@ -69,9 +71,15 @@ export default function ReviewEditor({
     setPreview(null);
   };
   const remoteChanged =
-    opened.calendar.version !== draft.opened.calendar.version ||
-    opened.catalogueRevision !== draft.opened.catalogueRevision ||
-    (opened.review?.revision || 0) !== (draft.opened.review?.revision || 0);
+    !reviewIsCurrent(
+      {
+        calendarVersion: draft.opened.calendar.version,
+        catalogueRevision: draft.opened.catalogueRevision,
+        baseIdentity: draft.opened.baseIdentity,
+      },
+      opened.calendar.version,
+      { revision: opened.catalogueRevision, identity: opened.baseIdentity },
+    ) || (opened.review?.revision || 0) !== (draft.opened.review?.revision || 0);
   useEffect(() => {
     if (!remoteChanged || dirty || pending || exporting) return;
     form.reset({ draft: initialDraft(opened) });

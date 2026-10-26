@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { baseChanges } from './base-changes.ts';
 import { useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import type { CalendarRecord } from './types.ts';
 
@@ -22,6 +21,11 @@ function EventDescription({ event }: { event: Event }) {
       {event.hours !== undefined ? ` · ${event.hours} horas` : ''}
       {event.evidence ? ` · Fonte: ${event.evidence}` : ''}
       {event.source ? ` · ${event.source}` : ''}
+      {event.originalStart &&
+      (event.originalStart !== event.start ||
+        (event.originalEnd && event.originalEnd !== event.end))
+        ? ` · Data institucional: ${date(event.originalStart)}${event.originalEnd && event.originalEnd !== event.originalStart ? ` a ${date(event.originalEnd)}` : ''}`
+        : ''}
     </>
   );
 }
@@ -35,23 +39,32 @@ function DocumentDescription({ document }: { document: Document }) {
 }
 
 export default function BaseUpdateCard() {
-  const { record, remote, readOnly, session, notify, connected, unapplied, status } =
+  const { record, remote, baseUpdate, readOnly, session, notify, connected, unapplied, status } =
     useCalendarEditor();
   const [pending, setPending] = useState(false);
   const latest = remote ?? record;
-  if (readOnly || record.catalogueRevision === latest.currentCatalogueRevision) return null;
-  const events = baseChanges(record.institutionalSnapshot, latest.institutionalEvents);
-  const documents = baseChanges(record.documentSnapshot, latest.currentDocuments);
-  const eventCount = events.added.length + events.changed.length + events.removed.length;
-  const documentCount =
-    documents.added.length + documents.changed.length + documents.removed.length;
+  if (readOnly || baseUpdate.compatible) return null;
+  const { events, documents } = baseUpdate;
+  const hasEvents = baseUpdate.kind === 'events';
+  const hasDocuments =
+    documents.added.length + documents.changed.length + documents.removed.length > 0;
+  const title = hasEvents
+    ? 'Há mudanças que afetam este calendário'
+    : 'Documentos de referência atualizados';
+  const actionLabel = hasEvents
+    ? 'Incorporar mudanças ao calendário'
+    : 'Atualizar referências do calendário';
   const newerCalendar = latest.version !== record.version;
   const blocked = !connected || unapplied || newerCalendar || status === 'saving';
   async function incorporate() {
     setPending(true);
     try {
-      await session.confirmBase();
-      notify('Mudanças da base institucional incorporadas ao calendário.');
+      await session.confirmBase(baseUpdate.identity);
+      notify(
+        hasEvents
+          ? 'Mudanças da base institucional incorporadas ao calendário.'
+          : 'Referências documentais atualizadas no calendário.',
+      );
     } catch (cause) {
       notify(
         cause instanceof Error ? cause.message : 'Não foi possível incorporar as mudanças.',
@@ -65,8 +78,12 @@ export default function BaseUpdateCard() {
     <details className="base-update-card">
       <summary>
         <span>
-          <strong>Há mudanças na base institucional</strong>
-          <span>Este calendário usa uma versão anterior das referências institucionais.</span>
+          <strong>{title}</strong>
+          <span>
+            {hasEvents
+              ? 'Confira as mudanças nos eventos institucionais antes de incorporá-las.'
+              : 'Confira os documentos atualizados. As datas do calendário permanecem iguais.'}
+          </span>
           <span className="base-update-card__toggle base-update-card__expand">Ver mudanças</span>
           <span className="base-update-card__toggle base-update-card__collapse">
             Recolher mudanças
@@ -74,85 +91,73 @@ export default function BaseUpdateCard() {
         </span>
       </summary>
       <div className="base-update-card__content">
-        <p>
-          Base incorporada: {record.catalogueRevision} · Base atual:{' '}
-          {latest.currentCatalogueRevision}.
-        </p>
-        <h3>Eventos institucionais</h3>
-        {!eventCount ? (
-          <p>Não há alterações nos eventos institucionais deste calendário.</p>
-        ) : (
-          <ul>
-            {events.added.map((event) => (
-              <li key={event.id}>
-                <strong>Incluído: </strong>
-                <EventDescription event={event} />
-              </li>
-            ))}
-            {events.removed.map((event) => (
-              <li key={event.id}>
-                <strong>Removido: </strong>
-                <EventDescription event={event} />
-              </li>
-            ))}
-            {events.changed.map(({ before, after }) => (
-              <li key={after.id}>
-                <strong>Alterado: {after.name}</strong>
-                <div>
-                  Antes: <EventDescription event={before} />
-                </div>
-                <div>
-                  Agora: <EventDescription event={after} />
-                </div>
-              </li>
-            ))}
-          </ul>
+        {hasEvents && (
+          <>
+            <h3>Eventos institucionais</h3>
+            <ul>
+              {events.added.map((event) => (
+                <li key={event.id}>
+                  <strong>Incluído: </strong>
+                  <EventDescription event={event} />
+                </li>
+              ))}
+              {events.removed.map((event) => (
+                <li key={event.id}>
+                  <strong>Removido: </strong>
+                  <EventDescription event={event} />
+                </li>
+              ))}
+              {events.changed.map(({ before, after }) => (
+                <li key={after.id}>
+                  <strong>Alterado: {after.name}</strong>
+                  <div>
+                    Antes: <EventDescription event={before} />
+                  </div>
+                  <div>
+                    Agora: <EventDescription event={after} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
-        <h3>Documentos de referência</h3>
-        {!documentCount ? (
-          <p>Não há alterações nos documentos de referência.</p>
-        ) : (
-          <ul>
-            {documents.added.map((document) => (
-              <li key={document.id}>
-                <strong>Incluído: </strong>
-                <DocumentDescription document={document} />
-              </li>
-            ))}
-            {documents.removed.map((document) => (
-              <li key={document.id}>
-                <strong>Removido: </strong>
-                <DocumentDescription document={document} />
-              </li>
-            ))}
-            {documents.changed.map(({ before, after }) => (
-              <li key={after.id}>
-                <strong>Atualizado: {after.title}</strong>
-                <div>
-                  Antes: <DocumentDescription document={before} />
-                </div>
-                <div>
-                  Agora: <DocumentDescription document={after} />
-                </div>
-                {before.hash !== after.hash && <div>O conteúdo do arquivo foi substituído.</div>}
-              </li>
-            ))}
-          </ul>
-        )}
-        {!eventCount && documentCount > 0 && (
-          <p>Apenas os documentos de referência foram atualizados.</p>
-        )}
-        {!eventCount && !documentCount && (
-          <p>
-            A revisão da base mudou, sem diferenças nos eventos e documentos usados por este
-            calendário.
-          </p>
+        {hasDocuments && (
+          <>
+            <h3>Documentos de referência</h3>
+            <ul>
+              {documents.added.map((document) => (
+                <li key={document.id}>
+                  <strong>Incluído: </strong>
+                  <DocumentDescription document={document} />
+                </li>
+              ))}
+              {documents.removed.map((document) => (
+                <li key={document.id}>
+                  <strong>Removido: </strong>
+                  <DocumentDescription document={document} />
+                </li>
+              ))}
+              {documents.changed.map(({ before, after }) => (
+                <li key={after.id}>
+                  <strong>Atualizado: {after.title}</strong>
+                  <div>
+                    Antes: <DocumentDescription document={before} />
+                  </div>
+                  <div>
+                    Agora: <DocumentDescription document={after} />
+                  </div>
+                  {before.hash !== after.hash && <div>O conteúdo do arquivo foi substituído.</div>}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
         <p>
-          Incorporar as mudanças recalcula o calendário e salva uma nova versão, incluindo as
-          alterações locais já aplicadas.
+          {hasEvents
+            ? 'Incorporar as mudanças recalcula o calendário e salva uma nova versão, incluindo as alterações locais já aplicadas.'
+            : 'Atualizar as referências salva uma nova versão com os documentos atuais, sem recalcular as datas.'}
         </p>
-        <p>Você pode recolher este card e incorporar as mudanças depois.</p>
+        <p>Você pode recolher este aviso e atualizar depois.</p>
         {unapplied && (
           <p>Aplique ou descarte os campos em preenchimento antes de incorporar as mudanças.</p>
         )}
@@ -165,7 +170,7 @@ export default function BaseUpdateCard() {
             void incorporate();
           }}
         >
-          {pending ? 'Incorporando mudanças…' : 'Incorporar mudanças ao calendário'}
+          {pending ? 'Atualizando calendário…' : actionLabel}
         </button>
       </div>
     </details>

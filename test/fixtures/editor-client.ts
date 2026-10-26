@@ -53,7 +53,8 @@ export const record: CalendarRecord = {
   currentDocuments: [],
   readiness: { ready: false, issues: [], warnings: [], officialApproval: false },
 };
-export const calls = { saves: 0, conversions: 0, failConversion: false };
+record.institutionalSnapshot = structuredClone(record.institutionalEvents);
+export const calls = { synchronizations: 0, saves: 0, conversions: 0, failConversion: false };
 export const fixtureProfile: { role: Bootstrap['user']['role'] } = { role: 'ADMIN' };
 export const functions = api;
 const listeners = new Set<() => void>();
@@ -108,6 +109,12 @@ export const convex = {
     Promise.resolve(result(getFunctionName(reference))),
   mutation(reference: FunctionReference<'mutation'>, args: Record<string, unknown>) {
     switch (getFunctionName(reference)) {
+      case 'calendars:synchronizeBase': {
+        calls.synchronizations++;
+        record.catalogueRevision = record.currentCatalogueRevision;
+        publish();
+        return Promise.resolve(structuredClone(record));
+      }
       case 'calendars:saveCalendar': {
         const body = args.body as { state: CalendarState; version: number };
         if (body.version !== record.version)
@@ -119,8 +126,16 @@ export const convex = {
         calls.saves++;
         record.state = structuredClone(body.state);
         record.version++;
+        record.catalogueRevision = record.currentCatalogueRevision;
+        record.institutionalSnapshot = structuredClone(record.institutionalEvents);
+        record.documentSnapshot = structuredClone(record.currentDocuments);
         publish();
         return Promise.resolve({
+          base: {
+            revision: record.catalogueRevision,
+            events: record.institutionalSnapshot,
+            documents: record.documentSnapshot,
+          },
           state: structuredClone(record.state),
           version: record.version,
           updatedAt: record.updatedAt,

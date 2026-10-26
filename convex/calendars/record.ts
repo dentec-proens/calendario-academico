@@ -1,4 +1,4 @@
-import { inheritedEvents } from '../../src/institution';
+import { inspectBase } from './base';
 import { releaseReadiness } from '../../src/release';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
@@ -30,11 +30,13 @@ export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>
     documentSnapshot: content.documentSnapshot.map(documentDto),
     institutionalSnapshot: content.institutionalSnapshot,
   };
+  const compatibility = inspectBase(record.state, content, base, docs);
   const readiness = releaseReadiness(record, {
+    base: compatibility,
     catalogue: base,
     reviews: review ? [reviewDto(review)] : [],
   }) as Infer<typeof contracts.readiness>;
-  return { row, content, record, base, docs, review, readiness };
+  return { row, content, record, base, docs, review, readiness, compatibility };
 }
 
 export async function fullRecord(
@@ -42,7 +44,7 @@ export async function fullRecord(
   user: Member,
   id: Id<'calendars'>,
 ): Promise<Infer<typeof contracts.calendarDto>> {
-  const { record, base, docs, readiness } = await baseRecord(ctx, user, id);
+  const { record, base, docs, readiness, compatibility } = await baseRecord(ctx, user, id);
   const versions = await ctx.db
     .query('calendarVersions')
     .withIndex('by_calendarId_and_version', (q) => q.eq('calendarId', id))
@@ -61,12 +63,7 @@ export async function fullRecord(
       catalogueRevision: row.catalogueRevision,
     })),
     readiness,
-    institutionalEvents: inheritedEvents(
-      base,
-      record.state.year,
-      record.state.modalities,
-      record.state,
-    ),
+    institutionalEvents: compatibility.snapshot.events,
     currentCatalogueRevision: base.revision,
     currentDocuments: docs.map(documentDto),
     histories: await Promise.all(

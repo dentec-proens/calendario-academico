@@ -1,3 +1,4 @@
+import { referenceIsCurrent, reviewIsCurrent } from './calendar-base/index.ts';
 import type { CalendarActivity, ActivityState, CalendarReview } from './domain-types.ts';
 import { calendarModalities, modalityLabels, appliesTo } from './modalities.ts';
 import { activityChecklist, assessmentCount, scopedRequirement } from './obligations.ts';
@@ -19,7 +20,11 @@ export function releaseReadiness(
     institutionalSnapshot: CalendarActivity[];
     state: ActivityState;
   },
-  db: { catalogue: { revision: number }; reviews?: CalendarReview[] },
+  db: {
+    catalogue: { revision: number };
+    reviews?: CalendarReview[];
+    base?: { compatible: boolean; identity: string };
+  },
 ) {
   const issues = [],
     warnings = [];
@@ -113,7 +118,7 @@ export function releaseReadiness(
 
   // Campus event requirements come from the same checklist displayed in the editor.
   // Do not add hidden, duplicate keyword requirements when generating the calendar.
-  if (record.catalogueRevision !== db.catalogue.revision)
+  if (!referenceIsCurrent(record.catalogueRevision, db.catalogue.revision, db.base))
     issues.push('Salve o calendário com a base institucional atualizada.');
   try {
     const result = calendarResult(record.state, [
@@ -137,16 +142,16 @@ export function releaseReadiness(
     issues.push('Complete e confira a semana letiva, os períodos e as evidências da contagem.');
   }
   const review = (db.reviews || []).find((r) => r.calendarId === record.id);
-  const current =
-    review &&
-    review.calendarVersion === record.version &&
-    review.catalogueRevision === db.catalogue.revision;
+  const current = reviewIsCurrent(review, record.version, {
+    revision: db.catalogue.revision,
+    identity: db.base?.identity,
+  });
   if (!current)
     issues.push('A DENTEC/PROENS precisa salvar a revisão desta versão do calendário e da base.');
   if (!review?.applicableNorm?.trim())
     issues.push('Identifique a norma vigente aplicável na revisão.');
   for (const c of reviewCriteria) {
-    const entry = current ? review.entries.find((e) => e.id === c.id) : undefined;
+    const entry = current ? review?.entries.find((e) => e.id === c.id) : undefined;
     if (!entry?.reviewed || !['ATENDIDO', 'NAO_APLICAVEL'].includes(entry.status))
       issues.push(
         `${c.item}: ${c.title} — atendimento ou não aplicabilidade aguardando confirmação.`,

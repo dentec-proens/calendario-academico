@@ -62,6 +62,7 @@ export interface ReviewEntry {
   notes?: string;
 }
 export interface CalendarReview {
+  baseIdentity?: string;
   calendarId: string;
   calendarVersion: number;
   catalogueRevision: number;

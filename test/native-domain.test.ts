@@ -1,3 +1,4 @@
+import { inspectCalendar } from '../src/calendar-base/index.ts';
 import { ConvexError } from 'convex/values';
 import type { FunctionReturnType } from 'convex/server';
 import type { CalendarActivity } from '../src/domain-types.ts';
@@ -159,7 +160,7 @@ test('native publication gates base revisions and reviews retain concurrent revi
   });
   await assert.rejects(
     campus.write(path, { ...saveBody(await campus.read(path)), catalogueRevision: 1 }, 'PUT'),
-    /base institucional mudou/,
+    /mudanças aplicáveis na base institucional/,
   );
   const full = await inspect();
   assert.equal(full.reviews[0].history.length, 1);
@@ -584,6 +585,7 @@ test('native institutional publication requires admin confirmation and preserves
     {
       version: 1,
       catalogueRevision: 2,
+      baseAcceptance: inspectCalendar(loaded, loaded).identity,
       state: loaded.state,
     },
     'PUT',

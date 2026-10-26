@@ -1,4 +1,5 @@
-import { assertWritesOpen } from './lib/maintenance';
+import { inspectBase, reconcileBase } from './calendars/base';
+import { assertWritesOpen, maintenanceAccess } from './lib/maintenance';
 import { normalizeCalendar } from '../src/calendar-normalize';
 import { recalculateCalendar } from '../src/calendar-edits/commands';
 import { equalValues } from '../src/equal';
@@ -23,7 +24,7 @@ import { pageBound } from './lib/pagination';
 import { fail, iso, text, clean } from './lib/shared';
 import * as validators from './validators';
 import { paginationOptsValidator } from 'convex/server';
-import { v } from 'convex/values';
+import { v, type Infer } from 'convex/values';
 
 const idArgs = { id: v.id('calendars') };
 const ok = v.object({ ok: v.boolean() });
@@ -199,14 +200,13 @@ export const createCalendar = mutation({
 export const saveCalendar = mutation({
   args: { ...idArgs, body: contracts.saveInput },
   returns: contracts.saveResult,
-  handler: async (ctx, { id, body }) => {
+  handler: async (ctx, { id, body }): Promise<Infer<typeof contracts.saveResult>> => {
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
-    const { row, content, record, base, docs } = await baseRecord(ctx, user, id);
+    const { row, content, record, base, docs, compatibility } = await baseRecord(ctx, user, id);
     if (row.version !== body.version) fail('Há versão mais recente. Reabra o calendário.', 409);
-    if (body.catalogueRevision !== base.revision)
-      fail('A base institucional mudou. Reabra para incorporar as alterações.', 409);
+    const reconciliation = reconcileBase(compatibility, body.baseAcceptance);
     if (
       body.state.year !== row.year ||
       JSON.stringify(body.state.modalities) !== JSON.stringify(row.modalities)
@@ -239,28 +239,29 @@ export const saveCalendar = mutation({
         fail('Referência histórica inválida para este calendário.');
     }
     try {
-      Object.assign(
-        state,
-        recalculateCalendar(state, inheritedEvents(base, row.year, row.modalities, state)),
-      );
+      if (reconciliation.recalculate || !equalValues(clean(content.state), toContent(state))) {
+        Object.assign(
+          state,
+          recalculateCalendar(state, inheritedEvents(base, row.year, row.modalities, state)),
+        );
+      }
     } catch (error) {
       fail(error instanceof Error ? error.message : 'Não foi possível recalcular o calendário.');
     }
     const next = toContent(state),
       institutionalSnapshot = clean(inheritedEvents(base, row.year, row.modalities, state));
-    if (
-      equalValues(clean(content.state), next) &&
-      content.catalogueRevision === base.revision &&
-      equalValues(content.documentSnapshot, docs) &&
-      equalValues(content.institutionalSnapshot, institutionalSnapshot)
-    )
+    if (equalValues(clean(content.state), next) && !reconciliation.incorporate) {
+      if (!body.unchangedOnly && content.catalogueRevision !== base.revision)
+        await ctx.db.patch(content._id, { catalogueRevision: base.revision });
       return {
+        base: inspectBase(state, content, base, docs).dto,
         version: row.version,
         state: record.state,
         updatedAt: iso(row.updatedAt),
         unchanged: true,
         readiness: (await baseRecord(ctx, user, id)).readiness,
       };
+    }
     if (body.unchangedOnly)
       fail(
         'O smoke exige um calendário de teste já salvo com a base atual. Nenhuma alteração foi gravada.',
@@ -283,11 +284,31 @@ export const saveCalendar = mutation({
     );
     const saved = await baseRecord(ctx, user, id);
     return {
+      base: saved.compatibility.dto,
       version: saved.row.version,
       state: saved.record.state,
       updatedAt: saved.record.updatedAt,
       readiness: saved.readiness,
     };
+  },
+});
+
+export const synchronizeBase = mutation({
+  args: { ...idArgs, version: v.number() },
+  returns: contracts.calendarDto,
+  handler: async (ctx, { id, version }) => {
+    await assertWritesOpen(ctx);
+    const { user } = await requireNativeUser(ctx);
+    calendarEditor(user);
+    const { row, content, compatibility } = await baseRecord(ctx, user, id);
+    if (row.version !== version) fail('Há versão mais recente. Reabra o calendário.', 409);
+    reconcileBase(compatibility);
+    if (
+      content.catalogueRevision !== compatibility.snapshot.revision &&
+      !(await maintenanceAccess(ctx))
+    )
+      await ctx.db.patch(content._id, { catalogueRevision: compatibility.snapshot.revision });
+    return fullRecord(ctx, user, id);
   },
 });
 
@@ -382,14 +403,11 @@ export const pdfContext = internalQuery({
     readiness: contracts.readiness,
     currentCatalogueRevision: v.number(),
   }),
-  handler: async (ctx, { id, version, catalogueRevision, copy }) => {
+  handler: async (ctx, { id, version, copy }) => {
     const { user } = await requireNativeUser(ctx);
     const record = await fullRecord(ctx, user, id);
-    if (
-      record.version !== version ||
-      record.currentCatalogueRevision !== catalogueRevision ||
-      record.catalogueRevision !== catalogueRevision
-    )
+    const { compatibility } = await baseRecord(ctx, user, id);
+    if (record.version !== version || !compatibility.compatible)
       fail('Salve a versão atual com a base institucional atualizada antes de baixar.', 409);
     const proposalCopy = copy === true && record.purpose !== 'test';
     if (record.purpose !== 'test' && !record.readiness.ready && !proposalCopy)
