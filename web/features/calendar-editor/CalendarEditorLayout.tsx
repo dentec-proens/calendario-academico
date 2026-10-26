@@ -19,6 +19,7 @@ import { editorPages, editorSteps, editorNavigation, continueLabel } from './edi
 import { modalityLabels } from '../../../src/modalities.ts';
 import { regimeLabels } from '../../../src/calendar-label.ts';
 import EditorSteps from './EditorSteps.tsx';
+import BaseUpdateCard from './BaseUpdateCard.tsx';
 import { useCalendarSummaryTool } from '../../shared/integrations/webmcp.ts';
 import './calendar-editor.css';
 import { HistoryAnalysisProvider } from './history/useHistoryAnalysis.tsx';
@@ -41,7 +42,6 @@ function EditorFrame() {
     session,
     evaluation,
     readOnly,
-    notify,
     formEpoch,
   } = useCalendarEditor();
   const { context, resume, open: eventEditorOpen } = useEventEditor();
@@ -94,9 +94,7 @@ function EditorFrame() {
     !connected ||
     Boolean(error || remote || unapplied) ||
     status === 'error' ||
-    status === 'blocked' ||
-    record.catalogueRevision !==
-      (remote?.currentCatalogueRevision ?? record.currentCatalogueRevision);
+    status === 'blocked';
   const saveLabel = readOnly
     ? 'Somente leitura'
     : !connected
@@ -299,27 +297,6 @@ function EditorFrame() {
               Confira os campos antes de reabrir.
             </p>
           )}
-          {!readOnly &&
-            record.catalogueRevision !==
-              (remote?.currentCatalogueRevision ?? record.currentCatalogueRevision) && (
-              <button
-                type="button"
-                onClick={() => {
-                  void session
-                    .confirmBase()
-                    .catch((cause: unknown) =>
-                      notify(
-                        cause instanceof Error
-                          ? cause.message
-                          : 'Não foi possível confirmar a base.',
-                        true,
-                      ),
-                    );
-                }}
-              >
-                Confirmar atualização da base
-              </button>
-            )}
           {remote && (
             <button
               type="button"
@@ -344,6 +321,7 @@ function EditorFrame() {
           )}
         </div>
       </div>
+      <BaseUpdateCard />
       {context && (
         <button
           id="resume-event"
