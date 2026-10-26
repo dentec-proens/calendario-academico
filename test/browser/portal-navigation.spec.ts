@@ -1,6 +1,31 @@
 import { test, expect } from './test.ts';
 import { startFixtureServer } from './fixture-server.ts';
 
+test('calendar creation presents the generated name as text and explains each purpose', async ({
+  page,
+  cleanup,
+}) => {
+  await page.goto(await startFixtureServer('portal', cleanup));
+  await page.getByRole('button', { name: 'Novo calendário' }).click();
+  const name = page.getByLabel('Nome do calendário', { exact: true });
+  await expect(name).toHaveJSProperty('tagName', 'OUTPUT');
+  await expect(name).toHaveText('Calendário 2027 - Campus Campus de teste');
+  await expect(page.getByText('Gerado automaticamente a partir do campus e do ano.')).toBeVisible();
+  await page.getByLabel('Ano', { exact: true }).fill('2028');
+  await expect(name).toHaveText('Calendário 2028 - Campus Campus de teste');
+  await page.getByLabel('Turnos (opcional)').focus();
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.getByLabel('Turmas (opcional)')).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.getByLabel('Nome dos cursos')).toBeFocused();
+  await expect(page.locator('.calendar-purpose-help')).toContainText('experimentar a ferramenta');
+  await expect(page.locator('.calendar-purpose-help')).toContainText('proposta para análise');
+  await expect(page.locator('.calendar-purpose-help')).toContainText('revisão humana');
+  await expect(page.locator('.workspace-heading')).not.toContainText(/Perfil|Todos os campi/);
+  await page.locator('[data-page="accounts"]').click();
+  await expect(page.locator('.workspace-heading')).not.toContainText(/Perfil|Todos os campi/);
+});
+
 test('portal shares each subject across roles while preserving drafts, scoped controls, history and mobile menus', async ({
   page,
   cleanup,

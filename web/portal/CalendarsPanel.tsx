@@ -170,56 +170,84 @@ export default function CalendarsPanel({
                   ))}
                 </div>
               </fieldset>
-              <div className="row-form">
+              <div className="row-form calendar-course-fields">
                 <label>
-                  Nome do calendário
-                  <input
+                  <span id="calendar-name-label">Nome do calendário</span>
+                  <output
                     id="calendar-name"
-                    value={name}
-                    readOnly
-                    maxLength={160}
-                    placeholder="Preenchido automaticamente pelo campus e ano"
-                  />
+                    htmlFor="calendar-campus calendar-year"
+                    aria-labelledby="calendar-name-label"
+                    aria-describedby="calendar-name-help"
+                  >
+                    {name || 'Nenhum campus disponível'}
+                  </output>
+                  <small id="calendar-name-help">
+                    Gerado automaticamente a partir do campus e do ano.
+                  </small>
                 </label>
                 <label>
-                  Nome dos cursos
+                  <span id="calendar-courses-label">Nome dos cursos</span>
                   <input
                     id="calendar-courses"
                     name="courses"
                     required
                     maxLength={1000}
-                    placeholder="Ex.: Técnico em Informática"
+                    aria-labelledby="calendar-courses-label"
+                    aria-describedby="calendar-courses-help"
                   />
+                  <small id="calendar-courses-help">
+                    Separe os cursos por vírgulas. Ex.: Técnico em Informática, Técnico em
+                    Administração.
+                  </small>
                 </label>
               </div>
               <div className="row-form">
                 <label>
-                  <span>
+                  <span id="calendar-classes-label">
                     Turmas <span className="field-optional">(opcional)</span>
                   </span>
                   <input
                     id="calendar-classes"
                     name="classes"
                     maxLength={500}
-                    placeholder="Ex.: 1º, 2º e 3º anos"
+                    aria-labelledby="calendar-classes-label"
+                    aria-describedby="calendar-classes-help"
                   />
+                  <small id="calendar-classes-help">
+                    Separe as turmas por vírgulas. Ex.: 1º ano A, 2º ano A, 3º ano B.
+                  </small>
                 </label>
                 <label>
-                  <span>
+                  <span id="calendar-shifts-label">
                     Turnos <span className="field-optional">(opcional)</span>
                   </span>
                   <input
                     id="calendar-shifts"
                     name="shifts"
                     maxLength={200}
-                    placeholder="Ex.: matutino e vespertino"
+                    aria-labelledby="calendar-shifts-label"
+                    aria-describedby="calendar-shifts-help"
                   />
+                  <small id="calendar-shifts-help">
+                    Separe os turnos por vírgulas. Ex.: matutino, vespertino, noturno.
+                  </small>
                 </label>
               </div>
-              <p>
-                Teste: PDF identificado como teste. Definitivo: PDF final sujeito à contagem e à
-                revisão dos critérios.
-              </p>
+              <div className="calendar-purpose-help">
+                <p>
+                  <strong>De teste:</strong> para experimentar a ferramenta. Os PDFs recebem a
+                  indicação de teste. Você pode convertê-lo em definitivo depois, mantendo os dados.
+                </p>
+                <p>
+                  <strong>Definitivo:</strong> para preparar o calendário que será encaminhado para
+                  análise. Enquanto houver pendências, você pode gerar um PDF da proposta para
+                  análise. O PDF final exige as verificações de dias letivos, conflitos e critérios,
+                  além da revisão humana atualizada.
+                </p>
+                <p className="help">
+                  Criar um calendário definitivo não significa que ele já esteja aprovado.
+                </p>
+              </div>
               <div className="actions">
                 <Button type="submit" name="purpose" value="test">
                   <CalendarPlus aria-hidden="true" size={18} />

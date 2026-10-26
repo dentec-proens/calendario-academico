@@ -213,9 +213,6 @@ export function Workspace({ info: metadata, status, notify }: WorkspaceProps) {
           <h1 id="panel-title" ref={headingRef} tabIndex={-1}>
             {title}
           </h1>
-          <p>
-            {`Perfil ${info.user.role} · ${permissions.selectCampus ? 'Todos os campi' : info.campuses[0]?.name || ''}`}
-          </p>
           {!status.hosted ? (
             <p id="deployment-note" className="help">
               Desenvolvimento

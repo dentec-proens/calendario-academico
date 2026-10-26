@@ -17,6 +17,18 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 0 var(--ui-space-4);
 }
+.calendar-course-fields {
+  align-items: start;
+}
+#calendar-name {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.calendar-purpose-help p {
+  margin: 0 0 var(--ui-space-3);
+}
 #calendar-modalities {
   display: block;
   min-width: 0;
