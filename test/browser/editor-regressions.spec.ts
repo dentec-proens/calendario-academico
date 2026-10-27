@@ -224,7 +224,7 @@ test('removing a campus exclusion recalculates the teaching-day target', async (
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0].end))
     .toBe('2027-03-08');
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await page
     .locator('#event-list li')
     .filter({ hasText: 'Feriado municipal' })
@@ -252,7 +252,7 @@ test('event removal clears its open draft and grouped teacher vacations', async 
   await page.locator('#event-more-options > summary').click();
   await page.locator('#event-category').selectOption('feriado');
   await expect(page.locator('#unapplied-status')).toBeVisible();
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await openCampusEvent(page, 'local-event');
   await page.locator('[data-remove-event="local-event"]').click();
   await expect(page.locator('#unapplied-status')).toBeHidden();

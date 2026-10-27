@@ -4,10 +4,12 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Input } from './fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
+import { FormActions } from '../../../shared/forms/FormActions.tsx';
+import { Button } from '../../../components/ui/Button.tsx';
 
-export default function TeacherDayForm({ date }: { date: string }) {
+export default function TeacherDayForm({ date, onClose }: { date: string; onClose: () => void }) {
   const { state, session, institutional, readOnly } = useCalendarEditor();
-  const { form, submit, error } = useCalendarForm(
+  const { form, submit, error, dirty, pending } = useCalendarForm(
     'teacher-day',
     { date: state.teacherDayDate || date },
     function apply(value) {
@@ -19,8 +21,8 @@ export default function TeacherDayForm({ date }: { date: string }) {
   );
   const week = teacherDayWeek(state.year);
   return (
-    <form onSubmit={submit}>
-      <fieldset disabled={readOnly}>
+    <form id="teacher-day-form" onSubmit={submit}>
+      <fieldset disabled={readOnly || pending}>
         <form.Field name="date">
           {(field) => (
             <Input
@@ -31,28 +33,45 @@ export default function TeacherDayForm({ date }: { date: string }) {
               min={week.start}
               max={week.end}
               required
+              aria-describedby="teacher-day-help"
             />
           )}
         </form.Field>
-        <button type="submit" id="apply-teacher-day">
-          Aplicar data
-        </button>
-        <button
-          type="button"
-          id="reset-teacher-day"
-          onClick={() => {
-            session.apply((current) =>
-              recalculateCalendar({ ...current, teacherDayDate: undefined }, institutional),
-            );
-            form.reset({ date });
-          }}
-        >
-          Restaurar data institucional
-        </button>
-        <small>
-          Escolha de {week.start} a {week.end}. A alteração vale apenas para este calendário.
-        </small>
+        <p id="teacher-day-help" className="help editor-field-description">
+          Escolha de {week.start.split('-').reverse().join('/')} a{' '}
+          {week.end.split('-').reverse().join('/')}. A alteração vale apenas para este calendário.
+        </p>
         <FormFeedback error={error} />
+        <FormActions preserveOnClose={dirty}>
+          <Button type="submit" id="apply-teacher-day">
+            Aplicar data
+          </Button>
+          <Button
+            variant="secondary"
+            id="reset-teacher-day"
+            onClick={() => {
+              session.apply((current) =>
+                recalculateCalendar({ ...current, teacherDayDate: undefined }, institutional),
+              );
+              form.reset({ date });
+            }}
+          >
+            Restaurar data institucional
+          </Button>
+          {dirty && (
+            <Button
+              id="discard-teacher-day"
+              variant="secondary"
+              onClick={() => {
+                form.reset({ date: state.teacherDayDate || date });
+                session.setFormDirty('teacher-day', false);
+                onClose();
+              }}
+            >
+              Descartar alterações
+            </Button>
+          )}
+        </FormActions>
       </fieldset>
     </form>
   );

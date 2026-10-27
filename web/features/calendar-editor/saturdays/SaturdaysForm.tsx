@@ -9,7 +9,9 @@ import { Notice } from '../../../components/ui/Notice.tsx';
 import SaturdayYearGrid from './SaturdayYearGrid.tsx';
 import SaturdayEditForm from './SaturdayEditForm.tsx';
 import SaturdayDayCount from './SaturdayDayCount.tsx';
-import SaturdayPanel from './SaturdayPanel.tsx';
+import { PanelDialog, PanelHeader } from '../../../components/ui/Panel.tsx';
+import { Button } from '../../../components/ui/Button.tsx';
+import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import SaturdayRegisteredList from './SaturdayRegisteredList.tsx';
 import SaturdayPrerequisites from './SaturdayPrerequisites.tsx';
 import { useDeferredFocus } from './useDeferredFocus.ts';
@@ -154,19 +156,12 @@ export default function SaturdaysForm() {
   );
   const editBody = editing && (
     <section className="saturday-panel-section" aria-labelledby="saturday-edit-title">
-      <div className="saturday-edit-heading">
-        <h5 id="saturday-edit-title" tabIndex={-1}>
-          Sábado, {shortDate(editing.date)}
-        </h5>
-        <button
-          type="button"
-          id="saturday-edit-close"
-          className="secondary"
-          onClick={() => closeEditing(editing.date)}
-        >
-          Fechar
-        </button>
-      </div>
+      <PanelHeader
+        title={`Sábado, ${shortDate(editing.date)}`}
+        titleId="saturday-edit-title"
+        closeId="saturday-edit-close"
+        onClose={() => closeEditing(editing.date)}
+      />
       {editing.editable ? (
         <SaturdayEditForm
           key={editing.registration!.id}
@@ -193,17 +188,13 @@ export default function SaturdaysForm() {
       aria-label="Atividade dos sábados selecionados"
     >
       {compact && (
-        <div className="saturday-edit-heading">
-          <h5>{selectionLabel}</h5>
-          <button
-            type="button"
-            id="saturday-close-panel"
-            className="secondary"
-            onClick={() => setPanelOpen(false)}
-          >
-            Fechar
-          </button>
-        </div>
+        <PanelHeader
+          title={selectionLabel}
+          titleId="saturday-selection-title"
+          closeId="saturday-close-panel"
+          disabled={pending}
+          onClose={() => setPanelOpen(false)}
+        />
       )}
       <ul className="saturday-chips" aria-label="Datas selecionadas">
         {selection.map((day) => (
@@ -283,19 +274,14 @@ export default function SaturdaysForm() {
         Documento que definiu a atividade, como uma resolução, portaria ou ata.
       </p>
       <FormFeedback error={error} />
-      <div className="saturday-actions">
-        <button type="submit" id="saturday-submit" form="saturday-form">
+      <FormActions preserveOnClose>
+        <Button type="submit" id="saturday-submit" form="saturday-form">
           Adicionar {plural(selection.length, 'sábado', 'sábados')}
-        </button>
-        <button
-          type="button"
-          id="saturday-clear"
-          className="secondary"
-          onClick={() => clear(selection[0]!.date)}
-        >
-          Limpar
-        </button>
-      </div>
+        </Button>
+        <Button id="saturday-clear" variant="secondary" onClick={() => clear(selection[0]!.date)}>
+          Descartar alterações
+        </Button>
+      </FormActions>
     </fieldset>
   );
   const idleBody = (
@@ -364,14 +350,15 @@ export default function SaturdaysForm() {
               </button>
             </div>
           )}
-          <SaturdayPanel
+          <PanelDialog
+            id="saturday-panel"
             open={panelOpen && Boolean(activeBody)}
             returnFocus={() => document.getElementById('saturday-open-panel')}
-            label={editing ? `Sábado, ${shortDate(editing.date)}` : 'Seleção de sábados'}
+            aria-label={editing ? `Sábado, ${shortDate(editing.date)}` : 'Seleção de sábados'}
             onClose={() => (editing ? closeEditing(editing.date) : setPanelOpen(false))}
           >
             {activeBody}
-          </SaturdayPanel>
+          </PanelDialog>
         </>
       )}
     </div>

@@ -379,7 +379,7 @@ test('editor sections support direct URLs, reload and Back/Forward without disca
   await expect(page.locator('#event-list')).toBeVisible();
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Evento ainda não aplicado');
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await page.locator('[data-view="periods"]').click();
   // Step links keep the query, so returning to step 6 shows the same tab.
   await expect(page).toHaveURL(editor + 'periodos?aba=eventos');

@@ -1,3 +1,4 @@
+import { Pencil, Trash2 } from 'lucide-react';
 import { modalityLabels } from '../../../../src/modalities.ts';
 import { removeEvent } from '../../../../src/calendar-edits/commands.ts';
 import { activityStatusLabels } from '../../../../src/activity-status.ts';
@@ -6,6 +7,7 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { useActivityCoverage } from './useActivityCoverage.ts';
 import { civilDate } from './activity-query.ts';
+import { Button } from '../../../components/ui/Button.tsx';
 import IntakeRequirementForm from '../forms/IntakeRequirementForm.tsx';
 
 /** What the side panel shows about one activity: its status, offers and registered records. */
@@ -129,19 +131,19 @@ export default function ActivityDetails({
                 <small>Fonte: {event.evidence}</small>
               </p>
               <div className="actions">
-                <button
+                <Button
                   type="button"
-                  className="secondary"
+                  variant="secondary"
                   data-edit-activity-event={event.id}
                   disabled={readOnly || (editor.open && editor.eventId === event.id)}
                   aria-label={`Editar ${event.name}`}
                   onClick={() => editor.edit(event.id)}
                 >
-                  Editar
-                </button>
-                <button
+                  <Pencil size={18} aria-hidden="true" /> Editar
+                </Button>
+                <Button
                   type="button"
-                  className="secondary"
+                  variant="danger"
                   data-remove-event={event.id}
                   disabled={readOnly}
                   aria-label={`Remover ${event.name}`}
@@ -156,22 +158,23 @@ export default function ActivityDetails({
                     }
                   }}
                 >
+                  <Trash2 size={18} aria-hidden="true" />
                   {stage ? 'Excluir datas' : 'Remover'}
-                </button>
+                </Button>
               </div>
             </li>
           ))}
         </ul>
       )}
       {!preparing && (
-        <button
+        <Button
           type="button"
           data-prepare-activity={item.id}
           disabled={readOnly}
           onClick={() => editor.prepare(item.id)}
         >
           {registered.length ? 'Adicionar outro período' : 'Preencher atividade'}
-        </button>
+        </Button>
       )}
     </div>
   );

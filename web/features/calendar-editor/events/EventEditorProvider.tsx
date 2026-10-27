@@ -141,7 +141,7 @@ function useController() {
     }
     if (context && dirty) {
       notify(
-        'Há um preenchimento em andamento. Retome-o ou use Cancelar e descartar antes de abrir outro evento.',
+        'Há um preenchimento em andamento. Retome-o ou use Descartar alterações antes de abrir outro evento.',
         true,
       );
       return false;

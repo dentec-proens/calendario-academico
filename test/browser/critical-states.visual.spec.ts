@@ -70,7 +70,7 @@ test('calendar editor and its event form', async ({ page, fixtureServer }) => {
     .poll(() =>
       eventHeading.evaluate((element) => {
         const bounds = element.getBoundingClientRect();
-        const header = document.querySelector('.event-panel-header')!.getBoundingClientRect();
+        const header = document.querySelector('.ui-panel-header')!.getBoundingClientRect();
         const hit = document.elementFromPoint(
           bounds.left + bounds.width / 2,
           bounds.top + bounds.height / 2,
@@ -109,7 +109,7 @@ test('event creation explains the pending draft beside the visible action', asyn
   await page.locator('[data-tab="eventos"]').click();
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Encontro com as famílias');
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await page.locator('#new-event').click();
   await expect(page.locator('#pending-event-title')).toBeFocused();
   await expect(page.locator('#new-event')).toBeVisible();

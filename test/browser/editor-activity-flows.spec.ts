@@ -192,7 +192,7 @@ test('changing the activity link keeps the filled values until it is applied or 
   await expect(page.locator('#event-start')).toHaveValue('2027-06-12');
   await expect(page.locator('#event-evidence')).toHaveValue('Ata de vínculo corrigido');
 
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await expect(page.locator('#event-panel')).toBeHidden();
   await selectCampusEvents(page);
   await page.locator('#new-event').click();
@@ -215,7 +215,7 @@ test('changing the activity link keeps the filled values until it is applied or 
   // The description chosen at creation is not replaced by the new activity's name.
   expect(linked).toMatchObject({ name: title, start: '2027-06-12', end: '2027-06-12' });
 
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await openActivity(page, 'alumni-meeting');
   await page.locator(`[data-edit-activity-event="${linked!.id}"]`).click();
   await page.locator('#event-requirement').selectOption('');
@@ -253,7 +253,7 @@ test('the free event form opens in the side panel with a labelled offer group', 
   await page.locator('[data-activity-open="stage-1:integrado"]').click();
   await expect(page.locator('#event-modalities')).toHaveText(/Técnico integrado/);
   await expect(page.locator('#event-modalities input')).toHaveCount(0);
-  await page.locator('#discard-event-form').click();
+  await page.locator('#close-event-panel').click();
   await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await page.locator('#new-event').click();
@@ -262,8 +262,9 @@ test('the free event form opens in the side panel with a labelled offer group', 
   await expect(offers.locator(':scope > legend')).toHaveText('Ofertas abrangidas');
   await expect(offers.locator('input')).toHaveCount(2);
   await expect(page.locator('#event-record-type')).toBeVisible();
-  await expect(page.locator('#close-event-form')).toHaveText('Fechar');
-  await expect(page.locator('#event-form .actions button')).toHaveCount(3);
+  await expect(page.locator('#close-event-panel')).toHaveAccessibleName('Fechar painel');
+  await expect(page.locator('#event-form .form-actions button')).toHaveCount(1);
+  await expect(page.locator('#discard-event-form')).toBeHidden();
 });
 
 test('a free event asks what it is and the answer sets its effect and category', async ({
@@ -505,7 +506,7 @@ test('a review link to an assessment stage opens it in the combined step and clo
     '',
   );
   await page.locator('#event-panel [data-prepare-activity="stage-1:integrado"]').click();
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await expect(page.locator('#event-panel')).toBeHidden();
   await expect(page).not.toHaveURL(/atividade=/);
   await selectEditorSection(page, 'periods');
@@ -521,7 +522,7 @@ test('discarding a pending draft from another activity returns focus to that act
   await selectEditorSection(page, 'events');
   await openActivity(page, 'family-meeting');
   await page.locator('#event-evidence').fill('Rascunho que será descartado');
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   const other = page.locator('[data-activity-open="alumni-meeting"]');
   await other.click();
   await page.locator('#panel-discard-event').click();

@@ -77,9 +77,10 @@ function useSession(record: CalendarRecord) {
     const present = new Set(snapshot.state.events.map((event) => event.id));
     for (const id of previousEvents.current) {
       if (present.has(id)) continue;
-      const formId = `event-metadata:${id}`;
-      session.setFormDirty(formId, false);
-      drafts?.clear(`calendar:${record.id}:${formId}`);
+      for (const formId of [`event-metadata:${id}`, `saturday-edit:${id}`]) {
+        session.setFormDirty(formId, false);
+        drafts?.clear(`calendar:${record.id}:${formId}`);
+      }
     }
     previousEvents.current = present;
   }, [drafts, record.id, session, snapshot.state.events]);

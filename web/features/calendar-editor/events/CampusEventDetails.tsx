@@ -1,8 +1,11 @@
+import { Pencil, Trash2 } from 'lucide-react';
 import { removeEvent } from '../../../../src/calendar-edits/commands.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { EditorEvent } from '../types.ts';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import EventRecordDetails from './EventRecordDetails.tsx';
+import { FormActions } from '../../../shared/forms/FormActions.tsx';
+import { Button } from '../../../components/ui/Button.tsx';
 
 /** Details and editing actions stay inside the panel, leaving the list compact. */
 export default function CampusEventDetails({ event }: { event: EditorEvent }) {
@@ -13,17 +16,18 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
       <div className="campus-event-record">
         <EventRecordDetails event={event} />
       </div>
-      <div className="actions">
-        <button
+      <FormActions>
+        <Button
           type="button"
           data-edit-event={event.id}
           disabled={readOnly || editor.pending}
           onClick={() => editor.edit(event.id)}
         >
-          Editar evento
-        </button>
-        <button
+          <Pencil size={18} aria-hidden="true" /> Editar evento
+        </Button>
+        <Button
           type="button"
+          variant="danger"
           data-remove-event={event.id}
           disabled={readOnly || editor.pending}
           aria-label={`Remover ${event.name}`}
@@ -33,9 +37,9 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
             else editor.close();
           }}
         >
-          Remover
-        </button>
-      </div>
+          <Trash2 size={18} aria-hidden="true" /> Remover
+        </Button>
+      </FormActions>
     </section>
   );
 }

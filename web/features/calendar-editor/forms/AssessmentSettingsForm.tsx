@@ -5,6 +5,8 @@ import {
 import { modalityLabels } from '../../../../src/modalities.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
+import { FormActions } from '../../../shared/forms/FormActions.tsx';
+import { Button } from '../../../components/ui/Button.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 
 export default function AssessmentSettingsForm() {
@@ -52,19 +54,19 @@ export default function AssessmentSettingsForm() {
           </form.Field>
         </div>
         <FormFeedback error={error} />
-        <div className="actions">
-          <button type="submit">Definir etapas</button>
-          <button
+        <FormActions>
+          <Button type="submit">Definir etapas</Button>
+          <Button
             type="button"
             id="recalculate-stages"
-            className="secondary"
+            variant="secondary"
             onClick={() =>
               applyCommand((current) => enableAutomaticAssessment(current, institutional))
             }
           >
             Recalcular datas das etapas
-          </button>
-        </div>
+          </Button>
+        </FormActions>
       </fieldset>
       {state.periods.some((period) => period.targetDays) && (
         <p id="assessment-auto-status" role="status">

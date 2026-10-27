@@ -62,7 +62,7 @@ for (const width of [1440, 390]) {
       .poll(() =>
         title.evaluate((element) => {
           const bounds = element.getBoundingClientRect();
-          const feedback = document.querySelector('.event-panel-header')!.getBoundingClientRect();
+          const feedback = document.querySelector('.ui-panel-header')!.getBoundingClientRect();
           const hit = document.elementFromPoint(
             bounds.left + bounds.width / 2,
             bounds.top + bounds.height / 2,
@@ -92,7 +92,7 @@ for (const width of [1440, 390]) {
     const name =
       'Encontro de ensino, pesquisa e extensão com estudantes, familiares e comunidade do campus — preparação do calendário acadêmico';
     await page.locator('#event-name').fill(name);
-    await page.getByRole('button', { name: 'Aplicar alterações do evento', exact: true }).click();
+    await page.getByRole('button', { name: 'Aplicar alterações', exact: true }).click();
     await expect(page.locator('#message')).toContainText(name);
     await expect
       .poll(() =>
@@ -101,7 +101,7 @@ for (const width of [1440, 390]) {
           .evaluate((element) => element.getBoundingClientRect().height),
       )
       .toBeGreaterThan(originalHeight);
-    await page.locator('#close-event-form').click();
+    await page.locator('#close-event-panel').click();
     await selectEditorSection(page, 'periods');
     await expect(page.locator('#editor-section-title')).toHaveText('Períodos e avaliações');
     await expect
@@ -162,7 +162,7 @@ for (const width of [1440, 390]) {
     await opener.click();
     await page.locator('[data-edit-event="local-event"]').click();
     await page.locator('#event-name').fill('Rascunho para continuar depois');
-    await page.locator('#close-event-form').click();
+    await page.locator('#close-event-panel').click();
     // Closing returns to the action that opened this existing record.
     await expect(opener).toBeFocused();
     await expect(opener).toBeInViewport({ ratio: 1 });

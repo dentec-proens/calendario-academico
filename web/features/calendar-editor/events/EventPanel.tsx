@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { X } from 'lucide-react';
+import { PanelDialog, PanelHeader } from '../../../components/ui/Panel.tsx';
 import { activityChecklist } from '../../../../src/obligations.ts';
 import { teacherDayId } from '../../../../src/teacher-day.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -22,7 +22,6 @@ export default function EventPanel() {
   const editor = useEventEditor();
   const search = useActivitySearch();
   const navigate = useNavigate();
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const { editorRecovery } = useAppSession();
   // While the session recovers, its notice must stay reachable; the panel reopens afterwards.
   const open = (editor.open || editor.panel !== null) && !editorRecovery;
@@ -45,13 +44,6 @@ export default function EventPanel() {
   useEffect(() => {
     if (campusEventId && !campusEvent) closeEditor();
   }, [campusEventId, campusEvent, closeEditor]);
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!open || !dialog) return;
-    dialog.showModal();
-    // The provider returns focus to the action that opened the panel.
-    return () => dialog.close();
-  }, [open]);
   const wasOpen = useRef(open);
   const reviewLink = search.atividade;
   useEffect(() => {
@@ -73,32 +65,24 @@ export default function EventPanel() {
     wasRecovering.current = recovering;
   }, [recovering, closeEditor]);
   return (
-    <dialog
+    <PanelDialog
       id="event-panel"
-      ref={dialogRef}
+      className="ui-panel-dialog--side"
+      open={open}
       aria-labelledby="event-panel-title"
-      onCancel={(event) => {
-        // Escape closes through state, so React keeps owning whether the panel is open.
-        event.preventDefault();
-        editor.close();
-      }}
+      onClose={editor.close}
     >
-      <div className="event-panel-header">
-        <h2 id="event-panel-title">
-          {activity?.name ??
-            campusEvent?.name ??
-            (teacherDay ? 'Dia do Professor' : 'Evento do campus')}
-        </h2>
-        <button
-          type="button"
-          id="close-event-panel"
-          className="secondary"
-          aria-label="Fechar painel"
-          onClick={editor.close}
-        >
-          <X aria-hidden="true" />
-        </button>
-      </div>
+      <PanelHeader
+        title={
+          activity?.name ??
+          campusEvent?.name ??
+          (teacherDay ? 'Dia do Professor' : 'Evento do campus')
+        }
+        titleId="event-panel-title"
+        closeId="close-event-panel"
+        disabled={editor.pending}
+        onClose={editor.close}
+      />
       {activity && (
         <ActivityDetails item={activity} detailOpen={search.atividade === activity.id} />
       )}
@@ -141,8 +125,13 @@ export default function EventPanel() {
         </Notice>
       )}
       {campusEvent && <CampusEventDetails event={campusEvent} />}
-      {teacherDay && <TeacherDayForm date={teacherDay.originalStart || teacherDay.start} />}
+      {teacherDay && (
+        <TeacherDayForm
+          date={teacherDay.originalStart || teacherDay.start}
+          onClose={editor.close}
+        />
+      )}
       <EventEditor />
-    </dialog>
+    </PanelDialog>
   );
 }

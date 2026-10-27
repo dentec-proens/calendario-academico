@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { Trash2 } from 'lucide-react';
 import type { CalendarActivity } from '../../../../src/domain-types.ts';
 import { removeEvent, updateSaturdayActivity } from '../../../../src/calendar-edits/commands.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
 import { Input } from '../forms/fields.tsx';
+import { FormActions } from '../../../shared/forms/FormActions.tsx';
+import { Button } from '../../../components/ui/Button.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 
 const fullDate = (date: string) => date.split('-').reverse().join('/');
@@ -19,7 +21,7 @@ export default function SaturdayEditForm({
 }) {
   const { state, session, institutional, readOnly, applyCommand } = useCalendarEditor();
   const id = `saturday-edit:${event.id}`;
-  const { form, submit, pending, error, clearDraft } = useCalendarForm(
+  const { form, submit, pending, error, dirty } = useCalendarForm(
     id,
     { name: event.name, evidence: event.evidence },
     function apply(value) {
@@ -30,19 +32,11 @@ export default function SaturdayEditForm({
     },
     () => `Sábado ${fullDate(event.start)} atualizado.`,
   );
-  // The panel opens one registration at a time and keeps no record of it, so an unsaved edit
-  // would linger as unapplied data after the panel moves on.
-  const discard = useRef(clearDraft);
-  useEffect(() => {
-    discard.current = clearDraft;
-  });
-  useEffect(
-    () => () => {
-      discard.current();
-      session.setFormDirty(id, false);
-    },
-    [id, session],
-  );
+  function discard() {
+    form.reset({ name: event.name, evidence: event.evidence });
+    session.setFormDirty(id, false);
+    onClose(event.start);
+  }
   const sameSource = state.events
     .filter(
       (item) =>
@@ -59,7 +53,7 @@ export default function SaturdayEditForm({
       confirmLabel: 'Remover sábado',
     });
     if (confirmed && applyCommand((current) => removeEvent(current, event.id, institutional)))
-      onClose(event.start);
+      discard();
   }
 
   return (
@@ -95,19 +89,19 @@ export default function SaturdayEditForm({
           </p>
         )}
         <FormFeedback error={error} />
-        <div className="saturday-actions">
-          <button type="submit" id="saturday-edit-save">
-            Salvar alterações
-          </button>
-          <button
-            type="button"
-            id="saturday-edit-remove"
-            className="secondary saturday-remove"
-            onClick={() => void remove()}
-          >
-            Remover sábado
-          </button>
-        </div>
+        <FormActions preserveOnClose={dirty}>
+          <Button type="submit" id="saturday-edit-save">
+            Aplicar alterações
+          </Button>
+          {dirty && (
+            <Button id="saturday-edit-discard" variant="secondary" onClick={discard}>
+              Descartar alterações
+            </Button>
+          )}
+          <Button id="saturday-edit-remove" variant="danger" onClick={() => void remove()}>
+            <Trash2 size={18} aria-hidden="true" /> Remover sábado
+          </Button>
+        </FormActions>
       </fieldset>
     </form>
   );

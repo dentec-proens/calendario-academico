@@ -48,8 +48,8 @@ Comandos de desenvolvimento e validação ficam em [Verificação](verificacao.m
 
 ## Retirada do calendário anterior
 
-A retirada foi concluída em 27/10/2026, incluindo a migração dos dados, a remoção do executor temporário e a publicação da limpeza em produção no commit `7134e122fc4e99fa0b31a16883e4791eff25a68a`. Não há etapa pendente dessa operação.
+A migração foi ensaiada, aplicada e verificada em produção em 27/10/2026. Foram retirados os PDFs de calendários anteriores, suas análises e os vínculos de procedência. Calendários, versões, fontes textuais, documentos institucionais e exportação PDF foram preservados.
 
-Foram retirados os PDFs de calendários anteriores, suas análises, os vínculos de procedência e as APIs desse recurso. Calendários, versões, fontes textuais, pareceres, documentos institucionais e exportação PDF foram preservados. O desenvolvimento foi substituído por uma cópia integral de produção e recebeu o mesmo backend; as APIs instaladas nos dois ambientes foram conferidas.
+O planejador específico, o modo de publicação contract e seus comandos de execução foram removidos após a conclusão. Backups, planos, journals e recibos permanecem nos diretórios privados `backup-*`, fora do Git. O schema conserva somente a leitura dos recibos contract já gravados; não há mais funções para iniciar ou retomar essa migração. O código exato usado na operação permanece recuperável pelo histórico do Git.
 
-O planejador específico, os comandos e as funções internas temporárias de execução foram removidos. O schema conserva a leitura dos recibos contract históricos para auditoria. Backups, planos, journals e recibos permanecem em diretórios privados fora do Git; os artefatos da contração ficam fora do repositório. O código exato usado na operação permanece recuperável pelo histórico do Git. O [registro de conclusão](implantacao-convex-vercel.md#registro-da-retirada-de-calendários-anteriores) identifica as verificações e evidências preservadas.
+Para uma nova operação administrativa, preparar um plano próprio e conferir os destinos. Não reaplicar planos ou executar scripts de uma retirada já concluída.

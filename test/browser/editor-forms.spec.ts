@@ -142,7 +142,7 @@ test('assessment settings require apply, generate stages and restore automatic d
       .filter((event) => event.requirementId?.startsWith('stage-'))
       .every((event) => !event.assessmentAutoStart),
   ).toBe(true);
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await page.locator('#recalculate-stages').click();
   await expect
     .poll(() =>
@@ -407,7 +407,7 @@ test('a selected holiday warns that it will not count as a teaching day', async 
       ),
     )
     .toBe(true);
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await selectEditorSection(page, 'days');
   await page.locator('#saturday-dates input[value="2027-05-01"]').check();
   await expect(page.locator('#saturday-impediments')).toContainText('01/05');
@@ -474,10 +474,10 @@ test('a registered Saturday is edited and removed from the panel', async ({
   await expect(page.locator('#saturday-edit-form')).toHaveCount(0);
   await expect(registered).toBeFocused();
 
-  // Closing without saving discards the edit and leaves nothing unapplied.
+  // Discarding explicitly clears the edit and leaves the registered Saturday intact.
   await registered.click();
   await page.locator('#saturday-edit-name').fill('Rascunho descartado');
-  await page.locator('#saturday-edit-close').click();
+  await page.locator('#saturday-edit-discard').click();
   await expect(registered).toBeFocused();
   await expect(page.locator('#unapplied-status')).toBeHidden();
 
@@ -514,7 +514,7 @@ test('multi-day inclusions over a Saturday are registered but edited in Activiti
       ),
     )
     .toBe(true);
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await selectEditorSection(page, 'days');
   const saturday = page.locator('[data-saturday="2027-03-27"]');
   await expect(saturday).toHaveAttribute('data-status', 'registered');

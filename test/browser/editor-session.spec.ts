@@ -9,7 +9,7 @@ async function editAppliedEvent(page: Page, name = 'Evento aplicado sem confirma
   await page.locator('[data-tab="eventos"]').click();
   await editCampusEvent(page, 'local-event');
   await page.locator('#event-name').fill(name);
-  await page.getByRole('button', { name: 'Aplicar alterações do evento', exact: true }).click();
+  await page.getByRole('button', { name: 'Aplicar alterações', exact: true }).click();
   await expect(page.locator('#message')).toContainText(name);
 }
 
@@ -72,7 +72,7 @@ test('header logout can be cancelled and waits for an in-flight save before sign
   await editAppliedEvent(page);
   await page.locator('#event-name').fill('Campo não aplicado');
   // The side panel is modal; Fechar keeps the unapplied field.
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await page.locator('#logout').click();
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toContainText('Os campos ainda não aplicados serão descartados');

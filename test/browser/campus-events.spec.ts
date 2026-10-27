@@ -38,7 +38,7 @@ for (const width of [1440, 390]) {
     expect(
       (await savedState(page)).state.events.find((event) => event.id === 'local-event')?.name,
     ).toBe('Encontro do campus');
-    await page.locator('#close-event-form').click();
+    await page.locator('#close-event-panel').click();
     await expect(row).toBeFocused();
     await expect(row).toContainText('Encontro do campus');
     await openCampusEvent(page, 'local-event');
@@ -63,7 +63,7 @@ test('campus consultation preserves another activity draft and prevents replacin
   await page.goto(origin + '/calendarios/synthetic-calendar/eventos');
   await openActivity(page, 'family-meeting');
   await page.locator('#event-evidence').fill('Fonte ainda não aplicada');
-  await page.locator('#close-event-form').click();
+  await page.locator('#close-event-panel').click();
   await selectCampusEvents(page);
   await openCampusEvent(page, 'local-event');
   await expect(page.locator('#panel-pending-event')).toBeVisible();

@@ -14,6 +14,8 @@ import { eventTypes, noticeActive, recordOffers } from './event-draft.ts';
 import { Input, Select } from '../forms/fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { scrollIntoView } from '../../../scroll.ts';
+import { Button } from '../../../components/ui/Button.tsx';
+import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 
 export default function EventEditor() {
@@ -26,7 +28,7 @@ export default function EventEditor() {
     const frame = requestAnimationFrame(() => {
       // Inside the side panel, keep the heading clear of the panel's sticky header.
       const panel = heading.current?.closest('dialog');
-      const header = panel?.querySelector('.event-panel-header');
+      const header = panel?.querySelector('.ui-panel-header');
       if (panel && header)
         panel.style.scrollPaddingTop = `${header.getBoundingClientRect().height + 8}px`;
       heading.current?.focus({ preventScroll: true });
@@ -541,28 +543,16 @@ export default function EventEditor() {
           </div>
         </fieldset>
         <FormFeedback error={editor.error} />
-        <div className="actions">
-          <button type="submit">
-            {editor.eventId ? 'Aplicar alterações do evento' : 'Adicionar evento'}
-          </button>
-          <button
-            type="button"
-            id="close-event-form"
-            className="secondary"
-            title="Fecha o formulário e mantém o preenchimento para continuar depois"
-            onClick={editor.close}
-          >
-            Fechar
-          </button>
-          <button
-            type="button"
-            id="discard-event-form"
-            className="secondary"
-            onClick={editor.discard}
-          >
-            Cancelar e descartar
-          </button>
-        </div>
+        <FormActions preserveOnClose={editor.dirty}>
+          <Button type="submit">
+            {editor.eventId ? 'Aplicar alterações' : 'Adicionar evento'}
+          </Button>
+          {editor.dirty && (
+            <Button id="discard-event-form" variant="secondary" onClick={editor.discard}>
+              Descartar alterações
+            </Button>
+          )}
+        </FormActions>
         {stage && !editor.eventId && (
           <Notice
             id="stage-suggestion"

@@ -1,3 +1,4 @@
+import { Pencil, Trash2 } from 'lucide-react';
 import { editorPages } from '../editor-steps.ts';
 import { useEffect, useRef } from 'react';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -11,6 +12,8 @@ import type { AcademicTerm } from '../../../../src/domain-types.ts';
 import type { Modality } from '../types.ts';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { scrollIntoView } from '../../../scroll.ts';
+import { FormActions } from '../../../shared/forms/FormActions.tsx';
+import { Button } from '../../../components/ui/Button.tsx';
 
 export default function PeriodForm() {
   const name = useRef<HTMLInputElement>(null);
@@ -28,20 +31,24 @@ export default function PeriodForm() {
       ? 'first'
       : 'annual') as AcademicTerm,
   };
-  const { form, values, submit, error } = useCalendarForm('period', empty, function apply(value) {
-    session.apply((current) =>
-      applyPeriod(
-        current,
-        {
-          ...value,
-          association: { status: 'defined', modalities: value.modalities, term: value.term },
-        },
-        institutional,
-        () => crypto.randomUUID(),
-      ),
-    );
-    return empty;
-  });
+  const { form, values, submit, error, dirty } = useCalendarForm(
+    'period',
+    empty,
+    function apply(value) {
+      session.apply((current) =>
+        applyPeriod(
+          current,
+          {
+            ...value,
+            association: { status: 'defined', modalities: value.modalities, term: value.term },
+          },
+          institutional,
+          () => crypto.randomUUID(),
+        ),
+      );
+      return empty;
+    },
+  );
   let preview = '';
   try {
     if (values.days && values.start)
@@ -93,10 +100,11 @@ export default function PeriodForm() {
                 </small>
               </div>
               <div className="actions">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   data-edit-period={period.id}
-                  disabled={readOnly}
+                  disabled={readOnly || dirty}
                   onClick={() =>
                     form.reset({
                       id: period.id,
@@ -119,10 +127,11 @@ export default function PeriodForm() {
                     })
                   }
                 >
-                  Editar período
-                </button>
-                <button
+                  <Pencil size={18} aria-hidden="true" /> Editar período
+                </Button>
+                <Button
                   type="button"
+                  variant="danger"
                   data-remove-period={period.id}
                   disabled={readOnly}
                   onClick={() => {
@@ -133,8 +142,8 @@ export default function PeriodForm() {
                       form.reset(empty);
                   }}
                 >
-                  Remover
-                </button>
+                  <Trash2 size={18} aria-hidden="true" /> Remover
+                </Button>
               </div>
             </li>
           ))
@@ -219,23 +228,26 @@ export default function PeriodForm() {
               />
             )}
           </form.Field>
-          <button id="period-submit" type="submit">
-            {values.id ? 'Aplicar alterações do período' : 'Adicionar período'}
-          </button>
-          <button
-            id="cancel-period-edit"
-            type="button"
-            className="secondary"
-            hidden={!values.id}
-            onClick={() => {
-              form.reset(empty);
-              name.current?.focus({ preventScroll: true });
-              scrollIntoView(name.current, { block: 'start' });
-            }}
-          >
-            Cancelar edição
-          </button>
           <FormFeedback error={error} />
+          <FormActions>
+            <Button id="period-submit" type="submit">
+              {values.id ? 'Aplicar alterações do período' : 'Adicionar período'}
+            </Button>
+            {dirty && (
+              <Button
+                id="cancel-period-edit"
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  form.reset(empty);
+                  name.current?.focus({ preventScroll: true });
+                  scrollIntoView(name.current, { block: 'start' });
+                }}
+              >
+                Descartar alterações
+              </Button>
+            )}
+          </FormActions>
         </fieldset>
       </form>
       <p id="period-duration-status" role="status">
