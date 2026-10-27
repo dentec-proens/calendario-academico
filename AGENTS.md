@@ -19,18 +19,12 @@ Before editing files for a substantial task:
 - Router define rotas em código e valida o estado da URL. TanStack Form possui os valores de preenchimento; comandos puros aplicam alterações ao calendário; somente confirmação Convex representa gravação concluída.
 - Formulários com senhas, códigos, tokens ou arquivos têm identidade privada na instrumentação. Esses valores permanecem efêmeros; formulários mistos podem conservar somente os demais campos com `excludeFromDraft`. Use o hook compartilhado de formulários para preservar esse contrato.
 
-## Desenvolvimento em Windows
-
-- Toda alteração neste repositório deve preservar o suporte ao desenvolvimento em Windows: instalação, execução local, build, testes e ferramentas auxiliares. Windows é um ambiente de desenvolvimento suportado, inclusive nas decisões sobre dependências e infraestrutura.
-- Prefira scripts multiplataforma e APIs de Node para processos e caminhos. Comandos documentados devem funcionar no PowerShell; dependências de Bash, utilitários Unix, permissões ou caminhos específicos de macOS/Linux precisam de uma alternativa funcional no Windows.
-- Quando um componente exigir Linux, ofereça um caminho de execução pelo Docker Desktop e documente os pré-requisitos em [Verificação](docs/verificacao.md).
-
 ## Testes e validação
 
 - Consulte [Verificação](docs/verificacao.md) para comandos, referências visuais e configuração dos ambientes de teste. Mantenha o README como apresentação e ponto de entrada; documente procedimentos nos guias de `docs/`.
 - Durante o desenvolvimento, rode a menor suíte que exercite o comportamento afetado. Para corrigir um bug, acrescente uma regressão que reproduza o problema pela mesma interação ou fluxo real e confirme a falha antes da correção quando viável.
 - Antes de concluir ou commitar mudanças de código, execute `pnpm check`. Para alterações apenas de documentação, confira a formatação dos arquivos alterados; a suíte completa é dispensável.
-- A validação é local, neste macOS, com `pnpm check`; o repositório não usa CI do GitHub nem suítes de navegador em Linux, Docker ou Windows. Para mudanças de UI, CSS, navegação ou infraestrutura de navegador, verifique desktop e mobile e, quando afetados, teclado, foco e controles desobstruídos, cobertos pela suíte local.
+- A validação é local, neste macOS, com `pnpm check`; o repositório não usa CI do GitHub nem suítes de navegador em Linux ou Docker. Para mudanças de UI, CSS, navegação ou infraestrutura de navegador, verifique desktop e mobile e, quando afetados, teclado, foco e controles desobstruídos, cobertos pela suíte local.
 - Mudanças no gerador de PDF, modelo de impressão ou dependências do runtime exigem também `pnpm test:runtime:linux`, pelo Docker local. É o único teste executado em Linux, porque o Chromium serverless da produção só roda nesse sistema.
 - Atualize referências visuais somente para mudanças intencionais: inspecione as imagens e diferenças, atualize as referências do macOS (`darwin`) conforme a Verificação e rode novamente a comparação sem atualização. Corrija defeitos na aplicação; preserve a capacidade dos testes de detectar o problema, sem contornos de interação ou tolerâncias ampliadas apenas para obter aprovação.
 - Execute E2E remoto com opt-in explícito: deployment descartável ou desenvolvimento atual autorizado pelo usuário, verificado contra `.env.local` e com conta, campus, ano e registros exclusivos da suíte. Produção fica bloqueada; dados preexistentes não podem ser alterados pela suíte. Consulte no README a configuração e os limites de cada modo.

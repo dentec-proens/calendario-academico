@@ -25,10 +25,10 @@ Pré-requisitos:
 - Conta administrativa Convex; nenhum seletor alternativo de deployment. `operations:status` deve estar disponível e sem manutenção.
 - `VERCEL_TOKEN` no ambiente, com acesso ao projeto e permissão de criar/promover deployments e configurar atribuição de domínios. Segredos nunca entram em argumentos, logs ou Git.
 - Conta operacional ADMIN local e calendário exclusivo de teste: `DENTEC_RELEASE_SMOKE_USER_ID`, `DENTEC_RELEASE_SMOKE_EMAIL`, `DENTEC_RELEASE_SMOKE_PASSWORD`, `DENTEC_RELEASE_SMOKE_CALENDAR_ID`. O calendário precisa estar salvo com a revisão institucional vigente.
-- Chromium instalado com `pnpm test:browser:install`, inclusive no Windows.
+- Chromium instalado com `pnpm test:browser:install`.
 - Se o deployment estiver protegido, `VERCEL_OIDC_TOKEN` local e Trusted Sources autorizando desenvolvimento para produção no próprio projeto. A ferramenta não desativa proteção nem altera essa regra. A credencial segue somente no transporte até a origem imutável, sem propagação em redirecionamentos externos. Redirecionamentos HTTP são recusados durante o ensaio para não escapar do deployment fixado; sair da origem canônica também bloqueia o preenchimento do login. Requisições que falham nunca são substituídas pelo frontend público anterior.
 - No primeiro uso, `DENTEC_RELEASE_BACKEND_COMMIT` deve conter o SHA comprovado do backend efetivamente instalado. O proprietário de uma manutenção não comprova publicação. Após a primeira expansão concluída, `releases:status` passa a fornecer o recibo persistido do backend.
-- Quando o plano contém migrações, `DENTEC_RELEASE_BACKUP_DIR` deve apontar a uma pasta privada existente, absoluta e fora do repositório. O comando exporta os dados com Storage, confere o ZIP e grava seu SHA-256 e recibo antes de publicar o backend. O backup contém dados e credenciais: no Windows, usar uma pasta com ACL privada. Ensaiar restauração conforme [Operações administrativas de dados](migracao-schema.md); a release nunca importa o backup.
+- Quando o plano contém migrações, `DENTEC_RELEASE_BACKUP_DIR` deve apontar a uma pasta privada existente, absoluta e fora do repositório. O comando exporta os dados com Storage, confere o ZIP e grava seu SHA-256 e recibo antes de publicar o backend. O backup contém dados e credenciais: usar uma pasta com acesso restrito ao usuário. Ensaiar restauração conforme [Operações administrativas de dados](migracao-schema.md); a release nunca importa o backup.
 
 ```sh
 pnpm deploy:production --dry-run
@@ -82,7 +82,7 @@ Uma falha de conexão durante o deploy, antes de registrar a expansão, exige re
 
 Depois de reconciliar uma falha fora da retomada automática, conferir `git ls-remote origin refs/heads/codex/production-release-lock` e remover **somente o proprietário conferido** com `git push --force-with-lease=refs/heads/codex/production-release-lock:SHA_DA_RESERVA origin :refs/heads/codex/production-release-lock`. Nunca usar força sem condição de identidade. Para recuperar o frontend, promover apenas um deployment anterior validado e compatível com o backend instalado; não reconstruir um commit antigo presumindo equivalência de ambiente.
 
-O arquivo da sessão de conferência é temporário e privado; o comando o remove ao terminar. Backup e recibos privados permanecem disponíveis para diagnóstico. Nenhuma credencial é registrada no recibo público de release. Os comandos usam Node/Git e são compatíveis com PowerShell.
+O arquivo da sessão de conferência é temporário e privado; o comando o remove ao terminar. Backup e recibos privados permanecem disponíveis para diagnóstico. Nenhuma credencial é registrada no recibo público de release.
 
 ## Falhas e manutenção
 

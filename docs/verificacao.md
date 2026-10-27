@@ -6,7 +6,7 @@ pnpm check
 
 Executa formatação de código e configuração, lint, lint com análise de tipos, TypeScript, testes e build. Comandos individuais: `pnpm format:check`, `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test` e `pnpm build`.
 
-A formatação da documentação é independente de `pnpm check`: arquivos Markdown (`.md`, `.mdx` e `.markdown`), inclusive rascunhos em `docs/plans/`, são verificados com `pnpm format:docs:check` e formatados com `pnpm format:docs`. `pnpm format` e `pnpm format:check` cuidam dos demais arquivos reconhecidos pelo Prettier. Os padrões ficam entre aspas para serem interpretados pelo próprio Prettier, inclusive no Windows/PowerShell.
+A formatação da documentação é independente de `pnpm check`: arquivos Markdown (`.md`, `.mdx` e `.markdown`), inclusive rascunhos em `docs/plans/`, são verificados com `pnpm format:docs:check` e formatados com `pnpm format:docs`. `pnpm format` e `pnpm format:check` cuidam dos demais arquivos reconhecidos pelo Prettier. Os padrões ficam entre aspas para serem interpretados pelo próprio Prettier, não pelo shell.
 
 Para uma alteração apenas documental, confira somente os arquivos alterados, por exemplo:
 
@@ -16,7 +16,7 @@ pnpm exec prettier --check docs/verificacao.md
 
 Os testes de domínio, backend, infraestrutura e autosave usam Vitest e `convex-test`, sem serviço remoto. Os testes de UI usam Playwright com Chromium e fixtures sintéticas que carregam os componentes e CSS reais. Todos entram na checagem estrita de tipos (`pnpm typecheck:tests`).
 
-Os testes de rotas verificam acesso direto às telas nos servidores Vite e de preview, equivalência com as regras da Vercel e respostas 404 para caminhos desconhecidos e arquivos inexistentes. Os testes de navegador cobrem a sincronização de tela e URL, recarregamento, histórico, permissões e preservação dos formulários ao navegar. Esse fluxo não exige scripts Unix nem geração de rotas por comandos de shell; os comandos de instalação, build e validação acima também se aplicam ao PowerShell.
+Os testes de rotas verificam acesso direto às telas nos servidores Vite e de preview, equivalência com as regras da Vercel e respostas 404 para caminhos desconhecidos e arquivos inexistentes. Os testes de navegador cobrem a sincronização de tela e URL, recarregamento, histórico, permissões e preservação dos formulários ao navegar. Esse fluxo não exige geração de rotas por comandos de shell.
 
 Na primeira execução, instale o navegador:
 
@@ -46,7 +46,7 @@ pnpm test:browser:install
 
 ## Validação local e release
 
-O repositório não executa GitHub Actions. `pnpm check` é o bloqueio local de release: `pnpm deploy:production` executa essa checagem antes de criar o candidato, publicar expansões compatíveis do backend e promover o domínio público. A suíte local inclui os fluxos de navegador e as referências visuais desktop e mobile do macOS; não há execução desses testes em Linux, Docker ou Windows.
+O repositório não executa GitHub Actions. `pnpm check` é o bloqueio local de release: `pnpm deploy:production` executa essa checagem antes de criar o candidato, publicar expansões compatíveis do backend e promover o domínio público. A suíte local inclui os fluxos de navegador e as referências visuais desktop e mobile do macOS; não há execução desses testes em Linux ou Docker.
 
 O E2E com Convex continua separado e exige o opt-in descrito abaixo. Execute-o quando a mudança exigir integração real, em destino de desenvolvimento autorizado ou descartável, antes da release. Os testes sintéticos de `check` não acessam o backend remoto. O smoke operacional de publicação mantém suas verificações de login, navegação e PDF no portal publicado.
 
@@ -58,7 +58,7 @@ Cada worker reutiliza um servidor Vite por tipo de fixture. Os testes continuam 
 
 A execução normal não grava traces. Casos marcados com `.only` são recusados também na validação local. Para investigar uma falha, execute `pnpm test:browser:trace`, acrescentando o arquivo ou `--grep` desejado; o trace é gravado durante o teste e preservado somente em caso de falha. Não há retry automático. O relatório HTML e as screenshots de falhas continuam disponíveis em `playwright-report/` e `test-results/`. Use `pnpm exec playwright show-report` ou `pnpm exec playwright show-trace <arquivo-trace.zip>` para inspecioná-los.
 
-Para executar validações simultâneas no mesmo checkout, separe os artefatos: configure `DENTEC_TEST_OUTPUT_DIR` e `PLAYWRIGHT_HTML_OUTPUT_DIR` com diretórios distintos por execução (no PowerShell, use `$env:NOME = "caminho"`). Isso evita que uma suíte apague os traces ou screenshots de outra.
+Para executar validações simultâneas no mesmo checkout, separe os artefatos: configure `DENTEC_TEST_OUTPUT_DIR` e `PLAYWRIGHT_HTML_OUTPUT_DIR` com diretórios distintos por execução. Isso evita que uma suíte apague os traces ou screenshots de outra.
 
 Durante o desenvolvimento, rode primeiro os arquivos afetados, por exemplo `pnpm test:browser test/browser/editor-forms.spec.ts`. Antes de concluir ou publicar, execute `pnpm check` completo e registre comando, resultado e duração. Uma execução parcial não substitui a validação de release.
 

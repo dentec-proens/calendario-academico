@@ -4,7 +4,7 @@ Aplicação web em fase alpha para elaborar calendários acadêmicos, conferir d
 
 ## Desenvolvimento
 
-Requisitos: Node.js 24 e pnpm 12.15.0. No Windows, os comandos também funcionam no PowerShell.
+Requisitos: Node.js 24 e pnpm 12.15.0.
 
 ```sh
 pnpm install --frozen-lockfile
