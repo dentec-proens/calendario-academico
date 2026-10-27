@@ -170,10 +170,10 @@ export default function PeriodForm() {
           </form.Field>
           <form.Field name="term">
             {(field) => (
-              <Select field={field} label="Identidade do ciclo/período" id="period-term">
-                <option value="annual">Ciclo anual</option>
-                <option value="first">Primeiro semestre</option>
-                <option value="second">Segundo semestre</option>
+              <Select field={field} label="Ciclo" id="period-term">
+                <option value="annual">Ano letivo</option>
+                <option value="first">1º semestre</option>
+                <option value="second">2º semestre</option>
               </Select>
             )}
           </form.Field>

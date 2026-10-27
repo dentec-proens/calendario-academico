@@ -548,15 +548,6 @@ footer {
     white-space: pre-line;
   }
 }
-.history-area .records button {
-  background: var(--green);
-  border-color: var(--green);
-  color: white;
-}
-.history-area .records a {
-  display: inline-block;
-  margin-top: 8px;
-}
 fieldset.app-operation-scope {
   display: block;
   inline-size: 100%;

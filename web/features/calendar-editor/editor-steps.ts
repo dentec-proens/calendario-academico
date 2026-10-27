@@ -20,9 +20,9 @@ export const editorPages = {
       'Defina os dias regulares de atividades letivas e informe a referência da decisão.',
   }),
   periods: defineEditorPage('periods', {
-    title: 'Períodos letivos',
+    title: 'Períodos e avaliações',
     detail: 'Organização do ano letivo',
-    description: 'Defina o início e o término dos períodos de aulas do calendário.',
+    description: 'Defina os períodos de aulas e as etapas de avaliação.',
   }),
   assessments: defineEditorPage('assessments', {
     title: 'Etapas de avaliação',
@@ -41,15 +41,13 @@ export const editorPages = {
   }),
   events: defineEditorPage('events', {
     title: 'Atividades e datas do campus',
-    detail: 'Atividades, prazos e referências',
-    description:
-      'Registre as atividades e datas do campus. Se desejar, use o calendário anterior como referência.',
+    detail: 'Resolução e atividades do campus',
+    description: 'Registre as atividades e eventos da Resolução e do campus.',
   }),
   history: defineEditorPage('history', {
-    title: 'Calendário anterior',
-    detail: 'Referência do ano passado',
-    description:
-      'Adicione o calendário anterior para consultar datas e dar continuidade ao planejamento.',
+    title: 'Atividades e datas do campus',
+    detail: 'Resolução e atividades do campus',
+    description: 'Registre as atividades e eventos da Resolução e do campus.',
   }),
   issues: defineEditorPage('issues', {
     title: 'Revisão e conclusão',
@@ -69,7 +67,6 @@ export type EditorPage = (typeof editorPages)[EditorSection];
 export const editorSteps = [
   editorPages.edit,
   editorPages.periods,
-  editorPages.assessments,
   editorPages.days,
   editorPages.vacations,
   editorPages.events,
@@ -77,7 +74,8 @@ export const editorSteps = [
 ] as const;
 
 export function editorNavigation(section: EditorSection) {
-  const destination = section === 'history' ? 'events' : section;
+  const destination =
+    section === 'history' ? 'events' : section === 'assessments' ? 'periods' : section;
   const stepIndex = editorSteps.findIndex((step) => step.section === destination);
   return {
     current: editorPages[destination],

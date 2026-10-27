@@ -1,59 +1,58 @@
 import { test, expect } from './test.ts';
 import { selectEditorSection } from './editor-navigation.ts';
-import { calendarReferenceAnchor } from '../../src/calendar-reference.ts';
 
-test('campus activities show first and optional PDF files survive tab changes', async ({
-  page,
-  fixtureServer,
-}) => {
-  await page.goto(await fixtureServer('editor'));
-  await selectEditorSection(page, 'events');
-  await expect(page.locator('#editor-section-title')).toHaveText('Atividades e datas do campus');
-  await expect(page.locator('#editor-section-title')).toBeFocused();
-  const reference = page.locator(`#${calendarReferenceAnchor}`);
-  await expect(page.locator('[data-tab="atividades"]')).toHaveAttribute('aria-selected', 'true');
-  await expect(reference).toBeHidden();
-  await expect(page.locator('#activity-checklist')).toBeVisible();
-  await page.locator('[data-tab="anterior"]').click();
-  const file = page.locator('#history-file');
-  await file.setInputFiles({
-    name: 'referencia.pdf',
-    mimeType: 'application/pdf',
-    buffer: Buffer.from('%PDF-1.4 referencia sintética'),
+for (const width of [1440, 390]) {
+  test(`step 6 contains only resolution and campus activities at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(await fixtureServer('editor'));
+    await expect(page.locator('#record-title')).toBeVisible();
+    await selectEditorSection(page, 'events');
+    await expect(page.getByRole('tab')).toHaveCount(2);
+    await expect(
+      page.getByRole('tab', { name: /Atividades\/Eventos da Resolução/ }),
+    ).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('tab', { name: /Atividades\/Eventos do Campus/ })).toBeVisible();
+    await expect(page.locator('#history-form, #history-file, [data-tab="anterior"]')).toHaveCount(
+      0,
+    );
+    await expect(page.locator('#activity-checklist')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
   });
-  await page.locator('[data-tab="atividades"]').click();
-  await expect(file).toBeHidden();
-  await page.locator('[data-tab="anterior"]').click();
-  await expect(file).toHaveValue(/referencia\.pdf$/);
-  await expect(page.locator('#history-form')).toHaveCount(1);
-  await expect(page.locator('#event-form')).toHaveCount(1);
-});
+}
 
-test('legacy history URLs open the optional reference and preserve search and focus', async ({
+for (const fixture of ['editor', 'editor-reviewer'] as const) {
+  test(`legacy history URLs open step 6 and preserve filters for ${fixture}`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    const origin = new URL(await fixtureServer(fixture)).origin;
+    await page.goto(
+      origin +
+        '/calendarios/synthetic-calendar/historico?busca=referencia&aba=anterior&atividadeSituacao=all',
+    );
+    await expect(page).toHaveURL(/\/eventos\?busca=referencia&atividadeSituacao=all$/);
+    await expect(page.locator('[data-tab="atividades"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 5 de 6');
+    await expect(page.locator('#history-file')).toHaveCount(0);
+    await page.reload();
+    await expect(page.locator('#activity-status')).toHaveValue('all');
+  });
+}
+
+test('old reference tab and fragment fall back to the resolution activities', async ({
   page,
   fixtureServer,
 }) => {
   const origin = new URL(await fixtureServer('editor')).origin;
-  await page.goto(origin + '/calendarios/synthetic-calendar/historico?busca=referencia');
-  await expect(page).toHaveURL(
-    origin + '/calendarios/synthetic-calendar/eventos?busca=referencia#' + calendarReferenceAnchor,
+  await page.goto(
+    origin + '/calendarios/synthetic-calendar/eventos?aba=anterior#calendario-anterior',
   );
-  await expect(page.locator(`#${calendarReferenceAnchor}`)).toBeVisible();
-  await expect(page.locator('[data-tab="anterior"]')).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('#history-file')).toBeFocused();
-  await expect(page.locator('#history-file')).toBeInViewport({ ratio: 1 });
-  await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 6 de 7');
-  await page.reload();
-  await expect(page.locator('#history-file')).toBeFocused();
-});
-
-test('read-only reference entries focus the disclosure instead of the disabled upload control', async ({
-  page,
-  fixtureServer,
-}) => {
-  const origin = new URL(await fixtureServer('editor-reviewer')).origin;
-  await page.goto(origin + '/calendarios/synthetic-calendar/historico');
-  await expect(page.locator('#history-file')).toBeDisabled();
-  await expect(page.locator('#open-history')).toBeFocused();
-  await expect(page.locator('#history-list')).toContainText('anterior.pdf');
+  await expect(page.locator('[data-tab="atividades"]')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#activity-checklist')).toBeVisible();
+  await expect(page.locator('#history-file')).toHaveCount(0);
 });

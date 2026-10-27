@@ -1,24 +1,21 @@
 import { useRef, type KeyboardEvent } from 'react';
-import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { teacherDayId } from '../../../../src/teacher-day.ts';
 import { removeEvent } from '../../../../src/calendar-edits/commands.ts';
 import { activityChecklist } from '../../../../src/obligations.ts';
-import { isCalendarReferenceHash } from '../../../../src/calendar-reference.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useActivitySearch } from '../events/activity-query.ts';
 import { useEventEditor } from '../events/EventEditorProvider.tsx';
 import { useActivityCoverage } from '../events/useActivityCoverage.ts';
 import ActivityChecklist from '../events/ActivityChecklist.tsx';
 import EventRecordDetails from '../events/EventRecordDetails.tsx';
-import HistorySection from './HistorySection.tsx';
 import ActivityFilters from '../events/ActivityFilters.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 import { editorPages } from '../editor-steps.ts';
 
 const tabs = [
-  { id: 'atividades', label: 'Atividades' },
-  { id: 'eventos', label: 'Eventos do campus' },
-  { id: 'anterior', label: 'Calendário anterior' },
+  { id: 'atividades', label: 'Atividades/Eventos da Resolução' },
+  { id: 'eventos', label: 'Atividades/Eventos do Campus' },
 ] as const;
 type Tab = (typeof tabs)[number]['id'];
 
@@ -26,11 +23,10 @@ export default function EventsSection() {
   const { events, state, record, institutional, applyCommand, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const search = useActivitySearch();
-  const hash = useRouterState({ select: (router) => router.location.hash });
   const navigate = useNavigate();
   const { statusFor } = useActivityCoverage();
   const tabList = useRef<HTMLDivElement>(null);
-  const tab: Tab = isCalendarReferenceHash(hash) ? 'anterior' : (search.aba ?? 'atividades');
+  const tab: Tab = search.aba ?? 'atividades';
   const hasPendingEvent = Boolean(editor.context && editor.dirty);
   const checklist = activityChecklist(state);
   const activities = new Set(checklist.map((item) => item.id));
@@ -50,7 +46,6 @@ export default function EventsSection() {
   const counts: Record<Tab, string> = {
     atividades: toFill ? ` · ${toFill} a preencher` : '',
     eventos: campusEvents.length ? ` · ${campusEvents.length}` : '',
-    anterior: '',
   };
   function select(next: Tab, focus = false) {
     void navigate({
@@ -227,14 +222,6 @@ export default function EventsSection() {
               Consultar todos os registros do calendário
             </Link>
           </p>
-        </div>
-        <div
-          role="tabpanel"
-          id="tabpanel-anterior"
-          aria-labelledby="tab-anterior"
-          hidden={tab !== 'anterior'}
-        >
-          <HistorySection />
         </div>
       </div>
     </section>

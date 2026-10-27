@@ -12,7 +12,6 @@ describe('calendar wizard metadata', () => {
     expect(editorSteps.map((step) => step.section)).toEqual([
       'edit',
       'periods',
-      'assessments',
       'days',
       'vacations',
       'events',
@@ -38,6 +37,7 @@ describe('calendar wizard metadata', () => {
       expect(navigation.previous).toBe(index > 0 ? editorSteps.at(index - 1) : undefined);
       expect(navigation.next).toBe(editorSteps.at(index + 1));
     }
+    expect(editorNavigation('assessments')).toEqual(editorNavigation('periods'));
     expect(editorNavigation('history')).toEqual(editorNavigation('events'));
     expect(editorNavigation('calendar')).toEqual({
       current: editorPages.calendar,
@@ -54,8 +54,7 @@ describe('calendar wizard metadata', () => {
     );
     expect(editorSteps.map(continueLabel)).toEqual([
       'Continuar para semana letiva',
-      'Continuar para períodos letivos',
-      'Continuar para etapas de avaliação',
+      'Continuar para períodos e avaliações',
       'Continuar para sábados letivos',
       'Continuar para férias docentes',
       'Continuar para atividades e datas do campus',

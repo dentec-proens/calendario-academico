@@ -1,22 +1,15 @@
 import type { Page } from '@playwright/test';
 import { expect } from './test.ts';
 import type { EditorSection } from '../../src/app-routes.ts';
-import { calendarReferenceAnchor } from '../../src/calendar-reference.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 /** Use the same expandable step picker offered to people on smaller screens. */
 export async function selectEditorSection(page: Page, section: EditorSection) {
-  if (section === 'history') {
-    await selectEditorSection(page, 'events');
-    await page.locator('[data-tab="anterior"]').click();
-    await page.locator(`#${calendarReferenceAnchor}`).waitFor();
-    return;
-  }
   const menu = page.locator('.editor-step-menu');
   const toggle = menu.locator(':scope > summary');
   if ((await toggle.isVisible()) && (await menu.getAttribute('open')) === null)
     await toggle.click();
-  await page.locator(`[data-view="${section}"]`).click();
+  await page.locator(`[data-view="${section === 'assessments' ? 'periods' : section}"]`).click();
 }
 
 /** Add one teaching period through the Periods step and wait until it is applied. */

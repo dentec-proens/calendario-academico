@@ -10,12 +10,11 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
-import type { CalendarEvent, History, HistoryAnalysis } from '../types.ts';
+import type { CalendarEvent } from '../types.ts';
 import {
   activityDraft,
   emptyEvent,
   eventFromValues,
-  eventTypeOf,
   eventValues,
   type EventContext,
   type EventValues,
@@ -23,20 +22,15 @@ import {
 import { applyEvent, recalculateCalendar } from '../../../../src/calendar-edits/commands.ts';
 import { activityChecklist, stageRequirement } from '../../../../src/obligations.ts';
 import { suggestStages } from '../../../../src/stage-suggestions.ts';
-import { proposedDates } from '../../../../src/history-dates.ts';
 import { rulesetVersion } from '../../../../src/calendar-rules/index.ts';
-import { historyCandidateKey, historicalOccurrence } from '../../../../src/history-progress.ts';
 import { scrollIntoView } from '../../../scroll.ts';
-import { calendarReferenceAnchor } from '../../../../src/calendar-reference.ts';
 import { editorPages } from '../editor-steps.ts';
 
 function destination(context: EventContext | null, requirementId: string) {
-  if (context?.kind === 'history')
-    return { to: editorPages.events.path, hash: calendarReferenceAnchor };
   const activity = context?.kind === 'activity' ? context.requirementId : requirementId;
   return {
-    to: stageRequirement(activity) ? editorPages.assessments.path : editorPages.events.path,
-    hash: '',
+    to: stageRequirement(activity) ? editorPages.periods.path : editorPages.events.path,
+    hash: stageRequirement(activity) ? 'assessment-area' : '',
   };
 }
 
@@ -74,15 +68,6 @@ function useController() {
     emptyEvent(state.modalities),
     function apply(value) {
       const id = eventId || crypto.randomUUID();
-      if (context?.kind === 'history' && context.intent === 'link') {
-        // Linking provenance touches nothing else of the existing record.
-        session.apply((current) => {
-          const saved = current.events.find((event) => event.id === eventId);
-          if (!saved) throw new Error('O evento não existe mais. Reabra o calendário.');
-          return applyEvent(current, { ...saved, historicalSource: source }, institutional, true);
-        });
-        return;
-      }
       session.apply((current) =>
         applyEvent(
           { ...current, rulesetVersion: rulesetVersion(current) },
@@ -206,82 +191,6 @@ function useController() {
     if (!requirement) return;
     begin({ kind: 'activity', requirementId }, activityDraft(state, requirement));
   }
-  function history(
-    history: History,
-    candidate: HistoryAnalysis['candidates'][number],
-    intent: 'reference' | 'new' = 'new',
-    analysis?: HistoryAnalysis,
-  ) {
-    const candidateKey = historyCandidateKey(candidate);
-    const dates =
-      intent === 'reference'
-        ? historicalOccurrence(history, analysis, candidate).dates
-        : proposedDates(candidate, state.year);
-    begin(
-      { kind: 'history', historyId: history.id, candidateKey, intent },
-      {
-        ...emptyEvent(state.modalities),
-        ...dates,
-        historyWarning:
-          intent === 'reference' && 'warning' in dates
-            ? String(dates.warning)
-            : 'Nova ocorrência: preencha datas e fonte próprias. Nenhuma data foi deslocada do calendário anterior.',
-        recordType: intent === 'reference' ? 'prior-reference' : 'event',
-        name: candidate.name,
-        category: candidate.category,
-        kind: 'note',
-        eventType:
-          intent === 'reference' ? '' : eventTypeOf({ kind: 'note', category: candidate.category }),
-      },
-      null,
-      {
-        historyId: history.id,
-        page: candidate.page,
-        candidateKey,
-        analysisId: analysis?.analysisId,
-      },
-    );
-  }
-  function linkHistory(
-    history: History,
-    candidate: HistoryAnalysis['candidates'][number],
-    existingId: string,
-    analysis: HistoryAnalysis,
-  ) {
-    const existing = state.events.find((event) => event.id === existingId);
-    if (!existing) {
-      notify(
-        'Eventos institucionais não podem receber procedência histórica local. Registre uma referência própria.',
-        true,
-      );
-      return;
-    }
-    const candidateKey = historyCandidateKey(candidate);
-    const source = {
-      historyId: history.id,
-      analysisId: analysis.analysisId,
-      candidateKey,
-      page: candidate.page,
-    };
-    if (
-      begin(
-        {
-          kind: 'history',
-          historyId: history.id,
-          candidateKey,
-          intent: 'link',
-          eventId: existingId,
-        },
-        eventValues(existing, state.modalities),
-        existingId,
-        source,
-      )
-    )
-      result.form.setFieldValue(
-        'provenanceKey',
-        `${history.id}:${analysis.analysisId ?? 'legacy'}:${candidateKey}`,
-      );
-  }
   function discard() {
     if (result.pending) return;
     result.form.reset(emptyEvent(state.modalities));
@@ -317,7 +226,7 @@ function useController() {
   function changeRequirement(requirementId: string) {
     result.form.setFieldValue('requirementId', requirementId);
     const next: EventContext =
-      context?.kind === 'history' || context?.kind === 'new'
+      context?.kind === 'new'
         ? context
         : requirementId
           ? { kind: 'activity', requirementId, ...(eventId ? { eventId } : {}) }
@@ -381,8 +290,6 @@ function useController() {
     unlockLink: () => setLinkUnlocked(true),
     edit,
     prepare,
-    history,
-    linkHistory,
     discard,
     resume,
     applyStages,

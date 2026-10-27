@@ -193,7 +193,7 @@ test('metadata rejects an activity for another modality before applying or savin
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });
 
-test('removing a historical exclusion recalculates the teaching-day target', async ({
+test('removing a campus exclusion recalculates the teaching-day target', async ({
   page,
   fixtureServer,
 }) => {
@@ -206,9 +206,10 @@ test('removing a historical exclusion recalculates the teaching-day target', asy
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0]?.end))
     .toBe('2027-03-05');
-  await selectEditorSection(page, 'history');
-  await page.locator('[data-analyze-history="history-a"]').click();
-  await page.locator('[data-history-candidate="0"]').click();
+  await selectEditorSection(page, 'events');
+  await page.locator('[data-tab="eventos"]').click();
+  await page.locator('#new-event').click();
+  await page.locator('#event-name').fill('Feriado municipal');
   await page.locator('#event-type-holiday').check();
   await page.locator('#event-start').fill('2027-03-03');
   await page.locator('#event-end').fill('2027-03-03');
@@ -218,7 +219,11 @@ test('removing a historical exclusion recalculates the teaching-day target', asy
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0].end))
     .toBe('2027-03-08');
   await page.locator('#close-event-form').click();
-  await page.locator('[data-history-item="0"] [data-remove-event]').click();
+  await page
+    .locator('#event-list li')
+    .filter({ hasText: 'Feriado municipal' })
+    .locator('[data-remove-event]')
+    .click();
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0].end))
     .toBe('2027-03-05');
@@ -302,7 +307,7 @@ test('stage editing and activity changes always reveal the same draft in its des
   });
   await page.locator('[data-view="calendar"]').click();
   await page.locator('[data-open-event="stage-existing"]').click();
-  await expect(page).toHaveURL(/\/avaliacoes$/);
+  await expect(page).toHaveURL(/\/periodos#assessment-area$/);
   await expect(page.locator('#event-form')).toBeVisible();
   await page.locator('#event-name').fill('Etapa com rascunho');
   await page.locator('#event-requirement').selectOption('family-meeting');

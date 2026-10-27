@@ -1,5 +1,4 @@
 import { test, expect } from './test.ts';
-import { selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-reviewer-client.ts';
 
 test('reviewer consults the complete calendar and live changes without editing or saving', async ({
@@ -25,9 +24,6 @@ test('reviewer consults the complete calendar and live changes without editing o
   const eventControls = page.locator('#event-list button, #event-list select, #event-list input');
   await expect(eventControls).not.toHaveCount(0);
   for (const control of await eventControls.all()) await expect(control).toBeDisabled();
-  await selectEditorSection(page, 'history');
-  await expect(page.locator('#history-list')).toContainText(/anterior\.pdf/);
-  await expect(page.locator('button#history-submit')).toBeDisabled();
   await page.locator('[data-view="edit"]').click();
   await expect(page.locator('#week-confirmed')).toBeDisabled();
   await page.locator('[data-view="issues"]').click();

@@ -10,7 +10,7 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#record-title')).toBeVisible();
-    await expect(page.locator('.editor-step-number')).toHaveCount(7);
+    await expect(page.locator('.editor-step-number')).toHaveCount(6);
     await expect(page.locator('.autosave-panel')).toBeHidden();
     await expect(page.getByText('Salvamento automático ativo.')).toHaveCount(0);
     await expect(page.locator('#make-definitive')).toHaveCount(0);
@@ -39,7 +39,7 @@ for (const width of [1440, 390]) {
     await page.locator('#week-evidence').fill('Decisão da semana letiva');
     await page.locator('#week-confirmed').check();
     await page
-      .getByRole('button', { name: 'Continuar para períodos letivos', exact: true })
+      .getByRole('button', { name: 'Continuar para períodos e avaliações', exact: true })
       .click();
     await expect(page.locator('#week-form [role="alert"]')).toContainText(
       'Selecione pelo menos um dia regular.',
@@ -49,37 +49,32 @@ for (const width of [1440, 390]) {
 
     await page.locator('#weekdays input[value="1"]').check();
     await page
-      .getByRole('button', { name: 'Continuar para períodos letivos', exact: true })
+      .getByRole('button', { name: 'Continuar para períodos e avaliações', exact: true })
       .click();
     await expect(page).toHaveURL(/\/periodos$/);
     await expect(page.locator('#editor-section-title')).toBeFocused();
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 7');
-    await expect(page.locator('#editor-section-title')).toHaveText('Períodos letivos');
-    await expect(page.locator('#editor-continue')).toHaveText('Continuar para etapas de avaliação');
+    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 6');
+    await expect(page.locator('#editor-section-title')).toHaveText('Períodos e avaliações');
+    await expect(page.locator('#assessment-area')).toBeVisible();
+    await expect(page.locator('#organization-form, #intake-form, #calendar-scope')).toHaveCount(0);
+    await expect(page.locator('#editor-continue')).toHaveText('Continuar para sábados letivos');
     await expect(page.locator('#autosave-status')).toHaveAttribute('data-state', 'saved');
     expect(await page.evaluate(() => window.editorTest.record.state.weekdays)).toEqual([1]);
-
-    await page.locator('#editor-continue').click();
-    await expect(page).toHaveURL(/\/avaliacoes$/);
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 3 de 7');
-    await expect(page.locator('#editor-section-title')).toHaveText('Etapas de avaliação');
-    await expect(page.locator('#editor-continue')).toHaveText('Continuar para sábados letivos');
-    await expect(page.locator('#period-form')).toHaveCount(0);
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/dias$/);
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 4 de 7');
+    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 3 de 6');
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para férias docentes');
     await expect(page.locator('#vacation-form')).toHaveCount(0);
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/ferias$/);
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 5 de 7');
+    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 4 de 6');
     await expect(page.locator('#editor-continue')).toHaveText(
       'Continuar para atividades e datas do campus',
     );
     await expect(page.locator('#saturday-form')).toHaveCount(0);
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/eventos$/);
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 6 de 7');
+    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 5 de 6');
     await selectEditorSection(page, 'issues');
     await expect(page.locator('#total')).toBeVisible();
     await expect(page.locator('#export-calendar')).toBeVisible();
@@ -128,9 +123,9 @@ test('secondary actions support the keyboard and the mobile step picker follows 
   await page.keyboard.press('Enter');
   await expect(page.locator('[data-view="events"]')).toBeVisible();
   await page.locator('[data-view="events"]').click();
-  await expect(steps.locator('summary')).toContainText('Etapa 6 de 7');
+  await expect(steps.locator('summary')).toContainText('Etapa 5 de 6');
   await expect(steps).not.toHaveAttribute('open');
   await expect(page.locator('#editor-section-title')).toBeFocused();
-  await expect(page.locator('#calendario-anterior')).not.toHaveAttribute('open');
-  await expect(page.locator('#history-file')).toBeHidden();
+  await expect(page.locator('#history-file')).toHaveCount(0);
+  await expect(page.getByRole('tab')).toHaveCount(2);
 });

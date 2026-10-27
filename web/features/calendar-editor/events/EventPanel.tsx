@@ -13,7 +13,7 @@ import EventEditor from './EventEditor.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 
 /**
- * The one place where activities, campus events and previous-calendar occurrences are filled.
+ * The one place where activities and campus events are filled.
  * A modal side sheet keeps the list visible behind it and closes with its button or Escape.
  */
 export default function EventPanel() {
@@ -78,12 +78,7 @@ export default function EventPanel() {
     >
       <div className="event-panel-header">
         <h2 id="event-panel-title">
-          {activity?.name ??
-            (teacherDay
-              ? 'Dia do Professor'
-              : editor.context?.kind === 'history'
-                ? 'Evento do calendário anterior'
-                : 'Evento do campus')}
+          {activity?.name ?? (teacherDay ? 'Dia do Professor' : 'Evento do campus')}
         </h2>
         <button
           type="button"

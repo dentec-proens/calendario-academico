@@ -23,12 +23,10 @@ import EditorSteps from './EditorSteps.tsx';
 import BaseUpdateCard from './BaseUpdateCard.tsx';
 import { useCalendarSummaryTool } from '../../shared/integrations/webmcp.ts';
 import './calendar-editor.css';
-import { HistoryAnalysisProvider } from './history/useHistoryAnalysis.tsx';
 import { useSessionState } from '../../app/session.tsx';
 import { scrollIntoView, trackScrollInset } from '../../scroll.ts';
 import ImportCalendarForm from './forms/ImportCalendarForm.tsx';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
-import { isCalendarReferenceHash } from '../../../src/calendar-reference.ts';
 import { Notice } from '../../components/ui/Notice.tsx';
 
 function EditorFrame() {
@@ -66,11 +64,8 @@ function EditorFrame() {
   }, []);
   useEffect(() => {
     if (previousPath.current === pathname) return;
-    // Reference entries and historical drafts manage their own focus inside the disclosure.
-    if (
-      pathname?.endsWith('/eventos') &&
-      (isCalendarReferenceHash(hash) || (context?.kind === 'history' && eventEditorOpen))
-    ) {
+    // The assessment block (or its event panel) owns focus for this explicit destination.
+    if (pathname?.endsWith('/periodos') && hash === 'assessment-area') {
       previousPath.current = pathname;
       return;
     }
@@ -80,7 +75,7 @@ function EditorFrame() {
       previousPath.current = pathname;
     });
     return () => cancelAnimationFrame(frame);
-  }, [pathname, hash, context?.kind, eventEditorOpen]);
+  }, [pathname, hash]);
   const currentSection =
     (Object.keys(editorSections) as (keyof typeof editorSections)[]).find((key) =>
       pathname?.endsWith('/' + editorSections[key]),
@@ -434,11 +429,9 @@ export default function CalendarEditorLayout({ calendarId }: { calendarId: strin
   return (
     <CalendarEditorProvider calendarId={calendarId}>
       <CalendarExportProvider>
-        <HistoryAnalysisProvider>
-          <EventEditorProvider>
-            <EditorFrame />
-          </EventEditorProvider>
-        </HistoryAnalysisProvider>
+        <EventEditorProvider>
+          <EditorFrame />
+        </EventEditorProvider>
       </CalendarExportProvider>
     </CalendarEditorProvider>
   );

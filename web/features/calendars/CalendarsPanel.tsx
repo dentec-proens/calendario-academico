@@ -4,7 +4,7 @@ import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 import type { TrashData } from '../../shared/convex/types.ts';
 import type { PaginationState } from '../../shared/forms/Pagination.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
-import { ArchiveRestore, Pencil, FileUp, Trash2 } from 'lucide-react';
+import { ArchiveRestore, Pencil, Trash2 } from 'lucide-react';
 import { calendarName } from '../../../src/calendar-label.ts';
 import { modalityLabels } from '../../../src/modalities.ts';
 import { calendars as calendarClient } from '../../shared/convex/calendars.ts';
@@ -13,8 +13,6 @@ import Pagination from '../../shared/forms/Pagination.tsx';
 import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
 import { useRouteForm } from '../../app/navigation.ts';
 import { Link } from '@tanstack/react-router';
-import { editorPages } from '../calendar-editor/editor-steps.ts';
-import { calendarReferenceAnchor } from '../../../src/calendar-reference.ts';
 
 export function updatedLabel(value: string | null | undefined) {
   const date = value ? new Date(value) : null;
@@ -132,15 +130,6 @@ export default function CalendarsPanel({
                 <Link to="/calendarios/$calendarId/editar" params={{ calendarId: c.id }}>
                   <Pencil aria-hidden="true" size={18} />
                   Editar
-                </Link>
-                <Link
-                  to={editorPages.events.path}
-                  params={{ calendarId: c.id }}
-                  hash={calendarReferenceAnchor}
-                  hashScrollIntoView={false}
-                >
-                  <FileUp aria-hidden="true" size={18} />
-                  Usar calendário anterior
                 </Link>
                 <Button
                   type="button"

@@ -1,6 +1,6 @@
 # Restauração dos PDFs originais
 
-Um registro com original indisponível conserva identidade, metadados, análises e referências usadas nos calendários. Um ADMIN pode repor os bytes usando **Restaurar original** no calendário anterior ou na lista de documentos institucionais.
+Um registro com original indisponível conserva identidade, metadados, análises e referências usadas nos calendários. Um ADMIN pode repor os bytes usando **Restaurar original** na lista de documentos institucionais. O fluxo de calendário anterior foi retirado da etapa de atividades; seus registros e APIs legados continuam preservados, sem formulário de restauração no editor.
 
 ## Procedimento
 

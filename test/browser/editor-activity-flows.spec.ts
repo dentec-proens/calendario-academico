@@ -369,16 +369,16 @@ test('answering another type after a notice keeps its draft but writes no notice
 });
 
 for (const width of [1440, 390])
-  test(`event type options keep their compact size in a historical draft at ${width}px`, async ({
+  test(`event type options keep their compact size in a campus event draft at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toBeVisible();
-    await selectEditorSection(page, 'history');
-    await page.locator('[data-analyze-history="history-a"]').click();
-    await page.locator('[data-history-candidate="0"]').click();
+    await selectEditorSection(page, 'events');
+    await selectCampusEvents(page);
+    await page.locator('#new-event').click();
     for (const option of await page.locator('#event-type label').all()) {
       const [radio, label] = await Promise.all([
         option.locator('input').boundingBox(),
@@ -451,12 +451,12 @@ test('step 6 tabs follow the keyboard and keep their place in the URL', async ({
   await expect(page.locator('#tabpanel-eventos')).toBeVisible();
   await expect(page).toHaveURL(/aba=eventos/);
   await page.keyboard.press('End');
-  await expect(page.locator('[data-tab="anterior"]')).toBeFocused();
+  await expect(page.locator('[data-tab="eventos"]')).toBeFocused();
   // At the last tab, End keeps the page where it is.
   const scroll = await page.evaluate(() => scrollY);
   await page.keyboard.press('End');
   expect(await page.evaluate(() => scrollY)).toBe(scroll);
-  await expect(page.locator('#calendario-anterior')).toBeVisible();
+  await expect(page.locator('#tabpanel-eventos')).toBeVisible();
   await page.keyboard.press('ArrowRight');
   await expect(activities).toBeFocused();
   await expect(page.locator('#tabpanel-atividades')).toBeVisible();
@@ -483,7 +483,7 @@ test('a reviewer consults activities and records without editing or saving', asy
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });
 
-test('a review link to an assessment stage opens it in step 3 and closing clears the link', async ({
+test('a review link to an assessment stage opens it in the combined step and closing clears the link', async ({
   page,
   fixtureServer,
 }) => {
@@ -497,7 +497,7 @@ test('a review link to an assessment stage opens it in step 3 and closing clears
   });
   await selectEditorSection(page, 'issues');
   await page.locator('a[href*="atividade=stage-1"]').first().click();
-  await expect(page).toHaveURL(/\/avaliacoes\?.*atividade=stage-1/);
+  await expect(page).toHaveURL(/\/periodos\?.*atividade=stage-1/);
   await expect(page.locator('#event-panel')).toBeVisible();
   await expect(page.locator('[data-activity-detail="stage-1:integrado"]')).toHaveAttribute(
     'open',

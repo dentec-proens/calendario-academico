@@ -157,7 +157,6 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
     'days',
     'vacations',
     'events',
-    'history',
     'issues',
     'assessments',
     'periods',
@@ -167,11 +166,6 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
     if (section === 'periods')
       await expect(page.locator('input#period-name')).toHaveValue('Preenchimento a preservar');
   }
-  await selectEditorSection(page, 'history');
-  await expect(page.locator('#history')).toBeVisible();
-  await expect(page.locator('#history-file')).toBeVisible();
-  await page.locator('[data-view="periods"]').click();
-
   const file = join(directory, 'rascunho.json');
   const draft = await page.evaluate(() => ({
     ...window.editorTest.record.state,

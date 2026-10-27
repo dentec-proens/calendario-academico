@@ -41,7 +41,6 @@ export default function EventEditor() {
   const publication =
     (Boolean(values.admissionType) && noticeActive(values)) ||
     requirement?.variant === 'admission-notice';
-  const linkOnly = editor.context?.kind === 'history' && editor.context.intent === 'link';
   const realDate = values.publicationStatus === 'published';
   // Hours prove the annual minimum of training and planning; other activities do not ask.
   const showHours =
@@ -56,7 +55,6 @@ export default function EventEditor() {
   const showRecordType =
     !values.requirementId ||
     Boolean(requirement?.acceptsPriorReference) ||
-    editor.context?.kind === 'history' ||
     values.recordType === 'prior-reference';
   const suggestion = useMemo(() => {
     if (!stage || editor.eventId || !values.start) return null;
@@ -188,19 +186,8 @@ export default function EventEditor() {
           ? `Origem histórica: página ${editor.source.page}. ${values.recordType === 'prior-reference' ? 'Conserve as datas reais e confirme a pertinência documental. A referência não altera os dias letivos.' : 'Prepare uma nova ocorrência com datas e fonte próprias; o PDF anterior não comprova sua vigência.'}`
           : ''}
       </Notice>
-      {editor.source && values.historyWarning && (
-        <Notice tone="warning" id="historical-event-date-warning">
-          {values.historyWarning}
-        </Notice>
-      )}
       <fieldset disabled={readOnly || editor.pending}>
-        {linkOnly && (
-          <Notice tone="info" id="event-link-only">
-            Confira o registro existente. Somente a procedência do calendário anterior será
-            vinculada; datas, fonte e demais campos não mudam.
-          </Notice>
-        )}
-        <fieldset className="event-fields" disabled={linkOnly}>
+        <fieldset className="event-fields">
           {activityCreation && (
             <div id="event-activity-header" className="event-activity-header">
               {/* The activity title is the card heading right above this form. */}
@@ -561,11 +548,7 @@ export default function EventEditor() {
         <FormFeedback error={editor.error} />
         <div className="actions">
           <button type="submit">
-            {editor.context?.kind === 'history' && editor.context.intent === 'link'
-              ? 'Aplicar vínculo ao registro existente'
-              : editor.eventId
-                ? 'Aplicar alterações do evento'
-                : 'Adicionar evento'}
+            {editor.eventId ? 'Aplicar alterações do evento' : 'Adicionar evento'}
           </button>
           <button
             type="button"

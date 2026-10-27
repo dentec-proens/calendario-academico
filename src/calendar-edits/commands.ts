@@ -5,6 +5,7 @@ import type {
   VacationPeriods,
   PeriodAssociation,
   Organization,
+  AcademicTerm,
 } from '../domain-types.ts';
 import { equalValues } from '../equal.ts';
 import { datesBetween } from '../calendar.ts';
@@ -13,6 +14,7 @@ import {
   samePeriodScope,
   validateActivityRecord,
   organizationSummary,
+  organizationForModality,
 } from '../calendar-rules/index.ts';
 import { durationEnd, recalculatePeriods } from '../duration.ts';
 import { activityChecklist, assessmentCount, stageRequirement } from '../obligations.ts';
@@ -119,16 +121,72 @@ export function applyPeriod<S extends ActivityState>(
     associated &&
     (!associated.length ||
       new Set(associated).size !== associated.length ||
-      associated.some(
-        (m) =>
-          !calendarModalities(state).includes(m) ||
-          state.organizationByModality?.[m] !==
-            (values.association?.status === 'defined' && values.association.term === 'annual'
-              ? 'anual'
-              : 'semestral'),
-      ))
+      associated.some((m) => !calendarModalities(state).includes(m)))
   )
     throw new Error('Associação do período incompatível com a organização por oferta.');
+  if (values.association?.status === 'defined' && associated) {
+    const organization = values.association.term === 'annual' ? 'anual' : 'semestral';
+    const conflicts = state.periods.filter(
+      (period) =>
+        period.id !== values.id &&
+        period.association?.status === 'defined' &&
+        period.association.modalities.some((m) => associated.includes(m)) &&
+        (period.association.term === 'annual' ? 'anual' : 'semestral') !== organization,
+    );
+    if (conflicts.length)
+      throw new Error(
+        `O ciclo conflita com ${conflicts.map((p) => p.name || p.id).join(', ')}. Edite os períodos existentes antes de mudar o ciclo da oferta.`,
+      );
+    if (
+      associated.some(
+        (m) =>
+          organizationForModality(state, m) !== organization &&
+          Object.entries(state.intakeByModality?.[m] ?? {}).some(
+            ([term, entry]) => entry.required && (term === 'annual') !== (organization === 'anual'),
+          ),
+      )
+    )
+      throw new Error(
+        'Revise a exigência local de matrícula nas atividades antes de alterar o ciclo da oferta.',
+      );
+    const previous = state.periods.find((p) => p.id === values.id);
+    if (
+      previous?.association?.status === 'defined' &&
+      previous.association.term !== values.association.term &&
+      state.events.some((event) => event.admission?.periodId === previous.id)
+    )
+      throw new Error('Revise os editais vinculados a este período antes de alterar seu ciclo.');
+    const organizationByModality = Object.fromEntries(
+      calendarModalities(state).map((m) => [
+        m,
+        associated.includes(m) ? organization : organizationForModality(state, m),
+      ]),
+    );
+    const candidate = {
+      ...state,
+      schemaVersion: 3 as const,
+      organizationByModality,
+      regime: organizationSummary(organizationByModality, calendarModalities(state)),
+    };
+    const requirements = new Map(activityChecklist(candidate).map((item) => [item.id, item]));
+    const incompatible = state.events.filter((event) => {
+      if (!event.requirementId) return false;
+      const requirement = requirements.get(event.requirementId);
+      if (!requirement) return true;
+      return (event.modalities?.length ? event.modalities : calendarModalities(state)).some(
+        (m) =>
+          associated.includes(m) &&
+          organizationForModality(state, m) !== organization &&
+          ((requirement.modality && requirement.modality !== m) ||
+            (requirement.modalities && !requirement.modalities.includes(m))),
+      );
+    });
+    if (incompatible.length)
+      throw new Error(
+        `Revise as atividades vinculadas antes de alterar o ciclo: ${incompatible.map((event) => event.name).join(', ')}.`,
+      );
+    state = candidate;
+  }
   if (
     values.association?.status === 'defined' &&
     state.periods.some(
@@ -175,15 +233,61 @@ export function applyPeriod<S extends ActivityState>(
     end,
     ...(values.days ? { targetDays: Number(values.days) } : {}),
   };
+  const periods = values.id
+    ? state.periods.map((item) => (item.id === values.id ? period : item))
+    : [...state.periods, period];
   return recalculateCalendar(
     {
       ...state,
-      periods: values.id
-        ? state.periods.map((item) => (item.id === values.id ? period : item))
-        : [...state.periods, period],
+      periods,
+      conversion: state.conversion
+        ? {
+            ...state.conversion,
+            organization:
+              periods.every((p) => p.association?.status === 'defined') &&
+              calendarModalities(state).every(
+                (m) => organizationForModality(state, m) !== 'a-classificar',
+              )
+                ? 'classified'
+                : 'pending',
+          }
+        : undefined,
     },
     institutional,
   );
+}
+
+/** Change only the selected offer/cycle; existing intake declarations stay intact. */
+export function configureIntakeRequirement<S extends ActivityState>(
+  state: S,
+  modality: string,
+  term: AcademicTerm,
+  required: boolean,
+  source: string,
+): S {
+  if (
+    !calendarModalities(state).includes(modality) ||
+    organizationForModality(state, modality) !== (term === 'annual' ? 'anual' : 'semestral')
+  )
+    throw new Error('O ciclo da oferta mudou. Reabra a atividade de matrícula.');
+  if (source.trim().length > 240 || (required && !source.trim()))
+    throw new Error('Informe a referência da regra local para exigir esta atividade.');
+  const current = state.intakeByModality?.[modality]?.[term];
+  return {
+    ...state,
+    intakeByModality: {
+      ...state.intakeByModality,
+      [modality]: {
+        ...state.intakeByModality?.[modality],
+        [term]: {
+          ...current,
+          status: required ? 'yes' : (current?.status ?? 'unknown'),
+          required,
+          source: source.trim(),
+        },
+      },
+    },
+  };
 }
 
 export function applyEvent<S extends ActivityState>(

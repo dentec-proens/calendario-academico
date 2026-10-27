@@ -19,16 +19,6 @@
 .portal-note {
   font-size: 0.875rem;
 }
-.history-area {
-  margin-top: 24px;
-}
-.history-area textarea {
-  width: 100%;
-  padding: 10px;
-  min-height: 90px;
-  border: 1px solid #b8c9bf;
-  border-radius: 6px;
-}
 .institution-label {
   display: inline-block;
   background: #dceaf6;
@@ -40,9 +30,6 @@
 .portal-back {
   color: #0c503a;
   font-size: 0.875rem;
-}
-.history-area a {
-  overflow-wrap: anywhere;
 }
 #user-password {
   max-width: 400px;
@@ -329,7 +316,7 @@
 /* Keep calendar actions aligned regardless of the length of the course names. */
 #calendar-list > li[data-calendar-campus] {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 11rem 16rem;
+  grid-template-columns: minmax(0, 1fr) 11rem 10rem;
   gap: 16px;
   align-items: center;
 }
@@ -372,7 +359,10 @@
   text-align: center;
   white-space: normal;
 }
-@media (max-width: 850px) {
+#calendar-list > li[data-calendar-campus] > button {
+  min-height: 46px;
+}
+@media (max-width: 1100px) {
   #calendar-list > li[data-calendar-campus] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
@@ -381,30 +371,10 @@
     grid-column: 1 / -1;
   }
 }
-@media (max-width: 480px) {
-  #calendar-list > li[data-calendar-campus] {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-  }
-}
-
-#calendar-list > li[data-calendar-campus] {
-  grid-template-columns: minmax(0, 1fr) 11rem 16rem 10rem;
-}
-#calendar-list > li[data-calendar-campus] > button {
-  min-height: 46px;
-}
-@media (max-width: 1100px) {
-  #calendar-list > li[data-calendar-campus] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  #calendar-list > li[data-calendar-campus] > div {
-    grid-column: 1/-1;
-  }
-}
 @media (max-width: 600px) {
   #calendar-list > li[data-calendar-campus] {
     grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
   }
 }
 
@@ -497,120 +467,12 @@
 .editor-navigation + .intro .eyebrow {
   margin-top: 0;
 }
-#history-suggestions > li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 16px;
-  align-items: center;
-  padding: 18px 0;
-}
-#history-suggestions > li > div {
-  min-width: 0;
-}
-#history-suggestions .history-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 200px;
-  max-width: 100%;
-  justify-self: end;
-}
-#history-suggestions .history-actions button {
-  width: 100%;
-  min-height: 44px;
-  margin: 0;
-  white-space: normal;
-}
-@media (max-width: 600px) {
-  #history-suggestions .history-actions {
-    justify-self: start;
-  }
-}
-#history-suggestions > li > button {
-  white-space: nowrap;
-  min-height: 44px;
-}
 @media (max-width: 600px) {
   .editor-navigation {
     align-items: flex-start;
     flex-direction: column;
     gap: 4px;
     margin-bottom: 24px;
-  }
-  #history-suggestions > li {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  #history-suggestions > li > button {
-    justify-self: start;
-  }
-}
-
-#history-suggestions > li.history-included {
-  background: #f0f7f3;
-  padding-left: 12px;
-  padding-right: 12px;
-  border-left: 3px solid var(--green);
-}
-.history-check {
-  display: inline-block;
-  margin-top: 8px;
-  color: var(--green);
-  font-weight: 650;
-  font-size: 0.9rem;
-}
-#history-suggestions button:disabled {
-  background: #e3eee8;
-  border-color: #cadbd1;
-  color: #285641;
-  opacity: 1;
-  cursor: default;
-}
-#history-progress {
-  padding: 12px 16px;
-  background: #edf5f0;
-  border-radius: 6px;
-  line-height: 1.6;
-}
-
-#history-suggestions .inline-history-review {
-  grid-column: 1/-1;
-  width: 100%;
-  min-width: 0;
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f8faf9;
-  margin-top: 4px;
-}
-#history-suggestions .inline-history-review label {
-  align-items: stretch;
-}
-#history-suggestions .inline-history-review label.check {
-  align-items: center;
-}
-#history-suggestions .inline-history-review > button {
-  display: inline-block;
-  margin: 8px 10px 0 0;
-  white-space: normal;
-}
-#history-suggestions .inline-history-review .row-form {
-  gap: 16px;
-}
-#history-suggestions .inline-history-review .row-form label {
-  min-width: 0;
-  flex: 1 1 200px;
-}
-#history-suggestions .inline-history-review input:not([type='checkbox'], [type='radio']),
-#history-suggestions .inline-history-review select {
-  width: 100%;
-  min-width: 0;
-}
-@media (max-width: 600px) {
-  #history-suggestions .inline-history-review {
-    padding: 14px;
-  }
-  #history-suggestions .inline-history-review .row-form {
-    display: block;
   }
 }
 
@@ -623,21 +485,6 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
 }
-:is(#activity-checklist, #assessment-checklist) .inline-history-review {
-  grid-column: 1/-1;
-  width: 100%;
-  min-width: 0;
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f8faf9;
-}
-:is(#activity-checklist, #assessment-checklist) .inline-history-review .row-form {
-  gap: 16px;
-}
-:is(#activity-checklist, #assessment-checklist) .inline-history-review label {
-  min-width: 0;
-}
 :is(#activity-checklist, #assessment-checklist) button:disabled {
   background: #e3eee8;
   color: #285641;
@@ -647,9 +494,6 @@
 @media (max-width: 600px) {
   :is(#activity-checklist, #assessment-checklist) > li {
     grid-template-columns: minmax(0, 1fr);
-  }
-  :is(#activity-checklist, #assessment-checklist) .inline-history-review {
-    padding: 12px;
   }
 }
 

@@ -5,8 +5,6 @@ import { dirname, join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../browser/test.ts';
 import { editorUrl, parseEditorPath } from '../../src/app-routes.ts';
-import { calendarReferenceAnchor } from '../../src/calendar-reference.ts';
-import { selectEditorSection } from '../browser/editor-navigation.ts';
 import { configuredE2ETarget } from '../../scripts/e2e-environment.ts';
 
 const restorationFixture = process.env.DENTEC_NATIVE_RESTORE_FIXTURE;
@@ -122,7 +120,7 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   assert.deepEqual(errors, [], 'portal and editor load without uncaught browser errors');
 });
 
-test('native Convex preserves invitations, password recovery, PDFs, history and human review', async ({
+test('native Convex preserves invitations, password recovery, PDFs and human review', async ({
   browser,
   page,
   cleanup,
@@ -256,11 +254,6 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   await expect(page.locator('#record-title')).toContainText(String(year));
   const calendarId = parseEditorPath(new URL(page.url()).pathname)?.id;
   assert(calendarId);
-  await selectEditorSection(page, 'history');
-  await page.locator('input#history-file').setInputFiles(pdf);
-  await page.locator('#history-submit').click();
-  await expect(page.locator('#history-list')).toContainText('synthetic-reference.pdf');
-  await expect(page.locator('#history-analysis')).toBeVisible();
   await page.locator('[data-view="calendar"]').click();
   const calendarDownloadPromise = page.waitForEvent('download', { timeout: 120_000 });
   await page.locator('#download-pdf').click();
@@ -365,7 +358,7 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   await page.locator(`[data-restore-calendar="${calendarId}"]`).click();
   await expect(page.locator('#message')).toContainText('Calendário restaurado');
   await page.goto(base + editorUrl(calendarId, 'history'));
-  await expect(page.locator('#history-list')).toContainText('synthetic-reference.pdf');
+  await expect(page.locator('#activity-checklist')).toBeVisible();
   await page.goto(base);
   await page.locator('[data-page="review-panel"]').click();
   await page.locator('#review-calendar').selectOption(calendarId);
@@ -386,7 +379,7 @@ test('native Convex preserves invitations, password recovery, PDFs, history and 
   );
 });
 
-test('admin restores originals created for E2E through canonical editor routes', async ({
+test('admin restores institutional originals created for E2E', async ({
   browser,
   page,
   cleanup,
@@ -430,31 +423,6 @@ test('admin restores originals created for E2E through canonical editor routes',
   await page.locator('#password').fill(password);
   await page.locator('#auth-submit').click();
   await expect(page.locator('#workspace')).toBeVisible();
-  await page.goto(base + editorUrl(fixture.calendarId, 'history'), { waitUntil: 'commit' });
-  await expect(page.locator(`form[data-restore-history="${fixture.historyId}"]`)).toBeVisible();
-  if (mode === 'development')
-    await expect(page.locator('#record-title')).toContainText(`Testes E2E ${runId}`);
-  const canonical = new URL(page.url());
-  assert.equal(parseEditorPath(canonical.pathname)?.id, fixture.calendarId);
-  assert.equal(parseEditorPath(canonical.pathname)?.section, 'events');
-  assert.equal(canonical.hash, `#${calendarReferenceAnchor}`);
-  await page
-    .locator(`form[data-restore-history="${fixture.historyId}"] input[type="file"]`)
-    .setInputFiles(original);
-  await page.locator(`form[data-restore-history="${fixture.historyId}"] button`).click();
-
-  await expect(page.locator(`form[data-restore-history="${fixture.historyId}"]`)).toHaveCount(0);
-  const historyDownloadPromise = page.waitForEvent('download');
-  await page.locator(`a[data-history-id="${fixture.historyId}"]`).click();
-  const historyDownload = await historyDownloadPromise;
-  expect(historyDownload.suggestedFilename()).toBe('original-e2e.pdf');
-  const restored = join(directory, 'original-e2e.pdf');
-  await historyDownload.saveAs(restored);
-  assert(
-    (await readFile(restored)).equals(expected),
-    'restored historical original keeps its bytes and stored filename',
-  );
-  await rm(restored);
   await page.close();
   const documentContext = await browser.newContext();
   cleanup(() => documentContext.close());

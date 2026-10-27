@@ -1,177 +1,181 @@
-# Proposta: organização da etapa 2 — períodos letivos
+# Proposta: unir períodos letivos e avaliações
 
-**Situação:** investigação e proposta em 27/10/2026; implementação não iniciada.
+**Situação:** implementada e validada localmente em 27/10/2026.
 
-**Recomendação:** manter as sete macroetapas e dividir a etapa 2 em três abas: **Organização**, **Datas dos períodos** e **Ingresso**. A ordem orienta o primeiro preenchimento; as abas permitem voltar diretamente ao assunto necessário durante a revisão.
+**Recomendação:** unir as atuais etapas 2 e 3 em **Períodos e avaliações**, reduzindo o roteiro de sete para seis etapas. Da atual etapa 2, manter no fluxo principal somente o conteúdo do screenshot enviado pelo usuário: lista e editor de períodos. Retirar os formulários independentes de organização e ingresso.
 
-**Escopo da investigação:** código e testes locais, incluindo alterações em andamento na etapa 6. O estado local não comprova a interface publicada. Esta proposta não modifica formulários, regras, dados ou navegação da aplicação.
+Esta revisão substitui a recomendação anterior deste arquivo, de três abas para Organização, Datas e Ingresso. Aquela solução preservava o excesso de decisões no preenchimento. A direção atual é reduzir o que se pede, reunindo as datas das aulas e suas avaliações.
 
-**Ampliação do pedido:** avaliar salvamento automático durante as alterações, aproveitando a infraestrutura do Convex. A recomendação é introduzir autosave para unidades pequenas e válidas, retirando botões genéricos de aplicação onde não representam uma decisão de domínio. Criação de registros e alterações estruturais continuam com ações que explicam sua consequência.
+A investigação usa o checkout e o histórico Git. Não comprova qual versão está publicada nem quando os campos chegaram à produção. As datas abaixo são dos commits, no fuso de São Paulo. A investigação inicial não alterou código, dados ou ambiente remoto. A implementação está registrada na seção 8.
 
-## 1. Diagnóstico
+## 1. Quando os campos extras entraram
 
-A etapa 2 reúne três tarefas diferentes em uma única tela, todas abertas ao mesmo tempo:
+| Data e hora       | Commit                                     | Mudança comprovada no histórico                                                                                                                                                                                                                                                    |
+| ----------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 20/10/2026, 14h59 | `dc44d71ff702844de31cf3eedebd0af2977e5ab5` | Introduziu a pergunta simples sobre ingresso de novos estudantes no segundo semestre.                                                                                                                                                                                              |
+| 26/10/2026, 13h39 | `f09a5d817820dc3d76b06d8937c3bceb1adf5d0f` | Criou o roteiro de sete etapas: ingresso ficou na etapa 2 e avaliações ganharam a etapa 3. Antes, períodos e avaliações já apareciam juntos.                                                                                                                                       |
+| 26/10/2026, 20h04 | `a5abbd5ec4c21e0627262165b68fb17090ca4282` | Criou Organização por oferta, escopo da norma, fonte, seletor anual/semestral por oferta e Aplicar organização por oferta. Expandiu ingresso para a matriz oferta/ciclo, com situação, fonte e regra local. Introduziu também as associações oferta/ciclo presentes no screenshot. |
+| 26/10/2026, 20h24 | `b068573`                                  | Padronizou os avisos com `Notice`; os campos já existiam.                                                                                                                                                                                                                          |
+| 27/10/2026, 09h29 | `162d737`                                  | Incluiu a versão anterior desta proposta, ainda sem implementar a reorganização da etapa 2.                                                                                                                                                                                        |
 
-| Bloco atual                   | Pergunta que resolve                                    | Conteúdo visível                                                                                                                                                  |
-| ----------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Organização por oferta        | Como cada oferta organiza o ano e qual norma se aplica? | Em 2027, escopo da norma e fonte; um seletor anual/semestral/a conferir por oferta; avisos de classificação legada; ação própria de aplicação.                    |
-| Períodos letivos              | Quando acontecem as aulas?                              | Lista de períodos com editar/remover; formulário aberto com ofertas, ciclo, nome, início, quantidade opcional de dias e término; mensagens de cálculo automático. |
-| Ingresso por oferta e período | Há novos estudantes e uma regra local de matrícula?     | Para cada combinação oferta/ciclo: situação do ingresso, fonte e declaração de exigência local; ação própria de aplicação.                                        |
+Reprodução da investigação: `git show <commit> -- web/features/calendar-editor/forms/IntakeForm.tsx web/features/calendar-editor/forms/OrganizationForm.tsx web/features/calendar-editor/sections/PeriodsSection.tsx` e `git log --follow -- <arquivo>`.
 
-Fontes: [composição da etapa 2](../../web/features/calendar-editor/sections/PeriodsSection.tsx), [organização](../../web/features/calendar-editor/forms/OrganizationForm.tsx), [períodos](../../web/features/calendar-editor/forms/PeriodForm.tsx) e [ingresso](../../web/features/calendar-editor/forms/IntakeForm.tsx).
+O commit de 20h04 implementou a política de 2027 e o conteúdo v3, abrangendo regras, persistência, referências históricas e interface. O [plano correspondente](calendario-2027-ofertas-referencias-e-etapa-6.md) registra três motivações:
 
-O volume de ingresso cresce com as ofertas e suas organizações. Um calendário com técnico integrado anual e graduação semestral já apresenta três combinações, com nove controles só nesse bloco. Além do volume, a tela mistura configuração normativa, datas e regras de ingresso. O título e a descrição da etapa enfatizam início e término, embora ela também peça as outras decisões. Essa diferença de expectativa é uma inferência de UX baseada nos campos e no [texto da navegação](../../web/features/calendar-editor/editor-steps.ts).
+- **Organização por oferta:** permitir, por exemplo, integrado anual e graduação semestral no mesmo calendário, com períodos que podem coincidir entre ofertas diferentes; seção 5.2.
+- **Escopo e fonte:** tratar a limitação do modelo ao distinguir calendários sujeitos a normas próprias; seções 2 e 5.1. Esta é a motivação registrada no projeto, sem nova análise jurídica nesta investigação.
+- **Ingresso por oferta/ciclo:** separar matrícula de ingressantes de veteranos e evitar que uma resposta global dispense atividades de outras ofertas; seção 2.1.
 
-Uma inspeção exploratória com a fixture sintética que carrega os componentes reais encontrou:
+Essas preocupações explicam os dados adicionados. A conclusão de UX é que sua representação em três formulários abertos impôs ao usuário detalhes do modelo antes de cadastrar as datas. Não é necessário reverter o commit inteiro: ele também trouxe as associações úteis do screenshot.
 
-| Cenário sintético                                                    | Controles `input`/`select` | Altura da seção em 1440 px | Altura da seção em 390 px |
-| -------------------------------------------------------------------- | -------------------------- | -------------------------- | ------------------------- |
-| Uma oferta anual                                                     | 12                         | 1.447 px                   | 2.164 px                  |
-| Técnico integrado anual, subsequente semestral e graduação semestral | 28                         | 3.084 px                   | 3.932 px                  |
+## 2. O que manter e o que retirar da etapa 2
 
-No segundo cenário, apenas Ingresso ocupa 1.901 px no desktop e 2.043 px no mobile. São medidas da seção, não da página inteira. A inspeção das capturas de desktop com uma oferta e mobile com múltiplas ofertas reforça a hipótese de sobrecarga por repetição. Essa observação local não é um teste de usabilidade com pessoas nem aprovação da suíte visual.
+| Elemento atual                                                       | Proposta                                                                                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Lista de períodos, datas, oferta/ciclo e Editar/Remover              | Manter.                                                                                          |
+| Ofertas deste período                                                | Manter. Com uma única oferta, pode aparecer como contexto; com várias, manter seleção explícita. |
+| Identidade do ciclo/período                                          | Manter, com rótulo mais simples: **Ciclo**. Opções: Ano letivo, 1º semestre e 2º semestre.       |
+| Nome, início, quantidade opcional de dias e término                  | Manter o funcionamento do screenshot, inclusive cálculo e recálculo do término.                  |
+| Escopo de aplicação da norma e Fonte que identifica o escopo         | Retirar desta etapa; tratar norma e exceções na revisão, conforme seção 5.                       |
+| Técnico integrado — Anual/Semestral e equivalentes por oferta        | Retirar como configuração separada. O ciclo escolhido no período expressa essa decisão.          |
+| Aplicar organização por oferta                                       | Eliminar. Atualizar a organização junto da aplicação do período.                                 |
+| Ingresso por oferta e período, fonte, regra local e Aplicar ingresso | Retirar desta etapa; tratar eventual exigência junto da atividade de matrícula.                  |
+| Ajuda sobre migração e organização legada                            | Exibir somente nos registros que precisam de correção.                                           |
 
-Há dependências reais entre os blocos:
+Fontes do estado atual: [PeriodsSection](../../web/features/calendar-editor/sections/PeriodsSection.tsx), [PeriodForm](../../web/features/calendar-editor/forms/PeriodForm.tsx); os formulários retirados `OrganizationForm.tsx` e `IntakeForm.tsx` podem ser consultados no commit `a5abbd5`.
 
-- Organização determina se cada oferta tem ciclo anual ou primeiro/segundo semestre. O cadastro de períodos exige associação compatível e impede duplicar um ciclo da mesma oferta.
-- Alterar a organização pode deixar associações de períodos existentes como **a classificar**. O comando preserva IDs e datas; a interface precisa tornar essa consequência visível.
-- Ingresso usa os mesmos ciclos e influencia a aplicabilidade de matrícula dos ingressantes na etapa 6. **Não informado** permanece diferente de **Não há ingresso**.
-- Quantidade de dias ativa o término automático, dependente da semana letiva e dos impedimentos registrados. Não se trata apenas de outra maneira de preencher a mesma data.
+O campo com rótulo **Técnico integrado** hoje pergunta novamente se a organização é anual ou semestral. A oferta já foi selecionada na criação, que também pede a organização geral em [CreateCalendarForm](../../web/features/calendars/CreateCalendarForm.tsx). Quando o período informa oferta e ciclo, há informação suficiente para evitar uma nova aplicação independente. O nome da oferta, sozinho, não deve determinar o ciclo.
 
-Fontes: [`configureOrganization` e `applyPeriod`](../../src/calendar-edits/commands.ts), [`applicabilityFor`](../../src/calendar-rules/index.ts), [formulário de ingresso](../../web/features/calendar-editor/forms/IntakeForm.tsx) e [formulário de períodos](../../web/features/calendar-editor/forms/PeriodForm.tsx).
+## 3. Tela unificada
 
-## 2. O que aproveitar da etapa 6
-
-O [plano de refatoração da etapa 6](etapa-6-refatoracao-ui-ux.md) prevê hierarquia por assunto, detalhes progressivos, editor perto da ação de origem e preservação dos valores existentes. O código local em andamento já avança para três abas: **Atividades**, **Eventos do campus** e **Calendário anterior**. A aba fica na URL, os painéis usam `hidden` mantendo o conteúdo montado e os controles têm `tablist`, `tab`, `tabpanel` e navegação por setas, Home e End. Fontes: [EventsSection](../../web/features/calendar-editor/sections/EventsSection.tsx) e [validação da busca](../../web/app/search.ts).
-
-A referência útil para a etapa 2 é a divisão por tarefa e a preservação do preenchimento ao trocar de assunto. O estado de uma aba não deve ser confundido com aplicação dos dados ou confirmação de salvamento.
-
-## 3. Alternativas consideradas
-
-| Alternativa                                                | Benefício                                                                                  | Custo / limite                                                                                                                                               | Parecer                                                                                         |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Três macroetapas no lugar da etapa 2                       | Orienta uma tarefa por página.                                                             | O roteiro passa de sete para nove etapas; muda a numeração das etapas seguintes, rotas, navegação e links. As revisões frequentes ganham mais deslocamentos. | Reservar para o caso de uso real revelar necessidade de orientação obrigatoriamente sequencial. |
-| Três abas dentro da etapa 2                                | Separa as tarefas e mantém acesso direto na revisão; acompanha a direção local da etapa 6. | Exige indicar pendências de preenchimento nas abas ocultas e tratar as dependências entre elas.                                                              | **Recomendada.**                                                                                |
-| Somente blocos recolhíveis                                 | Alteração menor e visão dos três assuntos.                                                 | Preserva uma página longa e permite reabrir todos os formulários ao mesmo tempo.                                                                             | Usar dentro de Ingresso para muitas ofertas, como complemento.                                  |
-| Mover organização para a etapa 1 e ingresso para a etapa 6 | Reduz o volume imediato da etapa 2.                                                        | Afasta organização das datas que ela condiciona e a configuração de ingresso da estrutura de ciclos; amplia outras telas.                                    | Não propor nesta intervenção.                                                                   |
-
-A contagem atual de sete etapas está centralizada em [editor-steps](../../web/features/calendar-editor/editor-steps.ts) e faz parte dos fluxos verificados em [editor-wizard](../../test/browser/editor-wizard.spec.ts). A opção por abas é uma decisão de produto proposta, não uma restrição técnica do repositório.
-
-## 4. Organização recomendada
+Uma página, com dois blocos em sequência, sem abas adicionais:
 
 ```text
-Etapa 2 de 7 · Períodos letivos
-Defina a organização das ofertas, as datas de aulas e o ingresso.
+Etapa 2 de 6 · Períodos e avaliações
+Defina os períodos de aulas e as etapas de avaliação.
 
-[Organização] [Datas dos períodos] [Ingresso]
+Períodos letivos
+  Anual · Técnico integrado · 15/02/2027 a 20/12/2027
+                                           [Editar] [Remover]
 
-Conteúdo de um assunto por vez
-Indicação de preenchimento pendente nas demais abas, quando houver
+  [Ofertas] [Ciclo] [Nome] [Início] [Dias, opcional] [Término]
+  [Adicionar período]
+  Informe início e quantidade para sugerir o término.
 
-Voltar à semana letiva                 Continuar para etapas de avaliação
+Etapas de avaliação
+  Técnico integrado · [4 etapas / bimestres]
+  [Definir etapas]
+
+  1º bimestre · datas                       [Editar]
+  2º bimestre · datas                       [Editar]
+  3º bimestre · datas                       [Editar]
+  4º bimestre · datas                       [Editar]
+
+Voltar à semana letiva              Continuar para sábados letivos
 ```
 
-### Organização
+O exemplo ilustra um calendário anual com quatro avaliações; não fixa essa combinação para toda oferta. Preservar as opções existentes de duas, três ou quatro etapas de avaliação e sua configuração por oferta.
 
-- Escopo da norma e fonte, quando aplicáveis ao ano.
-- Organização anual ou semestral por oferta.
-- Avisos de classificação legada somente quando pertinentes.
-- Organização sem registros dependentes é candidata a autosave validado. Quando a troca reclassificar períodos, usar uma ação com impacto explícito, por exemplo **Alterar organização e revisar períodos**. Oferecer **Ir para datas dos períodos** como navegação separada; ver seção 6.
-- Se a organização mudar, apresentar quais períodos ficaram com associação a conferir e um atalho para corrigi-los. Preservar IDs, datas e registros existentes.
+- O primeiro bloco mantém os campos do screenshot. Com períodos existentes, o editor pode ser aberto por **Adicionar período** ou **Editar**; no estado vazio, pode aparecer diretamente.
+- O segundo reaproveita a configuração e a lista da atual etapa 3. As datas continuam editáveis no painel já compartilhado pela aplicação.
+- Manter a sugestão de distribuição, o recálculo e a fonte da decisão das avaliações. Não adicionar formulários de ingresso ou norma a esse bloco.
+- Diferenciar **Ciclo** de **Etapas de avaliação**. Um período anual pode conter quatro bimestres; bimestres não viram quatro períodos letivos sobrepostos.
+- Com várias ofertas, mostrar a configuração e a lista de avaliações por oferta, sem duplicar o mesmo registro quando ele atende a várias.
+- No mobile, os dois blocos seguem em uma coluna. Abrir o editor posiciona o foco; fechar devolve à ação de origem. Evitar vários editores de avaliações abertos simultaneamente.
 
-Manter a escolha explícita da organização, mesmo com uma única oferta. Uma única oferta não permite deduzir se o ciclo é anual ou semestral.
+A seção atual [AssessmentsSection](../../web/features/calendar-editor/sections/AssessmentsSection.tsx) já separa configuração e datas, usando [AssessmentSettingsForm](../../web/features/calendar-editor/forms/AssessmentSettingsForm.tsx) e [ActivityChecklist](../../web/features/calendar-editor/events/ActivityChecklist.tsx). A fusão pode preservar essas capacidades e simplificar sua apresentação.
 
-### Datas dos períodos
+## 4. Organização sem formulário duplicado
 
-- Lista compacta dos períodos existentes, com nome, datas, oferta/ciclo e indicação de término automático quando ativo.
-- Ação **Adicionar período** e edição junto ao item escolhido. O formulário deixa de permanecer aberto depois da lista quando não há criação ou edição em curso; no estado vazio, o cadastro pode aparecer diretamente.
-- Uma única oferta elegível pode ser apresentada como contexto, sem checkbox redundante. A seleção real continua disponível quando há várias; na edição, preservar o escopo gravado até alteração explícita.
-- Na criação, oferecer os ciclos compatíveis com o escopo escolhido. Na edição, um valor legado ou incompatível continua visível como **a corrigir**, preservado no rascunho até escolha explícita. Se nenhuma organização aplicável estiver definida, explicar a dependência e oferecer **Configurar organização**; não aplicar uma organização presumida.
-- Nome, início e término compõem o caminho normal. O cálculo por dias aparece por escolha explícita: **Informar término** ou **Calcular por dias letivos**. Preservar `targetDays` na edição e o recálculo quando impedimentos mudarem.
-- Ação **Adicionar período** na criação. Na edição, nome pode usar autosave; datas, escopo e cálculo também, depois de validar o conjunto ao sair do grupo. Exibir o resultado do recálculo e permitir desfazer por nova operação. Confirmar adicionalmente apenas consequências estruturais concretas, como remover uma automação; não exigir confirmação só porque as datas alteram a contagem. Cancelar descarta somente o que ainda não foi aplicado.
+Hoje, [applyPeriod](../../src/calendar-edits/commands.ts) rejeita associações cujo ciclo diverge de `organizationByModality`. Por isso, apenas remover `OrganizationForm` pode impedir o cadastro.
 
-O formato dos dados e as validações atuais permanecem: um ciclo por oferta, associação explícita, sobreposição permitida entre ofertas independentes e proibida no mesmo escopo. A mudança de apresentação do cálculo não deve introduzir um segundo mecanismo de datas.
+A proposta é tornar **Adicionar/Salvar período** uma operação coerente: validar oferta, ciclo, datas e registros dependentes; atualizar o mapa de organização e o resumo `regime`; aplicar o período e os recálculos no mesmo comando puro.
 
-### Ingresso
+- Ano letivo declara organização anual; 1º ou 2º semestre declara organização semestral para as ofertas selecionadas.
+- Um primeiro semestre cadastrado pode deixar o segundo pendente, sem bloquear o salvamento intermediário.
+- Um ciclo conflitante com períodos existentes exige correção explícita. Mostrar quais registros conflitam; não reclassificar todos os períodos nem apagar vínculos automaticamente.
+- Um período compartilhado só pode atender ofertas com ciclo e datas compatíveis. Preservar os limites de um período anual ou dois semestres por oferta, a vedação de sobreposição na mesma oferta e a possibilidade de coincidência entre ofertas distintas.
+- Nos dados legados ambíguos, usar o próprio editor para escolher oferta/ciclo. Conservar IDs, datas, metas e vínculos até a correção; não deduzir semestres pela ordem das datas.
+- Reaproveitar a declaração já salva na criação como contexto inicial; mudanças conflitantes precisam ser resolvidas, sem duas fontes independentes para a organização. Uma revisão futura da criação pode eliminar outra redundância, mas não é requisito para esta fusão.
 
-- Introdução curta: informar se há ingresso; registrar a regra de matrícula quando existir. As datas de matrícula continuam sendo registradas na etapa 6.
-- Uma seção por oferta, com ciclo anual ou primeiro/segundo semestre conforme a organização aplicada.
-- Com várias ofertas, lista de resumos por oferta/ciclo e edição de uma unidade por vez. Oferta ou ciclo **não informado** precisa continuar visível no resumo, sem parecer concluído. Evitar abrir outra grade completa dentro da aba.
-- Pergunta principal **Há ingresso de novos estudantes?**, preservando as três situações existentes.
-- Fonte e regra local junto do ciclo correspondente. Reduzir a explicação repetida; detalhes normativos e contexto legado podem ficar em **Entenda esta configuração** e avisos contextuais.
-- Autosave por oferta/ciclo, quando o conjunto situação/fonte/regra for válido. Evitar uma aplicação que reenviaria os valores antigos de todas as ofertas. Não apagar fontes ou declarações existentes ao recolher uma seção, mudar de aba ou mudar a resposta. Se houver valores incompatíveis, revelá-los e explicar a correção necessária.
-- Orientar **Ir para atividades de matrícula** depois de aplicar, quando útil, sem transformar o atalho em cadastro automático de evento.
+Essa simplificação preserva a capacidade do modelo v3. Muda a maneira como a pessoa informa a decisão.
 
-## 5. Navegação, preenchimento e salvamento
+## 5. Norma e ingresso no lugar da decisão
 
-1. **Entrada previsível.** Sem indicação na URL, abrir Organização. Links específicos de revisão, de sábados sem períodos ou de correção devem abrir a aba e o item pertinentes. Acessar uma aba não obriga a preencher as anteriores.
-2. **URL como estado de navegação.** Usar uma chave validada própria da etapa 2, por exemplo `periodosAba=organizacao|datas|ingresso`. O nome é proposto; a chave genérica `aba` já é usada pela etapa 6 e os links atuais conservam a busca. A nova seleção não deve mudar a aba lembrada da etapa 6.
-3. **Troca de aba preserva campos.** Manter os formulários montados ou elevar sua propriedade a um nível persistente. Continuar usando o hook compartilhado e a identidade de rascunho por calendário/formulário. Não criar outro armazenamento para os mesmos valores.
-4. **Navegação independente.** Trocar de aba, usar um atalho ou continuar para a etapa 3 não deve aplicar silenciosamente outros formulários. Hoje, o continuar da etapa 2 já é navegação, e os três formulários têm ações próprias. Na proposta de autosave, a unidade válida é aplicada por sua própria alteração; valores incompletos continuam no formulário. Mostrar **Ainda não salvo** com ação **Retomar** na aba correspondente, sem bloqueio modal a cada troca.
-5. **Estados precisos.** Distinguir campos em preenchimento, dados aplicados aguardando salvamento, erro de gravação e salvamento confirmado. Um selo de seção configurada não significa conformidade normativa ou confirmação do Convex. Contadores devem representar os dados aplicados, com indicação separada para o rascunho.
-6. **Dependências sem perda silenciosa.** Se a organização aplicada mudar enquanto houver ingresso ou período em edição, conservar o preenchimento e indicar o conflito. Antes de aplicar, revalidar contra a organização atual. Não reutilizar automaticamente os valores anuais como primeiro semestre nem descartar segundo semestre ao trocar para anual.
-7. **Teclado e mobile.** Três abas com nomes curtos, estado selecionado e navegação por setas/Home/End; painéis ocultos fora da ordem de foco. Links de pendência abrem o painel antes de posicionar o foco. Testar 390 px e 1440 px, com ações e mensagens desobstruídas.
+### Norma aplicável
 
-Fontes do contrato existente: [layout e continuar](../../web/features/calendar-editor/CalendarEditorLayout.tsx), [useCalendarForm](../../web/features/calendar-editor/forms/useCalendarForm.ts), [useDraftForm](../../web/shared/forms/useDraftForm.ts), [regressão de rascunho](../../test/browser/editor-regressions.spec.ts) e [instruções de arquitetura](../../AGENTS.md). A mudança de organização com formulário dependente em edição é um caso a verificar na implementação; esta investigação não afirma que o comportamento atual já o resolve.
+Retirar escopo/fonte do preenchimento de períodos. Apresentar a norma de referência como informação na **Revisão e conclusão**, com linguagem direta, por exemplo **Norma aplicável ao calendário**.
 
-## 6. Salvamento automático: viabilidade e limites
+A fonte institucional já existente pode ser reutilizada quando comprovar a informação necessária. A existência de uma resolução na base, sozinha, não comprova o enquadramento de um curso. Quando faltar informação ou houver exceção, pedir apenas a confirmação ou referência necessária nesse ponto da revisão; manter declarações existentes consultáveis e editáveis. Não preencher `covered` nem inventar uma fonte com base apenas em “Técnico integrado”.
 
-### Infraestrutura existente
+A responsabilidade precisa ficar resolvível na revisão: hoje [evaluateCalendar](../../src/evaluation.ts) usa a confirmação para ativar os mínimos, [readiness](../../src/release.ts) bloqueia a conclusão de 2027 sem escopo coberto e fonte, e [proensLayout](../../src/printing/calendar-layout.ts) apresenta o estado no PDF. Ocultar campos sem adaptar esses consumidores deixaria pendências impossíveis de resolver. O tratamento de norma própria precisa continuar explícito, inclusive quanto aos limites da conclusão suportada pela aplicação.
 
-O calendário já tem autosave depois de aplicar um formulário. [`createEditorSession.apply`](../../web/features/calendar-editor/session/editor-session.ts) executa o comando puro sobre o estado atual, marca a alteração e agenda a gravação. [`createAutosaver`](../../web/autosave.ts) agrupa alterações por 1.500 ms, serializa os envios, distingue estados de gravação e bloqueia erros de autenticação ou conflito de versão. A confirmação considera o snapshot enviado; mudanças posteriores permanecem pendentes.
+### Matrícula de ingressantes
 
-O ponto que ainda exige botão é a passagem dos valores do TanStack Form para o estado do calendário. [`useCalendarForm`](../../web/features/calendar-editor/forms/useCalendarForm.ts) faz essa passagem no submit e redefine o baseline local antes da resposta remota. Remover o botão, isoladamente, não cria a política de quando um conjunto de campos pode virar um calendário válido.
+Eliminar a grade prévia de perguntas para toda combinação oferta/ciclo. Na etapa **Atividades e datas do campus**, tratar o assunto ao abrir **Matrícula de ingressantes**, perto das datas e da decisão correspondente.
 
-As consultas reativas atualizam os dados recebidos pela sessão. Se houver edição local ou formulário em preenchimento, a sessão preserva esses valores e expõe a versão remota para resolução. Isso não constitui mesclagem colaborativa campo a campo. No servidor, [`saveCalendar`](../../convex/calendars.ts) recebe o estado completo, verifica versão, recalcula, arquiva a versão anterior e registra auditoria para cada mudança efetiva. Enviar uma mutation por tecla aumentaria esse custo e a frequência de conflitos.
+- Cadastro da atividade continua disponível, mesmo sem configuração prévia de ingresso.
+- Configuração ausente não significa “não há ingresso”. A proposta é não gerar cobrança de preenchimento dessa configuração para todas as ofertas; a matrícula de ingressantes fica sem exigência automática até existir regra local fundamentada.
+- Se for necessário exigir essa atividade no planejamento, oferecer **Exigir esta atividade no calendário**, com referência da regra local, somente no detalhe da atividade e para a oferta/ciclo pertinentes. Essa ação declara a exigência; não inferi-la da simples existência de um evento.
+- Preservar situações, fontes e exigências já salvas. Configurações existentes que exigem matrícula continuam produzindo pendência quando faltam datas; não rebaixá-las silenciosamente.
+- Matrícula/rematrícula, ajuste e trancamento de veteranos continuam com suas regras próprias, sem dispensa por ausência de ingresso.
 
-A documentação do Convex descreve [atualizações otimistas](https://docs.convex.dev/client/react/optimistic-updates) como mudanças locais temporárias e [OCC/atomicidade](https://docs.convex.dev/database/advanced/occ) como garantias transacionais. A conclusão para este projeto é uma inferência apoiada também no código: essas garantias não substituem validação dos grupos de campos nem resolvem automaticamente o conflito de versão de domínio que `saveCalendar` retorna. A resposta do servidor continua sendo o marco de **Salvo**.
+Essa é uma mudança proposta de produto e política de pendências, além da retirada visual do formulário. Hoje [applicabilityFor](../../src/calendar-rules/index.ts) retorna `unconfigured` quando ingresso é desconhecido e exige matrícula somente com ingresso confirmado, regra e fonte. A implementação deverá alinhar cálculo de cobertura, contadores, revisão e backend à nova apresentação, sem transformar desconhecimento em ausência.
 
-### Matriz recomendada
+## 6. Roteiro e implementação
 
-| Caso                                                                              | Política proposta                                                                                               | Motivo                                                                                                              |
-| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Nome de período existente e outros textos independentes                           | Autosave após edição válida, ao sair do campo ou pela fila existente.                                           | Não exigem recriar o registro nem reclassificar seu escopo.                                                         |
-| Ingresso por oferta/ciclo                                                         | Autosave da unidade situação/fonte/regra, quando válida.                                                        | `required` depende de ingresso confirmado e fonte; os três campos formam uma unidade.                               |
-| Escopo da norma e fonte                                                           | Autosave do par válido.                                                                                         | Não enviar status afirmado sem a fonte exigida.                                                                     |
-| Organização sem períodos dependentes                                              | Candidata a autosave validado.                                                                                  | Não existe ainda um conjunto de períodos para reclassificar.                                                        |
-| Organização com períodos dependentes                                              | Mostrar consequências e confirmar o conjunto quando houver reclassificação.                                     | A alteração pode afetar períodos, contagens e atividades aplicáveis.                                                |
-| Novo período                                                                      | Manter **Adicionar período**, sem outro botão Salvar.                                                           | Criar é uma ação intencional, com identidade e campos obrigatórios.                                                 |
-| Datas, ofertas, ciclo e meta de período existente                                 | Autosave do conjunto válido ao sair do grupo, via `applyPeriod` e fila atual, com recálculo visível e desfazer. | Evita salvar entre a edição do início e a do término. A contagem mudar não exige, por si só, confirmação adicional. |
-| Semana letiva, férias, sábados, aplicação de etapas sugeridas e vínculo histórico | Avaliar em fluxos próprios; conservar ações intencionais nesta proposta.                                        | Há confirmação de decisão, inclusão/remoção de registros ou aplicação em lote.                                      |
-| Conclusão, importação e substituição                                              | Conservar ação explícita e confirmação prevista.                                                                | Não são edição de um campo.                                                                                         |
+Novo roteiro:
 
-### Contrato para o piloto
+1. Semana letiva.
+2. Períodos e avaliações.
+3. Sábados letivos.
+4. Férias docentes.
+5. Atividades e datas do campus.
+6. Revisão e conclusão.
 
-- Manter valores incompletos ou inválidos no Form, com **Ainda não salvo**. Não enfraquecer o schema canônico para gravar cada estágio transitório.
-- Aplicar apenas a unidade alterada e válida sobre o estado atual via comando puro. Não reenviar um `IntakeForm` inteiro baseado em defaults antigos de outras ofertas e não aplicar rascunhos de abas ocultas como efeito de navegação.
-- Reutilizar a fila de 1.500 ms; não somar outro atraso de 1.500 ms no formulário. Definir um único responsável por agrupar as gravações.
-- Distinguir, por bloco quando houver mistura, **Ainda não salvo**, **Salvando**, **Salvo**, **Erro ao salvar** e conflito. Uma unidade salva não pode esconder outra incompleta.
-- Preservar o controle de versão, a serialização, a retenção de alterações durante um envio e os fluxos de recuperação. Reabrir ou resolver versão remota continua necessário quando o contrato atual retornar conflito.
-- Uma edição já autosalva não é revertida por **Cancelar**. Se houver desfazer, ele precisa ser uma nova operação validada; rótulos e testes devem refletir essa diferença.
-- O rascunho atual é um `Map` em memória do [provider compartilhado](../../web/shared/forms/drafts.tsx). Recuperar campos incompletos após recarregar exige uma evolução distinta de persistência de rascunho, opcional e com modelo próprio. Autosave do calendário válido não garante essa recuperação.
+Manter `/periodos` como endereço da etapa unificada. O endereço antigo `/avaliacoes` deve abrir diretamente o bloco de avaliações na mesma etapa, preservando links de pendência e o histórico do navegador. Atualizar numeração, títulos, ações Continuar e referências que dependem das etapas antigas. A fonte atual do roteiro é [editor-steps](../../web/features/calendar-editor/editor-steps.ts).
 
-**Decisão sugerida:** adotar autosave incremental na mesma revisão de experiência, começando por ingresso por oferta/ciclo, escopo/fonte e edição de períodos existentes em grupos válidos. Tratar mudanças estruturais concretas por ações com consequência explícita. Remover os botões genéricos progressivamente, após os testes comprovarem estados transitórios, falhas e concorrência.
+Ordem recomendada para a implementação:
 
-## 7. Implementação sugerida
+1. Ajustar o comando de períodos para dispensar a aplicação separada de organização; cobrir conflitos e conversão legada.
+2. Reunir períodos e avaliações, retirar os formulários extras e adaptar navegação/links.
+3. Reposicionar a confirmação normativa na revisão e a exigência local de matrícula no detalhe da atividade; ajustar os consumidores das regras.
+4. Conferir dados existentes, rascunhos e mensagens; validar o fluxo completo antes de publicar.
 
-1. **Abas e navegação.** Separar os três blocos preservando os formulários existentes; validar URL, histórico, atalhos, rascunhos e leitura sem edição. Atualizar a descrição da etapa e indicadores de pendências. Essa fase entrega a principal redução de volume, sem depender da mudança de salvamento.
-2. **Editor de períodos.** Exibir cadastro/edição por demanda, perto da ação de origem. Depois, simplificar escopo único e tornar explícita a escolha entre término manual e cálculo por dias.
-3. **Ingresso e dependências.** Resumir por oferta/ciclo e introduzir expansão progressiva; verificar organização alterada com rascunho dependente e atualização remota. Antes de ocultar campos, fixar a preservação e os erros nos testes.
-4. **Piloto de autosave.** Aplicar por unidade válida em Ingresso, escopo/fonte e edição de períodos existentes, aproveitando fila e confirmação atuais. No grupo de datas, não gravar o estado intermediário enquanto a pessoa passa do início ao término. Testar edição rápida, valores inválidos, perda de conexão, falha, resposta atrasada, troca de aba e conflito remoto antes de expandir o padrão.
+Não ampliar esta mudança para um novo sistema geral de autosave. Usar o hook compartilhado de formulários, os comandos puros e a persistência existentes. **Adicionar/Salvar período** aplica a unidade válida; somente a confirmação Convex permite mostrar gravação concluída. Ao implementar os formulários, consultar exports/tipos da versão instalada do TanStack Form e as referências oficiais exigidas pelo [AGENTS.md](../../AGENTS.md).
 
-Não há necessidade identificada de alterar schema, backend ou modelo de impressão para a primeira fase. Antes de editar formulários, cumprir a consulta à versão instalada e às regras oficiais de composição/valores assíncronos do TanStack Form, conforme o `AGENTS.md`.
+## 7. Critérios de aceite e validação
 
-## 8. Critérios de aceitação e validação futura
+- Calendário anual de uma oferta permite cadastrar as datas pelo conteúdo do screenshot, sem aplicar organização em outro formulário.
+- Integrado anual e graduação semestral continuam funcionando juntos, inclusive com datas coincidentes entre ofertas diferentes.
+- Mudanças conflitantes de ciclo e legado ambíguo recebem correção contextual, preservando dados.
+- Avaliações mantêm configuração por oferta, datas, fontes e distribuição automática; não se confundem com períodos de aulas.
+- Configurações antigas de ingresso e norma continuam preservadas e acessíveis. Não surgem bloqueios sem ação de resolução, nem afirmações automáticas de conformidade sem fundamento.
+- O roteiro tem seis etapas. Links antigos de avaliações e links de revisão abrem o bloco/item correto; voltar, avançar e rascunhos funcionam.
+- Desktop 1440 px e mobile 390 px, teclado, foco e controles desobstruídos são verificados. Referências visuais só mudam após inspeção.
 
-- Continuam existindo sete macroetapas, com os assuntos da etapa 2 acessíveis diretamente.
-- Nenhum fluxo exige percorrer três telas para corrigir apenas uma data.
-- Técnico anual e graduação semestral conservam períodos independentes e sobrepostos entre ofertas; a matrícula de ingressantes continua condicionada a status, regra e fonte. Base: [editor-2027](../../test/browser/editor-2027.spec.ts).
-- Classificação de períodos legados preserva IDs e datas. Base: [editor-2027](../../test/browser/editor-2027.spec.ts).
-- Criar/editar um período, impedir sobreposição no mesmo escopo e recalcular término por dias continuam funcionando. Bases: [editor-forms](../../test/browser/editor-forms.spec.ts) e [editor-regressions](../../test/browser/editor-regressions.spec.ts).
-- Trocar abas, sair/voltar à etapa, usar histórico do navegador e receber atualização remota preservam os contratos de rascunho. Falha de gravação não vira selo de salvo.
-- Autosave não envia grupos inválidos, não sobrescreve outra oferta com valores antigos e não cria um período só porque o usuário começou a digitar. Alterações durante um envio permanecem pendentes até confirmação própria.
-- Links de sábados sem períodos, pendências e revisão abrem a aba correta; erros em conteúdo recolhido o revelam e levam o foco ao controle.
-- Leitura por parecerista exibe os dados das três abas sem permitir gravação.
-- Desktop/mobile e teclado verificados na suíte local, incluindo comparação visual das alterações intencionais. Executar as menores suítes afetadas durante o desenvolvimento e `pnpm check` antes de concluir código, conforme [Verificação](../verificacao.md).
+Na implementação, começar pelas regressões de períodos/organização e pelo fluxo real de cadastro; depois cobrir navegador e regras de cobertura/prontidão. Executar `pnpm check` antes de concluir mudanças de código. Se o modelo ou runtime de PDF mudar, executar também `pnpm test:runtime:linux`, conforme [Verificação](../verificacao.md).
 
-**Validação desta entrega:** descoberta Intent executada e orientação local de Router/search params consultada; fontes e referências conferidas no checkout e na documentação oficial do Convex. Formatação deste arquivo conferida separadamente. Inspeção exploratória da etapa 2 com fixture local em 1440/390 px, sem backend remoto. Executado pelo agente principal: `pnpm exec vitest run test/autosave.test.ts test/editor-session.test.ts`, com **21 testes aprovados em dois arquivos**. Esse resultado verifica a infraestrutura atual e não aprova a proposta ainda não implementada. Não houve alteração de UI, operação remota ou publicação; `pnpm check` completo é dispensável para esta entrega somente documental.
+**Validação da investigação inicial:** descoberta local com `pnpm exec intent list`, leitura de código, planos e histórico Git; conferência de formatação do arquivo com Prettier. A entrega inicial era somente documental. A implementação e seus resultados estão registrados abaixo.
+
+## 8. Implementação
+
+Implementada a etapa **Períodos e avaliações**, com seis etapas no roteiro. `/avaliacoes` redireciona para `/periodos#assessment-area`; links de atividade da revisão e retomada de avaliações usam a etapa unificada. As avaliações são agrupadas por oferta e usam o painel existente.
+
+O comando `applyPeriod` atualiza o mapa de organização e o resumo junto do período, rejeita ciclos conflitantes e protege exigências de matrícula e editais vinculados. A classificação de legado atualiza seu estado de conversão sem alterar IDs ou datas. Os dois formulários extras e o CSS exclusivo de ingresso foram retirados.
+
+`ScopeForm` oferece a confirmação de norma na revisão, sem presumir enquadramento nem fabricar fonte. `IntakeRequirementForm` permite exigir matrícula com fonte dentro do detalhe da atividade. Seu comando altera apenas a oferta/ciclo escolhido e conserva declarações anteriores. Ingresso desconhecido deixa de produzir uma tarefa de configuração; regras de veteranos e exigências locais já registradas permanecem independentes.
+
+Foram adicionadas regressões de domínio em `test/period-organization.test.ts`, um fluxo real em desktop/mobile em `test/browser/periods-assessments.spec.ts` e referências visuais em `test/browser/periods-assessments.visual.spec.ts`. As três regressões iniciais foram executadas e falharam antes da correção. Após a implementação, os cinco testes de domínio e o fluxo completo em 1440/390 px passaram, incluindo geração de quatro etapas, fontes, matrícula contextual, foco e compatibilidade do endereço antigo. As capturas da nova tela foram inspecionadas nos dois tamanhos.
+
+A validação completa está sendo coordenada com a mudança simultânea da tela de atividades no mesmo checkout, autorizada pelo usuário na conversa correspondente. Não houve publicação, commit, alteração do modelo de impressão ou do runtime de PDF nesta implementação. E2E remoto não foi executado; as verificações usam fixtures locais. O `pnpm check` consolidado final passou: formatação, lint, lint de tipos, todos os typechecks, `agents:check`, **434 testes unitários em 76 arquivos**, **176 testes de navegador** com comparações visuais desktop/mobile e build. Log local: `/tmp/stage6-final-check.log`. A rodada direcionada final passou em cinco casos de navegador (fluxo em 1440/390 px, duas comparações visuais sem atualização e aviso acessível) e em 37 testes Vitest nos quatro arquivos afetados. `git diff --check` e a formatação dos Markdown alterados também passaram.
+
+## 9. Revisão e acabamento antes da release
+
+A revisão independente de padrões e requisitos identificou três problemas: exigência de matrícula de um ciclo antigo bloqueava períodos da organização atual; a mudança de organização podia deixar uma atividade vinculada somente a outra oferta; e o foco do bloco de avaliações era sobrescrito ao voltar pelo histórico do navegador. As correções preservam os dados antigos, validam a pertinência das ofertas e dão prioridade ao foco do destino específico. Prazos docentes semestrais continuam válidos quando a oferta passa a ser anual.
+
+As regressões reproduziram as falhas antes dos ajustes. O arquivo de domínio passou em oito testes; o fluxo de navegador inclui o retorno por histórico em desktop/mobile, cadastro com exigência antiga preservada e rejeição de mudança que invalidaria um vínculo. Os revisores conferiram os ajustes e não apontaram novos problemas concretos.
+
+Por solicitação adicional do usuário, **Períodos letivos** e **Etapas de avaliação** agora ocupam dois cards empilhados, com fundo, bordas, títulos e espaçamento distintos. As referências desktop/mobile foram inspecionadas e sua comparação foi repetida sem atualização. Não foi necessária migração de dados; a publicação solicitada seguirá o procedimento de fast release após a validação de desenvolvimento.
+
+Após os ajustes da revisão e a separação em cards, `pnpm check` passou novamente: formatação, lint, lint de tipos, todos os typechecks, `agents:check`, **437 testes unitários em 76 arquivos**, **180 testes de navegador** com as referências desktop/mobile e build. A suíte de navegador levou cerca de dois minutos. Log local: `/tmp/release-review-check.log`. `git diff --check` e a formatação dos Markdown alterados também passaram. E2E remoto não foi executado, por não haver opt-in; o modelo e o runtime de PDF não foram alterados.

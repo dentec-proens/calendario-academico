@@ -90,12 +90,12 @@ test('assessment settings require apply, generate stages and restore automatic d
   await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-03-01', '2027-03-26');
   await savedState(page);
-  await page.locator('[data-view="assessments"]').click();
+  await page.locator('[data-view="periods"]').click();
   await page.locator('[data-assessment-modality="integrado"]').selectOption('4');
   expect(
     await page.evaluate(() => window.editorTest.record.state.assessmentStagesByModality),
   ).toEqual({});
-  await page.getByRole('button', { name: 'Aplicar organização das etapas' }).click();
+  await page.getByRole('button', { name: 'Definir etapas' }).click();
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.assessmentStagesByModality))
     .toEqual({ integrado: 4 });
@@ -360,7 +360,7 @@ test('without teaching periods the Saturday step explains what is pending and li
   await expect(page.locator('#saturday-panel')).toContainText(
     'Não há sábados disponíveis para seleção.',
   );
-  await pending.getByRole('link', { name: 'Períodos letivos' }).click();
+  await pending.getByRole('link', { name: 'Períodos e avaliações' }).click();
   await expect(page).toHaveURL(/\/periodos$/);
   await expect(page.locator('#period-name')).toBeVisible();
 
@@ -424,11 +424,12 @@ test('the Saturday panel shows the teaching-day count and previews the selection
     'A contagem aparece depois de confirmar a semana letiva e cadastrar os períodos.',
   );
   await addPeriod(page, '2027-03-01', '2027-04-30');
+  await selectEditorSection(page, 'issues');
   await page.locator('#calendar-scope').selectOption('covered');
   await page
     .locator('#calendar-scope-source')
     .fill('PPC sintético: técnico presencial abrangido pela norma de 2027');
-  await page.locator('#organization-form button[type="submit"]').click();
+  await page.locator('#scope-form button[type="submit"]').click();
   await selectEditorSection(page, 'issues');
   const total = Number(await page.locator('#total').textContent());
   expect(total).toBeGreaterThan(0);

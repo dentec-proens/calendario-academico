@@ -6,6 +6,7 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { useActivityCoverage } from './useActivityCoverage.ts';
 import { civilDate } from './activity-query.ts';
+import IntakeRequirementForm from '../forms/IntakeRequirementForm.tsx';
 
 /** What the side panel shows about one activity: its status, offers and registered records. */
 export default function ActivityDetails({
@@ -96,6 +97,7 @@ export default function ActivityDetails({
         </ul>
         {item.reviewInstruction && <p className="help">{item.reviewInstruction}</p>}
       </details>
+      <IntakeRequirementForm item={item} />
       {registered.length > 0 && (
         <ul className="activity-records" aria-label="Registros desta atividade">
           {registered.map((event) => (

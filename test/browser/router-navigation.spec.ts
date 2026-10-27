@@ -182,10 +182,7 @@ test('section and record links keep native browser shortcuts and canonical URLs'
     'href',
     '/calendarios/calendar-a/editar',
   );
-  await expect(page.locator('#calendar-list a').nth(1)).toHaveAttribute(
-    'href',
-    '/calendarios/calendar-a/eventos#calendario-anterior',
-  );
+  await expect(page.getByRole('link', { name: 'Usar calendário anterior' })).toHaveCount(0);
 });
 
 test('mobile keyboard navigation changes route, closes the menu and focuses the heading', async ({
@@ -351,7 +348,7 @@ test('focused assessment and vacation steps support direct URLs and reload', asy
 }) => {
   const origin = new URL(await fixtureServer('editor')).origin;
   for (const [segment, visible, absent] of [
-    ['avaliacoes', '#assessment-area', '#period-form'],
+    ['avaliacoes', '#assessment-area', '#saturday-form'],
     ['ferias', '#vacation-form', '#saturday-form'],
   ]) {
     const url = origin + '/calendarios/synthetic-calendar/' + segment;
@@ -359,7 +356,11 @@ test('focused assessment and vacation steps support direct URLs and reload', asy
     await expect(page.locator(visible)).toBeVisible();
     await expect(page.locator(absent)).toHaveCount(0);
     await page.reload();
-    await expect(page).toHaveURL(url);
+    await expect(page).toHaveURL(
+      segment === 'avaliacoes'
+        ? origin + '/calendarios/synthetic-calendar/periodos#assessment-area'
+        : url,
+    );
     await expect(page.locator(visible)).toBeVisible();
     await expect(page.locator(absent)).toHaveCount(0);
   }

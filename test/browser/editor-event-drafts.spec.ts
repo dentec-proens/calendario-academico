@@ -95,7 +95,7 @@ for (const width of [1440, 390]) {
   });
 }
 
-test('editor separates creation from editing and preserves closed activity/history drafts until explicit discard', async ({
+test('editor separates creation from editing and preserves closed activity drafts until explicit discard', async ({
   page,
   fixtureServer,
 }) => {
@@ -214,79 +214,5 @@ test('editor separates creation from editing and preserves closed activity/histo
   await cancel();
   expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(3);
 
-  await selectEditorSection(page, 'history');
-  await page.locator('[data-analyze-history="history-a"]').click();
-  await expect(page.locator('[data-history-candidate="0"]')).toBeVisible();
-  await page.locator('[data-history-candidate="0"]').click();
-  await expect(page.locator('#event-start')).toHaveValue('');
-  await expect(page.locator('#event-end')).toHaveValue('');
-  await page.locator('#event-name').fill('Evento histórico conferido');
-  await page.locator('#event-evidence').fill('Lei municipal vigente');
-  await page.locator('#event-hours').fill('4');
-  await setDates('2027-05-03', '2027-05-04');
-  const historyDraft = await fields();
-  const provenance = await page
-    .locator('#historical-event-source')
-    .evaluate((node) => node.textContent);
-  await page.locator('#close-event-form').click();
-  await expect(page.locator('#event-form')).toBeHidden();
-  await page.locator('#resume-event').click();
-  await expect(page.locator('#calendario-anterior')).toBeVisible();
-  await expect(page.locator('#event-form-title')).toBeFocused();
-  await expect(page.locator('#event-form')).toHaveCount(1);
-  expect(await fields()).toEqual(historyDraft);
-  await page.locator('#close-event-form').click();
-  await selectEditorSection(page, 'periods');
-  await page.locator('#resume-event').click();
-  await expect(page).toHaveURL(/\/eventos(\?[^#]*)?#calendario-anterior$/);
-  await expect(page.locator('#calendario-anterior')).toBeVisible();
-  await expect(page.locator('#event-form-title')).toBeFocused();
-  expect(await fields()).toEqual(historyDraft);
-  const savesBeforeClose = await page.evaluate(() => window.editorTest.calls.saves);
-  await page.locator('#close-event-form').click();
-  await expect(page.locator('#event-form')).toBeHidden();
-  await selectCampusEvents(page);
-  await page.locator('#new-event').click();
-  await expect(page.locator('#pending-event')).toContainText('Evento histórico conferido');
-  expect(await fields()).toEqual(historyDraft);
-  await selectEditorSection(page, 'history');
-  await page.locator('#show-existing-history').click();
-  await page.locator('[data-history-candidate="1"]').click();
-  expect(await fields()).toEqual(historyDraft);
-  await page.locator('[data-history-candidate="0"]').click();
-  await expect(page.locator('#event-panel #event-form')).toBeVisible();
-  expect(await fields()).toEqual(historyDraft);
-  await expect(page.locator('#historical-event-source')).toHaveText(provenance);
-  await expect(page.locator('#historical-event-source')).toBeVisible();
-  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(savesBeforeClose);
-  await page.setViewportSize({ width: 390, height: 844 });
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-  ).toBeTruthy();
-  await submit();
-  await page.waitForFunction(() =>
-    window.editorTest.record.state.events.some(
-      (event) => event.name === 'Evento histórico conferido',
-    ),
-  );
-  const saved = await page.evaluate(() =>
-    window.editorTest.record.state.events.find(
-      (event) => event.name === 'Evento histórico conferido',
-    ),
-  );
-  expect(saved?.historicalSource?.historyId).toBe('history-a');
-  expect(saved?.historicalSource?.page).toBe(1);
-  expect(saved?.historicalSource?.candidateKey).toBeTruthy();
-  await cancel();
-  await selectEditorSection(page, 'history');
-  await page.locator('[data-history-candidate="1"]').click();
-  await page.locator('#event-evidence').fill('Este preenchimento será descartado');
-  const savesBeforeCancel = await page.evaluate(() => window.editorTest.calls.saves);
-  await cancel();
-  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(savesBeforeCancel);
-  await page.locator('[data-history-candidate="1"]').click();
-  await expect(page.locator('input#event-evidence')).toHaveValue('');
-  await cancel();
-  expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(4);
   expect(errors).toEqual([]);
 });

@@ -10,6 +10,7 @@ import {
   rulesetVersion,
 } from '../../../../src/calendar-rules/index.ts';
 import { stageRequirement } from '../../../../src/obligations.ts';
+import ScopeForm from '../forms/ScopeForm.tsx';
 
 export default function IssuesSection() {
   const { state, record, dirty, evaluation } = useCalendarEditor();
@@ -104,6 +105,7 @@ export default function IssuesSection() {
       });
   return (
     <section id="issues" className="view">
+      <ScopeForm />
       <div className="metrics editor-review-metrics">
         <article>
           <span>Dias letivos calculados</span>
@@ -150,7 +152,7 @@ export default function IssuesSection() {
                   <Link
                     to={
                       stageRequirement(issue.requirementId)
-                        ? '/calendarios/$calendarId/avaliacoes'
+                        ? '/calendarios/$calendarId/periodos'
                         : '/calendarios/$calendarId/eventos'
                     }
                     params={{ calendarId: record.id }}

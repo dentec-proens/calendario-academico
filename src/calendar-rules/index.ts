@@ -296,7 +296,7 @@ export function applicabilityFor(
     return 'optional';
   if (requirement.id.startsWith('registration-')) {
     const config = state.intakeByModality?.[modality]?.[requirement.term ?? 'annual'];
-    if (!config || config.status === 'unknown') return 'unconfigured';
+    if (!config || config.status === 'unknown') return 'optional';
     return config.status === 'yes' && config.required === true && Boolean(config.source?.trim())
       ? 'required'
       : 'optional';

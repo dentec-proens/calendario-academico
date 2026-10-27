@@ -252,7 +252,15 @@ const days = createRoute({
 const assessments = createRoute({
   getParentRoute: () => editor,
   path: '/avaliacoes',
-  component: lazy(() => import('../features/calendar-editor/sections/AssessmentsSection.tsx')),
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: editorPages.periods.path,
+      params,
+      hash: 'assessment-area',
+      replace: true,
+      search: (previous) => previous,
+    });
+  },
   staticData: { title: editorPages.assessments.title },
 });
 const vacations = createRoute({
@@ -274,9 +282,12 @@ const history = createRoute({
     throw redirect({
       to: editorPages.events.path,
       params,
-      hash: calendarReferenceAnchor,
+      hash: '',
       replace: true,
-      search: (previous) => previous,
+      search: (previous) => ({
+        ...previous,
+        aba: previous.aba === 'eventos' ? 'eventos' : undefined,
+      }),
       hashScrollIntoView: false,
     });
   },

@@ -10,14 +10,7 @@ import type { CalendarEvent, Modality } from '../types.ts';
 export type EventContext =
   | { kind: 'new' }
   | { kind: 'event'; eventId: string }
-  | { kind: 'activity'; requirementId: string; eventId?: string }
-  | {
-      kind: 'history';
-      historyId: string;
-      candidateKey: string;
-      intent: 'reference' | 'new' | 'link';
-      eventId?: string;
-    };
+  | { kind: 'activity'; requirementId: string; eventId?: string };
 /** Campus events described by their purpose; each answer sets the count effect and category. */
 export const eventTypes = [
   { id: 'holiday', label: 'Feriado (suspende aulas)', kind: 'exclude', category: 'feriado' },
@@ -68,8 +61,6 @@ export interface EventValues {
   hours: string;
   /** Interface answer to "O que é este evento?"; `kind` and `category` hold the record. */
   eventType: '' | EventType;
-  provenanceKey: string;
-  historyWarning: string;
 }
 export const emptyEvent = (modalities: Modality[]): EventValues => ({
   name: '',
@@ -91,8 +82,6 @@ export const emptyEvent = (modalities: Modality[]): EventValues => ({
   modalities,
   hours: '',
   eventType: '',
-  provenanceKey: '',
-  historyWarning: '',
 });
 export function eventValues(event: CalendarEvent, modalities: Modality[]): EventValues {
   return {
@@ -115,8 +104,6 @@ export function eventValues(event: CalendarEvent, modalities: Modality[]): Event
     modalities: event.modalities?.length ? event.modalities : modalities,
     hours: event.hours === undefined ? '' : String(event.hours),
     eventType: event.requirementId ? '' : eventTypeOf(event),
-    provenanceKey: '',
-    historyWarning: '',
   };
 }
 /**

@@ -163,9 +163,21 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
         </Notice>
       )}
       {stages ? (
-        <ul id="assessment-checklist" className="activity-rows">
-          {rows.map(renderRow)}
-        </ul>
+        <div id="assessment-checklist">
+          {state.modalities.map((modality) => {
+            const items = rows.filter((item) => !item.modality || item.modality === modality);
+            return items.length ? (
+              <section
+                key={modality}
+                className="activity-group"
+                aria-label={`Avaliações — ${modalityLabels[modality]}`}
+              >
+                <h4>{modalityLabels[modality]}</h4>
+                <ul className="activity-rows">{items.map(renderRow)}</ul>
+              </section>
+            ) : null;
+          })}
+        </div>
       ) : (
         <div id="activity-checklist">
           {activityGroups.map(([group, label]) => {

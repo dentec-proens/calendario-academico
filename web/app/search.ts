@@ -58,9 +58,7 @@ export function applicationSearch(input: Record<string, unknown>) {
     ...(['admission', 'teaching', 'campus', 'other'].includes(String(input.atividadeAssunto))
       ? { atividadeAssunto: String(input.atividadeAssunto) }
       : {}),
-    ...(input.aba === 'eventos' || input.aba === 'anterior'
-      ? { aba: input.aba === 'eventos' ? ('eventos' as const) : ('anterior' as const) }
-      : {}),
+    ...(input.aba === 'eventos' ? { aba: 'eventos' as const } : {}),
     ...(typeof input.atividade === 'string' && /^[a-z0-9:-]{1,100}$/.test(input.atividade)
       ? { atividade: input.atividade }
       : {}),

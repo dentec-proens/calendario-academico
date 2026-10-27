@@ -263,12 +263,6 @@ test('ambiguous v2 organization preserves period IDs until explicit offer and cy
   await selectEditorSection(page, 'periods');
   await expect(page.locator('#regime-summary')).toHaveText('Organização a conferir');
   await expect(page.locator('#period-list')).toContainText('Associação a conferir');
-  await page.locator('#organization-integrado').selectOption('anual');
-  await page.locator('#calendar-scope').selectOption('covered');
-  await page
-    .locator('#calendar-scope-source')
-    .fill('PPC sintético com ciclo anual e abrangência confirmada');
-  await page.locator('#organization-form button[type="submit"]').click();
   await page.locator('[data-edit-period="legacy-cycle"]').click();
   await page.locator('#period-form input[value="integrado"]').check();
   await page.locator('#period-term').selectOption('annual');
@@ -300,13 +294,6 @@ test('annual integrated and semester undergraduate offers keep independent overl
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'periods');
-  await page.locator('#organization-graduacao').selectOption('semestral');
-  await page.locator('#calendar-scope').selectOption('covered');
-  await page
-    .locator('#calendar-scope-source')
-    .fill('PPCs sintéticos com técnico anual e graduação semestral');
-  await page.locator('#organization-form button[type="submit"]').click();
-  await expect(page.locator('#regime-summary')).toHaveText('Anual e semestral');
   const add = async (
     name: string,
     offer: 'integrado' | 'graduacao',
@@ -327,25 +314,27 @@ test('annual integrated and semester undergraduate offers keep independent overl
   await add('Integrado anual sintético', 'integrado', 'annual', '2027-02-01', '2027-12-17');
   await add('Graduação primeiro sintético', 'graduacao', 'first', '2027-02-01', '2027-06-30');
   await add('Graduação segundo sintético', 'graduacao', 'second', '2027-08-02', '2027-12-17');
-  await page.locator('#intake-integrado-annual').selectOption('no');
-  await page.locator('#intake-graduacao-second').selectOption('yes');
-  await page.locator('#intake-source-graduacao-second').fill('Regra local sintética de ingresso');
-  await page.locator('#intake-required-graduacao-second').check();
-  await page.locator('#intake-form button[type="submit"]').click();
+  await expect(page.locator('#regime-summary')).toHaveText('Anual e semestral');
+  await expect
+    .poll(() => page.evaluate(() => window.editorTest.record.state.periods.length))
+    .toBe(3);
+  await selectEditorSection(page, 'events');
+  await openActivity(page, 'registration-2');
+  await page.getByText('Exigência por regra local', { exact: true }).click();
+  await page.locator('#intake-graduacao-second-required').check();
+  await page.locator('#intake-graduacao-second-source').fill('Regra local sintética de ingresso');
+  await page.getByRole('button', { name: 'Salvar exigência', exact: true }).click();
   await expect
     .poll(() =>
       page.evaluate(
-        () => window.editorTest.record.state.intakeByModality?.graduacao?.second?.status,
+        () => window.editorTest.record.state.intakeByModality?.graduacao?.second?.required,
       ),
     )
-    .toBe('yes');
+    .toBe(true);
   expect(
-    await page.evaluate(
-      () => window.editorTest.record.state.intakeByModality?.integrado?.annual?.status,
-    ),
-  ).toBe('no');
-  expect(await page.evaluate(() => window.editorTest.record.state.periods.length)).toBe(3);
-  await selectEditorSection(page, 'events');
+    await page.evaluate(() => window.editorTest.record.state.intakeByModality?.integrado),
+  ).toBeUndefined();
+  await page.locator('#close-event-panel').click();
   const details = page.locator('#event-panel .activity-details');
   for (const [activity, text] of [
     ['enrolment-2', 'Graduação: Obrigatório'],
@@ -356,43 +345,4 @@ test('annual integrated and semester undergraduate offers keep independent overl
     await expect(details).toContainText(text);
     await page.locator('#close-event-panel').click();
   }
-});
-
-test('historical reference uses original dates while a new occurrence starts empty and ambiguity stays explicit', async ({
-  page,
-  fixtureServer,
-}) => {
-  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
-  await expect(page.locator('#record-title')).toBeVisible();
-  await selectEditorSection(page, 'history');
-  await page.locator('[data-analyze-history="history-a"]').click();
-  await page.locator('[data-history-reference="0"]').click();
-  await expect(page.locator('#event-start')).toHaveValue('2026-05-01');
-  await expect(page.locator('#event-end')).toHaveValue('2026-05-01');
-  await expect(page.locator('#historical-event-date-warning')).toContainText(
-    'Datas originais preservadas',
-  );
-  await page.locator('#event-evidence').fill('Fonte documental sintética da ocorrência em 2026');
-  await page.locator('#event-form button[type="submit"]').click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          window.editorTest.record.state.events.find(
-            (event) => event.recordType === 'prior-reference',
-          )?.historicalSource?.analysisId,
-      ),
-    )
-    .toBe('analysis-a');
-  await page.locator('#close-event-form').click();
-  await page.locator('[data-history-candidate="0"]').click();
-  await expect(page.locator('#event-start')).toHaveValue('');
-  await expect(page.locator('#event-end')).toHaveValue('');
-  await expect(page.locator('#historical-event-date-warning')).toContainText('Nova ocorrência');
-  await page.locator('#discard-event-form').click();
-  await page.locator('[data-history-reference="1"]').click();
-  await expect(page.locator('#event-start')).toHaveValue('');
-  await expect(page.locator('#historical-event-date-warning')).toContainText(
-    'Data não reconhecida com segurança',
-  );
 });

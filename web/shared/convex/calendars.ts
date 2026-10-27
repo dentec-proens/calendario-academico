@@ -35,41 +35,4 @@ export const calendars = {
     request(() =>
       convex.action(functions.actions.pdf.generatePdf, { id: id as Id<'calendars'>, ...options }),
     ),
-  uploadHistory: (
-    calendarId: string,
-    file: Omit<FunctionArgs<typeof functions.actions.history.uploadHistory>, 'calendarId'>,
-  ) =>
-    request(() =>
-      convex.action(functions.actions.history.uploadHistory, {
-        calendarId: calendarId as Id<'calendars'>,
-        ...file,
-      }),
-    ),
-  restoreHistoryOriginal: (id: string, uploadId: string) =>
-    request(() =>
-      convex.action(functions.actions.history.restoreHistoryOriginal, {
-        id: id as Id<'histories'>,
-        uploadId,
-      }),
-    ),
-  analyzeHistory: (id: string) =>
-    request(() =>
-      convex.action(functions.actions.history.analyzeHistory, {
-        id: id as Id<'histories'>,
-      }),
-    ),
-  reanalyzeHistory: (id: string) =>
-    request(() =>
-      convex.action(functions.actions.history.reanalyzeHistory, {
-        id: id as Id<'histories'>,
-        extractorVersion: 3,
-      }),
-    ),
-  historyAnalysisVersions: (id: string, analysisId?: string) =>
-    request(() =>
-      convex.query(functions.histories.analysisVersions, {
-        id: id as Id<'histories'>,
-        ...(analysisId ? { analysisId: analysisId as Id<'historyAnalyses'> } : {}),
-      }),
-    ),
 };

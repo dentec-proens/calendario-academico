@@ -103,7 +103,7 @@ for (const width of [1440, 390]) {
       .toBeGreaterThan(originalHeight);
     await page.locator('#close-event-form').click();
     await selectEditorSection(page, 'periods');
-    await expect(page.locator('#editor-section-title')).toHaveText('Períodos letivos');
+    await expect(page.locator('#editor-section-title')).toHaveText('Períodos e avaliações');
     await expect
       .poll(() =>
         page.locator('#editor-section-title').evaluate((element) => {
@@ -204,19 +204,5 @@ for (const width of [1440, 390]) {
         }),
       )
       .toBe(true);
-    await selectEditorSection(page, 'history');
-    await expect(page.locator('#history-file')).toBeVisible();
-    // Choosing the tab keeps focus on it; keyboard users reach the PDF input after the
-    // existing file actions.
-    await expect(page.locator('[data-tab="anterior"]')).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Consultar PDF original' })).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(
-      page.getByRole('button', { name: 'Identificar datas e atividades' }),
-    ).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(page.locator('#history-file')).toBeFocused();
-    await expect(page.locator('#history-file')).toBeInViewport({ ratio: 1 });
   });
 }

@@ -52,23 +52,25 @@ export default function AssessmentSettingsForm() {
           </form.Field>
         </div>
         <FormFeedback error={error} />
-        <button type="submit">Aplicar organização das etapas</button>
-        <button
-          type="button"
-          id="recalculate-stages"
-          onClick={() =>
-            applyCommand((current) => enableAutomaticAssessment(current, institutional))
-          }
-        >
-          Recalcular datas das etapas
-        </button>
+        <div className="actions">
+          <button type="submit">Definir etapas</button>
+          <button
+            type="button"
+            id="recalculate-stages"
+            className="secondary"
+            onClick={() =>
+              applyCommand((current) => enableAutomaticAssessment(current, institutional))
+            }
+          >
+            Recalcular datas das etapas
+          </button>
+        </div>
       </fieldset>
-      <p id="assessment-status" role="status">
-        Intervalos por oferta
-      </p>
-      <p id="assessment-auto-status" role="status">
-        Períodos com meta de dias letivos ajustam suas etapas automaticamente.
-      </p>
+      {state.periods.some((period) => period.targetDays) && (
+        <p id="assessment-auto-status" role="status">
+          Períodos com meta de dias letivos ajustam suas etapas automaticamente.
+        </p>
+      )}
     </form>
   );
 }
