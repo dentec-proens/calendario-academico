@@ -171,24 +171,12 @@ A preparação explícita de runtime gera recursos gzip das duas arquiteturas do
 
 Mudanças de runtime fazem parte do plano específico de backend; a release online preserva a versão instalada. Valide as duas arquiteturas antes de trocar essa configuração. Não substitua o runtime de actions em andamento sem comprovar a compatibilidade. O comando requer rede para o GitHub e upload de arquivos ao Storage; não usa os fluxos de documentos institucionais. Recursos já conferidos são reutilizados. As actions baixam os recursos por URLs obtidas diretamente do Storage e verificam integridade e arquitetura antes da extração gzip; não executam descompressão Brotli.
 
-## Retirada de calendários anteriores com manutenção
+## Registro da retirada de calendários anteriores
 
-A publicação completa possui uma etapa específica de contract, restrita à retirada dos calendários anteriores. Não é uma opção para ignorar a barreira de expansão nem substitui a fast release.
+A retirada foi concluída em produção em 27/10/2026, com ensaio descartável, backup integral, manutenção, verificação dos dados e smoke do candidato antes da promoção. A manutenção foi encerrada e a reserva exclusiva liberada.
 
-Depois de gerar, aplicar e verificar o plano inicial em um Convex local anônimo descartável conforme [Operações administrativas de dados](migracao-schema.md#retirada-do-calendário-anterior), manter o backend local em execução e carregar somente as credenciais de release e smoke. O diretório privado deve conter `plan.json`, `rehearsal-receipt.json` e o projeto local `rehearsal`:
+O executor temporário contract foi removido. `pnpm deploy:production` continua como publicação completa de expansões compatíveis; a fast release exige autorização explícita. O formato histórico dos recibos contract permanece legível para reconhecer o backend instalado e preservar a auditoria, sem comandos para repetir a retirada.
 
-```sh
-pnpm deploy:production --retire-previous-calendars backup-retire-DATA
-```
+Backups, planos, journals e recibos da operação continuam preservados em diretórios privados `backup-*`. Não executar novamente esses artefatos contra um banco já migrado. O procedimento administrativo geral está em [Operações administrativas de dados](migracao-schema.md).
 
-O comando exige `main` limpa e commitada, `pnpm check`, smoke do frontend instalado e os contratos exatos do backend anterior. A política aceita apenas a remoção das APIs, tabelas e campos do recurso retirado e a adição dos controles internos tipados de contract. Autenticação, destinos, componentes, dependências e runtime permanecem congelados. Os contratos internos adicionados também são conferidos quanto a visibilidade, argumentos e retorno.
-
-Após reservar a referência exclusiva, cria e aguarda o candidato Production READY, abre uma sessão operacional e pausa as alterações com o commit proprietário. Aguarda os leases e inventaria os jobs; nenhum lease é apagado por idade. Faz um backup completo antes do backend temporário e outro snapshot congelado depois dele, quando as funções da aplicação estão ausentes. O plano desse snapshot é importado, aplicado e verificado novamente no ambiente descartável. Só o recibo desse plano exato autoriza os lotes de produção.
-
-A aplicação em produção passa por `apply`, export completo, `verify` e `finish`. O backend final preserva a manutenção e a sessão anterior. Depois da verificação dos dados, `nativeFiles:cleanupExpired` é executado em lotes até concluir: isso recupera a limpeza de uploads e tickets cujos callbacks tenham vencido enquanto somente o backend de migração estava instalado. Os callbacks não são executados durante o plano congelado.
-
-Somente a conta de smoke é liberada para testar o candidato contra produção, com login, consulta, salvamento sem alteração e PDF real. Sua autorização é revogada antes de validar o recibo contract. A promoção usa o candidato testado; a manutenção termina somente após confirmação do domínio e do recibo concluído. Abas anteriores podem exigir recarregamento após a retirada de contrato; requisições obsoletas não são convertidas silenciosamente em novas gravações.
-
-O checkout e o commit são conferidos antes e depois dos subprocessos e antes dos limites destrutivos. Uma alteração concorrente interrompe a operação. O journal `contract-release.json`, planos, backups e recibos ficam no diretório privado; nenhum segredo é incluído no journal.
-
-Não há retomada automática deste caminho. Falhas antes da reabertura conservam a reserva e, quando já iniciada, a manutenção. O journal registra a tentativa e a confirmação de reabertura; falhas de transporte depois disso podem deixar o portal já aberto, e falhas na liberação da reserva podem ocorrer após a conclusão. Conferir o estado real, sem presumir manutenção ativa nem reativá-la automaticamente. Antes de qualquer retomada manual, conferir a última fase do journal, o checkpoint do plano, os contratos efetivamente instalados, o proprietário, o candidato e o domínio. Se a produção já recebeu lotes, continuar o mesmo plano confirmado; não importar automaticamente o backup, gerar outro plano sobre dados parcialmente transformados, limpar a reserva nem usar `--resume` da expansão para contornar o estado. A conclusão só libera a reserva que pertence exatamente a esta operação.
+A limpeza posterior removeu também `releases:contractPublished`, `releases:contractValidated` e `releases:contractComplete` do código. Enquanto produção ainda estiver na revisão anterior, o verificador de expansão recusará essa remoção, inclusive de funções internas. Publicar essa limpeza exige uma operação contract controlada separada, antes da próxima expansão; não usar fast release para contornar a proteção. A atualização do desenvolvimento com esse código não altera o backend de produção.

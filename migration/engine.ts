@@ -23,7 +23,6 @@ export const status = internalQuery({
 
 export const apply = internalMutation({
   args: {
-    purpose: v.optional(v.literal('retire-previous-calendars')),
     planDigest: v.string(),
     batchDigest: v.string(),
     batch: v.number(),
@@ -58,16 +57,6 @@ export const apply = internalMutation({
     if ((prior?.nextBatch ?? 0) !== args.batch)
       throw Error('Lote fora de ordem. Consulte o checkpoint antes de continuar.');
     for (const op of args.operations) {
-      if (
-        op.table === '_storage' &&
-        op.kind === 'delete' &&
-        args.purpose === 'retire-previous-calendars'
-      ) {
-        const id = ctx.db.system.normalizeId('_storage', op.id);
-        if (!id) throw Error('ID de Storage inválido.');
-        if (await ctx.db.system.get(id)) await ctx.storage.delete(id);
-        continue;
-      }
       if (op.table.startsWith('_') || op.table.startsWith('auth') || op.table === 'migrationState')
         throw Error('Tabela protegida: a migração preserva Auth e Storage sem alterações.');
       if (op.kind === 'insert') {

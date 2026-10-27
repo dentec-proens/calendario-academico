@@ -218,6 +218,11 @@ test('migration refuses orphan references, missing historical rows and altered p
   assert.throws(() => assertPlan(plan), /adulterado/);
 });
 
+test('generic migration refuses archived operation-specific plans', () => {
+  const plan = { ...createPlan(fixture(), 'source'), purpose: 'retire-previous-calendars' };
+  assert.throws(() => assertPlan(plan), /operações encerradas não são executáveis/);
+});
+
 test('verification detects historical or credential changes after migration', () => {
   const source = fixture(),
     plan = createPlan(source, 'source');

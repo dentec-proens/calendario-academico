@@ -48,19 +48,8 @@ Comandos de desenvolvimento e validação ficam em [Verificação](verificacao.m
 
 ## Retirada do calendário anterior
 
-A limpeza deste recurso é uma migração de contrato separada da publicação. O código final não contém `histories`, `historyAnalyses`, `historicalSource`, `ignoredHistory` nem as actions antigas. Portanto, os dados precisam ser limpos e verificados **antes** de publicar esse schema. A fast release não executa essa migração, e o publicador de expansão continua recusando remoções de contrato.
+A migração foi ensaiada, aplicada e verificada em produção em 27/10/2026. Foram retirados os PDFs de calendários anteriores, suas análises e os vínculos de procedência. Calendários, versões, fontes textuais, documentos institucionais e exportação PDF foram preservados.
 
-Para gerar o plano offline a partir do backup completo:
+O planejador específico, o modo de publicação contract e seus comandos de execução foram removidos após a conclusão. Backups, planos, journals e recibos permanecem nos diretórios privados `backup-*`, fora do Git. O schema conserva somente a leitura dos recibos contract já gravados; não há mais funções para iniciar ou retomar essa migração. O código exato usado na operação permanece recuperável pelo histórico do Git.
 
-```sh
-pnpm migrate:data plan --retire-previous-calendars --snapshot backup-dados/original.zip --out backup-dados/retirada.json
-pnpm migrate:data prepare --plan backup-dados/retirada.json --out backup-dados/retirada
-```
-
-O procedimento de `apply`, `verify` e `finish` é o mesmo descrito acima: projeto temporário sem funções da aplicação, destino explicitamente conferido, backup e ensaio obrigatório antes de produção. Gerar ou preparar o plano não executa a limpeza. A publicação e a execução remota exigem solicitação do usuário. Depois do ensaio inicial, o [caminho completo de retirada com manutenção](implantacao-convex-vercel.md#retirada-de-calendários-anteriores-com-manutenção) reconfere o plano congelado antes de executar produção.
-
-O plano remove somente os metadados de procedência dos eventos atuais e dos snapshots, conservando IDs, nomes, datas, fontes textuais, períodos e demais campos. Remove os registros de calendários anteriores, todas as análises extraídas e os bytes dos PDFs exclusivos desse recurso, incluindo tickets e uploads que apontavam para esses bytes. A auditoria permanece: seus alvos antigos passam a referências arquivadas com o calendário/campus original quando disponível.
-
-Arquivos também referenciados por documentos, snapshots, pareceres, recursos de runtime ou qualquer outro registro permanente são conservados. A comparação usa todas as tabelas do backup; nenhuma exclusão parte de uma busca global por extensão `.pdf`. Os bytes são excluídos por último, em lotes com checkpoint. O plano confere fingerprints de todas as tabelas e do Storage, e o novo backup verifica tamanho/hash dos arquivos restantes. O backup integral original continua sendo a fonte para recuperação de uma execução interrompida.
-
-O leitor e os uploads/restaurações de documentos institucionais, assim como a exportação dos calendários em PDF, continuam suportados. Adaptadores de migrações históricas em `migration/` apenas leem backups antigos; não são APIs da aplicação.
+Para uma nova operação administrativa, preparar um plano próprio e conferir os destinos. Não reaplicar planos ou executar scripts de uma retirada já concluída.

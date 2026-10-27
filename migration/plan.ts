@@ -574,6 +574,8 @@ export function verifyPlanSnapshot(plan: MigrationPlan, actual: Snapshot): void 
 }
 
 export function assertPlan(plan: MigrationPlan): void {
+  if ('purpose' in plan)
+    throw Error('Planos específicos de operações encerradas não são executáveis nesta ferramenta.');
   if (
     plan.format !== 1 ||
     fingerprint({ ...plan, digest: '' }) !== plan.digest ||

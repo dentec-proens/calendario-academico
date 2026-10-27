@@ -5,13 +5,13 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { prepareProject } from '../scripts/migrate-data.ts';
 import { root } from '../scripts/environment.ts';
-import { createHistoryRetirementPlan } from '../migration/retire-previous-calendars.ts';
+import { createCanonicalPlan } from '../migration/canonical.ts';
 
 test('prepared migration projects contain a standalone working TypeScript configuration', () => {
   const directory = mkdtempSync(join(root, 'backup-migration-config-'));
   try {
     const project = join(directory, 'project');
-    prepareProject(createHistoryRetirementPlan({ _tables: [], _storage: [] }, 'backup'), project);
+    prepareProject(createCanonicalPlan({ _tables: [], _storage: [] }, 'backup'), project);
     const configuration = join(project, 'convex', 'tsconfig.json');
     assert(existsSync(configuration), 'required typechecking must not be silently skipped');
     const result = spawnSync(

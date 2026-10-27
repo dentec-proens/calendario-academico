@@ -20,8 +20,6 @@ import type { Doc } from '../convex/_generated/dataModel.js';
 const args = process.argv.slice(2);
 const dryRun = args.length === 1 && args[0] === '--dry-run';
 const resume = args.length === 1 && args[0] === '--resume';
-const retirement =
-  args.length === 2 && args[0] === '--retire-previous-calendars' ? args[1] : undefined;
 const branch = environments.git.branch;
 
 function git(...values: string[]): string {
@@ -79,22 +77,14 @@ let promotionAttempted = false;
 let closeSession: (() => void) | undefined;
 const lockRef = 'refs/heads/codex/production-release-lock';
 try {
-  if (args.length && !dryRun && !resume && !retirement)
+  if (args.length && !dryRun && !resume)
     throw Error('Uso: pnpm deploy:production [--dry-run|--resume]');
   assertNoTargetOverrides(process.env);
   console.log(`Produção Convex: ${environments.production.deployment}`);
   console.log(
     'Ordem: conferir código → validar compatibilidade → candidato sem domínio público → smoke → promover.',
   );
-  if (retirement) {
-    const { retireProduction } = await import('./release-retirement.ts');
-    await retireProduction(retirement, {
-      check: runChecks,
-      clean: assertClean,
-      origin: assertOrigin,
-      unchanged: assertUnchanged,
-    });
-  } else if (dryRun) {
+  if (dryRun) {
     console.log('Simulação: nenhum comando, conexão remota ou arquivo de ambiente foi alterado.');
   } else {
     if (git('branch', '--show-current') !== branch) throw Error(`Publique pela branch ${branch}.`);
@@ -377,11 +367,9 @@ try {
       : 'Uma operação da release falhou. Confira os registros locais e os destinos.',
   );
   console.error(
-    retirement
-      ? 'Confira o journal contract e o estado real do domínio, da manutenção e da reserva antes de retomar.'
-      : promotionAttempted
-        ? 'A promoção pode ter ocorrido. Confira o deployment no domínio público antes de repetir; não restaure dados nem o backend automaticamente.'
-        : 'A release não promoveu o candidato. Confira o domínio público antes de recuperar uma operação ambígua.',
+    promotionAttempted
+      ? 'A promoção pode ter ocorrido. Confira o deployment no domínio público antes de repetir; não restaure dados nem o backend automaticamente.'
+      : 'A release não promoveu o candidato. Confira o domínio público antes de recuperar uma operação ambígua.',
   );
   process.exitCode = 1;
 } finally {

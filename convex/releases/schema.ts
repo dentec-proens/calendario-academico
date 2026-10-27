@@ -45,7 +45,8 @@ export const fastProgress = v.object({
   phase: v.union(v.literal('published'), v.literal('complete')),
   changedAt: v.number(),
 });
-export const contractIdentity = {
+// Read-only historical receipt format. The one-off contract executor has been removed.
+const contractIdentity = {
   mode: v.literal('contract'),
   commit: v.string(),
   owner: v.string(),
