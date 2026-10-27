@@ -377,9 +377,11 @@ try {
       : 'Uma operação da release falhou. Confira os registros locais e os destinos.',
   );
   console.error(
-    promotionAttempted
-      ? 'A promoção pode ter ocorrido. Confira o deployment no domínio público antes de repetir; não restaure dados nem o backend automaticamente.'
-      : 'A release não promoveu o candidato. Confira o domínio público antes de recuperar uma operação ambígua.',
+    retirement
+      ? 'Confira o journal contract e o estado real do domínio, da manutenção e da reserva antes de retomar.'
+      : promotionAttempted
+        ? 'A promoção pode ter ocorrido. Confira o deployment no domínio público antes de repetir; não restaure dados nem o backend automaticamente.'
+        : 'A release não promoveu o candidato. Confira o domínio público antes de recuperar uma operação ambígua.',
   );
   process.exitCode = 1;
 } finally {
