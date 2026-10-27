@@ -28,7 +28,7 @@ pnpm test:browser:install
 pnpm check
 ```
 
-`check` executa localmente formatação, lint, tipos, testes unitários, testes de navegador e visuais e build. É a validação obrigatória antes de uma release; `deploy:production` a executa antes de publicar. O teste específico do runtime PDF usa Linux e pode ser executado em macOS/Windows com Docker Desktop e containers Linux. Consulte [comandos, desempenho, referências visuais e E2E](docs/verificacao.md).
+`check` executa localmente formatação, lint, tipos, testes unitários, testes de navegador e visuais e build. É a validação obrigatória antes de uma release; `deploy:production` a executa antes de publicar. O teste do runtime PDF usa Linux e roda pelo Docker Desktop, com `pnpm test:runtime:linux`. Consulte [comandos, desempenho, referências visuais e E2E](docs/verificacao.md).
 
 ## Documentação
 

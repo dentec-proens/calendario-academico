@@ -31,7 +31,7 @@ pnpm build
 pnpm start
 ```
 
-Instalação, desenvolvimento, build e testes funcionam no PowerShell. O runtime Chromium dos PDFs usa Linux; o fluxo Docker Desktop, pré-requisitos, comandos e referências visuais estão em [Verificação](verificacao.md).
+Instalação, desenvolvimento, build e testes funcionam no PowerShell. O runtime Chromium dos PDFs usa Linux e seu teste roda pelo Docker Desktop; pré-requisitos, comandos e referências visuais estão em [Verificação](verificacao.md).
 
 ## Organização e tipos
 
