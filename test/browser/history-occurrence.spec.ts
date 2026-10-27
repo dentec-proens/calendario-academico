@@ -1,5 +1,10 @@
 import { test, expect } from './test.ts';
-import { selectEditorSection, selectCampusEvents, savedState } from './editor-navigation.ts';
+import {
+  selectEditorSection,
+  selectCampusEvents,
+  savedState,
+  editCampusEvent,
+} from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 
@@ -24,7 +29,7 @@ for (const width of [1440, 390]) {
     });
     await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
-    await page.locator('[data-edit-event="local-event"]').click();
+    await editCampusEvent(page, 'local-event');
     await expect(page.locator('#historical-event-source')).toContainText('página 1');
     await page.locator('#event-name').fill('Evento atualizado pelo campus');
     await page.locator('#event-form button[type="submit"]').click();

@@ -1,5 +1,11 @@
 import { test, expect } from './test.ts';
-import { addPeriod, savedState, selectEditorSection } from './editor-navigation.ts';
+import {
+  addPeriod,
+  savedState,
+  selectEditorSection,
+  editCampusEvent,
+  openCampusEvent,
+} from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 declare global {
@@ -15,7 +21,7 @@ test('an open event form adopts a newer confirmed value only while it has no loc
   await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="events"]').click();
   await page.locator('[data-tab="eventos"]').click();
-  await page.locator('[data-edit-event="local-event"]').click();
+  await editCampusEvent(page, 'local-event');
   const category = page.locator('#event-category');
   await expect(category).toHaveValue('evento');
   const publishCategory = (value: string) =>
@@ -180,7 +186,7 @@ test('metadata rejects an activity for another modality before applying or savin
   });
   await page.locator('[data-view="events"]').click();
   await page.locator('[data-tab="eventos"]').click();
-  await page.locator('[data-edit-event="local-event"]').click();
+  await editCampusEvent(page, 'local-event');
   // Stages belong to step 3; a campus event cannot be bound to another offer's stage here.
   await expect(page.locator('#event-requirement option[value="stage-1:graduacao"]')).toHaveCount(0);
   expect(
@@ -222,8 +228,9 @@ test('removing a campus exclusion recalculates the teaching-day target', async (
   await page
     .locator('#event-list li')
     .filter({ hasText: 'Feriado municipal' })
-    .locator('[data-remove-event]')
+    .locator('[data-open-event]')
     .click();
+  await page.locator('#event-panel [data-remove-event]').click();
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0].end))
     .toBe('2027-03-05');
@@ -241,11 +248,12 @@ test('event removal clears its open draft and grouped teacher vacations', async 
   await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="events"]').click();
   await page.locator('[data-tab="eventos"]').click();
-  await page.locator('[data-edit-event="local-event"]').click();
+  await editCampusEvent(page, 'local-event');
   await page.locator('#event-more-options > summary').click();
   await page.locator('#event-category').selectOption('feriado');
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('#close-event-form').click();
+  await openCampusEvent(page, 'local-event');
   await page.locator('[data-remove-event="local-event"]').click();
   await expect(page.locator('#unapplied-status')).toBeHidden();
   await expect(page.locator('#event-form')).toBeHidden();
@@ -266,6 +274,7 @@ test('event removal clears its open draft and grouped teacher vacations', async 
     )
     .toBe(2);
   await page.locator('[data-view="events"]').click();
+  await openCampusEvent(page, 'teacher-vacation-january');
   await page.locator('[data-remove-event="teacher-vacation-january"]').click();
   await expect
     .poll(() =>

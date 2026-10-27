@@ -1,14 +1,13 @@
-import { useRef, type KeyboardEvent } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import type { KeyboardEvent } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { teacherDayId } from '../../../../src/teacher-day.ts';
-import { removeEvent } from '../../../../src/calendar-edits/commands.ts';
 import { activityChecklist } from '../../../../src/obligations.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useActivitySearch } from '../events/activity-query.ts';
 import { useEventEditor } from '../events/EventEditorProvider.tsx';
 import { useActivityCoverage } from '../events/useActivityCoverage.ts';
 import ActivityChecklist from '../events/ActivityChecklist.tsx';
-import EventRecordDetails from '../events/EventRecordDetails.tsx';
+import CampusEventList from '../events/CampusEventList.tsx';
 import ActivityFilters from '../events/ActivityFilters.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 import { editorPages } from '../editor-steps.ts';
@@ -20,12 +19,11 @@ const tabs = [
 type Tab = (typeof tabs)[number]['id'];
 
 export default function EventsSection() {
-  const { events, state, record, institutional, applyCommand, readOnly } = useCalendarEditor();
+  const { events, state, record, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const search = useActivitySearch();
   const navigate = useNavigate();
   const { statusFor } = useActivityCoverage();
-  const tabList = useRef<HTMLDivElement>(null);
   const tab: Tab = search.aba ?? 'atividades';
   const hasPendingEvent = Boolean(editor.context && editor.dirty);
   const checklist = activityChecklist(state);
@@ -75,7 +73,7 @@ export default function EventsSection() {
   return (
     <section id="events" className="view">
       <div className="panel">
-        <div className="events-tabs" role="tablist" aria-label="Partes da etapa" ref={tabList}>
+        <div className="events-tabs" role="tablist" aria-label="Partes da etapa">
           {tabs.map((item) => (
             <button
               key={item.id}
@@ -163,65 +161,7 @@ export default function EventsSection() {
               </Notice>
             )}
           </div>
-          <ul id="event-list" className="records">
-            {campusEvents.map((event) => (
-              <li key={event.id}>
-                <div>
-                  <EventRecordDetails event={event} />
-                </div>
-                {event.id === teacherDayId ? (
-                  <div className="actions">
-                    <button
-                      type="button"
-                      id="open-teacher-day"
-                      disabled={readOnly}
-                      onClick={editor.viewTeacherDay}
-                    >
-                      Ajustar data
-                    </button>
-                  </div>
-                ) : (
-                  <div className="actions">
-                    <button
-                      type="button"
-                      data-edit-event={event.id}
-                      disabled={readOnly}
-                      onClick={() => editor.edit(event.id)}
-                    >
-                      Editar evento
-                    </button>
-                    <button
-                      type="button"
-                      data-remove-event={event.id}
-                      disabled={readOnly}
-                      aria-label={`Remover ${event.name}`}
-                      onClick={() => {
-                        if (
-                          applyCommand((current) =>
-                            removeEvent(current, event.id, institutional),
-                          ) &&
-                          editor.eventId === event.id
-                        )
-                          editor.discard();
-                      }}
-                    >
-                      Remover
-                    </button>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-          <p className="help">
-            <Link
-              to={editorPages.calendar.path}
-              params={{ calendarId: record.id }}
-              search={(previous) => previous}
-              hash="calendar-records"
-            >
-              Consultar todos os registros do calendário
-            </Link>
-          </p>
+          <CampusEventList events={campusEvents} />
         </div>
       </div>
     </section>

@@ -1,19 +1,15 @@
 import { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { ChevronRight } from 'lucide-react';
 import { activityChecklist, stageRequirement } from '../../../../src/obligations.ts';
 import { modalityLabels } from '../../../../src/modalities.ts';
-import {
-  activityStatus,
-  activityStatusLabels,
-  type ActivityStatus,
-} from '../../../../src/activity-status.ts';
+import { activityStatus, type ActivityStatus } from '../../../../src/activity-status.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { useActivityCoverage } from './useActivityCoverage.ts';
 import { activityGroups, civilDate, useActivitySearch } from './activity-query.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { Notice } from '../../../components/ui/Notice.tsx';
+import ActivityRow from './ActivityRow.tsx';
 
 // Shown when no status filter is chosen: what still needs dates or a decision.
 const toFill: ActivityStatus[] = ['pending', 'partial', 'unconfigured'];
@@ -92,35 +88,23 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
     const summary = statusFor(item.id);
     return (
       <li key={item.id} data-activity-row={item.id} data-status={summary.status}>
-        <button
-          type="button"
+        <ActivityRow
           id={`activity-${item.id}`}
-          className="activity-row"
           data-activity-open={item.id}
-          aria-current={selected === item.id ? 'true' : undefined}
+          label={item.name}
+          status={summary.status}
+          selected={selected === item.id}
+          dates={
+            registered.length
+              ? `${civilDate(registered[0].start)} a ${civilDate(registered[0].end)}${registered.length > 1 ? ` (+${registered.length - 1})` : ''}`
+              : 'Sem datas'
+          }
           onClick={() =>
-            // With another draft pending, the panel shows the activity and offers to resume it.
             registered.length || readOnly || (editor.context && editor.dirty)
               ? editor.view(item.id)
               : editor.prepare(item.id)
           }
-        >
-          <span className="activity-dot" data-status={summary.status} aria-hidden="true" />
-          <span className="activity-row-text">
-            <span className="activity-row-name">{item.name}</span>
-            <span className="activity-row-meta">
-              <span className="activity-status" data-status={summary.status}>
-                {activityStatusLabels[summary.status]}
-              </span>
-              <span>
-                {registered.length
-                  ? `${civilDate(registered[0].start)} a ${civilDate(registered[0].end)}${registered.length > 1 ? ` (+${registered.length - 1})` : ''}`
-                  : 'Sem datas'}
-              </span>
-            </span>
-          </span>
-          <ChevronRight className="activity-row-chevron" aria-hidden="true" />
-        </button>
+        />
       </li>
     );
   };

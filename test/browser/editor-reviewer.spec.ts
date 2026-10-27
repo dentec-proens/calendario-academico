@@ -1,3 +1,4 @@
+import { openCampusEvent } from './editor-navigation.ts';
 import { test, expect } from './test.ts';
 import type {} from '../fixtures/editor-reviewer-client.ts';
 
@@ -23,7 +24,12 @@ test('reviewer consults the complete calendar and live changes without editing o
   await expect(page.locator('button#new-event')).toBeDisabled();
   const eventControls = page.locator('#event-list button, #event-list select, #event-list input');
   await expect(eventControls).not.toHaveCount(0);
-  for (const control of await eventControls.all()) await expect(control).toBeDisabled();
+  for (const control of await eventControls.all()) await expect(control).toBeEnabled();
+  await openCampusEvent(page, 'local-event');
+  await expect(page.locator('.campus-event-record')).toContainText('Ata salva');
+  await expect(page.locator('#event-panel [data-edit-event]')).toBeDisabled();
+  await expect(page.locator('#event-panel [data-remove-event]')).toBeDisabled();
+  await page.locator('#close-event-panel').click();
   await page.locator('[data-view="edit"]').click();
   await expect(page.locator('#week-confirmed')).toBeDisabled();
   await page.locator('[data-view="issues"]').click();
@@ -48,7 +54,7 @@ test('reviewer consults the complete calendar and live changes without editing o
   });
   await page.locator('[data-view="events"]').click();
   await expect(page.locator('#event-list')).toContainText(/Evento atualizado pelo campus/);
-  for (const control of await eventControls.all()) await expect(control).toBeDisabled();
+  for (const control of await eventControls.all()) await expect(control).toBeEnabled();
   expect(await page.evaluate(() => window.editorTest.calls)).toEqual({
     synchronizations: 0,
     saves: 0,

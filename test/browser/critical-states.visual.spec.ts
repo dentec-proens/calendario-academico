@@ -1,6 +1,6 @@
 import { test, expect } from './test.ts';
 import type { Page } from '@playwright/test';
-import { addPeriod, selectEditorSection } from './editor-navigation.ts';
+import { addPeriod, selectEditorSection, editCampusEvent } from './editor-navigation.ts';
 
 // Each case runs in the desktop and mobile projects. Fixtures import production
 // components and CSS, and keep all content, timestamps and backend data local.
@@ -61,7 +61,7 @@ test('calendar editor and its event form', async ({ page, fixtureServer }) => {
   await expect(page).toHaveScreenshot('calendar-editor.png', { fullPage: true });
   await selectEditorSection(page, 'events');
   await page.locator('[data-tab="eventos"]').click();
-  await page.locator('[data-edit-event="local-event"]').click();
+  await editCampusEvent(page, 'local-event');
   await expect(page.locator('#event-form')).toBeVisible();
   await assertNoOverflow(page);
   const eventHeading = page.locator('#event-form-title');

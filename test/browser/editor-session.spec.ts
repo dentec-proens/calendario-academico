@@ -1,3 +1,4 @@
+import { editCampusEvent } from './editor-navigation.ts';
 import { readFile } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
 import { test, expect } from './test.ts';
@@ -6,7 +7,7 @@ import type {} from '../fixtures/editor-session-client.ts';
 async function editAppliedEvent(page: Page, name = 'Evento aplicado sem confirmação') {
   await page.locator('[data-view="events"]').click();
   await page.locator('[data-tab="eventos"]').click();
-  await page.locator('[data-edit-event="local-event"]').click();
+  await editCampusEvent(page, 'local-event');
   await page.locator('#event-name').fill(name);
   await page.getByRole('button', { name: 'Aplicar alterações do evento', exact: true }).click();
   await expect(page.locator('#message')).toContainText(name);

@@ -6,6 +6,7 @@ import {
   savedState,
   selectCampusEvents,
   selectEditorSection,
+  editCampusEvent,
 } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -597,7 +598,7 @@ test('changing category and activity link in the event form keeps identity, date
   const original = await page.evaluate(() =>
     window.editorTest.record.state.events.find((event) => event.id === 'local-event'),
   );
-  await page.locator('[data-edit-event="local-event"]').click();
+  await editCampusEvent(page, 'local-event');
   await page.locator('#event-more-options > summary').click();
   await page.locator('#event-category').selectOption('feriado');
   await page.locator('#event-requirement').selectOption('family-meeting');

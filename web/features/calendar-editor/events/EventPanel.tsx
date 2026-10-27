@@ -10,6 +10,7 @@ import { useActivitySearch } from './activity-query.ts';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import ActivityDetails from './ActivityDetails.tsx';
 import EventEditor from './EventEditor.tsx';
+import CampusEventDetails from './CampusEventDetails.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 
 /**
@@ -37,6 +38,13 @@ export default function EventPanel() {
     !editor.open && editor.panel?.kind === 'teacher-day'
       ? events.find((event) => event.id === teacherDayId)
       : undefined;
+  const campusEventId =
+    !editor.open && editor.panel?.kind === 'event' ? editor.panel.eventId : undefined;
+  const campusEvent = events.find((event) => event.id === campusEventId);
+  const { close: closeEditor } = editor;
+  useEffect(() => {
+    if (campusEventId && !campusEvent) closeEditor();
+  }, [campusEventId, campusEvent, closeEditor]);
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!open || !dialog) return;
@@ -57,7 +65,6 @@ export default function EventPanel() {
       });
     wasOpen.current = open;
   }, [open, reviewLink, navigate]);
-  const { close: closeEditor } = editor;
   const recovering = Boolean(editorRecovery);
   const wasRecovering = useRef(recovering);
   useEffect(() => {
@@ -78,7 +85,9 @@ export default function EventPanel() {
     >
       <div className="event-panel-header">
         <h2 id="event-panel-title">
-          {activity?.name ?? (teacherDay ? 'Dia do Professor' : 'Evento do campus')}
+          {activity?.name ??
+            campusEvent?.name ??
+            (teacherDay ? 'Dia do Professor' : 'Evento do campus')}
         </h2>
         <button
           type="button"
@@ -131,6 +140,7 @@ export default function EventPanel() {
           </p>
         </Notice>
       )}
+      {campusEvent && <CampusEventDetails event={campusEvent} />}
       {teacherDay && <TeacherDayForm date={teacherDay.originalStart || teacherDay.start} />}
       <EventEditor />
     </dialog>

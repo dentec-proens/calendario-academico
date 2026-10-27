@@ -1,5 +1,10 @@
 import { test, expect } from './test.ts';
-import { openActivity, selectCampusEvents, selectEditorSection } from './editor-navigation.ts';
+import {
+  openActivity,
+  selectCampusEvents,
+  selectEditorSection,
+  editCampusEvent,
+} from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
@@ -22,9 +27,9 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#resume-event')).toBeHidden();
     await expect(notice).toBeHidden();
 
-    await page.locator('[data-edit-event="local-event"]').click();
+    await editCampusEvent(page, 'local-event');
     await page.locator('#close-event-form').click();
-    await expect(page.locator('[data-edit-event="local-event"]')).toBeFocused();
+    await expect(page.locator('[data-open-event="local-event"]')).toBeFocused();
     await expect(page.locator('#resume-event')).toBeHidden();
     await add.press('Enter');
     await expect(page.locator('#event-form-title')).toHaveText('Novo evento local');
@@ -130,7 +135,7 @@ test('editor separates creation from editing and preserves closed activity draft
   await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await expect(page.locator('#event-form')).toBeHidden();
-  await page.locator('[data-edit-event="local-event"]').click();
+  await editCampusEvent(page, 'local-event');
   await expect(page.locator('#new-event')).toBeVisible();
   await expect(page.locator('#event-form-title')).toHaveText('Editar evento local');
   await page.locator('#event-name').fill('Edição local ainda não aplicada');

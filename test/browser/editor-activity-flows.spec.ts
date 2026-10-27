@@ -5,6 +5,7 @@ import {
   savedState,
   selectCampusEvents,
   selectEditorSection,
+  editCampusEvent,
 } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -325,7 +326,7 @@ test('a record with a freely combined effect and category shows both fields when
   });
   await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
-  await page.locator('[data-edit-event="free-combination"]').click();
+  await editCampusEvent(page, 'free-combination');
   await expect(page.locator('#event-type')).toHaveCount(0);
   await expect(page.locator('#event-kind')).toBeVisible();
   await expect(page.locator('#event-kind')).toHaveValue('exclude');

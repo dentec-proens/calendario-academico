@@ -45,10 +45,19 @@ function useController() {
   const [linkUnlocked, setLinkUnlocked] = useState(false);
   // What the side panel shows besides the form: an activity to consult or the Teacher Day.
   const [panel, setPanel] = useState<
-    { kind: 'activity'; requirementId: string } | { kind: 'teacher-day' } | null
+    | { kind: 'activity'; requirementId: string }
+    | { kind: 'event'; eventId: string }
+    | { kind: 'teacher-day' }
+    | null
+  >(null);
+  const opener = useRef<HTMLElement | null>(null);
+  const [returnFocus, setReturnFocus] = useState<
+    'resume-event' | 'new-event' | 'pending-event-title' | 'editor-section-title' | null
   >(null);
   // The action that opened the panel receives focus when it closes; actions inside it do not.
   const rememberOpener = useCallback(() => {
+    // A new action supersedes a focus return queued by the previously closed panel.
+    setReturnFocus(null);
     const active = document.activeElement;
     if (active instanceof HTMLElement && !active.closest('#event-panel')) opener.current = active;
   }, []);
@@ -59,10 +68,6 @@ function useController() {
     },
     [rememberOpener],
   );
-  const opener = useRef<HTMLElement | null>(null);
-  const [returnFocus, setReturnFocus] = useState<
-    'resume-event' | 'new-event' | 'pending-event-title' | 'editor-section-title' | null
-  >(null);
   const result = useCalendarForm(
     'event',
     emptyEvent(state.modalities),
@@ -297,6 +302,10 @@ function useController() {
     panel,
     /** Consult an activity in the side panel without opening a form. */
     view,
+    viewEvent: (eventId: string) => {
+      rememberOpener();
+      setPanel({ kind: 'event', eventId });
+    },
     viewTeacherDay: () => {
       rememberOpener();
       setPanel({ kind: 'teacher-day' });

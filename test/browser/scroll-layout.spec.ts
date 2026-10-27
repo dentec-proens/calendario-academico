@@ -1,5 +1,5 @@
 import { test, expect } from './test.ts';
-import { selectCampusEvents, selectEditorSection } from './editor-navigation.ts';
+import { selectCampusEvents, selectEditorSection, editCampusEvent } from './editor-navigation.ts';
 
 for (const width of [1440, 390]) {
   test(`editor respects reduced motion and reveals its section heading at ${width}px`, async ({
@@ -29,7 +29,7 @@ for (const width of [1440, 390]) {
     ).toBe(true);
 
     await selectCampusEvents(page);
-    await page.locator('[data-edit-event="local-event"]').click();
+    await editCampusEvent(page, 'local-event');
     await expect(page.locator('#event-form')).toBeVisible();
     const positions = await page.evaluate(async () => {
       const samples: number[] = [];
@@ -54,7 +54,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
-    await page.locator('[data-edit-event="local-event"]').click();
+    await editCampusEvent(page, 'local-event');
     const title = page.locator('#event-form-title');
     await expect(title).toBeInViewport({ ratio: 1 });
     // The form opens in the side panel; its sticky header must not cover the heading.
@@ -85,7 +85,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
-    await page.locator('[data-edit-event="local-event"]').click();
+    await editCampusEvent(page, 'local-event');
     const originalHeight = await page
       .locator('.editor-feedback')
       .evaluate((element) => element.getBoundingClientRect().height);
@@ -158,8 +158,9 @@ for (const width of [1440, 390]) {
       .toBe(true);
     await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
-    const opener = page.locator('[data-edit-event="local-event"]');
+    const opener = page.locator('[data-open-event="local-event"]');
     await opener.click();
+    await page.locator('[data-edit-event="local-event"]').click();
     await page.locator('#event-name').fill('Rascunho para continuar depois');
     await page.locator('#close-event-form').click();
     // Closing returns to the action that opened this existing record.

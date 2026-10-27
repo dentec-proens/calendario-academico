@@ -49,3 +49,16 @@ export async function openActivity(page: Page, id: string) {
   await row.click();
   await expect(page.locator('#event-panel')).toBeVisible();
 }
+
+/** Consult the saved record through the same compact row offered to people. */
+export async function openCampusEvent(page: Page, id: string) {
+  await page.locator(`[data-open-event="${id}"]`).click();
+  await expect(page.locator('#event-panel')).toBeVisible();
+}
+
+/** Enter editing from a campus record's detail panel. */
+export async function editCampusEvent(page: Page, id: string) {
+  await openCampusEvent(page, id);
+  await page.locator(`[data-edit-event="${id}"]`).click();
+  await expect(page.locator('#event-panel #event-form')).toBeVisible();
+}
