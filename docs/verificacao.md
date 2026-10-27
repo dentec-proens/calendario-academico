@@ -46,6 +46,8 @@ pnpm test:browser:install
 
 ## Validação local e release
 
+A exceção operacional é o pedido explícito de [fast release](implantacao-convex-vercel.md#fast-release): `pnpm deploy:production:fast` omite `check`, testes, build local e smoke. Mantém o typecheck do deploy Convex e o build remoto Production da Vercel. Essa exceção se aplica à publicação solicitada; ao implementar ou alterar código, permanece obrigatória a validação de desenvolvimento com `pnpm check`. Validações omitidas pelo modo rápido ficam identificadas no recibo e não contam como aprovação.
+
 O repositório não executa GitHub Actions. `pnpm check` é o bloqueio local de release: `pnpm deploy:production` executa essa checagem antes de criar o candidato, publicar expansões compatíveis do backend e promover o domínio público. A suíte local inclui os fluxos de navegador e as referências visuais desktop e mobile do macOS; não há execução desses testes em Linux ou Docker.
 
 O E2E com Convex continua separado e exige o opt-in descrito abaixo. Execute-o quando a mudança exigir integração real, em destino de desenvolvimento autorizado ou descartável, antes da release. Os testes sintéticos de `check` não acessam o backend remoto. O smoke operacional de publicação mantém suas verificações de login, navegação e PDF no portal publicado.

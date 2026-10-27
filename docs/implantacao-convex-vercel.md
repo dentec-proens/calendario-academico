@@ -19,6 +19,8 @@ Vite gera `dist/app/index.html` e chunks. Vite, preview e Vercel encaminham some
 
 `pnpm deploy:production` valida o código, constrói um candidato Production sem domínio público, publica somente expansões compatíveis do Convex e valida os dois frontends antes de promover o ID testado. Não entra em manutenção, não encerra sessões existentes e não restaura dados automaticamente.
 
+Esse é o fluxo padrão para todo pedido de release, deploy ou publicação em produção. O modo rápido exige um pedido explícito de **fast release**; uma falha no fluxo normal não autoriza essa troca.
+
 Pré-requisitos:
 
 - `main` commitada e limpa, `origin` correto e permissão de push fast-forward e de reservar `codex/production-release-lock`.
@@ -48,6 +50,35 @@ pnpm deploy:production --resume
 8. Confere a sessão após a troca, grava o recibo de conclusão, encerra somente sua sessão de conferência e remove a reserva com a identidade exata.
 
 Releases apenas de frontend preservam o backend e não executam migração ou preparação de runtime. As abas antigas continuam atendidas. Push, build ou smoke novo isoladamente não autorizam promoção. A reserva protege execuções cooperantes deste comando; mudanças administrativas externas exigem reconciliação e são bloqueadas quando a divergência é detectada.
+
+## Fast release
+
+```sh
+pnpm deploy:production:fast --dry-run
+pnpm deploy:production:fast
+```
+
+Use somente quando houver pedido explícito de **fast release**. O comando publica o frontend e o backend em produção e omite `pnpm check`, lint, testes, build local, comparação de compatibilidade, backup e smoke de navegador. O typecheck padrão do Convex, seu empacotamento/validação de schema e a instalação/build remotos da Vercel continuam executando. O deploy usa `--codegen disable` para preservar os arquivos gerados do commit; mantenha-os atualizados durante o desenvolvimento.
+
+Pré-requisitos: `main` commitada e limpa, `origin` correto, conta administrativa Convex, `VERCEL_TOKEN`, produção sem manutenção e nenhuma release pendente. O bootstrap usa o mesmo `DENTEC_RELEASE_BACKEND_COMMIT` comprovado do fluxo normal. A fast release dispensa Chromium, credenciais de smoke, calendário de teste e diretório de backup. Os comandos usam Node/Git, sem dependência de Bash.
+
+O script confere os destinos versionados, Git e o recibo instalado, recusa migrações declaradas em `release/plan.json` e reserva a mesma referência exclusiva do fluxo normal. Envia o SHA para `main` por fast-forward e cria o deployment Production pela API Vercel. O build remoto precisa atingir READY antes do deploy Convex; o domínio continua na versão anterior até a promoção. O hook mínimo de destino da CLI confere a URL Convex resolvida antes da publicação. Nenhuma comparação estrutural ou semântica é feita neste modo: mudanças que dependam de migração devem seguir o fluxo normal. O bloqueio considera todas as migrações declaradas, inclusive as já aplicadas. Para voltar a usar fast depois de uma migração normal concluída e verificada, versione um plano sem migrações; não limpe o plano enquanto a migração estiver pendente.
+
+Após o deploy Convex, consulta os metadados do destino e grava um recibo com `mode: fast`, fase `published`, SHA, proprietário, candidato, deployment anterior, hash dos metadados e `skippedValidations` identificando `check`, `smoke`, `compatibility` e `backup`. Esse hash identifica os metadados observados; não comprova compatibilidade. Promove imediatamente o candidato sem smoke, confirma seu ID no domínio público, conclui o recibo e libera a reserva. Não utiliza a fase `validated` nem fabrica um plano de expansão ou evidência de testes.
+
+`releases:installed` fornece o último recibo de qualquer modo; o contrato original de `releases:status` permanece disponível para releases normais. A próxima release normal usa o SHA da fast release concluída como baseline do backend, mantendo todas as suas validações. Se houver mudanças posteriores de backend, atualize `release/plan.json` para esse baseline como em qualquer expansão normal.
+
+Falhas preservam a reserva e o estado efetivamente publicado, sem rollback automático. Se houver erro de deploy, o backend pode já ter sido atualizado; se houver erro de promoção ou conclusão do recibo, o domínio pode já ter mudado. Confira os dois serviços, o SHA e o recibo antes de repetir ou liberar a reserva. A fast release não oferece `--resume`; a retomada automática normal também recusa recibos fast. Um recibo fast pendente exige reconciliação manual; depois de confirmar a promoção do candidato e a identidade do proprietário, `releases:fastComplete` pode concluir esse mesmo recibo de forma idempotente. Uma falha anterior ao registro do backend exige comprovar e reconciliar também qual código foi instalado.
+
+### Recuperar falha entre o deploy Convex e o recibo fast
+
+Mantenha a reserva e use o mesmo commit e candidato; não repita a publicação nem remova a reserva para contornar um recibo antigo. Todos os comandos Convex desta recuperação devem usar o destino de produção explícito, como no exemplo de `operations:status` abaixo.
+
+1. Confira no histórico de deployments do Convex se a publicação `fast SHA_DO_COMMIT` concluiu e corresponde ao código desse commit. Compare também o resultado de `function-spec` com as funções desse código. Os metadados isolados não comprovam mudanças que preservam assinaturas. Se a publicação continuar ambígua, preserve a reserva e investigue antes de gravar recibos.
+2. Consulte `releases:installed`. Se já existir um recibo fast do mesmo commit, proprietário e candidato, a chamada anterior pode ter gravado apesar da resposta perdida: preserve esse recibo e pule para o passo 4. Se o recibo ainda for o anterior e estiver concluído, confira seu SHA de backend (ou o bootstrap comprovado quando não há recibo), `operations:status` sem manutenção e o proprietário da reserva em `codex/production-release-lock`.
+3. Consulte `function-spec` no destino confirmado e calcule `functionSpecHash` com a função `fingerprint` exportada por `scripts/release-contracts.ts`, usando o objeto JSON retornado. Chame `releases:fastPublished` com `commit` igual ao SHA comprovado instalado; `previousBackend` igual ao SHA do recibo anterior/bootstrap; `previousFrontend` igual ao ID anterior mostrado na saída; `owner` igual ao SHA da reserva preservada; `candidateId` igual ao candidato READY original; `functionSpecHash` calculado e `plan` igual ao conteúdo de `release/plan.json` daquele commit, sem migrações. A mutation recusa substituir outra release pendente ou um baseline divergente. Confirme o recibo `published` em `releases:installed` antes de prosseguir.
+4. Confira na Vercel projeto, ambiente Production, SHA e estado READY do candidato original. Se o domínio ainda estiver no deployment anterior registrado, promova esse mesmo candidato e confirme seu ID no domínio; se já estiver no candidato, confirme a promoção existente. Um terceiro deployment no domínio exige investigação, sem sobrescrevê-lo automaticamente. Preserve a atribuição manual de domínios.
+5. Chame `releases:fastComplete` com o mesmo `owner` e `candidateId`, confirme `releases:installed` em fase `complete` e só então remova a reserva por `force-with-lease` do proprietário exato, conforme a seção de recuperação abaixo. Nunca registre o backend antigo como se ainda estivesse instalado nem conclua o recibo antes de confirmar a promoção.
 
 ## Plano de expansão e migrações
 

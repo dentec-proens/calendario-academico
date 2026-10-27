@@ -152,3 +152,85 @@ test('driver validates every migration before promotion and stops on timeout or 
     /checkpoint/,
   );
 });
+
+const fastPublished = makeFunctionReference<'mutation'>('releases:fastPublished'),
+  fastComplete = makeFunctionReference<'mutation'>('releases:fastComplete'),
+  installed = makeFunctionReference<'query'>('releases:installed');
+const fastArgs = {
+  commit,
+  previousBackend: plan.baseline,
+  previousFrontend: 'dpl_old',
+  owner,
+  candidateId: 'dpl_new',
+  functionSpecHash: 'd'.repeat(64),
+  plan: { ...plan, migrations: [] },
+};
+
+test('fast receipt records omitted checks without validating, preserves legacy status, and supplies the next normal baseline', async () => {
+  const t = fixture();
+  await t.mutation(fastPublished, fastArgs);
+  expect(await t.query(installed, {})).toMatchObject({
+    mode: 'fast',
+    phase: 'published',
+    commit,
+    skippedValidations: { check: true, smoke: true, compatibility: true, backup: true },
+  });
+  expect(await t.query(status, {})).toBeNull();
+  await expect(t.mutation(validated, { owner, candidateId: 'dpl_new' })).rejects.toThrow(
+    /modo fast/,
+  );
+  await expect(t.mutation(complete, { owner, candidateId: 'dpl_new' })).rejects.toThrow(
+    /modo fast/,
+  );
+  await expect(t.mutation(begin, args)).rejects.toThrow(/fast release pendente/);
+  await expect(
+    t.mutation(fastComplete, { owner: 'f'.repeat(40), candidateId: 'dpl_new' }),
+  ).rejects.toThrow(/reserva/);
+  await expect(t.mutation(fastComplete, { owner, candidateId: 'dpl_other' })).rejects.toThrow(
+    /candidato/,
+  );
+  await t.mutation(fastComplete, { owner, candidateId: 'dpl_new' });
+  await t.mutation(fastComplete, { owner, candidateId: 'dpl_new' });
+  expect(await t.query(installed, {})).toMatchObject({ mode: 'fast', phase: 'complete', commit });
+  await t.run(async (ctx) => {
+    const receipts = await ctx.db
+      .query('releaseReceipts')
+      .withIndex('by_commit', (q) => q.eq('commit', commit))
+      .take(2);
+    expect(receipts).toHaveLength(1);
+    expect(receipts[0]).toMatchObject({
+      mode: 'fast',
+      functionSpecHash: fastArgs.functionSpecHash,
+    });
+    expect(receipts[0]).not.toHaveProperty('contractHash');
+  });
+  await expect(t.mutation(begin, args)).rejects.toThrow(/baseline/);
+  await t.mutation(begin, {
+    ...args,
+    commit: 'f'.repeat(40),
+    previousBackend: commit,
+    plan: { ...plan, baseline: commit, migrations: [] },
+  });
+  expect(await t.query(status, {})).toMatchObject({ phase: 'expanded', previousBackend: commit });
+  expect(await t.query(installed, {})).not.toHaveProperty('mode');
+});
+
+test('fast publication refuses migrations, active maintenance and pending normal releases without replacing their receipts', async () => {
+  const t = fixture();
+  await expect(t.mutation(fastPublished, { ...fastArgs, plan })).rejects.toThrow(/Migrações/);
+  expect(await t.query(installed, {})).toBeNull();
+  await t.mutation(begin, args);
+  const previous = await t.query(installed, {});
+  await expect(t.mutation(fastPublished, fastArgs)).rejects.toThrow(/pendente/);
+  expect(await t.query(installed, {})).toEqual(previous);
+  await t.run((ctx) =>
+    ctx.db.insert('operationalControl', {
+      key: 'release',
+      paused: true,
+      commit,
+      changedAt: Date.now(),
+    }),
+  );
+  await expect(t.mutation(fastPublished, fastArgs)).rejects.toThrow(/manutenção/);
+  expect(await t.query(installed, {})).toEqual(previous);
+});

@@ -39,6 +39,7 @@
     "dev:setup": "tsx scripts/dev-setup.ts",
     "env:doctor": "tsx scripts/doctor.ts",
     "deploy:production": "tsx scripts/deploy-production.ts",
+    "deploy:production:fast": "tsx scripts/deploy-production-fast.ts",
     "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
     "migrate:data": "tsx scripts/migrate-data.ts",
     "agents:check": "node scripts/check-agent-skills.ts",

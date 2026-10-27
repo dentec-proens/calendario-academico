@@ -30,6 +30,12 @@ Before editing files for a substantial task:
 - Execute E2E remoto com opt-in explícito: deployment descartável ou desenvolvimento atual autorizado pelo usuário, verificado contra `.env.local` e com conta, campus, ano e registros exclusivos da suíte. Produção fica bloqueada; dados preexistentes não podem ser alterados pela suíte. Consulte no README a configuração e os limites de cada modo.
 - Reutilize resultados obtidos sobre o mesmo código; repita as verificações afetadas após novas alterações. Ao concluir, informe comandos executados, resultados e limitações. Se faltar navegador, Docker ou configuração, registre a verificação pendente e sua causa; testes pulados ou não executados não contam como aprovação.
 
+## Release para produção
+
+- Pedidos de release, deploy ou publicação em produção usam `pnpm deploy:production`. Somente um pedido explícito de **fast release** autoriza `pnpm deploy:production:fast`; falhas no fluxo normal exigem correção, sem troca automática para o rápido.
+- Na fast release autorizada, execute apenas o comando rápido, sem `pnpm check` ou suítes adicionais. Ele preserva o typecheck do Convex e o build remoto da Vercel. A implementação de mudanças de código, inclusive nessa ferramenta, continua sujeita à validação de desenvolvimento acima.
+- Antes de publicar ou recuperar uma release parcial de qualquer modo, consulte [Implantação e operação](docs/implantacao-convex-vercel.md), incluindo recibos, reserva exclusiva e restrições de migração.
+
 ## Commits
 
 - Mensagens de commit devem ser explicativas, em português, não apenas uma linha curta.

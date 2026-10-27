@@ -138,23 +138,37 @@ try {
       ) as { url: string; functions: Array<{ identifier?: string }> };
     }
     const remote = metadata();
-    const receipt = remote.functions.some((fn) => fn.identifier === 'releases.js:status')
-      ? (JSON.parse(call('releases:status') || 'null') as Doc<'releaseProgress'> | null)
+    const installed = remote.functions.some((fn) => fn.identifier === 'releases.js:installed')
+      ? 'releases:installed'
+      : 'releases:status';
+    const installedReceipt = remote.functions.some((fn) => fn.identifier === 'releases.js:status')
+      ? (JSON.parse(call(installed) || 'null') as Doc<'releaseProgress'> | null)
       : null;
+    if (installedReceipt && 'mode' in installedReceipt) {
+      if (installedReceipt.phase !== 'complete')
+        throw Error(
+          'Fast release pendente exige reconciliação manual; --resume retoma somente a release normal.',
+        );
+      if (resume)
+        throw Error(
+          'Fast release já concluída. Para uma nova release normal, execute sem --resume.',
+        );
+    }
+    const receipt = installedReceipt && !('mode' in installedReceipt) ? installedReceipt : null;
     if (receipt && receipt.phase !== 'complete' && (!resume || receipt.commit !== commit))
       throw Error('Há uma expansão pendente. Retome o mesmo commit com --resume.');
     if (resume && (!receipt || receipt.phase === 'complete' || receipt.commit !== commit))
       throw Error('Não há expansão deste commit para retomar.');
     const backendCommit = resume
       ? receipt!.previousBackend
-      : (receipt?.commit ?? process.env.DENTEC_RELEASE_BACKEND_COMMIT);
+      : (installedReceipt?.commit ?? process.env.DENTEC_RELEASE_BACKEND_COMMIT);
     if (!backendCommit || !/^[a-f0-9]{40}$/.test(backendCommit))
       throw Error('Configure DENTEC_RELEASE_BACKEND_COMMIT com o SHA comprovado para o bootstrap.');
     function assertOnline() {
       const status = parseReleaseStatus(control('status'));
       if (status.paused || status.emergency)
         throw Error('Há uma manutenção ativa. Reconcilie-a antes da release online.');
-      if (!receipt && status.commit !== backendCommit)
+      if (!installedReceipt && status.commit !== backendCommit)
         throw Error('O registro operacional diverge do recibo de bootstrap.');
     }
     assertOnline();
@@ -314,6 +328,7 @@ try {
       assertRemoteFunctions(metadata(), expansion.after, environments.production.url);
       const current = JSON.parse(call('releases:status')) as Doc<'releaseProgress'>;
       if (
+        'mode' in current ||
         current.owner !== owner ||
         current.commit !== commit ||
         current.planHash !== fingerprint(expansion.plan)

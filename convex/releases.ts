@@ -2,10 +2,10 @@ import { v } from 'convex/values';
 import { internalMutation, internalQuery } from './_generated/server';
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import { planValidator, assertPlan } from './releases/plan';
-import { releaseTables } from './releases/schema';
+import { safeProgress, fastProgress } from './releases/schema';
 import { maintenancePaused } from './lib/maintenance';
 
-const receipt = releaseTables.releaseProgress.validator;
+const systemFields = { _id: v.id('releaseProgress'), _creationTime: v.number() };
 async function read(ctx: QueryCtx) {
   return ctx.db
     .query('releaseProgress')
@@ -15,14 +15,27 @@ async function read(ctx: QueryCtx) {
 async function owned(ctx: MutationCtx, owner: string) {
   if (await maintenancePaused(ctx)) throw Error('A manutenção impede a release online.');
   const record = await read(ctx);
-  if (!record || record.owner !== owner) throw Error('A reserva da release mudou.');
+  if (!record || record.owner !== owner || 'mode' in record)
+    throw Error('A reserva da release mudou ou pertence ao modo fast.');
   return record;
 }
+// Keep the original status contract for older clients and contract snapshots.
 export const status = internalQuery({
+  args: {},
+  returns: v.union(v.null(), v.object({ ...safeProgress.fields, ...systemFields })),
+  handler: async (ctx) => {
+    const record = await read(ctx);
+    return record && !('mode' in record) ? record : null;
+  },
+});
+
+// The installed backend receipt can belong to either release mode.
+export const installed = internalQuery({
   args: {},
   returns: v.union(
     v.null(),
-    v.object({ ...receipt.fields, _id: v.id('releaseProgress'), _creationTime: v.number() }),
+    v.object({ ...safeProgress.fields, ...systemFields }),
+    v.object({ ...fastProgress.fields, ...systemFields }),
   ),
   handler: read,
 });
@@ -72,6 +85,8 @@ export const begin = internalMutation({
     }
     const previous = await read(ctx);
     if (previous && previous.phase !== 'complete') {
+      if ('mode' in previous)
+        throw Error('Há uma fast release pendente. Reconcilie a publicação antes de continuar.');
       if (
         previous.commit !== args.commit ||
         previous.planHash !== args.planHash ||
@@ -186,6 +201,81 @@ export const complete = internalMutation({
       contractHash: record.contractHash,
       planHash: record.planHash,
       candidateId,
+      completedAt: Date.now(),
+    });
+    return null;
+  },
+});
+
+export const fastPublished = internalMutation({
+  args: {
+    commit: v.string(),
+    previousBackend: v.string(),
+    previousFrontend: v.string(),
+    owner: v.string(),
+    candidateId: v.string(),
+    functionSpecHash: v.string(),
+    plan: planValidator,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    if (await maintenancePaused(ctx)) throw Error('A manutenção impede a fast release.');
+    if (args.plan.migrations.length)
+      throw Error('Migrações exigem a release normal com backup e verificação.');
+    for (const sha of [args.commit, args.previousBackend, args.owner])
+      if (!/^[a-f0-9]{40}$/.test(sha)) throw Error('Identidade de release inválida.');
+    if (
+      !/^[a-f0-9]{64}$/.test(args.functionSpecHash) ||
+      ![args.previousFrontend, args.candidateId].every((id) => /^dpl_[a-zA-Z0-9]+$/.test(id))
+    )
+      throw Error('Identidade de deployment ou fingerprint inválido.');
+    const previous = await read(ctx);
+    if (previous && previous.phase !== 'complete')
+      throw Error('Há uma release pendente. Reconcilie a publicação antes de continuar.');
+    if (previous && previous.commit !== args.previousBackend)
+      throw Error('O backend instalado diverge do baseline.');
+    const { plan: _, ...identity } = args;
+    const next = {
+      ...identity,
+      key: 'backend' as const,
+      mode: 'fast' as const,
+      phase: 'published' as const,
+      skippedValidations: {
+        check: true as const,
+        smoke: true as const,
+        compatibility: true as const,
+        backup: true as const,
+      },
+      changedAt: Date.now(),
+    };
+    if (previous) await ctx.db.replace(previous._id, next);
+    else await ctx.db.insert('releaseProgress', next);
+    return null;
+  },
+});
+
+export const fastComplete = internalMutation({
+  args: { owner: v.string(), candidateId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { owner, candidateId }) => {
+    if (await maintenancePaused(ctx)) throw Error('A manutenção impede a fast release.');
+    const record = await read(ctx);
+    if (
+      !record ||
+      !('mode' in record) ||
+      record.owner !== owner ||
+      record.candidateId !== candidateId
+    )
+      throw Error('A reserva ou o candidato da fast release mudou.');
+    if (record.phase === 'complete') return null;
+    await ctx.db.patch(record._id, { phase: 'complete', changedAt: Date.now() });
+    await ctx.db.insert('releaseReceipts', {
+      mode: record.mode,
+      commit: record.commit,
+      owner,
+      candidateId,
+      functionSpecHash: record.functionSpecHash,
+      skippedValidations: record.skippedValidations,
       completedAt: Date.now(),
     });
     return null;
