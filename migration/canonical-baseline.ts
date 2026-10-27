@@ -12,8 +12,6 @@ type Rules = {
   review: Fn;
   inherited: Fn;
   readiness: Fn;
-  existingHistory: Fn;
-  includedHistory: Fn;
 };
 function record(value: unknown): Document {
   if (!value || typeof value !== 'object' || Array.isArray(value))
@@ -30,17 +28,14 @@ async function load(root: string): Promise<Rules> {
     if (typeof fn !== 'function') throw Error(`Função ausente no baseline: ${name}.`);
     return fn as Fn;
   }
-  const [count, layout, review, inherited, readiness, existingHistory, includedHistory] =
-    await Promise.all([
-      exported('src/evaluation.ts', 'evaluateCalendar'),
-      exported('src/printing/calendar-layout.ts', 'proensLayout'),
-      exported('src/review.ts', 'reviewSupport'),
-      exported('src/institution.ts', 'inheritedEvents'),
-      exported('src/release.ts', 'releaseReadiness'),
-      exported('src/history-progress.ts', 'existingHistoryEvent'),
-      exported('src/history-progress.ts', 'includedHistoryCandidate'),
-    ]);
-  return { count, layout, review, inherited, readiness, existingHistory, includedHistory };
+  const [count, layout, review, inherited, readiness] = await Promise.all([
+    exported('src/evaluation.ts', 'evaluateCalendar'),
+    exported('src/printing/calendar-layout.ts', 'proensLayout'),
+    exported('src/review.ts', 'reviewSupport'),
+    exported('src/institution.ts', 'inheritedEvents'),
+    exported('src/release.ts', 'releaseReadiness'),
+  ]);
+  return { count, layout, review, inherited, readiness };
 }
 function stable(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
@@ -130,9 +125,7 @@ export type BaselineReport = {
   reviewSupportDigest: string;
   historyAnalyses: number;
   historyCandidates: number;
-  historyExistingCandidates: number;
-  historyIncludedCandidates: number;
-  historySuggestionsDigest: string;
+  historyArchiveDigest: string;
   savedReviewTextPolicy: string;
 };
 
@@ -223,10 +216,10 @@ export async function verifyBaselineEquivalence(
       throw Error(`Baseline incompleto: erro de liberação no contexto ${i}.`);
     readiness.push(fingerprint(previous));
   }
-  const history = verifyHistorySuggestions(source, canonical, oldLive, newLive, oldRules, newRules);
+  const history = verifyHistoryArchive(source, canonical);
   return {
     contexts: oldCases.length,
-    comparisons: oldCases.length * 3 + currentCount + history.historyCandidates * 2,
+    comparisons: oldCases.length * 3 + currentCount + history.historyAnalyses,
     unavailableCounts,
     layoutErrors,
     reviewSupportErrors,
@@ -241,95 +234,30 @@ export async function verifyBaselineEquivalence(
   };
 }
 
-type SuggestionRules = Pick<Rules, 'existingHistory' | 'includedHistory'>;
-export type HistorySuggestionReport = Pick<
-  BaselineReport,
-  | 'historyAnalyses'
-  | 'historyCandidates'
-  | 'historyExistingCandidates'
-  | 'historyIncludedCandidates'
-  | 'historySuggestionsDigest'
->;
-
-/** Audits visibility and the identity of the matching event for every PDF candidate. */
-export function verifyHistorySuggestions(
-  source: Snapshot,
-  canonical: Snapshot,
-  oldCases: Pick<Case, 'state' | 'events' | 'record'>[],
-  newCases: Pick<Case, 'state' | 'events' | 'record'>[],
-  oldRules: SuggestionRules,
-  newRules: SuggestionRules,
-): HistorySuggestionReport {
-  const contexts = (values: typeof oldCases) =>
-    new Map(values.map((item) => [item.record._id, item]));
-  const oldContexts = contexts(oldCases),
-    newContexts = contexts(newCases);
+/** Retired source documents and their immutable analyses remain part of the data audit. */
+export function verifyHistoryArchive(source: Snapshot, canonical: Snapshot) {
   const histories = new Map((source.histories ?? []).map((row) => [row._id, row]));
-  const migratedAnalyses = new Map((canonical.historyAnalyses ?? []).map((row) => [row._id, row]));
-  const comparisons: string[] = [];
-  let historyCandidates = 0,
-    historyExistingCandidates = 0,
-    historyIncludedCandidates = 0;
+  const archived = new Map((canonical.histories ?? []).map((row) => [row._id, row]));
+  const analyses = new Map((canonical.historyAnalyses ?? []).map((row) => [row._id, row]));
+  if (histories.size !== archived.size || (source.historyAnalyses ?? []).length !== analyses.size)
+    throw Error('Arquivo histórico divergente.');
+  for (const [id, history] of histories)
+    compare(history, archived.get(id), 'registro histórico arquivado');
+  let historyCandidates = 0;
+  const fingerprints: string[] = [];
   for (const analysis of source.historyAnalyses ?? []) {
-    const historical = histories.get(String(analysis.historyId));
-    const before = historical && oldContexts.get(historical.calendarId),
-      after = historical && newContexts.get(historical.calendarId);
-    const migrated = migratedAnalyses.get(analysis._id);
-    if (!historical || !before || !after || !migrated)
-      throw Error('Referência ausente na verificação das sugestões históricas.');
+    if (!histories.has(String(analysis.historyId)))
+      throw Error('Referência ausente no arquivo histórico.');
+    const migrated = analyses.get(analysis._id);
+    compare(analysis, migrated, 'análise histórica arquivada');
     const candidates = record(analysis.analysis).candidates;
-    const newCandidates = record(migrated.analysis).candidates;
-    if (!Array.isArray(candidates) || !Array.isArray(newCandidates))
-      throw Error('Lista de candidatos históricos inválida.');
-    compare(candidates, newCandidates, 'identidade e conteúdo dos candidatos históricos');
-    for (let i = 0; i < candidates.length; i++) {
-      historyCandidates++;
-      const match = (
-        rules: SuggestionRules,
-        context: typeof before,
-        candidate: unknown,
-        collection: unknown[],
-      ) => {
-        const existing = rules.existingHistory(context.events, candidate, context.state);
-        const id = existing === null || existing === undefined ? null : record(existing).id;
-        if (id !== null && (typeof id !== 'string' || !id))
-          throw Error('Evento histórico correspondente sem identidade.');
-        const included = rules.includedHistory(
-          context.state.events,
-          historical._id,
-          candidate,
-          collection,
-        );
-        if (typeof included !== 'boolean') throw Error('Resultado inválido da inclusão histórica.');
-        return { existingId: id, included };
-      };
-      const oldSuggestion = attempt(() => match(oldRules, before, candidates[i], candidates));
-      const newSuggestion = attempt(() => match(newRules, after, newCandidates[i], newCandidates));
-      if (oldSuggestion.error || newSuggestion.error)
-        throw Error(`Baseline incompleto: erro na sugestão histórica ${historyCandidates}.`);
-      compare(
-        oldSuggestion,
-        newSuggestion,
-        `visibilidade ou identidade da sugestão histórica ${historyCandidates}`,
-      );
-      const value = record(oldSuggestion.value);
-      if (value.existingId !== null) historyExistingCandidates++;
-      if (value.included) historyIncludedCandidates++;
-      comparisons.push(
-        fingerprint({
-          analysisId: analysis._id,
-          historyId: historical._id,
-          candidate: candidates[i],
-          result: value,
-        }),
-      );
-    }
+    if (!Array.isArray(candidates)) throw Error('Lista de candidatos históricos inválida.');
+    historyCandidates += candidates.length;
+    fingerprints.push(fingerprint(analysis));
   }
   return {
     historyAnalyses: (source.historyAnalyses ?? []).length,
     historyCandidates,
-    historyExistingCandidates,
-    historyIncludedCandidates,
-    historySuggestionsDigest: fingerprint(comparisons),
+    historyArchiveDigest: fingerprint({ histories: [...histories], analyses: fingerprints }),
   };
 }

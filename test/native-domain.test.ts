@@ -1,5 +1,4 @@
 import { inspectCalendar } from '../src/calendar-base/index.ts';
-import { ConvexError } from 'convex/values';
 import type { FunctionReturnType } from 'convex/server';
 import type { CalendarActivity } from '../src/domain-types.ts';
 import { test } from 'vitest';
@@ -206,62 +205,7 @@ test('native action boundaries recheck ownership and register only validated sto
   const context = await campus.actionContext(path + '/pdf', { version: 1, catalogueRevision: 1 });
   assert.equal(context.record.id, created.id);
   assert(!JSON.stringify(context).includes('private-'));
-  const result = { size: 12, hash: 'a'.repeat(64), uploadId: 'history-upload' };
-  await assert.rejects(
-    campus.finishAction(path + '/history', { year: 2026, filename: 'anterior.pdf' }, result),
-    /Arquivo não encontrado|Envio expirado/,
-  );
-  await client.run(async (ctx) => {
-    const storageId = await ctx.storage.store(
-      new Blob(['%PDF-fixture'], { type: 'application/pdf' }),
-    );
-    await ctx.db.insert('nativeUploads', {
-      uploadId: result.uploadId,
-      ownerId: ids.users['campus-a'],
-      filename: 'anterior.pdf',
-      size: result.size,
-      expiresAt: Date.now() + 10000,
-      storageId,
-      hash: result.hash,
-      completedAt: Date.now(),
-    });
-    return storageId;
-  });
-  const history = await campus.finishAction(
-    path + '/history',
-    { year: 2026, filename: 'anterior.pdf' },
-    result,
-  );
-  await assert.rejects(
-    campus.finishAction(path + '/history', { year: 2026, filename: 'anterior.pdf' }, result),
-    /Envio expirado, já utilizado ou incompatível/,
-  );
-  await assert.rejects(
-    as('campus-b').actionContext('/api/history/' + history.id),
-    /Registro não encontrado/,
-  );
-  const analyzed = {
-    version: 3,
-    pages: [{ page: 1, text: 'Análise sintética' }],
-    candidates: [],
-    truncated: false,
-    needsText: false,
-    analyzedAt: new Date().toISOString(),
-  };
-  await campus.finishAction(
-    '/api/history/' + history.id + '/analysis',
-    { hash: result.hash },
-    analyzed,
-  );
-  assert.equal((await campus.read(path)).histories[0].analyzed, true);
-  await assert.rejects(
-    campus.finishAction(
-      '/api/documents',
-      { year: 2027, type: 'norma', title: 'Norma', source: 'Fonte', filename: 'norma.pdf' },
-      result,
-    ),
-    /Acesso exclusivo/,
-  );
+  const result = { size: 12, hash: 'a'.repeat(64), uploadId: 'native-test' };
   const documentResult = { ...result, uploadId: 'admin-upload' };
   await client.run(async (ctx) =>
     ctx.db.insert('nativeUploads', {
@@ -422,82 +366,6 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
     '2027-10-15',
   );
   assert.equal(full.calendars[0].versions[1].state.teacherDayDate, '2027-10-13');
-});
-
-test('native calendar edits and trash preserve all thirteen deferred PDF references', async () => {
-  const { as, asClient, client, inspect, ids } = await fixture();
-  const campus = as('campus-a');
-  const record = await campus.write('/api/calendars', createBody());
-  const path = '/api/calendars/' + record.id;
-  const historyIds = await client.run(async (ctx) => {
-    const result = [];
-    for (let index = 0; index < 13; index++)
-      result.push(
-        await ctx.db.insert('histories', {
-          calendarId: record.id,
-          campusId: ids.campuses.a,
-          modalities: record.modalities,
-          year: 2026,
-          filename: 'original-' + index + '.pdf',
-          unavailableFile: {
-            sourceReference: 'uploads/original-' + index + '.pdf',
-            reason: 'not_migrated',
-          },
-          hash: String(index).padStart(64, '0'),
-          notes: '',
-          createdAt: Date.now(),
-        }),
-      );
-    return result;
-  });
-  const analysis = {
-    version: 2,
-    pages: [{ page: 1, text: 'Análise preservada' }],
-    candidates: [],
-    truncated: false,
-    needsText: false,
-    analyzedAt: new Date().toISOString(),
-  };
-  await client.run((ctx) =>
-    ctx.db.insert('historyAnalyses', { historyId: historyIds[0], analysis }),
-  );
-  const historiesBefore = (await inspect()).histories;
-  const cached = await asClient('campus-a').action(api.actions.history.analyzeHistory, {
-    id: historyIds[0],
-  });
-  assert.deepEqual(cached.pages, analysis.pages);
-  assert.deepEqual(cached.candidates, analysis.candidates);
-  assert.equal(cached.version, analysis.version);
-  assert(cached.analysisId);
-  await assert.rejects(
-    asClient('campus-a').action(api.actions.history.downloadHistory, { id: historyIds[1] }),
-    /aguarda/,
-  );
-  await assert.rejects(
-    asClient('campus-a').action(api.actions.history.analyzeHistory, { id: historyIds[1] }),
-    (error: unknown) =>
-      error instanceof ConvexError &&
-      error.data?.status === 503 &&
-      /aguarda/.test(error.data.error),
-  );
-  const loaded = await campus.read(path);
-  assert.equal(loaded.histories.length, 13);
-  assert.equal(loaded.histories[0].analyzed, true);
-  assert(
-    loaded.histories.every(
-      (history: { id: string }) => !('storageId' in history) && !('analysis' in history),
-    ),
-  );
-  await campus.write(path, saveBody(loaded), 'PUT');
-  await campus.write(path, { version: 2 }, 'DELETE');
-  await campus.write(path + '/restore');
-  assert.deepEqual((await inspect()).histories, historiesBefore);
-  assert.equal((await campus.read(path)).histories.length, 13);
-  assert.equal(await client.run((ctx) => ctx.db.query('nativeUploads').first()), null);
-  await assert.rejects(
-    as('campus-b').actionContext('/api/history/' + historyIds[0]),
-    /Registro não encontrado/,
-  );
 });
 
 test('native institutional publication requires admin confirmation and preserves earlier document snapshots', async () => {

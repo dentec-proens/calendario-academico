@@ -24,17 +24,11 @@ export async function consumeUpload(
   )
     fail('Envio expirado, já utilizado ou incompatível.', 409);
   if (!filename.toLowerCase().endsWith('.pdf')) fail('Envie um PDF.');
-  const [history, document] = await Promise.all([
-    ctx.db
-      .query('histories')
-      .withIndex('by_storageId', (q) => q.eq('storageId', upload.storageId))
-      .first(),
-    ctx.db
-      .query('documents')
-      .withIndex('by_storageId', (q) => q.eq('storageId', upload.storageId))
-      .first(),
-  ]);
-  if (history || document) fail('Arquivo já cadastrado.', 409);
+  const document = await ctx.db
+    .query('documents')
+    .withIndex('by_storageId', (q) => q.eq('storageId', upload.storageId))
+    .first();
+  if (document) fail('Arquivo já cadastrado.', 409);
   await ctx.db.patch(upload._id, { consumedAt: Date.now() });
   return {
     storageId: upload.storageId,

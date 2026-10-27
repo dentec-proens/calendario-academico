@@ -3,17 +3,15 @@ import { v } from 'convex/values';
 import { authTables } from '@convex-dev/auth/server';
 import { releaseTables } from './releases/schema';
 import {
+  contentState,
   modality,
   purpose,
-  contentState,
   snapshotFields,
   reviewFields,
   fileFields,
   documentType,
   documentStatus,
   institutionalEvent,
-  historyAnalysis,
-  analysisVersion,
   auditTarget,
 } from './validators';
 
@@ -77,32 +75,6 @@ export default defineSchema({
     'by_alias',
     ['alias'],
   ),
-  histories: defineTable({
-    calendarId: v.id('calendars'),
-    campusId: v.id('campuses'),
-    year: v.number(),
-    modalities: v.array(modality),
-    ...fileFields,
-    notes: v.string(),
-    createdAt: v.number(),
-    legacyAnalysisId: v.optional(v.id('historyAnalyses')),
-    analysisVersions: v.optional(v.array(analysisVersion)),
-  })
-    .index('by_calendarId', ['calendarId'])
-    .index('by_campusId', ['campusId'])
-    .index('by_storageId', ['storageId']),
-  historyAnalyses: defineTable({
-    historyId: v.id('histories'),
-    analysis: historyAnalysis,
-    pdfHash: v.optional(v.string()),
-    extractorVersion: v.optional(v.number()),
-  })
-    .index('by_historyId', ['historyId'])
-    .index('by_historyId_and_pdfHash_and_extractorVersion', [
-      'historyId',
-      'pdfHash',
-      'extractorVersion',
-    ]),
   documents: defineTable({
     year: v.number(),
     type: documentType,

@@ -41,7 +41,6 @@ export interface CalendarActivity {
   publicationStatus?: 'planned' | 'published';
   admission?: Admission;
   deadlineAdjustment?: { date: string; evidence: string; reviewed: boolean };
-  historicalSource?: { historyId: string; page: number; candidateKey: string; analysisId?: string };
 }
 
 export interface ActivityRequirement {

@@ -236,7 +236,7 @@ test('removing a campus exclusion recalculates the teaching-day target', async (
     .toBe('2027-03-05');
   expect(
     await page.evaluate(() =>
-      window.editorTest.record.state.events.some((event) => event.historicalSource),
+      window.editorTest.record.state.events.some((event) => 'historicalSource' in event),
     ),
   ).toBe(false);
 });

@@ -45,3 +45,22 @@ Conferir conteúdo, contagem, referências, snapshots, análises, texto dos pare
 A publicação de código não executa a ferramenta nem importa dados. A recuperação integral usa dados e código correspondentes; dados produzidos após a reabertura exigem conciliação antes de restaurar um backup. Manter recibos e evidências em local privado.
 
 Comandos de desenvolvimento e validação ficam em [Verificação](verificacao.md); os controles de manutenção e publicação ficam em [Implantação e operação](implantacao-convex-vercel.md).
+
+## Retirada do calendário anterior
+
+A limpeza deste recurso é uma migração de contrato separada da publicação. O código final não contém `histories`, `historyAnalyses`, `historicalSource`, `ignoredHistory` nem as actions antigas. Portanto, os dados precisam ser limpos e verificados **antes** de publicar esse schema. A fast release não executa essa migração, e o publicador de expansão continua recusando remoções de contrato.
+
+Para gerar o plano offline a partir do backup completo:
+
+```sh
+pnpm migrate:data plan --retire-previous-calendars --snapshot backup-dados/original.zip --out backup-dados/retirada.json
+pnpm migrate:data prepare --plan backup-dados/retirada.json --out backup-dados/retirada
+```
+
+O procedimento de `apply`, `verify` e `finish` é o mesmo descrito acima: projeto temporário sem funções da aplicação, destino explicitamente conferido, backup e ensaio obrigatório antes de produção. Gerar ou preparar o plano não executa a limpeza. A publicação e a execução remota permanecem suspensas até solicitação do usuário.
+
+O plano remove somente os metadados de procedência dos eventos atuais e dos snapshots, conservando IDs, nomes, datas, fontes textuais, períodos e demais campos. Remove os registros de calendários anteriores, todas as análises extraídas e os bytes dos PDFs exclusivos desse recurso, incluindo tickets e uploads que apontavam para esses bytes. A auditoria permanece: seus alvos antigos passam a referências arquivadas com o calendário/campus original quando disponível.
+
+Arquivos também referenciados por documentos, snapshots, pareceres, recursos de runtime ou qualquer outro registro permanente são conservados. A comparação usa todas as tabelas do backup; nenhuma exclusão parte de uma busca global por extensão `.pdf`. Os bytes são excluídos por último, em lotes com checkpoint. O plano confere fingerprints de todas as tabelas e do Storage, e o novo backup verifica tamanho/hash dos arquivos restantes. O backup integral original continua sendo a fonte para recuperação de uma execução interrompida.
+
+O leitor e os uploads/restaurações de documentos institucionais, assim como a exportação dos calendários em PDF, continuam suportados. Adaptadores de migrações históricas em `migration/` apenas leem backups antigos; não são APIs da aplicação.

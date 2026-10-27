@@ -27,7 +27,6 @@ export function auditLog(
       campusId?: string;
       version?: number;
     }[];
-    histories?: { id: string; calendarId: string }[];
     calendars: { id: string; campusId: string; state: { year: number; campus: string } }[];
     users: { id: string; name: string; campusId?: string | null }[];
   },
@@ -36,11 +35,10 @@ export function auditLog(
 ) {
   const visible = (db.audit || [])
     .map((entry) => {
-      const history = (db.histories || []).find((h) => h.id === entry.id);
-      const calendar = db.calendars.find((c) => c.id === (history?.calendarId || entry.id));
+      const calendar = db.calendars.find((c) => c.id === entry.id);
       const owner = db.users.find((u) => u.id === entry.id);
       const campusId = calendar?.campusId || entry.campusId || owner?.campusId;
-      // Campi see only calendar/history/review operations for their unit.
+      // Campi see only calendar/review operations for their unit.
       if (user.role !== 'ADMIN' && (!calendar || campusId !== user.campusId)) return null;
       return {
         at: entry.at,

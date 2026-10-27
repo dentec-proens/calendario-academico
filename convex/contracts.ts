@@ -9,8 +9,6 @@ import {
   reviewEntry,
   institutionalEventSnapshot,
   documentMetadata,
-  historyAnalysis,
-  fileFields,
 } from './validators';
 
 export const readiness = v.object({
@@ -59,18 +57,6 @@ export const summary = v.object({
   updatedByName: v.optional(v.string()),
   deletedAt: v.optional(v.string()),
 });
-export const historyDto = v.object({
-  id: v.id('histories'),
-  calendarId: v.id('calendars'),
-  campusId: v.id('campuses'),
-  year: v.number(),
-  modalities: v.array(modality),
-  ...fileFields,
-  notes: v.string(),
-  createdAt: v.string(),
-  analyzed: v.boolean(),
-  legacyAnalysisId: v.optional(v.id('historyAnalyses')),
-});
 export const versionDto = v.object({
   version: v.number(),
   at: v.string(),
@@ -93,7 +79,6 @@ export const calendarDto = v.object({
   institutionalEvents: v.array(institutionalEventSnapshot),
   currentCatalogueRevision: v.number(),
   currentDocuments: v.array(documentMetadata),
-  histories: v.array(historyDto),
 });
 export const bootstrapDto = v.object({
   user: publicMember,
@@ -210,21 +195,3 @@ export const reviewSupportDto = v.object({
   baseIdentity: v.optional(v.string()),
 });
 export const exportDto = v.object({ html: v.string(), body: v.string(), text: v.string() });
-export const historyContextDto = v.object({
-  history: v.object({
-    ...historyDto.fields,
-    analysis: v.optional(historyAnalysis),
-    latestAnalysisId: v.optional(v.id('historyAnalyses')),
-    originalAnalysisId: v.optional(v.id('historyAnalyses')),
-    analyses: v.optional(
-      v.array(
-        v.object({
-          analysisId: v.id('historyAnalyses'),
-          extractorVersion: v.number(),
-          pdfHash: v.string(),
-          analyzedAt: v.string(),
-        }),
-      ),
-    ),
-  }),
-});

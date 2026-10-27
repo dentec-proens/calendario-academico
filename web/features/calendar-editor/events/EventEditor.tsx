@@ -181,11 +181,6 @@ export default function EventEditor() {
             ? 'Editar evento local'
             : 'Novo evento local'}
       </h3>
-      <Notice tone="info" id="historical-event-source" hidden={!editor.source}>
-        {editor.source
-          ? `Origem histórica: página ${editor.source.page}. ${values.recordType === 'prior-reference' ? 'Conserve as datas reais e confirme a pertinência documental. A referência não altera os dias letivos.' : 'Prepare uma nova ocorrência com datas e fonte próprias; o PDF anterior não comprova sua vigência.'}`
-          : ''}
-      </Notice>
       <fieldset disabled={readOnly || editor.pending}>
         <fieldset className="event-fields">
           {activityCreation && (

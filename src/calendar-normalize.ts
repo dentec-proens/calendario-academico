@@ -214,9 +214,6 @@ export function normalizeCalendar(input: unknown) {
     scopeConfirmation: s.scopeConfirmation,
     secondSemesterIntake: s.secondSemesterIntake,
     teacherDayDate: validateTeacherDay(s.teacherDayDate, s.year),
-    ignoredHistory: Array.isArray(s.ignoredHistory)
-      ? s.ignoredHistory.filter((k) => typeof k === 'string' && k.length <= 3000).slice(0, 2000)
-      : [],
     teacherVacations: s.teacherVacations,
     modalities: calendarModalities(s),
     assessmentStagesByModality: s.assessmentStagesByModality,
@@ -245,14 +242,6 @@ export function normalizeCalendar(input: unknown) {
       admission: e.admission,
       deadlineAdjustment: e.deadlineAdjustment,
       hours: e.hours,
-      historicalSource: e.historicalSource
-        ? {
-            historyId: e.historicalSource.historyId,
-            page: e.historicalSource.page,
-            candidateKey: e.historicalSource.candidateKey,
-            analysisId: e.historicalSource.analysisId,
-          }
-        : undefined,
       modalities: e.modalities,
       requirementId: e.requirementId || undefined,
       id: e.id,

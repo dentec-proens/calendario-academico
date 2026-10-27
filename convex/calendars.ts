@@ -3,9 +3,7 @@ import { assertWritesOpen, maintenanceAccess } from './lib/maintenance';
 import { normalizeCalendar } from '../src/calendar-normalize';
 import { recalculateCalendar } from '../src/calendar-edits/commands';
 import { equalValues } from '../src/equal';
-import { historyCandidateKey } from '../src/history-progress';
 import { rulesetVersion } from '../src/calendar-rules/index';
-import { originalAnalysis } from './histories';
 import { inheritedEvents } from '../src/institution';
 import { query, mutation, internalQuery } from './_generated/server';
 import { requireNativeUser } from './access/identity';
@@ -156,7 +154,6 @@ export const createCalendar = mutation({
       fail('Selecione as formas de oferta/níveis do calendário.');
     const state = normalizeCalendar({
       schemaVersion: 3,
-      ignoredHistory: [],
       assessmentStagesByModality: {},
       year: body.year,
       campus: campus.name,
@@ -237,44 +234,6 @@ export const saveCalendar = mutation({
       ...body.state,
       campus: record.state.campus,
     }) as validators.DomainState;
-    for (const event of state.events) {
-      const source = event.historicalSource;
-      if (!source) continue;
-      const originalSource = record.state.events.find(
-        (item) => item.id === event.id,
-      )?.historicalSource;
-      const preservedLegacySource =
-        originalSource &&
-        !originalSource.analysisId &&
-        originalSource.historyId === source.historyId &&
-        originalSource.page === source.page &&
-        originalSource.candidateKey === source.candidateKey;
-      if (!source.analysisId && !preservedLegacySource)
-        fail(
-          'Referência histórica inválida: selecione a análise imutável que originou o novo registro.',
-        );
-      const history = await ctx.db.get(source.historyId);
-      const analysis =
-        history &&
-        (source.analysisId
-          ? await ctx.db.get(source.analysisId)
-          : await originalAnalysis(ctx, history));
-      if (
-        !history ||
-        history.calendarId !== id ||
-        history.campusId !== row.campusId ||
-        !history.modalities.length ||
-        history.modalities.some((modality) => !row.modalities.includes(modality)) ||
-        analysis?.historyId !== history._id ||
-        !Number.isInteger(source.page) ||
-        source.page < 1 ||
-        !analysis?.analysis.pages.some((p) => p.page === source.page) ||
-        !analysis.analysis.candidates.some(
-          (item) => item.page === source.page && historyCandidateKey(item) === source.candidateKey,
-        )
-      )
-        fail('Referência histórica inválida para este calendário.');
-    }
     try {
       if (reconciliation.recalculate || !equalValues(clean(content.state), toContent(state))) {
         Object.assign(

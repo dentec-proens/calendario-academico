@@ -147,7 +147,7 @@ const directory = join(root, 'test', '.temp', 'e2e', runId);
 await mkdir(directory, { recursive: true });
 const pdf = restorationPdf(prepared.year - 1);
 await writeFile(join(directory, 'restoration-upload.pdf'), pdf);
-const restoration: { calendarId: string; historyId: string; documentId: string } = JSON.parse(
+const restoration: { documentId: string } = JSON.parse(
   await run(
     [
       'run',

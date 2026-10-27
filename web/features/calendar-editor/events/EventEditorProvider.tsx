@@ -41,7 +41,6 @@ function useController() {
   const [context, setContext] = useState<EventContext | null>(null);
   const [open, setOpen] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
-  const [source, setSource] = useState<CalendarEvent['historicalSource']>();
   const [linkUnlocked, setLinkUnlocked] = useState(false);
   // What the side panel shows besides the form: an activity to consult or the Teacher Day.
   const [panel, setPanel] = useState<
@@ -79,7 +78,6 @@ function useController() {
           eventFromValues(value, {
             id,
             base: current.events.find((event) => event.id === eventId),
-            historicalSource: source,
           }),
           institutional,
           Boolean(eventId),
@@ -101,7 +99,6 @@ function useController() {
     setContext(null);
     setOpen(false);
     setEventId(null);
-    setSource(undefined);
     setLinkUnlocked(false);
     setPanel(null);
     eventForm.reset(emptyEvent(state.modalities));
@@ -151,12 +148,7 @@ function useController() {
     }
     return true;
   }
-  function begin(
-    next: EventContext,
-    values: EventValues,
-    id: string | null = null,
-    historicalSource?: CalendarEvent['historicalSource'],
-  ) {
+  function begin(next: EventContext, values: EventValues, id: string | null = null) {
     const same = context && JSON.stringify(context) === JSON.stringify(next);
     if (!canOpen(next) && !same) return;
     if (readOnly) return;
@@ -171,7 +163,6 @@ function useController() {
     result.form.reset(values);
     setContext(next);
     setEventId(id);
-    setSource(historicalSource);
     setLinkUnlocked(false);
     setPanel(
       next.kind === 'activity' ? { kind: 'activity', requirementId: next.requirementId } : null,
@@ -189,7 +180,7 @@ function useController() {
     const next: EventContext = event.requirementId
       ? { kind: 'activity', requirementId: event.requirementId, eventId: id }
       : { kind: 'event', eventId: id };
-    begin(next, eventValues(event, state.modalities), id, event.historicalSource);
+    begin(next, eventValues(event, state.modalities), id);
   }
   function prepare(requirementId: string) {
     const requirement = activityChecklist(state).find((item) => item.id === requirementId);
@@ -204,7 +195,6 @@ function useController() {
     setContext(null);
     setOpen(false);
     setEventId(null);
-    setSource(undefined);
     setLinkUnlocked(false);
     setPanel(null);
     setReturnFocus('new-event');
@@ -259,7 +249,7 @@ function useController() {
           [...institutional, ...current.events],
           value.start,
         );
-        const events: CalendarEvent[] = suggestion.stages.map((stage, index) => ({
+        const events: CalendarEvent[] = suggestion.stages.map((stage) => ({
           id: crypto.randomUUID(),
           name:
             activityChecklist(current).find((item) => item.id === stage.requirementId)?.name ||
@@ -272,7 +262,6 @@ function useController() {
           evidence: value.evidence.trim(),
           modalities: value.modalities,
           assessmentAutoStart: value.start,
-          historicalSource: index === 0 ? source : undefined,
         }));
         return recalculateCalendar(
           { ...current, events: [...current.events, ...events] },
@@ -290,7 +279,6 @@ function useController() {
     context,
     open,
     eventId,
-    source,
     linkUnlocked,
     unlockLink: () => setLinkUnlocked(true),
     edit,

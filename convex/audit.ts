@@ -75,14 +75,11 @@ export async function readAuditPage(
   for (const row of result.page) {
     if (
       user.role === 'CAMPUS' &&
-      (!row.calendarId || (row.target.type !== 'calendar' && row.target.type !== 'history'))
+      (!row.calendarId || (row.target.type !== 'calendar' && row.target.type !== 'archived'))
     )
       continue;
     let calendarId = row.calendarId;
     if (!calendarId && row.target.type === 'calendar') calendarId = row.target.id;
-    if (!calendarId && row.target.type === 'history') {
-      calendarId = (await ctx.db.get(row.target.id))?.calendarId;
-    }
     const record = calendarId ? await calendar(calendarId) : null;
     if (user.role === 'CAMPUS' && (!record || record.campusId !== user.campusId)) continue;
     const unit = record ? await campus(record.campusId) : null;

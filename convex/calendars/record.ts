@@ -50,11 +50,6 @@ export async function fullRecord(
     .withIndex('by_calendarId_and_version', (q) => q.eq('calendarId', id))
     .order('desc')
     .take(50);
-  const histories = await ctx.db
-    .query('histories')
-    .withIndex('by_calendarId', (q) => q.eq('calendarId', id))
-    .take(101);
-  if (histories.length > 100) fail('Limite de PDFs anteriores por calendário excedido.');
   return clean({
     ...record,
     versions: versions.map((row) => ({
@@ -66,19 +61,6 @@ export async function fullRecord(
     institutionalEvents: compatibility.snapshot.events,
     currentCatalogueRevision: base.revision,
     currentDocuments: docs.map(documentDto),
-    histories: await Promise.all(
-      histories.map(async ({ _id, _creationTime: _creation, analysisVersions, ...fields }) => ({
-        ...fields,
-        id: _id,
-        createdAt: iso(fields.createdAt),
-        analyzed:
-          Boolean(analysisVersions?.length) ||
-          !!(await ctx.db
-            .query('historyAnalyses')
-            .withIndex('by_historyId', (q) => q.eq('historyId', _id))
-            .first()),
-      })),
-    ),
   });
 }
 

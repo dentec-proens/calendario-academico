@@ -9,7 +9,6 @@ function draft() {
     year: 2027,
     offer: 'integrado',
     assessmentStagesByModality: {},
-    ignoredHistory: [],
     modalities: ['integrado'],
     regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
@@ -25,7 +24,7 @@ function draft() {
 test('editor imports canonical drafts and preserves day targets', () => {
   const state = validateImport(draft());
   assert.deepEqual(state.modalities, ['integrado']);
-  assert.deepEqual(state.ignoredHistory, []);
+  assert.equal('ignoredHistory' in state, false);
   assert.deepEqual(state.assessmentStagesByModality, {});
   assert.equal(state.periods[0].targetDays, 200);
 });
@@ -33,7 +32,7 @@ test('editor imports canonical drafts and preserves day targets', () => {
 test('editor rejects legacy files and missing canonical fields without inventing history', () => {
   const legacy: Record<string, unknown> = { ...draft(), schemaVersion: 1 };
   assert.throws(() => validateImport(legacy), /incompatível/);
-  for (const key of ['modalities', 'assessmentStagesByModality', 'ignoredHistory']) {
+  for (const key of ['modalities', 'assessmentStagesByModality']) {
     const incomplete: Record<string, unknown> = { ...draft() };
     delete incomplete[key];
     assert.throws(() => validateImport(incomplete));
@@ -66,4 +65,34 @@ test('editor rejects invalid JSON structures and dates before replacing the curr
   ]) {
     assert.throws(() => validateImport(value));
   }
+});
+
+test('old JSON copies keep events and dates while discarding retired PDF links and decisions', () => {
+  const event = {
+    id: 'imported',
+    name: 'Evento preservado',
+    start: '2027-03-10',
+    end: '2027-03-10',
+    kind: 'note',
+    evidence: 'Ata do campus',
+    modalities: ['integrado'],
+  };
+  const input = {
+    ...draft(),
+    ignoredHistory: ['history:candidate'],
+    events: [
+      {
+        ...event,
+        historicalSource: { historyId: 'retired', page: 1, candidateKey: 'legacy' },
+      },
+    ],
+  };
+  const result = validateImport(input);
+  assert.equal('ignoredHistory' in result, false);
+  assert.equal('historicalSource' in result.events[0], false);
+  assert.equal(result.events[0].id, event.id);
+  assert.equal(result.events[0].name, event.name);
+  assert.equal(result.events[0].start, event.start);
+  assert.equal(result.events[0].end, event.end);
+  assert.equal(result.events[0].evidence, event.evidence);
 });

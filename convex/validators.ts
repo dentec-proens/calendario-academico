@@ -29,12 +29,6 @@ export const period = v.object({
   targetDays: v.optional(v.number()),
   association: v.optional(periodAssociation),
 });
-export const historicalSource = v.object({
-  historyId: v.id('histories'),
-  page: v.number(),
-  candidateKey: v.string(),
-  analysisId: v.optional(v.id('historyAnalyses')),
-});
 export const event = v.object({
   id: v.string(),
   name: v.string(),
@@ -47,7 +41,6 @@ export const event = v.object({
   modalities: v.optional(v.array(modality)),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
-  historicalSource: v.optional(historicalSource),
   recordType: v.optional(v.union(v.literal('event'), v.literal('prior-reference'))),
   publicationStatus: v.optional(v.union(v.literal('planned'), v.literal('published'))),
   admission: v.optional(
@@ -136,7 +129,6 @@ export const contentState = v.object({
   events: v.array(event),
   secondSemesterIntake: v.optional(v.boolean()),
   teacherDayDate: v.optional(v.string()),
-  ignoredHistory: v.array(v.string()),
   teacherVacations: v.optional(vacations),
   assessmentStagesByModality: v.record(v.string(), stages),
 });
@@ -220,52 +212,9 @@ export const reviewFields = {
   reviewer: v.object({ id: v.id('users'), name: v.string() }),
   updatedAt: v.number(),
 };
-export const historyDates = v.object({
-  startMonth: v.number(),
-  startDay: v.number(),
-  endMonth: v.number(),
-  endDay: v.number(),
-  name: v.string(),
-  sourceYear: v.union(v.number(), v.null()),
-  endYear: v.union(v.number(), v.null()),
-  headerYear: v.optional(v.union(v.number(), v.null())),
-  yearSource: v.optional(
-    v.union(v.literal('line'), v.literal('heading'), v.literal('document'), v.literal('unknown')),
-  ),
-  conflict: v.optional(v.boolean()),
-});
-export const historyAnalysis = v.object({
-  analysisId: v.optional(v.id('historyAnalyses')),
-  extractorVersion: v.optional(v.number()),
-  pdfHash: v.optional(v.string()),
-  documentYear: v.optional(v.number()),
-  version: v.number(),
-  pages: v.array(v.object({ page: v.number(), text: v.string() })),
-  candidates: v.array(
-    v.object({
-      key: v.optional(v.string()),
-      dates: v.union(historyDates, v.null()),
-      page: v.number(),
-      excerpt: v.string(),
-      name: v.string(),
-      likelyLocal: v.boolean(),
-      category: v.string(),
-    }),
-  ),
-  truncated: v.boolean(),
-  needsText: v.boolean(),
-  analyzedAt: v.string(),
-});
-export const analysisVersion = v.object({
-  analysisId: v.id('historyAnalyses'),
-  extractorVersion: v.number(),
-  pdfHash: v.string(),
-  analyzedAt: v.string(),
-});
 export const auditTarget = v.union(
   v.object({ type: v.literal('user'), id: v.id('users') }),
   v.object({ type: v.literal('calendar'), id: v.id('calendars') }),
-  v.object({ type: v.literal('history'), id: v.id('histories') }),
   v.object({ type: v.literal('document'), id: v.id('documents') }),
   v.object({ type: v.literal('campus'), id: v.id('campuses') }),
   v.object({ type: v.literal('institutionalEvent'), id: v.id('institutionalEvents') }),
@@ -281,13 +230,7 @@ export const pdfRequest = v.object({
   catalogueRevision: v.number(),
   copy: v.optional(v.boolean()),
 });
-export const historyUploadInput = v.object({
-  calendarId: v.id('calendars'),
-  uploadId: v.string(),
-  filename: v.string(),
-  year: v.number(),
-  notes: v.optional(v.string()),
-});
+
 export const documentUploadInput = v.object({
   uploadId: v.string(),
   filename: v.string(),

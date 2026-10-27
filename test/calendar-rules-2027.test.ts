@@ -322,7 +322,7 @@ test('article 3 extends only explicitly evidenced municipal causes to the first 
   ).toBe('partial');
   expect(state.events[1].start).toBe('2027-09-03');
 });
-test('repeating the same command does not duplicate a record and differing provenance is not silently fused', () => {
+test('repeating the same command is idempotent and another ID cannot duplicate the same occurrence', () => {
   const state = calendar(),
     event = notice(),
     once = applyEvent(state, event, []);
@@ -332,9 +332,8 @@ test('repeating the same command does not duplicate a record and differing prove
   );
   const other = notice({
     id: 'different-source',
-    historicalSource: { historyId: 'synthetic', candidateKey: 'other', page: 1 },
   });
-  expect(applyEvent(once, other, []).events).toHaveLength(2);
+  expect(() => applyEvent(once, other, [])).toThrow('mesmas datas');
 });
 
 test('v2 semester classification requires semantic identity instead of sorted position', () => {
@@ -412,4 +411,18 @@ test('commands and direct import reject teaching inclusion outside the selected 
   expect(
     normalizeCalendar({ ...state, ignoredHistory: [], events: [integrated] }).events,
   ).toHaveLength(1);
+});
+
+test('preserved duplicate occurrences remain editable after PDF provenance is retired', () => {
+  const first = notice({ id: 'preserved-first', evidence: 'Ata A' });
+  const second = notice({ id: 'preserved-second', evidence: 'Ata B' });
+  const third = notice({ id: 'third', name: 'Outra ocorrência' });
+  const state = { ...calendar(), events: [first, second, third] };
+  const edited = applyEvent(state, { ...first, evidence: 'Ata A corrigida' }, [], true);
+  expect(edited.events.map((item) => item.id)).toEqual(state.events.map((item) => item.id));
+  expect(edited.events[0].evidence).toBe('Ata A corrigida');
+  expect(edited.events[1]).toEqual(second);
+  expect(applyEvent(state, first, [])).toBe(state);
+  expect(() => applyEvent(state, { ...first, id: 'new-duplicate' }, [])).toThrow('mesmas datas');
+  expect(() => applyEvent(state, { ...third, name: first.name }, [], true)).toThrow('mesmas datas');
 });

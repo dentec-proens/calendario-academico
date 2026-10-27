@@ -10,7 +10,7 @@ export const stageRequirement = isStageRequirementId;
 export const scopedRequirement = (_state: AssessmentSettings, id: string, modality: string) =>
   `${id}:${modality}`;
 
-// Undated PROENS operational checklist. Campus histories are separate references.
+// Undated PROENS operational checklist.
 // Historical dates are deliberately excluded. Applicability is reviewed separately.
 export function legacyActivityChecklist(state: AssessmentSettings): ActivityRequirement[] {
   const rows: ActivityRequirement[] = [];

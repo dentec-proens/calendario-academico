@@ -392,8 +392,6 @@ test('admin restores institutional originals created for E2E', async ({
   const { base, email, password, year, campusId, runId, mode } = browserEnvironment();
   assert(restorationFixture);
   const fixture = JSON.parse(await readFile(restorationFixture, 'utf8')) as {
-    calendarId: string;
-    historyId: string;
     documentId: string;
     runId?: string;
     campusId?: string;

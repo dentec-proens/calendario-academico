@@ -1,5 +1,4 @@
 import { record, convex as baseConvex } from './editor-client.ts';
-import type { Id } from '../../convex/_generated/dataModel.js';
 export { functions } from './editor-client.ts';
 record.state.events = [
   {
@@ -24,16 +23,4 @@ record.state.events = [
     modalities: ['integrado'],
   },
 ];
-record.histories.push({
-  id: 'history-a' as Id<'histories'>,
-  calendarId: record.id,
-  campusId: record.campusId,
-  year: 2026,
-  modalities: ['integrado'],
-  hash: 'a'.repeat(64),
-  filename: 'anterior.pdf',
-  notes: '',
-  createdAt: '2026-10-23T12:00:00Z',
-  analyzed: true,
-});
 export const convex = baseConvex;

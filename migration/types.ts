@@ -8,6 +8,7 @@ export type Operation =
 
 export type MigrationPlan = {
   format: 1;
+  purpose?: 'retire-previous-calendars';
   sourceDigest: string;
   digest: string;
   tables: string[];

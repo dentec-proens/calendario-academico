@@ -76,7 +76,6 @@ const activity = (value: unknown): CalendarActivity => {
     /^(stage|results|council|pedagogical-meeting)-[1-4]$/.test(requirement)
   )
     return invalidCalendar('Formato de atividade incompatível.');
-  const source = optional(row.historicalSource, object);
   return {
     ...range(row),
     kind: string(row.kind),
@@ -104,14 +103,6 @@ const activity = (value: unknown): CalendarActivity => {
         reviewed: boolean(adjustment.reviewed),
       };
     }),
-    historicalSource: source
-      ? {
-          historyId: string(source.historyId),
-          page: number(source.page),
-          candidateKey: string(source.candidateKey),
-          analysisId: optional(source.analysisId, string),
-        }
-      : undefined,
   };
 };
 export type VacationInput = VacationPeriods & { evidence: string };
@@ -197,7 +188,6 @@ export function readCalendarInput(value: unknown) {
       ]),
     ),
     teacherDayDate: row.teacherDayDate,
-    ignoredHistory: array(row.ignoredHistory, string),
     teacherVacations: vacations
       ? ({
           firstStart: string(vacations.firstStart),

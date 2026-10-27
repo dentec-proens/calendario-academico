@@ -202,7 +202,7 @@ export function createEditorSession(
       ) {
         publish({ record: { ...fresh, state: current.record.state }, remote: null });
       } else if (current.dirty || current.unapplied || current.status === 'saving')
-        publish({ remote: fresh, record: { ...current.record, histories: fresh.histories } });
+        publish({ remote: fresh });
       else {
         publish({ record: fresh, state: convertCalendarV2(fresh.state), remote: null });
       }

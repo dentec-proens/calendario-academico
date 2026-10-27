@@ -5,7 +5,7 @@ import {
   createCanonicalPlan,
   verifyCanonicalEquivalence,
 } from '../migration/canonical.ts';
-import { verifyHistorySuggestions } from '../migration/canonical-baseline.ts';
+import { verifyHistoryArchive } from '../migration/canonical-baseline.ts';
 import { assertPlan, assertSourceSnapshot, verifyPlanSnapshot } from '../migration/plan.ts';
 import type { Document, Row, Snapshot } from '../migration/types.ts';
 
@@ -292,72 +292,27 @@ test('unsupported or ambiguous legacy values stop the migration instead of inven
   }
 });
 
-test('history baseline checks every candidate, matching identity, visibility and explicit inclusion', () => {
+test('history migration baseline preserves complete archived rows and rejects missing or altered analyses', () => {
   const source = fixture();
-  source.histories[0].calendarId = 'calendar';
   source.historyAnalyses = [
     row('analysis', {
       historyId: 'history',
       analysis: {
-        candidates: [
-          { name: 'Adotada', page: 1, excerpt: 'Trecho original' },
-          { name: 'Proposta', page: 2, excerpt: 'Outro trecho' },
-        ],
+        candidates: [{ name: 'Adotada', page: 1, excerpt: 'Trecho original' }],
       },
     }),
   ];
-  (source.calendarContents[0].state as Document).events = [
-    event({ id: 'existing', name: 'Adotada' }),
-  ];
   const canonical = canonicalSnapshot(source);
-  const contexts = (snapshot: Snapshot) => {
-    const state = snapshot.calendarContents[0].state as Document;
-    return [{ state, events: state.events as unknown[], record: snapshot.calendars[0] }];
-  };
-  const rules = {
-    existingHistory: (...args: unknown[]) =>
-      (args[0] as Document[]).find((e) => e.name === (args[1] as Document).name) ?? null,
-    includedHistory: (...args: unknown[]) =>
-      (args[0] as Document[]).some((e) => e.name === (args[2] as Document).name),
-  };
-  const verify = (nextRules = rules, snapshot = canonical) =>
-    verifyHistorySuggestions(
-      source,
-      snapshot,
-      contexts(source),
-      contexts(snapshot),
-      rules,
-      nextRules,
-    );
-  const report = verify();
+  const report = verifyHistoryArchive(source, canonical);
   assert.equal(report.historyAnalyses, 1);
-  assert.equal(report.historyCandidates, 2);
-  assert.equal(report.historyExistingCandidates, 1);
-  assert.equal(report.historyIncludedCandidates, 1);
-  assert.throws(
-    () => verify({ ...rules, existingHistory: () => null }),
-    /visibilidade ou identidade/,
-  );
-  assert.throws(
-    () => verify({ ...rules, existingHistory: () => ({ id: 'other-id' }) }),
-    /visibilidade ou identidade/,
-  );
-  assert.throws(
-    () => verify({ ...rules, includedHistory: () => false }),
-    /visibilidade ou identidade/,
-  );
-  assert.throws(
-    () =>
-      verify({
-        ...rules,
-        existingHistory: () => {
-          throw Error('Unexpected runtime error');
-        },
-      }),
-    /Baseline incompleto/,
-  );
-  const edited = structuredClone(canonical);
-  (edited.historyAnalyses[0].analysis as { candidates: Document[] }).candidates[0].excerpt =
-    'Modificado';
-  assert.throws(() => verify(rules, edited), /identidade e conteúdo/);
+  assert.equal(report.historyCandidates, 1);
+  assert.match(report.historyArchiveDigest, /^[a-f0-9]{64}$/);
+  for (const table of ['histories', 'historyAnalyses']) {
+    const missing = structuredClone(canonical);
+    missing[table] = [];
+    assert.throws(() => verifyHistoryArchive(source, missing));
+    const changed = structuredClone(canonical);
+    changed[table][0].changed = true;
+    assert.throws(() => verifyHistoryArchive(source, changed));
+  }
 });

@@ -129,6 +129,14 @@ test('E2E reserves its own year/campus/account and publishing its fixture preser
   await client.run(async (ctx) => {
     for (const row of Object.values(prior)) assert.deepEqual(await ctx.db.get(row!._id), row);
     assert.equal((await ctx.db.get(fixture.documentId))?.status, 'vigente');
-    assert.equal((await ctx.db.get(fixture.calendarId))?.campusId, prepared.campusId);
+    assert.equal(
+      await ctx.db
+        .query('calendars')
+        .withIndex('by_campusId_and_year', (q) =>
+          q.eq('campusId', prepared.campusId).eq('year', prepared.year),
+        )
+        .first(),
+      null,
+    );
   });
 });

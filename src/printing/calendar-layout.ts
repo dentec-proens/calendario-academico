@@ -48,7 +48,7 @@ function externalReferences(state: PrintState, events: PrintEvent[]) {
   if (!rows.length) return '';
   const table = (title: string, items: PrintEvent[]) =>
     items.length
-      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade, finalidade e fonte</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${publicationDetails(event, false)}<small>${esc(event.modalities?.map((m) => modalityLabels[m] || m).join(', ') || '')}</small><small>Fonte: ${esc(event.evidence || 'Fonte a conferir')}</small>${event.historicalSource ? `<small>Calendário anterior, página ${event.historicalSource.page}${event.historicalSource.analysisId ? ` · Análise ${esc(event.historicalSource.analysisId)}` : ' · Análise legada'}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
+      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade, finalidade e fonte</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${publicationDetails(event, false)}<small>${esc(event.modalities?.map((m) => modalityLabels[m] || m).join(', ') || '')}</small><small>Fonte: ${esc(event.evidence || 'Fonte a conferir')}</small></td></tr>`).join('')}</tbody></table>`
       : '';
   return `<section class="proens-external-references"><h3>Atividades e referências de outros anos</h3><p>As datas integrais são preservadas. Estes registros informativos não alteram a contagem de dias letivos.</p>${table(
     'Publicações previstas',

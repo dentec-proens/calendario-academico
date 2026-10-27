@@ -289,7 +289,7 @@ test('legacy v2 reads never rewrite content and concurrent conversion preserves 
       weekdays: [],
       weekConfirmed: false,
       weekEvidence: '',
-      ignoredHistory: [],
+
       assessmentStagesByModality: {},
       secondSemesterIntake: false,
       periods: [

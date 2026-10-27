@@ -290,6 +290,18 @@ export function configureIntakeRequirement<S extends ActivityState>(
   };
 }
 
+/** Occurrence identity is independent of source documents and descriptive metadata. */
+function sameOccurrence(a: CalendarActivity, b: CalendarActivity) {
+  return (
+    a.name.toLocaleLowerCase() === b.name.trim().toLocaleLowerCase() &&
+    a.start === b.start &&
+    a.end === b.end &&
+    (a.recordType ?? 'event') === (b.recordType ?? 'event') &&
+    equalValues(a.admission, b.admission) &&
+    equalValues([...(a.modalities ?? [])].sort(), [...(b.modalities ?? [])].sort())
+  );
+}
+
 export function applyEvent<S extends ActivityState>(
   state: S,
   event: S['events'][number],
@@ -315,21 +327,6 @@ export function applyEvent<S extends ActivityState>(
   if (editing && !state.events.some((item) => item.id === event.id))
     throw new Error('O evento não existe mais. Reabra o calendário.');
   if (
-    state.events.some(
-      (item) =>
-        item.id !== event.id &&
-        item.name.toLocaleLowerCase() === event.name.trim().toLocaleLowerCase() &&
-        item.start === event.start &&
-        item.end === event.end &&
-        (item.recordType ?? 'event') === (event.recordType ?? 'event') &&
-        JSON.stringify(item.admission) === JSON.stringify(event.admission) &&
-        equalValues(item.historicalSource, event.historicalSource) &&
-        JSON.stringify([...(item.modalities ?? [])].sort()) ===
-          JSON.stringify([...(event.modalities ?? [])].sort()),
-    )
-  )
-    throw new Error('Este evento já foi incluído com as mesmas datas.');
-  if (
     event.kind === 'include' &&
     datesBetween(event.start, event.end).some((date) =>
       modalities.some(
@@ -347,6 +344,15 @@ export function applyEvent<S extends ActivityState>(
     if (equalValues(existing, updated)) return state;
     throw new Error('O identificador do evento já existe. Reabra o registro antes de editar.');
   }
+  if (
+    state.events.some(
+      (item) =>
+        item.id !== event.id &&
+        sameOccurrence(item, updated) &&
+        (!editing || !existing || !sameOccurrence(item, existing)),
+    )
+  )
+    throw new Error('Este evento já foi incluído com as mesmas datas.');
   let events = editing
     ? state.events.map((item) => (item.id === event.id ? updated : item))
     : [...state.events, updated];

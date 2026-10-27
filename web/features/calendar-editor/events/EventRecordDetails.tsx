@@ -45,9 +45,6 @@ export default function EventRecordDetails({
               : 'segundo semestre'}
         </small>
       )}
-      {event.historicalSource && (
-        <small>Origem histórica: página {event.historicalSource.page} do calendário anterior</small>
-      )}
       <small>{categoryLabel(event)}</small>
     </>
   );

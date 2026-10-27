@@ -205,32 +205,16 @@ export async function createNativeFixture(overrides: Seed = {}) {
         const calendar = path.match(/^\/api\/calendars\/([^/]+)\/pdf$/);
         if (calendar)
           return query(internal.calendars.pdfContext, { id: calendarId(calendar[1]), ...body });
-        const history = path.match(/^\/api\/history\/([^/]+)(?:\/analysis)?$/);
-        if (history) return query(internal.histories.historyContext, { id: history[1] });
         const document = path.match(/^\/api\/documents\/([^/]+)$/);
         if (document)
           return query(internal.documents.documentContext, { id: documentId(document[1]) });
         throw new Error('Unknown fixture action context: ' + path);
       },
       finishAction: async (path: string, body: Entity, result: Entity): Promise<any> => {
-        const history = path.match(/^\/api\/calendars\/([^/]+)\/history$/);
-        if (history)
-          return mutation(internal.histories.attachHistory, {
-            calendarId: calendarId(history[1]),
-            ...body,
-            uploadId: result.uploadId,
-          });
         if (path === '/api/documents')
           return mutation(internal.documents.attachDocument, {
             ...body,
             uploadId: result.uploadId,
-          });
-        const analysis = path.match(/^\/api\/history\/([^/]+)\/analysis$/);
-        if (analysis)
-          return mutation(internal.histories.saveHistoryAnalysis, {
-            id: analysis[1],
-            hash: body.hash,
-            analysis: result,
           });
         throw new Error('Unknown fixture action completion: ' + path);
       },
@@ -245,8 +229,6 @@ export async function createNativeFixture(overrides: Seed = {}) {
         versions,
         reviews,
         reviewVersions,
-        histories,
-        analyses,
         events,
         settings,
         documents,
@@ -258,8 +240,6 @@ export async function createNativeFixture(overrides: Seed = {}) {
         ctx.db.query('calendarVersions').collect(),
         ctx.db.query('reviews').collect(),
         ctx.db.query('reviewVersions').collect(),
-        ctx.db.query('histories').collect(),
-        ctx.db.query('historyAnalyses').collect(),
         ctx.db.query('institutionalEvents').collect(),
         ctx.db.query('institutionSettings').first(),
         ctx.db.query('documents').collect(),
@@ -294,13 +274,6 @@ export async function createNativeFixture(overrides: Seed = {}) {
           history: reviewVersions
             .filter((version) => version.reviewId === review._id)
             .sort((a, b) => a.revision - b.revision),
-        })),
-        histories: histories.map((history) => ({
-          ...history,
-          id: history._id,
-          ...(analyses.find((item) => item.historyId === history._id)
-            ? { analysis: analyses.find((item) => item.historyId === history._id)!.analysis }
-            : {}),
         })),
         catalogue: {
           revision: settings?.revision ?? 1,

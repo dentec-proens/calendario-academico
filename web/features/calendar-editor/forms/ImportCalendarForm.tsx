@@ -7,7 +7,6 @@ import { normalizeCalendar } from '../../../../src/calendar-normalize.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { CalendarState } from '../types.ts';
-import type { Id } from '../../../../convex/_generated/dataModel.js';
 
 export default function ImportCalendarForm() {
   const { state, record, session, notify, readOnly } = useCalendarEditor();
@@ -75,21 +74,6 @@ export default function ImportCalendarForm() {
                     : 'note',
               modalities: event.modalities
                 ? state.modalities.filter((modality) => event.modalities?.includes(modality))
-                : undefined,
-              historicalSource: event.historicalSource
-                ? {
-                    ...event.historicalSource,
-                    analysisId: event.historicalSource.analysisId as
-                      Id<'historyAnalyses'> | undefined,
-                    historyId:
-                      record.histories.find((item) => item.id === event.historicalSource?.historyId)
-                        ?.id ||
-                      (() => {
-                        throw new Error(
-                          'A origem histórica do arquivo não pertence a este calendário.',
-                        );
-                      })(),
-                  }
                 : undefined,
             })),
             assessmentStagesByModality: Object.fromEntries(

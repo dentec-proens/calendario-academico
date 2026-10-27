@@ -38,17 +38,6 @@ async function fixture() {
     };
     const calendarA = await ctx.db.insert('calendars', { ...fields, campusId: campusA });
     const calendarB = await ctx.db.insert('calendars', { ...fields, campusId: campusB });
-    const history = await ctx.db.insert('histories', {
-      calendarId: calendarA,
-      campusId: campusA,
-      year: 2026,
-      modalities: ['integrado'],
-      filename: 'original.pdf',
-      hash: 'a'.repeat(64),
-      notes: '',
-      createdAt: 1,
-      unavailableFile: { sourceReference: 'original/original.pdf', reason: 'not_migrated' },
-    });
     await ctx.db.insert('audit', {
       at: 1,
       actorId: memberId,
@@ -61,7 +50,7 @@ async function fixture() {
       at: 2,
       actorId: memberId,
       action: 'ANALYZE_HISTORY',
-      target: { type: 'history', id: history },
+      target: { type: 'archived', reference: 'previous-calendar:removed' },
       campusId: campusA,
       calendarId: calendarA,
     });
@@ -110,7 +99,7 @@ async function fixture() {
   return { admin: client.withIdentity(identities[0]), campus: client.withIdentity(identities[1]) };
 }
 
-test('native audit cursor pages expose only calendar and history operations of the authorized campus', async () => {
+test('native audit cursor pages expose only calendar and archived operations of the authorized campus', async () => {
   const { campus } = await fixture();
   const entries = [];
   let cursor: string | null = null;

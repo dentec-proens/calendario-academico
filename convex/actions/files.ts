@@ -29,12 +29,6 @@ export async function original(ctx: ActionCtx, item: FileSource) {
   return blob;
 }
 
-export async function fileBytes(ctx: ActionCtx, item: FileSource) {
-  const blob = await original(ctx, item);
-  if (blob.size < 5 || blob.size > 8_000_000) fail('Envie um PDF de até 8 MB.');
-  return validate(Buffer.from(await blob.arrayBuffer()));
-}
-
 export async function downloadOriginal(ctx: ActionCtx, item: FileSource) {
   await original(ctx, item);
   return ctx.runMutation(internal.nativeFiles.ticket, {

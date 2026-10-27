@@ -123,21 +123,17 @@ export const finishUpload = internalMutation({
       if (upload.storageId !== args.storageId) failure('Envio já concluído.', 409);
       return { uploadId: args.uploadId };
     }
-    const [pending, history, document] = await Promise.all([
+    const [pending, document] = await Promise.all([
       ctx.db
         .query('nativeUploads')
         .withIndex('by_storageId', (q) => q.eq('storageId', args.storageId))
         .unique(),
       ctx.db
-        .query('histories')
-        .withIndex('by_storageId', (q) => q.eq('storageId', args.storageId))
-        .first(),
-      ctx.db
         .query('documents')
         .withIndex('by_storageId', (q) => q.eq('storageId', args.storageId))
         .first(),
     ]);
-    if (pending || history || document) failure('Arquivo já cadastrado.', 409);
+    if (pending || document) failure('Arquivo já cadastrado.', 409);
     await ctx.db.patch(upload._id, {
       storageId: args.storageId,
       hash: args.hash,
@@ -248,48 +244,18 @@ async function restorationUpload(
   )
     failure('Envio expirado, já utilizado ou incompatível.', 409);
   if (upload.hash !== hash) failure('O SHA-256 não corresponde ao PDF original registrado.');
-  const [history, document, stored] = await Promise.all([
-    ctx.db
-      .query('histories')
-      .withIndex('by_storageId', (q) => q.eq('storageId', upload.storageId))
-      .first(),
+  const [document, stored] = await Promise.all([
     ctx.db
       .query('documents')
       .withIndex('by_storageId', (q) => q.eq('storageId', upload.storageId))
       .first(),
     ctx.db.system.get(upload.storageId),
   ]);
-  if (history || document) failure('Arquivo já cadastrado.', 409);
+  if (document) failure('Arquivo já cadastrado.', 409);
   if (!stored) failure('Arquivo validado indisponível.', 409);
   await ctx.db.patch(upload._id, { consumedAt: Date.now() });
   return upload.storageId;
 }
-
-export const restoreHistoryOriginal = internalMutation({
-  args: { id: v.id('histories'), uploadId: v.string() },
-  returns: v.object({ id: v.id('histories'), restored: v.literal(true) }),
-  handler: async (ctx, { id, uploadId }) => {
-    const { user, row: member } = await requireNativeUser(ctx);
-    if (user.role !== 'ADMIN') failure('Acesso exclusivo da administração.', 403);
-    const row = await ctx.db.get(id);
-    if (!row) failure('PDF histórico não encontrado.', 404);
-    if (row.storageId || !row.unavailableFile) failure('O PDF original já está disponível.', 409);
-    const calendar = await ctx.db.get(row.calendarId);
-    if (!calendar || calendar.campusId !== row.campusId)
-      failure('Vínculo histórico inválido.', 409);
-    const storageId = await restorationUpload(ctx, member._id, uploadId, row.hash);
-    await ctx.db.patch(id, { storageId, unavailableFile: undefined });
-    await ctx.db.insert('audit', {
-      at: Date.now(),
-      actorId: user.id,
-      action: 'RESTORE_HISTORY_ORIGINAL',
-      target: { type: 'history', id },
-      calendarId: row.calendarId,
-      campusId: row.campusId,
-    });
-    return { id, restored: true as const };
-  },
-});
 
 export const restoreDocumentOriginal = internalMutation({
   args: { id: v.id('documents'), uploadId: v.string() },

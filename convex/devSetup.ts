@@ -5,8 +5,6 @@ import { environments } from '../config/environments';
 import { campusNames, initialCatalogue } from '../src/institution.ts';
 import { internalMutation } from './_generated/server';
 import { setPassword } from './access/store';
-import { toContent } from './calendars/model';
-import type { DomainState } from './validators';
 import type { MutationCtx } from './_generated/server';
 import type { TableNames } from './_generated/dataModel';
 import schema from './schema';
@@ -102,62 +100,18 @@ export const prepareE2E = internalMutation({
 export const prepareE2ERestoration = internalMutation({
   args: { expectedCloudUrl: v.string(), runId: v.string(), year: v.number(), hash: v.string() },
   returns: v.object({
-    calendarId: v.id('calendars'),
-    historyId: v.id('histories'),
     documentId: v.id('documents'),
   }),
   handler: async (ctx, { expectedCloudUrl, runId, year, hash }) => {
     assertE2EDevelopment(expectedCloudUrl);
     if (!Number.isInteger(year) || year < 7000 || year > 8999 || !/^[a-f0-9]{64}$/.test(hash))
       throw Error('Fixture E2E inválida.');
-    const campusId = await e2eCampus(ctx, runId);
+    await e2eCampus(ctx, runId);
     const source = {
       filename: 'original-e2e.pdf',
       hash,
       unavailableFile: { sourceReference: `e2e:${runId}`, reason: 'not_migrated' as const },
     };
-    const calendarId = await ctx.db.insert('calendars', {
-      campusId,
-      year,
-      modalities: ['integrado'],
-      purpose: 'test',
-      courses: `Restauração E2E ${runId}`,
-      classes: '',
-      shifts: '',
-      version: 1,
-      updatedAt: Date.now(),
-    });
-    const state: DomainState = {
-      schemaVersion: 2,
-      campus: `Testes E2E ${runId}`,
-      year,
-      offer: 'integrado',
-      modalities: ['integrado'],
-      regime: 'anual',
-      weekdays: [],
-      weekEvidence: '',
-      weekConfirmed: false,
-      periods: [],
-      events: [],
-      ignoredHistory: [],
-      assessmentStagesByModality: {},
-    };
-    await ctx.db.insert('calendarContents', {
-      calendarId,
-      state: toContent(state),
-      catalogueRevision: 1,
-      institutionalSnapshot: [],
-      documentSnapshot: [],
-    });
-    const historyId = await ctx.db.insert('histories', {
-      calendarId,
-      campusId,
-      year: year - 1,
-      modalities: ['integrado'],
-      ...source,
-      notes: `Fixture E2E ${runId}`,
-      createdAt: Date.now(),
-    });
     const documentId = await ctx.db.insert('documents', {
       year,
       type: 'referencia',
@@ -168,7 +122,7 @@ export const prepareE2ERestoration = internalMutation({
       version: 1,
       createdAt: Date.now(),
     });
-    return { calendarId, historyId, documentId };
+    return { documentId };
   },
 });
 

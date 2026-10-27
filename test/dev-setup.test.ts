@@ -235,7 +235,7 @@ test('dev setup preserves every partial dataset, including isolated snapshots, A
           weekEvidence: '',
           periods: [],
           events: [],
-          ignoredHistory: [],
+
           assessmentStagesByModality: {},
         },
         at: 1,

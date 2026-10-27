@@ -124,7 +124,6 @@ export function eventFromValues(
   target: {
     id: string;
     base?: CalendarEvent;
-    historicalSource?: CalendarEvent['historicalSource'];
   },
 ): CalendarEvent {
   if (!value.kind) throw new Error('Escolha o efeito na contagem.');
@@ -169,7 +168,6 @@ export function eventFromValues(
     modalities: value.modalities,
     requirementId: value.requirementId || undefined,
     hours: value.hours ? Number(value.hours) : undefined,
-    historicalSource: target.historicalSource,
     deadlineExtensionCause: value.deadlineExtensionCause || undefined,
   };
 }

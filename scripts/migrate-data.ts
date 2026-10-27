@@ -24,6 +24,7 @@ import {
   verifyPlanSnapshot,
 } from '../migration/plan.ts';
 import { createCanonicalPlan } from '../migration/canonical.ts';
+import { createHistoryRetirementPlan } from '../migration/retire-previous-calendars.ts';
 import type { Document, MigrationPlan, Snapshot } from '../migration/types.ts';
 
 export function readSnapshot(path: string): Snapshot {
@@ -244,9 +245,13 @@ async function main(): Promise<void> {
     command = args.shift();
   if (command === 'plan') {
     const snapshot = privatePath(option(args, 'snapshot')!);
-    const plan = args.includes('--canonical')
-      ? createCanonicalPlan(readSnapshot(snapshot), fileDigest(snapshot))
-      : createPlan(readSnapshot(snapshot), fileDigest(snapshot));
+    if (args.includes('--canonical') && args.includes('--retire-previous-calendars'))
+      throw Error('Escolha uma única migração.');
+    const plan = args.includes('--retire-previous-calendars')
+      ? createHistoryRetirementPlan(readSnapshot(snapshot), fileDigest(snapshot))
+      : args.includes('--canonical')
+        ? createCanonicalPlan(readSnapshot(snapshot), fileDigest(snapshot))
+        : createPlan(readSnapshot(snapshot), fileDigest(snapshot));
     save(option(args, 'out')!, plan);
     console.log(
       `Plano ${plan.digest}: ${plan.batches.length} lotes; ${plan.missingFiles.length} arquivos indisponíveis preservados por referência.`,
@@ -310,6 +315,7 @@ async function main(): Promise<void> {
         batch: next,
         totalBatches: plan.batches.length,
         operations: batch.operations,
+        ...(plan.purpose ? { purpose: plan.purpose } : {}),
       };
       const result = JSON.parse(
         cli(
