@@ -12,6 +12,7 @@ import {
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { CalendarEditorProvider, useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import { EventEditorProvider, useEventEditor } from './events/EventEditorProvider.tsx';
+import EventPanel from './events/EventPanel.tsx';
 import { CalendarExportProvider, useCalendarExport } from './export/CalendarExportProvider.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
 import { editorSections } from '../../../src/app-routes.ts';
@@ -337,7 +338,7 @@ function EditorFrame() {
         </Notice>
       </div>
       <BaseUpdateCard />
-      {context && (
+      {context && !eventEditorOpen && (
         <button
           id="resume-event"
           type="button"
@@ -368,6 +369,7 @@ function EditorFrame() {
           <Suspense fallback={<p role="status">Carregando seção…</p>}>
             <Outlet key={formEpoch} />
           </Suspense>
+          <EventPanel key={`panel-${formEpoch}`} />
           <div className="editor-step-footer">
             <div className="editor-footer-leading">
               {previous && (

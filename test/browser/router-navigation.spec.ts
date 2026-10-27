@@ -372,17 +372,19 @@ test('editor sections support direct URLs, reload and Back/Forward without disca
 }) => {
   const origin = new URL(await fixtureServer('editor')).origin;
   const editor = origin + '/calendarios/synthetic-calendar/';
-  await page.goto(editor + 'eventos');
+  await page.goto(editor + 'eventos?aba=eventos');
   await expect(page.locator('#event-list')).toBeVisible();
   await page.reload();
   await expect(page.locator('#event-list')).toBeVisible();
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Evento ainda não aplicado');
+  await page.locator('#close-event-form').click();
   await page.locator('[data-view="periods"]').click();
-  await expect(page).toHaveURL(editor + 'periodos');
+  // Step links keep the query, so returning to step 6 shows the same tab.
+  await expect(page).toHaveURL(editor + 'periodos?aba=eventos');
   await expect(page.locator('#periods')).toBeVisible();
   await page.goBack();
-  await expect(page).toHaveURL(editor + 'eventos');
+  await expect(page).toHaveURL(editor + 'eventos?aba=eventos');
   await expect(page.locator('#event-name')).toHaveValue('Evento ainda não aplicado');
   await page.goForward();
   await expect(page.locator('#periods')).toBeVisible();

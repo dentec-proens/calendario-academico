@@ -8,10 +8,8 @@ import type {} from '../fixtures/editor-client.ts';
 export async function selectEditorSection(page: Page, section: EditorSection) {
   if (section === 'history') {
     await selectEditorSection(page, 'events');
-    const reference = page.locator(`#${calendarReferenceAnchor}`);
-    await reference.waitFor();
-    if ((await reference.getAttribute('open')) === null)
-      await reference.locator(':scope > summary').click();
+    await page.locator('[data-tab="anterior"]').click();
+    await page.locator(`#${calendarReferenceAnchor}`).waitFor();
     return;
   }
   const menu = page.locator('.editor-step-menu');
@@ -40,4 +38,21 @@ export async function savedState(page: Page) {
     state: window.editorTest.record.state,
     saves: window.editorTest.calls.saves,
   }));
+}
+
+/** Show the step 6 tab with the campus events and the Teacher Day. */
+export async function selectCampusEvents(page: Page) {
+  await page.locator('[data-tab="eventos"]').click();
+  await expect(page.locator('#tabpanel-eventos')).toBeVisible();
+}
+
+/** Open an activity in the side panel, listing every activity when the filter hides it. */
+export async function openActivity(page: Page, id: string) {
+  const tab = page.locator('[data-tab="atividades"]');
+  if ((await tab.count()) && (await tab.getAttribute('aria-selected')) !== 'true')
+    await tab.click();
+  const row = page.locator(`[data-activity-open="${id}"]`);
+  if (!(await row.isVisible())) await page.locator('#activity-status').selectOption('all');
+  await row.click();
+  await expect(page.locator('#event-panel')).toBeVisible();
 }

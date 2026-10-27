@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -48,9 +49,25 @@ function useController() {
   const [eventId, setEventId] = useState<string | null>(null);
   const [source, setSource] = useState<CalendarEvent['historicalSource']>();
   const [linkUnlocked, setLinkUnlocked] = useState(false);
+  // What the side panel shows besides the form: an activity to consult or the Teacher Day.
+  const [panel, setPanel] = useState<
+    { kind: 'activity'; requirementId: string } | { kind: 'teacher-day' } | null
+  >(null);
+  // The action that opened the panel receives focus when it closes; actions inside it do not.
+  const rememberOpener = useCallback(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && !active.closest('#event-panel')) opener.current = active;
+  }, []);
+  const view = useCallback(
+    (requirementId: string) => {
+      rememberOpener();
+      setPanel({ kind: 'activity', requirementId });
+    },
+    [rememberOpener],
+  );
   const opener = useRef<HTMLElement | null>(null);
   const [returnFocus, setReturnFocus] = useState<
-    'resume-event' | 'new-event' | 'pending-event-title' | null
+    'resume-event' | 'new-event' | 'pending-event-title' | 'editor-section-title' | null
   >(null);
   const result = useCalendarForm(
     'event',
@@ -96,6 +113,7 @@ function useController() {
     setEventId(null);
     setSource(undefined);
     setLinkUnlocked(false);
+    setPanel(null);
     eventForm.reset(emptyEvent(state.modalities));
     clearDraft();
     session.setFormDirty('event', false);
@@ -152,8 +170,7 @@ function useController() {
     const same = context && JSON.stringify(context) === JSON.stringify(next);
     if (!canOpen(next) && !same) return;
     if (readOnly) return;
-    if (!same && document.activeElement instanceof HTMLElement)
-      opener.current = document.activeElement;
+    if (!same) rememberOpener();
     void navigate({
       ...destination(next, values.requirementId),
       params: { calendarId: record.id },
@@ -166,6 +183,9 @@ function useController() {
     setEventId(id);
     setSource(historicalSource);
     setLinkUnlocked(false);
+    setPanel(
+      next.kind === 'activity' ? { kind: 'activity', requirementId: next.requirementId } : null,
+    );
     setOpen(true);
     return true;
   }
@@ -272,6 +292,7 @@ function useController() {
     setEventId(null);
     setSource(undefined);
     setLinkUnlocked(false);
+    setPanel(null);
     setReturnFocus('new-event');
   }
   async function resume() {
@@ -281,8 +302,11 @@ function useController() {
       search: (previous) => previous,
       hashScrollIntoView: false,
     });
-    if (context?.kind === 'history')
-      document.getElementById(calendarReferenceAnchor)?.setAttribute('open', '');
+    setPanel(
+      context?.kind === 'activity'
+        ? { kind: 'activity', requirementId: context.requirementId }
+        : null,
+    );
     setOpen(true);
     requestAnimationFrame(() => {
       const heading = document.getElementById('event-form-title');
@@ -363,13 +387,29 @@ function useController() {
     resume,
     applyStages,
     changeRequirement,
+    panel,
+    /** Consult an activity in the side panel without opening a form. */
+    view,
+    viewTeacherDay: () => {
+      rememberOpener();
+      setPanel({ kind: 'teacher-day' });
+    },
     close: () => {
       if (result.pending) return;
+      if (!open) {
+        // Closing a panel that is only consulting returns focus once; with none open, nothing.
+        if (panel) {
+          setPanel(null);
+          setReturnFocus('editor-section-title');
+        }
+        return;
+      }
       if (!dirty) {
         discard();
         return;
       }
       setOpen(false);
+      setPanel(null);
       setReturnFocus('resume-event');
     },
     newEvent: () => {

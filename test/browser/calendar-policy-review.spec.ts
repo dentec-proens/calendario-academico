@@ -1,5 +1,5 @@
 import { test, expect } from './test.ts';
-import { selectEditorSection } from './editor-navigation.ts';
+import { openActivity, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
@@ -21,7 +21,8 @@ for (const width of [1440, 390]) {
       return window.publishReviewerCalendar();
     });
     await selectEditorSection(page, 'events');
-    const card = page.locator('[data-activity-row="family-meeting"]');
+    await openActivity(page, 'family-meeting');
+    const card = page.locator('#event-panel .activity-details');
     await expect(card).toContainText('Conferência humana: aguardando revisão atualizada');
     await page.evaluate(() => {
       window.editorTest.record.readiness.humanReview = {
@@ -43,7 +44,8 @@ for (const width of [1440, 390]) {
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toBeVisible();
     await selectEditorSection(page, 'events');
-    const card = page.locator('[data-activity-row="enrolment-0"]');
+    await openActivity(page, 'enrolment-0');
+    const card = page.locator('#event-panel .activity-details');
     await expect(card).toContainText('Técnico integrado: Opcional');
     await expect(card).not.toContainText('Pendente de data e fonte');
     await page.evaluate(() => {

@@ -1,5 +1,5 @@
 import { test, expect } from './test.ts';
-import { selectEditorSection } from './editor-navigation.ts';
+import { openActivity, selectCampusEvents, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
@@ -11,6 +11,7 @@ for (const width of [1440, 390]) {
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
+    await selectCampusEvents(page);
     const add = page.locator('#new-event');
     const notice = page.locator('#pending-event');
 
@@ -63,6 +64,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#event-end')).toHaveValue('2027-04-06');
 
     // The visible action must protect the current new-event context too.
+    await page.locator('#close-event-form').click();
     await add.click();
     await expect(page.locator('#event-name')).toHaveValue('Evento para continuar depois');
     await expect(page.locator('#pending-event-title')).toBeFocused();
@@ -81,6 +83,7 @@ for (const width of [1440, 390]) {
     await page.locator('#event-form button[type="submit"]').click();
     await expect(page.locator('#event-form-title')).toHaveText('Editar evento local');
     await expect(notice).toBeHidden();
+    await page.locator('#close-event-form').click();
     await expect(add).toBeEnabled();
     await add.click();
     await expect(page.locator('#event-form-title')).toHaveText('Novo evento local');
@@ -125,6 +128,7 @@ test('editor separates creation from editing and preserves closed activity/histo
   const submit = () => page.locator('#event-form button[type="submit"]').click();
 
   await selectEditorSection(page, 'events');
+  await selectCampusEvents(page);
   await expect(page.locator('#event-form')).toBeHidden();
   await page.locator('[data-edit-event="local-event"]').click();
   await expect(page.locator('#new-event')).toBeVisible();
@@ -169,6 +173,7 @@ test('editor separates creation from editing and preserves closed activity/histo
   await expect(page.locator('#event-form-title')).toHaveText('Editar evento local');
   await cancel();
 
+  await openActivity(page, 'cultural-week');
   await page.locator('[data-edit-activity-event="activity-event"]').click();
   await page.locator('#event-name').fill('Semana cultural em edição');
   await page.locator('#event-evidence').fill('Fonte da atividade');
@@ -177,13 +182,19 @@ test('editor separates creation from editing and preserves closed activity/histo
   await page.locator('#close-event-form').click();
   await expect(page.locator('#event-form')).toBeHidden();
   await expect(page.locator('#unapplied-status')).toBeVisible();
+  await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await expect(page.locator('#pending-event')).toContainText('Semana cultural em edição');
   expect(await fields()).toEqual(activityDraft);
-  await page.locator('[data-prepare-activity="family-meeting"]').click();
+  // Another activity opens for consultation and offers to resume the pending draft.
+  await openActivity(page, 'family-meeting');
+  await expect(page.locator('#panel-pending-event')).toContainText('Semana cultural em edição');
+  await expect(page.locator('#event-form')).toBeHidden();
   expect(await fields()).toEqual(activityDraft);
+  await page.locator('#close-event-panel').click();
+  await openActivity(page, 'cultural-week');
   await page.locator('[data-edit-activity-event="activity-event"]').click();
-  await expect(page.locator('[data-activity-row="cultural-week"] #event-form')).toBeVisible();
+  await expect(page.locator('#event-panel #event-form')).toBeVisible();
   expect(await fields()).toEqual(activityDraft);
   await submit();
   await page.waitForFunction(() =>
@@ -193,11 +204,12 @@ test('editor separates creation from editing and preserves closed activity/histo
   );
   expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(3);
   await cancel();
-  await page.locator('[data-prepare-activity="family-meeting"]').click();
+  await openActivity(page, 'family-meeting');
   await page.locator('#event-evidence').fill('Preenchimento de atividade nova');
   const newActivityDraft = await fields();
   await page.locator('#close-event-form').click();
-  await page.locator('[data-prepare-activity="family-meeting"]').click();
+  await openActivity(page, 'family-meeting');
+  await page.locator('#panel-resume-event').click();
   expect(await fields()).toEqual(newActivityDraft);
   await cancel();
   expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(3);
@@ -216,30 +228,33 @@ test('editor separates creation from editing and preserves closed activity/histo
   const provenance = await page
     .locator('#historical-event-source')
     .evaluate((node) => node.textContent);
-  await page.locator('#open-history').click();
+  await page.locator('#close-event-form').click();
   await expect(page.locator('#event-form')).toBeHidden();
   await page.locator('#resume-event').click();
-  await expect(page.locator('#calendario-anterior')).toHaveAttribute('open', '');
+  await expect(page.locator('#calendario-anterior')).toBeVisible();
   await expect(page.locator('#event-form-title')).toBeFocused();
   await expect(page.locator('#event-form')).toHaveCount(1);
   expect(await fields()).toEqual(historyDraft);
+  await page.locator('#close-event-form').click();
   await selectEditorSection(page, 'periods');
   await page.locator('#resume-event').click();
-  await expect(page).toHaveURL(/\/eventos#calendario-anterior$/);
-  await expect(page.locator('#calendario-anterior')).toHaveAttribute('open', '');
+  await expect(page).toHaveURL(/\/eventos(\?[^#]*)?#calendario-anterior$/);
+  await expect(page.locator('#calendario-anterior')).toBeVisible();
   await expect(page.locator('#event-form-title')).toBeFocused();
   expect(await fields()).toEqual(historyDraft);
   const savesBeforeClose = await page.evaluate(() => window.editorTest.calls.saves);
   await page.locator('#close-event-form').click();
   await expect(page.locator('#event-form')).toBeHidden();
+  await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await expect(page.locator('#pending-event')).toContainText('Evento histórico conferido');
   expect(await fields()).toEqual(historyDraft);
+  await selectEditorSection(page, 'history');
   await page.locator('#show-existing-history').click();
   await page.locator('[data-history-candidate="1"]').click();
   expect(await fields()).toEqual(historyDraft);
   await page.locator('[data-history-candidate="0"]').click();
-  await expect(page.locator('[data-history-item="0"] #event-form')).toBeVisible();
+  await expect(page.locator('#event-panel #event-form')).toBeVisible();
   expect(await fields()).toEqual(historyDraft);
   await expect(page.locator('#historical-event-source')).toHaveText(provenance);
   await expect(page.locator('#historical-event-source')).toBeVisible();
@@ -262,7 +277,6 @@ test('editor separates creation from editing and preserves closed activity/histo
   expect(saved?.historicalSource?.historyId).toBe('history-a');
   expect(saved?.historicalSource?.page).toBe(1);
   expect(saved?.historicalSource?.candidateKey).toBeTruthy();
-  await selectEditorSection(page, 'events');
   await cancel();
   await selectEditorSection(page, 'history');
   await page.locator('[data-history-candidate="1"]').click();

@@ -594,12 +594,11 @@
 
 .activity-filters {
   display: grid;
-  grid-template-columns: minmax(12rem, 2fr) repeat(3, minmax(9rem, 1fr));
-  gap: 0.75rem;
-  margin-block: 1.25rem;
+  grid-template-columns: minmax(12rem, 2fr) minmax(10rem, 1fr);
+  gap: 0 0.75rem;
+  margin-block: 1rem 0.5rem;
 }
 .activity-filters label,
-.activity-card,
 .activity-record,
 .event-publication,
 .intake-period {
@@ -611,25 +610,212 @@
   width: 100%;
   min-width: 0;
 }
-.activity-group {
-  margin-block: 1rem;
-  border: 1px solid var(--line, #a0aec0);
-  border-radius: 0.5rem;
-  padding: 0.85rem;
+.activity-more-filters {
+  grid-column: 1 / -1;
+  margin-bottom: 0.5rem;
 }
-.activity-group > summary,
-.calendar-records > summary {
+.activity-more-filters > summary {
   cursor: pointer;
-  font-weight: 700;
-  padding-block: 0.5rem;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+  padding-block: 0.25rem;
 }
-.records > .activity-card {
-  display: block;
+.activity-more-filters > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 0.75rem;
+  padding-top: 0.5rem;
 }
-.activity-card h4 {
-  margin-block: 0 0.5rem;
+.events-tabs {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1rem;
 }
-.activity-card-header,
+.events-tabs > [role='tab'] {
+  flex: none;
+  padding: 0.6rem 0.9rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ui-muted);
+  font-weight: 600;
+}
+.events-tabs > [role='tab'][aria-selected='true'] {
+  border-bottom-color: var(--green);
+  color: var(--green);
+}
+.events-tab-count {
+  font-weight: 400;
+}
+.activity-group {
+  margin-block: 1.25rem 0;
+}
+.activity-group > h4 {
+  margin: 0 0 0.25rem;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+.activity-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.activity-rows > li {
+  border-bottom: 1px solid var(--line);
+}
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.6rem 0.5rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ui-text);
+  font-weight: 400;
+  text-align: left;
+}
+.activity-row[aria-current='true'] {
+  background: var(--ui-surface-muted);
+}
+@media (hover: hover) {
+  .activity-row:hover {
+    background: var(--ui-surface-muted);
+  }
+}
+.activity-row-text {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  min-width: 0;
+}
+.activity-row-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.activity-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+.activity-row-chevron {
+  flex: none;
+  color: var(--ui-muted);
+}
+.activity-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ui-border);
+}
+.activity-dot[data-status='complete'] {
+  background: var(--ui-action);
+}
+.activity-dot[data-status='pending'],
+.activity-dot[data-status='partial'],
+.activity-dot[data-status='unconfigured'] {
+  background: var(--ui-warning-border);
+}
+.link-button {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+dialog#event-panel {
+  width: min(560px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0 0 0 auto;
+  padding: 0 20px 24px;
+  overflow-y: auto;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+dialog#event-panel::backdrop {
+  background: #172b2566;
+}
+.event-panel-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 -20px 16px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--ui-surface);
+}
+.event-panel-header h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+.event-panel-header > button {
+  flex: none;
+  display: inline-flex;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 8px;
+}
+#event-panel #event-form {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+.activity-details > .activity-detail {
+  margin-bottom: 0.75rem;
+}
+.activity-records {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+.activity-records > .activity-record {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin: 0;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.activity-summary li {
+  display: grid;
+  gap: 0.25rem;
+}
+.activity-summary progress {
+  width: 100%;
+  height: 8px;
+  accent-color: var(--green);
+}
 .event-activity-header {
   display: flex;
   flex-wrap: wrap;
@@ -637,11 +823,6 @@
   justify-content: space-between;
   gap: 0.5rem 1rem;
 }
-.activity-card-header h4 {
-  flex: 1 1 18rem;
-  min-width: 0;
-}
-.activity-card-header > button,
 .event-activity-header > button {
   flex: none;
 }
@@ -693,9 +874,6 @@
   color: var(--ui-muted);
   font-size: 0.875rem;
   padding-block: 0.25rem;
-}
-#event-list > li > #event-form {
-  grid-column: 1 / -1;
 }
 .event-activity-header p {
   margin: 0;
@@ -773,19 +951,40 @@ fieldset.event-fields {
   padding: 0.5rem;
   margin-block: 0.5rem;
 }
-@media (max-width: 900px) {
-  .activity-filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 @media (max-width: 540px) {
-  .activity-filters {
+  .activity-filters,
+  .activity-more-filters > div {
     grid-template-columns: minmax(0, 1fr);
   }
-  .activity-group {
-    padding: 0.5rem;
+  .activity-row-text {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  .activity-record {
-    padding: 0.5rem;
+  .activity-row-meta {
+    justify-content: flex-start;
+  }
+  .events-tabs {
+    flex-wrap: wrap;
+  }
+  .events-tabs > [role='tab'] {
+    padding: 0.5rem 0.6rem;
+  }
+  .events-tab-count {
+    display: none;
+  }
+  dialog#event-panel {
+    width: 100vw;
+    padding: 0 16px 20px;
+    border-left: 0;
+  }
+  .event-panel-header {
+    margin: 0 -16px 16px;
+    padding: 12px 16px 10px;
+  }
+}
+
+@media print {
+  #calendar-records {
+    display: none;
   }
 }

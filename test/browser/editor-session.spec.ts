@@ -5,6 +5,7 @@ import type {} from '../fixtures/editor-session-client.ts';
 
 async function editAppliedEvent(page: Page, name = 'Evento aplicado sem confirmação') {
   await page.locator('[data-view="events"]').click();
+  await page.locator('[data-tab="eventos"]').click();
   await page.locator('[data-edit-event="local-event"]').click();
   await page.locator('#event-name').fill(name);
   await page.getByRole('button', { name: 'Aplicar alterações do evento', exact: true }).click();
@@ -55,7 +56,9 @@ test('a new login in the same tab protects the editor on its next expiration', a
   await editAppliedEvent(page, 'Alteração da nova sessão de acesso');
   await page.evaluate(() => window.editorSessionTest.expire());
   await expect(page.locator('#editor-session-expired')).toBeVisible();
-  await expect(page.locator('#event-name')).toHaveValue('Alteração da nova sessão de acesso');
+  // The applied change stays in the calendar while the expired session closes the panel.
+  await expect(page.locator('#event-panel')).toBeHidden();
+  await expect(page.locator('#event-list')).toContainText('Alteração da nova sessão de acesso');
 });
 
 test('header logout can be cancelled and waits for an in-flight save before sign-out', async ({
@@ -67,6 +70,8 @@ test('header logout can be cancelled and waits for an in-flight save before sign
   await page.evaluate(() => window.editorSessionTest.holdSaves());
   await editAppliedEvent(page);
   await page.locator('#event-name').fill('Campo não aplicado');
+  // The side panel is modal; Fechar keeps the unapplied field.
+  await page.locator('#close-event-form').click();
   await page.locator('#logout').click();
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toContainText('Os campos ainda não aplicados serão descartados');

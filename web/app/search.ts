@@ -50,13 +50,16 @@ export function applicationSearch(input: Record<string, unknown>) {
     )
       ? { atividadeOferta: String(input.atividadeOferta) }
       : {}),
-    ...(['pending', 'partial', 'complete', 'optional', 'unconfigured'].includes(
+    ...(['all', 'pending', 'partial', 'complete', 'optional', 'unconfigured'].includes(
       String(input.atividadeSituacao),
     )
       ? { atividadeSituacao: String(input.atividadeSituacao) }
       : {}),
     ...(['admission', 'teaching', 'campus', 'other'].includes(String(input.atividadeAssunto))
       ? { atividadeAssunto: String(input.atividadeAssunto) }
+      : {}),
+    ...(input.aba === 'eventos' || input.aba === 'anterior'
+      ? { aba: input.aba === 'eventos' ? ('eventos' as const) : ('anterior' as const) }
       : {}),
     ...(typeof input.atividade === 'string' && /^[a-z0-9:-]{1,100}$/.test(input.atividade)
       ? { atividade: input.atividade }

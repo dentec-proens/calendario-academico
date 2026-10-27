@@ -1,7 +1,12 @@
 import type { FixtureServer } from './fixture-server.ts';
 import type { Page } from '@playwright/test';
 import { test, expect } from './test.ts';
-import { addPeriod, savedState, selectEditorSection } from './editor-navigation.ts';
+import {
+  addPeriod,
+  savedState,
+  selectCampusEvents,
+  selectEditorSection,
+} from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 async function openEditor(page: Page, fixtureServer: FixtureServer) {
@@ -94,7 +99,7 @@ test('assessment settings require apply, generate stages and restore automatic d
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.assessmentStagesByModality))
     .toEqual({ integrado: 4 });
-  await page.locator('[data-prepare-activity="stage-1:integrado"]').click();
+  await page.locator('[data-activity-open="stage-1:integrado"]').click();
   await page.locator('#event-start').fill('2027-03-01');
   await page.locator('#event-evidence').fill('Organização pedagógica aprovada');
   await page.locator('#apply-stage-suggestion').click();
@@ -117,7 +122,8 @@ test('assessment settings require apply, generate stages and restore automatic d
     ['2027-03-15', '2027-03-19'],
     ['2027-03-22', '2027-03-26'],
   ]);
-  await page.locator('[data-activity-row="stage-1:integrado"] [data-edit-activity-event]').click();
+  await page.locator('[data-activity-open="stage-1:integrado"]').click();
+  await page.locator('#event-panel [data-edit-activity-event]').click();
   await page.locator('#event-end').fill('2027-03-04');
   await page.locator('#event-form button[type="submit"]').click();
   await expect
@@ -135,6 +141,7 @@ test('assessment settings require apply, generate stages and restore automatic d
       .filter((event) => event.requirementId?.startsWith('stage-'))
       .every((event) => !event.assessmentAutoStart),
   ).toBe(true);
+  await page.locator('#close-event-form').click();
   await page.locator('#recalculate-stages').click();
   await expect
     .poll(() =>
@@ -384,6 +391,7 @@ test('a selected holiday warns that it will not count as a teaching day', async 
   await addPeriod(page, '2027-04-01', '2027-05-31');
   // The fixture has no Saturday holiday; register one through Activities and dates.
   await selectEditorSection(page, 'events');
+  await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Dia do Trabalho');
   await page.locator('#event-type-holiday').check();
@@ -398,6 +406,7 @@ test('a selected holiday warns that it will not count as a teaching day', async 
       ),
     )
     .toBe(true);
+  await page.locator('#close-event-form').click();
   await selectEditorSection(page, 'days');
   await page.locator('#saturday-dates input[value="2027-05-01"]').check();
   await expect(page.locator('#saturday-impediments')).toContainText('01/05');
@@ -484,6 +493,7 @@ test('multi-day inclusions over a Saturday are registered but edited in Activiti
   await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'events');
+  await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Semana acadêmica');
   // An inclusion recorded as an event combines the two fields freely.
@@ -502,6 +512,7 @@ test('multi-day inclusions over a Saturday are registered but edited in Activiti
       ),
     )
     .toBe(true);
+  await page.locator('#close-event-form').click();
   await selectEditorSection(page, 'days');
   const saturday = page.locator('[data-saturday="2027-03-27"]');
   await expect(saturday).toHaveAttribute('data-status', 'registered');
@@ -550,6 +561,8 @@ test('Teacher Day is applied and restored explicitly and its native date bounds 
 }) => {
   await openEditor(page, fixtureServer);
   await page.locator('[data-view="events"]').click();
+  await selectCampusEvents(page);
+  await page.locator('#open-teacher-day').click();
   await page.locator('#teacher-day-date').fill('2027-10-14');
   expect(await page.evaluate(() => window.editorTest.record.state.teacherDayDate)).toBeUndefined();
   await page.locator('#apply-teacher-day').click();
@@ -579,6 +592,7 @@ test('changing category and activity link in the event form keeps identity, date
 }) => {
   await openEditor(page, fixtureServer);
   await page.locator('[data-view="events"]').click();
+  await selectCampusEvents(page);
   const original = await page.evaluate(() =>
     window.editorTest.record.state.events.find((event) => event.id === 'local-event'),
   );
@@ -586,7 +600,8 @@ test('changing category and activity link in the event form keeps identity, date
   await page.locator('#event-more-options > summary').click();
   await page.locator('#event-category').selectOption('feriado');
   await page.locator('#event-requirement').selectOption('family-meeting');
-  await expect(page.locator('[data-activity-row="family-meeting"] #event-form')).toBeVisible();
+  await expect(page.locator('#event-panel #event-form')).toBeVisible();
+  await expect(page.locator('#event-panel-title')).toContainText('familiares');
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
   await page.locator('#event-form button[type="submit"]').click();
   await expect

@@ -8,8 +8,11 @@ test('canceling an editor exit preserves the route, draft and React document', a
   const origin = new URL(fixture).origin;
   await page.goto(fixture);
   await page.locator('[data-view="events"]').click();
+  await page.locator('[data-tab="eventos"]').click();
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Alteração ainda não aplicada');
+  // Fechar keeps the draft; the side panel is modal while it is open.
+  await page.locator('#close-event-form').click();
   const initial = page.url();
   const documentOrigin = await page.evaluate(() => performance.timeOrigin);
   await page.locator('.portal-back').click();
@@ -32,8 +35,10 @@ test('sections and browser history preserve an unapplied event without an exit p
   const fixture = await fixtureServer('editor');
   await page.goto(fixture);
   await page.locator('[data-view="events"]').click();
+  await page.locator('[data-tab="eventos"]').click();
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Evento conservado entre seções');
+  await page.locator('#close-event-form').click();
   const documentOrigin = await page.evaluate(() => performance.timeOrigin);
   await page.locator('[data-view="periods"]').click();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);

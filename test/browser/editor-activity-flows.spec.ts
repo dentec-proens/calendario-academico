@@ -1,6 +1,11 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './test.ts';
-import { savedState, selectEditorSection } from './editor-navigation.ts';
+import {
+  openActivity,
+  savedState,
+  selectCampusEvents,
+  selectEditorSection,
+} from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 // Data contracts of the step 6 flows: each test pins what is written, not how the form looks.
@@ -20,9 +25,10 @@ test('a new activity record keeps the prepared link, offer, effect and category'
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await selectEditorSection(page, 'events');
-  const card = page.locator('[data-activity-row="family-meeting"]');
-  const title = (await card.locator('h4').textContent())!.trim();
-  await card.locator('[data-prepare-activity="family-meeting"]').click();
+  const title = (await page
+    .locator('[data-activity-row="family-meeting"] .activity-row-name')
+    .textContent())!.trim();
+  await openActivity(page, 'family-meeting');
   await page.locator('#event-start').fill('2027-05-08');
   await page.locator('#event-end').fill('2027-05-08');
   await page.locator('#event-evidence').fill('Ata da reunião sintética');
@@ -70,6 +76,7 @@ test('editing a linked record that changes the count keeps its effect, category 
   const original = await page.evaluate(() =>
     window.editorTest.record.state.events.find((event) => event.id === 'linked-exclusion'),
   );
+  await openActivity(page, 'family-meeting');
   await page.locator('[data-edit-activity-event="linked-exclusion"]').click();
   await expect(page.locator('#event-kind')).toHaveValue('exclude');
   await page.locator('#event-evidence').fill('Portaria sintética retificada');
@@ -93,6 +100,7 @@ test('a free admission notice is registered without an activity link', async ({
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await selectEditorSection(page, 'events');
+  await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Edital local de transferência');
   await chooseNoticeType(page);
@@ -133,9 +141,10 @@ test('activity creation shows the known link as context and keeps it changeable'
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await selectEditorSection(page, 'events');
-  const card = page.locator('[data-activity-row="family-meeting"]');
-  const title = (await card.locator('h4').textContent())!.trim();
-  await card.locator('[data-prepare-activity="family-meeting"]').click();
+  const title = (await page
+    .locator('[data-activity-row="family-meeting"] .activity-row-name')
+    .textContent())!.trim();
+  await openActivity(page, 'family-meeting');
   await expect(page.locator('#event-activity-header')).toContainText('Vinculado a esta atividade');
   await expect(page.locator('#event-activity-header')).not.toContainText(title);
   await expect(page.locator('#event-hours')).toHaveCount(0);
@@ -166,9 +175,9 @@ test('changing the activity link keeps the filled values until it is applied or 
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await selectEditorSection(page, 'events');
   const title = (await page
-    .locator('[data-activity-row="family-meeting"] h4')
+    .locator('[data-activity-row="family-meeting"] .activity-row-name')
     .textContent())!.trim();
-  await page.locator('[data-prepare-activity="family-meeting"]').click();
+  await openActivity(page, 'family-meeting');
   await page.locator('#event-start').fill('2027-06-12');
   await page.locator('#event-end').fill('2027-06-12');
   await page.locator('#event-evidence').fill('Ata de vínculo corrigido');
@@ -176,12 +185,15 @@ test('changing the activity link keeps the filled values until it is applied or 
   await page.keyboard.press('Enter');
   await expect(page.locator('#event-requirement')).toBeFocused();
   await page.locator('#event-requirement').selectOption('alumni-meeting');
-  await expect(page.locator('[data-activity-row="alumni-meeting"] #event-form')).toBeVisible();
+  await expect(page.locator('#event-panel #event-form')).toBeVisible();
+  await expect(page.locator('#event-panel-title')).toContainText('egressos');
   await expect(page.locator('#event-form')).toHaveCount(1);
   await expect(page.locator('#event-start')).toHaveValue('2027-06-12');
   await expect(page.locator('#event-evidence')).toHaveValue('Ata de vínculo corrigido');
 
   await page.locator('#close-event-form').click();
+  await expect(page.locator('#event-panel')).toBeHidden();
+  await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await expect(page.locator('#pending-event')).toBeVisible();
   await page.locator('#resume-pending-event').click();
@@ -203,6 +215,7 @@ test('changing the activity link keeps the filled values until it is applied or 
   expect(linked).toMatchObject({ name: title, start: '2027-06-12', end: '2027-06-12' });
 
   await page.locator('#close-event-form').click();
+  await openActivity(page, 'alumni-meeting');
   await page.locator(`[data-edit-activity-event="${linked!.id}"]`).click();
   await page.locator('#event-requirement').selectOption('');
   await applyEvent(page);
@@ -220,7 +233,7 @@ test('changing the activity link keeps the filled values until it is applied or 
   expect(unlinked).toMatchObject({ ...linked, requirementId: undefined });
 });
 
-test('the free event form opens beside its button with a labelled offer group', async ({
+test('the free event form opens in the side panel with a labelled offer group', async ({
   page,
   fixtureServer,
 }) => {
@@ -236,13 +249,14 @@ test('the free event form opens beside its button with a labelled offer group', 
   });
   // A stage belongs to one offer, so its record shows that offer instead of a choice.
   await selectEditorSection(page, 'assessments');
-  await page.locator('[data-prepare-activity="stage-1:integrado"]').click();
+  await page.locator('[data-activity-open="stage-1:integrado"]').click();
   await expect(page.locator('#event-modalities')).toHaveText(/Técnico integrado/);
   await expect(page.locator('#event-modalities input')).toHaveCount(0);
   await page.locator('#discard-event-form').click();
   await selectEditorSection(page, 'events');
+  await selectCampusEvents(page);
   await page.locator('#new-event').click();
-  await expect(page.locator('#event-creation #event-form')).toBeVisible();
+  await expect(page.locator('#event-panel #event-form')).toBeVisible();
   const offers = page.locator('fieldset#event-modalities');
   await expect(offers.locator(':scope > legend')).toHaveText('Ofertas abrangidas');
   await expect(offers.locator('input')).toHaveCount(2);
@@ -257,6 +271,7 @@ test('a free event asks what it is and the answer sets its effect and category',
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await selectEditorSection(page, 'events');
+  await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await expect(page.locator('#event-type > legend')).toHaveText('O que é este evento?');
   await expect(page.locator('#event-kind')).toBeHidden();
@@ -309,12 +324,13 @@ test('a record with a freely combined effect and category shows both fields when
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'events');
+  await selectCampusEvents(page);
   await page.locator('[data-edit-event="free-combination"]').click();
   await expect(page.locator('#event-type')).toHaveCount(0);
   await expect(page.locator('#event-kind')).toBeVisible();
   await expect(page.locator('#event-kind')).toHaveValue('exclude');
   await expect(page.locator('#event-category')).toHaveValue('formacao');
-  await expect(page.locator('#event-list #event-form')).toBeVisible();
+  await expect(page.locator('#event-panel #event-form')).toBeVisible();
 });
 
 test('answering another type after a notice keeps its draft but writes no notice data', async ({
@@ -323,6 +339,7 @@ test('answering another type after a notice keeps its draft but writes no notice
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await selectEditorSection(page, 'events');
+  await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Recesso após edital');
   await page.locator('#event-type-notice').check();
@@ -371,3 +388,177 @@ for (const width of [1440, 390])
       expect(label!.x + label!.width).toBeLessThanOrEqual(width);
     }
   });
+
+for (const width of [1440, 390])
+  test(`an activity opens in the side panel and closes back to its row at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+    await expect(page.locator('#record-title')).toBeVisible();
+    await selectEditorSection(page, 'events');
+    const row = page.locator('[data-activity-open="family-meeting"]');
+    await row.focus();
+    await page.keyboard.press('Enter');
+    const panel = page.locator('#event-panel');
+    await expect(panel).toBeVisible();
+    await expect(page.locator('#event-panel-title')).toContainText('familiares');
+    await expect(page.locator('#event-form-title')).toBeFocused();
+    await expect(page.locator('#event-form-title')).toBeInViewport({ ratio: 1 });
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeHidden();
+    await expect(row).toBeFocused();
+    await row.click();
+    await page.locator('#close-event-panel').click();
+    await expect(panel).toBeHidden();
+    expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+      .toBe(true);
+  });
+
+test('the list starts with what is left to fill and shows the rest on request', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await selectEditorSection(page, 'events');
+  // The cultural week is complete in the fixture and the integrated enrolment is optional.
+  await expect(page.locator('#activity-status')).toHaveValue('');
+  await expect(page.locator('[data-activity-row="cultural-week"]')).toHaveCount(0);
+  await expect(page.locator('[data-activity-row="enrolment-0"]')).toHaveCount(0);
+  await expect(page.locator('[data-activity-row="family-meeting"]')).toBeVisible();
+  await expect(page.locator('#activity-hidden')).toContainText('não exibidas');
+  await page.locator('#show-all-activities').click();
+  await expect(page).toHaveURL(/atividadeSituacao=all/);
+  await expect(page.locator('[data-activity-row="cultural-week"]')).toBeVisible();
+  await expect(page.locator('[data-activity-row="enrolment-0"]')).toBeVisible();
+  await expect(page.locator('#activity-hidden')).toHaveCount(0);
+});
+
+test('step 6 tabs follow the keyboard and keep their place in the URL', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await selectEditorSection(page, 'events');
+  const activities = page.locator('[data-tab="atividades"]');
+  await expect(activities).toHaveAttribute('aria-selected', 'true');
+  await activities.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('[data-tab="eventos"]')).toBeFocused();
+  await expect(page.locator('#tabpanel-eventos')).toBeVisible();
+  await expect(page).toHaveURL(/aba=eventos/);
+  await page.keyboard.press('End');
+  await expect(page.locator('[data-tab="anterior"]')).toBeFocused();
+  // At the last tab, End keeps the page where it is.
+  const scroll = await page.evaluate(() => scrollY);
+  await page.keyboard.press('End');
+  expect(await page.evaluate(() => scrollY)).toBe(scroll);
+  await expect(page.locator('#calendario-anterior')).toBeVisible();
+  await page.keyboard.press('ArrowRight');
+  await expect(activities).toBeFocused();
+  await expect(page.locator('#tabpanel-atividades')).toBeVisible();
+  await page.reload();
+  await expect(activities).toHaveAttribute('aria-selected', 'true');
+});
+
+test('a reviewer consults activities and records without editing or saving', async ({
+  page,
+  fixtureServer,
+}) => {
+  const fixtureUrl = await fixtureServer('editor-reviewer');
+  await page.goto(new URL('/calendarios/synthetic-calendar/eventos', fixtureUrl).href);
+  await expect(page.locator('#record-title')).toBeVisible();
+  await openActivity(page, 'family-meeting');
+  await expect(page.locator('#event-panel .activity-details')).toBeVisible();
+  await expect(page.locator('#event-form')).toBeHidden();
+  await expect(page.locator('#event-panel [data-prepare-activity]')).toBeDisabled();
+  await page.locator('#close-event-panel').click();
+  await selectEditorSection(page, 'calendar');
+  const records = page.locator('#calendar-record-list');
+  await expect(records).toContainText('Evento local salvo');
+  for (const control of await records.locator('button').all()) await expect(control).toBeDisabled();
+  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
+});
+
+test('a review link to an assessment stage opens it in step 3 and closing clears the link', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await expect(page.locator('#record-title')).toBeVisible();
+  await page.evaluate(() => {
+    const { record } = window.editorTest;
+    record.state.assessmentStagesByModality = { integrado: 2 };
+    record.version++;
+    return window.publishReviewerCalendar();
+  });
+  await selectEditorSection(page, 'issues');
+  await page.locator('a[href*="atividade=stage-1"]').first().click();
+  await expect(page).toHaveURL(/\/avaliacoes\?.*atividade=stage-1/);
+  await expect(page.locator('#event-panel')).toBeVisible();
+  await expect(page.locator('[data-activity-detail="stage-1:integrado"]')).toHaveAttribute(
+    'open',
+    '',
+  );
+  await page.locator('#event-panel [data-prepare-activity="stage-1:integrado"]').click();
+  await page.locator('#close-event-form').click();
+  await expect(page.locator('#event-panel')).toBeHidden();
+  await expect(page).not.toHaveURL(/atividade=/);
+  await selectEditorSection(page, 'periods');
+  await selectEditorSection(page, 'assessments');
+  await expect(page.locator('#event-panel')).toBeHidden();
+});
+
+test('discarding a pending draft from another activity returns focus to that activity', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await selectEditorSection(page, 'events');
+  await openActivity(page, 'family-meeting');
+  await page.locator('#event-evidence').fill('Rascunho que será descartado');
+  await page.locator('#close-event-form').click();
+  const other = page.locator('[data-activity-open="alumni-meeting"]');
+  await other.click();
+  await page.locator('#panel-discard-event').click();
+  await expect(page.locator('#event-panel')).toBeHidden();
+  await expect(other).toBeFocused();
+});
+
+test('the offer filter decides what is left to fill for that offer only', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await expect(page.locator('#record-title')).toBeVisible();
+  await page.evaluate(() => {
+    const { record } = window.editorTest;
+    record.modalities = record.state.modalities = ['integrado', 'graduacao'];
+    record.state.organizationByModality = { integrado: 'anual', graduacao: 'anual' };
+    record.version++;
+    return window.publishReviewerCalendar();
+  });
+  await selectEditorSection(page, 'events');
+  // Women's week is required for the integrated course and optional for undergraduates.
+  await expect(page.locator('[data-activity-row="women-week"]')).toBeVisible();
+  await page.locator('.activity-more-filters > summary').click();
+  await page.locator('#activity-modality').selectOption('graduacao');
+  await expect(page.locator('[data-activity-row="women-week"]')).toHaveCount(0);
+  await page.locator('#activity-modality').selectOption('integrado');
+  await expect(page.locator('[data-activity-row="women-week"]')).toBeVisible();
+});
+
+test('the complete record list stays out of the printed calendar', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await selectEditorSection(page, 'calendar');
+  await expect(page.locator('#calendar-records')).toBeVisible();
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.locator('#calendar-records')).toBeHidden();
+  await expect(page.locator('#months .proens-document')).toBeVisible();
+});

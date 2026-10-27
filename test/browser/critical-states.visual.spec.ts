@@ -60,6 +60,7 @@ test('calendar editor and its event form', async ({ page, fixtureServer }) => {
   await assertNoOverflow(page);
   await expect(page).toHaveScreenshot('calendar-editor.png', { fullPage: true });
   await selectEditorSection(page, 'events');
+  await page.locator('[data-tab="eventos"]').click();
   await page.locator('[data-edit-event="local-event"]').click();
   await expect(page.locator('#event-form')).toBeVisible();
   await assertNoOverflow(page);
@@ -69,14 +70,13 @@ test('calendar editor and its event form', async ({ page, fixtureServer }) => {
     .poll(() =>
       eventHeading.evaluate((element) => {
         const bounds = element.getBoundingClientRect();
-        const feedback = document.querySelector('.editor-feedback')!.getBoundingClientRect();
+        const header = document.querySelector('.event-panel-header')!.getBoundingClientRect();
         const hit = document.elementFromPoint(
           bounds.left + bounds.width / 2,
           bounds.top + bounds.height / 2,
         );
         return (
-          bounds.top >= feedback.bottom &&
-          (hit === element || Boolean(hit && element.contains(hit)))
+          bounds.top >= header.bottom && (hit === element || Boolean(hit && element.contains(hit)))
         );
       }),
     )
@@ -87,6 +87,18 @@ test('calendar editor and its event form', async ({ page, fixtureServer }) => {
   await expect(eventHeading).toBeInViewport({ ratio: 1 });
 });
 
+test('step 6 lists activities and opens one in the side panel', async ({ page, fixtureServer }) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await expect(page.locator('#record-title')).toBeVisible();
+  await selectEditorSection(page, 'events');
+  await expect(page.locator('#activity-checklist')).toBeVisible();
+  await assertNoOverflow(page);
+  await expect(page.locator('#events')).toHaveScreenshot('activity-list.png');
+  await page.locator('[data-activity-open="recognition-0"]').click();
+  await expect(page.locator('#event-form-title')).toBeFocused();
+  await expect(page).toHaveScreenshot('activity-panel.png');
+});
+
 test('event creation explains the pending draft beside the visible action', async ({
   page,
   fixtureServer,
@@ -94,6 +106,7 @@ test('event creation explains the pending draft beside the visible action', asyn
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await expect(page.locator('#record-title')).toBeVisible();
   await selectEditorSection(page, 'events');
+  await page.locator('[data-tab="eventos"]').click();
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Encontro com as famílias');
   await page.locator('#close-event-form').click();

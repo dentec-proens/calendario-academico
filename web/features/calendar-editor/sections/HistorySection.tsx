@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useRouterState } from '@tanstack/react-router';
-import { FileText, ChevronDown } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import {
   calendarReferenceAnchor,
   isCalendarReferenceHash,
@@ -20,49 +20,37 @@ export default function HistorySection() {
   const { record, isAdmin, notify, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const location = useRouterState({ select: (router) => router.location });
-  const reference = useRef<HTMLDetailsElement>(null);
+  const reference = useRef<HTMLElement>(null);
   const previousEntry = useRef<typeof location | null>(null);
   const explicitReference = isCalendarReferenceHash(location.hash);
-  const historicalDraft = editor.context?.kind === 'history';
   useEffect(() => {
     const entered = previousEntry.current !== location;
-    if (!explicitReference && !historicalDraft) {
-      previousEntry.current = location;
+    previousEntry.current = location;
+    // A draft from the previous calendar opens in the side panel, which takes the focus.
+    if (!explicitReference || !entered || (editor.context?.kind === 'history' && editor.open))
       return;
-    }
-    if (reference.current) reference.current.open = true;
-    if (!entered || (!explicitReference && !editor.open)) {
-      previousEntry.current = location;
-      return;
-    }
     const frame = requestAnimationFrame(() => {
-      previousEntry.current = location;
-      const target =
-        historicalDraft && editor.open
-          ? reference.current?.querySelector<HTMLElement>('#event-form-title')
-          : !historicalDraft && !readOnly
-            ? reference.current?.querySelector<HTMLElement>('#history-file')
-            : reference.current?.querySelector<HTMLElement>(':scope > summary');
+      const target = readOnly
+        ? reference.current?.querySelector<HTMLElement>('#open-history')
+        : reference.current?.querySelector<HTMLElement>('#history-file');
       target?.focus({ preventScroll: true });
       scrollIntoView(target, { block: 'start' });
     });
     return () => cancelAnimationFrame(frame);
-  }, [location, explicitReference, historicalDraft, editor.open, readOnly]);
+  }, [location, explicitReference, editor.context, editor.open, readOnly]);
   const analysis = useHistoryAnalysis();
   return (
-    <details id={calendarReferenceAnchor} className="calendar-reference" ref={reference}>
-      <summary id="open-history" data-view="history">
+    <section id={calendarReferenceAnchor} className="calendar-reference" ref={reference}>
+      <div className="calendar-reference-heading">
         <FileText aria-hidden="true" />
-        <span>
-          <strong>Usar calendário anterior</strong>
-          <small>Referência opcional para atividades e datas</small>
-        </span>
+        <h3 id="open-history" tabIndex={-1}>
+          Usar calendário anterior
+        </h3>
         <span className="calendar-reference-optional">Opcional</span>
-        <ChevronDown className="calendar-reference-chevron" aria-hidden="true" />
-      </summary>
+      </div>
       <section id="history">
-        <div className="panel history-area" id="history-area">
-          <h3>PDFs de referência</h3>
+        <div className="history-area" id="history-area">
+          <h4>PDFs de referência</h4>
           <p className="help">
             Consulte o calendário anterior para identificar atividades e datas do campus. Revise
             datas e fontes do ano atual antes de incluir.
@@ -125,6 +113,6 @@ export default function HistorySection() {
           <HistoryCandidates />
         </div>
       </section>
-    </details>
+    </section>
   );
 }

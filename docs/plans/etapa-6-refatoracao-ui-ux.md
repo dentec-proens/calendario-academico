@@ -296,3 +296,47 @@ Não foi adotado `createFormHook`. As duas conversões puras previstas (`activit
 - Uma primeira execução de `pnpm check` falhou em `router-navigation.spec.ts` ("a delayed campus creation…"), fora da etapa 6. A falha ocorreu enquanto o Codex rodava em paralelo; o teste passou 3/3 isolado.
 - `pnpm check` final, sem execução paralela: aprovado, com 75 arquivos e 429 testes Vitest, 160 testes de navegador, lint, tipos e build.
 - `pnpm test:runtime:linux` não foi executado: gerador de PDF, modelo de impressão e dependências do runtime não mudaram.
+
+## 11. Fase 5 — lista em linhas e painel lateral
+
+Proposta aprovada em 27/10/2026, após o uso da versão anterior. O formulário em linha não tinha como ser recolhido pelo topo, e os cartões dentro de grupos criavam três níveis de borda. Esta fase revê a decisão D1: o formulário passa a abrir num painel lateral.
+
+### Decisões
+
+- **Painel lateral único** (`EventPanel`, `<dialog>` modal à direita; tela cheia no mobile) para atividade, evento do campus, calendário anterior, etapas de avaliação e Dia do Professor. Fecha com ✕, Esc e **Fechar**, e devolve o foco à ação de origem. O estado aberto não vai para a URL, porque o rascunho é só em memória.
+- **Linhas em vez de cartões:** indicador de situação, nome, selo e datas. A linha abre o painel: preenchimento direto quando não há registros, ou consulta (situação, fundamento, detalhe por oferta, registros e **Adicionar outro período**) quando há registros, quando o usuário é PARECERISTA ou quando outro rascunho está pendente.
+- **Abas** _Atividades_, _Eventos do campus_ e _Calendário anterior_, no parâmetro `aba`, com navegação por setas, Home e End. Os painéis das abas continuam montados, o que preserva campos como o arquivo PDF escolhido.
+- **"A preencher" como filtro padrão** (pendente, parcial ou aplicação a confirmar, além de atividades com problema), com a contagem das ocultas e **Mostrar todas** (`atividadeSituacao=all`). Resumo por oferta com barra de progresso.
+- **Filtros enxutos:** busca e situação visíveis; oferta e assunto em **Mais filtros**.
+- **Grupos como subtítulos**, sem `details` com borda.
+- **Consulta completa** movida para **Visualizar calendário** (`#calendar-records`), com link na aba de eventos.
+- **Dia do Professor** como linha em _Eventos do campus_, editado no painel.
+
+### Registro da implementação
+
+- Componentes novos: `EventPanel`, `ActivityDetails`, `EventRecordDetails` e o hook `useActivityCoverage`. O provider ganhou o estado `panel` (atividade em consulta ou Dia do Professor) e `view`/`viewTeacherDay`, com `view` estável para o efeito dos links de revisão.
+- `useActivitySearch` revalida a busca com `applicationSearch`. O roteador mescla o resultado da validação da raiz com as chaves que ela descarta, e por isso `atividadeOferta=invalid-offer` chegava cru aos componentes. Esse defeito existia antes; o filtro padrão o tornou visível ao esvaziar a lista. Há regressão própria.
+- Problemas de comportamento encontrados pelos testes e corrigidos:
+  - o aviso de rascunho pendente agora aparece dentro do painel;
+  - **Editar** não fica bloqueado quando o rascunho fechado é daquele registro;
+  - remover o registro em edição mantém o painel na atividade;
+  - o título do formulário não rola para baixo do cabeçalho fixo do painel;
+  - a expiração da sessão fecha o painel, que não fica por cima do aviso de recuperação.
+- Testes: os seletores dos cartões e da lista foram trocados por `openActivity`/`selectCampusEvents`. Quando o painel modal está aberto, os passos que antes clicavam fora dele agora o fecham com **Fechar**, conservando o rascunho, e continuam verificando a preservação.
+- Regressões novas: abrir pela linha e fechar com Esc devolvendo o foco (desktop e mobile); filtro padrão e **Mostrar todas**; abas por teclado e na URL; consulta somente leitura do PARECERISTA no painel e em **Visualizar calendário**, sem gravações.
+- Referências visuais: `calendar-editor-event` e `event-pending-draft` atualizadas; `activity-list` e `activity-panel` criadas, desktop e mobile, após inspeção. A inspeção levou a corrigir, no mobile, a seta da linha, a quebra das abas e o hover em telas de toque.
+
+### Revisão do Codex da fase 5
+
+Seis achados, todos corrigidos com regressão:
+
+- **Link de revisão:** `?atividade=` é limpo em qualquer forma de fechar o painel, e não só no ✕ e no Esc. Assim o painel não reabre ao voltar à etapa.
+- **Etapas de avaliação:** os links de revisão voltam a abrir o painel na etapa 3.
+- **Foco ao fechar:** um único mecanismo, o do provider, devolve o foco. Ele registra a origem também nas consultas e ignora ações de dentro do painel.
+- **Impressão:** a lista completa de registros fica fora dela (`@media print`).
+- **Filtro "A preencher":** considera só a oferta selecionada.
+- **Home e End:** não rolam a página nas extremidades das abas.
+
+A suíte completa encontrou mais um defeito, também corrigido: o efeito que fecha o painel na expiração da sessão rodava a cada renderização e, depois do novo login, tirava o foco do título do calendário. Agora ele age só na transição.
+
+Validação: antes da revisão, `pnpm check` completo aprovado (429 Vitest e 167 de navegador, além de lint, tipos e build). Depois das correções, a pedido do usuário, o `pnpm check` completo não foi repetido. Foram executados: suíte de navegador completa (171/171, com referências visuais), tipos da aplicação e dos testes, lint e formatação.

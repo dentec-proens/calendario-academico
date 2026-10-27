@@ -1,5 +1,5 @@
 import { test, expect } from './test.ts';
-import { selectEditorSection } from './editor-navigation.ts';
+import { selectCampusEvents, selectEditorSection } from './editor-navigation.ts';
 
 for (const width of [1440, 390]) {
   test(`editor respects reduced motion and reveals its section heading at ${width}px`, async ({
@@ -28,6 +28,7 @@ for (const width of [1440, 390]) {
       'sticky feedback must not cover the newly selected heading',
     ).toBe(true);
 
+    await selectCampusEvents(page);
     await page.locator('[data-edit-event="local-event"]').click();
     await expect(page.locator('#event-form')).toBeVisible();
     const positions = await page.evaluate(async () => {
@@ -43,7 +44,7 @@ for (const width of [1440, 390]) {
       `reduced motion must not animate scroll: ${positions.join(', ')}`,
     ).toBe(1);
   });
-  test(`editor opens the event form heading below its feedback at ${width}px`, async ({
+  test(`editor opens the event form heading below the panel header at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
@@ -52,14 +53,16 @@ for (const width of [1440, 390]) {
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
+    await selectCampusEvents(page);
     await page.locator('[data-edit-event="local-event"]').click();
     const title = page.locator('#event-form-title');
     await expect(title).toBeInViewport({ ratio: 1 });
+    // The form opens in the side panel; its sticky header must not cover the heading.
     await expect
       .poll(() =>
         title.evaluate((element) => {
           const bounds = element.getBoundingClientRect();
-          const feedback = document.querySelector('.editor-feedback')!.getBoundingClientRect();
+          const feedback = document.querySelector('.event-panel-header')!.getBoundingClientRect();
           const hit = document.elementFromPoint(
             bounds.left + bounds.width / 2,
             bounds.top + bounds.height / 2,
@@ -81,6 +84,7 @@ for (const width of [1440, 390]) {
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
+    await selectCampusEvents(page);
     await page.locator('[data-edit-event="local-event"]').click();
     const originalHeight = await page
       .locator('.editor-feedback')
@@ -97,6 +101,7 @@ for (const width of [1440, 390]) {
           .evaluate((element) => element.getBoundingClientRect().height),
       )
       .toBeGreaterThan(originalHeight);
+    await page.locator('#close-event-form').click();
     await selectEditorSection(page, 'periods');
     await expect(page.locator('#editor-section-title')).toHaveText('Períodos letivos');
     await expect
@@ -152,6 +157,7 @@ for (const width of [1440, 390]) {
       )
       .toBe(true);
     await selectEditorSection(page, 'events');
+    await selectCampusEvents(page);
     const opener = page.locator('[data-edit-event="local-event"]');
     await opener.click();
     await page.locator('#event-name').fill('Rascunho para continuar depois');
@@ -200,9 +206,9 @@ for (const width of [1440, 390]) {
       .toBe(true);
     await selectEditorSection(page, 'history');
     await expect(page.locator('#history-file')).toBeVisible();
-    // The reference is now an optional disclosure. Opening it keeps focus on
-    // its summary; keyboard users reach the PDF input after the existing file actions.
-    await expect(page.locator('#open-history')).toBeFocused();
+    // Choosing the tab keeps focus on it; keyboard users reach the PDF input after the
+    // existing file actions.
+    await expect(page.locator('[data-tab="anterior"]')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Consultar PDF original' })).toBeFocused();
     await page.keyboard.press('Tab');

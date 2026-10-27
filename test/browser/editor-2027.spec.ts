@@ -1,5 +1,5 @@
 import { test, expect } from './test.ts';
-import { selectEditorSection } from './editor-navigation.ts';
+import { openActivity, selectCampusEvents, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
@@ -11,6 +11,7 @@ for (const width of [1440, 390]) {
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
+    await page.locator('#activity-status').selectOption('all');
     await expect
       .poll(() =>
         page
@@ -23,16 +24,20 @@ for (const width of [1440, 390]) {
           }),
       )
       .toBe(1);
+    await selectCampusEvents(page);
     await page.locator('#new-event').click();
     await page.locator('#event-record-type').selectOption('prior-reference');
     await page.locator('#event-name').fill('Edital anterior sintético');
     await page.locator('#event-start').fill('2026-12-01');
     await page.locator('#event-end').fill('2026-12-02');
     await page.locator('#event-evidence').fill('Documento sintético de publicação');
+    await page.locator('#close-event-form').click();
+    await page.locator('[data-tab="atividades"]').click();
     await page.locator('#activity-search').fill('sem resultado sintético');
-    await expect(page.locator('#event-name')).toHaveValue('Edital anterior sintético');
     await expect(page.locator('#activity-empty')).toBeVisible();
     await expect(page).toHaveURL(/atividadeBusca=sem/);
+    await page.locator('#resume-event').click();
+    await expect(page.locator('#event-name')).toHaveValue('Edital anterior sintético');
     await page.locator('#event-form button[type="submit"]').click();
     await expect
       .poll(() =>
@@ -75,7 +80,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'events');
-  await page.locator('[data-prepare-activity="admission-notice-0"]').click();
+  await openActivity(page, 'admission-notice-0');
   await page.locator('#event-record-type').selectOption('prior-reference');
   await page.locator('#event-publication-status').selectOption('published');
   await expect(page.locator('#event-admission-year')).toHaveValue('2027');
@@ -98,7 +103,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
     'Planejamento completo',
   );
   await page.locator('#close-event-form').click();
-  await page.locator('[data-prepare-activity="regular-admission-notice"]').click();
+  await openActivity(page, 'regular-admission-notice');
   await expect(page.locator('#event-admission-year')).toHaveValue('2028');
   await page.locator('#event-publication-status').selectOption('published');
   await page.locator('#event-start').fill('2027-12-01');
@@ -117,7 +122,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
       ),
     )
     .toBe('2027-12-01');
-  await expect(page.locator('[data-activity-row="regular-admission-notice"]')).toContainText(
+  await expect(page.locator('#event-panel .activity-details')).toContainText(
     /15\/06\/2027|2027-06-15/,
   );
   await page.locator('#close-event-form').click();
@@ -165,7 +170,8 @@ test('coverage stays partial per offer while the second record is edited and rem
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'events');
-  const card = page.locator('[data-activity-row="enrolment-0"]');
+  await openActivity(page, 'enrolment-0');
+  const card = page.locator('#event-panel .activity-details');
   await card.locator('[data-edit-activity-event="veterans-1"]').click();
   await expect(page.locator('#event-name')).toHaveValue('Veteranos graduacao');
   await page.locator('#event-end').fill('2027-02-03');
@@ -206,8 +212,15 @@ test('URL filters validate invalid input and follow browser history without losi
   });
   await expect(page.locator('#activity-modality')).toHaveValue('');
   await expect(page.locator('#activity-status')).toHaveValue('');
+  // Invalid filters fall back to the defaults instead of hiding every activity.
+  await expect(page.locator('.activity-more-filters > summary')).toHaveText('Mais filtros');
+  await expect(page.locator('[data-activity-row]').first()).toBeVisible();
+  await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Rascunho com filtros');
+  await page.locator('#close-event-form').click();
+  await page.locator('[data-tab="atividades"]').click();
+  await page.locator('.activity-more-filters > summary').click();
   await page.locator('#activity-subject').selectOption('campus');
   await page.locator('#activity-status').selectOption('optional');
   await expect(page).toHaveURL(/atividadeSituacao=optional/);
@@ -333,15 +346,16 @@ test('annual integrated and semester undergraduate offers keep independent overl
   ).toBe('no');
   expect(await page.evaluate(() => window.editorTest.record.state.periods.length)).toBe(3);
   await selectEditorSection(page, 'events');
-  await expect(page.locator('[data-activity-row="enrolment-2"]')).toContainText(
-    'Graduação: Obrigatório',
-  );
-  await expect(page.locator('[data-activity-row="registration-2"]')).toContainText(
-    'Graduação: Obrigatório',
-  );
-  await expect(page.locator('[data-activity-row="enrolment-0"]')).toContainText(
-    'Técnico integrado: Opcional',
-  );
+  const details = page.locator('#event-panel .activity-details');
+  for (const [activity, text] of [
+    ['enrolment-2', 'Graduação: Obrigatório'],
+    ['registration-2', 'Graduação: Obrigatório'],
+    ['enrolment-0', 'Técnico integrado: Opcional'],
+  ]) {
+    await openActivity(page, activity);
+    await expect(details).toContainText(text);
+    await page.locator('#close-event-panel').click();
+  }
 });
 
 test('historical reference uses original dates while a new occurrence starts empty and ambiguity stays explicit', async ({

@@ -18,6 +18,7 @@ test('reviewer consults the complete calendar and live changes without editing o
   await expect(page.locator('button#make-definitive')).toBeHidden();
   await expect(page.locator('a.editor-history')).toBeHidden();
   await page.locator('[data-view="events"]').click();
+  await page.locator('[data-tab="eventos"]').click();
   await expect(page.locator('#event-list')).toBeVisible();
   await expect(page.locator('#event-list')).toContainText(/Evento local salvo/);
   await expect(page.locator('button#new-event')).toBeDisabled();

@@ -24,6 +24,11 @@ export default function EventEditor() {
   useEffect(() => {
     if (!editor.open) return;
     const frame = requestAnimationFrame(() => {
+      // Inside the side panel, keep the heading clear of the panel's sticky header.
+      const panel = heading.current?.closest('dialog');
+      const header = panel?.querySelector('.event-panel-header');
+      if (panel && header)
+        panel.style.scrollPaddingTop = `${header.getBoundingClientRect().height + 8}px`;
       heading.current?.focus({ preventScroll: true });
       scrollIntoView(heading.current, { block: 'start' });
     });
@@ -168,11 +173,6 @@ export default function EventEditor() {
         const group = (event.target as HTMLElement).closest('details');
         if (group && !group.open) group.open = true;
       }}
-      className={
-        editor.context?.kind === 'history' || editor.context?.kind === 'activity'
-          ? 'inline-history-review'
-          : undefined
-      }
     >
       <h3 id="event-form-title" ref={heading} tabIndex={-1}>
         {editor.context?.kind === 'activity'
@@ -206,7 +206,6 @@ export default function EventEditor() {
               {/* The activity title is the card heading right above this form. */}
               <p>
                 <strong>Vinculado a esta atividade</strong>
-                {requirement?.basis && <small>{requirement.basis}</small>}
               </p>
               {!showLink && (
                 <button

@@ -9,7 +9,6 @@ import {
 } from '../../../../src/history-progress.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from '../events/EventEditorProvider.tsx';
-import EventEditor from '../events/EventEditor.tsx';
 import { useHistoryAnalysis } from './useHistoryAnalysis.tsx';
 import { removeEvent } from '../../../../src/calendar-edits/commands.ts';
 
@@ -24,13 +23,8 @@ export default function HistoryCandidates() {
     history ? { id: history.id } : 'skip',
   );
   const historicalContext = editor.context?.kind === 'history' ? editor.context : null;
-  if (!value || !history) return historicalContext ? <EventEditor /> : null;
+  if (!value || !history) return null;
   const { analysis } = value;
-  const draftInAnalysis =
-    historicalContext?.historyId === history.id &&
-    analysis.candidates.some(
-      (candidate) => historyCandidateKey(candidate) === historicalContext.candidateKey,
-    );
   const count = analysis.candidates.filter((candidate) =>
     includedHistoryCandidate(state.events, history.id, candidate, analysis.candidates, {
       analysisId: analysis.analysisId,
@@ -119,6 +113,7 @@ export default function HistoryCandidates() {
             <li
               key={key}
               data-history-item={index}
+              aria-current={editing ? 'true' : undefined}
               className={
                 included.length || (existing && showExisting) ? 'history-included' : undefined
               }
@@ -214,12 +209,10 @@ export default function HistoryCandidates() {
                   </button>
                 ))}
               </div>
-              {editing && <EventEditor />}
             </li>
           );
         })}
       </ul>
-      {historicalContext && !draftInAnalysis && <EventEditor />}
       <details>
         <summary>Consultar todo o texto identificado no PDF</summary>
         <pre id="history-text">
