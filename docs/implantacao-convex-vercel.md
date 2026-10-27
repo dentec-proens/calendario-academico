@@ -36,18 +36,21 @@ Pré-requisitos:
 
 A pasta `.vercel/`, ignorada pelo Git e de acesso restrito ao usuário, guarda o estado local de operação. Não copie seu conteúdo para issues, logs, argumentos de comando ou commits.
 
-- `project.json`: vínculo do diretório ao projeto e à equipe na Vercel (`projectId`, `orgId`). Não é credencial.
-- `cli/auth.json`: sessão da CLI da Vercel criada com `vercel login --global-config .vercel/cli`. O campo `token` pode ser usado como `VERCEL_TOKEN`, mas expira em poucas horas (`expiresAt`). O `refreshToken` permite renovar a sessão.
+- `release.env`: `VERCEL_TOKEN` da release, com permissão `600`. Use um token de acesso dedicado, criado em [Account Settings → Tokens](https://vercel.com/account/tokens) com escopo da equipe `dentec-proens` e do projeto `calendario-academico` e com expiração definida. Se a promoção do domínio for recusada com escopo de projeto, crie o token com a equipe e **All Projects**. O valor começa com `vcp_` e é mostrado uma única vez.
 - `release-smoke.env`: variáveis `DENTEC_RELEASE_SMOKE_*` da conta e do calendário de smoke da release normal.
+- `project.json`: vínculo do diretório ao projeto e à equipe na Vercel (`projectId`, `orgId`). Não é credencial.
+- `cli/auth.json`: sessão da CLI da Vercel, quando criada com `vercel login --global-config .vercel/cli`. Expira em poucas horas; não a use como credencial de release.
 
-As ferramentas de release só leem `VERCEL_TOKEN` e `DENTEC_RELEASE_SMOKE_*` do ambiente; elas não abrem esses arquivos. Para usar a sessão da CLI, renove-a com um comando da própria CLI e passe o token apenas ao comando da release:
+Não guarde o `VERCEL_TOKEN` no `.env.local`. Esse arquivo seleciona o deployment Convex de desenvolvimento, é reescrito por `pnpm dev:setup` e por `vercel env pull`, e carregá-lo inteiro exportaria destinos de desenvolvimento para o processo da release.
+
+As ferramentas de release só leem `VERCEL_TOKEN` e `DENTEC_RELEASE_SMOKE_*` do ambiente; elas não abrem esses arquivos. Carregue somente os arquivos de release no terminal que publica:
 
 ```sh
-npx vercel whoami --global-config .vercel/cli
-VERCEL_TOKEN="$(node -p "require('./.vercel/cli/auth.json').token")" pnpm deploy:production:fast
+set -a; . ./.vercel/release.env; set +a
+pnpm deploy:production:fast
 ```
 
-Se a renovação falhar, repita `npx vercel login --global-config .vercel/cli`. Na release normal, carregue também o smoke com `set -a; . ./.vercel/release-smoke.env; set +a` no mesmo terminal. Prefira um token de acesso dedicado, criado em Account Settings → Tokens da Vercel com escopo da equipe e expiração definida: ele não expira no meio de uma publicação como a sessão da CLI.
+Na release normal, carregue também `set -a; . ./.vercel/release.env; . ./.vercel/release-smoke.env; set +a` antes de `pnpm deploy:production`.
 
 ```sh
 pnpm deploy:production --dry-run
