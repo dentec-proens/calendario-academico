@@ -14,6 +14,10 @@ import ActivityRow from './ActivityRow.tsx';
 // Shown when no status filter is chosen: what still needs dates or a decision.
 const toFill: ActivityStatus[] = ['pending', 'partial', 'unconfigured'];
 
+function searchText(value: string) {
+  return value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR');
+}
+
 export default function ActivityChecklist({ stages = false }: { stages?: boolean }) {
   const { state, readOnly, record } = useCalendarEditor();
   const editor = useEventEditor();
@@ -43,6 +47,7 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
     (row) => row.applicability === 'required' && !stageRequirement(row.requirement.id),
   );
   const situation = search.atividadeSituacao ?? '';
+  const query = searchText(search.atividadeBusca ?? '');
   const candidates = activityChecklist(state).filter((item) => {
     if ((item.variant === 'stage') !== stages) return false;
     if (stages || selected === item.id || search.atividade === item.id) return true;
@@ -52,13 +57,7 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
         (!search.atividadeOferta || row.modality === search.atividadeOferta),
     );
     if (!matches.length) return false;
-    if (
-      search.atividadeBusca &&
-      !`${item.name} ${item.basis ?? ''}`
-        .toLocaleLowerCase()
-        .includes(search.atividadeBusca.toLocaleLowerCase())
-    )
-      return false;
+    if (query && !searchText(`${item.name} ${item.basis ?? ''}`).includes(query)) return false;
     if (search.atividadeAssunto && item.group !== search.atividadeAssunto) return false;
     if (
       situation &&
