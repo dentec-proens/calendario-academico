@@ -45,6 +45,26 @@ export const fastProgress = v.object({
   phase: v.union(v.literal('published'), v.literal('complete')),
   changedAt: v.number(),
 });
+export const contractIdentity = {
+  mode: v.literal('contract'),
+  commit: v.string(),
+  owner: v.string(),
+  candidateId: v.string(),
+  functionSpecHash: v.string(),
+  planDigest: v.string(),
+  sourceDigest: v.string(),
+  schemaDigest: v.string(),
+  rehearsalDigest: v.string(),
+  verificationDigest: v.string(),
+};
+export const contractProgress = v.object({
+  ...contractIdentity,
+  key: v.literal('backend'),
+  previousBackend: v.string(),
+  previousFrontend: v.string(),
+  phase: v.union(v.literal('published'), v.literal('validated'), v.literal('complete')),
+  changedAt: v.number(),
+});
 export const releaseTables = {
   releaseMigrationDefinitions: defineTable({ id: v.string(), definition: migration }).index(
     'by_migrationId',
@@ -61,7 +81,11 @@ export const releaseTables = {
         completedAt: v.number(),
       }),
       v.object({ ...fastIdentity, completedAt: v.number() }),
+      v.object({ ...contractIdentity, completedAt: v.number() }),
     ),
   ).index('by_commit', ['commit']),
-  releaseProgress: defineTable(v.union(safeProgress, fastProgress)).index('by_key', ['key']),
+  releaseProgress: defineTable(v.union(safeProgress, fastProgress, contractProgress)).index(
+    'by_key',
+    ['key'],
+  ),
 };

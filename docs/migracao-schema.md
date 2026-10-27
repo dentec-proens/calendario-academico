@@ -57,7 +57,7 @@ pnpm migrate:data plan --retire-previous-calendars --snapshot backup-dados/origi
 pnpm migrate:data prepare --plan backup-dados/retirada.json --out backup-dados/retirada
 ```
 
-O procedimento de `apply`, `verify` e `finish` é o mesmo descrito acima: projeto temporário sem funções da aplicação, destino explicitamente conferido, backup e ensaio obrigatório antes de produção. Gerar ou preparar o plano não executa a limpeza. A publicação e a execução remota permanecem suspensas até solicitação do usuário.
+O procedimento de `apply`, `verify` e `finish` é o mesmo descrito acima: projeto temporário sem funções da aplicação, destino explicitamente conferido, backup e ensaio obrigatório antes de produção. Gerar ou preparar o plano não executa a limpeza. A publicação e a execução remota exigem solicitação do usuário. Depois do ensaio inicial, o [caminho completo de retirada com manutenção](implantacao-convex-vercel.md#retirada-de-calendários-anteriores-com-manutenção) reconfere o plano congelado antes de executar produção.
 
 O plano remove somente os metadados de procedência dos eventos atuais e dos snapshots, conservando IDs, nomes, datas, fontes textuais, períodos e demais campos. Remove os registros de calendários anteriores, todas as análises extraídas e os bytes dos PDFs exclusivos desse recurso, incluindo tickets e uploads que apontavam para esses bytes. A auditoria permanece: seus alvos antigos passam a referências arquivadas com o calendário/campus original quando disponível.
 
