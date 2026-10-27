@@ -217,6 +217,8 @@ export function prepareProject(plan: MigrationPlan, path: string): void {
     copyFileSync(componentConfig, join(project, 'convex', 'convex.config.ts'));
   const text = `import { defineSchema, defineTable } from 'convex/server';\nimport { v } from 'convex/values';\n// Temporary maintenance schema: application functions are absent.\nexport default defineSchema({\n${tables.map((table) => `  ${JSON.stringify(table)}: defineTable(v.any()),`).join('\n')}\n});\n`;
   writeFileSync(join(project, 'convex', 'schema.ts'), text);
+  copyFileSync(join(root, 'tsconfig.base.json'), join(project, 'tsconfig.base.json'));
+  copyFileSync(join(root, 'convex', 'tsconfig.json'), join(project, 'convex', 'tsconfig.json'));
   copyFileSync(join(root, 'migration', 'engine.ts'), join(project, 'convex', 'migration.ts'));
   copyFileSync(
     join(root, 'migration', '_generated', 'server.ts'),
