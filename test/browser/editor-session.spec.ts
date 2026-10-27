@@ -7,7 +7,6 @@ async function editAppliedEvent(page: Page, name = 'Evento aplicado sem confirma
   await page.locator('[data-view="events"]').click();
   await page.locator('[data-edit-event="local-event"]').click();
   await page.locator('#event-name').fill(name);
-  await page.locator('#event-confirmed').check();
   await page.getByRole('button', { name: 'Aplicar alterações do evento', exact: true }).click();
   await expect(page.locator('#message')).toContainText(name);
 }

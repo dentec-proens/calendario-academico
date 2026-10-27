@@ -88,7 +88,6 @@ for (const width of [1440, 390]) {
     const name =
       'Encontro de ensino, pesquisa e extensão com estudantes, familiares e comunidade do campus — preparação do calendário acadêmico';
     await page.locator('#event-name').fill(name);
-    await page.locator('#event-confirmed').check();
     await page.getByRole('button', { name: 'Aplicar alterações do evento', exact: true }).click();
     await expect(page.locator('#message')).toContainText(name);
     await expect

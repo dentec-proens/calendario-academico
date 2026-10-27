@@ -14,7 +14,7 @@ for (const width of [1440, 390]) {
     await expect
       .poll(() =>
         page
-          .locator('[data-activity-row="enrolment-0"] .activity-coverage strong')
+          .locator('[data-activity-row="enrolment-0"] .activity-status')
           .first()
           .evaluate((element) => {
             const text = document.createRange();
@@ -33,7 +33,6 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#event-name')).toHaveValue('Edital anterior sintético');
     await expect(page.locator('#activity-empty')).toBeVisible();
     await expect(page).toHaveURL(/atividadeBusca=sem/);
-    await page.locator('#event-confirmed').check();
     await page.locator('#event-form button[type="submit"]').click();
     await expect
       .poll(() =>
@@ -84,7 +83,6 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   await page.locator('#event-start').fill('2026-12-01');
   await page.locator('#event-end').fill('2026-12-01');
   await page.locator('#event-evidence').fill('Publicação sintética de transferência');
-  await page.locator('#event-confirmed').check();
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
@@ -108,7 +106,6 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   await page
     .locator('#event-evidence')
     .fill('Publicação sintética em dezembro, sem ajuste documentado');
-  await page.locator('#event-confirmed').check();
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
@@ -132,6 +129,8 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
     .first()
     .click();
   await expect(page).toHaveURL(/atividade=/);
+  const activity = new URL(page.url()).searchParams.get('atividade')!;
+  await expect(page.locator(`[data-activity-detail="${activity}"]`)).toHaveAttribute('open', '');
 });
 
 test('coverage stays partial per offer while the second record is edited and removed explicitly', async ({
@@ -170,7 +169,6 @@ test('coverage stays partial per offer while the second record is edited and rem
   await card.locator('[data-edit-activity-event="veterans-1"]').click();
   await expect(page.locator('#event-name')).toHaveValue('Veteranos graduacao');
   await page.locator('#event-end').fill('2027-02-03');
-  await page.locator('#event-confirmed').check();
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
@@ -361,7 +359,6 @@ test('historical reference uses original dates while a new occurrence starts emp
     'Datas originais preservadas',
   );
   await page.locator('#event-evidence').fill('Fonte documental sintética da ocorrência em 2026');
-  await page.locator('#event-confirmed').check();
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>

@@ -36,6 +36,7 @@ for (const width of [1440, 390]) {
       record.version++;
       return window.publishReviewerCalendar();
     });
+    const before = await page.evaluate(() => window.editorTest.record.state.events[0]);
     await selectEditorSection(page, 'history');
     await page.locator('[data-analyze-history="history-a"]').click();
     const candidate = page.locator('[data-history-item="0"]');
@@ -49,10 +50,16 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#event-form-title')).toBeInViewport({ ratio: 1 });
     await expect(page.locator('#event-start')).toHaveValue('2026-05-01');
     await expect(page.locator('#event-end')).toHaveValue('2026-05-01');
+    // Only provenance is linked; the existing record is shown for consultation.
+    await expect(page.locator('#event-link-only')).toBeVisible();
+    await expect(page.locator('#event-start')).toBeDisabled();
+    await expect(page.locator('#event-evidence')).toBeDisabled();
     expect(
       await page.evaluate(() => window.editorTest.record.state.events[0].historicalSource),
     ).toBeUndefined();
-    await page.locator('#event-confirmed').check();
+    await expect(page.locator('#event-form button[type="submit"]')).toHaveText(
+      'Aplicar vínculo ao registro existente',
+    );
     await page.locator('#event-form button[type="submit"]').click();
     await expect
       .poll(() =>
@@ -61,6 +68,8 @@ for (const width of [1440, 390]) {
       .toBe('analysis-a');
     const events = await page.evaluate(() => window.editorTest.record.state.events);
     expect(events).toHaveLength(1);
+    const { historicalSource: _linked, ...unchanged } = events[0];
+    expect(unchanged).toEqual(before);
     expect(events[0]).toMatchObject({
       id: 'manual-prior',
       name: 'Feriado municipal',

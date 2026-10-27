@@ -161,7 +161,7 @@ textarea {
   background: white;
   color: #172b25;
 }
-input[type='checkbox'] {
+input:is([type='checkbox'], [type='radio']) {
   width: 18px;
   height: 18px;
   accent-color: var(--green);

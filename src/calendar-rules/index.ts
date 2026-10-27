@@ -11,6 +11,7 @@ import { parseDate } from '../calendar.ts';
 import { calendarModalities, appliesTo } from '../modalities.ts';
 import { legacyActivityChecklist } from '../obligations.ts';
 import { activityReviewCriterion } from './review-links.ts';
+import { withActivityMetadata } from '../activity-metadata.ts';
 
 export const rules2027 = 'consup-292-2027-v1';
 export const termLabels: Record<AcademicTerm, string> = {
@@ -273,7 +274,7 @@ export function requirements2027(state: AssessmentSettings): ActivityRequirement
         modalities,
         term: termFromId(old.id),
       });
-  return rows;
+  return rows.map(withActivityMetadata);
 }
 export function applicabilityFor(
   state: AssessmentSettings,

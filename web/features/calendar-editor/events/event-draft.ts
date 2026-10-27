@@ -1,3 +1,10 @@
+import type {
+  ActivityRequirement,
+  AssessmentSettings,
+  CalendarPeriod,
+} from '../../../../src/domain-types.ts';
+import { applicabilityFor } from '../../../../src/calendar-rules/index.ts';
+import { eventCategory } from '../../../../src/categories.ts';
 import type { CalendarEvent, Modality } from '../types.ts';
 
 export type EventContext =
@@ -11,6 +18,35 @@ export type EventContext =
       intent: 'reference' | 'new' | 'link';
       eventId?: string;
     };
+/** Campus events described by their purpose; each answer sets the count effect and category. */
+export const eventTypes = [
+  { id: 'holiday', label: 'Feriado (suspende aulas)', kind: 'exclude', category: 'feriado' },
+  { id: 'recess', label: 'Recesso (suspende aulas)', kind: 'exclude', category: 'recesso' },
+  { id: 'extra-day', label: 'Dia letivo extra ou reposição', kind: 'include', category: 'sabado' },
+  { id: 'campus-event', label: 'Evento ou atividade do campus', kind: 'note', category: 'evento' },
+  { id: 'deadline', label: 'Prazo', kind: 'note', category: 'prazo' },
+  { id: 'notice', label: 'Publicação de edital', kind: 'note', category: 'prazo' },
+] as const;
+export type EventType = (typeof eventTypes)[number]['id'];
+
+/** The answer matching a saved effect and category, or none when they were combined freely. */
+export function eventTypeOf(event: {
+  kind: string;
+  category?: string;
+  admission?: unknown;
+  admissionType?: string;
+}): '' | EventType {
+  const notice = Boolean(event.admission || event.admissionType);
+  return (
+    eventTypes.find(
+      (type) =>
+        type.kind === event.kind &&
+        type.category === event.category &&
+        (type.category !== 'prazo' || (type.id === 'notice') === notice),
+    )?.id ?? ''
+  );
+}
+
 export interface EventValues {
   name: string;
   start: string;
@@ -30,7 +66,8 @@ export interface EventValues {
   requirementId: string;
   modalities: Modality[];
   hours: string;
-  confirmed: boolean;
+  /** Interface answer to "O que é este evento?"; `kind` and `category` hold the record. */
+  eventType: '' | EventType;
   provenanceKey: string;
   historyWarning: string;
 }
@@ -53,7 +90,7 @@ export const emptyEvent = (modalities: Modality[]): EventValues => ({
   requirementId: '',
   modalities,
   hours: '',
-  confirmed: false,
+  eventType: '',
   provenanceKey: '',
   historyWarning: '',
 });
@@ -72,13 +109,128 @@ export function eventValues(event: CalendarEvent, modalities: Modality[]): Event
     adjustedDeadline: event.deadlineAdjustment?.date ?? '',
     adjustmentEvidence: event.deadlineAdjustment?.evidence ?? '',
     deadlineExtensionCause: event.deadlineExtensionCause ?? '',
-    category: event.category || 'institucional',
+    category: eventCategory(event),
     evidence: event.evidence,
     requirementId: event.requirementId || '',
     modalities: event.modalities?.length ? event.modalities : modalities,
     hours: event.hours === undefined ? '' : String(event.hours),
-    confirmed: false,
+    eventType: event.requirementId ? '' : eventTypeOf(event),
     provenanceKey: '',
     historyWarning: '',
+  };
+}
+/**
+ * Notice metadata applies to linked records and to free events answered as a notice. Another
+ * answer keeps it in the draft, so returning to "Publicação de edital" restores it, but not in
+ * the record.
+ */
+export const noticeActive = (value: Pick<EventValues, 'eventType'>) =>
+  !value.eventType || value.eventType === 'notice';
+
+/**
+ * Builds the record written by the form. Editing starts from the saved record, so fields the
+ * form does not show survive, and an absent document intent stays absent. A manual edit ends
+ * the automatic stage distribution.
+ */
+export function eventFromValues(
+  value: EventValues,
+  target: {
+    id: string;
+    base?: CalendarEvent;
+    historicalSource?: CalendarEvent['historicalSource'];
+  },
+): CalendarEvent {
+  if (!value.kind) throw new Error('Escolha o efeito na contagem.');
+  const notice = noticeActive(value);
+  // An unchanged adjustment keeps its institutional review; a new date or source needs another.
+  const adjustment = target.base?.deadlineAdjustment;
+  const { assessmentAutoStart: _automatic, ...kept } =
+    target.base ?? ({} as Partial<CalendarEvent>);
+  return {
+    ...kept,
+    id: target.id,
+    name: value.name,
+    start: value.start,
+    end: value.end,
+    kind: value.kind,
+    recordType:
+      target.base && !target.base.recordType && value.recordType === 'event'
+        ? undefined
+        : value.recordType,
+    publicationStatus: (notice && value.publicationStatus) || undefined,
+    admission:
+      notice && value.admissionType
+        ? {
+            type: value.admissionType,
+            year: Number(value.admissionYear),
+            term: value.admissionTerm,
+            periodId: value.admissionPeriodId || undefined,
+          }
+        : undefined,
+    deadlineAdjustment:
+      notice && (value.adjustedDeadline || value.adjustmentEvidence)
+        ? adjustment?.date === value.adjustedDeadline &&
+          adjustment.evidence === value.adjustmentEvidence
+          ? adjustment
+          : { date: value.adjustedDeadline, evidence: value.adjustmentEvidence, reviewed: false }
+        : undefined,
+    category:
+      target.base && !target.base.category && value.category === eventCategory(target.base)
+        ? undefined
+        : value.category,
+    evidence: value.evidence,
+    modalities: value.modalities,
+    requirementId: value.requirementId || undefined,
+    hours: value.hours ? Number(value.hours) : undefined,
+    historicalSource: target.historicalSource,
+    deadlineExtensionCause: value.deadlineExtensionCause || undefined,
+  };
+}
+
+/** Offers a record of this activity may cover: a stage belongs to exactly one offer. */
+export function recordOffers(state: { modalities: Modality[] }, requirement?: ActivityRequirement) {
+  return requirement?.modality
+    ? state.modalities.filter((modality) => modality === requirement.modality)
+    : state.modalities;
+}
+
+/** Values prepared for a new record of an activity, before any input. */
+export function activityDraft(
+  state: AssessmentSettings & { year: number; modalities: Modality[]; periods: CalendarPeriod[] },
+  requirement: ActivityRequirement,
+): EventValues {
+  const valid = recordOffers(state, requirement);
+  const pertinent = valid.filter(
+    (modality) => applicabilityFor(state, requirement, modality) === 'required',
+  );
+  const modalities = pertinent.length
+    ? pertinent
+    : requirement.modalities?.length && !requirement.modality
+      ? valid.filter((modality) => requirement.modalities?.includes(modality))
+      : valid;
+  const destinationPeriod = state.periods.find(
+    (period) =>
+      period.association?.status === 'defined' &&
+      period.association.term === requirement.term &&
+      modalities.every(
+        (modality) =>
+          period.association?.status === 'defined' &&
+          period.association.modalities.includes(modality),
+      ),
+  );
+  const notice = requirement.variant === 'admission-notice';
+  return {
+    ...emptyEvent(modalities),
+    name: requirement.name,
+    requirementId: requirement.id,
+    kind: 'note',
+    admissionType: requirement.admissionType ?? '',
+    admissionYear: notice
+      ? String(requirement.admissionType === 'regular' ? state.year + 1 : state.year)
+      : '',
+    admissionTerm: requirement.term ?? 'annual',
+    admissionPeriodId: destinationPeriod?.id ?? '',
+    publicationStatus: notice ? 'planned' : '',
+    category: requirement.defaultCategory ?? 'prazo',
   };
 }

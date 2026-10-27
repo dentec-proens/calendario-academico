@@ -600,7 +600,7 @@
   min-width: 0;
   flex: 1 1 200px;
 }
-#history-suggestions .inline-history-review input:not([type='checkbox']),
+#history-suggestions .inline-history-review input:not([type='checkbox'], [type='radio']),
 #history-suggestions .inline-history-review select {
   width: 100%;
   min-width: 0;

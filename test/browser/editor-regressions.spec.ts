@@ -8,32 +8,29 @@ declare global {
   }
 }
 
-test('reverting a dirty metadata field adopts a newer confirmed event value', async ({
+test('an open event form adopts a newer confirmed value only while it has no local changes', async ({
   page,
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="events"]').click();
-  await page.locator('[data-event-metadata="local-event"] > summary').click();
-  const category = page.locator('[data-category-event="local-event"]');
-  await category.selectOption('feriado');
   await page.locator('[data-edit-event="local-event"]').click();
-  await page.locator('#event-category').selectOption('conselho');
-  await page.locator('#event-confirmed').check();
-  await page.locator('#event-form button[type="submit"]').click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          window.editorTest.record.state.events.find((event) => event.id === 'local-event')
-            ?.category,
-      ),
-    )
-    .toBe('conselho');
-  await expect(category).toHaveValue('feriado');
-  await category.selectOption('evento');
+  const category = page.locator('#event-category');
+  await expect(category).toHaveValue('evento');
+  const publishCategory = (value: string) =>
+    page.evaluate((next) => {
+      const { record } = window.editorTest;
+      record.state.events.find((event) => event.id === 'local-event')!.category = next;
+      record.version++;
+      return window.publishReviewerCalendar();
+    }, value);
+  await publishCategory('conselho');
   await expect(category).toHaveValue('conselho');
-  await expect(page.locator('#unapplied-status')).toBeHidden();
+  await category.selectOption('feriado');
+  await expect(page.locator('#unapplied-status')).toBeVisible();
+  await publishCategory('evento');
+  await expect(category).toHaveValue('feriado');
+  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });
 
 test('a blocked save offers an explicit discard path without trapping navigation', async ({
@@ -181,12 +178,9 @@ test('metadata rejects an activity for another modality before applying or savin
     return window.publishReviewerCalendar();
   });
   await page.locator('[data-view="events"]').click();
-  await page.locator('[data-event-metadata="local-event"] > summary').click();
-  const link = page.locator('[data-link-activity="local-event"]');
-  const form = link.locator('xpath=ancestor::form');
-  await link.selectOption('stage-1:graduacao');
-  await form.getByRole('button', { name: 'Aplicar categoria e vínculo' }).click();
-  await expect(form.locator('[role="alert"]')).toContainText('somente a oferta da atividade');
+  await page.locator('[data-edit-event="local-event"]').click();
+  // Stages belong to step 3; a campus event cannot be bound to another offer's stage here.
+  await expect(page.locator('#event-requirement option[value="stage-1:graduacao"]')).toHaveCount(0);
   expect(
     await page.evaluate(
       () =>
@@ -213,11 +207,10 @@ test('removing a historical exclusion recalculates the teaching-day target', asy
   await selectEditorSection(page, 'history');
   await page.locator('[data-analyze-history="history-a"]').click();
   await page.locator('[data-history-candidate="0"]').click();
-  await page.locator('#event-kind').selectOption('exclude');
+  await page.locator('#event-type-holiday').check();
   await page.locator('#event-start').fill('2027-03-03');
   await page.locator('#event-end').fill('2027-03-03');
   await page.locator('#event-evidence').fill('Lei municipal vigente');
-  await page.locator('#event-confirmed').check();
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0].end))
@@ -233,17 +226,19 @@ test('removing a historical exclusion recalculates the teaching-day target', asy
   ).toBe(false);
 });
 
-test('event removal clears its metadata draft and grouped teacher vacations', async ({
+test('event removal clears its open draft and grouped teacher vacations', async ({
   page,
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="events"]').click();
-  await page.locator('[data-event-metadata="local-event"] > summary').click();
-  await page.locator('[data-category-event="local-event"]').selectOption('feriado');
+  await page.locator('[data-edit-event="local-event"]').click();
+  await page.locator('#event-more-options > summary').click();
+  await page.locator('#event-category').selectOption('feriado');
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-remove-event="local-event"]').click();
   await expect(page.locator('#unapplied-status')).toBeHidden();
+  await expect(page.locator('#event-form')).toBeHidden();
   await page.locator('[data-view="vacations"]').click();
   await page.locator('#vacation-first-start').fill('2027-01-04');
   await page.locator('#vacation-first-end').fill('2027-01-20');
@@ -301,7 +296,8 @@ test('stage editing and activity changes always reveal the same draft in its des
     return window.publishReviewerCalendar();
   });
   await page.locator('[data-view="events"]').click();
-  await page.locator('[data-edit-event="stage-existing"]').click();
+  await page.locator('#calendar-records > summary').click();
+  await page.locator('[data-open-event="stage-existing"]').click();
   await expect(page).toHaveURL(/\/avaliacoes$/);
   await expect(page.locator('#event-form')).toBeVisible();
   await page.locator('#event-name').fill('Etapa com rascunho');
@@ -312,8 +308,8 @@ test('stage editing and activity changes always reveal the same draft in its des
   await page.locator('#discard-event-form').click();
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Novo preenchimento');
-  await page.locator('#event-requirement').selectOption('stage-2:integrado');
-  await expect(page).toHaveURL(/\/avaliacoes$/);
+  // Assessment stages are linked in step 3; step 6 does not offer them to a new event.
+  await expect(page.locator('#event-requirement option[value^="stage-"]')).toHaveCount(0);
   await page.locator('#event-requirement').selectOption('family-meeting');
   await expect(page).toHaveURL(/\/eventos$/);
   await expect(page.locator('#event-form')).toBeVisible();

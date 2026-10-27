@@ -84,7 +84,11 @@ As análises são versionadas e preservadas. Reanalisar um original disponível 
 
 ## Atividades, editais e referências
 
-A etapa 6 reúne **Ingresso e vida acadêmica**, **Registros e prazos docentes**, **Atividades e semanas do campus** e **Outros eventos e impedimentos**. Busca, oferta, assunto e situação ficam na URL. Os cartões mostram fundamento, aplicabilidade e cobertura por oferta/período; um evento só atende as ofertas explicitamente abrangidas. Havendo várias ocorrências, escolha o registro a editar.
+A etapa 6 tem três blocos. **Atividades do calendário** agrupa as atividades em **Ingresso e vida acadêmica**, **Registros e prazos docentes**, **Atividades e semanas do campus** e **Outros eventos e impedimentos**. Busca, oferta, assunto e situação ficam na URL. Cada cartão mostra a situação do planejamento (pendente, parcial, completo, opcional ou aplicação a confirmar) e o fundamento. **Situação por oferta e conferência** detalha aplicabilidade, cobertura e conferência humana; o detalhe abre sozinho quando as ofertas divergem ou há problema. Um evento só atende as ofertas explicitamente abrangidas. Havendo várias ocorrências, escolha o registro a editar.
+
+**Preencher atividade** abre o formulário dentro do próprio cartão, já vinculado à atividade: informe datas, fonte e, quando houver escolha, as ofertas. Descrição, categoria e efeito vêm preenchidos em **Mais opções**. **Alterar vínculo** permite escolher outra atividade ou deixar o registro sem vínculo; etapas de avaliação são vinculadas na etapa 3. Na edição, os valores gravados são preservados.
+
+**Outros eventos do campus** reúne feriados, recessos, reposições, eventos e prazos sem atividade correspondente, além do Dia do Professor. **Adicionar novo evento** abre o formulário logo abaixo do botão e pergunta **O que é este evento?**; a resposta define o efeito na contagem e a categoria, ajustáveis em **Mais opções**. Para referenciar um fato anterior sem PDF, use **Intenção do registro**. **Consultar todos os registros do calendário** lista, somente para leitura, os registros institucionais e locais com vínculo, efeito, fonte e ofertas.
 
 Para um edital, informe tipo, situação de publicação e destino do ingresso separadamente das datas. **Publicação prevista** pode completar o planejamento após conferência; não comprova execução. **Publicação realizada** conserva data real e fonte. A passagem do tempo não transforma previsão em realização. Referências anteriores são informativas, sem efeito em dias letivos, horas, férias ou etapas atuais.
 
@@ -92,7 +96,7 @@ Exemplos: um edital publicado em dezembro de 2026 para ingresso em 2027 conserva
 
 Um feriado municipal ou recesso decorrente pode identificar expressamente a causa e sua fonte. Para prazos do calendário de referência abrangidos pelo art. 3º, § 2º, a política consulta o primeiro dia letivo subsequente por oferta, sem alterar a data cadastrada do fato. Uma exclusão genérica não comprova essa causa; a extensão não é aplicada automaticamente aos prazos do art. 11.
 
-O painel mantém um formulário ativo. Fechar conserva o rascunho em memória; cancelar e descartar limpa o preenchimento ativo. Aplicar altera o calendário local, e somente a confirmação do servidor comprova a gravação. Filtros de consulta não alteram as ofertas preenchidas.
+O painel mantém um formulário ativo. **Fechar** conserva o rascunho em memória; **Cancelar e descartar** limpa o preenchimento ativo. Aplicar altera o calendário local, e somente a confirmação do servidor comprova a gravação. Filtros de consulta não alteram as ofertas preenchidas.
 
 ## Revisão e saídas
 

@@ -1,3 +1,5 @@
+import type { ActivityGroup, ActivityVariant } from './activity-metadata.ts';
+
 /** Shared contracts for calendar activities and the operational checklist. */
 export type AcademicTerm = 'annual' | 'first' | 'second';
 export type Organization = 'anual' | 'semestral' | 'a-classificar';
@@ -61,6 +63,12 @@ export interface ActivityRequirement {
   applicability?: 'required' | 'optional' | 'unconfigured';
   reviewInstruction?: string;
   admissionType?: 'regular' | 'transfer';
+  /** Checklist subject, filled by the catalogue. */
+  group?: ActivityGroup;
+  /** Category prepared for a new record of this activity. */
+  defaultCategory?: string;
+  /** Form blocks a record of this activity needs. */
+  variant?: ActivityVariant;
 }
 
 /** Structural inputs shared by pure rules, saved historical states and previews. */

@@ -629,6 +629,117 @@
 .activity-card h4 {
   margin-block: 0 0.5rem;
 }
+.activity-card-header,
+.event-activity-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+.activity-card-header h4 {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+.activity-card-header > button,
+.event-activity-header > button {
+  flex: none;
+}
+.event-activity-header {
+  margin-block: 0 1rem;
+}
+.activity-summary {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0;
+  margin-block: 0.75rem 0;
+  list-style: none;
+}
+.activity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  margin-block: 0 0.5rem;
+}
+.activity-meta small {
+  flex-basis: 100%;
+}
+.activity-status {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.activity-status[data-status='complete'] {
+  border-color: var(--ui-success-border);
+  background: var(--ui-action-soft);
+  color: var(--ui-action);
+}
+.activity-status[data-status='pending'],
+.activity-status[data-status='partial'],
+.activity-status[data-status='unconfigured'] {
+  border-color: var(--ui-warning-border);
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+.activity-detail > summary {
+  cursor: pointer;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+  padding-block: 0.25rem;
+}
+#event-list > li > #event-form {
+  grid-column: 1 / -1;
+}
+.event-activity-header p {
+  margin: 0;
+  min-width: 0;
+}
+.event-activity-header small {
+  display: block;
+}
+.event-scope {
+  margin-block: 0 1rem;
+}
+fieldset.event-scope,
+fieldset.event-type {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+fieldset.event-scope > legend,
+fieldset.event-type > legend {
+  font-weight: 700;
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+fieldset.event-type {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0 1rem;
+  margin-block: 0 1rem;
+}
+fieldset.event-scope > label,
+fieldset.event-type > label {
+  margin: 0;
+}
+fieldset.event-fields {
+  display: contents;
+}
+.event-more-options {
+  margin-block: 0 1rem;
+}
+.event-more-options > summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding-block: 0.5rem;
+}
 .activity-coverage {
   display: grid;
   gap: 0.5rem;

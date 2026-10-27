@@ -97,7 +97,6 @@ test('assessment settings require apply, generate stages and restore automatic d
   await page.locator('[data-prepare-activity="stage-1:integrado"]').click();
   await page.locator('#event-start').fill('2027-03-01');
   await page.locator('#event-evidence').fill('Organização pedagógica aprovada');
-  await page.locator('#event-confirmed').check();
   await page.locator('#apply-stage-suggestion').click();
   await expect
     .poll(() =>
@@ -120,7 +119,6 @@ test('assessment settings require apply, generate stages and restore automatic d
   ]);
   await page.locator('[data-activity-row="stage-1:integrado"] [data-edit-activity-event]').click();
   await page.locator('#event-end').fill('2027-03-04');
-  await page.locator('#event-confirmed').check();
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
@@ -388,12 +386,10 @@ test('a selected holiday warns that it will not count as a teaching day', async 
   await selectEditorSection(page, 'events');
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Dia do Trabalho');
-  await page.selectOption('#event-category', 'feriado');
-  await page.selectOption('#event-kind', 'exclude');
+  await page.locator('#event-type-holiday').check();
   await page.locator('#event-start').fill('2027-05-01');
   await page.locator('#event-end').fill('2027-05-01');
   await page.locator('#event-evidence').fill('Calendário de feriados nacionais');
-  await page.locator('#event-confirmed').click();
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
@@ -490,12 +486,14 @@ test('multi-day inclusions over a Saturday are registered but edited in Activiti
   await selectEditorSection(page, 'events');
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Semana acadêmica');
+  // An inclusion recorded as an event combines the two fields freely.
+  await page.locator('#event-type-extra-day').check();
+  await page.locator('#event-more-options > summary').click();
   await page.selectOption('#event-category', 'evento');
-  await page.selectOption('#event-kind', 'include');
+  await expect(page.locator('#event-kind')).toHaveValue('include');
   await page.locator('#event-start').fill('2027-03-22');
   await page.locator('#event-end').fill('2027-03-27');
   await page.locator('#event-evidence').fill('Ata do colegiado nº 2/2027');
-  await page.locator('#event-confirmed').click();
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
@@ -575,7 +573,7 @@ test('Teacher Day is applied and restored explicitly and its native date bounds 
   expect(await savedState(page)).toEqual(before);
 });
 
-test('event metadata commits category and activity together without changing event identity or dates', async ({
+test('changing category and activity link in the event form keeps identity, dates and other fields', async ({
   page,
   fixtureServer,
 }) => {
@@ -584,15 +582,13 @@ test('event metadata commits category and activity together without changing eve
   const original = await page.evaluate(() =>
     window.editorTest.record.state.events.find((event) => event.id === 'local-event'),
   );
-  await page.locator('[data-event-metadata="local-event"] > summary').click();
-  const category = page.locator('[data-category-event="local-event"]');
-  await category.selectOption('feriado');
-  await page.locator('[data-link-activity="local-event"]').selectOption('family-meeting');
+  await page.locator('[data-edit-event="local-event"]').click();
+  await page.locator('#event-more-options > summary').click();
+  await page.locator('#event-category').selectOption('feriado');
+  await page.locator('#event-requirement').selectOption('family-meeting');
+  await expect(page.locator('[data-activity-row="family-meeting"] #event-form')).toBeVisible();
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
-  await category
-    .locator('xpath=ancestor::form')
-    .getByRole('button', { name: 'Aplicar categoria e vínculo' })
-    .click();
+  await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
       page.evaluate(

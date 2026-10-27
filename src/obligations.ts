@@ -2,10 +2,11 @@ import type { AssessmentSettings, ActivityRequirement } from './domain-types.ts'
 import { calendarModalities, modalityLabels } from './modalities.ts';
 import { requirements2027 } from './calendar-rules/index.ts';
 import { activityReviewCriterion } from './calendar-rules/review-links.ts';
+import { isStageRequirementId, withActivityMetadata } from './activity-metadata.ts';
 
 export const assessmentCount = (state: AssessmentSettings, modality: string) =>
   Number(state.assessmentStagesByModality?.[modality]);
-export const stageRequirement = (id: string | undefined) => /^stage-[1-4]:[a-z]+$/.test(id || '');
+export const stageRequirement = isStageRequirementId;
 export const scopedRequirement = (_state: AssessmentSettings, id: string, modality: string) =>
   `${id}:${modality}`;
 
@@ -127,10 +128,12 @@ export function legacyActivityChecklist(state: AssessmentSettings): ActivityRequ
     'Semana Cultural Interescolar — outubro, aberta a estudantes, famílias e comunidade',
     { month: 10 },
   );
-  return rows.map((row) => ({
-    ...row,
-    reviewCriterionId: activityReviewCriterion(state.year, row.id),
-  }));
+  return rows.map((row) =>
+    withActivityMetadata({
+      ...row,
+      reviewCriterionId: activityReviewCriterion(state.year, row.id),
+    }),
+  );
 }
 
 export function activityChecklist(state: AssessmentSettings): ActivityRequirement[] {

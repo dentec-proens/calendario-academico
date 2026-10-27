@@ -8,9 +8,10 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import EventEditor from './EventEditor.tsx';
 import { removeEvent } from '../../../../src/calendar-edits/commands.ts';
-import { activityGroup, activityGroups, civilDate } from './activity-query.ts';
+import { activityGroups, civilDate } from './activity-query.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { Notice } from '../../../components/ui/Notice.tsx';
+import { activityStatus, activityStatusLabels } from '../../../../src/activity-status.ts';
 
 export default function ActivityChecklist({ stages = false }: { stages?: boolean }) {
   const { state, events, institutional, applyCommand, readOnly, record, dirty } =
@@ -39,6 +40,9 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
     const frame = requestAnimationFrame(() => {
       const target = document.getElementById(`activity-${search.atividade}`);
       target?.closest('details')?.setAttribute('open', '');
+      document
+        .querySelector(`[data-activity-detail="${CSS.escape(search.atividade ?? '')}"]`)
+        ?.setAttribute('open', '');
       target?.focus({ preventScroll: true });
       scrollIntoView(target, { block: 'start' });
     });
@@ -47,9 +51,8 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
   const mandatory = coverage.filter(
     (row) => row.applicability === 'required' && !stageRequirement(row.requirement.id),
   );
-  const complete = mandatory.filter((row) => row.coverage === 'complete').length;
   const rows = activityChecklist(state).filter((item) => {
-    if (Boolean(stageRequirement(item.id)) !== stages) return false;
+    if ((item.variant === 'stage') !== stages) return false;
     if (stages || selected === item.id || search.atividade === item.id) return true;
     const matches = coverage.filter(
       (row) =>
@@ -64,7 +67,7 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
         .includes(search.atividadeBusca.toLocaleLowerCase())
     )
       return false;
-    if (search.atividadeAssunto && activityGroup(item.id) !== search.atividadeAssunto) return false;
+    if (search.atividadeAssunto && item.group !== search.atividadeAssunto) return false;
     if (
       search.atividadeSituacao &&
       !matches.some(
@@ -79,64 +82,96 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
   const renderRow = (item: ReturnType<typeof activityChecklist>[number]) => {
     const registered = state.events.filter((event) => event.requirementId === item.id);
     const evidence = coverage.filter((row) => row.requirement.id === item.id);
+    const summary = activityStatus(evidence);
     return (
       <li key={item.id} data-activity-row={item.id} className="activity-card">
         <div>
-          <h4 id={`activity-${item.id}`} tabIndex={-1}>
-            {item.name}
-          </h4>
-          {item.basis && (
-            <small>
-              {item.basis}
-              {item.reason ? ` · ${item.reason}` : ''}
-            </small>
-          )}
-          <ul className="activity-coverage" aria-label="Cobertura por oferta">
-            {evidence.map((row) => (
-              <li key={row.modality}>
-                <strong>{modalityLabels[row.modality]}: </strong>
-                {row.applicability === 'optional'
-                  ? 'Opcional'
-                  : row.applicability === 'unconfigured'
-                    ? 'Escopo a conferir'
-                    : 'Obrigatório'}
-                {' · Planejamento '}
-                {row.coverage === 'complete'
-                  ? 'completo'
-                  : row.coverage === 'partial'
-                    ? 'parcial'
-                    : 'pendente'}
-                {row.events.length
-                  ? ` · ${row.execution === 'planned' ? 'Publicação prevista' : row.execution === 'published' ? 'Publicação realizada com fonte' : 'Execução a conferir'}`
-                  : ''}
-                <small>
-                  Conferência humana:{' '}
-                  {row.humanReview === 'reviewed'
-                    ? 'revisado no conjunto vigente'
-                    : row.humanReview === 'unmapped'
-                      ? 'sem critério normativo vinculado'
-                      : 'aguardando revisão atualizada'}
-                </small>
-                {row.modality === 'posgraduacao' && (
+          <div className="activity-card-header">
+            <h4 id={`activity-${item.id}`} tabIndex={-1}>
+              {item.name}
+            </h4>
+            <button
+              type="button"
+              data-prepare-activity={item.id}
+              disabled={readOnly}
+              onClick={() => editor.prepare(item.id)}
+            >
+              {registered.length ? 'Adicionar outro período' : 'Preencher atividade'}
+            </button>
+          </div>
+          <p className="activity-meta">
+            <span className="activity-status" data-status={summary.status}>
+              {activityStatusLabels[summary.status]}
+            </span>
+            {summary.toConfirm > 0 && (
+              <span className="activity-status" data-status="unconfigured">
+                {summary.toConfirm === 1
+                  ? '1 oferta com aplicação a confirmar'
+                  : `${summary.toConfirm} ofertas com aplicação a confirmar`}
+              </span>
+            )}
+            {item.basis && (
+              <small>
+                {item.basis}
+                {item.reason ? ` · ${item.reason}` : ''}
+              </small>
+            )}
+          </p>
+          <details
+            className="activity-detail"
+            data-activity-detail={item.id}
+            open={summary.diverges || summary.problems || search.atividade === item.id}
+          >
+            <summary>Situação por oferta e conferência</summary>
+            <ul className="activity-coverage" aria-label="Cobertura por oferta">
+              {evidence.map((row) => (
+                <li key={row.modality}>
+                  <strong>{modalityLabels[row.modality]}: </strong>
+                  {row.applicability === 'optional'
+                    ? 'Opcional'
+                    : row.applicability === 'unconfigured'
+                      ? 'Aplicação a confirmar'
+                      : 'Obrigatório'}
+                  {' · Planejamento '}
+                  {row.coverage === 'complete'
+                    ? 'completo'
+                    : row.coverage === 'partial'
+                      ? 'parcial'
+                      : 'pendente'}
+                  {row.events.length
+                    ? ` · ${row.execution === 'planned' ? 'Publicação prevista' : row.execution === 'published' ? 'Publicação realizada com fonte' : 'Execução a conferir'}`
+                    : ''}
                   <small>
-                    Depende de norma própria; não há afirmação automática de conformidade.
+                    Conferência humana:{' '}
+                    {row.humanReview === 'reviewed'
+                      ? 'revisado no conjunto vigente'
+                      : row.humanReview === 'unmapped'
+                        ? 'sem critério normativo vinculado'
+                        : 'aguardando revisão atualizada'}
                   </small>
-                )}
-                {state.year === 2027 &&
-                  row.modality === 'integrado' &&
-                  /^(enrolment|adjustment|withdrawal)-/.test(item.id) && (
-                    <small>Não exigido por este inciso para o integrado; cadastro permitido.</small>
+                  {row.modality === 'posgraduacao' && (
+                    <small>
+                      Depende de norma própria; não há afirmação automática de conformidade.
+                    </small>
                   )}
-                {row.issues.map((issue) => (
-                  <small key={issue}>{issue}</small>
-                ))}
-                {row.warnings.map((warning) => (
-                  <small key={warning}>{warning}</small>
-                ))}
-              </li>
-            ))}
-          </ul>
-          {item.reviewInstruction && <p className="help">{item.reviewInstruction}</p>}
+                  {state.year === 2027 &&
+                    row.modality === 'integrado' &&
+                    /^(enrolment|adjustment|withdrawal)-/.test(item.id) && (
+                      <small>
+                        Não exigido por este inciso para o integrado; cadastro permitido.
+                      </small>
+                    )}
+                  {row.issues.map((issue) => (
+                    <small key={issue}>{issue}</small>
+                  ))}
+                  {row.warnings.map((warning) => (
+                    <small key={warning}>{warning}</small>
+                  ))}
+                </li>
+              ))}
+            </ul>
+            {item.reviewInstruction && <p className="help">{item.reviewInstruction}</p>}
+          </details>
         </div>
         {registered.map((event) => (
           <div key={event.id} className="activity-record">
@@ -193,16 +228,6 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
             </div>
           </div>
         ))}
-        <div className="actions">
-          <button
-            type="button"
-            data-prepare-activity={item.id}
-            disabled={readOnly}
-            onClick={() => editor.prepare(item.id)}
-          >
-            {registered.length ? 'Adicionar outro período/evento' : 'Preencher atividade'}
-          </button>
-        </div>
         {selected === item.id && <EventEditor />}
       </li>
     );
@@ -210,18 +235,7 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
   return (
     <>
       {!stages && (
-        <p id="activity-summary" role="status">
-          Planejamento: {complete} de {mandatory.length} pares obrigatórios de atividade, oferta e
-          período completos. Publicações previstas continuam previstas; fontes e pertinência
-          dependem de revisão humana.
-        </p>
-      )}
-      {!stages && (
-        <ul
-          id="activity-summary-by-modality"
-          className="activity-coverage"
-          aria-label="Resumo do planejamento por oferta"
-        >
+        <ul id="activity-summary" className="activity-summary" role="status">
           {state.modalities.map((modality) => {
             const required = mandatory.filter((row) => row.modality === modality);
             const fulfilled = required.filter((row) => row.coverage === 'complete').length;
@@ -233,9 +247,9 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
             ).length;
             return (
               <li key={modality}>
-                <strong>{modalityLabels[modality]}:</strong> {fulfilled} de {required.length} pares
-                obrigatórios completos{unconfigured ? ` · ${unconfigured} escopos a conferir` : ''}.
-                Opcionais fora do total obrigatório.
+                <strong>{modalityLabels[modality]}:</strong> {fulfilled} de {required.length}{' '}
+                atividades obrigatórias com planejamento completo
+                {unconfigured ? ` · ${unconfigured} com aplicação a confirmar` : ''}.
               </li>
             );
           })}
@@ -253,7 +267,7 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
       ) : (
         <div id="activity-checklist">
           {activityGroups.map(([group, label]) => {
-            const items = rows.filter((item) => activityGroup(item.id) === group);
+            const items = rows.filter((item) => item.group === group);
             return items.length ? (
               <details key={group} className="activity-group" open>
                 <summary>

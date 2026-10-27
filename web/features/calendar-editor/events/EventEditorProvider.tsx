@@ -10,12 +10,20 @@ import { useNavigate } from '@tanstack/react-router';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
 import type { CalendarEvent, History, HistoryAnalysis } from '../types.ts';
-import { emptyEvent, eventValues, type EventContext, type EventValues } from './event-draft.ts';
+import {
+  activityDraft,
+  emptyEvent,
+  eventFromValues,
+  eventTypeOf,
+  eventValues,
+  type EventContext,
+  type EventValues,
+} from './event-draft.ts';
 import { applyEvent, recalculateCalendar } from '../../../../src/calendar-edits/commands.ts';
 import { activityChecklist, stageRequirement } from '../../../../src/obligations.ts';
 import { suggestStages } from '../../../../src/stage-suggestions.ts';
 import { proposedDates } from '../../../../src/history-dates.ts';
-import { applicabilityFor, rulesetVersion } from '../../../../src/calendar-rules/index.ts';
+import { rulesetVersion } from '../../../../src/calendar-rules/index.ts';
 import { historyCandidateKey, historicalOccurrence } from '../../../../src/history-progress.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { calendarReferenceAnchor } from '../../../../src/calendar-reference.ts';
@@ -39,6 +47,7 @@ function useController() {
   const [open, setOpen] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
   const [source, setSource] = useState<CalendarEvent['historicalSource']>();
+  const [linkUnlocked, setLinkUnlocked] = useState(false);
   const opener = useRef<HTMLElement | null>(null);
   const [returnFocus, setReturnFocus] = useState<
     'resume-event' | 'new-event' | 'pending-event-title' | null
@@ -47,42 +56,24 @@ function useController() {
     'event',
     emptyEvent(state.modalities),
     function apply(value) {
-      if (!value.confirmed)
-        throw new Error('Confirme as datas, a fonte e a aplicação à oferta selecionada.');
-      if (!value.kind) throw new Error('Escolha o efeito na contagem.');
       const id = eventId || crypto.randomUUID();
-      const event: CalendarEvent = {
-        id,
-        name: value.name,
-        start: value.start,
-        end: value.end,
-        kind: value.kind,
-        recordType: value.recordType,
-        publicationStatus: value.publicationStatus || undefined,
-        admission: value.admissionType
-          ? {
-              type: value.admissionType,
-              year: Number(value.admissionYear),
-              term: value.admissionTerm,
-              periodId: value.admissionPeriodId || undefined,
-            }
-          : undefined,
-        deadlineAdjustment:
-          value.adjustedDeadline || value.adjustmentEvidence
-            ? { date: value.adjustedDeadline, evidence: value.adjustmentEvidence, reviewed: false }
-            : undefined,
-        category: value.category,
-        evidence: value.evidence,
-        modalities: value.modalities,
-        requirementId: value.requirementId || undefined,
-        hours: value.hours ? Number(value.hours) : undefined,
-        historicalSource: source,
-        deadlineExtensionCause: value.deadlineExtensionCause || undefined,
-      };
+      if (context?.kind === 'history' && context.intent === 'link') {
+        // Linking provenance touches nothing else of the existing record.
+        session.apply((current) => {
+          const saved = current.events.find((event) => event.id === eventId);
+          if (!saved) throw new Error('O evento não existe mais. Reabra o calendário.');
+          return applyEvent(current, { ...saved, historicalSource: source }, institutional, true);
+        });
+        return;
+      }
       session.apply((current) =>
         applyEvent(
           { ...current, rulesetVersion: rulesetVersion(current) },
-          event,
+          eventFromValues(value, {
+            id,
+            base: current.events.find((event) => event.id === eventId),
+            historicalSource: source,
+          }),
           institutional,
           Boolean(eventId),
         ),
@@ -104,6 +95,7 @@ function useController() {
     setOpen(false);
     setEventId(null);
     setSource(undefined);
+    setLinkUnlocked(false);
     eventForm.reset(emptyEvent(state.modalities));
     clearDraft();
     session.setFormDirty('event', false);
@@ -173,6 +165,7 @@ function useController() {
     setContext(next);
     setEventId(id);
     setSource(historicalSource);
+    setLinkUnlocked(false);
     setOpen(true);
     return true;
   }
@@ -191,55 +184,7 @@ function useController() {
   function prepare(requirementId: string) {
     const requirement = activityChecklist(state).find((item) => item.id === requirementId);
     if (!requirement) return;
-    const pertinent = state.modalities.filter(
-      (modality) => applicabilityFor(state, requirement, modality) === 'required',
-    );
-    const modalities = pertinent.length
-      ? pertinent
-      : requirement.modality
-        ? state.modalities.filter((modality) => modality === requirement.modality)
-        : requirement.modalities?.length
-          ? state.modalities.filter((modality) => requirement.modalities?.includes(modality))
-          : state.modalities;
-    const destinationPeriod = state.periods.find(
-      (period) =>
-        period.association?.status === 'defined' &&
-        period.association.term === requirement.term &&
-        modalities.every(
-          (modality) =>
-            period.association?.status === 'defined' &&
-            period.association.modalities.includes(modality),
-        ),
-    );
-    begin(
-      { kind: 'activity', requirementId },
-      {
-        ...emptyEvent(modalities),
-        name: requirement.name,
-        requirementId,
-        kind: 'note',
-        admissionType: requirement.admissionType ?? '',
-        admissionYear: requirementId.startsWith('admission-notice-')
-          ? String(state.year)
-          : requirementId === 'regular-admission-notice'
-            ? String(state.year + 1)
-            : '',
-        admissionTerm: requirement.term ?? 'annual',
-        admissionPeriodId: destinationPeriod?.id ?? '',
-        publicationStatus:
-          requirementId.startsWith('admission-notice-') ||
-          requirementId === 'regular-admission-notice'
-            ? 'planned'
-            : '',
-        category: requirementId.includes('council')
-          ? 'conselho'
-          : stageRequirement(requirementId)
-            ? 'limite'
-            : requirementId === 'cultural-week'
-              ? 'evento'
-              : 'prazo',
-      },
-    );
+    begin({ kind: 'activity', requirementId }, activityDraft(state, requirement));
   }
   function history(
     history: History,
@@ -265,6 +210,8 @@ function useController() {
         name: candidate.name,
         category: candidate.category,
         kind: 'note',
+        eventType:
+          intent === 'reference' ? '' : eventTypeOf({ kind: 'note', category: candidate.category }),
       },
       null,
       {
@@ -324,6 +271,7 @@ function useController() {
     setOpen(false);
     setEventId(null);
     setSource(undefined);
+    setLinkUnlocked(false);
     setReturnFocus('new-event');
   }
   async function resume() {
@@ -362,8 +310,8 @@ function useController() {
   }
   function applyStages() {
     const value = result.form.state.values;
-    if (!value.confirmed || !value.evidence.trim()) {
-      notify('Informe a fonte e confirme as datas antes de aplicar as etapas.', true);
+    if (!value.evidence.trim()) {
+      notify('Informe a fonte antes de aplicar as etapas.', true);
       return;
     }
     try {
@@ -405,6 +353,8 @@ function useController() {
     open,
     eventId,
     source,
+    linkUnlocked,
+    unlockLink: () => setLinkUnlocked(true),
     edit,
     prepare,
     history,
