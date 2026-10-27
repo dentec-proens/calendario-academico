@@ -4,6 +4,7 @@ import type { RequestListener } from 'node:http';
 import { pageDocument } from './app-routes.ts';
 
 const contentTypes: Record<string, string> = {
+  '.json': 'application/json; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -35,6 +36,7 @@ export function staticPortal(directory = resolve('dist/app')): RequestListener {
       if (
         !file.startsWith(root + sep) ||
         !contentType ||
+        (extname(file) === '.json' && path !== '/version.json') ||
         (extname(file) === '.html' && !pageDocument(path))
       ) {
         response.writeHead(404).end();
@@ -43,7 +45,12 @@ export function staticPortal(directory = resolve('dist/app')): RequestListener {
       const bytes = await readFile(file);
       response.writeHead(200, {
         'Content-Type': contentType,
-        'Cache-Control': extname(file) === '.html' ? 'no-store' : 'public, max-age=3600',
+        'Cache-Control':
+          path === '/version.json'
+            ? 'no-store'
+            : extname(file) === '.html'
+              ? 'public, max-age=0, must-revalidate'
+              : 'public, max-age=3600',
         'X-Content-Type-Options': 'nosniff',
         'Referrer-Policy': 'same-origin',
         'X-Frame-Options': 'DENY',

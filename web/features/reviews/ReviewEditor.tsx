@@ -1,5 +1,6 @@
 import { reviewIsCurrent } from '../../../src/calendar-base/index.ts';
 import { useEffect, useRef, useState, type SetStateAction } from 'react';
+import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { reviews } from '../../shared/convex/reviews.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
@@ -25,11 +26,13 @@ export default function ReviewEditor({
   /** Reports an outcome; confirmations are the default tone. */
   onMessage: (message: string, tone?: NoticeTone) => void;
 }) {
+  const [conclusionEditable, setConclusionEditable] = useState(false);
   const [previewData, setPreviewData] = useState<{
     document: ReviewDocument;
     revision: string;
   } | null>(null);
   const [exporting, setExporting] = useState(false);
+  const protection = useFormDrafts()?.protection;
   const exportBusy = useRef(false);
   const active = useRef(true);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -54,6 +57,7 @@ export default function ReviewEditor({
       const updated = await reviews.get(base.calendar.id);
       if (!isCurrent()) return;
       form.reset({ draft: initialDraft(updated) });
+      setConclusionEditable(false);
       clearDraft();
       setPreview(null);
       onMessage('Análise salva.');
@@ -94,15 +98,6 @@ export default function ReviewEditor({
     onMessage('A análise foi atualizada com as alterações recebidas de outra sessão.');
   }, [remoteChanged, dirty, pending, exporting, opened, form, onMessage]);
   useEffect(() => {
-    const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (!dirty && !pending) return;
-      event.preventDefault();
-      event.returnValue = '';
-    };
-    window.addEventListener('beforeunload', beforeUnload);
-    return () => window.removeEventListener('beforeunload', beforeUnload);
-  }, [dirty, pending]);
-  useEffect(() => {
     active.current = true;
     return () => {
       active.current = false;
@@ -112,8 +107,8 @@ export default function ReviewEditor({
     if (preview) scrollIntoView(previewRef.current, { behavior: 'smooth' });
   }, [preview]);
   useEffect(() => {
-    if (draft.conclusionEditable) conclusionRef.current?.focus();
-  }, [draft.conclusionEditable]);
+    if (conclusionEditable) conclusionRef.current?.focus();
+  }, [conclusionEditable]);
 
   function withConclusion(current: ReviewDraft, changes: Partial<ReviewDraft>) {
     const next = { ...current, ...changes, dirty: true };
@@ -153,11 +148,12 @@ export default function ReviewEditor({
     );
   }
   async function exportReview(action: 'preview' | 'copy' | 'html' | 'txt') {
-    if (busy || exportBusy.current) return;
+    if (busy || exportBusy.current || protection?.locked) return;
     if (dirty || !draft.opened.review || remoteChanged) {
       onMessage('Salve a análise antes de visualizar, copiar ou baixar o parecer.', 'warning');
       return;
     }
+    const operation = protection?.begin();
     exportBusy.current = true;
     setExporting(true);
     try {
@@ -193,6 +189,7 @@ export default function ReviewEditor({
     } catch (cause) {
       if (active.current) onMessage(nativeError(cause).message, 'danger');
     } finally {
+      if (operation) protection?.finish(operation);
       exportBusy.current = false;
       if (active.current) setExporting(false);
     }
@@ -215,7 +212,11 @@ export default function ReviewEditor({
         previewRef={previewRef}
         conclusionRef={conclusionRef}
         submit={submit}
-        setDraft={setDraft}
+        conclusionEditable={conclusionEditable}
+        onEditConclusion={() => {
+          setPreview(null);
+          setConclusionEditable(true);
+        }}
         changeField={changeField}
         changeEntry={changeEntry}
         confirmEntry={confirmEntry}

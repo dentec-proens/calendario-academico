@@ -1,3 +1,4 @@
+import { EditorErrorBoundary } from './EditorErrorBoundary.tsx';
 import { Suspense, useEffect, useRef } from 'react';
 import {
   ArrowLeft,
@@ -321,8 +322,8 @@ function EditorFrame() {
                   intent: 'warning',
                   onConfirm: async () => {
                     if (session.getSnapshot().status === 'saving') await session.flush();
-                    session.dispose();
-                    window.location.reload();
+                    drafts?.clearScope(`calendar:${record.id}:`);
+                    session.reopenRemote();
                   },
                 });
               }}
@@ -364,7 +365,9 @@ function EditorFrame() {
           <Suspense fallback={<p role="status">Carregando seção…</p>}>
             <Outlet key={formEpoch} />
           </Suspense>
-          <EventPanel key={`panel-${formEpoch}`} />
+          <EditorErrorBoundary>
+            <EventPanel key={`panel-${formEpoch}`} />
+          </EditorErrorBoundary>
           <div className="editor-step-footer">
             <div className="editor-footer-leading">
               {previous && (
@@ -430,7 +433,9 @@ export default function CalendarEditorLayout({ calendarId }: { calendarId: strin
     <CalendarEditorProvider calendarId={calendarId}>
       <CalendarExportProvider>
         <EventEditorProvider>
-          <EditorFrame />
+          <EditorErrorBoundary>
+            <EditorFrame />
+          </EditorErrorBoundary>
         </EventEditorProvider>
       </CalendarExportProvider>
     </CalendarEditorProvider>

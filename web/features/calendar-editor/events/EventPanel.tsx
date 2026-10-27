@@ -1,3 +1,4 @@
+import { useWorkRisk } from '../../../shared/forms/useWorkRisk.ts';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { PanelDialog, PanelHeader } from '../../../components/ui/Panel.tsx';
@@ -25,6 +26,7 @@ export default function EventPanel() {
   const { editorRecovery } = useAppSession();
   // While the session recovers, its notice must stay reachable; the panel reopens afterwards.
   const open = (editor.open || editor.panel !== null) && !editorRecovery;
+  useWorkRisk('interaction', open);
   const activityId = editor.open
     ? editor.context?.kind === 'activity'
       ? editor.context.requirementId

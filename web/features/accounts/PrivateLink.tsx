@@ -1,3 +1,4 @@
+import { useWorkRisk } from '../../shared/forms/useWorkRisk.ts';
 import { useRef, type ReactNode } from 'react';
 import { Copy, X } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
@@ -19,6 +20,7 @@ export default function PrivateLink({
   onClose: () => void;
   notify: Notify;
 }) {
+  useWorkRisk('access', true, true);
   const inputRef = useRef<HTMLInputElement>(null);
   const { pending, run } = useAction(notify);
   return (

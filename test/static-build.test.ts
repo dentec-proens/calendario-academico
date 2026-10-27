@@ -21,6 +21,8 @@ test(
         [
           fileURLToPath(new URL('../node_modules/vite/bin/vite.js', import.meta.url)),
           'build',
+          // Request build metadata for graph inspection; the deployed runtime does not need it.
+          '--manifest',
           '--outDir',
           output,
           '--emptyOutDir',

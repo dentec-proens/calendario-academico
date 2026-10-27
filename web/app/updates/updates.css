@@ -1,0 +1,9 @@
+.portal-update {
+  margin: 1rem clamp(1rem, 3vw, 2.5rem);
+}
+.portal-update p {
+  margin: 0.5rem 0;
+}
+.portal-update-scope {
+  display: contents;
+}

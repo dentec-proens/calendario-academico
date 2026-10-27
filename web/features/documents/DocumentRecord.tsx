@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { controlledLazy as lazy } from '../../app/controlled-lazy.tsx';
 import { Archive, CheckCircle2, ChevronDown, Ellipsis, Eye, FileText, Upload } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import { institution } from '../../shared/convex/institution.ts';

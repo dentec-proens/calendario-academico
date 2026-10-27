@@ -1,4 +1,4 @@
-import type { RefObject, FormEvent, Dispatch, SetStateAction } from 'react';
+import type { RefObject, FormEvent } from 'react';
 import { ClipboardCopy, Download, ExternalLink, Eye, Pencil, Save } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import { TextField } from '../../components/ui/Field.tsx';
@@ -19,7 +19,8 @@ interface Props {
   previewRef: RefObject<HTMLDivElement | null>;
   conclusionRef: RefObject<HTMLTextAreaElement | null>;
   submit: (event: FormEvent<HTMLFormElement>) => void;
-  setDraft: Dispatch<SetStateAction<ReviewDraft>>;
+  conclusionEditable: boolean;
+  onEditConclusion: () => void;
   changeField: <K extends 'conclusion' | 'processNumber' | 'applicableNorm' | 'acknowledgeStale'>(
     field: K,
     value: ReviewDraft[K],
@@ -38,7 +39,8 @@ export default function ReviewFormView({
   previewRef,
   conclusionRef,
   submit,
-  setDraft,
+  conclusionEditable,
+  onEditConclusion,
   changeField,
   changeEntry,
   confirmEntry,
@@ -189,9 +191,7 @@ export default function ReviewFormView({
           id="edit-conclusion"
           variant="secondary"
           disabled={busy}
-          onClick={() =>
-            setDraft((current) => (current ? { ...current, conclusionEditable: true } : current))
-          }
+          onClick={onEditConclusion}
         >
           <Pencil size={16} aria-hidden="true" /> Editar texto do parecer
         </Button>
@@ -200,7 +200,7 @@ export default function ReviewFormView({
           <textarea
             id="review-conclusion"
             ref={conclusionRef}
-            disabled={!draft.conclusionEditable || busy}
+            disabled={!conclusionEditable || busy}
             maxLength={8000}
             rows={5}
             value={draft.conclusion}

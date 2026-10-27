@@ -52,6 +52,10 @@ export const convex = {
 
 declare global {
   interface Window {
-    routerAuthTest: { acceptedToken: string | null; resetToken: string | null };
+    routerAuthTest: {
+      googleRedirect?: boolean;
+      acceptedToken: string | null;
+      resetToken: string | null;
+    };
   }
 }

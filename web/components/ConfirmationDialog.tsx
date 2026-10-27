@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { AlertTriangle, CheckCircle2, Info, LoaderCircle, Trash2 } from 'lucide-react';
 import {
   getConfirmation,
+  beginConfirmationOperation,
   subscribeConfirmation,
   type ConfirmationRequest,
 } from './confirmation.ts';
@@ -42,6 +43,7 @@ function ConfirmationDialog({ request }: { request: ConfirmationRequest }) {
   async function confirm() {
     if (busy.current) return;
     busy.current = true;
+    const finishOperation = beginConfirmationOperation();
     setPending(true);
     setError('');
     try {
@@ -52,6 +54,7 @@ function ConfirmationDialog({ request }: { request: ConfirmationRequest }) {
         cause instanceof Error ? cause.message : 'Não foi possível concluir. Tente novamente.',
       );
     } finally {
+      finishOperation();
       busy.current = false;
       setPending(false);
     }

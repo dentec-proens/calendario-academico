@@ -16,6 +16,20 @@ Cada seção do editor usa um endereço sob `/calendarios/<id>/`, terminando em 
 
 Na lista de calendários, **Editar** abre a edição. **Criado por** identifica a autoria original e **Última alteração por** identifica quem alterou a versão atual, junto da data e hora. A atribuição vem do histórico de operações do próprio calendário; uploads, pareceres e operações de lixeira não substituem a autoria da última alteração de conteúdo. Quando a evidência não existe para a criação ou para a versão atual, aparece **Autoria não registrada**.
 
+## Atualização do portal
+
+O portal verifica se há uma nova versão publicada. O aviso **Uma nova versão do portal está disponível** permite atualizar quando não há trabalho pendente. Uma aba limpa também pode atualizar ao clicar em outra seção do menu principal. Trocas de etapa do calendário e a saída do editor seguem seu fluxo habitual; salvar e sair não autoriza uma atualização no mesmo clique.
+
+No acesso, a operação do Google não acrescenta uma confirmação de saída. Se você já preencheu campos do acesso local, a proteção desses campos continua ativa ao trocar para Google; escolher ficar na página conserva o preenchimento. Limpe os campos locais se quiser abandoná-los antes de iniciar o outro método de acesso.
+
+Com campos em preenchimento, pareceres não salvos, arquivos selecionados, operações em andamento ou recuperação de acesso, a aba permanece aberta. Use **Voltar ao preenchimento pendente** ou o menu para retornar ao fluxo e aplicar, salvar ou descartar explicitamente seus dados. O botão **Atualizar agora** não envia nem descarta formulários. Filtros de consulta não impedem a atualização. Ativação e recuperação de senha precisam ser concluídas antes de trocar a página.
+
+Se uma tentativa carregar novamente a versão anterior, o aviso orienta uma nova tentativa manual e suspende as trocas automáticas nessa página. **Reabrir calendário atualizado**, quando há dados remotos mais recentes, adota esses dados na sessão atual após a confirmação de descarte dos campos locais; os demais preenchimentos do portal permanecem protegidos.
+
+Durante **Atualizando portal…**, os controles ficam temporariamente bloqueados. Se o carregamento demorar dez segundos, **Cancelar atualização** interrompe a navegação e permite continuar nesta aba. Uma nova tentativa exige outro gesto e nova verificação. Se a navegação falhar e o aviso continuar, use esse cancelamento antes de voltar a editar.
+
+Se uma tela não carregar seus arquivos, **Tentar novamente** usa o mesmo endereço dos arquivos. O editor e os preenchimentos das outras telas permanecem na mesma sessão. Alguns erros de módulo ficam memorizados pelo navegador: se a tentativa não resolver, volte ao trabalho pendente, conclua-o e use a atualização protegida. Manter a página aberta preserva os dados em memória; encerrar o processo, descartar a aba ou perder energia ainda pode perdê-los. Abas abertas antes da primeira publicação deste mecanismo precisam de um primeiro acesso ou recarregamento para recebê-lo.
+
 ## Perfis e criação
 
 ADMIN acessa todos os campi, gerencia contas e base institucional e registra a revisão técnico-pedagógica. CAMPUS consulta a base e cria, altera, exporta, exclui e restaura calendários da unidade autorizada. PARECERISTA consulta os calendários de todos os campi e as referências publicadas, registra revisões e emite pareceres, sem alterar calendários, base institucional ou contas. A autorização é conferida no backend.

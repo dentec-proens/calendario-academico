@@ -1,10 +1,30 @@
+import { WorkProtection } from '../../app/updates/work.ts';
+import { equalValues } from '../../../src/equal.ts';
 import { createContext, useContext, useMemo, type PropsWithChildren } from 'react';
 
 export class FormDrafts {
-  constructor(readonly identity: string) {}
+  constructor(readonly identity: string) {
+    this.protection.register(() => {
+      if (this.operations.size) return { kind: 'operation', loss: true };
+      if (this.editing.size)
+        return [...this.editing.values()].map((href) => ({
+          kind: 'form' as const,
+          loss: true,
+          href,
+        }));
+      return null;
+    });
+  }
 
   private readonly entries = new Map<string, object>();
-  private readonly operations = new Map<string, symbol>();
+  readonly protection = new WorkProtection();
+  private readonly editing = new Map<string, string | undefined>();
+  private readonly operations = new Map<string, { token: symbol; entry: object | undefined }>();
+
+  private publish() {
+    this.listeners.forEach((listener) => listener());
+    this.protection.publish();
+  }
   private readonly listeners = new Set<() => void>();
   private readonly completions = new Set<(key: string, error?: string) => void>();
 
@@ -27,21 +47,28 @@ export class FormDrafts {
   }
 
   begin(key: string) {
-    if (this.operations.has(key)) return null;
+    if (this.protection.locked || this.operations.has(key)) return null;
     const operation = Symbol(key);
-    this.operations.set(key, operation);
-    this.listeners.forEach((listener) => listener());
+    this.operations.set(key, { token: operation, entry: this.entries.get(key) });
+    this.publish();
     return operation;
   }
 
   finish(key: string, operation: symbol, error?: string) {
-    if (this.operations.get(key) !== operation) return;
+    const pending = this.operations.get(key);
+    if (pending?.token !== operation) return;
+    const unchanged = equalValues(draftValues(this.entries.get(key)), draftValues(pending.entry));
     this.operations.delete(key);
-    if (!error) {
+    if (!error && unchanged) {
       this.entries.delete(key);
+      this.editing.delete(key);
     }
-    this.completions.forEach((listener) => listener(key, error));
-    this.listeners.forEach((listener) => listener());
+    if (error || unchanged) this.completions.forEach((listener) => listener(key, error));
+    this.publish();
+  }
+
+  has(key: string) {
+    return this.entries.has(key);
   }
 
   read<T extends object>(key: string, defaults: T): T {
@@ -49,16 +76,26 @@ export class FormDrafts {
     return structuredClone((this.entries.get(key) as T | undefined) ?? defaults);
   }
 
-  write(key: string, value: object) {
-    this.entries.set(key, structuredClone(value));
+  write(key: string, value: object, editing = true, href?: string) {
+    if (!equalValues(this.entries.get(key), value)) this.entries.set(key, structuredClone(value));
+    if (editing) this.editing.set(key, href);
+    else this.editing.delete(key);
+    this.publish();
   }
 
   clear(key: string) {
     this.entries.delete(key);
+    this.editing.delete(key);
+    this.publish();
   }
 
   clearScope(prefix: string) {
-    for (const key of this.entries.keys()) if (key.startsWith(prefix)) this.entries.delete(key);
+    for (const key of this.entries.keys())
+      if (key.startsWith(prefix)) {
+        this.entries.delete(key);
+        this.editing.delete(key);
+      }
+    this.publish();
   }
 }
 
@@ -71,4 +108,10 @@ export function FormDraftProvider({ identity, children }: PropsWithChildren<{ id
 
 export function useFormDrafts() {
   return useContext(DraftContext);
+}
+
+// Field registration/validation metadata may change on unmount without a new edit.
+function draftValues(entry: object | undefined) {
+  if (!entry || !('values' in entry)) return entry;
+  return { values: entry.values, baseline: 'baseline' in entry ? entry.baseline : undefined };
 }

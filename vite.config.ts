@@ -1,3 +1,4 @@
+import { frontendVersion } from './scripts/frontend-version.ts';
 import { defineConfig, loadEnv } from 'vite';
 import type { Plugin } from 'vite';
 import { fileURLToPath } from 'node:url';
@@ -44,7 +45,7 @@ export default defineConfig(({ mode }) => {
     publicDir: false,
     oxc: { jsx: { runtime: 'automatic' } },
     define: { 'import.meta.env.VITE_CONVEX_URL': JSON.stringify(deploymentUrl) },
-    plugins: [applicationPages],
+    plugins: [applicationPages, frontendVersion()],
     server: {
       host: '127.0.0.1',
       port: Number(process.env.PORT || env.PORT || 4183),
@@ -53,7 +54,6 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: fileURLToPath(new URL('./dist/app', import.meta.url)),
       emptyOutDir: true,
-      manifest: true,
       rolldownOptions: { input: fileURLToPath(new URL('index.html', webRoot)) },
     },
   };

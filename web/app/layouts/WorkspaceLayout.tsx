@@ -1,3 +1,4 @@
+import { useUpdateNavigation } from '../updates/UpdateProvider.tsx';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useRouterState } from '@tanstack/react-router';
 import {
@@ -16,6 +17,7 @@ import { useAppSession } from '../session.tsx';
 import { scrollIntoView } from '../../scroll.ts';
 
 export default function WorkspaceLayout() {
+  const updateNavigation = useUpdateNavigation();
   const { info, permissions, status } = useAppSession();
   const location = useRouterState({ select: (state) => state.location });
   const match = useRouterState({ select: (state) => state.matches.at(-1) });
@@ -88,6 +90,7 @@ export default function WorkspaceLayout() {
   function links(items: Array<(typeof navigation)[number] | (typeof administrative)[number]>) {
     return items.map(({ id, to, label, Icon }) => (
       <Link
+        onClick={updateNavigation ?? undefined}
         key={id}
         to={to}
         className={'ui-button ui-button--primary sidebar-link' + (page === id ? ' active' : '')}
@@ -131,7 +134,7 @@ export default function WorkspaceLayout() {
               {links(administrative)}
             </div>
           ) : null}
-          <Link to="/logs" className="sidebar-link">
+          <Link to="/logs" className="sidebar-link" onClick={updateNavigation ?? undefined}>
             <ScrollText size={18} aria-hidden="true" /> Registro de operações
           </Link>
         </nav>

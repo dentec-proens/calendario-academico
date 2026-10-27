@@ -1,3 +1,4 @@
+import { useWorkRisk } from '../../shared/forms/useWorkRisk.ts';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, Download, ExternalLink } from 'lucide-react';
 import {
@@ -25,6 +26,7 @@ export default function DocumentReader({
   document: DocumentsData['documents'][number];
   onClose: () => void;
 }) {
+  useWorkRisk('interaction');
   const dialog = useRef<HTMLDialogElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
   const stage = useRef<HTMLDivElement>(null);

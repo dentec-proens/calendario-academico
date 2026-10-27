@@ -1,16 +1,18 @@
 import {
   createContext,
-  lazy,
   Suspense,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
   type PropsWithChildren,
 } from 'react';
+import { documentTransition } from '../../../app/updates/transition.ts';
+import { controlledLazy as lazy } from '../../../app/controlled-lazy.tsx';
 import { useQuery, useConvexConnectionState } from 'convex/react';
 import { useBlocker } from '@tanstack/react-router';
 import type { Id } from '../../../../convex/_generated/dataModel.js';
@@ -32,10 +34,19 @@ function useSession(record: CalendarRecord) {
   const drafts = useFormDrafts();
   const readOnly = info.user.role === 'PARECERISTA';
   const [session] = useState(() =>
-    createEditorSession(record, (body) => calendars.save(record.id, body), readOnly),
+    createEditorSession(
+      record,
+      (body) => calendars.save(record.id, body),
+      readOnly,
+      () => !drafts?.protection.locked,
+    ),
   );
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const connection = useConvexConnectionState();
+  const documentChange = useSyncExternalStore(
+    documentTransition.subscribe,
+    documentTransition.getSnapshot,
+  );
   const suspended = Boolean(editorRecovery);
   useEffect(() => {
     session.setAccessSuspended(suspended);
@@ -54,14 +65,21 @@ function useSession(record: CalendarRecord) {
       return;
     const key = `${snapshot.record.version}:${snapshot.remote?.currentCatalogueRevision ?? snapshot.record.currentCatalogueRevision}`;
     if (synchronization.current === key) return;
+    const operation = drafts?.protection.begin();
+    if (operation === null) return;
     synchronization.current = key;
     void calendars
       .synchronizeBase(record.id, snapshot.record.version)
       .then((fresh) => session.receive(fresh))
       .catch(() => {
         synchronization.current = '';
+      })
+      .finally(() => {
+        if (operation) drafts?.protection.finish(operation);
       });
   }, [
+    drafts,
+    documentChange,
     record.id,
     snapshot.baseUpdate.kind,
     snapshot.record.version,
@@ -85,17 +103,24 @@ function useSession(record: CalendarRecord) {
     previousEvents.current = present;
   }, [drafts, record.id, session, snapshot.state.events]);
   useEffect(() => () => session.dispose(), [session]);
-  useEffect(() => {
-    const beforeUnload = (event: BeforeUnloadEvent) => {
-      const state = session.getSnapshot();
-      if (state.dirty || state.unapplied || state.status === 'saving') {
-        event.preventDefault();
-        event.returnValue = '';
-      }
+  useLayoutEffect(() => {
+    if (!drafts) return;
+    const unregister = drafts.protection.register(() => {
+      const value = session.getSnapshot();
+      return value.dirty ||
+        value.unapplied ||
+        !['idle', 'saved'].includes(value.status) ||
+        value.error ||
+        value.remote
+        ? { kind: 'editor', loss: value.dirty || value.unapplied || value.status === 'saving' }
+        : null;
+    });
+    const unsubscribe = session.subscribe(drafts.protection.publish);
+    return () => {
+      unregister();
+      unsubscribe();
     };
-    window.addEventListener('beforeunload', beforeUnload);
-    return () => window.removeEventListener('beforeunload', beforeUnload);
-  }, [session]);
+  }, [drafts, session]);
   const confirmLeavingEditor = useCallback(async () => {
     if (suspended) return false;
     const value = session.getSnapshot();
@@ -164,6 +189,7 @@ function useSession(record: CalendarRecord) {
   }, [snapshot.state, events]);
   function applyCommand(command: (state: CalendarState) => CalendarState) {
     try {
+      if (drafts?.protection.locked) return false;
       session.apply(command);
       return true;
     } catch (cause) {

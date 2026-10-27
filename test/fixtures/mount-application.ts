@@ -23,7 +23,7 @@ export function mountApplication({
   isAuthenticated?: boolean;
 }) {
   capturePrivateLinkToken(window.location, window.history);
-  configureFormInstrumentation(true);
+  configureFormInstrumentation(import.meta.env.DEV);
   let bootstrap = info;
   const listeners = new Set<() => void>();
   const subscribe = (listener: () => void) => {

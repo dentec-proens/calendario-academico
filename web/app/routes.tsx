@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { controlledLazy as lazy } from './controlled-lazy.tsx';
 import { createRootRouteWithContext, createRoute, redirect } from '@tanstack/react-router';
 import { parseEditorPath, type PortalPageId } from '../../src/app-routes.ts';
 import type { PortalPermissions } from '../portal/permissions.ts';

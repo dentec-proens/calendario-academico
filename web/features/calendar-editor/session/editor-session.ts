@@ -32,6 +32,7 @@ export function createEditorSession(
     baseAcceptance?: string;
   }) => Promise<CalendarSave>,
   readOnly = false,
+  canEdit = () => true,
 ) {
   let current: EditorSnapshot = {
     record: structuredClone(record),
@@ -141,6 +142,7 @@ export function createEditorSession(
     },
   });
   function assertEditing() {
+    if (!canEdit()) throw new Error('Aguarde a atualização do portal.');
     if (abandoned || !active) throw new Error('A sessão de edição foi encerrada.');
     if (accessSuspended) throw new Error('Entre novamente para salvar as alterações.');
     if (readOnly) throw new Error('Consulta em modo somente leitura.');
@@ -249,6 +251,26 @@ export function createEditorSession(
       await saver.flush();
       if (current.status === 'blocked' || current.status === 'error')
         throw new Error(current.error);
+    },
+    reopenRemote() {
+      if (!active || abandoned || !canEdit())
+        throw new Error('A sessão de edição não está disponível.');
+      if (current.status === 'saving') throw new Error('Aguarde a confirmação do salvamento.');
+      const fresh = current.remote ?? current.record;
+      forms.clear();
+      baseAcceptance = undefined;
+      rejectedBaseAcceptance = false;
+      saver.resume();
+      publish({
+        record: structuredClone(fresh),
+        state: convertCalendarV2(fresh.state),
+        dirty: false,
+        unapplied: false,
+        status: 'idle',
+        error: '',
+        remote: null,
+        formEpoch: current.formEpoch + 1,
+      });
     },
     setAccessSuspended(value: boolean) {
       if (accessSuspended === value) return;

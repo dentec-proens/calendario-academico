@@ -69,7 +69,7 @@ pnpm deploy:production --resume
 7. Confere novamente código, contratos, reserva, plano e a sessão aberta antes do deploy. Marca o candidato validado e promove exatamente esse ID, sem reconstrução. Aceita o reconhecimento HTTP da promoção mesmo quando não há corpo JSON (por exemplo, 202 ou 204), mas somente conclui após consultar o ID testado no domínio. Mantém a configuração manual de domínios. Leituras e criação de deployments continuam exigindo JSON válido.
 8. Confere a sessão após a troca, grava o recibo de conclusão, encerra somente sua sessão de conferência e remove a reserva com a identidade exata.
 
-Releases apenas de frontend preservam o backend e não executam migração ou preparação de runtime. As abas antigas continuam atendidas. Push, build ou smoke novo isoladamente não autorizam promoção. A reserva protege execuções cooperantes deste comando; mudanças administrativas externas exigem reconciliação e são bloqueadas quando a divergência é detectada.
+Releases apenas de frontend preservam o backend e não executam migração ou preparação de runtime. O backend continua compatível com as abas antigas pelos contratos conferidos; isso não comprova a retenção dos arquivos JavaScript e CSS antigos no domínio público. Push, build ou smoke novo isoladamente não autorizam promoção. A reserva protege execuções cooperantes deste comando; mudanças administrativas externas exigem reconciliação e são bloqueadas quando a divergência é detectada.
 
 ## Fast release
 
@@ -180,3 +180,17 @@ O executor temporário contract foi removido. `pnpm deploy:production` continua 
 Backups, planos, journals e recibos da operação continuam preservados em diretórios privados `backup-*`. Não executar novamente esses artefatos contra um banco já migrado. O procedimento administrativo geral está em [Operações administrativas de dados](migracao-schema.md).
 
 A limpeza posterior removeu também `releases:contractPublished`, `releases:contractValidated` e `releases:contractComplete` do código. Enquanto produção ainda estiver na revisão anterior, o verificador de expansão recusará essa remoção, inclusive de funções internas. Publicar essa limpeza exige uma operação contract controlada separada, antes da próxima expansão; não usar fast release para contornar a proteção. A atualização do desenvolvimento com esse código não altera o backend de produção.
+
+## Identidade e passagem de versão no navegador
+
+Cada invocação de build Vite gera uma identidade opaca, embutida no cliente e no `dist/app/version.json`. A mesma identidade acompanha o candidato promovido; não há anúncio antecipado no Convex nem mudança no procedimento de release. `/version.json` é JSON sem cache de navegador/CDN. O preview revalida o HTML estático em cada acesso, sem cache longo, como o domínio público observado; somente o shell público pode participar do cache de voltar/avançar do navegador. A observação no domínio canônico muda somente com sua promoção ou rollback. Comparar diferença de identidade permite reconhecer também o retorno a uma versão anterior.
+
+A consulta é um sinal de disponibilidade, não uma prova de compatibilidade de backend nem autorização de descarte. A aplicação atualiza automaticamente somente num clique elegível do menu principal, com observação recente e trabalho resolvido na própria aba. A atualização manual usa a mesma proteção e consulta novamente o manifesto. Não há sincronização de rascunhos ou autorização de outra aba.
+
+### Continuidade dos assets: evidência e limite
+
+Leitura somente da configuração efetiva em 27/10/2026, com as credenciais locais de `.vercel/cli/auth.json` e os IDs de `.vercel/project.json`: o projeto `calendario-academico` usa `framework: vite`. A resposta de projeto não apresentou campos de Skew Protection ou retenção. Foram identificados o deployment público `dpl_7pKEWhrcH3eLVz9n8yzXzhp9KRcH` e o anterior `dpl_FJ5ifQUtTupFL6aZru1JEEn5RopH`, ambos READY. A URL imutável anterior respondeu 302 de proteção de acesso; a listagem de arquivos fonte pela API retornou 404. Nenhuma configuração foi alterada e nenhum deployment foi criado.
+
+Essa leitura não comprova acesso ao JavaScript/CSS antigo e seus imports transitivos pelo domínio canônico, nem estabelece uma janela de retenção. A [documentação de Skew Protection](https://vercel.com/docs/skew-protection) exige integração compatível; o build Vite atual não injeta um ID de deployment nos imports. Não foi habilitado Skew Protection, cache longo para HTML/manifesto, cópia de assets anteriores nem infraestrutura adicional. A continuidade na CDN permanece **não confirmada**. A garantia local é a recuperação protegida e a preservação dos proprietários em falha de chunk, comprovadas em bundles de produção sintéticos.
+
+Uma prova adicional deve identificar arquivos de um deployment anterior e consultar JS, CSS e imports transitivos no domínio canônico após uma promoção autorizada. Retenção do deployment isolada não comprova esse roteamento. Não executar deploy ou promoção só para produzir essa evidência sem autorização específica.

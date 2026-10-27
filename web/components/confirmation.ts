@@ -49,3 +49,17 @@ export function confirmAction(options: ConfirmationOptions): Promise<boolean> {
     listeners.forEach((listener) => listener());
   });
 }
+
+// Executing actions outlive the dialog that started them; closing is not completion.
+const pendingOperations = new Set<symbol>();
+export function hasPendingConfirmation() {
+  return pendingOperations.size > 0;
+}
+export function beginConfirmationOperation() {
+  const token = Symbol();
+  pendingOperations.add(token);
+  listeners.forEach((listener) => listener());
+  return () => {
+    if (pendingOperations.delete(token)) listeners.forEach((listener) => listener());
+  };
+}

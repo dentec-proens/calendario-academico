@@ -461,3 +461,42 @@ test.each(['before-failure', 'after-failure'])(
     session.dispose();
   },
 );
+
+test('explicitly reopening remote data preserves the active session and accepts later confirmed saves', async () => {
+  const record = await opened();
+  vi.useFakeTimers();
+  const write = vi.fn(async (body: { state: typeof record.state; version: number }) => ({
+    state: body.state,
+    version: body.version + 1,
+    updatedAt: record.updatedAt,
+    readiness: record.readiness,
+    base: savedBase(record),
+  }));
+  const session = createEditorSession(record, write);
+  session.apply((state) => ({ ...state, weekEvidence: 'Aplicado localmente' }));
+  session.setFormDirty('pending-field', true);
+  const remote = {
+    ...record,
+    version: record.version + 1,
+    state: { ...record.state, weekEvidence: 'Decisão remota' },
+  };
+  session.receive(remote);
+  expect(session.getSnapshot().remote).not.toBeNull();
+  session.reopenRemote();
+  expect(session.getSnapshot()).toMatchObject({
+    dirty: false,
+    unapplied: false,
+    remote: null,
+    status: 'idle',
+    formEpoch: 1,
+    state: { weekEvidence: 'Decisão remota' },
+  });
+  session.apply((state) => ({ ...state, weekEvidence: 'Nova decisão local' }));
+  await session.flush();
+  expect(write).toHaveBeenCalledWith(expect.objectContaining({ version: remote.version }));
+  expect(session.getSnapshot()).toMatchObject({
+    dirty: false,
+    state: { weekEvidence: 'Nova decisão local' },
+  });
+  session.dispose();
+});

@@ -6,6 +6,7 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
+import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
 import { calendars } from '../../../shared/convex/calendars.ts';
 import { saveBlob } from '../../../shared/convex/files.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
@@ -13,6 +14,7 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 
 function useExportController() {
   const { session, record, notify } = useCalendarEditor();
+  const protection = useFormDrafts()?.protection;
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
   const active = useRef(true);
@@ -25,7 +27,8 @@ function useExportController() {
     };
   }, []);
   async function run(operation: () => Promise<void>) {
-    if (busy.current || !active.current) return;
+    if (busy.current || !active.current || protection?.locked) return;
+    const token = protection?.begin();
     busy.current = true;
     setPending(true);
     try {
@@ -37,6 +40,7 @@ function useExportController() {
         true,
       );
     } finally {
+      if (token) protection?.finish(token);
       busy.current = false;
       if (active.current) setPending(false);
     }
@@ -69,7 +73,7 @@ function useExportController() {
       if (active.current) window.print();
     });
   const copy = () => {
-    if (!active.current) return;
+    if (!active.current || protection?.locked) return;
     const applied = session.getSnapshot().state;
     saveBlob(
       new Blob([JSON.stringify(applied, null, 2)], { type: 'application/json' }),

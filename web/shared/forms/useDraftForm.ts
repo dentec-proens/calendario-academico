@@ -1,6 +1,7 @@
 import { useForm, useStore } from '@tanstack/react-form';
 import {
   useEffect,
+  useLayoutEffect,
   useId,
   useMemo,
   useRef,
@@ -51,7 +52,7 @@ export function useDraftForm<T extends object>(options: DraftFormOptions<T>) {
   const [initial, setInitial] = useState(readInitial);
   if (initial.identity !== identity || initial.drafts !== drafts) setInitial(readInitial());
   const baselineForEvents = useRef(initial.baseline);
-  useEffect(() => {
+  useLayoutEffect(() => {
     baselineForEvents.current = initial.baseline;
   }, [initial.baseline]);
   const [error, setError] = useState('');
@@ -67,7 +68,8 @@ export function useDraftForm<T extends object>(options: DraftFormOptions<T>) {
     defaultState: { values: initial.state.values, fieldMetaBase: initial.state.fieldMetaBase },
     onSubmit: async ({ value }) => {
       const submittedIdentity = identity;
-      const operation = draftKey && drafts ? drafts.begin(draftKey) : undefined;
+      if (drafts?.protection.locked) return;
+      const operation = drafts?.begin(identity);
       if (operation === null) return;
       busy.current = submittedIdentity;
       let failure: string | undefined;
@@ -85,7 +87,7 @@ export function useDraftForm<T extends object>(options: DraftFormOptions<T>) {
         }
         throw cause;
       } finally {
-        if (draftKey && drafts && operation) drafts.finish(draftKey, operation, failure);
+        if (drafts && operation) drafts.finish(identity, operation, failure);
         if (busy.current === submittedIdentity) busy.current = null;
       }
     },
@@ -111,17 +113,20 @@ export function useDraftForm<T extends object>(options: DraftFormOptions<T>) {
     return managed;
   }, [draftKey, drafts, form, initial.baseline]);
   const values = useStore(form.store, (state) => state.values);
-  const nonEditing = new Set(options.nonEditingFields?.map(String) ?? []);
-  function hasChanges(values: T) {
+  const nonEditing = useMemo(
+    () => new Set(options.nonEditingFields?.map(String) ?? []),
+    [options.nonEditingFields],
+  );
+  function hasChanges(values: T, baseline: T = initial.baseline) {
     const editable = (value: object) =>
       Object.fromEntries(Object.entries(value).filter(([key]) => !nonEditing.has(key)));
-    return !equalValues(editable(values), editable(initial.baseline));
+    return !equalValues(editable(values), editable(baseline));
   }
   const dirty = useStore(form.store, (state) => hasChanges(state.values));
   const localPending = useStore(form.store, (state) => state.isSubmitting);
   const sharedPending = useSyncExternalStore(
     drafts?.subscribe ?? emptySubscribe,
-    () => Boolean(draftKey && drafts?.pending(draftKey)),
+    () => Boolean(drafts?.pending(identity)),
     () => false,
   );
   const pending = localPending || sharedPending;
@@ -133,43 +138,76 @@ export function useDraftForm<T extends object>(options: DraftFormOptions<T>) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!dirty && !pending) return;
-    const warn = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = '';
+  const liveRisk = useRef<() => boolean>(() => true);
+  useLayoutEffect(() => {
+    liveRisk.current = () =>
+      hasChanges(form.state.values, baselineForEvents.current) ||
+      form.state.isSubmitting ||
+      busy.current === identity;
+  });
+  useLayoutEffect(() => {
+    if (!drafts) return;
+    const unregister = drafts.protection.register(() =>
+      liveRisk.current() ? { kind: 'form', loss: true } : null,
+    );
+    const subscription = form.store.subscribe(() => drafts.protection.publish());
+    return () => {
+      unregister();
+      subscription.unsubscribe();
     };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty, pending]);
+  }, [drafts, form, identity]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!draftKey || !drafts) return;
+    const href = window.location.pathname;
+    let active = true;
+    let previousValues = form.state.values;
+    let previousBaseline = baselineForEvents.current;
     const subscription = form.store.subscribe(() => {
+      if (!active) return;
+      const unchanged =
+        equalValues(previousValues, form.state.values) &&
+        equalValues(previousBaseline, baselineForEvents.current);
+      previousValues = form.state.values;
+      previousBaseline = baselineForEvents.current;
+      // A metadata-only publication must never resurrect an explicitly discarded draft.
+      if (unchanged && !drafts.has(draftKey)) return;
       if (equalValues(form.state.values, baselineForEvents.current)) {
         drafts.clear(draftKey);
         return;
       }
-      drafts.write(draftKey, {
-        baseline: Object.fromEntries(
-          Object.entries(baselineForEvents.current).filter(([key]) => !excluded.has(key)),
-        ),
-        values: Object.fromEntries(
-          Object.entries(form.state.values).filter(([key]) => !excluded.has(key)),
-        ),
-        fieldMetaBase: Object.fromEntries(
-          Object.entries(form.state.fieldMetaBase).filter(
-            ([key]) =>
-              ![...excluded].some(
-                (field) =>
-                  key === field || key.startsWith(`${field}.`) || key.startsWith(`${field}[`),
-              ),
+      const cacheable = (value: object) =>
+        Object.fromEntries(
+          Object.entries(value).filter(([key]) => !excluded.has(key) && !nonEditing.has(key)),
+        );
+      drafts.write(
+        draftKey,
+        {
+          baseline: Object.fromEntries(
+            Object.entries(baselineForEvents.current).filter(([key]) => !excluded.has(key)),
           ),
-        ),
-      });
+          values: Object.fromEntries(
+            Object.entries(form.state.values).filter(([key]) => !excluded.has(key)),
+          ),
+          fieldMetaBase: Object.fromEntries(
+            Object.entries(form.state.fieldMetaBase).filter(
+              ([key]) =>
+                ![...excluded].some(
+                  (field) =>
+                    key === field || key.startsWith(`${field}.`) || key.startsWith(`${field}[`),
+                ),
+            ),
+          ),
+        },
+        !equalValues(cacheable(form.state.values), cacheable(baselineForEvents.current)),
+        href,
+      );
     });
-    return () => subscription.unsubscribe();
-  }, [draftKey, drafts, form, excluded, initial.baseline]);
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [draftKey, drafts, form, excluded, nonEditing, initial.baseline]);
 
   useEffect(() => {
     if (!draftKey || !drafts) return;
@@ -188,7 +226,7 @@ export function useDraftForm<T extends object>(options: DraftFormOptions<T>) {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy.current === identity || (draftKey && drafts?.pending(draftKey))) return;
+    if (drafts?.protection.locked || busy.current === identity || drafts?.pending(identity)) return;
     const element = event.currentTarget;
     if (!element.checkValidity()) {
       element.reportValidity();

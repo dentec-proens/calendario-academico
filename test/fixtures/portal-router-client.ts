@@ -174,6 +174,8 @@ export const convex = {
         });
       case 'actions/uploads:completeUpload':
         return Promise.resolve({ uploadId: 'synthetic-upload' });
+      case 'actions/documents:restoreDocumentOriginal':
+        return finishMutation('restoreDocumentOriginal', { ok: true });
       case 'actions/documents:uploadDocument':
         return finishMutation('uploadDocument', {
           ...args,

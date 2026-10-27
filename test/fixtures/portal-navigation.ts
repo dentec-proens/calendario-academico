@@ -226,6 +226,7 @@ window.portalRouterTest.publishCatalogue = (catalogue) => {
   application.updateInfo({ ...info });
 };
 window.portalRouterTest.publishMember = (member) => {
+  if (member.id === info.user.id) info.user = member;
   info.users = info.users.map((current) => (current.id === member.id ? member : current));
   window.portalRouterTest.members = info.users;
   application.updateInfo({ ...info });

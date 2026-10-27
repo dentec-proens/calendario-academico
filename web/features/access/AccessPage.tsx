@@ -11,7 +11,7 @@ import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 export default function AccessPage() {
   const { status, notify, isLoading, setArrivalPending } = useSessionState();
   const accounts = useAccounts();
-  const google = useAction(notify);
+  const google = useAction(notify, { kind: 'access', loss: false });
   const setup = status?.setupRequired === true;
   const {
     form,

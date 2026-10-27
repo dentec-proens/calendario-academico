@@ -49,7 +49,6 @@ export function initialDraft(opened: ReviewSupport) {
       reviewNorm(opened.calendar.year, opened.sameYear ? opened.source.norm : ''),
     acknowledgeStale: false,
     changed: {} as Record<string, boolean>,
-    conclusionEditable: false,
     dirty: conclusion !== previousConclusion,
   };
 }
