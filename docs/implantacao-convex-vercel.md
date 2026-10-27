@@ -32,6 +32,23 @@ Pré-requisitos:
 - No primeiro uso, `DENTEC_RELEASE_BACKEND_COMMIT` deve conter o SHA comprovado do backend efetivamente instalado. O proprietário de uma manutenção não comprova publicação. Após a primeira expansão concluída, `releases:status` passa a fornecer o recibo persistido do backend.
 - Quando o plano contém migrações, `DENTEC_RELEASE_BACKUP_DIR` deve apontar a uma pasta privada existente, absoluta e fora do repositório. O comando exporta os dados com Storage, confere o ZIP e grava seu SHA-256 e recibo antes de publicar o backend. O backup contém dados e credenciais: usar uma pasta com acesso restrito ao usuário. Ensaiar restauração conforme [Operações administrativas de dados](migracao-schema.md); a release nunca importa o backup.
 
+### Credenciais locais em `.vercel/`
+
+A pasta `.vercel/`, ignorada pelo Git e de acesso restrito ao usuário, guarda o estado local de operação. Não copie seu conteúdo para issues, logs, argumentos de comando ou commits.
+
+- `project.json`: vínculo do diretório ao projeto e à equipe na Vercel (`projectId`, `orgId`). Não é credencial.
+- `cli/auth.json`: sessão da CLI da Vercel criada com `vercel login --global-config .vercel/cli`. O campo `token` pode ser usado como `VERCEL_TOKEN`, mas expira em poucas horas (`expiresAt`). O `refreshToken` permite renovar a sessão.
+- `release-smoke.env`: variáveis `DENTEC_RELEASE_SMOKE_*` da conta e do calendário de smoke da release normal.
+
+As ferramentas de release só leem `VERCEL_TOKEN` e `DENTEC_RELEASE_SMOKE_*` do ambiente; elas não abrem esses arquivos. Para usar a sessão da CLI, renove-a com um comando da própria CLI e passe o token apenas ao comando da release:
+
+```sh
+npx vercel whoami --global-config .vercel/cli
+VERCEL_TOKEN="$(node -p "require('./.vercel/cli/auth.json').token")" pnpm deploy:production:fast
+```
+
+Se a renovação falhar, repita `npx vercel login --global-config .vercel/cli`. Na release normal, carregue também o smoke com `set -a; . ./.vercel/release-smoke.env; set +a` no mesmo terminal. Prefira um token de acesso dedicado, criado em Account Settings → Tokens da Vercel com escopo da equipe e expiração definida: ele não expira no meio de uma publicação como a sessão da CLI.
+
 ```sh
 pnpm deploy:production --dry-run
 pnpm deploy:production
