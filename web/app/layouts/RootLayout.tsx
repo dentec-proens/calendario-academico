@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react';
+import { Suspense, useCallback, useEffect, useRef } from 'react';
 import { Outlet, useRouterState } from '@tanstack/react-router';
 import { LogOut } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
@@ -9,6 +9,7 @@ import { FormDraftProvider } from '../../shared/forms/drafts.tsx';
 import { DevelopmentTools } from '../devtools.tsx';
 import { parseEditorPath } from '../../../src/app-routes.ts';
 import { Notice } from '../../components/ui/Notice.tsx';
+import { useArrivalFocus } from '../arrival-focus.ts';
 
 export default function RootLayout() {
   const session = useSessionState();
@@ -17,7 +18,14 @@ export default function RootLayout() {
     select: (state) => state.location.search.aviso === 'acesso-negado',
   });
   const identity = session.info ? sessionIdentity(session.info.user) : 'public';
+  const main = useRef<HTMLElement>(null);
+  const { setArrivalPending } = session;
   useEffect(() => clearPrivateLinkWhenLeaving(pathname), [pathname]);
+  useArrivalFocus(
+    main,
+    session.arrivalPending,
+    useCallback(() => setArrivalPending(false), [setArrivalPending]),
+  );
   return (
     <FormDraftProvider key={identity} identity={identity}>
       <header>
@@ -51,7 +59,7 @@ export default function RootLayout() {
           </Button>
         ) : null}
       </header>
-      <main id="app-main">
+      <main id="app-main" ref={main}>
         {!parseEditorPath(pathname) && (
           <div id="message" role="status" aria-live="polite">
             {session.message?.text ? (

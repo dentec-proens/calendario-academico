@@ -32,6 +32,7 @@ export function mountApplication({
   };
   function SyntheticApplication() {
     const [message, setMessage] = useState<SessionState['message']>(null);
+    const [arrivalPending, setArrivalPending] = useState(false);
     const currentInfo = useSyncExternalStore(subscribe, () => bootstrap);
     const session: SessionState = {
       info: currentInfo,
@@ -40,6 +41,8 @@ export function mountApplication({
       isAuthenticated,
       loggingOut: false,
       message,
+      arrivalPending,
+      setArrivalPending,
       notify: (text, error = false) => setMessage({ text, error }),
       logout: () => Promise.resolve(),
       maintenance: false,

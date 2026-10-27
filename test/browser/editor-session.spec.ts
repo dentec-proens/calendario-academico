@@ -26,6 +26,21 @@ test('portal logout redirects to the access form without an active editor recove
   await expect(page).toHaveURL(/\/?\?retorno=%2Fcalendarios$/);
 });
 
+test('login focuses the destination title instead of announcing the access', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('editor-session'));
+  await page.locator('.portal-back').click();
+  await expect(page.locator('#calendar-list')).toBeVisible();
+  await page.locator('#logout').click();
+  await page.locator('#email').fill('editor@example.invalid');
+  await page.locator('#password').fill('synthetic-password');
+  await page.locator('#auth-submit').click();
+  await expect(page.locator('#panel-title')).toBeFocused();
+  await expect(page.locator('#message')).toBeEmpty();
+});
+
 test('a new login in the same tab protects the editor on its next expiration', async ({
   page,
   fixtureServer,
@@ -37,7 +52,7 @@ test('a new login in the same tab protects the editor on its next expiration', a
   await page.locator('#email').fill('editor@example.invalid');
   await page.locator('#password').fill('synthetic-password');
   await page.locator('#auth-submit').click();
-  await expect(page.locator('#record-title')).toBeVisible();
+  await expect(page.locator('#record-title')).toBeFocused();
   await editAppliedEvent(page, 'Alteração da nova sessão de acesso');
   await page.evaluate(() => window.editorSessionTest.expire());
   await expect(page.locator('#editor-session-expired')).toBeVisible();
@@ -101,6 +116,7 @@ test('expired editor keeps applied data for a local copy and same-account reauth
   await page.locator('#password').fill('synthetic-password');
   await page.locator('#auth-submit').click();
   await expect(page.locator('#editor-session-expired')).toHaveCount(0);
+  await expect(page.locator('#record-title')).toBeFocused();
   await expect(page.locator('#event-name')).toHaveValue('Rascunho também preservado');
   await expect(page.locator('#event-name')).toBeEnabled();
   await page.evaluate(() => window.editorSessionTest.releaseSaves());

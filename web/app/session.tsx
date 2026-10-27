@@ -32,6 +32,9 @@ export interface SessionState {
   isAuthenticated: boolean;
   notify: Notify;
   message: { text: string; error: boolean } | null;
+  /** A completed sign-in whose destination title has not taken focus yet. */
+  arrivalPending: boolean;
+  setArrivalPending: (pending: boolean) => void;
   loggingOut: boolean;
   maintenance?: boolean;
   logout: () => Promise<void>;
@@ -54,6 +57,7 @@ export function AppSessionProvider({ children }: PropsWithChildren) {
   if (info && info !== confirmedInfo) setConfirmedInfo(info);
   const [message, setMessage] = useState<SessionState['message']>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [arrivalPending, setArrivalPending] = useState(false);
   const editor = useRef<EditorProtection | null>(null);
   const [owner, setOwner] = useState<EditorProtection | null>(null);
   const [intentionalExit, setIntentionalExit] = useState(false);
@@ -117,6 +121,8 @@ export function AppSessionProvider({ children }: PropsWithChildren) {
         isAuthenticated: auth.isAuthenticated,
         notify,
         message,
+        arrivalPending,
+        setArrivalPending,
         loggingOut,
         maintenance: availability?.maintenance ?? false,
         logout,

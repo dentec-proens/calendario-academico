@@ -132,7 +132,9 @@ function EditorFrame() {
       <div className="editor-intro">
         <div>
           <div className="editor-title-row">
-            <h1 id="record-title">{record.name}</h1>
+            <h1 id="record-title" tabIndex={-1}>
+              {record.name}
+            </h1>
             <span className="editor-purpose">
               {record.purpose === 'test' ? 'Calendário de teste' : 'Calendário definitivo'}
             </span>

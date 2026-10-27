@@ -9,7 +9,7 @@ import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 
 export default function AccessPage() {
-  const { status, notify, isLoading } = useSessionState();
+  const { status, notify, isLoading, setArrivalPending } = useSessionState();
   const accounts = useAccounts();
   const google = useAction(notify);
   const setup = status?.setupRequired === true;
@@ -26,9 +26,12 @@ export default function AccessPage() {
       if (setup)
         await accounts.setup({ ...credentials, name: value.name.trim(), code: value.code });
       await accounts.signIn(credentials);
+      // The destination title announces the access; an earlier "session ended" no longer applies.
+      // The redirect to the destination may unmount this form before sign-in resolves.
+      notify('');
+      setArrivalPending(true);
       if (!isCurrent()) return;
       form.reset();
-      notify('Acesso realizado.');
     },
   });
   const pending = submitting || google.pending;
