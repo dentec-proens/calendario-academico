@@ -116,6 +116,19 @@ function useController() {
           ? opener.current
           : (document.getElementById(returnFocus) ??
             document.getElementById('editor-section-title'));
+      const active = document.activeElement;
+      // A person may already have moved to another action after the dialog closed.
+      // Do not send the next keyboard activation back to the previous event row.
+      if (
+        returnFocus !== 'pending-event-title' &&
+        active instanceof HTMLElement &&
+        active !== document.body &&
+        active !== target &&
+        !active.closest('#event-panel')
+      ) {
+        setReturnFocus(null);
+        return;
+      }
       // A pause gives focus to the access notice; the editor behind it is inert.
       if (!target?.closest('[inert]')) {
         target?.focus({ preventScroll: true });

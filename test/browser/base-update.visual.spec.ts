@@ -18,7 +18,7 @@ test('institutional base changes collapsed and expanded', async ({ page, fixture
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
     .toBe(true);
-  await expect(card).toHaveScreenshot('base-update-expanded.png');
+  await expect(page).toHaveScreenshot('base-update-expanded.png', { fullPage: true });
 });
 
 test('legacy 2027 rules require explicit adoption without changing recorded dates', async ({
@@ -40,7 +40,7 @@ test('legacy 2027 rules require explicit adoption without changing recorded date
   await expect(card).toContainText('Regras de 2027 atualizadas: nova revisão necessária');
   await expect(card).toHaveScreenshot('rules-update-collapsed.png');
   await card.locator('summary').click();
-  await expect(card).toHaveScreenshot('rules-update-expanded.png');
+  await expect(page).toHaveScreenshot('rules-update-expanded.png', { fullPage: true });
   const before = await page.evaluate(() =>
     window.editorTest.record.state.events.map((event) => [event.id, event.start, event.end]),
   );

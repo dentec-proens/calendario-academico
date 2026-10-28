@@ -133,7 +133,7 @@ test('changing weekdays recalculates targets and preserves the draft when period
     record.version++;
     await window.publishReviewerCalendar();
   });
-  await expect(page.locator('#regime-summary')).toHaveText('Semestral');
+  await expect(page.locator('#record-heading')).toContainText('Versão 2');
   await page.locator('#weekdays input[value="5"]').uncheck();
   expect((await savedState(page)).state.periods[0].end).toBe('2027-03-08');
   await page.locator('#weekdays input[value="5"]').check();

@@ -20,10 +20,7 @@ for (const width of [1440, 390]) {
       'Semana letiva',
     );
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-    await expect(page.locator('.editor-calendar-details dt')).toHaveText([
-      'Forma de oferta/nível',
-      'Organização',
-    ]);
+    await expect(page.locator('.editor-calendar-details dt')).toHaveText(['Forma de oferta/nível']);
     await expect(page.locator('#campus, #year')).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Identificação', exact: true })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Semana letiva', exact: true })).toHaveCount(1);

@@ -262,7 +262,7 @@ test('ambiguous v2 organization preserves period IDs until explicit offer and cy
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'periods');
-  await expect(page.locator('#regime-summary')).toHaveText('Organização a conferir');
+  await expect(page.locator('#regime-summary')).toHaveCount(0);
   await expect(page.locator('#periods')).toContainText('associação a conferir');
   await page.locator('[data-edit-organization="integrado"]').click();
   await page.locator('#offer-integrado-source-0').selectOption('legacy-cycle');
@@ -314,7 +314,9 @@ test('annual integrated and semester undergraduate offers keep independent overl
   }
   await page.locator('#offer-graduacao-evidence').fill('Ata da graduação');
   await page.locator('#offer-graduacao-apply').click();
-  await expect(page.locator('#regime-summary')).toHaveText('Anual e semestral');
+  await expect(page.locator('[data-offer="integrado"]')).toContainText('Anual:');
+  await expect(page.locator('[data-offer="graduacao"]')).toContainText('1º semestre:');
+  await expect(page.locator('[data-offer="graduacao"]')).toContainText('2º semestre:');
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods.length))
     .toBe(3);

@@ -1,0 +1,196 @@
+.teaching-day-summary {
+  position: relative;
+  margin-bottom: 16px;
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  --day-count-color: var(--ui-muted);
+}
+.teaching-day-current[data-tone='warning'] {
+  --day-count-color: var(--ui-warning);
+}
+.teaching-day-current[data-tone='met'] {
+  --day-count-color: var(--green);
+}
+.teaching-day-summary > summary {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 16px;
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.8125rem;
+}
+.teaching-day-summary > summary::-webkit-details-marker {
+  display: none;
+}
+.teaching-day-summary > summary:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+.teaching-day-label {
+  font-weight: 650;
+  white-space: nowrap;
+}
+.teaching-day-offers {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.teaching-day-current {
+  position: relative;
+  flex: 1;
+  padding: 2px 12px 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  min-width: 0;
+}
+.teaching-day-current + .teaching-day-current {
+  border-left: 1px solid var(--line);
+}
+.teaching-day-current strong {
+  font-variant-numeric: tabular-nums;
+}
+.teaching-day-offer {
+  width: 100%;
+  color: var(--ui-muted);
+}
+.teaching-day-pending {
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+}
+.teaching-day-status {
+  color: var(--day-count-color);
+}
+.teaching-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--green);
+}
+.teaching-day-summary[open] .teaching-day-toggle svg {
+  transform: rotate(180deg);
+}
+.teaching-day-progress {
+  position: absolute;
+  bottom: 0;
+  inset-inline: 8px;
+  height: 3px;
+  background: var(--ui-action-soft);
+  overflow: hidden;
+}
+.teaching-day-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--day-count-color);
+}
+.teaching-day-details {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(560px, 100%);
+  max-height: min(60dvh, 440px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  box-shadow: 0 8px 24px #172b2526;
+  scroll-padding-block: 12px;
+}
+.teaching-day-details > .help:first-child {
+  margin-top: 0;
+  padding-right: 40px;
+}
+.teaching-day-detail-offer:first-of-type h3 {
+  padding-right: 36px;
+}
+.calendar-editor-content .teaching-day-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px;
+  border: 0;
+}
+.teaching-day-detail-offer {
+  padding-block: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.teaching-day-detail-offer h3 {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+}
+.teaching-day-detail-offer dl {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+.teaching-day-detail-offer dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 12px;
+  padding-block: 6px;
+}
+.teaching-day-detail-offer dd {
+  margin: 0;
+}
+.teaching-day-detail-offer dd span {
+  display: block;
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+}
+.teaching-day-detail-offer [data-reference='NOT_MET'] dd span {
+  color: var(--ui-warning);
+}
+.teaching-day-detail-offer [data-reference='MET'] dd span {
+  color: var(--green);
+}
+@media (max-width: 850px) {
+  .teaching-day-summary > summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 8px;
+    padding: 10px 12px;
+  }
+  .teaching-day-offers {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-column: 1 / -1;
+    grid-row: 2;
+    gap: 8px 0;
+    margin-inline: -8px;
+  }
+  .teaching-day-offers:has(> :only-child) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .teaching-day-current {
+    font-size: 0.75rem;
+    gap: 2px 8px;
+    padding-inline: 8px;
+  }
+  .teaching-day-current:nth-child(odd) {
+    border-left: 0;
+  }
+  .teaching-day-toggle {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 0.75rem;
+  }
+}
+@media print {
+  .teaching-day-summary {
+    display: none;
+  }
+}

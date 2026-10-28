@@ -19,8 +19,8 @@ import { confirmAction } from '../../components/confirmation.ts';
 import { editorSections } from '../../../src/app-routes.ts';
 import { editorPages, editorSteps, editorNavigation, continueLabel } from './editor-steps.ts';
 import { modalityLabels } from '../../../src/modalities.ts';
-import { regimeLabels } from '../../../src/calendar-label.ts';
 import EditorSteps from './EditorSteps.tsx';
+import TeachingDaySummary from './TeachingDaySummary.tsx';
 import BaseUpdateCard from './BaseUpdateCard.tsx';
 import { useCalendarSummaryTool } from '../../shared/integrations/webmcp.ts';
 import './calendar-editor.css';
@@ -127,18 +127,20 @@ function EditorFrame() {
         </Link>
       </div>
       <div className="editor-intro">
-        <div>
+        <div className="editor-heading-group">
           <div className="editor-title-row">
             <h1 id="record-title" tabIndex={-1}>
               {record.name}
             </h1>
+          </div>
+          <p id="record-heading">
             <span className="editor-purpose">
               {record.purpose === 'test' ? 'Calendário de teste' : 'Calendário definitivo'}
             </span>
-          </div>
-          <p id="record-heading">
-            Versão {record.version} ·{' '}
-            {record.readiness.ready && !dirty ? 'Conferência registrada' : 'Em elaboração'}
+            <span className="editor-heading-status">
+              Versão {record.version} ·{' '}
+              {record.readiness.ready && !dirty ? 'Conferência registrada' : 'Em elaboração'}
+            </span>
           </p>
         </div>
         <div className="editor-header-actions">
@@ -215,15 +217,11 @@ function EditorFrame() {
         <div>
           <dt>Forma de oferta/nível</dt>
           <dd id="selected-modalities">
-            {state.modalities.map((item) => modalityLabels[item]).join(' + ')}
-          </dd>
-        </div>
-        <div>
-          <dt>Organização</dt>
-          <dd id="regime-summary">
-            {state.regime === 'a-classificar'
-              ? 'Organização a conferir'
-              : regimeLabels[state.regime]}
+            <ul className="editor-offer-list" aria-label="Formas de oferta e níveis">
+              {state.modalities.map((item) => (
+                <li key={item}>{modalityLabels[item]}</li>
+              ))}
+            </ul>
           </dd>
         </div>
       </dl>
@@ -333,6 +331,7 @@ function EditorFrame() {
             </button>
           )}
         </Notice>
+        <TeachingDaySummary key={currentSection} />
       </div>
       <BaseUpdateCard />
       {context && !eventEditorOpen && (

@@ -98,7 +98,9 @@ test('step 6 lists activities and opens one in the side panel', async ({ page, f
   await selectEditorSection(page, 'events');
   await expect(page.locator('#activity-checklist')).toBeVisible();
   await assertNoOverflow(page);
-  await expect(page.locator('#events')).toHaveScreenshot('activity-list.png');
+  // Capture the page with its persistent count: scrolling a section taller than the
+  // mobile viewport for each element capture moves the sticky bar between captures.
+  await expect(page).toHaveScreenshot('activity-list.png', { fullPage: true });
   await page.locator('[data-activity-open="recognition-0"]').click();
   await expect(page.locator('#event-form-title')).toBeFocused();
   await expect(page).toHaveScreenshot('activity-panel.png');
