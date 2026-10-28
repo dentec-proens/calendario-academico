@@ -1,17 +1,18 @@
-import type * as EvaluationModule from '../../src/evaluation.ts';
-import type * as StageModule from '../../src/assessment-day-counts.ts';
-import type * as DurationModule from '../../src/duration.ts';
-import type * as RulesModule from '../../src/calendar-rules/index.ts';
-import type * as ConversionModule from '../../src/calendar-rules/conversion.ts';
-import type * as ObligationsModule from '../../src/obligations.ts';
-import type * as ModalitiesModule from '../../src/modalities.ts';
-import type * as TeacherDayModule from '../../src/teacher-day.ts';
+import type * as EvaluationModule from '../../src/domain/calendar/counting/evaluation.ts';
+import type * as StageModule from '../../src/domain/calendar/counting/assessment-days.ts';
+import type * as DurationModule from '../../src/domain/calendar/counting/duration.ts';
+import type * as RulesModule from '../../src/domain/calendar/activities/coverage.ts';
+import type * as DeadlinesModule from '../../src/domain/calendar/activities/deadlines.ts';
+import type * as ConversionModule from '../../src/domain/calendar/normalization/conversion.ts';
+import type * as ObligationsModule from '../../src/domain/calendar/activities/checklist.ts';
+import type * as ModalitiesModule from '../../src/domain/calendar/modalities.ts';
+import type * as TeacherDayModule from '../../src/domain/institution/teacher-day.ts';
 /** Private numeric/date proof: run against the committed old code and the new code separately. */
-import { writeFileSync, chmodSync } from 'node:fs';
+import { writeFileSync, chmodSync, existsSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { readSnapshot } from './snapshot.ts';
-import type { ActivityState } from '../../src/domain-types.ts';
+import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 function option(name: string) {
   const index = process.argv.indexOf(`--${name}`);
@@ -38,29 +39,34 @@ async function main() {
   if ((statSync(dirname(output)).mode & 0o077) !== 0)
     throw Error('A pasta de projeção deve ser privada (700).');
   const snapshot = readSnapshot(input);
+  const moduleUrl = (current: string, legacy: string) =>
+    pathToFileURL(join(codeRoot, existsSync(join(codeRoot, current)) ? current : legacy)).href;
+  const deadlineRules = (await import(
+    moduleUrl('src/domain/calendar/activities/deadlines.ts', 'src/calendar-rules/index.ts')
+  )) as typeof DeadlinesModule;
   const evaluation = (await import(
-    pathToFileURL(join(codeRoot, 'src/evaluation.ts')).href
+    moduleUrl('src/domain/calendar/counting/evaluation.ts', 'src/evaluation.ts')
   )) as typeof EvaluationModule;
   const stages = (await import(
-    pathToFileURL(join(codeRoot, 'src/assessment-day-counts.ts')).href
+    moduleUrl('src/domain/calendar/counting/assessment-days.ts', 'src/assessment-day-counts.ts')
   )) as typeof StageModule;
   const duration = (await import(
-    pathToFileURL(join(codeRoot, 'src/duration.ts')).href
+    moduleUrl('src/domain/calendar/counting/duration.ts', 'src/duration.ts')
   )) as typeof DurationModule;
   const rules = (await import(
-    pathToFileURL(join(codeRoot, 'src/calendar-rules/index.ts')).href
+    moduleUrl('src/domain/calendar/activities/coverage.ts', 'src/calendar-rules/index.ts')
   )) as typeof RulesModule;
   const conversion = (await import(
-    pathToFileURL(join(codeRoot, 'src/calendar-rules/conversion.ts')).href
+    moduleUrl('src/domain/calendar/normalization/conversion.ts', 'src/calendar-rules/conversion.ts')
   )) as typeof ConversionModule;
   const obligations = (await import(
-    pathToFileURL(join(codeRoot, 'src/obligations.ts')).href
+    moduleUrl('src/domain/calendar/activities/checklist.ts', 'src/obligations.ts')
   )) as typeof ObligationsModule;
   const modalities = (await import(
-    pathToFileURL(join(codeRoot, 'src/modalities.ts')).href
+    moduleUrl('src/domain/calendar/modalities.ts', 'src/modalities.ts')
   )) as typeof ModalitiesModule;
   const teacherDay = (await import(
-    pathToFileURL(join(codeRoot, 'src/teacher-day.ts')).href
+    moduleUrl('src/domain/institution/teacher-day.ts', 'src/teacher-day.ts')
   )) as typeof TeacherDayModule;
   const calendars = new Map((snapshot.tables.calendars ?? []).map((row) => [row._id, row]));
   const campuses = new Map((snapshot.tables.campuses ?? []).map((row) => [row._id, row]));
@@ -113,7 +119,12 @@ async function main() {
                   result: result(() => {
                     const deadline =
                       requirement.deadlinePolicy === 'reference'
-                        ? rules.prorogatedDeadline(state, requirement.deadline!, events, modality)
+                        ? deadlineRules.prorogatedDeadline(
+                            state,
+                            requirement.deadline!,
+                            events,
+                            modality,
+                          )
                         : {
                             date: requirement.deadline!,
                             original: requirement.deadline!,

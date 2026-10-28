@@ -2,7 +2,7 @@ import type { RefObject, FormEvent } from 'react';
 import { ClipboardCopy, Download, ExternalLink, Eye, Pencil, Save } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import { TextField } from '../../components/ui/Field.tsx';
-import { calendarName } from '../../../src/calendar-label.ts';
+import { calendarName } from '../../../src/domain/calendar/label.ts';
 import { editorUrl } from '../../../src/app-routes.ts';
 import ReviewCriterion from './ReviewCriterion.tsx';
 import { ReviewPreview } from './review-export.tsx';

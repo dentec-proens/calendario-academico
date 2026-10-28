@@ -8,7 +8,7 @@ import type { Doc, TableNames } from '../convex/_generated/dataModel';
 import { api, internal } from '../convex/_generated/api.js';
 import { environments } from '../config/environments.ts';
 import { generateAuthKeys, validateAuthKeys } from '../scripts/dev-setup.ts';
-import { initialCatalogue } from '../src/institution.ts';
+import { initialCatalogue } from '../src/domain/institution/catalogue.ts';
 import {
   chromiumArchives,
   chromiumVersion,

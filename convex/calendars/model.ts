@@ -1,10 +1,9 @@
-import { calendarName } from '../../src/calendar-label';
-import { normalizeCalendar } from '../../src/calendar-normalize';
+import { calendarName } from '../../src/domain/calendar/label';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { Member } from '../authContracts';
 import { assertCampus } from '../lib/authorization';
 import type { Context } from '../lib/shared';
-import { clean, fail, iso } from '../lib/shared';
+import { fail, iso } from '../lib/shared';
 import type { DomainState, ContentState } from '../validators';
 import { calendarAuthorship } from './authorship';
 
@@ -56,16 +55,4 @@ export function domainState(
     modalities: row.modalities,
     offer: row.modalities[0],
   };
-}
-
-export function toContent(input: DomainState): ContentState {
-  const normalized = normalizeCalendar(input) as DomainState;
-  const {
-    year: _year,
-    campus: _campus,
-    offer: _offer,
-    modalities: _modalities,
-    ...state
-  } = normalized;
-  return clean(state);
 }

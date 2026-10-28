@@ -1,7 +1,7 @@
 import type { KeyboardEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { teacherDayId } from '../../../../src/teacher-day.ts';
-import { activityChecklist } from '../../../../src/obligations.ts';
+import { teacherDayId } from '../../../../src/domain/institution/teacher-day.ts';
+import { activityChecklist } from '../../../../src/domain/calendar/activities/checklist.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useActivitySearch } from '../events/activity-query.ts';
 import { useEventEditor } from '../events/EventEditorProvider.tsx';

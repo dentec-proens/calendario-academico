@@ -1,6 +1,10 @@
-import type { CalendarActivity, CalendarPeriod, AssessmentSettings } from '../domain-types.ts';
-import type { countCalendar } from '../calendar.ts';
-import type { evaluateCalendar } from '../evaluation.ts';
+import type {
+  CalendarActivity,
+  CalendarPeriod,
+  AssessmentSettings,
+} from '../domain/calendar/model.ts';
+import type { countCalendar } from '../domain/calendar/counting/core.ts';
+import type { evaluateCalendar } from '../domain/calendar/counting/evaluation.ts';
 export type PrintState = AssessmentSettings & {
   year: number;
   campus?: string;

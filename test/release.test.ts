@@ -1,13 +1,13 @@
-import type { CalendarActivity } from '../src/domain-types.ts';
-import { evaluateCalendar } from '../src/evaluation.ts';
-import { activityChecklist } from '../src/obligations.ts';
+import type { CalendarActivity } from '../src/domain/calendar/model.ts';
+import { evaluateCalendar } from '../src/domain/calendar/counting/evaluation.ts';
+import { activityChecklist } from '../src/domain/calendar/activities/checklist.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { releaseReadiness } from '../src/release.ts';
-import { reviewCriteriaFor } from '../src/review.ts';
-import { rulesetVersion } from '../src/calendar-rules/index.ts';
+import { releaseReadiness } from '../src/domain/calendar/readiness.ts';
+import { reviewCriteriaFor } from '../src/domain/reviews/criteria.ts';
+import { rulesetVersion } from '../src/domain/calendar/policies/resolve.ts';
 const reviewCriteria = reviewCriteriaFor(2027);
-import { inheritedEvents } from '../src/institution.ts';
+import { inheritedEvents } from '../src/domain/institution/catalogue.ts';
 import { proensLayout } from '../src/printing/calendar-layout.ts';
 
 test('definitive release requires every reviewed criterion, current versions and adequate teaching days', () => {

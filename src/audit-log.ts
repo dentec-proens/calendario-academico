@@ -1,4 +1,4 @@
-import { calendarName } from './calendar-label.ts';
+import { calendarName } from './domain/calendar/label.ts';
 
 const labels: Record<string, string> = {
   DELETE_CALENDAR: 'Calendário movido para a lixeira',

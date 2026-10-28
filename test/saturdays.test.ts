@@ -1,4 +1,4 @@
-import type { ActivityState, CalendarActivity } from '../src/domain-types.ts';
+import type { ActivityState, CalendarActivity } from '../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
@@ -7,13 +7,13 @@ import {
   saturdayGain,
   saturdayYear,
   type YearSaturday,
-} from '../src/saturdays.ts';
-import { evaluateCalendar as calendarResult } from '../src/evaluation.ts';
+} from '../src/domain/calendar/activities/saturdays.ts';
+import { evaluateCalendar as calendarResult } from '../src/domain/calendar/counting/evaluation.ts';
 import {
   applySaturdayActivities,
   applySaturdays,
   updateSaturdayActivity,
-} from '../src/calendar-edits/commands.ts';
+} from '../src/domain/calendar/commands.ts';
 
 test('month selection adds only chosen Saturdays, survives serialization, and respects conflicts', () => {
   const s = {

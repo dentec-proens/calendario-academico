@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { categories, eventCategory } from '../src/categories.ts';
+import { categories, eventCategory } from '../src/domain/calendar/activities/categories.ts';
 import { proensLayout } from '../src/printing/calendar-layout.ts';
 import { readFile } from 'node:fs/promises';
 

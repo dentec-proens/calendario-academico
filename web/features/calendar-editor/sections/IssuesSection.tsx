@@ -1,47 +1,45 @@
+import {
+  diagnoseCalendar,
+  diagnoseTeachingDays,
+} from '../../../../src/domain/calendar/diagnostics.ts';
 import { Link } from '@tanstack/react-router';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarExport } from '../export/CalendarExportProvider.tsx';
-import { modalityLabels } from '../../../../src/modalities.ts';
+import { modalityLabels } from '../../../../src/domain/calendar/modalities.ts';
 import { Download, Eye } from 'lucide-react';
-import {
-  activityCoverage,
-  organizationForModality,
-  periodsForModality,
-  rulesetVersion,
-} from '../../../../src/calendar-rules/index.ts';
-import { stageRequirement } from '../../../../src/obligations.ts';
+import { rulesetVersion } from '../../../../src/domain/calendar/policies/resolve.ts';
+import { stageRequirement } from '../../../../src/domain/calendar/activities/assessment.ts';
 import ScopeForm from '../forms/ScopeForm.tsx';
 
 export default function IssuesSection() {
   const { state, record, dirty, evaluation } = useCalendarEditor();
   const exporting = useCalendarExport();
   const issues: { mark: string; title: string; detail: string; requirementId?: string }[] = [];
-  if (!state.weekConfirmed)
-    issues.push({
-      mark: 'Pendente',
-      title: 'Semana letiva',
-      detail: 'Registre e confirme os dias regulares.',
-    });
-  if (!state.periods.length)
-    issues.push({
-      mark: 'Pendente',
-      title: 'Períodos letivos',
-      detail: 'Cadastre pelo menos um período com início e término.',
-    });
-  for (const modality of state.modalities) {
-    const organization = organizationForModality(state, modality);
-    const periods = periodsForModality(state, modality);
-    if (organization === 'a-classificar' || periods.length !== (organization === 'anual' ? 1 : 2))
+  const diagnostics = diagnoseCalendar(state);
+  for (const issue of diagnostics.structure) {
+    if (issue.code === 'week-unconfirmed')
       issues.push({
         mark: 'Pendente',
-        title: `Organização — ${modalityLabels[modality]}`,
+        title: 'Semana letiva',
+        detail: 'Registre e confirme os dias regulares.',
+      });
+    else if (issue.code === 'periods-missing')
+      issues.push({
+        mark: 'Pendente',
+        title: 'Períodos letivos',
+        detail: 'Cadastre pelo menos um período com início e término.',
+      });
+    else if (issue.code === 'organization-unclassified' || issue.code === 'period-count')
+      issues.push({
+        mark: 'Pendente',
+        title: `Organização — ${modalityLabels[issue.modality]}`,
         detail:
-          organization === 'a-classificar'
+          issue.code === 'organization-unclassified'
             ? 'Classifique a organização e a associação dos períodos na etapa 2.'
-            : `Cadastre ${organization === 'anual' ? 'um período anual' : 'dois semestres identificados'} para esta oferta.`,
+            : `Cadastre ${issue.expected === 1 ? 'um período anual' : 'dois semestres identificados'} para esta oferta.`,
       });
   }
-  for (const row of activityCoverage(state)) {
+  for (const row of diagnostics.coverage) {
     if (row.applicability !== 'required' && row.applicability !== 'unconfigured') continue;
     if (row.coverage !== 'complete' || row.warnings.length)
       issues.push({
@@ -59,22 +57,20 @@ export default function IssuesSection() {
       });
   }
   if (evaluation) {
-    for (const [modality, detail] of Object.entries(evaluation.byModality))
-      for (const check of detail.checks)
-        if (check.scope === 'annual' || organizationForModality(state, modality) !== 'anual')
-          issues.push({
-            mark:
-              check.status === 'MET'
-                ? 'Atendido'
-                : check.status === 'NOT_MET'
-                  ? 'Corrigir'
-                  : 'Pendente',
-            title: `${modalityLabels[modality]} — ${check.scope === 'annual' ? 'Total anual' : state.periods.find((period) => period.id === check.scope)?.name || check.scope}`,
-            detail:
-              check.expected === null
-                ? 'Não há mínimo normativo configurado para este escopo.'
-                : `${check.observed} de ${check.expected} dias mínimos.`,
-          });
+    for (const check of diagnoseTeachingDays(state, evaluation))
+      issues.push({
+        mark:
+          check.status === 'MET'
+            ? 'Atendido'
+            : check.status === 'NOT_MET'
+              ? 'Corrigir'
+              : 'Pendente',
+        title: `${modalityLabels[check.modality]} — ${check.scope === 'annual' ? 'Total anual' : state.periods.find((period) => period.id === check.scope)?.name || check.scope}`,
+        detail:
+          check.expected === null
+            ? 'Não há mínimo normativo configurado para este escopo.'
+            : `${check.observed} de ${check.expected} dias mínimos.`,
+      });
     for (const conflict of evaluation.conflicts)
       issues.push({
         mark: 'Conflito',

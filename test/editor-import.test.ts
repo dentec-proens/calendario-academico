@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { normalizeCalendar as validateImport } from '../src/calendar-normalize.ts';
+import { normalizeCalendar as validateImport } from '../src/domain/calendar/normalization/normalize.ts';
 
 function draft() {
   return {

@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
 import { proensLayout } from '../src/printing/calendar-layout.ts';
-import type { CalendarActivity } from '../src/domain-types.ts';
+import type { CalendarActivity } from '../src/domain/calendar/model.ts';
 import { teachingDayBreakdown } from '../src/printing/teaching-day-breakdown.ts';
-import { evaluateCalendar } from '../src/evaluation.ts';
+import { evaluateCalendar } from '../src/domain/calendar/counting/evaluation.ts';
 
 const state = { year: 2027, campus: 'Campus sintético', modalities: ['integrado'], periods: [] };
 const events: CalendarActivity[] = [

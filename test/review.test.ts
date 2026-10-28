@@ -1,12 +1,12 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
+import { reviewSupport } from '../src/domain/reviews/support.ts';
 import {
-  reviewSupport,
   reviewCriteria,
   reviewCriteriaFor,
   reviewSourceFor,
-} from '../src/review.ts';
-import { reviewDocument } from '../src/review-export.ts';
+} from '../src/domain/reviews/criteria.ts';
+import { reviewDocument } from '../src/printing/review-export.ts';
 
 test('school vacation suggestions exclude teacher vacations and leave notes blank', () => {
   const record = {

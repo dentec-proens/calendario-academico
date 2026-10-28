@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button.tsx';
 import { useFeatureRoute } from '../../app/navigation.ts';
 import { functions } from '../../shared/convex/client.ts';
 import type { Id } from '../../../convex/_generated/dataModel.js';
-import { modalityLabels } from '../../../src/modalities.ts';
+import { modalityLabels } from '../../../src/domain/calendar/modalities.ts';
 import Pagination from '../../shared/forms/Pagination.tsx';
 import ReviewEditor from './ReviewEditor.tsx';
 import type { ReviewSupport } from './review-values.ts';

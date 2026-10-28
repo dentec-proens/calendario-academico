@@ -247,7 +247,7 @@ test('backend detection includes shared code, schema, runtime and dependencies',
   expect(changesBackend(['web/editor.tsx', 'docs/uso.md'])).toBe(false);
   for (const path of [
     'convex/schema.ts',
-    'src/calendar-base/index.ts',
+    'src/domain/calendar/base.ts',
     'config/environments.ts',
     'migration/import.ts',
     'pnpm-lock.yaml',

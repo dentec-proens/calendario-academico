@@ -1,4 +1,4 @@
-import type { CalendarInput } from '../src/calendar.ts';
+import type { CalendarInput } from '../src/domain/calendar/counting/core.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
@@ -6,7 +6,7 @@ import {
   datesBetween,
   daysBefore,
   firstTeachingDateAfter,
-} from '../src/calendar.ts';
+} from '../src/domain/calendar/counting/core.ts';
 
 // All evidence IDs and scenarios are synthetic, not institutional seed data.
 const fixture = (): CalendarInput => ({

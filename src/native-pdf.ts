@@ -1,4 +1,4 @@
-import type { CalendarActivity, TeachingState } from './domain-types.ts';
+import type { CalendarActivity, TeachingState } from './domain/calendar/model.ts';
 import chromium from '@sparticuz/chromium';
 import { chromium as playwright } from 'playwright-core';
 import { join } from 'node:path';
@@ -6,7 +6,7 @@ import { prepareChromium } from './printing/chromium-runtime.ts';
 import type { ChromiumRuntime } from './printing/chromium-manifest.ts';
 import { printCss, printLogo } from './printing/assets.generated.mjs';
 import { proensLayout } from './printing/calendar-layout.ts';
-import { evaluateCalendar } from './evaluation.ts';
+import { evaluateCalendar } from './domain/calendar/counting/evaluation.ts';
 
 export async function nativePdf(
   record: Parameters<typeof proensLayout>[3] & { state: TeachingState },

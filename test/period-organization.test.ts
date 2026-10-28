@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
-import { applyPeriod, configureIntakeRequirement } from '../src/calendar-edits/commands.ts';
-import { activityCoverage } from '../src/calendar-rules/index.ts';
-import { normalizeCalendar } from '../src/calendar-normalize.ts';
-import type { ActivityState, AcademicTerm } from '../src/domain-types.ts';
+import { applyPeriod, configureIntakeRequirement } from '../src/domain/calendar/commands.ts';
+import { activityCoverage } from '../src/domain/calendar/activities/coverage.ts';
+import { normalizeCalendar } from '../src/domain/calendar/normalization/normalize.ts';
+import type { ActivityState, AcademicTerm } from '../src/domain/calendar/model.ts';
 
 function calendar(): ActivityState {
   return {

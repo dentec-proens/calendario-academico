@@ -1,7 +1,7 @@
-import type { CalendarActivity } from '../src/domain-types.ts';
+import type { CalendarActivity } from '../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { evaluateCalendar } from '../src/evaluation.ts';
+import { evaluateCalendar } from '../src/domain/calendar/counting/evaluation.ts';
 import { proensLayout } from '../src/printing/calendar-layout.ts';
 import { teachingDayBreakdown } from '../src/printing/teaching-day-breakdown.ts';
 

@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
-import { applyEvent } from '../src/calendar-edits/commands.ts';
-import { normalizeCalendar } from '../src/calendar-normalize.ts';
-import { releaseReadiness } from '../src/release.ts';
-import type { ActivityState } from '../src/domain-types.ts';
+import { applyEvent } from '../src/domain/calendar/commands.ts';
+import { normalizeCalendar } from '../src/domain/calendar/normalization/normalize.ts';
+import { releaseReadiness } from '../src/domain/calendar/readiness.ts';
+import type { ActivityState } from '../src/domain/calendar/model.ts';
 
 const state: ActivityState & { ignoredHistory: string[] } = {
   schemaVersion: 2,

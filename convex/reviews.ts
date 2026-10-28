@@ -1,15 +1,12 @@
-import { reviewIsCurrent } from '../src/calendar-base/index';
-import { rulesetVersion } from '../src/calendar-rules/index';
+import { reviewIsCurrent } from '../src/domain/calendar/base';
+import { rulesetVersion } from '../src/domain/calendar/policies/resolve';
 import { assertWritesOpen } from './lib/maintenance';
-import {
-  reviewSupport,
-  reviewCriteriaFor,
-  initialConclusion,
-  reviewSourceFor,
-} from '../src/review';
-import { updateConclusion } from '../src/review-conclusion';
-import { reviewDocument } from '../src/review-export';
-import { reviewNorm } from '../src/review-presentation';
+import { reviewSupport } from '../src/domain/reviews/support';
+import { reviewCriteriaFor, reviewSourceFor } from '../src/domain/reviews/criteria';
+import { initialConclusion } from '../src/domain/reviews/conclusion';
+import { updateConclusion } from '../src/domain/reviews/conclusion';
+import { reviewDocument } from '../src/printing/review-export';
+import { reviewNorm } from '../src/domain/reviews/citation';
 import { query, mutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
 import { calendarRow } from './calendars/model';

@@ -1,5 +1,5 @@
 import { inspectBase } from './base';
-import { releaseReadiness } from '../../src/release';
+import { releaseReadiness } from '../../src/domain/calendar/readiness';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
 import type { Member } from '../authContracts';

@@ -2,7 +2,7 @@ import { v } from 'convex/values';
 import { chromiumArchives, parseChromiumManifest } from '../src/printing/chromium-manifest';
 import type { Infer } from 'convex/values';
 import { environments } from '../config/environments';
-import { campusNames, initialCatalogue } from '../src/institution.ts';
+import { campusNames, initialCatalogue } from '../src/domain/institution/catalogue.ts';
 import { internalMutation } from './_generated/server';
 import { isSupportedPasswordSecret } from './authCrypto';
 import { setPassword } from './access/store';

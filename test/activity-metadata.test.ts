@@ -3,11 +3,11 @@ import type {
   ActivityRequirement,
   AssessmentSettings,
   CalendarActivity,
-} from '../src/domain-types.ts';
-import { activityChecklist } from '../src/obligations.ts';
-import { activityGroups } from '../src/activity-metadata.ts';
-import { applicabilityFor } from '../src/calendar-rules/index.ts';
-import { applyEvent } from '../src/calendar-edits/commands.ts';
+} from '../src/domain/calendar/model.ts';
+import { activityChecklist } from '../src/domain/calendar/activities/checklist.ts';
+import { activityGroups } from '../src/domain/calendar/activities/metadata.ts';
+import { applicabilityFor } from '../src/domain/calendar/policies/resolve.ts';
+import { applyEvent } from '../src/domain/calendar/commands.ts';
 import {
   activityDraft,
   eventFromValues,

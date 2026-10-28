@@ -64,6 +64,10 @@ Para executar validações simultâneas no mesmo checkout, separe os artefatos: 
 
 Durante o desenvolvimento, rode primeiro os arquivos afetados, por exemplo `pnpm test:browser test/browser/editor-forms.spec.ts`. Antes de concluir ou publicar, execute `pnpm check` completo e registre comando, resultado e duração. Uma execução parcial não substitui a validação de release.
 
+## Organização e contratos do domínio
+
+`pnpm test:unit test/domain-architecture.test.ts test/academic-diagnostics.test.ts test/prepare-calendar-save.test.ts` verifica imports sem ciclos em runtime e sem dependências dos adaptadores no domínio acadêmico, coerência dos diagnósticos entre estado aplicado e confirmado e preparação pura do salvamento. As suítes de calendário, regras de 2027, base, adição de ofertas, revisão e persistência continuam exercitando os mesmos contratos públicos, agora importados de `src/domain/`.
+
 ## Referências visuais
 
 A suíte visual protege o portal, a criação de calendário, a consulta de documentos e seu leitor PDF, a revisão humana com confirmação pendente, o editor, a edição de evento e o diálogo de confirmação. Dados, relógio, idioma, fuso e viewports são fixos. As referências ficam versionadas em `test/browser/__screenshots__/`, somente para macOS (`darwin`), separadas por viewport. O teste falha quando falta uma referência; os testes obrigatórios não são pulados quando o navegador está ausente.

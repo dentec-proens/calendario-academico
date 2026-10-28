@@ -1,0 +1,103 @@
+import type { AssessmentSettings, ReviewEntry } from '../domain/calendar/model.ts';
+import { calendarModalities, modalityLabels } from '../domain/calendar/modalities.ts';
+import { reviewNorm } from '../domain/reviews/citation.ts';
+import { reviewCriteriaFor, reviewSourceFor } from '../domain/reviews/criteria.ts';
+import { rulesetVersion } from '../domain/calendar/policies/resolve.ts';
+
+const esc = (s: string | number | undefined | null) =>
+  String(s ?? '').replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  );
+const statusLabels: Record<string, string> = {
+  PENDENTE: 'Pendente de conferência',
+  ATENDIDO: 'Atendido',
+  NAO_ATENDIDO: 'Não atendido',
+  NAO_APLICAVEL: 'Não aplicável',
+};
+
+export function reviewDocument(
+  record: { state: AssessmentSettings & { year: number; campus?: string }; courses?: string },
+  review: {
+    calendarVersion?: number;
+    entries: ReviewEntry[];
+    processNumber?: string;
+    applicableNorm?: string;
+    reviewer: { name: string };
+    revision: number;
+    catalogueRevision: number;
+    conclusion?: string;
+  },
+) {
+  const reviewCriteria = reviewCriteriaFor(record.state.year),
+    reviewSource = reviewSourceFor(record.state.year);
+  const title = 'PARECER TÉCNICO-PEDAGÓGICO DE CALENDÁRIO ACADÊMICO E ADMINISTRATIVO';
+  const assessed = review.entries.filter(
+    (e) =>
+      e.reviewed === true && e.status !== 'PENDENTE' && reviewCriteria.some((c) => c.id === e.id),
+  ).length;
+  const notice = `Minuta para revisão humana e inserção no SEI. ${assessed}/${reviewCriteria.length} critérios conferidos pelo parecerista. Não é documento assinado nem aprovação oficial.`;
+  const metadata = [
+    ['Conjunto de regras', rulesetVersion(record.state)],
+    ['Processo nº', review.processNumber || 'Não informado'],
+    ['Assunto', `Calendário Acadêmico e Administrativo ${record.state.year}`],
+    ['Campus', record.state.campus],
+    [
+      'Forma de oferta/nível e cursos',
+      `${calendarModalities(record.state)
+        .map((m) => modalityLabels[m])
+        .join(' + ')} / ${record.courses}`,
+    ],
+    [
+      'Norma do ano analisado',
+      review.applicableNorm ||
+        reviewNorm(record.state.year) ||
+        'Não informada — conferir antes de concluir',
+    ],
+    [
+      'Modelo de referência',
+      `${reviewSource.id}; ${reviewSource.norm} (calendário ${reviewSource.year})`,
+    ],
+    [
+      'Registro da análise',
+      `${review.reviewer.name}; revisão ${review.revision}; base institucional ${review.catalogueRevision}`,
+    ],
+  ];
+  const bodyRows = reviewCriteria.map((c) => {
+    const e = review.entries.find((e) => e.id === c.id) || {
+      status: 'PENDENTE',
+      notes: '',
+      reviewed: false,
+    };
+    return {
+      criterion: `${c.title}\nReferência do modelo: página ${c.page}, ${c.item}.`,
+      assessment: `${statusLabels[e.status] || statusLabels.PENDENTE} — ${e.reviewed !== true || e.status === 'PENDENTE' ? 'proposta automática, não confirmada' : 'avaliação humana'}\n${e.notes}`,
+    };
+  });
+  const conclusion = review.conclusion || 'Conclusão pendente de elaboração pelo parecerista.';
+  const section = '1. ANÁLISE TÉCNICO-PEDAGÓGICA';
+  let body = `<article><h1>PARECER</h1><h2>${title}</h2><p class="center">Pró-Reitoria de Ensino — PROENS</p><p class="notice">${esc(notice)}</p>${record.state.year !== reviewSource.year ? `<p><strong>Atenção:</strong> o modelo é de ${reviewSource.year}; seus prazos e artigos não substituem a norma de ${record.state.year}.</p>` : ''}${metadata.map(([key, value]) => `<p><strong>${esc(key)}:</strong> ${esc(value)}</p>`).join('')}<h2>${section}</h2><table><thead><tr><th>Itens do calendário — roteiro do parecer</th><th>Situação e observações</th></tr></thead><tbody>${bodyRows.map((r) => `<tr><td>${esc(r.criterion).replace(/\n/g, '<br>')}</td><td>${esc(r.assessment).replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table><h2>2. PARECER</h2><p>${esc(conclusion).replace(/\n/g, '<br>')}</p><p>Responsável pelo registro da análise: ${esc(review.reviewer.name)}.</p><p>A formalização, assinatura e tramitação são realizadas pelas instâncias competentes no SEI.</p></article>`;
+  // Inline table formatting also travels with HTML clipboard content.
+  body = body
+    .replace('<table>', '<table style="border-collapse:collapse;width:100%;table-layout:fixed">')
+    .replaceAll(
+      '<td>',
+      '<td style="border:1px solid #555;padding:8px;vertical-align:top;overflow-wrap:anywhere">',
+    )
+    .replaceAll('<th>', '<th style="border:1px solid #555;padding:8px;background:#eee">');
+  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Parecer PROENS — minuta</title><style>@page{size:A4;margin:20mm}body{font:12pt Arial,sans-serif;color:#000;background:#fff;line-height:1.4;max-width:900px;margin:25px auto}h1,h2,.center{text-align:center}h1{font-size:14pt}h2{font-size:12pt;margin-top:24px}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid #555;padding:8px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee}tr{break-inside:avoid}thead{display:table-header-group}.notice{border:1px solid #999;padding:8px;font-size:10pt}</style></head><body>${body}</body></html>`;
+  const text = [
+    'PARECER',
+    title,
+    'Pró-Reitoria de Ensino — PROENS',
+    notice,
+    ...metadata.map(([key, value]) => `${key}: ${value}`),
+    section,
+    ...bodyRows.map((r) => r.criterion + '\n' + r.assessment),
+    '2. PARECER',
+    conclusion,
+    `Responsável pelo registro da análise: ${review.reviewer.name}.`,
+    'A formalização, assinatura e tramitação são realizadas pelas instâncias competentes no SEI.',
+  ].join('\n\n');
+  return { html, body, text };
+}

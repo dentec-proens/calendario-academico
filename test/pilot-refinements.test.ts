@@ -1,10 +1,10 @@
-import type { CalendarActivity } from '../src/domain-types.ts';
+import type { CalendarActivity } from '../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { teacherVacations } from '../src/teacher-vacations.ts';
-import { activityChecklist } from '../src/obligations.ts';
+import { teacherVacations } from '../src/domain/calendar/activities/teacher-vacations.ts';
+import { activityChecklist } from '../src/domain/calendar/activities/checklist.ts';
 import { auditLog } from '../src/audit-log.ts';
-import { evaluateCalendar } from '../src/evaluation.ts';
+import { evaluateCalendar } from '../src/domain/calendar/counting/evaluation.ts';
 
 test('teacher vacations count explicit inclusive ranges without sources and reject wrong years or inverted intervals', () => {
   for (const year of [2027, 2028]) {

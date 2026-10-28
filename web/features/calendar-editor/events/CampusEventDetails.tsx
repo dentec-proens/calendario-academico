@@ -1,5 +1,5 @@
 import { Pencil, Trash2 } from 'lucide-react';
-import { removeEvent } from '../../../../src/calendar-edits/commands.ts';
+import { removeEvent } from '../../../../src/domain/calendar/commands.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { EditorEvent } from '../types.ts';
 import { useEventEditor } from './EventEditorProvider.tsx';

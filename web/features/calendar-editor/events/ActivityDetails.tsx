@@ -1,8 +1,8 @@
 import { Pencil, Trash2 } from 'lucide-react';
-import { modalityLabels } from '../../../../src/modalities.ts';
-import { removeEvent } from '../../../../src/calendar-edits/commands.ts';
-import { activityStatusLabels } from '../../../../src/activity-status.ts';
-import type { ActivityRequirement } from '../../../../src/domain-types.ts';
+import { modalityLabels } from '../../../../src/domain/calendar/modalities.ts';
+import { removeEvent } from '../../../../src/domain/calendar/commands.ts';
+import { activityStatusLabels } from '../../../../src/domain/calendar/activities/status.ts';
+import type { ActivityRequirement } from '../../../../src/domain/calendar/model.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { useActivityCoverage } from './useActivityCoverage.ts';

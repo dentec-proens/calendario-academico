@@ -1,4 +1,4 @@
-import { teacherDayId } from '../../../../src/teacher-day.ts';
+import { teacherDayId } from '../../../../src/domain/institution/teacher-day.ts';
 import { Notice } from '../../../components/ui/Notice.tsx';
 import type { EditorEvent } from '../types.ts';
 import { useEventEditor } from './EventEditorProvider.tsx';

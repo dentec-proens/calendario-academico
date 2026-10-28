@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { inspect, reconcile, reviewIsCurrent } from '../src/calendar-base/index.ts';
+import { inspect, reconcile, reviewIsCurrent } from '../src/domain/calendar/base.ts';
 
 const scope = { year: 2027, modalities: ['integrado'] };
 const event = {

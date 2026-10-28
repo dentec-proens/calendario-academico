@@ -1,14 +1,16 @@
 import { expect, test } from 'vitest';
-import { countCalendar } from '../src/calendar.ts';
-import { evaluateCalendar } from '../src/evaluation.ts';
-import {
-  activityCoverage,
-  applicabilityFor,
-  prorogatedDeadline,
-  validateActivityRecord,
-} from '../src/calendar-rules/index.ts';
-import { activityChecklist } from '../src/obligations.ts';
-import type { ActivityState, CalendarActivity, IntakeConfiguration } from '../src/domain-types.ts';
+import { countCalendar } from '../src/domain/calendar/counting/core.ts';
+import { evaluateCalendar } from '../src/domain/calendar/counting/evaluation.ts';
+import { activityCoverage } from '../src/domain/calendar/activities/coverage.ts';
+import { applicabilityFor } from '../src/domain/calendar/policies/resolve.ts';
+import { prorogatedDeadline } from '../src/domain/calendar/activities/deadlines.ts';
+import { validateActivityRecord } from '../src/domain/calendar/activities/validation.ts';
+import { activityChecklist } from '../src/domain/calendar/activities/checklist.ts';
+import type {
+  ActivityState,
+  CalendarActivity,
+  IntakeConfiguration,
+} from '../src/domain/calendar/model.ts';
 
 // External metadata is test input, never a storage/API contract.
 type AnnotatedEvent = CalendarActivity & {

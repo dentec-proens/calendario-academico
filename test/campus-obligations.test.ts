@@ -1,9 +1,9 @@
-import type { CalendarActivity } from '../src/domain-types.ts';
+import type { CalendarActivity } from '../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { activityChecklist } from '../src/obligations.ts';
-import { releaseReadiness } from '../src/release.ts';
-import { selectableCampuses } from '../src/campus-selection.ts';
+import { activityChecklist } from '../src/domain/calendar/activities/checklist.ts';
+import { releaseReadiness } from '../src/domain/calendar/readiness.ts';
+import { selectableCampuses } from '../src/domain/institution/campus-selection.ts';
 
 test('2026 legacy explicit absence of second semester intake waives new-student registration only', () => {
   const base = {

@@ -1,11 +1,12 @@
-import { automaticEventSource } from '../calendar.ts';
+import { automaticEventSource } from '../domain/calendar/counting/core.ts';
 import type { PrintState, PrintResult, PrintRecord, PrintEvent, DistributionRow } from './types.ts';
 import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
 import { printLogo } from './assets.generated.mjs';
-import { calendarModalities, modalityLabels } from '../modalities.ts';
-import { categories, eventCategory } from '../categories.ts';
-import { rulesetVersion, periodsForModality } from '../calendar-rules/index.ts';
-import { reviewSourceFor } from '../review.ts';
+import { calendarModalities, modalityLabels } from '../domain/calendar/modalities.ts';
+import { categories, eventCategory } from '../domain/calendar/activities/categories.ts';
+import { rulesetVersion } from '../domain/calendar/policies/resolve.ts';
+import { periodsForModality } from '../domain/calendar/organization/periods.ts';
+import { reviewSourceFor } from '../domain/reviews/criteria.ts';
 
 const esc = (s: unknown) =>
   String(s).replace(

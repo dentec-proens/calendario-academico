@@ -1,8 +1,8 @@
-import { assessmentStageCounts } from '../calendar-config.ts';
-import type { DateRange } from '../domain-types.ts';
+import { assessmentStageCounts } from '../domain/calendar/config.ts';
+import type { DateRange } from '../domain/calendar/model.ts';
 import type { PrintState, PrintResult, PrintEvent, DistributionRow } from './types.ts';
-import { appliesTo } from '../modalities.ts';
-import { periodsForModality } from '../calendar-rules/index.ts';
+import { appliesTo } from '../domain/calendar/modalities.ts';
+import { periodsForModality } from '../domain/calendar/organization/periods.ts';
 
 export function teachingDayBreakdown(
   state: PrintState,

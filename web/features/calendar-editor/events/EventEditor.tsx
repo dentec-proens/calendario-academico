@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { categories } from '../../../../src/categories.ts';
-import { modalityLabels } from '../../../../src/modalities.ts';
-import { activityChecklist } from '../../../../src/obligations.ts';
-import { applicabilityFor } from '../../../../src/calendar-rules/index.ts';
+import { categories } from '../../../../src/domain/calendar/activities/categories.ts';
+import { modalityLabels } from '../../../../src/domain/calendar/modalities.ts';
+import { activityChecklist } from '../../../../src/domain/calendar/activities/checklist.ts';
+import { applicabilityFor } from '../../../../src/domain/calendar/policies/resolve.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { eventTypes, noticeActive, recordOffers } from './event-draft.ts';

@@ -1,15 +1,14 @@
-import { validateAddedOffers } from '../src/offer-organization';
-import { modalityIds } from '../src/calendar-config';
+import { prepareCalendarSave } from '../src/domain/calendar/prepare-save';
+import { calendarContent } from '../src/domain/calendar/normalization/content';
+import { modalityIds } from '../src/domain/calendar/config';
 import { inspectBase, reconcileBase } from './calendars/base';
 import { assertWritesOpen, maintenanceAccess } from './lib/maintenance';
-import { normalizeCalendar } from '../src/calendar-normalize';
-import { recalculateCalendar } from '../src/calendar-edits/commands';
-import { equalValues } from '../src/equal';
-import { rulesetVersion } from '../src/calendar-rules/index';
-import { inheritedEvents } from '../src/institution';
+import { normalizeCalendar } from '../src/domain/calendar/normalization/normalize';
+import { rulesetVersion } from '../src/domain/calendar/policies/resolve';
+import { inheritedEvents } from '../src/domain/institution/catalogue';
 import { query, mutation, internalQuery } from './_generated/server';
 import { requireNativeUser } from './access/identity';
-import { calendarRow, summary, toContent } from './calendars/model';
+import { calendarRow, summary } from './calendars/model';
 import {
   fullRecord,
   calendarSummaries,
@@ -190,7 +189,7 @@ export const createCalendar = mutation({
     const base = await catalogue(ctx, body.year);
     await ctx.db.insert('calendarContents', {
       calendarId: id,
-      state: toContent(state),
+      state: calendarContent(state) as validators.ContentState,
       catalogueRevision: base.revision,
       institutionalSnapshot: clean(inheritedEvents(base, body.year, body.modalities, state)),
       documentSnapshot: await currentDocuments(ctx, body.year),
@@ -231,40 +230,24 @@ export const saveCalendar = mutation({
       );
     const reconciliation = reconcileBase(compatibility, body.baseAcceptance);
     const savedContent = clean(content.state);
-    if (body.state.year !== row.year) fail('O ano não pode mudar neste registro.');
-    if (row.modalities.some((modality) => !body.state.modalities.includes(modality)))
-      fail('Ofertas existentes não podem ser removidas por esta operação.');
-    const added = body.state.modalities.some((modality) => !row.modalities.includes(modality));
-    const state = normalizeCalendar({
-      ...body.state,
-      events: added
-        ? body.state.events.map((event) =>
-            !event.modalities?.length &&
-            record.state.events.some(
-              (previous) => previous.id === event.id && !previous.modalities?.length,
-            )
-              ? { ...event, modalities: [...row.modalities] }
-              : event,
-          )
-        : body.state.events,
-      campus: record.state.campus,
-    }) as validators.DomainState;
-    try {
-      validateAddedOffers(row.modalities, state);
-      if (reconciliation.recalculate || !equalValues(savedContent, toContent(state))) {
-        Object.assign(
-          state,
-          normalizeCalendar(
-            recalculateCalendar(state, inheritedEvents(base, row.year, state.modalities, state)),
-          ),
-        );
+    const prepared = (() => {
+      try {
+        return prepareCalendarSave(record.state, body.state, {
+          storedContent: savedContent,
+          catalogue: base,
+          recalculate: reconciliation.recalculate,
+        });
+      } catch (error) {
+        if (error instanceof Error && 'status' in error && error.status === 400)
+          fail(error.message);
+        throw error;
       }
-    } catch (error) {
-      fail(error instanceof Error ? error.message : 'Não foi possível recalcular o calendário.');
-    }
-    const next = toContent(state),
-      institutionalSnapshot = clean(inheritedEvents(base, row.year, state.modalities, state));
-    if (equalValues(savedContent, next) && !reconciliation.incorporate) {
+    })();
+    // Convex validators constrain the transport; domain normalization preserves those literals.
+    const state = prepared.state as validators.DomainState;
+    const next = prepared.content as validators.ContentState;
+    const institutionalSnapshot = clean(prepared.institutionalSnapshot);
+    if (prepared.unchanged && !reconciliation.incorporate) {
       if (!body.unchangedOnly && content.catalogueRevision !== base.revision)
         await ctx.db.patch(content._id, { catalogueRevision: base.revision });
       return {

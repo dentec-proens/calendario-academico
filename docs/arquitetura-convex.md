@@ -4,26 +4,41 @@ A aplicação é uma SPA React e Vite com uma entrada HTML e TanStack Router. Co
 
 ## Responsabilidades
 
-| Módulo                                              | Responsabilidade                                                                   |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `web/app/`                                          | Árvore tipada de rotas, layouts, sessão, erros e Devtools                          |
-| `web/features/`                                     | Páginas e formulários organizados por assunto                                      |
-| `web/features/calendar-editor/session/`             | Estado confirmado/aplicado, sincronização, autosave e ciclo de vida do calendário  |
-| `web/shared/forms/`                                 | Rascunhos em memória, submissão e composição comum de formulários                  |
-| `web/shared/convex/`                                | Cliente, erros, tipos e operações por domínio                                      |
-| `web/components/`                                   | Controles visuais e confirmação acessível                                          |
-| `src/calendar-edits/`                               | Comandos puros que validam e aplicam alterações de calendário                      |
-| `src/calendar-rules/`                               | Política por ano, oferta e período; cobertura, referências e organização acadêmica |
-| `src/printing/`                                     | Modelo puro de impressão e distribuição de dias                                    |
-| `assets/printing/`                                  | CSS e logo usados no documento                                                     |
-| `convex/calendars.ts`                               | Calendários, versões e lixeira                                                     |
-| `convex/catalogue.ts`, `documents.ts`, `reviews.ts` | Base institucional, documentos e revisão humana                                    |
-| `convex/access/`                                    | Sessão, identidade, membros, convites, recuperação e instalação                    |
-| `convex/nativeFiles.ts`                             | Uploads temporários, tickets, restauração e limpeza agendada                       |
-| `convex/actions/`                                   | Processamento Node de arquivos, análise e PDF                                      |
-| `convex/operations.ts`                              | Admissão de trabalho, manutenção e drenagem de actions                             |
+| Módulo                                              | Responsabilidade                                                                  |
+| --------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `web/app/`                                          | Árvore tipada de rotas, layouts, sessão, erros e Devtools                         |
+| `web/features/`                                     | Páginas e formulários organizados por assunto                                     |
+| `web/features/calendar-editor/session/`             | Estado confirmado/aplicado, sincronização, autosave e ciclo de vida do calendário |
+| `web/shared/forms/`                                 | Rascunhos em memória, submissão e composição comum de formulários                 |
+| `web/shared/convex/`                                | Cliente, erros, tipos e operações por domínio                                     |
+| `web/components/`                                   | Controles visuais e confirmação acessível                                         |
+| `src/domain/calendar/commands.ts`                   | Comandos puros que validam e aplicam alterações de calendário                     |
+| `src/domain/calendar/policies/`                     | Política por ano e escopo; requisitos, aplicabilidade, prazos e mínimos           |
+| `src/domain/calendar/activities/`                   | Validação, cobertura, sábados, férias e metadados de atividades                   |
+| `src/domain/calendar/counting/`                     | Contagem civil de dias e recálculo de duração                                     |
+| `src/domain/calendar/organization/`                 | Associação de períodos e organização por oferta                                   |
+| `src/domain/reviews/`                               | Critérios, suporte técnico e conclusões da revisão humana                         |
+| `src/domain/institution/`                           | Catálogo, documentos e regras institucionais                                      |
+| `src/printing/`                                     | Modelo puro de impressão e distribuição de dias                                   |
+| `assets/printing/`                                  | CSS e logo usados no documento                                                    |
+| `convex/calendars.ts`                               | Calendários, versões e lixeira                                                    |
+| `convex/catalogue.ts`, `documents.ts`, `reviews.ts` | Base institucional, documentos e revisão humana                                   |
+| `convex/access/`                                    | Sessão, identidade, membros, convites, recuperação e instalação                   |
+| `convex/nativeFiles.ts`                             | Uploads temporários, tickets, restauração e limpeza agendada                      |
+| `convex/actions/`                                   | Processamento Node de arquivos, análise e PDF                                     |
+| `convex/operations.ts`                              | Admissão de trabalho, manutenção e drenagem de actions                            |
 
 Rotas compõem features; features usam domínio e infraestrutura. Domínio não importa React ou DOM. O runtime Node não entra nos bundles do navegador. Consultas paginadas pertencem às telas que as utilizam.
+
+## Interfaces do domínio acadêmico
+
+`src/domain/calendar/model.ts` define os tipos acadêmicos; `config.ts` mantém os catálogos estruturais e limites do formato. Os dados e exceções normativas pertencem a `policies/legacy-2026.ts` e `policies/consup-292-2027.ts`. `policies/resolve.ts` seleciona versão, janela, aplicabilidade e mínimos por ano e escopo. Referências históricas de revisão não ativam automaticamente mínimos de contagem. O catálogo legado independe do seletor de políticas, evitando a antiga dependência circular entre obrigações e regras.
+
+`commands.ts` valida e aplica alterações puras. `normalization/` lê entradas desconhecidas, converte v2 e normaliza o conteúdo; `normalization/content.ts` remove a identidade e o escopo pertencentes ao registro e produz conteúdo serializável. `prepare-save.ts` prepara o estado candidato a partir do anterior, da proposta e da base explícita: preserva campus e ano, impede remover ofertas, limita o alcance de registros legados ao acrescentar ofertas e recalcula quando necessário. Não acessa banco nem confirma gravação. A mutation `saveCalendar` mantém autorização, controle de versão, aceitação da base, histórico, auditoria e persistência na mesma transação. Os contratos públicos e o schema Convex permanecem os mesmos.
+
+`diagnostics.ts` oferece diagnósticos estruturados de semana, períodos e organização, cobertura de atividades e verificações de dias por oferta. A tela de pendências e a conclusão consomem essas decisões comuns, com apresentação e critérios de bloqueio próprios. Cada chamada examina o snapshot recebido: o editor pode diagnosticar o estado aplicado sem transformar essa avaliação em confirmação de persistência; o backend avalia o registro confirmado e a revisão humana atual.
+
+Domínio não importa React, Router, Convex, diretórios de adaptação nem runtime Node. Navegação e arquivos de infraestrutura continuam fora dele. Impressão consome o domínio e mantém seu runtime separado. `test/domain-architecture.test.ts` verifica a direção das dependências e a ausência de ciclos de imports em runtime. Os testes de diagnósticos e preparação do salvamento complementam os fluxos existentes de edição, concorrência, base, revisão e exportação. Imports apontam diretamente ao módulo responsável, sem uma fachada geral de reexports.
 
 ## Navegação e formulários
 
@@ -95,7 +110,7 @@ A atualização da fonte institucional de 2027 foi ensaiada por `preview2027Sour
 
 ### Fonte e limites das regras
 
-A referência utilizada para 2027 é a Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026, documento SEI 4422750, processo 23411.011715/2026-07. O arquivo fornecido na investigação tinha cinco páginas e SHA-256 `594fee1beb5f0cc5f09479dfd6f1ed3c55a9f84dde6c72370641873aa052c554`; ele não é dependência do build. A política executável está em `src/calendar-rules/` e é compartilhada por editor, revisão, backend e impressão. A fonte fundamenta requisitos, sem atribuir autorização institucional à aplicação.
+A referência utilizada para 2027 é a Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026, documento SEI 4422750, processo 23411.011715/2026-07. O arquivo fornecido na investigação tinha cinco páginas e SHA-256 `594fee1beb5f0cc5f09479dfd6f1ed3c55a9f84dde6c72370641873aa052c554`; ele não é dependência do build. A política executável está em `src/domain/calendar/` e é compartilhada por editor, revisão, backend e impressão. A fonte fundamenta requisitos, sem atribuir autorização institucional à aplicação.
 
 Cobertura é calculada por atividade, oferta e ciclo. Matrícula de ingressantes, matrícula/rematrícula de veteranos e ajuste são atividades distintas. As exigências dos incisos V e VII do art. 11 têm recorte de subsequente e graduação; não são herdadas pelo integrado num calendário combinado. O inciso VIII não tem esse mesmo recorte. A periodicidade de editais acompanha a organização anual/semestral; obrigações docentes semestrais, como Plano de Ensino, PIT e RIT, não desaparecem porque a oferta é anual. A falta de configuração de ingresso não significa ausência de ingressantes: não produz exigência automática sem regra local e fonte, mas preserva exigências anteriormente declaradas.
 
@@ -105,17 +120,17 @@ A norma de 2027 prevê metas anuais/semestrais e atividades com recortes própri
 
 ## Períodos, atividades e painéis
 
-O roteiro atual tem seis etapas, definidas em `web/features/calendar-editor/editor-steps.ts`. **Organização letiva por oferta** reúne períodos e avaliações em `/periodos`, com um formulário por oferta e divisórias simples; `/avaliacoes` aponta para a mesma etapa. `applyOfferOrganization` valida e aplica períodos e etapas juntos. A lista usa o catálogo completo de `src/calendar-config.ts`; uma oferta nova só é incluída ao aplicar sua organização completa. A mutation grava conteúdo, ofertas do registro e versão na mesma transação, preservando o escopo dos snapshots anteriores. Ciclos conflitantes e vínculos incompatíveis exigem correção explícita; legado ambíguo conserva IDs/datas até a classificação. Períodos de ofertas diferentes podem coincidir, sem permitir sobreposição dentro da mesma oferta. Quantidade de avaliações não representa quantidade de períodos letivos.
+O roteiro atual tem seis etapas, definidas em `web/features/calendar-editor/editor-steps.ts`. **Organização letiva por oferta** reúne períodos e avaliações em `/periodos`, com um formulário por oferta e divisórias simples; `/avaliacoes` aponta para a mesma etapa. `applyOfferOrganization` valida e aplica períodos e etapas juntos. A lista usa o catálogo completo de `src/domain/calendar/config.ts`; uma oferta nova só é incluída ao aplicar sua organização completa. A mutation grava conteúdo, ofertas do registro e versão na mesma transação, preservando o escopo dos snapshots anteriores. Ciclos conflitantes e vínculos incompatíveis exigem correção explícita; legado ambíguo conserva IDs/datas até a classificação. Períodos de ofertas diferentes podem coincidir, sem permitir sobreposição dentro da mesma oferta. Quantidade de avaliações não representa quantidade de períodos letivos.
 
 A norma aplicável é conferida na revisão; exigência local de matrícula é declarada no detalhe da atividade, com fonte e oferta/ciclo próprios. Não há formulários independentes de organização ou ingresso na etapa de períodos. Cadastro de um evento não declara sozinho uma nova exigência normativa.
 
 Atividades usam cobertura compartilhada, filtros validados na URL e um painel ativo. Consulta e edição têm identidades distintas: abrir uma atividade não escolhe silenciosamente seu primeiro registro, filtros não alteram valores preenchidos e padrões só inicializam criação. Edição preserva valores gravados até ação explícita. `PanelDialog`, `PanelHeader` e `FormActions` concentram fechamento, foco, rolagem e ações; fechar conserva rascunho, descartar afeta somente o preenchimento e remover atua no registro aplicado. O fechamento remove o link de atividade da URL e devolve foco à origem ou ao título disponível. Sessão expirada fecha o painel sem apagar o rascunho. A referência dos componentes está em [Componentes da interface](componentes-interface.md).
 
-`src/saturdays.ts` classifica a grade anual de sábados; o estado aplicado vem dos comandos, e a seleção continua no formulário. O painel usa uma atividade/fonte por lote, mostra contagens por oferta e não completa metas automaticamente. Sábados fora dos períodos ou impedidos não são selecionáveis; datas registradas têm edição e remoção próprias. Em contêiner estreito o painel abre como diálogo; teclado, retorno de foco e controles desobstruídos fazem parte da verificação local.
+`src/domain/calendar/activities/saturdays.ts` classifica a grade anual de sábados; o estado aplicado vem dos comandos, e a seleção continua no formulário. O painel usa uma atividade/fonte por lote, mostra contagens por oferta e não completa metas automaticamente. Sábados fora dos períodos ou impedidos não são selecionáveis; datas registradas têm edição e remoção próprias. Em contêiner estreito o painel abre como diálogo; teclado, retorno de foco e controles desobstruídos fazem parte da verificação local.
 
 ## Compatibilidade da base institucional
 
-`src/calendar-base/` concentra a política de equivalência, comparação e confirmação da base aplicável ao calendário. A revisão numérica é um marcador técnico; a identidade de conteúdo considera eventos, fontes, aplicabilidade e arquivos documentais. Ordem dos registros, ofertas externas ao calendário e metadados operacionais não exigem uma decisão do usuário. O adaptador `convex/calendars/base.ts` seleciona as referências por ano e oferta e adapta os snapshots persistidos para essa interface.
+`src/domain/calendar/base.ts` concentra a política de equivalência, comparação e confirmação da base aplicável ao calendário. A revisão numérica é um marcador técnico; a identidade de conteúdo considera eventos, fontes, aplicabilidade e arquivos documentais. Ordem dos registros, ofertas externas ao calendário e metadados operacionais não exigem uma decisão do usuário. O adaptador `convex/calendars/base.ts` seleciona as referências por ano e oferta e adapta os snapshots persistidos para essa interface.
 
 O editor recebe a análise pela sessão. Uma base equivalente não apresenta card: `synchronizeBase` atualiza somente a referência técnica, sem receber campos locais, recalcular datas, alterar autoria/data editorial ou criar versão. A mesma equivalência permite salvamento e PDF sem exigir essa sincronização antecipada. Durante o smoke autorizado em manutenção, a sincronização não grava nem mesmo a referência técnica; o smoke também verifica que os snapshots e a revisão persistida permanecem intactos. Alterações reais exigem uma confirmação vinculada à identidade do conteúdo exibido; a transação verifica novamente a identidade e a versão do calendário. Mudanças em eventos recalculam o calendário; mudanças apenas documentais preservam as datas. Ambas geram versão editorial quando incorporadas.
 

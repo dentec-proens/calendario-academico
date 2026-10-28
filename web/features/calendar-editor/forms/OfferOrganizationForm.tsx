@@ -4,7 +4,7 @@ import {
   termsByOrganization,
   periodCountByOrganization,
   assessmentStageRequirementPattern,
-} from '../../../../src/calendar-config.ts';
+} from '../../../../src/domain/calendar/config.ts';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -13,9 +13,9 @@ import {
   applyOfferOrganization,
   offerOrganizationDraft,
   offerOrganizationIssues,
-} from '../../../../src/offer-organization.ts';
-import { periodsForModality } from '../../../../src/calendar-rules/index.ts';
-import { modalityLabels } from '../../../../src/modalities.ts';
+} from '../../../../src/domain/calendar/organization/offers.ts';
+import { periodsForModality } from '../../../../src/domain/calendar/organization/periods.ts';
+import { modalityLabels } from '../../../../src/domain/calendar/modalities.ts';
 import { civilDate } from '../events/activity-query.ts';
 import { ChevronUp } from 'lucide-react';
 import { Button } from '../../../components/ui/Button.tsx';

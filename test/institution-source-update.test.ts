@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { initialCatalogue, preview2027SourceUpdate } from '../src/institution.ts';
+import { initialCatalogue, preview2027SourceUpdate } from '../src/domain/institution/catalogue.ts';
 
 test('source update rehearsal is idempotent and preserves locally changed institutional events', () => {
   const current = initialCatalogue().events;

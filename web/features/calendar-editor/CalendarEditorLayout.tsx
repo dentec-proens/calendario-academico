@@ -18,7 +18,7 @@ import { CalendarExportProvider, useCalendarExport } from './export/CalendarExpo
 import { confirmAction } from '../../components/confirmation.ts';
 import { editorSections } from '../../../src/app-routes.ts';
 import { editorPages, editorSteps, editorNavigation, continueLabel } from './editor-steps.ts';
-import { modalityLabels } from '../../../src/modalities.ts';
+import { modalityLabels } from '../../../src/domain/calendar/modalities.ts';
 import EditorSteps from './EditorSteps.tsx';
 import TeachingDaySummary from './TeachingDaySummary.tsx';
 import BaseUpdateCard from './BaseUpdateCard.tsx';

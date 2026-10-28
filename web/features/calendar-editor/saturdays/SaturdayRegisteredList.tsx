@@ -1,4 +1,4 @@
-import type { YearSaturday } from '../../../../src/saturdays.ts';
+import type { YearSaturday } from '../../../../src/domain/calendar/activities/saturdays.ts';
 
 const shortDate = (date: string) => date.slice(5).split('-').reverse().join('/');
 

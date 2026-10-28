@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { activityStatus } from '../src/activity-status.ts';
+import { activityStatus } from '../src/domain/calendar/activities/status.ts';
 
 const row = (
   applicability: 'required' | 'optional' | 'unconfigured',

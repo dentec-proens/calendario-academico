@@ -1,5 +1,6 @@
 import { test, expect } from './test.ts';
 import type {} from '../fixtures/portal-router-client.ts';
+
 import type { Page } from '@playwright/test';
 
 async function remoteCatalogue(page: Page) {

@@ -2,9 +2,9 @@ import type {
   ActivityRequirement,
   AssessmentSettings,
   CalendarPeriod,
-} from '../../../../src/domain-types.ts';
-import { applicabilityFor } from '../../../../src/calendar-rules/index.ts';
-import { eventCategory } from '../../../../src/categories.ts';
+} from '../../../../src/domain/calendar/model.ts';
+import { applicabilityFor } from '../../../../src/domain/calendar/policies/resolve.ts';
+import { eventCategory } from '../../../../src/domain/calendar/activities/categories.ts';
 import type { CalendarEvent, Modality } from '../types.ts';
 
 export type EventContext =

@@ -35,7 +35,7 @@ O runtime Chromium dos PDFs usa Linux e seu teste roda pelo Docker Desktop; pré
 
 ## Organização e tipos
 
-`web/app/` reúne navegação e sessão; `web/features/` contém os assuntos da interface; `web/shared/` oferece infraestrutura reutilizável. `src/calendar-edits/` contém comandos puros, e `src/printing/` atende prévia e PDF sem importar a interface. Convex usa funções por domínio e contratos gerados.
+`web/app/` reúne navegação e sessão; `web/features/` contém os assuntos da interface; `web/shared/` oferece infraestrutura reutilizável. `src/domain/calendar/commands.ts` contém comandos puros, e `src/printing/` atende prévia e PDF sem importar a interface. Convex usa funções por domínio e contratos gerados.
 
 Todo código manual usa TypeScript estrito. Valores externos são validados antes de entrar nos contratos. `convex/_generated/` e `src/printing/assets.generated.mjs` são gerados, com tipos adjacentes; não os edite manualmente. `scripts/print-assets.ts` gera os recursos de impressão a partir de `assets/printing/`.
 
@@ -49,9 +49,9 @@ O formulário conserva preenchimento ainda não aplicado; comandos atualizam o c
 
 ## Constantes compartilhadas do calendário
 
-`src/calendar-config.ts` é a fonte comum de ofertas e rótulos, ciclos e organizações, quantidades permitidas de etapas, quantidade de períodos por organização, limites de ano e duração e referências de dias letivos. O módulo não depende de React nem de Convex. A interface, os validadores Convex e as funções de domínio importam essas definições; `src/modalities.ts` mantém os helpers de escopo e reexporta o catálogo por compatibilidade.
+`src/domain/calendar/config.ts` é a fonte comum de ofertas e rótulos, ciclos e organizações, quantidades permitidas de etapas, quantidade de períodos por organização, limites de ano e duração. O módulo não depende de React nem de Convex. A interface, os validadores Convex e as funções de domínio importam essas definições; `src/domain/calendar/modalities.ts` mantém os helpers de escopo e reexporta o catálogo por compatibilidade.
 
-As constantes são dados; as condições de aplicabilidade continuam nas regras. Por exemplo, os mínimos de dias exigem a conferência do ano, da oferta e do escopo, em `src/evaluation.ts`. Alterar um mínimo não significa estendê-lo automaticamente a outro ano ou norma.
+As referências normativas de dias letivos pertencem aos módulos de `src/domain/calendar/policies/`. As constantes são dados; as condições de aplicabilidade continuam nas regras. Por exemplo, os mínimos de dias exigem a conferência do ano, da oferta e do escopo, em `src/domain/calendar/policies/resolve.ts`. Alterar um mínimo não significa estendê-lo automaticamente a outro ano ou norma.
 
 Novas ofertas entram apenas com organização completa. O comando monta um único estado e a mutation atualiza conteúdo, catálogo de ofertas do registro e versão na mesma transação. Ofertas existentes não são removidas por esse fluxo. Snapshots anteriores conservam seu escopo; registros locais antigos sem modalidades explícitas não são estendidos à nova oferta.
 

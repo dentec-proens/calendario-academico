@@ -1,5 +1,5 @@
-import { applicableEvents, inspectCalendar, reconcile } from '../../src/calendar-base/index';
-import { rulesetVersion } from '../../src/calendar-rules/index';
+import { applicableEvents, inspectCalendar, reconcile } from '../../src/domain/calendar/base';
+import { rulesetVersion } from '../../src/domain/calendar/policies/resolve';
 import type { DomainState } from '../validators';
 import type { Doc } from '../_generated/dataModel';
 import type { catalogue } from '../catalogue/model';

@@ -3,7 +3,7 @@ import { Upload } from 'lucide-react';
 import { useDraftForm } from '../../../shared/forms/useDraftForm.ts';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
-import { normalizeCalendar } from '../../../../src/calendar-normalize.ts';
+import { normalizeCalendar } from '../../../../src/domain/calendar/normalization/normalize.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { CalendarState } from '../types.ts';

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { durationEnd } from '../../../../src/duration.ts';
-import { teacherVacations } from '../../../../src/teacher-vacations.ts';
-import { applyVacations } from '../../../../src/calendar-edits/commands.ts';
+import { durationEnd } from '../../../../src/domain/calendar/counting/duration.ts';
+import { teacherVacations } from '../../../../src/domain/calendar/activities/teacher-vacations.ts';
+import { applyVacations } from '../../../../src/domain/calendar/commands.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Input } from './fields.tsx';

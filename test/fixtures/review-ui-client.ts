@@ -3,7 +3,8 @@ import type { Bootstrap, Status } from '../../web/shared/convex/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { api } from '../../convex/_generated/api.js';
 import { getFunctionName, type FunctionReference } from 'convex/server';
-import { reviewSupport, initialConclusion } from '../../src/review.ts';
+import { reviewSupport } from '../../src/domain/reviews/support.ts';
+import { initialConclusion } from '../../src/domain/reviews/conclusion.ts';
 
 type Support = Awaited<ReturnType<typeof reviewOperations.get>>;
 const support = reviewSupport(

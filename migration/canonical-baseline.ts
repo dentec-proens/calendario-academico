@@ -1,5 +1,6 @@
 /** Offline comparison against an extracted, immutable pre-migration source archive. */
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { Document, Row, Snapshot } from './types.ts';
@@ -19,7 +20,8 @@ function record(value: unknown): Document {
   return value as Document;
 }
 async function load(root: string): Promise<Rules> {
-  async function exported(file: string, name: string): Promise<Fn> {
+  async function exported(current: string, legacy: string, name: string): Promise<Fn> {
+    const file = existsSync(resolve(root, current)) ? current : legacy;
     const module = (await import(pathToFileURL(resolve(root, file)).href)) as Record<
       string,
       unknown
@@ -29,11 +31,11 @@ async function load(root: string): Promise<Rules> {
     return fn as Fn;
   }
   const [count, layout, review, inherited, readiness] = await Promise.all([
-    exported('src/evaluation.ts', 'evaluateCalendar'),
-    exported('src/printing/calendar-layout.ts', 'proensLayout'),
-    exported('src/review.ts', 'reviewSupport'),
-    exported('src/institution.ts', 'inheritedEvents'),
-    exported('src/release.ts', 'releaseReadiness'),
+    exported('src/domain/calendar/counting/evaluation.ts', 'src/evaluation.ts', 'evaluateCalendar'),
+    exported('src/printing/calendar-layout.ts', 'src/printing/calendar-layout.ts', 'proensLayout'),
+    exported('src/domain/reviews/support.ts', 'src/review.ts', 'reviewSupport'),
+    exported('src/domain/institution/catalogue.ts', 'src/institution.ts', 'inheritedEvents'),
+    exported('src/domain/calendar/readiness.ts', 'src/release.ts', 'releaseReadiness'),
   ]);
   return { count, layout, review, inherited, readiness };
 }

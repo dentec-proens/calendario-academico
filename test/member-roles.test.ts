@@ -2,7 +2,7 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api, internal } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
-import { reviewCriteriaFor } from '../src/review.ts';
+import { reviewCriteriaFor } from '../src/domain/reviews/criteria.ts';
 import { portalPermissions } from '../web/portal/permissions.ts';
 
 async function fixture() {

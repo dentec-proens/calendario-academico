@@ -1,12 +1,12 @@
-import { calendarLimits } from '../../../src/calendar-config.ts';
+import { calendarLimits } from '../../../src/domain/calendar/config.ts';
 import type { FormEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { CalendarPlus } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import type { Bootstrap } from '../../shared/convex/types.ts';
 import { calendars as calendarClient } from '../../shared/convex/calendars.ts';
-import { calendarName } from '../../../src/calendar-label.ts';
-import { modalityLabels, selectableModalities } from '../../../src/modalities.ts';
+import { calendarName } from '../../../src/domain/calendar/label.ts';
+import { modalityLabels, selectableModalities } from '../../../src/domain/calendar/modalities.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';

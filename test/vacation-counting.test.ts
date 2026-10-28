@@ -1,12 +1,12 @@
-import type { countCalendar } from '../src/calendar.ts';
-import type { CalendarActivity } from '../src/domain-types.ts';
+import type { countCalendar } from '../src/domain/calendar/counting/core.ts';
+import type { CalendarActivity } from '../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { teacherVacations } from '../src/teacher-vacations.ts';
-import { evaluateCalendar } from '../src/evaluation.ts';
-import { durationEnd } from '../src/duration.ts';
+import { teacherVacations } from '../src/domain/calendar/activities/teacher-vacations.ts';
+import { evaluateCalendar } from '../src/domain/calendar/counting/evaluation.ts';
+import { durationEnd } from '../src/domain/calendar/counting/duration.ts';
 import { proensLayout } from '../src/printing/calendar-layout.ts';
-import { assessmentDayCounts } from '../src/assessment-day-counts.ts';
+import { assessmentDayCounts } from '../src/domain/calendar/counting/assessment-days.ts';
 
 const state = {
   year: 2027,

@@ -1,7 +1,7 @@
-import type { CalendarActivity } from '../src/domain-types.ts';
+import type { CalendarActivity } from '../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { teacherVacations } from '../src/teacher-vacations.ts';
+import { teacherVacations } from '../src/domain/calendar/activities/teacher-vacations.ts';
 
 test('campus vacation intervals are flexible, counted inclusively, and reject overlap', () => {
   const v = teacherVacations(2027, {

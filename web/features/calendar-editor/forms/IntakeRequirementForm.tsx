@@ -1,6 +1,6 @@
-import type { AcademicTerm, ActivityRequirement } from '../../../../src/domain-types.ts';
-import { configureIntakeRequirement } from '../../../../src/calendar-edits/commands.ts';
-import { modalityLabels } from '../../../../src/modalities.ts';
+import type { AcademicTerm, ActivityRequirement } from '../../../../src/domain/calendar/model.ts';
+import { configureIntakeRequirement } from '../../../../src/domain/calendar/commands.ts';
+import { modalityLabels } from '../../../../src/domain/calendar/modalities.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Check } from './fields.tsx';

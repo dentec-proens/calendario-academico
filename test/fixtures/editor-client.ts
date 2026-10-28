@@ -3,7 +3,7 @@ import type { Bootstrap } from '../../web/shared/convex/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { api } from '../../convex/_generated/api.js';
 import { getFunctionName, type FunctionReference } from 'convex/server';
-import { teacherDayId } from '../../src/teacher-day.ts';
+import { teacherDayId } from '../../src/domain/institution/teacher-day.ts';
 
 export const record: CalendarRecord = {
   id: 'synthetic-calendar' as Id<'calendars'>,

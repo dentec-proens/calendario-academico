@@ -1,14 +1,14 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
-import { inspectCalendar } from '../src/calendar-base/index.ts';
+import { inspectCalendar } from '../src/domain/calendar/base.ts';
 import { createEditorSession } from '../web/features/calendar-editor/session/editor-session.ts';
 import {
   applyPeriod,
   applyWeek,
   configureOrganization,
   removePeriod,
-} from '../src/calendar-edits/commands.ts';
+} from '../src/domain/calendar/commands.ts';
 import type {
   CalendarSave,
   CalendarEvent,

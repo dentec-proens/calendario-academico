@@ -1,4 +1,4 @@
-import { modalityIds, calendarLimits } from '../../src/calendar-config.ts';
+import { modalityIds, calendarLimits } from '../../src/domain/calendar/config.ts';
 export type DocumentStatus = '' | 'rascunho' | 'vigente' | 'arquivado';
 
 function documentStatus(value: unknown): Exclude<DocumentStatus, ''> | undefined {

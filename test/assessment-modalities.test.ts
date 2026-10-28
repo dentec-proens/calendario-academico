@@ -1,9 +1,10 @@
 import { expect, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { activityChecklist, assessmentCount } from '../src/obligations.ts';
-import { assessmentDayCounts } from '../src/assessment-day-counts.ts';
-import { recalculateCalendar } from '../src/calendar-edits/commands.ts';
-import type { ActivityState } from '../src/domain-types.ts';
+import { activityChecklist } from '../src/domain/calendar/activities/checklist.ts';
+import { assessmentCount } from '../src/domain/calendar/activities/assessment.ts';
+import { assessmentDayCounts } from '../src/domain/calendar/counting/assessment-days.ts';
+import { recalculateCalendar } from '../src/domain/calendar/commands.ts';
+import type { ActivityState } from '../src/domain/calendar/model.ts';
 
 const state: ActivityState = {
   year: 2027,

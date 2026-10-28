@@ -1,6 +1,6 @@
 import { assertWritesOpen } from './lib/maintenance';
-import { datesBetween } from '../src/calendar';
-import { validCategory } from '../src/categories';
+import { datesBetween } from '../src/domain/calendar/counting/core';
+import { validCategory } from '../src/domain/calendar/activities/categories';
 import { mutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
 import { globalRevision, bumpRevision } from './catalogue/model';

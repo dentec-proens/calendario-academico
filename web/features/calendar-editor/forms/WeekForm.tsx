@@ -1,6 +1,6 @@
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
-import { applyWeek } from '../../../../src/calendar-edits/commands.ts';
+import { applyWeek } from '../../../../src/domain/calendar/commands.ts';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { useNavigate } from '@tanstack/react-router';
 import { editorPages, editorNavigation } from '../editor-steps.ts';

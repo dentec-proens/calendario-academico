@@ -1,12 +1,12 @@
-import { activityCoverage } from '../src/calendar-rules/index.ts';
+import { activityCoverage } from '../src/domain/calendar/activities/coverage.ts';
 import { expect, test } from 'vitest';
 import {
   applyOfferOrganization,
   offerOrganizationDraft,
   offerOrganizationIssues,
-} from '../src/offer-organization.ts';
-import { normalizeCalendar } from '../src/calendar-normalize.ts';
-import type { ActivityState } from '../src/domain-types.ts';
+} from '../src/domain/calendar/organization/offers.ts';
+import { normalizeCalendar } from '../src/domain/calendar/normalization/normalize.ts';
+import type { ActivityState } from '../src/domain/calendar/model.ts';
 
 function calendar(): ActivityState {
   return {

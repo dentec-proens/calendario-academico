@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
-import { inspectCalendar } from '../src/calendar-base/index.ts';
-import { reviewCriteria } from '../src/review.ts';
+import { inspectCalendar } from '../src/domain/calendar/base.ts';
+import { reviewCriteria } from '../src/domain/reviews/criteria.ts';
 
 async function setup() {
   const fixture = await createNativeFixture();

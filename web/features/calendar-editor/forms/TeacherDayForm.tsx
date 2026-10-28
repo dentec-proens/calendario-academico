@@ -1,5 +1,8 @@
-import { teacherDayWeek, validateTeacherDay } from '../../../../src/teacher-day.ts';
-import { recalculateCalendar } from '../../../../src/calendar-edits/commands.ts';
+import {
+  teacherDayWeek,
+  validateTeacherDay,
+} from '../../../../src/domain/institution/teacher-day.ts';
+import { recalculateCalendar } from '../../../../src/domain/calendar/commands.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Input } from './fields.tsx';

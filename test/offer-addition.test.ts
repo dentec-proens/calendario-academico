@@ -1,8 +1,11 @@
 import { expect, test } from 'vitest';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
-import { applyOfferOrganization, offerOrganizationDraft } from '../src/offer-organization.ts';
-import type { ActivityState } from '../src/domain-types.ts';
+import {
+  applyOfferOrganization,
+  offerOrganizationDraft,
+} from '../src/domain/calendar/organization/offers.ts';
+import type { ActivityState } from '../src/domain/calendar/model.ts';
 
 function calendar(): ActivityState {
   return {

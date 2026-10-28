@@ -1,16 +1,14 @@
 import { expect, test } from 'vitest';
-import type { ActivityState, CalendarActivity } from '../src/domain-types.ts';
-import { activityChecklist } from '../src/obligations.ts';
-import {
-  activityCoverage,
-  applicabilityFor,
-  rulesetVersion,
-  prorogatedDeadline,
-} from '../src/calendar-rules/index.ts';
-import { convertCalendarV2 } from '../src/calendar-rules/conversion.ts';
-import { normalizeCalendar } from '../src/calendar-normalize.ts';
-import { applyEvent, applyPeriod } from '../src/calendar-edits/commands.ts';
-import { evaluateCalendar } from '../src/evaluation.ts';
+import type { ActivityState, CalendarActivity } from '../src/domain/calendar/model.ts';
+import { activityChecklist } from '../src/domain/calendar/activities/checklist.ts';
+import { activityCoverage } from '../src/domain/calendar/activities/coverage.ts';
+import { applicabilityFor } from '../src/domain/calendar/policies/resolve.ts';
+import { rulesetVersion } from '../src/domain/calendar/policies/resolve.ts';
+import { prorogatedDeadline } from '../src/domain/calendar/activities/deadlines.ts';
+import { convertCalendarV2 } from '../src/domain/calendar/normalization/conversion.ts';
+import { normalizeCalendar } from '../src/domain/calendar/normalization/normalize.ts';
+import { applyEvent, applyPeriod } from '../src/domain/calendar/commands.ts';
+import { evaluateCalendar } from '../src/domain/calendar/counting/evaluation.ts';
 
 function calendar(): ActivityState {
   return {

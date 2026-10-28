@@ -1,4 +1,4 @@
-import { modalityIds, academicTerms, assessmentStageValues } from '../src/calendar-config';
+import { modalityIds, academicTerms, assessmentStageValues } from '../src/domain/calendar/config';
 import { v } from 'convex/values';
 import type { Infer } from 'convex/values';
 

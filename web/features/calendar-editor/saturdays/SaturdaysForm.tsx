@@ -1,6 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
-import { isYearSaturday, saturdayYear } from '../../../../src/saturdays.ts';
-import { applySaturdayActivities } from '../../../../src/calendar-edits/commands.ts';
+import {
+  isYearSaturday,
+  saturdayYear,
+} from '../../../../src/domain/calendar/activities/saturdays.ts';
+import { applySaturdayActivities } from '../../../../src/domain/calendar/commands.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
 import { Input } from '../forms/fields.tsx';

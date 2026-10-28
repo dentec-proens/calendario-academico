@@ -1,12 +1,12 @@
-import { inspectCalendar } from '../src/calendar-base/index.ts';
+import { inspectCalendar } from '../src/domain/calendar/base.ts';
 import type { FunctionReturnType } from 'convex/server';
-import type { CalendarActivity } from '../src/domain-types.ts';
+import type { CalendarActivity } from '../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../convex/_generated/api.js';
-import { reviewCriteriaFor } from '../src/review.ts';
-import { initialCatalogue } from '../src/institution.ts';
-import { teacherDayId } from '../src/teacher-day.ts';
+import { reviewCriteriaFor } from '../src/domain/reviews/criteria.ts';
+import { initialCatalogue } from '../src/domain/institution/catalogue.ts';
+import { teacherDayId } from '../src/domain/institution/teacher-day.ts';
 import { createNativeFixture as fixture } from './helpers/native-database.ts';
 
 const createBody = (campusId = 'a') => ({

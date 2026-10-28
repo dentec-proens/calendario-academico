@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import type { ActivityState } from '../../../src/domain-types.ts';
-import type { evaluateCalendar } from '../../../src/evaluation.ts';
+import type { ActivityState } from '../../../src/domain/calendar/model.ts';
+import type { evaluateCalendar } from '../../../src/domain/calendar/counting/evaluation.ts';
 
 type Summary = {
   state: ActivityState;

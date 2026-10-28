@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { api, internal } from '../convex/_generated/api.js';
-import { inspectCalendar } from '../src/calendar-base/index.ts';
-import { reviewCriteriaFor } from '../src/review.ts';
+import { inspectCalendar } from '../src/domain/calendar/base.ts';
+import { reviewCriteriaFor } from '../src/domain/reviews/criteria.ts';
 import { createNativeFixture } from './helpers/native-database.ts';
 
 async function opened() {
@@ -242,7 +242,7 @@ test('document incorporation preserves dates, invalidates the evidenced review a
 });
 
 test('removing Teacher Day leaves its local adjustment inspectable and permits explicit resolution', async () => {
-  const { teacherDayId } = await import('../src/teacher-day.ts');
+  const { teacherDayId } = await import('../src/domain/institution/teacher-day.ts');
   const fixture = await createNativeFixture({
     catalogue: {
       revision: 1,

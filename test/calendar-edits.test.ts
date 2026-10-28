@@ -3,8 +3,8 @@ import {
   configureAssessment,
   recalculateCalendar,
   removePeriod,
-} from '../src/calendar-edits/commands.ts';
-import type { ActivityState } from '../src/domain-types.ts';
+} from '../src/domain/calendar/commands.ts';
+import type { ActivityState } from '../src/domain/calendar/model.ts';
 
 function calendar(): ActivityState {
   return {
