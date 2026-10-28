@@ -51,6 +51,8 @@ Exportações que exigem persistência aguardam a conclusão das alterações ap
 
 `users` e `auth*` pertencem ao Convex Auth. `campuses` e `calendars` guardam unidades e metadados; `calendarContents` guarda o estado editável. Versões e snapshots são registros próprios. `reviews` e `reviewVersions` registram análise e revisão; `histories` e `historyAnalyses` guardam fontes e extração. Documentos e catálogo usam revisão por ano. Datas operacionais são timestamps; datas acadêmicas são civis.
 
+Convex Auth é a biblioteca `@convex-dev/auth`, instalada e configurada pela aplicação para executar autenticação no próprio backend Convex; não é um serviço externo de identidade nem uma funcionalidade ativada automaticamente ao criar o banco. A aplicação personaliza os fluxos de credenciais e a autorização. O login Google está intencionalmente desabilitado até segundo aviso; a integração preparada só deve ser reativada mediante instrução explícita, conforme [Acesso e contas](recuperacao-de-senha.md#google-institucional).
+
 O backend deriva identidade, papel e campus da sessão. CAMPUS só atua na unidade autorizada; ADMIN gerencia o sistema; PARECERISTA revisa sem editar calendários. Guards organizam as telas; cada função Convex autoriza a operação. Tipos gerados e validadores são a referência dos contratos.
 
 Salvar calendário confere versão e base, preserva atributos protegidos e valida fontes históricas; uma gravação sem mudança não cria versão artificial. A revisão humana possui salvamento explícito e depende da versão do calendário, base e revisão do parecer. Atualização institucional exige incorporação explícita.
@@ -90,3 +92,9 @@ O editor recebe a análise pela sessão. Uma base equivalente não apresenta car
 Novas revisões humanas guardam `baseIdentity`, além da revisão técnica e dos snapshots documentais originais. Uma mudança irrelevante no contador não invalida a análise; alterações no conteúdo aplicável ou na versão editorial invalidam. Registros anteriores sem essa identidade continuam exigindo a revisão técnica original, pois não há evidência suficiente para declarar equivalência retroativamente. A sincronização nunca reescreve uma revisão humana.
 
 Em 2027, a identidade `base-v2:<conjunto>:<hash canônico>` acrescenta a política à identidade de conteúdo. O hash canônico preserva a comparação anterior; anos sem mudança de regras mantêm `base-v1` e não recebem falsa mudança global. A categoria de comparação `rules` exige incorporação e nova revisão, mesmo com catálogo/datas iguais. Se houver também mudança de eventos, a incorporação recalcula as datas. O rascunho de parecer de outro conjunto perde as confirmações antigas; notas ficam identificadas como contexto, e snapshots permanecem imutáveis.
+
+## Controles de segurança
+
+A autorização compara a geração da sessão com a do usuário, inclusive na emissão/renovação de JWT. A criação transacional carimba geração e hora original de autenticação. A revogação é imediata; exclusões físicas são limitadas por lote. Ações de acesso sensíveis exigem ADMIN e login nos últimos 15 minutos. Convites/resets válidos consomem quota persistente antes do hash; tentativas inválidas não abrem leases.
+
+Uploads administrativos recebem bytes limitados em mutation, que valida ticket, propriedade, assinatura inicial e SHA-256 e grava objeto e vínculo de maneira atômica. O cliente não associa IDs de Storage. Sessões e credenciais expiradas têm cron de limpeza limitado e interrompido durante manutenção. O [guia de segurança operacional](seguranca-operacional.md) detalha dependências corrigidas, patches versionados, compatibilidade legada e requisitos da futura publicação.

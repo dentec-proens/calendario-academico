@@ -100,7 +100,7 @@
 /* The shared column widths keep profiles and actions aligned across all accounts. */
 .account-list {
   container: account-list / inline-size;
-  --account-columns: minmax(0, 1fr) 16rem 15rem 10rem;
+  --account-columns: minmax(0, 1fr) 16rem 18.5rem 10rem;
 }
 .account-list-heading {
   display: none;
@@ -125,6 +125,20 @@
 .account-recovery,
 .account-removal {
   min-width: 0;
+}
+.account-recovery {
+  display: flex;
+  align-items: end;
+  gap: var(--ui-space-2);
+}
+.account-recovery > button {
+  flex: 1;
+  min-width: 0;
+}
+#root .account-recovery > [data-unlock-password] {
+  width: 44px;
+  min-width: 44px;
+  flex: 0 0 44px;
 }
 .account-recovery:empty,
 .account-removal:empty {

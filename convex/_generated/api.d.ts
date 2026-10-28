@@ -8,9 +8,13 @@
  * @module
  */
 
+import type * as access_cleanup from "../access/cleanup.js";
+import type * as access_admission from "../access/admission.js";
+import type * as access_security from "../access/security.js";
 import type * as access_identity from "../access/identity.js";
 import type * as access_invitations from "../access/invitations.js";
 import type * as access_members from "../access/members.js";
+import type * as access_passwordSignIn from "../access/passwordSignIn.js";
 import type * as access_passwordRecovery from "../access/passwordRecovery.js";
 import type * as access_session from "../access/session.js";
 import type * as access_setup from "../access/setup.js";
@@ -60,9 +64,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "access/cleanup": typeof access_cleanup;
+  "access/admission": typeof access_admission;
+  "access/security": typeof access_security;
   "access/identity": typeof access_identity;
   "access/invitations": typeof access_invitations;
   "access/members": typeof access_members;
+  "access/passwordSignIn": typeof access_passwordSignIn;
   "access/passwordRecovery": typeof access_passwordRecovery;
   "access/session": typeof access_session;
   "access/setup": typeof access_setup;
@@ -133,5 +141,6 @@ export declare const internal: FilterApi<
 >;
 
 export declare const components: {
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
   presence: import("@convex-dev/presence/_generated/component.js").ComponentApi<"presence">;
 };

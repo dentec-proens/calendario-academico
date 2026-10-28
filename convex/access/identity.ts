@@ -1,4 +1,4 @@
-import type { Doc } from '../_generated/dataModel';
+import type { Doc, Id } from '../_generated/dataModel';
 import type { QueryCtx, MutationCtx } from '../_generated/server';
 import type { Member, PublicMember } from '../authContracts';
 import { getAuthSessionId, getAuthUserId } from '@convex-dev/auth/server';
@@ -60,20 +60,45 @@ export function safeMember(user: Member): PublicMember {
   };
 }
 
+export async function assertUserSession(
+  ctx: Context,
+  id: Id<'users'>,
+  sessionId: Id<'authSessions'>,
+) {
+  const [row, session] = await Promise.all([ctx.db.get(id), ctx.db.get(sessionId)]);
+  const user = memberFromRow(row);
+  if (
+    !user ||
+    !session ||
+    session.userId !== id ||
+    session.expirationTime <= Date.now() ||
+    (session.generation ?? 0) !== (row!.sessionGeneration ?? 0)
+  )
+    throw new ConvexError({ status: 401, error: 'Entre com sua conta.' });
+  return { row: row!, user, session };
+}
+
 export async function requireNativeUser(ctx: Context) {
   const id = await getAuthUserId(ctx);
   const sessionId = await getAuthSessionId(ctx);
   if (!id || !sessionId) throw new ConvexError({ status: 401, error: 'Entre com sua conta.' });
-  const [row, session] = await Promise.all([ctx.db.get(id), ctx.db.get(sessionId)]);
-  const user = memberFromRow(row);
-  if (!user || !session || session.userId !== id || session.expirationTime <= Date.now())
-    throw new ConvexError({ status: 401, error: 'Entre com sua conta.' });
-  return { row: row!, user };
+  return assertUserSession(ctx, id, sessionId);
 }
 
 export async function requireAdmin(ctx: Context) {
   const auth = await requireNativeUser(ctx);
   if (auth.user.role !== 'ADMIN')
     throw new ConvexError({ status: 403, error: 'Acesso exclusivo da administração.' });
+  return auth;
+}
+
+export async function requireRecentAdmin(ctx: MutationCtx) {
+  const auth = await requireAdmin(ctx);
+  if (Date.now() - (auth.session.authenticatedAt ?? auth.session._creationTime) > 15 * 60_000) {
+    throw new ConvexError({
+      status: 403,
+      error: 'Esta operação exige autenticação recente. Saia e entre novamente antes de continuar.',
+    });
+  }
   return auth;
 }

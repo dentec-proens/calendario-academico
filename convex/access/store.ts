@@ -2,6 +2,8 @@ import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
 import type { Member } from '../authContracts';
 import type { Context } from './identity';
+import { internal } from '../_generated/api';
+import { purgeUserSessions } from './cleanup';
 
 export const origin = () => (process.env.SITE_URL || 'http://127.0.0.1:4183').replace(/\/$/, '');
 
@@ -64,20 +66,24 @@ export async function setPassword(ctx: MutationCtx, row: Doc<'users'>, secret: s
 }
 
 export async function revokeSessions(ctx: MutationCtx, userId: Id<'users'>) {
-  const sessions = await ctx.db
-    .query('authSessions')
-    .withIndex('userId', (q) => q.eq('userId', userId))
-    .take(1001);
-  if (sessions.length > 1000) throw Error('Limite de sessões excedido.');
-  let tokenCount = 0;
-  for (const session of sessions) {
-    const tokens = await ctx.db
-      .query('authRefreshTokens')
-      .withIndex('sessionId', (q) => q.eq('sessionId', session._id))
-      .take(1001);
-    tokenCount += tokens.length;
-    if (tokens.length > 1000 || tokenCount > 4000) throw Error('Limite de tokens excedido.');
-    for (const token of tokens) await ctx.db.delete(token._id);
-    await ctx.db.delete(session._id);
+  const row = await ctx.db.get(userId);
+  if (!row) throw Error('Membro não encontrado.');
+  const generation = (row.sessionGeneration ?? 0) + 1;
+  await ctx.db.patch(userId, { sessionGeneration: generation });
+  if (await purgeUserSessions(ctx, userId, generation)) {
+    await ctx.scheduler.runAfter(0, internal.access.cleanup.purgeRevoked, { userId, generation });
   }
+}
+
+export async function initializeSession(
+  ctx: MutationCtx,
+  userId: Id<'users'>,
+  sessionId: Id<'authSessions'>,
+) {
+  const user = await ctx.db.get(userId);
+  if (!user) throw Error('Membro não encontrado.');
+  await ctx.db.patch(sessionId, {
+    generation: user.sessionGeneration ?? 0,
+    authenticatedAt: Date.now(),
+  });
 }

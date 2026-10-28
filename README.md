@@ -2,6 +2,8 @@
 
 Aplicação web em fase alpha para elaborar calendários acadêmicos, conferir dias letivos e registrar a revisão técnico-pedagógica. Usa React, TypeScript e Convex.
 
+A autenticação usa Convex Auth no próprio backend Convex. O login pelo Google está intencionalmente desabilitado até segundo aviso; consulte [Acesso e contas](docs/recuperacao-de-senha.md).
+
 ## Desenvolvimento
 
 Requisitos: Node.js 24 e pnpm 12.15.0.

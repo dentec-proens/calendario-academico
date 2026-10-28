@@ -41,6 +41,10 @@ const accountOperations = {
     request(() => convex.action(functions.access.members.createMember, { data })),
   updateMemberRole: (args: FunctionArgs<typeof functions.access.members.updateMemberRole>) =>
     request(() => convex.mutation(functions.access.members.updateMemberRole, args)),
+  unlockPassword: (id: string) =>
+    request(() =>
+      convex.mutation(functions.access.security.unlockPassword, { id: id as Id<'users'> }),
+    ),
   removeMember: (id: string) =>
     request(() =>
       convex.mutation(functions.access.members.removeMember, { id: id as Id<'users'> }),

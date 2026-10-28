@@ -8,7 +8,7 @@ import { passwordCrypto, validatePassword } from '../authCrypto';
 import {
   institutionalEmail,
   memberFromRow,
-  requireAdmin,
+  requireRecentAdmin,
   storedMember,
   safeMember,
 } from './identity';
@@ -20,9 +20,9 @@ import { fail } from '../lib/shared';
 export const createMember = action({
   args: { data: memberCredentialsInput },
   returns: createdMember,
-  handler: async (ctx, { data }): Promise<CreatedMember> =>
-    withActionLease(ctx, 'access.members.createMember', async () => {
-      await ctx.runQuery(internal.access.session.assertAdmin, {});
+  handler: async (ctx, { data }): Promise<CreatedMember> => {
+    await ctx.runMutation(internal.access.session.assertAdmin, {});
+    return withActionLease(ctx, 'access.members.createMember', async () => {
       let secret: string | null = null;
       if ((data.loginMethod || 'local') === 'local') {
         validatePassword(data.password);
@@ -30,14 +30,15 @@ export const createMember = action({
       }
       const { password: _password, ...profile } = data;
       return ctx.runMutation(internal.access.members.createMemberRecord, { data: profile, secret });
-    }),
+    });
+  },
 });
 
 export const createMemberRecord = internalMutation({
   args: { data: memberInput, secret: v.union(v.string(), v.null()) },
   returns: createdMember,
   handler: async (ctx, { data, secret }) => {
-    const { user: actor } = await requireAdmin(ctx);
+    const { user: actor } = await requireRecentAdmin(ctx);
     const email = institutionalEmail(data.email);
     const role = data.role ?? 'CAMPUS';
     const loginMethod = data.loginMethod || 'local';
@@ -86,7 +87,7 @@ export const updateMemberRole = mutation({
   returns: v.object({ ok: v.boolean() }),
   handler: async (ctx, { id, role, campusId, expected }) => {
     await assertWritesOpen(ctx);
-    const { user: actor } = await requireAdmin(ctx);
+    const { user: actor } = await requireRecentAdmin(ctx);
     const row = await memberById(ctx, id);
     if (!row || row.removedAt !== undefined) throw Error('Membro não encontrado.');
     if (row.role !== expected.role || (row.campusId ?? null) !== expected.campusId)
@@ -117,7 +118,7 @@ export const removeMember = mutation({
   returns: v.object({ ok: v.boolean() }),
   handler: async (ctx, { id }) => {
     await assertWritesOpen(ctx);
-    const { user: actor } = await requireAdmin(ctx);
+    const { user: actor } = await requireRecentAdmin(ctx);
     if (id === actor.id) throw Error('Você não pode excluir seu próprio acesso.');
     const row = await memberById(ctx, id);
     const user = row && storedMember(row);

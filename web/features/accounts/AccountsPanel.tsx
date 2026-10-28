@@ -4,7 +4,7 @@ import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 type Invitation = Awaited<ReturnType<ReturnType<typeof useAccounts>['issueInvitation']>>;
 import { confirmAction } from '../../components/confirmation.ts';
 import { useRef, useState } from 'react';
-import { KeyRound, MailPlus, Trash2, UserPlus } from 'lucide-react';
+import { KeyRound, MailPlus, Trash2, UserPlus, UnlockKeyhole } from 'lucide-react';
 import { useAccounts } from '../../shared/convex/accounts.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
@@ -132,6 +132,10 @@ export default function AccountsPanel({
 
   return (
     <section id="accounts" className="page" aria-busy={pending}>
+      <p className="help">
+        Alterações de acesso exigem login nos últimos 15 minutos. Se solicitado, conclua seus
+        rascunhos e use Sair para entrar novamente.
+      </p>
       <div ref={inviteRef}>
         {invite ? (
           <PrivateLink
@@ -320,6 +324,26 @@ export default function AccountsPanel({
                 </div>
                 <MemberRoleEditor key={u.id} member={u} campuses={info.campuses} notify={notify} />
                 <div className="account-recovery">
+                  {u.active && u.loginMethod === 'local' ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      data-unlock-password={u.id}
+                      aria-label={`Desbloquear login por senha de ${u.name}`}
+                      title="Desbloquear login por senha"
+                      disabled={pending}
+                      onClick={() =>
+                        run(async () => {
+                          await accounts.unlockPassword(u.id);
+                          notify(
+                            `Login por senha desbloqueado para ${u.email}. A senha não foi alterada.`,
+                          );
+                        })
+                      }
+                    >
+                      <UnlockKeyhole aria-hidden="true" size={18} />
+                    </Button>
+                  ) : null}
                   {u.active && u.loginMethod !== 'google' ? (
                     <Button
                       type="button"

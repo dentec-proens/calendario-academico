@@ -131,6 +131,8 @@ export const convex = {
         if (args.revision !== window.portalRouterTest.catalogue.revision)
           return Promise.reject(new Error('A base mudou. Atualize a lista antes de continuar.'));
         return finishMutation('documentStatus', { ok: true });
+      case 'access/security:unlockPassword':
+        return finishMutation('unlockPassword', { ok: true });
       case 'access/members:updateMemberRole': {
         const member = window.portalRouterTest.members.find((item) => item.id === args.id);
         const expected = args.expected as { role: string; campusId: string | null } | undefined;
@@ -148,10 +150,10 @@ export const convex = {
         });
         return finishMutation('updateMemberRole', { ok: true });
       }
+      case 'nativeFiles:receiveUpload':
       case 'nativeFiles:issueUpload':
         return Promise.resolve({
           uploadId: 'synthetic-upload',
-          uploadUrl: window.location.origin + '/__synthetic-upload',
         });
       case 'campuses:createCampus':
         return finishMutation('createCampus', {

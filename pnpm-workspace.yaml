@@ -10,3 +10,6 @@ minimumReleaseAgeExclude:
   - '@oxlint-tsgolint/win32-arm64@7.0.2005'
   - '@oxlint-tsgolint/win32-x64@7.0.2005'
   - oxlint-tsgolint@7.0.2005
+patchedDependencies:
+  '@convex-dev/auth@0.0.96': patches/@convex-dev__auth@0.0.96.patch
+  convex-test@0.0.64: patches/convex-test@0.0.64.patch

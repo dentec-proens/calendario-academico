@@ -7,7 +7,7 @@ import { query, mutation, action, internalMutation } from '../_generated/server'
 import { memberRole, invitationResult } from '../authContracts';
 import { passwordCrypto, validatePassword } from '../authCrypto';
 import type { Context } from './identity';
-import { institutionalEmail, requireAdmin, storedMember } from './identity';
+import { institutionalEmail, requireRecentAdmin, storedMember } from './identity';
 import { memberById, digest, patchMember, appendAudit, setPassword, origin } from './store';
 import { v } from 'convex/values';
 
@@ -92,7 +92,7 @@ export const issueInvitation = mutation({
   returns: v.object(invitationResult),
   handler: async (ctx, { id }) => {
     await assertWritesOpen(ctx);
-    const { user } = await requireAdmin(ctx);
+    const { user } = await requireRecentAdmin(ctx);
     const row = await memberById(ctx, id);
     if (!row) throw Error('Membro não encontrado.');
     const result = await issueInvite(ctx, row, user.id);
@@ -107,15 +107,32 @@ export const issueInvitation = mutation({
 export const acceptInvitation = action({
   args: { token: v.string(), email: v.string(), password: v.string() },
   returns: v.object({ ok: v.boolean() }),
-  handler: async (ctx, args): Promise<{ ok: boolean }> =>
-    withActionLease(ctx, 'access.invitations.acceptInvitation', async () => {
-      validatePassword(args.password);
-      return ctx.runMutation(internal.access.invitations.consumeInvitation, {
-        token: args.token,
-        email: institutionalEmail(args.email),
-        secret: await passwordCrypto.hashSecret(args.password),
-      });
-    }),
+  handler: async (ctx, args): Promise<{ ok: boolean }> => {
+    validatePassword(args.password);
+    const email = institutionalEmail(args.email);
+    const admission = await ctx.runMutation(internal.access.admission.credentialWork, {
+      kind: 'invitation',
+      token: args.token,
+      email,
+    });
+    if (!admission.ok || !admission.leaseId)
+      throw Error(
+        admission.retryAfter === null
+          ? 'Há duas operações em andamento para este link. Aguarde sua conclusão.'
+          : 'Muitas tentativas. Aguarde um minuto antes de tentar novamente.',
+      );
+    return withActionLease(
+      ctx,
+      'access.invitations.acceptInvitation',
+      async () =>
+        ctx.runMutation(internal.access.invitations.consumeInvitation, {
+          token: args.token,
+          email,
+          secret: await passwordCrypto.hashSecret(args.password),
+        }),
+      admission.leaseId,
+    );
+  },
 });
 
 export const consumeInvitation = internalMutation({

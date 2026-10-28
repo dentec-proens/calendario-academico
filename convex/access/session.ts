@@ -1,6 +1,7 @@
-import { query, internalQuery } from '../_generated/server';
+import { assertWritesOpen } from '../lib/maintenance';
+import { query, internalQuery, internalMutation } from '../_generated/server';
 import { publicMember } from '../authContracts';
-import { memberFromRow, requireNativeUser, requireAdmin, safeMember } from './identity';
+import { memberFromRow, requireNativeUser, requireRecentAdmin, safeMember } from './identity';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 
@@ -49,11 +50,11 @@ export const passwordOptions = query({
   handler: async () => ({ emailEnabled: false }),
 });
 
-export const assertAdmin = internalQuery({
+export const assertAdmin = internalMutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    await requireRecentAdmin(ctx);
     return null;
   },
 });
@@ -62,4 +63,13 @@ export const authorizedMember = internalQuery({
   args: { id: v.id('users') },
   returns: v.boolean(),
   handler: async (ctx, { id }) => !!memberFromRow(await ctx.db.get(id)),
+});
+
+export const assertWritesAllowed = internalQuery({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    await assertWritesOpen(ctx);
+    return null;
+  },
 });

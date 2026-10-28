@@ -1,4 +1,6 @@
 const preserved = new Set([
+  'access/cleanup:purgeRevoked',
+  'access/cleanup:sweep',
   'nativeFiles:expireUpload',
   'nativeFiles:expireTicket',
   'nativeFiles:cleanupExpired',

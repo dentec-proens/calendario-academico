@@ -43,10 +43,10 @@ export async function withActionLease<T>(
   ctx: ActionCtx,
   operation: string,
   work: () => Promise<T>,
+  admittedLease?: Id<'operationalLeases'>,
 ): Promise<T> {
-  const lease: Id<'operationalLeases'> = await ctx.runMutation(internal.operations.begin, {
-    operation,
-  });
+  const lease: Id<'operationalLeases'> =
+    admittedLease ?? (await ctx.runMutation(internal.operations.begin, { operation }));
   console.info('Operational lease', lease, operation);
   try {
     return await work();

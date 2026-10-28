@@ -2,9 +2,9 @@ import { assertWritesOpen } from '../lib/maintenance';
 import { withActionLease } from '../lib/maintenance';
 import { internal } from '../_generated/api';
 import { mutation, action, internalMutation } from '../_generated/server';
-import { passwordCrypto } from '../authCrypto';
+import { passwordCrypto, validatePassword } from '../authCrypto';
 import type { Context } from './identity';
-import { memberFromRow, requireAdmin } from './identity';
+import { memberFromRow, requireRecentAdmin } from './identity';
 import {
   memberById,
   digest,
@@ -47,7 +47,7 @@ export const passwordRecovery = mutation({
   returns: v.object({ url: v.string(), expiresAt: v.number(), email: v.string() }),
   handler: async (ctx, { id }) => {
     await assertWritesOpen(ctx);
-    const { user: actor } = await requireAdmin(ctx);
+    const { user: actor } = await requireRecentAdmin(ctx);
     const row = await memberById(ctx, id);
     const user = row && memberFromRow(row);
     const account =
@@ -74,13 +74,29 @@ export const passwordRecovery = mutation({
 export const resetPassword = action({
   args: { token: v.string(), password: v.string() },
   returns: v.object({ message: v.string() }),
-  handler: async (ctx, { token, password }): Promise<{ message: string }> =>
-    withActionLease(ctx, 'access.passwordRecovery.resetPassword', async () =>
-      ctx.runMutation(internal.access.passwordRecovery.consumeReset, {
-        token,
-        secret: await passwordCrypto.hashSecret(password),
-      }),
-    ),
+  handler: async (ctx, { token, password }): Promise<{ message: string }> => {
+    validatePassword(password);
+    const admission = await ctx.runMutation(internal.access.admission.credentialWork, {
+      kind: 'reset',
+      token,
+    });
+    if (!admission.ok || !admission.leaseId)
+      throw Error(
+        admission.retryAfter === null
+          ? 'Há duas operações em andamento para este link. Aguarde sua conclusão.'
+          : 'Muitas tentativas. Aguarde um minuto antes de tentar novamente.',
+      );
+    return withActionLease(
+      ctx,
+      'access.passwordRecovery.resetPassword',
+      async () =>
+        ctx.runMutation(internal.access.passwordRecovery.consumeReset, {
+          token,
+          secret: await passwordCrypto.hashSecret(password),
+        }),
+      admission.leaseId,
+    );
+  },
 });
 
 export const consumeReset = internalMutation({
@@ -101,10 +117,10 @@ export const consumeReset = internalMutation({
 export const requestPasswordRecovery = action({
   args: { email: v.string() },
   returns: v.object({ message: v.string() }),
-  handler: async (ctx) =>
-    withActionLease(ctx, 'access.passwordRecovery.requestPasswordRecovery', async () => {
-      throw Error(
-        'A recuperação por e-mail ainda não está configurada. Entre em contato com dentec.proens@ifpr.edu.br.',
-      );
-    }),
+  handler: async (ctx) => {
+    await ctx.runQuery(internal.access.session.assertWritesAllowed, {});
+    throw Error(
+      'A recuperação por e-mail ainda não está configurada. Entre em contato com dentec.proens@ifpr.edu.br.',
+    );
+  },
 });

@@ -52,10 +52,11 @@
     "pnpm": ">=12.15.0 <13"
   },
   "dependencies": {
-    "@auth/core": "0.41.1",
+    "@auth/core": "0.41.3",
     "@base-ui/react": "1.9.0",
     "@convex-dev/auth": "0.0.96",
     "@convex-dev/presence": "0.4.0",
+    "@convex-dev/rate-limiter": "0.4.2",
     "@noble/hashes": "2.0.1",
     "@sparticuz/chromium": "153.0.0",
     "@tanstack/react-form": "1.33.5",

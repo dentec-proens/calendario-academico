@@ -112,7 +112,7 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
   );
   await assert.rejects(
     reviewer.mutation(api.nativeFiles.issueUpload, { filename: 'teste.pdf', size: 10 }),
-    /não podem alterar/,
+    /Acesso exclusivo da administração/,
   );
   await assert.rejects(
     reviewer.query(api.workspace.logs, { paginationOpts: { cursor: null, numItems: 10 } }),

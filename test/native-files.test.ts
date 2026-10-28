@@ -13,13 +13,13 @@ async function fixture() {
   const client = convexTest(schema, convexModules);
   const identities = await client.run(async (ctx) => {
     const result = [];
-    for (const id of ['a', 'b', 'admin']) {
+    for (const id of ['a', 'b', 'admin', 'admin2']) {
       const campusId = await ctx.db.insert('campuses', { name: id, archived: false });
       const userId: Id<'users'> = await ctx.db.insert('users', {
         name: id,
         email: `${id}@ifpr.edu.br`,
-        role: id === 'admin' ? 'ADMIN' : 'CAMPUS',
-        ...(id === 'admin' ? {} : { campusId }),
+        role: id.startsWith('admin') ? 'ADMIN' : 'CAMPUS',
+        ...(id.startsWith('admin') ? {} : { campusId }),
         active: true,
         loginMethod: 'local',
       });
@@ -34,18 +34,33 @@ async function fixture() {
   const users = identities.map((identity) => client.withIdentity(identity));
   const put = (contents: BlobPart = '%PDF-fixture') =>
     client.run((ctx) => ctx.storage.store(new Blob([contents], { type: 'application/pdf' })));
-  const issue = (who = 0, size = 12, filename = 'calendar.pdf') =>
+  const issue = (who = 2, size = 12, filename = 'calendar.pdf') =>
     users[who].mutation(api.nativeFiles.issueUpload, { filename, size });
-  const complete = (uploadId: string, storageId: Id<'_storage'>, who = 0) =>
-    users[who].action(api.actions.uploads.completeUpload, { uploadId, storageId });
-  return { client, users, put, issue, complete };
+  const receive = (
+    uploadId: string,
+    bytes = new TextEncoder().encode('%PDF-fixture').buffer,
+    who = 2,
+  ) => users[who].mutation(api.nativeFiles.receiveUpload, { uploadId, bytes });
+  const metadata = (uploadId: string, who = 2) =>
+    users[who].query(internal.nativeFiles.uploadContext, { uploadId });
+  const send = async (contents = '%PDF-fixture', who = 2, filename = 'calendar.pdf') => {
+    const bytes = new TextEncoder().encode(contents).buffer;
+    const { uploadId } = await issue(who, bytes.byteLength, filename);
+    await receive(uploadId, bytes, who);
+    return metadata(uploadId, who);
+  };
+  return { client, users, put, issue, receive, metadata, send };
 }
 
-test('native upload tickets enforce auth, filename, 8 MB bound, owner and three pending uploads', async () => {
-  const { client, users, issue, put, complete } = await fixture();
+test('upload admission requires ADMIN, validates filename/size and bounds pending tickets', async () => {
+  const { client, users, issue } = await fixture();
   await assert.rejects(
     client.mutation(api.nativeFiles.issueUpload, { filename: 'x.pdf', size: 12 }),
     /Entre com sua conta/,
+  );
+  await assert.rejects(
+    users[0].mutation(api.nativeFiles.issueUpload, { filename: 'x.pdf', size: 12 }),
+    /administra/,
   );
   for (const [filename, size] of [
     ['x.txt', 12],
@@ -53,141 +68,134 @@ test('native upload tickets enforce auth, filename, 8 MB bound, owner and three 
     ['x.pdf', 8_000_001],
     ['x.pdf', 12.5],
     ['x'.repeat(181) + '.pdf', 12],
-  ] as [string, number][])
-    await assert.rejects(issue(0, size, filename), /PDF de até 8 MB/);
+  ] as [string, number][]) {
+    await assert.rejects(issue(2, size, filename), /PDF de até 8 MB/);
+  }
   const one = await issue();
-  assert.match(one.uploadUrl, /^https?:\/\//);
   assert.match(one.uploadId, /^[a-f0-9]{64}$/);
-  const storageId = await put();
-  await assert.rejects(complete(one.uploadId, storageId, 1), /Envio expirado ou não encontrado/);
-  await assert.rejects(
-    users[1].query(internal.nativeFiles.uploadContext, { uploadId: one.uploadId }),
-    /Envio expirado ou não encontrado/,
-  );
+  assert.equal('uploadUrl' in one, false, 'no direct Storage URL escapes the validated ingress');
   await issue();
   await issue();
   await assert.rejects(issue(), /Conclua os envios pendentes/);
 });
 
-test('native upload completion validates PDF bytes and stores a server computed SHA-256', async () => {
-  const { client, users, issue, put, complete } = await fixture();
+test('validated ingress rejects bytes before storage and binds only a newly created server object', async () => {
+  const { client, issue, receive, metadata, users, put } = await fixture();
   const upload = await issue();
-  await assert.rejects(complete(upload.uploadId, await put('not a PDF!!!')), /PDF de até 8 MB/);
+  const before = await client.run((ctx) => ctx.db.system.query('_storage').collect());
   await assert.rejects(
-    complete(upload.uploadId, await put('%PDF-longer-fixture')),
+    receive(upload.uploadId, new TextEncoder().encode('not a pdf!!!').buffer),
+    /PDF de até 8 MB/,
+  );
+  await assert.rejects(
+    receive(upload.uploadId, new TextEncoder().encode('%PDF-longer-fixture').buffer),
     /tamanho do PDF/,
   );
-  const storageId = await put();
-  assert.deepEqual(await complete(upload.uploadId, storageId), { uploadId: upload.uploadId });
-  const metadata = await users[0].query(internal.nativeFiles.uploadContext, {
-    uploadId: upload.uploadId,
-  });
-  assert.equal(metadata.hash, createHash('sha256').update('%PDF-fixture').digest('hex'));
-  assert.equal(metadata.size, 12);
-  assert.equal(metadata.storageId, storageId);
-  assert.equal('objectKey' in metadata, false);
-  assert(metadata.completedAt);
-  assert.deepEqual(await complete(upload.uploadId, storageId), { uploadId: upload.uploadId });
-  await assert.rejects(complete(upload.uploadId, await put()), /Envio já concluído/);
-  const other = await issue();
-  await assert.rejects(complete(other.uploadId, storageId), /Arquivo já cadastrado/);
   await assert.rejects(
-    users[0].mutation(internal.nativeFiles.finishUpload, {
-      uploadId: other.uploadId,
-      storageId: await put(),
-      size: 12,
-      hash: 'forged',
-    }),
-    /Envio expirado ou inválido/,
+    receive(upload.uploadId, new Uint8Array(8_000_001).buffer),
+    /PDF de até 8 MB/,
   );
-  const huge = new Uint8Array(8_000_001);
-  huge.set(new TextEncoder().encode('%PDF-'));
-  const hugeId = await put(huge);
-  await assert.rejects(complete(other.uploadId, hugeId), /PDF de até 8 MB/);
-  assert(await client.run(async (ctx) => (await ctx.storage.get(storageId)) !== null));
+  assert.deepEqual(await client.run((ctx) => ctx.db.system.query('_storage').collect()), before);
+  await assert.rejects(receive(upload.uploadId, undefined, 3), /Envio expirado/);
+  await receive(upload.uploadId);
+  const stored = await metadata(upload.uploadId);
+  assert.equal(stored.hash, createHash('sha256').update('%PDF-fixture').digest('hex'));
+  assert.equal(stored.verifiedIngress, true);
+  assert.ok(stored.storageId);
+  await receive(upload.uploadId);
+  assert.equal(
+    (await client.run((ctx) => ctx.db.system.query('_storage').collect())).length,
+    1,
+    'retry cannot store another object',
+  );
+  await assert.rejects(
+    receive(upload.uploadId, new TextEncoder().encode('%PDF-changed').buffer),
+    /Envio já concluído/,
+  );
+  const unrelated = await put();
+  const other = await issue();
+  await assert.rejects(
+    users[2].action(api.actions.uploads.completeUpload, {
+      uploadId: other.uploadId,
+      storageId: unrelated,
+    }),
+    /Atualize/,
+  );
+  await assert.rejects(
+    users[2].mutation(internal.nativeFiles.finishUpload, {
+      uploadId: other.uploadId,
+      storageId: unrelated,
+      hash: 'a'.repeat(64),
+      size: 12,
+    }),
+    /Atualize/,
+  );
+  await client.mutation(internal.nativeFiles.expireUpload, { uploadId: other.uploadId });
+  assert.ok(await client.run(async (ctx) => (await ctx.storage.get(unrelated)) !== null));
 });
 
-test('expired or consumed uploads cannot be reused and cleanup preserves files already attached', async () => {
-  const { client, users, issue, put, complete } = await fixture();
-  const one = await issue(),
-    oneStorage = await put();
-  await complete(one.uploadId, oneStorage);
-  const two = await issue(),
-    twoStorage = await put();
-  await complete(two.uploadId, twoStorage);
+test('expired and consumed uploads cannot be reused and cleanup preserves attached files', async () => {
+  const { client, send, receive } = await fixture();
+  const expired = await send();
+  const consumed = await send();
   await client.run(async (ctx) => {
-    const expired = await ctx.db
-      .query('nativeUploads')
-      .withIndex('by_uploadId', (q) => q.eq('uploadId', one.uploadId))
-      .unique();
-    const consumed = await ctx.db
-      .query('nativeUploads')
-      .withIndex('by_uploadId', (q) => q.eq('uploadId', two.uploadId))
-      .unique();
-    await ctx.db.patch(expired!._id, { expiresAt: Date.now() - 1 });
-    await ctx.db.patch(consumed!._id, { consumedAt: Date.now() });
+    await ctx.db.patch(expired._id, { expiresAt: Date.now() - 1 });
+    await ctx.db.patch(consumed._id, { consumedAt: Date.now() });
   });
-  for (const uploadId of [one.uploadId, two.uploadId])
-    await assert.rejects(
-      users[0].query(internal.nativeFiles.uploadContext, { uploadId }),
-      /Envio expirado ou não encontrado/,
-    );
-  await client.mutation(internal.nativeFiles.expireUpload, { uploadId: one.uploadId });
-  await client.mutation(internal.nativeFiles.expireUpload, { uploadId: two.uploadId });
+  for (const row of [expired, consumed])
+    await assert.rejects(receive(row.uploadId), /Envio expirado/);
+  await client.mutation(internal.nativeFiles.expireUpload, { uploadId: expired.uploadId });
+  await client.mutation(internal.nativeFiles.expireUpload, { uploadId: consumed.uploadId });
   assert.equal(
-    await client.run(async (ctx) => (await ctx.storage.get(oneStorage)) !== null),
+    await client.run(async (ctx) => (await ctx.storage.get(expired.storageId!)) !== null),
     false,
   );
-  assert(await client.run(async (ctx) => (await ctx.storage.get(twoStorage)) !== null));
-  assert.equal((await client.run((ctx) => ctx.db.query('nativeUploads').take(10))).length, 0);
+  assert.equal(
+    await client.run(async (ctx) => (await ctx.storage.get(consumed.storageId!)) !== null),
+    true,
+  );
 });
 
-test('completed storage IDs stay reserved after their consumed upload ticket is cleaned up', async () => {
-  const { client, issue, put, complete } = await fixture();
-  const upload = await issue();
+test('cleanup never deletes a legacy object whose upload ownership cannot be proven', async () => {
+  const { client, users, put } = await fixture();
   const storageId = await put();
-  await complete(upload.uploadId, storageId);
   await client.run(async (ctx) => {
-    const ticket = await ctx.db
-      .query('nativeUploads')
-      .withIndex('by_uploadId', (q) => q.eq('uploadId', upload.uploadId))
-      .unique();
-    await ctx.db.insert('documents', {
-      year: 2027,
-      type: 'norma',
-      title: 'Norma de teste',
-      source: 'Teste',
-      filename: 'calendar.pdf',
-      storageId,
-      hash: createHash('sha256').update('%PDF-fixture').digest('hex'),
+    const owner = await ctx.db.query('users').first();
+    await ctx.db.insert('nativeUploads', {
+      uploadId: 'legacy',
+      ownerId: owner!._id,
+      filename: 'legacy.pdf',
       size: 12,
-      status: 'rascunho',
-      version: 1,
-      createdAt: Date.now(),
+      storageId,
+      expiresAt: Date.now() - 1,
     });
-    await ctx.db.patch(ticket!._id, { consumedAt: Date.now() });
   });
-  await client.mutation(internal.nativeFiles.expireUpload, { uploadId: upload.uploadId });
-  const other = await issue();
-  await assert.rejects(complete(other.uploadId, storageId), /Arquivo já cadastrado/);
-  assert(await client.run(async (ctx) => (await ctx.storage.get(storageId)) !== null));
+  await client.mutation(internal.nativeFiles.expireUpload, { uploadId: 'legacy' });
+  assert.ok(await client.run(async (ctx) => (await ctx.storage.get(storageId)) !== null));
+  await assert.rejects(
+    users[2].mutation(api.nativeFiles.receiveUpload, {
+      uploadId: 'legacy',
+      bytes: new TextEncoder().encode('%PDF-fixture').buffer,
+    }),
+    /Envio expirado/,
+  );
 });
 
-test('missing institutional originals report unavailable without creating file tickets', async () => {
-  const { client, users } = await fixture();
+test('missing originals remain unavailable and restoring requires owner, exact SHA-256 and single consumption', async () => {
+  const { client, users, send } = await fixture();
   const id = await client.run((ctx) =>
     ctx.db.insert('documents', {
       year: 2027,
       type: 'norma',
-      title: 'Norma preservada',
+      title: 'Preservado',
       source: 'Referência',
-      filename: 'norma.pdf',
-      hash: 'a'.repeat(64),
+      filename: 'original.pdf',
+      hash: createHash('sha256').update('%PDF-fixture').digest('hex'),
       status: 'vigente',
       version: 1,
       createdAt: 1,
       publishedAt: 1,
-      unavailableFile: { sourceReference: 'legacy/norma.pdf', reason: 'not_migrated' },
+      unavailableFile: { sourceReference: 'legacy/original.pdf', reason: 'not_migrated' },
     }),
   );
   const before = await client.run((ctx) => ctx.db.get(id));
@@ -195,36 +203,7 @@ test('missing institutional originals report unavailable without creating file t
     users[0].action(api.actions.documents.downloadDocument, { id }),
     /aguarda a transferência/,
   );
-  assert.deepEqual(await client.run((ctx) => ctx.db.get(id)), before);
-  assert.equal(await client.run((ctx) => ctx.db.query('nativeFileTickets').first()), null);
-});
-
-test('admin restores institutional originals atomically and retains identity and metadata', async () => {
-  const { client, users, issue, put, complete } = await fixture();
-  const id = await client.run((ctx) =>
-    ctx.db.insert('documents', {
-      year: 2027,
-      type: 'norma',
-      title: 'Documento preservado',
-      source: 'Origem preservada',
-      filename: 'original.pdf',
-      hash: createHash('sha256').update('%PDF-fixture').digest('hex'),
-      unavailableFile: { sourceReference: 'legacy/original.pdf', reason: 'not_migrated' },
-      status: 'rascunho',
-      version: 1,
-      createdAt: 1,
-    }),
-  );
-  const before = await client.run((ctx) => ctx.db.get(id));
-  const foreign = await issue(0);
-  await complete(foreign.uploadId, await put());
-  await assert.rejects(
-    users[0].action(api.actions.documents.restoreDocumentOriginal, {
-      id,
-      uploadId: foreign.uploadId,
-    }),
-    /exclusivo da administra/,
-  );
+  const foreign = await send('%PDF-fixture', 3);
   await assert.rejects(
     users[2].action(api.actions.documents.restoreDocumentOriginal, {
       id,
@@ -232,8 +211,7 @@ test('admin restores institutional originals atomically and retains identity and
     }),
     /Envio expirado/,
   );
-  const wrong = await issue(2);
-  await complete(wrong.uploadId, await put('%PDF-wrongxx'), 2);
+  const wrong = await send('%PDF-wrongxx');
   await assert.rejects(
     users[2].action(api.actions.documents.restoreDocumentOriginal, {
       id,
@@ -241,38 +219,8 @@ test('admin restores institutional originals atomically and retains identity and
     }),
     /SHA-256/,
   );
-  const duplicate = await issue(2),
-    duplicateStorage = await put();
-  await complete(duplicate.uploadId, duplicateStorage, 2);
-  const {
-    _id: _oldId,
-    _creationTime: _created,
-    unavailableFile: _missing,
-    ...duplicateMetadata
-  } = before!;
-  await client.run((ctx) =>
-    ctx.db.insert('documents', { ...duplicateMetadata, storageId: duplicateStorage }),
-  );
-  await assert.rejects(
-    users[2].action(api.actions.documents.restoreDocumentOriginal, {
-      id,
-      uploadId: duplicate.uploadId,
-    }),
-    /Arquivo já cadastrado/,
-  );
-  for (const uploadId of [foreign.uploadId, wrong.uploadId, duplicate.uploadId]) {
-    const upload = await client.run((ctx) =>
-      ctx.db
-        .query('nativeUploads')
-        .withIndex('by_uploadId', (q) => q.eq('uploadId', uploadId))
-        .unique(),
-    );
-    assert.equal(upload!.consumedAt, undefined);
-  }
   assert.deepEqual(await client.run((ctx) => ctx.db.get(id)), before);
-  const valid = await issue(2, 12, 'different-name.pdf'),
-    storageId = await put();
-  await complete(valid.uploadId, storageId, 2);
+  const valid = await send('%PDF-fixture', 2, 'different-name.pdf');
   assert.deepEqual(
     await users[2].action(api.actions.documents.restoreDocumentOriginal, {
       id,
@@ -280,8 +228,11 @@ test('admin restores institutional originals atomically and retains identity and
     }),
     { id, restored: true },
   );
-  const { unavailableFile: _source, ...metadata } = before!;
-  assert.deepEqual(await client.run((ctx) => ctx.db.get(id)), { ...metadata, storageId });
+  const { unavailableFile: _missing, ...unchanged } = before!;
+  assert.deepEqual(await client.run((ctx) => ctx.db.get(id)), {
+    ...unchanged,
+    storageId: valid.storageId,
+  });
   await assert.rejects(
     users[2].action(api.actions.documents.restoreDocumentOriginal, {
       id,
@@ -290,7 +241,7 @@ test('admin restores institutional originals atomically and retains identity and
     /já está disponível/,
   );
   assert.deepEqual(
-    (await client.run((ctx) => ctx.db.query('audit').take(10))).map((row) => row.action),
+    (await client.run((ctx) => ctx.db.query('audit').collect())).map((row) => row.action),
     ['RESTORE_DOCUMENT_ORIGINAL'],
   );
 });
@@ -316,6 +267,7 @@ test('bounded expiration sweeps remove orphaned temporary files and preserve con
         size: 12,
         expiresAt: Date.now() - 1,
         consumedAt,
+        verifiedIngress: true,
       });
     await ctx.db.insert('nativeUploads', {
       uploadId: 'future',

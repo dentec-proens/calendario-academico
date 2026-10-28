@@ -27,6 +27,7 @@ export default defineSchema({
     active: v.boolean(),
     loginMethod: v.union(v.literal('local'), v.literal('google'), v.literal('invite')),
     inviteExpiresAt: v.optional(v.number()),
+    sessionGeneration: v.optional(v.number()),
     removedAt: v.optional(v.number()),
     nativeInviteHash: v.optional(v.string()),
     nativeResetHash: v.optional(v.string()),
@@ -37,6 +38,18 @@ export default defineSchema({
     .index('phone', ['phone'])
     .index('by_role_and_active', ['role', 'active'])
     .index('by_campusId', ['campusId']),
+  authSessions: defineTable({
+    ...authTables.authSessions.validator.fields,
+    generation: v.optional(v.number()),
+    authenticatedAt: v.optional(v.number()),
+  })
+    .index('userId', ['userId'])
+    .index('by_userId_generation', ['userId', 'generation'])
+    .index('by_expirationTime', ['expirationTime']),
+  authVerificationCodes: defineTable({ ...authTables.authVerificationCodes.validator.fields })
+    .index('accountId', ['accountId'])
+    .index('code', ['code'])
+    .index('by_expirationTime', ['expirationTime']),
   campuses: defineTable({ name: v.string(), archived: v.boolean() }).index('by_name', ['name']),
   calendars: defineTable({
     campusId: v.id('campuses'),
@@ -125,7 +138,8 @@ export default defineSchema({
     usedAt: v.optional(v.number()),
   })
     .index('by_tokenHash', ['tokenHash'])
-    .index('by_userId', ['userId']),
+    .index('by_userId', ['userId'])
+    .index('by_expiresAt', ['expiresAt']),
   passwordResets: defineTable({
     tokenHash: v.string(),
     userId: v.id('users'),
@@ -133,7 +147,8 @@ export default defineSchema({
     usedAt: v.optional(v.number()),
   })
     .index('by_tokenHash', ['tokenHash'])
-    .index('by_userId', ['userId']),
+    .index('by_userId', ['userId'])
+    .index('by_expiresAt', ['expiresAt']),
   audit: defineTable({
     at: v.number(),
     actorId: v.optional(v.id('users')),
@@ -157,6 +172,7 @@ export default defineSchema({
     storageId: v.optional(v.id('_storage')),
     hash: v.optional(v.string()),
     completedAt: v.optional(v.number()),
+    verifiedIngress: v.optional(v.literal(true)),
     consumedAt: v.optional(v.number()),
   })
     .index('by_uploadId', ['uploadId'])
@@ -181,7 +197,10 @@ export default defineSchema({
   }).index('by_key', ['key']),
   operationalLeases: defineTable({
     operation: v.string(),
+    credentialKey: v.optional(v.string()),
     startedAt: v.number(),
     actorId: v.optional(v.id('users')),
-  }).index('by_startedAt', ['startedAt']),
+  })
+    .index('by_startedAt', ['startedAt'])
+    .index('by_credentialKey', ['credentialKey']),
 });

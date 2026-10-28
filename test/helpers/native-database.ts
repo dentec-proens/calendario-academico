@@ -1,5 +1,6 @@
 import { convexModules } from './convex-modules.ts';
 import { convexTest } from 'convex-test';
+import rateLimiterTest from '@convex-dev/rate-limiter/test';
 import type { FunctionReference } from 'convex/server';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { api, internal } from '../../convex/_generated/api.js';
@@ -59,6 +60,7 @@ const time = (value: unknown) =>
 // resolved only here; the production client and backend use native document IDs.
 export async function createNativeFixture(overrides: Seed = {}) {
   const client = convexTest(schema, convexModules);
+  rateLimiterTest.register(client);
   const ids = {
     campuses: {} as Record<string, Id<'campuses'>>,
     users: {} as Record<string, Id<'users'>>,

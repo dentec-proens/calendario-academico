@@ -20,7 +20,7 @@ Na lista de calendários, **Editar** abre a edição. **Criado por** identifica 
 
 O portal verifica se há uma nova versão publicada. O aviso **Uma nova versão do portal está disponível** permite atualizar quando não há trabalho pendente. Uma aba limpa também pode atualizar ao clicar em outra seção do menu principal. Trocas de etapa do calendário e a saída do editor seguem seu fluxo habitual; salvar e sair não autoriza uma atualização no mesmo clique.
 
-No acesso, a operação do Google não acrescenta uma confirmação de saída. Se você já preencheu campos do acesso local, a proteção desses campos continua ativa ao trocar para Google; escolher ficar na página conserva o preenchimento. Limpe os campos locais se quiser abandoná-los antes de iniciar o outro método de acesso.
+O login pelo Google está intencionalmente desabilitado até segundo aviso. Use o acesso por e-mail e senha descrito em [Acesso e contas](recuperacao-de-senha.md). Se a integração for reativada futuramente, a troca para Google deverá preservar a proteção dos campos locais ainda preenchidos.
 
 Com campos em preenchimento, pareceres não salvos, arquivos selecionados, operações em andamento ou recuperação de acesso, a aba permanece aberta. Use **Voltar ao preenchimento pendente** ou o menu para retornar ao fluxo e aplicar, salvar ou descartar explicitamente seus dados. O botão **Atualizar agora** não envia nem descarta formulários. Filtros de consulta não impedem a atualização. Ativação e recuperação de senha precisam ser concluídas antes de trocar a página.
 

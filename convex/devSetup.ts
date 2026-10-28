@@ -4,6 +4,7 @@ import type { Infer } from 'convex/values';
 import { environments } from '../config/environments';
 import { campusNames, initialCatalogue } from '../src/institution.ts';
 import { internalMutation } from './_generated/server';
+import { isSupportedPasswordSecret } from './authCrypto';
 import { setPassword } from './access/store';
 import type { MutationCtx } from './_generated/server';
 import type { TableNames } from './_generated/dataModel';
@@ -42,8 +43,7 @@ export const prepareE2E = internalMutation({
   returns: v.object({ campusId: v.id('campuses'), userId: v.id('users'), year: v.number() }),
   handler: async (ctx, { expectedCloudUrl, runId, secret, preferredYear }) => {
     assertE2EDevelopment(expectedCloudUrl);
-    if (!/^dentec-scrypt-v1\$[a-f0-9]{32}\$[a-f0-9]{128}$/.test(secret))
-      throw Error('Credencial de teste inválida.');
+    if (!isSupportedPasswordSecret(secret)) throw Error('Credencial de teste inválida.');
     const campusId = await e2eCampus(ctx, runId);
     const email = `e2e-${runId}@ifpr.edu.br`;
     const name = `Testes E2E ${runId}`;

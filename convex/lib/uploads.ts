@@ -17,6 +17,7 @@ export async function consumeUpload(
     upload.ownerId !== userId ||
     upload.expiresAt <= Date.now() ||
     !upload.completedAt ||
+    !upload.verifiedIngress ||
     upload.consumedAt ||
     !upload.storageId ||
     !upload.hash ||

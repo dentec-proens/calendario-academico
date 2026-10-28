@@ -4,6 +4,7 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, scryptSync } from 'node:crypto';
 import { convexTest } from 'convex-test';
+import rateLimiterTest from '@convex-dev/rate-limiter/test';
 import { api } from '../convex/_generated/api.js';
 
 const { passwordCrypto, legacySecret } = await import('../convex/authCrypto.ts');
@@ -15,6 +16,7 @@ process.env.SITE_URL = 'http://127.0.0.1:4183';
 
 async function fixture() {
   const client = convexTest(schema, convexModules);
+  rateLimiterTest.register(client);
   const ids = await client.run(async (ctx) => {
     const campusId = await ctx.db.insert('campuses', { name: 'Campus de teste', archived: false });
     const users = [

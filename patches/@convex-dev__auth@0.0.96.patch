@@ -1,0 +1,97 @@
+diff --git a/dist/server/implementation/mutations/refreshSession.js b/dist/server/implementation/mutations/refreshSession.js
+index 116c251826dfc7d0f7006f2839fb80b27e6c77d7..f289d738cfb400fc15c3b1aef7a1a10db2c7580e 100644
+--- a/dist/server/implementation/mutations/refreshSession.js
++++ b/dist/server/implementation/mutations/refreshSession.js
+@@ -17,6 +17,12 @@ export async function refreshSessionImpl(ctx, args, getProviderOrThrow, config)
+     }
+     const validationResult = await refreshTokenIfValid(ctx, refreshTokenId, tokenSessionId);
+     if (validationResult === null) {
++    // Invalid or mismatched credentials never authorize deleting another session.
++    const presentedToken = await ctx.db.get(refreshTokenId);
++    if (presentedToken === null || presentedToken.sessionId !== tokenSessionId) {
++      return null;
++    }
++
+         // Replicating `deleteSession` but ensuring that we delete both the session
+         // and the refresh token, even if one of them is missing.
+         const session = await ctx.db.get(tokenSessionId);
+diff --git a/dist/server/implementation/sessions.js b/dist/server/implementation/sessions.js
+index 695a88d07557c49307f1206ce6c31df4bbe052b9..c0192ac7c7579556faa7bbf3f7a3489aaac010e8 100644
+--- a/dist/server/implementation/sessions.js
++++ b/dist/server/implementation/sessions.js
+@@ -43,7 +43,9 @@ async function createSession(ctx, userId, config) {
+         (config.session?.totalDurationMs ??
+             stringToNumber(process.env.AUTH_SESSION_TOTAL_DURATION_MS) ??
+             DEFAULT_SESSION_TOTAL_DURATION_MS);
+-    return await ctx.db.insert("authSessions", { expirationTime, userId });
++    const sessionId = await ctx.db.insert("authSessions", { expirationTime, userId });
++    await config.callbacks?.afterSessionCreation?.(ctx, { userId, sessionId });
++    return sessionId;
+ }
+ export async function deleteSession(ctx, session) {
+     await ctx.db.delete(session._id);
+diff --git a/dist/server/types.d.ts b/dist/server/types.d.ts
+index b0b61e18c168255e975a9dac0599120702ec31b1..7d87280afa10d13e4408b98d2755e255bf5e3398 100644
+--- a/dist/server/types.d.ts
++++ b/dist/server/types.d.ts
+@@ -204,6 +204,11 @@ export type ConvexAuthConfig = {
+              */
+             userId: GenericId<"users">;
+         }) => Promise<void>;
++        /** Runs transactionally after insertion and before token generation. */
++        afterSessionCreation?: (ctx: GenericMutationCtx<AnyDataModel>, args: {
++            userId: GenericId<"users">;
++            sessionId: GenericId<"authSessions">;
++        }) => Promise<void>;
+         /**
+          * Perform additional writes after a user is created.
+          *
+diff --git a/src/server/implementation/mutations/refreshSession.ts b/src/server/implementation/mutations/refreshSession.ts
+index 38c79bc771faccb1cdf1df24c0d77993f8f6a6fd..3bb6e519a848e625df2f5f2b35e6bda846b97165 100644
+--- a/src/server/implementation/mutations/refreshSession.ts
++++ b/src/server/implementation/mutations/refreshSession.ts
+@@ -52,6 +52,12 @@ export async function refreshSessionImpl(
+   );
+ 
+   if (validationResult === null) {
++    // Invalid or mismatched credentials never authorize deleting another session.
++    const presentedToken = await ctx.db.get(refreshTokenId);
++    if (presentedToken === null || presentedToken.sessionId !== tokenSessionId) {
++      return null;
++    }
++
+     // Replicating `deleteSession` but ensuring that we delete both the session
+     // and the refresh token, even if one of them is missing.
+     const session = await ctx.db.get(tokenSessionId);
+diff --git a/src/server/implementation/sessions.ts b/src/server/implementation/sessions.ts
+index 6150cce1199a3f6c24e10c21ac78f7022c5b5742..42114d4d033d680e937f8482f0d834dd09140894 100644
+--- a/src/server/implementation/sessions.ts
++++ b/src/server/implementation/sessions.ts
+@@ -95,7 +95,9 @@ async function createSession(
+     (config.session?.totalDurationMs ??
+       stringToNumber(process.env.AUTH_SESSION_TOTAL_DURATION_MS) ??
+       DEFAULT_SESSION_TOTAL_DURATION_MS);
+-  return await ctx.db.insert("authSessions", { expirationTime, userId });
++  const sessionId = await ctx.db.insert("authSessions", { expirationTime, userId });
++  await config.callbacks?.afterSessionCreation?.(ctx, { userId, sessionId });
++  return sessionId;
+ }
+ 
+ export async function deleteSession(
+diff --git a/src/server/types.ts b/src/server/types.ts
+index b7841a01c3e1d285f8e99d5e75b57d0ca4b11ab7..820b85d88e430dbc4df75bb3c25f575d8d871407 100644
+--- a/src/server/types.ts
++++ b/src/server/types.ts
+@@ -226,6 +226,12 @@ export type ConvexAuthConfig = {
+         userId: GenericId<"users">;
+       },
+     ) => Promise<void>;
++    /** Runs inside the session creation transaction, before tokens are minted.
++     * Throwing rolls back the new session and any callback writes. */
++    afterSessionCreation?: (
++      ctx: GenericMutationCtx<AnyDataModel>,
++      args: { userId: GenericId<"users">; sessionId: GenericId<"authSessions"> },
++    ) => Promise<void>;
+     /**
+      * Perform additional writes after a user is created.
+      *

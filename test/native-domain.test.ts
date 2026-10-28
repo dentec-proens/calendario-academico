@@ -217,6 +217,7 @@ test('native action boundaries recheck ownership and register only validated sto
       storageId: await ctx.storage.store(new Blob(['%PDF-admin--'], { type: 'application/pdf' })),
       hash: result.hash,
       completedAt: Date.now(),
+      verifiedIngress: true,
     }),
   );
   const document = await admin.finishAction(

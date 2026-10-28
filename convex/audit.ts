@@ -23,6 +23,7 @@ const labels: Record<string, string> = {
   SAVE_HUMAN_REVIEW: 'Parecer salvo',
   UPLOAD_HISTORY: 'Calendário anterior enviado',
   CREATE_USER: 'Membro cadastrado',
+  UNLOCK_PASSWORD_LOGIN: 'Login por senha desbloqueado',
   REMOVE_MEMBER: 'Acesso removido',
   REISSUE_INVITATION: 'Convite renovado',
   ACCEPT_INVITATION: 'Convite aceito',

@@ -2,8 +2,7 @@ import { assertWritesOpen } from './lib/maintenance';
 import { v, ConvexError } from 'convex/values';
 import { mutation, internalMutation, internalQuery, httpAction } from './_generated/server';
 import { internal } from './_generated/api';
-import { requireNativeUser } from './access/identity';
-import { calendarEditor } from './lib/authorization';
+import { requireNativeUser, requireAdmin } from './access/identity';
 import type { MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 
@@ -31,6 +30,7 @@ const uploadRecord = v.object({
   storageId: v.optional(v.id('_storage')),
   hash: v.optional(v.string()),
   completedAt: v.optional(v.number()),
+  verifiedIngress: v.optional(v.literal(true)),
   consumedAt: v.optional(v.number()),
 });
 const fileTicket = v.object({
@@ -45,11 +45,10 @@ const fileTicket = v.object({
 
 export const issueUpload = mutation({
   args: { filename: v.string(), size: v.number() },
-  returns: v.object({ uploadUrl: v.string(), uploadId: v.string() }),
+  returns: v.object({ uploadId: v.string() }),
   handler: async (ctx, { filename, size }) => {
     await assertWritesOpen(ctx);
-    const { row, user } = await requireNativeUser(ctx);
-    calendarEditor(user);
+    const { row } = await requireAdmin(ctx);
     if (
       filename.length > 180 ||
       !filename.toLowerCase().endsWith('.pdf') ||
@@ -76,7 +75,7 @@ export const issueUpload = mutation({
       expiresAt: Date.now() + 15 * 60_000,
     });
     await ctx.scheduler.runAfter(16 * 60_000, internal.nativeFiles.expireUpload, { uploadId });
-    return { uploadId, uploadUrl: await ctx.storage.generateUploadUrl() };
+    return { uploadId };
   },
 });
 
@@ -84,8 +83,7 @@ export const uploadContext = internalQuery({
   args: { uploadId: v.string() },
   returns: uploadRecord,
   handler: async (ctx, { uploadId }) => {
-    const { row, user } = await requireNativeUser(ctx);
-    calendarEditor(user);
+    const { row } = await requireAdmin(ctx);
     const upload = await ctx.db
       .query('nativeUploads')
       .withIndex('by_uploadId', (q) => q.eq('uploadId', uploadId))
@@ -100,46 +98,64 @@ export const uploadContext = internalQuery({
     return upload;
   },
 });
+// Legacy internal/public completion paths never accept client-chosen storage IDs.
 export const finishUpload = internalMutation({
   args: { uploadId: v.string(), storageId: v.id('_storage'), hash: v.string(), size: v.number() },
   returns: v.object({ uploadId: v.string() }),
-  handler: async (ctx, args) => {
-    const { row, user } = await requireNativeUser(ctx);
-    calendarEditor(user);
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    return failure('Atualize a aplicação para enviar o arquivo pelo ingresso validado.', 409);
+  },
+});
+
+export const receiveUpload = mutation({
+  args: { uploadId: v.string(), bytes: v.bytes() },
+  returns: v.object({ uploadId: v.string() }),
+  handler: async (ctx, { uploadId, bytes }) => {
+    await assertWritesOpen(ctx);
+    const { row } = await requireAdmin(ctx);
     const upload = await ctx.db
       .query('nativeUploads')
-      .withIndex('by_uploadId', (q) => q.eq('uploadId', args.uploadId))
+      .withIndex('by_uploadId', (q) => q.eq('uploadId', uploadId))
       .unique();
     if (
       !upload ||
       upload.ownerId !== row._id ||
       upload.expiresAt <= Date.now() ||
-      upload.consumedAt ||
-      upload.size !== args.size ||
-      !/^[a-f0-9]{64}$/.test(args.hash)
-    )
-      failure('Envio expirado ou inválido.');
-    if (upload.completedAt) {
-      if (upload.storageId !== args.storageId) failure('Envio já concluído.', 409);
-      return { uploadId: args.uploadId };
+      upload.consumedAt
+    ) {
+      failure('Envio expirado ou não encontrado.', 404);
     }
-    const [pending, document] = await Promise.all([
-      ctx.db
-        .query('nativeUploads')
-        .withIndex('by_storageId', (q) => q.eq('storageId', args.storageId))
-        .unique(),
-      ctx.db
-        .query('documents')
-        .withIndex('by_storageId', (q) => q.eq('storageId', args.storageId))
-        .first(),
-    ]);
-    if (pending || document) failure('Arquivo já cadastrado.', 409);
+    const view = new Uint8Array(bytes);
+    if (
+      view.length < 5 ||
+      view.length > 8_000_000 ||
+      view[0] !== 37 ||
+      view[1] !== 80 ||
+      view[2] !== 68 ||
+      view[3] !== 70 ||
+      view[4] !== 45
+    ) {
+      failure('Envie um PDF de até 8 MB.');
+    }
+    if (view.length !== upload.size) failure('O tamanho do PDF recebido é diferente do informado.');
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (b) =>
+      b.toString(16).padStart(2, '0'),
+    ).join('');
+    if (upload.completedAt) {
+      if (upload.verifiedIngress && upload.hash === hash) return { uploadId };
+      failure('Envio já concluído.', 409);
+    }
+    // Convex 1.48 stores the file and its owner/ticket association in the same
+    // transaction. Rejection above cannot leave an uploaded Storage object.
+    const storageId = await ctx.storage.store(new Blob([bytes], { type: 'application/pdf' }));
     await ctx.db.patch(upload._id, {
-      storageId: args.storageId,
-      hash: args.hash,
+      storageId,
+      hash,
       completedAt: Date.now(),
+      verifiedIngress: true,
     });
-    return { uploadId: args.uploadId };
+    return { uploadId };
   },
 });
 export const expireUpload = internalMutation({
@@ -151,7 +167,7 @@ export const expireUpload = internalMutation({
       .withIndex('by_uploadId', (q) => q.eq('uploadId', uploadId))
       .unique();
     if (!upload) return null;
-    if (!upload.consumedAt && upload.storageId) {
+    if (!upload.consumedAt && upload.storageId && upload.verifiedIngress) {
       await ctx.storage.delete(upload.storageId);
     }
     await ctx.db.delete(upload._id);
@@ -238,6 +254,7 @@ async function restorationUpload(
     upload.ownerId !== ownerId ||
     upload.expiresAt <= Date.now() ||
     !upload.completedAt ||
+    !upload.verifiedIngress ||
     upload.consumedAt ||
     !upload.storageId ||
     !upload.hash
@@ -294,7 +311,8 @@ export const cleanupExpired = internalMutation({
         .take(100),
     ]);
     for (const row of uploads) {
-      if (!row.consumedAt && row.storageId) await ctx.storage.delete(row.storageId);
+      if (!row.consumedAt && row.storageId && row.verifiedIngress)
+        await ctx.storage.delete(row.storageId);
       await ctx.db.delete(row._id);
     }
     for (const row of tickets) {

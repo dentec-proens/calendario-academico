@@ -1,23 +1,31 @@
 import { assertWritesOpen } from './lib/maintenance';
-import { Password } from '@convex-dev/auth/providers/Password';
+import { ConvexCredentials } from '@convex-dev/auth/providers/ConvexCredentials';
+import { internal } from './_generated/api';
+import { initializeSession } from './access/store';
 import Google from '@auth/core/providers/google';
 import { convexAuth } from '@convex-dev/auth/server';
 import { passwordCrypto, validatePassword } from './authCrypto';
-import { institutionalEmail, memberFromRow } from './access/identity';
+import { institutionalEmail, memberFromRow, assertUserSession } from './access/identity';
 import type { MutationCtx } from './_generated/server';
+import type { Id } from './_generated/dataModel';
 import type { GenericDataModel } from 'convex/server';
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
-    Password<GenericDataModel>({
+    ConvexCredentials<GenericDataModel>({
+      id: 'password',
       crypto: passwordCrypto,
-      validatePasswordRequirements: validatePassword,
-      profile(params) {
-        // Accounts are provisioned by administrators, approved invitations or
-        // the one-time installation flow, never by arbitrary public sign-up.
+      async authorize(params, ctx) {
+        // The application supports sign-in only; provisioning/reset remain in
+        // the separately authorized application flows.
         if (params.flow !== 'signIn') throw Error('Solicite seu acesso à administração.');
         validatePassword(params.password);
-        return { email: institutionalEmail(params.email) };
+        const result = await ctx.runMutation(internal.access.passwordSignIn.authorize, {
+          email: institutionalEmail(params.email),
+          password: params.password,
+        });
+        if ('error' in result) throw Error(result.error);
+        return result;
       },
     }),
     ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
@@ -40,7 +48,24 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       : []),
   ],
   session: { totalDurationMs: 8 * 60 * 60 * 1000, inactiveDurationMs: 8 * 60 * 60 * 1000 },
+  jwt: {
+    async customClaims(ctx, { userId, sessionId }) {
+      await assertUserSession(
+        ctx as MutationCtx,
+        userId as Id<'users'>,
+        sessionId as Id<'authSessions'>,
+      );
+      return {};
+    },
+  },
   callbacks: {
+    async afterSessionCreation(ctx, { userId, sessionId }) {
+      await initializeSession(
+        ctx as MutationCtx,
+        userId as Id<'users'>,
+        sessionId as Id<'authSessions'>,
+      );
+    },
     async createOrUpdateUser(ctx, args) {
       const db = (ctx as MutationCtx).db;
       const email = institutionalEmail(args.profile.email);

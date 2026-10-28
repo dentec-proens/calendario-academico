@@ -162,22 +162,29 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@convex-dev/auth@0.0.96': 2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d
+  convex-test@0.0.64: a99353a5dcad3b25735caa48a8a48bf879f95fdca630d84993fe88df54e3f8f2
+
 importers:
 
   .:
     dependencies:
       '@auth/core':
-        specifier: 0.41.1
-        version: 0.41.1
+        specifier: 0.41.3
+        version: 0.41.3
       '@base-ui/react':
         specifier: 1.9.0
         version: 1.9.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@convex-dev/auth':
         specifier: 0.0.96
-        version: 0.0.96(@auth/core@0.41.1)(convex@1.48.0(react@19.3.1))(react@19.3.1)
+        version: 0.0.96(patch_hash=2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d)(@auth/core@0.41.3)(convex@1.48.0(react@19.3.1))(react@19.3.1)
       '@convex-dev/presence':
         specifier: 0.4.0
         version: 0.4.0(convex@1.48.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@convex-dev/rate-limiter':
+        specifier: 0.4.2
+        version: 0.4.2(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
       '@noble/hashes':
         specifier: 2.0.1
         version: 2.0.1
@@ -241,7 +248,7 @@ importers:
         version: 2.0.4
       convex-test:
         specifier: 0.0.64
-        version: 0.0.64(convex@1.48.0(react@19.3.1))
+        version: 0.0.64(patch_hash=a99353a5dcad3b25735caa48a8a48bf879f95fdca630d84993fe88df54e3f8f2)(convex@1.48.0(react@19.3.1))
       fflate:
         specifier: 0.8.3
         version: 0.8.3
@@ -269,12 +276,12 @@ importers:
 
 packages:
 
-  '@auth/core@0.41.1':
-    resolution: {integrity: sha512-t9cJ2zNYAdWMacGRMT6+r4xr1uybIdmYa49calBPeTqwgAFPV/88ac9TEvCR85pvATiSPt8VaNf+Gt24JIT/uw==}
+  '@auth/core@0.41.3':
+    resolution: {integrity: sha512-sJ3JMHHkXMD3aOjopv7mOBTO1Ocw4b0fAEXJBz6k7YHLpYQI6C40jCUPc5fNvUKxXRXNE1/sRISA15UrwWJBTw==}
     peerDependencies:
       '@simplewebauthn/browser': ^9.0.1
       '@simplewebauthn/server': ^9.0.2
-      nodemailer: ^7.0.7
+      nodemailer: ^7.0.7 || ^8.0.5
     peerDependenciesMeta:
       '@simplewebauthn/browser':
         optional: true
@@ -330,6 +337,11 @@ packages:
       convex: ^1.36.1
       react: ^18.3.1 || ^19.0.0
 
+  '@convex-dev/batch-worker@0.3.5':
+    resolution: {integrity: sha512-kTxLGy1TXRN6WLcENcoRWWnvPshv1sIZp2EpPqGqCB4FxDI7m8tEHUr+jCLdhGtSZT1UHkWtb1w8YYuEzTxHWQ==}
+    peerDependencies:
+      convex: ^1.43.0
+
   '@convex-dev/presence@0.4.0':
     resolution: {integrity: sha512-T1f2aHyS2D2dxvMnvY+qSJBIRG0W7ph8+mgOvZif52JLlLNscCHTangAgNWR4VLYGhXFFDxwSSpdh7vxzA/hPQ==}
     peerDependencies:
@@ -342,6 +354,15 @@ packages:
       expo-crypto:
         optional: true
       react-native:
+        optional: true
+
+  '@convex-dev/rate-limiter@0.4.2':
+    resolution: {integrity: sha512-njheoDd//MZgxtw+0PP3LL47PVMkvOKZmXDjYglDKSu5IdrfJtGmz/EHd6px9UcALuk/w7LTo83YwQ3bTGsMIg==}
+    peerDependencies:
+      convex: ^1.43.0
+      react: ^18.2.0 || ^19.0.0
+    peerDependenciesMeta:
+      react:
         optional: true
 
   '@esbuild/aix-ppc64@0.27.0':
@@ -1442,6 +1463,28 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
+  convex-helpers@0.1.129:
+    resolution: {integrity: sha512-8QJLbym0fKsf3tYcF2ZTX37NeYt/BkOFBjBwB2LR1fXUAajeYaTLV11gi/0IVOU/jCdH2j/VseHhHid1qQcqFw==}
+    hasBin: true
+    peerDependencies:
+      '@standard-schema/spec': ^1.0.0
+      convex: ^1.46.0
+      hono: ^4.0.5
+      react: ^17.0.2 || ^18.0.0 || ^19.0.0
+      typescript: ^5.5 || ^6.0.0 || ^7.0.0
+      zod: ^3.25.0 || ^4.0.0
+    peerDependenciesMeta:
+      '@standard-schema/spec':
+        optional: true
+      hono:
+        optional: true
+      react:
+        optional: true
+      typescript:
+        optional: true
+      zod:
+        optional: true
+
   convex-test@0.0.64:
     resolution: {integrity: sha512-HvaFwCA7CO3i9sBWkP/+HUpCad49zXitDLheLpt+TUOHVWhsWQ7hbPAyPTOFhHZJrodzngkCP/tW9/8uDSOJqQ==}
     peerDependencies:
@@ -1925,7 +1968,7 @@ packages:
 
 snapshots:
 
-  '@auth/core@0.41.1':
+  '@auth/core@0.41.3':
     dependencies:
       '@panva/hkdf': 1.2.1
       jose: 6.2.13
@@ -1958,9 +2001,9 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  '@convex-dev/auth@0.0.96(@auth/core@0.41.1)(convex@1.48.0(react@19.3.1))(react@19.3.1)':
+  '@convex-dev/auth@0.0.96(patch_hash=2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d)(@auth/core@0.41.3)(convex@1.48.0(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@auth/core': 0.41.1
+      '@auth/core': 0.41.3
       '@oslojs/crypto': 1.0.1
       '@oslojs/encoding': 1.1.0
       convex: 1.48.0(react@19.3.1)
@@ -1980,12 +2023,35 @@ snapshots:
       convex: 1.48.0(react@19.3.1)
       react: 19.3.1
 
+  '@convex-dev/batch-worker@0.3.5(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)':
+    dependencies:
+      convex: 1.48.0(react@19.3.1)
+      convex-helpers: 0.1.129(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
+    transitivePeerDependencies:
+      - '@standard-schema/spec'
+      - hono
+      - react
+      - typescript
+      - zod
+
   '@convex-dev/presence@0.4.0(convex@1.48.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@convex-dev/batch-worker': 0.2.2(convex@1.48.0(react@19.3.1))(react@19.3.1)
       convex: 1.48.0(react@19.3.1)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
+
+  '@convex-dev/rate-limiter@0.4.2(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)':
+    dependencies:
+      '@convex-dev/batch-worker': 0.3.5(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
+      convex: 1.48.0(react@19.3.1)
+    optionalDependencies:
+      react: 19.3.1
+    transitivePeerDependencies:
+      - '@standard-schema/spec'
+      - hono
+      - typescript
+      - zod
 
   '@esbuild/aix-ppc64@0.27.0':
     optional: true
@@ -2712,7 +2778,14 @@ snapshots:
 
   clsx@2.1.1: {}
 
-  convex-test@0.0.64(convex@1.48.0(react@19.3.1)):
+  convex-helpers@0.1.129(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2):
+    dependencies:
+      convex: 1.48.0(react@19.3.1)
+    optionalDependencies:
+      react: 19.3.1
+      typescript: 7.0.2
+
+  convex-test@0.0.64(patch_hash=a99353a5dcad3b25735caa48a8a48bf879f95fdca630d84993fe88df54e3f8f2)(convex@1.48.0(react@19.3.1)):
     dependencies:
       convex: 1.48.0(react@19.3.1)
 

@@ -1,0 +1,41 @@
+diff --git a/dist/index.js b/dist/index.js
+index 17ace061ad719c1f87e3652dd1522b8db3acf030..7642d9281399cab5e0232515306adc9e94b8c2a8 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1,5 +1,6 @@
+ /// <reference types="vite/client" />
+ import { AsyncLocalStorage } from "node:async_hooks";
++import { Buffer } from "node:buffer";
+ import { actionGeneric, anyApi, componentsGeneric, filterApi, getFunctionAddress, httpActionGeneric, internalActionGeneric, internalMutationGeneric, internalQueryGeneric, makeFunctionReference, mutationGeneric, queryGeneric, } from "convex/server";
+ import { CommitTsPlaceholder, compareValues, convexToJson, getConvexSize, getDocumentSize, jsonToConvex, } from "convex/values";
+ import { TransactionMetricsTracker, } from "./transactionMetrics.js";
+@@ -1371,6 +1372,29 @@ function asyncSyscallImpl() {
+                 db.patch("_scheduled_functions", id, { state: { kind: "canceled" } });
+                 return JSON.stringify({});
+             }
++            case "1.0/storageStore": {
++                const { blob: encoded, contentType, sha256 } = args;
++                const blob = new Blob([Buffer.from(encoded, "base64")], { type: contentType });
++                const digest = await blobSha(blob);
++                if (sha256 !== undefined && sha256 !== digest) {
++                    throw new Error("SHA-256 digest does not match stored blob");
++                }
++                const storageId = await writeToDatabase(async (db) => db.insert("_storage", {
++                    size: blob.size,
++                    sha256: digest,
++                    ...(blob.type ? { contentType: blob.type } : {}),
++                }));
++                db.storeFile(storageId, blob);
++                return JSON.stringify(convexToJson(storageId));
++            }
++            case "1.0/storageGet": {
++                const { storageId } = args;
++                const blob = db.getFile(storageId);
++                return JSON.stringify(blob === null ? null : {
++                    blob: Buffer.from(await blob.arrayBuffer()).toString("base64"),
++                    contentType: blob.type,
++                });
++            }
+             case "1.0/storageDelete": {
+                 const { storageId } = args;
+                 await writeToDatabase(async (db) => {
