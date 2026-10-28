@@ -53,3 +53,19 @@ A migração foi ensaiada, aplicada e verificada em produção em 27/10/2026. Fo
 O planejador específico, o modo de publicação contract e seus comandos de execução foram removidos após a conclusão. Backups, planos, journals e recibos permanecem nos diretórios privados `backup-*`, fora do Git. O schema conserva somente a leitura dos recibos contract já gravados; não há mais funções para iniciar ou retomar essa migração. O código exato usado na operação permanece recuperável pelo histórico do Git.
 
 Para uma nova operação administrativa, preparar um plano próprio e conferir os destinos. Não reaplicar planos ou executar scripts de uma retirada já concluída.
+
+## Remoção das referências das etapas de avaliação
+
+O campo comum `events[].evidence` continua disponível aos demais registros. Para etapas ativas e etapas explicitamente desvinculadas (`recordType: retired-stage`), a normalização não exige nem persiste referência. Copiar, importar ou restaurar um calendário passa pela mesma normalização. A revisão aceita as datas completas das etapas sem fonte, mantendo as regras de intervalo, sequência e oferta.
+
+A função interna `maintenance/stageReferences:removePage` prepara a limpeza dos dados anteriores em `calendarContents` e `calendarSnapshots`, incluindo snapshots sem vínculo e calendários na lixeira. Ela não remove calendários, datas, versões, referências institucionais ou fontes de outros eventos. Identificadores legados de etapa também são reconhecidos. Notas antigas sem vínculo nem identificação de etapa não podem ser classificadas apenas pelo texto da fonte; não são apagadas por inferência. Pareceres, textos livres e PDFs já baixados não são reescritos.
+
+Procedimento administrativo, separado de uma fast release:
+
+1. Preparar e conferir backup integral com Storage em diretório privado e seu SHA-256. Ensaiar a restauração e a limpeza em deployment descartável, preservando IDs e comparando os demais campos e contagens. Os testes locais de handlers cobrem as barreiras e a transformação, mas não substituem esse ensaio com os dados do destino.
+2. Publicar o código compatível (o schema aceita referência ausente, e a normalização impede sua reintrodução nas etapas). Confirmar o destino e a autorização da operação histórica; reservar a operação e entrar em manutenção com o SHA do código conferido. Aguardar ausência de leases; não conceder acesso de smoke durante a limpeza.
+3. Para cada tabela, iniciar com `cursor: null` e `dryRun: true`; conservar somente contagens e os cursores retornados, sem registrar os valores antigos. Percorrer até `done: true`. O limite de leitura por chamada pode produzir páginas vazias intermediárias: continuar pelo cursor, não pela quantidade de resultados.
+4. Aplicar as mesmas páginas com `dryRun: false`, `commit` igual ao proprietário da manutenção e `backupSha256` do backup conferido. A função processa até dez documentos por página, preserva metadados de versões e registra as contagens e o backup na auditoria. Repetições são idempotentes. Conservar os recibos por página em arquivo privado; falha conserva a manutenção e exige reconciliação antes de continuar.
+5. Repetir a varredura completa em modo de prévia e comprovar zero campos restantes de etapas. Comparar estado atual, snapshots, versões e os demais dados com o backup, permitindo apenas a remoção prevista e os registros de auditoria. Encerrar a manutenção e liberar a reserva somente após essa conferência.
+
+A reescrita histórica é uma exceção explícita à preservação dos snapshots, autorizada para esta retirada. A recuperação dessas fontes exige o backup anterior. Um deploy isolado ou uma fast release não executa essa limpeza; a execução em produção continua pendente até o procedimento acima ser realizado.

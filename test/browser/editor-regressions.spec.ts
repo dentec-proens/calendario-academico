@@ -91,12 +91,12 @@ test('reverting a field clears unapplied state and annual Saturday selections su
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-view="periods"]').click();
   await page.locator('[data-edit-organization="integrado"]').click();
-  await page.locator('#offer-integrado-evidence').fill('Rascunho preservado');
+  await page.locator('#offer-integrado-period-0-start').fill('2027-03-02');
   await page.locator('[data-view="events"]').click();
   await page.locator('[data-view="periods"]').click();
-  await expect(page.locator('#offer-integrado-evidence')).toHaveValue('Rascunho preservado');
+  await expect(page.locator('#offer-integrado-period-0-start')).toHaveValue('2027-03-02');
   await expect(page.locator('#unapplied-status')).toBeVisible();
-  await page.locator('#offer-integrado-evidence').fill('');
+  await page.locator('#offer-integrado-period-0-start').fill('2027-03-01');
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-view="days"]').click();
   await expect(page.locator('#saturday-name')).toHaveValue('Feira de ciências');

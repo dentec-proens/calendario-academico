@@ -1021,14 +1021,14 @@ fieldset.event-fields {
   display: block;
   border: 0;
   padding: 0;
-  margin: 16px 0;
+  margin: 8px 0;
   min-width: 0;
 }
 .offer-period-fields legend,
 .offer-stage-fields legend {
   font-weight: 600;
   padding: 0;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 .offer-date-grid {
   display: grid;
@@ -1036,8 +1036,8 @@ fieldset.event-fields {
   gap: 0 18px;
 }
 .offer-assessments {
-  margin-top: 22px;
-  padding-top: 22px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--line);
 }
 .offer-organization .field-error {
@@ -1063,4 +1063,27 @@ fieldset.event-fields {
   color: var(--ui-warning);
   font-size: 0.875rem;
   margin: 6px 0 0;
+}
+
+.offer-settings-grid,
+.offer-stages-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px 24px;
+}
+.offer-settings-grid {
+  margin-top: 16px;
+}
+.offer-organization h5 {
+  margin: 12px 0 8px;
+}
+@container offer-organization (min-width: 480px) {
+  .offer-settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container offer-organization (min-width: 720px) {
+  .offer-stages-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

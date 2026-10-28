@@ -27,6 +27,24 @@ for (const width of [1440, 390]) {
     await expect(opener).toBeFocused();
     await opener.press('Enter');
     await expect(page.locator('#offer-integrado-organization')).toBeFocused();
+    await expect(page.locator('#offer-integrado-evidence')).toHaveCount(0);
+    expect(
+      before.state.events
+        .filter((event) => event.requirementId?.startsWith('stage-'))
+        .every((event) => !Object.hasOwn(event, 'evidence')),
+    ).toBe(true);
+    const stageBounds = await block.locator('.offer-stage-fields').evaluateAll((elements) =>
+      elements.map((element) => {
+        const { x, y, width, height } = element.getBoundingClientRect();
+        return { x, y, width, height };
+      }),
+    );
+    if (width >= 720) {
+      expect(stageBounds[0].y).toBe(stageBounds[1].y);
+      expect(stageBounds[0].x + stageBounds[0].width).toBeLessThanOrEqual(stageBounds[1].x);
+    } else {
+      expect(stageBounds[0].y + stageBounds[0].height).toBeLessThanOrEqual(stageBounds[1].y);
+    }
     await page.locator('#offer-integrado-period-0-start').fill('2027-03-08');
     await expect(block.locator('#offer-integrado-stage-0-error')).toContainText(
       'inteiramente dentro',
@@ -161,7 +179,9 @@ test('editing one shared offer preserves the other offer and existing inclusions
     term: 'annual',
   });
   expect(saved.events.filter((e) => e.modalities?.includes('graduacao'))).toEqual(
-    original.events.filter((e) => e.modalities?.includes('graduacao')),
+    original.events
+      .filter((e) => e.modalities?.includes('graduacao'))
+      .map(({ evidence: _source, ...event }) => event),
   );
   expect(saved.events.find((e) => e.id === 'sat')).toEqual(
     original.events.find((e) => e.id === 'sat'),

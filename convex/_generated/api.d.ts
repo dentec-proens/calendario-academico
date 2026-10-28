@@ -47,6 +47,7 @@ import type * as lib_maintenance from "../lib/maintenance.js";
 import type * as lib_pagination from "../lib/pagination.js";
 import type * as lib_shared from "../lib/shared.js";
 import type * as lib_uploads from "../lib/uploads.js";
+import type * as maintenance_stageReferences from "../maintenance/stageReferences.js";
 import type * as nativeFiles from "../nativeFiles.js";
 import type * as operations from "../operations.js";
 import type * as presence from "../presence.js";
@@ -104,6 +105,7 @@ declare const fullApi: ApiFromModules<{
   "lib/pagination": typeof lib_pagination;
   "lib/shared": typeof lib_shared;
   "lib/uploads": typeof lib_uploads;
+  "maintenance/stageReferences": typeof maintenance_stageReferences;
   nativeFiles: typeof nativeFiles;
   operations: typeof operations;
   presence: typeof presence;

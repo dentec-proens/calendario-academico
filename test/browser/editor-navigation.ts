@@ -36,7 +36,6 @@ export async function configureOffer(page: Page, modality: string, start: string
     await page.locator(`#offer-${modality}-stage-${index}-start`).fill(dates[0]);
     await page.locator(`#offer-${modality}-stage-${index}-end`).fill(dates[1]);
   }
-  await page.locator(`#offer-${modality}-evidence`).fill('Organização pedagógica sintética');
   await page.locator(`#offer-${modality}-apply`).click();
   await expect(block.locator('form')).toBeHidden();
 }

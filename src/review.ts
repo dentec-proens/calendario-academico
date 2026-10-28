@@ -359,7 +359,9 @@ export function reviewSupport<
       const dayMinimums =
         record.state.year === normativeDayMinimums.year ? normativeDayMinimums : legacyDayMinimums;
       let signal: string = 'Conferência documental necessária.';
-      let candidates: Pick<CalendarActivity, 'id' | 'name' | 'start' | 'end' | 'evidence'>[] = [];
+      let candidates: (Pick<CalendarActivity, 'id' | 'name' | 'start' | 'end'> & {
+        evidence: string;
+      })[] = [];
       if (c.pattern) {
         const pattern = new RegExp(c.pattern);
         candidates = events
@@ -377,7 +379,7 @@ export function reviewSupport<
             name: e.name,
             start: e.start,
             end: e.end,
-            evidence: e.evidence,
+            evidence: e.evidence ?? '',
           }));
         signal = candidates.length
           ? `${candidates.length} registro(s) possivelmente relacionado(s). A presença não comprova atendimento.`
@@ -456,7 +458,10 @@ export function reviewSupport<
             ' A presença não comprova atendimento. A conferência humana permanece necessária.';
           candidates = [
             ...new Map(
-              [...candidates, ...linked.flatMap((row) => row.events)].map((e) => [e.id, e]),
+              [...candidates, ...linked.flatMap((row) => row.events)].map((e) => [
+                e.id,
+                { ...e, evidence: e.evidence ?? '' },
+              ]),
             ).values(),
           ];
         }

@@ -5,7 +5,7 @@ const shortDate = (date: string) => date.slice(5).split('-').reverse().join('/')
 function bySource(days: YearSaturday[]) {
   const groups = new Map<string, YearSaturday[]>();
   for (const day of days) {
-    const source = day.registration!.evidence;
+    const source = day.registration!.evidence ?? '';
     groups.set(source, [...(groups.get(source) ?? []), day]);
   }
   return groups;

@@ -27,7 +27,7 @@ export interface CalendarActivity {
   start: string;
   end: string;
   kind: string;
-  evidence: string;
+  evidence?: string;
   category?: string;
   requirementId?: string;
   modalities?: string[];
@@ -37,7 +37,7 @@ export interface CalendarActivity {
   originalEnd?: string;
   assessmentAutoStart?: string;
   deadlineExtensionCause?: 'municipal-holiday' | 'municipal-recess';
-  recordType?: 'event' | 'prior-reference';
+  recordType?: 'event' | 'prior-reference' | 'retired-stage';
   publicationStatus?: 'planned' | 'published';
   admission?: Admission;
   deadlineAdjustment?: { date: string; evidence: string; reviewed: boolean };

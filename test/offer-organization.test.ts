@@ -1,3 +1,5 @@
+import { withoutStageReferences } from '../src/stage-references.ts';
+import { activityCoverage } from '../src/calendar-rules/index.ts';
 import { expect, test } from 'vitest';
 import {
   applyOfferOrganization,
@@ -66,15 +68,17 @@ test('one application splits a shared period and keeps the other offer and all s
   expect(integrated.id).not.toBe('shared');
   expect(integrated.targetDays).toBeUndefined();
   expect(next.events.filter((e) => e.modalities?.includes('graduacao'))).toEqual(
-    before.events.filter((e) => e.modalities?.includes('graduacao')),
+    withoutStageReferences({
+      events: before.events.filter((e) => e.modalities?.includes('graduacao')),
+    }).state.events,
   );
   expect(
     next.events
       .filter((e) => e.modalities?.includes('integrado'))
       .map((e) => [e.id, e.start, e.end, e.evidence, e.assessmentAutoStart]),
   ).toEqual([
-    ['integrado-0', '2027-03-01', '2027-03-12', 'integrado — ata 1', undefined],
-    ['integrado-1', '2027-03-15', '2027-03-31', 'integrado — ata 2', undefined],
+    ['integrado-0', '2027-03-01', '2027-03-12', undefined, undefined],
+    ['integrado-1', '2027-03-15', '2027-03-31', undefined, undefined],
   ]);
   expect(normalizeCalendar({ ...next, ignoredHistory: [] }).events).toHaveLength(4);
 });
@@ -179,4 +183,66 @@ test('splitting shared admission references preserves each offer link and eviden
     modalities: ['integrado'],
     term: 'annual',
   });
+});
+
+test('assessment stages no longer require or retain references while other records keep theirs', () => {
+  const state = calendar();
+  state.events.push({
+    id: 'other',
+    name: 'Evento',
+    start: '2027-03-01',
+    end: '2027-03-01',
+    kind: 'note',
+    evidence: 'Fonte de outro registro',
+  });
+  const draft = offerOrganizationDraft(state, 'integrado');
+  expect(draft).not.toHaveProperty('evidence');
+  expect(draft.stages[0]).not.toHaveProperty('evidence');
+  expect(offerOrganizationIssues(state, 'integrado', draft)).toEqual([]);
+  const next = normalizeCalendar({
+    ...applyOfferOrganization(state, 'integrado', draft, id),
+    ignoredHistory: [],
+  });
+  expect(
+    next.events
+      .filter((event) => event.requirementId?.startsWith('stage-'))
+      .every((event) => !Object.hasOwn(event, 'evidence')),
+  ).toBe(true);
+  expect(next.events.find((event) => event.id === 'other')?.evidence).toBe(
+    'Fonte de outro registro',
+  );
+  expect(
+    activityCoverage(next).find((row) => row.requirement.id === 'stage-1:integrado')?.coverage,
+  ).toBe('complete');
+  expect(() =>
+    normalizeCalendar({
+      ...next,
+      events: next.events.map((event) =>
+        event.id === 'other' ? { ...event, evidence: undefined } : event,
+      ),
+    }),
+  ).toThrow();
+});
+
+test('reducing date-only stages keeps retired dates without reintroducing a source requirement', () => {
+  const state = calendar();
+  const draft = offerOrganizationDraft(state, 'integrado');
+  draft.count = '4';
+  for (const [index, [start, end]] of [
+    ['2027-03-01', '2027-03-05'],
+    ['2027-03-08', '2027-03-12'],
+    ['2027-03-15', '2027-03-19'],
+    ['2027-03-22', '2027-03-26'],
+  ].entries())
+    Object.assign(draft.stages[index], { start, end });
+  const four = applyOfferOrganization(state, 'integrado', draft, id);
+  const twoDraft = offerOrganizationDraft(four, 'integrado');
+  twoDraft.count = '2';
+  const two = applyOfferOrganization(four, 'integrado', twoDraft, id);
+  const retired = two.events.filter((event) => event.recordType === 'retired-stage');
+  expect(retired.map((event) => [event.start, event.end, event.evidence])).toEqual([
+    ['2027-03-15', '2027-03-19', undefined],
+    ['2027-03-22', '2027-03-26', undefined],
+  ]);
+  expect(normalizeCalendar({ ...two, ignoredHistory: [] }).events).toHaveLength(two.events.length);
 });

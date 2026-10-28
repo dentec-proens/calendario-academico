@@ -179,7 +179,7 @@ export default function OfferOrganizationForm({
                 : datedStages < count
                   ? `Etapas pendentes: datas de ${datedStages} de ${count} etapas definidas.`
                   : stageIssues
-                    ? 'Etapas a conferir: revise as datas e referências.'
+                    ? 'Etapas a conferir: revise as datas.'
                     : `Datas de ${count} de ${count} etapas definidas.`}
               {dirty && ' Alterações ainda não aplicadas.'}
             </p>
@@ -251,30 +251,53 @@ export default function OfferOrganizationForm({
                 Alterações desta oferta ainda não aplicadas.
               </p>
             )}
-            <h5>1. Períodos letivos</h5>
-            <form.Field name="organization">
-              {(field) => (
-                <Select
-                  field={field}
-                  label="Organização"
-                  id={`${prefix}-organization`}
-                  ref={first}
-                  required
-                >
-                  <option value="">Selecione</option>
-                  {Object.keys(termsByOrganization).map((organization) => (
-                    <option key={organization} value={organization}>
-                      {organizationLabels[organization]}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </form.Field>
-            {messageFor('organization') && (
-              <p className="field-error" role="alert">
-                {messageFor('organization')}
-              </p>
-            )}
+            <div className="offer-settings-grid">
+              <div>
+                <form.Field name="organization">
+                  {(field) => (
+                    <Select
+                      field={field}
+                      label="Organização"
+                      id={`${prefix}-organization`}
+                      ref={first}
+                      required
+                    >
+                      <option value="">Selecione</option>
+                      {Object.keys(termsByOrganization).map((organization) => (
+                        <option key={organization} value={organization}>
+                          {organizationLabels[organization]}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </form.Field>
+                {messageFor('organization') && (
+                  <p className="field-error" role="alert">
+                    {messageFor('organization')}
+                  </p>
+                )}
+              </div>
+              <div>
+                <form.Field name="count">
+                  {(field) => (
+                    <Select field={field} label="Etapas no ano" id={`${prefix}-count`} required>
+                      <option value="">Selecione</option>
+                      {assessmentStageCounts.map((count) => (
+                        <option key={count} value={count}>
+                          {count} etapas
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </form.Field>
+                {messageFor('count') && (
+                  <p className="field-error" role="alert">
+                    {messageFor('count')}
+                  </p>
+                )}
+              </div>
+            </div>
+            <h5>Períodos letivos</h5>
             {Array.from(
               {
                 length:
@@ -358,97 +381,58 @@ export default function OfferOrganizationForm({
               </p>
             )}
             <div className="offer-assessments">
-              <h5>2. Etapas de avaliação</h5>
-              <form.Field name="count">
-                {(field) => (
-                  <Select field={field} label="Etapas no ano" id={`${prefix}-count`} required>
-                    <option value="">Selecione</option>
-                    {assessmentStageCounts.map((count) => (
-                      <option key={count} value={count}>
-                        {count} etapas
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </form.Field>
-              {messageFor('count') && (
-                <p className="field-error" role="alert">
-                  {messageFor('count')}
-                </p>
-              )}
+              <h5>Etapas de avaliação</h5>
               {savedCount && count && count < savedCount ? (
                 <p className="help">
                   Etapas e atividades além da quantidade escolhida serão preservadas como registros
                   sem vínculo de avaliação.
                 </p>
               ) : null}
-              {values.stages.slice(0, count).map((stage, index) => {
-                const message = messageFor(`stages[${index}]`);
-                return (
-                  <fieldset key={index} className="offer-stage-fields">
-                    <legend>{index + 1}ª etapa</legend>
-                    <div className="offer-date-grid">
-                      <form.Field name={`stages[${index}].start`}>
-                        {(field) => (
-                          <Input
-                            field={field}
-                            label="Início"
-                            id={`${prefix}-stage-${index}-start`}
-                            type="date"
-                            required
-                            min={`${state.year}-01-01`}
-                            max={`${state.year}-12-31`}
-                            aria-invalid={Boolean(message)}
-                            aria-describedby={`${prefix}-stage-${index}-error`}
-                          />
-                        )}
-                      </form.Field>
-                      <form.Field name={`stages[${index}].end`}>
-                        {(field) => (
-                          <Input
-                            field={field}
-                            label="Término"
-                            id={`${prefix}-stage-${index}-end`}
-                            type="date"
-                            required
-                            min={`${state.year}-01-01`}
-                            max={`${state.year}-12-31`}
-                            aria-invalid={Boolean(message)}
-                            aria-describedby={`${prefix}-stage-${index}-error`}
-                          />
-                        )}
-                      </form.Field>
-                    </div>
-                    <p className="field-error" id={`${prefix}-stage-${index}-error`} role="alert">
-                      {message}
-                    </p>
-                    {stage.evidence && !values.evidence && (
-                      <p className="help">Referência atual: {stage.evidence}</p>
-                    )}
-                  </fieldset>
-                );
-              })}
-              <form.Field name="evidence">
-                {(field) => (
-                  <Input
-                    field={field}
-                    label="Referência das etapas"
-                    id={`${prefix}-evidence`}
-                    maxLength={240}
-                    required={values.stages.slice(0, count).some((stage) => !stage.evidence.trim())}
-                    aria-describedby={`${prefix}-evidence-help`}
-                  />
-                )}
-              </form.Field>
-              {dirty && visibleIssues.some((issue) => issue.path.endsWith('.evidence')) && (
-                <p className="field-error" role="alert">
-                  Informe a referência das etapas.
-                </p>
-              )}
-              <p className="help" id={`${prefix}-evidence-help`}>
-                Use uma ata ou deliberação do campus. Uma nova referência será aplicada a todas as
-                etapas desta oferta; em branco, conserva as fontes já registradas.
-              </p>
+              <div className="offer-stages-grid">
+                {values.stages.slice(0, count).map((_, index) => {
+                  const message = messageFor(`stages[${index}]`);
+                  return (
+                    <fieldset key={index} className="offer-stage-fields">
+                      <legend>{index + 1}ª etapa</legend>
+                      <div className="offer-date-grid">
+                        <form.Field name={`stages[${index}].start`}>
+                          {(field) => (
+                            <Input
+                              field={field}
+                              label="Início"
+                              id={`${prefix}-stage-${index}-start`}
+                              type="date"
+                              required
+                              min={`${state.year}-01-01`}
+                              max={`${state.year}-12-31`}
+                              aria-invalid={Boolean(message)}
+                              aria-describedby={`${prefix}-stage-${index}-error`}
+                            />
+                          )}
+                        </form.Field>
+                        <form.Field name={`stages[${index}].end`}>
+                          {(field) => (
+                            <Input
+                              field={field}
+                              label="Término"
+                              id={`${prefix}-stage-${index}-end`}
+                              type="date"
+                              required
+                              min={`${state.year}-01-01`}
+                              max={`${state.year}-12-31`}
+                              aria-invalid={Boolean(message)}
+                              aria-describedby={`${prefix}-stage-${index}-error`}
+                            />
+                          )}
+                        </form.Field>
+                      </div>
+                      <p className="field-error" id={`${prefix}-stage-${index}-error`} role="alert">
+                        {message}
+                      </p>
+                    </fieldset>
+                  );
+                })}
+              </div>
             </div>
             <FormFeedback error={error} />
             <FormActions>

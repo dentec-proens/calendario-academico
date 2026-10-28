@@ -70,21 +70,21 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     await addPeriod(page, '2027-03-01', '2027-04-30');
     await page.locator('[data-edit-organization="integrado"]').click();
-    await page.locator('#offer-integrado-evidence').fill('Preenchimento do período');
+    await page.locator('#offer-integrado-period-0-start').fill('2027-03-02');
     await expect(page.locator('[data-edit-organization="integrado"]')).toHaveAttribute(
       'aria-expanded',
       'true',
     );
     await selectEditorSection(page, 'events');
     await selectEditorSection(page, 'periods');
-    await expect(page.locator('#offer-integrado-evidence')).toHaveValue('Preenchimento do período');
+    await expect(page.locator('#offer-integrado-period-0-start')).toHaveValue('2027-03-02');
     await page.locator('#offer-integrado-cancel').click();
     await expect(page.locator('[data-edit-organization="integrado"]')).toBeFocused();
     await expect(page.locator('#offer-integrado-form')).toBeHidden();
     await expect(page.locator('#offer-integrado-cancel')).toBeHidden();
     await expect(page.locator('[data-offer="integrado"]')).toContainText('Anual:');
     await page.locator('[data-edit-organization="integrado"]').click();
-    await expect(page.locator('#offer-integrado-evidence')).toHaveValue('');
+    await expect(page.locator('#offer-integrado-period-0-start')).toHaveValue('2027-03-01');
     await expect(page.locator('#unapplied-status')).toBeHidden();
   });
 

@@ -23,7 +23,7 @@ export default function SaturdayEditForm({
   const id = `saturday-edit:${event.id}`;
   const { form, submit, pending, error, dirty } = useCalendarForm(
     id,
-    { name: event.name, evidence: event.evidence },
+    { name: event.name, evidence: event.evidence ?? '' },
     function apply(value) {
       session.apply((current) =>
         updateSaturdayActivity(current, { id: event.id, ...value }, institutional),
@@ -33,7 +33,7 @@ export default function SaturdayEditForm({
     { successMessage: () => `Sábado ${fullDate(event.start)} atualizado.` },
   );
   function discard() {
-    form.reset({ name: event.name, evidence: event.evidence });
+    form.reset({ name: event.name, evidence: event.evidence ?? '' });
     session.setFormDirty(id, false);
     onClose(event.start);
   }

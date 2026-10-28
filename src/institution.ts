@@ -156,14 +156,14 @@ export function preview2027SourceUpdate(events: CatalogueEvent[]) {
       continue;
     }
     if (previous.evidence === next.evidence) continue;
-    if (!previous.evidence.startsWith('Resolução IFPR 2027 — SEI 4354987,')) {
+    if (!previous.evidence?.startsWith('Resolução IFPR 2027 — SEI 4354987,')) {
       conflicts.push({
         id: next.id,
         reason: 'Fonte local distinta; conferir antes de qualquer atualização.',
       });
       continue;
     }
-    updates.push({ id: next.id, before: previous.evidence, after: next.evidence });
+    updates.push({ id: next.id, before: previous.evidence ?? '', after: next.evidence ?? '' });
   }
   return { year: 2027, updates, conflicts };
 }

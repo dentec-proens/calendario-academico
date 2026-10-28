@@ -1,3 +1,4 @@
+import { isAssessmentStageRecord } from '../activity-metadata.ts';
 import type {
   ActivityState,
   CalendarActivity,
@@ -307,7 +308,8 @@ export function applyEvent<S extends ActivityState>(
   editing = false,
 ): S {
   validateActivityRecord(state, event);
-  if (!event.name.trim() || !event.evidence.trim()) throw new Error('Informe descrição e fonte.');
+  if (!event.name.trim() || (!isAssessmentStageRecord(event) && !event.evidence?.trim()))
+    throw new Error('Informe descrição e fonte.');
   if (!['include', 'exclude', 'note'].includes(event.kind))
     throw new Error('Tipo de evento inválido.');
   const modalities = event.modalities;
@@ -336,7 +338,11 @@ export function applyEvent<S extends ActivityState>(
     )
   )
     throw new Error('Inclusões letivas devem estar dentro dos períodos cadastrados.');
-  const updated = { ...event, name: event.name.trim(), evidence: event.evidence.trim() };
+  const updated = {
+    ...event,
+    name: event.name.trim(),
+    evidence: isAssessmentStageRecord(event) ? undefined : event.evidence?.trim(),
+  };
   const existing = state.events.find((item) => item.id === event.id);
   if (!editing && existing) {
     if (equalValues(existing, updated)) return state;

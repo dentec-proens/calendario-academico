@@ -12,7 +12,7 @@ import { teacherVacations } from './teacher-vacations.ts';
 import { calendarModalities, modalityLabels } from './modalities.ts';
 import { activityChecklist } from './obligations.ts';
 import { eventCategory, validCategory } from './categories.ts';
-import { isStageRequirementId } from './activity-metadata.ts';
+import { isAssessmentStageRecord, isStageRequirementId } from './activity-metadata.ts';
 import { datesBetween } from './calendar.ts';
 import { convertCalendarV2 } from './calendar-rules/conversion.ts';
 import {
@@ -199,7 +199,7 @@ export function normalizeCalendar(input: unknown) {
         if (e.category !== undefined && !validCategory(e.category))
           fail('Categoria PROENS inválida.');
         if (!['include', 'exclude', 'note'].includes(e.kind)) fail('Efeito inválido.');
-        text(e.evidence);
+        if (!isAssessmentStageRecord(e)) text(e.evidence);
       } else {
         datesBetween(e.start, e.end);
         if (Number(e.start.slice(0, 4)) !== s.year || Number(e.end.slice(0, 4)) !== s.year)
@@ -273,7 +273,7 @@ export function normalizeCalendar(input: unknown) {
       start: e.start,
       end: e.end,
       kind: e.kind,
-      evidence: e.evidence,
+      ...(!isAssessmentStageRecord(e) ? { evidence: e.evidence } : {}),
       category: eventCategory(e),
     })),
   };

@@ -16,7 +16,7 @@ import type {
 } from '../domain-types.ts';
 import { parseDate } from '../calendar.ts';
 import { assessmentIntervalIssue } from '../assessment-intervals.ts';
-import { isStageRequirementId } from '../activity-metadata.ts';
+import { isStageRequirementId, isAssessmentStageRecord } from '../activity-metadata.ts';
 import { calendarModalities, appliesTo } from '../modalities.ts';
 import { legacyActivityChecklist } from '../obligations.ts';
 import { activityReviewCriterion } from './review-links.ts';
@@ -339,14 +339,21 @@ export function validateActivityRecord(
     event.deadlineExtensionCause !== undefined &&
     (!['municipal-holiday', 'municipal-recess'].includes(event.deadlineExtensionCause) ||
       event.kind !== 'exclude' ||
-      !event.evidence.trim() ||
+      !event.evidence?.trim() ||
       position !== 'current')
   )
     throw new Error(
       'A prorrogação municipal exige feriado ou recesso decorrente, exclusão no ano e fonte.',
     );
-  if (event.recordType !== undefined && !['event', 'prior-reference'].includes(event.recordType))
+  if (
+    event.recordType !== undefined &&
+    !['event', 'prior-reference', 'retired-stage'].includes(event.recordType)
+  )
     throw new Error('Natureza do registro inválida.');
+  if (event.recordType === 'retired-stage' && (event.kind !== 'note' || event.requirementId))
+    throw new Error(
+      'Uma etapa desvinculada deve permanecer informativa e sem vínculo de atividade.',
+    );
   if (
     event.publicationStatus !== undefined &&
     !['planned', 'published'].includes(event.publicationStatus)
@@ -474,7 +481,7 @@ export function activityCoverage(
             issues.push(error instanceof Error ? error.message : String(error));
             return false;
           }
-          if (!event.evidence?.trim()) {
+          if (!isAssessmentStageRecord(event) && !event.evidence?.trim()) {
             issues.push('Informe a fonte do registro.');
             return false;
           }
@@ -639,7 +646,7 @@ export function prorogatedDeadline(
     (event) =>
       event.deadlineExtensionCause &&
       event.kind === 'exclude' &&
-      event.evidence.trim() &&
+      event.evidence?.trim() &&
       appliesTo(event, modality) &&
       event.start <= original &&
       event.end >= original,

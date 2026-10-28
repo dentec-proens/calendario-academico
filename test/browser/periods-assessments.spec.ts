@@ -30,7 +30,6 @@ for (const width of [1440, 390]) {
       await page.locator(`#offer-integrado-stage-${index}-end`).fill(end);
     }
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(before.saves);
-    await page.locator('#offer-integrado-evidence').fill('Deliberação pedagógica');
     await page.locator('#offer-integrado-apply').click();
     const saved = await savedState(page);
     expect(saved.state.assessmentStagesByModality).toEqual({ integrado: 4 });

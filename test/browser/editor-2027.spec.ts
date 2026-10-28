@@ -312,7 +312,6 @@ test('annual integrated and semester undergraduate offers keep independent overl
     await page.locator(`#offer-graduacao-stage-${index}-start`).fill(start);
     await page.locator(`#offer-graduacao-stage-${index}-end`).fill(end);
   }
-  await page.locator('#offer-graduacao-evidence').fill('Ata da graduação');
   await page.locator('#offer-graduacao-apply').click();
   await expect(page.locator('[data-offer="integrado"]')).toContainText('Anual:');
   await expect(page.locator('[data-offer="graduacao"]')).toContainText('1º semestre:');

@@ -1,3 +1,4 @@
+import { withoutStageReferences } from './stage-references.ts';
 import {
   assessmentStageCounts,
   assessmentStageNumbers,
@@ -33,12 +34,10 @@ export interface OrganizationStageDraft {
   id: string;
   start: string;
   end: string;
-  evidence: string;
 }
 export interface OfferOrganizationDraft {
   organization: string;
   count: string;
-  evidence: string;
   periods: OrganizationPeriodDraft[];
   stages: OrganizationStageDraft[];
 }
@@ -56,7 +55,6 @@ export function offerOrganizationDraft(
   return {
     organization: organization === 'a-classificar' ? '' : organization,
     count: String(state.assessmentStagesByModality?.[modality] ?? ''),
-    evidence: '',
     periods: termsByOrganization.semestral.map((_, index) => {
       const term = organization === 'semestral' ? (index ? 'second' : 'first') : 'annual';
       const period =
@@ -80,7 +78,6 @@ export function offerOrganizationDraft(
         id: event?.id ?? '',
         start: event?.start ?? '',
         end: event?.end ?? '',
-        evidence: event?.evidence ?? '',
       };
     }),
   };
@@ -232,8 +229,6 @@ export function offerOrganizationIssues(
     }
     if (valid && index && draft.stages[index - 1].end && stage.start <= draft.stages[index - 1].end)
       issue(path, 'Esta etapa deve começar depois do término da anterior.');
-    if (!draft.evidence.trim() && !stage.evidence.trim())
-      issue(`${path}.evidence`, 'Informe a referência das etapas.');
   }
   if (periodsValid)
     for (const event of state.events.filter(
@@ -349,7 +344,7 @@ export function applyOfferOrganization<S extends ActivityState>(
       kind: 'note',
       category: existing?.category ?? 'limite',
       modalities: [modality],
-      evidence: draft.evidence.trim() || value.evidence.trim(),
+      evidence: undefined,
     });
   }
   // Keep retired or duplicate records as notes instead of losing dates or evidence.
@@ -362,13 +357,18 @@ export function applyOfferOrganization<S extends ActivityState>(
       event.requirementId?.endsWith(`:${modality}`) &&
       !keptStageIds.has(event.id),
   )) {
-    const { requirementId: _link, assessmentAutoStart: _auto, ...kept } = event;
-    events.push(kept);
+    const {
+      requirementId: _link,
+      assessmentAutoStart: _auto,
+      evidence: _evidence,
+      ...kept
+    } = event;
+    events.push({ ...kept, kind: 'note', recordType: 'retired-stage' });
   }
   const candidate = {
     ...next,
     rulesetVersion: rulesetVersion(next),
-    events,
+    events: withoutStageReferences({ events }).state.events,
     conversion: state.conversion
       ? {
           ...state.conversion,

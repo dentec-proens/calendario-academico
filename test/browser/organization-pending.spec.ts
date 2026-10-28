@@ -55,7 +55,6 @@ for (const width of [1440, 390]) {
       await page.locator(`#offer-integrado-stage-${index}-start`).fill(start);
       await page.locator(`#offer-integrado-stage-${index}-end`).fill(end);
     }
-    await page.locator('#offer-integrado-evidence').fill('Ata da organização');
     await expect(page.locator('[data-edit-organization="integrado"] svg')).toHaveCount(1);
     await page.locator('[data-edit-organization="integrado"]').click();
     await expect(

@@ -60,7 +60,7 @@ A lista mostra as quatro ofertas do catálogo. **Incluir e configurar** abre o f
 
 A tela avisa imediatamente quando uma etapa fica fora de um período da oferta, atravessa o intervalo entre os semestres ou se sobrepõe à etapa anterior. Inclusões letivas que ficariam sem período também são identificadas antes de aplicar. O Convex verifica novamente os limites antes de gravar. Corrija o conjunto; não é preciso excluir uma oferta de um período compartilhado e deixá-la temporariamente sem período.
 
-Períodos compartilhados anteriores são separados ao aplicar a organização de uma oferta, preservando as datas e os vínculos das outras. Períodos legados sem associação ficam identificados para classificação explícita. Ao preencher **Referência das etapas**, essa fonte vale para todas as etapas da oferta; em branco, são conservadas as fontes individuais existentes. Reduzir a quantidade de etapas conserva os registros excedentes como eventos sem vínculo de avaliação.
+Períodos compartilhados anteriores são separados ao aplicar a organização de uma oferta, preservando as datas e os vínculos das outras. Períodos legados sem associação ficam identificados para classificação explícita. As etapas são definidas por suas datas e não exigem fonte ou referência. Reduzir a quantidade de etapas conserva os registros excedentes como eventos sem vínculo de avaliação.
 
 **Norma aplicável ao calendário** fica em **Revisão e conclusão**. Confirme a aplicação da Resolução 292 com uma referência do curso ou da decisão; informações já gravadas são preservadas. Calendários sujeitos a norma própria continuam sem conclusão automática pelas regras da Resolução 292.
 

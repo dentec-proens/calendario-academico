@@ -1,5 +1,5 @@
 import { assessmentStageRequirementPattern } from './calendar-config.ts';
-import type { ActivityRequirement } from './domain-types.ts';
+import type { ActivityRequirement, CalendarActivity } from './domain-types.ts';
 
 /** Subjects shown by the step 6 checklist, in display order. */
 export const activityGroups = [
@@ -18,6 +18,10 @@ export type ActivityVariant = 'activity' | 'hours' | 'admission-notice' | 'stage
 
 export const isStageRequirementId = (id: string | undefined) =>
   assessmentStageRequirementPattern.test(id || '');
+
+export const isAssessmentStageRecord = (
+  event: Pick<CalendarActivity, 'requirementId' | 'recordType'>,
+) => isStageRequirementId(event.requirementId) || event.recordType === 'retired-stage';
 
 function group(id: string): ActivityGroup {
   if (

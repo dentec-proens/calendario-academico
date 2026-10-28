@@ -38,7 +38,6 @@ test('a complete organization adds one catalog offer without extending existing 
   draft.periods[0].start = '2027-03-01';
   draft.periods[0].end = '2027-03-26';
   draft.count = '2';
-  draft.evidence = 'Ata da graduação';
   draft.stages[0].start = '2027-03-01';
   draft.stages[0].end = '2027-03-12';
   draft.stages[1].start = '2027-03-15';

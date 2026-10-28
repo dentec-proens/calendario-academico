@@ -31,13 +31,15 @@ export const event = v.object({
   start: v.string(),
   end: v.string(),
   kind: effect,
-  evidence: v.string(),
+  evidence: v.optional(v.string()),
   category: v.optional(v.string()),
   requirementId: v.optional(v.string()),
   modalities: v.optional(v.array(modality)),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
-  recordType: v.optional(v.union(v.literal('event'), v.literal('prior-reference'))),
+  recordType: v.optional(
+    v.union(v.literal('event'), v.literal('prior-reference'), v.literal('retired-stage')),
+  ),
   publicationStatus: v.optional(v.union(v.literal('planned'), v.literal('published'))),
   admission: v.optional(
     v.object({

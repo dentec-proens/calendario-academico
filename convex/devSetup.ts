@@ -167,6 +167,7 @@ export const initialize = internalMutation({
       const { id: code, ...fields } = item;
       await ctx.db.insert('institutionalEvents', {
         ...fields,
+        evidence: item.evidence ?? '',
         code,
         year: Number(item.start.slice(0, 4)),
         kind: item.kind as Infer<typeof effect>,

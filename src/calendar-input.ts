@@ -79,7 +79,7 @@ const activity = (value: unknown): CalendarActivity => {
   return {
     ...range(row),
     kind: string(row.kind),
-    evidence: string(row.evidence),
+    evidence: optional(row.evidence, string),
     category: optional(row.category, string),
     requirementId: optional(row.requirementId, string),
     modalities: optional(row.modalities, (value) => array(value, string)),

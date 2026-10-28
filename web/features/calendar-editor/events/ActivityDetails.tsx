@@ -127,7 +127,7 @@ export default function ActivityDetails({
                         .join(' / ')
                     : ''}
                 </small>
-                <small>Fonte: {event.evidence}</small>
+                {event.evidence && <small>Fonte: {event.evidence}</small>}
               </p>
               <div className="actions">
                 <Button
