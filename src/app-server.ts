@@ -7,11 +7,13 @@ const contentTypes: Record<string, string> = {
   '.json': 'application/json; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
 };
 
 // Local preview serves assets only. Convex owns auth, data, files and APIs.
@@ -36,7 +38,7 @@ export function staticPortal(directory = resolve('dist/app')): RequestListener {
       if (
         !file.startsWith(root + sep) ||
         !contentType ||
-        (extname(file) === '.json' && path !== '/version.json') ||
+        (extname(file) === '.json' && !['/version.json', '/asset-history.json'].includes(path)) ||
         (extname(file) === '.html' && !pageDocument(path))
       ) {
         response.writeHead(404).end();
@@ -45,12 +47,11 @@ export function staticPortal(directory = resolve('dist/app')): RequestListener {
       const bytes = await readFile(file);
       response.writeHead(200, {
         'Content-Type': contentType,
-        'Cache-Control':
-          path === '/version.json'
-            ? 'no-store'
-            : extname(file) === '.html'
-              ? 'public, max-age=0, must-revalidate'
-              : 'public, max-age=3600',
+        'Cache-Control': ['/version.json', '/asset-history.json'].includes(path)
+          ? 'no-store'
+          : extname(file) === '.html'
+            ? 'public, max-age=0, must-revalidate'
+            : 'public, max-age=3600',
         'X-Content-Type-Options': 'nosniff',
         'Referrer-Policy': 'same-origin',
         'X-Frame-Options': 'DENY',

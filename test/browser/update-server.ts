@@ -5,9 +5,14 @@ import { join, resolve } from 'node:path';
 import { build } from 'vite';
 import { staticPortal } from '../../src/app-server.ts';
 import type { Cleanup } from './test.ts';
+import { retainFrontendAssets } from '../../scripts/frontend-assets.ts';
 
 /** Production route tree and bundler with local services and observable build/state probes. */
-export async function startUpdateServer(cleanup: Cleanup, entry = 'editor') {
+export async function startUpdateServer(
+  cleanup: Cleanup,
+  entry = 'editor',
+  retainAssets: boolean | 'legacy' = false,
+) {
   const directory = await mkdtemp(join(tmpdir(), 'portal-update-'));
   await mkdir(resolve('test/.temp'), { recursive: true });
   const source = await mkdtemp(resolve('test/.temp/update-'));
@@ -72,6 +77,29 @@ export async function startUpdateServer(cleanup: Cleanup, entry = 'editor') {
       join(output, 'test/.temp', source.split('/').at(-1)!, 'index.html'),
       join(output, 'index.html'),
     );
+    if (name === 'b' && retainAssets) {
+      await retainFrontendAssets(output, {
+        origin: 'https://previous.invalid',
+        fetcher: async (input) => {
+          const path = new URL(input instanceof Request ? input.url : input).pathname;
+          if (retainAssets === 'legacy' && path === '/asset-history.json')
+            return new Response(null, { status: 404 });
+          return new Response(
+            path === '/' && retainAssets === 'legacy'
+              ? (await readFile(join(directory, 'a/index.html'), 'utf8')).replace(
+                  /<meta name="portal-asset-history"[^>]*>/,
+                  '',
+                )
+              : await readFile(join(directory, 'a', path === '/' ? 'index.html' : path.slice(1))),
+            {
+              headers: {
+                'Content-Type': path.endsWith('.json') ? 'application/json' : 'text/plain',
+              },
+            },
+          );
+        },
+      });
+    }
   }
   let selected = 'a';
   let manifest: 'a' | 'b' | undefined;

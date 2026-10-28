@@ -1,4 +1,6 @@
 import { frontendVersion } from './scripts/frontend-version.ts';
+import { frontendAssets } from './scripts/frontend-assets.ts';
+import { environments } from './config/environments.ts';
 import { defineConfig, loadEnv } from 'vite';
 import type { Plugin } from 'vite';
 import { fileURLToPath } from 'node:url';
@@ -45,7 +47,13 @@ export default defineConfig(({ mode }) => {
     publicDir: false,
     oxc: { jsx: { runtime: 'automatic' } },
     define: { 'import.meta.env.VITE_CONVEX_URL': JSON.stringify(deploymentUrl) },
-    plugins: [applicationPages, frontendVersion()],
+    plugins: [
+      applicationPages,
+      frontendVersion(),
+      frontendAssets(
+        process.env.VERCEL_ENV === 'production' ? environments.production.portalUrl : undefined,
+      ),
+    ],
     server: {
       host: '127.0.0.1',
       port: Number(process.env.PORT || env.PORT || 4183),

@@ -42,6 +42,16 @@ test(
         ['index.html'],
       );
       const index = await readFile(join(output, 'index.html'), 'utf8');
+      assert.match(index, /name="portal-asset-history"/);
+      const history = JSON.parse(await readFile(join(output, 'asset-history.json'), 'utf8')) as {
+        schemaVersion: number;
+        assets: Array<{ path: string; size: number; sha256: string }>;
+      };
+      assert.equal(history.schemaVersion, 1);
+      assert.deepEqual(
+        history.assets.map((asset) => asset.path).sort(),
+        (await readdir(join(output, 'assets'))).map((name) => '/assets/' + name).sort(),
+      );
       assert.match(index, /<div id="root"><\/div>/);
       assert.doesNotMatch(index, /id="event-form"|id="auth-form"/);
       const assets = [...index.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)];

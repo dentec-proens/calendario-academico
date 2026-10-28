@@ -3,6 +3,7 @@ import { test, expect } from './test.ts';
 import type { EditorSession } from '../../web/features/calendar-editor/session/editor-session.ts';
 import type { FormDrafts } from '../../web/shared/forms/drafts.tsx';
 import { startUpdateServer } from './update-server.ts';
+import { selectEditorSection } from './editor-navigation.ts';
 
 declare global {
   interface Window {
@@ -11,6 +12,75 @@ declare global {
     updateDrafts: FormDrafts;
     updateOwners?: { editor: EditorSession; drafts: FormDrafts };
   }
+}
+
+for (const viewport of [
+  { width: 1440, height: 1000 },
+  { width: 390, height: 844 },
+]) {
+  test(`an open editor continues through a publication with its unapplied draft at ${viewport.width}px`, async ({
+    page,
+    cleanup,
+  }) => {
+    await page.setViewportSize(viewport);
+    const server = await startUpdateServer(
+      cleanup,
+      'editor',
+      viewport.width === 390 ? 'legacy' : true,
+    );
+    await page.goto(server.origin + '/calendarios/synthetic-calendar/editar');
+    await expect(page.locator('#record-title')).toBeVisible();
+    await page.evaluate(() => {
+      window.updateOwners = { editor: window.updateEditor, drafts: window.updateDrafts };
+      document.documentElement.dataset.originalDocument = 'yes';
+    });
+    await selectEditorSection(page, 'events');
+    await page.locator('[data-tab="eventos"]').click();
+    await page.locator('#new-event').click();
+    await page.locator('#event-name').fill('Evento não aplicado antes da publicação');
+    await page.locator('#close-event-panel').click();
+    server.select('b');
+    const loaded = page.waitForResponse((response) =>
+      response.url().includes('/assets/IssuesSection-'),
+    );
+    await selectEditorSection(page, 'issues');
+    expect((await loaded).status()).toBe(200);
+    await expect(page.locator('#issue-list')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Não foi possível abrir esta página' }),
+    ).toHaveCount(0);
+    await selectEditorSection(page, 'events');
+    await page.locator('#resume-event').click();
+    await expect(page.locator('#event-name')).toHaveValue(
+      'Evento não aplicado antes da publicação',
+    );
+    await expect(page.locator('html')).toHaveAttribute('data-original-document', 'yes');
+    expect(
+      await page.evaluate(
+        () =>
+          window.updateOwners?.editor === window.updateEditor &&
+          window.updateOwners?.drafts === window.updateDrafts,
+      ),
+    ).toBe(true);
+    expect(
+      await page.evaluate(() =>
+        getComputedStyle(document.documentElement)
+          .getPropertyValue('--update-fixture-build')
+          .trim(),
+      ),
+    ).toBe('a');
+    const fresh = await page.context().newPage();
+    await fresh.goto(server.origin + '/calendarios/synthetic-calendar/editar');
+    await expect(fresh.locator('#record-title')).toBeVisible();
+    expect(
+      await fresh.evaluate(() =>
+        getComputedStyle(document.documentElement)
+          .getPropertyValue('--update-fixture-build')
+          .trim(),
+      ),
+    ).toBe('b');
+    await fresh.close();
+  });
 }
 
 test('a failed production section chunk preserves the editor and unapplied event', async ({
