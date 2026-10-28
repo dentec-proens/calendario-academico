@@ -1,0 +1,5 @@
+Marca horizontal do Instituto Federal do Paraná.
+Fonte: SVG do cabeçalho de https://ifpr.edu.br/ (28/10/2026).
+Estilos: https://ifpr.edu.br/wp-content/themes/tema-multisite/style.css
+Rasterizado a 4x com as fontes Open Sans do próprio tema, cores e proporções originais.
+A marca institucional não está abrangida pela licença do software.

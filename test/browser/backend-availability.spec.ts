@@ -187,7 +187,7 @@ test('anonymous portal and invitation show backend failures without exposing for
     'Portal temporariamente indisponível',
   );
   await expect(portal.locator('[role="alert"] button')).toHaveText('Tentar novamente');
-  await expect(portal.locator('header strong')).toHaveText('PROENS - Pró-Reitoria de Ensino');
+  await expect(portal.locator('header strong')).toHaveText('Calendários Acadêmicos');
   await expect(portal.locator('form')).toHaveCount(0);
   expect(backendSockets.some((url) => new URL(url).port === String(backendPort))).toBeTruthy();
   expect(backendSockets.every((url) => new URL(url).hostname === '127.0.0.1')).toBeTruthy();

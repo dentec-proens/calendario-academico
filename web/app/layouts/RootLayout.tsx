@@ -1,6 +1,6 @@
 import UpdateProvider from '../updates/UpdateProvider.tsx';
 import { Suspense, useCallback, useEffect, useRef } from 'react';
-import { Outlet, useRouterState } from '@tanstack/react-router';
+import { Link, Outlet, useRouterState } from '@tanstack/react-router';
 import { LogOut } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import BackendStatus from '../BackendStatus.tsx';
@@ -11,6 +11,7 @@ import { DevelopmentTools } from '../devtools.tsx';
 import { parseEditorPath } from '../../../src/app-routes.ts';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { useArrivalFocus } from '../arrival-focus.ts';
+import ifprLogo from '../../assets/ifpr-logo-horizontal.png';
 
 export default function RootLayout() {
   const session = useSessionState();
@@ -32,11 +33,13 @@ export default function RootLayout() {
     <FormDraftProvider key={identity} identity={identity}>
       <UpdateProvider>
         <header>
-          <div className="brand">P</div>
-          <div>
-            <strong>PROENS - Pró-Reitoria de Ensino</strong>
-            <div className="muted">Assistente de Calendário PROENS</div>
-          </div>
+          <Link to="/" className="brand" aria-label="Calendários Acadêmicos — página inicial">
+            <img src={ifprLogo} width={235} height={54} alt="Instituto Federal do Paraná" />
+            <span className="brand-copy">
+              <strong>Calendários Acadêmicos</strong>
+              <span>PROENS</span>
+            </span>
+          </Link>
           <span
             className="badge"
             id="account"
