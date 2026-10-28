@@ -3,43 +3,45 @@ import { randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { environments } from '../config/environments.ts';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { Doc } from '../convex/_generated/dataModel.js';
-import { assertPlan } from '../convex/releases/plan.ts';
 import type { ReleasePlan } from '../convex/releases/plan.ts';
-import { assertNoTargetOverrides, convexCli, root } from './environment.ts';
-import { productionCandidates } from './release-candidate.ts';
-import { parseReleaseStatus } from './release-coordination.ts';
-import { fingerprint } from './release-contracts.ts';
+import type * as EnvironmentConfig from '../config/environments.ts';
+import type * as EnvironmentTools from './environment.ts';
+import type * as ReleasePlanModule from '../convex/releases/plan.ts';
+import type * as CandidateTools from './release-candidate.ts';
+import type * as CoordinationTools from './release-coordination.ts';
+import type * as ContractTools from './release-contracts.ts';
+import { createReleaseSnapshot } from './release-snapshot.ts';
 
 const args = process.argv.slice(2);
 const dryRun = args.length === 1 && args[0] === '--dry-run';
-const branch = environments.git.branch;
+const root = fileURLToPath(new URL('../', import.meta.url));
+let releaseRoot = root;
 const lockRef = 'refs/heads/codex/production-release-lock';
 function git(...args: string[]): string {
   return execFileSync('git', args, {
-    cwd: root,
+    cwd: releaseRoot,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
 }
 function run(command: string, args: string[], env = process.env): void {
-  const result = spawnSync(command, args, { cwd: root, env, stdio: 'inherit' });
+  const result = spawnSync(command, args, { cwd: releaseRoot, env, stdio: 'inherit' });
   if (result.error) throw result.error;
   if (result.status !== 0)
     throw Error(`Falhou: ${command} ${args[0] ?? ''}. Fast release interrompida.`);
 }
 function assertCode(commit?: string) {
-  if (git('branch', '--show-current') !== branch) throw Error(`Publique pela branch ${branch}.`);
-  if (git('status', '--porcelain')) throw Error('Faça commit das alterações antes de publicar.');
+  if (git('status', '--porcelain'))
+    throw Error('O snapshot da release foi alterado durante a publicação.');
   if (git('ls-files', '--others', '--ignored', '--exclude-standard', '--', 'convex'))
     throw Error('Mova os arquivos ignorados de convex/ para fora da pasta antes de publicar.');
   if (commit && git('rev-parse', 'HEAD') !== commit)
     throw Error('O commit mudou durante a publicação.');
 }
-function assertOrigin() {
+function assertOrigin(repository: string) {
   const urls = git('remote', 'get-url', '--push', '--all', 'origin').split('\n');
-  const repository = environments.git.repository;
   if (
     urls.length !== 1 ||
     ![
@@ -53,29 +55,60 @@ function assertOrigin() {
 }
 
 let temporary: string | undefined;
+let snapshot: ReturnType<typeof createReleaseSnapshot> | undefined;
 let lock: string | undefined;
 let completed = false;
 let backendAttempted = false;
 let promotionAttempted = false;
 try {
   if (args.length && !dryRun) throw Error('Uso: pnpm deploy:production:fast [--dry-run]');
-  assertNoTargetOverrides(process.env);
-  console.log(
-    `FAST RELEASE — Convex ${environments.production.deployment}; Vercel ${environments.vercel.team}/${environments.vercel.project}.`,
-  );
-  console.log(
-    'Sem pnpm check, testes, smoke, comparação de compatibilidade ou backup. Typecheck do Convex preservado.',
-  );
   if (dryRun) {
     console.log(
-      'Ordem: conferir destinos/commit e reservar → build Production Vercel → deploy Convex → promover → registrar.',
+      'Ordem: capturar HEAD em checkout isolado e instalar dependências fixadas → conferir destinos/reservar → build Production Vercel → deploy Convex → promover → registrar.',
     );
     console.log('Simulação: nenhum comando, conexão remota ou arquivo de ambiente foi alterado.');
   } else {
-    assertCode();
-    assertOrigin();
-    const commit = git('rev-parse', 'HEAD');
-    const plan = JSON.parse(readFileSync(join(root, 'release/plan.json'), 'utf8')) as ReleasePlan;
+    const sourceBranch = git('branch', '--show-current');
+    if (!sourceBranch) throw Error('A fast release exige uma branch de origem.');
+    const commit = git('rev-parse', `refs/heads/${sourceBranch}`);
+    snapshot = createReleaseSnapshot(root, commit);
+    releaseRoot = snapshot.directory;
+    assertCode(commit);
+    console.log(`Snapshot da fast release: ${commit}. Alterações locais não serão publicadas.`);
+    run('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts']);
+    assertCode(commit);
+    const { environments }: typeof EnvironmentConfig = await import(
+      pathToFileURL(join(releaseRoot, 'config/environments.ts')).href
+    );
+    const { assertNoTargetOverrides, convexCli }: typeof EnvironmentTools = await import(
+      pathToFileURL(join(releaseRoot, 'scripts/environment.ts')).href
+    );
+    const { assertPlan }: typeof ReleasePlanModule = await import(
+      pathToFileURL(join(releaseRoot, 'convex/releases/plan.ts')).href
+    );
+    const { productionCandidates }: typeof CandidateTools = await import(
+      pathToFileURL(join(releaseRoot, 'scripts/release-candidate.ts')).href
+    );
+    const { parseReleaseStatus }: typeof CoordinationTools = await import(
+      pathToFileURL(join(releaseRoot, 'scripts/release-coordination.ts')).href
+    );
+    const { fingerprint }: typeof ContractTools = await import(
+      pathToFileURL(join(releaseRoot, 'scripts/release-contracts.ts')).href
+    );
+    assertNoTargetOverrides(process.env);
+    const branch = environments.git.branch;
+    if (sourceBranch !== branch) throw Error(`Publique pela branch ${branch}.`);
+    console.log(
+      `FAST RELEASE — Convex ${environments.production.deployment}; Vercel ${environments.vercel.team}/${environments.vercel.project}.`,
+    );
+    console.log(
+      'Sem pnpm check, testes, smoke, comparação de compatibilidade ou backup. Typecheck do Convex preservado.',
+    );
+    assertCode(commit);
+    assertOrigin(environments.git.repository);
+    const plan = JSON.parse(
+      readFileSync(join(releaseRoot, 'release/plan.json'), 'utf8'),
+    ) as ReleasePlan;
     assertPlan(plan);
     if (plan.migrations.length)
       throw Error('Migrações exigem pnpm deploy:production com backup e verificação.');
@@ -106,7 +139,7 @@ try {
           'disable',
         ],
         {
-          cwd: root,
+          cwd: releaseRoot,
           env,
           encoding: 'utf8',
           stdio: ['ignore', 'pipe', 'pipe'],
@@ -116,7 +149,7 @@ try {
     function metadata() {
       const value = JSON.parse(
         execFileSync(process.execPath, [convexCli, 'function-spec', '--env-file', targetFile], {
-          cwd: root,
+          cwd: releaseRoot,
           env,
           encoding: 'utf8',
           maxBuffer: 16 * 1024 * 1024,
@@ -255,4 +288,12 @@ try {
       `Reserva preservada em ${lockRef} (${lock}). Reconcilie a publicação antes de removê-la com force-with-lease.`,
     );
   if (temporary) rmSync(temporary, { recursive: true, force: true });
+  if (snapshot) {
+    try {
+      snapshot.dispose();
+    } catch {
+      console.error(`Não foi possível remover o checkout temporário ${snapshot.directory}.`);
+      process.exitCode = 1;
+    }
+  }
 }

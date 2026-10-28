@@ -35,6 +35,7 @@ function canonical(value) {if(Array.isArray(value))return '['+value.map(canonica
 const hash=value=>createHash('sha256').update(canonical(value)).digest('hex');
 const releaseFunction={kind:'query',visibility:'internal',args:{type:'object',value:{}},returns:null};
 function snapshot(candidate) {return {schema:{schemaValidation:true,tables:[{tableName:'campuses',documentType:{type:'object',value:{name:{fieldType:{type:'string'},optional:false},...(candidate?{releaseLabel:{fieldType:{type:'string'},optional:true}}:{})}},indexes:[],searchIndexes:[],vectorIndexes:[]}]},functions:candidate || afterFast?{'releases.js:status':releaseFunction,...(afterFast?{'releases.js:installed':releaseFunction}:{})}:{}};}
+let snapshotDirectory;
 let staged = false;
 let checked = false, manual = false, promoted = scenario==='backend-resume-promoted', reads = 0, didDeploy = resumed, batchReads = 0;
 let ledger = resumed ? {commit,previousBackend:baseline,previousFrontend:'dpl_old',owner:'f'.repeat(40),planHash:hash(plan),contractHash:hash(snapshot(true)),phase:scenario==='backend-resume-promoted'?'validated':'expanded',...(scenario==='backend-resume-promoted'?{candidateId:'dpl_new'}:{})} : null;
@@ -42,7 +43,7 @@ if (afterFast || scenario === 'fast-pending') ledger = {mode:'fast',commit:basel
 if (normalReceipt) ledger = {commit:baseline,previousBackend:'c'.repeat(40),previousFrontend:'dpl_old',owner:'f'.repeat(40),planHash:hash(plan),contractHash:hash(snapshot(true)),phase:scenario==='fast-normal-pending'?'expanded':'complete',plan,migrations:[]};
 function record(name) { calls.push(name); writeFileSync(process.env.LOG, JSON.stringify(calls)); }
 writeFileSync(process.env.LOG, '[]');
-childProcess.execFileSync = (command, args) => {
+childProcess.execFileSync = (command, args, options) => {
   if (command === process.execPath && args.some(arg=>arg.endsWith('release-contract-snapshot.ts'))) {
     const candidate = fs.realpathSync(args.at(-1)) === fs.realpathSync(process.cwd());
     return JSON.stringify(snapshot(candidate));
@@ -64,11 +65,25 @@ childProcess.execFileSync = (command, args) => {
   if (command !== 'git') throw Error('Unexpected executable');
   const op = args.join(' ');
   record('git '+op);
+  const isolated = options?.cwd === snapshotDirectory;
+  if(args[0] === 'worktree' && args[1] === 'add') {
+    snapshotDirectory=args[3];
+    fs.mkdirSync(snapshotDirectory,{recursive:true});
+    for(const name of ['scripts','config','convex','release']) fs.cpSync(path.join(process.cwd(),name),path.join(snapshotDirectory,name),{recursive:true});
+    fs.writeFileSync(path.join(snapshotDirectory,'package.json'),packageContent);
+    fs.symlinkSync(path.join(process.cwd(),'node_modules'),path.join(snapshotDirectory,'node_modules'),'dir');
+    return '';
+  }
+  if(args[0] === 'worktree' && args[1] === 'remove') {
+    fs.rmSync(args[3],{recursive:true,force:true});
+    return '';
+  }
   if (op === 'branch --show-current') return 'main';
+  if (op === 'rev-parse refs/heads/main') return commit;
   if (op === 'remote get-url --push --all origin') return 'https://github.com/dentec-proens/calendario-academico.git';
-  if (op === 'status --porcelain') return scenario==='dirty'?' M web/app.ts':'';
+  if (op === 'status --porcelain') return scenario==='dirty'&&!isolated || scenario==='snapshot-dirty'&&isolated?' M web/app.ts':'';
   if (args[0] === 'ls-files') return '';
-  if (op === 'rev-parse HEAD') return (checked || staged) && scenario==='head-changed'?'c'.repeat(40):commit;
+  if (op === 'rev-parse HEAD') return (checked || staged) && (scenario==='head-changed'&&!isolated || scenario==='snapshot-head-changed'&&isolated)?'c'.repeat(40):commit;
   if (args[0] === 'diff') return scenario==='backend-changed' || expanded?'convex/calendars.ts':'web/app.ts';
   if (args[0] === 'show') return packageContent;
   if (args[0] === 'archive') return Buffer.alloc(1024);
@@ -76,6 +91,7 @@ childProcess.execFileSync = (command, args) => {
   throw Error('Unexpected Git read '+op);
 };
 childProcess.spawnSync = (command, args, options) => {
+  if(command==='pnpm' && args[0]==='install') {record('snapshot-install');return {status:scenario==='snapshot-install-failed'?1:0};}
   if (args.includes('check') || args.includes('pnpm check')) { record('quality'); checked=true; return {status:scenario==='quality-failed'?1:0}; }
   if (command === 'git' && ['fetch','merge-base','push'].includes(args[0])) {
     record('git '+args.join(' '));
@@ -353,12 +369,17 @@ test('fast release builds Production, deploys Convex with default typecheck and 
       .slice('fast-published-payload '.length),
   );
   expect(payload).toMatchObject({ commit, previousBackend: backend, candidateId: 'dpl_new' });
-  expect(calls.at(-1)).toContain('origin :refs/heads/codex/production-release-lock');
+  const unlock = calls.findIndex((call) =>
+    call.endsWith('origin :refs/heads/codex/production-release-lock'),
+  );
+  expect(unlock).toBeGreaterThan(calls.indexOf('releases:fastComplete'));
+  expect(calls.at(-1)).toContain('git worktree remove --force');
 });
 
 test.each([
-  'dirty',
-  'head-changed',
+  'snapshot-dirty',
+  'snapshot-head-changed',
+  'snapshot-install-failed',
   'missing-receipt',
   'wrong-receipt',
   'paused',
@@ -481,3 +502,18 @@ test('normal resume explains that a completed fast release needs no reconciliati
   expect(result.stderr).not.toContain('reconciliação manual');
   expect(result.calls.some((call) => call.startsWith('POST /v10/'))).toBe(false);
 });
+
+test.each(['dirty', 'head-changed'])(
+  'fast release %s publishes the captured commit from an isolated checkout',
+  async (scenario) => {
+    const result = await release(scenario, [], true);
+    expect(result.code, result.stderr).toBe(0);
+    expect(result.calls).toContain('snapshot-install');
+    expect(result.calls).toContain(`git push origin ${commit}:refs/heads/main`);
+    expect(result.calls).toContain('backend-deploy');
+    expect(result.calls).toContain('releases:fastComplete');
+    expect(result.calls.some((call) => call.startsWith('git worktree add --detach'))).toBe(true);
+    expect(result.calls.at(-1)).toContain('git worktree remove --force');
+    expect(result.calls.some((call) => /git (stash|reset|clean|checkout)/.test(call))).toBe(false);
+  },
+);
