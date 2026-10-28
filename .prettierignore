@@ -10,4 +10,7 @@ pnpm-lock.yaml
 backup-*/
 *.zip
 convex/_generated/
+# Skills oficiais gerenciadas por convex ai-files install/update.
+.agents/skills/convex*/
+.claude/skills/convex*/
 src/printing/assets.generated.mjs
