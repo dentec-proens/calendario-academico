@@ -6,7 +6,7 @@ pnpm check
 
 Executa formatação de código e configuração, lint, lint com análise de tipos, TypeScript, testes e build. Comandos individuais: `pnpm format:check`, `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test` e `pnpm build`.
 
-A formatação da documentação é independente de `pnpm check`: arquivos Markdown (`.md`, `.mdx` e `.markdown`), inclusive rascunhos em `docs/plans/`, são verificados com `pnpm format:docs:check` e formatados com `pnpm format:docs`. `pnpm format` e `pnpm format:check` cuidam dos demais arquivos reconhecidos pelo Prettier. Os padrões ficam entre aspas para serem interpretados pelo próprio Prettier, não pelo shell.
+A formatação da documentação é independente de `pnpm check`: arquivos Markdown (`.md`, `.mdx` e `.markdown`) são verificados com `pnpm format:docs:check` e formatados com `pnpm format:docs`. `pnpm format` e `pnpm format:check` cuidam dos demais arquivos reconhecidos pelo Prettier, sem Markdown. Os padrões ficam entre aspas para serem interpretados pelo próprio Prettier, não pelo shell.
 
 Para uma alteração apenas documental, confira somente os arquivos alterados, por exemplo:
 
@@ -129,4 +129,4 @@ O manifesto interno do Vite não é publicado: `manifest` fica desabilitado na c
 
 `pnpm exec vitest run test/security-hardening.test.ts test/storage-simulator.test.ts test/native-files.test.ts` exercita os fluxos reais de autenticação, quota e ingresso: mais de mil renovações/sessões, revogação e novo login com relógio congelado, geração legada, limpeza limitada, par incompatível de refresh, bloqueio/desbloqueio auditado, recência original do ADMIN antes do hash, reset intercalado após verificação real da senha e teto de trabalho em andamento mesmo após repor a quota de frequência. A suíte de Storage também verifica rollback externo e de subtransação do adaptador de testes. `test/browser/account-security.spec.ts` cobre a ação de desbloqueio com teclado em desktop/mobile.
 
-`pnpm audit` consulta avisos conhecidos das dependências e complementa `pnpm check`. `pnpm exec tsx scripts/benchmark-passwords.ts` mede hashes sintéticos somente no Node local. O [guia operacional](seguranca-operacional.md) distingue esses resultados da validação remota ainda exigida antes de publicar auth e ingresso de bytes.
+`pnpm audit` consulta avisos conhecidos das dependências e complementa `pnpm check`. `pnpm exec tsx scripts/benchmark-passwords.ts` mede hashes sintéticos somente no Node local. O [guia operacional](seguranca.md) distingue esses resultados da validação remota ainda exigida antes de publicar auth e ingresso de bytes.

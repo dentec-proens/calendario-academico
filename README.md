@@ -38,6 +38,7 @@ pnpm check
 - [Guia da aplicação](docs/uso.md)
 - [Arquitetura](docs/arquitetura-convex.md)
 - [Acesso e contas](docs/recuperacao-de-senha.md)
+- [Segurança da aplicação](docs/seguranca.md)
 - [Implantação e operação](docs/implantacao-convex-vercel.md)
 - [Operações administrativas de dados](docs/migracao-schema.md)
 - [Restauração dos originais](docs/restauracao-de-originais.md)

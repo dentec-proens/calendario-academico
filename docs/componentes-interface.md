@@ -38,7 +38,7 @@ O painel Devtools só existe em desenvolvimento nas rotas permitidas com `?devto
 
 ## Atividades e datas do campus
 
-A etapa 5 usa cartões agrupados, resumo e filtros de consulta na URL. `ActivityFilters` valida enums no Router e preserva os demais parâmetros ao navegar. Descrições, fontes e valores do formulário não entram na URL. `ActivityChecklist` consome a cobertura compartilhada por atividade/oferta/período: aplicabilidade, cobertura, revisão humana e execução são dimensões diferentes.
+A etapa 5 usa linhas compactas agrupadas, resumo e filtros de consulta na URL. `ActivityFilters` valida enums no Router e preserva os demais parâmetros ao navegar. Descrições, fontes e valores do formulário não entram na URL. `ActivityChecklist` consome a cobertura compartilhada por atividade/oferta/período: aplicabilidade, cobertura, revisão humana e execução são dimensões diferentes.
 
 O editor mantém um painel ativo com TanStack Form e o hook compartilhado. A edição identifica explicitamente cada registro; não seleciona automaticamente a primeira ocorrência de uma obrigação. Filtros não mudam os valores do painel. Os campos específicos de edital identificam tipo, ingresso, previsão/realização e eventual fonte do prazo ajustado. A declaração de conferência não representa autorização institucional.
 
