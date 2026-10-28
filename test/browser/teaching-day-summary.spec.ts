@@ -56,7 +56,7 @@ for (const width of [1440, 390]) {
     await selectEditorSection(page, 'days');
     await page.locator('#saturday-dates input[value="2027-03-06"]').check();
     if (width === 390) await page.locator('#saturday-open-panel').click();
-    await expect(page.locator('#saturday-day-count')).toContainText('com a seleção: 46');
+    await expect(page.locator('#saturday-day-count')).toHaveCount(0);
     await expect(summary.locator('.teaching-day-current strong')).toHaveText('45 dias');
     await page.locator('#saturday-name').fill('Reposição');
 

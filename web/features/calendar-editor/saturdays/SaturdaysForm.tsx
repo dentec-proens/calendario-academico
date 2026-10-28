@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { isYearSaturday, saturdayGain, saturdayYear } from '../../../../src/saturdays.ts';
+import { isYearSaturday, saturdayYear } from '../../../../src/saturdays.ts';
 import { applySaturdayActivities } from '../../../../src/calendar-edits/commands.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
@@ -8,7 +8,6 @@ import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 import SaturdayYearGrid from './SaturdayYearGrid.tsx';
 import SaturdayEditForm from './SaturdayEditForm.tsx';
-import SaturdayDayCount from './SaturdayDayCount.tsx';
 import { PanelDialog, PanelHeader } from '../../../components/ui/Panel.tsx';
 import { Button } from '../../../components/ui/Button.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
@@ -32,8 +31,7 @@ const dateControl = (date: string) =>
   );
 
 export default function SaturdaysForm() {
-  const { state, record, events, evaluation, session, institutional, readOnly } =
-    useCalendarEditor();
+  const { state, record, events, session, institutional, readOnly } = useCalendarEditor();
   const { editorRecovery, maintenance } = useAppSession();
   // Opening a registered Saturday is local panel state, like the event editor; it never enters the URL.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -138,19 +136,10 @@ export default function SaturdaysForm() {
   }
 
   const overview = (
-    <>
-      <SaturdayDayCount
-        evaluation={evaluation}
-        gain={saturdayGain(
-          months,
-          selection.map((day) => day.date),
-        )}
-      />
-      <p id="saturday-summary" role="status" aria-live="polite">
-        <strong>{selection.length ? selectionLabel : 'Nenhum sábado selecionado'}</strong>
-        <span>{plural(registered.length, 'sábado já registrado', 'sábados já registrados')}</span>
-      </p>
-    </>
+    <p id="saturday-summary" role="status" aria-live="polite">
+      <strong>{selection.length ? selectionLabel : 'Nenhum sábado selecionado'}</strong>
+      <span>{plural(registered.length, 'sábado já registrado', 'sábados já registrados')}</span>
+    </p>
   );
   const editBody = editing && (
     <section className="saturday-panel-section" aria-labelledby="saturday-edit-title">
@@ -260,7 +249,7 @@ export default function SaturdaysForm() {
         </div>
       )}
       <FormFeedback error={error} />
-      <FormActions preserveOnClose>
+      <FormActions>
         <Button type="submit" id="saturday-submit" form="saturday-form">
           Adicionar {plural(selection.length, 'sábado', 'sábados')}
         </Button>

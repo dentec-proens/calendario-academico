@@ -194,7 +194,7 @@ test('compact Saturday panel opens as a dialog and keeps focused dates unobstruc
     'registered',
   );
   await expect(bar).toHaveCount(0);
-  await expect(page.locator('#saturday-day-count')).toBeVisible();
+  await expect(page.locator('#saturday-day-count')).toHaveCount(0);
 
   // A registered date opens its record in the same dialog.
   await page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]').click();
@@ -321,28 +321,24 @@ test('a selected holiday warns that it will not count as a teaching day', async 
   await expect(page.locator('#saturday-impediments')).toContainText('Dia do Trabalho');
 });
 
-test('the Saturday panel shows the teaching-day count and previews the selection', async ({
+test('the Saturday panel keeps its selection summary without repeating teaching days', async ({
   page,
   fixtureServer,
 }) => {
   await openEditor(page, fixtureServer);
   await selectEditorSection(page, 'days');
-  const count = page.locator('#saturday-day-count');
-  await expect(count).toContainText(
-    'A contagem aparece depois de confirmar a semana letiva e cadastrar os períodos.',
-  );
+  await expect(page.locator('#saturday-day-count')).toHaveCount(0);
+  await expect(page.locator('#saturday-summary')).toContainText('Nenhum sábado selecionado');
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'issues');
   await page.locator('#calendar-scope').selectOption('covered');
   await page.locator('#scope-form button[type="submit"]').click();
-  await selectEditorSection(page, 'issues');
-  const total = Number(await page.locator('#total').textContent());
-  expect(total).toBeGreaterThan(0);
   await selectEditorSection(page, 'days');
-  await expect(count).toContainText(`${total} de 200 dias letivos`);
-  await expect(count).not.toContainText('com a seleção');
+  await expect(page.locator('.teaching-day-current strong')).toHaveText('45 / 200');
+  await expect(page.locator('#saturday-day-count')).toHaveCount(0);
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
-  await expect(count).toContainText(`com a seleção: ${total + 1}`);
+  await expect(page.locator('#saturday-summary')).toContainText('1 sábado selecionado');
+  await expect(page.locator('#saturday-day-count')).toHaveCount(0);
 });
 
 test('a registered Saturday is edited and removed from the panel', async ({
@@ -383,7 +379,16 @@ test('a registered Saturday is edited and removed from the panel', async ({
 
   await registered.click();
   await page.locator('#saturday-edit-remove').click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Remover sábado' }).click();
+  const confirmation = page.getByRole('alertdialog');
+  await expect(confirmation).toContainText('Remover sábado letivo');
+  await expect(confirmation).toContainText('06/03/2027');
+  await expect.poll(saturdays).toEqual([{ start: '2027-03-06', name: 'Feira de ciências' }]);
+  await confirmation.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(confirmation).toBeHidden();
+  await expect(page.locator('#saturday-edit-remove')).toBeFocused();
+  await expect.poll(saturdays).toEqual([{ start: '2027-03-06', name: 'Feira de ciências' }]);
+  await page.locator('#saturday-edit-remove').click();
+  await confirmation.getByRole('button', { name: 'Remover sábado' }).click();
   await expect.poll(saturdays).toEqual([]);
   await expect(page.locator('#saturday-dates input[value="2027-03-06"]')).toBeFocused();
 });

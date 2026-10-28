@@ -57,5 +57,20 @@ test('registered Saturday uses shared header and action hierarchy', async ({
   await page.locator('#saturday-submit').click();
   await page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]').click();
   await page.locator('#saturday-edit-name').fill('Feira de ciências');
+  const actions = page.locator('#saturday-edit-form .form-actions__buttons');
+  await expect(actions.getByRole('button')).toHaveText(['Aplicar', 'Descartar', 'Remover']);
+  await expect(actions.locator('svg')).toHaveCount(0);
+  const boxes = await actions.getByRole('button').evaluateAll((buttons) =>
+    buttons.map((button) => {
+      const { top, right, left, height } = button.getBoundingClientRect();
+      return { top, right, left, height, fits: button.scrollWidth <= button.clientWidth };
+    }),
+  );
+  for (const [index, box] of boxes.entries()) {
+    expect(box.top).toBe(boxes[0].top);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(box.fits).toBe(true);
+    if (index) expect(box.left).toBeGreaterThan(boxes[index - 1].right);
+  }
   await expect(page.locator('#saturday-panel')).toHaveScreenshot('saturday-edit.png');
 });

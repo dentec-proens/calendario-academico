@@ -1,4 +1,3 @@
-import { Trash2 } from 'lucide-react';
 import type { CalendarActivity } from '../../../../src/domain-types.ts';
 import { removeEvent, updateSaturdayActivity } from '../../../../src/calendar-edits/commands.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
@@ -64,17 +63,17 @@ export default function SaturdayEditForm({
           )}
         </form.Field>
         <FormFeedback error={error} />
-        <FormActions preserveOnClose={dirty}>
+        <FormActions>
           <Button type="submit" id="saturday-edit-save">
-            Aplicar alterações
+            Aplicar
           </Button>
           {dirty && (
             <Button id="saturday-edit-discard" variant="secondary" onClick={discard}>
-              Descartar alterações
+              Descartar
             </Button>
           )}
           <Button id="saturday-edit-remove" variant="danger" onClick={() => void remove()}>
-            <Trash2 size={18} aria-hidden="true" /> Remover sábado
+            Remover
           </Button>
         </FormActions>
       </fieldset>

@@ -268,36 +268,6 @@ dialog#saturday-panel::backdrop {
 #saturday-overview {
   min-width: 0;
 }
-#saturday-day-count {
-  margin: 0 0 16px;
-  padding: 0 0 14px;
-  border-bottom: 1px solid var(--ui-border-soft);
-  font-size: 0.8125rem;
-}
-.saturday-day-count + .saturday-day-count {
-  margin-top: 10px;
-}
-.saturday-day-count p {
-  margin: 0 0 6px;
-}
-.saturday-day-count p span {
-  color: var(--ui-action);
-  font-weight: 600;
-}
-.saturday-day-count-bar {
-  display: flex;
-  height: 6px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--ui-border-soft);
-}
-.saturday-day-count-bar span {
-  background: var(--ui-action);
-}
-.saturday-day-count-bar span.is-preview {
-  background: var(--ui-focus);
-  opacity: 0.45;
-}
 #saturday-summary {
   display: flex;
   flex-direction: column;
@@ -325,6 +295,16 @@ dialog#saturday-panel::backdrop {
   margin: 0;
   padding: 0;
   border: 0;
+}
+#saturday-edit-form .form-actions__buttons {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+#saturday-edit-form .form-actions__buttons .ui-button {
+  flex: 1;
+  min-width: 0;
+  padding-inline: 6px;
 }
 #saturday-edit-title:focus-visible {
   outline: 3px solid var(--ui-focus);
