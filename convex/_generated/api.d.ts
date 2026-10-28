@@ -8,14 +8,14 @@
  * @module
  */
 
-import type * as access_cleanup from "../access/cleanup.js";
 import type * as access_admission from "../access/admission.js";
-import type * as access_security from "../access/security.js";
+import type * as access_cleanup from "../access/cleanup.js";
 import type * as access_identity from "../access/identity.js";
 import type * as access_invitations from "../access/invitations.js";
 import type * as access_members from "../access/members.js";
-import type * as access_passwordSignIn from "../access/passwordSignIn.js";
 import type * as access_passwordRecovery from "../access/passwordRecovery.js";
+import type * as access_passwordSignIn from "../access/passwordSignIn.js";
+import type * as access_security from "../access/security.js";
 import type * as access_session from "../access/session.js";
 import type * as access_setup from "../access/setup.js";
 import type * as access_store from "../access/store.js";
@@ -36,6 +36,7 @@ import type * as campuses from "../campuses.js";
 import type * as catalogue from "../catalogue.js";
 import type * as catalogue_model from "../catalogue/model.js";
 import type * as contracts from "../contracts.js";
+import type * as crons from "../crons.js";
 import type * as devSetup from "../devSetup.js";
 import type * as documents from "../documents.js";
 import type * as documents_model from "../documents/model.js";
@@ -64,14 +65,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "access/cleanup": typeof access_cleanup;
   "access/admission": typeof access_admission;
-  "access/security": typeof access_security;
+  "access/cleanup": typeof access_cleanup;
   "access/identity": typeof access_identity;
   "access/invitations": typeof access_invitations;
   "access/members": typeof access_members;
-  "access/passwordSignIn": typeof access_passwordSignIn;
   "access/passwordRecovery": typeof access_passwordRecovery;
+  "access/passwordSignIn": typeof access_passwordSignIn;
+  "access/security": typeof access_security;
   "access/session": typeof access_session;
   "access/setup": typeof access_setup;
   "access/store": typeof access_store;
@@ -92,6 +93,7 @@ declare const fullApi: ApiFromModules<{
   catalogue: typeof catalogue;
   "catalogue/model": typeof catalogue_model;
   contracts: typeof contracts;
+  crons: typeof crons;
   devSetup: typeof devSetup;
   documents: typeof documents;
   "documents/model": typeof documents_model;
@@ -141,6 +143,6 @@ export declare const internal: FilterApi<
 >;
 
 export declare const components: {
-  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
   presence: import("@convex-dev/presence/_generated/component.js").ComponentApi<"presence">;
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
 };
