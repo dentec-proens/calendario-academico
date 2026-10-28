@@ -54,81 +54,20 @@ O planejador específico, o modo de publicação contract e seus comandos de exe
 
 Para uma nova operação administrativa, preparar um plano próprio e conferir os destinos. Não reaplicar planos ou executar scripts de uma retirada já concluída.
 
-## Remoção das fontes manuais do calendário
+## Retirada das fontes manuais do calendário
 
-A retirada autorizada abrange o estado editável e todas as versões históricas, inclusive calendários na lixeira e snapshots sem vínculo. O helper puro `withoutManualSources` remove somente seis caminhos: `weekEvidence`, `teacherVacations.evidence`, `events[].evidence`, `events[].deadlineAdjustment.evidence`, `scopeConfirmation.source` e `intakeByModality[*][*].source`. Datas, IDs, escopos, confirmações e classificação de prorrogação são preservados. Um registro `inst:` ou `institutional: true` dentro do array local bloqueia a operação para reconciliação explícita; não se infere que sua fonte seja manual.
+A limpeza de dados foi concluída em produção em 28/10/2026: foram removidos 38.941 campos manuais do estado atual e das versões históricas, incluindo calendários na lixeira. A verificação final abrangeu 1.212 estados, com contagens e prazos equivalentes, referências institucionais preservadas e conferência integral dos demais namespaces e arquivos. A manutenção foi encerrada e a reserva exclusiva liberada.
 
-Referências institucionais automáticas permanecem nos arrays `institutionalSnapshot`, `institutionalEvents` e `documentSnapshot`, nas tabelas de catálogo/documentos e no identificador automático `reviews.source`. Não há remoção recursiva por nome de propriedade, reescrita de texto livre de pareceres ou alteração de PDFs já baixados. Os campos legados opcionais aceitos pelos validators de compatibilidade não representam valores persistidos: a normalização retira os dados manuais de novas escritas, cópias, importações e restaurações. Os contratos de saída para abas antigas são tratados separadamente da persistência. A bridge `convex/calendars/legacyDto.ts` fornece somente no retorno identificadores técnicos do registro e da versão nos slots antigos, sem reproduzir textos manuais e sem gravar esses identificadores no banco. Isso mantém o motor de contagem dos clientes anteriores funcional. Os validators conservam slots opcionais de compatibilidade; sua exclusão estrutural posterior exige uma operação contract, após avaliar clientes e jobs antigos.
+A operação retirou somente `weekEvidence`, `teacherVacations.evidence`, `events[].evidence`, `events[].deadlineAdjustment.evidence`, `scopeConfirmation.source` e `intakeByModality[*][*].source`. Documentos, eventos institucionais, fontes automáticas de revisão, texto livre dos pareceres e PDFs institucionais permaneceram preservados. Os PDFs temporários dos testes seguiram seu ciclo normal de expiração antes da cópia definitiva.
 
-### Plano específico e ensaio
+Backups integrais, planos, projeções, journals e recibos permanecem fora do Git, em diretórios privados com permissão `700` e arquivos `600`. A implementação da limpeza está preservada no histórico do commit `c70c378`; os executores temporários e a ponte de saída foram retirados do código corrente. Não reaplicar planos antigos nem restaurar automaticamente esses backups sobre dados posteriores.
 
-A limpeza usa `scripts/manual-source-cleanup.ts` e a função interna nativa `maintenance/manualSources:applyBatch`. Não publica o backend temporário de `migrate:data prepare`, não desativa o schema e não amplia a lista de migrações aditivas do release normal. `pnpm deploy:production` continua como publicação completa de expansão compatível; a limpeza destrutiva é uma operação administrativa separada e não deve ser contornada com fast release.
+A remoção definitiva dos validadores de armazenamento e dos contratos antigos usa o modo específico de contração descrito em [Implantação e operação](implantacao-convex-vercel.md). O modo normal de expansão continua recusando essas remoções. O ensaio da contração exige provar que nenhum dos seis campos permanece em `calendarContents` ou `calendarSnapshots`; nenhuma nova transformação de dados de negócio é necessária.
 
-Todos os caminhos do novo CLI são absolutos e privados **fora do repositório**, por exemplo uma pasta `~/.codex/backups/calendario-academico/manual-sources-ID` com permissão `700`. Backups, projeções, planos, journals e recibos usam `600`. Não publicar seus conteúdos em logs, issues ou Git. O CLI não sobrescreve backups, planos ou recibos existentes; atualiza somente o journal da mesma execução.
+## Verificação administrativa de dados efêmeros
 
-1. Finalizar e commitar os trabalhos concorrentes, executar a validação local e conferir o destino de produção e os contratos. Publicar a bridge compatível pelo fluxo normal. O `unchangedOnly` precisa comparar representações saneadas sem gravar diferenças apenas para satisfazer o smoke. A publicação isolada não apaga todos os valores antigos.
-2. Reservar a operação, entrar em manutenção do SHA conferido sem acesso de smoke e aguardar zero leases. Exportar o banco **com `--include-file-storage`** para a pasta privada. Esse backup congelado será a origem exata do plano e do ensaio; não usar um export anterior a alterações legítimas.
-3. Preservar a prova bruta pré-publicação pela implementação anterior fixada contra a nova implementação saneada. Para o backup final, após publicar a bridge, gerar a projeção antiga com `scripts/manual-source-projection.ts --legacy-wire` e o checkout anterior em `--code-root`; esse modo fornece ao motor antigo o mesmo DTO efetivamente recebido pelas abas anteriores, usando calendário e versão reais e conferindo a invariância dos demais campos. Gerar a projeção nova com `--strip-manual` e o checkout novo. Não usar fallback condicionado a erro nem substituir a prova bruta anterior pela prova do contrato. Cada JSON deve conter `{sourceSha256: SHA256_DO_ZIP_ORIGINAL, states: {"calendarContents:ID": RESULTADO, "calendarSnapshots:ID": RESULTADO}}`. Incluir todas as chaves, inclusive estados que legitimamente não permitem cálculo. Os resultados devem preservar contagens, ledger geométrico e datas de prazos; fontes textuais removidas não fazem parte da projeção.
-4. Preparar o plano. Ele vincula SHA-256 do ZIP, schema, commit, projeção, fingerprints completos de todos os documentos e namespaces, bytes de Storage e lotes de até dez documentos. Não contém os textos manuais anteriores.
+Os leitores de snapshots e as provas de integridade úteis a outras operações ficam em `scripts/administration/`. A leitura confere todos os namespaces, registries, metadados e bytes de Storage. Reconciliações limitadas são explicitamente vinculadas aos planos e relatórios; não significam igualdade literal de dados efêmeros nem demonstram autoria apenas pela comparação de exports.
 
-```sh
-pnpm exec tsx scripts/manual-source-cleanup.ts plan \
-  --snapshot /PASTA_PRIVADA/original.zip \
-  --commit SHA_DO_COMMIT \
-  --before-projection /PASTA_PRIVADA/before.json \
-  --after-projection /PASTA_PRIVADA/after.json \
-  --out /PASTA_PRIVADA/plan.json
-```
+O ciclo de presença é conferido somente nas tabelas e campos inventariados da versão instalada, preservando identidades e dados estáveis. A implementação de autenticação continua renovando credenciais de sessões existentes durante a manutenção. A prova em `scripts/auth-refresh-reconciliation.ts` permite somente o primeiro uso com criação exata de um filho na mesma sessão original, com SDK e configuração pinados por hashes e expiração de oito horas desde a criação. Usuários, sessões, contas, demais tabelas Auth e campos estáveis permanecem integralmente iguais. Remoção, novas raízes, reuso, siblings, invalidação e ciclos são recusados, mesmo quando possam representar outro fluxo legítimo do SDK.
 
-5. Restaurar o ZIP integral em um backend **local anônimo descartável** que execute o mesmo código/schema. Conferir a identidade e a preservação de IDs, componentes e Storage. Manter no ensaio a manutenção do mesmo commit. O CLI admite somente esse tipo de ensaio; um deployment de desenvolvimento compartilhado não é aceito como descartável por seu nome.
-6. Aplicar o plano e verificar por uma nova exportação ao vivo. `DIGEST_DO_PLANO` é o valor mostrado por `plan`; `/PROJETO_LOCAL_PRIVADO` contém a configuração `.convex/local/default/config.json` do backend descartável, sem expor sua chave administrativa.
-
-```sh
-pnpm exec tsx scripts/manual-source-cleanup.ts apply \
-  --plan /PASTA_PRIVADA/plan.json --confirm DIGEST_DO_PLANO \
-  --local-project /PROJETO_LOCAL_PRIVADO \
-  --journal /PASTA_PRIVADA/rehearsal-journal.json
-pnpm exec tsx scripts/manual-source-cleanup.ts verify \
-  --plan /PASTA_PRIVADA/plan.json --confirm DIGEST_DO_PLANO \
-  --local-project /PROJETO_LOCAL_PRIVADO \
-  --snapshot /PASTA_PRIVADA/rehearsal-after.zip \
-  --out /PASTA_PRIVADA/rehearsal-receipt.json
-```
-
-`apply` exporta e confere a origem antes do primeiro lote. Cada mutation verifica manutenção, commit, ausência de smoke e leases, schema instalado e os fingerprints anteriores/posteriores. Só o helper dos seis caminhos produz a alteração. Falha posterior de um item reverte todo o lote; uma resposta perdida pode ser repetida pelo journal, pois um documento já no estado esperado é reconhecido sem nova remoção/auditoria. A função não aceita substituição arbitrária de documentos. `verify` exige zero campos manuais restantes e igualdade dos demais dados, IDs, versões, registries e arquivos; permite os registros de auditoria previstos para os lotes daquele plano. Auth, referências institucionais, outros componentes e todos os bytes de Storage permanecem estritos.
-
-A manutenção preserva heartbeat/disconnect de sessões existentes. Por isso, o plano inclui manifesto delimitado das seis tabelas de lifecycle de `presence` e seu `batchWorker`, vinculado às versões e hashes do código instalado. A reconciliação verifica separadamente identidades, campos estáveis e transições de deadline, conexão e agendamento; rejeita alterações de dados de presença, tokens retidos, configuração, referências de funções, criação/remoção de worker e quaisquer tabelas desconhecidas. Não existe opção genérica para ignorar drift. Registries `_tables` são comparados integralmente, inclusive os dos componentes.
-
-Cada export conserva seu SHA-256 real. O relatório privado `<journal>.presence.json` registra a observação anterior; `<recibo>.presence.json` registra a posterior, vinculada por hash ao recibo. Esses relatórios registram hashes e contagens anteriores/posteriores, inserções, remoções e alterações, sem valores de tokens. Não afirmam que os bytes efêmeros ficaram iguais nem demonstram causalidade de cada heartbeat: demonstram compatibilidade limitada com o runtime instalado e preservação dos campos estáveis. O handler de limpeza escreve somente `calendarContents`/`calendarSnapshots` e auditoria; não recebe tabelas de componentes. Conservar ZIPs, manifesto, journals, relatórios e recibos juntos. Qualquer drift fora desse contrato bloqueia a reabertura e requer investigação explícita.
-
-### Renovação de credenciais durante a manutenção
-
-A pausa impede novas sessões e gravações de negócio, mas a implementação instalada de autenticação continua renovando credenciais de sessões existentes. O verificador administrativo não escreve em tabelas Auth. Novos planos incluem um manifesto `authRefresh` explícito, vinculado ao digest do plano, para reconhecer somente o primeiro uso de um token e a criação de seu filho na mesma sessão original. O helper `scripts/auth-refresh-reconciliation.ts` confere versão e hashes do SDK e da configuração da aplicação, preserva todos os registros anteriores e exige os vínculos temporais exatos observados no SDK: primeiro uso no instante de criação do filho e expiração de oito horas desde a criação.
-
-Usuários, sessões, contas, demais tabelas Auth e campos estáveis dos tokens permanecem integralmente iguais. Remoção, troca de sessão, novas raízes, reuso, siblings, invalidação e ciclos são recusados, inclusive quando puderem representar outro fluxo legítimo do SDK. Nesse caso, investigar e preparar um novo plano; não alterar os hashes de um plano ensaiado. Planos anteriores sem manifesto continuam exigindo igualdade literal de `authRefreshTokens`.
-
-O relatório registra hashes completos anteriores/posteriores, hashes estáveis, contagens e as inserções/primeiros usos reconhecidos. Ele declara uma reconciliação limitada, sem afirmar igualdade literal dos tokens nem atribuir a autoria das alterações apenas pelo export. A seção `authRefresh` integra o mesmo relatório operacional de presença: o nome legado `presenceReportDigest` e o arquivo `.presence.json` são preservados, mas seu hash cobre o relatório completo. Argumentos e recibos do backend continuam inalterados; o digest do plano vincula também o manifesto adicional.
-
-Antes de congelar a cópia definitiva, conferir callbacks de arquivos pendentes. Tickets de download e PDFs efêmeros podem expirar durante a manutenção; concluir esse ciclo normal antes do backup evita confundi-lo com a remoção das fontes. Storage e seus bytes continuam sujeitos à comparação estrita. Se nenhuma gravação de limpeza foi iniciada, uma preparação interrompida pode ser encerrada, após confirmar o código instalado e a ausência de leases, para reabrir o portal enquanto o novo plano é preparado.
-
-### Aplicação em produção e recuperação
-
-Somente após o ensaio verificado, executar sobre o destino de produção versionado. Tanto o CLI quanto a mutation exigem um recibo de ensaio de outro deployment local, com o mesmo plano, backup, schema, commit e prova de equivalência. A origem ainda deve corresponder ao backup; divergência exige reconciliação e um novo ensaio, sem forçar o plano antigo.
-
-```sh
-pnpm exec tsx scripts/manual-source-cleanup.ts apply \
-  --plan /PASTA_PRIVADA/plan.json --confirm DIGEST_DO_PLANO \
-  --deployment exuberant-cheetah-138 \
-  --rehearsal /PASTA_PRIVADA/rehearsal-receipt.json \
-  --journal /PASTA_PRIVADA/production-journal.json
-pnpm exec tsx scripts/manual-source-cleanup.ts verify \
-  --plan /PASTA_PRIVADA/plan.json --confirm DIGEST_DO_PLANO \
-  --deployment exuberant-cheetah-138 \
-  --rehearsal /PASTA_PRIVADA/rehearsal-receipt.json \
-  --snapshot /PASTA_PRIVADA/production-after.zip \
-  --out /PASTA_PRIVADA/production-receipt.json
-```
-
-Conferir o recibo, as projeções e os resultados antes de encerrar a manutenção do SHA responsável e liberar a reserva exata. O CLI não publica código, não inicia/encerra manutenção e não restaura dados automaticamente. Em falha, manter a janela e o journal; repetir somente o mesmo plano, destino e recibo. As gravações e sua auditoria são transacionais, e o journal só avança após confirmação. A recuperação das fontes exige o backup anterior e análise dos dados posteriores à reabertura. Preservar todos os artefatos privados.
-
-A reescrita histórica é uma exceção explícita à preservação dos snapshots, autorizada para esta retirada. A conclusão em produção exige a conferência do procedimento e dos recibos acima; os testes locais de handlers não substituem o ensaio com o backup real.
+Antes de congelar uma cópia para uma operação, conferir callbacks de arquivos pendentes. Tickets e PDFs efêmeros podem expirar durante a manutenção; concluir seu ciclo normal antes do backup evita confundi-lo com mudanças da operação. Os demais arquivos continuam sujeitos à comparação estrita. Divergência não coberta por uma prova explícita exige investigação, sem alterar os hashes de um plano já ensaiado.

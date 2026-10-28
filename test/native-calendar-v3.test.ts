@@ -1,4 +1,3 @@
-import { withoutManualSources } from '../src/manual-sources.ts';
 import { expect, test } from 'vitest';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
@@ -57,8 +56,8 @@ test('v3 round-trip preserves independent organization, actual publication dates
     intakeByModality: {
       integrado: { annual: { status: 'unknown' as const } },
       graduacao: {
-        first: { status: 'yes' as const, source: 'Regra local sintética', required: true },
-        second: { status: 'no' as const, source: 'Ata sintética' },
+        first: { status: 'yes' as const, required: true },
+        second: { status: 'no' as const },
       },
     },
     periods: [
@@ -111,7 +110,6 @@ test('v3 round-trip preserves independent organization, actual publication dates
           term: 'first' as const,
           periodId: 'undergraduate-first',
         },
-        evidence: 'Publicação sintética comprovada',
         modalities: ['graduacao' as const],
       },
       {
@@ -125,10 +123,8 @@ test('v3 round-trip preserves independent organization, actual publication dates
         admission: { type: 'regular' as const, year: 2028, term: 'annual' as const },
         deadlineAdjustment: {
           date: '2027-12-15',
-          evidence: 'Cronograma sintético — conferência pendente',
           reviewed: false,
         },
-        evidence: 'Planejamento sintético',
         modalities: ['integrado' as const],
       },
     ],
@@ -152,9 +148,7 @@ test('v3 round-trip preserves independent organization, actual publication dates
     admission: { year: 2028 },
   });
   expect(loaded.state.organizationByModality).toEqual(state.organizationByModality);
-  expect(withoutManualSources(loaded.state).state.intakeByModality).toEqual(
-    withoutManualSources(state).state.intakeByModality,
-  );
+  expect(loaded.state.intakeByModality).toEqual(state.intakeByModality);
   expect(loaded.state.periods.map((period) => period.association)).toEqual(
     state.periods.map((period) => period.association),
   );
@@ -190,7 +184,6 @@ test('direct backend writes cannot downgrade v3 or bypass the active rules and t
     end: '2026-12-01',
     kind: 'note' as const,
     recordType: 'prior-reference' as const,
-    evidence: 'Fonte sintética',
     modalities: ['integrado' as const],
   };
   for (const forged of [
@@ -255,7 +248,6 @@ test('a direct inclusion must fall inside the periods of every explicitly covere
     start: '2027-03-01',
     end: '2027-03-01',
     kind: 'include' as const,
-    evidence: 'Decisão sintética',
     modalities: ['graduacao' as const],
   };
   for (const modalities of [['graduacao' as const], ['integrado' as const, 'graduacao' as const]])
@@ -291,7 +283,6 @@ test('legacy v2 reads never rewrite content and concurrent conversion preserves 
       regime: 'misto' as const,
       weekdays: [],
       weekConfirmed: false,
-      weekEvidence: '',
 
       assessmentStagesByModality: {},
       secondSemesterIntake: false,
@@ -305,7 +296,6 @@ test('legacy v2 reads never rewrite content and concurrent conversion preserves 
           start: '2027-01-15',
           end: '2027-01-15',
           kind: 'note' as const,
-          evidence: 'Fonte legada',
         },
       ],
     };
@@ -343,9 +333,7 @@ test('legacy v2 reads never rewrite content and concurrent conversion preserves 
     end: '2027-06-30',
     association: { status: 'a-classificar' },
   });
-  expect(withoutManualSources(saved.state).state.events[0]).toMatchObject(
-    withoutManualSources(original.legacy).state.events[0],
-  );
+  expect(saved.state.events[0]).toMatchObject(original.legacy.events[0]);
   expect(saved.state.events[0].admission).toBeUndefined();
   expect(saved.state.conversion?.legacySecondSemesterIntake).toBe(false);
   const historical = await actor.query(api.calendars.calendarVersion, {
@@ -444,7 +432,6 @@ test('backend rejects an assessment stage outside its offer period without savin
         end: '2027-03-12',
         kind: 'note' as const,
         category: 'limite',
-        evidence: 'Ata sintética',
       },
       {
         id: 'integrated-stage-2',
@@ -455,7 +442,6 @@ test('backend rejects an assessment stage outside its offer period without savin
         end: '2027-03-26',
         kind: 'note' as const,
         category: 'limite',
-        evidence: 'Ata sintética',
       },
     ],
   };
@@ -487,7 +473,6 @@ test('backend rejects an assessment stage outside its offer period without savin
       ...saved.state,
       weekConfirmed: true,
       weekdays: [1, 2, 3, 4, 5],
-      weekEvidence: 'Ata',
       periods: saved.state.periods.map((period) => ({ ...period, targetDays: 2 })),
     },
   ]) {

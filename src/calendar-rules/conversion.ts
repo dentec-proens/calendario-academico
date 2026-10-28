@@ -67,8 +67,6 @@ export function convertCalendarV2<T extends AssessmentSettings & { periods: Cale
     intakeByModality[modalities[0]] = {
       second: {
         status: state.secondSemesterIntake ? 'yes' : 'no',
-        source:
-          'Configuração legada de ingresso; confirme a regra local antes de exigir matrícula.',
       },
     };
   return {

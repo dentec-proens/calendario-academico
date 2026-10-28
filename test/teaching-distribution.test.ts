@@ -14,7 +14,6 @@ const state = {
   assessmentStagesByModality: { integrado: 4, graduacao: 2 },
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
-  weekEvidence: 'Ata',
   periods: [
     { id: 'p1', name: '1º semestre', start: '2027-06-21', end: '2027-07-02' },
     { id: 'p2', name: '2º semestre', start: '2027-08-02', end: '2027-08-13' },
@@ -28,7 +27,6 @@ const stage = (number: number, modality: string, start: string, end: string) => 
   start,
   end,
   kind: 'note',
-  evidence: 'Ata',
 });
 const events: CalendarActivity[] = [
   stage(1, 'integrado', '2027-06-21', '2027-06-25'),
@@ -44,7 +42,6 @@ const events: CalendarActivity[] = [
     end: '2027-06-22',
     kind: 'exclude',
     modalities: ['integrado'],
-    evidence: 'Lei',
   },
   {
     id: 'saturday',
@@ -53,7 +50,6 @@ const events: CalendarActivity[] = [
     end: '2027-06-26',
     kind: 'include',
     modalities: ['integrado'],
-    evidence: 'Ata',
   },
 ];
 
@@ -125,7 +121,6 @@ test('annual periods use the registered assessment intervals; missing or overlap
       start: '2027-07-03',
       end: '2027-08-01',
       kind: 'exclude',
-      evidence: 'Ata',
     },
   ];
   const result = evaluateCalendar(input, withRecess),

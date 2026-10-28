@@ -12,7 +12,6 @@ record.state.periods = [
 record.state.events.push({
   id: 'reviewed-saturday',
   name: 'Reposição de aulas',
-  evidence: 'Resolução nº 12/2026',
   kind: 'include',
   category: 'sabado',
   start: '2027-03-06',

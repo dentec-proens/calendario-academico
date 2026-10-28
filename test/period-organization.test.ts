@@ -14,7 +14,6 @@ function calendar(): ActivityState {
     organizationByModality: { integrado: 'a-classificar', graduacao: 'a-classificar' },
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    weekEvidence: 'Ata',
     periods: [],
     events: [],
     assessmentStagesByModality: {},
@@ -80,7 +79,7 @@ test('unknown intake creates no configuration chore and an existing local requir
     );
   expect(registration()?.applicability).toBe('optional');
   state.intakeByModality = {
-    integrado: { annual: { status: 'yes', required: true, source: 'Regra local' } },
+    integrado: { annual: { status: 'yes', required: true } },
   };
   expect(registration()?.applicability).toBe('required');
   expect(registration()?.coverage).toBe('pending');
@@ -90,33 +89,21 @@ test('a local requirement uses its explicit choice without sources and preserves
   const state = calendar();
   state.organizationByModality = { integrado: 'anual', graduacao: 'semestral' };
   state.intakeByModality = {
-    integrado: { annual: { status: 'no', source: 'Declaração anterior' } },
+    integrado: { annual: { status: 'no' } },
   };
   const original = structuredClone(state);
   const configured = configureIntakeRequirement(state, 'graduacao', 'second', true);
-  expect(
-    configureIntakeRequirement(state, 'graduacao', 'second', true, 'Fonte legada ignorada')
-      .intakeByModality,
-  ).toEqual(configured.intakeByModality);
   expect(configured.intakeByModality?.integrado).toEqual({ annual: { status: 'no' } });
   expect(configured.intakeByModality?.graduacao?.second).toEqual({
     status: 'yes',
     required: true,
   });
-  const optional = configureIntakeRequirement(
-    configured,
-    'graduacao',
-    'second',
-    false,
-    'Regra local',
-  );
+  const optional = configureIntakeRequirement(configured, 'graduacao', 'second', false);
   expect(optional.intakeByModality?.graduacao?.second).toEqual({
     status: 'yes',
     required: false,
   });
-  expect(() => configureIntakeRequirement(state, 'graduacao', 'annual', true, 'Regra')).toThrow(
-    'ciclo',
-  );
+  expect(() => configureIntakeRequirement(state, 'graduacao', 'annual', true)).toThrow('ciclo');
   expect(state).toEqual(original);
 });
 
@@ -158,7 +145,7 @@ test('preserved intake from an old cycle does not block periods of the current o
   const state = calendar();
   state.organizationByModality = { integrado: 'semestral', graduacao: 'semestral' };
   state.intakeByModality = {
-    integrado: { annual: { status: 'yes', required: true, source: 'Regra anual anterior' } },
+    integrado: { annual: { status: 'yes', required: true } },
   };
   const original = structuredClone(state);
   const applied = add(state, 'integrado', 'first', 'first', '2027-02-01', '2027-06-30');
@@ -194,7 +181,6 @@ test('changing a cycle rejects activity records that would lose their offer even
       kind: 'note',
       category: 'prazo',
       modalities: ['graduacao'],
-      evidence: 'Decisão de graduação',
     },
   ];
   const original = structuredClone(state);
@@ -229,7 +215,6 @@ test('semester teacher deadlines stay valid when their offer changes to annual o
     kind: 'note',
     category: 'prazo',
     modalities: ['graduacao'],
-    evidence: 'Prazos docentes',
   }));
   const applied = applyPeriod(
     state,
@@ -245,5 +230,5 @@ test('semester teacher deadlines stay valid when their offer changes to annual o
     () => 'unused',
   );
   expect(applied.organizationByModality?.graduacao).toBe('anual');
-  expect(applied.events).toEqual(state.events.map(({ evidence: _source, ...event }) => event));
+  expect(applied.events).toEqual(state.events);
 });

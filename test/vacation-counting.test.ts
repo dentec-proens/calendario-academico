@@ -17,7 +17,6 @@ const state = {
   assessmentStagesByModality: { integrado: 2 },
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
-  weekEvidence: 'Fixture',
   periods: [{ id: 'oct', name: 'Outubro', start: '2027-10-01', end: '2027-10-31' }],
 };
 const excluded = (date: string) => ({
@@ -25,7 +24,6 @@ const excluded = (date: string) => ({
   start: date,
   end: date,
   kind: 'exclude',
-  evidence: 'Fixture',
 });
 
 test('third vacation excludes only counted dates; PDF, stages and automatic duration agree', () => {
@@ -33,18 +31,14 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
   const holidays = ['2027-10-11', '2027-10-12', '2027-10-15', '2027-10-28', '2027-10-29'].map(
     excluded,
   );
-  const vacation = teacherVacations(
-    2027,
-    {
-      firstStart: '2027-01-02',
-      firstEnd: '2027-01-16',
-      secondStart: '2027-07-01',
-      secondEnd: '2027-07-15',
-      thirdStart: '2027-10-06',
-      thirdEnd: '2027-10-08',
-    },
-    'Fixture',
-  );
+  const vacation = teacherVacations(2027, {
+    firstStart: '2027-01-02',
+    firstEnd: '2027-01-16',
+    secondStart: '2027-07-01',
+    secondEnd: '2027-07-15',
+    thirdStart: '2027-10-06',
+    thirdEnd: '2027-10-08',
+  });
   assert(vacation.events.every((e: CalendarActivity) => e.kind === 'exclude'));
   assert.equal(evaluateCalendar(state, holidays).total, 16);
   for (const kind of ['exclude']) {
@@ -95,14 +89,12 @@ test('vacation overlaps never double subtract holidays; Saturdays and offer scop
     end: '2027-10-17',
     kind: 'exclude',
     modalities: ['integrado'],
-    evidence: 'Fixture',
   };
   const saturday = {
     id: 'sat',
     start: '2027-10-16',
     end: '2027-10-16',
     kind: 'include',
-    evidence: 'Fixture',
   };
   const mixed = { ...state, modalities: ['integrado', 'graduacao'] };
   const result = evaluateCalendar(mixed, [vacation, saturday, excluded('2027-10-12')]);

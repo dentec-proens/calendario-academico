@@ -12,7 +12,6 @@ const saved = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
   start: '2027-05-10',
   end: '2027-05-10',
   kind: 'note',
-  evidence: 'Fonte salva',
   modalities: ['integrado'],
   ...extra,
 });
@@ -33,7 +32,7 @@ test('an unchanged reviewed deadline adjustment keeps its review', () => {
     requirementId: 'regular-admission-notice',
     publicationStatus: 'planned',
     admission: { type: 'regular', year: 2028, term: 'annual' },
-    deadlineAdjustment: { date: '2027-07-01', evidence: 'Ofício Proens', reviewed: true },
+    deadlineAdjustment: { date: '2027-07-01', reviewed: true },
   });
   expect(edit(base, { category: 'evento' }).deadlineAdjustment).toEqual({
     date: '2027-07-01',

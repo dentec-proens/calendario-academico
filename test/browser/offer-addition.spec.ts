@@ -1,7 +1,6 @@
 import { test, expect } from './test.ts';
 import { configureOffer, savedState, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
-import { withoutManualSources } from '../../src/manual-sources.ts';
 
 for (const width of [1440, 390]) {
   test(`all offers are listed and a new offer is included only with its complete organization at ${width}px`, async ({
@@ -48,7 +47,7 @@ for (const width of [1440, 390]) {
     ).toHaveLength(2);
     expect(
       saved.state.events.filter((event) => original.events.some((old) => old.id === event.id)),
-    ).toEqual(withoutManualSources({ events: original.events }).state.events);
+    ).toEqual(original.events);
     await expect(page.locator('[data-offer="graduacao"]')).not.toContainText('Não incluída');
     await expect(page.locator('[data-edit-organization="graduacao"]')).toHaveText(
       'Editar organização',

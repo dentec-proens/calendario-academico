@@ -520,7 +520,7 @@ test('changing category and activity link in the event form keeps identity, date
       ),
     )
     .toBe('feriado');
-  const { evidence: _legacySource, ...preserved } = original!;
+  const preserved = original!;
   expect(
     (await savedState(page)).state.events.find((event) => event.id === 'local-event'),
   ).toMatchObject({ ...preserved, category: 'feriado', requirementId: 'family-meeting' });

@@ -1,11 +1,7 @@
 import type { VacationPeriods } from './domain-types.ts';
 import { datesBetween } from './calendar.ts';
 
-export function teacherVacations(
-  year: number,
-  periodsInput: Partial<VacationPeriods>,
-  _legacyEvidence?: string,
-) {
+export function teacherVacations(year: number, periodsInput: Partial<VacationPeriods>) {
   const { firstStart, firstEnd, secondStart, secondEnd, thirdStart, thirdEnd } = periodsInput;
   const periods: [string | undefined, string | undefined][] = [[firstStart, firstEnd]];
   if (secondStart || secondEnd) periods.push([secondStart, secondEnd]);

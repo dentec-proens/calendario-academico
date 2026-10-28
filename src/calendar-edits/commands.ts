@@ -1,4 +1,3 @@
-import { withoutManualSources } from '../manual-sources.ts';
 import type {
   ActivityState,
   CalendarActivity,
@@ -66,7 +65,7 @@ export function recalculateCalendar<S extends ActivityState>(
   const inherited = campusInstitutionalEvents(institutional, state);
   const periods = recalculatePeriods(state, [...inherited, ...state.events]);
   const next = { ...state, periods };
-  return withoutManualSources(next).state;
+  return next;
 }
 
 export function validateInterval(state: Pick<ActivityState, 'year'>, start: string, end: string) {
@@ -77,7 +76,7 @@ export function validateInterval(state: Pick<ActivityState, 'year'>, start: stri
 
 export function applyWeek<S extends ActivityState>(
   state: S,
-  values: { weekdays: number[]; weekEvidence?: string; weekConfirmed: boolean },
+  values: { weekdays: number[]; weekConfirmed: boolean },
   institutional: CalendarActivity[],
 ): S {
   if (
@@ -260,7 +259,6 @@ export function configureIntakeRequirement<S extends ActivityState>(
   modality: string,
   term: AcademicTerm,
   required: boolean,
-  _legacySource?: string,
 ): S {
   if (
     !calendarModalities(state).includes(modality) ||
@@ -268,7 +266,7 @@ export function configureIntakeRequirement<S extends ActivityState>(
   )
     throw new Error('O ciclo da oferta mudou. Reabra a atividade de matrícula.');
   const current = state.intakeByModality?.[modality]?.[term];
-  return withoutManualSources({
+  return {
     ...state,
     intakeByModality: {
       ...state.intakeByModality,
@@ -281,7 +279,7 @@ export function configureIntakeRequirement<S extends ActivityState>(
         },
       },
     },
-  }).state;
+  };
 }
 
 /** Occurrence identity is independent of source documents and descriptive metadata. */
@@ -332,12 +330,10 @@ export function applyEvent<S extends ActivityState>(
     )
   )
     throw new Error('Inclusões letivas devem estar dentro dos períodos cadastrados.');
-  const updated = withoutManualSources({ events: [{ ...event, name: event.name.trim() }] }).state
-    .events[0];
+  const updated = { ...event, name: event.name.trim() };
   const existing = state.events.find((item) => item.id === event.id);
   if (!editing && existing) {
-    const normalizedExisting = withoutManualSources({ events: [existing] }).state.events[0];
-    if (equalValues(normalizedExisting, updated)) return withoutManualSources(state).state;
+    if (equalValues(existing, updated)) return state;
     throw new Error('O identificador do evento já existe. Reabra o registro antes de editar.');
   }
   if (
@@ -368,7 +364,7 @@ export function applyEvent<S extends ActivityState>(
 
 export function applySaturdays<S extends ActivityState>(
   state: S,
-  values: { dates: string[]; name: string; evidence?: string; confirmed: boolean },
+  values: { dates: string[]; name: string; confirmed: boolean },
   institutional: CalendarActivity[],
   id: () => string,
 ): S {
@@ -379,7 +375,7 @@ export function applySaturdays<S extends ActivityState>(
 
 export function applySaturdayActivities<S extends ActivityState>(
   state: S,
-  activities: { date: string; name: string; evidence?: string }[],
+  activities: { date: string; name: string }[],
   institutional: CalendarActivity[],
   id: () => string,
 ): S {
@@ -407,7 +403,7 @@ export function applySaturdayActivities<S extends ActivityState>(
 
 export function updateSaturdayActivity<S extends ActivityState>(
   state: S,
-  values: { id: string; name: string; evidence?: string },
+  values: { id: string; name: string },
   institutional: CalendarActivity[],
 ): S {
   const current = state.events.find((event) => event.id === values.id);
@@ -427,7 +423,7 @@ export function updateSaturdayActivity<S extends ActivityState>(
 
 export function applyVacations<S extends ActivityState>(
   state: S,
-  values: VacationPeriods & { evidence?: string },
+  values: VacationPeriods,
   institutional: CalendarActivity[],
 ): S {
   const vacation = teacherVacations(state.year, values);

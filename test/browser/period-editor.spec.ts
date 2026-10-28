@@ -1,4 +1,3 @@
-import { withoutManualSources } from '../../src/manual-sources.ts';
 import { test, expect } from './test.ts';
 import { addPeriod, savedState, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
@@ -145,7 +144,6 @@ test('editing one shared offer preserves the other offer and existing inclusions
         end: index ? '2027-04-30' : '2027-03-31',
         kind: 'note',
         category: 'limite',
-        evidence: 'Ata',
       })),
     );
     record.state.events.push({
@@ -155,7 +153,6 @@ test('editing one shared offer preserves the other offer and existing inclusions
       end: '2027-03-06',
       kind: 'include',
       modalities: ['integrado'],
-      evidence: 'Ata',
     });
     record.version++;
     await window.publishReviewerCalendar();
@@ -180,11 +177,9 @@ test('editing one shared offer preserves the other offer and existing inclusions
     term: 'annual',
   });
   expect(saved.events.filter((e) => e.modalities?.includes('graduacao'))).toEqual(
-    original.events
-      .filter((e) => e.modalities?.includes('graduacao'))
-      .map(({ evidence: _source, ...event }) => event),
+    original.events.filter((e) => e.modalities?.includes('graduacao')),
   );
   expect(saved.events.find((e) => e.id === 'sat')).toEqual(
-    withoutManualSources({ events: original.events }).state.events.find((e) => e.id === 'sat'),
+    original.events.find((e) => e.id === 'sat'),
   );
 });

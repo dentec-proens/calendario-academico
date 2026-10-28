@@ -23,7 +23,6 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
     regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    weekEvidence: 'Ata',
     periods: [{ id: 'year', name: 'Ano', start: '2027-02-01', end: '2027-03-31' }],
     events: [] as CalendarActivity[],
   };
@@ -47,7 +46,6 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
       start: '2027-02-20',
       end: '2027-02-20',
       kind: 'exclude',
-      evidence: 'Lei',
     },
   ]);
   assert.equal(result.byWeekday[6], 1);
@@ -65,7 +63,6 @@ test('a confirmed annual selection includes Saturdays from different months in o
     regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    weekEvidence: 'Ata',
     periods: [{ id: 'year', start: '2027-02-01', end: '2027-12-17' }],
     events: [],
   };
@@ -73,7 +70,6 @@ test('a confirmed annual selection includes Saturdays from different months in o
   const selected = {
     dates: ['2027-03-06', '2027-08-07', '2027-03-06'],
     name: 'Atividades de reposição',
-    evidence: 'Resolução nº 12/2026',
     confirmed: true,
   };
   let id = 0;
@@ -107,20 +103,19 @@ test('each Saturday keeps its activity and date without a source and a failed ba
     regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    weekEvidence: 'Ata',
     periods: [{ id: 'year', start: '2027-02-01', end: '2027-12-17' }],
     events: [],
   };
   const original = structuredClone(state);
   const activities = [
-    { date: '2027-03-06', name: 'Feira de ciências', evidence: 'Portaria 1/2027' },
-    { date: '2027-08-07', name: 'Reposição de aulas', evidence: 'Ata 2/2027' },
+    { date: '2027-03-06', name: 'Feira de ciências' },
+    { date: '2027-08-07', name: 'Reposição de aulas' },
   ];
   let id = 0;
   const changed = applySaturdayActivities(state, activities, [], () => String(++id));
   assert.deepEqual(
     changed.events.map(({ start, name }) => ({ date: start, name })),
-    activities.map(({ evidence: _source, ...activity }) => activity),
+    activities,
   );
   assert.equal(
     applySaturdayActivities(changed, activities, [], () => String(++id)).events.length,
@@ -154,13 +149,11 @@ const yearState: ActivityState = {
   regime: 'anual',
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
-  weekEvidence: 'Ata',
   periods: [{ id: 'year', name: 'Ano', start: '2027-03-01', end: '2027-03-31' }],
   events: [
     {
       id: 's1',
       name: 'Feira de ciências',
-      evidence: 'Ata 1',
       kind: 'include',
       category: 'sabado',
       start: '2027-03-06',
@@ -169,7 +162,6 @@ const yearState: ActivityState = {
     {
       id: 'semana',
       name: 'Semana acadêmica',
-      evidence: 'Calendário institucional',
       kind: 'include',
       category: 'institucional',
       start: '2027-03-22',
@@ -178,7 +170,6 @@ const yearState: ActivityState = {
     {
       id: 's2',
       name: 'Reposição',
-      evidence: 'Ata 2',
       kind: 'include',
       category: 'sabado',
       start: '2027-06-05',
@@ -189,7 +180,6 @@ const yearState: ActivityState = {
 const holiday: CalendarActivity = {
   id: 'holiday',
   name: 'Feriado municipal',
-  evidence: 'Lei',
   kind: 'exclude',
   start: '2027-03-20',
   end: '2027-03-20',
@@ -215,11 +205,7 @@ test('saturday year classifies each Saturday and keeps registered dates reachabl
 });
 
 test('updating a Saturday activity trims values and rejects other records', () => {
-  const next = updateSaturdayActivity(
-    yearState,
-    { id: 's1', name: '  Reposição ', evidence: ' Res. 12 ' },
-    [],
-  );
+  const next = updateSaturdayActivity(yearState, { id: 's1', name: '  Reposição ' }, []);
   assert.deepEqual(pick(next.events.find((e) => e.id === 's1')), { name: 'Reposição' });
   assert.equal(
     Object.hasOwn(
@@ -229,24 +215,20 @@ test('updating a Saturday activity trims values and rejects other records', () =
     false,
   );
   assert.throws(
-    () => updateSaturdayActivity(yearState, { id: 'x', name: 'a', evidence: 'b' }, []),
+    () => updateSaturdayActivity(yearState, { id: 'x', name: 'a' }, []),
     /não existe mais/,
   );
   assert.throws(
-    () => updateSaturdayActivity(yearState, { id: 'semana', name: 'a', evidence: 'b' }, []),
+    () => updateSaturdayActivity(yearState, { id: 'semana', name: 'a' }, []),
     /Atividades e datas do campus/,
   );
-  assert.throws(
-    () => updateSaturdayActivity(yearState, { id: 's1', name: ' ', evidence: 'b' }, []),
-    /atividade/,
-  );
+  assert.throws(() => updateSaturdayActivity(yearState, { id: 's1', name: ' ' }, []), /atividade/);
 });
 
 test('a Saturday covered by a wider inclusion stays editable through its own record', () => {
   const own: CalendarActivity = {
     id: 's3',
     name: 'Gincana',
-    evidence: 'Ata 3',
     kind: 'include',
     category: 'sabado',
     start: '2027-03-27',

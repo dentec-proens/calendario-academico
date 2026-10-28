@@ -82,7 +82,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     await page.evaluate(() => {
       const { record } = window.editorTest;
-      record.state.scopeConfirmation = { status: 'covered', source: 'PPC sintético' };
+      record.state.scopeConfirmation = { status: 'covered' };
       record.modalities = ['integrado', 'graduacao', 'posgraduacao'];
       record.state.modalities = record.modalities;
       record.state.organizationByModality = {

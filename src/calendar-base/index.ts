@@ -6,7 +6,7 @@ import { equalValues } from '../equal.ts';
 import type { CalendarActivity } from '../domain-types.ts';
 import { rulesetVersion } from '../calendar-rules/index.ts';
 
-export type BaseEvent = CalendarActivity & { source?: string };
+export type BaseEvent = CalendarActivity & { evidence?: string; source?: string };
 export interface BaseDocument {
   id: string;
   year: number;

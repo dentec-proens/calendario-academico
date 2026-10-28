@@ -1,4 +1,3 @@
-import { withoutManualSources } from '../src/manual-sources.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../convex/_generated/api.js';
@@ -47,7 +46,7 @@ test('calendar operations append immutable snapshots and roll back stale saves a
   }));
   assert.equal(before.snapshots.length, 1);
   assert.equal(before.versions[0].version, 1);
-  assert.deepEqual(before.snapshots[0].state, withoutManualSources(created.state).state);
+  assert.deepEqual(before.snapshots[0].state, created.state);
   await assert.rejects(
     campus.mutation(api.calendars.saveCalendar, {
       id: created.id,

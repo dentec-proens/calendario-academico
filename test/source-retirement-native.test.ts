@@ -1,12 +1,51 @@
 import { expect, test } from 'vitest';
+import { makeFunctionReference } from 'convex/server';
 import { api } from '../convex/_generated/api.js';
+import type { Id } from '../convex/_generated/dataModel.js';
+import { contentState } from '../convex/validators.ts';
+import { saveInput } from '../convex/contracts.ts';
+import type { DomainState } from '../convex/validators.ts';
 import { createNativeFixture } from './helpers/native-database.ts';
-import { withoutManualSources } from '../src/manual-sources.ts';
 
-const secret = 'Fonte manual a retirar integralmente';
+const secret = 'Fonte manual que não pertence ao contrato';
+const oldSave = makeFunctionReference<
+  'mutation',
+  { id: Id<'calendars'>; body: Record<string, unknown> },
+  unknown
+>('calendars:saveCalendar');
 
-test('old payloads cannot persist manual sources, including copies and historical restoration', async () => {
-  const fixture = await createNativeFixture();
+function assertSourceFree(state: DomainState) {
+  expect(state).not.toHaveProperty('weekEvidence');
+  expect(state.scopeConfirmation ?? {}).not.toHaveProperty('source');
+  expect(state.teacherVacations ?? {}).not.toHaveProperty('evidence');
+  for (const terms of Object.values(state.intakeByModality ?? {}))
+    for (const entry of Object.values(terms)) expect(entry).not.toHaveProperty('source');
+  for (const event of state.events) {
+    expect(event).not.toHaveProperty('evidence');
+    expect(event.deadlineAdjustment ?? {}).not.toHaveProperty('evidence');
+  }
+  expect(JSON.stringify(state)).not.toContain('registro:');
+}
+
+async function createRecord() {
+  const fixture = await createNativeFixture({
+    catalogue: {
+      revision: 1,
+      events: [
+        {
+          id: 'holiday',
+          name: 'Feriado institucional',
+          start: '2027-04-21',
+          end: '2027-04-21',
+          kind: 'exclude',
+          category: 'feriado',
+          modalities: ['integrado'],
+          evidence: 'Referência institucional preservada',
+          active: true,
+        },
+      ],
+    },
+  });
   const actor = fixture.asClient('campus-a');
   const created = await actor.mutation(api.calendars.createCalendar, {
     body: {
@@ -18,28 +57,32 @@ test('old payloads cannot persist manual sources, including copies and historica
       purpose: 'test',
     },
   });
-  const state = {
+  return { fixture, actor, created };
+}
+
+test('canonical records and historical restoration have no manual or generated source slots', async () => {
+  const { fixture, actor, created } = await createRecord();
+  assertSourceFree(created.state);
+  expect(
+    created.institutionalSnapshot.some(
+      (event) => event.evidence === 'Referência institucional preservada',
+    ),
+  ).toBe(true);
+  const state: DomainState = {
     ...created.state,
     weekConfirmed: true,
     weekdays: [1, 2, 3, 4, 5],
-    weekEvidence: secret,
-    scopeConfirmation: { status: 'covered' as const, source: secret },
-    intakeByModality: {
-      integrado: { annual: { status: 'yes' as const, required: true, source: secret } },
-    },
-    teacherVacations: { firstStart: '2027-01-04', firstEnd: '2027-01-15', evidence: secret },
-    organizationByModality: { integrado: 'anual' as const },
+    scopeConfirmation: { status: 'covered' },
+    intakeByModality: { integrado: { annual: { status: 'yes', required: true } } },
+    teacherVacations: { firstStart: '2027-01-04', firstEnd: '2027-01-15' },
+    organizationByModality: { integrado: 'anual' },
     periods: [
       {
         id: 'annual',
         name: 'Anual',
         start: '2027-02-01',
         end: '2027-12-17',
-        association: {
-          status: 'defined' as const,
-          modalities: ['integrado' as const],
-          term: 'annual' as const,
-        },
+        association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
       },
     ],
     events: [
@@ -48,13 +91,21 @@ test('old payloads cannot persist manual sources, including copies and historica
         name: 'Edital',
         start: '2027-07-01',
         end: '2027-07-10',
-        kind: 'note' as const,
-        evidence: secret,
-        modalities: ['integrado' as const],
+        kind: 'note',
+        modalities: ['integrado'],
         requirementId: 'regular-admission-notice',
-        publicationStatus: 'planned' as const,
-        admission: { type: 'regular' as const, year: 2028, term: 'annual' as const },
-        deadlineAdjustment: { date: '2027-07-20', reviewed: false, evidence: secret },
+        publicationStatus: 'planned',
+        admission: { type: 'regular', year: 2028, term: 'annual' },
+        deadlineAdjustment: { date: '2027-07-20', reviewed: false },
+      },
+      {
+        id: 'retired-stage',
+        name: 'Etapa excedente',
+        start: '2027-03-01',
+        end: '2027-03-02',
+        kind: 'note',
+        modalities: ['integrado'],
+        recordType: 'retired-stage',
       },
     ],
   };
@@ -62,28 +113,26 @@ test('old payloads cannot persist manual sources, including copies and historica
     id: created.id,
     body: { version: created.version, catalogueRevision: created.currentCatalogueRevision, state },
   });
-  expect(JSON.stringify(saved)).not.toContain(secret);
-  expect(
-    saved.state.events.every((event) =>
-      event.evidence.includes(`registro:${created.id}:v${saved.version}:`),
-    ),
-  ).toBe(true);
+  assertSourceFree(saved.state);
+  expect(saved.state.events.find((event) => event.id === 'retired-stage')?.recordType).toBe(
+    'retired-stage',
+  );
   const unchanged = await actor.mutation(api.calendars.saveCalendar, {
     id: created.id,
     body: {
       version: saved.version,
       catalogueRevision: created.currentCatalogueRevision,
-      state: { ...saved.state, weekEvidence: 'Outra fonte ignorada' },
+      state: saved.state,
       unchangedOnly: true,
     },
   });
   expect(unchanged.unchanged).toBe(true);
   expect(unchanged.version).toBe(saved.version);
-  // Restoring the public historical DTO must not write its technical compatibility slots.
   const initial = await actor.query(api.calendars.calendarVersion, {
     id: created.id,
     version: created.version,
   });
+  assertSourceFree(initial.state);
   await actor.mutation(api.calendars.saveCalendar, {
     id: created.id,
     body: {
@@ -96,47 +145,104 @@ test('old payloads cannot persist manual sources, including copies and historica
     contents: await ctx.db.query('calendarContents').take(10),
     snapshots: await ctx.db.query('calendarSnapshots').take(10),
   }));
-  for (const row of [...raw.contents, ...raw.snapshots])
-    expect(withoutManualSources(row.state).removed).toBe(0);
-  expect(JSON.stringify(raw)).not.toContain(secret);
+  for (const row of raw.snapshots) assertSourceFree(row.state);
+  expect(JSON.stringify(raw)).not.toContain('registro:');
   expect(raw.contents[0].institutionalSnapshot).toEqual(created.institutionalSnapshot);
 });
 
-test('unchanged smoke ignores legacy sources without mutating rows pending the verified cleanup', async () => {
-  const fixture = await createNativeFixture();
-  const actor = fixture.asClient('campus-a');
-  const record = await actor.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      modalities: ['integrado'],
-      regime: 'anual',
-      courses: 'Sintético',
-      purpose: 'test',
-    },
-  });
-  const legacy = await fixture.client.run(async (ctx) => {
-    const row = await ctx.db
-      .query('calendarContents')
-      .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
-      .unique();
-    if (!row) throw Error('Conteúdo ausente');
-    const value = { ...row, state: { ...row.state, weekEvidence: secret } };
-    await ctx.db.patch(row._id, { state: value.state });
-    return value;
-  });
-  const read = await actor.query(api.calendars.calendar, { id: record.id });
-  const saved = await actor.mutation(api.calendars.saveCalendar, {
-    id: record.id,
-    body: {
-      version: record.version,
-      catalogueRevision: record.currentCatalogueRevision,
-      state: read.state,
-      unchangedOnly: true,
-    },
-  });
-  expect(saved.unchanged).toBe(true);
-  expect(saved.version).toBe(record.version);
-  expect(await fixture.client.run((ctx) => ctx.db.get(legacy._id))).toEqual(legacy);
-  expect(JSON.stringify(read)).not.toContain(secret);
+const event = { id: 'note', name: 'Nota', start: '2027-03-01', end: '2027-03-01', kind: 'note' };
+const legacyFields: Array<[string, (state: DomainState) => Record<string, unknown>]> = [
+  ['weekEvidence', (state) => ({ ...state, weekEvidence: secret })],
+  ['events.evidence', (state) => ({ ...state, events: [{ ...event, evidence: secret }] })],
+  [
+    'deadlineAdjustment.evidence',
+    (state) => ({
+      ...state,
+      events: [
+        { ...event, deadlineAdjustment: { date: '2027-03-02', reviewed: false, evidence: secret } },
+      ],
+    }),
+  ],
+  [
+    'teacherVacations.evidence',
+    (state) => ({
+      ...state,
+      teacherVacations: { firstStart: '2027-01-04', firstEnd: '2027-01-15', evidence: secret },
+    }),
+  ],
+  [
+    'scopeConfirmation.source',
+    (state) => ({ ...state, scopeConfirmation: { status: 'covered', source: secret } }),
+  ],
+];
+
+test.each(legacyFields)(
+  'the canonical API refuses the retired field %s before saving',
+  async (_name, legacyState) => {
+    const { fixture, actor, created } = await createRecord();
+    await expect(
+      actor.mutation(oldSave, {
+        id: created.id,
+        body: {
+          version: created.version,
+          catalogueRevision: created.currentCatalogueRevision,
+          state: legacyState(created.state),
+        },
+      }),
+    ).rejects.toThrow(/Unexpected field/);
+    const raw = await fixture.client.run(async (ctx) => ({
+      calendar: await ctx.db.get(created.id),
+      snapshots: await ctx.db.query('calendarSnapshots').take(10),
+    }));
+    expect(raw.calendar?.version).toBe(created.version);
+    expect(raw.snapshots).toHaveLength(0);
+    assertSourceFree((await actor.query(api.calendars.calendar, { id: created.id })).state);
+  },
+);
+
+// convex-test 0.0.64 does not recurse through v.record validators. Inspect the
+// real published validator instead of changing production code for that mock gap.
+test('nested intake records have no source slot in storage or public input', () => {
+  const stored = contentState.fields.intakeByModality.value.value.fields;
+  const submitted = saveInput.fields.state.fields.intakeByModality.value.value.fields;
+  expect(Object.keys(stored)).toEqual(['status', 'required']);
+  expect(Object.keys(submitted)).toEqual(['status', 'required']);
+});
+
+test('current contents and historical storage refuse retired manual fields', async () => {
+  const { fixture, created } = await createRecord();
+  await expect(
+    fixture.client.run(async (ctx) => {
+      const row = (await ctx.db
+        .query('calendarContents')
+        .withIndex('by_calendarId', (q) => q.eq('calendarId', created.id))
+        .unique())!;
+      const invalid = { ...row.state, weekEvidence: secret };
+      await ctx.db.patch(row._id, { state: invalid });
+    }),
+  ).rejects.toThrow(/Unexpected field/);
+  await expect(
+    fixture.client.run(async (ctx) => {
+      const invalid = {
+        ...created.state,
+        events: [
+          {
+            id: 'note',
+            name: 'Nota',
+            start: '2027-03-01',
+            end: '2027-03-01',
+            kind: 'note' as const,
+            evidence: secret,
+          },
+        ],
+      };
+      await ctx.db.insert('calendarSnapshots', {
+        state: invalid,
+        at: Date.now(),
+        catalogueRevision: created.catalogueRevision,
+        institutionalEvents: created.institutionalSnapshot,
+        documentSnapshot: [],
+      });
+    }),
+  ).rejects.toThrow(/Unexpected field/);
 });

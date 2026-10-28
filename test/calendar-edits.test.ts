@@ -14,7 +14,6 @@ function calendar(): ActivityState {
     regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    weekEvidence: 'Ata aprovada',
     periods: [{ id: 'classes', start: '2027-03-01', end: '2027-03-26' }],
     assessmentStagesByModality: { integrado: 4 },
     events: Array.from({ length: 4 }, (_, index) => ({
@@ -25,7 +24,6 @@ function calendar(): ActivityState {
       end: `2027-03-${String(index * 7 + 4).padStart(2, '0')}`,
       kind: 'note',
       category: 'limite',
-      evidence: 'Organização pedagógica',
       modalities: ['integrado'],
     })),
   };
@@ -42,10 +40,9 @@ test('recalculating periods preserves every entered stage date, including legacy
       start: '2027-03-01',
       end: '2027-03-05',
       kind: 'exclude',
-      evidence: 'Lei',
     },
   ]);
-  const expected = before.events.map(({ evidence: _source, ...event }) => event);
+  const expected = before.events;
   expect(next.events).toEqual(expected);
   expect(removePeriod(state, 'classes', []).events).toEqual(expected);
   expect(state).toEqual(before);
@@ -62,7 +59,6 @@ test('changing assessment organization preserves events while removing obsolete 
     const {
       requirementId: _link,
       assessmentAutoStart: _anchor,
-      evidence: _source,
       ...preserved
     } = original.events[index];
     expect(changed.events[index]).toEqual(preserved);

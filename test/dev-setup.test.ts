@@ -232,10 +232,8 @@ test('dev setup preserves every partial dataset, including isolated snapshots, A
           regime: 'anual',
           weekdays: [1, 2, 3, 4, 5],
           weekConfirmed: false,
-          weekEvidence: '',
           periods: [],
           events: [],
-
           assessmentStagesByModality: {},
         },
         at: 1,

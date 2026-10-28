@@ -322,7 +322,6 @@ test('stage editing and activity changes always reveal the same draft in its des
       end: '2027-03-12',
       kind: 'note',
       category: 'limite',
-      evidence: 'Organização pedagógica',
       modalities: ['integrado'],
     });
     record.version++;

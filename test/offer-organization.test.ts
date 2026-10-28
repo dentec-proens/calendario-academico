@@ -1,4 +1,3 @@
-import { withoutManualSources } from '../src/manual-sources.ts';
 import { activityCoverage } from '../src/calendar-rules/index.ts';
 import { expect, test } from 'vitest';
 import {
@@ -20,7 +19,6 @@ function calendar(): ActivityState {
     assessmentStagesByModality: { integrado: 2, graduacao: 2 },
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    weekEvidence: 'Ata',
     periods: [
       {
         id: 'shared',
@@ -38,7 +36,6 @@ function calendar(): ActivityState {
         modalities: [modality],
         start: index ? '2027-03-15' : '2027-03-01',
         end: index ? '2027-03-26' : '2027-03-12',
-        evidence: `${modality} — ata ${index + 1}`,
         kind: 'note',
         category: 'limite',
         assessmentAutoStart: '2027-03-01',
@@ -68,17 +65,15 @@ test('one application splits a shared period and keeps the other offer and all s
   expect(integrated.id).not.toBe('shared');
   expect(integrated.targetDays).toBeUndefined();
   expect(next.events.filter((e) => e.modalities?.includes('graduacao'))).toEqual(
-    withoutManualSources({
-      events: before.events.filter((e) => e.modalities?.includes('graduacao')),
-    }).state.events,
+    before.events.filter((e) => e.modalities?.includes('graduacao')),
   );
   expect(
     next.events
       .filter((e) => e.modalities?.includes('integrado'))
-      .map((e) => [e.id, e.start, e.end, e.evidence, e.assessmentAutoStart]),
+      .map((e) => [e.id, e.start, e.end, e.assessmentAutoStart]),
   ).toEqual([
-    ['integrado-0', '2027-03-01', '2027-03-12', undefined, undefined],
-    ['integrado-1', '2027-03-15', '2027-03-31', undefined, undefined],
+    ['integrado-0', '2027-03-01', '2027-03-12', undefined],
+    ['integrado-1', '2027-03-15', '2027-03-31', undefined],
   ]);
   expect(normalizeCalendar({ ...next, ignoredHistory: [] }).events).toHaveLength(4);
 });
@@ -135,7 +130,6 @@ test('existing inclusions are checked before changing periods; records are never
     modalities: ['integrado'],
     start: '2027-03-06',
     end: '2027-03-06',
-    evidence: 'Ata',
   });
   const draft = offerOrganizationDraft(state, 'integrado');
   draft.periods[0].start = '2027-03-08';
@@ -159,7 +153,6 @@ test('splitting shared admission references preserves each offer link and dates'
     modalities: ['integrado', 'graduacao'],
     start: '2027-02-01',
     end: '2027-02-01',
-    evidence: 'Edital sintético',
     publicationStatus: 'published',
     admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'shared' },
   });
@@ -192,7 +185,6 @@ test('calendar records no longer require or retain manual references', () => {
     start: '2027-03-01',
     end: '2027-03-01',
     kind: 'note',
-    evidence: 'Fonte de outro registro',
   });
   const draft = offerOrganizationDraft(state, 'integrado');
   expect(draft).not.toHaveProperty('evidence');
@@ -211,14 +203,12 @@ test('calendar records no longer require or retain manual references', () => {
   expect(
     activityCoverage(next).find((row) => row.requirement.id === 'stage-1:integrado')?.coverage,
   ).toBe('complete');
-  expect(() =>
-    normalizeCalendar({
-      ...next,
-      events: next.events.map((event) =>
-        event.id === 'other' ? { ...event, evidence: undefined } : event,
-      ),
-    }),
-  ).not.toThrow();
+  expect(next.events.find((event) => event.id === 'other')).toMatchObject({
+    id: 'other',
+    start: '2027-03-01',
+    end: '2027-03-01',
+    kind: 'note',
+  });
 });
 
 test('reducing date-only stages keeps retired dates without reintroducing a source requirement', () => {
@@ -237,9 +227,9 @@ test('reducing date-only stages keeps retired dates without reintroducing a sour
   twoDraft.count = '2';
   const two = applyOfferOrganization(four, 'integrado', twoDraft, id);
   const retired = two.events.filter((event) => event.recordType === 'retired-stage');
-  expect(retired.map((event) => [event.start, event.end, event.evidence])).toEqual([
-    ['2027-03-15', '2027-03-19', undefined],
-    ['2027-03-22', '2027-03-26', undefined],
+  expect(retired.map((event) => [event.start, event.end])).toEqual([
+    ['2027-03-15', '2027-03-19'],
+    ['2027-03-22', '2027-03-26'],
   ]);
   expect(normalizeCalendar({ ...two, ignoredHistory: [] }).events).toHaveLength(two.events.length);
 });

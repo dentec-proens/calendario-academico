@@ -160,12 +160,6 @@ export default function SaturdaysForm() {
           <dl className="saturday-registration">
             <dt>Atividade</dt>
             <dd>{editing.registration!.name}</dd>
-            {editing.registration!.id.startsWith('inst:') && editing.registration!.evidence && (
-              <>
-                <dt>Fonte institucional</dt>
-                <dd>{editing.registration!.evidence}</dd>
-              </>
-            )}
           </dl>
           <p className="help">Edite este registro em Atividades e datas do campus.</p>
         </>

@@ -31,7 +31,6 @@ export const event = v.object({
   start: v.string(),
   end: v.string(),
   kind: effect,
-  evidence: v.optional(v.string()),
   category: v.optional(v.string()),
   requirementId: v.optional(v.string()),
   modalities: v.optional(v.array(modality)),
@@ -49,9 +48,7 @@ export const event = v.object({
       periodId: v.optional(v.string()),
     }),
   ),
-  deadlineAdjustment: v.optional(
-    v.object({ date: v.string(), evidence: v.optional(v.string()), reviewed: v.boolean() }),
-  ),
+  deadlineAdjustment: v.optional(v.object({ date: v.string(), reviewed: v.boolean() })),
   deadlineExtensionCause: v.optional(
     v.union(v.literal('municipal-holiday'), v.literal('municipal-recess')),
   ),
@@ -66,18 +63,34 @@ export const institutionalEvent = v.object({
   modalities: v.array(modality),
   active: v.boolean(),
 });
-// Public output compatibility for tabs published before manual sources were retired.
-// These fields carry generated record identities only; they are never stored as manual sources.
-export const legacyCalendarEvent = v.object({
-  ...event.fields,
+export const institutionalEventSnapshot = v.object({
+  id: v.string(),
+  name: v.string(),
+  start: v.string(),
+  end: v.string(),
+  kind: effect,
   evidence: v.string(),
+  category: v.optional(v.string()),
+  requirementId: v.optional(v.string()),
+  modalities: v.optional(v.array(modality)),
+  hours: v.optional(v.number()),
+  assessmentAutoStart: v.optional(v.string()),
   recordType: v.optional(v.union(v.literal('event'), v.literal('prior-reference'))),
+  publicationStatus: v.optional(v.union(v.literal('planned'), v.literal('published'))),
+  admission: v.optional(
+    v.object({
+      type: v.union(v.literal('regular'), v.literal('transfer')),
+      year: v.number(),
+      term: academicTerm,
+      periodId: v.optional(v.string()),
+    }),
+  ),
   deadlineAdjustment: v.optional(
     v.object({ date: v.string(), evidence: v.string(), reviewed: v.boolean() }),
   ),
-});
-export const institutionalEventSnapshot = v.object({
-  ...legacyCalendarEvent.fields,
+  deadlineExtensionCause: v.optional(
+    v.union(v.literal('municipal-holiday'), v.literal('municipal-recess')),
+  ),
   active: v.optional(v.boolean()),
   source: v.optional(v.string()),
   institutional: v.optional(v.boolean()),
@@ -91,7 +104,6 @@ export const vacations = v.object({
   secondEnd: v.optional(v.string()),
   thirdStart: v.optional(v.string()),
   thirdEnd: v.optional(v.string()),
-  evidence: v.optional(v.string()),
 });
 export const contentState = v.object({
   // Missing on persisted v2 content; retained on new content to prevent downgrade.
@@ -100,7 +112,6 @@ export const contentState = v.object({
   scopeConfirmation: v.optional(
     v.object({
       status: v.union(v.literal('covered'), v.literal('own-regulation')),
-      source: v.optional(v.string()),
     }),
   ),
   organizationByModality: v.optional(
@@ -116,7 +127,6 @@ export const contentState = v.object({
         v.string(),
         v.object({
           status: v.union(v.literal('unknown'), v.literal('yes'), v.literal('no')),
-          source: v.optional(v.string()),
           required: v.optional(v.boolean()),
         }),
       ),
@@ -132,8 +142,6 @@ export const contentState = v.object({
   regime,
   weekdays: v.array(v.number()),
   weekConfirmed: v.boolean(),
-  // Legacy input/storage slot accepted during compatible rollout; never written by the app.
-  weekEvidence: v.optional(v.string()),
   periods: v.array(period),
   events: v.array(event),
   secondSemesterIntake: v.optional(v.boolean()),
@@ -150,18 +158,6 @@ export const domainState = v.object({
   offer: modality,
 });
 export const historicalState = domainState;
-export const domainStateDto = v.object({
-  ...domainState.fields,
-  weekEvidence: v.string(),
-  events: v.array(legacyCalendarEvent),
-  scopeConfirmation: v.optional(
-    v.object({
-      status: v.union(v.literal('covered'), v.literal('own-regulation')),
-      source: v.string(),
-    }),
-  ),
-  teacherVacations: v.optional(v.object({ ...vacations.fields, evidence: v.string() })),
-});
 export const unavailableFile = v.object({
   sourceReference: v.string(),
   reason: v.literal('not_migrated'),
@@ -206,7 +202,6 @@ export const snapshotFields = {
   institutionalEvents: v.array(institutionalEventSnapshot),
   documentSnapshot: v.array(documentSnapshot),
 };
-export const snapshotDtoFields = { ...snapshotFields, state: domainStateDto };
 export const reviewEntry = v.object({
   id: v.string(),
   status: v.union(

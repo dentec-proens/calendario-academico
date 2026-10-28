@@ -1,4 +1,3 @@
-import { withoutManualSources } from '../src/manual-sources.ts';
 import { expect, test } from 'vitest';
 import { api, internal } from '../convex/_generated/api.js';
 import { inspectCalendar } from '../src/calendar-base/index.ts';
@@ -126,7 +125,6 @@ test('real changes require the displayed content acceptance and events recalcula
         ...record.state,
         weekConfirmed: true,
         weekdays: [1, 2, 3, 4, 5],
-        weekEvidence: 'Ata',
         periods: [
           {
             id: 'p',
@@ -235,7 +233,7 @@ test('document incorporation preserves dates, invalidates the evidenced review a
       state: fresh.state,
     },
   });
-  expect(withoutManualSources(saved.state).state).toEqual(withoutManualSources(record.state).state);
+  expect(saved.state).toEqual(record.state);
   expect(saved.version).toBe(2);
   expect(saved.base.documents[0]!.id).toBe(id);
   const data = await inspect();

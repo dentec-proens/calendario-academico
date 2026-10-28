@@ -5,9 +5,10 @@ import {
   createPresenceManifest,
   reconcilePresence,
   presenceNamespaces,
-} from '../convex/maintenance/presenceLifecycle.ts';
-import type { LifecycleRow } from '../convex/maintenance/presenceLifecycle.ts';
-import { assertPresenceRuntime, withCleanupEnvFile } from '../scripts/manual-source-cleanup.ts';
+} from '../scripts/administration/presence-lifecycle.ts';
+import type { LifecycleRow } from '../scripts/administration/presence-lifecycle.ts';
+import { assertPresenceRuntime } from '../scripts/administration/presence-runtime.ts';
+import { withTargetEnvFile } from '../scripts/administration/cli-environment.ts';
 const [presence, sessions, roomTokens, sessionTokens, workers, workerState] = presenceNamespaces;
 function fixture(): Record<string, LifecycleRow[]> {
   return {
@@ -140,7 +141,7 @@ test('isolated env-file contains only selected target, private permissions, and 
   vi.stubEnv('CONVEX_DEPLOYMENT', 'dev:unrelated');
   try {
     expect(() =>
-      withCleanupEnvFile({ url: 'http://127.0.0.1:3210', adminKey: 'private-key' }, (path) => {
+      withTargetEnvFile({ url: 'http://127.0.0.1:3210', adminKey: 'private-key' }, (path) => {
         selected = path;
         const env = readFileSync(path, 'utf8');
         expect(env).toContain('CONVEX_SELF_HOSTED_ADMIN_KEY="private-key"');

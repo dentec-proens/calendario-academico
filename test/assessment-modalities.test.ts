@@ -12,7 +12,6 @@ const state: ActivityState = {
   regime: 'anual',
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
-  weekEvidence: 'Ata',
   assessmentStagesByModality: { integrado: 4, graduacao: 2 },
   periods: [{ id: 'p', start: '2027-03-01', end: '2027-03-26' }],
   events: ['integrado', 'graduacao'].flatMap((modality) =>
@@ -24,7 +23,6 @@ const state: ActivityState = {
       kind: 'note',
       start: index ? '2027-03-15' : '2027-03-01',
       end: index ? '2027-03-26' : '2027-03-12',
-      evidence: 'Ata',
     })),
   ),
 };
@@ -54,7 +52,6 @@ test('holidays and inclusions update per-offer counts without moving any assessm
       start: '2027-03-05',
       end: '2027-03-05',
       modalities: ['integrado'],
-      evidence: 'Lei',
     },
     {
       id: 'sat',
@@ -63,13 +60,12 @@ test('holidays and inclusions update per-offer counts without moving any assessm
       start: '2027-03-06',
       end: '2027-03-06',
       modalities: ['integrado'],
-      evidence: 'Ata',
     },
   ];
   const current = { ...state, events };
   const before = structuredClone(current);
   const next = recalculateCalendar(current, []);
-  expect(next.events).toEqual(before.events.map(({ evidence: _source, ...event }) => event));
+  expect(next.events).toEqual(before.events);
   expect(assessmentDayCounts(next, next.events)['integrado-0']).toEqual([
     { modality: 'integrado', days: 10, saturdays: 1, excluded: 1 },
   ]);

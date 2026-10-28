@@ -20,7 +20,6 @@ test('definitive release requires every reviewed criterion, current versions and
       schemaVersion: 3,
       scopeConfirmation: {
         status: 'covered' as const,
-        source: 'Escopo presencial sintético confirmado',
       },
       organizationByModality: { integrado: 'anual' as const },
       assessmentStagesByModality: { integrado: 4 },
@@ -30,7 +29,6 @@ test('definitive release requires every reviewed criterion, current versions and
       regime: 'anual',
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
-      weekEvidence: 'Synthetic fixture',
       periods: [
         {
           id: 'year',
@@ -56,7 +54,6 @@ test('definitive release requires every reviewed criterion, current versions and
       end: '2027-02-01',
       kind: 'note',
       category: 'institucional',
-      evidence: 'Synthetic fixture',
     }));
   record.state.events.push(
     ...activityChecklist(record.state).map((r) => ({
@@ -67,7 +64,6 @@ test('definitive release requires every reviewed criterion, current versions and
       start: '2027-02-01',
       end: '2027-02-01',
       kind: 'note',
-      evidence: 'Synthetic fixture',
     })),
   );
   const db = {
@@ -185,7 +181,6 @@ test('combined calendars scope exclusions by modality and do not presume a postg
     regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    weekEvidence: 'Fixture',
     periods: [{ id: 'p', name: 'Semana', start: '2027-02-01', end: '2027-02-05' }],
     events: [] as CalendarActivity[],
   };
@@ -196,7 +191,6 @@ test('combined calendars scope exclusions by modality and do not presume a postg
       end: '2027-02-02',
       kind: 'exclude',
       modalities: ['graduacao'],
-      evidence: 'Fixture',
     },
   ]);
   assert.equal(result.byModality.subsequente.total, 5);
@@ -229,8 +223,7 @@ test('a single linked deadline cannot satisfy every assessment stage or semester
   assert.equal(new Set(activities.map((a) => a.id)).size, activities.length);
 });
 
-test('2026 review readiness stays unchanged when manual sources are retired', async () => {
-  const { withoutManualSources } = await import('../src/manual-sources.ts');
+test('2026 reviewed criterion is satisfied by a dated event without manual sources', async () => {
   const name = 'extratos das atas de aprovacao pelo cgpc e codic';
   const criteria = reviewCriteriaFor(2026);
   const target = criteria.find(
@@ -252,7 +245,6 @@ test('2026 review readiness stays unchanged when manual sources are retired', as
       assessmentStagesByModality: { integrado: 2 },
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
-      weekEvidence: 'Ata antiga',
       periods: [
         {
           id: 'annual',
@@ -273,7 +265,6 @@ test('2026 review readiness stays unchanged when manual sources are retired', as
           end: '2026-02-02',
           kind: 'note',
           modalities: ['integrado'],
-          evidence: 'Fonte manual antiga',
         },
       ],
     },
@@ -294,11 +285,8 @@ test('2026 review readiness stays unchanged when manual sources are retired', as
       },
     ],
   };
-  const before = releaseReadiness(record, db);
-  const after = releaseReadiness(
-    { ...record, state: withoutManualSources(record.state).state },
-    db,
-  );
-  assert.deepEqual(after.issues, before.issues);
-  assert.deepEqual(after.warnings, before.warnings);
+  const readiness = releaseReadiness(record, db);
+  assert(!readiness.issues.some((issue) => issue.includes(target.title)));
+  const missing = releaseReadiness({ ...record, state: { ...record.state, events: [] } }, db);
+  assert(missing.issues.some((issue) => issue.includes(target.title)));
 });

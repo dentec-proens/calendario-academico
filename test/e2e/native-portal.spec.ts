@@ -68,7 +68,7 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   assert.equal(openedUrl.searchParams.get('busca'), 'synthetic');
   assert.equal(openedUrl.hash, '#history-area');
 
-  async function fillOrganization(page: Page, _evidence: string, start: string, end: string) {
+  async function fillOrganization(page: Page, start: string, end: string) {
     if (!(await page.locator('#offer-integrado-form').isVisible()))
       await page.locator('[data-edit-organization="integrado"]').click();
     await page.locator('#offer-integrado-organization').selectOption('anual');
@@ -80,15 +80,15 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
     await page.locator('#offer-integrado-stage-1-start').fill(start.slice(0, 8) + '16');
     await page.locator('#offer-integrado-stage-1-end').fill(end);
   }
-  async function applyOrganization(evidence: string, start: string, end: string) {
+  async function applyOrganization(start: string, end: string) {
     await editor.locator('[data-view="periods"]').click();
-    await fillOrganization(editor, evidence, start, end);
+    await fillOrganization(editor, start, end);
     await editor.locator('#offer-integrado-apply').click();
     await expect(editor.locator('#autosave-status')).toHaveAttribute('data-state', 'saved');
     await expect(editor.locator('button#server-save')).toBeHidden();
   }
   await observer.locator('[data-view="periods"]').click();
-  await applyOrganization('Synthetic shared organization', `${year}-03-01`, `${year}-03-31`);
+  await applyOrganization(`${year}-03-01`, `${year}-03-31`);
   await expect(observer.locator('[data-offer="integrado"]')).toContainText(`01/03/${year}`);
   await editor.reload();
   await expect(editor.locator('#record-title')).toContainText(String(year));
@@ -96,13 +96,13 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   await expect(editor.locator('[data-offer="integrado"]')).toContainText(`01/03/${year}`);
   await observer.locator('[data-edit-organization="integrado"]').click();
   await observer.locator('#offer-integrado-period-0-start').fill('2027-02-16');
-  await applyOrganization('Synthetic later organization', `${year}-04-01`, `${year}-04-30`);
+  await applyOrganization(`${year}-04-01`, `${year}-04-30`);
   await expect(
     observer.getByText('O calendário ou a base mudou em outra sessão.', { exact: false }),
   ).toContainText('Suas alterações foram preservadas');
   await expect(observer.locator('#offer-integrado-period-0-start')).toHaveValue('2027-02-16');
   await expect(observer.locator('#offer-integrado-period-0-start')).toHaveValue(`${year}-03-01`);
-  await fillOrganization(observer, '2027-02-16', `${year}-05-01`, `${year}-05-31`);
+  await fillOrganization(observer, `${year}-05-01`, `${year}-05-31`);
   await observer.locator('#offer-integrado-apply').click();
   await expect(observer.locator('#autosave-status')).toHaveAttribute('data-state', 'blocked');
   await expect(observer.locator('[data-offer="integrado"]')).toContainText(`01/05/${year}`);

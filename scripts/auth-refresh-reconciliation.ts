@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { canonical, fingerprint, hexDigest } from '../convex/maintenance/canonical.ts';
+import { canonical, fingerprint, hexDigest } from './administration/canonical.ts';
 
 export type AuthRefreshRow = { _id: string; _creationTime: number; [key: string]: unknown };
 type Tables = Record<string, AuthRefreshRow[]>;

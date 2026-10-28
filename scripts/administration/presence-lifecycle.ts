@@ -1,6 +1,6 @@
 /** Read-only reconciliation of the installed presence runtime, never a migration allowlist. */
 import { jsonToConvex } from 'convex/values';
-import { canonical, fingerprint, hexDigest } from './canonical';
+import { canonical, fingerprint, hexDigest } from './canonical.ts';
 
 export type LifecycleRow = { _id: string; _creationTime: number; [key: string]: unknown };
 type Rows = Record<string, LifecycleRow[]>;

@@ -1,5 +1,6 @@
 import type { CalendarActivity } from './domain-types.ts';
 export interface CatalogueEvent extends CalendarActivity {
+  evidence: string;
   active: boolean;
   modalities: string[];
   category: string;
@@ -65,7 +66,7 @@ export function initialCatalogue() {
     end: `2027-${date}`,
     kind: 'exclude',
     category: 'feriado',
-    evidence,
+    evidence: evidence!,
     modalities: ['integrado', 'subsequente', 'graduacao'],
     active: true,
   }));

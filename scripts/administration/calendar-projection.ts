@@ -1,20 +1,17 @@
-import type * as EvaluationModule from '../src/evaluation.ts';
-import type * as StageModule from '../src/assessment-day-counts.ts';
-import type * as DurationModule from '../src/duration.ts';
-import type * as RulesModule from '../src/calendar-rules/index.ts';
-import type * as ConversionModule from '../src/calendar-rules/conversion.ts';
-import type * as ObligationsModule from '../src/obligations.ts';
-import type * as ModalitiesModule from '../src/modalities.ts';
-import type * as TeacherDayModule from '../src/teacher-day.ts';
+import type * as EvaluationModule from '../../src/evaluation.ts';
+import type * as StageModule from '../../src/assessment-day-counts.ts';
+import type * as DurationModule from '../../src/duration.ts';
+import type * as RulesModule from '../../src/calendar-rules/index.ts';
+import type * as ConversionModule from '../../src/calendar-rules/conversion.ts';
+import type * as ObligationsModule from '../../src/obligations.ts';
+import type * as ModalitiesModule from '../../src/modalities.ts';
+import type * as TeacherDayModule from '../../src/teacher-day.ts';
 /** Private numeric/date proof: run against the committed old code and the new code separately. */
 import { writeFileSync, chmodSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { readCleanupSnapshot } from './manual-source-cleanup.ts';
-import { withoutManualSources } from '../src/manual-sources.ts';
-import { legacyCalendarState } from '../convex/calendars/legacyDto.ts';
-import { fingerprint } from '../convex/maintenance/manualSourceProtocol.ts';
-import type { ActivityState } from '../src/domain-types.ts';
+import { readSnapshot } from './snapshot.ts';
+import type { ActivityState } from '../../src/domain-types.ts';
 
 function option(name: string) {
   const index = process.argv.indexOf(`--${name}`);
@@ -33,17 +30,6 @@ function result<T>(work: () => T) {
     };
   }
 }
-/** Only source annotations disappear; no date, count, conflict, scope or check is ignored. */
-function numeric(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(numeric);
-  if (value && typeof value === 'object')
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([key]) => key !== 'evidenceIds')
-        .map(([key, item]) => [key, numeric(item)]),
-    );
-  return value;
-}
 async function main() {
   const input = option('snapshot'),
     output = option('out'),
@@ -51,7 +37,7 @@ async function main() {
   const { statSync } = await import('node:fs');
   if ((statSync(dirname(output)).mode & 0o077) !== 0)
     throw Error('A pasta de projeção deve ser privada (700).');
-  const snapshot = readCleanupSnapshot(input);
+  const snapshot = readSnapshot(input);
   const evaluation = (await import(
     pathToFileURL(join(codeRoot, 'src/evaluation.ts')).href
   )) as typeof EvaluationModule;
@@ -78,12 +64,6 @@ async function main() {
   )) as typeof TeacherDayModule;
   const calendars = new Map((snapshot.tables.calendars ?? []).map((row) => [row._id, row]));
   const campuses = new Map((snapshot.tables.campuses ?? []).map((row) => [row._id, row]));
-  const versions = new Map(
-    (snapshot.tables.calendarVersions ?? []).map((row) => [String(row.snapshotId), row]),
-  );
-  const legacyWire = process.argv.includes('--legacy-wire');
-  if (legacyWire && process.argv.includes('--strip-manual'))
-    throw Error('Escolha uma representação de entrada por execução.');
   const states: Record<string, unknown> = {};
   for (const table of ['calendarContents', 'calendarSnapshots'])
     for (const row of snapshot.tables[table] ?? []) {
@@ -103,37 +83,6 @@ async function main() {
           offer: String(calendar.modalities[0]),
         };
       }
-      if (legacyWire) {
-        const reference =
-          table === 'calendarContents'
-            ? calendars.get(String(row.calendarId))
-            : versions.get(row._id);
-        const calendarId = table === 'calendarContents' ? row.calendarId : reference?.calendarId;
-        if (
-          !reference ||
-          typeof calendarId !== 'string' ||
-          !calendarId ||
-          !Number.isSafeInteger(reference.version)
-        )
-          throw Error('A projeção do contrato antigo exige vínculo real de calendário e versão.');
-        const wire = legacyCalendarState(
-          state as Parameters<typeof legacyCalendarState>[0],
-          calendarId,
-          Number(reference.version),
-        );
-        const clean = withoutManualSources(state).state;
-        const expected = {
-          ...clean,
-          events: clean.events.map((event) => ({
-            ...event,
-            recordType: event.recordType === 'retired-stage' ? 'event' : event.recordType,
-          })),
-        };
-        if (fingerprint(withoutManualSources(wire).state) !== fingerprint(expected))
-          throw Error('A bridge alterou campos fora dos slots de compatibilidade autorizados.');
-        state = wire;
-      }
-      if (process.argv.includes('--strip-manual')) state = withoutManualSources(state).state;
       const projected = result(() => {
         state = conversion.convertCalendarV2(state);
         const institutional = (
@@ -180,7 +129,7 @@ async function main() {
             : [],
         );
         return {
-          counts: result(() => numeric(evaluation.evaluateCalendar(state, events))),
+          counts: result(() => evaluation.evaluateCalendar(state, events)),
           stages: result(() => stages.assessmentDayCounts(state, events)),
           periods: result(() => duration.recalculatePeriods(state, events)),
           deadlines,

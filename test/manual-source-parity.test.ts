@@ -8,10 +8,22 @@ import {
   validateActivityRecord,
 } from '../src/calendar-rules/index.ts';
 import { activityChecklist } from '../src/obligations.ts';
-import type { ActivityState, CalendarActivity } from '../src/domain-types.ts';
+import type { ActivityState, CalendarActivity, IntakeConfiguration } from '../src/domain-types.ts';
+
+// External metadata is test input, never a storage/API contract.
+type AnnotatedEvent = CalendarActivity & {
+  evidence?: string;
+  deadlineAdjustment?: CalendarActivity['deadlineAdjustment'] & { evidence?: string };
+};
+type AnnotatedState = Omit<ActivityState, 'events' | 'scopeConfirmation' | 'intakeByModality'> & {
+  events: AnnotatedEvent[];
+  weekEvidence?: string;
+  scopeConfirmation?: ActivityState['scopeConfirmation'] & { source?: string };
+  intakeByModality?: Record<string, Record<string, IntakeConfiguration & { source?: string }>>;
+};
 import { proensLayout } from '../src/printing/calendar-layout.ts';
 
-function state(): ActivityState {
+function state(): AnnotatedState {
   return {
     schemaVersion: 3,
     year: 2027,
@@ -85,7 +97,7 @@ function state(): ActivityState {
   };
 }
 
-function removeManualSources(input: ActivityState): ActivityState {
+function removeManualSources(input: AnnotatedState): AnnotatedState {
   const result = structuredClone(input);
   delete result.weekEvidence;
   if (result.scopeConfirmation) delete (result.scopeConfirmation as { source?: string }).source;
@@ -165,7 +177,7 @@ function deadlineState(): ActivityState {
     events: [],
   };
 }
-const holiday = (overrides: Partial<CalendarActivity> = {}): CalendarActivity => ({
+const holiday = (overrides: Partial<AnnotatedEvent> = {}): AnnotatedEvent => ({
   id: 'municipal',
   name: 'Feriado municipal',
   start: '2027-08-31',
@@ -264,7 +276,7 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
   };
   const row = activityChecklist(original).find((item) => item.admissionType === 'regular')!;
   expect(row.deadline).toBeTruthy();
-  const event: CalendarActivity = {
+  const event: AnnotatedEvent = {
     id: 'notice',
     name: row.name,
     requirementId: row.id,

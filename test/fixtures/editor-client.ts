@@ -22,7 +22,6 @@ export const record: CalendarRecord = {
     modalities: ['integrado'],
     regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
-    weekEvidence: 'Ata sintética',
     weekConfirmed: true,
     periods: [],
     events: [],

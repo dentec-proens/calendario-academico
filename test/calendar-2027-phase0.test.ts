@@ -13,7 +13,6 @@ const state: ActivityState & { ignoredHistory: string[] } = {
   regime: 'anual',
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
-  weekEvidence: 'Ata sintética',
   periods: [],
   events: [],
   ignoredHistory: [],
@@ -39,7 +38,6 @@ test('a documented 2026 occurrence retains its actual dates through the event co
     kind: 'note',
     recordType: 'prior-reference' as const,
     publicationStatus: 'published' as const,
-    evidence: 'Documento sintético de publicação',
     modalities: ['integrado'],
   };
   const applied = applyEvent(state, event, []);

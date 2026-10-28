@@ -23,7 +23,6 @@ function calendar(): ActivityState {
     assessmentStagesByModality: { integrado: 4, graduacao: 2, subsequente: 2 },
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    weekEvidence: 'Ata sintética',
     periods: [
       {
         id: 'annual',
@@ -59,7 +58,6 @@ function notice(extra: Partial<CalendarActivity> = {}): CalendarActivity {
     id: 'notice',
     name: 'Edital sintético',
     kind: 'note',
-    evidence: 'Publicação sintética',
     start: '2026-12-10',
     end: '2026-12-10',
     modalities: ['integrado'],
@@ -105,7 +103,7 @@ test('2027 requirements use offer and academic cycle while PE/PIT/RIT remain sem
 test('one event covers only the explicitly declared offers and does not waive veterans for absent intake', () => {
   const state = calendar();
   state.intakeByModality = {
-    subsequente: { annual: { status: 'no', source: 'Regra local sintética' } },
+    subsequente: { annual: { status: 'no' } },
   };
   state.events = [
     {
@@ -181,7 +179,7 @@ test('prior publication keeps dates and destination after manual sources are rem
     event = notice();
   const applied = applyEvent(state, event, []),
     saved = normalizeCalendar({ ...applied, ignoredHistory: [] });
-  const { evidence: _manualSource, ...expected } = event;
+  const expected = event;
   expect(saved.events[0]).toMatchObject(expected);
   expect(saved.events[0]).not.toHaveProperty('evidence');
   expect(
@@ -216,7 +214,6 @@ test('planned regular publication remains planned and December requires an expli
   ).toMatchObject({ coverage: 'partial', execution: 'planned' });
   state.events[0].deadlineAdjustment = {
     date: '2027-12-02',
-    evidence: 'Cronograma ajustado sintético para conferência',
     reviewed: true,
   };
   expect(
@@ -275,7 +272,6 @@ test('article 3 extends only explicitly classified municipal causes to the first
     start: '2027-08-31',
     end: '2027-09-02',
     kind: 'exclude',
-    evidence: 'Lei municipal sintética',
     modalities: ['integrado'],
     deadlineExtensionCause: 'municipal-holiday',
   };
@@ -312,7 +308,6 @@ test('article 3 extends only explicitly classified municipal causes to the first
       start: '2027-09-03',
       end: '2027-09-03',
       kind: 'note',
-      evidence: 'Plano sintético',
       modalities: ['integrado'],
       requirementId: 'robotics',
     },
@@ -402,7 +397,6 @@ test('commands and direct import reject teaching inclusion outside the selected 
     start: '2027-07-20',
     end: '2027-07-20',
     kind: 'include',
-    evidence: 'Ata sintética',
     modalities: ['graduacao'],
   };
   expect(() => applyEvent(state, event, [])).toThrow('períodos');
@@ -416,15 +410,15 @@ test('commands and direct import reject teaching inclusion outside the selected 
 });
 
 test('preserved duplicate occurrences remain editable after PDF provenance is retired', () => {
-  const first = notice({ id: 'preserved-first', evidence: 'Ata A' });
-  const second = notice({ id: 'preserved-second', evidence: 'Ata B' });
+  const first = notice({ id: 'preserved-first' });
+  const second = notice({ id: 'preserved-second' });
   const third = notice({ id: 'third', name: 'Outra ocorrência' });
   const state = { ...calendar(), events: [first, second, third] };
   const edited = applyEvent(state, { ...first, name: 'Publicação corrigida' }, [], true);
   expect(edited.events.map((item) => item.id)).toEqual(state.events.map((item) => item.id));
   expect(edited.events[0].name).toBe('Publicação corrigida');
   expect(edited.events[0]).not.toHaveProperty('evidence');
-  const { evidence: _secondSource, ...expectedSecond } = second;
+  const expectedSecond = second;
   expect(edited.events[1]).toEqual(expectedSecond);
   const cleaned = applyEvent(state, first, []);
   expect(cleaned.events.map((item) => item.id)).toEqual(state.events.map((item) => item.id));

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "baseline": "8d4b4589101bc0d7c32ceacc976292e97d24a1fc",
+  "baseline": "57988481816781ba46ed9b1f57bba439ae77aabd",
   "strategy": "expand",
   "guarantees": {
     "oldClients": true,
@@ -8,12 +8,10 @@
     "scheduledFunctions": true,
     "sessions": true
   },
-  "rationale": "Retira as fontes manuais dos novos escritores, mantendo os argumentos e retornos legados compatíveis com abas abertas. Referências institucionais, sessões e componentes permanecem preservados. A limpeza dos valores existentes e históricos usa plano administrativo separado, com backup integral, comparação de contagens e prazos, ensaio local e verificação sob manutenção; não é executada pela expansão online.",
+  "rationale": "Plano padrão reservado a expansões compatíveis. A retirada definitiva dos campos de fonte manual e dos contratos antigos pertence ao modo específico de contração, com política restrita, manutenção, backup e ensaio; não é autorizada por este plano de expansão.",
   "tests": [
     "test/source-retirement-native.test.ts",
     "test/manual-source-parity.test.ts",
-    "test/manual-source-cleanup.test.ts",
-    "test/manual-sources.test.ts",
     "test/release.test.ts",
     "test/release-contracts.test.ts",
     "test/editor-session.test.ts",

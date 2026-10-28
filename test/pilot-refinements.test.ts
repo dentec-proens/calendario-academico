@@ -8,23 +8,17 @@ import { evaluateCalendar } from '../src/evaluation.ts';
 
 test('teacher vacations count explicit inclusive ranges without sources and reject wrong years or inverted intervals', () => {
   for (const year of [2027, 2028]) {
-    const v = teacherVacations(
-      year,
-      {
-        firstStart: `${year}-01-02`,
-        firstEnd: `${year}-01-31`,
-        secondStart: `${year}-07-17`,
-        secondEnd: `${year}-07-31`,
-      },
-      'Decisão de teste',
-    );
+    const v = teacherVacations(year, {
+      firstStart: `${year}-01-02`,
+      firstEnd: `${year}-01-31`,
+      secondStart: `${year}-07-17`,
+      secondEnd: `${year}-07-31`,
+    });
     assert.equal(v.total, 45);
     assert(v.events.every((e: CalendarActivity) => e.kind === 'exclude'));
     assert(v.events.every((e: CalendarActivity) => !Object.hasOwn(e, 'evidence')));
   }
-  assert.throws(() =>
-    teacherVacations(2027, { firstStart: '2026-07-01', firstEnd: '2026-07-15' }, 'Fonte'),
-  );
+  assert.throws(() => teacherVacations(2027, { firstStart: '2026-07-01', firstEnd: '2026-07-15' }));
   assert.throws(() => teacherVacations(2027, { firstStart: '2027-07-15', firstEnd: '2027-07-01' }));
 });
 test('mixed calendar includes annual and semester obligations plus extraordinary council', () => {
@@ -52,7 +46,6 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
     regime: 'misto',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    weekEvidence: 'Fonte',
     periods: [
       { id: 's1', name: 'S1', start: '2027-02-01', end: '2027-02-05' },
       { id: 's2', name: 'S2', start: '2027-08-02', end: '2027-08-06' },
@@ -64,7 +57,7 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
     schemaVersion: 3,
     regime: 'semestral',
     organizationByModality: { subsequente: 'semestral' as const },
-    scopeConfirmation: { status: 'covered' as const, source: 'Escopo presencial sintético' },
+    scopeConfirmation: { status: 'covered' as const },
     periods: state.periods.map((p, i) => ({
       ...p,
       association: {

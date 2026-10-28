@@ -1,7 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
-import { withoutManualSources } from '../src/manual-sources.ts';
 import { inspectCalendar } from '../src/calendar-base/index.ts';
 import { createEditorSession } from '../web/features/calendar-editor/session/editor-session.ts';
 import {
@@ -145,7 +144,7 @@ async function opened(withPeriod = true): Promise<CalendarRecord> {
   return {
     ...record,
     state: {
-      ...withoutManualSources(record.state).state,
+      ...record.state,
       periods: withPeriod
         ? [
             {
@@ -183,7 +182,6 @@ test('the server rejects removal of the last period while registered stages stil
         ...created.state,
         weekConfirmed: true,
         weekdays: [1, 2, 3, 4, 5],
-        weekEvidence: 'Ata',
         periods: [
           {
             id: 'first',
@@ -204,7 +202,6 @@ test('the server rejects removal of the last period while registered stages stil
           assessmentAutoStart: '2027-03-01',
           kind: 'note' as const,
           category: 'limite',
-          evidence: 'Organização pedagógica',
         })),
       },
     },
@@ -327,13 +324,11 @@ test('read-only sessions reject domain commands and never persist', async () => 
 test('domain commands reject invalid changes atomically and recalculate teaching-day targets', async () => {
   const record = await opened(false);
   const original = structuredClone(record.state);
-  expect(() =>
-    applyWeek(record.state, { weekdays: [], weekEvidence: 'Ata', weekConfirmed: true }, []),
-  ).toThrow();
+  expect(() => applyWeek(record.state, { weekdays: [], weekConfirmed: true }, [])).toThrow();
   expect(record.state).toEqual(original);
   const week = applyWeek(
     configureOrganization(record.state, { integrado: 'anual' }, []),
-    { weekdays: [1, 2, 3, 4, 5], weekEvidence: 'Ata', weekConfirmed: true },
+    { weekdays: [1, 2, 3, 4, 5], weekConfirmed: true },
     [],
   );
   const first = applyPeriod(
@@ -536,13 +531,12 @@ test('explicitly reopening remote data preserves the active session and accepts 
   session.dispose();
 });
 
-test('legacy manual sources are ignored on opening, save acknowledgement and remote reception', async () => {
+test('canonical state keeps manual sources absent on opening, save acknowledgement and remote reception', async () => {
   const record = await opened();
-  const legacy: CalendarRecord = {
+  const canonical: CalendarRecord = {
     ...record,
     state: {
       ...record.state,
-      weekEvidence: 'Ata manual anterior',
       events: [
         {
           id: 'local',
@@ -550,17 +544,15 @@ test('legacy manual sources are ignored on opening, save acknowledgement and rem
           kind: 'note',
           start: '2027-03-01',
           end: '2027-03-01',
-          evidence: 'Fonte antiga',
           modalities: ['integrado'],
         },
       ],
     },
   };
-  const session = createEditorSession(legacy, async (body) => ({
+  const session = createEditorSession(canonical, async (body) => ({
     state: {
       ...body.state,
-      weekEvidence: `record:${record.id}:week`,
-      events: body.state.events.map((event) => ({ ...event, evidence: `record:${event.id}` })),
+      events: body.state.events,
     },
     version: body.version + 1,
     updatedAt: record.updatedAt,
@@ -579,7 +571,7 @@ test('legacy manual sources are ignored on opening, save acknowledgement and rem
   const confirmed = session.getSnapshot().record;
   session.receive({
     ...confirmed,
-    state: { ...confirmed.state, weekEvidence: 'Outra fonte antiga' },
+    state: editPeriodName(confirmed.state, 'Alteração remota'),
   });
   expect(session.getSnapshot().dirty).toBe(false);
   expect(session.getSnapshot().record.state).not.toHaveProperty('weekEvidence');

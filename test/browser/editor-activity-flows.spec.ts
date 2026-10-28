@@ -66,7 +66,6 @@ test('editing a linked record that changes the count keeps its effect, category 
       end: '2027-05-10',
       kind: 'exclude',
       category: 'recesso',
-      evidence: 'Portaria sintética',
       modalities: ['integrado'],
     });
     record.version++;
@@ -92,7 +91,7 @@ test('editing a linked record that changes the count keeps its effect, category 
     )
     .toBe('Encontro com recesso retificado');
   const event = await savedEvent(page, (_, id) => id === 'linked-exclusion');
-  const { evidence: _legacySource, ...preserved } = original!;
+  const preserved = original!;
   expect(event).toMatchObject({ ...preserved, name: 'Encontro com recesso retificado' });
   expect(event).not.toHaveProperty('evidence');
 });
@@ -320,7 +319,6 @@ test('a record with a freely combined effect and category shows both fields when
       end: '2027-04-12',
       kind: 'exclude',
       category: 'formacao',
-      evidence: 'Portaria sintética',
       modalities: ['integrado'],
     });
     record.version++;

@@ -124,11 +124,8 @@ export function eventFromValues(
   const notice = noticeActive(value);
   // An unchanged adjustment keeps its institutional review; a new date needs another.
   const adjustment = target.base?.deadlineAdjustment;
-  const {
-    assessmentAutoStart: _automatic,
-    evidence: _legacySource,
-    ...kept
-  } = target.base ?? ({} as Partial<CalendarEvent>);
+  const { assessmentAutoStart: _automatic, ...kept } =
+    target.base ?? ({} as Partial<CalendarEvent>);
   return {
     ...kept,
     id: target.id,

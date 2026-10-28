@@ -1,5 +1,4 @@
 import type { CalendarRecord, CalendarState, CalendarSave } from '../types.ts';
-import { withoutManualSources } from '../../../../src/manual-sources.ts';
 import { equalValues } from '../../../../src/equal.ts';
 import { createAutosaver } from '../../../autosave.ts';
 import type { AutosaveStatus } from '../../../autosave.ts';
@@ -35,7 +34,6 @@ export function createEditorSession(
   readOnly = false,
   canEdit = () => true,
 ) {
-  record = { ...record, state: withoutManualSources(record.state).state };
   let current: EditorSnapshot = {
     record: structuredClone(record),
     state: convertCalendarV2(record.state),
@@ -99,7 +97,6 @@ export function createEditorSession(
       }
     },
     onSaved: (saved, sent) => {
-      saved = { ...saved, state: withoutManualSources(saved.state).state };
       const unchanged = equalValues(current.state, sent.state);
       const { base, unchanged: _unchanged, ...value } = saved;
       const confirmed = {
@@ -164,7 +161,7 @@ export function createEditorSession(
       assertEditing();
       if (current.status === 'blocked')
         throw new Error(current.error || 'Resolva o conflito antes de aplicar alterações.');
-      const changed = withoutManualSources(command(structuredClone(current.state))).state;
+      const changed = command(structuredClone(current.state));
       const state = { ...convertCalendarV2(changed), rulesetVersion: rulesetVersion(changed) };
       const dirty = !equalValues(state, current.record.state);
       publish({
@@ -176,7 +173,6 @@ export function createEditorSession(
     },
     replace(state: CalendarState) {
       assertEditing();
-      state = withoutManualSources(state).state;
       if (current.status === 'blocked')
         throw new Error(current.error || 'Resolva o conflito antes de importar.');
       forms.clear();
@@ -195,7 +191,6 @@ export function createEditorSession(
       if (unapplied !== current.unapplied) publish({ unapplied });
     },
     receive(fresh: CalendarRecord) {
-      fresh = { ...fresh, state: withoutManualSources(fresh.state).state };
       const newest = current.remote ?? current.record;
       if (
         fresh.version < newest.version ||

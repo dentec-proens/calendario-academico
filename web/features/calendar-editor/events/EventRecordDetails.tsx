@@ -1,3 +1,4 @@
+import { automaticEventSource } from '../../../../src/calendar.ts';
 import { categoryLabel } from '../../../../src/categories.ts';
 import type { EditorEvent } from '../types.ts';
 import { civilDate } from './activity-query.ts';
@@ -10,6 +11,7 @@ export default function EventRecordDetails({
   event: EditorEvent;
   activity?: string;
 }) {
+  const source = automaticEventSource(event);
   return (
     <>
       <strong>{event.name}</strong>
@@ -24,7 +26,7 @@ export default function EventRecordDetails({
       {activity !== undefined && (
         <small>{activity ? `Atividade: ${activity}` : 'Sem vínculo'}</small>
       )}
-      {event.institutional && event.evidence && <small>Fonte: {event.evidence}</small>}
+      {source && <small>Fonte: {source}</small>}
       {event.recordType === 'prior-reference' && (
         <small>Referência anterior · sem efeito na contagem</small>
       )}

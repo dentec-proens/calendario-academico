@@ -1,4 +1,3 @@
-import { withoutManualSources } from '../src/manual-sources.ts';
 import { inspectCalendar } from '../src/calendar-base/index.ts';
 import type { FunctionReturnType } from 'convex/server';
 import type { CalendarActivity } from '../src/domain-types.ts';
@@ -20,9 +19,7 @@ const createBody = (campusId = 'a') => ({
 });
 const changedState = (state: Record<string, unknown>, name = 'Atividade') => ({
   ...state,
-  events: [
-    { id: 'event', name, start: '2027-02-01', end: '2027-02-01', kind: 'note', evidence: 'Ata' },
-  ],
+  events: [{ id: 'event', name, start: '2027-02-01', end: '2027-02-01', kind: 'note' }],
 });
 const saveBody = (
   record: {
@@ -98,10 +95,7 @@ test('native mutations preserve immutable versions, reject stale writers and kee
   const record = full.calendars.find((c: { id: string }) => c.id === created.id)!;
   assert.equal(record.version, 3);
   assert.equal(record.versions.length, 2);
-  assert.deepEqual(
-    JSON.parse(JSON.stringify(record.versions[0].state)),
-    withoutManualSources(created.state).state,
-  );
+  assert.deepEqual(JSON.parse(JSON.stringify(record.versions[0].state)), created.state);
   assert.equal(record.versions[1].state.events[0].name, 'Atividade');
   const logs = await campus.read('/api/logs');
   assert.equal(logs.entries.length, 3);
@@ -257,7 +251,6 @@ test('native calendar saves validate per-offer stages and preserve the selected 
     secondSemesterIntake: false,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    weekEvidence: 'Ata sintética',
     periods: [
       {
         id: 'p',
@@ -284,7 +277,6 @@ test('native calendar saves validate per-offer stages and preserve the selected 
         end: '2027-03-12',
         kind: 'note',
         category: 'limite',
-        evidence: 'Ata sintética',
       },
     ],
   };
@@ -356,7 +348,6 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
               start: '2027-01-02',
               end: '2027-01-02',
               kind: 'exclude',
-              evidence: 'Fixture',
             },
           ],
         },

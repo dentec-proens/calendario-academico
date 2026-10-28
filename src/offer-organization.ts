@@ -1,4 +1,3 @@
-import { withoutManualSources } from './manual-sources.ts';
 import {
   assessmentStageCounts,
   assessmentStageNumbers,
@@ -344,10 +343,9 @@ export function applyOfferOrganization<S extends ActivityState>(
       kind: 'note',
       category: existing?.category ?? 'limite',
       modalities: [modality],
-      evidence: undefined,
     });
   }
-  // Keep retired or duplicate records as notes instead of losing dates or evidence.
+  // Keep retired or duplicate records as notes instead of losing dates.
   const keptStageIds = new Set(
     events.filter((event) => stageRequirement(event.requirementId)).map((event) => event.id),
   );
@@ -357,18 +355,13 @@ export function applyOfferOrganization<S extends ActivityState>(
       event.requirementId?.endsWith(`:${modality}`) &&
       !keptStageIds.has(event.id),
   )) {
-    const {
-      requirementId: _link,
-      assessmentAutoStart: _auto,
-      evidence: _evidence,
-      ...kept
-    } = event;
+    const { requirementId: _link, assessmentAutoStart: _auto, ...kept } = event;
     events.push({ ...kept, kind: 'note', recordType: 'retired-stage' });
   }
   const candidate = {
     ...next,
     rulesetVersion: rulesetVersion(next),
-    events: withoutManualSources({ events }).state.events,
+    events,
     conversion: state.conversion
       ? {
           ...state.conversion,

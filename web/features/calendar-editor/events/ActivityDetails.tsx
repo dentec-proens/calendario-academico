@@ -127,9 +127,6 @@ export default function ActivityDetails({
                         .join(' / ')
                     : ''}
                 </small>
-                {event.id.startsWith('inst:') && event.evidence && (
-                  <small>Fonte: {event.evidence}</small>
-                )}
               </p>
               <div className="actions">
                 <Button

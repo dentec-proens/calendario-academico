@@ -8,7 +8,6 @@ record.state.events = [
     end: '2027-03-10',
     kind: 'note',
     category: 'evento',
-    evidence: 'Ata salva',
     modalities: ['integrado'],
   },
   {
@@ -19,7 +18,6 @@ record.state.events = [
     end: '2027-10-08',
     kind: 'note',
     category: 'evento',
-    evidence: 'Decisão salva',
     modalities: ['integrado'],
   },
 ];

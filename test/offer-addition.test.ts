@@ -1,4 +1,3 @@
-import { withoutManualSources } from '../src/manual-sources.ts';
 import { expect, test } from 'vitest';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
@@ -16,7 +15,6 @@ function calendar(): ActivityState {
     assessmentStagesByModality: {},
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    weekEvidence: 'Ata',
     periods: [],
     events: [
       {
@@ -25,7 +23,6 @@ function calendar(): ActivityState {
         start: '2027-03-01',
         end: '2027-03-01',
         kind: 'note',
-        evidence: 'Fonte anterior',
       },
     ],
   };
@@ -47,7 +44,7 @@ test('a complete organization adds one catalog offer without extending existing 
   const next = applyOfferOrganization(original, 'graduacao', draft, () => `added-${sequence++}`);
   expect(next.modalities).toEqual(['integrado', 'graduacao']);
   expect(next.events.find((e) => e.id === 'legacy-note')).toEqual({
-    ...withoutManualSources(before).state.events[0],
+    ...before.events[0],
     modalities: ['integrado'],
   });
   expect(next.events.filter((e) => e.requirementId?.endsWith(':graduacao'))).toHaveLength(2);
@@ -95,7 +92,6 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
       start: index ? '2027-03-15' : '2027-03-01',
       end: index ? '2027-03-26' : '2027-03-12',
       kind: 'note' as const,
-      evidence: 'Ata sintética',
     })),
   };
   const saved = await actor.mutation(api.calendars.saveCalendar, {

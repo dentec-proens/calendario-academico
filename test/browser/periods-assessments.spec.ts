@@ -59,7 +59,7 @@ test('an existing local intake declaration survives explicit organization of its
     const { record } = window.editorTest;
     record.state.organizationByModality = { integrado: 'anual' };
     record.state.intakeByModality = {
-      integrado: { annual: { status: 'yes', required: true, source: 'Regra local preservada' } },
+      integrado: { annual: { status: 'yes', required: true } },
     };
     record.version++;
     await window.publishReviewerCalendar();
@@ -102,7 +102,6 @@ test('changing an offer cycle immediately identifies activities that need review
         end: '2027-12-17',
         kind: 'note',
         category: 'prazo',
-        evidence: 'Decisão da graduação',
       },
     ];
     record.version++;

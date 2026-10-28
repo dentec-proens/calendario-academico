@@ -13,7 +13,6 @@ export interface Admission {
 }
 export interface IntakeConfiguration {
   status: 'unknown' | 'yes' | 'no';
-  source?: string;
   required?: boolean;
 }
 export interface CalendarConversion {
@@ -27,7 +26,6 @@ export interface CalendarActivity {
   start: string;
   end: string;
   kind: string;
-  evidence?: string;
   category?: string;
   requirementId?: string;
   modalities?: string[];
@@ -40,7 +38,7 @@ export interface CalendarActivity {
   recordType?: 'event' | 'prior-reference' | 'retired-stage';
   publicationStatus?: 'planned' | 'published';
   admission?: Admission;
-  deadlineAdjustment?: { date: string; evidence?: string; reviewed: boolean };
+  deadlineAdjustment?: { date: string; reviewed: boolean };
 }
 
 export interface ActivityRequirement {
@@ -91,14 +89,13 @@ export interface AssessmentSettings {
   organizationByModality?: Record<string, Organization>;
   intakeByModality?: Record<string, Record<string, IntakeConfiguration>>;
   conversion?: CalendarConversion;
-  scopeConfirmation?: { status: 'covered' | 'own-regulation'; source?: string };
+  scopeConfirmation?: { status: 'covered' | 'own-regulation' };
 }
 export interface TeachingState extends AssessmentSettings {
   year: number;
   regime: string;
   weekdays: number[];
   weekConfirmed: boolean;
-  weekEvidence?: string;
   periods: CalendarPeriod[];
 }
 export interface ActivityState extends TeachingState {
