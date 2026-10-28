@@ -1,3 +1,4 @@
+import './audit-data.ts';
 import { mountApplication } from './mount-application.ts';
 import { getFunctionName } from 'convex/server';
 import type { FunctionReference } from 'convex/server';
@@ -17,6 +18,12 @@ const queryListeners = new Set<{ refresh: () => void; notify: () => void }>();
 window.portalRouterTest.removeCalendar = (id) => {
   removedCalendars.add(id);
   // Convex publishes a consistent snapshot for all queries before notifying hooks.
+  const listeners = [...queryListeners];
+  for (const listener of listeners) listener.refresh();
+  for (const listener of listeners) listener.notify();
+};
+window.auditTest.publish = (page) => {
+  window.auditTest.first = page;
   const listeners = [...queryListeners];
   for (const listener of listeners) listener.refresh();
   for (const listener of listeners) listener.notify();
@@ -203,6 +210,7 @@ const client = {
         return () => queryListeners.delete(listener);
       },
       localQueryResult: () => {
+        if (name === 'workspace:logs') return window.auditTest.first;
         if (!deferredDone) return undefined;
         if (name === 'reviews:review' && args.id && removedCalendars.has(args.id))
           throw new Error('Calendário removido.');

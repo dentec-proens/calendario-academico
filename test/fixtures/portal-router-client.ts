@@ -1,3 +1,4 @@
+import { olderAuditPage } from './audit-data.ts';
 import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import type { reviews } from '../../web/shared/convex/reviews.ts';
@@ -105,6 +106,8 @@ export const functions = api;
 export const convex = {
   url: 'http://127.0.0.1',
   query: (reference: FunctionReference<'query'>, args: Record<string, unknown>) => {
+    if (getFunctionName(reference) === 'workspace:logs')
+      return olderAuditPage((args.paginationOpts as { cursor?: string }).cursor);
     if (getFunctionName(reference) === 'reviews:review')
       return Promise.resolve(portalReview(String(args.id)));
     return Promise.reject(

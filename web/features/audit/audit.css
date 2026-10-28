@@ -1,0 +1,95 @@
+.audit-page {
+  container: audit / inline-size;
+}
+.audit-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.audit-heading h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+.audit-heading p {
+  margin: 6px 0 0;
+}
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: left;
+}
+.audit-table th,
+.audit-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--ui-border-soft);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.audit-table th {
+  background: var(--ui-surface-muted);
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+}
+.audit-table th:nth-child(1) {
+  width: 19%;
+}
+.audit-table th:nth-child(2),
+.audit-table th:nth-child(3) {
+  width: 27%;
+}
+.audit-table th:nth-child(4) {
+  width: 20%;
+}
+.audit-table th:nth-child(5) {
+  width: 7%;
+}
+.audit-table tbody tr:hover {
+  background: var(--ui-surface-muted);
+}
+.audit-cell-label {
+  display: none;
+}
+.audit-page #more-logs {
+  margin-top: 20px;
+}
+@container audit (max-width: 640px) {
+  .audit-table,
+  .audit-table tbody {
+    display: block;
+  }
+  .audit-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .audit-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+  .audit-table tbody tr {
+    display: block;
+    padding: 12px;
+    border: 1px solid var(--ui-border-soft);
+    border-radius: var(--ui-radius);
+  }
+  .audit-table td {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 8px;
+    padding: 4px 0;
+    border: 0;
+  }
+  .audit-cell-label {
+    display: block;
+    color: var(--ui-muted);
+    font-size: 0.75rem;
+  }
+}

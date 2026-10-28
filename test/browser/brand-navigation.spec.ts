@@ -29,6 +29,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#calendar-list')).toBeVisible();
     await page.goBack();
     await expect(page).toHaveURL(origin + '/campi');
+    await expect(page.locator('#panel-title')).toBeFocused();
     await brand.focus();
     await page.keyboard.press('Tab');
     await page.keyboard.press('Shift+Tab');

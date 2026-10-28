@@ -219,7 +219,7 @@ const audit = createRoute({
   getParentRoute: () => workspace,
   path: '/logs',
   component: lazy(() => import('../features/audit/AuditPage.tsx')),
-  staticData: { title: 'Registro de operações' },
+  staticData: { title: 'Registro de operações', page: 'logs' },
 });
 const EditorLayout = lazy(() => import('../features/calendar-editor/CalendarEditorLayout.tsx'));
 function CalendarEditor() {

@@ -7,6 +7,7 @@ export const portalPaths = {
   campuses: '/campi',
   accounts: '/contas',
   'online-users': '/usuarios-online',
+  logs: '/logs',
 } as const;
 
 export type PortalPageId = keyof typeof portalPaths;
@@ -19,6 +20,7 @@ export const portalCreationPaths = {
   accounts: '/contas/nova',
   'review-panel': undefined,
   'online-users': undefined,
+  logs: undefined,
 } as const;
 
 export const editorSections = {

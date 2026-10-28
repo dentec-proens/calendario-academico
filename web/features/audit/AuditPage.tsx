@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from '@tanstack/react-router';
 import { useQuery } from 'convex/react';
 import type { FunctionReturnType } from 'convex/server';
 import { convex, functions } from '../../shared/convex/client.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
 import { Button } from '../../components/ui/Button.tsx';
+import './audit.css';
+
+const formatDate = new Intl.DateTimeFormat('pt-BR', {
+  dateStyle: 'short',
+  timeStyle: 'medium',
+  timeZone: 'America/Sao_Paulo',
+});
 
 type Logs = FunctionReturnType<typeof functions.workspace.logs>;
 export default function AuditPage() {
@@ -27,6 +33,7 @@ export default function AuditPage() {
   async function loadMore() {
     if (loading.current || !last || last.isDone) return;
     loading.current = true;
+    setMessage('');
     setPending(true);
     try {
       const page = await convex.query(functions.workspace.logs, {
@@ -41,21 +48,24 @@ export default function AuditPage() {
     }
   }
   return (
-    <section className="page">
-      <Link to="/calendarios">← Voltar aos calendários</Link>
-      <h1>Histórico de alterações</h1>
-      <p>Exibe somente operações salvas.</p>
-      <Button
-        type="button"
-        id="refresh-logs"
-        disabled={pending}
-        onClick={() => {
-          setOlder([]);
-          setMessage('Histórico atualizado.');
-        }}
-      >
-        Atualizar histórico
-      </Button>
+    <section className="panel audit-page" aria-label="Operações salvas">
+      <div className="audit-heading">
+        <div>
+          <h2>Operações salvas</h2>
+          <p className="help">Da mais recente à mais antiga · Horário de Brasília.</p>
+        </div>
+        <Button
+          type="button"
+          id="refresh-logs"
+          disabled={pending}
+          onClick={() => {
+            setOlder([]);
+            setMessage('');
+          }}
+        >
+          Atualizar registros
+        </Button>
+      </div>
       <p id="log-message" role="status" aria-live="polite">
         {message ||
           (!first
@@ -64,25 +74,63 @@ export default function AuditPage() {
               ? 'Histórico atualizado.'
               : 'Nenhuma operação registrada para este acesso.')}
       </p>
-      <ul id="log-list" className="records">
-        {entries.map((entry, index) => (
-          <li key={`${entry.at}:${entry.action}:${index}`}>
-            <div>
-              <strong>
-                {entry.action}
-                {entry.calendar ? ' — ' + entry.calendar : ''}
-              </strong>
-              <small>
-                {new Date(entry.at).toLocaleString('pt-BR')} · {entry.actor}
-                {entry.version ? ' · versão ' + entry.version : ''}
-              </small>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {entries.length > 0 && (
+        <table
+          id="log-list"
+          className="audit-table"
+          role="table"
+          aria-label="Registro de operações"
+        >
+          <thead role="rowgroup">
+            <tr role="row">
+              {['Data e hora', 'Operação', 'Calendário', 'Responsável', 'Versão'].map((label) => (
+                <th scope="col" role="columnheader" key={label}>
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody role="rowgroup">
+            {entries.map((entry, index) => (
+              <tr role="row" key={`${entry.at}:${entry.action}:${index}`}>
+                <td role="cell">
+                  <span className="audit-cell-label" aria-hidden="true">
+                    Data e hora
+                  </span>
+                  <time dateTime={entry.at}>{formatDate.format(new Date(entry.at))}</time>
+                </td>
+                <td role="cell">
+                  <span className="audit-cell-label" aria-hidden="true">
+                    Operação
+                  </span>
+                  <strong>{entry.action}</strong>
+                </td>
+                <td role="cell">
+                  <span className="audit-cell-label" aria-hidden="true">
+                    Calendário
+                  </span>
+                  <span>{entry.calendar ?? '—'}</span>
+                </td>
+                <td role="cell">
+                  <span className="audit-cell-label" aria-hidden="true">
+                    Responsável
+                  </span>
+                  <span>{entry.actor}</span>
+                </td>
+                <td role="cell">
+                  <span className="audit-cell-label" aria-hidden="true">
+                    Versão
+                  </span>
+                  <span>{entry.version ?? '—'}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
       {last && !last.isDone ? (
         <Button type="button" id="more-logs" disabled={pending} onClick={() => void loadMore()}>
-          Carregar anteriores
+          {pending ? 'Carregando…' : 'Carregar anteriores'}
         </Button>
       ) : null}
     </section>

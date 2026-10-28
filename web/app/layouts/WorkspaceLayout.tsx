@@ -32,7 +32,8 @@ export default function WorkspaceLayout() {
     page === 'review-panel' ||
     page === 'campuses' ||
     page === 'accounts' ||
-    page === 'online-users';
+    page === 'online-users' ||
+    (page === 'logs' && info.user.role !== 'CAMPUS');
   const navigation = [
     ...(permissions.editCalendars
       ? [{ id: 'calendars', to: portalPaths.calendars, label: 'Calendários', Icon: CalendarDays }]
@@ -73,6 +74,9 @@ export default function WorkspaceLayout() {
         ]
       : []),
   ];
+  const auditNavigation = [
+    { id: 'logs', to: portalPaths.logs, label: 'Registro de operações', Icon: ScrollText },
+  ];
   useEffect(() => {
     document.title = `${title} · PROENS`;
     if (previous.current === activePath) return;
@@ -87,7 +91,13 @@ export default function WorkspaceLayout() {
     });
     return () => cancelAnimationFrame(frame);
   }, [activePath, metadata?.creating, title]);
-  function links(items: Array<(typeof navigation)[number] | (typeof administrative)[number]>) {
+  function links(
+    items: Array<
+      | (typeof navigation)[number]
+      | (typeof administrative)[number]
+      | (typeof auditNavigation)[number]
+    >,
+  ) {
     return items.map(({ id, to, label, Icon }) => (
       <Link
         onClick={updateNavigation ?? undefined}
@@ -134,9 +144,7 @@ export default function WorkspaceLayout() {
               {links(administrative)}
             </div>
           ) : null}
-          <Link to="/logs" className="sidebar-link" onClick={updateNavigation ?? undefined}>
-            <ScrollText size={18} aria-hidden="true" /> Registro de operações
-          </Link>
+          {links(auditNavigation)}
         </nav>
       </aside>
       <div className="portal-content">

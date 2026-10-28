@@ -339,6 +339,11 @@
   text-align: left;
   font-size: 0.875rem;
 }
+#root .sidebar-link.active {
+  color: var(--area-color);
+  background: var(--area-tint);
+  border-color: #b5cce0;
+}
 #root .shared-navigation .sidebar-link.active {
   color: #0c503a;
   background: #e8f2ed;
