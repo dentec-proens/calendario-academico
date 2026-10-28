@@ -44,6 +44,26 @@ import {
   presenceLifecyclePolicy,
 } from '../convex/maintenance/presenceLifecycle.ts';
 import type { PresenceReport } from '../convex/maintenance/presenceLifecycle.ts';
+import {
+  createAuthRefreshManifest,
+  reconcileAuthRefresh,
+  assertAuthRefreshRuntime,
+} from './auth-refresh-reconciliation.ts';
+import type { AuthRefreshManifest, AuthRefreshReport } from './auth-refresh-reconciliation.ts';
+
+/** Additional read-only proof; native mutation arguments and receipt contracts stay unchanged. */
+export type OperationalCleanupPlan = CleanupPlan & { authRefresh?: AuthRefreshManifest };
+export type OperationalCleanupReport = PresenceReport & { authRefresh?: AuthRefreshReport };
+function assertOperationalReport(plan: OperationalCleanupPlan, report: OperationalCleanupReport) {
+  if (plan.authRefresh) {
+    if (
+      !report.authRefresh ||
+      report.authRefresh.manifestDigest !== fingerprint(plan.authRefresh) ||
+      report.authRefresh.policyDigest !== plan.authRefresh.policyDigest
+    )
+      throw Error('O relatório Auth não corresponde ao manifesto explícito do plano.');
+  } else if (report.authRefresh) throw Error('O plano legado não autoriza reconciliação Auth.');
+}
 
 type Row = { _id: string; _creationTime: number; [key: string]: unknown };
 export type CleanupSnapshot = {
@@ -130,7 +150,7 @@ export function createCleanupPlan(
   commit: string,
   before?: CleanupProjection,
   after?: CleanupProjection,
-): CleanupPlan {
+): OperationalCleanupPlan {
   if (Boolean(before) !== Boolean(after)) throw Error('Forneça as duas projeções de equivalência.');
   let projectionDigest: string | null = null;
   if (before && after) {
@@ -178,7 +198,7 @@ export function createCleanupPlan(
       after: tableHash(expected[table] ?? []),
     };
   }
-  const plan: CleanupPlan = {
+  const plan: OperationalCleanupPlan = {
     format: 1,
     operation: 'manual-sources',
     commit,
@@ -188,6 +208,7 @@ export function createCleanupPlan(
     tables,
     files: snapshot.files,
     presence: createPresenceManifest(snapshot.tables),
+    authRefresh: createAuthRefreshManifest(snapshot.tables),
     batches,
     removed,
     digest: '',
@@ -198,7 +219,7 @@ export function createCleanupPlan(
 }
 
 export function verifyCleanupSnapshot(
-  plan: CleanupPlan,
+  plan: OperationalCleanupPlan,
   snapshot: CleanupSnapshot,
   phase: 'before' | 'after',
   rehearsalDigest: string | null = null,
@@ -271,7 +292,16 @@ export function verifyCleanupSnapshot(
         if (withoutManualSources(state(row)).removed)
           throw Error('Ainda há fontes manuais em estado atual ou histórico.');
   }
+  if (plan.authRefresh) {
+    const expected = plan.tables.authRefreshTokens ?? { count: 0, before: tableHash([]) };
+    if (
+      plan.authRefresh.count !== expected.count ||
+      plan.authRefresh.beforeHash !== expected.before
+    )
+      throw Error('O manifesto Auth não corresponde ao inventário original do plano.');
+  }
   for (const [table, expected] of Object.entries(plan.tables)) {
+    if (table === 'authRefreshTokens' && plan.authRefresh) continue;
     if ((presenceNamespaces as readonly string[]).includes(table)) continue;
     const rows = compared[table] ?? [];
     if (rows.length !== expected.count || tableHash(rows) !== expected[phase])
@@ -286,7 +316,7 @@ export function verifyCleanupSnapshot(
       throw Error(`Namespace novo não previsto no plano: ${table}.`);
   if (canonical(snapshot.files) !== canonical(plan.files))
     throw Error('Arquivos ou bytes de Storage divergiram.');
-  const report: PresenceReport = {
+  const report: OperationalCleanupReport = {
     format: 1,
     policyDigest: plan.presence.policyDigest,
     planDigest: plan.digest,
@@ -295,7 +325,11 @@ export function verifyCleanupSnapshot(
     observedSnapshotSha256: snapshot.sha256,
     phase,
     observations: reconcilePresence(plan.presence, snapshot.tables),
+    ...(plan.authRefresh
+      ? { authRefresh: reconcileAuthRefresh(plan.authRefresh, snapshot.tables) }
+      : {}),
   };
+  assertOperationalReport(plan, report);
   return report;
 }
 
@@ -496,6 +530,7 @@ async function main() {
   }
 
   if (command === 'plan') {
+    assertAuthRefreshRuntime();
     const snapshot = readCleanupSnapshot(privatePath(option(args, 'snapshot')!));
     const before = option(args, 'before-projection', false),
       after = option(args, 'after-projection', false);
@@ -516,7 +551,8 @@ async function main() {
       'Uso: manual-source-cleanup plan|apply|verify com caminhos privados absolutos e destino explícito.',
     );
   assertPresenceRuntime();
-  const plan = readJson<CleanupPlan>(option(args, 'plan')!);
+  const plan = readJson<OperationalCleanupPlan>(option(args, 'plan')!);
+  if (plan.authRefresh) assertAuthRefreshRuntime();
   assertCleanupPlan(plan);
   if (cleanupSchemaDigest() !== plan.schemaDigest)
     throw Error('O schema local mudou depois do plano.');
@@ -529,7 +565,8 @@ async function main() {
     if (!rehearsal || !plan.projectionDigest)
       throw Error('Produção exige recibo do ensaio local e projeções de contagens/prazos.');
     assertReceipt(rehearsal, identity(plan));
-    const report = readJson<PresenceReport>(`${rehearsalPath!}.presence.json`);
+    const report = readJson<OperationalCleanupReport>(`${rehearsalPath!}.presence.json`);
+    assertOperationalReport(plan, report);
     if (
       fingerprint(report) !== rehearsal.presenceReportDigest ||
       report.phase !== 'after' ||
@@ -584,7 +621,8 @@ async function main() {
         journal.nextBatch > plan.batches.length
       )
         throw Error('Journal não corresponde ao plano, destino ou ensaio.');
-      const beforeReport = readJson<PresenceReport>(`${journalPath}.presence.json`);
+      const beforeReport = readJson<OperationalCleanupReport>(`${journalPath}.presence.json`);
+      assertOperationalReport(plan, beforeReport);
       if (
         fingerprint(beforeReport) !== journal.beforePresenceReportDigest ||
         beforeReport.observedSnapshotSha256 !== journal.beforeSnapshotSha256 ||

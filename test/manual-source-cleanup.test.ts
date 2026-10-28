@@ -352,3 +352,42 @@ test('unknown or duplicated CLI flags fail before loading a plan or contacting a
     expect(result.stderr).toContain('nenhuma operação iniciada');
   }
 });
+
+test('explicit offline Auth proof accepts first-use rotation and leaves legacy plans and sessions strict', () => {
+  const source = offlineSnapshot();
+  source.tables.users = [{ _id: 'user', _creationTime: 1, active: true }];
+  source.tables.authSessions = [
+    { _id: 'session', _creationTime: 1, userId: 'user', expirationTime: 28_800_001 },
+  ];
+  source.tables.authRefreshTokens = [
+    { _id: 'parent', _creationTime: 1, sessionId: 'session', expirationTime: 28_800_001 },
+  ];
+  const plan = createCleanupPlan(source, commit);
+  const next = structuredClone(source);
+  next.tables.authRefreshTokens[0].firstUsedTime = 2;
+  next.tables.authRefreshTokens.push({
+    _id: 'child',
+    _creationTime: 2,
+    sessionId: 'session',
+    parentRefreshTokenId: 'parent',
+    expirationTime: 28_800_002,
+  });
+  const report = verifyCleanupSnapshot(plan, next, 'before');
+  expect(report.authRefresh).toMatchObject({
+    manifestDigest: fingerprint(plan.authRefresh),
+    inserted: 1,
+    firstUses: 1,
+    deleted: 0,
+  });
+  const legacy = { ...plan };
+  delete legacy.authRefresh;
+  legacy.digest = fingerprint({ ...legacy, digest: '' });
+  expect(() => verifyCleanupSnapshot(legacy, next, 'before')).toThrow('authRefreshTokens');
+  const changedSession = structuredClone(next);
+  changedSession.tables.authSessions[0].expirationTime = 28_800_002;
+  expect(() => verifyCleanupSnapshot(plan, changedSession, 'before')).toThrow();
+  const forgedManifest = structuredClone(plan);
+  forgedManifest.authRefresh!.beforeHash = '0'.repeat(64);
+  forgedManifest.digest = fingerprint({ ...forgedManifest, digest: '' });
+  expect(() => verifyCleanupSnapshot(forgedManifest, next, 'before')).toThrow('inventário');
+});
