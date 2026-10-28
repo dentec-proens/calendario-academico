@@ -279,7 +279,7 @@ export function createEditorSession(
         suspendedStatus = { status: current.status, error: current.error };
         publish({
           status: 'blocked',
-          error: 'Sua sessão expirou. Entre novamente ou baixe uma cópia das alterações aplicadas.',
+          error: 'Edição pausada. Aguarde a liberação do acesso para continuar.',
         });
       } else {
         publish(suspendedStatus ?? { status: 'idle', error: '' });

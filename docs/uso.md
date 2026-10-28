@@ -76,7 +76,7 @@ Em falha recuperável, use **Tentar novamente**. Conflito de versões ou sessão
 
 **Sair**, no cabeçalho, pede confirmação quando há alterações no editor e aguarda o salvamento das alterações aplicadas antes de encerrar a conta. A confirmação informa quando campos ainda não aplicados serão descartados; **Cancelar** mantém o preenchimento.
 
-Se o acesso expirar, o editor permanece bloqueado nesta aba. **Baixar cópia aplicada** guarda o estado aplicado em JSON. **Entrar novamente** permite retomar o preenchimento com a mesma conta; trocar de conta, perfil ou campus limpa os dados locais da identidade anterior. **Descartar e ir para acesso** exige confirmação e remove as alterações locais. Recarregar ou fechar a aba não preserva esses dados.
+Se o acesso expirar, o editor pausa o preenchimento e apresenta somente **Entrar novamente** para retomar com a mesma conta. Durante a verificação do acesso, aguarde. Em manutenção, o aviso **Portal em manutenção** orienta manter a aba aberta e aguardar, sem botões. Após a liberação, a edição é retomada ou o portal solicita novo acesso. Alterações e campos em preenchimento permanecem nesta aba; trocar de conta, perfil ou campus limpa os dados locais da identidade anterior. Recarregar ou fechar a aba não preserva esses dados.
 
 **Baixar cópia** gera JSON do estado aplicado, não dos campos ainda em edição. **Importar cópia** abre um JSON compatível e substitui o rascunho da sessão após confirmação. A importação também precisa ter seu salvamento confirmado.
 
@@ -140,4 +140,4 @@ A presença é acompanhada no portal e no editor de calendários. Cada pessoa co
 
 Erros de campo aparecem junto ao preenchimento; erros de operação preservam os valores para correção ou nova tentativa. Um campo válido não comprova salvamento. Arquivos selecionados não são preservados quando o fluxo é desmontado; selecione-os novamente ao retornar.
 
-Durante manutenção, novas alterações e processamento ficam indisponíveis no backend. Aguarde a liberação e recarregue a página para usar o código publicado. Não repita envios enquanto o resultado anterior estiver incerto; confira o estado do registro após a retomada.
+Durante manutenção, novas alterações e processamento ficam indisponíveis no backend. Mantenha a aba aberta e aguarde a liberação. No editor, não feche nem atualize a página enquanto houver alterações sem confirmação de salvamento ou campos em preenchimento. Para usar uma versão nova do portal, siga o aviso de atualização após resolver as pendências. Não repita envios enquanto o resultado anterior estiver incerto; confira o estado do registro após a retomada.

@@ -23,9 +23,10 @@ export default function EventPanel() {
   const editor = useEventEditor();
   const search = useActivitySearch();
   const navigate = useNavigate();
-  const { editorRecovery } = useAppSession();
-  // While the session recovers, its notice must stay reachable; the panel reopens afterwards.
-  const open = (editor.open || editor.panel !== null) && !editorRecovery;
+  const { editorRecovery, maintenance } = useAppSession();
+  const paused = Boolean(editorRecovery || maintenance);
+  // Keep the access notice reachable while preserving the panel and its draft.
+  const open = (editor.open || editor.panel !== null) && !paused;
   useWorkRisk('interaction', open);
   const activityId = editor.open
     ? editor.context?.kind === 'activity'
@@ -59,13 +60,12 @@ export default function EventPanel() {
       });
     wasOpen.current = open;
   }, [open, reviewLink, navigate]);
-  const recovering = Boolean(editorRecovery);
-  const wasRecovering = useRef(recovering);
+  const wasPaused = useRef(paused);
   useEffect(() => {
-    // An expired session closes the panel once; Fechar keeps an unapplied draft for later.
-    if (recovering && !wasRecovering.current) closeEditor();
-    wasRecovering.current = recovering;
-  }, [recovering, closeEditor]);
+    // Pausing closes the panel once; Fechar keeps an unapplied draft for later.
+    if (paused && !wasPaused.current) closeEditor();
+    wasPaused.current = paused;
+  }, [paused, closeEditor]);
   return (
     <PanelDialog
       id="event-panel"

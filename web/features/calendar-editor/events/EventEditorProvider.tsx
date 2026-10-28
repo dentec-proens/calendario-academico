@@ -115,8 +115,11 @@ function useController() {
           ? opener.current
           : (document.getElementById(returnFocus) ??
             document.getElementById('editor-section-title'));
-      target?.focus({ preventScroll: true });
-      scrollIntoView(target, { block: 'start' });
+      // A pause gives focus to the access notice; the editor behind it is inert.
+      if (!target?.closest('[inert]')) {
+        target?.focus({ preventScroll: true });
+        scrollIntoView(target, { block: 'start' });
+      }
       setReturnFocus(null);
     });
     return () => cancelAnimationFrame(frame);

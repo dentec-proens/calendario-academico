@@ -1,6 +1,5 @@
 import {
   createContext,
-  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -12,7 +11,6 @@ import {
   type PropsWithChildren,
 } from 'react';
 import { documentTransition } from '../../../app/updates/transition.ts';
-import { controlledLazy as lazy } from '../../../app/controlled-lazy.tsx';
 import { useQuery, useConvexConnectionState } from 'convex/react';
 import { useBlocker } from '@tanstack/react-router';
 import type { Id } from '../../../../convex/_generated/dataModel.js';
@@ -25,12 +23,10 @@ import { campusInstitutionalEvents } from '../../../../src/teacher-day.ts';
 import { evaluateCalendar } from '../../../../src/evaluation.ts';
 import { createEditorSession } from './editor-session.ts';
 import type { CalendarRecord, CalendarState, EditorEvent } from '../types.ts';
-import { saveBlob } from '../../../shared/convex/files.ts';
-
-const AccessPage = lazy(() => import('../../access/AccessPage.tsx'));
+import EditorAccessNotice from './EditorAccessNotice.tsx';
 
 function useSession(record: CalendarRecord) {
-  const { info, status, notify, registerEditor, editorRecovery } = useAppSession();
+  const { info, status, notify, registerEditor, editorRecovery, maintenance } = useAppSession();
   const drafts = useFormDrafts();
   const readOnly = info.user.role === 'PARECERISTA';
   const [session] = useState(() =>
@@ -47,7 +43,7 @@ function useSession(record: CalendarRecord) {
     documentTransition.subscribe,
     documentTransition.getSnapshot,
   );
-  const suspended = Boolean(editorRecovery);
+  const suspended = Boolean(editorRecovery || maintenance);
   useEffect(() => {
     session.setAccessSuspended(suspended);
   }, [session, suspended]);
@@ -219,81 +215,15 @@ const EditorContext = createContext<Context | null>(null);
 
 function OpenEditor({ record, children }: PropsWithChildren<{ record: CalendarRecord }>) {
   const controller = useSession(record);
-  const { editorRecovery } = useAppSession();
+  const { editorRecovery, maintenance } = useAppSession();
+  const paused = Boolean(editorRecovery || maintenance);
   return (
     <EditorContext.Provider value={controller}>
-      {editorRecovery && <ExpiredEditorRecovery />}
-      <div inert={Boolean(editorRecovery)} hidden={editorRecovery?.checkingIdentity || undefined}>
+      {paused && <EditorAccessNotice />}
+      <div inert={paused} hidden={editorRecovery?.checkingIdentity || undefined}>
         {children}
       </div>
     </EditorContext.Provider>
-  );
-}
-
-function ExpiredEditorRecovery() {
-  const { editorRecovery, notify } = useAppSession();
-  const { session, record } = useCalendarEditor();
-  const drafts = useFormDrafts();
-  const [login, setLogin] = useState(false);
-  if (!editorRecovery) return null;
-  return (
-    <section className="panel" id="editor-session-expired" aria-labelledby="expired-session-title">
-      <h2 id="expired-session-title">Sessão de acesso interrompida</h2>
-      <p>
-        O calendário permanece nesta aba, com a edição bloqueada. Baixe uma cópia dos dados
-        aplicados ou entre novamente com a mesma conta para continuar. Campos ainda não aplicados
-        permanecem nesta aba.
-      </p>
-      <div className="actions">
-        <button
-          type="button"
-          id="expired-editor-copy"
-          disabled={editorRecovery.checkingIdentity}
-          onClick={() => {
-            const applied = session.getSnapshot().state;
-            saveBlob(
-              new Blob([JSON.stringify(applied, null, 2)], { type: 'application/json' }),
-              `rascunho-calendario-${applied.year}.json`,
-            );
-            notify('Download solicitado. Somente dados aplicados foram incluídos.');
-          }}
-        >
-          Baixar cópia aplicada
-        </button>
-        <button type="button" id="expired-editor-login" onClick={() => setLogin(true)}>
-          Entrar novamente
-        </button>
-        <button
-          type="button"
-          id="expired-editor-discard"
-          className="secondary"
-          onClick={() => {
-            void confirmAction({
-              title: 'Descartar calendário desta aba?',
-              description:
-                'Baixe uma cópia antes de descartar se precisar guardar os dados aplicados.',
-              consequence:
-                'Alterações sem confirmação de salvamento e campos ainda não aplicados serão descartados.',
-              confirmLabel: 'Descartar e ir para acesso',
-              intent: 'danger',
-              onConfirm: () => {
-                session.abandon();
-                drafts?.clearScope(`calendar:${record.id}:`);
-                editorRecovery.discard();
-                return Promise.resolve();
-              },
-            });
-          }}
-        >
-          Descartar e ir para acesso
-        </button>
-      </div>
-      {login && (
-        <Suspense fallback={<p role="status">Carregando acesso…</p>}>
-          <AccessPage />
-        </Suspense>
-      )}
-    </section>
   );
 }
 

@@ -39,7 +39,7 @@ export interface SessionState {
   maintenance?: boolean;
   logout: () => Promise<void>;
   registerEditor?: (editor: EditorProtection) => () => void;
-  editorRecovery?: { calendarId: string; checkingIdentity: boolean; discard: () => void };
+  editorRecovery?: { calendarId: string; checkingIdentity: boolean };
 }
 
 const SessionContext = createContext<SessionState | null>(null);
@@ -131,10 +131,6 @@ export function AppSessionProvider({ children }: PropsWithChildren) {
           ? {
               calendarId: owner.calendarId,
               checkingIdentity: auth.isLoading || (auth.isAuthenticated && !info),
-              discard: () => {
-                editor.current = null;
-                setOwner(null);
-              },
             }
           : undefined,
       }}

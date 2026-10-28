@@ -25,6 +25,7 @@ export const info: Bootstrap = {
 const subscribers = new Set<() => void>();
 let authenticated = true;
 let loadingBootstrap = false;
+let maintenance = false;
 let holdSaves = false;
 const pendingSaves: Array<() => void> = [];
 export const counters = { signOuts: 0, saveStarted: 0 };
@@ -56,6 +57,7 @@ export const actions = {
   },
 };
 function sessionResult(name: string) {
+  if (name === 'operations:availability') return { maintenance };
   if (name === 'workspace:bootstrap') return loadingBootstrap ? undefined : structuredClone(info);
   return {
     setupRequired: false,
@@ -72,7 +74,11 @@ export const convex = {
   clearAuth() {},
   watchQuery(reference: FunctionReference<'query'>) {
     const name = getFunctionName(reference);
-    if (name !== 'workspace:bootstrap' && name !== 'access/session:status')
+    if (
+      name !== 'workspace:bootstrap' &&
+      name !== 'access/session:status' &&
+      name !== 'operations:availability'
+    )
       return editorClient.watchQuery(reference);
     let cached = sessionResult(name);
     return {
@@ -123,6 +129,10 @@ window.editorSessionTest = {
     loadingBootstrap = value;
     publishSession();
   },
+  maintenance(value: boolean) {
+    maintenance = value;
+    publishSession();
+  },
 };
 declare global {
   interface Window {
@@ -133,6 +143,7 @@ declare global {
       releaseSaves: () => void;
       switchUser: (id: string, role?: Bootstrap['user']['role']) => void;
       bootstrapLoading: (value: boolean) => void;
+      maintenance: (value: boolean) => void;
     };
   }
 }

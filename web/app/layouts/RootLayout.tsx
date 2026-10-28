@@ -18,6 +18,7 @@ export default function RootLayout() {
   const accessDenied = useRouterState({
     select: (state) => state.location.search.aviso === 'acesso-negado',
   });
+  const editorPath = parseEditorPath(pathname);
   const identity = session.info ? sessionIdentity(session.info.user) : 'public';
   const main = useRef<HTMLElement>(null);
   const { setArrivalPending } = session;
@@ -62,7 +63,7 @@ export default function RootLayout() {
           ) : null}
         </header>
         <main id="app-main" ref={main}>
-          {!parseEditorPath(pathname) && (
+          {!editorPath && (
             <div id="message" role="status" aria-live="polite">
               {session.message?.text ? (
                 <Notice tone={session.message.error ? 'danger' : 'success'} elevated>
@@ -80,7 +81,7 @@ export default function RootLayout() {
               Seu perfil não permite acessar a área solicitada.
             </Notice>
           ) : null}
-          {session.maintenance ? (
+          {session.maintenance && !editorPath ? (
             <Notice tone="warning" announce="assertive">
               O portal está em manutenção. Mantenha esta página aberta; novas alterações estarão
               disponíveis após a conclusão.

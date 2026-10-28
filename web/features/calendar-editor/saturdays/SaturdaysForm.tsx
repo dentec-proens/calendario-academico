@@ -16,6 +16,7 @@ import SaturdayRegisteredList from './SaturdayRegisteredList.tsx';
 import SaturdayPrerequisites from './SaturdayPrerequisites.tsx';
 import { useDeferredFocus } from './useDeferredFocus.ts';
 import { useNarrowContainer } from './useNarrowContainer.ts';
+import { useAppSession } from '../../../app/session.tsx';
 import './saturdays.css';
 
 /** Below this step width the panel no longer fits beside the grid and opens as a dialog. */
@@ -33,6 +34,7 @@ const dateControl = (date: string) =>
 export default function SaturdaysForm() {
   const { state, record, events, evaluation, session, institutional, readOnly } =
     useCalendarEditor();
+  const { editorRecovery, maintenance } = useAppSession();
   // Opening a registered Saturday is local panel state, like the event editor; it never enters the URL.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -352,7 +354,7 @@ export default function SaturdaysForm() {
           )}
           <PanelDialog
             id="saturday-panel"
-            open={panelOpen && Boolean(activeBody)}
+            open={panelOpen && Boolean(activeBody) && !editorRecovery && !maintenance}
             returnFocus={() => document.getElementById('saturday-open-panel')}
             aria-label={editing ? `Sábado, ${shortDate(editing.date)}` : 'Seleção de sábados'}
             onClose={() => (editing ? closeEditing(editing.date) : setPanelOpen(false))}
