@@ -17,7 +17,7 @@
     "test/release.test.ts",
     "test/release-contracts.test.ts",
     "test/editor-session.test.ts",
-    "test/browser/manual-sources.spec.ts",
+    "test/manual-source-presence.test.ts",
     "test/frontend-assets.test.ts"
   ],
   "migrations": []
