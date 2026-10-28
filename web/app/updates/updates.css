@@ -1,4 +1,8 @@
-.portal-update {
+.portal-update.ui-notice {
+  --ui-notice-text: var(--ui-info);
+  --ui-notice-icon: var(--ui-info);
+  --ui-notice-surface: var(--ui-info-soft);
+  --ui-notice-border: var(--ui-info-border);
   margin: 1rem clamp(1rem, 3vw, 2.5rem);
 }
 .portal-update p {
