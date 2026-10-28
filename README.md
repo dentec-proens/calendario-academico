@@ -41,3 +41,9 @@ pnpm check
 - [Restauração dos originais](docs/restauracao-de-originais.md)
 
 Produção: [calendario-academico-phi.vercel.app](https://calendario-academico-phi.vercel.app). Publicações seguem o procedimento de implantação e operação.
+
+## Licença e autoria
+
+Software disponibilizado sob a [licença MIT](LICENSE), com titularidade dos direitos patrimoniais do Instituto Federal de Educação, Ciência e Tecnologia do Paraná — IFPR. A unidade responsável pelo projeto é a DENTEC/PROENS. Consulte [Autoria e reconhecimento](AUTHORS.md) para os créditos.
+
+Dependências e materiais de terceiros permanecem sujeitos às respectivas licenças e condições de uso. A licença do software não concede direitos sobre marcas e logotipos institucionais.
