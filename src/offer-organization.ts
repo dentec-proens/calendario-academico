@@ -1,4 +1,4 @@
-import { withoutStageReferences } from './stage-references.ts';
+import { withoutManualSources } from './manual-sources.ts';
 import {
   assessmentStageCounts,
   assessmentStageNumbers,
@@ -368,7 +368,7 @@ export function applyOfferOrganization<S extends ActivityState>(
   const candidate = {
     ...next,
     rulesetVersion: rulesetVersion(next),
-    events: withoutStageReferences({ events }).state.events,
+    events: withoutManualSources({ events }).state.events,
     conversion: state.conversion
       ? {
           ...state.conversion,

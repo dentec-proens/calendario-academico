@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "baseline": "35fcfedff0b6d25081d551feaea57a0b75a7910b",
+  "baseline": "8d4b4589101bc0d7c32ceacc976292e97d24a1fc",
   "strategy": "expand",
   "guarantees": {
     "oldClients": true,
@@ -8,7 +8,17 @@
     "scheduledFunctions": true,
     "sessions": true
   },
-  "rationale": "A expans\u00e3o adiciona apenas o controle interno de release e preenchimento de campos novos opcionais. N\u00e3o substitui contratos, sess\u00f5es, tabelas ou componentes existentes.",
-  "tests": ["test/release-contracts.test.ts", "test/release-migrations.test.ts"],
+  "rationale": "Retira as fontes manuais dos novos escritores, mantendo os argumentos e retornos legados compatíveis com abas abertas. Referências institucionais, sessões e componentes permanecem preservados. A limpeza dos valores existentes e históricos usa plano administrativo separado, com backup integral, comparação de contagens e prazos, ensaio local e verificação sob manutenção; não é executada pela expansão online.",
+  "tests": [
+    "test/source-retirement-native.test.ts",
+    "test/manual-source-parity.test.ts",
+    "test/manual-source-cleanup.test.ts",
+    "test/manual-sources.test.ts",
+    "test/release.test.ts",
+    "test/release-contracts.test.ts",
+    "test/editor-session.test.ts",
+    "test/browser/manual-sources.spec.ts",
+    "test/frontend-assets.test.ts"
+  ],
   "migrations": []
 }

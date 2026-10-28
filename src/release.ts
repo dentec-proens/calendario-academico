@@ -38,9 +38,7 @@ export function releaseReadiness(
     warnings = [];
   if (
     record.state.year === 2027 &&
-    (!record.state.scopeConfirmation ||
-      record.state.scopeConfirmation.status !== 'covered' ||
-      !record.state.scopeConfirmation.source.trim())
+    (!record.state.scopeConfirmation || record.state.scopeConfirmation.status !== 'covered')
   )
     issues.push(
       'Confirme o escopo da Resolução 292: EaD, qualificação e pós-graduação exigem calendário e norma próprios; a oferta não identifica sozinha essa aplicabilidade.',
@@ -56,7 +54,7 @@ export function releaseReadiness(
   for (const row of coverage) {
     const prefix = `${modalityLabels[row.modality]} — ${row.requirement.name}`;
     if (row.applicability === 'required' && row.coverage === 'pending')
-      issues.push(`${prefix}: vincule um evento com datas e fonte no roteiro de atividades.`);
+      issues.push(`${prefix}: vincule um evento com datas no roteiro de atividades.`);
     if (row.applicability === 'required' || row.events.length)
       for (const issue of row.issues) issues.push(`${prefix}: ${issue}`);
     for (const warning of row.warnings) warnings.push(`${prefix}: ${warning}`);
@@ -145,7 +143,7 @@ export function releaseReadiness(
     if (Object.values(result.byModality).some((r) => r.conflicts.length))
       issues.push('Resolva os conflitos entre dias letivos e exclusões.');
   } catch {
-    issues.push('Complete e confira a semana letiva, os períodos e as evidências da contagem.');
+    issues.push('Complete e confira a semana letiva, os períodos e os dados da contagem.');
   }
   const review = (db.reviews || []).find((r) => r.calendarId === record.id);
   const current = reviewIsCurrent(review, record.version, {
@@ -167,14 +165,10 @@ export function releaseReadiness(
       record.state.year !== 2027 &&
       c.pattern &&
       entry?.status === 'ATENDIDO' &&
-      !events.some(
-        (e) =>
-          e.evidence?.trim() &&
-          new RegExp(c.pattern!).test(plain(e.name + ' ' + (e.category || ''))),
-      )
+      !events.some((e) => new RegExp(c.pattern!).test(plain(e.name + ' ' + (e.category || ''))))
     )
       issues.push(
-        `${c.item}: ${c.title} — nenhum evento com data e fonte localizado no calendário; confira o cadastro.`,
+        `${c.item}: ${c.title} — nenhum evento com data localizado no calendário; confira o cadastro.`,
       );
   }
   return {

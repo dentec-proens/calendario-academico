@@ -18,8 +18,7 @@ export default function SaturdayPrerequisites({
   const pending = [
     !weekConfirmed && {
       page: editorPages.edit,
-      action:
-        'Confirme os dias regulares e a referência da decisão. Sem isso, a contagem de dias letivos não é calculada.',
+      action: 'Confirme os dias regulares. Sem isso, a contagem de dias letivos não é calculada.',
     },
     !hasPeriods && {
       page: editorPages.periods,

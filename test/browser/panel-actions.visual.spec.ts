@@ -34,8 +34,8 @@ test('event footer has apply and discard while the shared header closes the pane
   await selectCampusEvents(page);
   await editCampusEvent(page, 'local-event');
   await expect(page.locator('#event-form-title')).toBeFocused();
-  await page.locator('#event-evidence').fill('Fonte da edição ainda não aplicada');
-  await page.keyboard.press('Tab');
+  await page.locator('#event-name').fill('Evento com alteração ainda não aplicada');
+  await page.locator('#event-form button[type="submit"]').focus();
   await expect(page.locator('#event-form button[type="submit"]')).toBeFocused();
   await expect(page.locator('#close-event-panel')).toBeInViewport({ ratio: 1 });
   await expect(page).toHaveScreenshot('event-actions.png');
@@ -53,7 +53,7 @@ test('registered Saturday uses shared header and action hierarchy', async ({
   const open = page.locator('#saturday-open-panel');
   if (await open.isVisible()) await open.click();
   await page.locator('#saturday-name').fill('Reposição de aulas');
-  await page.locator('#saturday-evidence').fill('Ata da decisão');
+
   await page.locator('#saturday-submit').click();
   await page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]').click();
   await page.locator('#saturday-edit-name').fill('Feira de ciências');

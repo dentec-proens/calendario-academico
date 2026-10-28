@@ -68,7 +68,7 @@ export default function ActivityDetails({
                   ? 'parcial'
                   : 'pendente'}
               {row.events.length
-                ? ` · ${row.execution === 'planned' ? 'Publicação prevista' : row.execution === 'published' ? 'Publicação realizada com fonte' : 'Execução a conferir'}`
+                ? ` · ${row.execution === 'planned' ? 'Publicação prevista' : row.execution === 'published' ? 'Publicação realizada' : 'Execução a conferir'}`
                 : ''}
               <small>
                 Conferência humana:{' '}
@@ -127,7 +127,9 @@ export default function ActivityDetails({
                         .join(' / ')
                     : ''}
                 </small>
-                {event.evidence && <small>Fonte: {event.evidence}</small>}
+                {event.id.startsWith('inst:') && event.evidence && (
+                  <small>Fonte: {event.evidence}</small>
+                )}
               </p>
               <div className="actions">
                 <Button

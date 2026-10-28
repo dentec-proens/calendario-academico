@@ -25,7 +25,7 @@ for (const width of [1440, 390]) {
     await row.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#event-panel-title')).toHaveText('Evento local salvo');
-    await expect(page.locator('.campus-event-record')).toContainText('Fonte: Ata salva');
+    await expect(page.locator('.campus-event-record')).not.toContainText('Fonte:');
     await expect(page.locator('#event-form')).toBeHidden();
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
     await page.locator('#close-event-panel').click();
@@ -62,7 +62,8 @@ test('campus consultation preserves another activity draft and prevents replacin
   const origin = new URL(await fixtureServer('editor')).origin;
   await page.goto(origin + '/calendarios/synthetic-calendar/eventos');
   await openActivity(page, 'family-meeting');
-  await page.locator('#event-evidence').fill('Fonte ainda não aplicada');
+  await page.locator('#event-start').fill('2027-05-08');
+
   await page.locator('#close-event-panel').click();
   await selectCampusEvents(page);
   await openCampusEvent(page, 'local-event');
@@ -70,11 +71,11 @@ test('campus consultation preserves another activity draft and prevents replacin
   await expect(page.locator('.campus-event-record')).toContainText('Evento local salvo');
   await page.locator('[data-edit-event="local-event"]').click();
   await expect(page.locator('#event-form')).toBeHidden();
-  await expect(page.locator('#event-evidence')).toHaveValue('Fonte ainda não aplicada');
+  await expect(page.locator('#event-start')).toHaveValue('2027-05-08');
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
   await page.locator('#panel-resume-event').click();
   await expect(page.locator('#event-form')).toBeVisible();
-  await expect(page.locator('#event-evidence')).toHaveValue('Fonte ainda não aplicada');
+  await expect(page.locator('#event-start')).toHaveValue('2027-05-08');
 });
 
 for (const width of [1440, 390]) {
@@ -88,7 +89,7 @@ for (const width of [1440, 390]) {
     const row = page.locator('[data-open-event="local-event"]');
     await row.focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('.campus-event-record')).toContainText('Fonte: Ata salva');
+    await expect(page.locator('.campus-event-record')).not.toContainText('Fonte:');
     await expect(page.locator('[data-edit-event="local-event"]')).toBeDisabled();
     await expect(page.locator('[data-remove-event="local-event"]')).toBeDisabled();
     await page.keyboard.press('Escape');

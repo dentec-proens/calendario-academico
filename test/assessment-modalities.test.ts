@@ -69,7 +69,7 @@ test('holidays and inclusions update per-offer counts without moving any assessm
   const current = { ...state, events };
   const before = structuredClone(current);
   const next = recalculateCalendar(current, []);
-  expect(next.events).toEqual(before.events);
+  expect(next.events).toEqual(before.events.map(({ evidence: _source, ...event }) => event));
   expect(assessmentDayCounts(next, next.events)['integrado-0']).toEqual([
     { modality: 'integrado', days: 10, saturdays: 1, excluded: 1 },
   ]);

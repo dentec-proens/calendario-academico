@@ -15,11 +15,13 @@ export function saturdayEvents(
   state: Pick<ActivityState, 'year' | 'periods' | 'events'> & AssessmentSettings,
   dates: string[],
   name: string,
-  evidence: string,
-  id: () => string,
+  idOrLegacySource: (() => string) | string,
+  legacyId?: () => string,
 ) {
   if (!dates.length) throw Error('Selecione pelo menos um sábado.');
-  if (!name.trim() || !evidence.trim()) throw Error('Informe a atividade e a fonte da decisão.');
+  if (!name.trim()) throw Error('Informe a atividade.');
+  const id = typeof idOrLegacySource === 'function' ? idOrLegacySource : legacyId;
+  if (!id) throw Error('Gerador de identidades ausente.');
   const selected = [...new Set(dates)];
   for (const date of selected) {
     if (new Date(parseDate(date)).getUTCDay() !== 6 || Number(date.slice(0, 4)) !== state.year)
@@ -42,7 +44,6 @@ export function saturdayEvents(
     .map((date) => ({
       id: id(),
       name: name.trim(),
-      evidence: evidence.trim(),
       kind: 'include' as const,
       category: 'sabado',
       start: date,

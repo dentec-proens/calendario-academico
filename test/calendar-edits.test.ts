@@ -45,8 +45,9 @@ test('recalculating periods preserves every entered stage date, including legacy
       evidence: 'Lei',
     },
   ]);
-  expect(next.events).toEqual(before.events);
-  expect(removePeriod(state, 'classes', []).events).toEqual(before.events);
+  const expected = before.events.map(({ evidence: _source, ...event }) => event);
+  expect(next.events).toEqual(expected);
+  expect(removePeriod(state, 'classes', []).events).toEqual(expected);
   expect(state).toEqual(before);
 });
 
@@ -61,6 +62,7 @@ test('changing assessment organization preserves events while removing obsolete 
     const {
       requirementId: _link,
       assessmentAutoStart: _anchor,
+      evidence: _source,
       ...preserved
     } = original.events[index];
     expect(changed.events[index]).toEqual(preserved);

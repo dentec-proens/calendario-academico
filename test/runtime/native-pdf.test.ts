@@ -219,15 +219,15 @@ test('real PDF preserves previous-year notices and distinguishes planned publica
   for (const expected of [
     'Atividades e referências de outros anos',
     'Publicações previstas',
-    'Fatos anteriores com fonte',
+    'Fatos anteriores registrados',
     '10/12/2026',
     '10/11/2026',
     '20/12/2026 a 10/01/2027',
     'Ingresso 2028',
     'Publicação prevista',
-    'Publicação realizada com fonte',
-    'Fonte <original> & conferida',
+    'Publicação realizada',
     'consup-292-2027-v1',
   ])
     expect(text).toContain(expected);
+  expect(text).not.toContain('Fonte <original> & conferida');
 });

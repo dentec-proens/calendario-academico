@@ -1,3 +1,4 @@
+import { withoutManualSources } from '../../src/manual-sources.ts';
 import { test, expect } from './test.ts';
 import { addPeriod, savedState, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
@@ -184,6 +185,6 @@ test('editing one shared offer preserves the other offer and existing inclusions
       .map(({ evidence: _source, ...event }) => event),
   );
   expect(saved.events.find((e) => e.id === 'sat')).toEqual(
-    original.events.find((e) => e.id === 'sat'),
+    withoutManualSources({ events: original.events }).state.events.find((e) => e.id === 'sat'),
   );
 });

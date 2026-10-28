@@ -1,3 +1,4 @@
+import { withoutManualSources } from '../src/manual-sources.ts';
 import { expect, test } from 'vitest';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
@@ -151,7 +152,9 @@ test('v3 round-trip preserves independent organization, actual publication dates
     admission: { year: 2028 },
   });
   expect(loaded.state.organizationByModality).toEqual(state.organizationByModality);
-  expect(loaded.state.intakeByModality).toEqual(state.intakeByModality);
+  expect(withoutManualSources(loaded.state).state.intakeByModality).toEqual(
+    withoutManualSources(state).state.intakeByModality,
+  );
   expect(loaded.state.periods.map((period) => period.association)).toEqual(
     state.periods.map((period) => period.association),
   );
@@ -340,7 +343,9 @@ test('legacy v2 reads never rewrite content and concurrent conversion preserves 
     end: '2027-06-30',
     association: { status: 'a-classificar' },
   });
-  expect(saved.state.events[0]).toMatchObject(original.legacy.events[0]);
+  expect(withoutManualSources(saved.state).state.events[0]).toMatchObject(
+    withoutManualSources(original.legacy).state.events[0],
+  );
   expect(saved.state.events[0].admission).toBeUndefined();
   expect(saved.state.conversion?.legacySecondSemesterIntake).toBe(false);
   const historical = await actor.query(api.calendars.calendarVersion, {

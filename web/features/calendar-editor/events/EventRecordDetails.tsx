@@ -24,15 +24,13 @@ export default function EventRecordDetails({
       {activity !== undefined && (
         <small>{activity ? `Atividade: ${activity}` : 'Sem vínculo'}</small>
       )}
-      <small>Fonte: {event.evidence}</small>
+      {event.institutional && event.evidence && <small>Fonte: {event.evidence}</small>}
       {event.recordType === 'prior-reference' && (
         <small>Referência anterior · sem efeito na contagem</small>
       )}
       {event.publicationStatus && (
         <small>
-          {event.publicationStatus === 'planned'
-            ? 'Publicação prevista'
-            : 'Publicação realizada com fonte'}
+          {event.publicationStatus === 'planned' ? 'Publicação prevista' : 'Publicação realizada'}
         </small>
       )}
       {event.admission && (

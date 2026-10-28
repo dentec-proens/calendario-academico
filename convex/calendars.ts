@@ -1,3 +1,5 @@
+import { withoutManualSources } from '../src/manual-sources';
+import { legacyCalendarState } from './calendars/legacyDto';
 import { validateAddedOffers } from '../src/offer-organization';
 import { modalityIds } from '../src/calendar-config';
 import { inspectBase, reconcileBase } from './calendars/base';
@@ -123,7 +125,7 @@ export const calendarHistory = query({
 
 export const calendarVersion = query({
   args: { ...idArgs, version: v.number() },
-  returns: v.object({ version: v.number(), ...validators.snapshotFields }),
+  returns: v.object({ version: v.number(), ...validators.snapshotDtoFields }),
   handler: async (ctx, { id, version }) => {
     const { user } = await requireNativeUser(ctx);
     await calendarRow(ctx, user, id);
@@ -134,7 +136,11 @@ export const calendarVersion = query({
     const snapshot = row && (await ctx.db.get(row.snapshotId));
     if (!row || !snapshot) fail('Versão histórica não encontrada.', 404);
     const { _id, _creationTime, ...value } = snapshot;
-    return { version: row.version, ...value };
+    return {
+      version: row.version,
+      ...value,
+      state: legacyCalendarState(value.state, id, row.version),
+    };
   },
 });
 
@@ -170,7 +176,6 @@ export const createCalendar = mutation({
       ),
       weekdays: [],
       weekConfirmed: false,
-      weekEvidence: '',
       periods: [],
       events: [],
     }) as validators.DomainState;
@@ -228,6 +233,9 @@ export const saveCalendar = mutation({
         409,
       );
     const reconciliation = reconcileBase(compatibility, body.baseAcceptance);
+    // Legacy slots do not turn an unchanged read/smoke into a content edit. The
+    // separately verified administrative plan removes existing stored values.
+    const savedLogical = clean(withoutManualSources(content.state).state);
     if (body.state.year !== row.year) fail('O ano não pode mudar neste registro.');
     if (row.modalities.some((modality) => !body.state.modalities.includes(modality)))
       fail('Ofertas existentes não podem ser removidas por esta operação.');
@@ -248,7 +256,7 @@ export const saveCalendar = mutation({
     }) as validators.DomainState;
     try {
       validateAddedOffers(row.modalities, state);
-      if (reconciliation.recalculate || !equalValues(clean(content.state), toContent(state))) {
+      if (reconciliation.recalculate || !equalValues(savedLogical, toContent(state))) {
         Object.assign(
           state,
           normalizeCalendar(
@@ -261,13 +269,13 @@ export const saveCalendar = mutation({
     }
     const next = toContent(state),
       institutionalSnapshot = clean(inheritedEvents(base, row.year, state.modalities, state));
-    if (equalValues(clean(content.state), next) && !reconciliation.incorporate) {
+    if (equalValues(savedLogical, next) && !reconciliation.incorporate) {
       if (!body.unchangedOnly && content.catalogueRevision !== base.revision)
         await ctx.db.patch(content._id, { catalogueRevision: base.revision });
       return {
         base: inspectBase(state, content, base, docs).dto,
         version: row.version,
-        state: record.state,
+        state: legacyCalendarState(record.state, record.id, record.version),
         updatedAt: iso(row.updatedAt),
         unchanged: true,
         readiness: (await baseRecord(ctx, user, id)).readiness,
@@ -301,7 +309,7 @@ export const saveCalendar = mutation({
     return {
       base: saved.compatibility.dto,
       version: saved.row.version,
-      state: saved.record.state,
+      state: legacyCalendarState(saved.record.state, saved.record.id, saved.record.version),
       updatedAt: saved.record.updatedAt,
       readiness: saved.readiness,
     };

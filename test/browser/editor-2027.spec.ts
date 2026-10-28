@@ -31,7 +31,7 @@ for (const width of [1440, 390]) {
     await page.locator('#event-name').fill('Edital anterior sintético');
     await page.locator('#event-start').fill('2026-12-01');
     await page.locator('#event-end').fill('2026-12-02');
-    await page.locator('#event-evidence').fill('Documento sintético de publicação');
+
     await page.locator('#close-event-panel').click();
     await page.locator('[data-tab="atividades"]').click();
     await page.locator('#activity-search').fill('sem resultado sintético');
@@ -88,7 +88,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   await expect(page.locator('#event-admission-period')).toHaveValue('annual-2027');
   await page.locator('#event-start').fill('2026-12-01');
   await page.locator('#event-end').fill('2026-12-01');
-  await page.locator('#event-evidence').fill('Publicação sintética de transferência');
+
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
@@ -109,9 +109,6 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   await page.locator('#event-publication-status').selectOption('published');
   await page.locator('#event-start').fill('2027-12-01');
   await page.locator('#event-end').fill('2027-12-01');
-  await page
-    .locator('#event-evidence')
-    .fill('Publicação sintética em dezembro, sem ajuste documentado');
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
@@ -323,7 +320,7 @@ test('annual integrated and semester undergraduate offers keep independent overl
   await openActivity(page, 'registration-2');
   await page.getByText('Exigência por regra local', { exact: true }).click();
   await page.locator('#intake-graduacao-second-required').check();
-  await page.locator('#intake-graduacao-second-source').fill('Regra local sintética de ingresso');
+
   await page.getByRole('button', { name: 'Salvar exigência', exact: true }).click();
   await expect
     .poll(() =>

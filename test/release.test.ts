@@ -228,3 +228,77 @@ test('a single linked deadline cannot satisfy every assessment stage or semester
   assert.equal(activities.filter((a) => a.id.startsWith('teaching-plan-')).length, 2);
   assert.equal(new Set(activities.map((a) => a.id)).size, activities.length);
 });
+
+test('2026 review readiness stays unchanged when manual sources are retired', async () => {
+  const { withoutManualSources } = await import('../src/manual-sources.ts');
+  const name = 'extratos das atas de aprovacao pelo cgpc e codic';
+  const criteria = reviewCriteriaFor(2026);
+  const target = criteria.find(
+    (criterion) => criterion.pattern && new RegExp(criterion.pattern).test(name),
+  );
+  assert(target);
+  const record = {
+    id: 'legacy-2026',
+    version: 1,
+    catalogueRevision: 1,
+    institutionalSnapshot: [],
+    state: {
+      schemaVersion: 3,
+      year: 2026,
+      offer: 'integrado',
+      modalities: ['integrado'],
+      regime: 'anual',
+      organizationByModality: { integrado: 'anual' as const },
+      assessmentStagesByModality: { integrado: 2 },
+      weekdays: [1, 2, 3, 4, 5],
+      weekConfirmed: true,
+      weekEvidence: 'Ata antiga',
+      periods: [
+        {
+          id: 'annual',
+          start: '2026-02-02',
+          end: '2026-12-18',
+          association: {
+            status: 'defined' as const,
+            modalities: ['integrado'],
+            term: 'annual' as const,
+          },
+        },
+      ],
+      events: [
+        {
+          id: 'minutes',
+          name,
+          start: '2026-02-02',
+          end: '2026-02-02',
+          kind: 'note',
+          modalities: ['integrado'],
+          evidence: 'Fonte manual antiga',
+        },
+      ],
+    },
+  };
+  const db = {
+    catalogue: { revision: 1 },
+    reviews: [
+      {
+        calendarId: record.id,
+        calendarVersion: 1,
+        catalogueRevision: 1,
+        applicableNorm: 'Norma sintética 2026',
+        entries: criteria.map((criterion) => ({
+          id: criterion.id,
+          reviewed: true,
+          status: criterion.id === target.id ? 'ATENDIDO' : 'NAO_APLICAVEL',
+        })),
+      },
+    ],
+  };
+  const before = releaseReadiness(record, db);
+  const after = releaseReadiness(
+    { ...record, state: withoutManualSources(record.state).state },
+    db,
+  );
+  assert.deepEqual(after.issues, before.issues);
+  assert.deepEqual(after.warnings, before.warnings);
+});

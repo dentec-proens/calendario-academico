@@ -1,3 +1,4 @@
+import { withoutManualSources } from '../src/manual-sources.ts';
 import { expect, test } from 'vitest';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
@@ -46,7 +47,7 @@ test('a complete organization adds one catalog offer without extending existing 
   const next = applyOfferOrganization(original, 'graduacao', draft, () => `added-${sequence++}`);
   expect(next.modalities).toEqual(['integrado', 'graduacao']);
   expect(next.events.find((e) => e.id === 'legacy-note')).toEqual({
-    ...before.events[0],
+    ...withoutManualSources(before).state.events[0],
     modalities: ['integrado'],
   });
   expect(next.events.filter((e) => e.requirementId?.endsWith(':graduacao'))).toHaveLength(2);

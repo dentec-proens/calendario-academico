@@ -126,7 +126,7 @@ test('a failed production section chunk preserves the editor and unapplied event
   await page.locator('#resume-event').click();
   await expect(page.locator('#event-name')).toHaveValue('Trabalho conservado após chunk');
   await page.locator('#event-type-campus-event').check();
-  await page.locator('#event-evidence').fill('Fonte conservada');
+
   await page.locator('#event-start').fill('2027-04-05');
   await page.locator('#event-end').fill('2027-04-06');
   await page.locator('#event-form button[type="submit"]').click();
@@ -742,21 +742,24 @@ test('reopening a remote calendar keeps the document and a usable editor session
     void dialog.dismiss();
   });
   await page.goto(origin + '/calendarios/synthetic-calendar/editar');
-  await page.locator('#week-evidence').fill('Preenchimento local a descartar');
+
+  await page.locator('#weekdays input[value="5"]').uncheck();
   await page.evaluate(() => {
     document.documentElement.dataset.oldDocument = 'yes';
     window.updateOwners = { editor: window.updateEditor, drafts: window.updateDrafts };
     window.editorTest.record.version++;
-    window.editorTest.record.state.weekEvidence = 'Decisão confirmada na outra sessão';
+    window.editorTest.record.state.weekdays = [2, 4];
     return window.publishReviewerCalendar();
   });
   await page.getByRole('button', { name: 'Reabrir calendário atualizado' }).click();
   await page.getByRole('button', { name: 'Reabrir calendário', exact: true }).click();
-  await expect(page.locator('#week-evidence')).toHaveValue('Decisão confirmada na outra sessão');
+  await expect(page.locator('#weekdays input[value="1"]')).not.toBeChecked();
+  await expect(page.locator('#weekdays input[value="4"]')).toBeChecked();
   expect(await page.evaluate(() => window.updateOwners?.editor === window.updateEditor)).toBe(true);
   await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
   expect(dialogs).toEqual([]);
-  await page.locator('#week-evidence').fill('Edição depois de reabrir');
+
+  await page.locator('#weekdays input[value="4"]').uncheck();
   await page.locator('#editor-continue').click();
   await expect.poll(() => page.evaluate(() => window.editorTest.calls.saves)).toBe(1);
 });

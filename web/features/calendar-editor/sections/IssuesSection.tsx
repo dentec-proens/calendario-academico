@@ -20,7 +20,7 @@ export default function IssuesSection() {
     issues.push({
       mark: 'Pendente',
       title: 'Semana letiva',
-      detail: 'Registre e confirme os dias regulares e a referência da decisão.',
+      detail: 'Registre e confirme os dias regulares.',
     });
   if (!state.periods.length)
     issues.push({
@@ -54,7 +54,7 @@ export default function IssuesSection() {
         title: `${modalityLabels[row.modality]} — ${row.requirement.name}`,
         detail:
           [...row.issues, ...row.warnings].join(' ') ||
-          'Planejamento pendente de registro, datas e fonte.',
+          'Planejamento pendente de registro e datas.',
         requirementId: row.requirement.id,
       });
   }

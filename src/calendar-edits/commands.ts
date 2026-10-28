@@ -1,4 +1,4 @@
-import { isAssessmentStageRecord } from '../activity-metadata.ts';
+import { withoutManualSources } from '../manual-sources.ts';
 import type {
   ActivityState,
   CalendarActivity,
@@ -66,7 +66,7 @@ export function recalculateCalendar<S extends ActivityState>(
   const inherited = campusInstitutionalEvents(institutional, state);
   const periods = recalculatePeriods(state, [...inherited, ...state.events]);
   const next = { ...state, periods };
-  return next;
+  return withoutManualSources(next).state;
 }
 
 export function validateInterval(state: Pick<ActivityState, 'year'>, start: string, end: string) {
@@ -77,7 +77,7 @@ export function validateInterval(state: Pick<ActivityState, 'year'>, start: stri
 
 export function applyWeek<S extends ActivityState>(
   state: S,
-  values: { weekdays: number[]; weekEvidence: string; weekConfirmed: boolean },
+  values: { weekdays: number[]; weekEvidence?: string; weekConfirmed: boolean },
   institutional: CalendarActivity[],
 ): S {
   if (
@@ -85,14 +85,12 @@ export function applyWeek<S extends ActivityState>(
     values.weekdays.some((day) => !Number.isInteger(day) || day < 1 || day > 5)
   )
     throw new Error('Selecione pelo menos um dia regular.');
-  if (!values.weekEvidence.trim()) throw new Error('Informe a referência da semana letiva.');
   if (!values.weekConfirmed) throw new Error('Confirme a organização da semana letiva.');
   return recalculateCalendar(
     {
       ...state,
       ...values,
       weekdays: [...new Set(values.weekdays)],
-      weekEvidence: values.weekEvidence.trim(),
     },
     institutional,
   );
@@ -262,17 +260,15 @@ export function configureIntakeRequirement<S extends ActivityState>(
   modality: string,
   term: AcademicTerm,
   required: boolean,
-  source: string,
+  _legacySource?: string,
 ): S {
   if (
     !calendarModalities(state).includes(modality) ||
     organizationForModality(state, modality) !== (term === 'annual' ? 'anual' : 'semestral')
   )
     throw new Error('O ciclo da oferta mudou. Reabra a atividade de matrícula.');
-  if (source.trim().length > 240 || (required && !source.trim()))
-    throw new Error('Informe a referência da regra local para exigir esta atividade.');
   const current = state.intakeByModality?.[modality]?.[term];
-  return {
+  return withoutManualSources({
     ...state,
     intakeByModality: {
       ...state.intakeByModality,
@@ -282,11 +278,10 @@ export function configureIntakeRequirement<S extends ActivityState>(
           ...current,
           status: required ? 'yes' : (current?.status ?? 'unknown'),
           required,
-          source: source.trim(),
         },
       },
     },
-  };
+  }).state;
 }
 
 /** Occurrence identity is independent of source documents and descriptive metadata. */
@@ -308,8 +303,7 @@ export function applyEvent<S extends ActivityState>(
   editing = false,
 ): S {
   validateActivityRecord(state, event);
-  if (!event.name.trim() || (!isAssessmentStageRecord(event) && !event.evidence?.trim()))
-    throw new Error('Informe descrição e fonte.');
+  if (!event.name.trim()) throw new Error('Informe a descrição.');
   if (!['include', 'exclude', 'note'].includes(event.kind))
     throw new Error('Tipo de evento inválido.');
   const modalities = event.modalities;
@@ -338,14 +332,12 @@ export function applyEvent<S extends ActivityState>(
     )
   )
     throw new Error('Inclusões letivas devem estar dentro dos períodos cadastrados.');
-  const updated = {
-    ...event,
-    name: event.name.trim(),
-    evidence: isAssessmentStageRecord(event) ? undefined : event.evidence?.trim(),
-  };
+  const updated = withoutManualSources({ events: [{ ...event, name: event.name.trim() }] }).state
+    .events[0];
   const existing = state.events.find((item) => item.id === event.id);
   if (!editing && existing) {
-    if (equalValues(existing, updated)) return state;
+    const normalizedExisting = withoutManualSources({ events: [existing] }).state.events[0];
+    if (equalValues(normalizedExisting, updated)) return withoutManualSources(state).state;
     throw new Error('O identificador do evento já existe. Reabra o registro antes de editar.');
   }
   if (
@@ -376,18 +368,18 @@ export function applyEvent<S extends ActivityState>(
 
 export function applySaturdays<S extends ActivityState>(
   state: S,
-  values: { dates: string[]; name: string; evidence: string; confirmed: boolean },
+  values: { dates: string[]; name: string; evidence?: string; confirmed: boolean },
   institutional: CalendarActivity[],
   id: () => string,
 ): S {
   if (!values.confirmed) throw new Error('Confirme as atividades para a oferta deste calendário.');
-  const events = saturdayEvents(state, values.dates, values.name, values.evidence, id);
+  const events = saturdayEvents(state, values.dates, values.name, id);
   return recalculateCalendar({ ...state, events: [...state.events, ...events] }, institutional);
 }
 
 export function applySaturdayActivities<S extends ActivityState>(
   state: S,
-  activities: { date: string; name: string; evidence: string }[],
+  activities: { date: string; name: string; evidence?: string }[],
   institutional: CalendarActivity[],
   id: () => string,
 ): S {
@@ -401,7 +393,6 @@ export function applySaturdayActivities<S extends ActivityState>(
           { ...state, events: [...state.events, ...events] },
           [activity.date],
           activity.name,
-          activity.evidence,
           id,
         ),
       );
@@ -416,7 +407,7 @@ export function applySaturdayActivities<S extends ActivityState>(
 
 export function updateSaturdayActivity<S extends ActivityState>(
   state: S,
-  values: { id: string; name: string; evidence: string },
+  values: { id: string; name: string; evidence?: string },
   institutional: CalendarActivity[],
 ): S {
   const current = state.events.find((event) => event.id === values.id);
@@ -424,14 +415,11 @@ export function updateSaturdayActivity<S extends ActivityState>(
   if (!isSaturdayRecord(current))
     throw new Error('Este registro é editado em Atividades e datas do campus.');
   const name = values.name.trim();
-  const evidence = values.evidence.trim();
-  if (!name || !evidence) throw new Error('Informe a atividade e a fonte da decisão.');
+  if (!name) throw new Error('Informe a atividade.');
   return recalculateCalendar(
     {
       ...state,
-      events: state.events.map((event) =>
-        event.id === values.id ? { ...event, name, evidence } : event,
-      ),
+      events: state.events.map((event) => (event.id === values.id ? { ...event, name } : event)),
     },
     institutional,
   );
@@ -439,10 +427,10 @@ export function updateSaturdayActivity<S extends ActivityState>(
 
 export function applyVacations<S extends ActivityState>(
   state: S,
-  values: VacationPeriods & { evidence: string },
+  values: VacationPeriods & { evidence?: string },
   institutional: CalendarActivity[],
 ): S {
-  const vacation = teacherVacations(state.year, values, values.evidence);
+  const vacation = teacherVacations(state.year, values);
   return recalculateCalendar(
     {
       ...state,

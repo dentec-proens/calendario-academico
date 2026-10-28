@@ -24,9 +24,9 @@ test('week form applies confirmed weekdays and rejects an empty week atomically'
   await page.locator('[data-view="edit"]').click();
   const weekdays = page.locator('#weekdays input');
   await expect(weekdays).toHaveCount(5);
-  await page.locator('#week-evidence').fill('');
+
   for (const checkbox of await weekdays.all()) await checkbox.uncheck();
-  await page.locator('#week-evidence').fill('Resolução da semana letiva');
+
   await page.locator('#editor-continue').click();
   await expect(page.locator('#week-form [role="alert"]')).toHaveText(
     'Selecione pelo menos um dia regular.',
@@ -40,7 +40,7 @@ test('week form applies confirmed weekdays and rejects an empty week atomically'
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.weekdays))
     .toEqual([1, 3, 5]);
-  expect((await savedState(page)).state.weekEvidence).toBe('Resolução da semana letiva');
+  expect((await savedState(page)).state).not.toHaveProperty('weekEvidence');
 });
 
 test('offer organization applies manual assessment dates and preserves them after a holiday changes', async ({
@@ -69,7 +69,7 @@ test('offer organization applies manual assessment dates and preserves them afte
   ).toBe(true);
 });
 
-test('Saturday panel applies one activity and source to the selected dates without moving focus', async ({
+test('Saturday panel applies one activity to the selected dates without moving focus', async ({
   page,
   fixtureServer,
 }) => {
@@ -84,7 +84,7 @@ test('Saturday panel applies one activity and source to the selected dates witho
   await page.locator('#saturday-dates input[value="2027-04-03"]').check();
   await expect(page.locator('#saturday-summary')).toContainText('2 sábados selecionados');
   await page.locator('#saturday-name').fill('Reposição de aulas');
-  await page.locator('#saturday-evidence').fill('Resolução nº 12/2026');
+
   await expect(page.locator('#saturday-submit')).toHaveText('Adicionar 2 sábados');
   await page.locator('#saturday-submit').click();
   await expect
@@ -92,7 +92,7 @@ test('Saturday panel applies one activity and source to the selected dates witho
       page.evaluate(() =>
         window.editorTest.record.state.events
           .filter((event) => event.category === 'sabado')
-          .map(({ start, end, name, evidence, kind }) => ({ start, end, name, evidence, kind }))
+          .map(({ start, end, name, kind }) => ({ start, end, name, kind }))
           .sort((a, b) => a.start.localeCompare(b.start)),
       ),
     )
@@ -101,7 +101,6 @@ test('Saturday panel applies one activity and source to the selected dates witho
         start: date,
         end: date,
         name: 'Reposição de aulas',
-        evidence: 'Resolução nº 12/2026',
         kind: 'include',
       })),
     );
@@ -116,9 +115,9 @@ test('Saturday panel applies one activity and source to the selected dates witho
   await expect(page.locator('#saturday-edit-title')).toBeFocused();
   await expect(page.locator('#saturday-edit-title')).toContainText('06/03');
 
-  // The next selection starts from the last source and offers the activities already used.
+  // The next selection offers the activities already used.
   await page.locator('#saturday-dates input[value="2027-03-13"]').check();
-  await expect(page.locator('#saturday-evidence')).toHaveValue('Resolução nº 12/2026');
+  await expect(page.locator('#saturday-evidence')).toHaveCount(0);
   await expect(page.locator('#saturday-name')).toHaveValue('');
   await page
     .locator('.saturday-suggestions')
@@ -187,7 +186,7 @@ test('compact Saturday panel opens as a dialog and keeps focused dates unobstruc
 
   await open.click();
   await page.locator('#saturday-name').fill('Reposição de aulas');
-  await page.locator('#saturday-evidence').fill('Resolução nº 12/2026');
+
   await page.locator('#saturday-submit').click();
   await expect(panel).toHaveJSProperty('open', false);
   await expect(page.locator('[data-saturday="2027-03-06"]')).toHaveAttribute(
@@ -244,7 +243,7 @@ test('a registered Saturday left open beside the grid does not take over the com
   await selectEditorSection(page, 'days');
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
   await page.locator('#saturday-name').fill('Reposição de aulas');
-  await page.locator('#saturday-evidence').fill('Resolução nº 12/2026');
+
   await page.locator('#saturday-submit').click();
   await page.locator('#saturday-dates input[value="2027-03-13"]').check();
   await page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]').click();
@@ -306,7 +305,7 @@ test('a selected holiday warns that it will not count as a teaching day', async 
   await page.locator('#event-type-holiday').check();
   await page.locator('#event-start').fill('2027-05-01');
   await page.locator('#event-end').fill('2027-05-01');
-  await page.locator('#event-evidence').fill('Calendário de feriados nacionais');
+
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
@@ -335,9 +334,6 @@ test('the Saturday panel shows the teaching-day count and previews the selection
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'issues');
   await page.locator('#calendar-scope').selectOption('covered');
-  await page
-    .locator('#calendar-scope-source')
-    .fill('PPC sintético: técnico presencial abrangido pela norma de 2027');
   await page.locator('#scope-form button[type="submit"]').click();
   await selectEditorSection(page, 'issues');
   const total = Number(await page.locator('#total').textContent());
@@ -358,7 +354,7 @@ test('a registered Saturday is edited and removed from the panel', async ({
   await page.locator('[data-view="days"]').click();
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
   await page.locator('#saturday-name').fill('Reposição de aulas');
-  await page.locator('#saturday-evidence').fill('Resolução nº 12/2026');
+
   await page.locator('#saturday-submit').click();
   const registered = page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]');
   await expect(registered).toBeFocused();
@@ -366,19 +362,15 @@ test('a registered Saturday is edited and removed from the panel', async ({
     page.evaluate(() =>
       window.editorTest.record.state.events
         .filter((event) => event.category === 'sabado')
-        .map(({ start, name, evidence }) => ({ start, name, evidence })),
+        .map(({ start, name }) => ({ start, name })),
     );
 
   await registered.click();
   await expect(page.locator('#saturday-edit-name')).toHaveValue('Reposição de aulas');
   await page.locator('#saturday-edit-name').fill('Feira de ciências');
-  await page.locator('#saturday-edit-evidence').fill('Ata do colegiado nº 4/2027');
+
   await page.locator('#saturday-edit-save').click();
-  await expect
-    .poll(saturdays)
-    .toEqual([
-      { start: '2027-03-06', name: 'Feira de ciências', evidence: 'Ata do colegiado nº 4/2027' },
-    ]);
+  await expect.poll(saturdays).toEqual([{ start: '2027-03-06', name: 'Feira de ciências' }]);
   await expect(page.locator('#saturday-edit-form')).toHaveCount(0);
   await expect(registered).toBeFocused();
 
@@ -413,7 +405,7 @@ test('multi-day inclusions over a Saturday are registered but edited in Activiti
   await expect(page.locator('#event-kind')).toHaveValue('include');
   await page.locator('#event-start').fill('2027-03-22');
   await page.locator('#event-end').fill('2027-03-27');
-  await page.locator('#event-evidence').fill('Ata do colegiado nº 2/2027');
+
   await page.locator('#event-form button[type="submit"]').click();
   await expect
     .poll(() =>
@@ -449,7 +441,7 @@ test('vacation form supports duration and manual end dates and rejects overlappi
   await page.locator('#vacation-second-start').fill('2027-07-01');
   await page.locator('#vacation-second-days').fill('15');
   await expect(page.locator('#vacation-second-end')).toHaveValue('2027-07-15');
-  await page.locator('#vacation-evidence').fill('Decisão do campus sobre férias');
+
   await expect(page.locator('#vacation-preview')).toContainText('32 dias');
   await page.locator('#vacation-form button[type="submit"]').click();
   await expect
@@ -523,32 +515,31 @@ test('changing category and activity link in the event form keeps identity, date
       ),
     )
     .toBe('feriado');
-  expect((await savedState(page)).state.events.find((event) => event.id === 'local-event')).toEqual(
-    { ...original, category: 'feriado', requirementId: 'family-meeting' },
-  );
+  const { evidence: _legacySource, ...preserved } = original!;
+  expect(
+    (await savedState(page)).state.events.find((event) => event.id === 'local-event'),
+  ).toMatchObject({ ...preserved, category: 'feriado', requirementId: 'family-meeting' });
 });
 
-test('clean fields receive remote defaults while unapplied values survive a later remote update', async ({
+test('clean week fields receive remote defaults while an incomplete choice survives a later remote update', async ({
   page,
   fixtureServer,
 }) => {
   await openEditor(page, fixtureServer);
   await page.evaluate(async () => {
     window.editorTest.record.version++;
-    window.editorTest.record.state.weekEvidence = 'Semana atualizada em outra sessão';
-    window.editorTest.record.state.weekdays = [2, 4];
+    window.editorTest.record.state.weekdays = [2];
     await window.publishReviewerCalendar();
   });
-  await expect(page.locator('#week-evidence')).toHaveValue('Semana atualizada em outra sessão');
   await expect(page.locator('#weekdays input[value="1"]')).not.toBeChecked();
   await expect(page.locator('#weekdays input[value="2"]')).toBeChecked();
-  await page.locator('#week-evidence').fill('   ');
+  await page.locator('#weekdays input[value="2"]').uncheck();
   await page.evaluate(async () => {
     window.editorTest.record.version++;
-    window.editorTest.record.state.weekEvidence = 'Nova atualização remota';
+    window.editorTest.record.state.weekdays = [3];
     await window.publishReviewerCalendar();
   });
-  await expect(page.locator('#week-evidence')).toHaveValue('   ');
+  await expect(page.locator('#weekdays input:checked')).toHaveCount(0);
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await expect(page.locator('#editor-remote-change')).toContainText('outra sessão');
   await expect(page.locator('.autosave-panel')).toHaveAttribute('data-tone', 'warning');

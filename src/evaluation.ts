@@ -1,6 +1,6 @@
 import { normativeDayMinimums } from './calendar-config.ts';
 import type { CountingEvent, TeachingState } from './domain-types.ts';
-import { countCalendar } from './calendar.ts';
+import { countCalendar, automaticEventSource } from './calendar.ts';
 import { calendarModalities, appliesTo } from './modalities.ts';
 import { organizationForModality, periodsForModality } from './calendar-rules/index.ts';
 
@@ -24,7 +24,6 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
       weekPattern: {
         weekdays: s.weekdays,
         confirmed: s.weekConfirmed,
-        evidenceId: s.weekEvidence ?? '',
       },
       inclusions: scoped
         .filter((e) => e.kind === 'include')
@@ -32,7 +31,7 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
           ...e,
           offerIds: [modality],
           confirmed: true,
-          evidenceId: e.evidence ?? '',
+          evidenceId: automaticEventSource(e),
         })),
       exclusions: scoped
         .filter((e) => e.kind === 'exclude')
@@ -40,7 +39,7 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
           ...e,
           offerIds: [modality],
           confirmed: true,
-          evidenceId: e.evidence ?? '',
+          evidenceId: automaticEventSource(e),
         })),
       thresholds: {
         annual: minimum ? normativeDayMinimums.annual : null,

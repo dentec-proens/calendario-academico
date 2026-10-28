@@ -215,9 +215,9 @@ export default function EventEditor() {
           )}
           {values.recordType === 'prior-reference' && (
             <Notice tone="info">
-              Referência anterior comprovada, somente informativa. Não comprova dias, horas, férias
-              ou avaliações do ano atual. Informe datas reais e fonte; uma publicação anterior
-              precisa estar realizada.
+              Referência anterior, somente informativa. Não comprova dias, horas, férias ou
+              avaliações do ano atual. Informe as datas reais; uma publicação anterior precisa estar
+              realizada.
             </Notice>
           )}
           <form.Field name="modalities">
@@ -305,9 +305,8 @@ export default function EventEditor() {
           )}
           {values.deadlineExtensionCause && (
             <p className="help">
-              Art. 3º, § 2º: identifique na fonte o feriado municipal ou recesso correspondente. A
-              política confere os prazos afetados por oferta e preserva as datas reais das
-              atividades.
+              Art. 3º, § 2º: classifique o feriado municipal ou recesso correspondente. A política
+              confere os prazos afetados por oferta e preserva as datas reais das atividades.
             </p>
           )}
           {(publication ||
@@ -399,8 +398,8 @@ export default function EventEditor() {
               {values.admissionType === 'regular' && state.year === 2027 && (
                 <Notice tone="info">
                   Art. 10: publicação do processo seletivo de 2028 até 15/06/2027. O prazo não
-                  preenche a data de publicação. Cronograma ajustado pela Proens exige fonte e
-                  conferência institucional.
+                  preenche a data de publicação. Cronograma ajustado pela Proens exige conferência
+                  institucional.
                 </Notice>
               )}
               {values.admissionType === 'transfer' && (
@@ -410,7 +409,7 @@ export default function EventEditor() {
                 </p>
               )}
               <details>
-                <summary>Informar fonte de ajuste do prazo</summary>
+                <summary>Informar ajuste do prazo</summary>
                 <p>
                   O registro pelo campus não representa autorização da Proens. A revisão
                   institucional confere sua origem.
@@ -422,16 +421,6 @@ export default function EventEditor() {
                       id="event-adjusted-deadline"
                       label="Prazo ajustado"
                       type="date"
-                    />
-                  )}
-                </form.Field>
-                <form.Field name="adjustmentEvidence">
-                  {(field) => (
-                    <Input
-                      field={field}
-                      id="event-adjustment-evidence"
-                      label="Fonte do cronograma ajustado"
-                      maxLength={240}
                     />
                   )}
                 </form.Field>
@@ -488,17 +477,6 @@ export default function EventEditor() {
                 )}
               </form.Field>
             )}
-            <form.Field name="evidence">
-              {(field) => (
-                <Input
-                  field={field}
-                  label="Fonte ou decisão"
-                  id="event-evidence"
-                  maxLength={240}
-                  required
-                />
-              )}
-            </form.Field>
           </div>
         </fieldset>
         <FormFeedback error={editor.error} />

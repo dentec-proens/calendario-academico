@@ -24,7 +24,19 @@ test('calendar authorship distinguishes creation from content edits without expo
     body: {
       version: created.version,
       catalogueRevision: created.currentCatalogueRevision,
-      state: { ...created.state, weekEvidence: 'Decisão atualizada pela administração' },
+      state: {
+        ...created.state,
+        events: [
+          {
+            id: 'content-note',
+            name: 'Atividade registrada',
+            kind: 'note' as const,
+            start: '2027-03-01',
+            end: '2027-03-01',
+            modalities: ['integrado' as const],
+          },
+        ],
+      },
     },
   });
   const page = () =>

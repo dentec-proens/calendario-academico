@@ -14,7 +14,7 @@ test('reviewer consults the complete calendar and live changes without editing o
   await expect(page).toHaveURL(/\/calendarios\/synthetic-calendar\/visualizar/);
   await expect(page.locator('#autosave-status')).toContainText(/somente leitura/i);
   await page.locator('[data-view="edit"]').click();
-  await expect(page.locator('input#week-evidence')).toBeDisabled();
+  await expect(page.locator('#weekdays input').first()).toBeDisabled();
   await expect(page.locator('button#make-definitive')).toBeHidden();
   await expect(page.locator('a.editor-history')).toBeHidden();
   await page.locator('[data-view="events"]').click();
@@ -26,7 +26,7 @@ test('reviewer consults the complete calendar and live changes without editing o
   await expect(eventControls).not.toHaveCount(0);
   for (const control of await eventControls.all()) await expect(control).toBeEnabled();
   await openCampusEvent(page, 'local-event');
-  await expect(page.locator('.campus-event-record')).toContainText('Ata salva');
+  await expect(page.locator('.campus-event-record')).not.toContainText('Fonte:');
   await expect(page.locator('#event-panel [data-edit-event]')).toBeDisabled();
   await expect(page.locator('#event-panel [data-remove-event]')).toBeDisabled();
   await page.locator('#close-event-panel').click();
@@ -78,7 +78,7 @@ test('reviewer direct section URLs and reload keep the requested read-only secti
     await expect(page.locator('#editor-section-title')).toHaveText('Semana letiva');
     await expect(page.locator('#edit')).toBeVisible();
     await expect(page.locator('[data-view="edit"]')).toHaveAttribute('aria-current', 'page');
-    await expect(page.locator('#week-evidence')).toBeDisabled();
+    await expect(page.locator('#weekdays input').first()).toBeDisabled();
     await expect(page.locator('#autosave-status')).toContainText(/somente leitura/i);
   }
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
@@ -96,7 +96,7 @@ test('reviewer reads a registered Saturday without selecting, editing or removin
   for (const control of await available.all()) await expect(control).toBeDisabled();
   await page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]').click();
   await expect(page.locator('#saturday-edit-name')).toHaveValue('Reposição de aulas');
-  for (const control of ['#saturday-edit-name', '#saturday-edit-evidence', '#saturday-edit-save'])
+  for (const control of ['#saturday-edit-name', '#saturday-edit-save'])
     await expect(page.locator(control)).toBeDisabled();
   await expect(page.locator('#saturday-edit-remove')).toBeDisabled();
   await expect(page.locator('#saturday-edit-close')).toBeEnabled();

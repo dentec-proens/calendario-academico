@@ -1,3 +1,4 @@
+import { withoutManualSources } from '../src/manual-sources.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../convex/_generated/api.js';
@@ -23,7 +24,19 @@ test('calendar operations append immutable snapshots and roll back stale saves a
     body: {
       version: created.version,
       catalogueRevision: created.currentCatalogueRevision,
-      state: { ...created.state, weekEvidence: 'Ata sintética' },
+      state: {
+        ...created.state,
+        events: [
+          {
+            id: 'content-note',
+            name: 'Atividade registrada',
+            kind: 'note' as const,
+            start: '2027-03-01',
+            end: '2027-03-01',
+            modalities: ['integrado' as const],
+          },
+        ],
+      },
     },
   });
   assert.equal(saved.version, 2);
@@ -34,14 +47,26 @@ test('calendar operations append immutable snapshots and roll back stale saves a
   }));
   assert.equal(before.snapshots.length, 1);
   assert.equal(before.versions[0].version, 1);
-  assert.deepEqual(before.snapshots[0].state, created.state);
+  assert.deepEqual(before.snapshots[0].state, withoutManualSources(created.state).state);
   await assert.rejects(
     campus.mutation(api.calendars.saveCalendar, {
       id: created.id,
       body: {
         version: 1,
         catalogueRevision: created.currentCatalogueRevision,
-        state: { ...created.state, weekEvidence: 'Tentativa concorrente' },
+        state: {
+          ...created.state,
+          events: [
+            {
+              id: 'content-note',
+              name: 'Tentativa concorrente',
+              kind: 'note' as const,
+              start: '2027-03-01',
+              end: '2027-03-01',
+              modalities: ['integrado' as const],
+            },
+          ],
+        },
       },
     }),
     /Há versão mais recente/,

@@ -21,7 +21,19 @@ test('historical versions are available by native calendar ID, paginated and cam
       {
         version,
         catalogueRevision: record.currentCatalogueRevision,
-        state: { ...record.state, weekEvidence: 'Registro ' + version },
+        state: {
+          ...record.state,
+          events: [
+            {
+              id: 'content-note',
+              name: 'Registro ' + version,
+              kind: 'note',
+              start: '2027-03-01',
+              end: '2027-03-01',
+              modalities: ['integrado'],
+            },
+          ],
+        },
       },
       'PUT',
     );
@@ -62,9 +74,9 @@ test('historical versions are available by native calendar ID, paginated and cam
   );
   assert.equal(last.isDone, true);
   const initial = await client.query(api.calendars.calendarVersion, { id: created.id, version: 1 });
-  assert.equal(initial.state.weekEvidence, '');
+  assert.equal(initial.state.events.length, 0);
   const second = await client.query(api.calendars.calendarVersion, { id: created.id, version: 2 });
-  assert.equal(second.state.weekEvidence, 'Registro 1');
+  assert.equal(second.state.events[0].name, 'Registro 1');
   await assert.rejects(
     asClient('campus-b').query(api.calendars.calendarVersion, { id: created.id, version: 1 }),
     /Registro não encontrado/,

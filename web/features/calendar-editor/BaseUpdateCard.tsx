@@ -103,7 +103,7 @@ export default function BaseUpdateCard() {
         {hasRules && (
           <p>
             A mudança de política invalida a revisão anterior, mesmo quando o catálogo não mudou. A
-            adoção registra nova versão e mantém as evidências existentes; ela não representa
+            adoção registra nova versão e preserva os dados registrados; ela não representa
             aprovação institucional.
           </p>
         )}

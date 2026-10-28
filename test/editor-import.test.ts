@@ -94,5 +94,5 @@ test('old JSON copies keep events and dates while discarding retired PDF links a
   assert.equal(result.events[0].name, event.name);
   assert.equal(result.events[0].start, event.start);
   assert.equal(result.events[0].end, event.end);
-  assert.equal(result.events[0].evidence, event.evidence);
+  assert.equal(Object.hasOwn(result.events[0], 'evidence'), false);
 });

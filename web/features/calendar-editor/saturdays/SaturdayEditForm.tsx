@@ -10,7 +10,6 @@ import { Button } from '../../../components/ui/Button.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 
 const fullDate = (date: string) => date.split('-').reverse().join('/');
-const shortDate = (date: string) => date.slice(5).split('-').reverse().join('/');
 
 export default function SaturdayEditForm({
   event,
@@ -19,11 +18,11 @@ export default function SaturdayEditForm({
   event: CalendarActivity;
   onClose: (focusDate: string) => void;
 }) {
-  const { state, session, institutional, readOnly, applyCommand } = useCalendarEditor();
+  const { session, institutional, readOnly, applyCommand } = useCalendarEditor();
   const id = `saturday-edit:${event.id}`;
   const { form, submit, pending, error, dirty } = useCalendarForm(
     id,
-    { name: event.name, evidence: event.evidence ?? '' },
+    { name: event.name },
     function apply(value) {
       session.apply((current) =>
         updateSaturdayActivity(current, { id: event.id, ...value }, institutional),
@@ -33,17 +32,10 @@ export default function SaturdayEditForm({
     { successMessage: () => `Sábado ${fullDate(event.start)} atualizado.` },
   );
   function discard() {
-    form.reset({ name: event.name, evidence: event.evidence ?? '' });
+    form.reset({ name: event.name });
     session.setFormDirty(id, false);
     onClose(event.start);
   }
-  const sameSource = state.events
-    .filter(
-      (item) =>
-        item.id !== event.id && item.category === 'sabado' && item.evidence === event.evidence,
-    )
-    .map((item) => shortDate(item.start))
-    .sort();
 
   async function remove() {
     const confirmed = await confirmAction({
@@ -71,23 +63,6 @@ export default function SaturdayEditForm({
             />
           )}
         </form.Field>
-        <form.Field name="evidence">
-          {(field) => (
-            <Input
-              field={field}
-              label="Fonte da decisão"
-              id="saturday-edit-evidence"
-              aria-describedby={sameSource.length ? 'saturday-edit-siblings' : undefined}
-              maxLength={240}
-              required
-            />
-          )}
-        </form.Field>
-        {sameSource.length > 0 && (
-          <p id="saturday-edit-siblings" className="help">
-            Mesma fonte também usada em {sameSource.join(', ')}.
-          </p>
-        )}
         <FormFeedback error={error} />
         <FormActions preserveOnClose={dirty}>
           <Button type="submit" id="saturday-edit-save">

@@ -1,4 +1,4 @@
-import { withoutStageReferences } from '../src/stage-references.ts';
+import { withoutManualSources } from '../src/manual-sources.ts';
 import { activityCoverage } from '../src/calendar-rules/index.ts';
 import { expect, test } from 'vitest';
 import {
@@ -68,7 +68,7 @@ test('one application splits a shared period and keeps the other offer and all s
   expect(integrated.id).not.toBe('shared');
   expect(integrated.targetDays).toBeUndefined();
   expect(next.events.filter((e) => e.modalities?.includes('graduacao'))).toEqual(
-    withoutStageReferences({
+    withoutManualSources({
       events: before.events.filter((e) => e.modalities?.includes('graduacao')),
     }).state.events,
   );
@@ -150,7 +150,7 @@ test('existing inclusions are checked before changing periods; records are never
   expect(state.events.at(-1)?.id).toBe('sat');
 });
 
-test('splitting shared admission references preserves each offer link and evidence', () => {
+test('splitting shared admission references preserves each offer link and dates', () => {
   const state = calendar();
   state.events.push({
     id: 'notice',
@@ -174,7 +174,6 @@ test('splitting shared admission references preserves each offer link and eviden
   expect(notices.find((e) => e.modalities?.includes('graduacao'))).toMatchObject({
     id: 'notice',
     admission: { periodId: 'shared' },
-    evidence: 'Edital sintético',
   });
   const moved = notices.find((e) => e.modalities?.includes('integrado'))!;
   expect(moved.admission?.periodId).not.toBe('shared');
@@ -185,7 +184,7 @@ test('splitting shared admission references preserves each offer link and eviden
   });
 });
 
-test('assessment stages no longer require or retain references while other records keep theirs', () => {
+test('calendar records no longer require or retain manual references', () => {
   const state = calendar();
   state.events.push({
     id: 'other',
@@ -208,9 +207,7 @@ test('assessment stages no longer require or retain references while other recor
       .filter((event) => event.requirementId?.startsWith('stage-'))
       .every((event) => !Object.hasOwn(event, 'evidence')),
   ).toBe(true);
-  expect(next.events.find((event) => event.id === 'other')?.evidence).toBe(
-    'Fonte de outro registro',
-  );
+  expect(next.events.find((event) => event.id === 'other')).not.toHaveProperty('evidence');
   expect(
     activityCoverage(next).find((row) => row.requirement.id === 'stage-1:integrado')?.coverage,
   ).toBe('complete');
@@ -221,7 +218,7 @@ test('assessment stages no longer require or retain references while other recor
         event.id === 'other' ? { ...event, evidence: undefined } : event,
       ),
     }),
-  ).toThrow();
+  ).not.toThrow();
 });
 
 test('reducing date-only stages keeps retired dates without reintroducing a source requirement', () => {

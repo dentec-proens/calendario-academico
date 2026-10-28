@@ -4,10 +4,8 @@ import { datesBetween } from './calendar.ts';
 export function teacherVacations(
   year: number,
   periodsInput: Partial<VacationPeriods>,
-  evidence: string,
+  _legacyEvidence?: string,
 ) {
-  if (typeof evidence !== 'string' || !evidence.trim() || evidence.length > 240)
-    throw Error('Informe a fonte ou decisão das férias docentes.');
   const { firstStart, firstEnd, secondStart, secondEnd, thirdStart, thirdEnd } = periodsInput;
   const periods: [string | undefined, string | undefined][] = [[firstStart, firstEnd]];
   if (secondStart || secondEnd) periods.push([secondStart, secondEnd]);
@@ -32,8 +30,16 @@ export function teacherVacations(
       end,
       kind: 'exclude' as const,
       category: 'ferias',
-      evidence: evidence.trim(),
     };
   });
-  return { ...periodsInput, events, total: seen.size };
+  return {
+    firstStart,
+    firstEnd,
+    secondStart,
+    secondEnd,
+    thirdStart,
+    thirdEnd,
+    events,
+    total: seen.size,
+  };
 }

@@ -32,7 +32,7 @@ test('a new activity record keeps the prepared link, offer, effect and category'
   await openActivity(page, 'family-meeting');
   await page.locator('#event-start').fill('2027-05-08');
   await page.locator('#event-end').fill('2027-05-08');
-  await page.locator('#event-evidence').fill('Ata da reunião sintética');
+
   await applyEvent(page);
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.events.length))
@@ -46,7 +46,6 @@ test('a new activity record keeps the prepared link, offer, effect and category'
     modalities: ['integrado'],
     start: '2027-05-08',
     end: '2027-05-08',
-    evidence: 'Ata da reunião sintética',
   });
   expect(event?.recordType ?? 'event').toBe('event');
 });
@@ -80,19 +79,22 @@ test('editing a linked record that changes the count keeps its effect, category 
   await openActivity(page, 'family-meeting');
   await page.locator('[data-edit-activity-event="linked-exclusion"]').click();
   await expect(page.locator('#event-kind')).toHaveValue('exclude');
-  await page.locator('#event-evidence').fill('Portaria sintética retificada');
+  await page.locator('#event-name').fill('Encontro com recesso retificado');
+
   await applyEvent(page);
   await expect
     .poll(() =>
       page.evaluate(
         () =>
           window.editorTest.record.state.events.find((event) => event.id === 'linked-exclusion')
-            ?.evidence,
+            ?.name,
       ),
     )
-    .toBe('Portaria sintética retificada');
+    .toBe('Encontro com recesso retificado');
   const event = await savedEvent(page, (_, id) => id === 'linked-exclusion');
-  expect(event).toMatchObject({ ...original, evidence: 'Portaria sintética retificada' });
+  const { evidence: _legacySource, ...preserved } = original!;
+  expect(event).toMatchObject({ ...preserved, name: 'Encontro com recesso retificado' });
+  expect(event).not.toHaveProperty('evidence');
 });
 
 test('a free admission notice is registered without an activity link', async ({
@@ -111,7 +113,7 @@ test('a free admission notice is registered without an activity link', async ({
   await page.locator('#event-admission-term').selectOption('second');
   await page.locator('#event-start').fill('2027-05-03');
   await page.locator('#event-end').fill('2027-05-07');
-  await page.locator('#event-evidence').fill('Edital sintético');
+
   await applyEvent(page);
   await expect
     .poll(() =>
@@ -162,7 +164,7 @@ test('activity creation shows the known link as context and keeps it changeable'
   await page.locator('#event-more-options > summary').click();
   await page.locator('#event-start').fill('2027-05-08');
   await page.locator('#event-end').fill('2027-05-08');
-  await page.locator('#event-evidence').fill('Ata sintética');
+
   await applyEvent(page);
   await expect(page.locator('#event-more-options')).toHaveAttribute('open', '');
   await expect(page.locator('#event-name')).toBeFocused();
@@ -181,7 +183,7 @@ test('changing the activity link keeps the filled values until it is applied or 
   await openActivity(page, 'family-meeting');
   await page.locator('#event-start').fill('2027-06-12');
   await page.locator('#event-end').fill('2027-06-12');
-  await page.locator('#event-evidence').fill('Ata de vínculo corrigido');
+
   await page.locator('#change-event-link').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('#event-requirement')).toBeFocused();
@@ -190,7 +192,7 @@ test('changing the activity link keeps the filled values until it is applied or 
   await expect(page.locator('#event-panel-title')).toContainText('egressos');
   await expect(page.locator('#event-form')).toHaveCount(1);
   await expect(page.locator('#event-start')).toHaveValue('2027-06-12');
-  await expect(page.locator('#event-evidence')).toHaveValue('Ata de vínculo corrigido');
+  await expect(page.locator('#event-evidence')).toHaveCount(0);
 
   await page.locator('#close-event-panel').click();
   await expect(page.locator('#event-panel')).toBeHidden();
@@ -207,10 +209,10 @@ test('changing the activity link keeps the filled values until it is applied or 
         () =>
           window.editorTest.record.state.events.find(
             (event) => event.requirementId === 'alumni-meeting',
-          )?.evidence,
+          )?.start,
       ),
     )
-    .toBe('Ata de vínculo corrigido');
+    .toBe('2027-06-12');
   const linked = await savedEvent(page, (_, id) => !['local-event', 'activity-event'].includes(id));
   // The description chosen at creation is not replaced by the new activity's name.
   expect(linked).toMatchObject({ name: title, start: '2027-06-12', end: '2027-06-12' });
@@ -279,7 +281,7 @@ test('a free event asks what it is and the answer sets its effect and category',
   await page.locator('#event-name').fill('Feriado municipal sintético');
   await page.locator('#event-start').fill('2027-06-24');
   await page.locator('#event-end').fill('2027-06-24');
-  await page.locator('#event-evidence').fill('Lei municipal sintética');
+
   // Applying without an answer is rejected by the form itself.
   await applyEvent(page);
   await expect(page.locator('#event-type-holiday')).toBeFocused();
@@ -354,7 +356,7 @@ test('answering another type after a notice keeps its draft but writes no notice
   await page.locator('#event-type-recess').check();
   await page.locator('#event-start').fill('2027-07-19');
   await page.locator('#event-end').fill('2027-07-23');
-  await page.locator('#event-evidence').fill('Portaria sintética de recesso');
+
   await applyEvent(page);
   await expect
     .poll(() =>
@@ -515,7 +517,8 @@ test('discarding a pending draft from another activity returns focus to that act
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await selectEditorSection(page, 'events');
   await openActivity(page, 'family-meeting');
-  await page.locator('#event-evidence').fill('Rascunho que será descartado');
+
+  await page.locator('#event-start').fill('2027-05-08');
   await page.locator('#close-event-panel').click();
   const other = page.locator('[data-activity-open="alumni-meeting"]');
   await other.click();

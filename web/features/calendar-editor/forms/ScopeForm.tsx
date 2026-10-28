@@ -1,24 +1,21 @@
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
-import { Input, Select } from './fields.tsx';
+import { Select } from './fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 
 /** Normative confirmation belongs to the review, independently of teaching dates. */
 export default function ScopeForm() {
   const { state, session, readOnly } = useCalendarEditor();
-  const defaults: { status: '' | 'covered' | 'own-regulation'; source: string } = {
+  const defaults: { status: '' | 'covered' | 'own-regulation' } = {
     status: state.scopeConfirmation?.status ?? '',
-    source: state.scopeConfirmation?.source ?? '',
   };
   const { form, submit, error } = useCalendarForm('scope', defaults, (value) => {
-    if (!value.status || !value.source.trim())
-      throw new Error('Confirme a norma aplicável e informe a referência do curso ou da decisão.');
+    if (!value.status) throw new Error('Confirme a norma aplicável ao calendário.');
     const status = value.status;
     session.apply((current) => ({
       ...current,
       scopeConfirmation: {
         status,
-        source: value.source.trim(),
       },
     }));
     requestAnimationFrame(() => document.getElementById('scope-summary')?.focus());
@@ -33,7 +30,7 @@ export default function ScopeForm() {
       </p>
       <details open={!state.scopeConfirmation}>
         <summary id="scope-summary">
-          {state.scopeConfirmation ? 'Conferir norma e referência' : 'Confirmar norma aplicável'}
+          {state.scopeConfirmation ? 'Conferir norma aplicável' : 'Confirmar norma aplicável'}
         </summary>
         <form id="scope-form" onSubmit={submit}>
           <fieldset disabled={readOnly}>
@@ -48,21 +45,8 @@ export default function ScopeForm() {
                 </Select>
               )}
             </form.Field>
-            <form.Field name="source">
-              {(field) => (
-                <Input
-                  field={field}
-                  id="calendar-scope-source"
-                  label="Referência do curso ou da decisão"
-                  required
-                  maxLength={240}
-                />
-              )}
-            </form.Field>
             <p className="help">
-              Use a referência que comprove o enquadramento, como o PPC ou uma decisão
-              institucional. Calendários com norma própria permanecem sem conclusão automática pela
-              Resolução 292.
+              Calendários com norma própria permanecem sem conclusão automática pela Resolução 292.
             </p>
             <button type="submit">Confirmar norma</button>
             <FormFeedback error={error} />

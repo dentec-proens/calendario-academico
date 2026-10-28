@@ -14,9 +14,9 @@ import type {
   CalendarPeriod,
   Organization,
 } from '../domain-types.ts';
-import { parseDate } from '../calendar.ts';
+import { parseDate, automaticEventSource } from '../calendar.ts';
 import { assessmentIntervalIssue } from '../assessment-intervals.ts';
-import { isStageRequirementId, isAssessmentStageRecord } from '../activity-metadata.ts';
+import { isStageRequirementId } from '../activity-metadata.ts';
 import { calendarModalities, appliesTo } from '../modalities.ts';
 import { legacyActivityChecklist } from '../obligations.ts';
 import { activityReviewCriterion } from './review-links.ts';
@@ -304,9 +304,7 @@ export function applicabilityFor(
   if (requirement.id.startsWith('registration-')) {
     const config = state.intakeByModality?.[modality]?.[requirement.term ?? 'annual'];
     if (!config || config.status === 'unknown') return 'optional';
-    return config.status === 'yes' && config.required === true && Boolean(config.source?.trim())
-      ? 'required'
-      : 'optional';
+    return config.status === 'yes' && config.required === true ? 'required' : 'optional';
   }
   return requirement.applicability ?? (requirement.required === false ? 'optional' : 'required');
 }
@@ -339,11 +337,10 @@ export function validateActivityRecord(
     event.deadlineExtensionCause !== undefined &&
     (!['municipal-holiday', 'municipal-recess'].includes(event.deadlineExtensionCause) ||
       event.kind !== 'exclude' ||
-      !event.evidence?.trim() ||
       position !== 'current')
   )
     throw new Error(
-      'A prorrogação municipal exige feriado ou recesso decorrente, exclusão no ano e fonte.',
+      'A prorrogação municipal exige feriado ou recesso decorrente e exclusão no ano.',
     );
   if (
     event.recordType !== undefined &&
@@ -434,11 +431,11 @@ export function validateActivityRecord(
     if (
       !event.admission ||
       event.admission.type !== 'regular' ||
-      !event.deadlineAdjustment.evidence.trim() ||
-      event.deadlineAdjustment.evidence.length > 240 ||
       typeof event.deadlineAdjustment.reviewed !== 'boolean'
     )
-      throw new Error('Ajuste de prazo exige edital regular, fonte e conferência.');
+      throw new Error(
+        'Ajuste de prazo exige edital regular, data válida e indicação de conferência.',
+      );
   }
   if (
     event.publicationStatus &&
@@ -479,10 +476,6 @@ export function activityCoverage(
             validateActivityRecord(state, event);
           } catch (error) {
             issues.push(error instanceof Error ? error.message : String(error));
-            return false;
-          }
-          if (!isAssessmentStageRecord(event) && !event.evidence?.trim()) {
-            issues.push('Informe a fonte do registro.');
             return false;
           }
           if (requirement.admissionType) {
@@ -534,17 +527,17 @@ export function activityCoverage(
             : null;
           if (deadline?.source === 'municipal-extension')
             warnings.push(
-              `Prazo de ${deadline.original} prorrogado para ${deadline.date ?? 'conferência do primeiro dia letivo subsequente'} por feriado municipal ou recesso decorrente. Fontes: ${deadline.evidence.join('; ')}.`,
+              `Prazo de ${deadline.original} prorrogado para ${deadline.date ?? 'conferência do primeiro dia letivo subsequente'} por feriado municipal ou recesso decorrente.${deadline.evidence.length ? ` Fontes institucionais: ${deadline.evidence.join('; ')}.` : ''}`,
             );
           if (deadline && (!deadline.date || event.end > deadline.date)) {
             const adjustment = event.deadlineAdjustment;
             if (!(
               requirement.admissionType === 'regular' &&
-              adjustment?.evidence.trim() &&
+              adjustment &&
               event.end <= adjustment.date
             )) {
               issues.push(
-                `Data posterior ao prazo de ${requirement.deadline}; confira a fonte de eventual ajuste pela Proens.`,
+                `Data posterior ao prazo de ${requirement.deadline}; confira eventual cronograma ajustado pela Proens.`,
               );
               return false;
             }
@@ -574,7 +567,7 @@ export function activityCoverage(
         if (applicability === 'unconfigured')
           warnings.push(
             requirement.id.startsWith('registration-')
-              ? 'Defina a configuração de ingresso e sua fonte por oferta e período.'
+              ? 'Defina a configuração de ingresso por oferta e período.'
               : 'Escopo depende de norma própria ou classificação.',
           );
         const complete = valid.length > 0 && issues.length === 0;
@@ -629,7 +622,7 @@ export function calendarWindow(state: AssessmentSettings) {
   return null;
 }
 
-/** Article 3 §2. A plain exclusion is not proof of a municipal holiday. */
+/** Article 3 §2. Only an explicitly classified municipal cause extends the deadline. */
 export function prorogatedDeadline(
   state: AssessmentSettings & {
     year: number;
@@ -646,14 +639,16 @@ export function prorogatedDeadline(
     (event) =>
       event.deadlineExtensionCause &&
       event.kind === 'exclude' &&
-      event.evidence?.trim() &&
       appliesTo(event, modality) &&
       event.start <= original &&
       event.end >= original,
   );
   if (!causes.length)
     return { date: original, original, source: 'norm' as const, evidence: [] as string[] };
-  const evidence = causes.map((e) => e.evidence);
+  const evidence = causes.flatMap((event) => {
+    const source = automaticEventSource(event);
+    return source ? [source] : [];
+  });
   if (!state.weekConfirmed || !state.weekdays?.length)
     return { date: null, original, source: 'municipal-extension' as const, evidence };
   const periods = periodsForModality(state, modality),

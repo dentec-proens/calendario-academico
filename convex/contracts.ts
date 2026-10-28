@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { publicMember } from './authContracts';
 import {
   domainState,
+  domainStateDto,
   modality,
   purpose,
   regime,
@@ -70,7 +71,7 @@ export const reviewDto = v.object({
 });
 export const calendarDto = v.object({
   ...summary.fields,
-  state: domainState,
+  state: domainStateDto,
   catalogueRevision: v.number(),
   documentSnapshot: v.array(documentMetadata),
   institutionalSnapshot: v.array(institutionalEventSnapshot),
@@ -116,7 +117,7 @@ export const baseSnapshotDto = v.object({
 export const saveResult = v.object({
   base: baseSnapshotDto,
   version: v.number(),
-  state: domainState,
+  state: domainStateDto,
   updatedAt: v.string(),
   unchanged: v.optional(v.boolean()),
   readiness,

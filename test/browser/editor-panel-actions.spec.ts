@@ -100,7 +100,7 @@ for (const width of [1440, 390]) {
     await page.locator('#saturday-dates input[value="2027-03-06"]').check();
     if (width === 390) await page.locator('#saturday-open-panel').click();
     await page.locator('#saturday-name').fill('Reposição de aulas');
-    await page.locator('#saturday-evidence').fill('Ata da decisão');
+
     await page.locator('#saturday-submit').click();
     const registered = page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]');
     await registered.click();

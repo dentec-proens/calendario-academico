@@ -3,22 +3,19 @@ import { configureIntakeRequirement } from '../../../../src/calendar-edits/comma
 import { modalityLabels } from '../../../../src/modalities.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
-import { Check, Input } from './fields.tsx';
+import { Check } from './fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 
 function OfferRequirement({ modality, term }: { modality: string; term: AcademicTerm }) {
   const { state, session, readOnly } = useCalendarEditor();
   const current = state.intakeByModality?.[modality]?.[term];
-  const { form, values, submit, error } = useCalendarForm(
+  const { form, submit, error } = useCalendarForm(
     `intake-requirement:${modality}:${term}`,
     {
       required: current?.required ?? false,
-      source: current?.source ?? '',
     },
     (value) => {
-      session.apply((state) =>
-        configureIntakeRequirement(state, modality, term, value.required, value.source),
-      );
+      session.apply((state) => configureIntakeRequirement(state, modality, term, value.required));
     },
   );
   const identity = `intake-${modality}-${term}`;
@@ -40,19 +37,6 @@ function OfferRequirement({ modality, term }: { modality: string; term: Academic
             />
           )}
         </form.Field>
-        {(values.required || values.source) && (
-          <form.Field name="source">
-            {(field) => (
-              <Input
-                field={field}
-                id={`${identity}-source`}
-                label="Referência da regra local"
-                required={values.required}
-                maxLength={240}
-              />
-            )}
-          </form.Field>
-        )}
         <button type="submit">Salvar exigência</button>
         <FormFeedback error={error} />
       </fieldset>
@@ -75,7 +59,7 @@ export default function IntakeRequirementForm({ item }: { item: ActivityRequirem
       <summary>Exigência por regra local</summary>
       <p className="help">
         O cadastro de datas é permitido sem configurar ingresso. Exija esta atividade somente quando
-        houver regra local com referência. Isso não altera as obrigações de veteranos.
+        houver regra local. Isso não altera as obrigações de veteranos.
       </p>
       {state.modalities
         .filter((m) => m !== 'posgraduacao' && (!item.modalities || item.modalities.includes(m)))

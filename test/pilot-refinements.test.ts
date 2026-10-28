@@ -6,7 +6,7 @@ import { activityChecklist } from '../src/obligations.ts';
 import { auditLog } from '../src/audit-log.ts';
 import { evaluateCalendar } from '../src/evaluation.ts';
 
-test('teacher vacations count explicit inclusive ranges and reject wrong years or missing evidence', () => {
+test('teacher vacations count explicit inclusive ranges without sources and reject wrong years or inverted intervals', () => {
   for (const year of [2027, 2028]) {
     const v = teacherVacations(
       year,
@@ -20,13 +20,12 @@ test('teacher vacations count explicit inclusive ranges and reject wrong years o
     );
     assert.equal(v.total, 45);
     assert(v.events.every((e: CalendarActivity) => e.kind === 'exclude'));
+    assert(v.events.every((e: CalendarActivity) => !Object.hasOwn(e, 'evidence')));
   }
   assert.throws(() =>
     teacherVacations(2027, { firstStart: '2026-07-01', firstEnd: '2026-07-15' }, 'Fonte'),
   );
-  assert.throws(() =>
-    teacherVacations(2027, { firstStart: '2027-07-01', firstEnd: '2027-07-15' }, ''),
-  );
+  assert.throws(() => teacherVacations(2027, { firstStart: '2027-07-15', firstEnd: '2027-07-01' }));
 });
 test('mixed calendar includes annual and semester obligations plus extraordinary council', () => {
   const rows = activityChecklist({

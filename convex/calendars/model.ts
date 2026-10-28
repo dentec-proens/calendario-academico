@@ -1,3 +1,4 @@
+import { withoutManualSources } from '../../src/manual-sources';
 import { calendarName } from '../../src/calendar-label';
 import { normalizeCalendar } from '../../src/calendar-normalize';
 import type { Doc, Id } from '../_generated/dataModel';
@@ -48,14 +49,14 @@ export function domainState(
   campus: Doc<'campuses'>,
   state: ContentState,
 ): DomainState {
-  return {
+  return withoutManualSources({
     ...state,
     schemaVersion: state.schemaVersion ?? 2,
     year: row.year,
     campus: campus.name,
     modalities: row.modalities,
     offer: row.modalities[0],
-  };
+  }).state;
 }
 
 export function toContent(input: DomainState): ContentState {

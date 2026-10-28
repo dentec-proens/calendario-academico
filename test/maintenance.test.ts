@@ -48,7 +48,22 @@ test('maintenance grants smoke only to its explicit active local ADMIN and revok
   await assert.rejects(
     admin.mutation(api.calendars.saveCalendar, {
       id: record.id,
-      body: { ...body, state: { ...record.state, weekEvidence: 'Mudança proibida no smoke' } },
+      body: {
+        ...body,
+        state: {
+          ...record.state,
+          events: [
+            {
+              id: 'content-note',
+              name: 'Mudança proibida no smoke',
+              kind: 'note',
+              start: '2027-03-01',
+              end: '2027-03-01',
+              modalities: ['integrado'],
+            },
+          ],
+        },
+      },
     }),
     /Nenhuma alteração foi gravada/,
   );

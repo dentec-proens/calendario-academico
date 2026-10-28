@@ -379,10 +379,6 @@ dialog#saturday-panel::backdrop {
   font-weight: 500;
   text-align: left;
 }
-#saturday-panel #saturday-evidence-help {
-  margin: -8px 0 16px;
-  font-size: 0.75rem;
-}
 .saturday-registration {
   margin: 0 0 14px;
   font-size: 0.875rem;
@@ -395,13 +391,7 @@ dialog#saturday-panel::backdrop {
 .saturday-registration dd {
   margin: 2px 0 10px;
 }
-.saturday-source h6 {
-  margin: 14px 0 6px;
-  color: var(--ui-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.saturday-source ul {
+.saturday-registrations {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -409,7 +399,7 @@ dialog#saturday-panel::backdrop {
   padding: 0;
   list-style: none;
 }
-#saturday-panel .saturday-source button {
+.saturday-registrations button {
   display: flex;
   justify-content: flex-start;
   gap: 8px;

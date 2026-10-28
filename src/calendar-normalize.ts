@@ -12,7 +12,7 @@ import { teacherVacations } from './teacher-vacations.ts';
 import { calendarModalities, modalityLabels } from './modalities.ts';
 import { activityChecklist } from './obligations.ts';
 import { eventCategory, validCategory } from './categories.ts';
-import { isAssessmentStageRecord, isStageRequirementId } from './activity-metadata.ts';
+import { isStageRequirementId } from './activity-metadata.ts';
 import { datesBetween } from './calendar.ts';
 import { convertCalendarV2 } from './calendar-rules/conversion.ts';
 import {
@@ -53,7 +53,6 @@ export function normalizeCalendar(input: unknown) {
   )
     fail('Estrutura do calendário inválida.');
   if (s.weekConfirmed) {
-    text(s.weekEvidence);
     if (!s.weekdays.length) fail('Semana letiva vazia.');
   }
   if (
@@ -75,13 +74,8 @@ export function normalizeCalendar(input: unknown) {
       ))
   )
     fail('Etapas por oferta inválidas.');
-  if (
-    s.scopeConfirmation &&
-    (!['covered', 'own-regulation'].includes(s.scopeConfirmation.status) ||
-      !s.scopeConfirmation.source.trim() ||
-      s.scopeConfirmation.source.length > 240)
-  )
-    fail('Identifique o escopo e a fonte da conferência normativa.');
+  if (s.scopeConfirmation && !['covered', 'own-regulation'].includes(s.scopeConfirmation.status))
+    fail('Identifique o escopo da conferência normativa.');
   if (
     s.organizationByModality &&
     Object.entries(s.organizationByModality).some(
@@ -98,12 +92,11 @@ export function normalizeCalendar(input: unknown) {
           ([term, value]) =>
             !academicTerms.some((allowed) => allowed === term) ||
             !['unknown', 'yes', 'no'].includes(value.status) ||
-            (value.source !== undefined && value.source.length > 240) ||
-            (value.required === true && (!value.source?.trim() || value.status !== 'yes')),
+            (value.required === true && value.status !== 'yes'),
         ),
     )
   )
-    fail('Configuração de ingresso por oferta inválida ou sem fonte.');
+    fail('Configuração de ingresso por oferta inválida.');
   for (const period of s.periods) {
     const association = period.association;
     if (!association) continue;
@@ -124,7 +117,7 @@ export function normalizeCalendar(input: unknown) {
   if (s.teacherVacations) {
     let vacation;
     try {
-      vacation = teacherVacations(s.year, s.teacherVacations, s.teacherVacations.evidence);
+      vacation = teacherVacations(s.year, s.teacherVacations);
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -199,7 +192,6 @@ export function normalizeCalendar(input: unknown) {
         if (e.category !== undefined && !validCategory(e.category))
           fail('Categoria PROENS inválida.');
         if (!['include', 'exclude', 'note'].includes(e.kind)) fail('Efeito inválido.');
-        if (!isAssessmentStageRecord(e)) text(e.evidence);
       } else {
         datesBetween(e.start, e.end);
         if (Number(e.start.slice(0, 4)) !== s.year || Number(e.end.slice(0, 4)) !== s.year)
@@ -248,7 +240,6 @@ export function normalizeCalendar(input: unknown) {
       ? organizationSummary(s.organizationByModality, calendarModalities(s))
       : ('a-classificar' as const),
     weekdays: s.weekdays,
-    weekEvidence: String(s.weekEvidence || '').slice(0, 240),
     weekConfirmed: s.weekConfirmed,
     periods: s.periods.map(({ id, name, start, end, targetDays, association }) => ({
       id,
@@ -273,7 +264,6 @@ export function normalizeCalendar(input: unknown) {
       start: e.start,
       end: e.end,
       kind: e.kind,
-      ...(!isAssessmentStageRecord(e) ? { evidence: e.evidence } : {}),
       category: eventCategory(e),
     })),
   };

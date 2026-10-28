@@ -2,6 +2,7 @@ import { normativeDayMinimums, legacyDayMinimums } from './calendar-config.ts';
 import type { CalendarActivity, TeachingState } from './domain-types.ts';
 import { calendarModalities, modalityLabels } from './modalities.ts';
 import { reviewNorm } from './review-presentation.ts';
+import { automaticEventSource } from './calendar.ts';
 import { evaluateCalendar as calendarResult } from './evaluation.ts';
 import {
   activityCoverage,
@@ -274,10 +275,7 @@ export function reviewSupport<
   },
 >(
   record: T,
-  events: (Pick<
-    CalendarActivity,
-    'id' | 'name' | 'start' | 'end' | 'evidence' | 'category' | 'modalities'
-  > &
+  events: (Pick<CalendarActivity, 'id' | 'name' | 'start' | 'end' | 'category' | 'modalities'> &
     Partial<
       Pick<
         CalendarActivity,
@@ -289,7 +287,7 @@ export function reviewSupport<
         | 'deadlineAdjustment'
         | 'hours'
       >
-    >)[],
+    > & { evidence?: string; institutional?: boolean })[],
 ) {
   let result: ReturnType<typeof calendarResult> | null = null,
     error: string | null = null,
@@ -308,16 +306,14 @@ export function reviewSupport<
           {
             ...record.state,
             weekConfirmed: true,
-            weekEvidence: record.state.weekEvidence || 'Prévia de dados cadastrados',
           },
           events.map((e) => ({
             ...e,
             kind: e.kind ?? 'note',
-            evidence: e.evidence || 'Prévia de dados cadastrados',
           })),
         );
         provisional = true;
-        error = 'Contagem provisória: confirme a semana letiva e as fontes dos eventos no editor.';
+        error = 'Contagem provisória: confirme a semana letiva no editor.';
       } catch {
         /* Invalid periods or dates must not produce a misleading total. */
       }
@@ -379,7 +375,7 @@ export function reviewSupport<
             name: e.name,
             start: e.start,
             end: e.end,
-            evidence: e.evidence ?? '',
+            evidence: automaticEventSource(e) ?? '',
           }));
         signal = candidates.length
           ? `${candidates.length} registro(s) possivelmente relacionado(s). A presença não comprova atendimento.`
@@ -460,7 +456,7 @@ export function reviewSupport<
             ...new Map(
               [...candidates, ...linked.flatMap((row) => row.events)].map((e) => [
                 e.id,
-                { ...e, evidence: e.evidence ?? '' },
+                { ...e, evidence: automaticEventSource(e) ?? '' },
               ]),
             ).values(),
           ];

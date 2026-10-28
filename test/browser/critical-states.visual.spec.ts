@@ -151,7 +151,7 @@ test('annual Saturdays keep the selection panel next to the year grid', async ({
     await expect(page.locator('dialog#saturday-panel')).toHaveJSProperty('open', true);
   }
   await page.locator('#saturday-name').fill('Reposição de aulas');
-  await page.locator('#saturday-evidence').fill('Ata da reunião de 10/03/2027');
+
   // Mobile full-page captures shift an intermediate scroll position a few pixels per capture;
   // the end of the page is stable and still shows the panel fields in both layouts.
   await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));

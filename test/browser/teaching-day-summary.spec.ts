@@ -59,12 +59,12 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#saturday-day-count')).toContainText('com a seleção: 46');
     await expect(summary.locator('.teaching-day-current strong')).toHaveText('45 dias');
     await page.locator('#saturday-name').fill('Reposição');
-    await page.locator('#saturday-evidence').fill('Ata sintética');
+
     await page.locator('#saturday-submit').click();
     await expect(summary.locator('.teaching-day-current strong')).toHaveText('46 dias');
     await selectEditorSection(page, 'issues');
     await page.locator('#calendar-scope').selectOption('covered');
-    await page.locator('#calendar-scope-source').fill('PPC sintético de 2027');
+
     await page.locator('#scope-form button[type="submit"]').click();
     await expect(summary.locator('.teaching-day-current strong')).toHaveText('46 / 200');
     await expect(summary.locator('.teaching-day-status')).toHaveText('Faltam 154 dias');

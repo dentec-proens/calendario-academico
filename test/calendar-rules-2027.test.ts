@@ -176,12 +176,14 @@ test('ambiguous v2 mixed organization preserves dates/ids without inventing scop
   expect(() => evaluateCalendar(converted, [])).toThrow('Organização a conferir');
   expect(state).toEqual(original);
 });
-test('documented prior publication survives command/copy and satisfies only its semantic destination', () => {
+test('prior publication keeps dates and destination after manual sources are removed from commands and copies', () => {
   const state = calendar(),
     event = notice();
   const applied = applyEvent(state, event, []),
     saved = normalizeCalendar({ ...applied, ignoredHistory: [] });
-  expect(saved.events[0]).toMatchObject(event);
+  const { evidence: _manualSource, ...expected } = event;
+  expect(saved.events[0]).toMatchObject(expected);
+  expect(saved.events[0]).not.toHaveProperty('evidence');
   expect(
     activityCoverage(saved).find(
       (r) => r.modality === 'integrado' && r.requirement.id === 'admission-notice-0',
@@ -195,7 +197,7 @@ test('documented prior publication survives command/copy and satisfies only its 
   ).toMatchObject({ coverage: 'partial' });
   expect(saved.events[0].admission?.periodId).toBe('deleted-period');
 });
-test('planned regular publication remains planned and December requires documented adjusted deadline', () => {
+test('planned regular publication remains planned and December requires an explicit adjusted deadline', () => {
   const state = calendar();
   state.events = [
     notice({
@@ -265,7 +267,7 @@ test('2026 is preserved, postgraduate and other years are not implicitly certifi
   expect(activityCoverage(state).every((r) => r.applicability === 'unconfigured')).toBe(true);
 });
 
-test('article 3 extends only explicitly evidenced municipal causes to the first teaching day of the offer', () => {
+test('article 3 extends only explicitly classified municipal causes to the first teaching day of the offer', () => {
   const state = calendar();
   const holiday: CalendarActivity = {
     id: 'municipal',
@@ -418,11 +420,16 @@ test('preserved duplicate occurrences remain editable after PDF provenance is re
   const second = notice({ id: 'preserved-second', evidence: 'Ata B' });
   const third = notice({ id: 'third', name: 'Outra ocorrência' });
   const state = { ...calendar(), events: [first, second, third] };
-  const edited = applyEvent(state, { ...first, evidence: 'Ata A corrigida' }, [], true);
+  const edited = applyEvent(state, { ...first, name: 'Publicação corrigida' }, [], true);
   expect(edited.events.map((item) => item.id)).toEqual(state.events.map((item) => item.id));
-  expect(edited.events[0].evidence).toBe('Ata A corrigida');
-  expect(edited.events[1]).toEqual(second);
-  expect(applyEvent(state, first, [])).toBe(state);
+  expect(edited.events[0].name).toBe('Publicação corrigida');
+  expect(edited.events[0]).not.toHaveProperty('evidence');
+  const { evidence: _secondSource, ...expectedSecond } = second;
+  expect(edited.events[1]).toEqual(expectedSecond);
+  const cleaned = applyEvent(state, first, []);
+  expect(cleaned.events.map((item) => item.id)).toEqual(state.events.map((item) => item.id));
+  expect(cleaned.events.every((item) => !Object.hasOwn(item, 'evidence'))).toBe(true);
+  expect(applyEvent(cleaned, cleaned.events[0], [])).toBe(cleaned);
   expect(() => applyEvent(state, { ...first, id: 'new-duplicate' }, [])).toThrow('mesmas datas');
   expect(() => applyEvent(state, { ...third, name: first.name }, [], true)).toThrow('mesmas datas');
 });

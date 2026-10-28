@@ -1,3 +1,4 @@
+import { automaticEventSource } from '../calendar.ts';
 import type { PrintState, PrintResult, PrintRecord, PrintEvent, DistributionRow } from './types.ts';
 import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
 import { printLogo } from './assets.generated.mjs';
@@ -19,9 +20,7 @@ function publicationDetails(event: PrintEvent, includeSource = true) {
   const labels = [];
   if (event.publicationStatus)
     labels.push(
-      event.publicationStatus === 'planned'
-        ? 'Publicação prevista'
-        : 'Publicação realizada com fonte',
+      event.publicationStatus === 'planned' ? 'Publicação prevista' : 'Publicação realizada',
     );
   if (event.admission) {
     const term = { annual: 'ciclo anual', first: '1º semestre', second: '2º semestre' }[
@@ -34,11 +33,12 @@ function publicationDetails(event: PrintEvent, includeSource = true) {
         : 'Transferência, reingresso e portador de diploma',
     );
   }
-  if (includeSource && (event.admission || event.publicationStatus) && event.evidence)
-    labels.push(`Fonte: ${event.evidence}`);
+  const source = automaticEventSource(event);
+  if (includeSource && (event.admission || event.publicationStatus) && source)
+    labels.push(`Fonte: ${source}`);
   if (event.deadlineAdjustment)
     labels.push(
-      `Prazo ajustado declarado: ${dateLabel(event.deadlineAdjustment.date)}; fonte: ${event.deadlineAdjustment.evidence}; consulte a conferência institucional no parecer`,
+      `Prazo ajustado declarado: ${dateLabel(event.deadlineAdjustment.date)}; consulte a conferência institucional no parecer`,
     );
   return labels.length ? `<small>${labels.map(esc).join(' · ')}</small>` : '';
 }
@@ -48,13 +48,13 @@ function externalReferences(state: PrintState, events: PrintEvent[]) {
   if (!rows.length) return '';
   const table = (title: string, items: PrintEvent[]) =>
     items.length
-      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade, finalidade e fonte</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${publicationDetails(event, false)}<small>${esc(event.modalities?.map((m) => modalityLabels[m] || m).join(', ') || '')}</small><small>Fonte: ${esc(event.evidence || 'Fonte a conferir')}</small></td></tr>`).join('')}</tbody></table>`
+      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade e finalidade</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${publicationDetails(event, false)}<small>${esc(event.modalities?.map((m) => modalityLabels[m] || m).join(', ') || '')}</small>${automaticEventSource(event) ? `<small>Fonte: ${esc(automaticEventSource(event))}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
       : '';
   return `<section class="proens-external-references"><h3>Atividades e referências de outros anos</h3><p>As datas integrais são preservadas. Estes registros informativos não alteram a contagem de dias letivos.</p>${table(
     'Publicações previstas',
     rows.filter((event) => event.publicationStatus === 'planned'),
   )}${table(
-    'Fatos anteriores com fonte',
+    'Fatos anteriores registrados',
     rows.filter(
       (event) => event.recordType === 'prior-reference' || event.publicationStatus === 'published',
     ),
@@ -101,7 +101,7 @@ export function proensLayout(
   const scopeLabel =
     state.year === 2027 && state.scopeConfirmation?.status !== 'covered'
       ? state.scopeConfirmation?.status === 'own-regulation'
-        ? `Aplicabilidade: calendário sujeito a norma própria; fonte declarada: ${state.scopeConfirmation.source}.`
+        ? 'Aplicabilidade: calendário sujeito a norma própria.'
         : 'Aplicabilidade: escopo a conferir antes de afirmar conformidade.'
       : '';
   const ledger = new Map(result?.ledger.map((d) => [d.date, d]) || []),

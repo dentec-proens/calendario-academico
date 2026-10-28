@@ -35,10 +35,12 @@ test('an unchanged reviewed deadline adjustment keeps its review', () => {
     admission: { type: 'regular', year: 2028, term: 'annual' },
     deadlineAdjustment: { date: '2027-07-01', evidence: 'Ofício Proens', reviewed: true },
   });
-  expect(edit(base, { category: 'evento' }).deadlineAdjustment).toEqual(base.deadlineAdjustment);
-  expect(edit(base, { adjustmentEvidence: 'Outro ofício' }).deadlineAdjustment).toEqual({
+  expect(edit(base, { category: 'evento' }).deadlineAdjustment).toEqual({
     date: '2027-07-01',
-    evidence: 'Outro ofício',
+    reviewed: true,
+  });
+  expect(edit(base, { adjustedDeadline: '2027-07-02' }).deadlineAdjustment).toEqual({
+    date: '2027-07-02',
     reviewed: false,
   });
 });

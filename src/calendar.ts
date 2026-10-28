@@ -1,7 +1,7 @@
 import { calendarLimits } from './calendar-config.ts';
 export interface CalendarEvidence {
   confirmed: boolean;
-  evidenceId: string;
+  evidenceId?: string;
 }
 export interface CalendarEvent extends CalendarEvidence {
   id: string;
@@ -19,6 +19,15 @@ export interface CalendarInput {
   thresholds: { annual: number | null; byPeriod: Record<string, number | null> };
 }
 type Evidence = Pick<CalendarEvent, 'id' | 'evidenceId'>;
+
+/** Manual calendar fields never become institutional source metadata. */
+export function automaticEventSource(event: {
+  id?: string;
+  institutional?: boolean;
+  evidence?: string;
+}) {
+  return event.institutional === true || event.id?.startsWith('inst:') ? event.evidence : undefined;
+}
 
 /** Pure civil-date counting core. Not a complete institutional validator. */
 const DAY = 86400000;
@@ -54,14 +63,12 @@ function minimum(value: number | null) {
 
 function confirmed(record: CalendarEvidence) {
   if (record.confirmed !== true) throw new TypeError('Configuração não confirmada');
-  requiredString(record.evidenceId, 'evidenceId');
 }
 
 /**
  * periods must be disjoint terms at ONE level, not both semesters and subterms.
  * weekPattern represents pedagogically confirmed ordinary teaching days.
- * This core trusts confirmation IDs supplied by its authenticated caller.
- * The future backend must resolve and authorize real evidence records.
+ * Optional institutional references are diagnostic metadata; counting never depends on source text.
  */
 export function countCalendar(input: CalendarInput) {
   const { year, offerId, periods, weekPattern, inclusions, exclusions, thresholds } = input;
@@ -167,11 +174,13 @@ export function countCalendar(input: CalendarInput) {
             ? 'WEEK_PATTERN'
             : 'NO_TEACHING',
       evidenceIds: [
-        ...new Set([
-          ...(ordinary ? [weekPattern.evidenceId] : []),
-          ...additions.map((x) => x.evidenceId),
-          ...blockers.map((x) => x.evidenceId),
-        ]),
+        ...new Set(
+          [
+            ...(ordinary ? [weekPattern.evidenceId] : []),
+            ...additions.map((x) => x.evidenceId),
+            ...blockers.map((x) => x.evidenceId),
+          ].filter((value): value is string => typeof value === 'string' && Boolean(value.trim())),
+        ),
       ],
     });
   }

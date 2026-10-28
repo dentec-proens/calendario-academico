@@ -18,7 +18,6 @@ export default function VacationsForm() {
       secondEnd: state.teacherVacations?.secondEnd || '',
       thirdStart: state.teacherVacations?.thirdStart || '',
       thirdEnd: state.teacherVacations?.thirdEnd || '',
-      evidence: state.teacherVacations?.evidence || '',
       firstDays: '',
       secondDays: '',
       thirdDays: '',
@@ -43,7 +42,7 @@ export default function VacationsForm() {
   }, [form, values]);
   let preview = '';
   try {
-    const result = teacherVacations(state.year, values, values.evidence || 'Prévia');
+    const result = teacherVacations(state.year, values);
     preview = `Total informado: ${result.total} dias. Confira o quantitativo e a decisão do campus.`;
   } catch (cause) {
     preview = cause instanceof Error ? cause.message : '';
@@ -100,17 +99,6 @@ export default function VacationsForm() {
             </form.Field>
           </div>
         ))}
-        <form.Field name="evidence">
-          {(field) => (
-            <Input
-              field={field}
-              label="Fonte ou decisão"
-              id="vacation-evidence"
-              maxLength={240}
-              required
-            />
-          )}
-        </form.Field>
         <p id="vacation-preview" role="status">
           {preview}
         </p>

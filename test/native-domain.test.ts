@@ -1,3 +1,4 @@
+import { withoutManualSources } from '../src/manual-sources.ts';
 import { inspectCalendar } from '../src/calendar-base/index.ts';
 import type { FunctionReturnType } from 'convex/server';
 import type { CalendarActivity } from '../src/domain-types.ts';
@@ -97,7 +98,10 @@ test('native mutations preserve immutable versions, reject stale writers and kee
   const record = full.calendars.find((c: { id: string }) => c.id === created.id)!;
   assert.equal(record.version, 3);
   assert.equal(record.versions.length, 2);
-  assert.deepEqual(JSON.parse(JSON.stringify(record.versions[0].state)), created.state);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(record.versions[0].state)),
+    withoutManualSources(created.state).state,
+  );
   assert.equal(record.versions[1].state.events[0].name, 'Atividade');
   const logs = await campus.read('/api/logs');
   assert.equal(logs.entries.length, 3);

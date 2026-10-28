@@ -79,7 +79,6 @@ const activity = (value: unknown): CalendarActivity => {
   return {
     ...range(row),
     kind: string(row.kind),
-    evidence: optional(row.evidence, string),
     category: optional(row.category, string),
     requirementId: optional(row.requirementId, string),
     modalities: optional(row.modalities, (value) => array(value, string)),
@@ -99,13 +98,12 @@ const activity = (value: unknown): CalendarActivity => {
       const adjustment = object(value);
       return {
         date: string(adjustment.date),
-        evidence: string(adjustment.evidence),
         reviewed: boolean(adjustment.reviewed),
       };
     }),
   };
 };
-export type VacationInput = VacationPeriods & { evidence: string };
+export type VacationInput = VacationPeriods;
 export function readCalendarInput(value: unknown) {
   const row = object(value);
   if (![2, 3].includes(number(row.schemaVersion)) || 'assessmentStages' in row)
@@ -134,7 +132,6 @@ export function readCalendarInput(value: unknown) {
                 term,
                 {
                   status: string(item.status) as IntakeConfiguration['status'],
-                  source: optional(item.source, string),
                   required: optional(item.required, boolean),
                 },
               ];
@@ -147,7 +144,6 @@ export function readCalendarInput(value: unknown) {
       const item = object(value);
       return {
         status: string(item.status) as 'covered' | 'own-regulation',
-        source: string(item.source),
       };
     }),
     conversion: optional(row.conversion, (value) => {
@@ -179,7 +175,6 @@ export function readCalendarInput(value: unknown) {
     events: array(row.events, activity),
     weekdays: array(row.weekdays, number),
     weekConfirmed: boolean(row.weekConfirmed),
-    weekEvidence: row.weekEvidence === undefined ? '' : string(row.weekEvidence),
     secondSemesterIntake: optional(row.secondSemesterIntake, boolean),
     assessmentStagesByModality: Object.fromEntries(
       Object.entries(object(row.assessmentStagesByModality)).map(([key, value]) => [
@@ -196,7 +191,6 @@ export function readCalendarInput(value: unknown) {
           secondEnd: optional(vacations.secondEnd, string),
           thirdStart: optional(vacations.thirdStart, string),
           thirdEnd: optional(vacations.thirdEnd, string),
-          evidence: string(vacations.evidence),
         } satisfies VacationInput)
       : undefined,
   };

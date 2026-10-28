@@ -40,7 +40,7 @@ export interface CalendarActivity {
   recordType?: 'event' | 'prior-reference' | 'retired-stage';
   publicationStatus?: 'planned' | 'published';
   admission?: Admission;
-  deadlineAdjustment?: { date: string; evidence: string; reviewed: boolean };
+  deadlineAdjustment?: { date: string; evidence?: string; reviewed: boolean };
 }
 
 export interface ActivityRequirement {
@@ -91,7 +91,7 @@ export interface AssessmentSettings {
   organizationByModality?: Record<string, Organization>;
   intakeByModality?: Record<string, Record<string, IntakeConfiguration>>;
   conversion?: CalendarConversion;
-  scopeConfirmation?: { status: 'covered' | 'own-regulation'; source: string };
+  scopeConfirmation?: { status: 'covered' | 'own-regulation'; source?: string };
 }
 export interface TeachingState extends AssessmentSettings {
   year: number;
@@ -133,6 +133,6 @@ export type VacationPeriods = {
 export type CountingEvent = Pick<
   CalendarActivity,
   'id' | 'kind' | 'start' | 'end' | 'modalities'
-> & { evidence?: string };
+> & { evidence?: string; institutional?: boolean };
 export type StageEvent = CountingEvent &
   Pick<CalendarActivity, 'requirementId' | 'assessmentAutoStart'>;

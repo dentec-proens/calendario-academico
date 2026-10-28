@@ -1,3 +1,4 @@
+import { selectEditorSection } from './editor-navigation.ts';
 import type * as EditorFixture from '../fixtures/editor-client.ts';
 import { test, expect } from './test.ts';
 import { publishBaseUpdate } from './base-update.ts';
@@ -31,10 +32,14 @@ for (const width of [1440, 390]) {
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
       .toBe(true);
-    await page.locator('#week-evidence').fill('');
+
+    await selectEditorSection(page, 'periods');
+    await page.locator('[data-edit-organization="integrado"]').click();
+    await page.locator('#offer-integrado-period-0-start').fill('2027-03-01');
     await expect(action).toBeDisabled();
     await expect(card).toContainText('Aplique ou descarte os campos');
-    await page.locator('#week-evidence').fill('Ata sintética');
+
+    await page.locator('#offer-integrado-period-0-start').fill('');
     await expect(action).toBeEnabled();
     await action.click();
     await expect(card).toHaveCount(0);
@@ -67,7 +72,10 @@ test('an equivalent base advance stays invisible and synchronizes without saving
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('editor'));
-  await page.locator('#week-evidence').fill('   ');
+
+  await selectEditorSection(page, 'periods');
+  await page.locator('[data-edit-organization="integrado"]').click();
+  await page.locator('#offer-integrado-period-0-start').fill('2027-03-01');
   await page.evaluate(async () => {
     const modulePath = '/test/fixtures/editor-client.ts';
     const module = (await import(modulePath)) as typeof EditorFixture;
@@ -76,7 +84,7 @@ test('an equivalent base advance stays invisible and synchronizes without saving
   });
   await expect(page.locator('.base-update-card')).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.editorTest.calls.synchronizations)).toBe(1);
-  await expect(page.locator('#week-evidence')).toHaveValue('   ');
+  await expect(page.locator('#offer-integrado-period-0-start')).toHaveValue('2027-03-01');
   expect(
     await page.evaluate(() => ({
       saves: window.editorTest.calls.saves,

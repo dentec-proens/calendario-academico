@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { api } from '../convex/_generated/api.js';
 import { createNativeFixture } from './helpers/native-database.ts';
+import { withoutManualSources } from '../src/manual-sources.ts';
 import { inspectCalendar } from '../src/calendar-base/index.ts';
 import { createEditorSession } from '../web/features/calendar-editor/session/editor-session.ts';
 import {
@@ -13,6 +14,7 @@ import type {
   CalendarSave,
   CalendarEvent,
   CalendarRecord,
+  CalendarState,
 } from '../web/features/calendar-editor/types.ts';
 
 const savedBase = (record: CalendarRecord) => ({
@@ -40,7 +42,7 @@ test.each([401, 409])(
       };
     });
     const session = createEditorSession(record, write);
-    session.apply((state) => ({ ...state, weekEvidence: 'Decisão preservada' }));
+    session.apply((state) => editPeriodName(state, 'Decisão preservada'));
     await expect(session.flush()).rejects.toThrow('Gravação bloqueada');
     session.setAccessSuspended(true);
     session.setAccessSuspended(false);
@@ -75,7 +77,7 @@ test('an unauthorized response from an old request can arrive after reauthentica
     });
   });
   const session = createEditorSession(record, write);
-  session.apply((state) => ({ ...state, weekEvidence: 'Dados aplicados antes da expiração' }));
+  session.apply((state) => editPeriodName(state, 'Dados aplicados antes da expiração'));
   const flushing = session.flush();
   await Promise.resolve();
   session.setAccessSuspended(true);
@@ -88,7 +90,7 @@ test('an unauthorized response from an old request can arrive after reauthentica
   expect(session.getSnapshot()).toMatchObject({
     dirty: false,
     status: 'saved',
-    state: { weekEvidence: 'Dados aplicados antes da expiração' },
+    state: { periods: [{ name: 'Dados aplicados antes da expiração' }] },
   });
   session.dispose();
 });
@@ -104,26 +106,33 @@ test('expired access pauses scheduled writes without losing applied state and re
     base: savedBase(record),
   }));
   const session = createEditorSession(record, write);
-  session.apply((state) => ({ ...state, weekEvidence: 'Decisão preservada' }));
+  session.apply((state) => editPeriodName(state, 'Decisão preservada'));
   session.setAccessSuspended(true);
   await vi.runAllTimersAsync();
   expect(write).not.toHaveBeenCalled();
   await expect(session.flush()).rejects.toThrow('Entre novamente');
   expect(() => session.apply((state) => state)).toThrow('Entre novamente');
-  expect(session.getSnapshot().state.weekEvidence).toBe('Decisão preservada');
+  expect(session.getSnapshot().state.periods[0].name).toBe('Decisão preservada');
   session.setAccessSuspended(false);
   await session.flush();
   expect(write).toHaveBeenCalledOnce();
   expect(session.getSnapshot()).toMatchObject({
     dirty: false,
-    state: { weekEvidence: 'Decisão preservada' },
+    state: { periods: [{ name: 'Decisão preservada' }] },
   });
   session.dispose();
 });
 
-async function opened() {
+function editPeriodName<S extends CalendarState>(state: S, name: string): S {
+  return {
+    ...state,
+    periods: state.periods.map((period, index) => (index ? period : { ...period, name })),
+  };
+}
+
+async function opened(withPeriod = true): Promise<CalendarRecord> {
   const fixture = await createNativeFixture();
-  return fixture.asClient('admin').mutation(api.calendars.createCalendar, {
+  const record = await fixture.asClient('admin').mutation(api.calendars.createCalendar, {
     body: {
       campusId: fixture.ids.campuses.a,
       year: 2027,
@@ -133,6 +142,23 @@ async function opened() {
       purpose: 'test',
     },
   });
+  return {
+    ...record,
+    state: {
+      ...withoutManualSources(record.state).state,
+      periods: withPeriod
+        ? [
+            {
+              id: 'session-period',
+              name: 'Período base',
+              start: '2027-03-01',
+              end: '2027-03-26',
+              association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+            },
+          ]
+        : [],
+    },
+  };
 }
 
 test('the server rejects removal of the last period while registered stages still need it', async () => {
@@ -197,10 +223,10 @@ test('the server rejects removal of the last period while registered stages stil
 
 test('flush drains edits applied during a write and advances the expected version', async () => {
   const record = await opened();
-  const sent: { version: number; evidence: string }[] = [];
+  const sent: { version: number; name: string }[] = [];
   let finish!: (value: CalendarSave) => void;
   const session = createEditorSession(record, (body) => {
-    sent.push({ version: body.version, evidence: body.state.weekEvidence });
+    sent.push({ version: body.version, name: body.state.periods[0].name });
     const value = {
       version: body.version + 1,
       state: body.state,
@@ -214,11 +240,11 @@ test('flush drains edits applied during a write and advances the expected versio
         })
       : Promise.resolve(value);
   });
-  session.apply((state) => ({ ...state, weekEvidence: 'Primeira decisão' }));
+  session.apply((state) => editPeriodName(state, 'Primeira decisão'));
   const flushing = session.flush();
   await Promise.resolve();
   const first = session.getSnapshot().state;
-  session.apply((state) => ({ ...state, weekEvidence: 'Decisão aplicada durante a gravação' }));
+  session.apply((state) => editPeriodName(state, 'Decisão aplicada durante a gravação'));
   finish({
     version: 2,
     state: first,
@@ -228,14 +254,14 @@ test('flush drains edits applied during a write and advances the expected versio
   });
   await flushing;
   expect(sent).toEqual([
-    { version: 1, evidence: 'Primeira decisão' },
-    { version: 2, evidence: 'Decisão aplicada durante a gravação' },
+    { version: 1, name: 'Primeira decisão' },
+    { version: 2, name: 'Decisão aplicada durante a gravação' },
   ]);
   expect(session.getSnapshot()).toMatchObject({
     dirty: false,
     status: 'saved',
     record: { version: 3 },
-    state: { weekEvidence: 'Decisão aplicada durante a gravação' },
+    state: { periods: [{ name: 'Decisão aplicada durante a gravação' }] },
   });
   session.dispose();
 });
@@ -249,11 +275,11 @@ test('remote updates cannot overwrite unapplied fields or dirty state', async ()
   const remote = {
     ...record,
     version: record.version + 1,
-    state: { ...record.state, weekEvidence: 'Outra sessão' },
+    state: editPeriodName(record.state, 'Outra sessão'),
   };
   session.receive(remote);
   expect(session.getSnapshot().record.version).toBe(record.version);
-  expect(session.getSnapshot().state.weekEvidence).toBe(record.state.weekEvidence);
+  expect(session.getSnapshot().state.periods[0].name).toBe(record.state.periods[0].name);
   expect(session.getSnapshot().remote?.version).toBe(remote.version);
   session.dispose();
 });
@@ -269,7 +295,7 @@ test('disposed sessions ignore late save confirmations and cancel scheduled writ
       }),
   );
   const session = createEditorSession(record, write);
-  session.apply((state) => ({ ...state, weekEvidence: 'Decisão' }));
+  session.apply((state) => editPeriodName(state, 'Decisão'));
   const flushing = session.flush();
   await Promise.resolve();
   const before = session.getSnapshot();
@@ -299,7 +325,7 @@ test('read-only sessions reject domain commands and never persist', async () => 
 });
 
 test('domain commands reject invalid changes atomically and recalculate teaching-day targets', async () => {
-  const record = await opened();
+  const record = await opened(false);
   const original = structuredClone(record.state);
   expect(() =>
     applyWeek(record.state, { weekdays: [], weekEvidence: 'Ata', weekConfirmed: true }, []),
@@ -356,7 +382,7 @@ test('a new institutional revision is saved only after explicit confirmation, pr
       base: savedBase(record),
     };
   });
-  session.apply((state) => ({ ...state, weekEvidence: 'Decisão local preservada' }));
+  session.apply((state) => editPeriodName(state, 'Decisão local preservada'));
   await expect(session.flush()).rejects.toThrow('base institucional');
   expect(revisions).toEqual([1]);
   await session.confirmBase(session.getSnapshot().baseUpdate.identity);
@@ -364,7 +390,7 @@ test('a new institutional revision is saved only after explicit confirmation, pr
   expect(session.getSnapshot()).toMatchObject({
     dirty: false,
     record: { catalogueRevision: 2 },
-    state: { weekEvidence: 'Decisão local preservada' },
+    state: { periods: [{ name: 'Decisão local preservada' }] },
   });
   session.dispose();
 });
@@ -464,7 +490,7 @@ test.each(['before-failure', 'after-failure'])(
       status: 'saved',
       record: { version: original.version, catalogueRevision: 3 },
     });
-    session.apply((state) => ({ ...state, weekEvidence: 'Nova alteração permitida' }));
+    session.apply((state) => editPeriodName(state, 'Nova alteração permitida'));
     await session.flush();
     expect(sent.at(-1)).toBeUndefined();
     session.dispose();
@@ -482,12 +508,12 @@ test('explicitly reopening remote data preserves the active session and accepts 
     base: savedBase(record),
   }));
   const session = createEditorSession(record, write);
-  session.apply((state) => ({ ...state, weekEvidence: 'Aplicado localmente' }));
+  session.apply((state) => editPeriodName(state, 'Aplicado localmente'));
   session.setFormDirty('pending-field', true);
   const remote = {
     ...record,
     version: record.version + 1,
-    state: { ...record.state, weekEvidence: 'Decisão remota' },
+    state: editPeriodName(record.state, 'Decisão remota'),
   };
   session.receive(remote);
   expect(session.getSnapshot().remote).not.toBeNull();
@@ -498,14 +524,64 @@ test('explicitly reopening remote data preserves the active session and accepts 
     remote: null,
     status: 'idle',
     formEpoch: 1,
-    state: { weekEvidence: 'Decisão remota' },
+    state: { periods: [{ name: 'Decisão remota' }] },
   });
-  session.apply((state) => ({ ...state, weekEvidence: 'Nova decisão local' }));
+  session.apply((state) => editPeriodName(state, 'Nova decisão local'));
   await session.flush();
   expect(write).toHaveBeenCalledWith(expect.objectContaining({ version: remote.version }));
   expect(session.getSnapshot()).toMatchObject({
     dirty: false,
-    state: { weekEvidence: 'Nova decisão local' },
+    state: { periods: [{ name: 'Nova decisão local' }] },
   });
+  session.dispose();
+});
+
+test('legacy manual sources are ignored on opening, save acknowledgement and remote reception', async () => {
+  const record = await opened();
+  const legacy: CalendarRecord = {
+    ...record,
+    state: {
+      ...record.state,
+      weekEvidence: 'Ata manual anterior',
+      events: [
+        {
+          id: 'local',
+          name: 'Evento',
+          kind: 'note',
+          start: '2027-03-01',
+          end: '2027-03-01',
+          evidence: 'Fonte antiga',
+          modalities: ['integrado'],
+        },
+      ],
+    },
+  };
+  const session = createEditorSession(legacy, async (body) => ({
+    state: {
+      ...body.state,
+      weekEvidence: `record:${record.id}:week`,
+      events: body.state.events.map((event) => ({ ...event, evidence: `record:${event.id}` })),
+    },
+    version: body.version + 1,
+    updatedAt: record.updatedAt,
+    readiness: record.readiness,
+    base: savedBase(record),
+  }));
+  expect(session.getSnapshot().dirty).toBe(false);
+  expect(session.getSnapshot().state).not.toHaveProperty('weekEvidence');
+  expect(session.getSnapshot().record.state.events[0]).not.toHaveProperty('evidence');
+  expect(session.getSnapshot().record.institutionalSnapshot).toEqual(record.institutionalSnapshot);
+  session.apply((state) => editPeriodName(state, 'Período ajustado'));
+  await session.flush();
+  expect(session.getSnapshot().dirty).toBe(false);
+  expect(session.getSnapshot().state).not.toHaveProperty('weekEvidence');
+  expect(session.getSnapshot().record.state.events[0]).not.toHaveProperty('evidence');
+  const confirmed = session.getSnapshot().record;
+  session.receive({
+    ...confirmed,
+    state: { ...confirmed.state, weekEvidence: 'Outra fonte antiga' },
+  });
+  expect(session.getSnapshot().dirty).toBe(false);
+  expect(session.getSnapshot().record.state).not.toHaveProperty('weekEvidence');
   session.dispose();
 });

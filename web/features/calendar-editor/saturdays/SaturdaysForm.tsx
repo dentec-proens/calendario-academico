@@ -56,7 +56,7 @@ export default function SaturdaysForm() {
   });
   const { form, values, submit, pending, error } = useCalendarForm(
     'saturdays',
-    { dates: [] as string[], name: '', evidence: '' },
+    { dates: [] as string[], name: '' },
     function apply(value) {
       let first = '';
       session.apply((current) => {
@@ -71,7 +71,7 @@ export default function SaturdaysForm() {
         first = dates[0] ?? '';
         return applySaturdayActivities(
           current,
-          dates.map((date) => ({ date, name: value.name, evidence: value.evidence })),
+          dates.map((date) => ({ date, name: value.name })),
           institutional,
           () => crypto.randomUUID(),
         );
@@ -79,7 +79,7 @@ export default function SaturdaysForm() {
       setPanelOpen(false);
       // The submit button leaves with the selection: continue from the first registered date.
       if (first) focusLater(() => dateControl(first));
-      return { dates: [], name: '', evidence: '' };
+      return { dates: [], name: '' };
     },
   );
   const months = useMemo(() => saturdayYear(state, events), [state, events]);
@@ -93,7 +93,6 @@ export default function SaturdaysForm() {
     (day) => day.status !== 'registered' && values.dates.includes(day.date),
   );
   const saturdayActivities = state.events.filter((event) => event.category === 'sabado');
-  const lastSource = saturdayActivities.at(-1)?.evidence ?? '';
   const suggestions = [...new Set(saturdayActivities.map((event) => event.name))].filter(
     (name) => name !== values.name,
   );
@@ -104,7 +103,6 @@ export default function SaturdaysForm() {
     // An empty selection returns to the defaults, so nothing remains unapplied.
     form.setFieldValue('dates', []);
     form.setFieldValue('name', '');
-    form.setFieldValue('evidence', '');
     setPanelOpen(false);
     // A compact panel closes first; the date is reachable only once the dialog is gone.
     if (focus) focusLater(() => dateControl(focus));
@@ -119,8 +117,6 @@ export default function SaturdaysForm() {
       return;
     }
     setEditingId(null);
-    if (!active.length && !form.getFieldValue('evidence').trim() && lastSource)
-      form.setFieldValue('evidence', lastSource);
     form.setFieldValue('dates', [...rest, date]);
   }
   function unselect(date: string) {
@@ -175,8 +171,12 @@ export default function SaturdaysForm() {
           <dl className="saturday-registration">
             <dt>Atividade</dt>
             <dd>{editing.registration!.name}</dd>
-            <dt>Fonte da decisão</dt>
-            <dd>{editing.registration!.evidence}</dd>
+            {editing.registration!.id.startsWith('inst:') && editing.registration!.evidence && (
+              <>
+                <dt>Fonte institucional</dt>
+                <dd>{editing.registration!.evidence}</dd>
+              </>
+            )}
           </dl>
           <p className="help">Edite este registro em Atividades e datas do campus.</p>
         </>
@@ -259,22 +259,6 @@ export default function SaturdaysForm() {
           </ul>
         </div>
       )}
-      <form.Field name="evidence">
-        {(field) => (
-          <Input
-            field={field}
-            label="Fonte da decisão"
-            id="saturday-evidence"
-            form="saturday-form"
-            aria-describedby="saturday-evidence-help"
-            maxLength={240}
-            required
-          />
-        )}
-      </form.Field>
-      <p id="saturday-evidence-help" className="help">
-        Documento que definiu a atividade, como uma resolução, portaria ou ata.
-      </p>
       <FormFeedback error={error} />
       <FormActions preserveOnClose>
         <Button type="submit" id="saturday-submit" form="saturday-form">

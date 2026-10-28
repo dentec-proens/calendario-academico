@@ -15,9 +15,8 @@ function defineEditorPage<Section extends EditorSection>(
 export const editorPages = {
   edit: defineEditorPage('edit', {
     title: 'Semana letiva',
-    detail: 'Dias regulares e referência',
-    description:
-      'Defina os dias regulares de atividades letivas e informe a referência da decisão.',
+    detail: 'Dias regulares de atividades',
+    description: 'Defina os dias regulares de atividades letivas.',
   }),
   periods: defineEditorPage('periods', {
     title: 'Organização letiva por oferta',
@@ -32,12 +31,12 @@ export const editorPages = {
   days: defineEditorPage('days', {
     title: 'Sábados letivos',
     detail: 'Atividades ao longo do ano',
-    description: 'Selecione os sábados letivos do ano e registre a decisão que os definiu.',
+    description: 'Selecione os sábados letivos do ano e informe suas atividades.',
   }),
   vacations: defineEditorPage('vacations', {
     title: 'Férias docentes',
     detail: 'Períodos de férias do campus',
-    description: 'Informe os períodos de férias docentes e a referência da decisão do campus.',
+    description: 'Informe os períodos de férias docentes do campus.',
   }),
   events: defineEditorPage('events', {
     title: 'Atividades e datas do campus',

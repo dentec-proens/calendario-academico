@@ -35,16 +35,10 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
   ]);
   let id = 0;
   const make = () => String(++id);
-  s.events = saturdayEvents(
-    s,
-    ['2027-02-06', '2027-02-20', '2027-02-20'],
-    'Sábado letivo',
-    'Ata 1',
-    make,
-  );
+  s.events = saturdayEvents(s, ['2027-02-06', '2027-02-20', '2027-02-20'], 'Sábado letivo', make);
   const restored = JSON.parse(JSON.stringify(s));
   assert.equal(calendarResult(restored, restored.events).byWeekday[6], 2);
-  assert.equal(saturdayEvents(s, ['2027-02-06'], 'Sábado', 'Ata', make).length, 0);
+  assert.equal(saturdayEvents(s, ['2027-02-06'], 'Sábado', make).length, 0);
   const result = calendarResult(s, [
     ...s.events,
     {
@@ -58,9 +52,9 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
   ]);
   assert.equal(result.byWeekday[6], 1);
   assert.equal(result.conflicts.length, 1);
-  assert.throws(() => saturdayEvents(s, ['2027-04-03'], 'Sábado', 'Ata', make), /fora/);
-  assert.throws(() => saturdayEvents(s, ['2027-02-05'], 'Sábado', 'Ata', make), /sábados/);
-  assert.throws(() => saturdayEvents(s, ['2027-02-27'], 'Sábado', '', make), /fonte/);
+  assert.throws(() => saturdayEvents(s, ['2027-04-03'], 'Sábado', make), /fora/);
+  assert.throws(() => saturdayEvents(s, ['2027-02-05'], 'Sábado', make), /sábados/);
+  assert.throws(() => saturdayEvents(s, ['2027-02-27'], '', make), /atividade/);
 });
 
 test('a confirmed annual selection includes Saturdays from different months in one atomic command', () => {
@@ -88,7 +82,7 @@ test('a confirmed annual selection includes Saturdays from different months in o
     changed.events.map((event) => event.start),
     ['2027-03-06', '2027-08-07'],
   );
-  assert.ok(changed.events.every((event) => event.evidence === selected.evidence));
+  assert.ok(changed.events.every((event) => !Object.hasOwn(event, 'evidence')));
   assert.equal(applySaturdays(changed, selected, [], () => String(++id)).events.length, 2);
   assert.deepEqual(state, original);
   assert.throws(
@@ -105,7 +99,7 @@ test('a confirmed annual selection includes Saturdays from different months in o
   assert.deepEqual(state, original);
 });
 
-test('each Saturday keeps its activity and decision and a failed batch changes nothing', () => {
+test('each Saturday keeps its activity and date without a source and a failed batch changes nothing', () => {
   const state: ActivityState = {
     year: 2027,
     offer: 'integrado',
@@ -125,8 +119,8 @@ test('each Saturday keeps its activity and decision and a failed batch changes n
   let id = 0;
   const changed = applySaturdayActivities(state, activities, [], () => String(++id));
   assert.deepEqual(
-    changed.events.map(({ start, name, evidence }) => ({ date: start, name, evidence })),
-    activities,
+    changed.events.map(({ start, name }) => ({ date: start, name })),
+    activities.map(({ evidence: _source, ...activity }) => activity),
   );
   assert.equal(
     applySaturdayActivities(changed, activities, [], () => String(++id)).events.length,
@@ -134,13 +128,10 @@ test('each Saturday keeps its activity and decision and a failed batch changes n
   );
   assert.throws(
     () =>
-      applySaturdayActivities(
-        state,
-        [activities[0]!, { ...activities[1]!, evidence: '' }],
-        [],
-        () => String(++id),
+      applySaturdayActivities(state, [activities[0]!, { ...activities[1]!, name: '' }], [], () =>
+        String(++id),
       ),
-    /07\/08\/2027:.*fonte/,
+    /07\/08\/2027:.*atividade/,
   );
   assert.throws(
     () =>
@@ -203,7 +194,7 @@ const holiday: CalendarActivity = {
   start: '2027-03-20',
   end: '2027-03-20',
 };
-const pick = (event?: CalendarActivity) => ({ name: event?.name, evidence: event?.evidence });
+const pick = (event?: CalendarActivity) => ({ name: event?.name });
 
 test('saturday year classifies each Saturday and keeps registered dates reachable', () => {
   const months = saturdayYear(yearState, [...yearState.events, holiday]);
@@ -229,10 +220,14 @@ test('updating a Saturday activity trims values and rejects other records', () =
     { id: 's1', name: '  Reposição ', evidence: ' Res. 12 ' },
     [],
   );
-  assert.deepEqual(pick(next.events.find((e) => e.id === 's1')), {
-    name: 'Reposição',
-    evidence: 'Res. 12',
-  });
+  assert.deepEqual(pick(next.events.find((e) => e.id === 's1')), { name: 'Reposição' });
+  assert.equal(
+    Object.hasOwn(
+      next.events.find((e) => e.id === 's1')!,
+      'evidence',
+    ),
+    false,
+  );
   assert.throws(
     () => updateSaturdayActivity(yearState, { id: 'x', name: 'a', evidence: 'b' }, []),
     /não existe mais/,
@@ -243,7 +238,7 @@ test('updating a Saturday activity trims values and rejects other records', () =
   );
   assert.throws(
     () => updateSaturdayActivity(yearState, { id: 's1', name: ' ', evidence: 'b' }, []),
-    /atividade e a fonte/,
+    /atividade/,
   );
 });
 

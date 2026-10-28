@@ -1,3 +1,4 @@
+import { legacyCalendarState } from './legacyDto';
 import { inspectBase } from './base';
 import { releaseReadiness } from '../../src/release';
 import type { Doc, Id } from '../_generated/dataModel';
@@ -52,6 +53,7 @@ export async function fullRecord(
     .take(50);
   return clean({
     ...record,
+    state: legacyCalendarState(record.state, record.id, record.version),
     versions: versions.map((row) => ({
       version: row.version,
       at: iso(row.at),

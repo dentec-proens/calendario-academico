@@ -102,9 +102,9 @@ test('overlapping periods, foreign year and out-of-period inclusions rejected', 
   z.inclusions = [event('a', '2027-02-08')];
   assert.throws(() => countCalendar(z));
 });
-test('missing evidence, scope and thresholds cannot silently pass', () => {
+test('missing confirmation, scope and thresholds cannot silently pass', () => {
   const x = fixture();
-  x.weekPattern.evidenceId = '';
+  x.weekPattern.confirmed = false;
   assert.throws(() => countCalendar(x));
   const y = fixture();
   y.exclusions = [event('a', '2027-02-02')];

@@ -26,15 +26,13 @@ for (const width of [1440, 390]) {
     await expect(page.getByRole('heading', { name: 'Semana letiva', exact: true })).toHaveCount(1);
     await expect(page.getByRole('textbox', { name: 'Campus', exact: true })).toHaveCount(0);
     await expect(page.getByRole('spinbutton', { name: 'Ano', exact: true })).toHaveCount(0);
-    await expect(page.locator('#week-evidence')).toHaveAccessibleDescription(
-      /resolução, portaria ou ata de reunião/,
-    );
+    await expect(page.locator('#week-evidence')).toHaveCount(0);
 
     const weekdays = page.locator('#weekdays input');
     await expect(weekdays).toHaveCount(5);
-    await page.locator('#week-evidence').fill('');
+
     for (const checkbox of await weekdays.all()) await checkbox.uncheck();
-    await page.locator('#week-evidence').fill('Decisão da semana letiva');
+
     await page
       .getByRole('button', { name: 'Continuar para organização letiva por oferta', exact: true })
       .click();
@@ -91,7 +89,8 @@ for (const width of [1440, 390]) {
     expect(await page.evaluate(() => window.editorTest.calls.conversions)).toBe(0);
     await selectEditorSection(page, 'edit');
     const saves = await page.evaluate(() => window.editorTest.calls.saves);
-    await page.locator('#week-evidence').fill('');
+    await page.locator('#weekdays input[value="1"]').uncheck();
+
     await expect(page.locator('.editor-save-indicator')).toHaveText(
       'Campos ainda em preenchimento',
     );

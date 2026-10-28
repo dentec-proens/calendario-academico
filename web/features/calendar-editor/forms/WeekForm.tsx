@@ -1,7 +1,6 @@
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { applyWeek } from '../../../../src/calendar-edits/commands.ts';
-import { Input } from './fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { useNavigate } from '@tanstack/react-router';
 import { editorPages, editorNavigation } from '../editor-steps.ts';
@@ -14,7 +13,6 @@ export default function WeekForm() {
     'week',
     {
       weekdays: state.weekdays,
-      weekEvidence: state.weekEvidence,
     },
     function apply(value) {
       session.apply((current) =>
@@ -63,24 +61,6 @@ export default function WeekForm() {
             </fieldset>
           )}
         </form.Field>
-        <form.Field name="weekEvidence">
-          {(field) => (
-            <Input
-              field={field}
-              label="Referência da decisão"
-              id="week-evidence"
-              aria-describedby="week-evidence-help"
-              placeholder="Ex.: Resolução nº 12/2026 ou Portaria nº 45/2026"
-              required
-              maxLength={240}
-            />
-          )}
-        </form.Field>
-        <p id="week-evidence-help" className="help editor-field-description">
-          Indique o documento ou registro que definiu a semana letiva desta oferta, como uma
-          resolução, portaria ou ata de reunião. Informe o número, o ano ou outra identificação que
-          permita consultar a decisão.
-        </p>
         <FormFeedback error={error} />
       </fieldset>
     </form>

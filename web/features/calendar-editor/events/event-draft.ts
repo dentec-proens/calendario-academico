@@ -52,10 +52,8 @@ export interface EventValues {
   admissionTerm: 'annual' | 'first' | 'second';
   admissionPeriodId: string;
   adjustedDeadline: string;
-  adjustmentEvidence: string;
   deadlineExtensionCause: '' | 'municipal-holiday' | 'municipal-recess';
   category: string;
-  evidence: string;
   requirementId: string;
   modalities: Modality[];
   hours: string;
@@ -74,10 +72,8 @@ export const emptyEvent = (modalities: Modality[]): EventValues => ({
   admissionTerm: 'annual',
   admissionPeriodId: '',
   adjustedDeadline: '',
-  adjustmentEvidence: '',
   deadlineExtensionCause: '',
   category: 'recesso',
-  evidence: '',
   requirementId: '',
   modalities,
   hours: '',
@@ -96,10 +92,8 @@ export function eventValues(event: CalendarEvent, modalities: Modality[]): Event
     admissionTerm: event.admission?.term ?? 'annual',
     admissionPeriodId: event.admission?.periodId ?? '',
     adjustedDeadline: event.deadlineAdjustment?.date ?? '',
-    adjustmentEvidence: event.deadlineAdjustment?.evidence ?? '',
     deadlineExtensionCause: event.deadlineExtensionCause ?? '',
     category: eventCategory(event),
-    evidence: event.evidence ?? '',
     requirementId: event.requirementId || '',
     modalities: event.modalities?.length ? event.modalities : modalities,
     hours: event.hours === undefined ? '' : String(event.hours),
@@ -128,10 +122,13 @@ export function eventFromValues(
 ): CalendarEvent {
   if (!value.kind) throw new Error('Escolha o efeito na contagem.');
   const notice = noticeActive(value);
-  // An unchanged adjustment keeps its institutional review; a new date or source needs another.
+  // An unchanged adjustment keeps its institutional review; a new date needs another.
   const adjustment = target.base?.deadlineAdjustment;
-  const { assessmentAutoStart: _automatic, ...kept } =
-    target.base ?? ({} as Partial<CalendarEvent>);
+  const {
+    assessmentAutoStart: _automatic,
+    evidence: _legacySource,
+    ...kept
+  } = target.base ?? ({} as Partial<CalendarEvent>);
   return {
     ...kept,
     id: target.id,
@@ -154,17 +151,15 @@ export function eventFromValues(
           }
         : undefined,
     deadlineAdjustment:
-      notice && (value.adjustedDeadline || value.adjustmentEvidence)
-        ? adjustment?.date === value.adjustedDeadline &&
-          adjustment.evidence === value.adjustmentEvidence
-          ? adjustment
-          : { date: value.adjustedDeadline, evidence: value.adjustmentEvidence, reviewed: false }
+      notice && value.adjustedDeadline
+        ? adjustment?.date === value.adjustedDeadline
+          ? { date: adjustment.date, reviewed: adjustment.reviewed }
+          : { date: value.adjustedDeadline, reviewed: false }
         : undefined,
     category:
       target.base && !target.base.category && value.category === eventCategory(target.base)
         ? undefined
         : value.category,
-    evidence: value.evidence,
     modalities: value.modalities,
     requirementId: value.requirementId || undefined,
     hours: value.hours ? Number(value.hours) : undefined,

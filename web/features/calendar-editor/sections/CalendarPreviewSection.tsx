@@ -58,7 +58,7 @@ export default function CalendarPreviewSection() {
       <div className="panel" id="calendar-records">
         <h3>Registros do calendário</h3>
         <p className="help">
-          Datas institucionais e registros do campus, com vínculo, efeito, fonte e ofertas.
+          Datas institucionais e registros do campus, com vínculo, efeito e ofertas.
         </p>
         <ul id="calendar-record-list" className="records">
           {[...events]

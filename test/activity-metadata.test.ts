@@ -154,7 +154,7 @@ test('a 2026 stage prepared in a calendar with several offers can be applied', (
   const draft = activityDraft(state, row);
   expect(draft.modalities).toEqual(['integrado']);
   const event = eventFromValues(
-    { ...draft, start: '2026-03-02', end: '2026-04-30', evidence: 'Ata sintética' },
+    { ...draft, start: '2026-03-02', end: '2026-04-30' },
     { id: 'stage' },
   );
   expect(() => applyEvent(state, event, [])).toThrow(/inteiramente dentro/);

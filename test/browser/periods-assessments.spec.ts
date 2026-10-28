@@ -69,7 +69,6 @@ test('an existing local intake declaration survives explicit organization of its
   expect((await savedState(page)).state.intakeByModality?.integrado?.annual).toEqual({
     status: 'yes',
     required: true,
-    source: 'Regra local preservada',
   });
 });
 
