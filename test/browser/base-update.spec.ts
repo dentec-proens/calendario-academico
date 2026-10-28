@@ -31,7 +31,7 @@ for (const width of [1440, 390]) {
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
       .toBe(true);
-    await page.locator('#week-evidence').fill('Campo em preenchimento');
+    await page.locator('#week-evidence').fill('');
     await expect(action).toBeDisabled();
     await expect(card).toContainText('Aplique ou descarte os campos');
     await page.locator('#week-evidence').fill('Ata sintética');
@@ -67,7 +67,7 @@ test('an equivalent base advance stays invisible and synchronizes without saving
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('editor'));
-  await page.locator('#week-evidence').fill('Rascunho não aplicado');
+  await page.locator('#week-evidence').fill('   ');
   await page.evaluate(async () => {
     const modulePath = '/test/fixtures/editor-client.ts';
     const module = (await import(modulePath)) as typeof EditorFixture;
@@ -76,7 +76,7 @@ test('an equivalent base advance stays invisible and synchronizes without saving
   });
   await expect(page.locator('.base-update-card')).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.editorTest.calls.synchronizations)).toBe(1);
-  await expect(page.locator('#week-evidence')).toHaveValue('Rascunho não aplicado');
+  await expect(page.locator('#week-evidence')).toHaveValue('   ');
   expect(
     await page.evaluate(() => ({
       saves: window.editorTest.calls.saves,

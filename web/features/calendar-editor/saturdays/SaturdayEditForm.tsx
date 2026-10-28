@@ -30,7 +30,7 @@ export default function SaturdayEditForm({
       );
       onClose(event.start);
     },
-    () => `Sábado ${fullDate(event.start)} atualizado.`,
+    { successMessage: () => `Sábado ${fullDate(event.start)} atualizado.` },
   );
   function discard() {
     form.reset({ name: event.name, evidence: event.evidence });

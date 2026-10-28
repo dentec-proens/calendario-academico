@@ -3,25 +3,37 @@ import { useDraftForm } from '../../../shared/forms/useDraftForm.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { equalValues } from '../../../../src/equal.ts';
 
+interface CalendarFormOptions<T> {
+  successMessage?: (value: T) => string;
+  nonEditingFields?: ReadonlyArray<keyof T>;
+  applyOnChange?: boolean;
+  onSubmit?: () => void;
+}
+
 export function useCalendarForm<T extends object>(
   id: string,
   defaultValues: T,
   onApply: (value: T) => T | void,
-  successMessage?: (value: T) => string,
-  nonEditingFields?: ReadonlyArray<keyof T>,
+  options: CalendarFormOptions<T> = {},
 ) {
-  const { session, record, notify } = useCalendarEditor();
+  const { session, record, notify, readOnly } = useCalendarEditor();
   const pendingDefaults = useRef<T | null>(null);
+  function apply(values: T) {
+    if (readOnly) throw new Error('Consulta em modo somente leitura.');
+    const next = onApply(values);
+    pendingDefaults.current = null;
+    result.form.reset(next === undefined ? values : next);
+    session.setFormDirty(id, false);
+  }
   const result = useDraftForm({
     defaultValues,
     draftKey: `calendar:${record.id}:${id}`,
-    nonEditingFields,
+    nonEditingFields: options.nonEditingFields,
+    onChange: options.applyOnChange ? apply : undefined,
     onSubmit: (values) => {
-      const next = onApply(values);
-      pendingDefaults.current = null;
-      result.form.reset(next === undefined ? values : next);
-      session.setFormDirty(id, false);
-      notify(successMessage?.(values) ?? '');
+      apply(values);
+      notify(options.successMessage?.(values) ?? '');
+      options.onSubmit?.();
     },
   });
   const dirty = result.dirty;
@@ -35,12 +47,15 @@ export function useCalendarForm<T extends object>(
         pendingDefaults.current = defaultValues;
       confirmedDefaults.current = defaultValues;
     }
+    // Track local applications too: their server acknowledgement must not reset
+    // a text field (or its caret) while the person is still typing.
+    if (options.applyOnChange) confirmedDefaults.current = defaultValues;
     if (!dirty && pendingDefaults.current) {
       const fresh = pendingDefaults.current;
       pendingDefaults.current = null;
       result.form.reset(fresh);
     }
-  }, [defaultValues, dirty, id, record.version, result.form]);
+  }, [defaultValues, dirty, id, options.applyOnChange, record.version, result.form]);
   useEffect(() => {
     session.setFormDirty(id, dirty);
   }, [dirty, id, session]);

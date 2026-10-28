@@ -88,7 +88,10 @@ function useController() {
         context?.kind === 'activity' ? { ...context, eventId: id } : { kind: 'event', eventId: id },
       );
     },
-    (value) => `Evento “${value.name}” aplicado. Confira o indicador de salvamento.`,
+    {
+      successMessage: (value) =>
+        `Evento “${value.name}” aplicado. Confira o indicador de salvamento.`,
+    },
   );
   const dirty = result.dirty;
   const { form: eventForm, clearDraft } = result;

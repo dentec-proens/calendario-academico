@@ -21,6 +21,8 @@ interface DraftFormOptions<T extends object> {
   excludeFromDraft?: ReadonlyArray<keyof T>;
   /** Browsing preferences are cached but do not represent unapplied data. */
   nonEditingFields?: ReadonlyArray<keyof T>;
+  /** Runs only for field interactions, never when resetting or adopting remote values. */
+  onChange?: (value: T) => void;
   onSubmit: (value: T, operation: { isCurrent: () => boolean }) => Promise<void> | void;
   onError?: (message: string) => void;
 }
@@ -66,6 +68,19 @@ export function useDraftForm<T extends object>(options: DraftFormOptions<T>) {
     formId: draftKey && !excluded.size ? `inspect:${draftKey}` : `private:${draftKey ?? privateId}`,
     defaultValues: initial.state.values,
     defaultState: { values: initial.state.values, fieldMetaBase: initial.state.fieldMetaBase },
+    listeners: {
+      onChange: ({ formApi }) => {
+        if (!options.onChange || drafts?.protection.locked) return;
+        setError('');
+        try {
+          options.onChange(formApi.state.values);
+        } catch (cause) {
+          const message = nativeError(cause).message;
+          setError(message);
+          options.onError?.(message);
+        }
+      },
+    },
     onSubmit: async ({ value }) => {
       const submittedIdentity = identity;
       if (drafts?.protection.locked) return;

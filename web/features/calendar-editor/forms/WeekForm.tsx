@@ -1,7 +1,7 @@
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { applyWeek } from '../../../../src/calendar-edits/commands.ts';
-import { Input, Check } from './fields.tsx';
+import { Input } from './fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { useNavigate } from '@tanstack/react-router';
 import { editorPages, editorNavigation } from '../editor-steps.ts';
@@ -15,18 +15,23 @@ export default function WeekForm() {
     {
       weekdays: state.weekdays,
       weekEvidence: state.weekEvidence,
-      weekConfirmed: state.weekConfirmed,
     },
     function apply(value) {
-      session.apply((current) => applyWeek(current, value, institutional));
-      if (next)
-        void navigate({
-          to: next.path,
-          params: { calendarId: record.id },
-          search: (previous) => previous,
-        });
+      session.apply((current) =>
+        applyWeek(current, { ...value, weekConfirmed: true }, institutional),
+      );
     },
-    () => 'Semana letiva atualizada.',
+    {
+      applyOnChange: true,
+      onSubmit: () => {
+        if (next)
+          void navigate({
+            to: next.path,
+            params: { calendarId: record.id },
+            search: (previous) => previous,
+          });
+      },
+    },
   );
   return (
     <form id="week-form" onSubmit={submit} aria-labelledby="editor-section-title">
@@ -76,16 +81,6 @@ export default function WeekForm() {
           resolução, portaria ou ata de reunião. Informe o número, o ano ou outra identificação que
           permita consultar a decisão.
         </p>
-        <form.Field name="weekConfirmed">
-          {(field) => (
-            <Check
-              field={field}
-              id="week-confirmed"
-              required
-              label="Confirmo essa organização para a oferta."
-            />
-          )}
-        </form.Field>
         <FormFeedback error={error} />
       </fieldset>
     </form>

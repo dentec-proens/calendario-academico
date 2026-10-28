@@ -161,7 +161,12 @@ export function createEditorSession(
         throw new Error(current.error || 'Resolva o conflito antes de aplicar alterações.');
       const changed = command(structuredClone(current.state));
       const state = { ...convertCalendarV2(changed), rulesetVersion: rulesetVersion(changed) };
-      publish({ state, dirty: !equalValues(state, current.record.state) });
+      const dirty = !equalValues(state, current.record.state);
+      publish({
+        state,
+        dirty,
+        status: !dirty && current.status === 'scheduled' ? 'saved' : current.status,
+      });
       saver.schedule();
     },
     replace(state: CalendarState) {

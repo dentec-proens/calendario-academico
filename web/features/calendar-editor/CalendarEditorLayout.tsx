@@ -300,8 +300,9 @@ function EditorFrame() {
             </div>
           )}
           <p id="unapplied-status" className="help" role="status" hidden={!unapplied}>
-            Há campos em preenchimento. Confirme o formulário para incluir essas alterações no
-            calendário.
+            {currentSection === 'edit'
+              ? 'Há campos em preenchimento. Corrija as pendências da semana letiva ou confirme os demais formulários.'
+              : 'Há campos em preenchimento. Confirme o formulário para incluir essas alterações no calendário.'}
           </p>
           {remote && (
             <p id="editor-remote-change">

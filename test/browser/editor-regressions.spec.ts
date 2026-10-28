@@ -74,7 +74,7 @@ test('reverting a field clears unapplied state and annual Saturday selections su
   await page.goto(await fixtureServer('editor'));
   const evidence = page.locator('#week-evidence');
   const original = await evidence.inputValue();
-  await evidence.fill('Preenchimento temporário');
+  await evidence.fill('');
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await evidence.fill(original);
   await expect(page.locator('#unapplied-status')).toBeHidden();

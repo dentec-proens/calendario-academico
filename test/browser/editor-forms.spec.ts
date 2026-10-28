@@ -24,9 +24,9 @@ test('week form applies confirmed weekdays and rejects an empty week atomically'
   await page.locator('[data-view="edit"]').click();
   const weekdays = page.locator('#weekdays input');
   await expect(weekdays).toHaveCount(5);
+  await page.locator('#week-evidence').fill('');
   for (const checkbox of await weekdays.all()) await checkbox.uncheck();
   await page.locator('#week-evidence').fill('Resolução da semana letiva');
-  await page.locator('#week-confirmed').check();
   await page.locator('#editor-continue').click();
   await expect(page.locator('#week-form [role="alert"]')).toHaveText(
     'Selecione pelo menos um dia regular.',
@@ -634,13 +634,13 @@ test('clean fields receive remote defaults while unapplied values survive a late
   await expect(page.locator('#week-evidence')).toHaveValue('Semana atualizada em outra sessão');
   await expect(page.locator('#weekdays input[value="1"]')).not.toBeChecked();
   await expect(page.locator('#weekdays input[value="2"]')).toBeChecked();
-  await page.locator('#week-evidence').fill('Decisão local ainda não aplicada');
+  await page.locator('#week-evidence').fill('   ');
   await page.evaluate(async () => {
     window.editorTest.record.version++;
     window.editorTest.record.state.weekEvidence = 'Nova atualização remota';
     await window.publishReviewerCalendar();
   });
-  await expect(page.locator('#week-evidence')).toHaveValue('Decisão local ainda não aplicada');
+  await expect(page.locator('#week-evidence')).toHaveValue('   ');
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await expect(page.locator('#editor-remote-change')).toContainText('outra sessão');
   await expect(page.locator('.autosave-panel')).toHaveAttribute('data-tone', 'warning');

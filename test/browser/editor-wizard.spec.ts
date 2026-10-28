@@ -35,9 +35,9 @@ for (const width of [1440, 390]) {
 
     const weekdays = page.locator('#weekdays input');
     await expect(weekdays).toHaveCount(5);
+    await page.locator('#week-evidence').fill('');
     for (const checkbox of await weekdays.all()) await checkbox.uncheck();
     await page.locator('#week-evidence').fill('Decisão da semana letiva');
-    await page.locator('#week-confirmed').check();
     await page
       .getByRole('button', { name: 'Continuar para períodos e avaliações', exact: true })
       .click();
@@ -88,7 +88,7 @@ for (const width of [1440, 390]) {
     expect(await page.evaluate(() => window.editorTest.calls.conversions)).toBe(0);
     await selectEditorSection(page, 'edit');
     const saves = await page.evaluate(() => window.editorTest.calls.saves);
-    await page.locator('#week-evidence').fill('Nova decisão ainda em preenchimento');
+    await page.locator('#week-evidence').fill('');
     await expect(page.locator('.editor-save-indicator')).toHaveText(
       'Campos ainda em preenchimento',
     );
