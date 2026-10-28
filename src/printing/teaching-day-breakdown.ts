@@ -1,3 +1,4 @@
+import { assessmentStageCounts } from '../calendar-config.ts';
 import type { DateRange } from '../domain-types.ts';
 import type { PrintState, PrintResult, PrintEvent, DistributionRow } from './types.ts';
 import { appliesTo } from '../modalities.ts';
@@ -40,14 +41,17 @@ export function teachingDayBreakdown(
   });
   const count = Number(state.assessmentStagesByModality?.[modality]);
   const candidates = (events || []).filter((e) => appliesTo(e, modality));
-  const stages = Array.from({ length: [2, 3, 4].includes(count) ? count : 0 }, (_, i) => {
-    const id = String(i + 1),
-      matches = candidates.filter((e) =>
-        new RegExp(`^stage-${id}:${modality}$`).test(e.requirementId || ''),
-      );
-    if (matches.length === 1) return { start: matches[0].start, end: matches[0].end };
-    return null;
-  });
+  const stages = Array.from(
+    { length: assessmentStageCounts.includes(count) ? count : 0 },
+    (_, i) => {
+      const id = String(i + 1),
+        matches = candidates.filter((e) =>
+          new RegExp(`^stage-${id}:${modality}$`).test(e.requirementId || ''),
+        );
+      if (matches.length === 1) return { start: matches[0].start, end: matches[0].end };
+      return null;
+    },
+  );
   const periods = [...periodsForModality(state, modality)].sort((a, b) =>
     a.start.localeCompare(b.start),
   );

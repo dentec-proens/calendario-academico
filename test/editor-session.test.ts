@@ -135,7 +135,7 @@ async function opened() {
   });
 }
 
-test('the server persists removal of the last period while preserving registered automatic stages', async () => {
+test('the server rejects removal of the last period while registered stages still need it', async () => {
   const fixture = await createNativeFixture();
   const client = fixture.asClient('admin');
   const created = await client.mutation(api.calendars.createCalendar, {
@@ -159,7 +159,13 @@ test('the server persists removal of the last period while preserving registered
         weekdays: [1, 2, 3, 4, 5],
         weekEvidence: 'Ata',
         periods: [
-          { id: 'first', name: 'Primeiro período', start: '2027-03-01', end: '2027-03-26' },
+          {
+            id: 'first',
+            name: 'Primeiro período',
+            start: '2027-03-01',
+            end: '2027-03-26',
+            association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+          },
         ],
         assessmentStagesByModality: { integrado: 2 },
         events: [1, 2].map((number): CalendarEvent => ({
@@ -167,8 +173,8 @@ test('the server persists removal of the last period while preserving registered
           name: `${number}ª etapa`,
           requirementId: `stage-${number}:integrado`,
           modalities: ['integrado'],
-          start: '2027-03-01',
-          end: '2027-03-26',
+          start: number === 1 ? '2027-03-01' : '2027-03-15',
+          end: number === 1 ? '2027-03-12' : '2027-03-26',
           assessmentAutoStart: '2027-03-01',
           kind: 'note' as const,
           category: 'limite',
@@ -178,12 +184,15 @@ test('the server persists removal of the last period while preserving registered
     },
   });
   const state = removePeriod(saved.state, 'first', created.institutionalEvents);
-  const removed = await client.mutation(api.calendars.saveCalendar, {
-    id: created.id,
-    body: { version: saved.version, catalogueRevision: created.currentCatalogueRevision, state },
-  });
-  expect(removed.state.periods).toEqual([]);
-  expect(removed.state.events).toEqual(saved.state.events);
+  await expect(
+    client.mutation(api.calendars.saveCalendar, {
+      id: created.id,
+      body: { version: saved.version, catalogueRevision: created.currentCatalogueRevision, state },
+    }),
+  ).rejects.toThrow(/etapa.*período/);
+  const intact = await client.query(api.calendars.calendar, { id: created.id });
+  expect(intact.state.periods).toEqual(saved.state.periods);
+  expect(intact.state.events).toEqual(saved.state.events);
 });
 
 test('flush drains edits applied during a write and advances the expected version', async () => {

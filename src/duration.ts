@@ -1,3 +1,4 @@
+import { calendarLimits } from './calendar-config.ts';
 import type { CountingEvent, CalendarPeriod, TeachingState } from './domain-types.ts';
 import { parseDate, datesBetween } from './calendar.ts';
 import { calendarModalities, appliesTo } from './modalities.ts';
@@ -51,8 +52,14 @@ export function durationEnd(
 ) {
   const count = Number(quantity),
     time = parseDate(start);
-  if (!Number.isInteger(count) || count < 1 || count > 366)
-    throw Error('Informe uma quantidade inteira entre 1 e 366 dias.');
+  if (
+    !Number.isInteger(count) ||
+    count < calendarLimits.minimumTargetDays ||
+    count > calendarLimits.maximumTargetDays
+  )
+    throw Error(
+      `Informe uma quantidade inteira entre ${calendarLimits.minimumTargetDays} e ${calendarLimits.maximumTargetDays} dias.`,
+    );
   if (!state) return new Date(time + (count - 1) * 86400000).toISOString().slice(0, 10);
   if (!state.weekConfirmed || !state.weekdays?.length)
     throw Error('Confirme a semana letiva antes de calcular o término.');

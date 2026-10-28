@@ -20,9 +20,9 @@ export const editorPages = {
       'Defina os dias regulares de atividades letivas e informe a referência da decisão.',
   }),
   periods: defineEditorPage('periods', {
-    title: 'Períodos e avaliações',
-    detail: 'Organização do ano letivo',
-    description: 'Defina os períodos de aulas e as etapas de avaliação.',
+    title: 'Organização letiva por oferta',
+    detail: 'Períodos e etapas de avaliação',
+    description: 'Defina os períodos de aulas e as etapas de avaliação em conjunto, por oferta.',
   }),
   assessments: defineEditorPage('assessments', {
     title: 'Etapas de avaliação',

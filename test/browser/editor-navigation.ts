@@ -12,16 +12,33 @@ export async function selectEditorSection(page: Page, section: EditorSection) {
   await page.locator(`[data-view="${section === 'assessments' ? 'periods' : section}"]`).click();
 }
 
-/** Add one teaching period through the Periods step and wait until it is applied. */
+/** Configure one offer through the real atomic periods-and-assessments form. */
 export async function addPeriod(page: Page, start: string, end: string) {
   await selectEditorSection(page, 'periods');
-  await page.locator('#period-name').fill('Período de aulas');
-  await page.locator('#period-start').fill(start);
-  await page.locator('#period-end').fill(end);
-  await page.locator('#period-submit').click();
-  await expect
-    .poll(() => page.evaluate(() => window.editorTest.record.state.periods.length))
-    .toBe(1);
+  await configureOffer(page, 'integrado', start, end);
+}
+
+export async function configureOffer(page: Page, modality: string, start: string, end: string) {
+  const block = page.locator(`[data-offer="${modality}"]`);
+  if (!(await block.locator('form').isVisible()))
+    await page.locator(`[data-edit-organization="${modality}"]`).click();
+  await page.locator(`#offer-${modality}-organization`).selectOption('anual');
+  await page.locator(`#offer-${modality}-period-0-start`).fill(start);
+  await page.locator(`#offer-${modality}-period-0-end`).fill(end);
+  await page.locator(`#offer-${modality}-count`).selectOption('2');
+  const midpoint = Math.floor((Date.parse(start) + Date.parse(end)) / 2 / 86400000) * 86400000;
+  const firstEnd = new Date(midpoint).toISOString().slice(0, 10);
+  const secondStart = new Date(midpoint + 86400000).toISOString().slice(0, 10);
+  for (const [index, dates] of [
+    [start, firstEnd],
+    [secondStart, end],
+  ].entries()) {
+    await page.locator(`#offer-${modality}-stage-${index}-start`).fill(dates[0]);
+    await page.locator(`#offer-${modality}-stage-${index}-end`).fill(dates[1]);
+  }
+  await page.locator(`#offer-${modality}-evidence`).fill('Organização pedagógica sintética');
+  await page.locator(`#offer-${modality}-apply`).click();
+  await expect(block.locator('form')).toBeHidden();
 }
 
 /** Wait for the Convex confirmation and read the saved state with its save count. */

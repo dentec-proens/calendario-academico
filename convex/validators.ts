@@ -1,12 +1,8 @@
+import { modalityIds, academicTerms, assessmentStageValues } from '../src/calendar-config';
 import { v } from 'convex/values';
 import type { Infer } from 'convex/values';
 
-export const modality = v.union(
-  v.literal('integrado'),
-  v.literal('subsequente'),
-  v.literal('graduacao'),
-  v.literal('posgraduacao'),
-);
+export const modality = v.union(...modalityIds.map((id) => v.literal(id)));
 export const effect = v.union(v.literal('include'), v.literal('exclude'), v.literal('note'));
 export const purpose = v.union(v.literal('test'), v.literal('definitive'));
 export const regime = v.union(
@@ -15,12 +11,12 @@ export const regime = v.union(
   v.literal('misto'),
   v.literal('a-classificar'),
 );
-export const academicTerm = v.union(v.literal('annual'), v.literal('first'), v.literal('second'));
+export const academicTerm = v.union(...academicTerms.map((term) => v.literal(term)));
 export const periodAssociation = v.union(
   v.object({ status: v.literal('a-classificar') }),
   v.object({ status: v.literal('defined'), modalities: v.array(modality), term: academicTerm }),
 );
-export const stages = v.union(v.literal(2), v.literal(3), v.literal(4));
+export const stages = v.union(...assessmentStageValues.map((count) => v.literal(count)));
 export const period = v.object({
   id: v.string(),
   name: v.string(),

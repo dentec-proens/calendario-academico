@@ -1,5 +1,5 @@
 import { test, expect } from './test.ts';
-import { selectEditorSection } from './editor-navigation.ts';
+import { configureOffer, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
@@ -39,7 +39,7 @@ for (const width of [1440, 390]) {
     for (const checkbox of await weekdays.all()) await checkbox.uncheck();
     await page.locator('#week-evidence').fill('Decisão da semana letiva');
     await page
-      .getByRole('button', { name: 'Continuar para períodos e avaliações', exact: true })
+      .getByRole('button', { name: 'Continuar para organização letiva por oferta', exact: true })
       .click();
     await expect(page.locator('#week-form [role="alert"]')).toContainText(
       'Selecione pelo menos um dia regular.',
@@ -49,17 +49,23 @@ for (const width of [1440, 390]) {
 
     await page.locator('#weekdays input[value="1"]').check();
     await page
-      .getByRole('button', { name: 'Continuar para períodos e avaliações', exact: true })
+      .getByRole('button', { name: 'Continuar para organização letiva por oferta', exact: true })
       .click();
     await expect(page).toHaveURL(/\/periodos$/);
     await expect(page.locator('#editor-section-title')).toBeFocused();
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 6');
-    await expect(page.locator('#editor-section-title')).toHaveText('Períodos e avaliações');
+    await expect(page.locator('#editor-section-title')).toHaveText('Organização letiva por oferta');
     await expect(page.locator('#assessment-area')).toBeVisible();
     await expect(page.locator('#organization-form, #intake-form, #calendar-scope')).toHaveCount(0);
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para sábados letivos');
     await expect(page.locator('#autosave-status')).toHaveAttribute('data-state', 'saved');
     expect(await page.evaluate(() => window.editorTest.record.state.weekdays)).toEqual([1]);
+    await page.locator('#editor-continue').click();
+    await expect(page).toHaveURL(/\/periodos$/);
+    await expect(page.locator('#organization-continue [role="alert"]')).toContainText(
+      'Técnico integrado',
+    );
+    await configureOffer(page, 'integrado', '2027-03-01', '2027-03-26');
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/dias$/);
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 3 de 6');

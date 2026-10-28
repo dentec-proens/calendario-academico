@@ -408,3 +408,114 @@ test('a legacy review cannot certify the 2027 rules or export without reevaluati
     ).rejects.toThrow('identidade da base');
   expect((await client.run((ctx) => ctx.db.get(reviewId)))?.entries).toEqual(legacy.entries);
 });
+
+test('backend rejects an assessment stage outside its offer period without saving any part of the change', async () => {
+  const { actor, record } = await setup();
+  const valid = {
+    ...record.state,
+    regime: 'anual' as const,
+    organizationByModality: { integrado: 'anual' as const, graduacao: 'anual' as const },
+    assessmentStagesByModality: { integrado: 2 as const },
+    periods: [
+      {
+        id: 'integrated-year',
+        name: 'Ano integrado',
+        start: '2027-03-01',
+        end: '2027-03-26',
+        association: {
+          status: 'defined' as const,
+          modalities: ['integrado' as const],
+          term: 'annual' as const,
+        },
+      },
+    ],
+    events: [
+      {
+        id: 'integrated-stage-1',
+        name: '1ª etapa',
+        requirementId: 'stage-1:integrado',
+        modalities: ['integrado' as const],
+        start: '2027-03-01',
+        end: '2027-03-12',
+        kind: 'note' as const,
+        category: 'limite',
+        evidence: 'Ata sintética',
+      },
+      {
+        id: 'integrated-stage-2',
+        name: '2ª etapa',
+        requirementId: 'stage-2:integrado',
+        modalities: ['integrado' as const],
+        start: '2027-03-15',
+        end: '2027-03-26',
+        kind: 'note' as const,
+        category: 'limite',
+        evidence: 'Ata sintética',
+      },
+    ],
+  };
+  const saved = await actor.mutation(api.calendars.saveCalendar, {
+    id: record.id,
+    body: { version: record.version, catalogueRevision: record.catalogueRevision, state: valid },
+  });
+  for (const changed of [
+    {
+      ...saved.state,
+      periods: saved.state.periods.map((period) => ({ ...period, start: '2027-03-08' })),
+    },
+    {
+      ...saved.state,
+      periods: saved.state.periods.map((period) => ({ ...period, end: '2027-03-20' })),
+    },
+    {
+      ...saved.state,
+      periods: saved.state.periods.map((period) => ({
+        ...period,
+        association: {
+          status: 'defined' as const,
+          modalities: ['graduacao' as const],
+          term: 'annual' as const,
+        },
+      })),
+    },
+    {
+      ...saved.state,
+      weekConfirmed: true,
+      weekdays: [1, 2, 3, 4, 5],
+      weekEvidence: 'Ata',
+      periods: saved.state.periods.map((period) => ({ ...period, targetDays: 2 })),
+    },
+  ]) {
+    await expect(
+      actor.mutation(api.calendars.saveCalendar, {
+        id: record.id,
+        body: {
+          version: saved.version,
+          catalogueRevision: record.catalogueRevision,
+          state: changed,
+        },
+      }),
+    ).rejects.toThrow(/etapa.*período/i);
+    const intact = await actor.query(api.calendars.calendar, { id: record.id });
+    expect(intact.version).toBe(saved.version);
+    expect(intact.state.periods).toEqual(saved.state.periods);
+    expect(intact.state.events).toEqual(saved.state.events);
+  }
+  const next = await actor.mutation(api.calendars.saveCalendar, {
+    id: record.id,
+    body: {
+      version: saved.version,
+      catalogueRevision: record.catalogueRevision,
+      state: {
+        ...saved.state,
+        periods: saved.state.periods.map((period) => ({ ...period, start: '2027-03-08' })),
+        events: saved.state.events.map((event) =>
+          event.id === 'integrated-stage-1' ? { ...event, start: '2027-03-08' } : event,
+        ),
+      },
+    },
+  });
+  expect(next.version).toBe(saved.version + 1);
+  expect(next.state.periods[0].start).toBe('2027-03-08');
+  expect(next.state.events[0].start).toBe('2027-03-08');
+});

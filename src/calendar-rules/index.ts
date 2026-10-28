@@ -1,3 +1,10 @@
+import {
+  rules2027,
+  termLabels,
+  assessmentStageCounts,
+  calendarLimits,
+  normativeDayMinimums,
+} from '../calendar-config.ts';
 import type {
   AcademicTerm,
   ActivityRequirement,
@@ -8,20 +15,20 @@ import type {
   Organization,
 } from '../domain-types.ts';
 import { parseDate } from '../calendar.ts';
+import { assessmentIntervalIssue } from '../assessment-intervals.ts';
+import { isStageRequirementId } from '../activity-metadata.ts';
 import { calendarModalities, appliesTo } from '../modalities.ts';
 import { legacyActivityChecklist } from '../obligations.ts';
 import { activityReviewCriterion } from './review-links.ts';
 import { withActivityMetadata } from '../activity-metadata.ts';
 
-export const rules2027 = 'consup-292-2027-v1';
-export const termLabels: Record<AcademicTerm, string> = {
-  annual: 'ano letivo',
-  first: '1º semestre',
-  second: '2º semestre',
-};
+export { rules2027, termLabels } from '../calendar-config.ts';
 export function rulesetVersion(state: AssessmentSettings): string {
   if (state.year === 2026) return 'legacy-2026-v1';
-  return state.year === 2027 && calendarModalities(state).some((m) => m !== 'posgraduacao')
+  return state.year === normativeDayMinimums.year &&
+    calendarModalities(state).some(
+      (m) => !normativeDayMinimums.excludedModalities.some((excluded) => excluded === m),
+    )
     ? rules2027
     : `unconfigured:${state.year ?? ''}`;
 }
@@ -103,7 +110,7 @@ export function requirements2027(state: AssessmentSettings): ActivityRequirement
   };
   for (const modality of modalities) {
     const stages = Number(state.assessmentStagesByModality?.[modality]);
-    for (let n = 1; n <= ([2, 3, 4].includes(stages) ? stages : 0); n++) {
+    for (let n = 1; n <= (assessmentStageCounts.includes(stages) ? stages : 0); n++) {
       for (const [prefix, label, basis] of [
         ['stage', `${n}ª etapa de avaliação — início e término`, 'Art. 11, I'],
         [
@@ -378,8 +385,8 @@ export function validateActivityRecord(
       !['regular', 'transfer'].includes(a.type) ||
       !['annual', 'first', 'second'].includes(a.term) ||
       !Number.isInteger(a.year) ||
-      a.year < 1900 ||
-      a.year > 9999
+      a.year < calendarLimits.minimumYear ||
+      a.year > calendarLimits.maximumYear
     )
       throw new Error('Finalidade de ingresso inválida.');
     if (event.kind !== 'note') throw new Error('Publicação de edital é um registro informativo.');
@@ -390,6 +397,15 @@ export function validateActivityRecord(
     if (a.periodId && (typeof a.periodId !== 'string' || a.periodId.length > 100))
       throw new Error('Período de ingresso inválido.');
     // Deleted periods remain visible as unresolved evidence instead of being reassigned.
+  }
+  if (isStageRequirementId(event.requirementId) && state.periods) {
+    const modality = event.requirementId!.split(':')[1];
+    const issue = assessmentIntervalIssue(
+      periodsForModality({ ...state, periods: state.periods }, modality),
+      event.start,
+      event.end,
+    );
+    if (issue) throw new Error(issue);
   }
   if (event.kind === 'include' && state.periods) {
     const scope = event.modalities?.length ? event.modalities : calendarModalities(state);

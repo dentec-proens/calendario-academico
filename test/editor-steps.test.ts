@@ -54,7 +54,7 @@ describe('calendar wizard metadata', () => {
     );
     expect(editorSteps.map(continueLabel)).toEqual([
       'Continuar para semana letiva',
-      'Continuar para períodos e avaliações',
+      'Continuar para organização letiva por oferta',
       'Continuar para sábados letivos',
       'Continuar para férias docentes',
       'Continuar para atividades e datas do campus',

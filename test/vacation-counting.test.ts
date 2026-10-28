@@ -6,7 +6,7 @@ import { teacherVacations } from '../src/teacher-vacations.ts';
 import { evaluateCalendar } from '../src/evaluation.ts';
 import { durationEnd } from '../src/duration.ts';
 import { proensLayout } from '../src/printing/calendar-layout.ts';
-import { suggestStages } from '../src/stage-suggestions.ts';
+import { assessmentDayCounts } from '../src/assessment-day-counts.ts';
 
 const state = {
   year: 2027,
@@ -66,7 +66,21 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
         .at(-1)!.date,
     );
     assert.equal(
-      suggestStages(state, events, '2027-10-01').stages.reduce((sum, s) => sum + s.days, 0),
+      assessmentDayCounts(
+        {
+          ...state,
+          events: [
+            {
+              id: 'stage',
+              kind: 'note',
+              requirementId: 'stage-1:integrado',
+              start: '2027-10-01',
+              end: '2027-10-31',
+            },
+          ],
+        },
+        events,
+      ).stage[0].days,
       13,
     );
     assert.match(proensLayout(state, events, result), /13 dias letivos/);

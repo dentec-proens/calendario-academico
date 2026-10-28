@@ -1,3 +1,4 @@
+import { assessmentStageRequirementPattern } from './calendar-config.ts';
 import type { ActivityRequirement } from './domain-types.ts';
 
 /** Subjects shown by the step 6 checklist, in display order. */
@@ -16,7 +17,7 @@ export type ActivityGroup = (typeof activityGroups)[number][0];
 export type ActivityVariant = 'activity' | 'hours' | 'admission-notice' | 'stage';
 
 export const isStageRequirementId = (id: string | undefined) =>
-  /^stage-[1-4]:[a-z]+$/.test(id || '');
+  assessmentStageRequirementPattern.test(id || '');
 
 function group(id: string): ActivityGroup {
   if (

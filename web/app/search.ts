@@ -1,3 +1,4 @@
+import { modalityIds, calendarLimits } from '../../src/calendar-config.ts';
 export type DocumentStatus = '' | 'rascunho' | 'vigente' | 'arquivado';
 
 function documentStatus(value: unknown): Exclude<DocumentStatus, ''> | undefined {
@@ -36,7 +37,11 @@ export function applicationSearch(input: Record<string, unknown>) {
   const situation = documentStatus(input.situacao);
   return {
     ...(text(input.campus) ? { campus: text(input.campus) } : {}),
-    ...(Number.isInteger(year) && year >= 1900 && year <= 9999 ? { ano: String(year) } : {}),
+    ...(Number.isInteger(year) &&
+    year >= calendarLimits.minimumYear &&
+    year <= calendarLimits.maximumYear
+      ? { ano: String(year) }
+      : {}),
     ...(situation ? { situacao: situation } : {}),
     ...(text(input.busca) ? { busca: text(input.busca)?.slice(0, 200) } : {}),
     ...(text(input.retorno) ? { retorno: text(input.retorno) } : {}),
@@ -45,9 +50,7 @@ export function applicationSearch(input: Record<string, unknown>) {
     ...(typeof input.atividadeBusca === 'string' && input.atividadeBusca.trim()
       ? { atividadeBusca: input.atividadeBusca.slice(0, 200) }
       : {}),
-    ...(['integrado', 'subsequente', 'graduacao', 'posgraduacao'].includes(
-      String(input.atividadeOferta),
-    )
+    ...(modalityIds.some((modality) => modality === input.atividadeOferta)
       ? { atividadeOferta: String(input.atividadeOferta) }
       : {}),
     ...(['all', 'pending', 'partial', 'complete', 'optional', 'unconfigured'].includes(

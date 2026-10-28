@@ -10,7 +10,6 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
-import type { CalendarEvent } from '../types.ts';
 import {
   activityDraft,
   emptyEvent,
@@ -19,9 +18,8 @@ import {
   type EventContext,
   type EventValues,
 } from './event-draft.ts';
-import { applyEvent, recalculateCalendar } from '../../../../src/calendar-edits/commands.ts';
+import { applyEvent } from '../../../../src/calendar-edits/commands.ts';
 import { activityChecklist, stageRequirement } from '../../../../src/obligations.ts';
-import { suggestStages } from '../../../../src/stage-suggestions.ts';
 import { rulesetVersion } from '../../../../src/calendar-rules/index.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { editorPages } from '../editor-steps.ts';
@@ -176,9 +174,23 @@ function useController() {
     setOpen(true);
     return true;
   }
+  function openOrganization(requirementId: string) {
+    setOpen(false);
+    setPanel(null);
+    void navigate({
+      to: editorPages.periods.path,
+      params: { calendarId: record.id },
+      search: (previous) => ({ ...previous, atividade: requirementId }),
+      hashScrollIntoView: false,
+    });
+  }
   function edit(id: string) {
     const event = state.events.find((item) => item.id === id);
     if (!event) return;
+    if (stageRequirement(event.requirementId)) {
+      openOrganization(event.requirementId!);
+      return;
+    }
     if (id.startsWith('teacher-vacation-')) {
       void navigate({ to: '/calendarios/$calendarId/ferias', params: { calendarId: record.id } });
       return;
@@ -189,6 +201,10 @@ function useController() {
     begin(next, eventValues(event, state.modalities), id);
   }
   function prepare(requirementId: string) {
+    if (stageRequirement(requirementId)) {
+      openOrganization(requirementId);
+      return;
+    }
     const requirement = activityChecklist(state).find((item) => item.id === requirementId);
     if (!requirement) return;
     begin({ kind: 'activity', requirementId }, activityDraft(state, requirement));
@@ -242,44 +258,6 @@ function useController() {
       hashScrollIntoView: false,
     });
   }
-  function applyStages() {
-    const value = result.form.state.values;
-    if (!value.evidence.trim()) {
-      notify('Informe a fonte antes de aplicar as etapas.', true);
-      return;
-    }
-    try {
-      session.apply((current) => {
-        const suggestion = suggestStages(
-          { ...current, modalities: value.modalities, offer: value.modalities[0] },
-          [...institutional, ...current.events],
-          value.start,
-        );
-        const events: CalendarEvent[] = suggestion.stages.map((stage) => ({
-          id: crypto.randomUUID(),
-          name:
-            activityChecklist(current).find((item) => item.id === stage.requirementId)?.name ||
-            stage.name,
-          requirementId: stage.requirementId,
-          start: stage.start,
-          end: stage.end,
-          kind: 'note',
-          category: 'limite',
-          evidence: value.evidence.trim(),
-          modalities: value.modalities,
-          assessmentAutoStart: value.start,
-        }));
-        return recalculateCalendar(
-          { ...current, events: [...current.events, ...events] },
-          institutional,
-        );
-      });
-      discard();
-      notify('Etapas incluídas. Confira o indicador de salvamento.');
-    } catch (error) {
-      notify(error instanceof Error ? error.message : 'Não foi possível aplicar as etapas.', true);
-    }
-  }
   return {
     ...result,
     context,
@@ -291,7 +269,6 @@ function useController() {
     prepare,
     discard,
     resume,
-    applyStages,
     changeRequirement,
     panel,
     /** Consult an activity in the side panel without opening a form. */

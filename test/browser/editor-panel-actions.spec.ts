@@ -69,19 +69,22 @@ for (const width of [1440, 390]) {
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#record-title')).toBeVisible();
     await addPeriod(page, '2027-03-01', '2027-04-30');
-    await page.locator('[data-edit-period]').click();
-    await page.locator('#period-name').fill('Preenchimento do período');
-    await expect(page.locator('[data-edit-period]')).toBeDisabled();
+    await page.locator('[data-edit-organization="integrado"]').click();
+    await page.locator('#offer-integrado-evidence').fill('Preenchimento do período');
+    await expect(page.locator('[data-edit-organization="integrado"]')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
     await selectEditorSection(page, 'events');
     await selectEditorSection(page, 'periods');
-    await expect(page.locator('#period-name')).toHaveValue('Preenchimento do período');
-    await page.locator('#cancel-period-edit').click();
-    await expect(page.locator('#period-name')).toBeFocused();
-    await expect(page.locator('#period-name')).toHaveValue('');
-    await expect(page.locator('#cancel-period-edit')).toBeHidden();
-    await expect(page.locator('#period-list')).toContainText('Período de aulas');
-    await page.locator('[data-edit-period]').click();
-    await expect(page.locator('#period-name')).toHaveValue('Período de aulas');
+    await expect(page.locator('#offer-integrado-evidence')).toHaveValue('Preenchimento do período');
+    await page.locator('#offer-integrado-cancel').click();
+    await expect(page.locator('[data-edit-organization="integrado"]')).toBeFocused();
+    await expect(page.locator('#offer-integrado-form')).toBeHidden();
+    await expect(page.locator('#offer-integrado-cancel')).toBeHidden();
+    await expect(page.locator('[data-offer="integrado"]')).toContainText('Anual:');
+    await page.locator('[data-edit-organization="integrado"]').click();
+    await expect(page.locator('#offer-integrado-evidence')).toHaveValue('');
     await expect(page.locator('#unapplied-status')).toBeHidden();
   });
 

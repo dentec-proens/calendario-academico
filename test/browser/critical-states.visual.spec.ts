@@ -1,6 +1,11 @@
 import { test, expect } from './test.ts';
 import type { Page } from '@playwright/test';
-import { addPeriod, selectEditorSection, editCampusEvent } from './editor-navigation.ts';
+import {
+  addPeriod,
+  savedState,
+  selectEditorSection,
+  editCampusEvent,
+} from './editor-navigation.ts';
 
 // Each case runs in the desktop and mobile projects. Fixtures import production
 // components and CSS, and keep all content, timestamps and backend data local.
@@ -134,6 +139,7 @@ test('annual Saturdays keep the selection panel next to the year grid', async ({
   await page.goto(await fixtureServer('editor'));
   await expect(page.locator('#record-title')).toBeVisible();
   await addPeriod(page, '2027-03-01', '2027-04-30');
+  await savedState(page);
   await selectEditorSection(page, 'days');
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
   await page.locator('#saturday-dates input[value="2027-04-03"]').check();

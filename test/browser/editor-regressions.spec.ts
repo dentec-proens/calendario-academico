@@ -90,12 +90,13 @@ test('reverting a field clears unapplied state and annual Saturday selections su
   await page.locator('#saturday-evidence').fill('Portaria 1/2027');
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-view="periods"]').click();
-  await page.locator('#period-name').fill('Rascunho preservado');
+  await page.locator('[data-edit-organization="integrado"]').click();
+  await page.locator('#offer-integrado-evidence').fill('Rascunho preservado');
   await page.locator('[data-view="events"]').click();
   await page.locator('[data-view="periods"]').click();
-  await expect(page.locator('#period-name')).toHaveValue('Rascunho preservado');
+  await expect(page.locator('#offer-integrado-evidence')).toHaveValue('Rascunho preservado');
   await expect(page.locator('#unapplied-status')).toBeVisible();
-  await page.locator('#period-name').fill('');
+  await page.locator('#offer-integrado-evidence').fill('');
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-view="days"]').click();
   await expect(page.locator('#saturday-name')).toHaveValue('Feira de ciências');
@@ -205,10 +206,21 @@ test('removing a campus exclusion recalculates the teaching-day target', async (
 }) => {
   await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="periods"]').click();
-  await page.locator('#period-name').fill('Cinco dias letivos');
-  await page.locator('#period-start').fill('2027-03-01');
-  await page.locator('#period-days').fill('5');
-  await page.locator('#period-submit').click();
+  await page.evaluate(async () => {
+    const { record } = window.editorTest;
+    record.state.periods = [
+      {
+        id: 'target',
+        name: 'Cinco dias letivos',
+        start: '2027-03-01',
+        end: '2027-03-05',
+        targetDays: 5,
+        association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+      },
+    ];
+    record.version++;
+    await window.publishReviewerCalendar();
+  });
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0]?.end))
     .toBe('2027-03-05');
@@ -316,14 +328,14 @@ test('stage editing and activity changes always reveal the same draft in its des
   });
   await page.locator('[data-view="calendar"]').click();
   await page.locator('[data-open-event="stage-existing"]').click();
-  await expect(page).toHaveURL(/\/periodos#assessment-area$/);
-  await expect(page.locator('#event-form')).toBeVisible();
-  await page.locator('#event-name').fill('Etapa com rascunho');
-  await page.locator('#event-requirement').selectOption('family-meeting');
-  await expect(page).toHaveURL(/\/eventos(\?[^#]*)?$/);
-  await expect(page.locator('#event-form')).toBeVisible();
-  await expect(page.locator('#event-name')).toHaveValue('Etapa com rascunho');
-  await page.locator('#discard-event-form').click();
+  await expect(page).toHaveURL(/\/periodos\?.*atividade=stage-1/);
+  await expect(page.locator('#offer-integrado-form')).toBeVisible();
+  await page.locator('#offer-integrado-stage-0-end').fill('2027-03-11');
+  await selectEditorSection(page, 'events');
+  await selectEditorSection(page, 'periods');
+  await expect(page.locator('#offer-integrado-stage-0-end')).toHaveValue('2027-03-11');
+  await page.locator('#offer-integrado-cancel').click();
+  await selectEditorSection(page, 'events');
   await page.locator('[data-tab="eventos"]').click();
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Novo preenchimento');

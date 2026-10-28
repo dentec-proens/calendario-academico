@@ -19,7 +19,7 @@ export function Input({
         value={String(field.state.value ?? '')}
         onBlur={field.handleBlur}
         onChange={(event) => field.handleChange(event.target.value)}
-        aria-invalid={errors.length ? true : undefined}
+        aria-invalid={errors.length ? true : props['aria-invalid']}
       />
       {errors.length > 0 && <small role="alert">{errors.map(String).join('. ')}</small>}
     </label>

@@ -126,7 +126,6 @@ export default function ActivityDetails({
                         )
                         .join(' / ')
                     : ''}
-                  {event.assessmentAutoStart ? ' · ajuste automático' : ''}
                 </small>
                 <small>Fonte: {event.evidence}</small>
               </p>

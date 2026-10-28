@@ -1,10 +1,16 @@
+import { calendarLimits } from './calendar-config.ts';
 import { datesBetween } from './calendar.ts';
 
 // Explicit institutional event identity: no other holiday can be moved by a campus.
 export const teacherDayId = 'inst:ifpr2027-16';
 
 export function teacherDayWeek(year: number) {
-  if (!Number.isInteger(year) || year < 1900 || year > 9999) throw Error('Ano inválido.');
+  if (
+    !Number.isInteger(year) ||
+    year < calendarLimits.minimumYear ||
+    year > calendarLimits.maximumYear
+  )
+    throw Error('Ano inválido.');
   const date = new Date(`${year}-10-15T00:00:00Z`);
   const start = new Date(date.getTime() - ((date.getUTCDay() + 6) % 7) * 86400000);
   return {

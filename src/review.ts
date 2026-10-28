@@ -1,3 +1,4 @@
+import { normativeDayMinimums, legacyDayMinimums } from './calendar-config.ts';
 import type { CalendarActivity, TeachingState } from './domain-types.ts';
 import { calendarModalities, modalityLabels } from './modalities.ts';
 import { reviewNorm } from './review-presentation.ts';
@@ -355,6 +356,8 @@ export function reviewSupport<
       version: record.version,
     },
     criteria: reviewCriteriaFor(record.state.year).map((c) => {
+      const dayMinimums =
+        record.state.year === normativeDayMinimums.year ? normativeDayMinimums : legacyDayMinimums;
       let signal: string = 'Conferência documental necessária.';
       let candidates: Pick<CalendarActivity, 'id' | 'name' | 'start' | 'end' | 'evidence'>[] = [];
       if (c.pattern) {
@@ -387,7 +390,7 @@ export function reviewSupport<
               .map(([m, r]) => {
                 const minimum =
                   record.state.year === 2026 && m !== 'posgraduacao'
-                    ? 200
+                    ? legacyDayMinimums.annual
                     : r.checks.find((check) => check.scope === 'annual')?.expected;
                 return `${modalityLabels[m] || m}: ${r.total} dias letivos registrados; ${minimum == null ? 'mínimo normativo não configurado para este escopo' : `${r.total >= minimum ? 'alcança' : 'não alcança'} a referência de ${minimum} dias`}`;
               })
@@ -462,10 +465,14 @@ export function reviewSupport<
         finding = candidates.length ? 'REGISTROS_LOCALIZADOS' : 'CONFERENCIA_NECESSARIA';
       if (c.pattern && !candidates.length) finding = 'NAO_LOCALIZADO';
       if (c.id === 'annual' && result && !provisional) {
-        finding = counts.some(([, r]) => r.total < 200)
+        finding = counts.some(([, r]) => r.total < dayMinimums.annual)
           ? 'CONTAGEM_INSUFICIENTE'
           : 'CONTAGEM_ALCANCADA';
-        if (sameYear && normativeScopeConfirmed && counts.some(([, r]) => r.total < 200))
+        if (
+          sameYear &&
+          normativeScopeConfirmed &&
+          counts.some(([, r]) => r.total < dayMinimums.annual)
+        )
           status = 'NAO_ATENDIDO';
       }
       if (c.id === 'semester' && record.state.regime === 'anual') {
@@ -479,7 +486,9 @@ export function reviewSupport<
             ([m, r]) =>
               organizationForModality(record.state, m) !== 'semestral' ||
               (periodsForModality(record.state, m).length === 2 &&
-                periodsForModality(record.state, m).every((p) => r.byPeriod[p.id] >= 100)),
+                periodsForModality(record.state, m).every(
+                  (p) => r.byPeriod[p.id] >= dayMinimums.semester,
+                )),
           );
         finding = valid ? 'CONTAGEM_ALCANCADA' : 'CONTAGEM_INSUFICIENTE';
         if (sameYear && normativeScopeConfirmed) status = valid ? 'ATENDIDO' : 'NAO_ATENDIDO';

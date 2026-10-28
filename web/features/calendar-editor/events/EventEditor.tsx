@@ -1,12 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { categories } from '../../../../src/categories.ts';
 import { modalityLabels } from '../../../../src/modalities.ts';
-import { activityChecklist, stageRequirement } from '../../../../src/obligations.ts';
-import {
-  isFirstStageStart,
-  suggestStages,
-  suggestStageEnd,
-} from '../../../../src/stage-suggestions.ts';
+import { activityChecklist } from '../../../../src/obligations.ts';
 import { applicabilityFor } from '../../../../src/calendar-rules/index.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
@@ -19,7 +14,7 @@ import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 
 export default function EventEditor() {
-  const { state, events, readOnly } = useCalendarEditor();
+  const { state, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const { form, values } = editor;
   const heading = useRef<HTMLHeadingElement>(null);
@@ -38,57 +33,21 @@ export default function EventEditor() {
   }, [editor.open, editor.context]);
   const checklist = activityChecklist(state);
   const requirement = checklist.find((item) => item.id === values.requirementId);
-  const stage =
-    requirement?.variant === 'stage' || (!values.requirementId && isFirstStageStart(values.name));
   const publication =
     (Boolean(values.admissionType) && noticeActive(values)) ||
     requirement?.variant === 'admission-notice';
   const realDate = values.publicationStatus === 'published';
   // Hours prove the annual minimum of training and planning; other activities do not ask.
-  const showHours =
-    !stage && (!requirement || requirement.variant === 'hours' || Boolean(values.hours));
+  const showHours = !requirement || requirement.variant === 'hours' || Boolean(values.hours);
   // Creating from an activity card: the link, label and effect are already known.
   const activityCreation = editor.context?.kind === 'activity' && !editor.eventId;
   const showLink = !activityCreation || editor.linkUnlocked;
   const offers = recordOffers(state, requirement);
-  const linkOptions = checklist.filter(
-    (item) => item.variant !== 'stage' || requirement?.variant === 'stage',
-  );
+  const linkOptions = checklist.filter((item) => item.variant !== 'stage');
   const showRecordType =
     !values.requirementId ||
     Boolean(requirement?.acceptsPriorReference) ||
     values.recordType === 'prior-reference';
-  const suggestion = useMemo(() => {
-    if (!stage || editor.eventId || !values.start) return null;
-    try {
-      const scoped = { ...state, modalities: values.modalities, offer: values.modalities[0] };
-      const number = Number(values.requirementId.match(/^stage-([1-4])/)?.[1] || 1);
-      if (
-        number === 1 &&
-        !events.some(
-          (event) =>
-            stageRequirement(event.requirementId) &&
-            (!event.modalities?.length ||
-              event.modalities.some((item) => values.modalities.includes(item))),
-        )
-      ) {
-        const result = suggestStages(scoped, events, values.start);
-        return { end: result.stages[0].end, stages: result.stages, error: '' };
-      }
-      const result = suggestStageEnd(scoped, events, values.start, number);
-      return { end: result.end, stages: [], error: '' };
-    } catch (error) {
-      return {
-        end: '',
-        stages: [],
-        error: error instanceof Error ? error.message : 'Confira os períodos e as ofertas.',
-      };
-    }
-  }, [editor.eventId, events, stage, state, values.modalities, values.requirementId, values.start]);
-  useEffect(() => {
-    if (suggestion?.end && form.state.values.end !== suggestion.end)
-      form.setFieldValue('end', suggestion.end);
-  }, [form, suggestion?.end]);
   const freeEvent = !values.requirementId && values.recordType !== 'prior-reference';
   const answered = eventTypes.find(
     (type) =>
@@ -553,43 +512,6 @@ export default function EventEditor() {
             </Button>
           )}
         </FormActions>
-        {stage && !editor.eventId && (
-          <Notice
-            id="stage-suggestion"
-            tone={values.start && suggestion?.error ? 'warning' : 'info'}
-            announce="polite"
-          >
-            {!values.start
-              ? 'Informe o início da etapa. O sistema usará o número de etapas cadastrado e os dias letivos até o final dos períodos.'
-              : suggestion?.error || (
-                  <>
-                    <strong>Sugestão de distribuição das etapas</strong>
-                    <p>
-                      Confira as datas e a norma vigente antes de aplicar. Não representa aprovação
-                      institucional.
-                    </p>
-                    <ul>
-                      {suggestion?.stages.map((item) => (
-                        <li key={item.requirementId}>
-                          {item.name}: {item.start} a {item.end} — {item.days} dias letivos
-                        </li>
-                      ))}
-                    </ul>
-                    {suggestion?.stages.length ? (
-                      <button
-                        type="button"
-                        id="apply-stage-suggestion"
-                        onClick={editor.applyStages}
-                      >
-                        Aplicar todas as etapas sugeridas
-                      </button>
-                    ) : (
-                      <p>Término sugerido: {suggestion?.end}</p>
-                    )}
-                  </>
-                )}
-          </Notice>
-        )}
       </fieldset>
     </form>
   );

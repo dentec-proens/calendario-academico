@@ -1,3 +1,4 @@
+import { configureOffer } from './editor-navigation.ts';
 import { test, expect } from './test.ts';
 import { openActivity, selectCampusEvents, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
@@ -262,11 +263,10 @@ test('ambiguous v2 organization preserves period IDs until explicit offer and cy
   });
   await selectEditorSection(page, 'periods');
   await expect(page.locator('#regime-summary')).toHaveText('Organização a conferir');
-  await expect(page.locator('#period-list')).toContainText('Associação a conferir');
-  await page.locator('[data-edit-period="legacy-cycle"]').click();
-  await page.locator('#period-form input[value="integrado"]').check();
-  await page.locator('#period-term').selectOption('annual');
-  await page.locator('#period-submit').click();
+  await expect(page.locator('#periods')).toContainText('associação a conferir');
+  await page.locator('[data-edit-organization="integrado"]').click();
+  await page.locator('#offer-integrado-source-0').selectOption('legacy-cycle');
+  await configureOffer(page, 'integrado', '2027-02-01', '2027-12-17');
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0].association))
     .toEqual({ status: 'defined', modalities: ['integrado'], term: 'annual' });
@@ -294,26 +294,26 @@ test('annual integrated and semester undergraduate offers keep independent overl
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'periods');
-  const add = async (
-    name: string,
-    offer: 'integrado' | 'graduacao',
-    term: string,
-    start: string,
-    end: string,
-  ) => {
-    await page
-      .locator(`#period-form input[value="${offer === 'integrado' ? 'graduacao' : 'integrado'}"]`)
-      .uncheck();
-    await page.locator('#period-name').fill(name);
-    await page.locator('#period-term').selectOption(term);
-    await page.locator('#period-start').fill(start);
-    await page.locator('#period-end').fill(end);
-    await page.locator('#period-submit').click();
-    await expect(page.locator('#period-list')).toContainText(name);
-  };
-  await add('Integrado anual sintético', 'integrado', 'annual', '2027-02-01', '2027-12-17');
-  await add('Graduação primeiro sintético', 'graduacao', 'first', '2027-02-01', '2027-06-30');
-  await add('Graduação segundo sintético', 'graduacao', 'second', '2027-08-02', '2027-12-17');
+  await configureOffer(page, 'integrado', '2027-02-01', '2027-12-17');
+  await page.locator('[data-edit-organization="graduacao"]').click();
+  await page.locator('#offer-graduacao-organization').selectOption('semestral');
+  for (const [index, [start, end]] of [
+    ['2027-02-01', '2027-06-30'],
+    ['2027-08-02', '2027-12-17'],
+  ].entries()) {
+    await page.locator(`#offer-graduacao-period-${index}-start`).fill(start);
+    await page.locator(`#offer-graduacao-period-${index}-end`).fill(end);
+  }
+  await page.locator('#offer-graduacao-count').selectOption('2');
+  for (const [index, [start, end]] of [
+    ['2027-02-01', '2027-06-30'],
+    ['2027-08-02', '2027-12-17'],
+  ].entries()) {
+    await page.locator(`#offer-graduacao-stage-${index}-start`).fill(start);
+    await page.locator(`#offer-graduacao-stage-${index}-end`).fill(end);
+  }
+  await page.locator('#offer-graduacao-evidence').fill('Ata da graduação');
+  await page.locator('#offer-graduacao-apply').click();
   await expect(page.locator('#regime-summary')).toHaveText('Anual e semestral');
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods.length))

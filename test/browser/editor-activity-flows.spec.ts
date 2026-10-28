@@ -248,12 +248,11 @@ test('the free event form opens in the side panel with a labelled offer group', 
     record.version++;
     return window.publishReviewerCalendar();
   });
-  // A stage belongs to one offer, so its record shows that offer instead of a choice.
+  // Periods and assessments are edited together, without an offer checkbox group.
   await selectEditorSection(page, 'assessments');
-  await page.locator('[data-activity-open="stage-1:integrado"]').click();
-  await expect(page.locator('#event-modalities')).toHaveText(/Técnico integrado/);
-  await expect(page.locator('#event-modalities input')).toHaveCount(0);
-  await page.locator('#close-event-panel').click();
+  await page.locator('[data-edit-organization="integrado"]').click();
+  await expect(page.locator('[data-offer="integrado"] form')).toBeVisible();
+  await expect(page.locator('[data-offer="integrado"] input[type="checkbox"]')).toHaveCount(0);
   await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await page.locator('#new-event').click();
@@ -500,14 +499,9 @@ test('a review link to an assessment stage opens it in the combined step and clo
   await selectEditorSection(page, 'issues');
   await page.locator('a[href*="atividade=stage-1"]').first().click();
   await expect(page).toHaveURL(/\/periodos\?.*atividade=stage-1/);
-  await expect(page.locator('#event-panel')).toBeVisible();
-  await expect(page.locator('[data-activity-detail="stage-1:integrado"]')).toHaveAttribute(
-    'open',
-    '',
-  );
-  await page.locator('#event-panel [data-prepare-activity="stage-1:integrado"]').click();
-  await page.locator('#close-event-panel').click();
-  await expect(page.locator('#event-panel')).toBeHidden();
+  await expect(page.locator('#offer-integrado-form')).toBeVisible();
+  await expect(page.locator('#offer-integrado-stage-0-start')).toBeFocused();
+  await page.locator('#offer-integrado-cancel').click();
   await expect(page).not.toHaveURL(/atividade=/);
   await selectEditorSection(page, 'periods');
   await selectEditorSection(page, 'assessments');

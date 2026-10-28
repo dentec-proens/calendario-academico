@@ -1,5 +1,10 @@
 import { test, expect } from './test.ts';
-import { selectCampusEvents, selectEditorSection, editCampusEvent } from './editor-navigation.ts';
+import {
+  addPeriod,
+  selectCampusEvents,
+  selectEditorSection,
+  editCampusEvent,
+} from './editor-navigation.ts';
 
 for (const width of [1440, 390]) {
   test(`editor respects reduced motion and reveals its section heading at ${width}px`, async ({
@@ -103,7 +108,7 @@ for (const width of [1440, 390]) {
       .toBeGreaterThan(originalHeight);
     await page.locator('#close-event-panel').click();
     await selectEditorSection(page, 'periods');
-    await expect(page.locator('#editor-section-title')).toHaveText('Períodos e avaliações');
+    await expect(page.locator('#editor-section-title')).toHaveText('Organização letiva por oferta');
     await expect
       .poll(() =>
         page.locator('#editor-section-title').evaluate((element) => {
@@ -135,17 +140,13 @@ for (const width of [1440, 390]) {
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'periods');
-    await page.locator('#period-name').fill('1º semestre');
-    await page.locator('#period-start').fill('2027-02-01');
-    await page.locator('#period-end').fill('2027-06-30');
-    await page.locator('#period-submit').click();
-    await expect(page.locator('#period-list')).toContainText('1º semestre');
-    await page.locator('[data-edit-period]').click();
-    await expect(page.locator('#period-name')).toHaveValue('1º semestre');
-    await expect(page.locator('#period-name')).toBeInViewport({ ratio: 1 });
+    await addPeriod(page, '2027-02-01', '2027-06-30');
+    await page.locator('[data-edit-organization="integrado"]').click();
+    await expect(page.locator('#offer-integrado-organization')).toBeFocused();
+    await expect(page.locator('#offer-integrado-organization')).toBeInViewport({ ratio: 1 });
     await expect
       .poll(() =>
-        page.locator('#period-name').evaluate((element) => {
+        page.locator('#offer-integrado-organization').evaluate((element) => {
           const bounds = element.getBoundingClientRect();
           const feedback = document.querySelector('.editor-feedback')!.getBoundingClientRect();
           const hit = document.elementFromPoint(

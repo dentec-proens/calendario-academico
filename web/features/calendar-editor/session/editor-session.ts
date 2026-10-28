@@ -102,6 +102,8 @@ export function createEditorSession(
       const confirmed = {
         ...current.record,
         ...value,
+        modalities: saved.state.modalities,
+        offer: saved.state.offer,
         catalogueRevision: base.revision,
         institutionalSnapshot: base.events,
         documentSnapshot: base.documents,

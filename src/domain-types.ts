@@ -1,8 +1,8 @@
 import type { ActivityGroup, ActivityVariant } from './activity-metadata.ts';
 
 /** Shared contracts for calendar activities and the operational checklist. */
-export type AcademicTerm = 'annual' | 'first' | 'second';
-export type Organization = 'anual' | 'semestral' | 'a-classificar';
+import type { AcademicTerm, Organization } from './calendar-config.ts';
+export type { AcademicTerm, Organization } from './calendar-config.ts';
 export type PeriodAssociation =
   { status: 'defined'; modalities: string[]; term: AcademicTerm } | { status: 'a-classificar' };
 export interface Admission {

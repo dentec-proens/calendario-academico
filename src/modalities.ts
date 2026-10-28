@@ -1,11 +1,4 @@
-export const modalityLabels: Record<string, string> = {
-  integrado: 'Técnico integrado',
-  subsequente: 'Técnico subsequente',
-  graduacao: 'Graduação',
-  posgraduacao: 'Pós-graduação',
-};
-export const selectableModalities: ('integrado' | 'subsequente' | 'graduacao' | 'posgraduacao')[] =
-  ['integrado', 'subsequente', 'graduacao', 'posgraduacao'];
+export { modalityLabels, selectableModalities } from './calendar-config.ts';
 export const calendarModalities = <T extends string>(state: { modalities?: T[] }): T[] =>
   state.modalities ?? [];
 

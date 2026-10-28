@@ -1,3 +1,4 @@
+import { calendarLimits } from '../../../src/calendar-config.ts';
 import type { FormEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { CalendarPlus } from 'lucide-react';
@@ -116,8 +117,8 @@ export default function CreateCalendarForm({
               type="number"
               value={year}
               onChange={(e) => form.setFieldValue('year', e.target.value)}
-              min="1900"
-              max="9999"
+              min={calendarLimits.minimumYear}
+              max={calendarLimits.maximumYear}
               required
             />
           </label>

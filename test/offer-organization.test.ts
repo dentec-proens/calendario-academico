@@ -1,0 +1,182 @@
+import { expect, test } from 'vitest';
+import {
+  applyOfferOrganization,
+  offerOrganizationDraft,
+  offerOrganizationIssues,
+} from '../src/offer-organization.ts';
+import { normalizeCalendar } from '../src/calendar-normalize.ts';
+import type { ActivityState } from '../src/domain-types.ts';
+
+function calendar(): ActivityState {
+  return {
+    schemaVersion: 3,
+    year: 2027,
+    offer: 'integrado',
+    modalities: ['integrado', 'graduacao'],
+    regime: 'anual',
+    organizationByModality: { integrado: 'anual', graduacao: 'anual' },
+    assessmentStagesByModality: { integrado: 2, graduacao: 2 },
+    weekdays: [1, 2, 3, 4, 5],
+    weekConfirmed: true,
+    weekEvidence: 'Ata',
+    periods: [
+      {
+        id: 'shared',
+        name: 'Anual',
+        start: '2027-03-01',
+        end: '2027-03-26',
+        association: { status: 'defined', modalities: ['integrado', 'graduacao'], term: 'annual' },
+      },
+    ],
+    events: ['integrado', 'graduacao'].flatMap((modality) =>
+      [0, 1].map((index) => ({
+        id: `${modality}-${index}`,
+        name: `${index + 1}ª etapa`,
+        requirementId: `stage-${index + 1}:${modality}`,
+        modalities: [modality],
+        start: index ? '2027-03-15' : '2027-03-01',
+        end: index ? '2027-03-26' : '2027-03-12',
+        evidence: `${modality} — ata ${index + 1}`,
+        kind: 'note',
+        category: 'limite',
+        assessmentAutoStart: '2027-03-01',
+      })),
+    ),
+  };
+}
+let sequence = 0;
+const id = () => `generated-${sequence++}`;
+
+test('one application splits a shared period and keeps the other offer and all stage identities intact', () => {
+  const state = calendar(),
+    before = structuredClone(state),
+    draft = offerOrganizationDraft(state, 'integrado');
+  draft.periods[0].end = '2027-03-31';
+  draft.stages[1].end = '2027-03-31';
+  const next = applyOfferOrganization(state, 'integrado', draft, id);
+  expect(state).toEqual(before);
+  expect(next.periods).toHaveLength(2);
+  expect(next.periods.find((p) => p.id === 'shared')).toEqual({
+    ...before.periods[0],
+    association: { status: 'defined', modalities: ['graduacao'], term: 'annual' },
+  });
+  const integrated = next.periods.find(
+    (p) => p.association?.status === 'defined' && p.association.modalities.includes('integrado'),
+  )!;
+  expect(integrated.id).not.toBe('shared');
+  expect(integrated.targetDays).toBeUndefined();
+  expect(next.events.filter((e) => e.modalities?.includes('graduacao'))).toEqual(
+    before.events.filter((e) => e.modalities?.includes('graduacao')),
+  );
+  expect(
+    next.events
+      .filter((e) => e.modalities?.includes('integrado'))
+      .map((e) => [e.id, e.start, e.end, e.evidence, e.assessmentAutoStart]),
+  ).toEqual([
+    ['integrado-0', '2027-03-01', '2027-03-12', 'integrado — ata 1', undefined],
+    ['integrado-1', '2027-03-15', '2027-03-31', 'integrado — ata 2', undefined],
+  ]);
+  expect(normalizeCalendar({ ...next, ignoredHistory: [] }).events).toHaveLength(4);
+});
+
+test('moving period endpoints reports live issues and the command rejects without changing anything', () => {
+  const state = calendar(),
+    before = structuredClone(state),
+    draft = offerOrganizationDraft(state, 'integrado');
+  draft.periods[0].start = '2027-03-08';
+  expect(offerOrganizationIssues(state, 'integrado', draft)).toContainEqual({
+    path: 'stages[0]',
+    message: expect.stringMatching(/inteiramente dentro/),
+  });
+  expect(() => applyOfferOrganization(state, 'integrado', draft, id)).toThrow(/etapa.*período/);
+  draft.periods[0].start = '2027-03-01';
+  draft.periods[0].end = '2027-03-20';
+  expect(
+    offerOrganizationIssues(state, 'integrado', draft).some((i) => i.path === 'stages[1]'),
+  ).toBe(true);
+  expect(state).toEqual(before);
+});
+
+test('a stage cannot span the semester gap, overlap another stage or use another offer period', () => {
+  const state = calendar(),
+    draft = offerOrganizationDraft(state, 'integrado');
+  draft.organization = 'semestral';
+  draft.periods[0].end = '2027-03-12';
+  draft.periods[1] = { sourceId: '', name: 'Segundo', start: '2027-03-22', end: '2027-03-26' };
+  draft.stages[1].start = '2027-03-15';
+  expect(
+    offerOrganizationIssues(state, 'integrado', draft).some(
+      (i) => i.path === 'stages[1]' && /inteiramente/.test(i.message),
+    ),
+  ).toBe(true);
+  draft.stages[1].start = '2027-03-22';
+  expect(offerOrganizationIssues(state, 'integrado', draft)).toEqual([]);
+  const next = applyOfferOrganization(state, 'integrado', draft, id);
+  expect(
+    next.periods.filter(
+      (p) => p.association?.status === 'defined' && p.association.modalities.includes('integrado'),
+    ),
+  ).toHaveLength(2);
+  const bad = structuredClone(next);
+  bad.events.find((e) => e.id === 'integrado-1')!.start = '2027-03-15';
+  expect(() => normalizeCalendar({ ...bad, ignoredHistory: [] })).toThrow(/etapa.*período/);
+});
+
+test('existing inclusions are checked before changing periods; records are never silently deleted', () => {
+  const state = calendar();
+  state.events.push({
+    id: 'sat',
+    name: 'Reposição de sábado',
+    kind: 'include',
+    modalities: ['integrado'],
+    start: '2027-03-06',
+    end: '2027-03-06',
+    evidence: 'Ata',
+  });
+  const draft = offerOrganizationDraft(state, 'integrado');
+  draft.periods[0].start = '2027-03-08';
+  draft.stages[0].start = '2027-03-08';
+  expect(offerOrganizationIssues(state, 'integrado', draft)).toContainEqual({
+    path: 'periods',
+    message: expect.stringContaining('Reposição de sábado'),
+  });
+  expect(() => applyOfferOrganization(state, 'integrado', draft, id)).toThrow(
+    'Reposição de sábado',
+  );
+  expect(state.events.at(-1)?.id).toBe('sat');
+});
+
+test('splitting shared admission references preserves each offer link and evidence', () => {
+  const state = calendar();
+  state.events.push({
+    id: 'notice',
+    name: 'Edital',
+    kind: 'note',
+    modalities: ['integrado', 'graduacao'],
+    start: '2027-02-01',
+    end: '2027-02-01',
+    evidence: 'Edital sintético',
+    publicationStatus: 'published',
+    admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'shared' },
+  });
+  const next = applyOfferOrganization(
+    state,
+    'integrado',
+    offerOrganizationDraft(state, 'integrado'),
+    id,
+  );
+  const notices = next.events.filter((e) => e.admission);
+  expect(notices).toHaveLength(2);
+  expect(notices.find((e) => e.modalities?.includes('graduacao'))).toMatchObject({
+    id: 'notice',
+    admission: { periodId: 'shared' },
+    evidence: 'Edital sintético',
+  });
+  const moved = notices.find((e) => e.modalities?.includes('integrado'))!;
+  expect(moved.admission?.periodId).not.toBe('shared');
+  expect(next.periods.find((p) => p.id === moved.admission?.periodId)?.association).toEqual({
+    status: 'defined',
+    modalities: ['integrado'],
+    term: 'annual',
+  });
+});

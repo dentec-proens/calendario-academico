@@ -1,3 +1,4 @@
+import { assessmentStageCounts } from './calendar-config.ts';
 import type { AssessmentSettings, ActivityRequirement } from './domain-types.ts';
 import { calendarModalities, modalityLabels } from './modalities.ts';
 import { requirements2027 } from './calendar-rules/index.ts';
@@ -30,7 +31,7 @@ export function legacyActivityChecklist(state: AssessmentSettings): ActivityRequ
   };
   for (const modality of calendarModalities(state)) {
     const stages = assessmentCount(state, modality);
-    if (![2, 3, 4].includes(stages)) continue;
+    if (!assessmentStageCounts.includes(stages)) continue;
     const cycle = stages === 4 ? 'bimestral' : stages === 3 ? 'trimestral' : 'semestral';
     const suffix = ` — ${modalityLabels[modality]} (${cycle})`;
     for (let n = 1; n <= stages; n++) {

@@ -1,9 +1,18 @@
+import {
+  assessmentStageCounts,
+  assessmentStageRequirementPattern,
+  calendarLimits,
+  modalityIds,
+  organizations,
+  academicTerms,
+} from './calendar-config.ts';
 import { readCalendarInput, invalidCalendar as fail } from './calendar-input.ts';
 import { validateTeacherDay } from './teacher-day.ts';
 import { teacherVacations } from './teacher-vacations.ts';
 import { calendarModalities, modalityLabels } from './modalities.ts';
 import { activityChecklist } from './obligations.ts';
 import { eventCategory, validCategory } from './categories.ts';
+import { isStageRequirementId } from './activity-metadata.ts';
 import { datesBetween } from './calendar.ts';
 import { convertCalendarV2 } from './calendar-rules/conversion.ts';
 import {
@@ -13,7 +22,7 @@ import {
   validateActivityRecord,
 } from './calendar-rules/index.ts';
 
-const text = (value: unknown, maximum = 240) => {
+const text = (value: unknown, maximum = calendarLimits.maximumTextLength) => {
   if (typeof value !== 'string' || !value.trim() || value.length > maximum)
     return fail('Campo obrigatório ou texto muito longo.');
   return value.trim();
@@ -26,17 +35,17 @@ export function normalizeCalendar(input: unknown) {
   if (
     !s ||
     !Number.isInteger(s.year) ||
-    s.year < 1900 ||
-    s.year > 9999 ||
+    s.year < calendarLimits.minimumYear ||
+    s.year > calendarLimits.maximumYear ||
     !Object.keys(modalityLabels).includes(s.offer) ||
     !['anual', 'semestral', 'misto', 'a-classificar'].includes(s.regime ?? '')
   )
     fail('Ano ou oferta inválidos.');
   if (
     !Array.isArray(s.periods) ||
-    s.periods.length > 50 ||
+    s.periods.length > calendarLimits.maximumPeriods ||
     !Array.isArray(s.events) ||
-    s.events.length > 1000 ||
+    s.events.length > calendarLimits.maximumEvents ||
     !Array.isArray(s.weekdays) ||
     s.weekdays.some((d) => !Number.isInteger(d) || d < 1 || d > 5) ||
     new Set(s.weekdays).size !== s.weekdays.length ||
@@ -51,7 +60,7 @@ export function normalizeCalendar(input: unknown) {
     s.modalities !== undefined &&
     (!Array.isArray(s.modalities) ||
       !s.modalities.length ||
-      s.modalities.length > 4 ||
+      s.modalities.length > modalityIds.length ||
       new Set(s.modalities).size !== s.modalities.length ||
       s.modalities.some((m) => !Object.hasOwn(modalityLabels, m)))
   )
@@ -62,7 +71,7 @@ export function normalizeCalendar(input: unknown) {
       typeof s.assessmentStagesByModality !== 'object' ||
       Array.isArray(s.assessmentStagesByModality) ||
       Object.entries(s.assessmentStagesByModality).some(
-        ([m, n]) => !calendarModalities(s).includes(m) || ![2, 3, 4].includes(n),
+        ([m, n]) => !calendarModalities(s).includes(m) || !assessmentStageCounts.includes(n),
       ))
   )
     fail('Etapas por oferta inválidas.');
@@ -76,9 +85,7 @@ export function normalizeCalendar(input: unknown) {
   if (
     s.organizationByModality &&
     Object.entries(s.organizationByModality).some(
-      ([m, value]) =>
-        !calendarModalities(s).includes(m) ||
-        !['anual', 'semestral', 'a-classificar'].includes(value),
+      ([m, value]) => !calendarModalities(s).includes(m) || !organizations.includes(value),
     )
   )
     fail('Organização por oferta inválida.');
@@ -89,7 +96,7 @@ export function normalizeCalendar(input: unknown) {
         !calendarModalities(s).includes(m) ||
         Object.entries(terms).some(
           ([term, value]) =>
-            !['annual', 'first', 'second'].includes(term) ||
+            !academicTerms.some((allowed) => allowed === term) ||
             !['unknown', 'yes', 'no'].includes(value.status) ||
             (value.source !== undefined && value.source.length > 240) ||
             (value.required === true && (!value.source?.trim() || value.status !== 'yes')),
@@ -133,7 +140,9 @@ export function normalizeCalendar(input: unknown) {
   for (const p of s.periods)
     if (
       p.targetDays !== undefined &&
-      (!Number.isInteger(p.targetDays) || p.targetDays < 1 || p.targetDays > 366)
+      (!Number.isInteger(p.targetDays) ||
+        p.targetDays < calendarLimits.minimumTargetDays ||
+        p.targetDays > calendarLimits.maximumTargetDays)
     )
       fail('Meta de dias letivos inválida.');
   for (let i = 0; i < s.periods.length; i++)
@@ -164,7 +173,7 @@ export function normalizeCalendar(input: unknown) {
           datesBetween(e.assessmentAutoStart, e.assessmentAutoStart);
           if (
             Number(e.assessmentAutoStart.slice(0, 4)) !== s.year ||
-            !/^stage-[1-4](?::[a-z]+)?$/.test(e.requirementId || '')
+            !assessmentStageRequirementPattern.test(e.requirementId || '')
           )
             fail('Distribuição automática de etapas inválida.');
         }
@@ -205,6 +214,21 @@ export function normalizeCalendar(input: unknown) {
         s.periods[i].end >= s.periods[j].start
       )
         fail('Períodos sobrepostos.');
+  for (const modality of calendarModalities(s)) {
+    const stages = s.events
+      .filter(
+        (event) =>
+          isStageRequirementId(event.requirementId) &&
+          event.requirementId?.endsWith(`:${modality}`),
+      )
+      .sort((a, b) => a.requirementId!.localeCompare(b.requirementId!));
+    for (let index = 1; index < stages.length; index++) {
+      if (stages[index].requirementId === stages[index - 1].requirementId)
+        fail('Há etapas de avaliação duplicadas para a mesma oferta.');
+      if (stages[index].start <= stages[index - 1].end)
+        fail('As etapas de avaliação da oferta devem ocorrer em sequência, sem sobreposição.');
+    }
+  }
   return {
     schemaVersion: 3 as const,
     rulesetVersion: rulesetVersion(s),

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { activityCoverage } from '../../../../src/calendar-rules/index.ts';
-import { assessmentDayCounts } from '../../../../src/stage-suggestions.ts';
+import { assessmentDayCounts } from '../../../../src/assessment-day-counts.ts';
 import { activityStatus } from '../../../../src/activity-status.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 

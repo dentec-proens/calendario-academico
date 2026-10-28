@@ -157,5 +157,22 @@ test('a 2026 stage prepared in a calendar with several offers can be applied', (
     { ...draft, start: '2026-03-02', end: '2026-04-30', evidence: 'Ata sintética' },
     { id: 'stage' },
   );
-  expect(applyEvent(state, event, []).events).toHaveLength(1);
+  expect(() => applyEvent(state, event, [])).toThrow(/inteiramente dentro/);
+  const organized = {
+    ...state,
+    periods: [
+      {
+        id: 'annual',
+        name: 'Anual',
+        start: '2026-03-02',
+        end: '2026-12-18',
+        association: {
+          status: 'defined' as const,
+          modalities: ['integrado'],
+          term: 'annual' as const,
+        },
+      },
+    ],
+  };
+  expect(applyEvent(organized, event, []).events).toHaveLength(1);
 });

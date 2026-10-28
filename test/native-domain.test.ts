@@ -255,8 +255,20 @@ test('native calendar saves validate per-offer stages and preserve the selected 
     weekConfirmed: true,
     weekEvidence: 'Ata sintética',
     periods: [
-      { id: 'p', name: 'Primeiro semestre', start: '2027-03-01', end: '2027-03-12' },
-      { id: 'q', name: 'Segundo semestre', start: '2027-04-01', end: '2027-04-14' },
+      {
+        id: 'p',
+        name: 'Primeiro semestre',
+        start: '2027-03-01',
+        end: '2027-03-12',
+        association: { status: 'defined', modalities: ['integrado', 'graduacao'], term: 'first' },
+      },
+      {
+        id: 'q',
+        name: 'Segundo semestre',
+        start: '2027-04-01',
+        end: '2027-04-14',
+        association: { status: 'defined', modalities: ['integrado', 'graduacao'], term: 'second' },
+      },
     ],
     events: [
       {

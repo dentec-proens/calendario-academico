@@ -43,122 +43,30 @@ test('week form applies confirmed weekdays and rejects an empty week atomically'
   expect((await savedState(page)).state.weekEvidence).toBe('Resolução da semana letiva');
 });
 
-test('period form calculates a teaching-day target, edits the same period and rejects overlap', async ({
-  page,
-  fixtureServer,
-}) => {
-  await openEditor(page, fixtureServer);
-  await page.locator('[data-view="periods"]').click();
-  await page.locator('#period-name').fill('Primeiro período');
-  await page.locator('#period-start').fill('2027-02-01');
-  await page.locator('#period-days').fill('5');
-  await expect(page.locator('#period-end')).toHaveValue('2027-02-05');
-  await expect(page.locator('#period-end')).toHaveAttribute('readonly', '');
-  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
-  await page.locator('#period-submit').click();
-  await expect
-    .poll(() => page.evaluate(() => window.editorTest.record.state.periods.length))
-    .toBe(1);
-  const original = (await savedState(page)).state.periods[0];
-  expect(original).toMatchObject({ name: 'Primeiro período', targetDays: 5, end: '2027-02-05' });
-  await page.locator(`[data-edit-period="${original.id}"]`).click();
-  await expect(page.locator('#period-name')).toHaveValue('Primeiro período');
-  await page.locator('#period-name').fill('Período ampliado');
-  await page.locator('#period-days').fill('10');
-  await expect(page.locator('#period-end')).toHaveValue('2027-02-12');
-  await page.locator('#period-submit').click();
-  await expect
-    .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0].targetDays))
-    .toBe(10);
-  const before = await savedState(page);
-  expect(before.state.periods).toEqual([
-    { ...original, name: 'Período ampliado', targetDays: 10, end: '2027-02-12' },
-  ]);
-  await page.locator('#period-name').fill('Sobreposição inválida');
-  await page.locator('#period-start').fill('2027-02-10');
-  await page.locator('#period-end').fill('2027-02-15');
-  await page.locator('#period-submit').click();
-  await expect(page.locator('#period-form [role="alert"]')).toContainText(
-    'Já existe um período para este ciclo da oferta',
-  );
-  expect(await savedState(page)).toEqual(before);
-});
-
-test('assessment settings require apply, generate stages and restore automatic dates after a manual edit', async ({
+test('offer organization applies manual assessment dates and preserves them after a holiday changes', async ({
   page,
   fixtureServer,
 }) => {
   await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-03-01', '2027-03-26');
-  await savedState(page);
-  await page.locator('[data-view="periods"]').click();
-  await page.locator('[data-assessment-modality="integrado"]').selectOption('4');
+  const before = await savedState(page);
+  await page.locator('[data-edit-organization="integrado"]').click();
+  await page.locator('#offer-integrado-stage-0-end').fill('2027-03-14');
+  await page.locator('#offer-integrado-stage-1-start').fill('2027-03-15');
+  await page.locator('#offer-integrado-apply').click();
+  const applied = await savedState(page);
   expect(
-    await page.evaluate(() => window.editorTest.record.state.assessmentStagesByModality),
-  ).toEqual({});
-  await page.getByRole('button', { name: 'Definir etapas' }).click();
-  await expect
-    .poll(() => page.evaluate(() => window.editorTest.record.state.assessmentStagesByModality))
-    .toEqual({ integrado: 4 });
-  await page.locator('[data-activity-open="stage-1:integrado"]').click();
-  await page.locator('#event-start').fill('2027-03-01');
-  await page.locator('#event-evidence').fill('Organização pedagógica aprovada');
-  await page.locator('#apply-stage-suggestion').click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          window.editorTest.record.state.events.filter((event) =>
-            event.requirementId?.startsWith('stage-'),
-          ).length,
-      ),
-    )
-    .toBe(4);
-  const automatic = (await savedState(page)).state.events.filter((event) =>
-    event.requirementId?.startsWith('stage-'),
-  );
-  expect(automatic.map((event) => [event.start, event.end])).toEqual([
-    ['2027-03-01', '2027-03-05'],
-    ['2027-03-08', '2027-03-12'],
-    ['2027-03-15', '2027-03-19'],
-    ['2027-03-22', '2027-03-26'],
-  ]);
-  await page.locator('[data-activity-open="stage-1:integrado"]').click();
-  await page.locator('#event-panel [data-edit-activity-event]').click();
-  await page.locator('#event-end').fill('2027-03-04');
-  await page.locator('#event-form button[type="submit"]').click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          window.editorTest.record.state.events.find(
-            (event) => event.requirementId === 'stage-1:integrado',
-          )?.end,
-      ),
-    )
-    .toBe('2027-03-04');
+    applied.state.events.filter((event) => event.requirementId?.startsWith('stage-')),
+  ).toHaveLength(2);
   expect(
-    (await savedState(page)).state.events
+    applied.state.events.find((event) => event.requirementId === 'stage-1:integrado')?.end,
+  ).toBe('2027-03-14');
+  expect(applied.state.periods).toEqual(before.state.periods);
+  expect(
+    applied.state.events
       .filter((event) => event.requirementId?.startsWith('stage-'))
       .every((event) => !event.assessmentAutoStart),
   ).toBe(true);
-  await page.locator('#close-event-panel').click();
-  await page.locator('#recalculate-stages').click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          window.editorTest.record.state.events.find(
-            (event) => event.requirementId === 'stage-1:integrado',
-          )?.end,
-      ),
-    )
-    .toBe('2027-03-05');
-  expect(
-    (await savedState(page)).state.events
-      .filter((event) => event.requirementId?.startsWith('stage-'))
-      .map((event) => event.assessmentAutoStart),
-  ).toEqual(Array<string>(4).fill('2027-03-01'));
 });
 
 test('Saturday panel applies one activity and source to the selected dates without moving focus', async ({
@@ -361,9 +269,9 @@ test('without teaching periods the Saturday step explains what is pending and li
   await expect(page.locator('#saturday-panel')).toContainText(
     'Não há sábados disponíveis para seleção.',
   );
-  await pending.getByRole('link', { name: 'Períodos e avaliações' }).click();
+  await pending.getByRole('link', { name: 'Organização letiva por oferta' }).click();
   await expect(page).toHaveURL(/\/periodos$/);
-  await expect(page.locator('#period-name')).toBeVisible();
+  await expect(page.locator('[data-edit-organization="integrado"]')).toBeVisible();
 
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'days');

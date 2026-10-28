@@ -125,6 +125,8 @@ export const convex = {
           );
         calls.saves++;
         record.state = structuredClone(body.state);
+        record.modalities = [...body.state.modalities];
+        record.offer = body.state.offer;
         record.version++;
         record.catalogueRevision = record.currentCatalogueRevision;
         record.institutionalSnapshot = structuredClone(record.institutionalEvents);

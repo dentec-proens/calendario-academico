@@ -23,6 +23,7 @@ const sources = [
   'package.json',
   'pnpm-lock.yaml',
   'pnpm-workspace.yaml',
+  'patches',
   'vitest.runtime.config.ts',
   'tsconfig.base.json',
   'test/runtime',

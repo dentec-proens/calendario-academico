@@ -340,31 +340,7 @@
   border-top: 1px solid var(--line);
   margin-top: 24px;
 }
-/* Periods and assessments are separate decisions within the same step. */
-.editor-section-content > #periods {
-  display: grid;
-  gap: 24px;
-  padding: 24px;
-  background: var(--ui-surface-muted);
-}
-.calendar-editor-content .editor-section-content #periods .period-section-card {
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--ui-surface);
-}
-.period-section-card > h3 {
-  margin-top: 0;
-}
-@media (max-width: 600px) {
-  .editor-section-content > #periods {
-    gap: 16px;
-    padding: 16px;
-  }
-  .calendar-editor-content .editor-section-content #periods .period-section-card {
-    padding: 16px;
-  }
-}
+/* Offers share the editor's existing surface; only dividers separate their forms. */
 
 .editor-calendar-details {
   display: grid;
@@ -978,4 +954,82 @@ fieldset.event-fields {
   gap: 0.4rem;
   margin-bottom: 1.25rem;
   line-height: 1.6;
+}
+
+.offer-organization {
+  min-width: 0;
+  padding-block: 20px;
+  container: offer-organization / inline-size;
+}
+.offer-organization + .offer-organization {
+  border-top: 1px solid var(--line);
+}
+.offer-organization-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.offer-organization-heading h4,
+.offer-organization-heading .help {
+  margin: 0;
+}
+.offer-organization-heading .help {
+  margin-top: 6px;
+}
+.offer-organization form {
+  margin-top: 20px;
+}
+.offer-organization h5 {
+  font-size: 1rem;
+  margin: 0 0 16px;
+}
+.offer-organization .offer-period-fields,
+.offer-organization .offer-stage-fields {
+  display: block;
+  border: 0;
+  padding: 0;
+  margin: 16px 0;
+  min-width: 0;
+}
+.offer-period-fields legend,
+.offer-stage-fields legend {
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 10px;
+}
+.offer-date-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 18px;
+}
+.offer-assessments {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+.offer-organization .field-error {
+  color: var(--ui-danger);
+  font-size: 0.875rem;
+  margin: 4px 0 12px;
+}
+.offer-organization .field-error:empty {
+  display: none;
+}
+.offer-applied {
+  color: var(--green);
+  font-size: 0.875rem;
+  margin: 12px 0 0;
+}
+@container offer-organization (min-width: 480px) {
+  .offer-date-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.offer-organization-pending {
+  color: var(--ui-warning);
+  font-size: 0.875rem;
+  margin: 6px 0 0;
 }

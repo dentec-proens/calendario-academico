@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import {
   configureAssessment,
-  enableAutomaticAssessment,
+  recalculateCalendar,
   removePeriod,
 } from '../src/calendar-edits/commands.ts';
 import type { ActivityState } from '../src/domain-types.ts';
@@ -31,25 +31,23 @@ function calendar(): ActivityState {
   };
 }
 
-test('removing a period recalculates automatic stages and permits an empty calendar without losing events', () => {
-  const state = enableAutomaticAssessment(
+test('recalculating periods preserves every entered stage date, including legacy automatic markers', () => {
+  const state = calendar();
+  state.events = state.events.map((event) => ({ ...event, assessmentAutoStart: '2027-03-01' }));
+  const before = structuredClone(state);
+  const next = recalculateCalendar(state, [
     {
-      ...calendar(),
-      periods: [
-        { id: 'first', start: '2027-03-01', end: '2027-03-12' },
-        { id: 'second', start: '2027-08-02', end: '2027-08-13' },
-      ],
+      id: 'holiday',
+      name: 'Feriado',
+      start: '2027-03-01',
+      end: '2027-03-05',
+      kind: 'exclude',
+      evidence: 'Lei',
     },
-    [],
-  );
-  expect(state.events.at(-1)?.end).toBe('2027-08-13');
-  const changed = removePeriod(state, 'second', []);
-  expect(changed.periods).toHaveLength(1);
-  expect(changed.events.at(-1)?.end).toBe('2027-03-12');
-  const empty = removePeriod(changed, 'first', []);
-  expect(empty.periods).toEqual([]);
-  expect(empty.events).toEqual(changed.events);
-  expect(state.periods).toHaveLength(2);
+  ]);
+  expect(next.events).toEqual(before.events);
+  expect(removePeriod(state, 'classes', []).events).toEqual(before.events);
+  expect(state).toEqual(before);
 });
 
 test('changing assessment organization preserves events while removing obsolete activity links and automatic anchors', () => {
@@ -68,47 +66,10 @@ test('changing assessment organization preserves events while removing obsolete 
     expect(changed.events[index]).toEqual(preserved);
   }
   expect(changed.events.slice(0, 2).map((event) => [event.start, event.end])).toEqual([
-    ['2027-03-01', '2027-03-12'],
-    ['2027-03-15', '2027-03-26'],
+    ['2027-03-01', '2027-03-04'],
+    ['2027-03-08', '2027-03-11'],
   ]);
   expect(state).toEqual(original);
   expect(() => configureAssessment(state, { integrado: '5' }, [])).toThrow('número de etapas');
   expect(state).toEqual(original);
-});
-
-test('automatic assessment regenerates a complete manually edited group without losing event metadata', () => {
-  const state = calendar();
-  const original = structuredClone(state);
-  const changed = enableAutomaticAssessment(state, []);
-  expect(changed.events.map((event) => [event.start, event.end])).toEqual([
-    ['2027-03-01', '2027-03-05'],
-    ['2027-03-08', '2027-03-12'],
-    ['2027-03-15', '2027-03-19'],
-    ['2027-03-22', '2027-03-26'],
-  ]);
-  expect(changed.events.map((event) => event.assessmentAutoStart)).toEqual(
-    Array<string>(4).fill('2027-03-01'),
-  );
-  expect(changed.events[0]).toMatchObject({
-    id: 'event-1',
-    name: '1ª etapa',
-    evidence: 'Organização pedagógica',
-    category: 'limite',
-  });
-  expect(state).toEqual(original);
-});
-
-test('automatic assessment rejects absent, incomplete and duplicate groups atomically', () => {
-  const absent = { ...calendar(), events: [] };
-  expect(() => enableAutomaticAssessment(absent, [])).toThrow('Preencha as etapas');
-  const incomplete = calendar();
-  incomplete.events.pop();
-  const original = structuredClone(incomplete);
-  expect(() => enableAutomaticAssessment(incomplete, [])).toThrow('Preencha todas as etapas');
-  expect(incomplete).toEqual(original);
-  const duplicate = calendar();
-  duplicate.events[3].requirementId = duplicate.events[0].requirementId;
-  const duplicated = structuredClone(duplicate);
-  expect(() => enableAutomaticAssessment(duplicate, [])).toThrow('duplicadas');
-  expect(duplicate).toEqual(duplicated);
 });

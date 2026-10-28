@@ -1,102 +1,56 @@
 import { test, expect } from './test.ts';
-import { openActivity, savedState, selectEditorSection } from './editor-navigation.ts';
+import { addPeriod, savedState, selectEditorSection, configureOffer } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
-  test(`periods, assessments and contextual requirements work together at ${width}px`, async ({
+  test(`offer organization uses a single surface and manual stages at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#record-title')).toBeVisible();
-    await selectEditorSection(page, 'periods');
+    await addPeriod(page, '2027-03-01', '2027-03-26');
+    await expect(page.locator('#editor-section-title')).toHaveText('Organização letiva por oferta');
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 6');
-    await expect(page.locator('#organization-form, #intake-form, #calendar-scope')).toHaveCount(0);
-    await page.locator('#period-name').fill('Ano letivo');
-    await page.locator('#period-start').fill('2027-03-01');
-    await page.locator('#period-days').fill('20');
-    await expect(page.locator('#period-end')).toHaveValue('2027-03-26');
-    await page.locator('#period-submit').click();
-    await expect(page.locator('#period-list')).toContainText('Ano letivo');
-    await page.locator('[data-assessment-modality="integrado"]').selectOption('4');
-    await page.getByRole('button', { name: 'Definir etapas', exact: true }).click();
-    await page.locator('[data-activity-open="stage-1:integrado"]').click();
-    await expect(page.locator('#event-form-title')).toBeFocused();
-    await page.locator('#event-start').fill('2027-03-01');
-    await page.locator('#event-evidence').fill('Organização pedagógica');
-    await page.locator('#apply-stage-suggestion').click();
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () =>
-            window.editorTest.record.state.events.filter((event) =>
-              event.requirementId?.startsWith('stage-'),
-            ).length,
-        ),
-      )
-      .toBe(4);
-    await expect(page.locator('#event-panel')).toBeHidden();
-    await expect(page.locator('[data-activity-open="stage-1:integrado"]')).toBeFocused();
-    await expect(page.locator('#assessment-checklist [data-activity-open]')).toHaveCount(4);
-    await selectEditorSection(page, 'issues');
-    await page.locator('#calendar-scope').selectOption('covered');
-    await page
-      .locator('#calendar-scope-source')
-      .fill('PPC sintético: técnico presencial abrangido');
-    await page.locator('#scope-form button[type="submit"]').click();
-    await expect(page.locator('#scope-summary')).toBeFocused();
-    await expect(page.locator('#calendar-scope')).toBeHidden();
-    await savedState(page);
-    await selectEditorSection(page, 'events');
-    await openActivity(page, 'registration-0');
-    await page.getByText('Exigência por regra local', { exact: true }).click();
-    await page.locator('#intake-integrado-annual-required').check();
-    await page.locator('#intake-integrado-annual-source').fill('Regra local de matrícula');
-    await page.getByRole('button', { name: 'Salvar exigência', exact: true }).click();
-    await expect
-      .poll(() =>
-        page.evaluate(() => window.editorTest.record.state.intakeByModality?.integrado?.annual),
-      )
-      .toEqual({ status: 'yes', required: true, source: 'Regra local de matrícula' });
-    await page.locator('#close-event-panel').click();
-    await openActivity(page, 'registration-0');
-    await expect(page.locator('#event-panel .activity-details')).toContainText('Obrigatório');
-    await page.locator('#close-event-panel').click();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
-      true,
-    );
+    await expect(page.locator('#periods .panel')).toHaveCount(0);
+    await expect(
+      page.locator('#periods button').filter({ hasText: /sugerir|recalcular|distribuir/i }),
+    ).toHaveCount(0);
+    await page.locator('[data-edit-organization="integrado"]').click();
+    await page.locator('#offer-integrado-count').selectOption('4');
+    const before = await savedState(page);
+    for (const [index, [start, end]] of [
+      ['2027-03-01', '2027-03-05'],
+      ['2027-03-08', '2027-03-12'],
+      ['2027-03-15', '2027-03-19'],
+      ['2027-03-22', '2027-03-26'],
+    ].entries()) {
+      await page.locator(`#offer-integrado-stage-${index}-start`).fill(start);
+      await page.locator(`#offer-integrado-stage-${index}-end`).fill(end);
+    }
+    expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(before.saves);
+    await page.locator('#offer-integrado-evidence').fill('Deliberação pedagógica');
+    await page.locator('#offer-integrado-apply').click();
+    const saved = await savedState(page);
+    expect(saved.state.assessmentStagesByModality).toEqual({ integrado: 4 });
+    expect(saved.state.events.filter((e) => e.requirementId?.startsWith('stage-'))).toHaveLength(4);
     const origin = new URL(page.url()).origin;
     await page.goto(origin + '/calendarios/synthetic-calendar/avaliacoes');
     await expect(page).toHaveURL(
       origin + '/calendarios/synthetic-calendar/periodos#assessment-area',
     );
-    await expect(page.locator('#assessment-heading')).toBeFocused();
-    await expect(page.locator('#period-form')).toBeVisible();
-  });
-}
-
-for (const width of [1440, 390]) {
-  test(`browser Back to the legacy assessment destination focuses its block at ${width}px`, async ({
-    page,
-    fixtureServer,
-  }) => {
-    await page.setViewportSize({ width, height: 1000 });
-    const origin = new URL(await fixtureServer('editor')).origin;
-    await page.goto(origin + '/calendarios/synthetic-calendar/avaliacoes');
-    await expect(page.locator('#assessment-heading')).toBeFocused();
-    await selectEditorSection(page, 'events');
     await expect(page.locator('#editor-section-title')).toBeFocused();
+    await selectEditorSection(page, 'events');
     await page.goBack();
-    await expect(page).toHaveURL(
-      origin + '/calendarios/synthetic-calendar/periodos#assessment-area',
+    await expect(page.locator('#editor-section-title')).toBeFocused();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
     );
-    await expect(page.locator('#assessment-heading')).toBeFocused();
-    await expect(page.locator('#assessment-heading')).toBeInViewport({ ratio: 1 });
   });
 }
 
-test('a preserved annual intake requirement does not block the current semester period form', async ({
+test('an existing local intake declaration survives explicit organization of its offer', async ({
   page,
   fixtureServer,
 }) => {
@@ -104,30 +58,23 @@ test('a preserved annual intake requirement does not block the current semester 
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(async () => {
     const { record } = window.editorTest;
-    record.state.organizationByModality = { integrado: 'semestral' };
-    record.state.regime = 'semestral';
+    record.state.organizationByModality = { integrado: 'anual' };
     record.state.intakeByModality = {
-      integrado: { annual: { status: 'yes', required: true, source: 'Regra anual preservada' } },
+      integrado: { annual: { status: 'yes', required: true, source: 'Regra local preservada' } },
     };
     record.version++;
     await window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'periods');
-  await page.locator('#period-name').fill('Primeiro semestre');
-  await page.locator('#period-term').selectOption('first');
-  await page.locator('#period-start').fill('2027-02-01');
-  await page.locator('#period-end').fill('2027-06-30');
-  await page.locator('#period-submit').click();
-  await expect(page.locator('#period-list')).toContainText('Primeiro semestre');
-  const { state } = await savedState(page);
-  expect(state.intakeByModality?.integrado?.annual).toEqual({
+  await configureOffer(page, 'integrado', '2027-02-01', '2027-12-17');
+  expect((await savedState(page)).state.intakeByModality?.integrado?.annual).toEqual({
     status: 'yes',
     required: true,
-    source: 'Regra anual preservada',
+    source: 'Regra local preservada',
   });
 });
 
-test('editing a period cannot leave a saved activity linked to another offer', async ({
+test('changing an offer cycle immediately identifies activities that need review', async ({
   page,
   fixtureServer,
 }) => {
@@ -135,16 +82,18 @@ test('editing a period cannot leave a saved activity linked to another offer', a
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(async () => {
     const { record } = window.editorTest;
-    record.state.modalities = ['integrado', 'graduacao'];
-    record.state.regime = 'anual';
+    record.modalities = ['integrado', 'graduacao'];
+    record.state.modalities = record.modalities;
     record.state.organizationByModality = { integrado: 'anual', graduacao: 'anual' };
-    record.state.periods = (['integrado', 'graduacao'] as const).map((modality) => ({
-      id: modality,
-      name: modality,
-      start: '2027-02-01',
-      end: '2027-12-17',
-      association: { status: 'defined', modalities: [modality], term: 'annual' },
-    }));
+    record.state.periods = [
+      {
+        id: 'grad',
+        name: 'Anual da graduação',
+        start: '2027-02-01',
+        end: '2027-12-17',
+        association: { status: 'defined', modalities: ['graduacao'], term: 'annual' },
+      },
+    ];
     record.state.events = [
       {
         id: 'final-result',
@@ -162,15 +111,11 @@ test('editing a period cannot leave a saved activity linked to another offer', a
     await window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'periods');
-  await page.locator('[data-edit-period="graduacao"]').click();
-  await page.locator('#period-term').selectOption('first');
-  await page.locator('#period-end').fill('2027-06-30');
-  await page.locator('#period-submit').click();
-  await expect(page.locator('#period-form [role="alert"]')).toContainText(
+  await page.locator('[data-edit-organization="graduacao"]').click();
+  await page.locator('#offer-graduacao-organization').selectOption('semestral');
+  await expect(page.locator('[data-offer="graduacao"]')).toContainText(
     'Resultado final da graduação',
   );
-  expect(
-    await page.evaluate(() => window.editorTest.record.state.organizationByModality?.graduacao),
-  ).toBe('anual');
+  await expect(page.locator('#offer-graduacao-apply')).toBeDisabled();
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });

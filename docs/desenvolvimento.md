@@ -47,6 +47,14 @@ Novos conteúdos e cópias de calendários usam `schemaVersion: 3`, organizaçã
 
 O formulário conserva preenchimento ainda não aplicado; comandos atualizam o calendário da sessão; autosave confirma sua gravação no Convex. Rascunhos não sensíveis são isolados por usuário e entidade e limpos ao encerrar a sessão. Não há persistência durável offline.
 
+## Constantes compartilhadas do calendário
+
+`src/calendar-config.ts` é a fonte comum de ofertas e rótulos, ciclos e organizações, quantidades permitidas de etapas, quantidade de períodos por organização, limites de ano e duração e referências de dias letivos. O módulo não depende de React nem de Convex. A interface, os validadores Convex e as funções de domínio importam essas definições; `src/modalities.ts` mantém os helpers de escopo e reexporta o catálogo por compatibilidade.
+
+As constantes são dados; as condições de aplicabilidade continuam nas regras. Por exemplo, os mínimos de dias exigem a conferência do ano, da oferta e do escopo, em `src/evaluation.ts`. Alterar um mínimo não significa estendê-lo automaticamente a outro ano ou norma.
+
+Novas ofertas entram apenas com organização completa. O comando monta um único estado e a mutation atualiza conteúdo, catálogo de ofertas do registro e versão na mesma transação. Ofertas existentes não são removidas por esse fluxo. Snapshots anteriores conservam seu escopo; registros locais antigos sem modalidades explícitas não são estendidos à nova oferta.
+
 ## Integração do trabalho
 
 Use dados de teste no desenvolvimento individual. As contas da aplicação são distintas das contas administrativas Convex/GitHub. Antes de integrar mudanças, execute os comandos obrigatórios de [verificação](verificacao.md) e confira os [componentes compartilhados](componentes-interface.md).

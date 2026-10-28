@@ -1,3 +1,4 @@
+import { calendarLimits } from './calendar-config.ts';
 export interface CalendarEvidence {
   confirmed: boolean;
   evidenceId: string;
@@ -64,7 +65,12 @@ function confirmed(record: CalendarEvidence) {
  */
 export function countCalendar(input: CalendarInput) {
   const { year, offerId, periods, weekPattern, inclusions, exclusions, thresholds } = input;
-  if (!Number.isInteger(year) || year < 1900 || year > 9999) throw new RangeError('Ano inválido');
+  if (
+    !Number.isInteger(year) ||
+    year < calendarLimits.minimumYear ||
+    year > calendarLimits.maximumYear
+  )
+    throw new RangeError('Ano inválido');
   requiredString(offerId, 'offerId');
   if (!Array.isArray(periods) || periods.length === 0) throw new TypeError('Informe períodos');
   if (!Array.isArray(inclusions) || !Array.isArray(exclusions))

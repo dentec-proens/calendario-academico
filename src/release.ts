@@ -1,3 +1,4 @@
+import { assessmentStageCounts } from './calendar-config.ts';
 import { referenceIsCurrent, reviewIsCurrent } from './calendar-base/index.ts';
 import type { CalendarActivity, ActivityState, CalendarReview } from './domain-types.ts';
 import { calendarModalities, modalityLabels, appliesTo } from './modalities.ts';
@@ -47,7 +48,7 @@ export function releaseReadiness(
   const events = [...record.institutionalSnapshot, ...record.state.events];
   if (
     calendarModalities(record.state).some(
-      (m) => ![2, 3, 4].includes(assessmentCount(record.state, m)),
+      (m) => !assessmentStageCounts.includes(assessmentCount(record.state, m)),
     )
   )
     issues.push('Informe a quantidade de etapas de avaliação (2, 3 ou 4).');

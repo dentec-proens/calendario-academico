@@ -17,9 +17,8 @@ import {
   organizationForModality,
 } from '../calendar-rules/index.ts';
 import { durationEnd, recalculatePeriods } from '../duration.ts';
-import { activityChecklist, assessmentCount, stageRequirement } from '../obligations.ts';
+import { activityChecklist, stageRequirement } from '../obligations.ts';
 import { calendarModalities } from '../modalities.ts';
-import { recalculateAssessmentStages } from '../stage-suggestions.ts';
 import { teacherVacations } from '../teacher-vacations.ts';
 import { isSaturdayRecord, saturdayEvents } from '../saturdays.ts';
 import { campusInstitutionalEvents } from '../teacher-day.ts';
@@ -66,8 +65,7 @@ export function recalculateCalendar<S extends ActivityState>(
   const inherited = campusInstitutionalEvents(institutional, state);
   const periods = recalculatePeriods(state, [...inherited, ...state.events]);
   const next = { ...state, periods };
-  if (!periods.length) return next;
-  return { ...next, events: recalculateAssessmentStages(next, [...inherited, ...next.events]) };
+  return next;
 }
 
 export function validateInterval(state: Pick<ActivityState, 'year'>, start: string, end: string) {
@@ -476,29 +474,6 @@ export function configureAssessment<S extends ActivityState>(
     },
     institutional,
   );
-}
-
-export function enableAutomaticAssessment<S extends ActivityState>(
-  state: S,
-  institutional: CalendarActivity[],
-): S {
-  const events = state.events.map((event) => ({ ...event }));
-  let groups = 0;
-  for (const modality of calendarModalities(state)) {
-    const rows = events.filter(
-      (event) =>
-        stageRequirement(event.requirementId) &&
-        (!event.modalities?.length || event.modalities.includes(modality)),
-    );
-    if (!rows.length) continue;
-    if (rows.length !== assessmentCount(state, modality))
-      throw new Error('Preencha todas as etapas da oferta antes de recalcular.');
-    const anchor = rows.map((event) => event.start).sort()[0];
-    for (const event of rows) event.assessmentAutoStart = anchor;
-    groups++;
-  }
-  if (!groups) throw new Error('Preencha as etapas antes de recalcular.');
-  return recalculateCalendar({ ...state, events }, institutional);
 }
 
 /** Classifying organization never guesses which legacy period belongs to which offer. */

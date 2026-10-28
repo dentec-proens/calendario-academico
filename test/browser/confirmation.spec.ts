@@ -140,14 +140,15 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
     });
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.locator('[data-view="periods"]').click();
-  await page.locator('#period-name').fill('Preenchimento a preservar');
+  await page.locator('[data-edit-organization="integrado"]').click();
+  await page.locator('#offer-integrado-evidence').fill('Preenchimento a preservar');
   expect(
     await page
-      .locator('#period-name')
+      .locator('#offer-integrado-evidence')
       .evaluate((node) => getComputedStyle(node.closest('label')!).fontWeight),
   ).toBe('600');
   await page.waitForFunction(() => {
-    const input = document.querySelector('#period-name')!;
+    const input = document.querySelector('#offer-integrado-evidence')!;
     return (
       getComputedStyle(input.closest('label')!).color === getComputedStyle(input).borderTopColor
     );
@@ -162,9 +163,14 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
     'periods',
   ] as const) {
     await selectEditorSection(page, section);
-    await expect(page.locator(`#${section}`), section).toBeVisible();
+    await expect(
+      page.locator(`#${section === 'assessments' ? 'periods' : section}`),
+      section,
+    ).toBeVisible();
     if (section === 'periods')
-      await expect(page.locator('input#period-name')).toHaveValue('Preenchimento a preservar');
+      await expect(page.locator('input#offer-integrado-evidence')).toHaveValue(
+        'Preenchimento a preservar',
+      );
   }
   const file = join(directory, 'rascunho.json');
   const draft = await page.evaluate(() => ({
@@ -184,14 +190,16 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
   await page.locator('.confirmation-dialog__cancel').click();
   await expect(page.locator('dialog')).toBeHidden();
-  await expect(page.locator('input#period-name')).toHaveValue('Preenchimento a preservar');
+  await expect(page.locator('input#offer-integrado-evidence')).toHaveValue(
+    'Preenchimento a preservar',
+  );
   expect(await page.evaluate(() => window.editorTest.record.state.periods.length)).toBe(0);
 
   const picker = page.locator('input#file');
   await picker.setInputFiles(file);
   await expect(page.locator('dialog[open]')).toBeVisible();
   await page.locator('.confirmation-dialog__confirm').click();
-  await expect(page.locator('#period-list'))
+  await expect(page.locator('#periods'))
     .toContainText('Período importado')
     .catch(async (error: unknown) => {
       throw new Error(
@@ -202,17 +210,18 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
         { cause: error },
       );
     });
-  await expect(page.locator('input#period-name')).toHaveValue('');
+  await page.locator('[data-edit-organization="integrado"]').click();
+  await expect(page.locator('input#offer-integrado-evidence')).toHaveValue('');
   await page.waitForFunction(() => window.editorTest.calls.saves === 1);
 
   // Invalid JSON never discards a field or asks to confirm an unusable file.
-  await page.locator('#period-name').fill('Outro preenchimento');
+  await page.locator('#offer-integrado-evidence').fill('Outro preenchimento');
   await writeFile(file, JSON.stringify({ schemaVersion: 99 }));
   await picker.setInputFiles(file);
   await expect(page.locator('#message')).toContainText('Não foi possível abrir');
   await expect(page.locator('#message .ui-notice')).toHaveAttribute('data-tone', 'danger');
   await expect(page.locator('dialog[open]')).toHaveCount(0);
-  await expect(page.locator('input#period-name')).toHaveValue('Outro preenchimento');
+  await expect(page.locator('input#offer-integrado-evidence')).toHaveValue('Outro preenchimento');
 
   await page.locator('[data-view="issues"]').click();
   await page.locator('#make-definitive').click();

@@ -44,7 +44,7 @@ test('a failed production section chunk preserves the editor and unapplied event
   const retried = page.waitForResponse((response) => response.url() === failedChunk);
   await page.getByRole('button', { name: 'Tentar novamente', exact: true }).click();
   expect((await retried).status()).toBe(200);
-  await expect(page.locator('#period-name')).toBeVisible();
+  await expect(page.locator('[data-edit-organization="integrado"]')).toBeVisible();
   expect(
     await page.evaluate(
       () =>

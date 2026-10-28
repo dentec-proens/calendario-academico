@@ -1,3 +1,4 @@
+import { normativeDayMinimums } from './calendar-config.ts';
 import type { CountingEvent, TeachingState } from './domain-types.ts';
 import { countCalendar } from './calendar.ts';
 import { calendarModalities, appliesTo } from './modalities.ts';
@@ -13,7 +14,9 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
         'Organização a conferir: classifique os períodos por oferta antes de confirmar a contagem.',
       );
     const minimum =
-      s.year === 2027 && modality !== 'posgraduacao' && s.scopeConfirmation?.status === 'covered';
+      s.year === normativeDayMinimums.year &&
+      !normativeDayMinimums.excludedModalities.some((excluded) => excluded === modality) &&
+      s.scopeConfirmation?.status === 'covered';
     byModality[modality] = countCalendar({
       year: s.year,
       offerId: modality,
@@ -40,11 +43,13 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
           evidenceId: e.evidence ?? '',
         })),
       thresholds: {
-        annual: minimum ? 200 : null,
+        annual: minimum ? normativeDayMinimums.annual : null,
         byPeriod: Object.fromEntries(
           periods.map((p) => [
             p.id,
-            minimum && organizationForModality(s, modality) === 'semestral' ? 100 : null,
+            minimum && organizationForModality(s, modality) === 'semestral'
+              ? normativeDayMinimums.semester
+              : null,
           ]),
         ),
       },

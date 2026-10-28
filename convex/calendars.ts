@@ -1,3 +1,5 @@
+import { validateAddedOffers } from '../src/offer-organization';
+import { modalityIds } from '../src/calendar-config';
 import { inspectBase, reconcileBase } from './calendars/base';
 import { assertWritesOpen, maintenanceAccess } from './lib/maintenance';
 import { normalizeCalendar } from '../src/calendar-normalize';
@@ -148,7 +150,7 @@ export const createCalendar = mutation({
     assertCampus(user, campus._id);
     if (
       !body.modalities.length ||
-      body.modalities.length > 4 ||
+      body.modalities.length > modalityIds.length ||
       new Set(body.modalities).size !== body.modalities.length
     )
       fail('Selecione as formas de oferta/níveis do calendário.');
@@ -218,34 +220,47 @@ export const saveCalendar = mutation({
       );
     if (
       body.state.schemaVersion === 3 &&
-      body.state.rulesetVersion !== rulesetVersion({ year: row.year, modalities: row.modalities })
+      body.state.rulesetVersion !==
+        rulesetVersion({ year: row.year, modalities: body.state.modalities })
     )
       fail(
         'O conjunto de regras mudou. Atualize a aplicação e confira o preenchimento antes de salvar.',
         409,
       );
     const reconciliation = reconcileBase(compatibility, body.baseAcceptance);
-    if (
-      body.state.year !== row.year ||
-      JSON.stringify(body.state.modalities) !== JSON.stringify(row.modalities)
-    )
-      fail('Ano e ofertas não podem mudar neste registro.');
+    if (body.state.year !== row.year) fail('O ano não pode mudar neste registro.');
+    if (row.modalities.some((modality) => !body.state.modalities.includes(modality)))
+      fail('Ofertas existentes não podem ser removidas por esta operação.');
+    const added = body.state.modalities.some((modality) => !row.modalities.includes(modality));
     const state = normalizeCalendar({
       ...body.state,
+      events: added
+        ? body.state.events.map((event) =>
+            !event.modalities?.length &&
+            record.state.events.some(
+              (previous) => previous.id === event.id && !previous.modalities?.length,
+            )
+              ? { ...event, modalities: [...row.modalities] }
+              : event,
+          )
+        : body.state.events,
       campus: record.state.campus,
     }) as validators.DomainState;
     try {
+      validateAddedOffers(row.modalities, state);
       if (reconciliation.recalculate || !equalValues(clean(content.state), toContent(state))) {
         Object.assign(
           state,
-          recalculateCalendar(state, inheritedEvents(base, row.year, row.modalities, state)),
+          normalizeCalendar(
+            recalculateCalendar(state, inheritedEvents(base, row.year, state.modalities, state)),
+          ),
         );
       }
     } catch (error) {
       fail(error instanceof Error ? error.message : 'Não foi possível recalcular o calendário.');
     }
     const next = toContent(state),
-      institutionalSnapshot = clean(inheritedEvents(base, row.year, row.modalities, state));
+      institutionalSnapshot = clean(inheritedEvents(base, row.year, state.modalities, state));
     if (equalValues(clean(content.state), next) && !reconciliation.incorporate) {
       if (!body.unchangedOnly && content.catalogueRevision !== base.revision)
         await ctx.db.patch(content._id, { catalogueRevision: base.revision });
@@ -270,7 +285,11 @@ export const saveCalendar = mutation({
       institutionalSnapshot,
       documentSnapshot: docs,
     });
-    await ctx.db.patch(id, { version: row.version + 1, updatedAt: Date.now() });
+    await ctx.db.patch(id, {
+      modalities: state.modalities,
+      version: row.version + 1,
+      updatedAt: Date.now(),
+    });
     await appendAudit(
       ctx,
       user,

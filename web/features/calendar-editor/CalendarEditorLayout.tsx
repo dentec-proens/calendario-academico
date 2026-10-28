@@ -388,8 +388,12 @@ function EditorFrame() {
                 {saveLabel}
               </span>
             </div>
-            {currentSection === 'edit' && !readOnly && next ? (
-              <button id="editor-continue" type="submit" form="week-form">
+            {(currentSection === 'edit' || currentSection === 'periods') && !readOnly && next ? (
+              <button
+                id="editor-continue"
+                type="submit"
+                form={currentSection === 'periods' ? 'organization-continue' : 'week-form'}
+              >
                 {continueLabel(next)} <ArrowRight aria-hidden="true" />
               </button>
             ) : next ? (
