@@ -111,6 +111,16 @@ test('fechar enquanto o PDF carrega impede que uma resposta tardia reabra o leit
   await expect
     .poll(() => page.evaluate(() => window.portalRouterTest.pendingMutation))
     .toBe('downloadDocument');
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.locator('.loading-indicator-bar')).toBeVisible();
+  await expect(dialog.locator('.loading-indicator').getByRole('status')).toHaveText(
+    'Carregando PDF…',
+  );
+  await expect(dialog.locator('.loading-indicator').getByRole('status')).toHaveCSS(
+    'clip-path',
+    'inset(50%)',
+  );
+  await expect(dialog.locator('.loading-indicator')).toHaveCount(1);
   await page.keyboard.press('Escape');
   await page.evaluate(() => window.portalRouterTest.resolvePendingMutation());
   await expect(page.getByRole('dialog')).toHaveCount(0);

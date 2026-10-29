@@ -57,10 +57,16 @@ test('backend availability waits, distinguishes outages, recovers and preserves 
   }
 
   const initial = await fixture('?allowReload');
+  await expect(initial.locator('[role="status"]')).toBeEmpty();
+  await advance(initial, 199);
+  await expect(initial.locator('.loading-indicator-bar')).toHaveCount(0);
+  await advance(initial, 1);
+  await expect(initial.locator('.loading-indicator-bar')).toBeVisible();
   await expect(initial.locator('[role="status"]')).toHaveText('Carregando dados de teste…');
+  await expect(initial.locator('[role="status"]')).toHaveCSS('clip-path', 'inset(50%)');
   await expect(initial.locator('[role="alert"]')).toHaveCount(0);
   await initial.locator('#availability-draft').fill('Semana de acolhimento ainda não salva');
-  await advance(initial, 9999);
+  await advance(initial, 9799);
   await expect(initial.locator('[role="alert"]')).toHaveCount(0);
   await advance(initial, 1);
   await expect(initial.getByRole('alert').locator('h2')).toHaveText(

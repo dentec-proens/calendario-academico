@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 export interface PaginationState {
   status: 'LoadingFirstPage' | 'CanLoadMore' | 'LoadingMore' | 'Exhausted';
@@ -7,20 +8,23 @@ export interface PaginationState {
 export default function Pagination({
   pagination,
   label,
+  loadingLabel = 'Carregando…',
 }: {
   pagination: PaginationState;
   label: string;
+  loadingLabel?: string;
 }) {
   if (pagination.status === 'Exhausted') return null;
-  if (pagination.status === 'LoadingFirstPage') return <p role="status">Carregando…</p>;
+  if (pagination.status === 'LoadingFirstPage') return <LoadingIndicator label={loadingLabel} />;
   return (
     <Button
       type="button"
       variant="secondary"
-      disabled={pagination.status === 'LoadingMore'}
+      pending={pagination.status === 'LoadingMore'}
+      loadingLabel={loadingLabel}
       onClick={() => pagination.loadMore(50)}
     >
-      {pagination.status === 'LoadingMore' ? 'Carregando…' : label}
+      {label}
     </Button>
   );
 }

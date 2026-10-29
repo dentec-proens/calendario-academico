@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../components/ui/LoadingIndicator.tsx';
 import { Button } from '../components/ui/Button.tsx';
 import { Notice } from '../components/ui/Notice.tsx';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
@@ -46,9 +47,9 @@ export default function BackendStatus({
 
   if (online && !delayed)
     return loading ? (
-      <p className="backend-loading" role="status">
-        {loadingLabel}
-      </p>
+      <div className="backend-loading">
+        <LoadingIndicator label={loadingLabel} />
+      </div>
     ) : null;
 
   const title = !online

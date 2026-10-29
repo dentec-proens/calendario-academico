@@ -98,6 +98,9 @@ window.portalRouterTest = {
     resolvePendingMutation = undefined;
     this.pendingMutation = null;
   },
+  resolvePendingCollections() {
+    throw new Error('Fixture de coleções ainda não iniciada.');
+  },
   resolvePendingReview() {
     throw new Error('Nenhuma revisão sintética pendente.');
   },
@@ -213,6 +216,7 @@ declare global {
       completedMutation: string | null;
       removeCalendar(id: string): void;
       pendingReviewId: string | null;
+      resolvePendingCollections(): void;
       resolvePendingReview(): void;
       resolvePendingMutation(): void;
     };

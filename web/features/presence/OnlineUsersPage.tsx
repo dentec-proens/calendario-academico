@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { useNavigate } from '@tanstack/react-router';
 import { useFeatureRoute } from '../../app/navigation.ts';
 import { useQuery } from 'convex/react';
@@ -45,7 +46,7 @@ export default function OnlineUsersPanel() {
         automaticamente. Uma perda de conexão pode levar cerca de 90 segundos para aparecer.
       </p>
       {!data ? (
-        <p role="status">Carregando usuários online…</p>
+        <LoadingIndicator label="Carregando usuários online…" />
       ) : (
         <>
           <div className="online-summary" aria-live="polite" role="status">

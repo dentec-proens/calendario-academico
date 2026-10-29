@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { usePaginatedQuery, useQueries, type RequestForQueries } from 'convex/react';
@@ -89,9 +90,7 @@ export default function ReviewsPage() {
       : message.text ||
         (!pagination.results.length && pagination.status === 'Exhausted'
           ? 'Nenhum calendário disponível para revisão.'
-          : requested && !result
-            ? 'Abrindo análise…'
-            : '');
+          : '');
   return (
     <section id="review-panel" className="page" aria-busy={Boolean(requested && !result)}>
       <div className="panel">
@@ -138,8 +137,13 @@ export default function ReviewsPage() {
             Abrir análise
           </Button>
         </div>
-        <Pagination pagination={pagination} label="Carregar mais calendários" />
+        <Pagination
+          pagination={pagination}
+          label="Carregar mais calendários"
+          loadingLabel="Carregando calendários para revisão…"
+        />
         {requested ? <Link to="/revisoes">Voltar à lista de revisões</Link> : null}
+        {requested && !result ? <LoadingIndicator label="Carregando análise…" /> : null}
         <div id="review-message" role="status" aria-live="polite">
           {reviewMessage ? (
             <Notice

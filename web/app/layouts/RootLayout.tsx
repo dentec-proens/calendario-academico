@@ -1,5 +1,5 @@
 import UpdateProvider from '../updates/UpdateProvider.tsx';
-import { PageLoading } from '../PageLoading.tsx';
+import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { Suspense, useCallback, useEffect, useRef } from 'react';
 import { Link, Outlet, useRouterState } from '@tanstack/react-router';
 import { LogOut } from 'lucide-react';
@@ -96,7 +96,7 @@ export default function RootLayout() {
             disabled={session.maintenance && session.isAuthenticated && !session.editorRecovery}
           >
             {session.isLoading ? null : (
-              <Suspense fallback={<PageLoading />}>
+              <Suspense fallback={<LoadingIndicator layout="overlay" label="Carregando página…" />}>
                 <Outlet />
               </Suspense>
             )}

@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../../components/ui/LoadingIndicator.tsx';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { controlledLazy as lazy } from '../../../app/controlled-lazy.tsx';
 import { useAppSession } from '../../../app/session.tsx';
@@ -59,7 +60,7 @@ export default function EditorAccessNotice() {
         )}
       </Notice>
       {login && !maintenance && !checking && (
-        <Suspense fallback={<p role="status">Carregando acesso…</p>}>
+        <Suspense fallback={<LoadingIndicator layout="overlay" label="Carregando acesso…" />}>
           <AccessPage />
         </Suspense>
       )}

@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../../components/ui/LoadingIndicator.tsx';
 import {
   createContext,
   useCallback,
@@ -239,7 +240,7 @@ export function CalendarEditorProvider({
   const [retained, setRetained] = useState(fresh);
   if (fresh && retained !== fresh) setRetained(fresh);
   const record = fresh ?? (editorRecovery?.calendarId === calendarId ? retained : null);
-  if (!record) return <p role="status">Carregando calendário…</p>;
+  if (!record) return <LoadingIndicator label="Carregando calendário…" />;
   return (
     <OpenEditor key={`${calendarId}:${sessionIdentity(user)}`} record={record}>
       {children}

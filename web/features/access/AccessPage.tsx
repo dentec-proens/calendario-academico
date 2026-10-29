@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { Link } from '@tanstack/react-router';
 import { LogIn, ShieldCheck } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
@@ -35,7 +36,7 @@ export default function AccessPage() {
     },
   });
   const pending = submitting || google.pending;
-  if (isLoading || !status) return <p role="status">Carregando…</p>;
+  if (isLoading || !status) return <LoadingIndicator label="Carregando acesso…" />;
   return (
     <section id="auth" className="auth panel" aria-busy={pending}>
       <h1 id="auth-title">{setup ? 'Criar administração' : 'Entrar'}</h1>

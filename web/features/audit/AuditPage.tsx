@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from 'convex/react';
 import type { FunctionReturnType } from 'convex/server';
@@ -68,10 +69,11 @@ export default function AuditPage() {
           Atualizar registros
         </Button>
       </div>
+      {!first ? <LoadingIndicator label="Carregando histórico…" /> : null}
       <p id="log-message" role="status" aria-live="polite">
         {message ||
           (!first
-            ? 'Carregando histórico…'
+            ? ''
             : entries.length
               ? 'Histórico atualizado.'
               : 'Nenhuma operação registrada para este acesso.')}
@@ -131,8 +133,14 @@ export default function AuditPage() {
         </table>
       )}
       {last && !last.isDone ? (
-        <Button type="button" id="more-logs" disabled={pending} onClick={() => void loadMore()}>
-          {pending ? 'Carregando…' : 'Carregar anteriores'}
+        <Button
+          type="button"
+          id="more-logs"
+          pending={pending}
+          loadingLabel="Carregando registros anteriores…"
+          onClick={() => void loadMore()}
+        >
+          Carregar anteriores
         </Button>
       ) : null}
     </section>

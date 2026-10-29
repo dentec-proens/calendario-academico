@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { useWorkRisk } from '../../shared/forms/useWorkRisk.ts';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, Download, ExternalLink } from 'lucide-react';
@@ -163,9 +164,7 @@ export default function DocumentReader({
           >
             <ChevronLeft size={18} aria-hidden="true" />
           </Button>
-          <span role="status">
-            {pdf ? `Página ${pageNumber} de ${pdf.numPages}` : 'Carregando PDF…'}
-          </span>
+          <span role="status">{pdf ? `Página ${pageNumber} de ${pdf.numPages}` : ''}</span>
           <Button
             variant="secondary"
             aria-label="Próxima página"
@@ -193,7 +192,7 @@ export default function DocumentReader({
         </Notice>
       ) : null}
       <div ref={stage} className="document-reader__stage" aria-busy={rendering && !error}>
-        {rendering && !error ? <p role="status">Preparando página…</p> : null}
+        {rendering && !error ? <LoadingIndicator layout="overlay" label="Carregando PDF…" /> : null}
         <canvas
           ref={canvas}
           role="img"

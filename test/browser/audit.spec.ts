@@ -60,7 +60,17 @@ for (const width of [1440, 390]) {
     const more = page.locator('#more-logs');
     await more.click();
     await expect(more).toBeDisabled();
-    await expect(more).toHaveText('Carregando…');
+    await expect(more).toHaveAttribute('aria-busy', 'true');
+    await expect(more).toContainText('Carregar anteriores');
+    await expect(more.locator('.loading-indicator-bar')).toBeVisible();
+    await expect(more.getByRole('status')).toHaveText('Carregando registros anteriores…');
+    await expect(more.getByRole('status')).toHaveCSS('clip-path', 'inset(50%)');
+    const button = await more.boundingBox();
+    const bar = await more.locator('.loading-indicator-bar').boundingBox();
+    expect(button && bar && bar.x >= button.x && bar.x + bar.width <= button.x + button.width).toBe(
+      true,
+    );
+    await page.screenshot({ path: `test-results/loading-action-${width}.png` });
     await expect.poll(() => page.evaluate(() => window.auditTest.pending)).toBe(true);
     await page.evaluate(() => window.auditTest.finishMore());
     await expect(rows).toHaveCount(4);
@@ -94,7 +104,11 @@ test('audit keeps existing records on pagination failure', async ({ page, fixtur
 test('audit explains the initial loading and empty states', async ({ page, fixtureServer }) => {
   const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/logs?audit-loading');
-  await expect(page.locator('#log-message')).toContainText('Carregando histórico…');
+  await expect(page.locator('.loading-indicator-bar')).toBeVisible();
+  await expect(page.locator('.loading-indicator').getByRole('status')).toHaveText(
+    'Carregando histórico…',
+  );
+  await expect(page.locator('#log-message')).toBeEmpty();
   await expect(page.locator('#log-list')).toHaveCount(0);
   await page.evaluate(() =>
     window.auditTest.publish({ entries: [], isDone: true, continueCursor: '' }),

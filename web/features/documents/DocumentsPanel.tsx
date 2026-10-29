@@ -102,19 +102,21 @@ export default function DocumentsPanel({
               onMessage={setMessage}
             />
           ))
-        ) : (
+        ) : !liveData ? null : (
           <li>
-            {!liveData
-              ? 'Carregando documentos…'
-              : statusFilter
-                ? 'Nenhum documento encontrado para os filtros selecionados.'
-                : year
-                  ? `Nenhum documento disponível para o ano ${year}.`
-                  : 'Nenhum documento PDF cadastrado.'}
+            {statusFilter
+              ? 'Nenhum documento encontrado para os filtros selecionados.'
+              : year
+                ? `Nenhum documento disponível para o ano ${year}.`
+                : 'Nenhum documento PDF cadastrado.'}
           </li>
         )}
       </ul>
-      <Pagination pagination={pagination} label="Carregar mais documentos" />
+      <Pagination
+        pagination={pagination}
+        label="Carregar mais documentos"
+        loadingLabel="Carregando documentos…"
+      />
     </CollectionPanel>
   );
 }

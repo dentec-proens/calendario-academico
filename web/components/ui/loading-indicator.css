@@ -1,0 +1,67 @@
+.loading-indicator {
+  --loading-color: var(--green);
+  position: relative;
+  display: block;
+  height: 3px;
+  margin-block: 12px;
+  pointer-events: none;
+}
+.loading-indicator--overlay {
+  height: 0;
+  margin: 0;
+}
+.ui-button--pending {
+  position: relative;
+}
+.loading-indicator--action {
+  --loading-color: currentColor;
+  position: absolute;
+  inset: auto 12px 4px;
+  height: 3px;
+  margin: 0;
+}
+.loading-indicator-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.loading-indicator-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--loading-color) 15%, transparent);
+}
+.loading-indicator-bar::after {
+  content: '';
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--loading-color);
+  animation: loading-indicator-progress 1.4s ease-in-out infinite;
+}
+@keyframes loading-indicator-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(286%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-indicator-bar::after {
+    width: 100%;
+    animation: none;
+  }
+}
+@media print {
+  .loading-indicator {
+    display: none;
+  }
+}

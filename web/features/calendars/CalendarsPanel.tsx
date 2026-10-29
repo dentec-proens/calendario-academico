@@ -142,24 +142,24 @@ export default function CalendarsPanel({
                 </Button>
               </li>
             ))
-          ) : (
+          ) : pagination.status === 'LoadingFirstPage' ? null : (
             <li>
-              {pagination.status === 'LoadingFirstPage'
-                ? 'Carregando calendários…'
-                : filter
-                  ? 'Nenhum calendário registrado para este campus.'
-                  : 'Nenhum calendário registrado nesta conta.'}
+              {filter
+                ? 'Nenhum calendário registrado para este campus.'
+                : 'Nenhum calendário registrado nesta conta.'}
             </li>
           )}
         </ul>
-        <Pagination pagination={pagination} label="Carregar mais calendários" />
+        <Pagination
+          pagination={pagination}
+          label="Carregar mais calendários"
+          loadingLabel="Carregando calendários…"
+        />
         <details className="panel calendar-trash">
           <summary>Lixeira de calendários</summary>
           {trash.length ? <p>Os dados e documentos são preservados para restauração.</p> : null}
           <ul id="calendar-trash-list" className="records">
-            {trashLoading ? (
-              <li>Carregando lixeira…</li>
-            ) : trash.length ? (
+            {trashLoading ? null : trash.length ? (
               trash.map((c) => (
                 <li key={c.id}>
                   <div>
@@ -187,7 +187,11 @@ export default function CalendarsPanel({
               <li>A lixeira está vazia.</li>
             )}
           </ul>
-          <Pagination pagination={trashPagination} label="Carregar mais calendários da lixeira" />
+          <Pagination
+            pagination={trashPagination}
+            label="Carregar mais calendários da lixeira"
+            loadingLabel="Carregando lixeira…"
+          />
         </details>
       </CollectionPanel>
     </section>

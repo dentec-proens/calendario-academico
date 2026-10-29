@@ -9,7 +9,14 @@ test('online users renders live totals, search, campus filters and mobile layout
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(String(error)));
   await page.goto(fixtureUrl);
-  await expect(page.getByText('Carregando usuários online…', { exact: true })).toBeVisible();
+  await expect(page.locator('.loading-indicator-bar')).toBeVisible();
+  await expect(page.locator('.loading-indicator').getByRole('status')).toHaveText(
+    'Carregando usuários online…',
+  );
+  await expect(page.locator('.loading-indicator').getByRole('status')).toHaveCSS(
+    'clip-path',
+    'inset(50%)',
+  );
   const users = [
     {
       id: 'a',

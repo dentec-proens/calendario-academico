@@ -12,9 +12,14 @@ import '../../web/portal/react-portal.css';
 const campusId = 'campus-a' as Id<'campuses'>;
 if (location.pathname === '/__portal')
   history.replaceState(null, '', '/calendarios' + location.search);
+let collectionsReady = !new URLSearchParams(location.search).has('collections-loading');
 const multipleReviews = new URLSearchParams(location.search).has('multiple-reviews');
 const removedCalendars = new Set<string>();
 const queryListeners = new Set<{ refresh: () => void; notify: () => void }>();
+window.portalRouterTest.resolvePendingCollections = () => {
+  collectionsReady = true;
+  for (const listener of queryListeners) listener.notify();
+};
 window.portalRouterTest.removeCalendar = (id) => {
   removedCalendars.add(id);
   // Convex publishes a consistent snapshot for all queries before notifying hooks.
@@ -210,6 +215,11 @@ const client = {
         return () => queryListeners.delete(listener);
       },
       localQueryResult: () => {
+        if (
+          !collectionsReady &&
+          (name === 'documents:documentPage' || name === 'calendars:calendarPage')
+        )
+          return undefined;
         if (name === 'workspace:logs') return window.auditTest.first;
         if (!deferredDone) return undefined;
         if (name === 'reviews:review' && args.id && removedCalendars.has(args.id))

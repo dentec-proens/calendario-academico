@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { EditorErrorBoundary } from './EditorErrorBoundary.tsx';
 import { Suspense, useEffect, useRef } from 'react';
 import {
@@ -362,7 +363,7 @@ function EditorFrame() {
             </h2>
             <p className="editor-section-description">{current.description}</p>
           </div>
-          <Suspense fallback={<p role="status">Carregando seção…</p>}>
+          <Suspense fallback={<LoadingIndicator layout="overlay" label="Carregando seção…" />}>
             <Outlet key={formEpoch} />
           </Suspense>
           <EditorErrorBoundary>
