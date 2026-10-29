@@ -377,3 +377,26 @@ test('unknown kinds and invalid source formats fail instead of inventing v4 dime
   ).toThrow('Ofertas');
   expect(() => convertCalendarV3(calendar({ schemaVersion: 4 }), context)).toThrow('Formato');
 });
+
+test.each([2, 3, 4])(
+  'unclassified v3 retains %i old ordinals without assigning a cycle',
+  (count) => {
+    const input = calendar({
+      organizationByModality: { graduacao: 'a-classificar' },
+      assessmentStagesByModality: { graduacao: count },
+    });
+    const before = structuredClone(input);
+    const converted = convertCalendarV3(input, context);
+    expect(converted.offers[0]).toMatchObject({
+      organization: 'a-classificar',
+      legacyStageCount: count,
+    });
+    expect(converted.offers[0]).not.toHaveProperty('stages');
+    expect(converted.events[0]).toMatchObject({
+      requirementId: 'stage-1:graduacao',
+      start: input.events[0].start,
+      end: input.events[0].end,
+    });
+    expect(input).toEqual(before);
+  },
+);

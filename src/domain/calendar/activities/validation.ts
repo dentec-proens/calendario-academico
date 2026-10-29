@@ -35,6 +35,7 @@ export function temporalPosition(
 export function validateActivityRecord(
   state: AssessmentSettings & { year: number; periods?: CalendarPeriod[] },
   event: CalendarActivity,
+  options: { preserveLegacyStageEvidence?: boolean } = {},
 ) {
   const position = temporalPosition(state, event);
   if (!['include', 'exclude', 'note'].includes(event.kind))
@@ -120,8 +121,14 @@ export function validateActivityRecord(
     const offer = state.offers ? offerFor(state, modality) : undefined;
     if (state.offers && !offer)
       throw new DomainError('A oferta da etapa de avaliação não pertence ao calendário.');
+    const preserveLegacyStage =
+      options.preserveLegacyStageEvidence === true &&
+      offer?.organization === 'a-classificar' &&
+      offer.stages === undefined &&
+      [2, 3, 4].includes(offer.legacyStageCount ?? 0);
     const issue =
-      offer?.organization === 'a-classificar'
+      offer?.organization === 'a-classificar' &&
+      (offer.legacyStageCount === undefined || preserveLegacyStage)
         ? ''
         : assessmentIntervalIssue(
             periodsForModality({ ...state, periods: state.periods }, modality),

@@ -36,6 +36,13 @@ export function validateOffers(offers: CalendarOffer[]): CalendarOffer[] {
       if (labels.has(key)) fail('Os nomes das ofertas devem ser únicos no calendário.');
       labels.add(key);
     }
+    if (
+      offer.legacyStageCount !== undefined &&
+      (![2, 3, 4].includes(offer.legacyStageCount) ||
+        offer.organization !== 'a-classificar' ||
+        offer.stages !== undefined)
+    )
+      fail('A quantidade anterior de etapas exige organização a conferir, sem etapas por ciclo.');
     if (offer.stages) {
       const allowed =
         offer.organization === 'anual'
@@ -157,7 +164,9 @@ export function normalizeOfferCalendar(
     if (ids.has(event.id) || event.id.startsWith('inst:')) fail('Identificador inválido.');
     ids.add(event.id);
     if (event.offers !== undefined) scope(event.offers);
-    validateActivityRecord(s, event);
+    // Preserve migration evidence on save; coverage still reports its original interval finding.
+    // The backend separately validates every new/changed stage interval and cycle.
+    validateActivityRecord(s, event, { preserveLegacyStageEvidence: true });
     if (
       event.hours !== undefined &&
       (!Number.isFinite(event.hours) || event.hours <= 0 || event.hours > 8784)

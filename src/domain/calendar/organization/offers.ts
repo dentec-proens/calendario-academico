@@ -197,7 +197,13 @@ export function offerOrganizationIssues(
       ? {
           ...state,
           offers: state.offers.map((offer) =>
-            offer.id === modality ? { ...offer, organization } : offer,
+            offer.id === modality
+              ? (() => {
+                  if (offer.legacyStageCount === undefined) return { ...offer, organization };
+                  const { legacyStageCount: _legacy, ...configured } = offer;
+                  return { ...configured, organization, stages: { perTerm: count } };
+                })()
+              : offer,
           ),
         }
       : {
@@ -213,6 +219,20 @@ export function offerOrganizationIssues(
         appliesTo(event, modality) && event.requirementId && !stageRequirement(event.requirementId),
     )) {
       const requirement = requirements.get(event.requirementId!);
+      const historical = offerFor(state, modality)?.legacyStageCount;
+      const ordinal = event.requirementId?.match(
+        /^(?:results|council|pedagogical-meeting)-([1-4]):([a-z][a-z0-9-]*)$/,
+      );
+      // Complete classification applies the same existing detach rule to excess
+      // annual ordinals, while keeping every date and occurrence identity.
+      if (
+        historical !== undefined &&
+        !requirement &&
+        ordinal?.[2] === modality &&
+        Number(ordinal[1]) > count * (organization === 'semestral' ? 2 : 1)
+      )
+        continue;
+
       if (
         !requirement ||
         ((requirement.offerId ?? requirement.modality) &&
@@ -365,9 +385,11 @@ export function applyOfferOrganization<S extends ActivityState>(
   const next = state.offers
     ? {
         ...state,
-        offers: state.offers.map((offer) =>
-          offer.id === modality ? { ...offer, organization, stages: { perTerm: count } } : offer,
-        ),
+        offers: state.offers.map((offer) => {
+          if (offer.id !== modality) return offer;
+          const { legacyStageCount: _legacy, ...configured } = offer;
+          return { ...configured, organization, stages: { perTerm: count } };
+        }),
         periods: [...retained, ...periods],
       }
     : {

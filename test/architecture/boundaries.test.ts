@@ -121,11 +121,20 @@ test('year-specific behaviour lives only in the policies selected by the registr
     /(?:[!=]==?|[<>]=?)\s*['"]?20[2-9]\d\b|\b20[2-9]\d['"]?\s*(?:[!=]==?|[<>]=?)|case\s+['"]?20[2-9]\d\b|\[\s*20[2-9]\d\s*,|startsWith\(['"][a-z0-9-]*-20[2-9]\d-/;
   const selector = resolve(policies, 'registry.ts');
   const contract = resolve(policies, 'contract.ts');
+  // M7 only: these read-only operations inventory historical years and compare a frozen
+  // pre-v4 source with migrated snapshots; they do not select normative product behaviour.
+  // The concrete-policy import restriction below still applies to every one of these files.
+  const historicalYearInventoryFiles = new Set([
+    'convex/legacy.ts',
+    'scripts/administration/offers-source-projection.ts',
+    'scripts/administration/offers-projection.ts',
+    'scripts/administration/offers-verify.ts',
+  ]);
   for (const directory of ['src', 'web', 'convex', 'scripts']) {
     for (const file of await sources(resolve(repository, directory))) {
       const label = relative(repository, file);
       const text = await readFile(file, 'utf8');
-      if (!inside(policies, file))
+      if (!inside(policies, file) && !historicalYearInventoryFiles.has(label))
         expect(text, `${label} branches on a calendar year`).not.toMatch(yearBranch);
       for (const target of relativeTargets(file, text)) {
         if (!inside(policies, target) || target === contract || target === selector) continue;

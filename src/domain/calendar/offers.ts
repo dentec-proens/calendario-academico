@@ -93,12 +93,12 @@ export function stageTerm(offer: CalendarOffer, n: number): AcademicTerm | undef
 }
 
 export function stageCount(offer: CalendarOffer): number {
-  if (!offer.stages || offer.organization === 'a-classificar') return 0;
+  if (offer.organization === 'a-classificar') return offer.legacyStageCount ?? 0;
+  if (!offer.stages) return 0;
   return offer.stages.perTerm * (offer.organization === 'semestral' ? 2 : 1);
 }
 
 export function stageCycle(offer: CalendarOffer): string | undefined {
-  if (!offer.stages || offer.organization === 'a-classificar') return undefined;
   const total = stageCount(offer);
   return total === 2
     ? 'semestral'

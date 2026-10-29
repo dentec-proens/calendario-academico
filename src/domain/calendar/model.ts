@@ -13,6 +13,8 @@ export interface CalendarOffer {
   delivery: OfferDelivery;
   organization: Organization;
   stages?: { perTerm: number };
+  /** Previous annual ordinals, retained only while organization has no classified cycle. */
+  legacyStageCount?: 2 | 3 | 4;
   scope?: { status: 'covered' | 'own-regulation' };
   intake?: Partial<Record<AcademicTerm, IntakeConfiguration>>;
   organizationBasis?: string;

@@ -123,6 +123,7 @@ export const calendarOffer = v.object({
   label: v.optional(v.string()),
   delivery: v.union(v.literal('presencial'), v.literal('ead'), v.literal('a-conferir')),
   organization,
+  legacyStageCount: v.optional(v.union(v.literal(2), v.literal(3), v.literal(4))),
   stages: v.optional(
     v.object({
       perTerm: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),

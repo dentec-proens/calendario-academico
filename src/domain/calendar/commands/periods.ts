@@ -63,6 +63,10 @@ export function applyPeriod<S extends ActivityState>(
     throw new DomainError('Associação do período incompatível com a organização por oferta.');
   if (values.association?.status === 'defined' && associated) {
     const organization = values.association.term === 'annual' ? 'anual' : 'semestral';
+    if (associated.some((id) => offerFor(state, id)?.legacyStageCount !== undefined))
+      throw new DomainError(
+        'Configure a organização e todas as etapas da oferta antes de classificar o período.',
+      );
     const conflicts = state.periods.filter(
       (period) =>
         period.id !== values.id &&

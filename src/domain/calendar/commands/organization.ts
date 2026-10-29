@@ -135,6 +135,14 @@ export function configureOrganization<S extends ActivityState>(
     )
   )
     throw new DomainError('Informe a organização de cada oferta.');
+  for (const offer of state.offers ?? [])
+    if (
+      offer.legacyStageCount !== undefined &&
+      organizationByModality[offer.id] !== 'a-classificar'
+    )
+      throw new DomainError(
+        'Configure a organização e todas as etapas da oferta antes de retirar a quantidade anterior.',
+      );
   const periods = state.periods.map((p) =>
     p.association?.status === 'defined' &&
     associationOffers(p.association).every(

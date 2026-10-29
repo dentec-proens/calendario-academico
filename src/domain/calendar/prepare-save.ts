@@ -5,7 +5,11 @@ import { recalculateCalendar } from './commands/recalculate.ts';
 import { normalizeCalendar } from './normalization/normalize.ts';
 import { calendarContent } from './normalization/content.ts';
 import { invalidCalendar } from './normalization/input.ts';
-import { validateAddedOffers } from './organization/offers.ts';
+import {
+  validateAddedOffers,
+  offerOrganizationDraft,
+  offerOrganizationIssues,
+} from './organization/offers.ts';
 import { normalizeOfferCalendar, offerCalendarContent } from './normalization/normalize-v4.ts';
 import { kinds } from './offers.ts';
 
@@ -38,6 +42,24 @@ export function prepareOfferCalendarSave<E extends CalendarActivity & { active: 
         )
       : proposed.events,
   });
+  for (const offer of state.offers) {
+    const old = previous.offers.find((item) => item.id === offer.id);
+    if (offer.legacyStageCount !== undefined && offer.legacyStageCount !== old?.legacyStageCount)
+      invalidCalendar('A quantidade anterior de etapas não pode ser criada nem alterada.');
+    if (old?.legacyStageCount !== undefined && offer.legacyStageCount === undefined) {
+      if (offer.organization === 'a-classificar' || !offer.stages)
+        invalidCalendar(
+          'Configure a organização e todas as etapas antes de retirar a quantidade anterior.',
+        );
+      const issues = offerOrganizationIssues(
+        previous,
+        offer.id,
+        offerOrganizationDraft(state, offer.id),
+      );
+      if (issues.length)
+        invalidCalendar(`Configure os períodos e todas as etapas da oferta: ${issues[0].message}`);
+    }
+  }
   validateAddedOffers(previousIds, state);
   if (context.recalculate || !equalValues(context.storedContent, offerCalendarContent(state)))
     state = normalizeOfferCalendar(

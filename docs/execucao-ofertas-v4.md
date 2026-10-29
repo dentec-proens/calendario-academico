@@ -422,3 +422,146 @@ e atualiza a API gerada; não é produção. Nenhuma suíte remota ou comando de
 foi executado contra esse desenvolvimento. Os comandos desta execução de
 publicação/verificação foram direcionados ao backend local descartável.
 Produção continua sem backup, migração ou publicação desta execução.
+
+## M7 — ensaio e verificação da release A (em andamento)
+
+O responsável informou que as sessões Convex/Vercel estão no perfil **Dentec**
+do Google Chrome. A autenticação da CLI e o token da release continuam sendo o
+caminho principal; o perfil fica disponível para renovação da sessão.
+
+Foi exportado um backup integral de produção com Storage, somente leitura, em
+diretório privado novo fora do Git. SHA-256:
+`e7470a14131c5f8496081f0e6283a894268b67db9071d95c8ef2362f17bd4475`.
+São 75 calendários/conteúdos, 1.575 versões, 1.575 snapshots, quatro pareceres,
+12 versões de parecer, 61 aliases e um arquivo no Storage. A projeção anterior
+foi calculada pelo código arquivado do `main` original (`34e35b9`), com verificação
+dos blobs e do oráculo congelado. Digest da projeção:
+`ef8cf03247173841e77ecb89229bb06fea1db551faea8bf918fb8065f22798c0`.
+
+O inventário anterior contém 59 conteúdos v2, nenhum órfão ou chave sem destino,
+40 calendários sem etapas definidas e nenhuma combinação semestral com três
+etapas. Não há calendário até 2026 nem registros de tipo diferente de `event`;
+há vínculos de requisitos legados de 2027, que dependem da confirmação da
+consulta em produção depois da migração para decidir a limpeza do M9.
+
+O verificador próprio compara o mapeamento integral, domínio, namespaces,
+registros de tabelas, bytes do Storage, expurgo, auditoria e recibos. Uma revisão
+independente detectou duas omissões importantes: comparar só nomes do registro
+de tabelas e descartar nomes/termos de todos os requisitos. A correção compara
+os registros completos e conserva nomes/termos, transformando apenas os quatro
+nomes de famílias de etapas previstos. O mesmo revisor aprovou a correção;
+71 testes do verificador e sete da consulta `legacy:usage` passaram, assim como
+os quatro projetos TypeScript. Isso ainda não substitui o ensaio real.
+
+A primeira restauração local foi recusada atomicamente por conflito de número
+interno de tabela: o schema A publicado no banco vazio havia atribuído a
+`migrationReports` o número de `migrationState` no backup. O ensaio será repetido
+em instância local nova, importando o backup antes de publicar A, na ordem do
+plano. Nenhuma escrita em produção ocorreu. O backup imediatamente anterior à
+release A e sua prova de restauração ainda serão conferidos antes da publicação.
+
+A segunda restauração, antes de qualquer push, foi aprovada: 62 namespaces,
+5.643 linhas incluindo metadados, seis registros de tabelas e um arquivo no
+Storage. As 114 entradas descompactadas são idênticas byte a byte. Depois disso,
+o schema A foi aceito com typecheck; as nove migrações e o relatório concluíram
+com sucesso, convertendo 75 conteúdos e expurgando as quantidades previstas.
+O `pnpm check` do código M7 inicial passou em **224,1 s**, incluindo os **307
+testes de navegador**. A correção da prova abaixo exigirá nova validação afetada.
+
+O portão formal de conformidade detectou uma lacuna importante: o baseline de
+prontidão usava pareceres vazios nos dois lados. O expurgo está autorizado, mas
+dois dos quatro pareceres antigos têm norma preenchida, mesmo desatualizados;
+apagá-los acrescenta uma pendência. O painel independente (dois subagentes e
+Codex CLI somente leitura) aprovou **3/3** o esclarecimento na §6.4: conservar
+prontidão real e prontidão após exclusivamente o expurgo, com delta completo,
+comparando a conversão com a segunda. Esse voto não concede go de produção.
+A correção e sua regressão estão em preparação; os recibos originais permanecem.
+
+O primeiro verificador executado contra o backup realmente migrado também
+bloqueou a publicação: 14 calendários possuem organização a classificar, mas
+quantidade antiga de etapas definida. O domínio anterior ainda gera requisitos
+dessas etapas; a conversão atual descarta essa quantidade e perde as linhas.
+Esse é um problema da aplicação/modelo a corrigir, sem relaxar a comparação.
+O ensaio ainda não foi aprovado e produção permanece sem escritas.
+
+O diagnóstico independente detalhou a perda: 26 ofertas com organização a
+classificar (11 com duas, quatro com três e 11 com quatro etapas) deixariam de
+gerar 312 linhas, 78 de cada família. O painel de modelo aprovou **3/3** a
+preservação em `legacyStageCount`, sem inferir organização nem ciclo. A §3.4 e
+a lista do M9 foram atualizadas no mesmo marco. A implementação precisa manter
+os nomes, obrigações e cronologia anteriores, proteger a transição no backend,
+conservar o impedimento de organização e a validação de novas datas, e medir
+uso também nos snapshots históricos. Esse voto também não autoriza produção.
+Os 61 demais calendários passaram na comparação de domínio preliminar; os 14
+continuam bloqueados até a correção e a repetição do ensaio desde o backup.
+
+A representação preservadora foi implementada e comparada com a fonte original.
+Os três novos casos 2/3/4 foram congelados antes da correção no caminho v3 e
+conferidos independentemente com `34e35b9`: requisitos completos e prontidão
+idênticos em todos. Nenhum valor esperado foi regenerado após a correção.
+O novo campo é preservado em leitura, cópia4 e salvamentos de outras partes;
+classificações parciais por períodos são recusadas até a configuração completa.
+Seu uso é contado também nos snapshots históricos, com distribuição 2/3/4.
+
+A restauração dos requisitos revelou outro defeito: a validação v4 suprimia o
+diagnóstico antigo de etapa fora de período quando a organização era pendente.
+O diagnóstico foi restabelecido; somente a normalização preservadora desses
+registros usa uma opção interna restrita, enquanto editar/criar datas continua
+exigindo ciclo válido no comando e no backend. O preview de configuração também
+passou a considerar organização e quantidade juntas, conservando resultados,
+conselhos e reuniões vinculados. Ambas as regressões falharam antes da correção.
+
+O portão Convex encontrou uma salvaguarda adicional: a retirada do marcador
+comparava a proposta com ela mesma, pulando exigências anteriores de ingresso e
+editais. Agora a transição usa o estado anterior autoritativo e o draft completo
+do candidato. A regressão HTTP reproduziu a aceitação indevida e passou depois;
+o mesmo revisor confirmou a rejeição mesmo se o candidato omitir a matrícula ou
+o edital anteriores. Os dois achados formais M7 estão resolvidos, sem importantes
+abertos. A revisão da prontidão confirmou exatamente os dois deltas previstos.
+
+A prova de domínio sobre os dados reais passou em **75/75 calendários**: 20
+contagens calculadas e 55 pendências com evidência independente; as 26 ofertas
+mantêm suas quantidades e os 312 requisitos. Passaram 99 testes do verificador,
+as regressões de domínio/backend e seis novos casos de navegador desktop/mobile.
+A execução completa definitiva **`pnpm check` passou em 227,2 s, com 313 testes
+de navegador**. Uma execução intermediária foi interrompida com código 130 para
+incorporar os defeitos encontrados pela prova real; ela não conta como aprovação.
+
+O replay do backup inicial, já com quase uma hora, foi recusado pelo verificador
+porque o cron normal de autenticação retirou uma sessão expirada e seus dez
+refresh tokens. Nenhuma tolerância foi adicionada. Foi gerado backup integral
+novo de produção, SHA-256
+`3b4217402feccdd2cb24587b326c951a10d605ad925f6d1430539b3a6c3d52d3`,
+com projeção independente
+`f5449fd5389ef0e35cef00c5d37cb5434cf1ddd084d0ee693660de7ae87a1028`.
+O estado operacional continua livre, sem emergência nem pausa. O ensaio final
+usa esse backup fresco em uma instância local nova, antes de qualquer escrita
+em produção.
+
+O ensaio B revelou uma diferença de representação e uma falha real de escopo.
+O verificador agora canoniza `offerId` para o nome histórico da projeção somente
+nas coleções definidas e recusa conflitos, ausência ou troca de identidade;
+os campos extras continuam comparados. A projeção A não mudou. No produto B,
+73 snapshots institucionais antigos ainda declaram tipos normativos sem ids de
+ofertas; seu filtro passa por `offer.kind` exclusivamente quando
+`institutional === true`, com prioridade dos ids explícitos. Registros locais
+continuam somente v4. As duas contagens de pós-graduação que divergiam voltaram
+a coincidir; os 20 ledgers calculados são idênticos.
+
+O verificador integral aprovou A e B em 75/75 calendários, com o mesmo hash de
+projeção `87f50e1dd5e17073d644386de408fed9c106ad3b788ea4787a6483886d89639c`.
+Passaram 116 testes das ferramentas; B teve 48 testes dirigidos, quatro projetos
+TypeScript e lints verdes. Após a última mudança da ferramenta, **`pnpm check`
+passou em 225,9 s, incluindo 313 testes de navegador**. Nenhum código funcional
+foi alterado depois dessa execução.
+
+Para aproximar o backup da publicação, a preimagem integral foi renovada:
+SHA-256 `911c0b3f2a68d9901af40e2b2bb2a59b5da17cf66f9c5e79e6062fc0310f9321`,
+fonte congelada
+`673412d4dc0bc8dab2457fb893777d36324ca6e97b9b5820d144dc7a03df693a`.
+A restauração em instância local nova preservou as 114 entradas, 62 namespaces,
+5.673 linhas, seis registros de tabelas e um arquivo do Storage. O mesmo código
+A/B está repetindo o ensaio sobre essa preimagem. Os dois julgadores de produção
+concluíram a pré-análise sem importantes/bloqueantes; aguardam os recibos finais
+e o SHA para emitir o voto único. A publicação ainda está bloqueada até o go
+unânime dos três julgadores.

@@ -93,6 +93,10 @@ export function convertCalendarV3(
         : organization === 'semestral' && (count === 2 || count === 4)
           ? count / 2
           : undefined;
+    const legacyStageCount =
+      organization === 'a-classificar'
+        ? ([2, 3, 4] as const).find((value) => value === count)
+        : undefined;
     let intake = intakeFor(state.intakeByModality?.[modality]);
     if (unresolvedSecondIntake && (!intake?.second || intake.second.status === 'unknown'))
       intake = { ...intake, second: { status: 'unknown' } };
@@ -105,6 +109,7 @@ export function convertCalendarV3(
     return {
       ...offer,
       ...(perTerm === undefined ? {} : { stages: { perTerm } }),
+      ...(legacyStageCount === undefined ? {} : { legacyStageCount }),
       ...(state.scopeConfirmation && !policy.excludes(offer)
         ? { scope: { ...state.scopeConfirmation } }
         : {}),

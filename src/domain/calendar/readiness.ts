@@ -55,10 +55,11 @@ export function releaseReadiness(
   if (
     offers.some((offer) =>
       record.state.offers
-        ? !offer.stages ||
-          !(offer.organization === 'anual'
-            ? assessmentStageCounts.includes(offer.stages.perTerm)
-            : offer.organization === 'semestral' && [1, 2].includes(offer.stages.perTerm))
+        ? offer.legacyStageCount === undefined &&
+          (!offer.stages ||
+            !(offer.organization === 'anual'
+              ? assessmentStageCounts.includes(offer.stages.perTerm)
+              : offer.organization === 'semestral' && [1, 2].includes(offer.stages.perTerm)))
         : !assessmentStageCounts.includes(assessmentCount(record.state, offer.id)),
     )
   )
@@ -94,7 +95,7 @@ export function releaseReadiness(
         : `${n}ª etapa`;
       if (start && end && start.start > end.end)
         issues.push(`${stage}: término anterior ao início.`);
-      if (start && record.state.offers) {
+      if (start && record.state.offers && offer.legacyStageCount === undefined) {
         const cycleIssue = assessmentCycleIssue(record.state, start);
         if (cycleIssue)
           warnings.push(`${labelFor(record.state, offer.id)} — ${stage}: ${cycleIssue}`);

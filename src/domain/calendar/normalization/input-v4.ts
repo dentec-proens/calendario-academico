@@ -33,6 +33,11 @@ const term = (value: unknown) => choice(value, academicTerms, 'Ciclo letivo inv�
 function offer(value: unknown): CalendarOffer {
   const row = calendarObject(value);
   const organization = choice(row.organization, organizations, 'Organização da oferta inválida.');
+  const legacyStageCount =
+    row.legacyStageCount === undefined
+      ? undefined
+      : (([2, 3, 4] as const).find((count) => count === row.legacyStageCount) ??
+        fail('Quantidade anterior de etapas inválida.'));
   const intake: CalendarOffer['intake'] = row.intake === undefined ? undefined : {};
   if (intake)
     for (const [key, raw] of Object.entries(calendarObject(row.intake))) {
@@ -51,6 +56,7 @@ function offer(value: unknown): CalendarOffer {
     kind: choice(row.kind, modalityIds, 'Tipo de oferta inválido.'),
     delivery: choice(row.delivery, ['presencial', 'ead', 'a-conferir'], 'Modo da oferta inválido.'),
     organization,
+    ...(legacyStageCount === undefined ? {} : { legacyStageCount }),
     ...(row.label === undefined ? {} : { label: text(row.label) }),
     ...(row.organizationBasis === undefined
       ? {}
