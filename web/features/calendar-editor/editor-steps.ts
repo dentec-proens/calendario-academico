@@ -31,12 +31,13 @@ export const editorPages = {
   days: defineEditorPage('days', {
     title: 'Sábados letivos',
     detail: 'Atividades ao longo do ano',
-    description: 'Selecione os sábados letivos do ano e informe suas atividades.',
+    description:
+      'Selecione sábados no calendário e informe a atividade. Para editar um registro, selecione a data.',
   }),
   vacations: defineEditorPage('vacations', {
     title: 'Férias docentes',
     detail: 'Períodos de férias do campus',
-    description: 'Informe os períodos de férias docentes do campus.',
+    description: 'Informe até três períodos de férias docentes do campus.',
   }),
   events: defineEditorPage('events', {
     title: 'Atividades e datas do campus',

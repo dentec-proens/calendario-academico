@@ -15,11 +15,7 @@ export default function SaturdayRegisteredList({
 }) {
   return (
     <section className="saturday-panel-section" aria-label="Sábados registrados">
-      <p className="help">
-        {hasAvailable
-          ? 'Selecione sábados disponíveis no calendário para informar a atividade.'
-          : 'Não há sábados disponíveis para seleção.'}
-      </p>
+      {!hasAvailable && <p className="help">Não há sábados disponíveis para seleção.</p>}
       {registered.length > 0 && (
         <>
           <h5>Sábados registrados</h5>
