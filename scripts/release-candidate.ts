@@ -44,7 +44,14 @@ export function productionCandidates(
         signal: AbortSignal.timeout(30_000),
       },
     );
-    if (!response.ok) throw Error(`A Vercel recusou ${method} ${path} (${response.status}).`);
+    if (!response.ok)
+      throw Error(
+        `A Vercel recusou ${method} ${path} (${response.status}).${
+          response.status === 401 || response.status === 403
+            ? ' Confira validade e escopo do VERCEL_TOKEN em .vercel/release.env.'
+            : ''
+        }`,
+      );
     return response;
   }
   async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {

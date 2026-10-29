@@ -113,14 +113,21 @@ async function release(scenario: string, args: string[] = []) {
     const preload = join(dir, 'preload.mjs'),
       log = join(dir, 'calls.json');
     await writeFile(preload, preloadSource);
+    if (scenario !== 'no-release-env')
+      await writeFile(
+        join(dir, 'release.env'),
+        `VERCEL_TOKEN=synthetic-token\n${scenario === 'backend-no-backup-dir' ? '' : `DENTEC_RELEASE_BACKUP_DIR=${dir}\n`}`,
+        { mode: 0o600 },
+      );
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       SCENARIO: scenario,
       LOG: log,
-      DENTEC_RELEASE_BACKUP_DIR: scenario === 'backend-no-backup-dir' ? '' : dir,
-      VERCEL_TOKEN: 'synthetic-token',
+      DENTEC_RELEASE_ENV_FILE: join(dir, 'release.env'),
     };
     for (const key of [
+      'VERCEL_TOKEN',
+      'DENTEC_RELEASE_BACKUP_DIR',
       'CONVEX_DEPLOY_KEY',
       'CONVEX_DEPLOYMENT_TOKEN',
       'CONVEX_SELF_HOSTED_URL',
@@ -212,6 +219,14 @@ test.each([
   expect(result.code, result.stderr).not.toBe(0);
   expect(result.calls).not.toContain('backend-deploy');
   expect(result.calls.some((call) => call.startsWith('POST /v10/'))).toBe(false);
+});
+
+test('a missing release.env explains the setup without running operations', async () => {
+  const result = await release('no-release-env', ['--dry-run']);
+  expect(result.code).toBe(1);
+  expect(result.stderr).toContain('https://vercel.com/account/tokens');
+  expect(result.stderr).toContain('DENTEC_RELEASE_BACKUP_DIR=');
+  expect(result.calls).toEqual([]);
 });
 
 test('a missing backup directory is refused before reserving or building', async () => {

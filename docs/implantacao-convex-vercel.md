@@ -23,28 +23,27 @@ Pré-requisitos:
 
 - Checkout na branch `main` (integre antes a branch de trabalho, por exemplo com `git merge --ff-only`), `origin` correto e permissão de push fast-forward e de reservar `codex/production-release-lock`. A árvore de trabalho pode conter alterações locais; elas não entram na release.
 - Conta administrativa Convex; nenhum seletor alternativo de deployment. `operations:status` deve estar disponível e sem manutenção.
-- `VERCEL_TOKEN` no ambiente, com acesso ao projeto e permissão de criar/promover deployments e configurar atribuição de domínios. Segredos nunca entram em argumentos, logs ou Git.
-- Quando o backend mudou desde o deployment servido no domínio, `DENTEC_RELEASE_BACKUP_DIR` deve apontar a uma pasta privada existente, absoluta e fora do repositório. O comando recusa a release antes de reservar ou construir se ela faltar. O backup contém dados e credenciais: usar uma pasta com acesso restrito ao usuário.
+- Conta Convex com login (`pnpm exec convex login`); sem ela, o comando para antes de reservar e indica o login.
+- `.vercel/release.env` com `VERCEL_TOKEN` e `DENTEC_RELEASE_BACKUP_DIR` (abaixo). O comando lê esse arquivo sozinho e, se ele faltar ou estiver incompleto, mostra os passos exatos de configuração. Segredos nunca entram em argumentos, logs ou Git.
 
 ### Credenciais locais em `.vercel/`
 
 A pasta `.vercel/`, ignorada pelo Git e de acesso restrito ao usuário, guarda o estado local de operação. Não copie seu conteúdo para issues, logs, argumentos de comando ou commits.
 
-- `release.env`: `VERCEL_TOKEN` da release e, opcionalmente, `DENTEC_RELEASE_BACKUP_DIR`, com permissão `600`. Use um token de acesso dedicado, criado em [Account Settings → Tokens](https://vercel.com/account/tokens) com escopo da equipe `dentec-proens` e do projeto `calendario-academico` e com expiração definida. Se a promoção do domínio for recusada com escopo de projeto, crie o token com a equipe e **All Projects**. O valor começa com `vcp_` e é mostrado uma única vez.
+- `release.env`: `VERCEL_TOKEN` e `DENTEC_RELEASE_BACKUP_DIR` da release, com permissão `600`. Use um token de acesso dedicado, criado em [Account Settings → Tokens](https://vercel.com/account/tokens) com escopo da equipe `dentec-proens` e do projeto `calendario-academico` e com expiração definida. Se a promoção do domínio for recusada com escopo de projeto, crie o token com a equipe e **All Projects**. O valor começa com `vcp_` e é mostrado uma única vez. `DENTEC_RELEASE_BACKUP_DIR` é uma pasta existente, absoluta, fora do repositório e com permissão `700`, porque o backup contém dados e sessões; ela é exigida sempre, para que uma release com backend alterado não descubra a falta no meio do caminho.
 - `project.json`: vínculo do diretório ao projeto e à equipe na Vercel (`projectId`, `orgId`). Não é credencial.
 - `cli/auth.json`: sessão da CLI da Vercel, quando criada com `vercel login --global-config .vercel/cli`. Expira em poucas horas; não a use como credencial de release.
 
 Não guarde o `VERCEL_TOKEN` no `.env.local`. Esse arquivo seleciona o deployment Convex de desenvolvimento, é reescrito por `pnpm dev:setup` e por `vercel env pull`, e carregá-lo inteiro exportaria destinos de desenvolvimento para o processo da release.
 
-A ferramenta só lê `VERCEL_TOKEN` e `DENTEC_RELEASE_BACKUP_DIR` do ambiente; ela não abre esses arquivos. Carregue somente o arquivo de release no terminal que publica:
+`pnpm deploy:production` carrega `.vercel/release.env` a cada execução, sem `source` no terminal. O arquivo só aceita as duas variáveis acima; outra chave, permissão aberta, pasta de backup inválida ou valor diferente já exportado no shell interrompem o comando antes de qualquer operação. O token fica no processo da release e não é repassado a Git, pnpm ou Convex CLI.
 
 ```sh
-set -a; . ./.vercel/release.env; set +a
 pnpm deploy:production --dry-run
 pnpm deploy:production
 ```
 
-`--dry-run` mostra os destinos e a ordem das etapas, sem subprocessos nem chamadas remotas. A execução:
+`--dry-run` confere `.vercel/release.env` e mostra os destinos e a ordem das etapas, sem subprocessos nem chamadas remotas. Uma recusa 401/403 da Vercel indica token vencido ou sem escopo: crie outro e atualize o arquivo. A execução:
 
 1. Fixa o HEAD da branch de origem e cria um worktree temporário detached desse SHA. Fontes, configuração de destino e módulos operacionais são lidos do snapshot; as dependências são instaladas nele com lockfile congelado e sem scripts de instalação. Não há stash, reset, commit automático ou alteração do índice original. Para incluir mudanças locais, faça o commit antes de iniciar a release.
 2. Confere destinos versionados, `origin`, que o SHA descende de `origin/main` e do commit servido no domínio público. Compara os arquivos alterados desde esse commit para decidir se o backend mudou (`convex/`, `src/`, `config/`, `migration/`, runtime de impressão e dependências).

@@ -1,5 +1,5 @@
-import { mkdtempSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdtempSync, realpathSync, statSync } from 'node:fs';
+import { isAbsolute, join, relative, sep } from 'node:path';
 import { environments } from '../config/environments.ts';
 
 export function changesBackend(paths: string[]) {
@@ -11,37 +11,38 @@ export function changesBackend(paths: string[]) {
       ),
   );
 }
-export async function backupProduction(
-  root: string,
-  commit: string,
-  previous: string,
-  run: (path: string) => void,
-  directory = process.env.DENTEC_RELEASE_BACKUP_DIR,
-) {
-  if (!directory)
-    throw Error(
-      'Configure DENTEC_RELEASE_BACKUP_DIR fora do repositório: o backend mudou e será exportado antes do deploy.',
-    );
-  const {
-    chmodSync,
-    realpathSync,
-    statSync,
-    openSync,
-    readSync,
-    closeSync,
-    createReadStream,
-    writeFileSync,
-  } = await import('node:fs');
-  const { relative, isAbsolute, sep } = await import('node:path');
+// The export holds data and sessions: it must stay private and outside Git.
+export function assertBackupDirectory(root: string, directory: string): string {
   if (!isAbsolute(directory)) throw Error('O diretório privado de backup deve ser absoluto.');
-  const parent = realpathSync(directory),
-    workspace = realpathSync(root),
-    fromWorkspace = relative(workspace, parent);
+  let parent: string;
+  try {
+    parent = realpathSync(directory);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    throw Error(`Crie o diretório privado de backup: mkdir -m 700 -p "${directory}"`);
+  }
+  const fromWorkspace = relative(realpathSync(root), parent);
   if (
     !fromWorkspace ||
     (fromWorkspace !== '..' && !fromWorkspace.startsWith(`..${sep}`) && !isAbsolute(fromWorkspace))
   )
     throw Error('O backup com dados e sessões deve ficar fora do repositório.');
+  const stats = statSync(parent);
+  if (!stats.isDirectory()) throw Error(`O backup exige um diretório: ${directory}.`);
+  if (stats.mode & 0o077)
+    throw Error(`O diretório de backup deve ser acessível só a você: chmod 700 "${directory}"`);
+  return parent;
+}
+export async function backupProduction(
+  root: string,
+  commit: string,
+  previous: string,
+  run: (path: string) => void,
+  directory: string,
+) {
+  const { chmodSync, openSync, readSync, closeSync, createReadStream, writeFileSync } =
+    await import('node:fs');
+  const parent = assertBackupDirectory(root, directory);
   const privateDirectory = mkdtempSync(join(parent, `release-${commit.slice(0, 8)}-`));
   const path = join(privateDirectory, 'before.zip');
   run(path);

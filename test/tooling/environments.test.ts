@@ -211,6 +211,8 @@ async function childFixture(t: TestContext) {
     'doctor.ts',
     'deploy-production.ts',
     'release-snapshot.ts',
+    'release-environment.ts',
+    'release-backup.ts',
     'assert-production-target.ts',
   ])
     await copyFile(join(repository, 'scripts', name), join(path, 'scripts', name));
@@ -219,7 +221,10 @@ async function childFixture(t: TestContext) {
   const log = join(path, 'unexpected-effects.log');
   const env: NodeJS.ProcessEnv = { ...process.env, DENTEC_TOOL_TEST_TRAP_LOG: log };
   for (const key of Object.keys(env))
-    if (/^(CONVEX_|VITE_)/.test(key) || key === 'NODE_OPTIONS' || key === 'npm_execpath')
+    if (
+      /^(CONVEX_|VITE_|DENTEC_RELEASE_)/.test(key) ||
+      ['VERCEL_TOKEN', 'NODE_OPTIONS', 'npm_execpath'].includes(key)
+    )
       delete env[key];
   const run = (file: string, args: string[] = [], overrides: NodeJS.ProcessEnv = {}) =>
     spawnSync(
@@ -251,9 +256,20 @@ test('doctor runs entirely from a local dev file without commands, network or co
 test('production dry run executes no child command or network request and leaves the environment untouched', async (t) => {
   const fixture = await childFixture(t);
   const before = await readFile(join(fixture.path, '.env.local'));
-  const result = fixture.run('deploy-production.ts', ['--dry-run']);
+  const secrets = await directory(t);
+  const releaseFile = join(secrets, 'release.env');
+  await mkdir(join(secrets, 'backups'), { mode: 0o700 });
+  await writeFile(
+    releaseFile,
+    `VERCEL_TOKEN=vcp_synthetic\nDENTEC_RELEASE_BACKUP_DIR=${join(secrets, 'backups')}\n`,
+    { mode: 0o600 },
+  );
+  const result = fixture.run('deploy-production.ts', ['--dry-run'], {
+    DENTEC_RELEASE_ENV_FILE: releaseFile,
+  });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Simulação: nenhum comando/);
+  assert.doesNotMatch(result.stdout, /vcp_synthetic/);
   assert.match(result.stdout, /exuberant-cheetah-138/);
   await fixture.noEffects();
   assert.deepEqual(await readFile(join(fixture.path, '.env.local')), before);

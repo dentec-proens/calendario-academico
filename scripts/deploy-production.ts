@@ -9,6 +9,7 @@ import type * as EnvironmentTools from './environment.ts';
 import type * as BackupTools from './release-backup.ts';
 import type * as CandidateTools from './release-candidate.ts';
 import type * as CoordinationTools from './release-coordination.ts';
+import { readReleaseEnvironment, releaseEnvFile } from './release-environment.ts';
 import { createReleaseSnapshot } from './release-snapshot.ts';
 
 const args = process.argv.slice(2);
@@ -59,6 +60,7 @@ let backendAttempted = false;
 let promotionAttempted = false;
 try {
   if (args.length && !dryRun) throw Error('Uso: pnpm deploy:production [--dry-run]');
+  const release = readReleaseEnvironment(root);
   if (dryRun) {
     const { environments }: typeof EnvironmentConfig = await import('../config/environments.ts');
     console.log(
@@ -67,6 +69,7 @@ try {
     console.log(
       'Ordem: capturar HEAD em checkout isolado e instalar dependências fixadas → conferir destinos/reservar → build Production Vercel → backup se o backend mudou → deploy Convex → migrações → promover.',
     );
+    console.log(`Credenciais: ${releaseEnvFile}; backups em ${release.backupDirectory}.`);
     console.log('Simulação: nenhum comando, conexão remota ou arquivo de ambiente foi alterado.');
   } else {
     const sourceBranch = git('branch', '--show-current');
@@ -102,11 +105,9 @@ try {
     console.log('Sem pnpm check ou testes. Typecheck do Convex preservado.');
     assertCode(commit);
     assertOrigin(environments.git.repository);
-    const token = process.env.VERCEL_TOKEN;
-    if (!token) throw Error('Configure VERCEL_TOKEN antes da release.');
     run('git', ['fetch', '--no-tags', 'origin', branch]);
     run('git', ['merge-base', '--is-ancestor', `origin/${branch}`, commit]);
-    const platform = productionCandidates(token);
+    const platform = productionCandidates(release.token);
     const previous = await platform.current();
     run('git', ['merge-base', '--is-ancestor', previous.commit, commit]);
     const backend = changesBackend(
@@ -114,10 +115,6 @@ try {
         .split('\n')
         .filter(Boolean),
     );
-    if (backend && !process.env.DENTEC_RELEASE_BACKUP_DIR)
-      throw Error(
-        'Configure DENTEC_RELEASE_BACKUP_DIR fora do repositório: o backend mudou e será exportado antes do deploy.',
-      );
     temporary = mkdtempSync(join(tmpdir(), 'calendario-release-'));
     const targetFile = join(temporary, 'production.env');
     writeFileSync(targetFile, `CONVEX_DEPLOYMENT=prod:${environments.production.deployment}\n`, {
@@ -159,7 +156,14 @@ try {
         throw Error('Metadados do Convex não comprovam o destino de produção.');
       return value;
     }
-    metadata();
+    try {
+      metadata();
+    } catch (error) {
+      if (!(error instanceof Error) || !('stderr' in error)) throw error;
+      throw Error(
+        `O Convex de produção recusou sua conta. Entre com pnpm exec convex login, como administrador da equipe ${environments.convex.team}, e repita.`,
+      );
+    }
     function assertOnline() {
       const status = parseReleaseStatus(call('operations:status'));
       if (status.paused || status.emergency)
@@ -195,12 +199,25 @@ try {
     assertOnline();
     await platform.assertCurrent(previous);
     if (backend) {
-      const backup = await backupProduction(root, commit, previous.commit, (path) =>
-        run(
-          process.execPath,
-          [convexCli, 'export', '--env-file', targetFile, '--path', path, '--include-file-storage'],
-          env,
-        ),
+      const backup = await backupProduction(
+        root,
+        commit,
+        previous.commit,
+        (path) =>
+          run(
+            process.execPath,
+            [
+              convexCli,
+              'export',
+              '--env-file',
+              targetFile,
+              '--path',
+              path,
+              '--include-file-storage',
+            ],
+            env,
+          ),
+        release.backupDirectory,
       );
       console.log(`Backup privado com Storage conferido: ${backup}.`);
     }
