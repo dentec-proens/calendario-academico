@@ -4,7 +4,7 @@
 pnpm check
 ```
 
-Executa formatação de código e configuração, lint, lint com análise de tipos, TypeScript, testes e build. Comandos individuais: `pnpm format:check`, `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test` e `pnpm build`.
+Executa formatação de código e configuração, lint, lint com análise de tipos, TypeScript, testes e build. As etapas rápidas (formatação, lint, os quatro projetos TypeScript, skills, build e Vitest) rodam em paralelo, com uma linha e a duração de cada uma; a primeira falha interrompe as demais e mostra somente a saída da etapa que falhou. A suíte de navegador roda depois, sozinha, porque precisa de todos os núcleos. Comandos individuais: `pnpm format:check`, `pnpm lint`, `pnpm lint:types`, `pnpm typecheck`, `pnpm test` e `pnpm build`.
 
 A formatação da documentação é independente de `pnpm check`: arquivos Markdown (`.md`, `.mdx` e `.markdown`) são verificados com `pnpm format:docs:check` e formatados com `pnpm format:docs`. `pnpm format` e `pnpm format:check` cuidam dos demais arquivos reconhecidos pelo Prettier, sem Markdown. Os padrões ficam entre aspas para serem interpretados pelo próprio Prettier, não pelo shell.
 

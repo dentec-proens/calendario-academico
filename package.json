@@ -37,7 +37,7 @@
     "test:visual": "playwright test --project=chromium-desktop --project=chromium-mobile",
     "test:visual:update": "pnpm run test:visual --update-snapshots",
     "test:e2e": "tsx scripts/run-e2e.ts",
-    "check": "pnpm run format:check && pnpm run lint && pnpm run lint:types && pnpm run typecheck && pnpm run agents:check && pnpm test && pnpm run build",
+    "check": "tsx scripts/check.ts",
     "dev:setup": "tsx scripts/dev-setup.ts",
     "env:doctor": "tsx scripts/doctor.ts",
     "deploy:production": "tsx scripts/deploy-production.ts",
