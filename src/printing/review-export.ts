@@ -1,5 +1,5 @@
 import type { AssessmentSettings, ReviewEntry } from '../domain/calendar/model.ts';
-import { calendarModalities, modalityLabels } from '../domain/calendar/modalities.ts';
+import { calendarOffers, offerLabel } from '../domain/calendar/offers.ts';
 import { reviewNorm } from '../domain/reviews/citation.ts';
 import { reviewCriteriaFor, reviewSourceFor } from '../domain/reviews/criteria.ts';
 import { rulesetVersion } from '../domain/policies/registry.ts';
@@ -17,7 +17,10 @@ const statusLabels: Record<string, string> = {
 };
 
 export function reviewDocument(
-  record: { state: AssessmentSettings & { year: number; campus?: string }; courses?: string },
+  record: {
+    state: AssessmentSettings & { year: number; campus?: string };
+    courses?: string;
+  },
   review: {
     calendarVersion?: number;
     entries: ReviewEntry[];
@@ -43,10 +46,8 @@ export function reviewDocument(
     ['Assunto', `Calendário Acadêmico e Administrativo ${record.state.year}`],
     ['Campus', record.state.campus],
     [
-      'Forma de oferta/nível e cursos',
-      `${calendarModalities(record.state)
-        .map((m) => modalityLabels[m])
-        .join(' + ')} / ${record.courses}`,
+      record.state.offers ? 'Ofertas e cursos' : 'Forma de oferta/nível e cursos',
+      `${calendarOffers(record.state).map(offerLabel).join(' + ')} / ${record.courses}`,
     ],
     [
       'Norma do ano analisado',

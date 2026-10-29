@@ -12,6 +12,7 @@ export type PrintState = AssessmentSettings & {
 };
 export type PrintResult =
   | (ReturnType<typeof countCalendar> & {
+      byOffer?: ReturnType<typeof evaluateCalendar>['byOffer'];
       byModality?: ReturnType<typeof evaluateCalendar>['byModality'];
     })
   | null;
@@ -40,6 +41,7 @@ export type PrintEvent = Pick<
   | 'end'
   | 'category'
   | 'modalities'
+  | 'offers'
   | 'requirementId'
   | 'recordType'
   | 'publicationStatus'

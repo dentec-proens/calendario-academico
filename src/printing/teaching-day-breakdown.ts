@@ -1,8 +1,20 @@
-import { assessmentStageCounts } from '../domain/calendar/config.ts';
+import {
+  assessmentStageCounts,
+  termLabels,
+  termsByOrganization,
+} from '../domain/calendar/config.ts';
 import type { DateRange } from '../domain/calendar/model.ts';
 import type { PrintState, PrintResult, PrintEvent, DistributionRow } from './types.ts';
 import { appliesTo } from '../domain/calendar/modalities.ts';
 import { periodsForModality } from '../domain/calendar/organization/periods.ts';
+import {
+  isStructured,
+  offerFor,
+  stageCount,
+  stageCycle,
+  stageInTerm,
+  stageTerm,
+} from '../domain/calendar/offers.ts';
 
 export function teachingDayBreakdown(
   state: PrintState,
@@ -10,7 +22,8 @@ export function teachingDayBreakdown(
   result: PrintResult,
   modality: string,
 ) {
-  const scoped = result?.byModality ? result.byModality[modality] : result;
+  const byOffer = result?.byOffer ?? result?.byModality;
+  const scoped = byOffer ? byOffer[modality] : result;
   const ledger = scoped?.ledger;
   const row = (label: string, range: DateRange | null): DistributionRow => {
     const available = !!ledger && !!range && range.start <= range.end;
@@ -39,15 +52,17 @@ export function teachingDayBreakdown(
       { start, end },
     );
   });
-  const count = Number(state.assessmentStagesByModality?.[modality]);
+  const offer = offerFor(state, modality);
+  const count =
+    state.offers && offer
+      ? stageCount(offer)
+      : Number(state.assessmentStagesByModality?.[modality]);
   const candidates = (events || []).filter((e) => appliesTo(e, modality));
   const stages = Array.from(
     { length: assessmentStageCounts.includes(count) ? count : 0 },
     (_, i) => {
       const id = String(i + 1),
-        matches = candidates.filter((e) =>
-          new RegExp(`^stage-${id}:${modality}$`).test(e.requirementId || ''),
-        );
+        matches = candidates.filter((e) => e.requirementId === `stage-${id}:${modality}`);
       if (matches.length === 1) return { start: matches[0].start, end: matches[0].end };
       return null;
     },
@@ -56,7 +71,7 @@ export function teachingDayBreakdown(
     a.start.localeCompare(b.start),
   );
   let semesters: (DateRange | null)[] = [null, null];
-  if (state.schemaVersion === 3 || state.organizationByModality) {
+  if (isStructured(state) || state.organizationByModality) {
     for (const period of periods) {
       if (period.association?.status !== 'defined' || period.association.term === 'annual')
         continue;
@@ -85,9 +100,36 @@ export function teachingDayBreakdown(
     semesters = [null, null];
     notes.push('Confira os intervalos dos semestres: há sobreposição.');
   }
-  const stageRows = stages.map((range, i) =>
-    row(`${i + 1}º ${count === 4 ? 'bimestre' : count === 3 ? 'trimestre' : 'semestre'}`, range),
-  );
+  const stageRows = stages.map((range, i) => {
+    const term = state.offers && offer ? stageTerm(offer, i + 1) : undefined;
+    const label =
+      state.offers && offer
+        ? offer.organization === 'semestral' && offer.stages
+          ? `${stageInTerm(i + 1, offer.stages.perTerm).number}ª etapa — ${term ? termLabels[term] : 'ciclo a conferir'}`
+          : `${i + 1}ª etapa — ${stageCycle(offer) ?? 'ciclo a conferir'}`
+        : `${i + 1}º ${count === 4 ? 'bimestre' : count === 3 ? 'trimestre' : 'semestre'}`;
+    const item = row(label, range);
+    if (
+      state.offers &&
+      term &&
+      range &&
+      !periods.some(
+        (period) =>
+          period.association?.status === 'defined' &&
+          period.association.term === term &&
+          period.start <= range.start &&
+          range.end <= period.end,
+      )
+    ) {
+      item.available = false;
+      item.total = null;
+      item.byWeekday = null;
+      notes.push(
+        `Confira ${label}: o intervalo deve ficar inteiramente dentro do período do seu ciclo.`,
+      );
+    }
+    return item;
+  });
   if (overlaps(stages)) {
     for (const item of stageRows) {
       item.available = false;
@@ -97,7 +139,8 @@ export function teachingDayBreakdown(
     notes.push('Confira os intervalos das etapas: há sobreposição.');
   }
   const semesterRows = semesters.map((range, i) => row(`${i + 1}º semestre`, range));
-  if (semesters.some((r) => !r || r.start > r.end))
+  const showSemesters = !state.offers || offer?.organization === 'semestral';
+  if (showSemesters && semesters.some((r) => !r || r.start > r.end))
     notes.push(
       'Preencha os intervalos dos semestres letivos para completar a distribuição semestral.',
     );
@@ -115,10 +158,24 @@ export function teachingDayBreakdown(
   }
   return {
     months,
-    stages: count === 4 || count === 3 ? stageRows : [],
-    stageLabel: count === 4 ? 'bimestre' : 'trimestre',
+    stages: state.offers || count === 4 || count === 3 ? stageRows : [],
+    stageLabel: state.offers ? 'etapa de avaliação' : count === 4 ? 'bimestre' : 'trimestre',
+    stageGroups:
+      state.offers && offer && offer.organization !== 'a-classificar'
+        ? termsByOrganization[offer.organization]
+            .map((term) => ({
+              term,
+              label: `Etapas de avaliação — ${termLabels[term]}`,
+              rows: stageRows.filter((_, index) => stageTerm(offer, index + 1) === term),
+            }))
+            .filter((group) => group.rows.length)
+        : [],
+    showSemesters,
     semesters: semesterRows,
-    annual: row('Total anual', { start: `${state.year}-01-01`, end: `${state.year}-12-31` }),
+    annual: row('Total anual', {
+      start: `${state.year}-01-01`,
+      end: `${state.year}-12-31`,
+    }),
     notes,
   };
 }

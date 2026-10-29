@@ -166,6 +166,12 @@ export default function RulesPage() {
         </tbody>
       </table>
 
+      {view.minimumSources.map((source) => (
+        <p className="help" key={source}>
+          {source}
+        </p>
+      ))}
+
       {view.changes.length ? (
         <>
           <h3>Histórico das regras</h3>

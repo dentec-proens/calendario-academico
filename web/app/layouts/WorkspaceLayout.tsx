@@ -87,10 +87,13 @@ export default function WorkspaceLayout() {
       previous.current = activePath;
       return;
     }
+    const originFocus = document.activeElement;
     const frame = requestAnimationFrame(() => {
+      previous.current = activePath;
+      const active = document.activeElement;
+      if (active !== originFocus && active !== document.body) return;
       heading.current?.focus({ preventScroll: true });
       scrollIntoView(heading.current, { block: 'start' });
-      previous.current = activePath;
     });
     return () => cancelAnimationFrame(frame);
   }, [activePath, metadata?.creating, title]);

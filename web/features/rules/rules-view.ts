@@ -1,10 +1,10 @@
-import type { AssessmentSettings } from '#src/domain/calendar/model.ts';
-import { modalityLabels, selectableModalities } from '#src/domain/calendar/modalities.ts';
+import type { AssessmentSettings, CalendarOffer } from '#src/domain/calendar/model.ts';
+import { selectableModalities } from '#src/domain/calendar/modalities.ts';
 import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
 import { expandRequirements } from '#src/domain/calendar/activities/requirement-table.ts';
 import type { RulesetChange } from '#src/domain/policies/contract.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
-import { calendarOffers, offerFor } from '#src/domain/calendar/offers.ts';
+import { offerLabel } from '#src/domain/calendar/offers.ts';
 
 export type OfferStatus = 'required' | 'optional' | 'unconfigured' | 'intake' | 'absent';
 
@@ -24,7 +24,7 @@ export const effectLabels: Record<RulesetChange['effect'], string> = {
 const repeatLabels = {
   stage: {
     title: 'Por etapa de avaliação',
-    help: 'Em cada etapa da oferta: 2 (semestral), 3 (trimestral) ou 4 (bimestral).',
+    help: 'Nas ofertas anuais: 2, 3 ou 4 etapas no ano letivo. Nas semestrais: 1 ou 2 etapas por semestre, numeradas novamente em cada ciclo.',
   },
   cycle: {
     title: 'Por ciclo letivo',
@@ -51,33 +51,48 @@ export const statusHelp = [
  */
 export function rulesView(year: number) {
   const policy = policyFor(year);
-  const offers = [...selectableModalities];
+  const offers: CalendarOffer[] = selectableModalities.map((kind) => {
+    const offer: CalendarOffer = {
+      id: kind,
+      kind,
+      delivery: 'a-conferir',
+      organization: 'anual',
+      stages: { perTerm: 2 },
+    };
+    return policy.excludes(offer) ? offer : { ...offer, scope: { status: 'covered' } };
+  });
   const state: AssessmentSettings = {
     year,
-    modalities: offers,
-    regime: 'anual',
-    organizationByModality: Object.fromEntries(offers.map((m) => [m, 'anual' as const])),
-    assessmentStagesByModality: Object.fromEntries(offers.map((m) => [m, 2])),
-    scopeConfirmation: { status: 'covered' },
+    schemaVersion: 4,
+    offers,
   };
   const rows = new Map(activityChecklist(state).map((row) => [row.id, row]));
+  const minimums = offers.map((offer) => {
+    const values = policy.countingMinimums(state, offer);
+    return {
+      offer: offerLabel(offer),
+      annual: values.annual?.days ?? null,
+      semester: values.semester?.days ?? null,
+      annualBasis: values.annual?.basis,
+      semesterBasis: values.semester?.basis,
+    };
+  });
   return {
     year,
     norm: policy.review.citation ?? policy.review.source.title,
     version: policy.rulesetVersion(state),
     window: policy.window(state),
-    excluded: calendarOffers(state)
-      .filter((offer) => policy.excludes(offer))
-      .map((offer) => modalityLabels[offer.kind]),
-    offers: offers.map((id) => ({ id, label: modalityLabels[id] })),
-    minimums: calendarOffers(state).map((offer) => {
-      const minimums = policy.countingMinimums(state, offer);
-      return {
-        offer: modalityLabels[offer.kind],
-        annual: minimums.annual?.days ?? null,
-        semester: minimums.semester?.days ?? null,
-      };
-    }),
+    excluded: offers.filter((offer) => policy.excludes(offer)).map(offerLabel),
+    offers: offers.map((offer) => ({ id: offer.id, label: offerLabel(offer) })),
+    minimums,
+    minimumSources: [
+      ...new Set(
+        minimums.flatMap((row) => [
+          ...(row.annualBasis ? [`Ano letivo: ${row.annualBasis}.`] : []),
+          ...(row.semesterBasis ? [`Semestre: ${row.semesterBasis}.`] : []),
+        ]),
+      ),
+    ],
     changes: (policy.rulesetChanges ?? []).map((change) => ({
       ...change,
       date: civilDate(change.date),
@@ -92,18 +107,20 @@ export function rulesView(year: number) {
           const own = expanded
             .filter((item) => item.spec.id === spec.id)
             .map((item) => rows.get(item.row.id)!);
-          const rowFor = (m: string) => own.find((row) => !row.modality || row.modality === m);
+          const rowFor = (id: string) =>
+            own.find(
+              (row) => !(row.offerId ?? row.modality) || (row.offerId ?? row.modality) === id,
+            );
           const sample = own[0];
-          const byOffer = offers.map((m) => {
-            const row = rowFor(m);
-            if (!row) return { offer: m, status: 'absent' as OfferStatus };
-            const offer = offerFor(state, m)!;
+          const byOffer = offers.map((offer) => {
+            const row = rowFor(offer.id);
+            if (!row) return { offer: offer.id, status: 'absent' as OfferStatus };
             const applicability = policy.applicability(state, row, offer);
             const status: OfferStatus =
               row.intake && policy.intakeRequirements && applicability !== 'unconfigured'
                 ? 'intake'
                 : applicability;
-            return { offer: m, status, note: policy.applicabilityNote?.(row, offer) };
+            return { offer: offer.id, status, note: policy.applicabilityNote?.(row, offer) };
           });
           return {
             id: spec.id,

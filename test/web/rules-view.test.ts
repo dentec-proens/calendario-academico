@@ -46,6 +46,19 @@ test('family meeting is required only on integrated offers in 2027', () => {
   });
 });
 
+test('the rules view explains stages per cycle and exposes the unchanged minima with their sources', () => {
+  const view = rulesView(2027);
+  expect(view.sections[0].help).toContain('1 ou 2 etapas por semestre');
+  expect(view.sections[0].help).toContain('2, 3 ou 4 etapas no ano letivo');
+  expect(view.minimums.find((row) => row.offer === 'Graduação')).toMatchObject({
+    annual: 200,
+    semester: 100,
+    annualBasis: expect.stringContaining('Art. 4º'),
+    semesterBasis: expect.stringContaining('§ 1º'),
+  });
+  expect(view.minimumSources).toHaveLength(2);
+});
+
 test('applicability per offer does not depend on organisation or stage count', () => {
   // The page shows one table per year; a norm that varies with them needs the page to show it.
   for (const year of documentedYears) {

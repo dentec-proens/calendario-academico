@@ -240,3 +240,67 @@ completa de `pnpm check` sobre o código final passou, incluindo **295 testes de
 navegador**. As 17 referências da variação nativa permaneceram inalteradas; as
 quatro referências editoriais já haviam sido inspecionadas e comparadas novamente
 sem atualização. Produção continua sem escritas ou releases desta execução.
+
+## 29/10/2026 — M4 em validação
+
+A impressão e o parecer passam a identificar cada oferta pelo rótulo humano.
+Os quadros de contagem mantêm os mesmos ledgers; etapas anuais ficam no ano
+letivo e as semestrais são agrupadas por semestre, com numeração reiniciada em
+cada ciclo. IDs, datas e vínculos persistidos permanecem intactos. Os cabeçalhos
+HTML escapam rótulos e fundamentos; o parecer textual conserva o texto humano.
+A página de regras explica as quantidades por ciclo e apresenta os fundamentos
+dos mínimos anuais e semestrais, sem mudar os valores.
+
+A revisão independente de conformidade aprovou o marco sem achados. Onze testes
+direcionados de impressão/regras, typecheck e lint passaram. Dois testes locais
+geraram PDFs reais no Chromium, a partir da fixture com quatro ofertas, nas
+larguras desktop e mobile. As sete páginas renderizadas foram inspecionadas:
+quadros legíveis, rótulos presentes, grupos anuais e semestrais corretos, sem
+conteúdo cortado. Os PNGs das sete páginas são idênticos entre as duas larguras.
+
+As duas referências de `/regras` mudam pela explicação dos ciclos e pelas fontes
+dos mínimos. Imagens reais e diferenças foram inspecionadas em desktop/mobile,
+incluindo recortes legíveis do início e final da página mobile. Não há texto ou
+controles sobrepostos. A comparação sem atualização e `pnpm check` do código
+final estão em andamento. Produção continua sem escritas desta execução.
+
+A primeira validação completa parou por formatação do teste novo, corrigida.
+A segunda encontrou uma regressão no teste já existente de três etapas legadas:
+uma derivação exclusiva do v4 era chamada também no caminho antigo. A chamada
+agora exige `state.offers`; o comportamento legado permanece intacto. O mesmo
+teste passou após a correção, junto com os demais testes direcionados (14 casos).
+As duas comparações de regras passaram sem atualização. A correção foi enviada
+ao mesmo revisor para rechecagem pontual e a validação completa foi reiniciada.
+
+A rechecagem aprovou o guard do caminho legado. A execução completa seguinte
+aprovou as etapas rápidas e 296/297 testes de navegador em 209,2 s, mas o teste
+de navegação pelo cabeçalho perdeu foco ao voltar pelo histórico. O fluxo
+inalterado passou em 40/40 repetições isoladas; a investigação está medindo a
+ordem dos callbacks de foco da rota. O marco segue aberto até resolver essa
+falha e obter `pnpm check` aprovado, sem alterar interações ou tolerâncias.
+
+A captura determinística comprovou a ordem: o título já conservava foco na volta;
+depois do foco explícito no cabeçalho, o frame pendente da rota voltava ao título
+e Shift+Tab alcançava o último link lateral. `WorkspaceLayout` agora compara o
+foco com a origem capturada antes do frame. Se a pessoa já escolheu outro
+controle, preserva esse foco e a rolagem. O reset natural para `body` quando o
+controle de origem é ocultado/removido continua focando o título de chegada.
+As quatro regressões, em desktop/mobile, falharam antes de suas correções e
+passaram depois. O teste original permanece intacto e passou em 40/40 repetições
+com quatro workers sobre o código final; navegação portal/Router passou com
+27/27 casos. Não restam sondas ou tolerâncias alteradas. A correção pontual foi
+encaminhada ao mesmo revisor; `pnpm check` final foi reiniciado.
+
+A execução seguinte aprovou 300/301 testes, mas a regressão nova consultava o
+reset de foco nativo com uma asserção imediata. A captura com servidor aquecido
+mostrou o botão conectado sob `display: none` ainda ativo e, depois, `focusout`
+para `body`, ambos com o relógio virtual parado no mesmo instante. O teste passa
+a esperar estritamente essa mesma pré-condição com `expect.poll`, sem mudar
+interações, relógio ou timeout. Retirando temporariamente a exceção `body`, a
+regressão continuou falhando no foco final do título nas duas larguras; com a
+fonte restaurada, os 27 casos passaram. A aplicação não mudou nesta rodada.
+
+Resultado final do M4: revisão pontual aprovada sem achados; **`pnpm check`
+aprovado em 207,6 s**, incluindo **592 testes unitários e 301 de navegador**.
+As duas referências intencionais de regras passaram novamente sem atualização;
+as demais referências permaneceram intactas. Nenhuma publicação foi realizada.

@@ -1,11 +1,17 @@
 import { automaticEventSource } from '../domain/calendar/counting/core.ts';
 import type { PrintState, PrintResult, PrintRecord, PrintEvent, DistributionRow } from './types.ts';
 import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
-import { calendarModalities, modalityLabels } from '../domain/calendar/modalities.ts';
+import { calendarModalities } from '../domain/calendar/modalities.ts';
 import { categories, eventCategory } from '../domain/calendar/activities/categories.ts';
 import { policyFor } from '../domain/policies/registry.ts';
 import { periodsForModality } from '../domain/calendar/organization/periods.ts';
-import { associationOffers } from '../domain/calendar/offers.ts';
+import {
+  associationOffers,
+  calendarOffers,
+  labelFor,
+  offerIds,
+  offerLabel,
+} from '../domain/calendar/offers.ts';
 
 const esc = (s: unknown) =>
   String(s).replace(
@@ -15,6 +21,9 @@ const esc = (s: unknown) =>
 const dateLabel = (date: string | undefined) => date?.split('-').reverse().join('/') || '';
 const fullInterval = (event: PrintEvent) =>
   dateLabel(event.start) + (event.end === event.start ? '' : ` a ${dateLabel(event.end)}`);
+const eventOffers = (state: PrintState, event: PrintEvent) =>
+  (state.offers ? event.offers : event.modalities)?.map((id) => labelFor(state, id)).join(', ') ??
+  '';
 
 function publicationDetails(event: PrintEvent, includeSource = true) {
   const labels = [];
@@ -23,9 +32,11 @@ function publicationDetails(event: PrintEvent, includeSource = true) {
       event.publicationStatus === 'planned' ? 'Publicação prevista' : 'Publicação realizada',
     );
   if (event.admission) {
-    const term = { annual: 'ciclo anual', first: '1º semestre', second: '2º semestre' }[
-      event.admission.term
-    ];
+    const term = {
+      annual: 'ciclo anual',
+      first: '1º semestre',
+      second: '2º semestre',
+    }[event.admission.term];
     labels.push(`Ingresso ${event.admission.year} — ${term}`);
     labels.push(
       event.admission.type === 'regular'
@@ -48,7 +59,7 @@ function externalReferences(state: PrintState, events: PrintEvent[]) {
   if (!rows.length) return '';
   const table = (title: string, items: PrintEvent[]) =>
     items.length
-      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade e finalidade</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${publicationDetails(event, false)}<small>${esc(event.modalities?.map((m) => modalityLabels[m] || m).join(', ') || '')}</small>${automaticEventSource(event) ? `<small>Fonte: ${esc(automaticEventSource(event))}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
+      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade e finalidade</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${publicationDetails(event, false)}<small>${esc(eventOffers(state, event))}</small>${automaticEventSource(event) ? `<small>Fonte: ${esc(automaticEventSource(event))}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
       : '';
   return `<section class="proens-external-references"><h3>Atividades e referências de outros anos</h3><p>As datas integrais são preservadas. Estes registros informativos não alteram a contagem de dias letivos.</p>${table(
     'Publicações previstas',
@@ -81,10 +92,15 @@ function distributionTables(state: PrintState, events: PrintEvent[], result: Pri
   ];
   const table = (title: string, rows: DistributionRow[]) =>
     `<table class="teaching-distribution"><caption>${esc(title)}</caption><thead><tr><th scope="col">Intervalo</th>${weekdays.map(([, name]) => `<th scope="col">${name}</th>`).join('')}<th scope="col">Total</th></tr></thead><tbody>${rows.map((r) => `<tr><th scope="row">${esc(r.label)}${r.start && r.end ? `<small>${dateLabel(r.start)} a ${dateLabel(r.end)}</small>` : ''}</th>${weekdays.map(([day]) => `<td>${r.available ? r.byWeekday![day] : '—'}</td>`).join('')}<td><strong>${r.available ? r.total : '—'}</strong></td></tr>`).join('')}</tbody></table>`;
-  return calendarModalities(state)
+  return offerIds(state)
     .map((modality) => {
       const report = teachingDayBreakdown(state, events, result, modality);
-      return `<section class="teaching-distribution-group"><h4>Dias letivos — ${esc(modalityLabels[modality] || modality)}</h4>${table('Distribuição por mês', report.months)}${report.stages.length ? table('Distribuição por ' + report.stageLabel, report.stages) : ''}${table('Distribuição por semestre letivo', report.semesters)}${table('Consolidado anual', [report.annual])}${report.notes.map((note) => `<p>${esc(note)}</p>`).join('')}</section>`;
+      const stages = report.stageGroups.length
+        ? report.stageGroups.map((group) => table(group.label, group.rows)).join('')
+        : report.stages.length
+          ? table('Distribuição por ' + report.stageLabel, report.stages)
+          : '';
+      return `<section class="teaching-distribution-group"><h4>Dias letivos — ${esc(labelFor(state, modality))}</h4>${table('Distribuição por mês', report.months)}${stages}${report.showSemesters ? table('Distribuição por semestre letivo', report.semesters) : ''}${table('Consolidado anual', [report.annual])}${report.notes.map((note) => `<p>${esc(note)}</p>`).join('')}</section>`;
     })
     .join('');
 }
@@ -100,11 +116,28 @@ export function proensLayout(
   const source = policy.review.source;
   const ruleLabel = policy.rulesetVersion(state);
   const scopeLabel =
-    policy.scope && state.scopeConfirmation?.status !== 'covered'
-      ? state.scopeConfirmation?.status === 'own-regulation'
-        ? 'Aplicabilidade: calendário sujeito a norma própria.'
-        : 'Aplicabilidade: escopo a conferir antes de afirmar conformidade.'
-      : '';
+    state.offers && policy.scope
+      ? calendarOffers(state)
+          .map(
+            (offer) =>
+              `${offerLabel(offer)}: ${policy.excludes(offer) || offer.scope?.status === 'own-regulation' ? 'norma própria' : offer.scope?.status === 'covered' ? 'escopo confirmado' : 'escopo a conferir antes de afirmar conformidade'}.`,
+          )
+          .join(' ')
+      : policy.scope && state.scopeConfirmation?.status !== 'covered'
+        ? state.scopeConfirmation?.status === 'own-regulation'
+          ? 'Aplicabilidade: calendário sujeito a norma própria.'
+          : 'Aplicabilidade: escopo a conferir antes de afirmar conformidade.'
+        : '';
+  const window = state.offers ? policy.window(state) : null;
+  const windowOffers = window
+    ? calendarOffers(state)
+        .filter((offer) => policy.window({ ...state, offers: [offer] }) !== null)
+        .map(offerLabel)
+    : [];
+  const windowLabel = window
+    ? `<p>Janela do ano letivo: ${dateLabel(window.start)} a ${dateLabel(window.end)}; início até ${dateLabel(window.latestStart)}. Ofertas: ${esc(windowOffers.join(', '))}. ${esc(window.basis)}.</p>`
+    : '';
+  const byOffer = result?.byOffer ?? result?.byModality;
   const ledger = new Map(result?.ledger.map((d) => [d.date, d]) || []),
     boundary = new Set(state.periods.flatMap((p) => [p.start, p.end]));
   const colorKeys = categories.filter((c) => c[2]).map((c) => c[0]);
@@ -112,7 +145,10 @@ export function proensLayout(
     const prefix = `${state.year}-${String(m + 1).padStart(2, '0')}`,
       first = new Date(prefix + '-01T00:00:00Z'),
       length = new Date(Date.UTC(state.year, m + 1, 0)).getUTCDate(),
-      name = first.toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
+      name = first.toLocaleDateString('pt-BR', {
+        month: 'long',
+        timeZone: 'UTC',
+      });
     const monthEvents: PrintEvent[] = events
       .filter((e) => e.start.slice(0, 7) <= prefix && e.end.slice(0, 7) >= prefix)
       .sort((a, b) => a.start.localeCompare(b.start));
@@ -123,6 +159,7 @@ export function proensLayout(
           end: p.start,
           category: 'limite',
           name: 'Início — ' + p.name,
+          ...(state.offers ? { offers: associationOffers(p.association) } : {}),
         });
       if (p.end.startsWith(prefix))
         monthEvents.push({
@@ -130,6 +167,7 @@ export function proensLayout(
           end: p.end,
           category: 'limite',
           name: 'Término — ' + p.name,
+          ...(state.offers ? { offers: associationOffers(p.association) } : {}),
         });
     }
     let cells = Array(first.getUTCDay()).fill('<td></td>'),
@@ -182,7 +220,8 @@ export function proensLayout(
         const a = e.start.startsWith(prefix) ? Number(e.start.slice(8)) : 1,
           b = e.end.startsWith(prefix) ? Number(e.end.slice(8)) : length;
         const crossesYear = e.start < `${state.year}-01-01`;
-        return `<tr><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(e.name)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e)}${!e.institutional && e.modalities?.length ? ' [' + esc(e.modalities.map((m) => modalityLabels[m]).join(', ')) + ']' : ''}</td></tr>`;
+        const scope = eventOffers(state, e);
+        return `<tr><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(e.name)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e)}${(state.offers || !e.institutional) && scope ? ' [' + esc(scope) + ']' : ''}</td></tr>`;
       });
     const middle = Math.max(6, Math.ceil(entries.length / 2)),
       columns = [entries.slice(0, middle), entries.slice(middle)];
@@ -199,16 +238,14 @@ export function proensLayout(
   const countRows = state.periods
     .map((p) => {
       const scope =
-        p.association?.status === 'defined'
-          ? associationOffers(p.association)
-          : calendarModalities(state);
+        p.association?.status === 'defined' ? associationOffers(p.association) : offerIds(state);
       const unclassified = p.association?.status === 'a-classificar';
       const counts = unclassified
         ? 'Organização a conferir'
         : scope
             .map(
               (m) =>
-                `${esc(modalityLabels[m] || m)}: ${result?.byModality?.[m]?.byPeriod[p.id] ?? (result?.byModality ? '—' : (result?.byPeriod[p.id] ?? '—'))}`,
+                `${esc(labelFor(state, m))}: ${byOffer?.[m]?.byPeriod[p.id] ?? (byOffer ? '—' : (result?.byPeriod[p.id] ?? '—'))}`,
             )
             .join(' · ');
       return `<tr><td>${esc(p.name)}</td><td>${counts}</td></tr>`;
@@ -216,17 +253,17 @@ export function proensLayout(
     .join('');
   const dayDistribution = distributionTables(state, events, result);
   return `<div class="proens-document"><div class="proens-heading"><img class="ifpr-logo" src="${esc(logo)}" alt="Instituto Federal do Paraná"><strong>INSTITUTO FEDERAL DO PARANÁ</strong><h2>CALENDÁRIO ACADÊMICO E ADMINISTRATIVO ${state.year}</h2><h2>CAMPUS ${esc(state.campus)}</h2><p>${esc(
-    calendarModalities(state)
-      .map((m) => modalityLabels[m] || m)
+    offerIds(state)
+      .map((m) => labelFor(state, m))
       .join(' + '),
-  )}</p><p>${esc(record?.courses || '')} ${record?.classes ? ' · ' + esc(record.classes) : ''} ${record?.shifts ? ' · ' + esc(record.shifts) : ''}</p><small>${record?.purpose === 'test' ? 'CALENDÁRIO DE TESTE — SEM VALIDADE PARA ENVIO · ' : ''}${record?.purpose !== 'test' && (record?.proposalCopy || record?.readiness?.ready === false) ? 'CÓPIA DA PROPOSTA PARA ANÁLISE DA PROENS · ' : ''}Proposta preliminar · Versão ${record?.version ?? 'local'}${record ? ' · Base institucional ' + (record.currentCatalogueRevision ?? 'a conferir') : ''} · Sem aprovação oficial</small><p>Conjunto de regras: ${esc(ruleLabel)}.${ruleLabel.startsWith('unconfigured:') ? ' Escopo sem norma configurada.' : ` Fonte da política: ${esc(source.norm)} (${esc(source.id)}).`} ${esc(scopeLabel)} Planejamento e execução são conferidos separadamente.</p></div>${months}${externalReferences(state, events)}<section class="proens-summary"><h3>Legendas e contagem</h3><p>Marcação gráfica de dias: ${esc(modalityLabels[calendarModalities(state)[0]] || state.offer)}.</p>${
-    result?.byModality
-      ? `<table><thead><tr><th>Forma de oferta/nível</th><th>Total anual</th><th>Períodos</th></tr></thead><tbody>${Object.entries(
-          result.byModality,
+  )}</p><p>${esc(record?.courses || '')} ${record?.classes ? ' · ' + esc(record.classes) : ''} ${record?.shifts ? ' · ' + esc(record.shifts) : ''}</p><small>${record?.purpose === 'test' ? 'CALENDÁRIO DE TESTE — SEM VALIDADE PARA ENVIO · ' : ''}${record?.purpose !== 'test' && (record?.proposalCopy || record?.readiness?.ready === false) ? 'CÓPIA DA PROPOSTA PARA ANÁLISE DA PROENS · ' : ''}Proposta preliminar · Versão ${record?.version ?? 'local'}${record ? ' · Base institucional ' + (record.currentCatalogueRevision ?? 'a conferir') : ''} · Sem aprovação oficial</small><p>Conjunto de regras: ${esc(ruleLabel)}.${ruleLabel.startsWith('unconfigured:') ? ' Escopo sem norma configurada.' : ` Fonte da política: ${esc(source.norm)} (${esc(source.id)}).`} ${esc(scopeLabel)} Planejamento e execução são conferidos separadamente.</p>${windowLabel}</div>${months}${externalReferences(state, events)}<section class="proens-summary"><h3>Legendas e contagem</h3><p>Marcação gráfica de dias: ${esc(state.offers ? labelFor(state, offerIds(state)[0] ?? '') : labelFor(state, calendarModalities(state)[0] ?? state.offer ?? ''))}.</p>${
+    byOffer
+      ? `<table><thead><tr><th>${state.offers ? 'Oferta' : 'Forma de oferta/nível'}</th><th>Total anual</th><th>Períodos</th></tr></thead><tbody>${Object.entries(
+          byOffer,
         )
           .map(
             ([m, r]) =>
-              `<tr><td>${esc(modalityLabels[m])}</td><td>${r.total}</td><td>${periodsForModality(
+              `<tr><td>${esc(labelFor(state, m))}</td><td>${r.total}</td><td>${periodsForModality(
                 state,
                 m,
               )
