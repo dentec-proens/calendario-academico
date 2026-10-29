@@ -107,6 +107,19 @@ export default function BaseUpdateCard() {
             aprovação institucional.
           </p>
         )}
+        {hasRules && baseUpdate.rules.changes.length > 0 && (
+          <>
+            <h3>Mudanças nas regras</h3>
+            <ul>
+              {baseUpdate.rules.changes.map((change) => (
+                <li key={change.version}>
+                  <strong>{change.version}: </strong>
+                  {change.summary} · Fonte: {change.source}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
         {hasEvents && (
           <>
             <h3>Eventos institucionais</h3>

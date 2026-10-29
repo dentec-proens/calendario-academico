@@ -117,7 +117,20 @@ Uma base equivalente não apresenta card: a sincronização atualiza somente a r
 
 Revisões humanas guardam a identidade da base. Uma mudança irrelevante no contador não invalida a análise; mudanças no conteúdo aplicável ou na versão editorial invalidam. Revisões antigas sem essa identidade continuam exigindo a revisão técnica original, pois não há evidência para declarar equivalência retroativa. A sincronização nunca reescreve uma revisão humana.
 
-Quando a política vincula base e revisão ao conjunto de regras, como em 2027, a identidade da base inclui esse conjunto. Anos sem essa vinculação mantêm a identidade anterior e não recebem falsa mudança global. Uma mudança de regras exige incorporação e nova revisão, mesmo com catálogo e datas iguais; o rascunho de parecer de outro conjunto perde as confirmações antigas, e snapshots permanecem imutáveis.
+Quando a política vincula base e revisão ao conjunto de regras, como em 2027, a identidade da base inclui esse conjunto. Anos sem essa vinculação mantêm a identidade anterior e não recebem falsa mudança global. Snapshots permanecem imutáveis.
+
+### Mudanças de regra
+
+Cada política vinculada mantém em `rulesetChanges` o histórico ordenado das versões do conjunto de regras. A última entrada é a versão vigente, gravada no conteúdo, na revisão e na impressão. Cada entrada registra data, fonte (norma, comunicação da Proens ou decisão), resumo, critérios do parecer afetados e efeito:
+
+- `establishes`: primeira versão da política.
+- `tightens`: cria, amplia ou antecipa uma exigência. Uma mudança que aperta e afrouxa ao mesmo tempo é `tightens`.
+- `relaxes`: dispensa ou restringe uma exigência.
+- `editorial`: muda redação sem alterar exigências.
+
+A base e a revisão se vinculam à última versão `establishes` ou `tightens` até a versão em que foram feitas. Somente uma nova versão desses dois tipos exige incorporação e nova revisão; o rascunho de parecer de outro vínculo perde as confirmações antigas, e o card de atualização lista as versões adotadas com fonte e resumo. Versões `relaxes` e `editorial` mantêm a identidade da base e as revisões atuais, pois a conferência feita continua válida. O servidor aceita conteúdo e revisão de uma versão equivalente e grava a versão vigente.
+
+Quando uma regra restringe ou amplia o que o inciso diz, `decision` registra a decisão e a versão que a adotou, e o detalhe da atividade a mostra ao lado da base normativa. Em 2027, `consup-292-2027-v2` restringiu ao técnico integrado a reunião com familiares, responsáveis e comunidade (Art. 11, XVI).
 
 ## Controles de segurança
 

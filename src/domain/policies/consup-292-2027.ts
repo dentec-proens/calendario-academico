@@ -6,10 +6,29 @@ import { reviewCriterionLookup } from '../calendar/activities/review-links.ts';
 import { withActivityMetadata } from '../calendar/activities/metadata.ts';
 import { termsFor } from '../calendar/organization/periods.ts';
 import { frozenCriteria, parecerItems } from '../reviews/parecer-items.ts';
-import type { Applicability, CalendarPolicy } from './contract.ts';
+import type { Applicability, CalendarPolicy, RulesetChange } from './contract.ts';
 
-const rulesetVersion = 'consup-292-2027-v1';
 const citation = 'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026';
+// Append a version for every catalogue change; `ruleset-history.test.ts` guards the catalogue.
+const rulesetChanges: readonly RulesetChange[] = [
+  {
+    version: 'consup-292-2027-v1',
+    date: '2026-10-26',
+    effect: 'establishes',
+    source: citation,
+    summary: 'Requisitos estruturados para as ofertas técnicas e de graduação.',
+  },
+  {
+    version: 'consup-292-2027-v2',
+    date: '2026-10-29',
+    effect: 'relaxes',
+    criteria: ['XVI'],
+    source: 'Decisão da gestão do sistema após retorno de campus',
+    summary:
+      'Reunião com familiares, responsáveis e comunidade passa a ser exigida apenas no técnico integrado.',
+  },
+];
+const rulesetVersion = rulesetChanges.at(-1)!.version;
 const dayMinimums = { annual: 200, semester: 100 } as const;
 const excludedModalities = ['posgraduacao'] as const;
 const excluded = (modality: string) => excludedModalities.some((item) => item === modality);
@@ -150,13 +169,16 @@ function requirements(state: AssessmentSettings): ActivityRequirement[] {
       add(`${prefix}-${n}`, `${label} — ${n}º semestre`, 'Art. 11, XII', {
         term: n === 1 ? 'first' : 'second',
       });
+  add(
+    'extraordinary-council',
+    'Conselho de classe/coletivo pedagógico extraordinário para revisão dos resultados finais',
+    'Art. 11, XV',
+  );
+  add('family-meeting', 'Reunião com familiares, responsáveis e comunidade', 'Art. 11, XVI', {
+    modalities: supported.filter((m) => m === 'integrado'),
+    decision: 'exigida apenas no técnico integrado (consup-292-2027-v2)',
+  });
   for (const [id, label, basis] of [
-    [
-      'extraordinary-council',
-      'Conselho de classe/coletivo pedagógico extraordinário para revisão dos resultados finais',
-      'Art. 11, XV',
-    ],
-    ['family-meeting', 'Reunião com familiares, responsáveis e comunidade', 'Art. 11, XVI'],
     [
       'campus-events',
       'Eventos de ensino, pesquisa, extensão e inovação do campus',
@@ -308,6 +330,7 @@ export const consup2922027Policy: CalendarPolicy = {
   year: 2027,
   configured: true,
   rulesetPrefix: 'consup-292-2027-',
+  rulesetChanges,
   rulesetVersion: (state) =>
     calendarModalities(state).some((m) => !excluded(m)) ? rulesetVersion : 'unconfigured:2027',
   requirements,
@@ -315,7 +338,9 @@ export const consup2922027Policy: CalendarPolicy = {
   applicabilityNote: (requirementId, modality) =>
     modality === 'integrado' && /^(enrolment|adjustment|withdrawal)-/.test(requirementId)
       ? 'Não exigido por este inciso para o integrado; cadastro permitido.'
-      : undefined,
+      : requirementId === 'family-meeting' && modality !== 'integrado'
+        ? 'Exigida apenas para o integrado; cadastro permitido.'
+        : undefined,
   window: (state) =>
     state.scopeConfirmation?.status !== 'own-regulation' &&
     calendarModalities(state).some((m) => !excluded(m))

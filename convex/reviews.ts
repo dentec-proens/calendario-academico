@@ -1,5 +1,5 @@
 import { reviewIsCurrent } from '../src/domain/calendar/base';
-import { rulesetVersion } from '../src/domain/policies/registry';
+import { equivalentRulesets, rulesetVersion } from '../src/domain/policies/registry';
 import { assertWritesOpen } from './lib/maintenance';
 import { reviewSupport } from '../src/domain/reviews/technical-support';
 import { reviewCriteriaFor, reviewSourceFor } from '../src/domain/reviews/criteria';
@@ -95,7 +95,7 @@ export const saveReview = mutation({
     const { record, base, docs, compatibility, review: prior } = await baseRecord(ctx, user, id);
     const currentRules = rulesetVersion(record.state);
     const criteria = reviewCriteriaFor(record.state.year);
-    if (record.state.schemaVersion === 3 && body.rulesetVersion !== currentRules)
+    if (record.state.schemaVersion === 3 && !equivalentRulesets(body.rulesetVersion, currentRules))
       fail(
         'O conjunto de regras da revisão mudou. Reabra e confira os critérios antes de salvar.',
         409,

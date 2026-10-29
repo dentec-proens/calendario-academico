@@ -66,7 +66,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   await page.evaluate(() => {
     const { record } = window.editorTest;
     record.state.schemaVersion = 3;
-    record.state.rulesetVersion = 'consup-292-2027-v1';
+    record.state.rulesetVersion = 'consup-292-2027-v2';
     record.state.organizationByModality = { integrado: 'anual' };
     record.state.periods = [
       {
@@ -147,7 +147,7 @@ test('coverage stays partial per offer while the second record is edited and rem
     record.modalities = ['integrado', 'subsequente', 'graduacao'];
     record.state.modalities = record.modalities;
     record.state.schemaVersion = 3;
-    record.state.rulesetVersion = 'consup-292-2027-v1';
+    record.state.rulesetVersion = 'consup-292-2027-v2';
     record.state.organizationByModality = {
       integrado: 'anual',
       subsequente: 'anual',

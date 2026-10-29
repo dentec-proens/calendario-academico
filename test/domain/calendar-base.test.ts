@@ -92,7 +92,8 @@ test('2027 rules adoption is explicit and invalidates reviews without changing d
   const result = inspect(snapshot, { ...snapshot, rulesetVersion }, scope);
   expect(result.kind).toBe('rules');
   expect(result.compatible).toBe(false);
-  expect(result.rules).toEqual({ before: undefined, after: rulesetVersion, changed: true });
+  expect(result.rules).toMatchObject({ before: undefined, after: rulesetVersion, changed: true });
+  expect(result.rules.changes.map((change) => change.version)).toEqual([rulesetVersion]);
   expect(reconcile(result, result.identity)).toEqual({ incorporate: true, recalculate: false });
   expect(result.identity).toMatch(/^base-v2:consup-292-2027-v1:/);
   const current = { revision: 1, identity: result.identity, rulesetVersion };
@@ -102,6 +103,37 @@ test('2027 rules adoption is explicit and invalidates reviews without changing d
   expect(
     inspect({ ...snapshot, rulesetVersion }, { ...snapshot, rulesetVersion }, scope).compatible,
   ).toBe(true);
+});
+
+test('a relaxing ruleset version keeps base identity and reviews made under the previous one', () => {
+  const [before, after] = ['consup-292-2027-v1', 'consup-292-2027-v2'];
+  const previous = inspect(snapshot, { ...snapshot, rulesetVersion: before }, scope);
+  const result = inspect(
+    { ...snapshot, rulesetVersion: before },
+    { ...snapshot, rulesetVersion: after },
+    scope,
+  );
+  expect(result.kind).toBe('current');
+  expect(result.compatible).toBe(true);
+  expect(result.rules.changed).toBe(false);
+  expect(result.rules.changes).toMatchObject([{ version: after, effect: 'relaxes' }]);
+  expect(result.identity).toBe(previous.identity);
+  const review = {
+    calendarVersion: 1,
+    catalogueRevision: 1,
+    baseIdentity: previous.identity,
+    rulesetVersion: before,
+  };
+  expect(
+    reviewIsCurrent(review, 1, { revision: 1, identity: result.identity, rulesetVersion: after }),
+  ).toBe(true);
+  expect(
+    reviewIsCurrent({ ...review, rulesetVersion: 'consup-292-2027-v0' }, 1, {
+      revision: 1,
+      identity: result.identity,
+      rulesetVersion: after,
+    }),
+  ).toBe(false);
 });
 
 test('legacy base identities remain stable for years without changed rules', () => {

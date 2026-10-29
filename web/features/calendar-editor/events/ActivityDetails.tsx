@@ -44,6 +44,7 @@ export default function ActivityDetails({
         {item.basis && (
           <small>
             {item.basis}
+            {item.decision ? ` · Decisão: ${item.decision}` : ''}
             {item.reason ? ` · ${item.reason}` : ''}
           </small>
         )}

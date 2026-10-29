@@ -53,6 +53,8 @@ O formulário conserva preenchimento ainda não aplicado; comandos atualizam o c
 
 As referências normativas de dias letivos pertencem às políticas de `src/domain/policies/`. Cada política decide sua aplicabilidade; por exemplo, os mínimos de contagem de 2027 exigem oferta abrangida e escopo confirmado, em `consup-292-2027.ts`. Para um novo ano, implemente `CalendarPolicy` num módulo próprio e registre-o em `registry.ts`. Alterar um mínimo não significa estendê-lo automaticamente a outro ano ou norma.
 
+Toda mudança no catálogo de uma política vinculada, inclusive de redação, acrescenta uma versão em `rulesetChanges` com fonte, resumo, critérios afetados e efeito; versões publicadas não são editadas. `test/domain/ruleset-history.test.ts` calcula uma impressão digital do catálogo em estados de referência e falha quando ele muda sem nova versão; registre a impressão da nova versão nesse teste. Classifique o efeito pelo impacto em revisões já feitas: apenas `tightens` reabre revisão e base. Os critérios estão em [Mudanças de regra](arquitetura-convex.md#mudanças-de-regra).
+
 Novas ofertas entram apenas com organização completa. O comando monta um único estado e a mutation atualiza conteúdo, catálogo de ofertas do registro e versão na mesma transação. Ofertas existentes não são removidas por esse fluxo. Snapshots anteriores conservam seu escopo; registros locais antigos sem modalidades explícitas não são estendidos à nova oferta.
 
 ## Integração do trabalho

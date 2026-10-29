@@ -1,6 +1,6 @@
 import type { AssessmentSettings, ActivityRequirement } from '../calendar/model.ts';
 import { consup2922027Policy } from './consup-292-2027.ts';
-import type { CalendarPolicy } from './contract.ts';
+import type { CalendarPolicy, RulesetChange } from './contract.ts';
 import { legacy2026Policy } from './legacy-2026.ts';
 import { unconfiguredPolicy } from './unconfigured.ts';
 
@@ -19,6 +19,43 @@ export function bindsRuleset(version: string | undefined): boolean {
   return policies.some(
     (policy) => policy.rulesetPrefix !== undefined && version?.startsWith(policy.rulesetPrefix),
   );
+}
+
+const historyOf = (version: string | undefined): readonly RulesetChange[] =>
+  policies.find(
+    (policy) => policy.rulesetPrefix !== undefined && version?.startsWith(policy.rulesetPrefix),
+  )?.rulesetChanges ?? [];
+
+/**
+ * The version a review or base made under `version` is bound to: the latest one up to it that
+ * establishes or tightens requirements. Versions missing from the history are their own boundary.
+ */
+export function reviewBoundary(
+  version: string | undefined,
+  changes: readonly RulesetChange[] = historyOf(version),
+): string | undefined {
+  const index = changes.findIndex((change) => change.version === version);
+  if (index < 0) return version;
+  return (
+    changes
+      .slice(0, index + 1)
+      .findLast((change) => change.effect === 'establishes' || change.effect === 'tightens')
+      ?.version ?? version
+  );
+}
+
+/** Whether work done under `before` still holds under `after`, since only relaxations or wording changed. */
+export const equivalentRulesets = (before: string | undefined, after: string | undefined) =>
+  before === after || (before !== undefined && reviewBoundary(before) === reviewBoundary(after));
+
+/** Versions adopted after `before` up to `after`, shown when new rules are adopted. */
+export function rulesetChangesBetween(
+  before: string | undefined,
+  after: string | undefined,
+): readonly RulesetChange[] {
+  const changes = historyOf(after);
+  const end = changes.findIndex((change) => change.version === after);
+  return changes.slice(changes.findIndex((change) => change.version === before) + 1, end + 1);
 }
 
 export const rulesetVersion = (state: AssessmentSettings) =>

@@ -71,7 +71,7 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
   const state = {
     ...record.state,
     modalities,
-    rulesetVersion: 'consup-292-2027-v1',
+    rulesetVersion: 'consup-292-2027-v2',
     organizationByModality: { ...record.state.organizationByModality, integrado: 'anual' as const },
     assessmentStagesByModality: { integrado: 2 as const },
     periods: [

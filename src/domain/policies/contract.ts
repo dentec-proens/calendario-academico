@@ -3,6 +3,25 @@ import type { ReviewCriterion, ReviewSource } from '../reviews/parecer-items.ts'
 
 export type Applicability = 'required' | 'optional' | 'unconfigured';
 
+/**
+ * Effect of a ruleset version on work done under the previous ones. Only `establishes` and
+ * `tightens` reopen reviews and base incorporation; a change that both tightens and relaxes
+ * is a `tightens`.
+ */
+export type RulesetEffect = 'establishes' | 'tightens' | 'relaxes' | 'editorial';
+
+export interface RulesetChange {
+  version: string;
+  /** Date the change was adopted, `YYYY-MM-DD`. */
+  date: string;
+  effect: RulesetEffect;
+  /** Review criteria whose requirements changed. */
+  criteria?: readonly string[];
+  /** Norm, Proens communication or decision behind the change. */
+  source: string;
+  summary: string;
+}
+
 export interface CalendarWindow {
   start: string;
   latestStart: string;
@@ -25,6 +44,11 @@ export interface CalendarPolicy {
    * and human reviews are tied to the exact ruleset version, so a rules change needs a new review.
    */
   rulesetPrefix?: string;
+  /**
+   * Ordered history of the bound ruleset, required with `rulesetPrefix`. The last entry is the
+   * current version; versions after the latest `establishes`/`tightens` one are equivalent.
+   */
+  rulesetChanges?: readonly RulesetChange[];
   rulesetVersion(state: AssessmentSettings): string;
   /** Requirements linked to coverage; `activityChecklist` adds the fallback's applicability. */
   requirements(state: AssessmentSettings): ActivityRequirement[];

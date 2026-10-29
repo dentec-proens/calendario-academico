@@ -4,7 +4,7 @@ import { modalityIds } from '../src/domain/calendar/config';
 import { inspectBase, reconcileBase } from './calendars/base';
 import { assertWritesOpen } from './lib/maintenance';
 import { normalizeCalendar } from '../src/domain/calendar/normalization/normalize';
-import { rulesetVersion } from '../src/domain/policies/registry';
+import { equivalentRulesets, rulesetVersion } from '../src/domain/policies/registry';
 import { inheritedEvents } from '../src/domain/institution/catalogue';
 import { query, mutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
@@ -223,8 +223,10 @@ export const saveCalendar = mutation({
       );
     if (
       body.state.schemaVersion === 3 &&
-      body.state.rulesetVersion !==
-        rulesetVersion({ year: row.year, modalities: body.state.modalities })
+      !equivalentRulesets(
+        body.state.rulesetVersion,
+        rulesetVersion({ year: row.year, modalities: body.state.modalities }),
+      )
     )
       fail(
         'O conjunto de regras mudou. Atualize a aplicação e confira o preenchimento antes de salvar.',

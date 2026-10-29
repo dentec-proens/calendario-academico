@@ -5,7 +5,13 @@ import { bytesToHex } from '@noble/hashes/utils.js';
 import { equalValues } from '../../shared/equal.ts';
 import type { CalendarActivity } from './model.ts';
 import { DomainError } from '../errors.ts';
-import { bindsRuleset, rulesetVersion } from '../policies/registry.ts';
+import {
+  bindsRuleset,
+  equivalentRulesets,
+  reviewBoundary,
+  rulesetChangesBetween,
+  rulesetVersion,
+} from '../policies/registry.ts';
 
 export type BaseEvent = CalendarActivity & { evidence?: string; source?: string };
 export interface BaseDocument {
@@ -78,7 +84,9 @@ function hasChanges(diff: { added: unknown[]; removed: unknown[]; changed: unkno
 }
 function identity(snapshot: BaseSnapshot, scope: BaseScope) {
   return (
-    (bindsRuleset(snapshot.rulesetVersion) ? `base-v2:${snapshot.rulesetVersion}:` : 'base-v1:') +
+    (bindsRuleset(snapshot.rulesetVersion)
+      ? `base-v2:${reviewBoundary(snapshot.rulesetVersion)}:`
+      : 'base-v1:') +
     bytesToHex(
       sha256(
         new TextEncoder().encode(
@@ -106,7 +114,9 @@ export function inspect<E extends BaseEvent, D extends BaseDocument>(
     before: previous.rulesetVersion,
     after: current.rulesetVersion,
     changed:
-      bindsRuleset(current.rulesetVersion) && previous.rulesetVersion !== current.rulesetVersion,
+      bindsRuleset(current.rulesetVersion) &&
+      !equivalentRulesets(previous.rulesetVersion, current.rulesetVersion),
+    changes: rulesetChangesBetween(previous.rulesetVersion, current.rulesetVersion),
   };
   const kind = rules.changed
     ? 'rules'
@@ -161,7 +171,7 @@ export function reviewIsCurrent(
   const requiredRules = bindsRuleset(declaredRules) ? declaredRules : undefined;
   return Boolean(
     review &&
-    (!requiredRules || review.rulesetVersion === requiredRules) &&
+    (!requiredRules || equivalentRulesets(review.rulesetVersion, requiredRules)) &&
     review.calendarVersion === calendarVersion &&
     (review.baseIdentity && current.identity
       ? review.baseIdentity === current.identity

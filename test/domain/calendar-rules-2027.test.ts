@@ -92,8 +92,13 @@ test('2027 requirements use offer and academic cycle while PE/PIT/RIT remain sem
   for (const prefix of ['teaching-plan', 'pit', 'rit'])
     for (const n of [1, 2])
       expect(requirements.find((r) => r.id === `${prefix}-${n}`)?.required).toBe(true);
-  for (const id of ['council-1:graduacao', 'family-meeting', 'extraordinary-council'])
+  for (const id of ['council-1:graduacao', 'extraordinary-council'])
     expect(requirements.find((r) => r.id === id)?.required).toBe(true);
+  const familyMeeting = requirements.find((r) => r.id === 'family-meeting')!;
+  expect(familyMeeting.modalities).toEqual(['integrado']);
+  expect(applicabilityFor(state, familyMeeting, 'integrado')).toBe('required');
+  for (const modality of ['subsequente', 'graduacao'])
+    expect(applicabilityFor(state, familyMeeting, modality)).toBe('optional');
   expect(requirements.find((r) => r.id === 'ethics-week')).toMatchObject({
     month: 5,
     basis: 'Art. 11, XXV',

@@ -1,6 +1,7 @@
 import type { reviews } from '../../shared/convex/reviews.ts';
 import { updateConclusion } from '#src/domain/reviews/conclusion.ts';
 import { reviewNorm } from '#src/domain/reviews/citation.ts';
+import { equivalentRulesets } from '#src/domain/policies/registry.ts';
 export type ReviewSupport = Awaited<ReturnType<typeof reviews.get>>;
 export type ReviewEntry = Parameters<typeof reviews.save>[1]['entries'][number];
 export type ReviewDocument = Awaited<ReturnType<typeof reviews.export>>;
@@ -10,7 +11,7 @@ export function initialDraft(opened: ReviewSupport) {
   const rulesChanged = Boolean(
     opened.rulesetVersion &&
     opened.review &&
-    opened.review.rulesetVersion !== opened.rulesetVersion,
+    !equivalentRulesets(opened.review.rulesetVersion, opened.rulesetVersion),
   );
   const entries = opened.criteria.map((criterion) => {
     const saved = opened.review?.entries.find((entry) => entry.id === criterion.id);
