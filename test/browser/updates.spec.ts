@@ -218,7 +218,8 @@ test('a detached draft blocks manual and menu updates without submitting or disc
   });
   server.select('b');
   await observeNewVersion(page);
-  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeDisabled();
+  await expect(page.locator('.portal-update')).toContainText(/para atualizar\./);
+  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
   await page.locator('[data-page="calendars"]').click();
   await page.getByRole('button', { name: 'Novo calendário' }).click();
   await expect(page.locator('#calendar-courses')).toHaveValue('Curso ainda não enviado');
@@ -361,7 +362,8 @@ test('review edits, query preferences and reversion use their real owners', asyn
     .locator('textarea')
     .fill('Observações ainda não confirmadas');
   await page.locator('[data-page="institution"]').click();
-  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeDisabled();
+  await expect(page.locator('.portal-update')).toContainText(/para atualizar\./);
+  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
   await page.locator('[data-page="review-panel"]').click();
   await page.locator('#open-review').click();
   await page.locator('#review-items > li').first().locator('.review-item__notes summary').click();
@@ -382,7 +384,8 @@ test('private tokens and unavailable storage cannot authorize an update', async 
   await expect(page.locator('#activation-form')).toBeVisible();
   await expect(page).toHaveURL(access.origin + '/ativar-conta');
   await expect(page.getByText('Uma nova versão do portal está disponível.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeDisabled();
+  await expect(page.getByText('Conclua a entrada no portal para atualizar.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
   expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
   const portal = await startUpdateServer(cleanup, 'portal-navigation');
   portal.selectManifest('b');
@@ -464,7 +467,8 @@ test('upload and private submission remain protected after their forms unmount',
   });
   await page.locator('[data-page="calendars"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
-  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeDisabled();
+  await expect(page.locator('.portal-update')).toContainText(/para atualizar\./);
+  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
   await page.evaluate(() => window.portalRouterTest.resolvePendingMutation());
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeEnabled();
   await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
@@ -489,7 +493,8 @@ test('manual verification is cancelled by editing, and filters alone allow a lat
   await arrival;
   await page.locator('#calendar-courses').fill('Edição durante a consulta');
   release();
-  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeDisabled();
+  await expect(page.locator('.portal-update')).toContainText(/para atualizar\./);
+  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
   await page.locator('#calendar-courses').fill('');
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeEnabled();
@@ -594,7 +599,8 @@ test('a private file form without a draft key keeps its detached submission prot
     .poll(() => page.evaluate(() => window.portalRouterTest.pendingMutation))
     .toBe('restoreDocumentOriginal');
   await page.locator('[data-page="calendars"]').click();
-  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeDisabled();
+  await expect(page.locator('.portal-update')).toContainText(/para atualizar\./);
+  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
   const risk = await page.evaluate(() => window.updateDrafts.protection.getSnapshot());
   expect(risk).toContainEqual({ kind: 'operation', loss: true });
   expect(JSON.stringify(risk)).not.toContain('original-privado');

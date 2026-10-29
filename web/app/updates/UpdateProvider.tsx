@@ -11,6 +11,7 @@ import {
   type PropsWithChildren,
 } from 'react';
 import { Link, useRouter, useRouterState } from '@tanstack/react-router';
+import { LoaderCircle, RefreshCw } from 'lucide-react';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { readPrivateLinkToken } from '../private-links.ts';
 import { sessionIdentity, useSessionState } from '../session.tsx';
@@ -25,11 +26,27 @@ import { documentTransition } from './transition.ts';
 import { portalPageForPath } from '#src/app/routes.ts';
 import { createVersionDetector, recentDifference } from './detector.ts';
 import { createAttemptPolicy } from './attempts.ts';
+import { trackScrollInset } from '../../scroll.ts';
+import type { WorkRisk } from './work.ts';
 import './updates.css';
 
 const ownBuild = typeof __PORTAL_BUILD_ID__ === 'string' ? __PORTAL_BUILD_ID__ : '';
 const attemptPolicy = createAttemptPolicy(ownBuild, () => sessionStorage);
 const UpdateContext = createContext<((event: MouseEvent<HTMLAnchorElement>) => void) | null>(null);
+
+// The most pressing risk names what the person must finish before the update can run.
+const blockedReasons: [WorkRisk['kind'][], string][] = [
+  [['form', 'editor'], 'Conclua os preenchimentos pendentes para atualizar.'],
+  [['operation'], 'Aguarde a operação em andamento terminar para atualizar.'],
+  [['interaction'], 'Feche a janela aberta para atualizar.'],
+  [['access'], 'Conclua a entrada no portal para atualizar.'],
+];
+function blockedReason(risks: readonly WorkRisk[]) {
+  return (
+    blockedReasons.find(([kinds]) => risks.some((risk) => kinds.includes(risk.kind)))?.[1] ??
+    'Conclua os preenchimentos e operações pendentes para atualizar.'
+  );
+}
 
 export function useUpdateNavigation() {
   return useContext(UpdateContext);
@@ -56,6 +73,7 @@ export default function UpdateProvider({ children }: PropsWithChildren) {
     documentTransition.getSnapshot,
   );
   const scope = useRef<HTMLDivElement>(null);
+  const region = useRef<HTMLDivElement>(null);
   const request = useRef(0);
   const [message, setMessage] = useState(
     attemptPolicy.returnedToOrigin
@@ -69,6 +87,13 @@ export default function UpdateProvider({ children }: PropsWithChildren) {
   );
   const risks = work.getSnapshot();
   const changed = Boolean(detection.observed && detection.observed.buildId !== detection.own);
+  // Drafts record their pathname; on that page itself the link would lead nowhere.
+  const pending = risks.find((risk) => risk.href && risk.href !== location.pathname)?.href;
+
+  // The bar stays above the page while it scrolls; sticky content below it starts after it.
+  useEffect(() => {
+    if (region.current) return trackScrollInset(region.current);
+  }, []);
 
   useLayoutEffect(() => {
     const unregister = work.register(() => {
@@ -260,68 +285,80 @@ export default function UpdateProvider({ children }: PropsWithChildren) {
   }
   return (
     <UpdateContext.Provider value={handleMenu}>
-      <div role="status" aria-live="polite">
+      <div role="status" aria-live="polite" className="portal-update-region" ref={region}>
         {transition ? (
-          <Notice className="portal-update" tone="info">
-            <p>Atualizando portal…</p>
-            {transition.delayed && (
-              <>
-                <p>A atualização está demorando. Você pode cancelar para continuar nesta aba.</p>
-                <Button type="button" onClick={() => cancel(transition.id)}>
+          <Notice
+            className="portal-update"
+            tone="info"
+            icon={LoaderCircle}
+            data-busy
+            actions={
+              transition.delayed && (
+                <Button type="button" variant="secondary" onClick={() => cancel(transition.id)}>
                   Cancelar atualização
                 </Button>
-              </>
-            )}
+              )
+            }
+          >
+            <p>
+              <strong>Atualizando portal…</strong>
+              {transition.delayed &&
+                ' A atualização está demorando. Você pode cancelar para continuar nesta aba.'}
+            </p>
           </Notice>
         ) : changed || message || detection.failure ? (
-          <Notice className="portal-update" tone="info">
-            {changed && <p>Uma nova versão do portal está disponível.</p>}
-            {changed && risks.length > 0 && (
-              <p>
-                Conclua os preenchimentos e operações pendentes antes de atualizar. Você pode
-                retornar às telas pelo menu.
-              </p>
-            )}
-            {changed && risks.find((risk) => risk.href)?.href && (
-              <p>
-                <Link to={risks.find((risk) => risk.href)!.href}>
-                  Voltar ao preenchimento pendente
-                </Link>
-              </p>
-            )}
+          <Notice
+            className="portal-update"
+            tone="info"
+            icon={changed ? RefreshCw : undefined}
+            actions={
+              changed ? (
+                // A blocked update offers the way back to the pending work, never a dead button.
+                risks.length > 0 ? (
+                  pending && <Link to={pending}>Voltar ao preenchimento pendente</Link>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={checking}
+                    onClick={() => {
+                      void manual();
+                    }}
+                  >
+                    {checking ? 'Verificando versão…' : 'Atualizar agora'}
+                  </Button>
+                )
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={detection.checking}
+                  onClick={() => {
+                    void detector.check(true).then(() => {
+                      const value = detector.getSnapshot();
+                      setMessage(
+                        value.observed?.buildId === value.own && !value.failure
+                          ? 'Este portal já está na versão pública.'
+                          : '',
+                      );
+                    });
+                  }}
+                >
+                  Verificar versão
+                </Button>
+              )
+            }
+          >
             {changed && (
-              <Button
-                type="button"
-                disabled={checking || risks.length > 0}
-                onClick={() => {
-                  void manual();
-                }}
-              >
-                {checking ? 'Verificando versão…' : 'Atualizar agora'}
-              </Button>
+              <p>
+                <strong>Uma nova versão do portal está disponível.</strong>
+                {risks.length > 0 && ` ${blockedReason(risks)}`}
+              </p>
             )}
             {detection.failure && (
               <p>Não foi possível verificar a versão pública nesta consulta.</p>
             )}
             {message && <p>{message}</p>}
-            {!changed && (
-              <Button
-                type="button"
-                disabled={detection.checking}
-                onClick={() => {
-                  void detector.check(true).then(() => {
-                    const value = detector.getSnapshot();
-                    setMessage(
-                      value.observed?.buildId === value.own && !value.failure
-                        ? 'Este portal já está na versão pública.'
-                        : '',
-                    );
-                  });
-                }}
-              >
-                Verificar versão
-              </Button>
-            )}
           </Notice>
         ) : null}
       </div>

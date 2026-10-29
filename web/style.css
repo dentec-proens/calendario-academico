@@ -573,7 +573,7 @@ footer {
 @media screen {
   #message:not(:empty) {
     position: sticky;
-    top: 10px;
+    top: calc(var(--scroll-inset-top, 0px) + 10px);
     z-index: 30;
     white-space: pre-line;
   }
