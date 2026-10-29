@@ -357,7 +357,6 @@ test('PDF omits manual source text but keeps automatic institutional references 
       start: '2026-12-01',
       end: '2026-12-02',
       kind: 'note',
-      recordType: 'prior-reference' as const,
       evidence: 'SEGREDO MANUAL DO EVENTO',
       publicationStatus: 'published' as const,
       admission: { type: 'regular' as const, year: 2027, term: 'annual' as const },
@@ -374,7 +373,6 @@ test('PDF omits manual source text but keeps automatic institutional references 
       start: '2026-11-01',
       end: '2026-11-02',
       evidence: 'REFERÊNCIA INSTITUCIONAL AUTOMÁTICA',
-      recordType: 'prior-reference' as const,
     },
   ];
   const html = proensLayout(original, events);

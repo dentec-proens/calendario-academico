@@ -11,8 +11,7 @@
     "server.ts",
     "vite.config.ts",
     "test/helpers/**/*.ts",
-    "src/**/*.ts",
-    "migration/**/*.ts"
+    "src/**/*.ts"
   ],
   "exclude": ["node_modules", "dist", "backup-*"]
 }

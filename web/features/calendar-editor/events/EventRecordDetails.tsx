@@ -27,9 +27,6 @@ export default function EventRecordDetails({
         <small>{activity ? `Atividade: ${activity}` : 'Sem vínculo'}</small>
       )}
       {source && <small>Fonte: {source}</small>}
-      {event.recordType === 'prior-reference' && (
-        <small>Referência anterior · sem efeito na contagem</small>
-      )}
       {event.publicationStatus && (
         <small>
           {event.publicationStatus === 'planned' ? 'Publicação prevista' : 'Publicação realizada'}

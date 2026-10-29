@@ -25,7 +25,6 @@ const events: CalendarActivity[] = [
     end: '2026-12-01',
     kind: 'note',
     offers: ['integrado'],
-    recordType: 'prior-reference',
     publicationStatus: 'published',
     admission: { type: 'transfer', year: 2027, term: 'annual' },
   },
@@ -47,7 +46,6 @@ const events: CalendarActivity[] = [
     end: '2027-01-12',
     kind: 'note',
     offers: ['integrado'],
-    recordType: 'prior-reference',
   },
   {
     id: 'current',

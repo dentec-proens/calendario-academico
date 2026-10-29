@@ -51,7 +51,6 @@ import type * as migrations from "../migrations.js";
 import type * as nativeFiles from "../nativeFiles.js";
 import type * as operations from "../operations.js";
 import type * as presence from "../presence.js";
-import type * as releaseResidue from "../releaseResidue.js";
 import type * as reviews from "../reviews.js";
 import type * as reviews_model from "../reviews/model.js";
 import type * as validators from "../validators.js";
@@ -107,7 +106,6 @@ declare const fullApi: ApiFromModules<{
   nativeFiles: typeof nativeFiles;
   operations: typeof operations;
   presence: typeof presence;
-  releaseResidue: typeof releaseResidue;
   reviews: typeof reviews;
   "reviews/model": typeof reviews_model;
   validators: typeof validators;

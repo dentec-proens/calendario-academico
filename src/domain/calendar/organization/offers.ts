@@ -409,7 +409,7 @@ export function applyOfferOrganization<S extends ActivityState>(
       !keptStageIds.has(event.id),
   )) {
     const { requirementId: _link, assessmentAutoStart: _auto, ...kept } = event;
-    events.push({ ...kept, kind: 'note', recordType: 'retired-stage' });
+    events.push({ ...kept, kind: 'note' });
   }
   const candidate = {
     ...next,

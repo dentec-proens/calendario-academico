@@ -48,15 +48,8 @@ export function validateActivityRecord(
     throw new DomainError(
       'A prorrogação municipal exige feriado ou recesso decorrente e exclusão no ano.',
     );
-  if (
-    event.recordType !== undefined &&
-    !['event', 'prior-reference', 'retired-stage'].includes(event.recordType)
-  )
+  if (event.recordType !== undefined && event.recordType !== 'event')
     throw new DomainError('Natureza do registro inválida.');
-  if (event.recordType === 'retired-stage' && (event.kind !== 'note' || event.requirementId))
-    throw new DomainError(
-      'Uma etapa desvinculada deve permanecer informativa e sem vínculo de atividade.',
-    );
   if (
     event.publicationStatus !== undefined &&
     !['planned', 'published'].includes(event.publicationStatus)
@@ -66,14 +59,8 @@ export function validateActivityRecord(
     throw new DomainError(
       'A ocorrência não pode ser inteiramente futura nem terminar depois do ano do calendário.',
     );
-  if (event.recordType === 'prior-reference' && event.publicationStatus === 'planned')
-    throw new DomainError(
-      'Referência anterior exige ocorrência comprovada; uma previsão é atividade de planejamento.',
-    );
-  if (event.recordType === 'prior-reference' && !['prior', 'crossing'].includes(position))
-    throw new DomainError('A referência anterior deve começar antes do ano do calendário.');
   const outOfYear = position !== 'current';
-  if (outOfYear || event.recordType === 'prior-reference') {
+  if (outOfYear) {
     if (event.kind !== 'note')
       throw new DomainError(
         'Referências e ocorrências fora do ano são informativas, sem efeito letivo.',
@@ -109,8 +96,6 @@ export function validateActivityRecord(
       throw new DomainError('Publicação de edital é um registro informativo.');
     if (!event.publicationStatus)
       throw new DomainError('Informe se a publicação é prevista ou realizada.');
-    if (event.recordType === 'prior-reference' && event.publicationStatus !== 'published')
-      throw new DomainError('Referência anterior exige publicação realizada com fonte.');
     if (a.periodId && (typeof a.periodId !== 'string' || a.periodId.length > 100))
       throw new DomainError('Período de ingresso inválido.');
     // Deleted periods remain visible as unresolved evidence instead of being reassigned.

@@ -1,6 +1,6 @@
 # Operações administrativas de dados
 
-A ferramenta `scripts/migrate-data.ts` opera sobre exportações Convex mediante plano, fingerprints, ensaio e recibos. Ela é administrativa e não participa do runtime do navegador nem das funções de negócio.
+As verificações administrativas em `scripts/administration/` operam sobre exportações Convex, com projeções independentes, fingerprints e recibos. Elas não participam do runtime do navegador nem das funções de negócio.
 
 ## Requisitos
 
@@ -33,39 +33,20 @@ somente conforme o inventário real do M9. Os snapshots institucionais conservam
 tipos normativos em `modalities`; seu escopo é resolvido por `offer.kind`, sem
 reintroduzir esse campo nos eventos locais do formato 4.
 
-Para o resíduo identificado pelo inventário, B publica preparatoriamente a
-mutação interna temporária `releaseResidue:purge`. O M9 confere IDs e versão,
-executa primeiro sem gravação e depois realiza a exclusão auditada. A função
-recusa campus/ano/vínculos inesperados e trabalho posterior, conserva campus
-com qualquer usuário ou outro calendário e não apaga arquivos ou auditorias.
-Depois da execução conferida, o próprio M9 retira a função e seus testes. Essa
-sequência permite executar e remover a operação usando apenas o fluxo oficial
-de publicação, sem disponibilizar uma ferramenta administrativa permanente.
-
-## Fluxo da ferramenta
-
-```sh
-pnpm migrate:data plan --snapshot backup-dados/original.zip --out backup-dados/plan.json
-pnpm migrate:data prepare --plan backup-dados/plan.json --out backup-dados/rehearsal
-```
-
-`plan` produz o digest, fingerprints e lotes; `prepare` constrói o projeto isolado de execução. Planos vazios representam conferência e não devem iniciar uma aplicação.
-
-Depois de restaurar o ZIP integral em um backend descartável e conferir sua identidade, aplicar com digest explícito e verificar o próprio destino:
-
-```sh
-pnpm migrate:data apply --plan backup-dados/plan.json --deployment local --project backup-dados/rehearsal --confirm DIGEST_DO_PLANO
-pnpm migrate:data verify --plan backup-dados/plan.json --snapshot backup-dados/after.zip --deployment local --project backup-dados/rehearsal --out backup-dados/receipt.json
-pnpm migrate:data finish --plan backup-dados/plan.json --deployment local --project backup-dados/rehearsal --receipt backup-dados/receipt.json
-```
-
-As identidades `local`, portas e credenciais pertencem ao ambiente descartável preparado. Não inferir que um destino é descartável por seu nome. `apply` confere a fonte novamente; qualquer divergência exige plano e ensaio próprios. Produção exige o recibo verificado correspondente ao plano e ao schema em outro deployment, além da conferência explícita do destino.
+A mutação interna temporária de exclusão do resíduo foi introduzida em B
+exclusivamente para a operação auditada de M9. A execução confere IDs, versão,
+trabalho posterior e vínculos, preserva campus ligado a usuários ou outros
+calendários e não apaga arquivos ou auditorias. No estado final de M9, o executor,
+seus testes e o inventário específico do resíduo são retirados; o evento
+`PURGE_RELEASE_RESIDUE` permanece em `audit`. Os recibos da execução e da
+conferência ficam registrados no diário, sem uma ferramenta administrativa
+permanente para repetir a exclusão.
 
 ## Verificação e recuperação
 
 Conferir conteúdo, contagem, referências, snapshots, análises, texto dos pareceres, Storage e namespaces de componentes. Preservar o ZIP sem edição manual. Uma falha de fingerprint, arquivo, schema ou referência bloqueia a reabertura; não remover registros ou relaxar validações para aprovar o plano.
 
-A publicação de código não executa a ferramenta nem importa dados. A recuperação integral usa dados e código correspondentes; dados produzidos após a reabertura exigem conciliação antes de restaurar um backup. Manter recibos e evidências em local privado.
+A recuperação integral usa dados e código correspondentes; dados produzidos após a reabertura exigem conciliação antes de restaurar um backup. Manter recibos e evidências em local privado.
 
 Comandos de desenvolvimento e validação ficam em [Verificação](verificacao.md); os controles de manutenção e publicação ficam em [Implantação e operação](implantacao-convex-vercel.md).
 
@@ -94,3 +75,13 @@ Os leitores de snapshots e as provas de integridade úteis a outras operações 
 O ciclo de presença é conferido somente nas tabelas e campos inventariados da versão instalada, preservando identidades e dados estáveis. A implementação de autenticação continua renovando credenciais de sessões existentes durante a manutenção. Uma comparação de exports antes e depois de uma manutenção precisa tratar essas renovações como esperadas.
 
 Antes de congelar uma cópia para uma operação, conferir callbacks de arquivos pendentes. Tickets e PDFs efêmeros podem expirar durante a manutenção; concluir seu ciclo normal antes do backup evita confundi-lo com mudanças da operação. Os demais arquivos continuam sujeitos à comparação estrita. Divergência não coberta por uma prova explícita exige investigação, sem alterar os hashes de um plano já ensaiado.
+
+## Limpeza de legado de ofertas
+
+A preparação de M9 retira a política de 2026 e sua decisão operacional própria, os tipos especiais de registro e o redirecionamento de URLs anteriores aos IDs nativos. Datas reais anteriores ao ano continuam admitidas como notas informativas, conforme as mesmas regras temporais. A redução de etapas conserva os registros desvinculados, seus IDs e datas.
+
+As ferramentas de importação e conversão v1/v2, seus comandos, testes próprios e dependências exclusivas foram retirados porque o verificador atual em `scripts/administration/` é independente delas. A fonte exata permanece no histórico do Git; oráculos e fingerprints publicados continuam imutáveis.
+
+A quantidade histórica de etapas com organização pendente permanece no contrato v4: o ensaio encontrou 26 ofertas em 14 calendários, com distribuição 2/3/4 de 11/4/11. O inventário inclui conteúdos correntes, lixeira, órfãos e snapshots históricos. Os vínculos legados ainda usados pela política de 2027 também permanecem.
+
+O inventário de produção após a release A confirmou ausência de calendários até 2026 e de tipos especiais de registro, incluindo o histórico. Permanecem 26 marcadores de quantidade de etapas e 59 vínculos de requisitos legados. O estado final de M9 também retira a descoberta específica do resíduo depois da exclusão auditada; a execução e sua conferência são registradas no diário pelo responsável pela operação.

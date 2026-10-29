@@ -30,37 +30,6 @@ test('the parecer compares minima and window only for covered offers', () => {
   expect(actual.criteria.find((item) => item.id === 'window')?.initial.status).toBe('ATENDIDO');
 });
 
-test('a repeated postgraduate id does not activate the 2026 annual reference', () => {
-  const state = calendarOffersV4Fixture();
-  const signals = ['posgraduacao', 'posgraduacao-2'].map((id) => {
-    const pg = {
-      ...state,
-      year: 2026,
-      offers: [
-        {
-          id,
-          kind: 'posgraduacao' as const,
-          organization: 'anual' as const,
-          delivery: 'a-conferir' as const,
-        },
-      ],
-      events: [],
-      periods: [
-        {
-          id: 'pg-year',
-          name: 'Ano letivo',
-          start: '2026-02-02',
-          end: '2026-12-18',
-          association: { status: 'defined' as const, offers: [id], term: 'annual' as const },
-        },
-      ],
-    };
-    return support(pg).criteria.find((item) => item.id === 'annual')?.signal;
-  });
-  expect(signals[0]).toBe(signals[1]);
-  expect(signals[1]).toContain('mínimo normativo não configurado');
-});
-
 test('pending semester stages retain every assessment-dependent binding while other data is edited', () => {
   const state = {
     schemaVersion: 4 as const,

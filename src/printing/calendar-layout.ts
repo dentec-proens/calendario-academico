@@ -64,16 +64,11 @@ function externalReferences(state: PrintState, events: PrintEvent[]) {
     rows.filter((event) => event.publicationStatus === 'planned'),
   )}${table(
     'Fatos anteriores registrados',
-    rows.filter(
-      (event) => event.recordType === 'prior-reference' || event.publicationStatus === 'published',
-    ),
+    rows.filter((event) => event.publicationStatus === 'published'),
   )}${table(
     'Registros informativos com data anterior — conferir natureza e execução',
     rows.filter(
-      (event) =>
-        event.publicationStatus !== 'planned' &&
-        event.publicationStatus !== 'published' &&
-        event.recordType !== 'prior-reference',
+      (event) => event.publicationStatus !== 'planned' && event.publicationStatus !== 'published',
     ),
   )}</section>`;
 }

@@ -41,7 +41,6 @@ export type PrintEvent = Pick<
   | 'category'
   | 'offers'
   | 'requirementId'
-  | 'recordType'
   | 'publicationStatus'
   | 'admission'
   | 'deadlineAdjustment'

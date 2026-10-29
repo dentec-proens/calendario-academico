@@ -115,7 +115,6 @@ export default function ActivityDetails({
                   {(event.offers ?? offerIds(state))
                     .map((modality) => labelFor(state, modality))
                     .join(', ')}
-                  {event.recordType === 'prior-reference' ? ' · Referência anterior' : ''}
                   {event.publicationStatus === 'planned'
                     ? ' · Publicação prevista'
                     : event.publicationStatus === 'published'

@@ -209,7 +209,7 @@ test('complete explicit configuration clears the marker and retains surplus stag
   expect(configured.events.find((e) => e.id === 'old-3')).toMatchObject({
     start: '2027-04-01',
     end: '2027-04-12',
-    recordType: 'retired-stage',
+    kind: 'note',
   });
   const saved = prepareOfferCalendarSave(state, configured, {
     storedContent: offerCalendarContent(state),

@@ -110,14 +110,7 @@ export const resolveCalendarId = query({
   handler: async (ctx, { reference }) => {
     const { user } = await requireNativeUser(ctx);
     if (!reference || reference.length > 200) fail('Registro não encontrado.', 404);
-    const id =
-      ctx.db.normalizeId('calendars', reference) ??
-      (
-        await ctx.db
-          .query('calendarAliases')
-          .withIndex('by_alias', (q) => q.eq('alias', reference))
-          .unique()
-      )?.calendarId;
+    const id = ctx.db.normalizeId('calendars', reference);
     if (!id) fail('Registro não encontrado.', 404);
     await calendarRow(ctx, user, id);
     return id;

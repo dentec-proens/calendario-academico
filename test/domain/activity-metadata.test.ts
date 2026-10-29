@@ -1,18 +1,10 @@
 import { calendarOffers } from '../../src/domain/calendar/offers.ts';
 import { expect, test } from 'vitest';
-import type {
-  ActivityRequirement,
-  AssessmentSettings,
-  CalendarActivity,
-} from '../../src/domain/calendar/model.ts';
+import type { ActivityRequirement, AssessmentSettings } from '../../src/domain/calendar/model.ts';
 import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
 import { activityGroups } from '../../src/domain/calendar/activities/metadata.ts';
 import { applicabilityFor } from '../../src/domain/policies/registry.ts';
-import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
-import {
-  activityDraft,
-  eventFromValues,
-} from '../../web/features/calendar-editor/events/event-draft.ts';
+import { activityDraft } from '../../web/features/calendar-editor/events/event-draft.ts';
 
 // Rules that lived in the editor before the metadata moved into the catalogue.
 const previous = {
@@ -42,7 +34,7 @@ const previous = {
   notice: (id: string) => id.startsWith('admission-notice-') || id === 'regular-admission-notice',
 };
 
-const settings: (AssessmentSettings & { year: number })[] = [2026, 2027, 2028].flatMap((year) =>
+const settings: (AssessmentSettings & { year: number })[] = [2027, 2028].flatMap((year) =>
   (['anual', 'semestral', 'misto'] as const).flatMap((regime) =>
     [['integrado'], ['graduacao'], ['integrado', 'subsequente', 'graduacao', 'posgraduacao']].map(
       (kinds) => ({
@@ -61,7 +53,6 @@ const settings: (AssessmentSettings & { year: number })[] = [2026, 2027, 2028].f
               : { stages: { perTerm: total / (organization === 'semestral' ? 2 : 1) } }),
           };
         }),
-        ...(year === 2026 && regime === 'semestral' ? { legacySecondSemesterIntake: false } : {}),
       }),
     ),
   ),
@@ -123,7 +114,7 @@ function previousDraft(state: (typeof settings)[number], row: ActivityRequiremen
 }
 
 test('every year keeps a catalogue and prepares the same draft as before', () => {
-  for (const year of [2026, 2027, 2028])
+  for (const year of [2027, 2028])
     expect(
       settings
         .filter((state) => state.year === year)
@@ -133,7 +124,7 @@ test('every year keeps a catalogue and prepares the same draft as before', () =>
     const draftState = { ...state, offers: calendarOffers(state), periods: [] };
     for (const row of activityChecklist(state)) {
       const expected = previousDraft(state, row);
-      // A stage record may only cover its own offer; 2026 used to prepare every offer.
+      // A stage record may only cover its own offer.
       if (row.offerId) expected.offers = expected.offers.filter((m) => m === row.offerId);
       const { offers, ...fields } = expected;
       expect(activityDraft(draftState, row), `${state.year} ${row.id}`).toMatchObject({
@@ -142,52 +133,4 @@ test('every year keeps a catalogue and prepares the same draft as before', () =>
       });
     }
   }
-});
-
-test('a 2026 stage prepared in a calendar with several offers can be applied', () => {
-  const state = {
-    year: 2026,
-    schemaVersion: 4 as const,
-    offers: [
-      {
-        id: 'integrado',
-        kind: 'integrado' as const,
-        delivery: 'a-conferir' as const,
-        organization: 'anual' as const,
-        stages: { perTerm: 4 },
-      },
-      {
-        id: 'graduacao',
-        kind: 'graduacao' as const,
-        delivery: 'a-conferir' as const,
-        organization: 'anual' as const,
-        stages: { perTerm: 2 },
-      },
-    ],
-    weekdays: [1, 2, 3, 4, 5],
-    weekConfirmed: true,
-    periods: [],
-    events: [] as CalendarActivity[],
-  };
-  const row = activityChecklist(state).find((item) => item.id === 'stage-1:integrado')!;
-  const draft = activityDraft(state, row);
-  expect(draft.offers).toEqual(['integrado']);
-  const event = eventFromValues(
-    { ...draft, start: '2026-03-02', end: '2026-04-30' },
-    { id: 'stage' },
-  );
-  expect(() => applyEvent(state, event, [])).toThrow(/inteiramente dentro/);
-  const organized = {
-    ...state,
-    periods: [
-      {
-        id: 'annual',
-        name: 'Anual',
-        start: '2026-03-02',
-        end: '2026-12-18',
-        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
-      },
-    ],
-  };
-  expect(applyEvent(organized, event, []).events).toHaveLength(1);
 });

@@ -218,7 +218,7 @@ test('complete explicit configuration retires surplus bindings and retains the m
   expect(saved.state.events.find((event) => event.id === oldExcess.id)).toMatchObject({
     start: oldExcess.start,
     end: oldExcess.end,
-    recordType: 'retired-stage',
+    kind: 'note',
   });
   expect(
     saved.state.events.find((event) => event.id === oldExcess.id)?.requirementId,

@@ -16,7 +16,7 @@ export interface ReviewSource {
 /** Review data is module state shared by every request in a Convex isolate; keep it immutable. */
 export const frozenCriteria = (criteria: ReviewCriterion[]): readonly ReviewCriterion[] =>
   Object.freeze(criteria.map((criterion) => Object.freeze(criterion)));
-/** The parecer itself: review reference of the 2026 policy and of years without a norm. */
+/** The parecer itself remains the review reference for years without a configured norm. */
 export const parecerSource: ReviewSource = Object.freeze({
   id: 'SEI 3959640',
   year: 2026,

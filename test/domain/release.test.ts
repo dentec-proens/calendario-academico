@@ -4,8 +4,8 @@ import { activityChecklist } from '../../src/domain/calendar/activities/checklis
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
-import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
+import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 const reviewCriteria = reviewCriteriaFor(2027);
 import { inheritedEvents } from '../../src/domain/institution/catalogue.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
@@ -265,76 +265,4 @@ test('a single linked deadline cannot satisfy every assessment stage or semester
   assert.equal(activities.filter((a) => a.id.startsWith('diary-')).length, 2);
   assert.equal(activities.filter((a) => a.id.startsWith('teaching-plan-')).length, 2);
   assert.equal(new Set(activities.map((a) => a.id)).size, activities.length);
-});
-
-test('2026 reviewed criterion is satisfied by a dated event without manual sources', async () => {
-  const name = 'extratos das atas de aprovacao pelo cgpc e codic';
-  const criteria = reviewCriteriaFor(2026);
-  const target = criteria.find(
-    (criterion) => criterion.pattern && new RegExp(criterion.pattern).test(name),
-  );
-  assert(target);
-  const record = {
-    id: 'legacy-2026',
-    version: 1,
-    catalogueRevision: 1,
-    institutionalSnapshot: [],
-    state: {
-      schemaVersion: 4 as const,
-      year: 2026,
-      weekdays: [1, 2, 3, 4, 5],
-      weekConfirmed: true,
-      periods: [
-        {
-          id: 'annual',
-          start: '2026-02-02',
-          end: '2026-12-18',
-          association: {
-            status: 'defined' as const,
-            offers: ['integrado'],
-            term: 'annual' as const,
-          },
-        },
-      ],
-      events: [
-        {
-          id: 'minutes',
-          name,
-          start: '2026-02-02',
-          end: '2026-02-02',
-          kind: 'note',
-          offers: ['integrado'],
-        },
-      ],
-      offers: [
-        {
-          id: 'integrado',
-          kind: 'integrado' as const,
-          delivery: 'a-conferir' as const,
-          organization: 'anual' as const as 'anual' | 'semestral' | 'a-classificar',
-          stages: { perTerm: 2 },
-        },
-      ],
-    },
-  };
-  const db = {
-    catalogue: { revision: 1 },
-    reviews: [
-      {
-        calendarId: record.id,
-        calendarVersion: 1,
-        catalogueRevision: 1,
-        applicableNorm: 'Norma sintética 2026',
-        entries: criteria.map((criterion) => ({
-          id: criterion.id,
-          reviewed: true,
-          status: criterion.id === target.id ? 'ATENDIDO' : 'NAO_APLICAVEL',
-        })),
-      },
-    ],
-  };
-  const readiness = releaseReadiness(record, db);
-  assert(!readiness.issues.some((issue) => issue.includes(target.title)));
-  const missing = releaseReadiness({ ...record, state: { ...record.state, events: [] } }, db);
-  assert(missing.issues.some((issue) => issue.includes(target.title)));
 });

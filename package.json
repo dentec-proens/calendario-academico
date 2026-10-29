@@ -21,7 +21,7 @@
     "typecheck:tools": "tsc --noEmit -p tsconfig.tools.json",
     "lint": "oxlint --deny-warnings",
     "lint:fix": "oxlint --fix --deny-warnings",
-    "lint:types": "oxlint --type-aware --deny-warnings convex web scripts config src migration server.ts vite.config.ts vitest.config.ts playwright.config.ts playwright.e2e.config.ts test",
+    "lint:types": "oxlint --type-aware --deny-warnings convex web scripts config src server.ts vite.config.ts vitest.config.ts playwright.config.ts playwright.e2e.config.ts test",
     "format": "prettier --write . \"!**/*.{md,mdx,markdown}\"",
     "format:check": "prettier --check . \"!**/*.{md,mdx,markdown}\"",
     "format:docs": "prettier --write \"**/*.{md,mdx,markdown}\"",
@@ -42,7 +42,6 @@
     "env:doctor": "tsx scripts/doctor.ts",
     "deploy:production": "tsx scripts/deploy-production.ts",
     "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
-    "migrate:data": "tsx scripts/migrate-data.ts",
     "agents:check": "node scripts/check-agent-skills.ts",
     "e2e:setup": "tsx scripts/setup-e2e.ts"
   },
@@ -64,8 +63,7 @@
     "lucide-react": "1.61.0",
     "pdfjs-dist": "6.3.289",
     "react": "19.3.1",
-    "react-dom": "19.3.1",
-    "tar-fs": "3.1.2"
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
@@ -76,7 +74,6 @@
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@types/tar-fs": "2.0.4",
     "convex-test": "0.0.64",
     "fflate": "0.8.3",
     "oxlint": "1.89.0",

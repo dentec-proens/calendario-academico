@@ -117,11 +117,7 @@ const activity = (value: unknown): CalendarActivityV4 => {
     hours: optional(row.hours, number),
     assessmentAutoStart: optional(row.assessmentAutoStart, text),
     recordType: optional(row.recordType, (value) =>
-      choice(
-        value,
-        ['event', 'prior-reference', 'retired-stage'],
-        'Natureza do registro inválida.',
-      ),
+      choice(value, ['event'], 'Natureza do registro inválida.'),
     ),
     publicationStatus: optional(row.publicationStatus, (value) =>
       choice(value, ['planned', 'published'], 'Situação de publicação inválida.'),
@@ -184,8 +180,5 @@ export function readCalendarOfferInput(
     events: array(row.events, activity),
     teacherDayDate: optional(row.teacherDayDate, text),
     teacherVacations: optional(row.teacherVacations, vacations),
-    ...(row.legacySecondSemesterIntake === undefined
-      ? {}
-      : { legacySecondSemesterIntake: boolean(row.legacySecondSemesterIntake) }),
   };
 }

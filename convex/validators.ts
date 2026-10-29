@@ -40,9 +40,7 @@ export const event = v.object({
   offers: v.optional(v.array(v.string())),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
-  recordType: v.optional(
-    v.union(v.literal('event'), v.literal('prior-reference'), v.literal('retired-stage')),
-  ),
+  recordType: v.optional(v.literal('event')),
   publicationStatus: v.optional(v.union(v.literal('planned'), v.literal('published'))),
   admission: v.optional(
     v.object({
@@ -80,7 +78,7 @@ export const institutionalEventSnapshot = v.object({
   offers: v.optional(v.array(v.string())),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
-  recordType: v.optional(v.union(v.literal('event'), v.literal('prior-reference'))),
+  recordType: v.optional(v.literal('event')),
   publicationStatus: v.optional(v.union(v.literal('planned'), v.literal('published'))),
   admission: v.optional(
     v.object({
@@ -153,7 +151,6 @@ export const contentState = v.object({
   events: v.array(event),
   teacherDayDate: v.optional(v.string()),
   teacherVacations: v.optional(vacations),
-  legacySecondSemesterIntake: v.optional(v.boolean()),
 });
 export const domainState = v.object({
   ...contentState.fields,

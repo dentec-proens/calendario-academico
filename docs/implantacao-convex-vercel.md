@@ -46,7 +46,7 @@ pnpm deploy:production
 `--dry-run` confere `.vercel/release.env` e mostra os destinos e a ordem das etapas, sem subprocessos nem chamadas remotas. Uma recusa 401/403 da Vercel indica token vencido ou sem escopo: crie outro e atualize o arquivo. A execução:
 
 1. Fixa o HEAD da branch de origem e cria um worktree temporário detached desse SHA. Fontes, configuração de destino e módulos operacionais são lidos do snapshot; as dependências são instaladas nele com lockfile congelado e sem scripts de instalação. Não há stash, reset, commit automático ou alteração do índice original. Para incluir mudanças locais, faça o commit antes de iniciar a release.
-2. Confere destinos versionados, `origin`, que o SHA descende de `origin/main` e do commit servido no domínio público. Compara os arquivos alterados desde esse commit para decidir se o backend mudou (`convex/`, `src/`, `config/`, `migration/`, runtime de impressão e dependências).
+2. Confere destinos versionados, `origin`, que o SHA descende de `origin/main` e do commit servido no domínio público. Compara os arquivos alterados desde esse commit para decidir se o backend mudou (`convex/`, `src/`, `config/`, runtime de impressão e dependências).
 3. Confere pelos metadados da Convex CLI que o destino é a produção e que não há manutenção. O destino é fixado em arquivo temporário explícito; tokens não são enviados como argumentos.
 4. Reserva a release por referência Git com `force-with-lease` esperando ausência. Confere que o domínio continua no deployment anterior, desativa e confirma a atribuição automática de domínios (`vercel.json` também desativa auto-deploy por push), envia o SHA para `main` e aguarda o candidato Production READY.
 5. Se o backend mudou, exporta os dados com Storage, confere o ZIP e grava seu SHA-256 e recibo em uma subpasta privada de `DENTEC_RELEASE_BACKUP_DIR`.
@@ -78,7 +78,7 @@ Uma mudança de schema que exige migrar dados ocupa duas releases:
 
 2. **Estreitar.** Com a migração concluída, o schema e o código passam a exigir somente o formato novo; remova a definição de `pending`. Se algum documento ainda violar o schema, o próprio Convex recusa o deploy, antes da promoção.
 
-Antes de publicar uma migração que altera ou remove valores existentes, teste-a no deployment de desenvolvimento e, se o risco justificar, restaure o último backup em um deployment descartável e execute-a lá. `npx convex run migrations:run '{"fn":"migrations:fillCampusLabel","dryRun":true}'` executa um lote e desfaz o resultado. O progresso pode ser acompanhado com `npx convex run --component migrations lib:getStatus --watch`. Conversões que não cabem em lotes por documento, como reescritas entre tabelas ou importações completas, continuam na [ferramenta administrativa de dados](migracao-schema.md).
+Antes de publicar uma migração que altera ou remove valores existentes, teste-a no deployment de desenvolvimento e, se o risco justificar, restaure o último backup em um deployment descartável e execute-a lá. `npx convex run migrations:run '{"fn":"migrations:fillCampusLabel","dryRun":true}'` executa um lote e desfaz o resultado. O progresso pode ser acompanhado com `npx convex run --component migrations lib:getStatus --watch`. Conversões que não cabem em lotes por documento, como reescritas entre tabelas ou importações completas, exigem um plano próprio conforme [Operações administrativas de dados](migracao-schema.md).
 
 ## Falhas e recuperação
 

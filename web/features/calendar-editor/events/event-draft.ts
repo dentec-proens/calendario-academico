@@ -47,7 +47,6 @@ export interface EventValues {
   start: string;
   end: string;
   kind: '' | 'include' | 'exclude' | 'note';
-  recordType: 'event' | 'prior-reference';
   publicationStatus: '' | 'planned' | 'published';
   admissionType: '' | 'regular' | 'transfer';
   admissionYear: string;
@@ -67,7 +66,6 @@ export const emptyEvent = (offers: OfferId[]): EventValues => ({
   start: '',
   end: '',
   kind: '',
-  recordType: 'event',
   publicationStatus: '',
   admissionType: '',
   admissionYear: '',
@@ -87,7 +85,6 @@ export function eventValues(event: CalendarEvent, offers: OfferId[]): EventValue
     start: event.start,
     end: event.end,
     kind: event.kind,
-    recordType: event.recordType === 'prior-reference' ? 'prior-reference' : 'event',
     publicationStatus: event.publicationStatus ?? '',
     admissionType: event.admission?.type ?? '',
     admissionYear: event.admission ? String(event.admission.year) : '',
@@ -112,8 +109,7 @@ export const noticeActive = (value: Pick<EventValues, 'eventType'>) =>
 
 /**
  * Builds the record written by the form. Editing starts from the saved record, so fields the
- * form does not show survive, and an absent document intent stays absent. A manual edit ends
- * the automatic stage distribution.
+ * form does not show survive. A manual edit ends the automatic stage distribution.
  */
 export function eventFromValues(
   value: EventValues,
@@ -135,10 +131,6 @@ export function eventFromValues(
     start: value.start,
     end: value.end,
     kind: value.kind,
-    recordType:
-      target.base && !target.base.recordType && value.recordType === 'event'
-        ? undefined
-        : value.recordType,
     publicationStatus: (notice && value.publicationStatus) || undefined,
     admission:
       notice && value.admissionType

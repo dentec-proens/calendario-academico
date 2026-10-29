@@ -20,9 +20,8 @@ export default function CampusEventList({ events }: { events: EditorEvent[] }) {
   return events.length ? (
     <ul id="event-list" className="activity-rows">
       {events.map((event) => {
-        const reference = event.recordType === 'prior-reference';
         const planned = event.publicationStatus === 'planned';
-        const status = reference ? 'optional' : planned ? 'pending' : 'complete';
+        const status = planned ? 'pending' : 'complete';
         return (
           <li key={event.id} data-campus-event={event.id}>
             <ActivityRow
@@ -30,9 +29,7 @@ export default function CampusEventList({ events }: { events: EditorEvent[] }) {
               data-open-event={event.id}
               label={event.name}
               status={status}
-              statusLabel={
-                reference ? 'Referência anterior' : planned ? 'Publicação prevista' : 'Registrado'
-              }
+              statusLabel={planned ? 'Publicação prevista' : 'Registrado'}
               dates={`${civilDate(event.start)} a ${civilDate(event.end)}`}
               selected={selected === event.id}
               onClick={() =>

@@ -33,7 +33,6 @@ export function reviewSupport<
         CalendarActivity,
         | 'kind'
         | 'requirementId'
-        | 'recordType'
         | 'publicationStatus'
         | 'admission'
         | 'deadlineAdjustment'

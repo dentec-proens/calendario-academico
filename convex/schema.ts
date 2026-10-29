@@ -121,11 +121,6 @@ export default defineSchema({
     snapshotId: v.id('calendarSnapshots'),
   }).index('by_calendarId_and_version', ['calendarId', 'version']),
   calendarSnapshots: defineTable(snapshotFields),
-  // Durable redirects for editor URLs issued before native document IDs.
-  calendarAliases: defineTable({
-    alias: v.string(),
-    calendarId: v.id('calendars'),
-  }).index('by_alias', ['alias']),
   documents: defineTable({
     year: v.number(),
     type: documentType,

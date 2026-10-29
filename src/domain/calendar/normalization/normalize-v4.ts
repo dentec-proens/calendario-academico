@@ -8,7 +8,7 @@ import { activityChecklist } from '../activities/checklist.ts';
 import { validCategory, eventCategory } from '../activities/categories.ts';
 import { validateTeacherDay } from '../../institution/teacher-day.ts';
 import { teacherVacations } from '../activities/teacher-vacations.ts';
-import { policyFor, rulesetVersion } from '../../policies/registry.ts';
+import { rulesetVersion } from '../../policies/registry.ts';
 import { associationOffers, offerFor, stageTerm } from '../offers.ts';
 import { isStageRequirementId } from '../activities/metadata.ts';
 
@@ -91,11 +91,6 @@ export function normalizeOfferCalendar(
   )
     fail('Estrutura do calendário inválida.');
   if (s.weekConfirmed && !s.weekdays.length) fail('Semana letiva vazia.');
-  if (
-    s.legacySecondSemesterIntake !== undefined &&
-    !policyFor(s.year).usesLegacySecondSemesterIntake
-  )
-    fail('Decisão operacional legada incompatível com a política do calendário.');
   if (s.teacherVacations) {
     const vacation = teacherVacations(s.year, s.teacherVacations);
     s.events = s.events
@@ -234,7 +229,6 @@ export function offerCalendarContent(state: CalendarContentV4): CalendarContentV
     events,
     teacherDayDate,
     teacherVacations,
-    legacySecondSemesterIntake,
   } = state;
   return JSON.parse(
     JSON.stringify({
@@ -247,7 +241,6 @@ export function offerCalendarContent(state: CalendarContentV4): CalendarContentV
       events,
       teacherDayDate,
       teacherVacations,
-      legacySecondSemesterIntake,
     }),
   ) as CalendarContentV4;
 }

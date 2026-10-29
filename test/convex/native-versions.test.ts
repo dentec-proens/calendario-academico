@@ -4,7 +4,7 @@ import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 
 test('historical versions are available by native calendar ID, paginated and campus scoped', async () => {
-  const { as, asClient, client: database } = await createNativeFixture();
+  const { as, asClient } = await createNativeFixture();
   const campus = as('campus-a');
   const created = await campus.write('/api/calendars', {
     campusId: 'a',
@@ -38,12 +38,9 @@ test('historical versions are available by native calendar ID, paginated and cam
     );
   }
   const client = asClient('campus-a');
-  await database.run((ctx) =>
-    ctx.db.insert('calendarAliases', { alias: 'original-editor-uuid', calendarId: created.id }),
-  );
-  assert.equal(
-    await client.query(api.calendars.resolveCalendarId, { reference: 'original-editor-uuid' }),
-    created.id,
+  await assert.rejects(
+    client.query(api.calendars.resolveCalendarId, { reference: 'original-editor-uuid' }),
+    /Registro não encontrado/,
   );
   assert.equal(
     await client.query(api.calendars.resolveCalendarId, { reference: created.id }),
@@ -51,7 +48,7 @@ test('historical versions are available by native calendar ID, paginated and cam
   );
   await assert.rejects(
     asClient('campus-b').query(api.calendars.resolveCalendarId, {
-      reference: 'original-editor-uuid',
+      reference: created.id,
     }),
     /Registro não encontrado/,
   );

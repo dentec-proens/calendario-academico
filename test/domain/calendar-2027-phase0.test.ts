@@ -72,7 +72,6 @@ test('a documented 2026 occurrence retains its actual dates through the event co
     start: '2026-12-01',
     end: '2026-12-01',
     kind: 'note',
-    recordType: 'prior-reference' as const,
     publicationStatus: 'published' as const,
     offers: ['integrado'],
   };

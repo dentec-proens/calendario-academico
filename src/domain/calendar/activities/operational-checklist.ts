@@ -17,8 +17,6 @@ import {
 
 /** Year-specific details a policy may add to the undated operational checklist. */
 export interface OperationalChecklistOptions {
-  /** The 2026 operational decision can differ from the offer-level intake configuration. */
-  usesLegacySecondSemesterIntake?: boolean;
   /** Civil deadlines by activity ID; the label shows them in dd/mm/yyyy. */
   deadlines?: Readonly<Record<string, string>>;
   /** Review criteria are linked only when given; entries renumber criteria by activity ID. */
@@ -45,14 +43,11 @@ const cyclesByRegime = (state: AssessmentSettings): CycleSlot[] => {
   }));
 };
 
-// Undated PROENS operational checklist, shared by the 2026 policy, unconfigured years and the
-// legacy IDs kept by later policies. Historical dates come only from the selected policy.
+// Undated PROENS operational checklist for unconfigured years and legacy IDs kept by later
+// policies. Historical dates come only from the selected policy.
 function sections(options: OperationalChecklistOptions): RequirementSection[] {
   const withoutSecondIntake = ({ n, state }: Slot) => {
-    const intake =
-      (options.usesLegacySecondSemesterIntake ? state.legacySecondSemesterIntake : undefined) ??
-      secondSemesterIntake(state.offers);
-    return n === 2 && intake === false;
+    return n === 2 && secondSemesterIntake(state.offers) === false;
   };
   const linked = (rows: RequirementSpec[]) =>
     rows.map((row) => ({

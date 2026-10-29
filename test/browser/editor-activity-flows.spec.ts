@@ -281,7 +281,7 @@ test('the free event form opens in the side panel with a labelled offer group', 
   const offers = page.locator('fieldset#event-modalities');
   await expect(offers.locator(':scope > legend')).toHaveText('Ofertas abrangidas');
   await expect(offers.locator('input')).toHaveCount(2);
-  await expect(page.locator('#event-record-type')).toBeVisible();
+  await expect(page.locator('#event-record-type')).toHaveCount(0);
   await expect(page.locator('#close-event-panel')).toHaveAccessibleName('Fechar painel');
   await expect(page.locator('#event-form .form-actions button')).toHaveCount(1);
   await expect(page.locator('#discard-event-form')).toBeHidden();

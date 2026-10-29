@@ -45,11 +45,7 @@ export default function EventEditor() {
   const showLink = !activityCreation || editor.linkUnlocked;
   const offers = recordOffers(state, requirement);
   const linkOptions = checklist.filter((item) => item.variant !== 'stage');
-  const showRecordType =
-    !values.requirementId ||
-    Boolean(requirement?.acceptsPriorReference) ||
-    values.recordType === 'prior-reference';
-  const freeEvent = !values.requirementId && values.recordType !== 'prior-reference';
+  const freeEvent = !values.requirementId;
   const answered = eventTypes.find(
     (type) =>
       type.id === values.eventType &&
@@ -81,13 +77,7 @@ export default function EventEditor() {
   const kindField = (
     <form.Field name="kind">
       {(field) => (
-        <Select
-          field={field}
-          label="Efeito na contagem"
-          id="event-kind"
-          required={!askType}
-          disabled={values.recordType === 'prior-reference'}
-        >
+        <Select field={field} label="Efeito na contagem" id="event-kind" required={!askType}>
           <option value="">Escolha o efeito</option>
           <option value="exclude">Excluir dias · feriado ou recesso</option>
           <option value="include">Incluir dias · sábado ou reposição</option>
@@ -190,36 +180,6 @@ export default function EventEditor() {
                 </label>
               )}
             </form.Field>
-          )}
-          {showRecordType && (
-            <form.Field name="recordType">
-              {(field) => (
-                <label>
-                  Intenção do registro
-                  <select
-                    id="event-record-type"
-                    name={field.name}
-                    value={field.state.value}
-                    onChange={(event) => {
-                      const type =
-                        event.target.value === 'prior-reference' ? 'prior-reference' : 'event';
-                      field.handleChange(type);
-                      if (type === 'prior-reference') form.setFieldValue('kind', 'note');
-                    }}
-                  >
-                    <option value="event">Registrar atividade deste calendário</option>
-                    <option value="prior-reference">Referenciar fato anterior</option>
-                  </select>
-                </label>
-              )}
-            </form.Field>
-          )}
-          {values.recordType === 'prior-reference' && (
-            <Notice tone="info">
-              Referência anterior, somente informativa. Não comprova dias, horas, férias ou
-              avaliações do ano atual. Informe as datas reais; uma publicação anterior precisa estar
-              realizada.
-            </Notice>
           )}
           <form.Field name="offers">
             {(field) => {

@@ -9,6 +9,35 @@ for (const width of [1440, 390]) {
     page,
   }, testInfo) => {
     const state = calendarOffersV4Fixture();
+    state.events.push(
+      {
+        id: 'previous-publication',
+        name: 'Publicação realizada antes do ano',
+        start: '2026-12-01',
+        end: '2026-12-01',
+        kind: 'note',
+        publicationStatus: 'published',
+        admission: { type: 'transfer', year: 2027, term: 'annual' },
+        offers: ['integrado'],
+      },
+      {
+        id: 'previous-plan',
+        name: 'Publicação prevista antes do ano',
+        start: '2026-11-01',
+        end: '2026-11-01',
+        kind: 'note',
+        publicationStatus: 'planned',
+        offers: ['integrado'],
+      },
+      {
+        id: 'cross-year-note',
+        name: 'Registro informativo que atravessa o ano',
+        start: '2026-12-15',
+        end: '2027-01-12',
+        kind: 'note',
+        offers: ['integrado'],
+      },
+    );
     const paths = [
       '../../web/components/ui/tokens.css',
       '../../web/components/ui/ui.css',
@@ -32,6 +61,10 @@ for (const width of [1440, 390]) {
       `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Calendário de referência v4</title><style>${styles.join('\n').replace(/@import[^;]+;/g, '')}</style></head><body><main class="main-column"><section id="calendar" class="view"><div class="panel"><div id="months">${html}</div></div></section></main></body></html>`,
     );
     await page.emulateMedia({ media: 'print' });
+    await expect(page.locator('.proens-external-references tbody tr')).toHaveCount(3);
+    await expect(page.locator('.proens-external-references')).toContainText(
+      '15/12/2026 a 12/01/2027',
+    );
     await expect(page.locator('.teaching-distribution-group')).toHaveCount(4);
     const electrical = page.locator('.teaching-distribution-group').filter({
       has: page.getByRole('heading', { name: 'Dias letivos — Engenharia Elétrica', exact: true }),
@@ -74,6 +107,11 @@ for (const width of [1440, 390]) {
         '1ª etapa — 2º semestre',
         '2ª etapa — 2º semestre',
         'Consolidado anual',
+        'Publicação realizada antes do ano',
+        'Publicação prevista antes do ano',
+        'Registro informativo que atravessa o ano',
+        '01/12/2026',
+        '15/12/2026 a 12/01/2027',
       ])
         expect(text).toContain(label);
       expect(text).not.toContain('undefined');

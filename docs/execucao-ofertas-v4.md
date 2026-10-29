@@ -627,3 +627,75 @@ integralmente; a origem fica esclarecida neste diário.
 
 Os dois julgadores de B concluíram a pré-análise sem importantes/bloqueantes.
 O voto final e a publicação aguardam o SHA do marco e a unanimidade do painel.
+
+**M8 concluído em produção.** O painel aprovou **3/3** o commit `161fb295`,
+incluindo a preparação temporária de M9. A release oficial aceitou o schema
+estrito, confirmou ausência de migrações pendentes e promoveu o deployment
+`dpl_5ikSR9NzfACTyBkQwW3cwiYHkq5w`. O Storage e todas as tabelas da aplicação
+permaneceram idênticos ao backup imediatamente anterior; somente dois
+namespaces de presença seguiram seu ciclo normal, com prova independente do
+runtime fixado. Os runtimes A e B produziram a mesma projeção dos 75 calendários
+da exportação efetiva de produção.
+
+## M9 — retirada dos legados sem uso (em andamento)
+
+O inventário real permite retirar a política de 2026 e sua decisão operacional,
+os tipos de registro sem uso, aliases e ferramentas v1/v2 com comandos,
+dependências e testes exclusivos. Permanecem as 26 quantidades antigas em 14
+calendários, seus inventários correntes/históricos e 59 vínculos de requisitos
+legados de 2027. O oráculo e os fingerprints publicados não são regravados.
+O verificador M7 e a correção permanente da coordenação continuam disponíveis.
+
+O candidato C foi preparado com o executor e sua API já ausentes; a função
+implantada em B continua disponível somente até a publicação de C. O painel
+de M9 autoriza a operação por IDs/versão e a publicação desse estado final,
+depois da simulação e do backup. Nenhuma exclusão foi feita em produção até
+esta etapa. A simulação efetiva no backend B planejou um conteúdo, um calendário
+e um campus, retornou zero exclusões e `auditId: null`.
+
+No ensaio descartável, a execução removeu exatamente esses três registros e
+acrescentou uma auditoria `PURGE_RELEASE_RESIDUE`; repetir a chamada retornou o
+mesmo recibo sem alterações. Dos 64 namespaces, somente `calendarContents`,
+`calendars`, `campuses` e `audit` tiveram as alterações previstas; os demais
+60 e o Storage permaneceram idênticos. O schema C foi aceito, o executor deixou de existir e as exportações
+após o expurgo e após o deploy C foram byte a byte idênticas. Os runtimes B/C
+produziram a mesma projeção dos 74 calendários restantes, digest
+`239a034d88ea0ec21401ed985cd165010257eb838e9d5de0e0ad99d574745502`.
+
+A preparação visual passou em 29 fluxos, dois casos de impressão com fatos
+anteriores e quatro comparações visuais. Três referências darwin mudaram pela
+retirada intencional do seletor de tipo de registro e foram inspecionadas e
+comparadas novamente. O rebase sobre o escopo institucional corrigido em B
+passou em 223 testes de domínio e nos quatro projetos TypeScript; a suíte
+completa no workspace principal é a validação definitiva.
+
+A primeira execução completa parou antes do navegador: três testes do
+verificador ainda pediam a política de 2026 no runtime atual. Como seu uso
+real é zero e a política foi retirada, os dois inputs originais de 2026 agora
+comprovam a rejeição explícita pelo runtime C, sem trocar anos ou esperados.
+A prova histórica do parecer usa diretamente a fonte congelada e preserva
+seus deltas. Os 116 testes do verificador passaram; fonte, oráculo e algoritmo
+de verificação não mudaram. Uma nova execução completa está em andamento.
+
+A execução definitiva de C passou em **239,6 s**, com **311 testes de navegador**
+e todas as etapas rápidas aprovadas. Antes da exclusão real foi exportado outro
+backup v4 integral com Storage, SHA-256
+`87c184568b65143bb50aba79809e137d901c6d3a0299065a0f94207ee940b5ab`.
+A restauração em backend vazio conferiu 118 entradas, 64 namespaces, 2.575 linhas,
+seis registros de tabelas e um arquivo do Storage, todos idênticos. O inventário
+real foi repetido e confirmou as mesmas condições de retirada. A chamada
+`dryRun` foi comprovada inclusive a partir do checkout C preparado, usando a
+função ainda implantada em B, sem introduzir o executor no código final.
+O portão e o painel de M9 avaliarão a exclusão estrita por IDs/versão e a release
+desse mesmo estado final, antes de qualquer exclusão em produção.
+
+O portão formal de M9 terminou sem bloqueantes ou importantes. As sugestões
+editoriais foram aplicadas: 64 namespaces totais, dos quais 60 intactos, e título
+de teste sem a referência a uma política já retirada. Os exports e tipos da
+versão instalada de `@tanstack/react-form` (1.33.5) foram conferidos novamente,
+assim como os guias oficiais de
+[composição](https://tanstack.com/form/latest/docs/framework/react/guides/form-composition)
+e [valores assíncronos](https://tanstack.com/form/latest/docs/framework/react/guides/async-initial-values).
+A retirada do seletor conserva o hook compartilhado, a identidade do formulário
+e o contrato de valores carregados. Após a suíte completa, só documentação e o
+título desse teste foram alterados; suas asserções e código funcional não mudaram.

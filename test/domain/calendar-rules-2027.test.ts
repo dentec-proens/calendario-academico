@@ -74,7 +74,6 @@ function notice(extra: Partial<CalendarActivity> = {}): CalendarActivity {
     start: '2026-12-10',
     end: '2026-12-10',
     offers: ['integrado'],
-    recordType: 'prior-reference',
     publicationStatus: 'published',
     admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'annual' },
     requirementId: 'admission-notice-0',
@@ -266,20 +265,7 @@ test('prior/cross-year references are informative even if the received discrimin
   ])
     expect(() => applyEvent(state, notice(changes), [])).toThrow();
 });
-test('2026 is preserved, postgraduate and other years are not implicitly certified by 2027', () => {
-  expect(
-    rulesetVersion({
-      year: 2026,
-      offers: [
-        {
-          id: 'integrado',
-          kind: 'integrado' as const,
-          delivery: 'a-conferir' as const,
-          organization: 'anual' as const,
-        },
-      ],
-    }),
-  ).toBe('legacy-2026-v1');
+test('postgraduate and other years are not implicitly certified by 2027', () => {
   expect(
     rulesetVersion({
       year: 2027,

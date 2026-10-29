@@ -103,7 +103,6 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
         start: '2026-12-10',
         end: '2026-12-10',
         kind: 'note',
-        recordType: 'prior-reference',
         publicationStatus: 'published',
         admission: { type: 'transfer', year: 2027, term: 'first', periodId: 'undergraduate-first' },
         offers: ['graduacao'],
@@ -147,7 +146,7 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
 
 test('a save cannot silently adopt another ruleset or change history', async () => {
   const { actor, client, record } = await setup();
-  for (const rulesetVersion of [undefined, 'legacy-2026-v1', 'forged'])
+  for (const rulesetVersion of [undefined, 'forged'])
     await expect(
       actor.mutation(api.calendars.saveCalendar, {
         id: record.id,
@@ -172,7 +171,6 @@ test('direct backend writes retain temporal and offer-scope validation', async (
     start: '2026-12-01',
     end: '2026-12-01',
     kind: 'note' as const,
-    recordType: 'prior-reference' as const,
     offers: ['integrado'],
   };
   for (const forged of [
@@ -183,7 +181,7 @@ test('direct backend writes retain temporal and offer-scope validation', async (
     {
       ...event,
       admission: { type: 'transfer' as const, year: 2027, term: 'annual' as const },
-      publicationStatus: 'planned' as const,
+      publicationStatus: undefined,
     },
   ])
     await expect(

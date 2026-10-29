@@ -148,48 +148,12 @@ test('historical quantities are counted separately from absent quantities, inclu
   expect(count(result, 'historicalLegacyStageCountOffers')).toBe(0);
 });
 
-test('historical-only non-event records, retained intake and old-year metadata remain visible after live data is clear', async () => {
+test('historical old-year metadata stays self-contained after live data is clear', async () => {
   const t = fixture();
   await t.run(async (ctx) => {
     for (const [index, year] of [2025, 2026, 2027].entries()) {
-      const state = state4();
-      if (index < 2) state.legacySecondSemesterIntake = index === 0;
-      state.events = [
-        {
-          id: 'ordinary',
-          name: 'Nome histórico privado',
-          kind: 'note',
-          start: `${year}-02-01`,
-          end: `${year}-02-01`,
-          recordType: 'event',
-        },
-        ...(index < 2
-          ? [
-              {
-                id: 'prior',
-                name: 'Referência privada',
-                kind: 'note' as const,
-                start: `${year}-01-10`,
-                end: `${year}-01-10`,
-                recordType: 'prior-reference' as const,
-              },
-            ]
-          : []),
-        ...(index === 0
-          ? [
-              {
-                id: 'retired',
-                name: 'Etapa privada',
-                kind: 'note' as const,
-                start: `${year}-02-01`,
-                end: `${year}-02-01`,
-                recordType: 'retired-stage' as const,
-              },
-            ]
-          : []),
-      ];
       await ctx.db.insert('calendarSnapshots', {
-        state: { ...state, year, campus: 'Campus privado histórico' },
+        state: { ...state4(), year, campus: 'Campus privado histórico' },
         at: index,
         catalogueRevision: 1,
         institutionalEvents: [],
@@ -197,19 +161,10 @@ test('historical-only non-event records, retained intake and old-year metadata r
       });
     }
   });
-  const live = await pages(t, 'contents');
-  expect(count(live, 'nonEventRecords')).toBe(0);
-  expect(count(live, 'legacySecondSemesterIntakeContents')).toBe(0);
   const historical = await pages(t, 'historicalSnapshots');
   expect(count(historical, 'historicalLegacyStageCountOffers')).toBe(0);
-  expect(count(historical, 'historicalNonEventRecords')).toBe(3);
-  expect(count(historical, 'historicalPriorReferenceRecords')).toBe(2);
-  expect(count(historical, 'historicalRetiredStageRecords')).toBe(1);
-  expect(count(historical, 'historicalLegacySecondSemesterIntakeContents')).toBe(2);
   expect(count(historical, 'historicalYearThrough2026Snapshots')).toBe(2);
-  expect(JSON.stringify(historical)).not.toMatch(
-    /Nome histórico|Referência privada|Campus privado/,
-  );
+  expect(JSON.stringify(historical)).not.toContain('Campus privado');
 });
 
 test('historical snapshots keep a separate paginated inventory after every live marker has been resolved', async () => {
@@ -245,31 +200,22 @@ test('historical snapshots keep a separate paginated inventory after every live 
   expect(JSON.stringify(historical)).not.toContain('Campus privado sintético');
 });
 
-test('counts retained intake decisions, non-event records and actual legacy requirement IDs in 2027', async () => {
+test('counts actual legacy requirement IDs retained by the 2027 policy', async () => {
   const t = fixture();
   const campusId = await t.run((ctx) =>
     ctx.db.insert('campuses', { name: 'Campus sintético', archived: false }),
   );
-  for (const decision of [true, false]) {
+  for (let index = 0; index < 2; index++) {
     const state = state4();
-    state.legacySecondSemesterIntake = decision;
     state.events = [
       {
-        id: 'prior',
+        id: 'legacy-link',
         name: 'Evento privado',
-        kind: 'note',
-        start: '2026-12-01',
-        end: '2026-12-01',
-        recordType: 'prior-reference',
-        requirementId: 'teaching-plan-0',
-      },
-      {
-        id: 'retired',
-        name: 'Etapa privada',
         kind: 'note',
         start: '2027-02-01',
         end: '2027-02-01',
-        recordType: 'retired-stage',
+        recordType: 'event',
+        requirementId: 'teaching-plan-0',
       },
       {
         id: 'modern',
@@ -277,7 +223,6 @@ test('counts retained intake decisions, non-event records and actual legacy requ
         kind: 'note',
         start: '2027-02-01',
         end: '2027-02-01',
-        recordType: 'event',
         requirementId: 'family-meeting',
       },
     ];
@@ -296,12 +241,6 @@ test('counts retained intake decisions, non-event records and actual legacy requ
   ];
   await seed(t, campusId, oldYear, { year: 2026 });
   const result = await pages(t, 'contents');
-  expect(count(result, 'legacySecondSemesterIntakeContents')).toBe(2);
-  expect(count(result, 'legacySecondSemesterIntakeTrue')).toBe(1);
-  expect(count(result, 'legacySecondSemesterIntakeFalse')).toBe(1);
-  expect(count(result, 'nonEventRecords')).toBe(4);
-  expect(count(result, 'priorReferenceRecords')).toBe(2);
-  expect(count(result, 'retiredStageRecords')).toBe(2);
   expect(count(result, 'legacyRequirementEvents2027')).toBe(2);
   expect(result.flatMap((page) => page.legacyRequirementIds2027)).toEqual([
     { id: 'teaching-plan-0', events: 2 },
@@ -326,47 +265,6 @@ test('cross-checks orphan calendars and contents; groups <=2026 by native campus
   expect(result.flatMap((page) => page.calendarsThrough2026ByCampus)).toEqual([
     { campusId, calendars: 2 },
   ]);
-});
-
-test('release residues require prefix plus year 8700 and every linked user guards the campus', async () => {
-  const t = fixture();
-  const ids = await t.run(async (ctx) => {
-    const guarded = await ctx.db.insert('campuses', {
-      name: 'Operação de publicação release-sintética',
-      archived: false,
-    });
-    const empty = await ctx.db.insert('campuses', {
-      name: 'Operação de publicação release-vazia',
-      archived: true,
-    });
-    const ordinary = await ctx.db.insert('campuses', { name: 'Campus comum', archived: false });
-    await ctx.db.insert('users', {
-      campusId: guarded,
-      name: 'Operação de publicação',
-      email: 'private@example.invalid',
-      role: 'CAMPUS',
-      active: false,
-      removedAt: 1,
-      loginMethod: 'local',
-    });
-    return { guarded, empty, ordinary };
-  });
-  const residue = await seed(t, ids.guarded, state4(), { year: 8700, trash: true });
-  await seed(t, ids.ordinary, state4(), { year: 8700 });
-  await seed(t, ids.empty, state4(), { year: 2027 });
-  const campuses = (await pages(t, 'campuses')).flatMap((page) => page.releaseResidueCampuses);
-  expect(campuses).toEqual([
-    { campusId: ids.guarded, hasAnyUsers: true },
-    { campusId: ids.empty, hasAnyUsers: false },
-  ]);
-  const calendars = (await pages(t, 'calendars')).flatMap((page) => page.year8700Calendars);
-  expect(
-    calendars.filter((item) => campuses.some((campus) => campus.campusId === item.campusId)),
-  ).toEqual([
-    { calendarId: residue.calendarId, campusId: ids.guarded, hasContent: true, trashed: true },
-  ]);
-  expect(JSON.stringify(campuses)).not.toMatch(/private@example|publicação/);
-  expect((await t.run((ctx) => ctx.db.query('users').take(2))).length).toBe(1);
 });
 
 test('migration receipts remain separate from live counts and never guess lost semester-three settings', async () => {

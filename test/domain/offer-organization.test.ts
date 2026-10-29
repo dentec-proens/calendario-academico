@@ -237,10 +237,11 @@ test('reducing date-only stages keeps retired dates without reintroducing a sour
   const twoDraft = offerOrganizationDraft(four, 'integrado');
   twoDraft.count = '2';
   const two = applyOfferOrganization(four, 'integrado', twoDraft, id);
-  const retired = two.events.filter((event) => event.recordType === 'retired-stage');
+  const retired = two.events.filter((event) => !event.requirementId && event.category === 'limite');
   expect(retired.map((event) => [event.start, event.end])).toEqual([
     ['2027-03-15', '2027-03-19'],
     ['2027-03-22', '2027-03-26'],
   ]);
+  expect(retired.every((event) => event.kind === 'note')).toBe(true);
   expect(normalizeCalendar({ ...two, ignoredHistory: [] }).events).toHaveLength(two.events.length);
 });

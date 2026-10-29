@@ -34,8 +34,6 @@ export interface CalendarContentV4 {
   events: CalendarActivityV4[];
   teacherDayDate?: string;
   teacherVacations?: VacationPeriods;
-  /** Preserves the independent operational decision used only by the 2026 policy. */
-  legacySecondSemesterIntake?: boolean;
 }
 export type PeriodAssociation = PeriodAssociationV4;
 export interface Admission {
@@ -63,7 +61,7 @@ export interface CalendarActivity {
   originalEnd?: string;
   assessmentAutoStart?: string;
   deadlineExtensionCause?: 'municipal-holiday' | 'municipal-recess';
-  recordType?: 'event' | 'prior-reference' | 'retired-stage';
+  recordType?: 'event';
   publicationStatus?: 'planned' | 'published';
   admission?: Admission;
   deadlineAdjustment?: { date: string; reviewed: boolean };
@@ -114,7 +112,6 @@ export interface CalendarPeriod {
 }
 export interface AssessmentSettings {
   offers: CalendarOffer[];
-  legacySecondSemesterIntake?: boolean;
   year?: number;
   schemaVersion?: 4;
   rulesetVersion?: string;

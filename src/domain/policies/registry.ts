@@ -3,10 +3,9 @@ import { offerFor } from '../calendar/offers.ts';
 import { DomainError } from '../errors.ts';
 import { consup2922027Policy } from './consup-292-2027.ts';
 import type { CalendarPolicy, RulesetChange } from './contract.ts';
-import { legacy2026Policy } from './legacy-2026.ts';
 import { unconfiguredPolicy } from './unconfigured.ts';
 
-const policies: readonly CalendarPolicy[] = [legacy2026Policy, consup2922027Policy];
+const policies: readonly CalendarPolicy[] = [consup2922027Policy];
 
 /** The single place that maps a calendar year to its norm. */
 export function policyFor(year: number | string | undefined): CalendarPolicy {

@@ -42,12 +42,14 @@ test('the offer editorial version preserves the review boundary and historical m
   expect(policy.countingMinimums(state, state.offers[1]).annual?.days).toBe(200);
   expect(policy.countingMinimums(state, state.offers[2]).annual?.days).toBe(200);
   expect(policy.countingMinimums(state, state.offers[2]).semester?.days).toBe(100);
-  expect(policyFor(2026).countingMinimums(state, state.offers[2])).toEqual({
-    annual: null,
-    semester: null,
-  });
   expect(policyFor(2028).countingMinimums(state, state.offers[2])).toEqual({
     annual: null,
     semester: null,
   });
+});
+
+test('retired years resolve to the unconfigured policy', () => {
+  const policy = policyFor(2026);
+  expect(policy.configured).toBe(false);
+  expect(policy.rulesetVersion({ year: 2026, offers: [] })).toBe('unconfigured:2026');
 });

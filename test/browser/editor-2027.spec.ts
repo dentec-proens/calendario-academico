@@ -4,7 +4,7 @@ import { openActivity, selectCampusEvents, selectEditorSection } from './editor-
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
-  test(`prior reference keeps civil dates and draft while filtering at ${width}px`, async ({
+  test(`an earlier event keeps civil dates and draft while filtering at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
@@ -27,7 +27,7 @@ for (const width of [1440, 390]) {
       .toBe(1);
     await selectCampusEvents(page);
     await page.locator('#new-event').click();
-    await page.locator('#event-record-type').selectOption('prior-reference');
+    await page.locator('#event-type-campus-event').check();
     await page.locator('#event-name').fill('Edital anterior sintético');
     await page.locator('#event-start').fill('2026-12-01');
     await page.locator('#event-end').fill('2026-12-02');
@@ -50,7 +50,7 @@ for (const width of [1440, 390]) {
         ),
       )
       .toBe('2026-12-01');
-    await expect(page.locator('#event-list')).toContainText('Referência anterior');
+    await expect(page.locator('#event-list')).toContainText('Registrado');
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
       .toBe(true);
@@ -81,7 +81,6 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   });
   await selectEditorSection(page, 'events');
   await openActivity(page, 'admission-notice-0');
-  await page.locator('#event-record-type').selectOption('prior-reference');
   await page.locator('#event-publication-status').selectOption('published');
   await expect(page.locator('#event-admission-year')).toHaveValue('2027');
   await expect(page.locator('#event-admission-period')).toHaveValue('annual-2027');

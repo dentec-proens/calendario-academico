@@ -96,7 +96,7 @@ test('initial analysis identifies a measurable deficit without assuming document
     courses: 'Curso',
     state: {
       schemaVersion: 4 as const,
-      year: 2026,
+      year: 2027,
       campus: 'Foz',
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
@@ -105,8 +105,8 @@ test('initial analysis identifies a measurable deficit without assuming document
         {
           id: 'a',
           name: 'Ano',
-          start: '2026-02-04',
-          end: '2026-12-18',
+          start: '2027-02-01',
+          end: '2027-12-17',
           association: {
             status: 'defined' as const,
             offers: ['integrado'],
@@ -121,6 +121,7 @@ test('initial analysis identifies a measurable deficit without assuming document
           kind: 'integrado' as const,
           delivery: 'a-conferir' as const,
           organization: 'anual' as const,
+          scope: { status: 'covered' as const },
         },
       ],
     },
@@ -128,7 +129,7 @@ test('initial analysis identifies a measurable deficit without assuming document
   let result = reviewSupport(record, []);
   assert.equal(result.criteria.find((c) => c.id === 'annual')!.initial.status, 'PENDENTE');
   assert.equal(result.criteria.find((c) => c.id === 'window')!.initial.status, 'ATENDIDO');
-  record.state.periods[0].end = '2026-02-10';
+  record.state.periods[0].end = '2027-02-10';
   result = reviewSupport(record, []);
   assert.equal(result.criteria.find((c) => c.id === 'annual')!.initial.status, 'NAO_ATENDIDO');
   assert.equal(result.criteria.find((c) => c.id === 'annual')!.initial.reviewed, false);
@@ -143,7 +144,7 @@ test('initial analysis identifies a measurable deficit without assuming document
     processNumber: '23411.000001/2026-00',
     applicableNorm: 'Norma confirmada pelo revisor',
   });
-  assert.equal((doc.html.match(/<tr>/g) || []).length, 30);
+  assert.equal((doc.html.match(/<tr>/g) || []).length, 32);
   assert(doc.html.includes('proposta automática, não confirmada'));
   assert(doc.html.includes('23411.000001/2026-00'));
   assert(doc.html.includes('2. PARECER'));

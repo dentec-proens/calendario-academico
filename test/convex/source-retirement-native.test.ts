@@ -103,13 +103,12 @@ test('canonical records and historical restoration have no manual or generated s
         deadlineAdjustment: { date: '2027-07-20', reviewed: false },
       },
       {
-        id: 'retired-stage',
+        id: 'detached-stage',
         name: 'Etapa excedente',
         start: '2027-03-01',
         end: '2027-03-02',
         kind: 'note',
         offers: ['integrado'],
-        recordType: 'retired-stage',
       },
     ],
   };
@@ -118,9 +117,11 @@ test('canonical records and historical restoration have no manual or generated s
     body: { version: created.version, catalogueRevision: created.currentCatalogueRevision, state },
   });
   assertSourceFree(saved.state);
-  expect(saved.state.events.find((event) => event.id === 'retired-stage')?.recordType).toBe(
-    'retired-stage',
-  );
+  expect(saved.state.events.find((event) => event.id === 'detached-stage')).toMatchObject({
+    kind: 'note',
+    start: '2027-03-01',
+    end: '2027-03-02',
+  });
   const unchanged = await actor.mutation(api.calendars.saveCalendar, {
     id: created.id,
     body: {

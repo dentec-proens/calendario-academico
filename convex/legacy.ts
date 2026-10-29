@@ -10,7 +10,6 @@ import type { Doc, Id } from './_generated/dataModel';
 const phase = v.union(
   v.literal('contents'),
   v.literal('calendars'),
-  v.literal('campuses'),
   v.literal('receipts'),
   v.literal('historicalSnapshots'),
 );
@@ -37,27 +36,13 @@ const countFields = {
   historicalLegacyStageCount2Offers: v.number(),
   historicalLegacyStageCount3Offers: v.number(),
   historicalLegacyStageCount4Offers: v.number(),
-  historicalNonEventRecords: v.number(),
-  historicalPriorReferenceRecords: v.number(),
-  historicalRetiredStageRecords: v.number(),
-  historicalLegacySecondSemesterIntakeContents: v.number(),
   historicalYearThrough2026Snapshots: v.number(),
   liveLegacySemesterThreeContents: v.number(),
   liveLegacySemesterThreeOffers: v.number(),
-  legacySecondSemesterIntakeContents: v.number(),
-  legacySecondSemesterIntakeTrue: v.number(),
-  legacySecondSemesterIntakeFalse: v.number(),
-  nonEventRecords: v.number(),
-  priorReferenceRecords: v.number(),
-  retiredStageRecords: v.number(),
   legacyRequirementEvents2027: v.number(),
   calendars: v.number(),
   calendarsWithoutContent: v.number(),
   calendarsThrough2026: v.number(),
-  year8700Calendars: v.number(),
-  campuses: v.number(),
-  releaseResidueCampuses: v.number(),
-  releaseResidueCampusesWithAnyUsers: v.number(),
   migrationReceipts: v.number(),
   receiptOrphanKeys: v.number(),
   receiptOrphanContents: v.number(),
@@ -82,23 +67,10 @@ const resultValidator = v.object({
     v.object({ campusId: v.id('campuses'), calendars: v.number() }),
   ),
   legacyRequirementIds2027: v.array(v.object({ id: v.string(), events: v.number() })),
-  releaseResidueCampuses: v.array(
-    v.object({ campusId: v.id('campuses'), hasAnyUsers: v.boolean() }),
-  ),
-  // Intersect these candidates with releaseResidueCampuses by the native campus ID.
-  year8700Calendars: v.array(
-    v.object({
-      calendarId: v.id('calendars'),
-      campusId: v.id('campuses'),
-      hasContent: v.boolean(),
-      trashed: v.boolean(),
-    }),
-  ),
 });
 export type LegacyUsageArgs = Infer<typeof argsValidator>;
 export type LegacyUsagePage = Infer<typeof resultValidator>;
 
-const releaseResiduePrefix = 'Operação de publicação release-';
 const maximumPageBytes = 4 * 1024 * 1024;
 const emptyCounts = (): Counts =>
   Object.fromEntries(Object.keys(countFields).map((key) => [key, 0])) as Counts;
@@ -162,19 +134,6 @@ function contentCounts(
     countHistoricalStages(state.offers, counts);
     counts.offersWithPendingStageCycle += state.offers.filter((offer) => !offer.stages).length;
   }
-  if (state.legacySecondSemesterIntake !== undefined) {
-    counts.legacySecondSemesterIntakeContents++;
-    counts[
-      state.legacySecondSemesterIntake
-        ? 'legacySecondSemesterIntakeTrue'
-        : 'legacySecondSemesterIntakeFalse'
-    ]++;
-  }
-  for (const event of state.events) {
-    if (event.recordType !== undefined && event.recordType !== 'event') counts.nonEventRecords++;
-    if (event.recordType === 'prior-reference') counts.priorReferenceRecords++;
-    if (event.recordType === 'retired-stage') counts.retiredStageRecords++;
-  }
   // Metadata is authoritative. An orphan cannot acquire a year or a kind from its content maps.
   if (!calendar) return;
   const settings: AssessmentSettings = { ...state, year: calendar.year };
@@ -206,8 +165,6 @@ export const usage = internalQuery({
     const counts = emptyCounts();
     const calendarsByCampus = new Map<Id<'campuses'>, number>();
     const requirementIds = new Map<string, number>();
-    const releaseResidueCampuses: LegacyUsagePage['releaseResidueCampuses'] = [];
-    const year8700Calendars: LegacyUsagePage['year8700Calendars'] = [];
     // One native pagination operation per request. Cursors belong to their phase, never another table.
     let pagination: Pick<
       LegacyUsagePage,
@@ -239,14 +196,6 @@ export const usage = internalQuery({
         countHistoricalStages(state.offers, counts, true);
         // Historical metadata is self-contained; no live row or converter is consulted.
         if (state.year <= 2026) counts.historicalYearThrough2026Snapshots++;
-        if (state.legacySecondSemesterIntake !== undefined)
-          counts.historicalLegacySecondSemesterIntakeContents++;
-        for (const event of state.events) {
-          if (event.recordType !== undefined && event.recordType !== 'event')
-            counts.historicalNonEventRecords++;
-          if (event.recordType === 'prior-reference') counts.historicalPriorReferenceRecords++;
-          if (event.recordType === 'retired-stage') counts.historicalRetiredStageRecords++;
-        }
       }
     } else if (args.phase === 'calendars') {
       const { page, ...rest } = await ctx.db.query('calendars').paginate(args.paginationOpts);
@@ -267,32 +216,6 @@ export const usage = internalQuery({
             (calendarsByCampus.get(calendar.campusId) ?? 0) + 1,
           );
         }
-        if (calendar.year === 8700) {
-          counts.year8700Calendars++;
-          year8700Calendars.push({
-            calendarId: calendar._id,
-            campusId: calendar.campusId,
-            hasContent: content !== null,
-            trashed: calendar.deletedAt !== undefined,
-          });
-        }
-      }
-    } else if (args.phase === 'campuses') {
-      const { page, ...rest } = await ctx.db.query('campuses').paginate(args.paginationOpts);
-      pagination = rest;
-      scanned = page.length;
-      counts.campuses = scanned;
-      for (const campus of page) {
-        if (!campus.name.startsWith(releaseResiduePrefix)) continue;
-        const hasAnyUsers =
-          (await ctx.db
-            .query('users')
-            .withIndex('by_campusId', (q) => q.eq('campusId', campus._id))
-            .first()) !== null;
-        counts.releaseResidueCampuses++;
-        if (hasAnyUsers) counts.releaseResidueCampusesWithAnyUsers++;
-        // There is no trusted operation-account marker in this schema. Even inactive users guard it.
-        releaseResidueCampuses.push({ campusId: campus._id, hasAnyUsers });
       }
     } else {
       const { page, ...rest } = await ctx.db
@@ -321,8 +244,6 @@ export const usage = internalQuery({
         calendars,
       })),
       legacyRequirementIds2027: [...requirementIds].map(([id, events]) => ({ id, events })),
-      releaseResidueCampuses,
-      year8700Calendars,
     };
   },
 });

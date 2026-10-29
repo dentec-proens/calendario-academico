@@ -5,7 +5,7 @@ import { environments } from '../config/environments.ts';
 export function changesBackend(paths: string[]) {
   return paths.some(
     (path) =>
-      /^(convex|src|config|migration)\//.test(path) ||
+      /^(convex|src|config)\//.test(path) ||
       ['package.json', 'pnpm-lock.yaml', 'convex.json', '.npmrc', 'pnpm-workspace.yaml'].includes(
         path,
       ),

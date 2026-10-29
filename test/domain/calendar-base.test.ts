@@ -147,11 +147,11 @@ test('a relaxing ruleset version keeps base identity and reviews made under the 
 });
 
 test('legacy base identities remain stable for years without changed rules', () => {
-  for (const year of [2026, 2028]) {
+  for (const year of [2028]) {
     const before = inspect(snapshot, snapshot, { ...scope, year });
     const after = inspect(
       snapshot,
-      { ...snapshot, rulesetVersion: year === 2026 ? 'legacy-2026-v1' : 'unconfigured:2028' },
+      { ...snapshot, rulesetVersion: 'unconfigured:2028' },
       { ...scope, year },
     );
     expect(after.identity).toBe(before.identity);

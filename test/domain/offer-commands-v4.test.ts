@@ -87,12 +87,17 @@ test('reducing semester stages keeps two bindings and retires excess dates witho
   ]);
   expect(
     next.events
-      .filter((event) => event.recordType === 'retired-stage')
+      .filter((event) => event.id.startsWith('graduacao-2-stage-') && !event.requirementId)
       .map((event) => [event.id, event.start, event.end, event.requirementId]),
   ).toEqual([
     ['graduacao-2-stage-3', '2027-07-26', '2027-10-01', undefined],
     ['graduacao-2-stage-4', '2027-10-04', '2027-12-17', undefined],
   ]);
+  expect(
+    next.events
+      .filter((event) => event.id.startsWith('graduacao-2-stage-') && !event.requirementId)
+      .every((event) => event.kind === 'note'),
+  ).toBe(true);
 });
 
 test('organization edits reject a stage in the other semester even when it fits another period', () => {

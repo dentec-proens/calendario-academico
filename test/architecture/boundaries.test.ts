@@ -116,7 +116,6 @@ const relativeTargets = (file: string, text: string) =>
 
 test('year-specific behaviour lives only in the policies selected by the registry', async () => {
   // Equality, ordering, `case`, year lists and ruleset prefixes such as `consup-292-2027-`.
-  // `migration/` is excluded: it reproduces frozen legacy code for equivalence audits.
   const yearBranch =
     /(?:[!=]==?|[<>]=?)\s*['"]?20[2-9]\d\b|\b20[2-9]\d['"]?\s*(?:[!=]==?|[<>]=?)|case\s+['"]?20[2-9]\d\b|\[\s*20[2-9]\d\s*,|startsWith\(['"][a-z0-9-]*-20[2-9]\d-/;
   const selector = resolve(policies, 'registry.ts');

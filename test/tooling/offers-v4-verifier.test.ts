@@ -357,7 +357,7 @@ async function verify(
   change?.(final);
   return verifySnapshots(initial, final, frozen, currentRuntime, options(frozen));
 }
-for (const index of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]) {
+for (const index of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 17]) {
   test(`compares independently archived v3 with v4: ${oracle.cases[index]!.name}`, async () => {
     const initial = before(index);
     const frozen = freeze(initial);
@@ -366,6 +366,19 @@ for (const index of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 1
     expect(report.result).toBe('verified');
     expect(report.counts.countingComputed + report.counts.countingPendingWithProof).toBe(1);
     expect(report.sourceCommit).toBe(sourceCommit);
+  });
+}
+// M9 retired the 2026 policy only after its live-use count reached zero. Keep its
+// immutable source cases as rejection proofs: runtime C cannot certify an old 2026 backup.
+for (const index of [15, 16]) {
+  test(`rejects equivalence after policy retirement: ${oracle.cases[index]!.name}`, async () => {
+    const initial = before(index);
+    const frozen = freeze(initial);
+    expect(initial.tables.calendars![0]!.year).toBe(2026);
+    expect(frozen.projection.calendars.calendar!.normalizedSource!.year).toBe(2026);
+    await expect(
+      verifySnapshots(initial, after(initial, frozen), frozen, currentRuntime, options(frozen)),
+    ).rejects.toThrow(/dominio-requirements/);
   });
 }
 test('freezes the actual ZIP against the immutable source and oracle', async () => {
@@ -990,27 +1003,23 @@ test('the original format without real readiness is rejected even when its diges
   ).rejects.toThrow(/origem-nao-independente/);
 });
 
-test('a current pattern-based legacy review records both removed evidence signals and lost confirmations', async () => {
+test('a historical 2026 pattern-based review proves removed evidence signals and lost confirmations independently of the retired runtime policy', () => {
   const initial = before(15);
   (initial.tables.calendarContents![0]!.state as ObjectValue).events = [];
-  addReview(initial, true);
+  const review = addReview(initial, true);
   const frozen = freeze(initial);
-  const proof = frozen.projection.calendars.calendar!.reviewPurge!;
+  const projection = frozen.projection.calendars.calendar!;
+  const proof = projection.reviewPurge!;
   expect(proof.policy.evidence).toBe('pattern');
   expect(proof.before.humanReview.current).toBe(true);
   expect(proof.delta.issues.removed.length).toBeGreaterThan(0);
   expect(proof.delta.issues.added.length).toBeGreaterThan(0);
-  expect(
-    (
-      await verifySnapshots(
-        initial,
-        after(initial, frozen),
-        frozen,
-        currentRuntime,
-        options(frozen),
-      )
-    ).result,
-  ).toBe('verified');
+  // The frozen v3 policy and original review prove the historical purge delta;
+  // runtime C no longer supports this policy and must not be used to claim equivalence.
+  const report = verifyReviewPurgeEvidence(initial, projection);
+  expect(proof.reviews).toEqual([review]);
+  expect(report.reviews).toBe(1);
+  expect(report.delta).toEqual(proof.delta);
 });
 
 function retainUnclassifiedQuantity(snapshot: Snapshot, count: number | undefined = 3) {

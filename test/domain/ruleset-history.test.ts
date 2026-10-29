@@ -21,10 +21,9 @@ import {
 /**
  * Catalogue fingerprint of each policy version. When this test fails on a bound policy, append a
  * version to its `rulesetChanges`, classify its effect and record the new version's fingerprint
- * here; never edit the fingerprint of a released version. Policies without `rulesetChanges`
- * (2026 and years without a norm) have one fixed version: record their new fingerprint in place
- * after confirming the change. Changing `hidden` or `referenceSettings` recomputes every
- * fingerprint, so do it alone, with the rules unchanged.
+ * here; never edit the fingerprint of a released version. Retired policies retain their published
+ * fingerprints only in the archive checks. Changing `hidden` or `referenceSettings` recomputes
+ * every runtime fingerprint, so do it alone, with the rules unchanged.
  */
 const catalogueFingerprints: Record<string, string> = {
   'legacy-2026-v1': 'b0e948ba297029f2f001473bd645baab6ed4f4a44c793835c9b3d0d6286a32df',
@@ -119,7 +118,7 @@ const canonical = (value: unknown): unknown =>
 const fingerprint = (value: unknown) =>
   bytesToHex(sha256(new TextEncoder().encode(JSON.stringify(canonical(value)))));
 
-const years = [2026, 2027, 2028];
+const years = [2027, 2028];
 const boundPolicies = years.map(policyFor).filter((policy) => policy.rulesetPrefix);
 const versionOf = (policy: CalendarPolicy, year: number) =>
   policy.rulesetVersion({
@@ -254,7 +253,7 @@ test('only establishing or tightening versions bind reviews and base identities'
   ]);
   expect(equivalentRulesets(undefined, 'consup-292-2027-v2')).toBe(false);
   expect(equivalentRulesets('consup-292-2027-v0', 'consup-292-2027-v2')).toBe(false);
-  expect(equivalentRulesets('legacy-2026-v1', 'consup-292-2027-v1')).toBe(false);
+  expect(equivalentRulesets('unconfigured:2028', 'consup-292-2027-v1')).toBe(false);
   expect(
     rulesetChangesBetween('consup-292-2027-v1', 'consup-292-2027-v2').map((c) => c.version),
   ).toEqual(['consup-292-2027-v2']);
