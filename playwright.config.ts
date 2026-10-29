@@ -12,6 +12,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: true,
   retries: 0,
+  // Measured: more workers exhaust memory (Chromium plus a Vite server per fixture each) and
+  // make the suite slower and timing-flaky; see docs/verificacao.md.
   workers: Math.min(4, availableParallelism()),
   reporter: [['list'], ['html', { open: 'never' }]],
   outputDir: process.env.DENTEC_TEST_OUTPUT_DIR ?? 'test-results',

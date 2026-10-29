@@ -52,7 +52,7 @@ O E2E com Convex continua separado e exige o opt-in descrito abaixo. Execute-o q
 
 ## Desempenho e diagnóstico
 
-Os testes sintéticos usam até quatro workers, limitados ao paralelismo disponível da máquina, e distribuem os casos independentes dentro dos arquivos. Para comparar ou limitar o consumo, use `pnpm test:browser --workers=2` ou `--workers=1`. O E2E com Convex mantém um worker e execução sequencial, pois utiliza registros compartilhados da própria suíte.
+Os testes sintéticos usam até quatro workers, limitados ao paralelismo disponível da máquina, e distribuem os casos independentes dentro dos arquivos. O limite é medido: cada worker abre seu Chromium e um servidor Vite por fixture, e neste Mac a suíte levou 184 s com 4 workers, 438 s com 6 e 2270 s com 8, com falhas por timeout acima de 4 causadas por falta de memória. Para comparar ou limitar o consumo, use `pnpm test:browser --workers=2` ou `--workers=1`. O E2E com Convex mantém um worker e execução sequencial, pois utiliza registros compartilhados da própria suíte.
 
 Cada worker reutiliza um servidor Vite por tipo de fixture. Os testes continuam recebendo contextos de navegador novos: memória dos módulos da aplicação, cookies e armazenamento do navegador ficam isolados. As variantes de perfil e os testes de indisponibilidade de backend têm servidores separados; os caches Vite são separados por worker.
 
