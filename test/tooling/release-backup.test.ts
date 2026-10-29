@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { backupProduction } from '../../scripts/release-backup';
@@ -30,6 +30,7 @@ test('production backup is private, outside the repository, and retains a digest
       includesFileStorage: boolean;
     };
     expect(receipt.sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(statSync(join(path, 'before.zip')).mode & 0o777).toBe(0o600);
     expect(receipt.includesFileStorage).toBe(true);
     await expect(
       backupProduction(

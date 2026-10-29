@@ -227,6 +227,7 @@ try {
     if (metadata().functions.some((fn) => fn.identifier === 'migrations.js:start')) {
       call('migrations:start');
       const migrated = await waitForMigrations(() => JSON.parse(call('migrations:status')));
+      if (!migrated.length) console.log('Nenhuma migração pendente.');
       for (const { name, processed } of migrated)
         console.log(`Migração ${name} concluída: ${processed} documentos.`);
     }

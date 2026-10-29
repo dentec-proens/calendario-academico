@@ -21,7 +21,7 @@ Vite gera `dist/app/index.html` e chunks. Vite, preview e Vercel encaminham some
 
 Pré-requisitos:
 
-- Checkout na branch `main`, `origin` correto e permissão de push fast-forward e de reservar `codex/production-release-lock`. A árvore de trabalho pode conter alterações locais; elas não entram na release.
+- Checkout na branch `main` (integre antes a branch de trabalho, por exemplo com `git merge --ff-only`), `origin` correto e permissão de push fast-forward e de reservar `codex/production-release-lock`. A árvore de trabalho pode conter alterações locais; elas não entram na release.
 - Conta administrativa Convex; nenhum seletor alternativo de deployment. `operations:status` deve estar disponível e sem manutenção.
 - `VERCEL_TOKEN` no ambiente, com acesso ao projeto e permissão de criar/promover deployments e configurar atribuição de domínios. Segredos nunca entram em argumentos, logs ou Git.
 - Quando o backend mudou desde o deployment servido no domínio, `DENTEC_RELEASE_BACKUP_DIR` deve apontar a uma pasta privada existente, absoluta e fora do repositório. O comando recusa a release antes de reservar ou construir se ela faltar. O backup contém dados e credenciais: usar uma pasta com acesso restrito ao usuário.
@@ -152,7 +152,7 @@ A herança ocorre durante o build remoto de toda release. As verificações de c
 
 Não promover diretamente um deployment antigo que não contenha o histórico acumulado: isso voltaria a remover arquivos usados por abas mais recentes. Uma recuperação de frontend deve produzir um candidato compatível que herde o inventário do domínio atual antes de ser validado e promovido. Remover arquivos antigos, inclusive em uma resposta a incidente, exige uma operação explícita e avaliação das abas afetadas.
 
-A adoção foi ensaiada por leitura pública contra o portal atual, sem criar ou promover deployments. A validação local cobre A → B → C, integridade, indisponibilidade e navegação real após a troca de diretório servido em desktop/mobile: a revisão abre com 200, o evento ainda não aplicado permanece, os proprietários do editor/formulários conservam identidade e uma aba nova recebe B. A primeira publicação preservará os arquivos ainda disponíveis no momento do build; não recupera arquivos que publicações anteriores já removeram. Depois de uma publicação autorizada, conferir os endereços antigos de JS/CSS no domínio canônico. Essa prova remota permanece pendente até a publicação da correção.
+A adoção foi ensaiada por leitura pública contra o portal atual, sem criar ou promover deployments. A validação local cobre A → B → C, integridade, indisponibilidade e navegação real após a troca de diretório servido em desktop/mobile: a revisão abre com 200, o evento ainda não aplicado permanece, os proprietários do editor/formulários conservam identidade e uma aba nova recebe B. A primeira publicação preservará os arquivos ainda disponíveis no momento do build; não recupera arquivos que publicações anteriores já removeram. A prova remota foi feita na release de 28/10/2026 (`7d025ee`): os 246 arquivos de `/asset-history.json`, inclusive os da versão anterior, responderam 200 no domínio canônico após a promoção.
 
 ## Correções de autenticação de outubro de 2026
 

@@ -22,8 +22,16 @@ export async function backupProduction(
     throw Error(
       'Configure DENTEC_RELEASE_BACKUP_DIR fora do repositório: o backend mudou e será exportado antes do deploy.',
     );
-  const { realpathSync, statSync, openSync, readSync, closeSync, createReadStream, writeFileSync } =
-    await import('node:fs');
+  const {
+    chmodSync,
+    realpathSync,
+    statSync,
+    openSync,
+    readSync,
+    closeSync,
+    createReadStream,
+    writeFileSync,
+  } = await import('node:fs');
   const { relative, isAbsolute, sep } = await import('node:path');
   if (!isAbsolute(directory)) throw Error('O diretório privado de backup deve ser absoluto.');
   const parent = realpathSync(directory),
@@ -37,6 +45,8 @@ export async function backupProduction(
   const privateDirectory = mkdtempSync(join(parent, `release-${commit.slice(0, 8)}-`));
   const path = join(privateDirectory, 'before.zip');
   run(path);
+  // The Convex CLI writes the export with the default umask; it holds data and credentials.
+  chmodSync(path, 0o600);
   if (statSync(path).size < 22) throw Error('O export não produziu um backup válido.');
   const descriptor = openSync(path, 'r');
   try {
