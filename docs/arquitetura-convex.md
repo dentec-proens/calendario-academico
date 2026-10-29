@@ -18,7 +18,7 @@ A aplicação é uma SPA React e Vite com uma entrada HTML e TanStack Router. Co
 | `src/domain/calendar/counting/`                     | Contagem civil de dias e recálculo de duração                                     |
 | `src/domain/calendar/organization/`                 | Associação de períodos e organização por oferta                                   |
 | `src/domain/reviews/`                               | Critérios, suporte técnico e conclusões da revisão humana                         |
-| `src/domain/institution/`                           | Catálogo, documentos e regras institucionais                                      |
+| `src/domain/institution/`                           | Catálogo, Dia do Professor e seleção de campus                                    |
 | `src/printing/`                                     | Modelo puro de impressão e distribuição de dias                                   |
 | `src/runtime/`                                      | Runtime Node: geração de PDF com Chromium e servidor estático de preview          |
 | `src/app/`                                          | Contratos puros do portal: rotas, retorno de login e rótulos de auditoria         |

@@ -9,15 +9,11 @@ import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { filePayload } from '../../upload.ts';
 import { Notice } from '../../components/ui/Notice.tsx';
+import { documentTypeLabels } from './document-types.ts';
 
 type Document = DocumentsData['documents'][number];
 const DocumentReader = lazy(() => import('./DocumentReader.tsx'));
 const documentStatuses = { rascunho: 'Rascunho', vigente: 'Vigente', arquivado: 'Arquivado' };
-export const documentTypes = {
-  norma: 'Resolução / norma',
-  referencia: 'Calendário de referência',
-  parecer: 'Modelo de parecer / checklist',
-};
 
 function RestoreDocumentForm({
   document,
@@ -181,7 +177,7 @@ export default function DocumentRecord({
           </span>
         </div>
         <p className="document-record__meta">
-          {document.year} · {documentTypes[document.type]} · Versão {document.version}
+          {document.year} · {documentTypeLabels[document.type]} · Versão {document.version}
         </p>
         <p className="document-record__meta">{document.source}</p>
         <div className="document-record__actions">

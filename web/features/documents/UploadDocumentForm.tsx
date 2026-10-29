@@ -5,6 +5,7 @@ import { institution } from '../../shared/convex/institution.ts';
 import { filePayload } from '../../upload.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
+import { documentTypeLabels, documentTypes, type DocumentType } from './document-types.ts';
 
 export default function UploadDocumentForm({
   onUploaded,
@@ -16,7 +17,7 @@ export default function UploadDocumentForm({
   const fileInput = useRef<HTMLInputElement>(null);
   const defaults: {
     year: string;
-    type: 'norma' | 'referencia' | 'parecer';
+    type: DocumentType;
     title: string;
     source: string;
     file: File | null;
@@ -77,9 +78,11 @@ export default function UploadDocumentForm({
               form.setFieldValue('type', event.target.value as typeof values.type)
             }
           >
-            <option value="norma">Resolução / norma</option>
-            <option value="referencia">Calendário de referência PROENS</option>
-            <option value="parecer">Modelo de parecer / checklist</option>
+            {documentTypes.map((type) => (
+              <option key={type} value={type}>
+                {documentTypeLabels[type]}
+              </option>
+            ))}
           </select>
         </label>
       </div>
