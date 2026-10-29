@@ -1,29 +1,30 @@
 import type { ActivityState } from './model.ts';
 import { activityCoverage } from './activities/coverage.ts';
-import { calendarModalities } from './modalities.ts';
-import { organizationForModality, periodsForModality } from './organization/periods.ts';
+import { calendarOffers, offerFor } from './offers.ts';
+import { periodsForModality } from './organization/periods.ts';
 import { periodCountByOrganization } from './config.ts';
 import type { evaluateCalendar } from './counting/evaluation.ts';
 
 export type CalendarDiagnostic =
   | { code: 'week-unconfirmed' | 'periods-missing' }
-  | { code: 'organization-unclassified'; modality: string }
-  | { code: 'period-count'; modality: string; expected: number; actual: number };
+  | { code: 'organization-unclassified'; modality: string; offerId?: string }
+  | { code: 'period-count'; modality: string; offerId?: string; expected: number; actual: number };
 
 /** Examines an explicit snapshot. It never claims that local work has been saved or approved. */
 export function diagnoseCalendar(state: ActivityState, events = state.events) {
   const structure: CalendarDiagnostic[] = [];
   if (!state.weekConfirmed) structure.push({ code: 'week-unconfirmed' });
   if (!state.periods.length) structure.push({ code: 'periods-missing' });
-  for (const modality of calendarModalities(state)) {
-    const organization = organizationForModality(state, modality);
+  for (const offer of calendarOffers(state)) {
+    const organization = offer.organization;
+    const scope = { modality: offer.id, ...(state.offers ? { offerId: offer.id } : {}) };
     if (organization === 'a-classificar') {
-      structure.push({ code: 'organization-unclassified', modality });
+      structure.push({ code: 'organization-unclassified', ...scope });
       continue;
     }
     const expected = periodCountByOrganization[organization];
-    const actual = periodsForModality(state, modality).length;
-    if (actual !== expected) structure.push({ code: 'period-count', modality, expected, actual });
+    const actual = periodsForModality(state, offer.id).length;
+    if (actual !== expected) structure.push({ code: 'period-count', ...scope, expected, actual });
   }
   return { structure, coverage: activityCoverage(state, events) };
 }
@@ -33,11 +34,15 @@ export function diagnoseTeachingDays(
   state: ActivityState,
   result: ReturnType<typeof evaluateCalendar>,
 ) {
-  return Object.entries(result.byModality).flatMap(([modality, detail]) =>
+  return Object.entries(result.byOffer).flatMap(([offerId, detail]) =>
     detail.checks
       .filter(
-        (check) => check.scope === 'annual' || organizationForModality(state, modality) !== 'anual',
+        (check) => check.scope === 'annual' || offerFor(state, offerId)?.organization !== 'anual',
       )
-      .map((check) => ({ ...check, modality })),
+      .map((check) => ({
+        ...check,
+        modality: offerId,
+        ...(state.offers ? { offerId } : {}),
+      })),
   );
 }

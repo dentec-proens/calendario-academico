@@ -1,4 +1,4 @@
-import type { ActivityState, CalendarActivity } from './model.ts';
+import type { ActivityState, CalendarActivity, CalendarContentV4 } from './model.ts';
 import { equalValues } from '../../shared/equal.ts';
 import { inheritedEvents } from '../institution/catalogue.ts';
 import { recalculateCalendar } from './commands/recalculate.ts';
@@ -6,6 +6,55 @@ import { normalizeCalendar } from './normalization/normalize.ts';
 import { calendarContent } from './normalization/content.ts';
 import { invalidCalendar } from './normalization/input.ts';
 import { validateAddedOffers } from './organization/offers.ts';
+import { normalizeOfferCalendar, offerCalendarContent } from './normalization/normalize-v4.ts';
+import { kinds } from './offers.ts';
+
+type OfferState = CalendarContentV4 & { year: number; campus?: string };
+
+/** V4 save boundary; the backend retains concurrency, authorization and final confirmation. */
+export function prepareOfferCalendarSave<E extends CalendarActivity & { active: boolean }>(
+  previous: OfferState,
+  proposed: OfferState,
+  context: { storedContent: unknown; catalogue: { events: E[] }; recalculate: boolean },
+) {
+  if (proposed.year !== previous.year) invalidCalendar('O ano não pode mudar neste registro.');
+  for (const old of previous.offers) {
+    const next = proposed.offers.find((offer) => offer.id === old.id);
+    if (!next)
+      return invalidCalendar('Ofertas existentes não podem ser removidas por esta operação.');
+    if (next.kind !== old.kind) invalidCalendar('O tipo de uma oferta existente não pode mudar.');
+  }
+  const previousIds = previous.offers.map((offer) => offer.id);
+  const added = proposed.offers.some((offer) => !previousIds.includes(offer.id));
+  let state = normalizeOfferCalendar({
+    ...proposed,
+    campus: previous.campus ?? '',
+    events: added
+      ? proposed.events.map((event) =>
+          !event.offers?.length &&
+          previous.events.some((old) => old.id === event.id && !old.offers?.length)
+            ? { ...event, offers: previousIds }
+            : event,
+        )
+      : proposed.events,
+  });
+  validateAddedOffers(previousIds, state);
+  if (context.recalculate || !equalValues(context.storedContent, offerCalendarContent(state)))
+    state = normalizeOfferCalendar(
+      recalculateCalendar(
+        state,
+        inheritedEvents(context.catalogue, previous.year, state.offers, state),
+      ),
+    );
+  const content = offerCalendarContent(state);
+  return {
+    state,
+    content,
+    offerKinds: kinds(state),
+    institutionalSnapshot: inheritedEvents(context.catalogue, previous.year, state.offers, state),
+    unchanged: equalValues(context.storedContent, content),
+  };
+}
 
 /**
  * Prepares one candidate from explicit snapshots, without authorizing or persisting it.

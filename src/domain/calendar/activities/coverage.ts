@@ -1,5 +1,6 @@
 import type { AssessmentSettings, CalendarActivity, CalendarPeriod } from '../model.ts';
-import { calendarModalities, appliesTo } from '../modalities.ts';
+import { appliesTo } from '../modalities.ts';
+import { calendarOffers } from '../offers.ts';
 import { policyFor } from '../../policies/registry.ts';
 import { temporalPosition, validateActivityRecord } from './validation.ts';
 import { periodsForModality } from '../organization/periods.ts';
@@ -17,9 +18,14 @@ export function activityCoverage(
 ) {
   const policy = policyFor(state.year);
   return policy.requirements(state).flatMap((requirement) =>
-    calendarModalities(state)
-      .filter((m) => !requirement.modality || requirement.modality === m)
-      .map((modality) => {
+    calendarOffers(state)
+      .filter(
+        (offer) =>
+          !(requirement.offerId ?? requirement.modality) ||
+          (requirement.offerId ?? requirement.modality) === offer.id,
+      )
+      .map((offer) => {
+        const modality = offer.id;
         const applicability = policy.applicability(state, requirement, modality);
         const linked = events.filter(
           (event) => event.requirementId === requirement.id && appliesTo(event, modality),
@@ -27,7 +33,10 @@ export function activityCoverage(
         const issues: string[] = [],
           warnings: string[] = [];
         const valid = linked.filter((event) => {
-          if (policy.explicitRecordOffers && !event.modalities?.includes(modality)) {
+          if (
+            policy.explicitRecordOffers &&
+            !(state.offers ? event.offers : event.modalities)?.includes(modality)
+          ) {
             issues.push('Confirme explicitamente as ofertas abrangidas pelo registro legado.');
             return false;
           }
@@ -133,6 +142,7 @@ export function activityCoverage(
         return {
           requirement,
           modality,
+          ...(state.offers ? { offerId: offer.id, offer } : {}),
           applicability,
           humanReview: !requirement.reviewCriterionId
             ? ('unmapped' as const)

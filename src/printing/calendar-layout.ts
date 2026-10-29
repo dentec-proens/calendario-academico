@@ -5,6 +5,7 @@ import { calendarModalities, modalityLabels } from '../domain/calendar/modalitie
 import { categories, eventCategory } from '../domain/calendar/activities/categories.ts';
 import { policyFor } from '../domain/policies/registry.ts';
 import { periodsForModality } from '../domain/calendar/organization/periods.ts';
+import { associationOffers } from '../domain/calendar/offers.ts';
 
 const esc = (s: unknown) =>
   String(s).replace(
@@ -198,7 +199,9 @@ export function proensLayout(
   const countRows = state.periods
     .map((p) => {
       const scope =
-        p.association?.status === 'defined' ? p.association.modalities : calendarModalities(state);
+        p.association?.status === 'defined'
+          ? associationOffers(p.association)
+          : calendarModalities(state);
       const unclassified = p.association?.status === 'a-classificar';
       const counts = unclassified
         ? 'Organização a conferir'

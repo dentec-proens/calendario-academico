@@ -1,8 +1,10 @@
 import type { AssessmentSettings, Organization, CalendarPeriod, AcademicTerm } from '../model.ts';
+import { associationOffers, isStructured, offerFor } from '../offers.ts';
 export function organizationForModality(state: AssessmentSettings, modality: string): Organization {
+  if (state.offers) return offerFor(state, modality)?.organization ?? 'a-classificar';
   if (state.organizationByModality)
     return state.organizationByModality[modality] ?? 'a-classificar';
-  if (state.schemaVersion === 3) return 'a-classificar';
+  if (isStructured(state)) return 'a-classificar';
   return state.regime === 'anual' || state.regime === 'semestral' ? state.regime : 'a-classificar';
 }
 export function organizationSummary(
@@ -18,10 +20,8 @@ export function periodsForModality<T extends CalendarPeriod>(
   state: AssessmentSettings & { periods: T[] },
   modality: string,
 ): T[] {
-  if (!state.organizationByModality && state.schemaVersion !== 3) return state.periods;
-  return state.periods.filter(
-    (p) => p.association?.status === 'defined' && p.association.modalities.includes(modality),
-  );
+  if (!state.offers && !state.organizationByModality && !isStructured(state)) return state.periods;
+  return state.periods.filter((p) => associationOffers(p.association).includes(modality));
 }
 export function periodForTerm(
   state: AssessmentSettings & { periods: CalendarPeriod[] },
@@ -36,10 +36,13 @@ export function samePeriodScope(a: CalendarPeriod, b: CalendarPeriod) {
   if (a.association?.status === 'a-classificar' || b.association?.status === 'a-classificar')
     return false;
   if (!a.association || !b.association) return true;
-  return a.association.modalities.some(
-    (m) => b.association?.status === 'defined' && b.association.modalities.includes(m),
+  return associationOffers(a.association).some((id) =>
+    associationOffers(b.association).includes(id),
   );
 }
+
+export const organizationForOffer = organizationForModality;
+export const periodsForOffer = periodsForModality;
 export const termsFor = (state: AssessmentSettings, modality: string): AcademicTerm[] => {
   const organization = organizationForModality(state, modality);
   return organization === 'anual'

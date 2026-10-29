@@ -8,8 +8,10 @@ import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import { inspect } from '../../src/domain/calendar/base.ts';
 import { convertCalendarV2 } from '../../src/domain/calendar/normalization/conversion.ts';
+import { convertCalendarV3 } from '../../src/domain/calendar/normalization/conversion-v4.ts';
 import { inheritedEvents, type CatalogueEvent } from '../../src/domain/institution/catalogue.ts';
 import { policyFor } from '../../src/domain/policies/registry.ts';
+import { calendarOffers, offerIds, offerLabel } from '../../src/domain/calendar/offers.ts';
 
 /**
  * Static v3 oracle captured before the M2/M3 implementation, from commit 34e35b9.
@@ -24,7 +26,12 @@ function semanticProjection(
 ) {
   const policy = policyFor(state.year);
   const requirements = activityChecklist(state);
-  const institutional = inheritedEvents(catalogue, state.year, state.modalities ?? [], state);
+  const institutional = inheritedEvents(
+    catalogue,
+    state.year,
+    state.offers ?? state.modalities ?? [],
+    state,
+  );
   const events = [...institutional, ...state.events];
   const diagnostic = diagnoseCalendar(state, events);
   const baseSnapshot = {
@@ -39,11 +46,17 @@ function semanticProjection(
       .sort((a, b) => b.name.length - a.name.length)
       .reduce((text, row) => text.replaceAll(row.name, `[${row.id}]`), message);
   const normativeFields = (requirement: ActivityRequirement) => {
-    const { name: _editorial, ...fields } = requirement;
+    const { name: _editorial, offerId, offerIds: _cycleIdentities, term, ...fields } = requirement;
+    // A v4 stage has an explicit cycle and offer identity. The old stage already
+    // encoded its identity in modality and its annual ordinal in the stable ID.
+    // Applicability below still checks every offer, including cycle restrictions.
+    const isStageRow = Boolean(offerId ?? requirement.modality);
     return {
       ...fields,
+      ...(offerId ? { modality: offerId } : {}),
+      ...(!isStageRow && term !== undefined ? { term } : {}),
       applicabilityByOffer: Object.fromEntries(
-        (state.modalities ?? []).map((modality) => [
+        offerIds(state).map((modality) => [
           modality,
           policy.applicability(state, requirement, modality),
         ]),
@@ -55,7 +68,7 @@ function semanticProjection(
   try {
     const result = evaluateCalendar(state, events);
     counting = Object.fromEntries(
-      Object.entries(result.byModality).map(([modality, detail]) => {
+      Object.entries(result.byOffer).map(([modality, detail]) => {
         const { ledger, ...summary } = detail;
         return [
           modality,
@@ -66,7 +79,9 @@ function semanticProjection(
         ];
       }),
     );
-    teachingDiagnostics = diagnoseTeachingDays(state, result);
+    teachingDiagnostics = diagnoseTeachingDays(state, result).map(
+      ({ offerId: _id, ...row }) => row,
+    );
   } catch (error) {
     counting = { error: error instanceof Error ? error.message : String(error) };
     teachingDiagnostics = null;
@@ -92,20 +107,21 @@ function semanticProjection(
       })),
       requirements: requirements.map(normativeFields),
       minimums: Object.fromEntries(
-        (state.modalities ?? []).map((modality) => [
-          modality,
-          policy.countingMinimums(state, modality),
-        ]),
+        offerIds(state).map((modality) => [modality, policy.countingMinimums(state, modality)]),
       ),
       counting,
       diagnostics: {
-        structure: diagnostic.structure,
+        structure: diagnostic.structure.map((row) =>
+          'offerId' in row ? (({ offerId: _id, ...rest }) => rest)(row) : row,
+        ),
         teaching: teachingDiagnostics,
-        coverage: diagnostic.coverage.map(({ requirement, events: linked, ...row }) => ({
-          ...row,
-          requirementId: requirement.id,
-          eventIds: linked.map((event) => event.id),
-        })),
+        coverage: diagnostic.coverage.map(
+          ({ requirement, events: linked, offerId: _id, offer: _offer, ...row }) => ({
+            ...row,
+            requirementId: requirement.id,
+            eventIds: linked.map((event) => event.id),
+          }),
+        ),
       },
       baseIdentity: base.identity,
       window: policy.window(state),
@@ -118,6 +134,32 @@ function semanticProjection(
   ) as unknown;
 }
 
+/**
+ * The capture used the first matching activity name as its token. Distinct v3
+ * offers could share that name; v4 names now distinguish their cycles. Resolve
+ * only this lexical ambiguity from the readiness message's own offer prefix,
+ * on both sides. Requirements and applicability remain compared in full.
+ */
+function readinessTokens(projection: unknown, state: ActivityState) {
+  const value = structuredClone(projection) as {
+    readiness: { issues: string[]; warnings: string[] };
+  };
+  const canonical = (message: string) => {
+    const offer = calendarOffers(state).find((item) =>
+      message.startsWith(`${offerLabel(item)} — `),
+    );
+    return offer
+      ? message.replace(
+          /\[((?:stage|results|council|pedagogical-meeting)-[1-4]):[a-z][a-z0-9-]*\]/g,
+          `[$1:${offer.id}]`,
+        )
+      : message;
+  };
+  value.readiness.issues = value.readiness.issues.map(canonical).sort();
+  value.readiness.warnings = value.readiness.warnings.map(canonical).sort();
+  return value;
+}
+
 // Oracle test: no update mode. Changes to the expected JSON require the pre-v4 source.
 const oracle = JSON.parse(
   readFileSync(new URL('../fixtures/offers-v3-oracle.json', import.meta.url), 'utf8'),
@@ -127,9 +169,27 @@ const oracle = JSON.parse(
   cases: { name: string; input: ActivityState; expected: unknown }[];
 };
 
-test.each(oracle.cases)('preserves the captured v3 semantics: $name', ({ input, expected }) => {
+test.each(oracle.cases)('preserves the captured v3 boundary: $name', ({ input, expected }) => {
   const before = structuredClone(input);
   const state = convertCalendarV2(input);
-  expect(semanticProjection(state, oracle.catalogue)).toEqual(expected);
+  expect(readinessTokens(semanticProjection(state, oracle.catalogue), state)).toEqual(
+    readinessTokens(expected, state),
+  );
   expect(input).toEqual(before);
 });
+
+test.each(oracle.cases)(
+  'preserves the captured semantics after v4 migration: $name',
+  ({ input, expected }) => {
+    const before = structuredClone(input);
+    const state = {
+      ...convertCalendarV3(input, { year: input.year, modalities: input.modalities ?? [] }),
+      year: input.year,
+      campus: input.campus,
+    };
+    expect(readinessTokens(semanticProjection(state, oracle.catalogue), state)).toEqual(
+      readinessTokens(expected, state),
+    );
+    expect(input).toEqual(before);
+  },
+);

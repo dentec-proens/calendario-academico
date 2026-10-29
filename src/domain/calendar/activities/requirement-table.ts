@@ -1,6 +1,12 @@
 import { assessmentStageCounts } from '../config.ts';
-import type { AcademicTerm, ActivityRequirement, AssessmentSettings } from '../model.ts';
+import type {
+  AcademicTerm,
+  ActivityRequirement,
+  AssessmentSettings,
+  CalendarOffer,
+} from '../model.ts';
 import { calendarModalities } from '../modalities.ts';
+import { calendarOffers, stageCount, stageInTerm, stageTerm } from '../offers.ts';
 import type { ActivityGroup, ActivityVariant } from './metadata.ts';
 
 /** Position of one generated row: an offer's assessment stage, an academic cycle or a semester. */
@@ -10,6 +16,9 @@ export interface Slot {
   n: number;
   /** Stage rows: the offer and its stage count. */
   modality?: string;
+  offer?: CalendarOffer;
+  /** Displayed stage number, restarted within each organization cycle. */
+  number?: number;
   stages?: number;
   /** Cycle and semester rows. */
   term?: AcademicTerm;
@@ -74,11 +83,37 @@ const semesterTerms = { 1: 'first', 2: 'second' } as const;
 function slotsOf(section: RequirementSection, state: AssessmentSettings): [Slot, string][] {
   switch (section.repeat) {
     case 'stage':
+      if (state.offers)
+        return calendarOffers(state).flatMap((offer) =>
+          Array.from({ length: stageCount(offer) }, (_, index): [Slot, string] => {
+            const n = index + 1;
+            return [
+              {
+                state,
+                n,
+                number:
+                  offer.organization === 'semestral'
+                    ? stageInTerm(n, offer.stages!.perTerm).number
+                    : n,
+                offer,
+                stages: stageCount(offer),
+                term: stageTerm(offer, n),
+              },
+              `-${n}:${offer.id}`,
+            ];
+          }),
+        );
       return calendarModalities(state).flatMap((modality) => {
         const stages = Number(state.assessmentStagesByModality?.[modality]);
         if (!assessmentStageCounts.includes(stages)) return [];
         return Array.from({ length: stages }, (_, index): [Slot, string] => [
-          { state, n: index + 1, modality, stages },
+          {
+            state,
+            n: index + 1,
+            modality,
+            offer: calendarOffers(state).find((offer) => offer.id === modality),
+            stages,
+          },
           `-${index + 1}:${modality}`,
         ]);
       });
@@ -114,6 +149,11 @@ export function expandRequirements(
           if (resolved !== undefined) row[key] = resolved;
         }
         if (slot.modality) row.modality = slot.modality;
+        if (state.offers && slot.offer) {
+          row.offerId = slot.offer.id;
+          row.term = slot.term;
+        }
+        if (state.offers && slot.offers) row.offerIds = slot.offers;
         Object.assign(row, {
           reviewCriterionId: criterion,
           group,

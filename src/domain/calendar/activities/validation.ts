@@ -7,6 +7,7 @@ import type {
 } from '../model.ts';
 import { parseDate } from '../counting/core.ts';
 import { calendarModalities } from '../modalities.ts';
+import { offerFor, offerIds } from '../offers.ts';
 import { isStageRequirementId } from './metadata.ts';
 import { assessmentIntervalIssue } from './assessment-intervals.ts';
 import { policyFor } from '../../policies/registry.ts';
@@ -116,15 +117,26 @@ export function validateActivityRecord(
   }
   if (isStageRequirementId(event.requirementId) && state.periods) {
     const modality = event.requirementId!.split(':')[1];
-    const issue = assessmentIntervalIssue(
-      periodsForModality({ ...state, periods: state.periods }, modality),
-      event.start,
-      event.end,
-    );
+    const offer = state.offers ? offerFor(state, modality) : undefined;
+    if (state.offers && !offer)
+      throw new DomainError('A oferta da etapa de avaliação não pertence ao calendário.');
+    const issue =
+      offer?.organization === 'a-classificar'
+        ? ''
+        : assessmentIntervalIssue(
+            periodsForModality({ ...state, periods: state.periods }, modality),
+            event.start,
+            event.end,
+          );
     if (issue) throw new DomainError(issue);
   }
   if (event.kind === 'include' && state.periods) {
-    const scope = event.modalities?.length ? event.modalities : calendarModalities(state);
+    const declared = event.offers ?? event.modalities;
+    const scope = declared?.length
+      ? declared
+      : state.offers
+        ? offerIds(state)
+        : calendarModalities(state);
     for (let time = parseDate(event.start); time <= parseDate(event.end); time += 86400000) {
       const date = new Date(time).toISOString().slice(0, 10);
       if (

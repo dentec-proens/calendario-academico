@@ -1,14 +1,15 @@
 import { calendarLimits } from '../config.ts';
 import type { CountingEvent, CalendarPeriod, TeachingState } from '../model.ts';
 import { parseDate, datesBetween } from './core.ts';
-import { calendarModalities, appliesTo } from '../modalities.ts';
+import { appliesTo } from '../modalities.ts';
+import { associationOffers, calendarOffers, isStructured } from '../offers.ts';
 import { samePeriodScope } from '../organization/periods.ts';
 import { DomainError } from '../../errors.ts';
 
 type DurationEvent = Omit<CountingEvent, 'id'> & { id?: string };
 type DurationState = Pick<
   TeachingState,
-  'year' | 'weekConfirmed' | 'weekdays' | 'offer' | 'modalities' | 'schemaVersion'
+  'year' | 'weekConfirmed' | 'weekdays' | 'offer' | 'modalities' | 'offers' | 'schemaVersion'
 >;
 export function recalculatePeriods<T extends CalendarPeriod>(
   state: DurationState & { periods: T[] },
@@ -17,7 +18,7 @@ export function recalculatePeriods<T extends CalendarPeriod>(
   const periods = state.periods.map((p) =>
     p.targetDays === undefined ||
     p.association?.status === 'a-classificar' ||
-    (state.schemaVersion === 3 && p.association?.status !== 'defined')
+    (isStructured(state) && p.association?.status !== 'defined')
       ? { ...p }
       : {
           ...p,
@@ -27,8 +28,16 @@ export function recalculatePeriods<T extends CalendarPeriod>(
             p.association?.status === 'defined'
               ? {
                   ...state,
-                  modalities: p.association.modalities,
-                  offer: p.association.modalities[0],
+                  ...(state.offers
+                    ? {
+                        offers: state.offers.filter((offer) =>
+                          associationOffers(p.association).includes(offer.id),
+                        ),
+                      }
+                    : {
+                        modalities: associationOffers(p.association),
+                        offer: associationOffers(p.association)[0],
+                      }),
                 }
               : state,
             events,
@@ -66,8 +75,8 @@ export function durationEnd(
     throw new DomainError('Confirme a semana letiva antes de calcular o término.');
   if (Number(start.slice(0, 4)) !== state.year)
     throw new DomainError('O início deve pertencer ao ano do calendário.');
-  const ends = calendarModalities(state).map((modality) => {
-    const scoped = events.filter((e) => appliesTo(e, modality));
+  const ends = calendarOffers(state).map((offer) => {
+    const scoped = events.filter((e) => appliesTo(e, offer.id));
     let total = 0;
     for (const date of datesBetween(start, `${state.year}-12-31`)) {
       const active = scoped.filter((e) => e.start <= date && e.end >= date);

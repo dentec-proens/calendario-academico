@@ -36,9 +36,11 @@ export interface CalendarContentV4 {
   events: CalendarActivityV4[];
   teacherDayDate?: string;
   teacherVacations?: VacationPeriods;
+  /** Preserves the independent operational decision used only by the 2026 policy. */
+  legacySecondSemesterIntake?: boolean;
 }
 export type PeriodAssociation =
-  { status: 'defined'; modalities: string[]; term: AcademicTerm } | { status: 'a-classificar' };
+  { status: 'defined'; modalities: string[]; term: AcademicTerm } | PeriodAssociationV4;
 export interface Admission {
   type: 'regular' | 'transfer';
   year: number;
@@ -63,6 +65,7 @@ export interface CalendarActivity {
   category?: string;
   requirementId?: string;
   modalities?: string[];
+  offers?: string[];
   hours?: number;
   days?: number;
   originalStart?: string;
@@ -84,6 +87,8 @@ export interface ActivityRequirement {
   minHours?: number;
   month?: number;
   modality?: string;
+  offerId?: string;
+  offerIds?: string[];
   modalities?: string[];
   term?: AcademicTerm;
   periodId?: string;
@@ -118,6 +123,8 @@ export interface CalendarPeriod {
   association?: PeriodAssociation;
 }
 export interface AssessmentSettings {
+  offers?: CalendarOffer[];
+  legacySecondSemesterIntake?: boolean;
   offer?: string;
   modalities?: string[];
   regime?: string;
@@ -133,7 +140,6 @@ export interface AssessmentSettings {
 }
 export interface TeachingState extends AssessmentSettings {
   year: number;
-  regime: string;
   weekdays: number[];
   weekConfirmed: boolean;
   periods: CalendarPeriod[];
@@ -169,7 +175,7 @@ export type VacationPeriods = {
 
 export type CountingEvent = Pick<
   CalendarActivity,
-  'id' | 'kind' | 'start' | 'end' | 'modalities'
+  'id' | 'kind' | 'start' | 'end' | 'modalities' | 'offers'
 > & { evidence?: string; institutional?: boolean };
 export type StageEvent = CountingEvent &
   Pick<CalendarActivity, 'requirementId' | 'assessmentAutoStart'>;

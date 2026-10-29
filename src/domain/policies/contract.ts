@@ -83,6 +83,8 @@ export interface CalendarPolicy {
   explicitRecordOffers: boolean;
   /** Local requirement of new-student registration per offer and cycle. */
   intakeRequirements: boolean;
+  /** Compatibility for the independent operational decision accepted by v2/v3 in 2026. */
+  usesLegacySecondSemesterIntake?: boolean;
   /** Readiness warns when an offer's periods leave the norm's window. */
   windowInReadiness: boolean;
   review: {

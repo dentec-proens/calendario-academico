@@ -5,6 +5,7 @@ import type {
 } from '#src/domain/calendar/model.ts';
 import { applicabilityFor } from '#src/domain/policies/registry.ts';
 import { eventCategory } from '#src/domain/calendar/activities/categories.ts';
+import { associationOffers } from '#src/domain/calendar/offers.ts';
 import type { CalendarEvent, Modality } from '../types.ts';
 
 export type EventContext =
@@ -192,7 +193,7 @@ export function activityDraft(
       modalities.every(
         (modality) =>
           period.association?.status === 'defined' &&
-          period.association.modalities.includes(modality),
+          associationOffers(period.association).includes(modality),
       ),
   );
   const notice = requirement.variant === 'admission-notice';

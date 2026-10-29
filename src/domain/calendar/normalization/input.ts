@@ -38,7 +38,8 @@ const array = <T>(value: unknown, read: (item: unknown) => T): T[] => {
   if (!Array.isArray(value)) return invalidCalendar('Estrutura do calendário inválida.');
   return value.map(read);
 };
-const association = (value: unknown): PeriodAssociation => {
+type LegacyAssociation = Exclude<PeriodAssociation, { offers: string[] }>;
+const association = (value: unknown): LegacyAssociation => {
   const row = object(value);
   if (row.status === 'a-classificar') return { status: 'a-classificar' };
   if (row.status !== 'defined') return invalidCalendar('Associação de período inválida.');
@@ -57,7 +58,9 @@ const admission = (value: unknown): Admission => {
     periodId: optional(row.periodId, string),
   };
 };
-const range = (value: unknown): CalendarPeriod & { name: string } => {
+const range = (
+  value: unknown,
+): Omit<CalendarPeriod, 'association'> & { name: string; association?: LegacyAssociation } => {
   const row = object(value);
   return {
     id: string(row.id),

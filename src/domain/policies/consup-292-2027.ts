@@ -1,6 +1,6 @@
 import { modalityIds, termLabels } from '../calendar/config.ts';
 import type { AssessmentSettings, ActivityRequirement, AcademicTerm } from '../calendar/model.ts';
-import { calendarModalities } from '../calendar/modalities.ts';
+import { calendarOffers, offerFor, stageCycle as offerStageCycle } from '../calendar/offers.ts';
 import { operationalRequirements } from '../calendar/activities/operational-checklist.ts';
 import {
   expandRequirements,
@@ -37,10 +37,21 @@ const dayMinimums = { annual: 200, semester: 100 } as const;
 const excludedModalities = ['posgraduacao'] as const;
 const excluded = (modality: string) => excludedModalities.some((item) => item === modality);
 const supported = (state: AssessmentSettings) =>
-  calendarModalities(state).filter((m) => !excluded(m));
+  calendarOffers(state).filter((offer) => !excluded(offer.kind));
+const supportedKinds = (state: AssessmentSettings) => [
+  ...new Set(supported(state).map((offer) => offer.kind)),
+];
 const termNumber = (term: AcademicTerm) => (term === 'annual' ? 0 : term === 'first' ? 1 : 2);
-const stageCycle = ({ stages }: Slot) =>
-  stages === 4 ? 'bimestral' : stages === 3 ? 'trimestral' : 'semestral';
+const stageCycle = ({ state, stages, offer }: Slot) =>
+  state.offers && offer
+    ? offerStageCycle(offer)
+    : stages === 4
+      ? 'bimestral'
+      : stages === 3
+        ? 'trimestral'
+        : 'semestral';
+const stageNumber = (slot: Slot, title = 'etapa') =>
+  `${slot.state.offers ? slot.number : slot.n}ª ${title}${slot.state.offers && slot.term && slot.term !== 'annual' ? ` do ${termLabels[slot.term]}` : ''}`;
 const perTerm = (title: string) => ({
   title,
   name: (s: Slot) => `${title} — ${termLabels[s.term!]}`,
@@ -65,15 +76,18 @@ const sections: RequirementSection[] = [
   {
     repeat: 'stage',
     each: {
-      modalities: (s) => [s.modality!],
+      modalities: (s) => [s.offer?.kind ?? s.modality!],
       reason: (s) =>
-        excluded(s.modality!) ? 'Pós-graduação depende de norma própria.' : undefined,
+        excluded(s.offer?.kind ?? s.modality!)
+          ? 'Pós-graduação depende de norma própria.'
+          : undefined,
     },
     rows: [
       {
         id: 'stage',
         title: 'Etapa de avaliação — início e término',
-        name: (s) => `${s.n}ª etapa de avaliação — início e término — ${stageCycle(s)}`,
+        name: (s) =>
+          `${stageNumber(s, 'etapa de avaliação')} — início e término — ${stageCycle(s)}`,
         basis: 'Art. 11, I',
         group: 'teaching',
         criterion: 'I',
@@ -84,7 +98,7 @@ const sections: RequirementSection[] = [
         id: 'results',
         title: 'Prazo de lançamento dos resultados (rendimento e frequência) de cada etapa',
         name: (s) =>
-          `Prazo de lançamento dos resultados (rendimento e frequência) da ${s.n}ª etapa — ${stageCycle(s)}`,
+          `Prazo de lançamento dos resultados (rendimento e frequência) da ${stageNumber(s)} — ${stageCycle(s)}`,
         basis: 'Art. 11, IX',
         group: 'teaching',
         criterion: 'IX',
@@ -92,7 +106,8 @@ const sections: RequirementSection[] = [
       {
         id: 'council',
         title: 'Conselho de classe/coletivo pedagógico de cada etapa',
-        name: (s) => `Conselho de classe/coletivo pedagógico da ${s.n}ª etapa — ${stageCycle(s)}`,
+        name: (s) =>
+          `Conselho de classe/coletivo pedagógico da ${stageNumber(s)} — ${stageCycle(s)}`,
         basis: 'Art. 11, XIII',
         group: 'teaching',
         criterion: 'XIII',
@@ -102,7 +117,7 @@ const sections: RequirementSection[] = [
         id: 'pedagogical-meeting',
         title: 'Reunião pedagógica após os resultados parciais de cada etapa',
         name: (s) =>
-          `Reunião pedagógica após os resultados parciais da ${s.n}ª etapa — ${stageCycle(s)}`,
+          `Reunião pedagógica após os resultados parciais da ${stageNumber(s)} — ${stageCycle(s)}`,
         basis: 'Art. 11, XIII',
         group: 'teaching',
         criterion: 'XIII',
@@ -116,10 +131,22 @@ const sections: RequirementSection[] = [
         .map((term) => ({
           n: termNumber(term),
           term,
-          offers: supported(state).filter((m) => termsFor(state, m).includes(term)),
+          offers: supported(state)
+            .filter((offer) => termsFor(state, offer.id).includes(term))
+            .map((offer) => offer.id),
         }))
         .filter((cycle) => cycle.offers.length),
-    each: { modalities: (s) => s.offers, term: (s) => s.term },
+    each: {
+      modalities: (s) => [
+        ...new Set(
+          s.offers?.flatMap((id) => {
+            const offer = offerFor(s.state, id);
+            return offer ? [offer.kind] : [];
+          }),
+        ),
+      ],
+      term: (s) => s.term,
+    },
     rows: [
       {
         id: 'final',
@@ -228,7 +255,10 @@ const sections: RequirementSection[] = [
         name: 'Reunião com familiares, responsáveis e comunidade',
         basis: 'Art. 11, XVI',
         decision: 'exigida apenas no técnico integrado (consup-292-2027-v2)',
-        modalities: ({ state }) => supported(state).filter((m) => familyMeetingOffers.includes(m)),
+        modalities: ({ state }) =>
+          supported(state)
+            .filter((offer) => familyMeetingOffers.includes(offer.kind))
+            .map((offer) => offer.kind),
         optionalFor: Object.fromEntries(
           modalityIds
             .filter((m) => !familyMeetingOffers.includes(m))
@@ -342,7 +372,7 @@ const declared = new Map<string, RequirementSpec>(
 
 function requirements(state: AssessmentSettings): ActivityRequirement[] {
   const rows = expandRequirements(sections, state).map(({ row }) => ({
-    modalities: supported(state),
+    modalities: supportedKinds(state),
     ...row,
   }));
   // Keep every legacy ID resolvable. It is evidence awaiting classification, never silently rebound.
@@ -354,7 +384,7 @@ function requirements(state: AssessmentSettings): ActivityRequirement[] {
       applicability: 'optional' as const,
       reason: 'Vínculo legado conservado; confira o requisito e a organização aplicáveis em 2027.',
       basis: 'Classificação legada',
-      modalities: calendarModalities(state),
+      modalities: calendarOffers(state).map((offer) => offer.kind),
       term: slot.term,
       ...(declared.get(spec.id)?.optionalFor && {
         optionalFor: declared.get(spec.id)!.optionalFor,
@@ -367,13 +397,25 @@ function applicability(
   requirement: ActivityRequirement,
   modality: string,
 ): Applicability {
-  if (excluded(modality) || state.scopeConfirmation?.status === 'own-regulation')
+  const offer = offerFor(state, modality);
+  const kind = offer?.kind ?? modality;
+  if (
+    excluded(kind) ||
+    (state.offers ? offer?.scope?.status : state.scopeConfirmation?.status) === 'own-regulation'
+  )
     return 'unconfigured';
-  if (requirement.modalities && !requirement.modalities.includes(modality)) return 'optional';
-  if (requirement.modality && requirement.modality !== modality) return 'optional';
-  if (requirement.optionalFor?.[modality] !== undefined) return 'optional';
+  if (requirement.modalities && !requirement.modalities.includes(kind)) return 'optional';
+  if (
+    (requirement.offerId ?? requirement.modality) &&
+    (requirement.offerId ?? requirement.modality) !== modality
+  )
+    return 'optional';
+  if (requirement.offerIds && !requirement.offerIds.includes(modality)) return 'optional';
+  if (requirement.optionalFor?.[kind] !== undefined) return 'optional';
   if (requirement.intake) {
-    const config = state.intakeByModality?.[modality]?.[requirement.term ?? 'annual'];
+    const config = state.offers
+      ? offer?.intake?.[requirement.term ?? 'annual']
+      : state.intakeByModality?.[modality]?.[requirement.term ?? 'annual'];
     if (!config || config.status === 'unknown') return 'optional';
     return config.status === 'yes' && config.required === true ? 'required' : 'optional';
   }
@@ -446,13 +488,16 @@ export const consup2922027Policy: CalendarPolicy = {
   rulesetChanges,
   catalogue: sections,
   rulesetVersion: (state) =>
-    calendarModalities(state).some((m) => !excluded(m)) ? rulesetVersion : 'unconfigured:2027',
+    calendarOffers(state).some((offer) => !excluded(offer.kind))
+      ? rulesetVersion
+      : 'unconfigured:2027',
   requirements,
   applicability,
   applicabilityNote: (requirement, modality) => requirement.optionalFor?.[modality] || undefined,
   window: (state) =>
-    state.scopeConfirmation?.status !== 'own-regulation' &&
-    calendarModalities(state).some((m) => !excluded(m))
+    calendarOffers(state).some(
+      (offer) => !excluded(offer.kind) && offer.scope?.status !== 'own-regulation',
+    )
       ? {
           start: '2027-02-01',
           latestStart: '2027-02-15',
@@ -461,7 +506,10 @@ export const consup2922027Policy: CalendarPolicy = {
         }
       : null,
   countingMinimums: (state, modality) => {
-    const configured = !excluded(modality) && state.scopeConfirmation?.status === 'covered';
+    const offer = offerFor(state, modality);
+    const configured =
+      !excluded(offer?.kind ?? modality) &&
+      (state.offers ? offer?.scope?.status : state.scopeConfirmation?.status) === 'covered';
     return {
       annual: configured ? dayMinimums.annual : null,
       semester: configured ? dayMinimums.semester : null,

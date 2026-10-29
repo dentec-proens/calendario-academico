@@ -1,4 +1,5 @@
-import type { CalendarActivity } from '../calendar/model.ts';
+import type { CalendarActivity, CalendarOffer } from '../calendar/model.ts';
+import { kinds } from '../calendar/offers.ts';
 export interface CatalogueEvent extends CalendarActivity {
   evidence: string;
   active: boolean;
@@ -180,10 +181,18 @@ export function inheritedEvents<
 >(
   catalogue: { events: T[] },
   year: number,
-  offer: string | string[],
+  offer: string | string[] | CalendarOffer[],
   state: { year: number; teacherDayDate?: string | null } = { year },
 ) {
-  const modalities = Array.isArray(offer) ? offer : [offer];
+  const offers =
+    Array.isArray(offer) && offer.some((item) => typeof item !== 'string')
+      ? offer.filter((item): item is CalendarOffer => typeof item !== 'string')
+      : undefined;
+  const modalities = offers
+    ? kinds({ offers })
+    : typeof offer === 'string'
+      ? [offer]
+      : offer.filter((item): item is string => typeof item === 'string');
   return campusInstitutionalEvents(
     catalogue.events
       .filter(
@@ -192,7 +201,14 @@ export function inheritedEvents<
           Number(e.start.slice(0, 4)) === year &&
           modalities.some((m) => appliesTo(e, m)),
       )
-      .map((e) => ({ ...e, id: `inst:${e.id}`, institutional: true })),
+      .map((e) => ({
+        ...e,
+        id: `inst:${e.id}`,
+        institutional: true,
+        ...(offers
+          ? { offers: offers.filter((item) => appliesTo(e, item.kind)).map((item) => item.id) }
+          : {}),
+      })),
     state,
   );
 }

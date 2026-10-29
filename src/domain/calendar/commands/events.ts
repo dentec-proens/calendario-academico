@@ -5,7 +5,8 @@ import { periodsForModality } from '../organization/periods.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
 import { activityChecklist } from '../activities/checklist.ts';
 import { stageRequirement } from '../activities/assessment.ts';
-import { calendarModalities } from '../modalities.ts';
+import { assessmentCycleIssue } from '../activities/assessment-intervals.ts';
+import { offerIds } from '../offers.ts';
 import { recalculateCalendar } from './recalculate.ts';
 import { vacationIds } from './vacations.ts';
 import { DomainError } from '../../errors.ts';
@@ -35,7 +36,10 @@ function sameOccurrence(a: CalendarActivity, b: CalendarActivity) {
     a.end === b.end &&
     (a.recordType ?? 'event') === (b.recordType ?? 'event') &&
     equalValues(a.admission, b.admission) &&
-    equalValues([...(a.modalities ?? [])].sort(), [...(b.modalities ?? [])].sort())
+    equalValues(
+      [...(a.offers ?? a.modalities ?? [])].sort(),
+      [...(b.offers ?? b.modalities ?? [])].sort(),
+    )
   );
 }
 
@@ -49,14 +53,23 @@ export function applyEvent<S extends ActivityState>(
   if (!event.name.trim()) throw new DomainError('Informe a descrição.');
   if (!['include', 'exclude', 'note'].includes(event.kind))
     throw new DomainError('Tipo de evento inválido.');
-  const modalities = event.modalities;
-  if (!modalities?.length || modalities.some((item) => !calendarModalities(state).includes(item)))
+  const modalities = state.offers ? event.offers : event.modalities;
+  if (
+    !modalities?.length ||
+    new Set(modalities).size !== modalities.length ||
+    modalities.some((item) => !offerIds(state).includes(item))
+  )
     throw new DomainError('Selecione ao menos uma forma de oferta/nível válida para o evento.');
   const activity = activityChecklist(state).find((item) => item.id === event.requirementId);
   if (event.requirementId && !activity)
     throw new DomainError('Atividade inválida para este calendário.');
-  if (activity?.modality && (modalities.length !== 1 || modalities[0] !== activity.modality))
+  const activityOfferId = activity?.offerId ?? activity?.modality;
+  if (activityOfferId && (modalities.length !== 1 || modalities[0] !== activityOfferId))
     throw new DomainError('Selecione somente a oferta da atividade.');
+  if (state.offers) {
+    const cycleIssue = assessmentCycleIssue(state, event);
+    if (cycleIssue) throw new DomainError(cycleIssue);
+  }
   if (
     event.hours !== undefined &&
     (!Number.isFinite(event.hours) || event.hours <= 0 || event.hours > 8784)
@@ -100,8 +113,10 @@ export function applyEvent<S extends ActivityState>(
     events = events.map((item) => {
       if (
         !stageRequirement(item.requirementId) ||
-        (item.modalities?.length &&
-          !item.modalities.some((modality) => modalities.includes(modality)))
+        ((state.offers ? item.offers : item.modalities)?.length &&
+          !(state.offers ? item.offers : item.modalities)?.some((modality) =>
+            modalities.includes(modality),
+          ))
       )
         return item;
       const { assessmentAutoStart: _auto, ...rest } = item;

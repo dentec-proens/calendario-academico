@@ -1,5 +1,13 @@
 import type { CalendarActivity, TeachingState } from '../calendar/model.ts';
-import { calendarModalities, modalityLabels } from '../calendar/modalities.ts';
+import {
+  calendarOffers,
+  offerIds,
+  labelFor,
+  organizationSummary,
+  kinds,
+  offerFor,
+  associationOffers,
+} from '../calendar/offers.ts';
 import { automaticEventSource } from '../calendar/counting/core.ts';
 import { evaluateCalendar as calendarResult } from '../calendar/counting/evaluation.ts';
 import { activityCoverage } from '../calendar/activities/coverage.ts';
@@ -20,7 +28,10 @@ export function reviewSupport<
   },
 >(
   record: T,
-  events: (Pick<CalendarActivity, 'id' | 'name' | 'start' | 'end' | 'category' | 'modalities'> &
+  events: (Pick<
+    CalendarActivity,
+    'id' | 'name' | 'start' | 'end' | 'category' | 'modalities' | 'offers'
+  > &
     Partial<
       Pick<
         CalendarActivity,
@@ -64,14 +75,52 @@ export function reviewSupport<
       }
     }
   }
+  const regime = record.state.offers
+    ? organizationSummary(record.state.offers)
+    : (record.state.regime ?? 'a-classificar');
   const counts = result ? Object.entries(result.byModality) : [];
   const countLabel = provisional ? 'Contagem provisória dos dados cadastrados. ' : '';
   const policy = policyFor(record.state.year);
   const source = policy.review.source;
   const sameYear = record.state.year === source.year;
   const normativeScopeConfirmed =
-    !policy.scope || record.state.scopeConfirmation?.status === 'covered';
+    !policy.scope ||
+    (record.state.offers
+      ? calendarOffers(record.state).filter(
+          (offer) =>
+            !policy.excludedModalities.includes(offer.kind) &&
+            offer.scope?.status !== 'own-regulation',
+        ).length > 0 &&
+        calendarOffers(record.state)
+          .filter(
+            (offer) =>
+              !policy.excludedModalities.includes(offer.kind) &&
+              offer.scope?.status !== 'own-regulation',
+          )
+          .every((offer) => offer.scope?.status === 'covered')
+      : record.state.scopeConfirmation?.status === 'covered');
   const window = policy.window(record.state);
+  const normativeOffers = calendarOffers(record.state).filter(
+    (offer) =>
+      !policy.excludedModalities.includes(offer.kind) &&
+      (!policy.scope || offer.scope?.status === 'covered'),
+  );
+  const normativeCounts = record.state.offers
+    ? counts.filter(([id]) => normativeOffers.some((offer) => offer.id === id))
+    : counts;
+  const normativeRegime = record.state.offers ? organizationSummary(normativeOffers) : regime;
+  const windowPeriods = record.state.offers
+    ? record.state.periods.filter((period) =>
+        associationOffers(period.association).some((id) => {
+          const offer = offerFor(record.state, id);
+          return (
+            offer &&
+            !policy.excludedModalities.includes(offer.kind) &&
+            offer.scope?.status !== 'own-regulation'
+          );
+        }),
+      )
+    : record.state.periods;
   const windowStart = window?.start ?? '',
     latestStart = window?.latestStart ?? '',
     windowEnd = window?.end ?? '';
@@ -93,8 +142,11 @@ export function reviewSupport<
       campus: record.state.campus,
       year: record.state.year,
       offer: record.state.offer,
-      modalities: calendarModalities(record.state),
-      regime: record.state.regime,
+      modalities: record.state.offers
+        ? kinds({ offers: record.state.offers })
+        : offerIds(record.state),
+      ...(record.state.offers ? { offers: record.state.offers } : {}),
+      regime: regime,
       version: record.version,
     },
     criteria: policy.review.criteria.map((c) => {
@@ -132,9 +184,9 @@ export function reviewSupport<
             counts
               .map(([m, r]) => {
                 const minimum =
-                  policy.review.annualReference?.(m) ??
+                  policy.review.annualReference?.(offerFor(record.state, m)?.kind ?? m) ??
                   r.checks.find((check) => check.scope === 'annual')?.expected;
-                return `${modalityLabels[m] || m}: ${r.total} dias letivos registrados; ${minimum == null ? 'mínimo normativo não configurado para este escopo' : `${r.total >= minimum ? 'alcança' : 'não alcança'} a referência de ${minimum} dias`}`;
+                return `${labelFor(record.state, m)}: ${r.total} dias letivos registrados; ${minimum == null ? 'mínimo normativo não configurado para este escopo' : `${r.total >= minimum ? 'alcança' : 'não alcança'} a referência de ${minimum} dias`}`;
               })
               .join('; ') +
             '. Carga horária do PPC exige análise.' +
@@ -142,7 +194,7 @@ export function reviewSupport<
           : (error ?? '');
       if (c.id === 'semester')
         signal =
-          (record.state.regime === 'anual'
+          (normativeRegime === 'anual'
             ? 'Regime anual: confira a aplicabilidade do mínimo semestral. '
             : '') +
           (result
@@ -150,7 +202,7 @@ export function reviewSupport<
               counts
                 .map(
                   ([m, r]) =>
-                    `${modalityLabels[m] || m}: ` +
+                    `${labelFor(record.state, m)}: ` +
                     periodsForModality(record.state, m)
                       .map((p) => `${p.name || p.id}: ${r.byPeriod[p.id]} dias letivos`)
                       .join('; '),
@@ -162,8 +214,8 @@ export function reviewSupport<
           record.state.periods.map((p) => `${p.name}: ${p.start} a ${p.end}`).join('; ') ||
           'Nenhum período cadastrado. Confira também as etapas internas.';
       if (c.id === 'window') {
-        const starts = record.state.periods.map((p) => p.start).sort(),
-          ends = record.state.periods.map((p) => p.end).sort();
+        const starts = windowPeriods.map((p) => p.start).sort(),
+          ends = windowPeriods.map((p) => p.end).sort();
         signal = !sameYear
           ? 'Datas da norma de referência não aplicadas. Consulte a resolução do ano do calendário.'
           : !normativeScopeConfirmed || !window
@@ -174,13 +226,13 @@ export function reviewSupport<
       }
       if (
         ['V', 'VII'].includes(c.id) &&
-        calendarModalities(record.state).every((m) => m === 'integrado')
+        calendarOffers(record.state).every((offer) => offer.kind === 'integrado')
       )
         signal +=
           ' O texto do parecer menciona subsequentes e graduação: confira se não se aplica.';
       if (
         ['XXIV', 'XXV', 'XXVI'].includes(c.id) &&
-        calendarModalities(record.state).every((m) => m === 'graduacao')
+        calendarOffers(record.state).every((offer) => offer.kind === 'graduacao')
       )
         signal += ' A norma de referência considera esse evento facultativo para graduação.';
       if (['IV', 'XXII', 'XXIII'].includes(c.id))
@@ -192,7 +244,7 @@ export function reviewSupport<
             linked
               .map(
                 (row) =>
-                  `${modalityLabels[row.modality]} — ${row.requirement.name}: ${row.applicability === 'required' ? 'obrigatório' : row.applicability === 'optional' ? 'opcional' : 'escopo a conferir'}; planejamento ${row.coverage === 'complete' ? 'completo' : row.coverage === 'partial' ? 'parcial' : 'pendente'}; ${row.execution === 'published' ? 'execução comprovada' : row.execution === 'planned' ? 'publicação prevista' : 'execução a classificar'}. ${[...row.issues, ...row.warnings].join(' ')}`,
+                  `${labelFor(record.state, row.modality)} — ${row.requirement.name}: ${row.applicability === 'required' ? 'obrigatório' : row.applicability === 'optional' ? 'opcional' : 'escopo a conferir'}; planejamento ${row.coverage === 'complete' ? 'completo' : row.coverage === 'partial' ? 'parcial' : 'pendente'}; ${row.execution === 'published' ? 'execução comprovada' : row.execution === 'planned' ? 'publicação prevista' : 'execução a classificar'}. ${[...row.issues, ...row.warnings].join(' ')}`,
               )
               .join(' | ') +
             ' A presença não comprova atendimento. A conferência humana permanece necessária.';
@@ -209,25 +261,25 @@ export function reviewSupport<
       let status = 'PENDENTE',
         finding = candidates.length ? 'REGISTROS_LOCALIZADOS' : 'CONFERENCIA_NECESSARIA';
       if (c.pattern && !candidates.length) finding = 'NAO_LOCALIZADO';
-      if (c.id === 'annual' && result && !provisional) {
-        finding = counts.some(([, r]) => r.total < dayMinimums.annual)
+      if (c.id === 'annual' && result && !provisional && normativeCounts.length) {
+        finding = normativeCounts.some(([, r]) => r.total < dayMinimums.annual)
           ? 'CONTAGEM_INSUFICIENTE'
           : 'CONTAGEM_ALCANCADA';
         if (
           sameYear &&
           normativeScopeConfirmed &&
-          counts.some(([, r]) => r.total < dayMinimums.annual)
+          normativeCounts.some(([, r]) => r.total < dayMinimums.annual)
         )
           status = 'NAO_ATENDIDO';
       }
-      if (c.id === 'semester' && record.state.regime === 'anual') {
+      if (c.id === 'semester' && normativeRegime === 'anual') {
         finding = 'APLICABILIDADE';
         if (sameYear && normativeScopeConfirmed) status = 'NAO_APLICAVEL';
       }
-      if (c.id === 'semester' && record.state.regime !== 'anual' && result && !provisional) {
+      if (c.id === 'semester' && normativeRegime !== 'anual' && result && !provisional) {
         const valid =
-          counts.length > 0 &&
-          counts.every(
+          normativeCounts.length > 0 &&
+          normativeCounts.every(
             ([m, r]) =>
               organizationForModality(record.state, m) !== 'semestral' ||
               (periodsForModality(record.state, m).length === 2 &&
@@ -238,9 +290,9 @@ export function reviewSupport<
         finding = valid ? 'CONTAGEM_ALCANCADA' : 'CONTAGEM_INSUFICIENTE';
         if (sameYear && normativeScopeConfirmed) status = valid ? 'ATENDIDO' : 'NAO_ATENDIDO';
       }
-      if (c.id === 'window' && sameYear && normativeScopeConfirmed && record.state.periods.length) {
-        const starts = record.state.periods.map((p) => p.start).sort(),
-          ends = record.state.periods.map((p) => p.end).sort();
+      if (c.id === 'window' && sameYear && normativeScopeConfirmed && windowPeriods.length) {
+        const starts = windowPeriods.map((p) => p.start).sort(),
+          ends = windowPeriods.map((p) => p.end).sort();
         status =
           starts[0] >= windowStart && starts[0] <= latestStart && ends.at(-1)! <= windowEnd
             ? 'ATENDIDO'
@@ -262,6 +314,9 @@ export function reviewSupport<
     }),
     teachingDays: counts.map(([modality, r]) => ({
       modality,
+      ...(record.state.offers
+        ? { offerId: modality, label: labelFor(record.state, modality) }
+        : {}),
       total: r.total,
       byPeriod: r.byPeriod,
       provisional,

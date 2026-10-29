@@ -1,5 +1,39 @@
 import { test, expect } from './test.ts';
 
+for (const width of [1440, 390]) {
+  test(`collection opening preserves a control selected before the deferred heading focus at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(await fixtureServer('portal'));
+    await expect(page.locator('#calendar-list')).toBeVisible();
+    await page.clock.install();
+    await page.clock.pauseAt(new Date());
+
+    const open = page.getByRole('button', { name: 'Novo calendário' });
+    const heading = page.getByRole('heading', { name: 'Criar calendário', exact: true });
+    await open.focus();
+    await page.keyboard.press('Enter');
+    await expect(heading).toBeVisible();
+    await page.clock.runFor(32);
+    await expect(heading).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#calendar-campus')).toBeFocused();
+
+    await page.getByRole('button', { name: 'Voltar à lista' }).click();
+    await open.focus();
+    await page.keyboard.press('Enter');
+    const courses = page.getByLabel('Nome dos cursos');
+    await courses.fill('Rascunho iniciado antes do foco programado');
+    await page.clock.runFor(32);
+    await expect(courses).toBeFocused();
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('Delete');
+    await expect(courses).toHaveValue('');
+  });
+}
+
 test('calendar creation presents the generated name as text and explains each purpose', async ({
   page,
   fixtureServer,

@@ -11,7 +11,7 @@ import {
 } from '../organization/periods.ts';
 import { durationEnd } from '../counting/duration.ts';
 import { activityChecklist } from '../activities/checklist.ts';
-import { calendarModalities } from '../modalities.ts';
+import { associationOffers, isStructured, offerFor, offerIds } from '../offers.ts';
 import { recalculateCalendar, validateInterval } from './recalculate.ts';
 import { DomainError } from '../../errors.ts';
 
@@ -53,12 +53,12 @@ export function applyPeriod<S extends ActivityState>(
   if (values.id && !state.periods.some((period) => period.id === values.id))
     throw new DomainError('O período não existe mais. Reabra o calendário.');
   const associated =
-    values.association?.status === 'defined' ? values.association.modalities : undefined;
+    values.association?.status === 'defined' ? associationOffers(values.association) : undefined;
   if (
     associated &&
     (!associated.length ||
       new Set(associated).size !== associated.length ||
-      associated.some((m) => !calendarModalities(state).includes(m)))
+      associated.some((m) => !offerIds(state).includes(m)))
   )
     throw new DomainError('Associação do período incompatível com a organização por oferta.');
   if (values.association?.status === 'defined' && associated) {
@@ -67,7 +67,7 @@ export function applyPeriod<S extends ActivityState>(
       (period) =>
         period.id !== values.id &&
         period.association?.status === 'defined' &&
-        period.association.modalities.some((m) => associated.includes(m)) &&
+        associationOffers(period.association).some((m) => associated.includes(m)) &&
         (period.association.term === 'annual' ? 'anual' : 'semestral') !== organization,
     );
     if (conflicts.length)
@@ -78,7 +78,9 @@ export function applyPeriod<S extends ActivityState>(
       associated.some(
         (m) =>
           organizationForModality(state, m) !== organization &&
-          Object.entries(state.intakeByModality?.[m] ?? {}).some(
+          Object.entries(
+            (state.offers ? offerFor(state, m)?.intake : state.intakeByModality?.[m]) ?? {},
+          ).some(
             ([term, entry]) => entry.required && (term === 'annual') !== (organization === 'anual'),
           ),
       )
@@ -96,28 +98,48 @@ export function applyPeriod<S extends ActivityState>(
         'Revise os editais vinculados a este período antes de alterar seu ciclo.',
       );
     const organizationByModality = Object.fromEntries(
-      calendarModalities(state).map((m) => [
+      offerIds(state).map((m) => [
         m,
         associated.includes(m) ? organization : organizationForModality(state, m),
       ]),
     );
-    const candidate = {
-      ...state,
-      schemaVersion: 3 as const,
-      organizationByModality,
-      regime: organizationSummary(organizationByModality, calendarModalities(state)),
-    };
+    if (
+      state.offers &&
+      associated.some((id) => {
+        const stages = offerFor(state, id)?.stages;
+        return (
+          stages && !(organization === 'semestral' ? [1, 2] : [2, 3, 4]).includes(stages.perTerm)
+        );
+      })
+    )
+      throw new DomainError('Revise as etapas de avaliação antes de alterar o ciclo da oferta.');
+    const candidate = state.offers
+      ? {
+          ...state,
+          offers: state.offers.map((offer) =>
+            associated.includes(offer.id) ? { ...offer, organization } : offer,
+          ),
+        }
+      : {
+          ...state,
+          schemaVersion: 3 as const,
+          organizationByModality,
+          regime: organizationSummary(organizationByModality, offerIds(state)),
+        };
     const requirements = new Map(activityChecklist(candidate).map((item) => [item.id, item]));
     const incompatible = state.events.filter((event) => {
       if (!event.requirementId) return false;
       const requirement = requirements.get(event.requirementId);
       if (!requirement) return true;
-      return (event.modalities?.length ? event.modalities : calendarModalities(state)).some(
+      const explicit = state.offers ? event.offers : event.modalities;
+      return (explicit?.length ? explicit : offerIds(state)).some(
         (m) =>
           associated.includes(m) &&
           organizationForModality(state, m) !== organization &&
-          ((requirement.modality && requirement.modality !== m) ||
-            (requirement.modalities && !requirement.modalities.includes(m))),
+          (((requirement.offerId ?? requirement.modality) &&
+            (requirement.offerId ?? requirement.modality) !== m) ||
+            (requirement.modalities &&
+              !requirement.modalities.includes(offerFor(state, m)?.kind ?? m))),
       );
     });
     if (incompatible.length)
@@ -134,16 +156,18 @@ export function applyPeriod<S extends ActivityState>(
         p.association?.status === 'defined' &&
         p.association.term ===
           (values.association?.status === 'defined' ? values.association.term : undefined) &&
-        p.association.modalities.some((m) => associated?.includes(m)),
+        associationOffers(p.association).some((m) => associated?.includes(m)),
     )
   )
     throw new DomainError(
       'Já existe um período para este ciclo da oferta. Edite o período existente.',
     );
-  if (state.schemaVersion === 3 && values.days && !associated)
+  if (isStructured(state) && values.days && !associated)
     throw new DomainError('Classifique a oferta e o ciclo do período antes de calcular o término.');
   const scopedState = associated
-    ? { ...state, modalities: associated, offer: associated[0] }
+    ? state.offers
+      ? { ...state, offers: state.offers.filter((offer) => associated.includes(offer.id)) }
+      : { ...state, modalities: associated, offer: associated[0] }
     : state;
   const end = values.days
     ? durationEnd(values.start, values.days, scopedState, [...institutional, ...state.events])
@@ -169,7 +193,16 @@ export function applyPeriod<S extends ActivityState>(
   const period: CalendarPeriod = {
     id: values.id || id(),
     name: values.name.trim(),
-    ...(values.association ? { association: values.association } : {}),
+    ...(state.offers
+      ? {
+          association:
+            values.association?.status === 'defined'
+              ? { status: 'defined' as const, offers: associated!, term: values.association.term }
+              : { status: 'a-classificar' as const },
+        }
+      : values.association
+        ? { association: values.association }
+        : {}),
     start: values.start,
     end,
     ...(values.days ? { targetDays: Number(values.days) } : {}),
@@ -186,9 +219,7 @@ export function applyPeriod<S extends ActivityState>(
             ...state.conversion,
             organization:
               periods.every((p) => p.association?.status === 'defined') &&
-              calendarModalities(state).every(
-                (m) => organizationForModality(state, m) !== 'a-classificar',
-              )
+              offerIds(state).every((m) => organizationForModality(state, m) !== 'a-classificar')
                 ? 'classified'
                 : 'pending',
           }

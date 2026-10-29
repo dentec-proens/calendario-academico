@@ -12,6 +12,7 @@ import { organizationForModality } from '../organization/periods.ts';
 import { DomainError } from '../../errors.ts';
 import { policyFor } from '../../policies/registry.ts';
 import { convertCalendarV2 } from './conversion.ts';
+import { associationOffers, organizationSummary, secondSemesterIntake } from '../offers.ts';
 
 export interface LegacyCalendarInput extends AssessmentSettings {
   weekdays: number[];
@@ -108,17 +109,30 @@ export function convertCalendarV3(
     };
   });
 
+  const summary = organizationSummary(offers);
+  const oldSuppressed = state.secondSemesterIntake === false;
+  const derivedSuppressed = secondSemesterIntake(offers) === false;
+  const needsLegacyDecision =
+    policy.usesLegacySecondSemesterIntake &&
+    (summary === 'semestral' || summary === 'misto') &&
+    oldSuppressed !== derivedSuppressed;
+
   return {
     schemaVersion: 4,
     ...(state.rulesetVersion === undefined ? {} : { rulesetVersion: state.rulesetVersion }),
     offers,
+    ...(needsLegacyDecision ? { legacySecondSemesterIntake: !oldSuppressed } : {}),
     weekdays: [...state.weekdays],
     weekConfirmed: state.weekConfirmed,
     periods: state.periods.map(({ association, ...period }) => ({
       ...period,
       association:
         association?.status === 'defined'
-          ? { status: 'defined', offers: [...association.modalities], term: association.term }
+          ? {
+              status: 'defined',
+              offers: [...associationOffers(association)],
+              term: association.term,
+            }
           : { status: 'a-classificar' },
     })),
     events: state.events.map(({ modalities, ...event }) => ({

@@ -8,9 +8,11 @@ const excludedModalities = ['posgraduacao'] as const;
 export const legacy2026Policy: CalendarPolicy = {
   year: 2026,
   configured: true,
+  usesLegacySecondSemesterIntake: true,
   rulesetVersion: () => 'legacy-2026-v1',
   requirements: (state) =>
     operationalChecklist(state, {
+      usesLegacySecondSemesterIntake: true,
       deadlines: { robotics: '2026-08-31', 'course-showcase': '2026-09-30' },
       criteria: { 'cultural-week': 'XXV' },
     }),

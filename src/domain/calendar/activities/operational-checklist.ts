@@ -1,6 +1,13 @@
 import type { AssessmentSettings, ActivityRequirement } from '../model.ts';
 import { calendarModalities, modalityLabels } from '../modalities.ts';
 import {
+  calendarOffers,
+  offerLabel,
+  organizationSummary,
+  secondSemesterIntake,
+  stageCycle,
+} from '../offers.ts';
+import {
   expandRequirements,
   type CycleSlot,
   type ExpandedRequirement,
@@ -11,6 +18,8 @@ import {
 
 /** Year-specific details a policy may add to the undated operational checklist. */
 export interface OperationalChecklistOptions {
+  /** The 2026 operational decision can differ from the offer-level intake configuration. */
+  usesLegacySecondSemesterIntake?: boolean;
   /** Civil deadlines by activity ID; the label shows them in dd/mm/yyyy. */
   deadlines?: Readonly<Record<string, string>>;
   /** Review criteria are linked only when given; entries renumber criteria by activity ID. */
@@ -22,24 +31,36 @@ const optionalLabel = ' (opcional para esta oferta)';
 const nonIntegrated = ['graduacao', 'subsequente', 'posgraduacao'];
 const cycleLabel = (stages: number | undefined) =>
   stages === 4 ? 'bimestral' : stages === 3 ? 'trimestral' : 'semestral';
-const stageSuffix = ({ modality, stages }: Slot) =>
-  ` — ${modalityLabels[modality!]} (${cycleLabel(stages)})`;
+const stageSuffix = ({ state, modality, stages, offer, term }: Slot) =>
+  ` — ${state.offers && offer ? offerLabel(offer) : modalityLabels[modality!]}${state.offers && term && term !== 'annual' ? ` — ${term === 'first' ? '1º' : '2º'} semestre` : ''} (${state.offers && offer ? stageCycle(offer) : cycleLabel(stages)})`;
+const stageNumber = (slot: Slot) => (slot.state.offers ? slot.number : slot.n);
 const termLabel = ({ n }: Slot) => (n ? `${n}º semestre` : 'ano letivo');
 /** Councils of an offer outside integrated secondary education. */
-const optionalCouncil = (slot: Slot) => nonIntegrated.includes(slot.modality!);
+const optionalCouncil = (slot: Slot) => nonIntegrated.includes(slot.offer?.kind ?? slot.modality!);
 /** School meetings of a calendar without integrated secondary education. */
 const optionalMeeting = ({ state }: Slot) =>
-  calendarModalities(state).every((m) => nonIntegrated.includes(m));
-const withoutSecondIntake = ({ n, state }: Slot) => n === 2 && state.secondSemesterIntake === false;
-const cyclesByRegime = (state: AssessmentSettings): CycleSlot[] =>
-  (state.regime === 'misto' ? [0, 1, 2] : state.regime === 'semestral' ? [1, 2] : [0]).map((n) => ({
+  (state.offers
+    ? calendarOffers(state).map((offer) => offer.kind)
+    : calendarModalities(state)
+  ).every((m) => nonIntegrated.includes(m));
+const cyclesByRegime = (state: AssessmentSettings): CycleSlot[] => {
+  const regime = state.offers ? organizationSummary(state.offers) : state.regime;
+  return (regime === 'misto' ? [0, 1, 2] : regime === 'semestral' ? [1, 2] : [0]).map((n) => ({
     n,
     term: n === 0 ? 'annual' : n === 1 ? 'first' : 'second',
   }));
+};
 
 // Undated PROENS operational checklist, shared by the 2026 policy, unconfigured years and the
 // legacy IDs kept by later policies. Historical dates come only from the selected policy.
 function sections(options: OperationalChecklistOptions): RequirementSection[] {
+  const withoutSecondIntake = ({ n, state }: Slot) => {
+    const intake = state.offers
+      ? ((options.usesLegacySecondSemesterIntake ? state.legacySecondSemesterIntake : undefined) ??
+        secondSemesterIntake(state.offers))
+      : state.secondSemesterIntake;
+    return n === 2 && intake === false;
+  };
   const linked = (rows: RequirementSpec[]) =>
     rows.map((row) => ({
       ...row,
@@ -55,7 +76,7 @@ function sections(options: OperationalChecklistOptions): RequirementSection[] {
       rows: [
         {
           id: 'stage',
-          name: (s) => `${s.n}ª etapa de avaliação — início e término${stageSuffix(s)}`,
+          name: (s) => `${stageNumber(s)}ª etapa de avaliação — início e término${stageSuffix(s)}`,
           group: 'teaching',
           criterion: 'I',
           category: 'limite',
@@ -64,14 +85,14 @@ function sections(options: OperationalChecklistOptions): RequirementSection[] {
         {
           id: 'results',
           name: (s) =>
-            `Prazo de lançamento dos resultados (rendimento e frequência) da ${s.n}ª etapa${stageSuffix(s)}`,
+            `Prazo de lançamento dos resultados (rendimento e frequência) da ${stageNumber(s)}ª etapa${stageSuffix(s)}`,
           group: 'teaching',
           criterion: 'IX',
         },
         {
           id: 'council',
           name: (s) =>
-            `Conselho de classe/coletivo pedagógico da ${s.n}ª etapa${optionalCouncil(s) ? optionalLabel : ''}${stageSuffix(s)}`,
+            `Conselho de classe/coletivo pedagógico da ${stageNumber(s)}ª etapa${optionalCouncil(s) ? optionalLabel : ''}${stageSuffix(s)}`,
           required: (s) => (optionalCouncil(s) ? false : undefined),
           group: 'teaching',
           criterion: 'XIII',
@@ -80,7 +101,7 @@ function sections(options: OperationalChecklistOptions): RequirementSection[] {
         {
           id: 'pedagogical-meeting',
           name: (s) =>
-            `Reunião pedagógica após os resultados parciais da ${s.n}ª etapa${stageSuffix(s)}`,
+            `Reunião pedagógica após os resultados parciais da ${stageNumber(s)}ª etapa${stageSuffix(s)}`,
           group: 'teaching',
           criterion: 'XIII',
         },

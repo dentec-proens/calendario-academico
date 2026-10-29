@@ -3,7 +3,8 @@ import { campusInstitutionalEvents, teacherDayId } from '../institution/teacher-
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { equalValues } from '../../shared/equal.ts';
-import type { CalendarActivity } from './model.ts';
+import type { CalendarActivity, CalendarOffer } from './model.ts';
+import { kinds } from './offers.ts';
 import { DomainError } from '../errors.ts';
 import {
   bindsRuleset,
@@ -37,6 +38,18 @@ export interface BaseScope {
   modalities?: string[];
   offer?: string;
   rulesetVersion?: string;
+  offers?: CalendarOffer[];
+}
+
+const scopeKinds = (scope: BaseScope): string[] =>
+  scope.offers ? kinds({ offers: scope.offers }) : (scope.modalities ?? [scope.offer ?? '']);
+
+function eventKinds(event: BaseEvent, scope: BaseScope): string[] {
+  if (scope.offers && event.offers)
+    return scope.offers
+      .filter((offer) => event.offers!.includes(offer.id))
+      .map((offer) => offer.kind);
+  return event.modalities ?? scopeKinds(scope);
 }
 
 function eventContent(event: BaseEvent, scope: BaseScope) {
@@ -52,11 +65,7 @@ function eventContent(event: BaseEvent, scope: BaseScope) {
     requirementId: event.requirementId ?? '',
     hours: event.hours ?? null,
     modalities: [
-      ...new Set(
-        (event.modalities ?? scope.modalities ?? [scope.offer ?? '']).filter((item) =>
-          (scope.modalities ?? [scope.offer ?? item]).includes(item),
-        ),
-      ),
+      ...new Set(eventKinds(event, scope).filter((item) => scopeKinds(scope).includes(item))),
     ].sort(),
   };
 }
@@ -92,7 +101,7 @@ function identity(snapshot: BaseSnapshot, scope: BaseScope) {
         new TextEncoder().encode(
           JSON.stringify({
             year: scope.year,
-            modalities: [...new Set(scope.modalities ?? [scope.offer ?? ''])].sort(),
+            modalities: [...new Set(scopeKinds(scope))].sort(),
             events: ordered(snapshot.events).map((event) => eventContent(event, scope)),
             documents: ordered(snapshot.documents).map(documentContent),
           }),
@@ -226,7 +235,11 @@ export function applicableEvents<T extends BaseEvent & { active: boolean }>(
   catalogue: { events: T[] },
   scope: BaseScope & { teacherDayDate?: string | null },
 ) {
-  const published = inheritedEvents(catalogue, scope.year, scope.modalities ?? [scope.offer ?? '']);
+  const published = inheritedEvents(
+    catalogue,
+    scope.year,
+    scope.offers ?? scope.modalities ?? [scope.offer ?? ''],
+  );
   return published.some((event) => event.id === teacherDayId)
     ? campusInstitutionalEvents(published, scope)
     : published;

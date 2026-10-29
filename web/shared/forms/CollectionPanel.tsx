@@ -43,7 +43,8 @@ export default function CollectionPanel({
     if (!formOpen) return;
     const frame = requestAnimationFrame(() => {
       const heading = formHeading.current;
-      heading?.focus({ preventScroll: true });
+      if (!heading || heading.parentElement?.contains(document.activeElement)) return;
+      heading.focus({ preventScroll: true });
       scrollIntoView(heading, { block: 'start' });
     });
     return () => cancelAnimationFrame(frame);

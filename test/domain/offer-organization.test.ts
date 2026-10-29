@@ -7,6 +7,7 @@ import {
 } from '../../src/domain/calendar/organization/offers.ts';
 import { normalizeCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
+import { associationOffers } from '../../src/domain/calendar/offers.ts';
 
 function calendar(): ActivityState {
   return {
@@ -59,8 +60,8 @@ test('one application splits a shared period and keeps the other offer and all s
     ...before.periods[0],
     association: { status: 'defined', modalities: ['graduacao'], term: 'annual' },
   });
-  const integrated = next.periods.find(
-    (p) => p.association?.status === 'defined' && p.association.modalities.includes('integrado'),
+  const integrated = next.periods.find((p) =>
+    associationOffers(p.association).includes('integrado'),
   )!;
   expect(integrated.id).not.toBe('shared');
   expect(integrated.targetDays).toBeUndefined();
@@ -112,9 +113,7 @@ test('a stage cannot span the semester gap, overlap another stage or use another
   expect(offerOrganizationIssues(state, 'integrado', draft)).toEqual([]);
   const next = applyOfferOrganization(state, 'integrado', draft, id);
   expect(
-    next.periods.filter(
-      (p) => p.association?.status === 'defined' && p.association.modalities.includes('integrado'),
-    ),
+    next.periods.filter((p) => associationOffers(p.association).includes('integrado')),
   ).toHaveLength(2);
   const bad = structuredClone(next);
   bad.events.find((e) => e.id === 'integrado-1')!.start = '2027-03-15';
