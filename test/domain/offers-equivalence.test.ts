@@ -11,7 +11,12 @@ import { convertCalendarV2 } from '../../src/domain/calendar/normalization/conve
 import { convertCalendarV3 } from '../../src/domain/calendar/normalization/conversion-v4.ts';
 import { inheritedEvents, type CatalogueEvent } from '../../src/domain/institution/catalogue.ts';
 import { policyFor } from '../../src/domain/policies/registry.ts';
-import { calendarOffers, offerIds, offerLabel } from '../../src/domain/calendar/offers.ts';
+import {
+  calendarOffers,
+  offerIds,
+  offerLabel,
+  offerFor,
+} from '../../src/domain/calendar/offers.ts';
 
 /**
  * Static v3 oracle captured before the M2/M3 implementation, from commit 34e35b9.
@@ -58,7 +63,7 @@ function semanticProjection(
       applicabilityByOffer: Object.fromEntries(
         offerIds(state).map((modality) => [
           modality,
-          policy.applicability(state, requirement, modality),
+          policy.applicability(state, requirement, offerFor(state, modality)!),
         ]),
       ),
     };
@@ -107,7 +112,13 @@ function semanticProjection(
       })),
       requirements: requirements.map(normativeFields),
       minimums: Object.fromEntries(
-        offerIds(state).map((modality) => [modality, policy.countingMinimums(state, modality)]),
+        calendarOffers(state).map((offer) => {
+          const minimums = policy.countingMinimums(state, offer);
+          return [
+            offer.id,
+            { annual: minimums.annual?.days ?? null, semester: minimums.semester?.days ?? null },
+          ];
+        }),
       ),
       counting,
       diagnostics: {

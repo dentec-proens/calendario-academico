@@ -4,6 +4,7 @@ import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts'
 import { expandRequirements } from '#src/domain/calendar/activities/requirement-table.ts';
 import type { RulesetChange } from '#src/domain/policies/contract.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
+import { calendarOffers, offerFor } from '#src/domain/calendar/offers.ts';
 
 export type OfferStatus = 'required' | 'optional' | 'unconfigured' | 'intake' | 'absent';
 
@@ -65,12 +66,18 @@ export function rulesView(year: number) {
     norm: policy.review.citation ?? policy.review.source.title,
     version: policy.rulesetVersion(state),
     window: policy.window(state),
-    excluded: policy.excludedModalities.map((m) => modalityLabels[m]),
+    excluded: calendarOffers(state)
+      .filter((offer) => policy.excludes(offer))
+      .map((offer) => modalityLabels[offer.kind]),
     offers: offers.map((id) => ({ id, label: modalityLabels[id] })),
-    minimums: offers.map((m) => ({
-      offer: modalityLabels[m],
-      ...policy.countingMinimums(state, m),
-    })),
+    minimums: calendarOffers(state).map((offer) => {
+      const minimums = policy.countingMinimums(state, offer);
+      return {
+        offer: modalityLabels[offer.kind],
+        annual: minimums.annual?.days ?? null,
+        semester: minimums.semester?.days ?? null,
+      };
+    }),
     changes: (policy.rulesetChanges ?? []).map((change) => ({
       ...change,
       date: civilDate(change.date),
@@ -90,12 +97,13 @@ export function rulesView(year: number) {
           const byOffer = offers.map((m) => {
             const row = rowFor(m);
             if (!row) return { offer: m, status: 'absent' as OfferStatus };
-            const applicability = policy.applicability(state, row, m);
+            const offer = offerFor(state, m)!;
+            const applicability = policy.applicability(state, row, offer);
             const status: OfferStatus =
               row.intake && policy.intakeRequirements && applicability !== 'unconfigured'
                 ? 'intake'
                 : applicability;
-            return { offer: m, status, note: policy.applicabilityNote?.(row, m) };
+            return { offer: m, status, note: policy.applicabilityNote?.(row, offer) };
           });
           return {
             id: spec.id,

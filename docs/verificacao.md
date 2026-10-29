@@ -74,6 +74,12 @@ A suíte visual protege o portal, a criação de calendário, a consulta de docu
 
 Para uma mudança visual intencional, execute `pnpm test:visual:update`, confira cada screenshot alterado e execute `pnpm test:visual` novamente, sem atualização. Outros sistemas não têm referências versionadas, e a comparação visual falha neles. Ao atualizar Playwright, confira as referências afetadas. Não aceite alterações de screenshots sem verificar o efeito na interface.
 
+O Chromium local no macOS usa a variante de controles nativos com `OverlayScrollbar` desabilitado, fixada pela fixture compartilhada em `test/browser/test.ts`. A outra variante desloca a seta de cada `select` e provoca diferenças pequenas e estáveis mesmo quando código, layout, foco e estilos são idênticos. Essa diferença foi reproduzida também no código anterior à mudança em investigação; desabilitar somente essa feature recuperou as referências existentes, sem alterá-las. A escolha vale apenas para os processos dos testes e não modifica preferências do macOS nem os controles da aplicação.
+
+Antes de abrir o navegador do worker, `chromium-native-theme.ts` consulta os argumentos reais da versão instalada pela API pública `launchServer().process().spawnargs` e fecha esse processo temporário. Mescla todas as features já desabilitadas pelo Playwright e pelos argumentos do projeto antes de acrescentar `OverlayScrollbar`, pois repetir `--disable-features` com uma lista parcial substituiria os defaults do Playwright. O teste de configuração confere essa preservação contra o Chromium instalado. As comparações mantêm as mesmas referências e tolerâncias; não há máscara de controles nem supressão de diferenças visuais.
+
+Os switches dedicados `--disable-overlay-scrollbar`, `--disable-overlay-scrollbars` e `--disable-blink-features=OverlayScrollbars` não estabilizaram essa variante no Chromium instalado. Por isso a configuração usa a mesclagem por feature. A sondagem acrescentou entre 0,10 e 0,14 segundo por worker neste Mac; encerra antes do navegador de execução, e uma regressão confirma o término do processo também quando a leitura dos argumentos falha.
+
 ## Impressão do calendário
 
 O PDF do calendário é a impressão da prévia pelo navegador. Os testes de navegador conferem o nome sugerido pelo título da página, e o E2E gera o PDF da prévia com `page.pdf()` do Chromium e confere seu texto.

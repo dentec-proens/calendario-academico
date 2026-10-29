@@ -4,6 +4,7 @@ import { removeEvent } from '#src/domain/calendar/commands/events.ts';
 import { activityStatusLabels } from '#src/domain/calendar/activities/status.ts';
 import type { ActivityRequirement } from '#src/domain/calendar/model.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
+import { offerFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { useActivityCoverage } from './useActivityCoverage.ts';
@@ -25,6 +26,10 @@ export default function ActivityDetails({
   const evidence = rowsFor(item.id);
   const summary = statusFor(item.id);
   const policy = policyFor(state.year);
+  const noteFor = (id: string) => {
+    const offer = offerFor(state, id);
+    return offer ? policy.applicabilityNote?.(item, offer) : undefined;
+  };
   const registered = state.events.filter((event) => event.requirementId === item.id);
   const stage = item.variant === 'stage';
   const preparing = editor.open && editor.context?.kind === 'activity' && !editor.eventId;
@@ -86,9 +91,7 @@ export default function ActivityDetails({
                   Depende de norma própria; não há afirmação automática de conformidade.
                 </small>
               )}
-              {policy.applicabilityNote?.(item, row.modality) && (
-                <small>{policy.applicabilityNote(item, row.modality)}</small>
-              )}
+              {noteFor(row.modality) && <small>{noteFor(row.modality)}</small>}
               {row.issues.map((issue) => (
                 <small key={issue}>{issue}</small>
               ))}

@@ -14,7 +14,7 @@ for (const role of ['ADMIN', 'CAMPUS', 'PARECERISTA'] as const)
     await expect(link).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('#panel-title')).toHaveText('Regras do calendário');
     await expect(page.locator('#rules-title')).toHaveText('Regras do calendário de 2027');
-    await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v2');
+    await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v3');
     const family = page.locator('[data-rule="family-meeting"]');
     await expect(family).toContainText('Decisão: exigida apenas no técnico integrado');
     await expect(family.locator('[data-offer="integrado"]')).toContainText('Obrigatória');

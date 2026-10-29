@@ -1,4 +1,6 @@
-import type { AssessmentSettings, ActivityRequirement } from '../calendar/model.ts';
+import type { AssessmentSettings, ActivityRequirement, CalendarOffer } from '../calendar/model.ts';
+import { offerFor } from '../calendar/offers.ts';
+import { DomainError } from '../errors.ts';
 import { consup2922027Policy } from './consup-292-2027.ts';
 import type { CalendarPolicy, RulesetChange } from './contract.ts';
 import { legacy2026Policy } from './legacy-2026.ts';
@@ -69,8 +71,15 @@ export const rulesetVersion = (state: AssessmentSettings) =>
 export const applicabilityFor = (
   state: AssessmentSettings,
   requirement: ActivityRequirement,
-  modality: string,
-) => policyFor(state.year).applicability(state, requirement, modality);
+  offer: CalendarOffer | string,
+) => policyFor(state.year).applicability(state, requirement, resolveOffer(state, offer));
 
-export const countingMinimums = (state: AssessmentSettings, modality: string) =>
-  policyFor(state.year).countingMinimums(state, modality);
+function resolveOffer(state: AssessmentSettings, offer: CalendarOffer | string): CalendarOffer {
+  if (typeof offer !== 'string') return offer;
+  const resolved = offerFor(state, offer);
+  if (!resolved) throw new DomainError('A oferta não pertence ao calendário.');
+  return resolved;
+}
+
+export const countingMinimums = (state: AssessmentSettings, offer: CalendarOffer | string) =>
+  policyFor(state.year).countingMinimums(state, resolveOffer(state, offer));

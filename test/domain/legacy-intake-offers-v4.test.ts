@@ -3,7 +3,7 @@ import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { convertCalendarV3 } from '../../src/domain/calendar/normalization/conversion-v4.ts';
 import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
 import { policyFor } from '../../src/domain/policies/registry.ts';
-import { secondSemesterIntake } from '../../src/domain/calendar/offers.ts';
+import { secondSemesterIntake, offerFor } from '../../src/domain/calendar/offers.ts';
 import {
   normalizeOfferCalendar,
   offerCalendarContent,
@@ -14,7 +14,7 @@ const rows = (state: ActivityState) => {
   return activityChecklist(state).map((requirement) => ({
     id: requirement.id,
     required: requirement.required,
-    applicability: policy.applicability(state, requirement, 'subsequente'),
+    applicability: policy.applicability(state, requirement, offerFor(state, 'subsequente')!),
   }));
 };
 

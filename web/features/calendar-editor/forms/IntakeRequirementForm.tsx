@@ -2,6 +2,7 @@ import type { AcademicTerm, ActivityRequirement } from '#src/domain/calendar/mod
 import { configureIntakeRequirement } from '#src/domain/calendar/commands/organization.ts';
 import { modalityLabels } from '#src/domain/calendar/modalities.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
+import { offerFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Check } from './fields.tsx';
@@ -64,11 +65,14 @@ export default function IntakeRequirementForm({ item }: { item: ActivityRequirem
         houver regra local. Isso não altera as obrigações de veteranos.
       </p>
       {state.modalities
-        .filter(
-          (m) =>
-            !policy.excludedModalities.includes(m) &&
-            (!item.modalities || item.modalities.includes(m)),
-        )
+        .filter((m) => {
+          const offer = offerFor(state, m);
+          return (
+            offer &&
+            !policy.excludes(offer) &&
+            (!item.modalities || item.modalities.includes(offer.kind))
+          );
+        })
         .map((m) => (
           <OfferRequirement key={`${m}:${term}`} modality={m} term={term} />
         ))}

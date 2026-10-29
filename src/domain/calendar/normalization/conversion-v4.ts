@@ -96,13 +96,16 @@ export function convertCalendarV3(
     let intake = intakeFor(state.intakeByModality?.[modality]);
     if (unresolvedSecondIntake && (!intake?.second || intake.second.status === 'unknown'))
       intake = { ...intake, second: { status: 'unknown' } };
-    return {
+    const offer: CalendarOffer = {
       id: modality,
       kind,
       delivery: 'a-conferir',
       organization,
+    };
+    return {
+      ...offer,
       ...(perTerm === undefined ? {} : { stages: { perTerm } }),
-      ...(state.scopeConfirmation && !policy.excludedModalities.includes(modality)
+      ...(state.scopeConfirmation && !policy.excludes(offer)
         ? { scope: { ...state.scopeConfirmation } }
         : {}),
       ...(intake === undefined ? {} : { intake }),

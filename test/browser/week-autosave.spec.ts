@@ -1,6 +1,7 @@
 import { test, expect } from './test.ts';
 import { savedState, selectEditorSection } from './editor-navigation.ts';
 import type * as EditorFixture from '../fixtures/editor-client.ts';
+import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 
 // Anchor the browser clock before startup; freezing against the host clock can race.
 const clockStart = new Date('2027-01-01T12:00:00Z');
@@ -179,6 +180,8 @@ test('reverting a valid change before the debounce clears the pending save indic
   await page.clock.install({ time: clockStart });
   await page.goto(await fixtureServer('editor'));
   await expect(page.locator('#weekdays input[value="5"]')).toBeVisible();
+  const confirmed = await page.evaluate(() => window.editorTest.record.state);
+  expect(confirmed.rulesetVersion).toBe(rulesetVersion(confirmed));
   await page.clock.pauseAt(new Date(clockStart.getTime() + 60_000));
   const friday = page.locator('#weekdays input[value="5"]');
   await friday.uncheck();

@@ -6,6 +6,7 @@ import { assessmentCount } from '../../src/domain/calendar/activities/assessment
 import { assessmentCycleIssue } from '../../src/domain/calendar/activities/assessment-intervals.ts';
 import { validateActivityRecord } from '../../src/domain/calendar/activities/validation.ts';
 import { policyFor } from '../../src/domain/policies/registry.ts';
+import { offerFor } from '../../src/domain/calendar/offers.ts';
 
 test('etapas de ofertas do mesmo tipo preservam identidades e reiniciam os nomes por ciclo', () => {
   const state = calendarOffersV4Fixture();
@@ -36,15 +37,15 @@ test('aplicabilidade depende do tipo, mas o escopo das linhas de ciclo depende d
   const family = rows.find((row) => row.id === 'family-meeting')!;
   const annual = rows.find((row) => row.id === 'final-0')!;
   const first = rows.find((row) => row.id === 'final-1')!;
-  expect(policy.applicability(state, family, 'integrado')).toBe('required');
+  expect(policy.applicability(state, family, offerFor(state, 'integrado')!)).toBe('required');
   for (const id of ['graduacao', 'graduacao-2', 'graduacao-3'])
-    expect(policy.applicability(state, family, id)).toBe('optional');
-  expect(policy.applicability(state, annual, 'graduacao')).toBe('required');
-  expect(policy.applicability(state, annual, 'graduacao-2')).toBe('optional');
-  expect(policy.applicability(state, first, 'graduacao')).toBe('optional');
-  expect(policy.applicability(state, first, 'graduacao-2')).toBe('required');
+    expect(policy.applicability(state, family, offerFor(state, id)!)).toBe('optional');
+  expect(policy.applicability(state, annual, offerFor(state, 'graduacao')!)).toBe('required');
+  expect(policy.applicability(state, annual, offerFor(state, 'graduacao-2')!)).toBe('optional');
+  expect(policy.applicability(state, first, offerFor(state, 'graduacao')!)).toBe('optional');
+  expect(policy.applicability(state, first, offerFor(state, 'graduacao-2')!)).toBe('required');
   const pit = rows.find((row) => row.id === 'pit-1')!;
-  expect(policy.applicability(state, pit, 'graduacao')).toBe('required');
+  expect(policy.applicability(state, pit, offerFor(state, 'graduacao')!)).toBe('required');
 });
 
 test('cobertura de uma etapa não atende a outra oferta de graduação', () => {
@@ -68,10 +69,20 @@ test('escopo e configuração de ingresso são independentes em ofertas do mesmo
   state.offers[2].scope = { status: 'own-regulation' };
   state.offers[3].intake = { first: { status: 'yes', required: true } };
   const registration = policy.requirements(state).find((row) => row.id === 'registration-1')!;
-  expect(policy.applicability(state, registration, 'graduacao-2')).toBe('unconfigured');
-  expect(policy.applicability(state, registration, 'graduacao-3')).toBe('required');
-  expect(policy.countingMinimums(state, 'graduacao-2')).toEqual({ annual: null, semester: null });
-  expect(policy.countingMinimums(state, 'graduacao-3')).toEqual({ annual: 200, semester: 100 });
+  expect(policy.applicability(state, registration, offerFor(state, 'graduacao-2')!)).toBe(
+    'unconfigured',
+  );
+  expect(policy.applicability(state, registration, offerFor(state, 'graduacao-3')!)).toBe(
+    'required',
+  );
+  expect(policy.countingMinimums(state, offerFor(state, 'graduacao-2')!)).toEqual({
+    annual: null,
+    semester: null,
+  });
+  expect(policy.countingMinimums(state, offerFor(state, 'graduacao-3')!)).toMatchObject({
+    annual: { days: 200, basis: expect.any(String) },
+    semester: { days: 100, basis: expect.any(String) },
+  });
   expect(policy.window(state)).not.toBeNull();
   state.offers.forEach((offer) => {
     offer.scope = { status: 'own-regulation' };

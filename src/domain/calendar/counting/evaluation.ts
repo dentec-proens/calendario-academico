@@ -1,4 +1,4 @@
-import { countingMinimums } from '../../policies/registry.ts';
+import { policyFor } from '../../policies/registry.ts';
 import type { CountingEvent, TeachingState } from '../model.ts';
 import { countCalendar, automaticEventSource } from './core.ts';
 import { appliesTo } from '../modalities.ts';
@@ -16,7 +16,7 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
       throw new DomainError(
         'Organização a conferir: classifique os períodos por oferta antes de confirmar a contagem.',
       );
-    const minimum = countingMinimums(s, offer.id);
+    const minimum = policyFor(s.year).countingMinimums(s, offer);
     byOffer[offer.id] = countCalendar({
       year: s.year,
       offerId: offer.id,
@@ -42,9 +42,12 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
           evidenceId: automaticEventSource(e),
         })),
       thresholds: {
-        annual: minimum.annual,
+        annual: minimum.annual?.days ?? null,
         byPeriod: Object.fromEntries(
-          periods.map((p) => [p.id, offer.organization === 'semestral' ? minimum.semester : null]),
+          periods.map((p) => [
+            p.id,
+            offer.organization === 'semestral' ? (minimum.semester?.days ?? null) : null,
+          ]),
         ),
       },
     });

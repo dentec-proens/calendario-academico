@@ -36,6 +36,7 @@ test('legacy 2027 rules require explicit adoption without changing recorded date
     record.version++;
     return window.publishReviewerCalendar();
   });
+  expect(await page.evaluate(() => window.editorTest.record.state.rulesetVersion)).toBeUndefined();
   const card = page.locator('.base-update-card');
   await expect(card).toContainText('Regras de 2027 atualizadas: nova revisão necessária');
   await expect(card).toHaveScreenshot('rules-update-collapsed.png');
@@ -52,6 +53,6 @@ test('legacy 2027 rules require explicit adoption without changing recorded date
     ),
   ).toEqual(before);
   expect(await page.evaluate(() => window.editorTest.record.state.rulesetVersion)).toBe(
-    'consup-292-2027-v2',
+    'consup-292-2027-v3',
   );
 });

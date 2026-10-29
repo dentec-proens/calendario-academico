@@ -87,23 +87,15 @@ export function reviewSupport<
     !policy.scope ||
     (record.state.offers
       ? calendarOffers(record.state).filter(
-          (offer) =>
-            !policy.excludedModalities.includes(offer.kind) &&
-            offer.scope?.status !== 'own-regulation',
+          (offer) => !policy.excludes(offer) && offer.scope?.status !== 'own-regulation',
         ).length > 0 &&
         calendarOffers(record.state)
-          .filter(
-            (offer) =>
-              !policy.excludedModalities.includes(offer.kind) &&
-              offer.scope?.status !== 'own-regulation',
-          )
+          .filter((offer) => !policy.excludes(offer) && offer.scope?.status !== 'own-regulation')
           .every((offer) => offer.scope?.status === 'covered')
       : record.state.scopeConfirmation?.status === 'covered');
   const window = policy.window(record.state);
   const normativeOffers = calendarOffers(record.state).filter(
-    (offer) =>
-      !policy.excludedModalities.includes(offer.kind) &&
-      (!policy.scope || offer.scope?.status === 'covered'),
+    (offer) => !policy.excludes(offer) && (!policy.scope || offer.scope?.status === 'covered'),
   );
   const normativeCounts = record.state.offers
     ? counts.filter(([id]) => normativeOffers.some((offer) => offer.id === id))
@@ -113,11 +105,7 @@ export function reviewSupport<
     ? record.state.periods.filter((period) =>
         associationOffers(period.association).some((id) => {
           const offer = offerFor(record.state, id);
-          return (
-            offer &&
-            !policy.excludedModalities.includes(offer.kind) &&
-            offer.scope?.status !== 'own-regulation'
-          );
+          return offer && !policy.excludes(offer) && offer.scope?.status !== 'own-regulation';
         }),
       )
     : record.state.periods;
@@ -183,8 +171,9 @@ export function reviewSupport<
           ? countLabel +
             counts
               .map(([m, r]) => {
+                const offer = offerFor(record.state, m);
                 const minimum =
-                  policy.review.annualReference?.(offerFor(record.state, m)?.kind ?? m) ??
+                  (offer ? policy.review.annualReference?.(offer.kind) : undefined) ??
                   r.checks.find((check) => check.scope === 'annual')?.expected;
                 return `${labelFor(record.state, m)}: ${r.total} dias letivos registrados; ${minimum == null ? 'mínimo normativo não configurado para este escopo' : `${r.total >= minimum ? 'alcança' : 'não alcança'} a referência de ${minimum} dias`}`;
               })

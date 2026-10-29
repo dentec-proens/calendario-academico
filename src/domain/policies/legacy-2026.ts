@@ -26,7 +26,7 @@ export const legacy2026Policy: CalendarPolicy = {
   }),
   // Historical review references do not automatically become active counting thresholds.
   countingMinimums: () => ({ annual: null, semester: null }),
-  excludedModalities,
+  excludes: (offer) => excludedModalities.some((kind) => kind === offer.kind),
   explicitRecordOffers: false,
   intakeRequirements: false,
   windowInReadiness: false,

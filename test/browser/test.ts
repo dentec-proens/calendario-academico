@@ -1,11 +1,22 @@
 import { test as base, expect } from '@playwright/test';
 import { startFixtureServer, type FixtureServer } from './fixture-server.ts';
+import { nativeSelectLaunchOptions } from './chromium-native-theme.ts';
 
 export type Cleanup = (callback: () => unknown) => void;
 
 // Keep fixture servers alive until the page has closed; always release every resource,
 // even when a test or another teardown fails.
 export const test = base.extend<{ cleanup: Cleanup }, { fixtureServer: FixtureServer }>({
+  launchOptions: [
+    async ({ browserName, launchOptions, playwright }, provide) => {
+      await provide(
+        process.platform === 'darwin' && browserName === 'chromium'
+          ? await nativeSelectLaunchOptions(playwright.chromium, launchOptions)
+          : launchOptions,
+      );
+    },
+    { scope: 'worker' },
+  ],
   fixtureServer: [
     async ({ browserName }, provide) => {
       const callbacks: Parameters<Cleanup>[0][] = [];

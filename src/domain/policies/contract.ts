@@ -1,4 +1,4 @@
-import type { ActivityRequirement, AssessmentSettings } from '../calendar/model.ts';
+import type { ActivityRequirement, AssessmentSettings, CalendarOffer } from '../calendar/model.ts';
 import type { RequirementSection } from '../calendar/activities/requirement-table.ts';
 import type { ReviewCriterion, ReviewSource } from '../reviews/parecer-items.ts';
 
@@ -27,6 +27,11 @@ export interface CalendarWindow {
   start: string;
   latestStart: string;
   end: string;
+  basis: string;
+}
+
+export interface Minimum {
+  days: number;
   basis: string;
 }
 
@@ -61,18 +66,18 @@ export interface CalendarPolicy {
   applicability(
     state: AssessmentSettings,
     requirement: ActivityRequirement,
-    modality: string,
+    offer: CalendarOffer,
   ): Applicability;
   /** Short explanation shown next to an activity the norm leaves optional for an offer. */
-  applicabilityNote?(requirement: ActivityRequirement, modality: string): string | undefined;
+  applicabilityNote?(requirement: ActivityRequirement, offer: CalendarOffer): string | undefined;
   window(state: AssessmentSettings): CalendarWindow | null;
   /** Minimum teaching days actually enforced by counting; `null` means not configured. */
   countingMinimums(
     state: AssessmentSettings,
-    modality: string,
-  ): { annual: number | null; semester: number | null };
+    offer: CalendarOffer,
+  ): { annual: Minimum | null; semester: Minimum | null };
   /** Offers the norm leaves to their own regulation. */
-  excludedModalities: readonly string[];
+  excludes(offer: CalendarOffer): boolean;
   /** Human confirmation of the norm's scope, required before asserting compliance. */
   scope?: {
     /** Short name of the norm shown in the editor. */

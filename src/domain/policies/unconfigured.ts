@@ -10,7 +10,7 @@ export const unconfiguredPolicy: CalendarPolicy = {
   applicability: () => 'unconfigured',
   window: () => null,
   countingMinimums: () => ({ annual: null, semester: null }),
-  excludedModalities: [],
+  excludes: () => false,
   explicitRecordOffers: false,
   intakeRequirements: false,
   windowInReadiness: false,

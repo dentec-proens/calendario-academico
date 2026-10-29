@@ -40,7 +40,7 @@ export function releaseReadiness(
       if (record.state.scopeConfirmation?.status !== 'covered')
         issues.push(policy.scope.readinessIssue);
     } else {
-      const included = offers.filter((offer) => !policy.excludedModalities.includes(offer.kind));
+      const included = offers.filter((offer) => !policy.excludes(offer));
       const pending = included.filter((offer) => offer.scope?.status !== 'covered');
       if (pending.length) {
         if (new Set(included.map((offer) => offer.scope?.status)).size === 1)
@@ -125,7 +125,7 @@ export function releaseReadiness(
   if (window && policy.windowInReadiness)
     for (const offer of offers.filter(
       (offer) =>
-        !policy.excludedModalities.includes(offer.kind) &&
+        !policy.excludes(offer) &&
         (!record.state.offers || offer.scope?.status !== 'own-regulation'),
     )) {
       const periods = periodsForModality(record.state, offer.id);

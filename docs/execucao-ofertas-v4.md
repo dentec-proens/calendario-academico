@@ -176,3 +176,67 @@ rápidas e **293 testes de navegador** aprovados. Referências visuais inalterad
 Nenhum bloqueante ou importante permanece aberto nos portões; os limites de
 três rodadas foram respeitados. Nenhuma operação de escrita ou publicação foi
 realizada em produção.
+
+## 29/10/2026 — M3 em validação
+
+O contrato de política passa a receber `CalendarOffer` em aplicabilidade, notas
+e mínimos; `excludes(offer)` substitui a lista pública de modalidades excluídas.
+Cada mínimo possui `days` e `basis`. A contagem extrai os mesmos números de antes:
+200 anuais e 100 semestrais em 2027, incluindo ambas as conferências na
+organização semestral; 2026 e anos sem norma continuam sem mínimos automáticos.
+Os wrappers transitórios resolvem ids por correspondência exata com a oferta,
+sem inferir tipo pelo texto do id.
+
+A entrada `consup-292-2027-v3`, de efeito editorial, registra a aplicação por
+oferta e a numeração por ciclo. A fronteira de revisão continua equivalente à
+v2. Os fingerprints publicados foram preservados; a nova entrada tem o mesmo
+fingerprint da v2 na fronteira de referência v3, cuja redação de compatibilidade
+permanece estável. O JSON do oráculo original não foi alterado.
+
+Os portões de conformidade e equivalência aprovaram o M3 sem achados. O revisor
+de equivalência fez também uma comparação independente com a política anterior:
+5.931 comparações, em 19 estados e três variantes de escopo, sem divergências.
+Typecheck completo e 61 testes direcionados passaram; a revisão React dos dois
+consumidores TSX não identificou novos hooks, efeitos ou proprietários de valores.
+
+As imagens de regras e adoção de regras mudam apenas pela versão atual e pela
+nova entrada do histórico. As quatro imagens reais e suas diferenças foram
+inspecionadas em desktop/mobile, incluindo o final da página mobile em tamanho
+legível; não há corte de texto ou controles sobrepostos. As referências macOS
+afetadas estão sendo atualizadas e serão comparadas novamente sem atualização
+antes de `pnpm check`.
+
+As quatro referências editoriais foram atualizadas após inspeção e os seis casos
+de comparação passaram novamente sem atualização. `pnpm test:unit` passou com
+581 testes em 11,00 s; tipos e lint de tipos passaram. A primeira execução
+completa do M3 aprovou as etapas rápidas, mas teve 18 falhas de navegador em
+216,1 s: uma no cenário de reversão de semana e 17 comparações com deslocamento
+de poucos pixels nas setas nativas de selects.
+
+O diagnóstico da semana reproduziu a falha 3/3 e comprovou um único diff:
+`rulesetVersion` de v2 para v3. A fixture padrão ainda fixava v2; a sessão
+carimbava legitimamente a política corrente ao editar. A fixture passa a obter a
+versão pelo registry, e o cenário de reversão afirma esse baseline corrente. O
+cenário de legado continua explicitamente sem versão, com asserção própria.
+Sessão, debounce e expectativa de zero saves não foram alterados. Os 23 testes
+relacionados passaram.
+
+As setas foram comparadas também com o código do M2 no mesmo Chromium: resultado
+idêntico ao M3, afastando regressão da aplicação. A feature `OverlayScrollbar`
+explicou a variação. O ambiente sintético macOS/Chromium agora fixa a variante das
+referências por uma mesclagem que preserva os defaults reais do Playwright e as
+opções do projeto. Uma sondagem pela API pública obtém os argumentos e é fechada
+em `finally` antes do navegador do worker; custo medido de 101–135 ms por worker.
+Os 17 casos afetados, páginas longas/mobile e testes de configuração/limpeza
+passaram (22 casos de navegador e quatro unitários). As 17 referências,
+tolerâncias e controles da aplicação permaneceram intactos; não houve mudança
+nas preferências do macOS. O procedimento está documentado em `verificacao.md`.
+
+A revisão complementar e a nova execução completa do código final do M3 estão
+em andamento.
+
+Resultado final do M3: revisão complementar aprovada, sem achados; a execução
+completa de `pnpm check` sobre o código final passou, incluindo **295 testes de
+navegador**. As 17 referências da variação nativa permaneceram inalteradas; as
+quatro referências editoriais já haviam sido inspecionadas e comparadas novamente
+sem atualização. Produção continua sem escritas ou releases desta execução.

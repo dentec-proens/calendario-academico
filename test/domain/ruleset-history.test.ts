@@ -1,7 +1,13 @@
 import { expect, test } from 'vitest';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
-import type { ActivityRequirement, AssessmentSettings } from '../../src/domain/calendar/model.ts';
+import type {
+  ActivityRequirement,
+  AssessmentSettings,
+  CalendarOffer,
+} from '../../src/domain/calendar/model.ts';
+import { calendarOffers } from '../../src/domain/calendar/offers.ts';
+import { modalityIds } from '../../src/domain/calendar/config.ts';
 import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
 import type { CalendarPolicy, RulesetChange } from '../../src/domain/policies/contract.ts';
 import {
@@ -22,6 +28,8 @@ import {
 const catalogueFingerprints: Record<string, string> = {
   'legacy-2026-v1': 'b0e948ba297029f2f001473bd645baab6ed4f4a44c793835c9b3d0d6286a32df',
   'consup-292-2027-v2': 'bc56d935878de0a5af2150b3c0fbdb4575d74db77afc0e8f143e4318f31e1e8d',
+  // The preserved v3 input boundary keeps its published catalogue; offer-aware wording is v4.
+  'consup-292-2027-v3': 'bc56d935878de0a5af2150b3c0fbdb4575d74db77afc0e8f143e4318f31e1e8d',
   'unconfigured:2028': '85a305ec506d13408190b3ec133c33b76ae7518951b8325ed3edc82f8a666d32',
 };
 
@@ -84,13 +92,15 @@ const hidden = new Set<string>([
   'optionalFor',
 ] satisfies (keyof ActivityRequirement)[]);
 
-const note = (policy: CalendarPolicy, requirement: ActivityRequirement, modality: string) =>
-  policy.applicabilityNote?.(requirement, modality) ?? null;
+const note = (policy: CalendarPolicy, requirement: ActivityRequirement, offer: CalendarOffer) =>
+  policy.applicabilityNote?.(requirement, offer) ?? null;
 
 function catalogue(policy: CalendarPolicy, year: number) {
   return {
     criteria: policy.review.criteria,
-    excludedModalities: policy.excludedModalities,
+    excludedModalities: calendarOffers({ modalities: [...modalityIds] })
+      .filter((offer) => policy.excludes(offer))
+      .map((offer) => offer.id),
     states: referenceSettings.map((settings) => {
       const state = { ...settings, year };
       return {
@@ -98,12 +108,18 @@ function catalogue(policy: CalendarPolicy, year: number) {
         requirements: activityChecklist(state).map((requirement) => ({
           ...Object.fromEntries(Object.entries(requirement).filter(([key]) => !hidden.has(key))),
           byModality: Object.fromEntries(
-            (state.modalities ?? []).map((modality) => [
-              modality,
+            calendarOffers(state).map((offer) => [
+              offer.id,
               {
-                applicability: policy.applicability(state, requirement, modality),
-                note: note(policy, requirement, modality),
-                minimums: policy.countingMinimums(state, modality),
+                applicability: policy.applicability(state, requirement, offer),
+                note: note(policy, requirement, offer),
+                minimums: (() => {
+                  const minimums = policy.countingMinimums(state, offer);
+                  return {
+                    annual: minimums.annual?.days ?? null,
+                    semester: minimums.semester?.days ?? null,
+                  };
+                })(),
               },
             ]),
           ),
@@ -246,6 +262,10 @@ test('only establishing or tightening versions bind reviews and base identities'
 
   expect(reviewBoundary('consup-292-2027-v2')).toBe('consup-292-2027-v1');
   expect(equivalentRulesets('consup-292-2027-v1', 'consup-292-2027-v2')).toBe(true);
+  expect(equivalentRulesets('consup-292-2027-v2', 'consup-292-2027-v3')).toBe(true);
+  expect(rulesetChangesBetween('consup-292-2027-v2', 'consup-292-2027-v3')).toMatchObject([
+    { version: 'consup-292-2027-v3', effect: 'editorial' },
+  ]);
   expect(equivalentRulesets(undefined, 'consup-292-2027-v2')).toBe(false);
   expect(equivalentRulesets('consup-292-2027-v0', 'consup-292-2027-v2')).toBe(false);
   expect(equivalentRulesets('legacy-2026-v1', 'consup-292-2027-v1')).toBe(false);

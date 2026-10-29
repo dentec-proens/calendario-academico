@@ -26,7 +26,7 @@ export function activityCoverage(
       )
       .map((offer) => {
         const modality = offer.id;
-        const applicability = policy.applicability(state, requirement, modality);
+        const applicability = policy.applicability(state, requirement, offer);
         const linked = events.filter(
           (event) => event.requirementId === requirement.id && appliesTo(event, modality),
         );

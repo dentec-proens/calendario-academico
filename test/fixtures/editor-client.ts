@@ -4,6 +4,7 @@ import type { Id } from '../../convex/_generated/dataModel.js';
 import { api } from '../../convex/_generated/api.js';
 import { getFunctionName, type FunctionReference } from 'convex/server';
 import { teacherDayId } from '../../src/domain/institution/teacher-day.ts';
+import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 
 export const record: CalendarRecord = {
   id: 'synthetic-calendar' as Id<'calendars'>,
@@ -14,7 +15,6 @@ export const record: CalendarRecord = {
   modalities: ['integrado'],
   state: {
     schemaVersion: 3,
-    rulesetVersion: 'consup-292-2027-v2',
     organizationByModality: { integrado: 'anual' },
     campus: 'Campus de teste',
     year: 2027,
@@ -52,6 +52,7 @@ export const record: CalendarRecord = {
   currentDocuments: [],
   readiness: { ready: false, issues: [], warnings: [], officialApproval: false },
 };
+record.state.rulesetVersion = rulesetVersion(record.state);
 record.institutionalSnapshot = structuredClone(record.institutionalEvents);
 export const calls = { synchronizations: 0, saves: 0, conversions: 0, failConversion: false };
 export const fixtureProfile: { role: Bootstrap['user']['role'] } = { role: 'ADMIN' };

@@ -1,5 +1,10 @@
 import { modalityIds, termLabels } from '../calendar/config.ts';
-import type { AssessmentSettings, ActivityRequirement, AcademicTerm } from '../calendar/model.ts';
+import type {
+  AssessmentSettings,
+  ActivityRequirement,
+  AcademicTerm,
+  CalendarOffer,
+} from '../calendar/model.ts';
 import { calendarOffers, offerFor, stageCycle as offerStageCycle } from '../calendar/offers.ts';
 import { operationalRequirements } from '../calendar/activities/operational-checklist.ts';
 import {
@@ -30,6 +35,14 @@ const rulesetChanges: readonly RulesetChange[] = [
     source: 'Decisão da gestão do sistema após retorno de campus',
     summary:
       'Reunião com familiares, responsáveis e comunidade passa a ser exigida apenas no técnico integrado.',
+  },
+  {
+    version: 'consup-292-2027-v3',
+    date: '2026-10-29',
+    effect: 'editorial',
+    source: 'Decisão da gestão do sistema após retorno de campus',
+    summary:
+      'Atividades aplicadas por oferta; etapas de avaliação numeradas por ciclo da organização. Sem mudança de obrigações.',
   },
 ];
 const rulesetVersion = rulesetChanges.at(-1)!.version;
@@ -393,29 +406,22 @@ function requirements(state: AssessmentSettings): ActivityRequirement[] {
   return [...rows, ...legacy];
 }
 function applicability(
-  state: AssessmentSettings,
+  _state: AssessmentSettings,
   requirement: ActivityRequirement,
-  modality: string,
+  offer: CalendarOffer,
 ): Applicability {
-  const offer = offerFor(state, modality);
-  const kind = offer?.kind ?? modality;
-  if (
-    excluded(kind) ||
-    (state.offers ? offer?.scope?.status : state.scopeConfirmation?.status) === 'own-regulation'
-  )
-    return 'unconfigured';
+  const kind = offer.kind;
+  if (excluded(kind) || offer.scope?.status === 'own-regulation') return 'unconfigured';
   if (requirement.modalities && !requirement.modalities.includes(kind)) return 'optional';
   if (
     (requirement.offerId ?? requirement.modality) &&
-    (requirement.offerId ?? requirement.modality) !== modality
+    (requirement.offerId ?? requirement.modality) !== offer.id
   )
     return 'optional';
-  if (requirement.offerIds && !requirement.offerIds.includes(modality)) return 'optional';
+  if (requirement.offerIds && !requirement.offerIds.includes(offer.id)) return 'optional';
   if (requirement.optionalFor?.[kind] !== undefined) return 'optional';
   if (requirement.intake) {
-    const config = state.offers
-      ? offer?.intake?.[requirement.term ?? 'annual']
-      : state.intakeByModality?.[modality]?.[requirement.term ?? 'annual'];
+    const config = offer.intake?.[requirement.term ?? 'annual'];
     if (!config || config.status === 'unknown') return 'optional';
     return config.status === 'yes' && config.required === true ? 'required' : 'optional';
   }
@@ -493,7 +499,7 @@ export const consup2922027Policy: CalendarPolicy = {
       : 'unconfigured:2027',
   requirements,
   applicability,
-  applicabilityNote: (requirement, modality) => requirement.optionalFor?.[modality] || undefined,
+  applicabilityNote: (requirement, offer) => requirement.optionalFor?.[offer.kind] || undefined,
   window: (state) =>
     calendarOffers(state).some(
       (offer) => !excluded(offer.kind) && offer.scope?.status !== 'own-regulation',
@@ -505,17 +511,16 @@ export const consup2922027Policy: CalendarPolicy = {
           basis: 'Arts. 4º e 8º da Resolução CONSUP/IFPR nº 292/2026',
         }
       : null,
-  countingMinimums: (state, modality) => {
-    const offer = offerFor(state, modality);
-    const configured =
-      !excluded(offer?.kind ?? modality) &&
-      (state.offers ? offer?.scope?.status : state.scopeConfirmation?.status) === 'covered';
+  countingMinimums: (_state, offer) => {
+    const configured = !excluded(offer.kind) && offer.scope?.status === 'covered';
     return {
-      annual: configured ? dayMinimums.annual : null,
-      semester: configured ? dayMinimums.semester : null,
+      annual: configured ? { days: dayMinimums.annual, basis: `Art. 4º da ${citation}` } : null,
+      semester: configured
+        ? { days: dayMinimums.semester, basis: `Art. 4º, § 1º, da ${citation}` }
+        : null,
     };
   },
-  excludedModalities,
+  excludes: (offer) => excluded(offer.kind),
   scope: {
     norm: 'Resolução 292',
     readinessIssue:
