@@ -24,8 +24,7 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
     body: {
       campusId: ids.campuses.a,
       year: 2027,
-      modalities: ['integrado'],
-      regime: 'anual',
+      offers: [{ kind: 'integrado', organization: 'anual' }],
       courses: 'Curso de teste',
       classes: '',
       shifts: '',
@@ -65,8 +64,7 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
       body: {
         campusId: ids.campuses.b,
         year: 2027,
-        modalities: ['integrado'],
-        regime: 'anual',
+        offers: [{ kind: 'integrado', organization: 'anual' }],
         courses: 'Teste',
         classes: '',
         shifts: '',
@@ -230,8 +228,7 @@ test('campus cannot read or change another campus while admin can manage both', 
   const body = {
     campusId: ids.campuses.b,
     year: 2027,
-    modalities: ['integrado' as const],
-    regime: 'anual' as const,
+    offers: [{ kind: 'integrado' as const, organization: 'anual' as const }],
     courses: 'Teste isolado',
     purpose: 'test' as const,
   };

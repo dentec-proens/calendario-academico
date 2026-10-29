@@ -13,8 +13,7 @@ import { createNativeFixture as fixture } from '../helpers/native-database.ts';
 const createBody = (campusId = 'a') => ({
   campusId,
   year: 2027,
-  modalities: ['integrado' as const],
-  regime: 'anual' as const,
+  offers: [{ kind: 'integrado' as const, organization: 'anual' as const }],
   courses: 'Técnico',
   purpose: 'test' as const,
 });
@@ -229,14 +228,18 @@ test('native calendar saves validate per-offer stages and preserve the selected 
   const campus = as('campus-a');
   const record = await campus.write('/api/calendars', {
     ...createBody(),
-    modalities: ['integrado', 'graduacao'],
-    regime: 'semestral',
+    offers: [
+      { kind: 'integrado', organization: 'semestral' },
+      { kind: 'graduacao', organization: 'semestral' },
+    ],
   });
   const path = '/api/calendars/' + record.id;
   const state = {
     ...record.state,
-    assessmentStagesByModality: { integrado: 4, graduacao: 2 },
-    secondSemesterIntake: false,
+    offers: [
+      { ...record.state.offers[0], stages: { perTerm: 2 }, intake: { second: { status: 'no' } } },
+      { ...record.state.offers[1], stages: { perTerm: 1 }, intake: { second: { status: 'no' } } },
+    ],
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     periods: [
@@ -245,14 +248,14 @@ test('native calendar saves validate per-offer stages and preserve the selected 
         name: 'Primeiro semestre',
         start: '2027-03-01',
         end: '2027-03-12',
-        association: { status: 'defined', modalities: ['integrado', 'graduacao'], term: 'first' },
+        association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'first' },
       },
       {
         id: 'q',
         name: 'Segundo semestre',
         start: '2027-04-01',
         end: '2027-04-14',
-        association: { status: 'defined', modalities: ['integrado', 'graduacao'], term: 'second' },
+        association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'second' },
       },
     ],
     events: [
@@ -260,7 +263,7 @@ test('native calendar saves validate per-offer stages and preserve the selected 
         id: 'stage',
         name: 'Graduação',
         requirementId: 'stage-1:graduacao',
-        modalities: ['graduacao'],
+        offers: ['graduacao'],
         start: '2027-03-01',
         end: '2027-03-12',
         kind: 'note',
@@ -270,14 +273,17 @@ test('native calendar saves validate per-offer stages and preserve the selected 
   };
   await campus.write(path, { ...saveBody(record), state }, 'PUT');
   const loaded = await campus.read(path);
-  assert.deepEqual(loaded.state.assessmentStagesByModality, state.assessmentStagesByModality);
+  assert.deepEqual(loaded.state.offers, state.offers);
   assert.equal(loaded.state.events[0].requirementId, 'stage-1:graduacao');
-  assert.equal(loaded.state.secondSemesterIntake, false);
+  assert.equal(loaded.state.offers[1].intake.second.status, 'no');
   for (const invalid of [
-    { ...state, secondSemesterIntake: 'false' },
-    { ...state, events: [{ ...state.events[0], modalities: ['integrado'] }] },
+    {
+      ...state,
+      offers: [{ ...state.offers[0], intake: { second: { status: 'false' } } }, state.offers[1]],
+    },
+    { ...state, events: [{ ...state.events[0], offers: ['integrado'] }] },
     { ...state, year: 2028 },
-    { ...state, offer: 'posgraduacao', modalities: ['posgraduacao'] },
+    { ...state, offers: [{ ...state.offers[0], kind: 'posgraduacao' }] },
   ]) {
     await assert.rejects(campus.write(path, { ...saveBody(loaded), state: invalid }, 'PUT'));
   }
@@ -693,7 +699,7 @@ test('domain rule violations reach the client as ConvexError with their status a
     (error: unknown) =>
       error instanceof ConvexError &&
       error.data?.status === 400 &&
-      error.data.error === 'Ano ou oferta inválidos.',
+      error.data.error === 'Ano inválido.',
   );
   const page = await admin.query(api.calendars.calendarPage, {
     paginationOpts: { numItems: 10, cursor: null },

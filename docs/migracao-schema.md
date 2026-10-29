@@ -9,15 +9,15 @@ A ferramenta `scripts/migrate-data.ts` opera sobre exportações Convex mediante
 - Ensaio descartável isolado antes de qualquer aplicação em ambiente compartilhado.
 - Verificação de IDs, sessões, referências, versões, pareceres, componentes e arquivos.
 
-Exportações podem conter credenciais e dados pessoais. Não publicar seus conteúdos em logs ou artefatos de CI. Novos conteúdos e cópias de calendário usam `schemaVersion: 3`; v2 permanece como formato de leitura/conversão, inclusive para os adaptadores históricos desta migração. As regras de validação e normalização pertencem ao código de domínio e ao schema.
+Exportações podem conter credenciais e dados pessoais. Não publicar seus conteúdos em logs ou artefatos de CI. Novos conteúdos e cópias de calendário usam `schemaVersion: 4`; a release A mantém validadores legados independentes somente na fronteira de armazenamento/conversão. As regras de validação e normalização pertencem ao código de domínio e ao schema.
 
-## Conversão local de v2 para v3
+## Migração para ofertas com identidade
 
-A consulta preserva o conteúdo e os snapshots originais. O editor adapta v2 em memória; um salvamento válido grava v3 com a versão esperada e a incorporação explícita da política de 2027 quando necessária. A importação de cópia usa a mesma conversão e pede confirmação antes da substituição do estado aplicado. Dois salvamentos concorrentes não executam duas conversões silenciosas.
+O conteúdo v4 separa a identidade da oferta do tipo que determina sua aplicabilidade normativa. A release A aceita v2/v3 e v4 no armazenamento, adapta leituras em memória e grava somente v4. Um cliente antigo recebe 409 e pedido de atualização; importações de cópias 2/3 são recusadas. A release B exige somente v4 e remove os conversores. IDs, datas e vínculos dos conteúdos atuais, inclusive lixeira, são preservados; a conversão não aumenta versões nem altera `updatedAt` ou revisões da base.
 
-Organização anual inequívoca conserva período, ID e datas. Organização semestral exige identidade segura dos dois semestres; nomes genéricos, `misto` e configurações inconsistentes ficam `a-classificar`. A classificação não é inferida pela posição de um período em uma lista. Nenhum edital legado ganha ano de ingresso ou situação realizada pelo nome. A configuração geral antiga de ingresso é contexto; em calendário combinado, exige confirmação por oferta.
+A lista `pending` do componente de migrações expurga `reviewVersions`, `reviews`, `calendarVersions`, `calendarSnapshots` e `calendarAliases`, converte conteúdos em lotes de dez e materializa `calendars.offerKinds`. Recibos e contadores próprios registram convertidos, pendentes, órfãos e falhas sem varreduras integrais por consulta. Auditorias de sistema conservam contagens do expurgo e hash do estado anterior de cada calendário. Erros de dados bloqueiam a promoção; a série permite retomada segura após correção.
 
-Um cliente v2 não sobrescreve conteúdo já convertido para v3. Cópias, fontes e rascunhos continuam recuperáveis para atualização do cliente. Pareceres e snapshots antigos não são reescritos; a adoção de novas regras invalida a conferência antiga, e a nova revisão identifica o conjunto efetivamente examinado. O ensaio da fonte institucional e a operação administrativa posterior estão descritos em [Arquitetura](arquitetura-convex.md#conteúdo-v3-e-política-de-2027).
+Publicação exige backup integral com Storage restaurado em destino descartável, ensaio A/B, verificação independente pelo domínio e painel unânime. Os procedimentos estão em [Implantação e operação](implantacao-convex-vercel.md); o estado efetivamente executado, contagens e limites ficam no [diário de ofertas v4](execucao-ofertas-v4.md). A implementação na branch não comprova que uma operação foi executada em produção.
 
 ## Fluxo da ferramenta
 

@@ -129,11 +129,9 @@ export function reviewSupport<
       name: record.name,
       campus: record.state.campus,
       year: record.state.year,
-      offer: record.state.offer,
-      modalities: record.state.offers
-        ? kinds({ offers: record.state.offers })
-        : offerIds(record.state),
-      ...(record.state.offers ? { offers: record.state.offers } : {}),
+      ...(record.state.offers
+        ? { offerKinds: kinds({ offers: record.state.offers }), offers: record.state.offers }
+        : { offer: record.state.offer, modalities: offerIds(record.state) }),
       regime: regime,
       version: record.version,
     },
@@ -302,10 +300,9 @@ export function reviewSupport<
       };
     }),
     teachingDays: counts.map(([modality, r]) => ({
-      modality,
       ...(record.state.offers
         ? { offerId: modality, label: labelFor(record.state, modality) }
-        : {}),
+        : { modality }),
       total: r.total,
       byPeriod: r.byPeriod,
       provisional,

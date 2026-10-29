@@ -6,8 +6,7 @@ import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 
 const createBody = {
   year: 2027,
-  modalities: ['integrado' as const],
-  regime: 'anual' as const,
+  offers: [{ kind: 'integrado' as const, organization: 'anual' as const }],
   courses: 'Curso sintético',
   purpose: 'test' as const,
 };
@@ -32,7 +31,7 @@ test('calendar operations append immutable snapshots and roll back stale saves a
             kind: 'note' as const,
             start: '2027-03-01',
             end: '2027-03-01',
-            modalities: ['integrado' as const],
+            offers: ['integrado' as const],
           },
         ],
       },
@@ -62,7 +61,7 @@ test('calendar operations append immutable snapshots and roll back stale saves a
               kind: 'note' as const,
               start: '2027-03-01',
               end: '2027-03-01',
-              modalities: ['integrado' as const],
+              offers: ['integrado' as const],
             },
           ],
         },
@@ -173,7 +172,7 @@ test('typed storage rejects legacy envelopes, invalid relationships and incomple
     client.run((ctx) =>
       ctx.db.insert('calendars', {
         year: createBody.year,
-        modalities: createBody.modalities,
+        offerKinds: createBody.offers.map((offer) => offer.kind),
         purpose: createBody.purpose,
         courses: createBody.courses,
         campusId: ids.users.admin,
@@ -212,5 +211,5 @@ test('typed storage rejects legacy envelopes, invalid relationships and incomple
   );
   assert(content);
   for (const key of ['campus', 'year', 'offer']) assert(!(key in content.state));
-  assert.equal(content.state.schemaVersion, 3);
+  assert.equal(content.state.schemaVersion, 4);
 });

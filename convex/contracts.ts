@@ -2,6 +2,10 @@ import { v } from 'convex/values';
 import { publicMember } from './access/contracts';
 import {
   domainState,
+  contentStateV4,
+  historicalStateLegacy,
+  organization,
+  calendarOffer,
   modality,
   purpose,
   regime,
@@ -39,14 +43,16 @@ export const catalogueEventDto = v.object({
   modalities: v.array(modality),
   active: v.boolean(),
 });
-export const catalogueDto = v.object({ revision: v.number(), events: v.array(catalogueEventDto) });
+export const catalogueDto = v.object({
+  revision: v.number(),
+  events: v.array(catalogueEventDto),
+});
 export const summary = v.object({
   id: v.id('calendars'),
   name: v.string(),
   campusId: v.id('campuses'),
   year: v.number(),
-  modalities: v.array(modality),
-  offer: modality,
+  offerKinds: v.array(modality),
   purpose,
   courses: v.string(),
   classes: v.string(),
@@ -90,21 +96,32 @@ export const bootstrapDto = v.object({
 export const createInput = v.object({
   campusId: v.id('campuses'),
   year: v.number(),
-  modalities: v.array(modality),
-  regime,
+  offers: v.array(v.object({ kind: modality, organization, label: v.optional(v.string()) })),
   courses: v.string(),
   classes: v.optional(v.string()),
   shifts: v.optional(v.string()),
   purpose: v.optional(purpose),
 });
-export const saveInput = v.object({
+export const saveStateV4 = v.object({
+  ...contentStateV4.fields,
+  year: v.number(),
+  campus: v.string(),
+  teacherDayDate: v.optional(v.union(v.string(), v.null())),
+});
+const saveStateLegacy = v.object({
+  ...historicalStateLegacy.fields,
+  teacherDayDate: v.optional(v.union(v.string(), v.null())),
+});
+const saveFields = {
   baseAcceptance: v.optional(v.string()),
   version: v.number(),
   catalogueRevision: v.number(),
-  state: v.object({
-    ...domainState.fields,
-    teacherDayDate: v.optional(v.union(v.string(), v.null())),
-  }),
+};
+export const saveInputV4 = v.object({ ...saveFields, state: saveStateV4 });
+// The legacy transport is accepted solely to return the update-required 409.
+export const saveInput = v.object({
+  ...saveFields,
+  state: v.union(saveStateV4, saveStateLegacy),
 });
 export const baseSnapshotDto = v.object({
   rulesetVersion: v.optional(v.string()),
@@ -156,7 +173,12 @@ const criterion = v.object({
 });
 export const reviewSupportDto = v.object({
   rulesetVersion: v.optional(v.string()),
-  source: v.object({ id: v.string(), year: v.number(), title: v.string(), norm: v.string() }),
+  source: v.object({
+    id: v.string(),
+    year: v.number(),
+    title: v.string(),
+    norm: v.string(),
+  }),
   sameYear: v.boolean(),
   officialApproval: v.literal(false),
   calendar: v.object({
@@ -164,15 +186,16 @@ export const reviewSupportDto = v.object({
     name: v.string(),
     campus: v.string(),
     year: v.number(),
-    offer: modality,
-    modalities: v.array(modality),
+    offerKinds: v.array(modality),
+    offers: v.array(calendarOffer),
     regime,
     version: v.number(),
   }),
   criteria: v.array(criterion),
   teachingDays: v.array(
     v.object({
-      modality: v.string(),
+      offerId: v.string(),
+      label: v.string(),
       total: v.number(),
       byPeriod: v.record(v.string(), v.number()),
       provisional: v.boolean(),
@@ -193,4 +216,8 @@ export const reviewSupportDto = v.object({
   stale: v.boolean(),
   baseIdentity: v.optional(v.string()),
 });
-export const exportDto = v.object({ html: v.string(), body: v.string(), text: v.string() });
+export const exportDto = v.object({
+  html: v.string(),
+  body: v.string(),
+  text: v.string(),
+});

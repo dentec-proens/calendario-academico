@@ -1,4 +1,6 @@
 import type { FunctionArgs } from 'convex/server';
+import type { Infer } from 'convex/values';
+import type { saveInputV4 } from '../../../convex/contracts.ts';
 import type { Id } from '../../../convex/_generated/dataModel.js';
 import { convex, functions } from './client.ts';
 import { request } from './errors.ts';
@@ -8,7 +10,7 @@ export const calendars = {
     request(() => convex.query(functions.calendars.calendar, { id: id as Id<'calendars'> })),
   create: (body: FunctionArgs<typeof functions.calendars.createCalendar>['body']) =>
     request(() => convex.mutation(functions.calendars.createCalendar, { body })),
-  save: (id: string, body: FunctionArgs<typeof functions.calendars.saveCalendar>['body']) =>
+  save: (id: string, body: Infer<typeof saveInputV4>) =>
     request(() =>
       convex.mutation(functions.calendars.saveCalendar, { id: id as Id<'calendars'>, body }),
     ),

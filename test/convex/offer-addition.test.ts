@@ -6,6 +6,7 @@ import {
   offerOrganizationDraft,
 } from '../../src/domain/calendar/organization/offers.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
+import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 
 function calendar(): ActivityState {
   return {
@@ -61,19 +62,25 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
     body: {
       campusId: fixture.ids.campuses.a,
       year: 2027,
-      modalities: ['posgraduacao'],
-      regime: 'anual',
+      offers: [{ kind: 'posgraduacao', organization: 'anual' }],
       courses: 'Pós-graduação sintética',
       purpose: 'test',
     },
   });
-  const modalities: typeof record.state.modalities = ['posgraduacao', 'integrado'];
+  const offers: typeof record.state.offers = [
+    ...record.state.offers,
+    {
+      id: 'integrado',
+      kind: 'integrado',
+      delivery: 'a-conferir',
+      organization: 'anual',
+      stages: { perTerm: 2 },
+    },
+  ];
   const state = {
     ...record.state,
-    modalities,
-    rulesetVersion: 'consup-292-2027-v2',
-    organizationByModality: { ...record.state.organizationByModality, integrado: 'anual' as const },
-    assessmentStagesByModality: { integrado: 2 as const },
+    offers,
+    rulesetVersion: rulesetVersion({ year: 2027, offers }),
     periods: [
       {
         id: 'integrated',
@@ -82,7 +89,7 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
         end: '2027-03-26',
         association: {
           status: 'defined' as const,
-          modalities: ['integrado' as const],
+          offers: ['integrado'],
           term: 'annual' as const,
         },
       },
@@ -91,7 +98,7 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
       id: `stage-${index + 1}`,
       name: `${index + 1}ª etapa`,
       requirementId: `stage-${index + 1}:integrado`,
-      modalities: ['integrado' as const],
+      offers: ['integrado'],
       start: index ? '2027-03-15' : '2027-03-01',
       end: index ? '2027-03-26' : '2027-03-12',
       kind: 'note' as const,
@@ -103,25 +110,31 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
   });
   const loaded = await actor.query(api.calendars.calendar, { id: record.id });
   expect(saved.version).toBe(record.version + 1);
-  expect(loaded.modalities).toEqual(modalities);
-  expect(loaded.state.modalities).toEqual(modalities);
+  expect(loaded.offerKinds).toEqual(['integrado', 'posgraduacao']);
+  expect(loaded.state.offers).toEqual(offers);
   expect(loaded.state.periods).toEqual(saved.state.periods);
   expect(loaded.state.events).toEqual(saved.state.events);
   const previous = await actor.query(api.calendars.calendarVersion, {
     id: record.id,
     version: record.version,
   });
-  expect(previous.state.modalities).toEqual(['posgraduacao']);
+  expect(previous.state.schemaVersion).toBe(4);
+  if (previous.state.schemaVersion !== 4) throw Error('Snapshot v4 esperado.');
+  expect(previous.state.offers.map((offer) => offer.id)).toEqual(['posgraduacao']);
   expect(previous.state.periods).toEqual([]);
   for (const changed of [
-    { ...loaded.state, modalities: ['integrado' as const] },
+    { ...loaded.state, offers: loaded.state.offers.filter((offer) => offer.id === 'integrado') },
     {
       ...loaded.state,
-      modalities: [...modalities, 'graduacao' as const],
-      organizationByModality: {
-        ...loaded.state.organizationByModality,
-        graduacao: 'anual' as const,
-      },
+      offers: [
+        ...offers,
+        {
+          id: 'graduacao',
+          kind: 'graduacao' as const,
+          delivery: 'a-conferir' as const,
+          organization: 'anual' as const,
+        },
+      ],
     },
     { ...loaded.state, year: 2028 },
   ]) {

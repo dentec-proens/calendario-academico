@@ -11,8 +11,7 @@ test('calendar authorship distinguishes creation from content edits without expo
     body: {
       campusId: ids.campuses.a,
       year: 2027,
-      modalities: ['integrado'],
-      regime: 'anual',
+      offers: [{ kind: 'integrado', organization: 'anual' }],
       courses: 'Curso sintético',
       purpose: 'test',
     },
@@ -33,7 +32,7 @@ test('calendar authorship distinguishes creation from content edits without expo
             kind: 'note' as const,
             start: '2027-03-01',
             end: '2027-03-01',
-            modalities: ['integrado' as const],
+            offers: ['integrado' as const],
           },
         ],
       },

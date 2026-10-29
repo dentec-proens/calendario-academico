@@ -1,8 +1,16 @@
 import { expect, test } from 'vitest';
+import { makeFunctionReference } from 'convex/server';
 import { api } from '../../convex/_generated/api.js';
+import type { DomainState } from '../../convex/validators.ts';
+import type { CalendarContentV4, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
+import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { reviewCriteria } from '../../src/domain/reviews/criteria.ts';
+import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import { rulesetVersion } from '../../src/domain/policies/registry.ts';
+import { initialCatalogue } from '../../src/domain/institution/catalogue.ts';
+import { teacherDayId } from '../../src/domain/institution/teacher-day.ts';
 
 async function setup() {
   const fixture = await createNativeFixture();
@@ -11,8 +19,10 @@ async function setup() {
     body: {
       campusId: fixture.ids.campuses.a,
       year: 2027,
-      modalities: ['integrado', 'graduacao'],
-      regime: 'misto',
+      offers: [
+        { kind: 'integrado', organization: 'a-classificar' },
+        { kind: 'graduacao', organization: 'a-classificar' },
+      ],
       courses: 'Ofertas sintéticas',
       purpose: 'test',
     },
@@ -20,79 +30,100 @@ async function setup() {
   return { ...fixture, actor, record };
 }
 
-test('calendar creation preserves the explicitly chosen organization and keeps a mixed choice pending', async () => {
-  const { asClient, ids } = await createNativeFixture();
-  const actor = asClient('campus-a');
-  for (const regime of ['anual', 'semestral', 'misto'] as const) {
-    const record = await actor.mutation(api.calendars.createCalendar, {
+const legacy = (schemaVersion: 2 | 3 = 3) => ({
+  schemaVersion,
+  regime: 'misto' as const,
+  weekdays: [],
+  weekConfirmed: false,
+  assessmentStagesByModality: {},
+  secondSemesterIntake: false,
+  ...(schemaVersion === 3
+    ? {
+        organizationByModality: {
+          integrado: 'a-classificar' as const,
+          graduacao: 'a-classificar' as const,
+        },
+      }
+    : {}),
+  periods: [{ id: 'legacy-first', name: 'Período legado', start: '2027-02-01', end: '2027-06-30' }],
+  events: [
+    {
+      id: 'legacy-notice',
+      name: 'Edital legado sem classificação',
+      start: '2027-01-15',
+      end: '2027-01-15',
+      kind: 'note' as const,
+    },
+  ],
+});
+
+test.each(['anual', 'semestral', 'a-classificar'] as const)(
+  'creation preserves organization %s and leaves later editor decisions undefined',
+  async (organization) => {
+    const { asClient, ids } = await createNativeFixture();
+    const record = await asClient('campus-a').mutation(api.calendars.createCalendar, {
       body: {
         campusId: ids.campuses.a,
         year: 2027,
-        modalities: ['integrado', 'graduacao'],
-        regime,
-        courses: 'Ofertas sintéticas',
+        offers: [
+          { kind: 'integrado', organization },
+          { kind: 'graduacao', organization },
+        ],
+        courses: 'Sintético',
         purpose: 'test',
       },
     });
-    const expected = regime === 'misto' ? 'a-classificar' : regime;
-    expect(record.state.organizationByModality).toEqual({
-      integrado: expected,
-      graduacao: expected,
-    });
-    expect(record.state.regime).toBe(expected);
-    expect(record.state.periods).toEqual([]);
-    expect(record.state.schemaVersion).toBe(3);
-    expect(record.state.conversion).toBeUndefined();
-    const reloaded = await actor.query(api.calendars.calendar, { id: record.id });
-    expect(reloaded.state.organizationByModality).toEqual(record.state.organizationByModality);
-  }
-});
+    expect(record.state.offers.map((offer) => offer.organization)).toEqual([
+      organization,
+      organization,
+    ]);
+    expect(
+      record.state.offers.every(
+        (offer) => offer.delivery === 'a-conferir' && !offer.stages && !offer.scope,
+      ),
+    ).toBe(true);
+    expect(record.state.schemaVersion).toBe(4);
+    for (const field of ['offer', 'modalities', 'regime', 'organizationByModality', 'conversion'])
+      expect(record.state).not.toHaveProperty(field);
+    expect(
+      (await asClient('campus-a').query(api.calendars.calendar, { id: record.id })).state,
+    ).toEqual(record.state);
+  },
+);
 
-test('v3 round-trip preserves independent organization, actual publication dates and intended admission', async () => {
+test('v4 round-trip preserves independent organization, intake, actual dates and intended admission', async () => {
   const { actor, record } = await setup();
-  const state = {
+  const state: DomainState = {
     ...record.state,
-    organizationByModality: { integrado: 'anual' as const, graduacao: 'semestral' as const },
-    intakeByModality: {
-      integrado: { annual: { status: 'unknown' as const } },
-      graduacao: {
-        first: { status: 'yes' as const, required: true },
-        second: { status: 'no' as const },
-      },
-    },
+    offers: record.state.offers.map((offer): DomainState['offers'][number] => ({
+      ...offer,
+      organization: offer.kind === 'integrado' ? 'anual' : 'semestral',
+      intake:
+        offer.kind === 'integrado'
+          ? { annual: { status: 'unknown' } }
+          : { first: { status: 'yes', required: true }, second: { status: 'no' } },
+    })),
     periods: [
       {
         id: 'integrated-year',
         name: 'Ciclo anual',
         start: '2027-02-01',
         end: '2027-12-17',
-        association: {
-          status: 'defined' as const,
-          modalities: ['integrado' as const],
-          term: 'annual' as const,
-        },
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
       {
         id: 'undergraduate-first',
         name: 'Primeiro semestre',
         start: '2027-02-01',
         end: '2027-06-30',
-        association: {
-          status: 'defined' as const,
-          modalities: ['graduacao' as const],
-          term: 'first' as const,
-        },
+        association: { status: 'defined', offers: ['graduacao'], term: 'first' },
       },
       {
         id: 'undergraduate-second',
         name: 'Segundo semestre',
         start: '2027-08-02',
         end: '2027-12-17',
-        association: {
-          status: 'defined' as const,
-          modalities: ['graduacao' as const],
-          term: 'second' as const,
-        },
+        association: { status: 'defined', offers: ['graduacao'], term: 'second' },
       },
     ],
     events: [
@@ -101,31 +132,23 @@ test('v3 round-trip preserves independent organization, actual publication dates
         name: 'Publicação sintética de 2026',
         start: '2026-12-10',
         end: '2026-12-10',
-        kind: 'note' as const,
-        recordType: 'prior-reference' as const,
-        publicationStatus: 'published' as const,
-        admission: {
-          type: 'transfer' as const,
-          year: 2027,
-          term: 'first' as const,
-          periodId: 'undergraduate-first',
-        },
-        modalities: ['graduacao' as const],
+        kind: 'note',
+        recordType: 'prior-reference',
+        publicationStatus: 'published',
+        admission: { type: 'transfer', year: 2027, term: 'first', periodId: 'undergraduate-first' },
+        offers: ['graduacao'],
       },
       {
         id: 'future-admission',
         name: 'Previsão sintética para ingresso 2028',
         start: '2027-12-01',
         end: '2027-12-01',
-        kind: 'note' as const,
-        recordType: 'event' as const,
-        publicationStatus: 'planned' as const,
-        admission: { type: 'regular' as const, year: 2028, term: 'annual' as const },
-        deadlineAdjustment: {
-          date: '2027-12-15',
-          reviewed: false,
-        },
-        modalities: ['integrado' as const],
+        kind: 'note',
+        recordType: 'event',
+        publicationStatus: 'planned',
+        admission: { type: 'regular', year: 2028, term: 'annual' },
+        deadlineAdjustment: { date: '2027-12-15', reviewed: false },
+        offers: ['integrado'],
       },
     ],
   };
@@ -133,50 +156,73 @@ test('v3 round-trip preserves independent organization, actual publication dates
     id: record.id,
     body: { version: record.version, catalogueRevision: record.catalogueRevision, state },
   });
-  expect(saved.state.schemaVersion).toBe(3);
   const loaded = await actor.query(api.calendars.calendar, { id: record.id });
   expect(loaded.state.events).toEqual(saved.state.events);
   expect(loaded.state.events[0]).toMatchObject({
     start: '2026-12-10',
-    end: '2026-12-10',
     publicationStatus: 'published',
     admission: { year: 2027, periodId: 'undergraduate-first' },
   });
   expect(loaded.state.events[1]).toMatchObject({
-    start: '2027-12-01',
     publicationStatus: 'planned',
     admission: { year: 2028 },
   });
-  expect(loaded.state.organizationByModality).toEqual(state.organizationByModality);
-  expect(loaded.state.intakeByModality).toEqual(state.intakeByModality);
-  expect(loaded.state.periods.map((period) => period.association)).toEqual(
-    state.periods.map((period) => period.association),
-  );
-  const snapshot = await actor.query(api.calendars.calendarVersion, {
-    id: record.id,
-    version: record.version,
-  });
-  expect(snapshot.state).toEqual(record.state);
+  expect(loaded.state.offers).toEqual(state.offers);
+  expect(loaded.state.periods).toEqual(state.periods);
+  expect(
+    (await actor.query(api.calendars.calendarVersion, { id: record.id, version: record.version }))
+      .state,
+  ).toEqual(record.state);
 });
 
-test('direct backend writes cannot downgrade v3 or bypass the active rules and temporal policy', async () => {
-  const { actor, record } = await setup();
-  for (const forged of [
-    { ...record.state, schemaVersion: 2 as const },
-    { ...record.state, rulesetVersion: undefined },
-    { ...record.state, rulesetVersion: 'legacy-2026-v1' },
-    { ...record.state, rulesetVersion: 'forged' },
-  ])
+test('legacy save transport reaches an update-required 409 and cannot downgrade v4 or change history', async () => {
+  const { actor, client, record } = await setup();
+  const rawSave = makeFunctionReference<
+    'mutation',
+    { id: typeof record.id; body: Record<string, unknown> },
+    unknown
+  >('calendars:saveCalendar');
+  for (const schemaVersion of [2, 3] as const) {
+    const previous = {
+      ...legacy(schemaVersion),
+      year: 2027,
+      campus: 'A',
+      modalities: ['integrado', 'graduacao'],
+      offer: 'integrado',
+    };
+    const error = await actor
+      .mutation(rawSave, {
+        id: record.id,
+        body: {
+          version: record.version,
+          catalogueRevision: record.catalogueRevision,
+          state: previous,
+        },
+      })
+      .catch((cause: unknown) => cause);
+    expect(error).toMatchObject({
+      data: { status: 409, error: expect.stringContaining('Atualize a aplicação') },
+    });
+  }
+  for (const rulesetVersion of [undefined, 'legacy-2026-v1', 'forged'])
     await expect(
       actor.mutation(api.calendars.saveCalendar, {
         id: record.id,
         body: {
           version: record.version,
           catalogueRevision: record.catalogueRevision,
-          state: forged,
+          state: { ...record.state, rulesetVersion },
         },
       }),
-    ).rejects.toThrow(/formato v3|conjunto de regras/);
+    ).rejects.toThrow('conjunto de regras');
+  expect((await actor.query(api.calendars.calendar, { id: record.id })).state).toEqual(
+    record.state,
+  );
+  expect(await client.run((ctx) => ctx.db.query('calendarVersions').take(10))).toEqual([]);
+});
+
+test('direct backend writes retain temporal and offer-scope validation', async () => {
+  const { actor, record } = await setup();
   const event = {
     id: 'forged-history',
     name: 'Fato sintético anterior',
@@ -184,7 +230,7 @@ test('direct backend writes cannot downgrade v3 or bypass the active rules and t
     end: '2026-12-01',
     kind: 'note' as const,
     recordType: 'prior-reference' as const,
-    modalities: ['integrado' as const],
+    offers: ['integrado'],
   };
   for (const forged of [
     { ...event, kind: 'include' as const },
@@ -207,38 +253,33 @@ test('direct backend writes cannot downgrade v3 or bypass the active rules and t
         },
       }),
     ).rejects.toThrow();
-  const intact = await actor.query(api.calendars.calendar, { id: record.id });
-  expect(intact.version).toBe(record.version);
-  expect(intact.state.events).toEqual([]);
+  expect((await actor.query(api.calendars.calendar, { id: record.id })).version).toBe(
+    record.version,
+  );
 });
 
-test('a direct inclusion must fall inside the periods of every explicitly covered offer', async () => {
+test('a direct inclusion must fit every explicitly covered offer period', async () => {
   const { actor, record } = await setup();
-  const state = {
+  const state: DomainState = {
     ...record.state,
-    organizationByModality: { integrado: 'anual' as const, graduacao: 'semestral' as const },
+    offers: record.state.offers.map((offer) => ({
+      ...offer,
+      organization: offer.kind === 'integrado' ? 'anual' : 'semestral',
+    })),
     periods: [
       {
         id: 'integrated',
         name: 'Ciclo anual',
         start: '2027-02-01',
         end: '2027-12-17',
-        association: {
-          status: 'defined' as const,
-          modalities: ['integrado' as const],
-          term: 'annual' as const,
-        },
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
       {
         id: 'undergraduate-first',
         name: 'Primeiro semestre',
         start: '2027-08-02',
         end: '2027-08-31',
-        association: {
-          status: 'defined' as const,
-          modalities: ['graduacao' as const],
-          term: 'first' as const,
-        },
+        association: { status: 'defined', offers: ['graduacao'], term: 'first' },
       },
     ],
   };
@@ -248,16 +289,15 @@ test('a direct inclusion must fall inside the periods of every explicitly covere
     start: '2027-03-01',
     end: '2027-03-01',
     kind: 'include' as const,
-    modalities: ['graduacao' as const],
   };
-  for (const modalities of [['graduacao' as const], ['integrado' as const, 'graduacao' as const]])
+  for (const offers of [['graduacao'], ['integrado', 'graduacao']])
     await expect(
       actor.mutation(api.calendars.saveCalendar, {
         id: record.id,
         body: {
           version: record.version,
           catalogueRevision: record.catalogueRevision,
-          state: { ...state, events: [{ ...event, modalities }] },
+          state: { ...state, events: [{ ...event, offers }] },
         },
       }),
     ).rejects.toThrow('períodos cadastrados da oferta');
@@ -266,88 +306,73 @@ test('a direct inclusion must fall inside the periods of every explicitly covere
     body: {
       version: record.version,
       catalogueRevision: record.catalogueRevision,
-      state: { ...state, events: [{ ...event, modalities: ['integrado'] }] },
+      state: { ...state, events: [{ ...event, offers: ['integrado'] }] },
     },
   });
-  expect(saved.state.events[0].modalities).toEqual(['integrado']);
+  expect(saved.state.events[0].offers).toEqual(['integrado']);
 });
 
-test('legacy v2 reads never rewrite content and concurrent conversion preserves the original snapshot', async () => {
-  const { client, actor, record } = await setup();
-  const original = await client.run(async (ctx) => {
-    const content = (await ctx.db
-      .query('calendarContents')
-      .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
-      .unique())!;
-    const legacy = {
-      regime: 'misto' as const,
-      weekdays: [],
-      weekConfirmed: false,
-
-      assessmentStagesByModality: {},
-      secondSemesterIntake: false,
-      periods: [
-        { id: 'legacy-first', name: 'Período legado', start: '2027-02-01', end: '2027-06-30' },
-      ],
-      events: [
-        {
-          id: 'legacy-notice',
-          name: 'Edital legado sem classificação',
-          start: '2027-01-15',
-          end: '2027-01-15',
-          kind: 'note' as const,
-        },
-      ],
+test.each([2, 3] as const)(
+  'legacy v%i reads adapt in memory and concurrent saves preserve one original snapshot',
+  async (schemaVersion) => {
+    const { client, actor, record } = await setup();
+    const original = await client.run(async (ctx) => {
+      const content = (await ctx.db
+        .query('calendarContents')
+        .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
+        .unique())!;
+      const old = legacy(schemaVersion);
+      await ctx.db.patch(content._id, { state: old });
+      await ctx.db.patch(record.id, {
+        offerKinds: undefined,
+        modalities: ['integrado', 'graduacao'],
+      });
+      return { contentId: content._id, old };
+    });
+    const read = await actor.query(api.calendars.calendar, { id: record.id });
+    expect(read.state.schemaVersion).toBe(4);
+    expect(read.state.rulesetVersion).toBeUndefined();
+    expect(read.state.offers.map((offer) => offer.organization)).toEqual([
+      'a-classificar',
+      'a-classificar',
+    ]);
+    expect((await client.run((ctx) => ctx.db.get(original.contentId)))?.state).toEqual(
+      original.old,
+    );
+    const body = {
+      version: read.version,
+      catalogueRevision: read.currentCatalogueRevision,
+      baseAcceptance: inspectCalendar(read, read).identity,
+      state: { ...read.state, rulesetVersion: rulesetVersion(read.state) },
     };
-    await ctx.db.patch(content._id, { state: legacy });
-    return { contentId: content._id, legacy };
-  });
-  const read = await actor.query(api.calendars.calendar, { id: record.id });
-  expect(read.state.schemaVersion).toBe(2);
-  expect(read.state.events[0].publicationStatus).toBeUndefined();
-  expect((await client.run((ctx) => ctx.db.get(original.contentId)))?.state).toEqual(
-    original.legacy,
-  );
-  const body = {
-    version: read.version,
-    catalogueRevision: read.currentCatalogueRevision,
-    baseAcceptance: inspectCalendar(read, read).identity,
-    state: read.state,
-  };
-  const results = await Promise.allSettled([
-    actor.mutation(api.calendars.saveCalendar, { id: record.id, body }),
-    actor.mutation(api.calendars.saveCalendar, { id: record.id, body }),
-  ]);
-  expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(1);
-  expect(results.filter((item) => item.status === 'rejected')).toHaveLength(1);
-  const saved = await actor.query(api.calendars.calendar, { id: record.id });
-  expect(saved.state.schemaVersion).toBe(3);
-  expect(saved.state.regime).toBe('a-classificar');
-  expect(saved.state.organizationByModality).toEqual({
-    integrado: 'a-classificar',
-    graduacao: 'a-classificar',
-  });
-  expect(saved.state.periods[0]).toMatchObject({
-    id: 'legacy-first',
-    start: '2027-02-01',
-    end: '2027-06-30',
-    association: { status: 'a-classificar' },
-  });
-  expect(saved.state.events[0]).toMatchObject(original.legacy.events[0]);
-  expect(saved.state.events[0].admission).toBeUndefined();
-  expect(saved.state.conversion?.legacySecondSemesterIntake).toBe(false);
-  const historical = await actor.query(api.calendars.calendarVersion, {
-    id: record.id,
-    version: read.version,
-  });
-  expect(historical.state).toEqual(read.state);
-  expect(historical.state.schemaVersion).toBe(2);
-});
+    const results = await Promise.allSettled([
+      actor.mutation(api.calendars.saveCalendar, { id: record.id, body }),
+      actor.mutation(api.calendars.saveCalendar, { id: record.id, body }),
+    ]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+    const saved = await actor.query(api.calendars.calendar, { id: record.id });
+    expect(saved.state.periods[0]).toMatchObject({
+      id: 'legacy-first',
+      start: '2027-02-01',
+      end: '2027-06-30',
+      association: { status: 'a-classificar' },
+    });
+    expect(saved.state.events[0]).toMatchObject(original.old.events[0]);
+    const raw = await client.run((ctx) => ctx.db.get(record.id));
+    expect(raw?.offerKinds).toEqual(['integrado', 'graduacao']);
+    expect(raw).not.toHaveProperty('modalities');
+    expect(
+      (await actor.query(api.calendars.calendarVersion, { id: record.id, version: read.version }))
+        .state,
+    ).toEqual(read.state);
+  },
+);
 
-test('a legacy review cannot certify the 2027 rules or export without reevaluating the new criteria', async () => {
-  const { client, asClient, ids, record } = await setup();
-  const admin = asClient('admin');
-  const legacy = {
+test('a legacy review cannot certify current rules or export without reevaluating the criteria', async () => {
+  const { client, asClient, ids, record } = await setup(),
+    admin = asClient('admin');
+  const prior = {
     calendarId: record.id,
     calendarVersion: record.version,
     catalogueRevision: record.catalogueRevision,
@@ -366,11 +391,10 @@ test('a legacy review cannot certify the 2027 rules or export without reevaluati
     reviewer: { id: ids.users.admin, name: 'Admin' },
     updatedAt: 1,
   };
-  const reviewId = await client.run((ctx) => ctx.db.insert('reviews', legacy));
+  const id = await client.run((ctx) => ctx.db.insert('reviews', prior));
   const support = await admin.query(api.reviews.review, { id: record.id });
   expect(support.stale).toBe(true);
-  expect(support.review?.entries).toEqual(legacy.entries);
-  expect((await client.run((ctx) => ctx.db.get(reviewId)))?.entries).toEqual(legacy.entries);
+  expect(support.review?.entries).toEqual(prior.entries);
   await expect(
     admin.query(api.reviews.exportReview, { id: record.id, revision: 1 }),
   ).rejects.toThrow('desatualizada');
@@ -380,8 +404,8 @@ test('a legacy review cannot certify the 2027 rules or export without reevaluati
     catalogueRevision: record.catalogueRevision,
     baseIdentity: support.baseIdentity,
     acknowledgeStale: true,
-    entries: legacy.entries,
-    conclusion: legacy.conclusion,
+    entries: prior.entries,
+    conclusion: prior.conclusion,
   };
   await expect(admin.mutation(api.reviews.saveReview, { id: record.id, body })).rejects.toThrow(
     'conjunto de regras',
@@ -399,113 +423,263 @@ test('a legacy review cannot certify the 2027 rules or export without reevaluati
         body: { ...body, rulesetVersion: support.rulesetVersion, baseIdentity },
       }),
     ).rejects.toThrow('identidade da base');
-  expect((await client.run((ctx) => ctx.db.get(reviewId)))?.entries).toEqual(legacy.entries);
+  expect((await client.run((ctx) => ctx.db.get(id)))?.entries).toEqual(prior.entries);
 });
 
-test('backend rejects an assessment stage outside its offer period without saving any part of the change', async () => {
-  const { actor, record } = await setup();
-  const valid = {
-    ...record.state,
-    regime: 'anual' as const,
-    organizationByModality: { integrado: 'anual' as const, graduacao: 'anual' as const },
-    assessmentStagesByModality: { integrado: 2 as const },
-    periods: [
-      {
-        id: 'integrated-year',
-        name: 'Ano integrado',
-        start: '2027-03-01',
-        end: '2027-03-26',
-        association: {
-          status: 'defined' as const,
-          modalities: ['integrado' as const],
-          term: 'annual' as const,
-        },
-      },
-    ],
-    events: [
-      {
-        id: 'integrated-stage-1',
-        name: '1ª etapa',
-        requirementId: 'stage-1:integrado',
-        modalities: ['integrado' as const],
-        start: '2027-03-01',
-        end: '2027-03-12',
-        kind: 'note' as const,
-        category: 'limite',
-      },
-      {
-        id: 'integrated-stage-2',
-        name: '2ª etapa',
-        requirementId: 'stage-2:integrado',
-        modalities: ['integrado' as const],
-        start: '2027-03-15',
-        end: '2027-03-26',
-        kind: 'note' as const,
-        category: 'limite',
-      },
-    ],
-  };
-  const saved = await actor.mutation(api.calendars.saveCalendar, {
-    id: record.id,
-    body: { version: record.version, catalogueRevision: record.catalogueRevision, state: valid },
-  });
-  for (const changed of [
-    {
-      ...saved.state,
-      periods: saved.state.periods.map((period) => ({ ...period, start: '2027-03-08' })),
-    },
-    {
-      ...saved.state,
-      periods: saved.state.periods.map((period) => ({ ...period, end: '2027-03-20' })),
-    },
-    {
-      ...saved.state,
-      periods: saved.state.periods.map((period) => ({
+function oneOffer(
+  source: string,
+  organization: 'anual' | 'semestral',
+  perTerm: number,
+): CalendarContentV4 & { year: number; campus: string } {
+  const fixture = calendarOffersV4Fixture();
+  const old = fixture.offers.find((offer) => offer.id === source)!;
+  const offers: CalendarOffer[] = [
+    { ...old, id: 'graduacao', kind: 'graduacao', organization, stages: { perTerm } },
+  ];
+  return {
+    ...fixture,
+    offers,
+    periods: fixture.periods
+      .filter(
+        (period) =>
+          period.association.status === 'defined' && period.association.offers.includes(source),
+      )
+      .map((period) => ({
         ...period,
-        association: {
-          status: 'defined' as const,
-          modalities: ['graduacao' as const],
-          term: 'annual' as const,
-        },
+        id: period.id.replace(source, 'graduacao'),
+        association: { ...period.association, offers: ['graduacao'] },
       })),
-    },
-    {
-      ...saved.state,
-      weekConfirmed: true,
-      weekdays: [1, 2, 3, 4, 5],
-      periods: saved.state.periods.map((period) => ({ ...period, targetDays: 2 })),
-    },
-  ]) {
-    await expect(
-      actor.mutation(api.calendars.saveCalendar, {
-        id: record.id,
-        body: {
-          version: saved.version,
-          catalogueRevision: record.catalogueRevision,
-          state: changed,
+    events: fixture.events
+      .filter((event) => event.offers?.includes(source))
+      .map((event) => ({
+        ...event,
+        id: event.id.replace(source, 'graduacao'),
+        offers: ['graduacao'],
+        requirementId: event.requirementId?.replace(`:${source}`, ':graduacao'),
+      })),
+  };
+}
+
+test.each(['annual', 'semester', 'trimester', 'three'] as const)(
+  'acceptance: %s undergraduate offers save and reload with independent configuration',
+  async (mode) => {
+    const fixture = await createNativeFixture({
+        catalogue: {
+          revision: 1,
+          events: [
+            {
+              id: 'undergraduate',
+              name: 'Evento institucional da graduação',
+              start: '2027-05-04',
+              end: '2027-05-04',
+              kind: 'note',
+              category: 'evento',
+              evidence: 'Fonte sintética',
+              modalities: ['graduacao'],
+              active: true,
+            },
+          ],
         },
       }),
-    ).rejects.toThrow(/etapa.*período/i);
-    const intact = await actor.query(api.calendars.calendar, { id: record.id });
-    expect(intact.version).toBe(saved.version);
-    expect(intact.state.periods).toEqual(saved.state.periods);
-    expect(intact.state.events).toEqual(saved.state.events);
-  }
-  const next = await actor.mutation(api.calendars.saveCalendar, {
+      actor = fixture.asClient('campus-a');
+    const reference =
+      mode === 'annual'
+        ? oneOffer('integrado', 'anual', 4)
+        : mode === 'semester'
+          ? oneOffer('graduacao-2', 'semestral', 2)
+          : mode === 'trimester'
+            ? oneOffer('graduacao', 'anual', 3)
+            : calendarOffersV4Fixture();
+    if (mode === 'three') {
+      reference.offers = reference.offers.filter((offer) => offer.kind === 'graduacao');
+      reference.periods = reference.periods.filter(
+        (period) =>
+          period.association.status !== 'defined' ||
+          !period.association.offers.includes('integrado'),
+      );
+      reference.events = reference.events.filter((event) => !event.offers?.includes('integrado'));
+    }
+    const created = await actor.mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        courses: 'Graduações sintéticas',
+        offers: reference.offers.map(({ kind, organization, label }) => ({
+          kind,
+          organization,
+          label,
+        })),
+      },
+    });
+    const state = { ...reference, campus: created.state.campus } as DomainState;
+    const saved = await actor.mutation(api.calendars.saveCalendar, {
+      id: created.id,
+      body: { version: created.version, catalogueRevision: created.catalogueRevision, state },
+    });
+    const loaded = await actor.query(api.calendars.calendar, { id: created.id });
+    expect(loaded.state).toEqual(saved.state);
+    expect(loaded.state.offers).toEqual(reference.offers);
+    expect(loaded.state.periods).toEqual(reference.periods);
+    expect(
+      loaded.state.events.map((event) => [event.id, event.requirementId, event.start, event.end]),
+    ).toEqual(
+      reference.events.map((event) => [event.id, event.requirementId, event.start, event.end]),
+    );
+    const institutional = loaded.institutionalEvents.find(
+      (event) => event.id === 'inst:undergraduate',
+    );
+    expect(institutional?.offers).toEqual(reference.offers.map((offer) => offer.id));
+    expect(loaded.offerKinds).toEqual(['graduacao']);
+    if (mode === 'three')
+      expect(activityChecklist(loaded.state).some((row) => row.id === 'stage-4:graduacao-2')).toBe(
+        true,
+      );
+  },
+);
+
+test('backend rejects a newly moved stage in the wrong semester but preserves unchanged inconsistent migrated evidence', async () => {
+  const fixture = await createNativeFixture(),
+    actor = fixture.asClient('campus-a');
+  const reference = oneOffer('graduacao-2', 'semestral', 2);
+  const record = await actor.mutation(api.calendars.createCalendar, {
+    body: {
+      campusId: fixture.ids.campuses.a,
+      year: 2027,
+      courses: 'Sintético',
+      offers: [{ kind: 'graduacao', organization: 'semestral' }],
+    },
+  });
+  const saved = await actor.mutation(api.calendars.saveCalendar, {
+    id: record.id,
+    body: {
+      version: record.version,
+      catalogueRevision: record.catalogueRevision,
+      state: { ...reference, campus: record.state.campus } as DomainState,
+    },
+  });
+  const bad = {
+    ...saved.state,
+    events: saved.state.events.map((event) =>
+      event.requirementId === 'stage-3:graduacao'
+        ? { ...event, start: '2027-02-01', end: '2027-04-16' }
+        : event,
+    ),
+  };
+  await expect(
+    actor.mutation(api.calendars.saveCalendar, {
+      id: record.id,
+      body: { version: saved.version, catalogueRevision: record.catalogueRevision, state: bad },
+    }),
+  ).rejects.toThrow('2º semestre');
+  await fixture.client.run(async (ctx) => {
+    const content = (await ctx.db
+      .query('calendarContents')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
+      .unique())!;
+    const { year: _year, campus: _campus, ...state } = bad;
+    await ctx.db.patch(content._id, { state });
+  });
+  const migrated = await actor.query(api.calendars.calendar, { id: record.id });
+  const unrelated = {
+    id: 'note',
+    name: 'Ajuste em outra parte',
+    start: '2027-06-01',
+    end: '2027-06-01',
+    kind: 'note' as const,
+    offers: ['graduacao'],
+  };
+  const kept = await actor.mutation(api.calendars.saveCalendar, {
+    id: record.id,
+    body: {
+      version: migrated.version,
+      catalogueRevision: migrated.catalogueRevision,
+      state: { ...migrated.state, events: [...migrated.state.events, unrelated] },
+    },
+  });
+  expect(kept.state.events.find((event) => event.requirementId === 'stage-3:graduacao')).toEqual(
+    bad.events.find((event) => event.requirementId === 'stage-3:graduacao'),
+  );
+  expect(kept.readiness.issues.join(' ')).toContain('2º semestre');
+});
+
+test('creation enforces labels and the twelve-offer limit before creating any record', async () => {
+  const fixture = await createNativeFixture(),
+    actor = fixture.asClient('campus-a');
+  const repeated = Array.from({ length: 13 }, (_, index) => ({
+    kind: 'graduacao' as const,
+    organization: 'anual' as const,
+    label: `Curso ${index + 1}`,
+  }));
+  for (const offers of [
+    [],
+    [
+      { kind: 'graduacao' as const, organization: 'anual' as const },
+      { kind: 'graduacao' as const, organization: 'semestral' as const },
+    ],
+    [
+      { kind: 'graduacao' as const, organization: 'anual' as const, label: 'Mesmo nome' },
+      { kind: 'integrado' as const, organization: 'anual' as const, label: 'Mesmo nome' },
+    ],
+    repeated,
+  ])
+    await expect(
+      actor.mutation(api.calendars.createCalendar, {
+        body: { campusId: fixture.ids.campuses.a, year: 2027, courses: 'Sintético', offers },
+      }),
+    ).rejects.toThrow();
+  expect(await fixture.client.run((ctx) => ctx.db.query('calendars').take(20))).toHaveLength(0);
+  const created = await actor.mutation(api.calendars.createCalendar, {
+    body: {
+      campusId: fixture.ids.campuses.a,
+      year: 2027,
+      courses: 'Sintético',
+      offers: repeated.slice(0, 12),
+    },
+  });
+  expect(created.state.offers.map((offer) => offer.id)).toEqual([
+    'graduacao',
+    ...Array.from({ length: 11 }, (_, index) => `graduacao-${index + 2}`),
+  ]);
+});
+
+test('teacher-day null transport clears the choice and never persists null', async () => {
+  const catalogue = initialCatalogue();
+  const fixture = await createNativeFixture({
+      catalogue: { ...catalogue, events: catalogue.events.map((event) => ({ ...event })) },
+    }),
+    actor = fixture.asClient('campus-a');
+  const record = await actor.mutation(api.calendars.createCalendar, {
+    body: {
+      campusId: fixture.ids.campuses.a,
+      year: 2027,
+      courses: 'Sintético',
+      offers: [{ kind: 'integrado', organization: 'anual' }],
+    },
+  });
+  const saved = await actor.mutation(api.calendars.saveCalendar, {
+    id: record.id,
+    body: {
+      version: record.version,
+      catalogueRevision: record.catalogueRevision,
+      state: { ...record.state, teacherDayDate: '2027-10-16' },
+    },
+  });
+  expect(saved.base.events.find((event) => event.id === teacherDayId)?.start).toBe('2027-10-16');
+  const cleared = await actor.mutation(api.calendars.saveCalendar, {
     id: record.id,
     body: {
       version: saved.version,
       catalogueRevision: record.catalogueRevision,
-      state: {
-        ...saved.state,
-        periods: saved.state.periods.map((period) => ({ ...period, start: '2027-03-08' })),
-        events: saved.state.events.map((event) =>
-          event.id === 'integrated-stage-1' ? { ...event, start: '2027-03-08' } : event,
-        ),
-      },
+      state: { ...saved.state, teacherDayDate: null },
     },
   });
-  expect(next.version).toBe(saved.version + 1);
-  expect(next.state.periods[0].start).toBe('2027-03-08');
-  expect(next.state.events[0].start).toBe('2027-03-08');
+  expect(cleared.state).not.toHaveProperty('teacherDayDate');
+  expect(cleared.base.events.find((event) => event.id === teacherDayId)?.start).toBe('2027-10-15');
+  const content = await fixture.client.run((ctx) =>
+    ctx.db
+      .query('calendarContents')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
+      .unique(),
+  );
+  expect(content?.state).not.toHaveProperty('teacherDayDate');
 });

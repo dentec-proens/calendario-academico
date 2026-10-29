@@ -1,6 +1,7 @@
 import { convexModules } from './convex-modules.ts';
 import { convexTest } from 'convex-test';
 import rateLimiterTest from '@convex-dev/rate-limiter/test';
+import migrationsTest from '@convex-dev/migrations/test';
 import type { FunctionReference } from 'convex/server';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { api, internal } from '../../convex/_generated/api.js';
@@ -61,6 +62,7 @@ const time = (value: unknown) =>
 export async function createNativeFixture(overrides: Seed = {}) {
   const client = convexTest(schema, convexModules);
   rateLimiterTest.register(client);
+  migrationsTest.register(client);
   const ids = {
     campuses: {} as Record<string, Id<'campuses'>>,
     users: {} as Record<string, Id<'users'>>,
@@ -249,8 +251,12 @@ export async function createNativeFixture(overrides: Seed = {}) {
               schemaVersion: content.state.schemaVersion ?? 2,
               year: calendar.year,
               campus: calendar.campusId === ids.campuses.a ? 'A' : 'B',
-              modalities: calendar.modalities,
-              offer: calendar.modalities[0],
+              ...(content.state.schemaVersion === 4
+                ? {}
+                : {
+                    modalities: calendar.modalities ?? calendar.offerKinds,
+                    offer: (calendar.modalities ?? calendar.offerKinds)?.[0],
+                  }),
             },
             versions: versions
               .filter((version) => version.calendarId === calendar._id)

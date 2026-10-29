@@ -304,3 +304,121 @@ Resultado final do M4: revisão pontual aprovada sem achados; **`pnpm check`
 aprovado em 207,6 s**, incluindo **592 testes unitários e 301 de navegador**.
 As duas referências intencionais de regras passaram novamente sem atualização;
 as demais referências permaneceram intactas. Nenhuma publicação foi realizada.
+
+## 29/10/2026 — M5 e M6 em validação coordenada
+
+O backend passa a criar, ler e salvar conteúdo v4; as tabelas aceitam v2/v3 e v4
+durante a expansão. Os validadores legados de conteúdo e histórico foram
+congelados em módulo independente e seu JSON foi comparado com o schema anterior,
+sem diferenças. A entrada legada de salvamento existe somente para responder 409
+e pedir atualização; nenhuma gravação nova usa esse formato. O histórico aceita
+os dois contratos durante A. `offerKinds` é materializado nas operações sobre o
+registro, sem persistir resumos de organização. O transporte aceita `null` para
+limpar o Dia do Professor; o conteúdo persistido conserva somente ausência/data.
+
+A migração expurga apenas as cinco tabelas previstas, converte conteúdos em
+lotes de dez, preserva lixeira e metadados, mantém recibos substitutivos e
+contadores próprios e registra auditorias do expurgo e de cada conversão com
+hash anterior. Falhas de dados permanecem registradas e bloqueiam o status de
+release; falhas transacionais conservam o cursor do componente. O reinício da
+série retoma com segurança. O contador `pending` conta conteúdos com organização
+a classificar, etapas ausentes em ofertas não excluídas ou ingresso desconhecido.
+Órfãos e chaves sem destino são contados separadamente; sucesso do componente
+não substitui a verificação independente do M7.
+
+Os dois portões M5 aprovaram sem achados bloqueantes/importantes. A sugestão de
+ordenar `offerKinds` pela ordem canônica foi aplicada e coberta pelo caso de v4
+preexistente com pós-graduação antes de graduação. Validação dirigida: **131
+testes Convex**, **nove de migração** e **49 de domínio**, além de typecheck Convex
+e lint comum/com tipos. As regressões incluem três graduações independentes,
+eventos institucionais para todos os ids do tipo, 409 sem escrita, limites e
+rótulos, limpeza de data, etapas novas/alteradas fora do ciclo recusadas e
+inconsistências migradas inalteradas preservadas ao salvar outra parte.
+
+O cliente usa somente v4: formulários por identidade, criação com lista de ofertas,
+metadados separados, etapas por ciclo e seleção de eventos por id. O caminho v2
+do editor foi retirado junto da troca do seu contrato; os conversores continuam
+apenas no backend/migração até B. Importação e cópia exportada usam formato 4;
+cópias anteriores recebem a mensagem prevista. O filtro da URL valida a sintaxe
+e confere a existência do id no calendário aberto, preservando o fallback de
+filtros inválidos. A interface não conserva valores preenchidos fora dos hooks
+compartilhados de formulário.
+
+M5 e M6 estão sendo implementados e validados juntos porque o contrato inferido
+do Convex atravessa o cliente. Os commits dos marcos serão separados, sem release
+intermediária. A validação completa será feita sobre a combinação final, antes de
+ambos os commits e da integração em `main`.
+
+Validação parcial M6: **24 testes funcionais desktop/mobile** e **26 testes
+dirigidos** passaram, incluindo criação com três rótulos, semestral com quatro
+IDs e numeração reiniciada, escopo isolado, edição fora do ciclo e URL por id.
+As quatro referências de períodos/etapas foram inspecionadas com seus diffs,
+atualizadas e comparadas novamente sem atualização (4/4). Typecheck de aplicação
+e testes passou. Portões M6 e demais fluxos de navegador estão em andamento.
+Produção permanece sem escritas; o ensaio M7 ainda não foi executado.
+
+Os portões M6 identificaram dois problemas importantes: a página de conferência
+ainda consultava rótulos de tipos usando ids, produzindo `undefined`, e cancelar
+uma oferta nova desmontava o formulário antes de limpar sua identidade suja na
+sessão. Foram corrigidos com `labelFor`/`byOffer` e limpeza explícita da identidade
+antes do descarte, sem alterar a preservação de rascunhos na navegação. Ambas as
+regressões falharam em desktop/mobile antes da correção e passaram depois. Os
+dois revisores aprovaram a rechecagem sem achados abertos.
+
+Os testes existentes também detectaram que o seletor de sábados ainda consultava
+a lista antiga, aceitando datas sem períodos no v4. Ele agora usa os ids de todas
+as ofertas. As duas regressões de navegador passaram após a correção; sete testes
+do modelo, incluindo a lacuna semestral e ausência do período de uma graduação
+adicional, passaram. A navegação do portal foi ajustada para os dois campos de
+identificação e para a lista de ofertas; os quatro casos passaram. As demais
+correções dirigidas passaram em 24 casos.
+
+A inspeção visual da criação detectou um botão esticado pelo layout herdado de
+`fieldset`; o bloco novo passa a usar grid e controles com tamanho natural. As
+quatro imagens reais e diferenças de criação/resumo foram inspecionadas em
+desktop/mobile, incluindo recorte legível do final mobile, sem cortes ou
+sobreposições. A confirmação da norma na fixture agora é feita para cada uma das
+duas ofertas, preservando exatamente os totais e referências de 45/200 e 50/200.
+Essas quatro referências foram atualizadas e comparadas novamente sem
+atualização. Somadas às quatro de períodos, são oito referências intencionais.
+
+Uma chamada de `pnpm exec` na cópia privada de preparação do M7 reconciliou por
+engano o `node_modules` compartilhado. A execução foi interrompida, e
+`pnpm install --frozen-lockfile` na raiz restaurou as dependências do lockfile,
+sem downloads nem alteração de manifests/fontes. Intent continua disponível
+(17 skills), os quatro projetos TypeScript e lint passaram após a restauração.
+As verificações privadas seguintes usam somente binários Node diretos.
+
+A primeira execução conjunta parou na formatação dos quatro contratos copiados
+da preparação externa; foram formatados pela configuração da raiz. A execução
+seguinte aprovou todas as etapas rápidas e 305/307 testes de navegador em 226 s.
+O teste de importação ainda criava um período sem a associação obrigatória do
+formato 4; passou a declarar explicitamente `a-classificar`, preservando o
+cenário anterior de cópia ambígua e cancelamento. O caso completo passou novamente.
+A diferença visual restante era somente a posição da barra lateral sticky: o
+teste preenchia campos antes do foco/rolagem de chegada ao formulário. A captura
+agora aguarda o título focado antes de começar a mesma interação, sem scroll
+manual, máscaras ou tolerâncias. A comparação é repetida nas duas larguras.
+
+O primeiro push real do schema A no backend local descartável revelou uma
+restrição da plataforma que os tipos não detectam: módulos Convex não aceitam
+hífens. Os três módulos novos foram renomeados para `legacyValidators`,
+`migrationsReport` e `migrationsState`, com seus imports. A CLI 1.48.0 publicou
+essas funções com typecheck em `anonymous-agent` e retornou sucesso em 1,2 s.
+Esse backend está vazio; nenhuma migração, importação, seed ou escrita em
+produção foi executada. A validação completa da combinação final será repetida
+antes dos commits.
+
+Resultado final conjunto M5/M6: **`pnpm check` aprovado em 223,5 s**, com todas
+as etapas rápidas e **307 testes de navegador** aprovados. Os dois portões de
+cada marco estão aprovados, sem bloqueantes/importantes abertos. A captura de
+criação passou em seis repetições sem atualizar referências; o fluxo completo
+de importação/cancelamento passou novamente. O schema A também foi aceito pela
+CLI com typecheck no backend descartável.
+
+Foi identificado um watcher Convex preexistente, iniciado antes desta execução,
+com `.env.local` apontando para `dev:oceanic-gazelle-652`. Ele acompanha os fontes
+e atualiza a API gerada; não é produção. Nenhuma suíte remota ou comando de dados
+foi executado contra esse desenvolvimento. Os comandos desta execução de
+publicação/verificação foram direcionados ao backend local descartável.
+Produção continua sem backup, migração ou publicação desta execução.

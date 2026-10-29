@@ -11,8 +11,7 @@ test('an unready definitive calendar prints as an identified proposal without ap
     purpose: 'definitive',
     courses: 'Proposta sintética',
     year: 2027,
-    modalities: ['graduacao'],
-    regime: 'semestral',
+    offers: [{ kind: 'graduacao', organization: 'semestral' }],
   });
   const path = '/api/calendars/' + record.id;
   const before = await inspect();

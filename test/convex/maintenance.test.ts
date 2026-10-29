@@ -16,8 +16,7 @@ test('maintenance blocks every account, including ADMIN, until it is resumed', a
     body: {
       campusId: fixture.ids.campuses.a,
       year: 2027,
-      modalities: ['integrado'],
-      regime: 'anual',
+      offers: [{ kind: 'integrado', organization: 'anual' }],
       courses: 'Calendário operacional',
       purpose: 'test',
     },

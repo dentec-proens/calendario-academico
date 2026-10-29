@@ -28,8 +28,7 @@ async function opened() {
     body: {
       campusId: fixture.ids.campuses.a!,
       year: 2027,
-      modalities: ['integrado'],
-      regime: 'anual',
+      offers: [{ kind: 'integrado', organization: 'anual' }],
       courses: 'Teste',
       purpose: 'test',
     },
@@ -124,7 +123,7 @@ test('real changes require the displayed content acceptance and events recalcula
             start: '2027-03-01',
             end: '2027-03-03',
             targetDays: 2,
-            association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+            association: { status: 'defined', offers: ['integrado'], term: 'annual' },
           },
         ],
       },
@@ -258,8 +257,7 @@ test('removing Teacher Day leaves its local adjustment inspectable and permits e
     body: {
       campusId: fixture.ids.campuses.a!,
       year: 2027,
-      modalities: ['integrado'],
-      regime: 'anual',
+      offers: [{ kind: 'integrado', organization: 'anual' }],
       courses: 'Teste',
     },
   });

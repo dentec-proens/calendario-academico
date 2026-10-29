@@ -95,12 +95,12 @@ export const saveReview = mutation({
     const { record, base, docs, compatibility, review: prior } = await baseRecord(ctx, user, id);
     const currentRules = rulesetVersion(record.state);
     const criteria = reviewCriteriaFor(record.state.year);
-    if (record.state.schemaVersion === 3 && !equivalentRulesets(body.rulesetVersion, currentRules))
+    if (!equivalentRulesets(body.rulesetVersion, currentRules))
       fail(
         'O conjunto de regras da revisão mudou. Reabra e confira os critérios antes de salvar.',
         409,
       );
-    if (record.state.schemaVersion === 3 && body.baseIdentity !== compatibility.identity)
+    if (body.baseIdentity !== compatibility.identity)
       fail(
         'A identidade da base da revisão mudou. Reabra e confira os critérios antes de salvar.',
         409,

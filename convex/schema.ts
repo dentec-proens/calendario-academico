@@ -44,7 +44,9 @@ export default defineSchema({
     .index('userId', ['userId'])
     .index('by_userId_generation', ['userId', 'generation'])
     .index('by_expirationTime', ['expirationTime']),
-  authVerificationCodes: defineTable({ ...authTables.authVerificationCodes.validator.fields })
+  authVerificationCodes: defineTable({
+    ...authTables.authVerificationCodes.validator.fields,
+  })
     .index('accountId', ['accountId'])
     .index('code', ['code'])
     .index('by_expirationTime', ['expirationTime']),
@@ -52,7 +54,8 @@ export default defineSchema({
   calendars: defineTable({
     campusId: v.id('campuses'),
     year: v.number(),
-    modalities: v.array(modality),
+    modalities: v.optional(v.array(modality)),
+    offerKinds: v.optional(v.array(modality)),
     purpose,
     courses: v.string(),
     classes: v.string(),
@@ -66,6 +69,44 @@ export default defineSchema({
     .index('by_campusId_and_deletedAt', ['campusId', 'deletedAt'])
     .index('by_year', ['year'])
     .index('by_deletedAt', ['deletedAt']),
+  migrationReports: defineTable({
+    key: v.literal('offers-v4'),
+    converted: v.number(),
+    alreadyV4: v.number(),
+    pending: v.number(),
+    orphanContents: v.number(),
+    orphanCalendars: v.number(),
+    orphanKeys: v.number(),
+    failures: v.number(),
+    purged: v.object({
+      reviewVersions: v.number(),
+      reviews: v.number(),
+      calendarVersions: v.number(),
+      calendarSnapshots: v.number(),
+      calendarAliases: v.number(),
+    }),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+    purgeAuditId: v.optional(v.id('audit')),
+  }).index('by_key', ['key']),
+  migrationResults: defineTable({
+    key: v.literal('offers-v4'),
+    reference: v.string(),
+    contentId: v.optional(v.id('calendarContents')),
+    calendarId: v.optional(v.id('calendars')),
+    outcome: v.union(
+      v.literal('converted'),
+      v.literal('already-v4'),
+      v.literal('orphan-content'),
+      v.literal('orphan-calendar'),
+      v.literal('failed'),
+    ),
+    pending: v.boolean(),
+    orphanKeys: v.number(),
+    sourceSchemaVersion: v.optional(v.number()),
+    oldStateHash: v.optional(v.string()),
+    error: v.optional(v.string()),
+  }).index('by_key_and_reference', ['key', 'reference']),
   calendarContents: defineTable({
     calendarId: v.id('calendars'),
     state: contentState,
@@ -82,10 +123,10 @@ export default defineSchema({
   }).index('by_calendarId_and_version', ['calendarId', 'version']),
   calendarSnapshots: defineTable(snapshotFields),
   // Durable redirects for editor URLs issued before native document IDs.
-  calendarAliases: defineTable({ alias: v.string(), calendarId: v.id('calendars') }).index(
-    'by_alias',
-    ['alias'],
-  ),
+  calendarAliases: defineTable({
+    alias: v.string(),
+    calendarId: v.id('calendars'),
+  }).index('by_alias', ['alias']),
   documents: defineTable({
     year: v.number(),
     type: documentType,
@@ -108,10 +149,10 @@ export default defineSchema({
     .index('by_publishedAt', ['publishedAt'])
     .index('by_storageId', ['storageId']),
   reviews: defineTable(reviewFields).index('by_calendarId', ['calendarId']),
-  reviewVersions: defineTable({ reviewId: v.id('reviews'), ...reviewFields }).index(
-    'by_reviewId_and_revision',
-    ['reviewId', 'revision'],
-  ),
+  reviewVersions: defineTable({
+    reviewId: v.id('reviews'),
+    ...reviewFields,
+  }).index('by_reviewId_and_revision', ['reviewId', 'revision']),
   institutionalEvents: defineTable({
     code: v.string(),
     year: v.number(),
@@ -119,13 +160,14 @@ export default defineSchema({
   })
     .index('by_year', ['year'])
     .index('by_code', ['code']),
-  catalogueRevisions: defineTable({ year: v.number(), revision: v.number() }).index('by_year', [
-    'year',
-  ]),
-  institutionSettings: defineTable({ key: v.literal('catalogue'), revision: v.number() }).index(
-    'by_key',
-    ['key'],
-  ),
+  catalogueRevisions: defineTable({
+    year: v.number(),
+    revision: v.number(),
+  }).index('by_year', ['year']),
+  institutionSettings: defineTable({
+    key: v.literal('catalogue'),
+    revision: v.number(),
+  }).index('by_key', ['key']),
   invitations: defineTable({
     tokenHash: v.string(),
     userId: v.id('users'),

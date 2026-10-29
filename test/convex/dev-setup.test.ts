@@ -149,8 +149,7 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
     body: {
       campusId: bootstrap.campuses[0].id,
       year: 2027,
-      modalities: ['integrado'],
-      regime: 'anual',
+      offers: [{ kind: 'integrado', organization: 'anual' }],
       courses: 'Curso sintético',
       purpose: 'test',
     },

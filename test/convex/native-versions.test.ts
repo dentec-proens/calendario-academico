@@ -9,8 +9,7 @@ test('historical versions are available by native calendar ID, paginated and cam
   const created = await campus.write('/api/calendars', {
     campusId: 'a',
     year: 2027,
-    modalities: ['integrado'],
-    regime: 'anual',
+    offers: [{ kind: 'integrado', organization: 'anual' }],
     courses: 'Curso',
     purpose: 'test',
   });
@@ -30,7 +29,7 @@ test('historical versions are available by native calendar ID, paginated and cam
               kind: 'note',
               start: '2027-03-01',
               end: '2027-03-01',
-              modalities: ['integrado'],
+              offers: ['integrado'],
             },
           ],
         },

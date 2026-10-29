@@ -1,5 +1,7 @@
 import { modalityIds, academicTerms, assessmentStageValues } from '../src/domain/calendar/config';
 import { v } from 'convex/values';
+import { contentStateLegacy, historicalStateLegacy } from './legacyValidators';
+export { contentStateLegacy, historicalStateLegacy } from './legacyValidators';
 import type { Infer } from 'convex/values';
 
 export const modality = v.union(...modalityIds.map((id) => v.literal(id)));
@@ -14,7 +16,11 @@ export const regime = v.union(
 export const academicTerm = v.union(...academicTerms.map((term) => v.literal(term)));
 export const periodAssociation = v.union(
   v.object({ status: v.literal('a-classificar') }),
-  v.object({ status: v.literal('defined'), modalities: v.array(modality), term: academicTerm }),
+  v.object({
+    status: v.literal('defined'),
+    offers: v.array(v.string()),
+    term: academicTerm,
+  }),
 );
 export const stages = v.union(...assessmentStageValues.map((count) => v.literal(count)));
 export const period = v.object({
@@ -23,7 +29,7 @@ export const period = v.object({
   start: v.string(),
   end: v.string(),
   targetDays: v.optional(v.number()),
-  association: v.optional(periodAssociation),
+  association: periodAssociation,
 });
 export const event = v.object({
   id: v.string(),
@@ -33,7 +39,7 @@ export const event = v.object({
   kind: effect,
   category: v.optional(v.string()),
   requirementId: v.optional(v.string()),
-  modalities: v.optional(v.array(modality)),
+  offers: v.optional(v.array(v.string())),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
   recordType: v.optional(
@@ -73,6 +79,7 @@ export const institutionalEventSnapshot = v.object({
   category: v.optional(v.string()),
   requirementId: v.optional(v.string()),
   modalities: v.optional(v.array(modality)),
+  offers: v.optional(v.array(v.string())),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
   recordType: v.optional(v.union(v.literal('event'), v.literal('prior-reference'))),
@@ -105,59 +112,57 @@ export const vacations = v.object({
   thirdStart: v.optional(v.string()),
   thirdEnd: v.optional(v.string()),
 });
-export const contentState = v.object({
-  // Missing on persisted v2 content; retained on new content to prevent downgrade.
-  schemaVersion: v.optional(v.union(v.literal(2), v.literal(3))),
-  rulesetVersion: v.optional(v.string()),
-  scopeConfirmation: v.optional(
+export const organization = v.union(
+  v.literal('anual'),
+  v.literal('semestral'),
+  v.literal('a-classificar'),
+);
+export const calendarOffer = v.object({
+  id: v.string(),
+  kind: modality,
+  label: v.optional(v.string()),
+  delivery: v.union(v.literal('presencial'), v.literal('ead'), v.literal('a-conferir')),
+  organization,
+  stages: v.optional(
+    v.object({
+      perTerm: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),
+    }),
+  ),
+  scope: v.optional(
     v.object({
       status: v.union(v.literal('covered'), v.literal('own-regulation')),
     }),
   ),
-  organizationByModality: v.optional(
+  intake: v.optional(
     v.record(
       v.string(),
-      v.union(v.literal('anual'), v.literal('semestral'), v.literal('a-classificar')),
+      v.object({
+        status: v.union(v.literal('unknown'), v.literal('yes'), v.literal('no')),
+        required: v.optional(v.boolean()),
+      }),
     ),
   ),
-  intakeByModality: v.optional(
-    v.record(
-      v.string(),
-      v.record(
-        v.string(),
-        v.object({
-          status: v.union(v.literal('unknown'), v.literal('yes'), v.literal('no')),
-          required: v.optional(v.boolean()),
-        }),
-      ),
-    ),
-  ),
-  conversion: v.optional(
-    v.object({
-      from: v.literal(2),
-      organization: v.union(v.literal('classified'), v.literal('pending')),
-      legacySecondSemesterIntake: v.optional(v.boolean()),
-    }),
-  ),
-  regime,
+  organizationBasis: v.optional(v.string()),
+});
+export const contentStateV4 = v.object({
+  schemaVersion: v.literal(4),
+  rulesetVersion: v.optional(v.string()),
+  offers: v.array(calendarOffer),
   weekdays: v.array(v.number()),
   weekConfirmed: v.boolean(),
   periods: v.array(period),
   events: v.array(event),
-  secondSemesterIntake: v.optional(v.boolean()),
   teacherDayDate: v.optional(v.string()),
   teacherVacations: v.optional(vacations),
-  assessmentStagesByModality: v.record(v.string(), stages),
+  legacySecondSemesterIntake: v.optional(v.boolean()),
 });
+export const contentState = v.union(contentStateLegacy, contentStateV4);
 export const domainState = v.object({
-  ...contentState.fields,
-  schemaVersion: v.union(v.literal(2), v.literal(3)),
+  ...contentStateV4.fields,
   year: v.number(),
   campus: v.string(),
-  modalities: v.array(modality),
-  offer: modality,
 });
-export const historicalState = domainState;
+export const historicalState = v.union(historicalStateLegacy, domainState);
 export const unavailableFile = v.object({
   sourceReference: v.string(),
   reason: v.literal('not_migrated'),
@@ -234,12 +239,18 @@ export const auditTarget = v.union(
   v.object({ type: v.literal('calendar'), id: v.id('calendars') }),
   v.object({ type: v.literal('document'), id: v.id('documents') }),
   v.object({ type: v.literal('campus'), id: v.id('campuses') }),
-  v.object({ type: v.literal('institutionalEvent'), id: v.id('institutionalEvents') }),
+  v.object({
+    type: v.literal('institutionalEvent'),
+    id: v.id('institutionalEvents'),
+  }),
   v.object({ type: v.literal('archived'), reference: v.string() }),
 );
-export type ContentState = Infer<typeof contentState>;
+export type ContentState = Infer<typeof contentStateV4>;
+export type StoredContentState = Infer<typeof contentState>;
 export type DomainState = Infer<typeof domainState>;
-export type ReviewFields = { [K in keyof typeof reviewFields]: Infer<(typeof reviewFields)[K]> };
+export type ReviewFields = {
+  [K in keyof typeof reviewFields]: Infer<(typeof reviewFields)[K]>;
+};
 
 export const documentUploadInput = v.object({
   uploadId: v.string(),
