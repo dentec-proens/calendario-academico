@@ -16,7 +16,7 @@ export const assessmentStageNumbers = Array.from(
   (_, index) => index + 1,
 );
 export const assessmentStageRequirementPattern = new RegExp(
-  `^stage-(${assessmentStageNumbers.join('|')}):[a-z]+$`,
+  `^stage-(${assessmentStageNumbers.join('|')}):[a-z][a-z0-9-]*$`,
 );
 export const academicTerms = ['annual', 'first', 'second'] as const;
 export type AcademicTerm = (typeof academicTerms)[number];
@@ -45,6 +45,7 @@ export const calendarLimits = {
   maximumYear: 9999,
   maximumPeriods: 50,
   maximumEvents: 1000,
+  maximumOffers: 12,
   minimumTargetDays: 1,
   maximumTargetDays: 366,
   maximumTextLength: 240,

@@ -3,6 +3,40 @@ import type { ActivityGroup, ActivityVariant } from './activities/metadata.ts';
 /** Shared contracts for calendar activities and the operational checklist. */
 import type { AcademicTerm, Organization } from './config.ts';
 export type { AcademicTerm, Organization } from './config.ts';
+export type OfferKind = 'integrado' | 'subsequente' | 'graduacao' | 'posgraduacao';
+export type OfferDelivery = 'presencial' | 'ead' | 'a-conferir';
+/** Identity is immutable within the calendar; kind determines normative applicability. */
+export interface CalendarOffer {
+  id: string;
+  kind: OfferKind;
+  label?: string;
+  delivery: OfferDelivery;
+  organization: Organization;
+  stages?: { perTerm: number };
+  scope?: { status: 'covered' | 'own-regulation' };
+  intake?: Partial<Record<AcademicTerm, IntakeConfiguration>>;
+  organizationBasis?: string;
+}
+export type PeriodAssociationV4 =
+  { status: 'defined'; offers: string[]; term: AcademicTerm } | { status: 'a-classificar' };
+export interface CalendarPeriodV4 extends Omit<CalendarPeriod, 'association'> {
+  association: PeriodAssociationV4;
+}
+export interface CalendarActivityV4 extends Omit<CalendarActivity, 'modalities'> {
+  offers?: string[];
+}
+/** Version four persists offer configuration, never its derived summaries. */
+export interface CalendarContentV4 {
+  schemaVersion: 4;
+  rulesetVersion?: string;
+  offers: CalendarOffer[];
+  weekdays: number[];
+  weekConfirmed: boolean;
+  periods: CalendarPeriodV4[];
+  events: CalendarActivityV4[];
+  teacherDayDate?: string;
+  teacherVacations?: VacationPeriods;
+}
 export type PeriodAssociation =
   { status: 'defined'; modalities: string[]; term: AcademicTerm } | { status: 'a-classificar' };
 export interface Admission {
