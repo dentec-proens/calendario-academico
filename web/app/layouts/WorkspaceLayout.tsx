@@ -1,4 +1,5 @@
 import { useUpdateNavigation } from '../updates/UpdateProvider.tsx';
+import { PageLoading } from '../PageLoading.tsx';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useRouterState } from '@tanstack/react-router';
 import {
@@ -160,7 +161,7 @@ export default function WorkspaceLayout() {
             </p>
           ) : null}
         </div>
-        <Suspense fallback={<p role="status">Carregando página…</p>}>
+        <Suspense fallback={<PageLoading />}>
           <Outlet />
         </Suspense>
       </div>

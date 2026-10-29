@@ -1,0 +1,50 @@
+.page-loading {
+  position: relative;
+  height: 0;
+  pointer-events: none;
+}
+.page-loading-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.page-loading-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--green) 15%, transparent);
+}
+.page-loading-bar::after {
+  content: '';
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+  animation: page-loading-progress 1.4s ease-in-out infinite;
+}
+@keyframes page-loading-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(286%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-loading-bar::after {
+    width: 100%;
+    animation: none;
+  }
+}
+@media print {
+  .page-loading {
+    display: none;
+  }
+}
