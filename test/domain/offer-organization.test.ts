@@ -5,7 +5,7 @@ import {
   offerOrganizationDraft,
   offerOrganizationIssues,
 } from '../../src/domain/calendar/organization/offers.ts';
-import { normalizeCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { associationOffers } from '../../src/domain/calendar/offers.ts';
 
@@ -87,7 +87,7 @@ test('one application splits a shared period and keeps the other offer and all s
     ['integrado-0', '2027-03-01', '2027-03-12', undefined],
     ['integrado-1', '2027-03-15', '2027-03-31', undefined],
   ]);
-  expect(normalizeCalendar({ ...next, ignoredHistory: [] }).events).toHaveLength(4);
+  expect(normalizeOfferCalendar({ ...next, ignoredHistory: [] }).events).toHaveLength(4);
 });
 
 test('moving period endpoints reports live issues and the command rejects without changing anything', () => {
@@ -129,7 +129,7 @@ test('a stage cannot span the semester gap, overlap another stage or use another
   ).toHaveLength(2);
   const bad = structuredClone(next);
   bad.events.find((e) => e.id === 'integrado-1')!.start = '2027-03-15';
-  expect(() => normalizeCalendar({ ...bad, ignoredHistory: [] })).toThrow(/etapa.*período/);
+  expect(() => normalizeOfferCalendar({ ...bad, ignoredHistory: [] })).toThrow(/etapa.*período/);
 });
 
 test('existing inclusions are checked before changing periods; records are never silently deleted', () => {
@@ -201,7 +201,7 @@ test('calendar records no longer require or retain manual references', () => {
   expect(draft).not.toHaveProperty('evidence');
   expect(draft.stages[0]).not.toHaveProperty('evidence');
   expect(offerOrganizationIssues(state, 'integrado', draft)).toEqual([]);
-  const next = normalizeCalendar({
+  const next = normalizeOfferCalendar({
     ...applyOfferOrganization(state, 'integrado', draft, id),
     ignoredHistory: [],
   });
@@ -243,5 +243,7 @@ test('reducing date-only stages keeps retired dates without reintroducing a sour
     ['2027-03-22', '2027-03-26'],
   ]);
   expect(retired.every((event) => event.kind === 'note')).toBe(true);
-  expect(normalizeCalendar({ ...two, ignoredHistory: [] }).events).toHaveLength(two.events.length);
+  expect(normalizeOfferCalendar({ ...two, ignoredHistory: [] }).events).toHaveLength(
+    two.events.length,
+  );
 });

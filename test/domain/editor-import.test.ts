@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { normalizeCalendar as validateImport } from '../../src/domain/calendar/normalization/normalize.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 
 function draft() {
   return {
@@ -33,7 +33,7 @@ function draft() {
 }
 
 test('editor imports canonical drafts and preserves day targets', () => {
-  const state = validateImport(draft());
+  const state = normalizeOfferCalendar(draft());
   assert.deepEqual(
     state.offers.map((offer) => offer.id),
     ['integrado'],
@@ -45,14 +45,17 @@ test('editor imports canonical drafts and preserves day targets', () => {
 
 test('editor rejects legacy files and missing canonical fields without inventing history', () => {
   const legacy: Record<string, unknown> = { ...draft(), schemaVersion: 1 };
-  assert.throws(() => validateImport(legacy), /incompatível/);
+  assert.throws(() => normalizeOfferCalendar(legacy), /incompatível/);
   for (const key of ['offers', 'weekdays', 'periods', 'events']) {
     const incomplete: Record<string, unknown> = { ...draft() };
     delete incomplete[key];
-    assert.throws(() => validateImport(incomplete));
+    assert.throws(() => normalizeOfferCalendar(incomplete));
   }
   assert.throws(() =>
-    validateImport({ ...draft(), teacherVacations: { julyStart: '2027-07-01', evidence: 'Ata' } }),
+    normalizeOfferCalendar({
+      ...draft(),
+      teacherVacations: { julyStart: '2027-07-01', evidence: 'Ata' },
+    }),
   );
 });
 
@@ -76,7 +79,7 @@ test('editor rejects invalid JSON structures and dates before replacing the curr
       ],
     },
   ]) {
-    assert.throws(() => validateImport(value));
+    assert.throws(() => normalizeOfferCalendar(value));
   }
 });
 
@@ -97,7 +100,7 @@ test('v4 JSON copies keep events and dates while discarding retired PDF links an
       { ...event, historicalSource: { historyId: 'retired', page: 1, candidateKey: 'legacy' } },
     ],
   };
-  const result = validateImport(input);
+  const result = normalizeOfferCalendar(input);
   assert.equal('ignoredHistory' in result, false);
   assert.equal('historicalSource' in result.events[0], false);
   assert.equal(result.events[0].id, event.id);

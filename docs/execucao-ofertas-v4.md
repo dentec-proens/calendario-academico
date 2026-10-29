@@ -770,8 +770,8 @@ Os backups integrais e dados dos ensaios são preservados fora do Git.
 - **Limites e pendências:** não há trabalho funcional ou publicação pendente.
   A suíte de escrita remota não foi executada em produção, conforme a regra do
   projeto; as operações autorizadas foram ensaiadas em backends descartáveis.
-  Fica registrada abaixo uma sugestão menor de organização dos imports de
-  testes, sem efeito no runtime ou nos dados.
+  A sugestão menor de organização dos imports de testes foi corrigida na
+  continuação registrada abaixo, sem efeito no runtime ou nos dados.
 
 ## Standards
 
@@ -784,9 +784,8 @@ apenas reexporta `normalizeOfferCalendar` como `normalizeCalendar`. Contraria
 `docs/arquitetura-convex.md:14`: “Imports apontam ao módulo responsável, sem
 fachadas de reexport”. Os consumidores restantes são testes, como
 `test/domain/editor-import.test.ts:3`. Remover a fachada e atualizar esses
-imports elimina esse ponto de entrada intermediário. A sugestão fica
-registrada; não altera o comportamento publicado nem mantém leitura de
-formatos antigos.
+imports elimina esse ponto de entrada intermediário. A sugestão foi corrigida na continuação registrada abaixo; não alterava o
+comportamento publicado nem mantinha leitura de formatos antigos.
 
 ## Spec
 
@@ -796,3 +795,16 @@ plano.
 
 **Resultado por eixo:** Standards: um achado, de sugestão; Spec: zero achados.
 Nenhum bloqueante ou importante aberto em qualquer eixo.
+
+## 29/10/2026 — correção da sugestão sobre imports
+
+A fachada `src/domain/calendar/normalization/normalize.ts` foi removida. Seus
+seis consumidores de testes importam diretamente `normalizeOfferCalendar` de
+`normalize-v4.ts` e usam o nome original da função, sem aliases intermediários.
+As asserções e a implementação da normalização permanecem iguais. Não resta
+referência ao módulo retirado nos fontes ou testes. A sugestão de Standards
+fica resolvida; o achado acima conserva o registro histórico da revisão.
+
+Validação da correção: `pnpm check` aprovado em **228,5 s**, com **311 testes de
+navegador**, além de tipos, lint, build e testes rápidos. Prettier do diário e
+`git diff --check` aprovados. A alteração não exige migração de dados.

@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import { applyPeriod } from '../../src/domain/calendar/commands/periods.ts';
 import { configureIntakeRequirement } from '../../src/domain/calendar/commands/organization.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
-import { normalizeCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import type { ActivityState, AcademicTerm } from '../../src/domain/calendar/model.ts';
 
 function calendar(): ActivityState {
@@ -54,7 +54,7 @@ test('periods declare annual and semester organization atomically and survive no
     { id: 'integrado', organization: 'anual' },
     { id: 'graduacao', organization: 'semestral' },
   ]);
-  expect(normalizeCalendar({ ...second, ignoredHistory: [] }).periods).toEqual(second.periods);
+  expect(normalizeOfferCalendar({ ...second, ignoredHistory: [] }).periods).toEqual(second.periods);
   expect(original.periods).toEqual([]);
   expect(original.offers[0].organization).toBe('a-classificar');
 });

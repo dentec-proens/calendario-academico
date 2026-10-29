@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
-import { normalizeCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
@@ -76,6 +76,6 @@ test('a documented 2026 occurrence retains its actual dates through the event co
     offers: ['integrado'],
   };
   const applied = applyEvent(state, event, []);
-  const normalized = normalizeCalendar(applied);
+  const normalized = normalizeOfferCalendar(applied);
   expect(normalized.events[0]).toMatchObject({ start: '2026-12-01', end: '2026-12-01' });
 });

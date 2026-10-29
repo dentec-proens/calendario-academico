@@ -6,7 +6,7 @@ import { applicabilityFor } from '../../src/domain/policies/registry.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlines.ts';
 
-import { normalizeCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
 import { applyPeriod } from '../../src/domain/calendar/commands/periods.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
@@ -164,7 +164,7 @@ test('one event covers only the explicitly declared offers and does not waive ve
 });
 test('mixed organizations count disjoint periods separately and keep simultaneous offers valid on roundtrip', () => {
   const state = calendar();
-  const normalized = normalizeCalendar({ ...state, ignoredHistory: [] }),
+  const normalized = normalizeOfferCalendar({ ...state, ignoredHistory: [] }),
     count = evaluateCalendar(normalized, []);
   expect(normalized.schemaVersion).toBe(4);
   expect(count.byOffer.integrado.byPeriod).toHaveProperty('annual');
@@ -190,7 +190,7 @@ test('prior publication keeps dates and destination after manual sources are rem
   const state = calendar(),
     event = notice();
   const applied = applyEvent(state, event, []),
-    saved = normalizeCalendar({ ...applied, ignoredHistory: [] });
+    saved = normalizeOfferCalendar({ ...applied, ignoredHistory: [] });
   const expected = event;
   expect(saved.events[0]).toMatchObject(expected);
   expect(saved.events[0]).not.toHaveProperty('evidence');
@@ -244,7 +244,9 @@ test('prior/cross-year references are informative even if the received discrimin
   ]) {
     const event = notice({ ...changes, recordType: 'event' });
     expect(() => applyEvent(state, event, [])).toThrow();
-    expect(() => normalizeCalendar({ ...state, ignoredHistory: [], events: [event] })).toThrow();
+    expect(() =>
+      normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [event] }),
+    ).toThrow();
   }
   const old = notice({
     start: '1900-01-01',
@@ -253,9 +255,9 @@ test('prior/cross-year references are informative even if the received discrimin
     admission: undefined,
     publicationStatus: undefined,
   });
-  expect(normalizeCalendar({ ...state, ignoredHistory: [], events: [old] }).events[0].start).toBe(
-    '1900-01-01',
-  );
+  expect(
+    normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [old] }).events[0].start,
+  ).toBe('1900-01-01');
   for (const changes of [
     { start: '2026-02-30' },
     { end: '2026-01-01' },
@@ -404,12 +406,12 @@ test('commands and direct import reject teaching inclusion outside the selected 
     offers: ['graduacao'],
   };
   expect(() => applyEvent(state, event, [])).toThrow('períodos');
-  expect(() => normalizeCalendar({ ...state, ignoredHistory: [], events: [event] })).toThrow(
+  expect(() => normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [event] })).toThrow(
     'períodos',
   );
   const integrated = { ...event, offers: ['integrado'] };
   expect(
-    normalizeCalendar({ ...state, ignoredHistory: [], events: [integrated] }).events,
+    normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [integrated] }).events,
   ).toHaveLength(1);
 });
 

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { normalizeCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { calendarContent } from '../../src/domain/calendar/normalization/content.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
 import {
@@ -8,7 +8,7 @@ import {
 } from '../../src/domain/calendar/organization/offers.ts';
 
 function calendar() {
-  return normalizeCalendar({
+  return normalizeOfferCalendar({
     schemaVersion: 4 as const,
     year: 2027,
     campus: 'Campus confirmado',
@@ -59,7 +59,7 @@ test('save preparation preserves record identity and detects unchanged editable 
 });
 
 test('accepting a changed institutional base recalculates unchanged input and preserves inherited sources', () => {
-  const previous = normalizeCalendar({
+  const previous = normalizeOfferCalendar({
     ...calendar(),
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
