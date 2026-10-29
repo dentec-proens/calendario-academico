@@ -1,14 +1,14 @@
 import type { ActivityState } from './model.ts';
 import { activityCoverage } from './activities/coverage.ts';
 import { calendarOffers, offerFor } from './offers.ts';
-import { periodsForModality } from './organization/periods.ts';
+import { periodsForOffer } from './organization/periods.ts';
 import { periodCountByOrganization } from './config.ts';
 import type { evaluateCalendar } from './counting/evaluation.ts';
 
 export type CalendarDiagnostic =
   | { code: 'week-unconfirmed' | 'periods-missing' }
-  | { code: 'organization-unclassified'; modality: string; offerId?: string }
-  | { code: 'period-count'; modality: string; offerId?: string; expected: number; actual: number };
+  | { code: 'organization-unclassified'; offerId: string }
+  | { code: 'period-count'; offerId: string; expected: number; actual: number };
 
 /** Examines an explicit snapshot. It never claims that local work has been saved or approved. */
 export function diagnoseCalendar(state: ActivityState, events = state.events) {
@@ -17,13 +17,13 @@ export function diagnoseCalendar(state: ActivityState, events = state.events) {
   if (!state.periods.length) structure.push({ code: 'periods-missing' });
   for (const offer of calendarOffers(state)) {
     const organization = offer.organization;
-    const scope = { modality: offer.id, ...(state.offers ? { offerId: offer.id } : {}) };
+    const scope = { offerId: offer.id };
     if (organization === 'a-classificar') {
       structure.push({ code: 'organization-unclassified', ...scope });
       continue;
     }
     const expected = periodCountByOrganization[organization];
-    const actual = periodsForModality(state, offer.id).length;
+    const actual = periodsForOffer(state, offer.id).length;
     if (actual !== expected) structure.push({ code: 'period-count', ...scope, expected, actual });
   }
   return { structure, coverage: activityCoverage(state, events) };
@@ -41,8 +41,7 @@ export function diagnoseTeachingDays(
       )
       .map((check) => ({
         ...check,
-        modality: offerId,
-        ...(state.offers ? { offerId } : {}),
+        offerId,
       })),
   );
 }

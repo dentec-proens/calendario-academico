@@ -100,7 +100,7 @@ test('legacy authorship uses recorded labels and never guesses a missing creator
     ctx.db.insert('calendars', {
       campusId: ids.campuses.a,
       year: 2027,
-      modalities: ['integrado'],
+      offerKinds: ['integrado'],
       purpose: 'test',
       courses: 'Calendário anterior',
       classes: '',

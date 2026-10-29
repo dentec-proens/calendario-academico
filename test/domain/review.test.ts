@@ -15,15 +15,21 @@ test('school vacation suggestions exclude teacher vacations and leave notes blan
     name: 'Teste',
     version: 1,
     state: {
+      schemaVersion: 4 as const,
       year: 2027,
       campus: 'Foz',
-      offer: 'integrado',
-      modalities: ['integrado'],
-      regime: 'anual',
       weekdays: [],
       weekConfirmed: false,
       periods: [],
       events: [],
+      offers: [
+        {
+          id: 'integrado',
+          kind: 'integrado' as const,
+          delivery: 'a-conferir' as const,
+          organization: 'anual' as const,
+        },
+      ],
     },
   };
   const events = [
@@ -46,15 +52,21 @@ test('review extracts 29 active criteria, flags other years and treats name matc
     name: 'Teste',
     version: 1,
     state: {
+      schemaVersion: 4 as const,
       year: 2028,
       campus: 'Foz',
-      offer: 'graduacao',
-      modalities: ['graduacao'],
-      regime: 'anual',
       weekdays: [],
       weekConfirmed: false,
       periods: [],
       events: [],
+      offers: [
+        {
+          id: 'graduacao',
+          kind: 'graduacao' as const,
+          delivery: 'a-conferir' as const,
+          organization: 'anual' as const,
+        },
+      ],
     },
   };
   const result = reviewSupport(record, [
@@ -83,16 +95,34 @@ test('initial analysis identifies a measurable deficit without assuming document
     version: 1,
     courses: 'Curso',
     state: {
+      schemaVersion: 4 as const,
       year: 2026,
       campus: 'Foz',
-      offer: 'integrado',
-      modalities: ['integrado'],
-      regime: 'anual',
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
       weekEvidence: 'Ata',
-      periods: [{ id: 'a', name: 'Ano', start: '2026-02-04', end: '2026-12-18' }],
+      periods: [
+        {
+          id: 'a',
+          name: 'Ano',
+          start: '2026-02-04',
+          end: '2026-12-18',
+          association: {
+            status: 'defined' as const,
+            offers: ['integrado'],
+            term: 'annual' as const,
+          },
+        },
+      ],
       events: [],
+      offers: [
+        {
+          id: 'integrado',
+          kind: 'integrado' as const,
+          delivery: 'a-conferir' as const,
+          organization: 'anual' as const,
+        },
+      ],
     },
   };
   let result = reviewSupport(record, []);
@@ -129,15 +159,39 @@ test('review displays separate registered totals and provisional counts without 
     name: 'Teste',
     version: 1,
     state: {
+      schemaVersion: 4 as const,
       year: 2026,
       campus: 'Foz',
-      modalities: ['integrado', 'graduacao'],
-      offer: 'integrado',
-      regime: 'semestral',
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
       weekEvidence: 'Ata',
-      periods: [{ id: 'a', name: '1º semestre', start: '2026-03-02', end: '2026-03-06' }],
+      periods: [
+        {
+          id: 'a',
+          name: '1º semestre',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          association: {
+            status: 'defined' as const,
+            offers: ['integrado', 'graduacao'],
+            term: 'first' as const,
+          },
+        },
+      ],
+      offers: [
+        {
+          id: 'integrado',
+          kind: 'integrado' as const,
+          delivery: 'a-conferir' as const,
+          organization: 'semestral' as const,
+        },
+        {
+          id: 'graduacao',
+          kind: 'graduacao' as const,
+          delivery: 'a-conferir' as const,
+          organization: 'semestral' as const,
+        },
+      ],
     },
   };
   const events = [
@@ -148,7 +202,7 @@ test('review displays separate registered totals and provisional counts without 
       start: '2026-03-03',
       end: '2026-03-03',
       evidence: 'Lei',
-      modalities: ['graduacao'],
+      offers: ['graduacao'],
     },
   ];
   let r = reviewSupport(record, events);
@@ -194,13 +248,20 @@ test('review coverage follows the criterion identity when its citation text chan
         name: 'Calendário sintético',
         version: 1,
         state: {
+          schemaVersion: 4 as const,
           year: 2027,
-          modalities: ['integrado'],
-          regime: 'anual',
           weekdays: [],
           weekConfirmed: false,
           periods: [],
-          scopeConfirmation: { status: 'covered', source: 'PPC sintético' },
+          offers: [
+            {
+              id: 'integrado',
+              kind: 'integrado' as const,
+              delivery: 'a-conferir' as const,
+              organization: 'anual' as const,
+              scope: { status: 'covered', source: 'PPC sintético' },
+            },
+          ],
         },
       },
       [
@@ -211,7 +272,7 @@ test('review coverage follows the criterion identity when its citation text chan
           end: '2027-03-05',
           kind: 'note',
           evidence: 'Ata sintética',
-          modalities: ['integrado'],
+          offers: ['integrado'],
           requirementId: 'family-meeting',
         },
       ],

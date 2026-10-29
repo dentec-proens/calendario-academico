@@ -187,7 +187,7 @@ export function normalizeOfferCalendar(
     const stageOffer = pendingStage ? offerFor(s, pendingStage[1]) : undefined;
     if (event.requirementId && !requirement && !(stageOffer && !stageOffer.stages))
       fail('Vínculo de atividade inválido para esta organização.');
-    const requiredOffer = requirement?.offerId ?? requirement?.modality ?? stageOffer?.id;
+    const requiredOffer = requirement?.offerId ?? stageOffer?.id;
     if (requiredOffer && (event.offers?.length !== 1 || event.offers[0] !== requiredOffer))
       fail('A etapa deve estar vinculada à sua oferta.');
     if (event.category !== undefined && !validCategory(event.category))

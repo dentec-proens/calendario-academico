@@ -1,55 +1,45 @@
 import { expect, test } from 'vitest';
 import { readFileSync } from 'node:fs';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
-import { convertCalendarV3 } from '../../src/domain/calendar/normalization/conversion-v4.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import { policyFor } from '../../src/domain/policies/registry.ts';
 
-const oracle = JSON.parse(
-  readFileSync(new URL('../fixtures/offers-v3-oracle.json', import.meta.url), 'utf8'),
+const fixture = JSON.parse(
+  readFileSync(new URL('../fixtures/offers-v4-oracle-inputs.json', import.meta.url), 'utf8'),
 ) as { cases: { name: string; input: ActivityState }[] };
-const source = oracle.cases.find(
+const source = fixture.cases.find(
   (row) =>
     row.input.year === 2027 &&
-    row.input.modalities?.length === 1 &&
-    row.input.modalities[0] === 'posgraduacao',
+    row.input.offers.length === 1 &&
+    row.input.offers[0].kind === 'posgraduacao',
 )!.input;
 const readiness = (state: ActivityState) =>
   releaseReadiness(
     { id: 'synthetic', version: 1, catalogueRevision: 1, institutionalSnapshot: [], state },
     { catalogue: { revision: 1 }, reviews: [] },
   );
-
-for (const status of [undefined, 'covered', 'own-regulation'] as const) {
-  test(`excludes postgraduate scope confirmation without dropping other findings (${String(status)})`, () => {
-    const before = {
-      ...structuredClone(source),
-      scopeConfirmation: status ? { status } : undefined,
-    };
-    const converted = convertCalendarV3(before, { year: 2027, modalities: ['posgraduacao'] });
-    expect(converted.offers[0]).not.toHaveProperty('scope');
-    const actual = readiness({ ...converted, year: 2027 });
-    const previous = readiness(before);
-    const obsolete = policyFor(2027).scope!.readinessIssue;
-    expect(actual).toEqual({
-      ...previous,
-      issues: previous.issues.filter((issue) => issue !== obsolete),
-    });
+for (const status of [undefined, 'covered', 'own-regulation'] as const)
+  test(`postgraduate scope does not suppress other findings (${String(status)})`, () => {
+    const baseline = structuredClone(source),
+      state = structuredClone(source);
+    state.offers[0].scope = status ? { status } : undefined;
+    expect(readiness(state)).toEqual(readiness(baseline));
+    expect(readiness(state).issues).not.toContain(policyFor(2027).scope!.readinessIssue);
   });
-}
 
 test('excluded offers do not waive confirmation for a covered kind in a mixed calendar', () => {
-  const before = {
+  const state = {
     ...structuredClone(source),
-    modalities: ['graduacao', 'posgraduacao'],
-    organizationByModality: { graduacao: 'anual' as const, posgraduacao: 'anual' as const },
-    assessmentStagesByModality: {},
+    offers: [
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+      ...structuredClone(source.offers),
+    ],
   };
-  const content = convertCalendarV3(
-    { ...before, scopeConfirmation: undefined },
-    { year: 2027, modalities: before.modalities },
-  );
-  const state = { ...content, year: 2027 };
   expect(readiness(state).issues).toContain(policyFor(2027).scope!.readinessIssue);
   state.offers[0].scope = { status: 'covered' };
   expect(readiness(state).issues).not.toContain(policyFor(2027).scope!.readinessIssue);

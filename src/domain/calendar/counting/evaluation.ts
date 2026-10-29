@@ -2,7 +2,7 @@ import { policyFor } from '../../policies/registry.ts';
 import type { CountingEvent, TeachingState } from '../model.ts';
 import { countCalendar, automaticEventSource } from './core.ts';
 import { appliesTo } from '../modalities.ts';
-import { periodsForModality } from '../organization/periods.ts';
+import { periodsForOffer } from '../organization/periods.ts';
 import { calendarOffers } from '../offers.ts';
 import { DomainError } from '../../errors.ts';
 
@@ -10,8 +10,8 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
   const byOffer: Record<string, ReturnType<typeof countCalendar>> = {};
   const offers = calendarOffers(s);
   for (const offer of offers) {
-    const scoped = events.filter((e) => appliesTo(e, offer.id));
-    const periods = periodsForModality(s, offer.id);
+    const scoped = events.filter((e) => appliesTo(e, offer));
+    const periods = periodsForOffer(s, offer.id);
     if (offer.organization === 'a-classificar')
       throw new DomainError(
         'Organização a conferir: classifique os períodos por oferta antes de confirmar a contagem.',
@@ -52,6 +52,5 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
       },
     });
   }
-  // Temporary alias for v3 transport consumers while the client moves to offer identities.
-  return { ...byOffer[offers[0]?.id ?? ''], byOffer, byModality: byOffer };
+  return { ...byOffer[offers[0]?.id ?? ''], byOffer };
 }

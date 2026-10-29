@@ -7,22 +7,28 @@ import { selectableCampuses } from '../../src/domain/institution/campus-selectio
 
 test('2026 legacy explicit absence of second semester intake waives new-student registration only', () => {
   const base = {
+    schemaVersion: 4 as const,
     year: 2026,
-    offer: 'graduacao',
-    modalities: ['graduacao'],
-    regime: 'semestral',
-    assessmentStagesByModality: { graduacao: 2 },
     events: [] as CalendarActivity[],
     periods: [],
     weekdays: [],
     weekConfirmed: false,
+    offers: [
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'semestral' as const,
+        stages: { perTerm: 1 },
+      },
+    ],
   };
-  for (const secondSemesterIntake of [undefined, true, false]) {
-    const state = { ...base, secondSemesterIntake },
+  for (const legacySecondSemesterIntake of [undefined, true, false]) {
+    const state = { ...base, legacySecondSemesterIntake },
       rows = activityChecklist(state);
     assert.equal(
       rows.find((r) => r.id === 'registration-2')!.required === false,
-      secondSemesterIntake === false,
+      legacySecondSemesterIntake === false,
     );
     for (const id of ['registration-1', 'enrolment-1', 'enrolment-2', 'admission-notice-2'])
       assert.notEqual(rows.find((r) => r.id === id)!.required, false);
@@ -36,7 +42,7 @@ test('2026 legacy explicit absence of second semester intake waives new-student 
           i.includes('Período destinado à matrícula — 2º semestre') &&
           i.includes('vincule um evento'),
       ),
-      secondSemesterIntake !== false,
+      legacySecondSemesterIntake !== false,
     );
     assert(
       issues.some(
@@ -50,19 +56,27 @@ test('2026 legacy explicit absence of second semester intake waives new-student 
     requirementId: 'registration-2',
     name: 'Matrícula cadastrada',
   };
-  const state = { ...base, secondSemesterIntake: false, events: [existing] };
+  const state = { ...base, legacySecondSemesterIntake: false, events: [existing] };
   activityChecklist(state);
   assert.deepEqual(state.events, [existing]);
-  assert(!activityChecklist({ ...state, regime: 'anual' }).some((r) => r.id === 'registration-2'));
+  assert.equal(
+    activityChecklist({ ...state }).find((r) => r.id === 'registration-2')?.required,
+    false,
+  );
 });
 
 test('2026 legacy family meetings and class councils are required only for integrated secondary education', () => {
   const base = {
     year: 2026,
-    offer: 'graduacao',
-    modalities: ['graduacao'],
-    regime: 'semestral',
-    assessmentStagesByModality: { graduacao: 2 },
+    offers: [
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'semestral' as const,
+        stages: { perTerm: 1 },
+      },
+    ],
   };
   for (const modalities of [
     ['graduacao'],
@@ -72,9 +86,13 @@ test('2026 legacy family meetings and class councils are required only for integ
   ]) {
     const state = {
       ...base,
-      offer: modalities[0],
-      modalities,
-      assessmentStagesByModality: Object.fromEntries(modalities.map((m) => [m, 2])),
+      offers: modalities.map((kind) => ({
+        id: kind,
+        kind: kind as 'integrado' | 'subsequente' | 'graduacao' | 'posgraduacao',
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages: { perTerm: 2 },
+      })),
     };
     const rows = activityChecklist(state);
     const optional = rows.filter((r) => r.required === false);
@@ -94,18 +112,28 @@ test('2026 legacy family meetings and class councils are required only for integ
   ]) {
     const state = {
       ...base,
-      modalities,
-      assessmentStagesByModality: Object.fromEntries(modalities.map((m) => [m, 2])),
+      offers: modalities.map((kind) => ({
+        id: kind,
+        kind: kind as 'integrado' | 'subsequente' | 'graduacao' | 'posgraduacao',
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages:
+          Object.fromEntries(modalities.map((m) => [m, 2]))[kind] === undefined
+            ? undefined
+            : {
+                perTerm: Number(Object.fromEntries(modalities.map((m) => [m, 2]))[kind]) / 1,
+              },
+      })),
     };
     const rows = activityChecklist(state);
     assert(
       rows
-        .filter((r) => !r.modality || r.modality === 'integrado')
+        .filter((r) => !r.offerId || r.offerId === 'integrado')
         .every((r) => r.required !== false),
     );
     assert(
       rows
-        .filter((r) => r.id.startsWith('council-') && r.modality !== 'integrado')
+        .filter((r) => r.id.startsWith('council-') && r.offerId !== 'integrado')
         .every((r) => r.required === false),
     );
   }
@@ -113,15 +141,21 @@ test('2026 legacy family meetings and class councils are required only for integ
 
 test('2026 legacy release checks omit optional missing activities without deleting existing links', () => {
   const state = {
+    schemaVersion: 4 as const,
     year: 2026,
-    offer: 'graduacao',
-    modalities: ['graduacao'],
-    regime: 'anual',
-    assessmentStagesByModality: { graduacao: 2 },
     weekdays: [],
     weekConfirmed: false,
     periods: [],
     events: [] as CalendarActivity[],
+    offers: [
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages: { perTerm: 2 },
+      },
+    ],
   };
   const record = { id: 'test', version: 1, catalogueRevision: 1, institutionalSnapshot: [], state };
   const db = { catalogue: { revision: 1 }, reviews: [] };
@@ -146,7 +180,23 @@ test('2026 legacy release checks omit optional missing activities without deleti
   activityChecklist(state);
   releaseReadiness(record, db);
   assert.deepEqual(state.events, before);
-  const mixed = { ...state, modalities: ['graduacao', 'integrado'] };
+  const mixed = {
+    ...state,
+    offers: [
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
+  };
   assert(
     releaseReadiness({ ...record, state: mixed }, db).issues.some(
       (i) => i.includes('Reunião com familiares') && i.includes('vincule um evento'),
@@ -161,9 +211,25 @@ test('mandatory checklist includes annual and semester notices, stage results, h
   ] as const) {
     const rows = activityChecklist({
       year: 2026,
-      regime,
-      modalities: ['integrado'],
-      assessmentStagesByModality: { integrado: 4 },
+      offers: [
+        {
+          id: 'integrado',
+          kind: 'integrado',
+          delivery: 'a-conferir',
+          organization: regime === 'misto' ? 'anual' : regime,
+          stages: { perTerm: regime === 'semestral' ? 2 : 4 },
+        },
+        ...(regime === 'misto'
+          ? [
+              {
+                id: 'graduacao',
+                kind: 'graduacao' as const,
+                delivery: 'a-conferir' as const,
+                organization: 'semestral' as const,
+              },
+            ]
+          : []),
+      ],
     });
     assert.equal(rows.filter((r) => r.id.startsWith('admission-notice-')).length, count);
     assert.equal(rows.filter((r) => r.id.startsWith('registration-')).length, count);
@@ -184,7 +250,12 @@ test('mandatory checklist includes annual and semester notices, stage results, h
     assert.equal(rows.find((r) => r.id === 'collective-planning')!.minHours, 20);
   }
   assert.equal(
-    activityChecklist({ year: 2027, regime: 'anual' }).find((r) => r.id === 'robotics')!.deadline,
+    activityChecklist({
+      year: 2027,
+      offers: [
+        { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
+      ],
+    }).find((r) => r.id === 'robotics')!.deadline,
     '2027-08-31',
   );
 });

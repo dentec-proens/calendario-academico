@@ -1,59 +1,7 @@
 import { expect, test } from 'vitest';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
-import {
-  applyOfferOrganization,
-  offerOrganizationDraft,
-} from '../../src/domain/calendar/organization/offers.ts';
-import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
-
-function calendar(): ActivityState {
-  return {
-    schemaVersion: 3,
-    year: 2027,
-    modalities: ['integrado'],
-    offer: 'integrado',
-    regime: 'anual',
-    organizationByModality: { integrado: 'anual' },
-    assessmentStagesByModality: {},
-    weekdays: [1, 2, 3, 4, 5],
-    weekConfirmed: true,
-    periods: [],
-    events: [
-      {
-        id: 'legacy-note',
-        name: 'Registro anterior',
-        start: '2027-03-01',
-        end: '2027-03-01',
-        kind: 'note',
-      },
-    ],
-  };
-}
-
-test('a complete organization adds one catalog offer without extending existing records to it', () => {
-  const original = calendar(),
-    before = structuredClone(original),
-    draft = offerOrganizationDraft(original, 'graduacao');
-  draft.organization = 'anual';
-  draft.periods[0].start = '2027-03-01';
-  draft.periods[0].end = '2027-03-26';
-  draft.count = '2';
-  draft.stages[0].start = '2027-03-01';
-  draft.stages[0].end = '2027-03-12';
-  draft.stages[1].start = '2027-03-15';
-  draft.stages[1].end = '2027-03-26';
-  let sequence = 0;
-  const next = applyOfferOrganization(original, 'graduacao', draft, () => `added-${sequence++}`);
-  expect(next.modalities).toEqual(['integrado', 'graduacao']);
-  expect(next.events.find((e) => e.id === 'legacy-note')).toEqual({
-    ...before.events[0],
-    modalities: ['integrado'],
-  });
-  expect(next.events.filter((e) => e.requirementId?.endsWith(':graduacao'))).toHaveLength(2);
-  expect(original).toEqual(before);
-});
 
 test('Convex includes a complete new offer atomically and preserves the earlier version scope', async () => {
   const fixture = await createNativeFixture(),

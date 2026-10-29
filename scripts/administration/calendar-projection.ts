@@ -1,18 +1,63 @@
-import type * as EvaluationModule from '../../src/domain/calendar/counting/evaluation.ts';
-import type * as StageModule from '../../src/domain/calendar/counting/assessment-days.ts';
-import type * as DurationModule from '../../src/domain/calendar/counting/duration.ts';
-import type * as RulesModule from '../../src/domain/calendar/activities/coverage.ts';
-import type * as DeadlinesModule from '../../src/domain/calendar/activities/deadlines.ts';
-import type * as ConversionModule from '../../src/domain/calendar/normalization/conversion.ts';
-import type * as ObligationsModule from '../../src/domain/calendar/activities/checklist.ts';
-import type * as ModalitiesModule from '../../src/domain/calendar/modalities.ts';
-import type * as TeacherDayModule from '../../src/domain/institution/teacher-day.ts';
 /** Private numeric/date proof: run against the committed old code and the new code separately. */
 import { writeFileSync, chmodSync, existsSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { readSnapshot } from './snapshot.ts';
-import type { ActivityState } from '../../src/domain/calendar/model.ts';
+// This historical probe intentionally loads an explicit old checkout. It is not
+// the v4 M7 verifier and has no compile-time dependency on the live domain.
+type HistoricEvent = {
+  id: string;
+  start: string;
+  end: string;
+  requirementId?: string;
+  deadlineAdjustment?: { date: string; reviewed: boolean };
+};
+type ActivityState = {
+  year: number;
+  schemaVersion?: number;
+  campus?: string;
+  modalities?: string[];
+  offer?: string;
+  events: HistoricEvent[];
+};
+type HistoricRequirement = {
+  id: string;
+  modality?: string;
+  deadline?: string;
+  deadlinePolicy?: string;
+};
+type HistoricCoverage = {
+  requirement: { id: string };
+  modality: string;
+  applicability: string;
+  coverage: string;
+  execution: string;
+  events: HistoricEvent[];
+};
+type EvaluationModule = {
+  evaluateCalendar(state: ActivityState, events: HistoricEvent[]): unknown;
+};
+type StageModule = { assessmentDayCounts(state: ActivityState, events: HistoricEvent[]): unknown };
+type DurationModule = {
+  recalculatePeriods(state: ActivityState, events: HistoricEvent[]): unknown;
+};
+type RulesModule = {
+  activityCoverage(state: ActivityState, events: HistoricEvent[]): HistoricCoverage[];
+};
+type DeadlinesModule = {
+  prorogatedDeadline(
+    state: ActivityState,
+    date: string,
+    events: HistoricEvent[],
+    modality: string,
+  ): { date: string | null; original: string; source: string };
+};
+type ConversionModule = { convertCalendarV2(state: ActivityState): ActivityState };
+type ObligationsModule = { activityChecklist(state: ActivityState): HistoricRequirement[] };
+type ModalitiesModule = { calendarModalities(state: ActivityState): string[] };
+type TeacherDayModule = {
+  campusInstitutionalEvents(events: HistoricEvent[], state: ActivityState): HistoricEvent[];
+};
 
 function option(name: string) {
   const index = process.argv.indexOf(`--${name}`);
@@ -43,31 +88,31 @@ async function main() {
     pathToFileURL(join(codeRoot, existsSync(join(codeRoot, current)) ? current : legacy)).href;
   const deadlineRules = (await import(
     moduleUrl('src/domain/calendar/activities/deadlines.ts', 'src/calendar-rules/index.ts')
-  )) as typeof DeadlinesModule;
+  )) as DeadlinesModule;
   const evaluation = (await import(
     moduleUrl('src/domain/calendar/counting/evaluation.ts', 'src/evaluation.ts')
-  )) as typeof EvaluationModule;
+  )) as EvaluationModule;
   const stages = (await import(
     moduleUrl('src/domain/calendar/counting/assessment-days.ts', 'src/assessment-day-counts.ts')
-  )) as typeof StageModule;
+  )) as StageModule;
   const duration = (await import(
     moduleUrl('src/domain/calendar/counting/duration.ts', 'src/duration.ts')
-  )) as typeof DurationModule;
+  )) as DurationModule;
   const rules = (await import(
     moduleUrl('src/domain/calendar/activities/coverage.ts', 'src/calendar-rules/index.ts')
-  )) as typeof RulesModule;
+  )) as RulesModule;
   const conversion = (await import(
     moduleUrl('src/domain/calendar/normalization/conversion.ts', 'src/calendar-rules/conversion.ts')
-  )) as typeof ConversionModule;
+  )) as ConversionModule;
   const obligations = (await import(
     moduleUrl('src/domain/calendar/activities/checklist.ts', 'src/obligations.ts')
-  )) as typeof ObligationsModule;
+  )) as ObligationsModule;
   const modalities = (await import(
     moduleUrl('src/domain/calendar/modalities.ts', 'src/modalities.ts')
-  )) as typeof ModalitiesModule;
+  )) as ModalitiesModule;
   const teacherDay = (await import(
     moduleUrl('src/domain/institution/teacher-day.ts', 'src/teacher-day.ts')
-  )) as typeof TeacherDayModule;
+  )) as TeacherDayModule;
   const calendars = new Map((snapshot.tables.calendars ?? []).map((row) => [row._id, row]));
   const campuses = new Map((snapshot.tables.campuses ?? []).map((row) => [row._id, row]));
   const states: Record<string, unknown> = {};

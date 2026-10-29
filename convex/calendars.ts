@@ -7,7 +7,7 @@ import { kinds, nextOfferId, offerFor, stageTerm } from '../src/domain/calendar/
 import type { CalendarOffer, ActivityState, CalendarActivity } from '../src/domain/calendar/model';
 import { assessmentCycleIssue } from '../src/domain/calendar/activities/assessment-intervals';
 import { isStageRequirementId } from '../src/domain/calendar/activities/metadata';
-import { periodsForModality } from '../src/domain/calendar/organization/periods';
+import { periodsForOffer } from '../src/domain/calendar/organization/periods';
 import { equalValues } from '../src/shared/equal';
 import { DomainError } from '../src/domain/errors';
 import { inspectBase, reconcileBase } from './calendars/base';
@@ -47,7 +47,7 @@ function validateEditedAssessmentCycles(previous: ActivityState, next: ActivityS
     return {
       organization: offer?.organization,
       perTerm: offer?.stages?.perTerm,
-      periods: periodsForModality(state, id)
+      periods: periodsForOffer(state, id)
         .filter(
           (period) => period.association?.status === 'defined' && period.association.term === term,
         )
@@ -248,11 +248,6 @@ export const saveCalendar = mutation({
     calendarEditor(user);
     const { row, content, record, base, docs, compatibility } = await baseRecord(ctx, user, id);
     if (row.version !== body.version) fail('Há versão mais recente. Reabra o calendário.', 409);
-    if (body.state.schemaVersion !== 4)
-      fail(
-        'Este calendário usa o formato v4. Atualize a aplicação; o preenchimento não foi gravado nem descartado.',
-        409,
-      );
     if (
       !equivalentRulesets(
         body.state.rulesetVersion,
@@ -280,8 +275,8 @@ export const saveCalendar = mutation({
     const next = prepared.content as validators.ContentState;
     const institutionalSnapshot = clean(prepared.institutionalSnapshot);
     if (prepared.unchanged && !reconciliation.incorporate) {
-      if (!equalValues(row.offerKinds, prepared.offerKinds) || row.modalities !== undefined)
-        await ctx.db.patch(id, { offerKinds: prepared.offerKinds, modalities: undefined });
+      if (!equalValues(row.offerKinds, prepared.offerKinds))
+        await ctx.db.patch(id, { offerKinds: prepared.offerKinds });
       if (content.catalogueRevision !== base.revision)
         await ctx.db.patch(content._id, { catalogueRevision: base.revision });
       return {
@@ -302,7 +297,6 @@ export const saveCalendar = mutation({
     });
     await ctx.db.patch(id, {
       offerKinds: kinds(state),
-      modalities: undefined,
       version: row.version + 1,
       updatedAt: Date.now(),
     });
@@ -353,8 +347,7 @@ export const deleteCalendar = mutation({
     await ctx.db.patch(id, {
       deletedAt: Date.now(),
       deletedBy: user.id,
-      offerKinds: row.offerKinds ?? row.modalities ?? [],
-      modalities: undefined,
+      offerKinds: row.offerKinds,
     });
     await appendAudit(
       ctx,
@@ -379,8 +372,7 @@ export const restoreCalendar = mutation({
     await ctx.db.patch(id, {
       deletedAt: undefined,
       deletedBy: undefined,
-      offerKinds: row.offerKinds ?? row.modalities ?? [],
-      modalities: undefined,
+      offerKinds: row.offerKinds,
     });
     await appendAudit(
       ctx,
@@ -412,8 +404,7 @@ export const makeDefinitive = mutation({
       await archive(ctx, row, content);
       await ctx.db.patch(id, {
         purpose: 'definitive',
-        offerKinds: row.offerKinds ?? row.modalities ?? [],
-        modalities: undefined,
+        offerKinds: row.offerKinds,
         version: row.version + 1,
         updatedAt: Date.now(),
       });

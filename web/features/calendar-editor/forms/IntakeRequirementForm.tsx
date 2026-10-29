@@ -70,7 +70,7 @@ export default function IntakeRequirementForm({ item }: { item: ActivityRequirem
             offer.scope?.status !== 'own-regulation' &&
             (!item.modalities || item.modalities.includes(offer.kind)) &&
             (!item.offerIds || item.offerIds.includes(offer.id)) &&
-            (!(item.offerId ?? item.modality) || (item.offerId ?? item.modality) === offer.id) &&
+            (!item.offerId || item.offerId === offer.id) &&
             termsFor(state, offer.id).includes(term),
         )
         .map((offer) => (

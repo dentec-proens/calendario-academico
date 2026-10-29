@@ -15,14 +15,13 @@ export function assessmentDayCounts(
       .map((e) => [
         e.id,
         calendarOffers(state)
-          .filter((offer) => appliesTo(e, offer.id))
+          .filter((offer) => appliesTo(e, offer))
           .map((offer) => {
             const ledger = result.byOffer[offer.id].ledger.filter(
               (d) => d.date >= e.start && d.date <= e.end,
             );
             return {
-              modality: offer.id,
-              ...(state.offers ? { offerId: offer.id } : {}),
+              offerId: offer.id,
               days: ledger.filter((d) => d.counted).length,
               saturdays: ledger.filter((d) => d.counted && d.weekday === 6).length,
               excluded: ledger.filter((d) => d.reason === 'EXCLUDED').length,

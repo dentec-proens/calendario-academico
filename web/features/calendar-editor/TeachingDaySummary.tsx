@@ -1,7 +1,7 @@
 import { ChevronDown, X } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
-import { periodsForModality } from '#src/domain/calendar/organization/periods.ts';
+import { periodsForOffer } from '#src/domain/calendar/organization/periods.ts';
 import { evaluateCalendar } from '#src/domain/calendar/counting/evaluation.ts';
 import { useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import './teaching-day-summary.css';
@@ -39,7 +39,7 @@ export default function TeachingDaySummary() {
   const offers = useMemo(
     () =>
       offerIds(state).map((modality) => {
-        const periods = periodsForModality(state, modality);
+        const periods = periodsForOffer(state, modality);
         let result = periods.length ? evaluation?.byOffer[modality] : undefined;
         // An unfinished offer must not hide the count of offers already configured.
         if (!evaluation && state.weekConfirmed && periods.length) {

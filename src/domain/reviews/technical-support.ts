@@ -1,7 +1,6 @@
 import type { CalendarActivity, TeachingState } from '../calendar/model.ts';
 import {
   calendarOffers,
-  offerIds,
   labelFor,
   organizationSummary,
   kinds,
@@ -11,7 +10,7 @@ import {
 import { automaticEventSource } from '../calendar/counting/core.ts';
 import { evaluateCalendar as calendarResult } from '../calendar/counting/evaluation.ts';
 import { activityCoverage } from '../calendar/activities/coverage.ts';
-import { organizationForModality, periodsForModality } from '../calendar/organization/periods.ts';
+import { organizationForOffer, periodsForOffer } from '../calendar/organization/periods.ts';
 import { policyFor } from '../policies/registry.ts';
 
 const normalize = (s: string) =>
@@ -28,10 +27,7 @@ export function reviewSupport<
   },
 >(
   record: T,
-  events: (Pick<
-    CalendarActivity,
-    'id' | 'name' | 'start' | 'end' | 'category' | 'modalities' | 'offers'
-  > &
+  events: (Pick<CalendarActivity, 'id' | 'name' | 'start' | 'end' | 'category' | 'offers'> &
     Partial<
       Pick<
         CalendarActivity,
@@ -75,40 +71,32 @@ export function reviewSupport<
       }
     }
   }
-  const regime = record.state.offers
-    ? organizationSummary(record.state.offers)
-    : (record.state.regime ?? 'a-classificar');
-  const counts = result ? Object.entries(result.byModality) : [];
+  const regime = organizationSummary(record.state.offers);
+  const counts = result ? Object.entries(result.byOffer) : [];
   const countLabel = provisional ? 'Contagem provisória dos dados cadastrados. ' : '';
   const policy = policyFor(record.state.year);
   const source = policy.review.source;
   const sameYear = record.state.year === source.year;
   const normativeScopeConfirmed =
     !policy.scope ||
-    (record.state.offers
-      ? calendarOffers(record.state).filter(
-          (offer) => !policy.excludes(offer) && offer.scope?.status !== 'own-regulation',
-        ).length > 0 &&
-        calendarOffers(record.state)
-          .filter((offer) => !policy.excludes(offer) && offer.scope?.status !== 'own-regulation')
-          .every((offer) => offer.scope?.status === 'covered')
-      : record.state.scopeConfirmation?.status === 'covered');
+    (calendarOffers(record.state).filter(
+      (offer) => !policy.excludes(offer) && offer.scope?.status !== 'own-regulation',
+    ).length > 0 &&
+      calendarOffers(record.state)
+        .filter((offer) => !policy.excludes(offer) && offer.scope?.status !== 'own-regulation')
+        .every((offer) => offer.scope?.status === 'covered'));
   const window = policy.window(record.state);
   const normativeOffers = calendarOffers(record.state).filter(
     (offer) => !policy.excludes(offer) && (!policy.scope || offer.scope?.status === 'covered'),
   );
-  const normativeCounts = record.state.offers
-    ? counts.filter(([id]) => normativeOffers.some((offer) => offer.id === id))
-    : counts;
-  const normativeRegime = record.state.offers ? organizationSummary(normativeOffers) : regime;
-  const windowPeriods = record.state.offers
-    ? record.state.periods.filter((period) =>
-        associationOffers(period.association).some((id) => {
-          const offer = offerFor(record.state, id);
-          return offer && !policy.excludes(offer) && offer.scope?.status !== 'own-regulation';
-        }),
-      )
-    : record.state.periods;
+  const normativeCounts = counts.filter(([id]) => normativeOffers.some((offer) => offer.id === id));
+  const normativeRegime = organizationSummary(normativeOffers);
+  const windowPeriods = record.state.periods.filter((period) =>
+    associationOffers(period.association).some((id) => {
+      const offer = offerFor(record.state, id);
+      return offer && !policy.excludes(offer) && offer.scope?.status !== 'own-regulation';
+    }),
+  );
   const windowStart = window?.start ?? '',
     latestStart = window?.latestStart ?? '',
     windowEnd = window?.end ?? '';
@@ -129,9 +117,8 @@ export function reviewSupport<
       name: record.name,
       campus: record.state.campus,
       year: record.state.year,
-      ...(record.state.offers
-        ? { offerKinds: kinds({ offers: record.state.offers }), offers: record.state.offers }
-        : { offer: record.state.offer, modalities: offerIds(record.state) }),
+      offerKinds: kinds({ offers: record.state.offers }),
+      offers: record.state.offers,
       regime: regime,
       version: record.version,
     },
@@ -190,7 +177,7 @@ export function reviewSupport<
                 .map(
                   ([m, r]) =>
                     `${labelFor(record.state, m)}: ` +
-                    periodsForModality(record.state, m)
+                    periodsForOffer(record.state, m)
                       .map((p) => `${p.name || p.id}: ${r.byPeriod[p.id]} dias letivos`)
                       .join('; '),
                 )
@@ -231,7 +218,7 @@ export function reviewSupport<
             linked
               .map(
                 (row) =>
-                  `${labelFor(record.state, row.modality)} — ${row.requirement.name}: ${row.applicability === 'required' ? 'obrigatório' : row.applicability === 'optional' ? 'opcional' : 'escopo a conferir'}; planejamento ${row.coverage === 'complete' ? 'completo' : row.coverage === 'partial' ? 'parcial' : 'pendente'}; ${row.execution === 'published' ? 'execução comprovada' : row.execution === 'planned' ? 'publicação prevista' : 'execução a classificar'}. ${[...row.issues, ...row.warnings].join(' ')}`,
+                  `${labelFor(record.state, row.offerId)} — ${row.requirement.name}: ${row.applicability === 'required' ? 'obrigatório' : row.applicability === 'optional' ? 'opcional' : 'escopo a conferir'}; planejamento ${row.coverage === 'complete' ? 'completo' : row.coverage === 'partial' ? 'parcial' : 'pendente'}; ${row.execution === 'published' ? 'execução comprovada' : row.execution === 'planned' ? 'publicação prevista' : 'execução a classificar'}. ${[...row.issues, ...row.warnings].join(' ')}`,
               )
               .join(' | ') +
             ' A presença não comprova atendimento. A conferência humana permanece necessária.';
@@ -268,9 +255,9 @@ export function reviewSupport<
           normativeCounts.length > 0 &&
           normativeCounts.every(
             ([m, r]) =>
-              organizationForModality(record.state, m) !== 'semestral' ||
-              (periodsForModality(record.state, m).length === 2 &&
-                periodsForModality(record.state, m).every(
+              organizationForOffer(record.state, m) !== 'semestral' ||
+              (periodsForOffer(record.state, m).length === 2 &&
+                periodsForOffer(record.state, m).every(
                   (p) => r.byPeriod[p.id] >= dayMinimums.semester,
                 )),
           );
@@ -300,9 +287,8 @@ export function reviewSupport<
       };
     }),
     teachingDays: counts.map(([modality, r]) => ({
-      ...(record.state.offers
-        ? { offerId: modality, label: labelFor(record.state, modality) }
-        : { modality }),
+      offerId: modality,
+      label: labelFor(record.state, modality),
       total: r.total,
       byPeriod: r.byPeriod,
       provisional,

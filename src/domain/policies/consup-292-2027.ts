@@ -55,16 +55,9 @@ const supportedKinds = (state: AssessmentSettings) => [
   ...new Set(supported(state).map((offer) => offer.kind)),
 ];
 const termNumber = (term: AcademicTerm) => (term === 'annual' ? 0 : term === 'first' ? 1 : 2);
-const stageCycle = ({ state, stages, offer }: Slot) =>
-  state.offers && offer
-    ? offerStageCycle(offer)
-    : stages === 4
-      ? 'bimestral'
-      : stages === 3
-        ? 'trimestral'
-        : 'semestral';
+const stageCycle = ({ offer }: Slot) => offerStageCycle(offer!);
 const stageNumber = (slot: Slot, title = 'etapa') =>
-  `${slot.state.offers ? slot.number : slot.n}ª ${title}${slot.state.offers && slot.term && slot.term !== 'annual' ? ` do ${termLabels[slot.term]}` : ''}`;
+  `${slot.number}ª ${title}${slot.term && slot.term !== 'annual' ? ` do ${termLabels[slot.term]}` : ''}`;
 const perTerm = (title: string) => ({
   title,
   name: (s: Slot) => `${title} — ${termLabels[s.term!]}`,
@@ -89,11 +82,9 @@ const sections: RequirementSection[] = [
   {
     repeat: 'stage',
     each: {
-      modalities: (s) => [s.offer?.kind ?? s.modality!],
+      modalities: (s) => [s.offer!.kind],
       reason: (s) =>
-        excluded(s.offer?.kind ?? s.modality!)
-          ? 'Pós-graduação depende de norma própria.'
-          : undefined,
+        excluded(s.offer!.kind) ? 'Pós-graduação depende de norma própria.' : undefined,
     },
     rows: [
       {
@@ -413,11 +404,7 @@ function applicability(
   const kind = offer.kind;
   if (excluded(kind) || offer.scope?.status === 'own-regulation') return 'unconfigured';
   if (requirement.modalities && !requirement.modalities.includes(kind)) return 'optional';
-  if (
-    (requirement.offerId ?? requirement.modality) &&
-    (requirement.offerId ?? requirement.modality) !== offer.id
-  )
-    return 'optional';
+  if (requirement.offerId && requirement.offerId !== offer.id) return 'optional';
   if (requirement.offerIds && !requirement.offerIds.includes(offer.id)) return 'optional';
   if (requirement.optionalFor?.[kind] !== undefined) return 'optional';
   if (requirement.intake) {

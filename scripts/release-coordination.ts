@@ -58,8 +58,10 @@ export async function waitForMigrations(
   for (;;) {
     const statuses = readStatus();
     if (!Array.isArray(statuses)) throw Error('O status das migrações é inválido.');
+    const inProgress = statuses.some(({ state }) => state === 'inProgress');
     const stopped = statuses.find(
-      ({ state }) => state === 'failed' || state === 'canceled' || state === 'unknown',
+      ({ state }) =>
+        state === 'failed' || state === 'canceled' || (state === 'unknown' && !inProgress),
     );
     if (stopped)
       throw Error(

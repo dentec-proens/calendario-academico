@@ -19,6 +19,29 @@ A lista `pending` do componente de migrações expurga `reviewVersions`, `review
 
 Publicação exige backup integral com Storage restaurado em destino descartável, ensaio A/B, verificação independente pelo domínio e painel unânime. Os procedimentos estão em [Implantação e operação](implantacao-convex-vercel.md); o estado efetivamente executado, contagens e limites ficam no [diário de ofertas v4](execucao-ofertas-v4.md). A implementação na branch não comprova que uma operação foi executada em produção.
 
+Após a confirmação da release A em produção, o estreitamento da release B exige
+formato 4 tanto no conteúdo atual quanto nos snapshots históricos e torna
+`calendars.offerKinds` obrigatório. São retirados os conversores v2/v3, os
+validadores legados, as adaptações de leitura e a barreira 409 específica de
+gravações antigas; `pending` fica vazio. A validação de schema do Convex recusa a
+publicação se algum documento ainda depender da representação anterior.
+
+`legacyStageCount` continua sendo uma representação v4 válida da quantidade
+conhecida com organização pendente, com as restrições do plano. A política de
+2026, os tipos de registro e os vínculos de requisitos antigos são retirados
+somente conforme o inventário real do M9. Os snapshots institucionais conservam
+tipos normativos em `modalities`; seu escopo é resolvido por `offer.kind`, sem
+reintroduzir esse campo nos eventos locais do formato 4.
+
+Para o resíduo identificado pelo inventário, B publica preparatoriamente a
+mutação interna temporária `releaseResidue:purge`. O M9 confere IDs e versão,
+executa primeiro sem gravação e depois realiza a exclusão auditada. A função
+recusa campus/ano/vínculos inesperados e trabalho posterior, conserva campus
+com qualquer usuário ou outro calendário e não apaga arquivos ou auditorias.
+Depois da execução conferida, o próprio M9 retira a função e seus testes. Essa
+sequência permite executar e remover a operação usando apenas o fluxo oficial
+de publicação, sem disponibilizar uma ferramenta administrativa permanente.
+
 ## Fluxo da ferramenta
 
 ```sh

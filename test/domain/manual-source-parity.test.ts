@@ -9,6 +9,7 @@ import { activityChecklist } from '../../src/domain/calendar/activities/checklis
 import type {
   ActivityState,
   CalendarActivity,
+  CalendarOffer,
   IntakeConfiguration,
 } from '../../src/domain/calendar/model.ts';
 
@@ -17,48 +18,46 @@ type AnnotatedEvent = CalendarActivity & {
   evidence?: string;
   deadlineAdjustment?: CalendarActivity['deadlineAdjustment'] & { evidence?: string };
 };
-type AnnotatedState = Omit<ActivityState, 'events' | 'scopeConfirmation' | 'intakeByModality'> & {
+type AnnotatedState = Omit<ActivityState, 'events' | 'offers'> & {
   events: AnnotatedEvent[];
   weekEvidence?: string;
-  scopeConfirmation?: ActivityState['scopeConfirmation'] & { source?: string };
-  intakeByModality?: Record<string, Record<string, IntakeConfiguration & { source?: string }>>;
+  offers: (Omit<CalendarOffer, 'scope' | 'intake'> & {
+    scope?: CalendarOffer['scope'] & { source?: string };
+    intake?: Partial<
+      Record<'annual' | 'first' | 'second', IntakeConfiguration & { source?: string }>
+    >;
+  })[];
 };
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 
 function state(): AnnotatedState {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4 as const,
     year: 2027,
-    offer: 'integrado',
-    modalities: ['integrado', 'graduacao'],
-    regime: 'misto',
-    organizationByModality: { integrado: 'anual', graduacao: 'semestral' },
-    scopeConfirmation: { status: 'covered', source: 'Referência manual de escopo' },
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     weekEvidence: 'Ata manual da semana',
-    assessmentStagesByModality: { integrado: 2, graduacao: 2 },
     periods: [
       {
         id: 'annual',
         name: 'Anual',
         start: '2027-03-01',
         end: '2027-03-26',
-        association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
       {
         id: 'first',
         name: 'Primeiro',
         start: '2027-03-01',
         end: '2027-03-12',
-        association: { status: 'defined', modalities: ['graduacao'], term: 'first' },
+        association: { status: 'defined', offers: ['graduacao'], term: 'first' },
       },
       {
         id: 'second',
         name: 'Segundo',
         start: '2027-03-15',
         end: '2027-03-26',
-        association: { status: 'defined', modalities: ['graduacao'], term: 'second' },
+        association: { status: 'defined', offers: ['graduacao'], term: 'second' },
       },
     ],
     events: [
@@ -84,7 +83,7 @@ function state(): AnnotatedState {
         start: '2027-03-08',
         end: '2027-03-08',
         kind: 'exclude',
-        modalities: ['integrado'],
+        offers: ['integrado'],
         evidence: 'Fonte manual do feriado',
       },
       {
@@ -96,15 +95,34 @@ function state(): AnnotatedState {
         evidence: 'Resolução institucional automática',
       },
     ],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages: { perTerm: 2 },
+        scope: { status: 'covered', source: 'Referência manual de escopo' },
+      },
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'semestral' as const,
+        stages: { perTerm: 1 },
+        scope: { status: 'covered', source: 'Referência manual de escopo' },
+      },
+    ],
   };
 }
 
 function removeManualSources(input: AnnotatedState): AnnotatedState {
   const result = structuredClone(input);
   delete result.weekEvidence;
-  if (result.scopeConfirmation) delete (result.scopeConfirmation as { source?: string }).source;
-  for (const config of Object.values(result.intakeByModality ?? {}))
-    for (const entry of Object.values(config)) delete entry.source;
+  for (const offer of result.offers) {
+    if (offer.scope) delete offer.scope.source;
+    for (const entry of Object.values(offer.intake ?? {})) delete entry.source;
+  }
   for (const event of result.events) {
     if (!event.id.startsWith('inst:')) delete event.evidence;
     if (event.deadlineAdjustment)
@@ -115,7 +133,7 @@ function removeManualSources(input: AnnotatedState): AnnotatedState {
 
 function numericResult(result: ReturnType<typeof evaluateCalendar>) {
   return Object.fromEntries(
-    Object.entries(result.byModality).map(([modality, row]) => [
+    Object.entries(result.byOffer).map(([modality, row]) => [
       modality,
       {
         total: row.total,
@@ -132,16 +150,16 @@ function numericResult(result: ReturnType<typeof evaluateCalendar>) {
 test('removing every manual source preserves annual, semester and per-offer day counts and conflicts', () => {
   const original = state();
   const before = evaluateCalendar(original, original.events);
-  expect(before.byModality.integrado.total).toBe(19);
-  expect(before.byModality.graduacao.total).toBe(20);
-  expect(before.byModality.graduacao.byPeriod).toEqual({ first: 10, second: 10 });
+  expect(before.byOffer.integrado.total).toBe(19);
+  expect(before.byOffer.graduacao.total).toBe(20);
+  expect(before.byOffer.graduacao.byPeriod).toEqual({ first: 10, second: 10 });
   const stripped = removeManualSources(original);
   const after = evaluateCalendar(stripped, stripped.events);
   expect(numericResult(after)).toEqual(numericResult(before));
   expect(
-    after.byModality.integrado.ledger.find((day) => day.date === '2027-03-10')?.evidenceIds,
+    after.byOffer.integrado.ledger.find((day) => day.date === '2027-03-10')?.evidenceIds,
   ).toEqual(['Resolução institucional automática']);
-  expect(after.byModality.integrado.ledger.flatMap((day) => day.evidenceIds)).not.toContain(
+  expect(after.byOffer.integrado.ledger.flatMap((day) => day.evidenceIds)).not.toContain(
     'Ata manual da semana',
   );
 });
@@ -150,7 +168,14 @@ test('the counting core requires applied confirmation, not a textual source', ()
   const input = {
     year: 2027,
     offerId: 'integrado',
-    periods: [{ id: 'one', start: '2027-03-01', end: '2027-03-05' }],
+    periods: [
+      {
+        id: 'one',
+        start: '2027-03-01',
+        end: '2027-03-05',
+        association: { status: 'defined' as const, offers: ['graduacao'], term: 'first' as const },
+      },
+    ],
     weekPattern: { weekdays: [1, 2, 3, 4, 5], confirmed: true },
     inclusions: [],
     exclusions: [],
@@ -166,17 +191,20 @@ test('the counting core requires applied confirmation, not a textual source', ()
 function deadlineState(): ActivityState {
   return {
     ...state(),
-    regime: 'anual',
-    organizationByModality: { integrado: 'anual', graduacao: 'anual' },
     periods: [
       {
         id: 'one',
         start: '2027-08-01',
         end: '2027-09-30',
-        association: { status: 'defined', modalities: ['integrado', 'graduacao'], term: 'annual' },
+        association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'annual' },
       },
     ],
     events: [],
+    offers: state().offers.map((offer) => ({
+      ...offer,
+      organization: ({ integrado: 'anual', graduacao: 'anual' }[offer.id] ?? 'a-classificar') as
+        'anual' | 'semestral' | 'a-classificar',
+    })),
   };
 }
 const holiday = (overrides: Partial<AnnotatedEvent> = {}): AnnotatedEvent => ({
@@ -185,7 +213,7 @@ const holiday = (overrides: Partial<AnnotatedEvent> = {}): AnnotatedEvent => ({
   start: '2027-08-31',
   end: '2027-08-31',
   kind: 'exclude',
-  modalities: ['integrado'],
+  offers: ['integrado'],
   evidence: 'Lei manual',
   deadlineExtensionCause: 'municipal-holiday',
   ...overrides,
@@ -228,7 +256,7 @@ for (const scenario of [
   },
   {
     name: 'a municipal holiday belonging to another offer',
-    events: [holiday({ modalities: ['graduacao'] })],
+    events: [holiday({ offers: ['graduacao'] })],
     expected: '2027-08-31',
     source: 'norm',
   },
@@ -250,11 +278,9 @@ for (const scenario of [
 
 test('local registration keeps its explicit required and optional choices without sources', () => {
   const original = state();
-  original.intakeByModality = {
-    graduacao: {
-      first: { status: 'yes', required: true, source: 'Regra manual' },
-      second: { status: 'no', required: false, source: 'Ata manual' },
-    },
+  original.offers.find((offer) => offer.id === 'graduacao')!.intake = {
+    first: { status: 'yes', required: true, source: 'Regra manual' },
+    second: { status: 'no', required: false, source: 'Ata manual' },
   };
   const stripped = removeManualSources(original);
   const rows = activityChecklist(original).filter(
@@ -273,8 +299,15 @@ test('local registration keeps its explicit required and optional choices withou
 test('an exceptional regular notice deadline keeps its date even with reviewed false and no source', () => {
   const original = {
     ...deadlineState(),
-    modalities: ['integrado'],
-    assessmentStagesByModality: { integrado: 2 },
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages: { perTerm: 2 },
+      },
+    ],
   };
   const row = activityChecklist(original).find((item) => item.admissionType === 'regular')!;
   expect(row.deadline).toBeTruthy();
@@ -283,7 +316,7 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
     name: row.name,
     requirementId: row.id,
     kind: 'note',
-    modalities: ['integrado'],
+    offers: ['integrado'],
     start: '2027-12-01',
     end: '2027-12-01',
     evidence: 'Publicação manual',
@@ -295,10 +328,10 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
   const stripped = removeManualSources(original);
   expect(() => validateActivityRecord(stripped, stripped.events[0])).not.toThrow();
   const before = activityCoverage(original).find(
-    (item) => item.requirement.id === row.id && item.modality === 'integrado',
+    (item) => item.requirement.id === row.id && item.offerId === 'integrado',
   )!;
   const after = activityCoverage(stripped).find(
-    (item) => item.requirement.id === row.id && item.modality === 'integrado',
+    (item) => item.requirement.id === row.id && item.offerId === 'integrado',
   )!;
   expect(before.coverage).toBe('complete');
   expect(after.coverage).toBe(before.coverage);
@@ -307,14 +340,16 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
   stripped.events[0].end = '2027-12-04';
   expect(
     activityCoverage(stripped).find(
-      (item) => item.requirement.id === row.id && item.modality === 'integrado',
+      (item) => item.requirement.id === row.id && item.offerId === 'integrado',
     )?.coverage,
   ).toBe('partial');
 });
 
 test('PDF omits manual source text but keeps automatic institutional references and full dates', () => {
   const original = state();
-  original.scopeConfirmation = { status: 'own-regulation', source: 'SEGREDO MANUAL DE ESCOPO' };
+  original.offers.forEach((offer) => {
+    offer.scope = { status: 'own-regulation', source: 'SEGREDO MANUAL DE ESCOPO' };
+  });
   const events = [
     {
       id: 'manual',
@@ -353,14 +388,16 @@ test('PDF omits manual source text but keeps automatic institutional references 
 
 test('own-regulation status preserves unconfigured minimums after removing its manual reference', () => {
   const original = state();
-  original.scopeConfirmation = { status: 'own-regulation', source: 'Norma local manual' };
+  original.offers.forEach((offer) => {
+    offer.scope = { status: 'own-regulation', source: 'Norma local manual' };
+  });
   const stripped = removeManualSources(original);
   const before = evaluateCalendar(original, original.events);
   const after = evaluateCalendar(stripped, stripped.events);
   expect(numericResult(after)).toEqual(numericResult(before));
-  expect(
-    after.byModality.integrado.checks.every((check) => check.status === 'NOT_VERIFIABLE'),
-  ).toBe(true);
+  expect(after.byOffer.integrado.checks.every((check) => check.status === 'NOT_VERIFIABLE')).toBe(
+    true,
+  );
 });
 
 test('municipal deadline preserves automatic institutional references while absent next teaching dates stay unresolved', () => {

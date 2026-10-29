@@ -7,8 +7,6 @@ import { diagnoseCalendar, diagnoseTeachingDays } from '../../src/domain/calenda
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import { inspect } from '../../src/domain/calendar/base.ts';
-import { convertCalendarV2 } from '../../src/domain/calendar/normalization/conversion.ts';
-import { convertCalendarV3 } from '../../src/domain/calendar/normalization/conversion-v4.ts';
 import { inheritedEvents, type CatalogueEvent } from '../../src/domain/institution/catalogue.ts';
 import { policyFor } from '../../src/domain/policies/registry.ts';
 import {
@@ -31,12 +29,7 @@ function semanticProjection(
 ) {
   const policy = policyFor(state.year);
   const requirements = activityChecklist(state);
-  const institutional = inheritedEvents(
-    catalogue,
-    state.year,
-    state.offers ?? state.modalities ?? [],
-    state,
-  );
+  const institutional = inheritedEvents(catalogue, state.year, state.offers, state);
   const events = [...institutional, ...state.events];
   const diagnostic = diagnoseCalendar(state, events);
   const baseSnapshot = {
@@ -55,7 +48,7 @@ function semanticProjection(
     // A v4 stage has an explicit cycle and offer identity. The old stage already
     // encoded its identity in modality and its annual ordinal in the stable ID.
     // Applicability below still checks every offer, including cycle restrictions.
-    const isStageRow = Boolean(offerId ?? requirement.modality);
+    const isStageRow = Boolean(offerId);
     return {
       ...fields,
       ...(offerId ? { modality: offerId } : {}),
@@ -84,9 +77,10 @@ function semanticProjection(
         ];
       }),
     );
-    teachingDiagnostics = diagnoseTeachingDays(state, result).map(
-      ({ offerId: _id, ...row }) => row,
-    );
+    teachingDiagnostics = diagnoseTeachingDays(state, result).map(({ offerId, ...row }) => ({
+      ...row,
+      modality: offerId,
+    }));
   } catch (error) {
     counting = { error: error instanceof Error ? error.message : String(error) };
     teachingDiagnostics = null;
@@ -123,12 +117,15 @@ function semanticProjection(
       counting,
       diagnostics: {
         structure: diagnostic.structure.map((row) =>
-          'offerId' in row ? (({ offerId: _id, ...rest }) => rest)(row) : row,
+          'offerId' in row
+            ? (({ offerId, ...rest }) => ({ ...rest, modality: offerId }))(row)
+            : row,
         ),
         teaching: teachingDiagnostics,
         coverage: diagnostic.coverage.map(
-          ({ requirement, events: linked, offerId: _id, offer: _offer, ...row }) => ({
+          ({ requirement, events: linked, offerId, offer: _offer, ...row }) => ({
             ...row,
+            modality: offerId,
             requirementId: requirement.id,
             eventIds: linked.map((event) => event.id),
           }),
@@ -180,27 +177,30 @@ const oracle = JSON.parse(
   cases: { name: string; input: ActivityState; expected: unknown }[];
 };
 
-test.each(oracle.cases)('preserves the captured v3 boundary: $name', ({ input, expected }) => {
+// Converted once by the validated release A converter before its deletion. All
+// 18 cases passed against this oracle before and after the release B cleanup.
+// The input fixture records the converter hashes; expected values stay frozen.
+const inputs = JSON.parse(
+  readFileSync(new URL('../fixtures/offers-v4-oracle-inputs.json', import.meta.url), 'utf8'),
+) as { oracleSha256: string; cases: { name: string; input: ActivityState }[] };
+
+test('retains the immutable pre-v4 oracle and all independently captured v4 inputs', () => {
+  expect(
+    createHash('sha256')
+      .update(readFileSync(new URL('../fixtures/offers-v3-oracle.json', import.meta.url)))
+      .digest('hex'),
+  ).toBe('eff78c9cb6b7e88f6061bb4a2b40c99a2cce22c2e054cc2490b569dd9e77e75c');
+  expect(inputs.oracleSha256).toBe(
+    'eff78c9cb6b7e88f6061bb4a2b40c99a2cce22c2e054cc2490b569dd9e77e75c',
+  );
+  expect(inputs.cases.map(({ name }) => name)).toEqual(oracle.cases.map(({ name }) => name));
+});
+
+test.each(inputs.cases)('preserves the captured semantics in v4: $name', ({ name, input }) => {
+  const expected = oracle.cases.find((item) => item.name === name)!.expected;
   const before = structuredClone(input);
-  const state = convertCalendarV2(input);
-  expect(readinessTokens(semanticProjection(state, oracle.catalogue), state)).toEqual(
-    readinessTokens(expected, state),
+  expect(readinessTokens(semanticProjection(input, oracle.catalogue), input)).toEqual(
+    readinessTokens(expected, input),
   );
   expect(input).toEqual(before);
 });
-
-test.each(oracle.cases)(
-  'preserves the captured semantics after v4 migration: $name',
-  ({ input, expected }) => {
-    const before = structuredClone(input);
-    const state = {
-      ...convertCalendarV3(input, { year: input.year, modalities: input.modalities ?? [] }),
-      year: input.year,
-      campus: input.campus,
-    };
-    expect(readinessTokens(semanticProjection(state, oracle.catalogue), state)).toEqual(
-      readinessTokens(expected, state),
-    );
-    expect(input).toEqual(before);
-  },
-);

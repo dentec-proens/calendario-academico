@@ -1,7 +1,5 @@
 import { modalityIds, academicTerms, assessmentStageValues } from '../src/domain/calendar/config';
 import { v } from 'convex/values';
-import { contentStateLegacy, historicalStateLegacy } from './legacyValidators';
-export { contentStateLegacy, historicalStateLegacy } from './legacyValidators';
 import type { Infer } from 'convex/values';
 
 export const modality = v.union(...modalityIds.map((id) => v.literal(id)));
@@ -145,7 +143,7 @@ export const calendarOffer = v.object({
   ),
   organizationBasis: v.optional(v.string()),
 });
-export const contentStateV4 = v.object({
+export const contentState = v.object({
   schemaVersion: v.literal(4),
   rulesetVersion: v.optional(v.string()),
   offers: v.array(calendarOffer),
@@ -157,13 +155,12 @@ export const contentStateV4 = v.object({
   teacherVacations: v.optional(vacations),
   legacySecondSemesterIntake: v.optional(v.boolean()),
 });
-export const contentState = v.union(contentStateLegacy, contentStateV4);
 export const domainState = v.object({
-  ...contentStateV4.fields,
+  ...contentState.fields,
   year: v.number(),
   campus: v.string(),
 });
-export const historicalState = v.union(historicalStateLegacy, domainState);
+export const historicalState = domainState;
 export const unavailableFile = v.object({
   sourceReference: v.string(),
   reason: v.literal('not_migrated'),
@@ -246,8 +243,7 @@ export const auditTarget = v.union(
   }),
   v.object({ type: v.literal('archived'), reference: v.string() }),
 );
-export type ContentState = Infer<typeof contentStateV4>;
-export type StoredContentState = Infer<typeof contentState>;
+export type ContentState = Infer<typeof contentState>;
 export type DomainState = Infer<typeof domainState>;
 export type ReviewFields = {
   [K in keyof typeof reviewFields]: Infer<(typeof reviewFields)[K]>;

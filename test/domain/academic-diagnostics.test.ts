@@ -6,12 +6,8 @@ import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 
 function calendar(): ActivityState {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4 as const,
     year: 2027,
-    modalities: ['integrado', 'graduacao'],
-    regime: 'misto',
-    organizationByModality: { integrado: 'anual', graduacao: 'semestral' },
-    scopeConfirmation: { status: 'covered' },
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     periods: [
@@ -19,16 +15,32 @@ function calendar(): ActivityState {
         id: 'year-integrado',
         start: '2027-02-01',
         end: '2027-12-17',
-        association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
       {
         id: 'first',
         start: '2027-02-01',
         end: '2027-06-30',
-        association: { status: 'defined', modalities: ['graduacao'], term: 'first' },
+        association: { status: 'defined', offers: ['graduacao'], term: 'first' },
       },
     ],
     events: [],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        scope: { status: 'covered' },
+      },
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'semestral' as const,
+        scope: { status: 'covered' },
+      },
+    ],
   };
 }
 
@@ -36,7 +48,7 @@ test('local diagnostics and confirmed readiness require the same missing semeste
   const state = calendar();
   const before = structuredClone(state);
   expect(diagnoseCalendar(state).structure).toEqual([
-    { code: 'period-count', modality: 'graduacao', expected: 2, actual: 1 },
+    { code: 'period-count', offerId: 'graduacao', expected: 2, actual: 1 },
   ]);
   const readiness = releaseReadiness(
     { id: 'calendar', catalogueRevision: 1, institutionalSnapshot: [], state },
@@ -54,11 +66,7 @@ test('local diagnostics and confirmed readiness require the same missing semeste
         id: 'second',
         start: '2027-08-02',
         end: '2027-12-17',
-        association: {
-          status: 'defined' as const,
-          modalities: ['graduacao'],
-          term: 'second' as const,
-        },
+        association: { status: 'defined' as const, offers: ['graduacao'], term: 'second' as const },
       },
     ],
   };
@@ -76,12 +84,21 @@ test('local diagnostics and confirmed readiness require the same missing semeste
 test('mixed offers retain annual and semester counting checks in their own scope', () => {
   const state = calendar();
   const checks = diagnoseTeachingDays(state, evaluateCalendar(state, []));
-  expect(checks.map(({ modality, scope, expected }) => ({ modality, scope, expected }))).toEqual([
-    { modality: 'integrado', scope: 'annual', expected: 200 },
-    { modality: 'graduacao', scope: 'annual', expected: 200 },
-    { modality: 'graduacao', scope: 'first', expected: 100 },
+  expect(
+    checks.map(({ offerId: modality, scope, expected }) => ({
+      offerId: modality,
+      scope,
+      expected,
+    })),
+  ).toEqual([
+    { offerId: 'integrado', scope: 'annual', expected: 200 },
+    { offerId: 'graduacao', scope: 'annual', expected: 200 },
+    { offerId: 'graduacao', scope: 'first', expected: 100 },
   ]);
-  const unconfirmed = { ...state, scopeConfirmation: undefined };
+  const unconfirmed = {
+    ...state,
+    offers: state.offers.map((offer) => ({ ...offer, scope: undefined })),
+  };
   expect(
     diagnoseTeachingDays(unconfirmed, evaluateCalendar(unconfirmed, [])).every(
       (check) => check.status === 'NOT_VERIFIABLE',
@@ -94,15 +111,19 @@ test('an incomplete calendar remains diagnosable while counting is unavailable',
     ...calendar(),
     weekConfirmed: false,
     periods: [],
-    organizationByModality: {
-      integrado: 'a-classificar' as const,
-      graduacao: 'semestral' as const,
-    },
+    offers: calendar().offers.map((offer) => ({
+      ...offer,
+      organization:
+        {
+          integrado: 'a-classificar' as const,
+          graduacao: 'semestral' as const,
+        }[offer.id] ?? 'a-classificar',
+    })),
   };
   expect(diagnoseCalendar(state).structure).toEqual([
     { code: 'week-unconfirmed' },
     { code: 'periods-missing' },
-    { code: 'organization-unclassified', modality: 'integrado' },
-    { code: 'period-count', modality: 'graduacao', expected: 2, actual: 0 },
+    { code: 'organization-unclassified', offerId: 'integrado' },
+    { code: 'period-count', offerId: 'graduacao', expected: 2, actual: 0 },
   ]);
 });

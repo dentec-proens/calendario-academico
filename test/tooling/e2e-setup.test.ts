@@ -72,7 +72,7 @@ test('E2E reserves its own year/campus/account and publishing its fixture preser
     const calendarId = await ctx.db.insert('calendars', {
       campusId,
       year: 7001,
-      modalities: ['integrado'],
+      offerKinds: ['integrado'],
       purpose: 'definitive',
       courses: 'Existente',
       classes: '',

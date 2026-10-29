@@ -1,5 +1,4 @@
 import type { CalendarActivity, CalendarOffer } from '../calendar/model.ts';
-import { kinds } from '../calendar/offers.ts';
 export interface CatalogueEvent extends CalendarActivity {
   evidence: string;
   active: boolean;
@@ -7,7 +6,6 @@ export interface CatalogueEvent extends CalendarActivity {
   category: string;
 }
 import { campusInstitutionalEvents } from './teacher-day.ts';
-import { appliesTo } from '../calendar/modalities.ts';
 
 // User-supplied campus list, with Foz added by explicit request. Admin may extend it.
 export const campusNames = [
@@ -181,33 +179,24 @@ export function inheritedEvents<
 >(
   catalogue: { events: T[] },
   year: number,
-  offer: string | string[] | CalendarOffer[],
+  offers: CalendarOffer[],
   state: { year: number; teacherDayDate?: string | null } = { year },
 ) {
-  const offers =
-    Array.isArray(offer) && offer.some((item) => typeof item !== 'string')
-      ? offer.filter((item): item is CalendarOffer => typeof item !== 'string')
-      : undefined;
-  const modalities = offers
-    ? kinds({ offers })
-    : typeof offer === 'string'
-      ? [offer]
-      : offer.filter((item): item is string => typeof item === 'string');
+  const applies = (event: T, kind: string) =>
+    !event.modalities?.length || event.modalities.includes(kind);
   return campusInstitutionalEvents(
     catalogue.events
       .filter(
         (e) =>
           e.active &&
           Number(e.start.slice(0, 4)) === year &&
-          modalities.some((m) => appliesTo(e, m)),
+          offers.some((offer) => applies(e, offer.kind)),
       )
       .map((e) => ({
         ...e,
         id: `inst:${e.id}`,
         institutional: true,
-        ...(offers
-          ? { offers: offers.filter((item) => appliesTo(e, item.kind)).map((item) => item.id) }
-          : {}),
+        offers: offers.filter((offer) => applies(e, offer.kind)).map((offer) => offer.id),
       })),
     state,
   );

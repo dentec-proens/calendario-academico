@@ -4,19 +4,23 @@ import { termsFor } from '#src/domain/calendar/organization/periods.ts';
 import { expandRequirements } from '#src/domain/calendar/activities/requirement-table.ts';
 import { applicabilityFor, documentedYears, policyFor } from '#src/domain/policies/registry.ts';
 import { rulesView } from '../../web/features/rules/rules-view.ts';
+import { selectableModalities } from '#src/domain/calendar/modalities.ts';
+import type { AssessmentSettings } from '#src/domain/calendar/model.ts';
 
 test('the rules page shows the applicability the editor computes for each offer', () => {
   expect(documentedYears.length).toBeGreaterThan(0);
   for (const year of documentedYears) {
     const view = rulesView(year);
-    const offers = view.offers.map((offer) => offer.id);
-    const state = {
+    const state: AssessmentSettings = {
       year,
-      modalities: offers,
-      regime: 'anual',
-      organizationByModality: Object.fromEntries(offers.map((m) => [m, 'anual' as const])),
-      assessmentStagesByModality: Object.fromEntries(offers.map((m) => [m, 2])),
-      scopeConfirmation: { status: 'covered' as const },
+      offers: selectableModalities.map((kind) => ({
+        id: kind,
+        kind,
+        delivery: 'a-conferir',
+        organization: 'anual',
+        stages: { perTerm: 2 },
+        scope: { status: 'covered' },
+      })),
     };
     const rows = activityChecklist(state);
     const declared = view.sections.flatMap((section) => section.activities);
@@ -26,9 +30,13 @@ test('the rules page shows the applicability the editor computes for each offer'
         const row = rows.find(
           (item) =>
             item.id.replace(/-\d(:[a-z]+)?$/, '') === activity.id &&
-            (!item.modality || item.modality === offer),
+            (!item.offerId || item.offerId === offer),
         )!;
-        const expected = applicabilityFor(state, row, offer);
+        const expected = applicabilityFor(
+          state,
+          row,
+          state.offers.find((item) => item.id === offer)!,
+        );
         expect(status === 'intake' ? 'optional' : status, `${activity.id} ${offer}`).toBe(expected);
       }
   }
@@ -77,39 +85,45 @@ test('applicability per offer does not depend on organisation or stage count', (
     const repeat = new Map(
       policy.catalogue!.flatMap((section) => section.rows.map((row) => [row.id, section.repeat])),
     );
-    const offers = view.offers.map((offer) => offer.id);
     const organizations = [
       ['anual', 'anual', 'anual', 'anual'],
       ['semestral', 'semestral', 'semestral', 'semestral'],
       ['anual', 'semestral', 'anual', 'semestral'],
     ] as const;
     for (const organization of organizations)
-      for (const stages of [2, 3, 4]) {
-        const state = {
-          year,
-          modalities: offers,
-          regime: 'misto',
-          organizationByModality: Object.fromEntries(offers.map((m, i) => [m, organization[i]])),
-          assessmentStagesByModality: Object.fromEntries(offers.map((m) => [m, stages])),
-          scopeConfirmation: { status: 'covered' as const },
-        };
-        const declared = new Set(
-          expandRequirements(policy.catalogue!, state).map((item) => item.row.id),
-        );
-        // Legacy rows keep old IDs optional on purpose; only declared rows carry the table's rules.
-        for (const row of activityChecklist(state).filter((item) => declared.has(item.id))) {
-          const id = row.id.replace(/-\d(:[a-z]+)?$/, '');
-          for (const offer of offers) {
-            if (row.modality && row.modality !== offer) continue;
-            // A cycle row belongs to the offers organised in that cycle.
-            if (repeat.get(id) === 'cycle' && !termsFor(state, offer).includes(row.term!)) continue;
-            expect(
-              applicabilityFor(state, row, offer),
-              `${row.id} ${offer} ${organization.join('/')} ${stages}`,
-            ).toBe(shown.get(`${id} ${offer}`));
+      for (const annualStages of [2, 3, 4])
+        for (const semesterStages of [1, 2]) {
+          const state: AssessmentSettings = {
+            year,
+            offers: selectableModalities.map((kind, index) => ({
+              id: kind,
+              kind,
+              delivery: 'a-conferir',
+              organization: organization[index],
+              stages: {
+                perTerm: organization[index] === 'semestral' ? semesterStages : annualStages,
+              },
+              scope: { status: 'covered' },
+            })),
+          };
+          const declared = new Set(
+            expandRequirements(policy.catalogue!, state).map((item) => item.row.id),
+          );
+          // Legacy rows keep old IDs optional on purpose; only declared rows carry the table's rules.
+          for (const row of activityChecklist(state).filter((item) => declared.has(item.id))) {
+            const id = row.id.replace(/-\d(:[a-z]+)?$/, '');
+            for (const offer of state.offers) {
+              if (row.offerId && row.offerId !== offer.id) continue;
+              // A cycle row belongs to the offers organised in that cycle.
+              if (repeat.get(id) === 'cycle' && !termsFor(state, offer.id).includes(row.term!))
+                continue;
+              expect(
+                applicabilityFor(state, row, offer),
+                `${row.id} ${offer.id} ${organization.join('/')} ${annualStages}/${semesterStages}`,
+              ).toBe(shown.get(`${id} ${offer.id}`));
+            }
           }
         }
-      }
   }
 });
 
@@ -129,7 +143,12 @@ const months = [
 ];
 test('activity names carry the month and hours the page does not repeat', () => {
   for (const year of documentedYears) {
-    const state = { year, modalities: ['integrado'], regime: 'anual' };
+    const state: AssessmentSettings = {
+      year,
+      offers: [
+        { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
+      ],
+    };
     for (const row of activityChecklist(state)) {
       if (row.month)
         expect(row.name.toLocaleLowerCase('pt-BR'), row.id).toContain(months[row.month - 1]);

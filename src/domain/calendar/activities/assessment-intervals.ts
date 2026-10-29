@@ -1,6 +1,6 @@
 import type { AssessmentSettings, CalendarActivity, CalendarPeriod } from '../model.ts';
 import { offerFor, stageTerm } from '../offers.ts';
-import { periodsForModality } from '../organization/periods.ts';
+import { periodsForOffer } from '../organization/periods.ts';
 import { isStageRequirementId } from './metadata.ts';
 import { termLabels } from '../config.ts';
 
@@ -21,14 +21,14 @@ export function assessmentCycleIssue(
   state: AssessmentSettings & { periods: CalendarPeriod[]; events?: CalendarActivity[] },
   event: CalendarActivity,
 ): string | undefined {
-  if (!state.offers || !isStageRequirementId(event.requirementId)) return undefined;
+  if (!isStageRequirementId(event.requirementId)) return undefined;
   const [stage, id] = event.requirementId!.split(':');
   const offer = offerFor(state, id);
   if (!offer) return 'A oferta da etapa de avaliação não pertence ao calendário.';
   const ordinal = Number(stage.slice('stage-'.length));
   const term = stageTerm(offer, ordinal);
   if (!term) return 'Defina a organização e a quantidade de etapas da oferta.';
-  const periods = periodsForModality(state, id).filter(
+  const periods = periodsForOffer(state, id).filter(
     (period) => period.association?.status === 'defined' && period.association.term === term,
   );
   if (assessmentIntervalIssue(periods, event.start, event.end))

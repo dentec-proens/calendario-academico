@@ -1,7 +1,8 @@
 import type { AssessmentSettings, CalendarPeriod, CalendarActivity } from '../model.ts';
 import { parseDate, automaticEventSource } from '../counting/core.ts';
 import { appliesTo } from '../modalities.ts';
-import { periodsForModality } from '../organization/periods.ts';
+import { offerFor } from '../offers.ts';
+import { periodsForOffer } from '../organization/periods.ts';
 /** Article 3 §2. Only an explicitly classified municipal cause extends the deadline. */
 export function prorogatedDeadline(
   state: AssessmentSettings & {
@@ -15,11 +16,12 @@ export function prorogatedDeadline(
   modality: string,
 ) {
   parseDate(original);
+  const offer = offerFor(state, modality);
   const causes = events.filter(
     (event) =>
       event.deadlineExtensionCause &&
       event.kind === 'exclude' &&
-      appliesTo(event, modality) &&
+      appliesTo(event, offer ?? modality) &&
       event.start <= original &&
       event.end >= original,
   );
@@ -31,8 +33,8 @@ export function prorogatedDeadline(
   });
   if (!state.weekConfirmed || !state.weekdays?.length)
     return { date: null, original, source: 'municipal-extension' as const, evidence };
-  const periods = periodsForModality(state, modality),
-    scoped = events.filter((e) => appliesTo(e, modality));
+  const periods = periodsForOffer(state, modality),
+    scoped = events.filter((e) => appliesTo(e, offer ?? modality));
   for (
     let time = parseDate(original) + 86400000;
     time <= parseDate(`${state.year}-12-31`);

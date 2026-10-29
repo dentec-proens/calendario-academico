@@ -8,8 +8,7 @@ import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.
 test('calendar print identifies each offer in the header, periods, event scopes and teaching totals', () => {
   const state = calendarOffersV4Fixture();
   const result = evaluateCalendar(state, state.events);
-  const { byModality: _legacy, ...byOfferOnly } = result;
-  const html = proensLayout(state, state.events, byOfferOnly, null, '');
+  const html = proensLayout(state, state.events, result, null, '');
   for (const label of [
     'Técnico integrado',
     'Licenciatura em Química',

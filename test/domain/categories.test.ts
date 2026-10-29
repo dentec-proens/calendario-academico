@@ -33,7 +33,12 @@ test('PROENS palette matches reference and simultaneous classifications remain v
       kind: 'note',
       category,
     }));
-  const html = proensLayout({ year: 2027, campus: 'Foz', periods: [] }, events, null, null);
+  const html = proensLayout(
+    { year: 2027, campus: 'Foz', periods: [], offers: [] },
+    events,
+    null,
+    null,
+  );
   assert(html.includes('class="cat-feriado"'));
   assert(html.includes('color-mark cat-formacao'));
   assert(html.includes('color-mark cat-conselho'));
@@ -42,8 +47,20 @@ test('PROENS palette matches reference and simultaneous classifications remain v
   for (const [, label, color] of categories) if (color) assert(html.includes(label!));
 });
 
-test('canonical institutional scopes preserve the printed legend while local scopes remain explicit', () => {
-  const state = { year: 2027, campus: 'Foz', modalities: ['integrado'], periods: [] };
+test('institutional and local scopes identify their actual offer in v4 printing', () => {
+  const state = {
+    year: 2027,
+    campus: 'Foz',
+    periods: [],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
+  };
   const event = {
     id: 'fixture',
     name: 'Feriado institucional',
@@ -51,10 +68,10 @@ test('canonical institutional scopes preserve the printed legend while local sco
     end: '2027-02-06',
     kind: 'exclude',
     category: 'feriado',
-    modalities: ['integrado'],
+    offers: ['integrado'],
   };
   const institutional = proensLayout(state, [{ ...event, institutional: true }]);
   const local = proensLayout(state, [{ ...event, institutional: false }]);
-  assert(!institutional.includes('Feriado institucional [Técnico integrado]'));
+  assert(institutional.includes('Feriado institucional [Técnico integrado]'));
   assert(local.includes('Feriado institucional [Técnico integrado]'));
 });

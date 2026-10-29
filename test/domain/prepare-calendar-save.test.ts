@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { normalizeCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import { calendarContent } from '../../src/domain/calendar/normalization/content.ts';
-import { prepareCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
+import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
 import {
   applyOfferOrganization,
   offerOrganizationDraft,
@@ -9,14 +9,9 @@ import {
 
 function calendar() {
   return normalizeCalendar({
-    schemaVersion: 3,
+    schemaVersion: 4 as const,
     year: 2027,
     campus: 'Campus confirmado',
-    offer: 'integrado',
-    modalities: ['integrado'],
-    regime: 'anual',
-    organizationByModality: { integrado: 'anual' },
-    assessmentStagesByModality: {},
     weekdays: [],
     weekConfirmed: false,
     periods: [],
@@ -29,6 +24,14 @@ function calendar() {
         kind: 'note',
       },
     ],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
   });
 }
 
@@ -36,7 +39,7 @@ test('save preparation preserves record identity and detects unchanged editable 
   const previous = calendar();
   const proposed = { ...previous, campus: 'Campus enviado pelo cliente' };
   const before = structuredClone(proposed);
-  const prepared = prepareCalendarSave(previous, proposed, {
+  const prepared = prepareOfferCalendarSave(previous, proposed, {
     storedContent: calendarContent(previous),
     catalogue: { events: [] },
     recalculate: false,
@@ -47,7 +50,7 @@ test('save preparation preserves record identity and detects unchanged editable 
   expect(prepared.content).not.toHaveProperty('year');
   expect(proposed).toEqual(before);
   expect(() =>
-    prepareCalendarSave(
+    prepareOfferCalendarSave(
       previous,
       { ...previous, year: 2028 },
       { storedContent: {}, catalogue: { events: [] }, recalculate: false },
@@ -67,7 +70,7 @@ test('accepting a changed institutional base recalculates unchanged input and pr
         start: '2027-03-01',
         end: '2027-03-05',
         targetDays: 5,
-        association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
     ],
   });
@@ -83,13 +86,13 @@ test('accepting a changed institutional base recalculates unchanged input and pr
     modalities: ['integrado'],
   };
   const before = structuredClone({ previous, holiday });
-  const unchanged = prepareCalendarSave(previous, previous, {
+  const unchanged = prepareOfferCalendarSave(previous, previous, {
     storedContent,
     catalogue: { events: [] },
     recalculate: true,
   });
   expect(unchanged.unchanged).toBe(true);
-  const changed = prepareCalendarSave(previous, previous, {
+  const changed = prepareOfferCalendarSave(previous, previous, {
     storedContent,
     catalogue: { events: [holiday] },
     recalculate: true,
@@ -97,7 +100,7 @@ test('accepting a changed institutional base recalculates unchanged input and pr
   expect(changed.state.periods[0].end).toBe('2027-03-08');
   expect(changed.unchanged).toBe(false);
   expect(changed.institutionalSnapshot).toEqual([
-    { ...holiday, id: 'inst:holiday', institutional: true },
+    { ...holiday, offers: ['integrado'], id: 'inst:holiday', institutional: true },
   ]);
   expect({ previous, holiday }).toEqual(before);
 });
@@ -106,7 +109,7 @@ test('malformed civil dates remain structural errors rather than being relabelle
   const previous = calendar();
   const proposed = { ...previous, events: [{ ...previous.events[0], start: 'data inválida' }] };
   expect(() =>
-    prepareCalendarSave(previous, proposed, {
+    prepareOfferCalendarSave(previous, proposed, {
       storedContent: calendarContent(previous),
       catalogue: { events: [] },
       recalculate: false,
@@ -131,30 +134,41 @@ test('adding an offer does not silently broaden a legacy event and does not muta
     'graduacao',
     draft,
     () => `added-${sequence++}`,
+    { id: 'graduacao', kind: 'graduacao', delivery: 'a-conferir', organization: 'a-classificar' },
   );
   proposed.events = proposed.events.map((event) =>
-    event.id === 'legacy' ? { ...event, modalities: undefined } : event,
+    event.id === 'legacy' ? { ...event, offers: undefined } : event,
   );
-  proposed.events.push({ ...previous.events[0], id: 'new-unscoped', modalities: undefined });
+  proposed.events.push({ ...previous.events[0], id: 'new-unscoped', offers: undefined });
   const before = structuredClone({ previous, proposed });
-  const prepared = prepareCalendarSave(previous, proposed, {
+  const prepared = prepareOfferCalendarSave(previous, proposed, {
     storedContent: calendarContent(previous),
     catalogue: { events: [] },
     recalculate: false,
   });
-  expect(prepared.state.events.find((event) => event.id === 'legacy')?.modalities).toEqual([
+  expect(prepared.state.events.find((event) => event.id === 'legacy')?.offers).toEqual([
     'integrado',
   ]);
   expect(
-    prepared.state.events.find((event) => event.id === 'new-unscoped')?.modalities,
+    prepared.state.events.find((event) => event.id === 'new-unscoped')?.offers,
   ).toBeUndefined();
-  expect(prepared.state.modalities).toEqual(['integrado', 'graduacao']);
+  expect(prepared.state.offers.map((offer) => offer.id)).toEqual(['integrado', 'graduacao']);
   expect(prepared.unchanged).toBe(false);
   expect({ previous, proposed }).toEqual(before);
   expect(() =>
-    prepareCalendarSave(
+    prepareOfferCalendarSave(
       previous,
-      { ...previous, modalities: ['graduacao'] },
+      {
+        ...previous,
+        offers: [
+          {
+            id: 'graduacao',
+            kind: 'graduacao' as const,
+            delivery: 'a-conferir' as const,
+            organization: 'anual' as const,
+          },
+        ],
+      },
       { storedContent: {}, catalogue: { events: [] }, recalculate: false },
     ),
   ).toThrow('não podem ser removidas');

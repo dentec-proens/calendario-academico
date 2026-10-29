@@ -1,14 +1,11 @@
 import { expect, test } from 'vitest';
-import { makeFunctionReference } from 'convex/server';
 import { api } from '../../convex/_generated/api.js';
 import type { DomainState } from '../../convex/validators.ts';
 import type { CalendarContentV4, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
-import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { reviewCriteria } from '../../src/domain/reviews/criteria.ts';
 import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
-import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import { initialCatalogue } from '../../src/domain/institution/catalogue.ts';
 import { teacherDayId } from '../../src/domain/institution/teacher-day.ts';
 
@@ -29,33 +26,6 @@ async function setup() {
   });
   return { ...fixture, actor, record };
 }
-
-const legacy = (schemaVersion: 2 | 3 = 3) => ({
-  schemaVersion,
-  regime: 'misto' as const,
-  weekdays: [],
-  weekConfirmed: false,
-  assessmentStagesByModality: {},
-  secondSemesterIntake: false,
-  ...(schemaVersion === 3
-    ? {
-        organizationByModality: {
-          integrado: 'a-classificar' as const,
-          graduacao: 'a-classificar' as const,
-        },
-      }
-    : {}),
-  periods: [{ id: 'legacy-first', name: 'Período legado', start: '2027-02-01', end: '2027-06-30' }],
-  events: [
-    {
-      id: 'legacy-notice',
-      name: 'Edital legado sem classificação',
-      start: '2027-01-15',
-      end: '2027-01-15',
-      kind: 'note' as const,
-    },
-  ],
-});
 
 test.each(['anual', 'semestral', 'a-classificar'] as const)(
   'creation preserves organization %s and leaves later editor decisions undefined',
@@ -175,35 +145,8 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
   ).toEqual(record.state);
 });
 
-test('legacy save transport reaches an update-required 409 and cannot downgrade v4 or change history', async () => {
+test('a save cannot silently adopt another ruleset or change history', async () => {
   const { actor, client, record } = await setup();
-  const rawSave = makeFunctionReference<
-    'mutation',
-    { id: typeof record.id; body: Record<string, unknown> },
-    unknown
-  >('calendars:saveCalendar');
-  for (const schemaVersion of [2, 3] as const) {
-    const previous = {
-      ...legacy(schemaVersion),
-      year: 2027,
-      campus: 'A',
-      modalities: ['integrado', 'graduacao'],
-      offer: 'integrado',
-    };
-    const error = await actor
-      .mutation(rawSave, {
-        id: record.id,
-        body: {
-          version: record.version,
-          catalogueRevision: record.catalogueRevision,
-          state: previous,
-        },
-      })
-      .catch((cause: unknown) => cause);
-    expect(error).toMatchObject({
-      data: { status: 409, error: expect.stringContaining('Atualize a aplicação') },
-    });
-  }
   for (const rulesetVersion of [undefined, 'legacy-2026-v1', 'forged'])
     await expect(
       actor.mutation(api.calendars.saveCalendar, {
@@ -311,63 +254,6 @@ test('a direct inclusion must fit every explicitly covered offer period', async 
   });
   expect(saved.state.events[0].offers).toEqual(['integrado']);
 });
-
-test.each([2, 3] as const)(
-  'legacy v%i reads adapt in memory and concurrent saves preserve one original snapshot',
-  async (schemaVersion) => {
-    const { client, actor, record } = await setup();
-    const original = await client.run(async (ctx) => {
-      const content = (await ctx.db
-        .query('calendarContents')
-        .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
-        .unique())!;
-      const old = legacy(schemaVersion);
-      await ctx.db.patch(content._id, { state: old });
-      await ctx.db.patch(record.id, {
-        offerKinds: undefined,
-        modalities: ['integrado', 'graduacao'],
-      });
-      return { contentId: content._id, old };
-    });
-    const read = await actor.query(api.calendars.calendar, { id: record.id });
-    expect(read.state.schemaVersion).toBe(4);
-    expect(read.state.rulesetVersion).toBeUndefined();
-    expect(read.state.offers.map((offer) => offer.organization)).toEqual([
-      'a-classificar',
-      'a-classificar',
-    ]);
-    expect((await client.run((ctx) => ctx.db.get(original.contentId)))?.state).toEqual(
-      original.old,
-    );
-    const body = {
-      version: read.version,
-      catalogueRevision: read.currentCatalogueRevision,
-      baseAcceptance: inspectCalendar(read, read).identity,
-      state: { ...read.state, rulesetVersion: rulesetVersion(read.state) },
-    };
-    const results = await Promise.allSettled([
-      actor.mutation(api.calendars.saveCalendar, { id: record.id, body }),
-      actor.mutation(api.calendars.saveCalendar, { id: record.id, body }),
-    ]);
-    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
-    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
-    const saved = await actor.query(api.calendars.calendar, { id: record.id });
-    expect(saved.state.periods[0]).toMatchObject({
-      id: 'legacy-first',
-      start: '2027-02-01',
-      end: '2027-06-30',
-      association: { status: 'a-classificar' },
-    });
-    expect(saved.state.events[0]).toMatchObject(original.old.events[0]);
-    const raw = await client.run((ctx) => ctx.db.get(record.id));
-    expect(raw?.offerKinds).toEqual(['integrado', 'graduacao']);
-    expect(raw).not.toHaveProperty('modalities');
-    expect(
-      (await actor.query(api.calendars.calendarVersion, { id: record.id, version: read.version }))
-        .state,
-    ).toEqual(read.state);
-  },
-);
 
 test('a legacy review cannot certify current rules or export without reevaluating the criteria', async () => {
   const { client, asClient, ids, record } = await setup(),

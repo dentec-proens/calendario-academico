@@ -5,7 +5,7 @@ import type {
   Organization,
   AcademicTerm,
 } from '../model.ts';
-import { organizationSummary, organizationForModality } from '../organization/periods.ts';
+import { organizationForOffer } from '../organization/periods.ts';
 import { activityChecklist } from '../activities/checklist.ts';
 import { associationOffers, offerFor, offerIds } from '../offers.ts';
 import { recalculateCalendar } from './recalculate.ts';
@@ -48,34 +48,21 @@ export function configureIntakeRequirement<S extends ActivityState>(
 ): S {
   if (
     !offerIds(state).includes(modality) ||
-    organizationForModality(state, modality) !== (term === 'annual' ? 'anual' : 'semestral')
+    organizationForOffer(state, modality) !== (term === 'annual' ? 'anual' : 'semestral')
   )
     throw new DomainError('O ciclo da oferta mudou. Reabra a atividade de matrícula.');
   const offer = offerFor(state, modality);
-  const current = state.offers ? offer?.intake?.[term] : state.intakeByModality?.[modality]?.[term];
+  const current = offer?.intake?.[term];
   const configuration = {
     ...current,
     status: required ? ('yes' as const) : (current?.status ?? 'unknown'),
     required,
   };
-  if (state.offers)
-    return {
-      ...state,
-      offers: state.offers.map((item) =>
-        item.id === modality
-          ? { ...item, intake: { ...item.intake, [term]: configuration } }
-          : item,
-      ),
-    };
   return {
     ...state,
-    intakeByModality: {
-      ...state.intakeByModality,
-      [modality]: {
-        ...state.intakeByModality?.[modality],
-        [term]: configuration,
-      },
-    },
+    offers: state.offers.map((item) =>
+      item.id === modality ? { ...item, intake: { ...item.intake, [term]: configuration } } : item,
+    ),
   };
 }
 
@@ -89,24 +76,18 @@ export function configureAssessment<S extends ActivityState>(
     const value = values[modality];
     if (!value) continue;
     const count = Number(value);
-    const allowed =
-      state.offers && organizationForModality(state, modality) === 'semestral' ? [1, 2] : [2, 3, 4];
-    if (
-      !allowed.includes(count) ||
-      (state.offers && organizationForModality(state, modality) === 'a-classificar')
-    )
+    const allowed = organizationForOffer(state, modality) === 'semestral' ? [1, 2] : [2, 3, 4];
+    if (!allowed.includes(count) || organizationForOffer(state, modality) === 'a-classificar')
       throw new DomainError('Selecione o número de etapas permitido para o ciclo da oferta.');
     stages[modality] = count;
   }
-  const next = state.offers
-    ? {
-        ...state,
-        offers: state.offers.map(({ stages: _stages, ...offer }) => ({
-          ...offer,
-          ...(stages[offer.id] === undefined ? {} : { stages: { perTerm: stages[offer.id] } }),
-        })),
-      }
-    : { ...state, assessmentStagesByModality: stages };
+  const next = {
+    ...state,
+    offers: state.offers.map(({ stages: _stages, ...offer }) => ({
+      ...offer,
+      ...(stages[offer.id] === undefined ? {} : { stages: { perTerm: stages[offer.id] } }),
+    })),
+  };
   const valid = new Set(activityChecklist(next).map((item) => item.id));
   return recalculateCalendar(
     {
@@ -121,25 +102,20 @@ export function configureAssessment<S extends ActivityState>(
   );
 }
 
-/** Classifying organization never guesses which legacy period belongs to which offer. */
+/** Classifying organization never guesses which period belongs to which offer. */
 export function configureOrganization<S extends ActivityState>(
   state: S,
-  organizationByModality: Record<string, Organization>,
+  organizationByOffer: Record<string, Organization>,
   institutional: CalendarActivity[],
 ): S {
-  const modalities = offerIds(state);
+  const ids = offerIds(state);
   if (
-    Object.keys(organizationByModality).some((m) => !modalities.includes(m)) ||
-    modalities.some(
-      (m) => !['anual', 'semestral', 'a-classificar'].includes(organizationByModality[m]),
-    )
+    Object.keys(organizationByOffer).some((m) => !ids.includes(m)) ||
+    ids.some((m) => !['anual', 'semestral', 'a-classificar'].includes(organizationByOffer[m]))
   )
     throw new DomainError('Informe a organização de cada oferta.');
   for (const offer of state.offers ?? [])
-    if (
-      offer.legacyStageCount !== undefined &&
-      organizationByModality[offer.id] !== 'a-classificar'
-    )
+    if (offer.legacyStageCount !== undefined && organizationByOffer[offer.id] !== 'a-classificar')
       throw new DomainError(
         'Configure a organização e todas as etapas da oferta antes de retirar a quantidade anterior.',
       );
@@ -147,7 +123,7 @@ export function configureOrganization<S extends ActivityState>(
     p.association?.status === 'defined' &&
     associationOffers(p.association).every(
       (m) =>
-        organizationByModality[m] ===
+        organizationByOffer[m] ===
         (p.association?.status === 'defined' && p.association.term === 'annual'
           ? 'anual'
           : 'semestral'),
@@ -155,57 +131,35 @@ export function configureOrganization<S extends ActivityState>(
       ? p
       : { ...p, association: { status: 'a-classificar' as const } },
   );
-  if (state.offers) {
-    for (const offer of state.offers) {
-      const organization = organizationByModality[offer.id];
-      if (organization === offer.organization) continue;
-      if (
-        Object.entries(offer.intake ?? {}).some(
-          ([term, entry]) => entry.required && (term === 'annual') !== (organization === 'anual'),
-        )
+  for (const offer of state.offers) {
+    const organization = organizationByOffer[offer.id];
+    if (organization === offer.organization) continue;
+    if (
+      Object.entries(offer.intake ?? {}).some(
+        ([term, entry]) => entry.required && (term === 'annual') !== (organization === 'anual'),
       )
-        throw new DomainError(
-          'Revise a exigência local de matrícula antes de alterar a organização da oferta.',
-        );
-      if (
-        offer.stages &&
-        !(
-          organization === 'semestral' ? [1, 2] : organization === 'anual' ? [2, 3, 4] : []
-        ).includes(offer.stages.perTerm)
+    )
+      throw new DomainError(
+        'Revise a exigência local de matrícula antes de alterar a organização da oferta.',
+      );
+    if (
+      offer.stages &&
+      !(organization === 'semestral' ? [1, 2] : organization === 'anual' ? [2, 3, 4] : []).includes(
+        offer.stages.perTerm,
       )
-        throw new DomainError(
-          'Revise as etapas de avaliação antes de alterar a organização da oferta.',
-        );
-    }
-    return recalculateCalendar(
-      {
-        ...state,
-        offers: state.offers.map((offer) => ({
-          ...offer,
-          organization: organizationByModality[offer.id],
-        })),
-        periods,
-      },
-      institutional,
-    );
+    )
+      throw new DomainError(
+        'Revise as etapas de avaliação antes de alterar a organização da oferta.',
+      );
   }
   return recalculateCalendar(
     {
       ...state,
-      schemaVersion: 3,
-      organizationByModality: { ...organizationByModality },
-      regime: organizationSummary(organizationByModality, modalities),
+      offers: state.offers.map((offer) => ({
+        ...offer,
+        organization: organizationByOffer[offer.id],
+      })),
       periods,
-      conversion: state.conversion
-        ? {
-            ...state.conversion,
-            organization:
-              periods.every((p) => p.association?.status === 'defined') &&
-              modalities.every((m) => organizationByModality[m] !== 'a-classificar')
-                ? 'classified'
-                : 'pending',
-          }
-        : undefined,
     },
     institutional,
   );

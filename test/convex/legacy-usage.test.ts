@@ -4,7 +4,7 @@ import { internal } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel';
 import schema from '../../convex/schema';
 import type { LegacyUsageArgs, LegacyUsagePage } from '../../convex/legacy';
-import type { ContentState, StoredContentState } from '../../convex/validators';
+import type { ContentState } from '../../convex/validators';
 
 const modules = {
   '../../convex/_generated/server.js': () => import('../../convex/_generated/server.js'),
@@ -29,7 +29,7 @@ const state4 = (): ContentState => ({
 async function seed(
   t: Fixture,
   campusId: Id<'campuses'>,
-  state: StoredContentState = state4(),
+  state: ContentState = state4(),
   options: { year?: number; trash?: boolean; withoutContent?: boolean } = {},
 ) {
   return t.run(async (ctx) => {
@@ -37,7 +37,7 @@ async function seed(
     const calendarId = await ctx.db.insert('calendars', {
       campusId,
       year: options.year ?? 2027,
-      ...(state.schemaVersion === 4 ? { offerKinds: kinds } : { modalities: kinds }),
+      offerKinds: kinds,
       purpose: 'test',
       courses: 'Nome privado sintético',
       classes: 'Turma privada',
@@ -92,6 +92,26 @@ test('all contents are paginated in batches of ten, including trash, without pri
   expect(count(result, 'liveLegacySemesterThreeContents')).toBe(0);
   expect(JSON.stringify(result)).not.toMatch(/Nome privado|Turma privada|Campus sintético/);
   expect((await t.run((ctx) => ctx.db.query('calendarContents').take(30))).length).toBe(23);
+});
+
+test('post-migration inventory records only v4 and reports undefined offer stages without guessing the old count', async () => {
+  const t = fixture();
+  const campusId = await t.run((ctx) =>
+    ctx.db.insert('campuses', { name: 'Campus sintético', archived: false }),
+  );
+  const convertedUnknown = state4();
+  convertedUnknown.offers[0].organization = 'semestral';
+  await seed(t, campusId, convertedUnknown);
+  const result = await pages(t, 'contents');
+  expect(count(result, 'schemaV2')).toBe(0);
+  expect(count(result, 'schemaV3')).toBe(0);
+  expect(count(result, 'schemaV4')).toBe(1);
+  expect(count(result, 'orphanKeys')).toBe(0);
+  expect(count(result, 'contentsWithOrphanKeys')).toBe(0);
+  expect(count(result, 'contentsWithoutStages')).toBe(1);
+  expect(count(result, 'offersWithoutStages')).toBe(1);
+  expect(count(result, 'liveLegacySemesterThreeContents')).toBe(0);
+  expect(count(result, 'liveLegacySemesterThreeOffers')).toBe(0);
 });
 
 test('historical quantities are counted separately from absent quantities, including trash and orphan contents', async () => {
@@ -223,45 +243,6 @@ test('historical snapshots keep a separate paginated inventory after every live 
   expect(count(historical, 'historicalLegacyStageCount4Offers')).toBe(7);
   expect(count(historical, 'legacyStageCountOffers')).toBe(0);
   expect(JSON.stringify(historical)).not.toContain('Campus privado sintético');
-});
-
-test('counts live v2, orphan keys, unconfigured stages and semester-three only from explicit legacy data', async () => {
-  const t = fixture();
-  const campusId = await t.run((ctx) =>
-    ctx.db.insert('campuses', { name: 'Campus sintético', archived: false }),
-  );
-  await seed(t, campusId, {
-    regime: 'anual',
-    assessmentStagesByModality: {},
-    weekdays: [],
-    weekConfirmed: false,
-    periods: [],
-    events: [],
-  });
-  await seed(t, campusId, {
-    schemaVersion: 3,
-    regime: 'semestral',
-    weekdays: [],
-    weekConfirmed: false,
-    periods: [],
-    events: [],
-    organizationByModality: { integrado: 'semestral', graduacao: 'anual' },
-    assessmentStagesByModality: { integrado: 3, graduacao: 4 },
-    intakeByModality: { graduacao: { second: { status: 'no' } } },
-  });
-  const convertedUnknown = state4();
-  convertedUnknown.offers[0].organization = 'semestral';
-  await seed(t, campusId, convertedUnknown);
-  const result = await pages(t, 'contents');
-  expect(count(result, 'schemaV2')).toBe(1);
-  expect(count(result, 'schemaV3')).toBe(1);
-  expect(count(result, 'schemaV4')).toBe(1);
-  expect(count(result, 'orphanKeys')).toBe(3);
-  expect(count(result, 'contentsWithOrphanKeys')).toBe(1);
-  expect(count(result, 'contentsWithoutStages')).toBe(2);
-  expect(count(result, 'offersWithoutStages')).toBe(2);
-  expect(count(result, 'liveLegacySemesterThreeContents')).toBe(1);
-  expect(count(result, 'liveLegacySemesterThreeOffers')).toBe(1);
 });
 
 test('counts retained intake decisions, non-event records and actual legacy requirement IDs in 2027', async () => {

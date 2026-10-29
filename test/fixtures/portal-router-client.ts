@@ -57,17 +57,7 @@ export function portalReview(id: string): Awaited<ReturnType<typeof reviews.get>
       ],
       regime: 'anual',
     },
-    teachingDays: support.teachingDays.map((row) =>
-      'offerId' in row
-        ? row
-        : {
-            offerId: row.modality,
-            label: 'Técnico integrado',
-            total: row.total,
-            byPeriod: row.byPeriod,
-            provisional: row.provisional,
-          },
-    ),
+    teachingDays: support.teachingDays,
     catalogueRevision: 1,
     officialApproval: false,
     initialConclusion: initialConclusion(support),

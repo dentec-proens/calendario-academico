@@ -367,6 +367,13 @@ Ao terminar (sucesso ou interrupção), o relatório final no diário resume: es
 
 Os resíduos de dados são apagados por uma mutação interna de uso único, com evento em `audit` (`PURGE_RELEASE_RESIDUE`), retirada do código no mesmo marco depois de executada. Os registros de `audit` que os citam são mantidos.
 
+Como toda publicação de código em produção passa pela release oficial, a
+mutação específica é preparada e publicada junto de B, sem execução sobre os
+dados. O M9 confere o inventário real, faz a simulação sem gravação, executa a
+operação por IDs e versão explícitos e retira imediatamente a função e seus
+testes na sua release. Os portões de B incluem essa preparação; os de M9
+incluem o recibo da execução e a ausência da ferramenta no código final.
+
 Remover um item inclui o código, os testes, os validadores, a documentação e os scripts que só existem por ele. O histórico do Git preserva o código, como nas operações anteriores. `migracao-schema.md` ganha uma seção curta registrando o que foi retirado.
 
 ### 11.7 Portões de revisão e painel de julgadores

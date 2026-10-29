@@ -10,33 +10,8 @@ import type {
   PeriodAssociation,
 } from './model.ts';
 
-/** Transitional input boundary; v4 offers always take precedence over v3 summaries. */
-export function calendarOffers(state: AssessmentSettings): CalendarOffer[] {
-  if (state.offers) return state.offers;
-  return (state.modalities ?? []).map((id) => {
-    const kind = modalityIds.find((value) => value === id);
-    if (!kind) throw new DomainError('Tipo de oferta inválido.');
-    const organization =
-      state.organizationByModality?.[id] ??
-      (state.schemaVersion === 3
-        ? 'a-classificar'
-        : state.regime === 'anual' || state.regime === 'semestral'
-          ? state.regime
-          : 'a-classificar');
-    const count = state.assessmentStagesByModality?.[id];
-    return {
-      id,
-      kind,
-      delivery: 'a-conferir',
-      organization,
-      ...(count === undefined
-        ? {}
-        : { stages: { perTerm: count / (organization === 'semestral' ? 2 : 1) } }),
-      ...(state.scopeConfirmation ? { scope: state.scopeConfirmation } : {}),
-      ...(state.intakeByModality?.[id] ? { intake: state.intakeByModality[id] } : {}),
-    };
-  });
-}
+/** All live domain inputs carry explicit offers. */
+export const calendarOffers = (state: AssessmentSettings): CalendarOffer[] => state.offers;
 
 export const offerIds = (state: AssessmentSettings): string[] =>
   calendarOffers(state).map((offer) => offer.id);
@@ -47,13 +22,7 @@ export const labelFor = (state: AssessmentSettings, id: string): string => {
   return offer ? offerLabel(offer) : id;
 };
 export const associationOffers = (association?: PeriodAssociation): string[] =>
-  association?.status === 'defined'
-    ? 'offers' in association
-      ? association.offers
-      : association.modalities
-    : [];
-export const isStructured = (state: AssessmentSettings): boolean =>
-  state.schemaVersion === 3 || state.schemaVersion === 4;
+  association?.status === 'defined' ? association.offers : [];
 
 export const kindOf = (offer: CalendarOffer): OfferKind => offer.kind;
 export const levelOf = (offer: CalendarOffer): 'tecnico' | 'graduacao' | 'posgraduacao' =>

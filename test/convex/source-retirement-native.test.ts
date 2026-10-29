@@ -3,7 +3,7 @@ import { makeFunctionReference } from 'convex/server';
 import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { calendarOffer } from '../../convex/validators.ts';
-import { saveInputV4 } from '../../convex/contracts.ts';
+import { saveInput } from '../../convex/contracts.ts';
 import type { DomainState, historicalState } from '../../convex/validators.ts';
 import type { Infer } from 'convex/values';
 import { createNativeFixture } from '../helpers/native-database.ts';
@@ -18,16 +18,10 @@ const oldSave = makeFunctionReference<
 function assertSourceFree(state: Infer<typeof historicalState>) {
   expect(state).not.toHaveProperty('weekEvidence');
   expect(state.teacherVacations ?? {}).not.toHaveProperty('evidence');
-  if (state.schemaVersion === 4) {
-    for (const offer of state.offers) {
-      expect(offer.scope ?? {}).not.toHaveProperty('source');
-      for (const entry of Object.values(offer.intake ?? {}))
-        expect(entry).not.toHaveProperty('source');
-    }
-  } else {
-    expect(state.scopeConfirmation ?? {}).not.toHaveProperty('source');
-    for (const terms of Object.values(state.intakeByModality ?? {}))
-      for (const entry of Object.values(terms)) expect(entry).not.toHaveProperty('source');
+  for (const offer of state.offers) {
+    expect(offer.scope ?? {}).not.toHaveProperty('source');
+    for (const entry of Object.values(offer.intake ?? {}))
+      expect(entry).not.toHaveProperty('source');
   }
   for (const event of state.events) {
     expect(event).not.toHaveProperty('evidence');
@@ -204,7 +198,7 @@ test.each(legacyFields)(
           state: legacyState(created.state),
         },
       }),
-    ).rejects.toThrow(/Expected one of object, object/);
+    ).rejects.toThrow(/Unexpected field|Expected/);
     const raw = await fixture.client.run(async (ctx) => ({
       calendar: await ctx.db.get(created.id),
       snapshots: await ctx.db.query('calendarSnapshots').take(10),
@@ -219,7 +213,7 @@ test.each(legacyFields)(
 // real published validator instead of changing production code for that mock gap.
 test('nested intake records have no source slot in storage or public input', () => {
   const stored = calendarOffer.fields.intake.value.fields;
-  const submitted = saveInputV4.fields.state.fields.offers.element.fields.intake.value.fields;
+  const submitted = saveInput.fields.state.fields.offers.element.fields.intake.value.fields;
   expect(Object.keys(stored)).toEqual(['status', 'required']);
   expect(Object.keys(submitted)).toEqual(['status', 'required']);
 });
@@ -235,7 +229,7 @@ test('current contents and historical storage refuse retired manual fields', asy
       const invalid = { ...row.state, weekEvidence: secret };
       await ctx.db.patch(row._id, { state: invalid });
     }),
-  ).rejects.toThrow(/Expected one of object, object/);
+  ).rejects.toThrow(/Unexpected field|Expected/);
   await expect(
     fixture.client.run(async (ctx) => {
       const invalid = {
@@ -259,5 +253,5 @@ test('current contents and historical storage refuse retired manual fields', asy
         documentSnapshot: [],
       });
     }),
-  ).rejects.toThrow(/Expected one of object, object/);
+  ).rejects.toThrow(/Unexpected field|Expected/);
 });

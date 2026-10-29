@@ -7,7 +7,7 @@ import { calendarOffers, labelFor, stageInTerm } from './offers.ts';
 import { assessmentCount, scopedRequirement } from './activities/assessment.ts';
 import { assessmentCycleIssue } from './activities/assessment-intervals.ts';
 import { evaluateCalendar as calendarResult } from './counting/evaluation.ts';
-import { periodsForModality } from './organization/periods.ts';
+import { periodsForOffer } from './organization/periods.ts';
 import { policyFor } from '../policies/registry.ts';
 
 const plain = (value: string) =>
@@ -36,38 +36,32 @@ export function releaseReadiness(
   const policy = policyFor(record.state.year);
   const offers = calendarOffers(record.state);
   if (policy.scope) {
-    if (!record.state.offers) {
-      if (record.state.scopeConfirmation?.status !== 'covered')
+    const included = offers.filter((offer) => !policy.excludes(offer));
+    const pending = included.filter((offer) => offer.scope?.status !== 'covered');
+    if (pending.length) {
+      if (new Set(included.map((offer) => offer.scope?.status)).size === 1)
         issues.push(policy.scope.readinessIssue);
-    } else {
-      const included = offers.filter((offer) => !policy.excludes(offer));
-      const pending = included.filter((offer) => offer.scope?.status !== 'covered');
-      if (pending.length) {
-        if (new Set(included.map((offer) => offer.scope?.status)).size === 1)
-          issues.push(policy.scope.readinessIssue);
-        else
-          for (const offer of pending)
-            issues.push(`${labelFor(record.state, offer.id)} — ${policy.scope.readinessIssue}`);
-      }
+      else
+        for (const offer of pending)
+          issues.push(`${labelFor(record.state, offer.id)} — ${policy.scope.readinessIssue}`);
     }
   }
   const events = [...record.institutionalSnapshot, ...record.state.events];
   if (
-    offers.some((offer) =>
-      record.state.offers
-        ? offer.legacyStageCount === undefined &&
-          (!offer.stages ||
-            !(offer.organization === 'anual'
-              ? assessmentStageCounts.includes(offer.stages.perTerm)
-              : offer.organization === 'semestral' && [1, 2].includes(offer.stages.perTerm)))
-        : !assessmentStageCounts.includes(assessmentCount(record.state, offer.id)),
+    offers.some(
+      (offer) =>
+        offer.legacyStageCount === undefined &&
+        (!offer.stages ||
+          !(offer.organization === 'anual'
+            ? assessmentStageCounts.includes(offer.stages.perTerm)
+            : offer.organization === 'semestral' && [1, 2].includes(offer.stages.perTerm))),
     )
   )
     issues.push('Informe a quantidade de etapas de avaliação (2, 3 ou 4).');
   const diagnostics = diagnoseCalendar(record.state, events);
   const coverage = diagnostics.coverage;
   for (const row of coverage) {
-    const prefix = `${labelFor(record.state, row.modality)} — ${row.requirement.name}`;
+    const prefix = `${labelFor(record.state, row.offerId)} — ${row.requirement.name}`;
     if (row.applicability === 'required' && row.coverage === 'pending')
       issues.push(`${prefix}: vincule um evento com datas no roteiro de atividades.`);
     if (row.applicability === 'required' || row.events.length)
@@ -78,8 +72,7 @@ export function releaseReadiness(
     const eventFor = (id: string) =>
       events.find(
         (e) =>
-          e.requirementId === scopedRequirement(record.state, id, offer.id) &&
-          appliesTo(e, offer.id),
+          e.requirementId === scopedRequirement(record.state, id, offer.id) && appliesTo(e, offer),
       );
     for (let n = 1; n <= (assessmentCount(record.state, offer.id) || 0); n++) {
       const start = eventFor('stage-' + n),
@@ -87,7 +80,7 @@ export function releaseReadiness(
         results = eventFor('results-' + n),
         council = eventFor('council-' + n);
       const position =
-        record.state.offers && offer.organization === 'semestral' && offer.stages
+        offer.organization === 'semestral' && offer.stages
           ? stageInTerm(n, offer.stages.perTerm)
           : undefined;
       const stage = position
@@ -95,7 +88,7 @@ export function releaseReadiness(
         : `${n}ª etapa`;
       if (start && end && start.start > end.end)
         issues.push(`${stage}: término anterior ao início.`);
-      if (start && record.state.offers && offer.legacyStageCount === undefined) {
+      if (start && offer.legacyStageCount === undefined) {
         const cycleIssue = assessmentCycleIssue(record.state, start);
         if (cycleIssue)
           warnings.push(`${labelFor(record.state, offer.id)} — ${stage}: ${cycleIssue}`);
@@ -107,7 +100,7 @@ export function releaseReadiness(
       const councilRequired = coverage.some(
         (row) =>
           row.requirement.id === scopedRequirement(record.state, 'council-' + n, offer.id) &&
-          row.modality === offer.id &&
+          row.offerId === offer.id &&
           row.applicability === 'required',
       );
       if (councilRequired && results && council && council.start < results.end)
@@ -125,11 +118,9 @@ export function releaseReadiness(
   const window = policy.window(record.state);
   if (window && policy.windowInReadiness)
     for (const offer of offers.filter(
-      (offer) =>
-        !policy.excludes(offer) &&
-        (!record.state.offers || offer.scope?.status !== 'own-regulation'),
+      (offer) => !policy.excludes(offer) && offer.scope?.status !== 'own-regulation',
     )) {
-      const periods = periodsForModality(record.state, offer.id);
+      const periods = periodsForOffer(record.state, offer.id);
       const start = periods.map((p) => p.start).sort()[0],
         end = periods
           .map((p) => p.end)
@@ -153,17 +144,17 @@ export function releaseReadiness(
       if (issue.code === 'periods-missing') issues.push('Cadastre os períodos letivos.');
       else if (issue.code === 'organization-unclassified')
         issues.push(
-          `${labelFor(record.state, issue.modality)} — Organização a conferir antes de confirmar contagem e conclusão.`,
+          `${labelFor(record.state, issue.offerId)} — Organização a conferir antes de confirmar contagem e conclusão.`,
         );
       else if (issue.code === 'period-count')
         issues.push(
-          `${labelFor(record.state, issue.modality)} — Cadastre ${issue.expected === 1 ? 'o ciclo anual' : 'os dois semestres letivos'}.`,
+          `${labelFor(record.state, issue.offerId)} — Cadastre ${issue.expected === 1 ? 'o ciclo anual' : 'os dois semestres letivos'}.`,
         );
     }
     for (const check of diagnoseTeachingDays(record.state, result))
       if (check.status !== 'MET')
         issues.push(
-          `${labelFor(record.state, check.modality)} — ${check.scope === 'annual' ? 'Total anual' : record.state.periods.find((p) => p.id === check.scope)?.name}: mínimo de dias não atendido ou não configurado.`,
+          `${labelFor(record.state, check.offerId)} — ${check.scope === 'annual' ? 'Total anual' : record.state.periods.find((p) => p.id === check.scope)?.name}: mínimo de dias não atendido ou não configurado.`,
         );
     if (Object.values(result.byOffer).some((r) => r.conflicts.length))
       issues.push('Resolva os conflitos entre dias letivos e exclusões.');

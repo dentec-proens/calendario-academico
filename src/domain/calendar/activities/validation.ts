@@ -6,12 +6,11 @@ import type {
   CalendarPeriod,
 } from '../model.ts';
 import { parseDate } from '../counting/core.ts';
-import { calendarModalities } from '../modalities.ts';
 import { offerFor, offerIds } from '../offers.ts';
 import { isStageRequirementId } from './metadata.ts';
 import { assessmentIntervalIssue } from './assessment-intervals.ts';
 import { policyFor } from '../../policies/registry.ts';
-import { periodsForModality } from '../organization/periods.ts';
+import { periodsForOffer } from '../organization/periods.ts';
 import { DomainError } from '../../errors.ts';
 export function temporalPosition(
   state: Pick<ActivityState, 'year'>,
@@ -118,9 +117,8 @@ export function validateActivityRecord(
   }
   if (isStageRequirementId(event.requirementId) && state.periods) {
     const modality = event.requirementId!.split(':')[1];
-    const offer = state.offers ? offerFor(state, modality) : undefined;
-    if (state.offers && !offer)
-      throw new DomainError('A oferta da etapa de avaliação não pertence ao calendário.');
+    const offer = offerFor(state, modality);
+    if (!offer) throw new DomainError('A oferta da etapa de avaliação não pertence ao calendário.');
     const preserveLegacyStage =
       options.preserveLegacyStageEvidence === true &&
       offer?.organization === 'a-classificar' &&
@@ -131,25 +129,21 @@ export function validateActivityRecord(
       (offer.legacyStageCount === undefined || preserveLegacyStage)
         ? ''
         : assessmentIntervalIssue(
-            periodsForModality({ ...state, periods: state.periods }, modality),
+            periodsForOffer({ ...state, periods: state.periods }, modality),
             event.start,
             event.end,
           );
     if (issue) throw new DomainError(issue);
   }
   if (event.kind === 'include' && state.periods) {
-    const declared = event.offers ?? event.modalities;
-    const scope = declared?.length
-      ? declared
-      : state.offers
-        ? offerIds(state)
-        : calendarModalities(state);
+    const declared = event.offers;
+    const scope = declared?.length ? declared : offerIds(state);
     for (let time = parseDate(event.start); time <= parseDate(event.end); time += 86400000) {
       const date = new Date(time).toISOString().slice(0, 10);
       if (
         scope.some(
           (modality) =>
-            !periodsForModality({ ...state, periods: state.periods ?? [] }, modality).some(
+            !periodsForOffer({ ...state, periods: state.periods ?? [] }, modality).some(
               (period) => period.start <= date && period.end >= date,
             ),
         )

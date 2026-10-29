@@ -107,10 +107,7 @@ export function rulesView(year: number) {
           const own = expanded
             .filter((item) => item.spec.id === spec.id)
             .map((item) => rows.get(item.row.id)!);
-          const rowFor = (id: string) =>
-            own.find(
-              (row) => !(row.offerId ?? row.modality) || (row.offerId ?? row.modality) === id,
-            );
+          const rowFor = (id: string) => own.find((row) => !row.offerId || row.offerId === id);
           const sample = own[0];
           const byOffer = offers.map((offer) => {
             const row = rowFor(offer.id);

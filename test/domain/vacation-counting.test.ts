@@ -9,22 +9,31 @@ import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessment-days.ts';
 
 const state = {
+  schemaVersion: 4 as const,
   year: 2027,
   campus: 'Fixture',
-  offer: 'integrado',
-  modalities: ['integrado'],
-  regime: 'anual',
-  assessmentStagesByModality: { integrado: 2 },
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
-  periods: [{ id: 'oct', name: 'Outubro', start: '2027-10-01', end: '2027-10-31' }],
+  periods: [
+    {
+      id: 'oct',
+      name: 'Outubro',
+      start: '2027-10-01',
+      end: '2027-10-31',
+      association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
+    },
+  ],
+  offers: [
+    {
+      id: 'integrado',
+      kind: 'integrado' as const,
+      delivery: 'a-conferir' as const,
+      organization: 'anual' as const,
+      stages: { perTerm: 2 },
+    },
+  ],
 };
-const excluded = (date: string) => ({
-  id: date,
-  start: date,
-  end: date,
-  kind: 'exclude',
-});
+const excluded = (date: string) => ({ id: date, start: date, end: date, kind: 'exclude' });
 
 test('third vacation excludes only counted dates; PDF, stages and automatic duration agree', () => {
   // Synthetic dates reproduce 16 -> 13; they are not the campus dates.
@@ -88,20 +97,35 @@ test('vacation overlaps never double subtract holidays; Saturdays and offer scop
     start: '2027-10-11',
     end: '2027-10-17',
     kind: 'exclude',
-    modalities: ['integrado'],
+    offers: ['integrado'],
   };
-  const saturday = {
-    id: 'sat',
-    start: '2027-10-16',
-    end: '2027-10-16',
-    kind: 'include',
+  const saturday = { id: 'sat', start: '2027-10-16', end: '2027-10-16', kind: 'include' };
+  const mixed = {
+    ...state,
+    periods: state.periods.map((period) => ({
+      ...period,
+      association: { ...period.association, offers: ['integrado', 'graduacao'] },
+    })),
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
   };
-  const mixed = { ...state, modalities: ['integrado', 'graduacao'] };
   const result = evaluateCalendar(mixed, [vacation, saturday, excluded('2027-10-12')]);
-  assert.equal(result.byModality.integrado.total, 16);
-  assert.equal(result.byModality.graduacao.total, 21);
+  assert.equal(result.byOffer.integrado.total, 16);
+  assert.equal(result.byOffer.graduacao.total, 21);
   assert.equal(
-    result.byModality.integrado.ledger.find(
+    result.byOffer.integrado.ledger.find(
       (d: ReturnType<typeof countCalendar>['ledger'][number]) => d.date === '2027-10-16',
     )!.counted,
     false,

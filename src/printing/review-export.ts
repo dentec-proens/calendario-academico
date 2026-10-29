@@ -46,7 +46,7 @@ export function reviewDocument(
     ['Assunto', `Calendário Acadêmico e Administrativo ${record.state.year}`],
     ['Campus', record.state.campus],
     [
-      record.state.offers ? 'Ofertas e cursos' : 'Forma de oferta/nível e cursos',
+      'Ofertas e cursos',
       `${calendarOffers(record.state).map(offerLabel).join(' + ')} / ${record.courses}`,
     ],
     [

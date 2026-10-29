@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import type {
@@ -28,59 +29,25 @@ import {
 const catalogueFingerprints: Record<string, string> = {
   'legacy-2026-v1': 'b0e948ba297029f2f001473bd645baab6ed4f4a44c793835c9b3d0d6286a32df',
   'consup-292-2027-v2': 'bc56d935878de0a5af2150b3c0fbdb4575d74db77afc0e8f143e4318f31e1e8d',
-  // The preserved v3 input boundary keeps its published catalogue; offer-aware wording is v4.
   'consup-292-2027-v3': 'bc56d935878de0a5af2150b3c0fbdb4575d74db77afc0e8f143e4318f31e1e8d',
   'unconfigured:2028': '85a305ec506d13408190b3ec133c33b76ae7518951b8325ed3edc82f8a666d32',
 };
 
-/** Offer combinations, cycles and stage counts that exercise every catalogue branch. */
-const referenceSettings: Omit<AssessmentSettings, 'year'>[] = [
-  {
-    modalities: ['integrado'],
-    regime: 'anual',
-    organizationByModality: { integrado: 'anual' },
-    assessmentStagesByModality: { integrado: 4 },
-    scopeConfirmation: { status: 'covered' },
-  },
-  {
-    modalities: ['subsequente', 'graduacao'],
-    regime: 'misto',
-    organizationByModality: { subsequente: 'anual', graduacao: 'semestral' },
-    assessmentStagesByModality: { subsequente: 2, graduacao: 2 },
-    intakeByModality: {
-      subsequente: { annual: { status: 'no' } },
-      graduacao: { first: { status: 'yes', required: true }, second: { status: 'unknown' } },
-    },
-    secondSemesterIntake: false,
-    scopeConfirmation: { status: 'covered' },
-  },
-  {
-    modalities: ['integrado', 'subsequente', 'graduacao', 'posgraduacao'],
-    regime: 'semestral',
-    organizationByModality: {
-      integrado: 'anual',
-      subsequente: 'semestral',
-      graduacao: 'semestral',
-      posgraduacao: 'semestral',
-    },
-    assessmentStagesByModality: { integrado: 3, subsequente: 2, graduacao: 2, posgraduacao: 2 },
-  },
-  {
-    modalities: ['graduacao'],
-    regime: 'semestral',
-    organizationByModality: { graduacao: 'semestral' },
-    assessmentStagesByModality: { graduacao: 2 },
-    scopeConfirmation: { status: 'own-regulation' },
-  },
-  {
-    modalities: ['integrado', 'subsequente'],
-    regime: 'misto',
-    organizationByModality: { integrado: 'anual', subsequente: 'anual' },
-    assessmentStagesByModality: { integrado: 4, subsequente: 5 },
-    intakeByModality: { integrado: { annual: { status: 'yes', required: false } } },
-    secondSemesterIntake: true,
-  },
-];
+/**
+ * Captured from release A before removing its compatibility paths. Historical
+ * cases 3 and 5 deliberately had contradictory global/offer organizations.
+ * The archive preserves their released hashes; the independent v4 capture
+ * compares this implementation with release A using only explicit offers.
+ */
+const archive = JSON.parse(
+  readFileSync(new URL('../fixtures/ruleset-release-a-catalogues.json', import.meta.url), 'utf8'),
+) as {
+  sourceSha256: string;
+  historicalCatalogues: Record<string, unknown>;
+  v4Settings: Omit<AssessmentSettings, 'year'>[];
+  v4Catalogues: Record<string, unknown>;
+};
+const referenceSettings = archive.v4Settings;
 
 /**
  * Requirement fields left out of the hash because they act only through `byModality`. Every other
@@ -98,7 +65,14 @@ const note = (policy: CalendarPolicy, requirement: ActivityRequirement, offer: C
 function catalogue(policy: CalendarPolicy, year: number) {
   return {
     criteria: policy.review.criteria,
-    excludedModalities: calendarOffers({ modalities: [...modalityIds] })
+    excludedModalities: calendarOffers({
+      offers: modalityIds.map((kind) => ({
+        id: kind,
+        kind,
+        delivery: 'a-conferir',
+        organization: 'anual',
+      })),
+    })
       .filter((offer) => policy.excludes(offer))
       .map((offer) => offer.id),
     states: referenceSettings.map((settings) => {
@@ -142,13 +116,23 @@ const canonical = (value: unknown): unknown =>
         )
       : value;
 
-const fingerprint = (policy: CalendarPolicy, year: number) =>
-  bytesToHex(sha256(new TextEncoder().encode(JSON.stringify(canonical(catalogue(policy, year))))));
+const fingerprint = (value: unknown) =>
+  bytesToHex(sha256(new TextEncoder().encode(JSON.stringify(canonical(value)))));
 
 const years = [2026, 2027, 2028];
 const boundPolicies = years.map(policyFor).filter((policy) => policy.rulesetPrefix);
 const versionOf = (policy: CalendarPolicy, year: number) =>
-  policy.rulesetVersion({ year, modalities: ['integrado'] });
+  policy.rulesetVersion({
+    year,
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
+  });
 
 test('every bound ruleset has an ordered history ending at the current version', () => {
   expect(boundPolicies.length).toBeGreaterThan(0);
@@ -223,17 +207,19 @@ test('released activities stay declared so saved records keep resolving', () => 
   }
 });
 
-test('the rules catalogue changes only together with a new ruleset version', () => {
-  for (const year of years) {
-    const policy = policyFor(year);
-    const version = versionOf(policy, year);
-    expect(
-      fingerprint(policy, year),
-      policy.rulesetChanges
-        ? `O catálogo de regras mudou sem nova versão. Acrescente uma entrada em rulesetChanges e registre a impressão digital da nova versão em catalogueFingerprints.`
-        : `O catálogo de ${version} mudou. Confirme que a mudança é intencional e registre a nova impressão digital de ${version} em catalogueFingerprints.`,
-    ).toBe(catalogueFingerprints[version]);
+test('published historical fingerprints remain intact and v4 catalogues match the independent release A capture', () => {
+  expect(archive.sourceSha256).toBe(
+    '32009116a85436005331f9dfe4a82f32c37f83865af6781ec63d174c7dda369c',
+  );
+  for (const [version, expected] of Object.entries(catalogueFingerprints)) {
+    const year =
+      version === 'legacy-2026-v1' ? 2026 : version.startsWith('consup-292-2027') ? 2027 : 2028;
+    expect(fingerprint(archive.historicalCatalogues[year]), version).toBe(expected);
   }
+  for (const year of years)
+    expect(canonical(catalogue(policyFor(year), year)), String(year)).toEqual(
+      canonical(archive.v4Catalogues[year]),
+    );
 });
 
 test('only establishing or tightening versions bind reviews and base identities', () => {

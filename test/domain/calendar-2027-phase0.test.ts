@@ -5,18 +5,23 @@ import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 const state: ActivityState & { ignoredHistory: string[] } = {
-  schemaVersion: 2,
+  schemaVersion: 4 as const,
   year: 2027,
   campus: 'Campus sintético',
-  offer: 'integrado',
-  modalities: ['integrado'],
-  regime: 'anual',
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
   periods: [],
   events: [],
   ignoredHistory: [],
-  assessmentStagesByModality: { integrado: 4 },
+  offers: [
+    {
+      id: 'integrado',
+      kind: 'integrado' as const,
+      delivery: 'a-conferir' as const,
+      organization: 'anual' as const,
+      stages: { perTerm: 4 },
+    },
+  ],
 };
 
 test('2027 integrated calendar is not blocked by veteran enrolment under article 11 V', () => {
@@ -36,8 +41,18 @@ test('2027 family meeting is pending only for the integrated offer', () => {
         id: 'synthetic',
         state: {
           ...state,
-          modalities,
-          assessmentStagesByModality: Object.fromEntries(modalities.map((m) => [m, 2])),
+          offers: modalities.map((kind) => ({
+            id: kind,
+            kind: kind as 'integrado' | 'subsequente' | 'graduacao' | 'posgraduacao',
+            delivery: 'a-conferir' as const,
+            organization: 'anual' as const,
+            stages:
+              Object.fromEntries(modalities.map((m) => [m, 2]))[kind] === undefined
+                ? undefined
+                : {
+                    perTerm: Number(Object.fromEntries(modalities.map((m) => [m, 2]))[kind]) / 1,
+                  },
+          })),
         },
         institutionalSnapshot: [],
         catalogueRevision: 1,
@@ -59,7 +74,7 @@ test('a documented 2026 occurrence retains its actual dates through the event co
     kind: 'note',
     recordType: 'prior-reference' as const,
     publicationStatus: 'published' as const,
-    modalities: ['integrado'],
+    offers: ['integrado'],
   };
   const applied = applyEvent(state, event, []);
   const normalized = normalizeCalendar(applied);

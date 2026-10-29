@@ -22,7 +22,9 @@ test('campus may choose every day of the Monday-to-Sunday week containing Octobe
 
 test('only teacher day moves; original date is restored and other calendars stay unchanged', () => {
   const catalogue = initialCatalogue(),
-    base = inheritedEvents(catalogue, 2027, 'integrado');
+    base = inheritedEvents(catalogue, 2027, [
+      { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
+    ]);
   const moved = campusInstitutionalEvents(base, { year: 2027, teacherDayDate: '2027-10-13' });
   assert.equal(moved.find((e: CalendarActivity) => e.id === teacherDayId)!.start, '2027-10-13');
   assert.equal(moved.filter((e: CalendarActivity) => e.id === teacherDayId).length, 1);
@@ -33,13 +35,20 @@ test('only teacher day moves; original date is restored and other calendars stay
   assert.equal(base.find((e: CalendarActivity) => e.id === teacherDayId)!.start, '2027-10-15');
   assert.deepEqual(campusInstitutionalEvents(moved, { year: 2027 }), base);
   const state = {
+    schemaVersion: 4 as const,
     year: 2027,
-    offer: 'integrado',
-    modalities: ['integrado'],
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     periods: [],
     events: [],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
   };
   assert.equal(durationEnd('2027-10-13', 1, state, base), '2027-10-13');
   assert.equal(durationEnd('2027-10-13', 1, state, moved), '2027-10-14');
@@ -47,6 +56,11 @@ test('only teacher day moves; original date is restored and other calendars stay
   assert.throws(() => validateTeacherDay('2028-10-13', 2027));
   assert.throws(() => validateTeacherDay('2027-02-30', 2027));
   assert.throws(() =>
-    inheritedEvents(catalogue, 2028, 'integrado', { year: 2028, teacherDayDate: '2028-10-13' }),
+    inheritedEvents(
+      catalogue,
+      2028,
+      [{ id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' }],
+      { year: 2028, teacherDayDate: '2028-10-13' },
+    ),
   );
 });

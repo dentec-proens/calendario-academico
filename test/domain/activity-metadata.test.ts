@@ -45,21 +45,23 @@ const previous = {
 const settings: (AssessmentSettings & { year: number })[] = [2026, 2027, 2028].flatMap((year) =>
   (['anual', 'semestral', 'misto'] as const).flatMap((regime) =>
     [['integrado'], ['graduacao'], ['integrado', 'subsequente', 'graduacao', 'posgraduacao']].map(
-      (modalities) => ({
+      (kinds) => ({
         year,
-        offer: modalities[0],
-        modalities,
-        regime,
-        secondSemesterIntake: regime === 'semestral' ? false : undefined,
-        organizationByModality: Object.fromEntries(
-          modalities.map((modality) => [
-            modality,
-            regime === 'misto' ? (modality === 'integrado' ? 'anual' : 'semestral') : regime,
-          ]),
-        ),
-        assessmentStagesByModality: Object.fromEntries(
-          modalities.map((modality, index) => [modality, [4, 3, 2, 2][index]]),
-        ),
+        offers: kinds.map((kind, index) => {
+          const organization =
+            regime === 'misto' ? (kind === 'integrado' ? 'anual' : 'semestral') : regime;
+          const total = [4, 3, 2, 2][index];
+          return {
+            id: kind,
+            kind: kind as 'integrado' | 'subsequente' | 'graduacao' | 'posgraduacao',
+            delivery: 'a-conferir' as const,
+            organization,
+            ...(organization === 'semestral' && total === 3
+              ? {}
+              : { stages: { perTerm: total / (organization === 'semestral' ? 2 : 1) } }),
+          };
+        }),
+        ...(year === 2026 && regime === 'semestral' ? { legacySecondSemesterIntake: false } : {}),
       }),
     ),
   ),
@@ -92,16 +94,16 @@ test('every catalogue subject is offered by the checklist filter', () => {
 
 // The values `prepare()` produced before it moved to `activityDraft`.
 function previousDraft(state: (typeof settings)[number], row: ActivityRequirement) {
-  const modalities = state.modalities ?? [];
+  const modalities = state.offers.map((offer) => offer.id);
   const pertinent = modalities.filter(
     (modality) => applicabilityFor(state, row, modality) === 'required',
   );
   const notice = previous.notice(row.id);
   return {
-    modalities: pertinent.length
+    offers: pertinent.length
       ? pertinent
-      : row.modality
-        ? modalities.filter((modality) => modality === row.modality)
+      : row.offerId
+        ? modalities.filter((modality) => modality === row.offerId)
         : row.modalities?.length
           ? modalities.filter((modality) => row.modalities?.includes(modality))
           : modalities,
@@ -132,11 +134,11 @@ test('every year keeps a catalogue and prepares the same draft as before', () =>
     for (const row of activityChecklist(state)) {
       const expected = previousDraft(state, row);
       // A stage record may only cover its own offer; 2026 used to prepare every offer.
-      if (row.modality) expected.modalities = expected.modalities.filter((m) => m === row.modality);
-      const { modalities, ...fields } = expected;
+      if (row.offerId) expected.offers = expected.offers.filter((m) => m === row.offerId);
+      const { offers, ...fields } = expected;
       expect(activityDraft(draftState, row), `${state.year} ${row.id}`).toMatchObject({
         ...fields,
-        offers: modalities,
+        offers,
       });
     }
   }
@@ -145,7 +147,7 @@ test('every year keeps a catalogue and prepares the same draft as before', () =>
 test('a 2026 stage prepared in a calendar with several offers can be applied', () => {
   const state = {
     year: 2026,
-    schemaVersion: 4,
+    schemaVersion: 4 as const,
     offers: [
       {
         id: 'integrado',
@@ -183,11 +185,7 @@ test('a 2026 stage prepared in a calendar with several offers can be applied', (
         name: 'Anual',
         start: '2026-03-02',
         end: '2026-12-18',
-        association: {
-          status: 'defined' as const,
-          offers: ['integrado'],
-          term: 'annual' as const,
-        },
+        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
     ],
   };

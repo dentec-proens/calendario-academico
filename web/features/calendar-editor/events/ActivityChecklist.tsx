@@ -55,7 +55,7 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
     const matches = coverage.filter(
       (row) =>
         row.requirement.id === item.id &&
-        (!search.atividadeOferta || row.modality === search.atividadeOferta),
+        (!search.atividadeOferta || row.offerId === search.atividadeOferta),
     );
     if (!matches.length) return false;
     if (query && !searchText(`${item.name} ${item.basis ?? ''}`).includes(query)) return false;
@@ -75,7 +75,7 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
       coverage.filter(
         (row) =>
           row.requirement.id === item.id &&
-          (!search.atividadeOferta || row.modality === search.atividadeOferta),
+          (!search.atividadeOferta || row.offerId === search.atividadeOferta),
       ),
     );
     return toFill.includes(summary.status) || summary.problems;
@@ -113,11 +113,11 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
       {!stages && (
         <ul id="activity-summary" className="activity-summary" role="status">
           {offerIds(state).map((modality) => {
-            const required = mandatory.filter((row) => row.modality === modality);
+            const required = mandatory.filter((row) => row.offerId === modality);
             const fulfilled = required.filter((row) => row.coverage === 'complete').length;
             const unconfigured = coverage.filter(
               (row) =>
-                row.modality === modality &&
+                row.offerId === modality &&
                 row.applicability === 'unconfigured' &&
                 !stageRequirement(row.requirement.id),
             ).length;
@@ -149,10 +149,7 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
       {stages ? (
         <div id="assessment-checklist">
           {offerIds(state).map((modality) => {
-            const items = rows.filter(
-              (item) =>
-                !(item.offerId ?? item.modality) || (item.offerId ?? item.modality) === modality,
-            );
+            const items = rows.filter((item) => !item.offerId || item.offerId === modality);
             return items.length ? (
               <section
                 key={modality}

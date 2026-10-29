@@ -23,9 +23,16 @@ test('teacher vacations count explicit inclusive ranges without sources and reje
 });
 test('mixed calendar includes annual and semester obligations plus extraordinary council', () => {
   const rows = activityChecklist({
-    regime: 'misto',
-    modalities: ['integrado'],
-    assessmentStagesByModality: { integrado: 4 },
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado',
+        delivery: 'a-conferir',
+        organization: 'anual',
+        stages: { perTerm: 4 },
+      },
+      { id: 'graduacao', kind: 'graduacao', delivery: 'a-conferir', organization: 'semestral' },
+    ],
   });
   for (const id of [
     'final-0',
@@ -40,31 +47,60 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
     assert(rows.some((r) => r.id === id));
   assert(!rows.some((r) => r.id.startsWith('stage-start') || r.id.startsWith('stage-end')));
   const state = {
+    schemaVersion: 4 as const,
     year: 2027,
-    offer: 'subsequente',
-    modalities: ['subsequente'],
-    regime: 'misto',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     periods: [
-      { id: 's1', name: 'S1', start: '2027-02-01', end: '2027-02-05' },
-      { id: 's2', name: 'S2', start: '2027-08-02', end: '2027-08-06' },
+      {
+        id: 's1',
+        name: 'S1',
+        start: '2027-02-01',
+        end: '2027-02-05',
+        association: {
+          status: 'defined' as const,
+          offers: ['subsequente'],
+          term: 'annual' as const,
+        },
+      },
+      {
+        id: 's2',
+        name: 'S2',
+        start: '2027-08-02',
+        end: '2027-08-06',
+        association: {
+          status: 'defined' as const,
+          offers: ['subsequente'],
+          term: 'annual' as const,
+        },
+      },
+    ],
+    offers: [
+      {
+        id: 'subsequente',
+        kind: 'subsequente' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'a-classificar' as const,
+      },
     ],
   };
   assert.throws(() => evaluateCalendar(state, []), /Organização a conferir/);
   const classified = {
     ...state,
-    schemaVersion: 3,
-    regime: 'semestral',
-    organizationByModality: { subsequente: 'semestral' as const },
-    scopeConfirmation: { status: 'covered' as const },
+    schemaVersion: 4 as const,
     periods: state.periods.map((p, i) => ({
       ...p,
       association: {
         status: 'defined' as const,
-        modalities: ['subsequente'],
+        offers: ['subsequente'],
         term: i === 0 ? ('first' as const) : ('second' as const),
       },
+    })),
+    offers: state.offers.map((offer) => ({
+      ...offer,
+      organization: ({ subsequente: 'semestral' as const }[offer.id] ?? 'a-classificar') as
+        'anual' | 'semestral' | 'a-classificar',
+      scope: { status: 'covered' as const },
     })),
   };
   assert.deepEqual(
@@ -95,7 +131,19 @@ test('audit log isolates campi and contains canonical names and saved versions w
 test('assessment range colors only endpoints and preserves intervening holiday colors', async () => {
   const { proensLayout } = await import('../../src/printing/calendar-layout.ts');
   const html = proensLayout(
-    { year: 2027, campus: 'Reitoria', modalities: ['integrado'], periods: [] },
+    {
+      year: 2027,
+      campus: 'Reitoria',
+      periods: [],
+      offers: [
+        {
+          id: 'integrado',
+          kind: 'integrado' as const,
+          delivery: 'a-conferir' as const,
+          organization: 'anual' as const,
+        },
+      ],
+    },
     [
       { start: '2027-02-01', end: '2027-04-30', category: 'limite', name: 'Etapa' },
       { start: '2027-03-26', end: '2027-03-26', category: 'feriado', name: 'Feriado' },

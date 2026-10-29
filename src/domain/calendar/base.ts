@@ -14,7 +14,11 @@ import {
   rulesetVersion,
 } from '../policies/registry.ts';
 
-export type BaseEvent = CalendarActivity & { evidence?: string; source?: string };
+export type BaseEvent = CalendarActivity & {
+  evidence?: string;
+  source?: string;
+  modalities?: string[];
+};
 export interface BaseDocument {
   id: string;
   year: number;
@@ -35,17 +39,14 @@ export interface BaseSnapshot<
 }
 export interface BaseScope {
   year: number;
-  modalities?: string[];
-  offer?: string;
   rulesetVersion?: string;
-  offers?: CalendarOffer[];
+  offers: CalendarOffer[];
 }
 
-const scopeKinds = (scope: BaseScope): string[] =>
-  scope.offers ? kinds({ offers: scope.offers }) : (scope.modalities ?? [scope.offer ?? '']);
+const scopeKinds = (scope: BaseScope): string[] => kinds({ offers: scope.offers });
 
 function eventKinds(event: BaseEvent, scope: BaseScope): string[] {
-  if (scope.offers && event.offers)
+  if (event.offers)
     return scope.offers
       .filter((offer) => event.offers!.includes(offer.id))
       .map((offer) => offer.kind);
@@ -235,11 +236,7 @@ export function applicableEvents<T extends BaseEvent & { active: boolean }>(
   catalogue: { events: T[] },
   scope: BaseScope & { teacherDayDate?: string | null },
 ) {
-  const published = inheritedEvents(
-    catalogue,
-    scope.year,
-    scope.offers ?? scope.modalities ?? [scope.offer ?? ''],
-  );
+  const published = inheritedEvents(catalogue, scope.year, scope.offers);
   return published.some((event) => event.id === teacherDayId)
     ? campusInstitutionalEvents(published, scope)
     : published;

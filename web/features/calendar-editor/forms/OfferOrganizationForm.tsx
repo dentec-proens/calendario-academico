@@ -29,7 +29,7 @@ import type {
   OfferOrganizationDraft,
   OrganizationIssue,
 } from '#src/domain/calendar/organization/offers.ts';
-import { periodsForModality } from '#src/domain/calendar/organization/periods.ts';
+import { periodsForOffer } from '#src/domain/calendar/organization/periods.ts';
 import { modalityLabels } from '#src/domain/calendar/modalities.ts';
 import { civilDate } from '../events/activity-query.ts';
 import { ChevronUp } from 'lucide-react';
@@ -217,7 +217,7 @@ export default function OfferOrganizationForm({
       .map((issue) => issue.message)
       .join(' ');
   const included = Boolean(savedOffer);
-  const periods = periodsForModality(state, modality);
+  const periods = periodsForOffer(state, modality);
   const perTerm = Number(values.count);
   const allowedCounts: readonly number[] =
     values.organization === 'semestral' ? [1, 2] : assessmentStageCounts;

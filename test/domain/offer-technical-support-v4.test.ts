@@ -1,8 +1,6 @@
 import { expect, test } from 'vitest';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
-import { normalizeCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
-import { convertCalendarV3 } from '../../src/domain/calendar/normalization/conversion-v4.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 
 const support = (state: ReturnType<typeof calendarOffersV4Fixture>) =>
@@ -63,16 +61,19 @@ test('a repeated postgraduate id does not activate the 2026 annual reference', (
   expect(signals[1]).toContain('mínimo normativo não configurado');
 });
 
-test('semester migration retains every assessment-dependent binding when the count is pending', () => {
-  const before = normalizeCalendar({
-    schemaVersion: 3,
+test('pending semester stages retain every assessment-dependent binding while other data is edited', () => {
+  const state = {
+    schemaVersion: 4 as const,
     year: 2027,
     campus: 'Campus sintético',
-    offer: 'graduacao',
-    modalities: ['graduacao'],
-    regime: 'semestral',
-    organizationByModality: { graduacao: 'semestral' },
-    assessmentStagesByModality: { graduacao: 3 },
+    offers: [
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'semestral' as const,
+      },
+    ],
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     periods: [
@@ -81,14 +82,14 @@ test('semester migration retains every assessment-dependent binding when the cou
         name: '1º semestre',
         start: '2027-02-01',
         end: '2027-07-09',
-        association: { status: 'defined', modalities: ['graduacao'], term: 'first' },
+        association: { status: 'defined' as const, offers: ['graduacao'], term: 'first' as const },
       },
       {
         id: 'second',
         name: '2º semestre',
         start: '2027-07-26',
         end: '2027-12-17',
-        association: { status: 'defined', modalities: ['graduacao'], term: 'second' },
+        association: { status: 'defined' as const, offers: ['graduacao'], term: 'second' as const },
       },
     ],
     events: ['stage', 'results', 'council', 'pedagogical-meeting'].map((prefix) => ({
@@ -97,16 +98,17 @@ test('semester migration retains every assessment-dependent binding when the cou
       start: '2027-03-01',
       end: '2027-03-02',
       kind: 'note',
-      modalities: ['graduacao'],
+      offers: ['graduacao'],
       requirementId: `${prefix}-1:graduacao`,
     })),
-  });
-  const content = convertCalendarV3(before, { year: 2027, modalities: ['graduacao'] });
-  const saved = normalizeOfferCalendar({ ...content, year: 2027, campus: 'Campus sintético' });
+  };
+  const before = structuredClone(state);
+  const saved = normalizeOfferCalendar(state);
   expect(saved.offers[0].stages).toBeUndefined();
   expect(saved.events.map((event) => event.requirementId)).toEqual(
     before.events.map((event) => event.requirementId),
   );
+  expect(state).toEqual(before);
 });
 
 test('an offer with its own regulation does not change the semester criterion of a covered annual offer', () => {

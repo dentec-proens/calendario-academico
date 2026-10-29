@@ -27,7 +27,7 @@ export default function IssuesSection() {
     else if (issue.code === 'organization-unclassified' || issue.code === 'period-count')
       issues.push({
         mark: 'Pendente',
-        title: `Organização — ${labelFor(state, issue.modality)}`,
+        title: `Organização — ${labelFor(state, issue.offerId)}`,
         detail:
           issue.code === 'organization-unclassified'
             ? 'Classifique a organização e a associação dos períodos na etapa 2.'
@@ -44,7 +44,7 @@ export default function IssuesSection() {
             : row.coverage === 'complete'
               ? 'Conferir'
               : 'Pendente',
-        title: `${labelFor(state, row.modality)} — ${row.requirement.name}`,
+        title: `${labelFor(state, row.offerId)} — ${row.requirement.name}`,
         detail:
           [...row.issues, ...row.warnings].join(' ') ||
           'Planejamento pendente de registro e datas.',
@@ -60,7 +60,7 @@ export default function IssuesSection() {
             : check.status === 'NOT_MET'
               ? 'Corrigir'
               : 'Pendente',
-        title: `${labelFor(state, check.modality)} — ${check.scope === 'annual' ? 'Total anual' : state.periods.find((period) => period.id === check.scope)?.name || check.scope}`,
+        title: `${labelFor(state, check.offerId)} — ${check.scope === 'annual' ? 'Total anual' : state.periods.find((period) => period.id === check.scope)?.name || check.scope}`,
         detail:
           check.expected === null
             ? 'Não há mínimo normativo configurado para este escopo.'

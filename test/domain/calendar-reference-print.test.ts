@@ -4,7 +4,19 @@ import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 
-const state = { year: 2027, campus: 'Campus sintético', modalities: ['integrado'], periods: [] };
+const state = {
+  year: 2027,
+  campus: 'Campus sintético',
+  periods: [],
+  offers: [
+    {
+      id: 'integrado',
+      kind: 'integrado' as const,
+      delivery: 'a-conferir' as const,
+      organization: 'anual' as const,
+    },
+  ],
+};
 const events: CalendarActivity[] = [
   {
     id: 'prior',
@@ -12,7 +24,7 @@ const events: CalendarActivity[] = [
     start: '2026-12-01',
     end: '2026-12-01',
     kind: 'note',
-    modalities: ['integrado'],
+    offers: ['integrado'],
     recordType: 'prior-reference',
     publicationStatus: 'published',
     admission: { type: 'transfer', year: 2027, term: 'annual' },
@@ -23,7 +35,7 @@ const events: CalendarActivity[] = [
     start: '2026-11-01',
     end: '2026-11-01',
     kind: 'note',
-    modalities: ['integrado'],
+    offers: ['integrado'],
     recordType: 'event',
     publicationStatus: 'planned',
     admission: { type: 'regular', year: 2028, term: 'first' },
@@ -34,7 +46,7 @@ const events: CalendarActivity[] = [
     start: '2026-12-15',
     end: '2027-01-12',
     kind: 'note',
-    modalities: ['integrado'],
+    offers: ['integrado'],
     recordType: 'prior-reference',
   },
   {
@@ -43,7 +55,7 @@ const events: CalendarActivity[] = [
     start: '2027-12-01',
     end: '2027-12-01',
     kind: 'note',
-    modalities: ['integrado'],
+    offers: ['integrado'],
     publicationStatus: 'planned',
     admission: { type: 'regular', year: 2028, term: 'annual' },
   },
@@ -74,45 +86,44 @@ test('an empty calendar has no fabricated historical section or execution certif
 test('print distributions use the semantic semester of each offer despite coincident annual periods', () => {
   const input = {
     ...state,
-    schemaVersion: 3,
-    regime: 'misto',
+    schemaVersion: 4 as const,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    modalities: ['integrado', 'graduacao'],
-    organizationByModality: { integrado: 'anual' as const, graduacao: 'semestral' as const },
     periods: [
       {
         id: 'annual',
         name: 'Ano integrado',
         start: '2027-02-01',
         end: '2027-12-17',
-        association: {
-          status: 'defined' as const,
-          modalities: ['integrado'],
-          term: 'annual' as const,
-        },
+        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
       {
         id: 'second',
         name: 'Segundo semestre graduação',
         start: '2027-08-02',
         end: '2027-12-17',
-        association: {
-          status: 'defined' as const,
-          modalities: ['graduacao'],
-          term: 'second' as const,
-        },
+        association: { status: 'defined' as const, offers: ['graduacao'], term: 'second' as const },
       },
       {
         id: 'first',
         name: 'Primeiro semestre graduação',
         start: '2027-02-01',
         end: '2027-06-30',
-        association: {
-          status: 'defined' as const,
-          modalities: ['graduacao'],
-          term: 'first' as const,
-        },
+        association: { status: 'defined' as const, offers: ['graduacao'], term: 'first' as const },
+      },
+    ],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const as 'anual' | 'semestral' | 'a-classificar',
+      },
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'semestral' as const as 'anual' | 'semestral' | 'a-classificar',
       },
     ],
   };

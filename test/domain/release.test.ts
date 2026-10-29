@@ -17,16 +17,8 @@ test('definitive release requires every reviewed criterion, current versions and
     catalogueRevision: 1,
     institutionalSnapshot: [],
     state: {
-      schemaVersion: 3,
-      scopeConfirmation: {
-        status: 'covered' as const,
-      },
-      organizationByModality: { integrado: 'anual' as const },
-      assessmentStagesByModality: { integrado: 4 },
+      schemaVersion: 4 as const,
       year: 2027,
-      offer: 'integrado',
-      modalities: ['integrado'],
-      regime: 'anual',
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
       periods: [
@@ -37,12 +29,24 @@ test('definitive release requires every reviewed criterion, current versions and
           end: '2027-12-17',
           association: {
             status: 'defined' as const,
-            modalities: ['integrado'],
+            offers: ['integrado'],
             term: 'annual' as const,
           },
         },
       ],
       events: [] as CalendarActivity[],
+      offers: [
+        {
+          id: 'integrado',
+          kind: 'integrado' as const,
+          delivery: 'a-conferir' as const,
+          organization: 'anual' as const as 'anual' | 'semestral' | 'a-classificar',
+          stages: { perTerm: 4 },
+          scope: {
+            status: 'covered' as const,
+          },
+        },
+      ],
     },
   };
   record.state.events = reviewCriteria
@@ -59,7 +63,7 @@ test('definitive release requires every reviewed criterion, current versions and
     ...activityChecklist(record.state).map((r) => ({
       id: r.id,
       requirementId: r.id,
-      modalities: r.modality ? [r.modality] : ['integrado'],
+      offers: r.offerId ? [r.offerId] : ['integrado'],
       name: r.name,
       start: '2027-02-01',
       end: '2027-02-01',
@@ -165,9 +169,19 @@ test('explicit technical modality inherits scoped events and test PDF identifies
     end: '2027-01-01',
     modalities: ['subsequente'],
   };
-  assert.equal(inheritedEvents({ events: [event] }, 2027, 'subsequente').length, 1);
-  assert.equal(inheritedEvents({ events: [event] }, 2027, 'graduacao').length, 0);
-  const html = proensLayout({ year: 2027, campus: 'Test', periods: [] }, [], null, {
+  assert.equal(
+    inheritedEvents({ events: [event] }, 2027, [
+      { id: 'subsequente', kind: 'subsequente', delivery: 'a-conferir', organization: 'anual' },
+    ]).length,
+    1,
+  );
+  assert.equal(
+    inheritedEvents({ events: [event] }, 2027, [
+      { id: 'graduacao', kind: 'graduacao', delivery: 'a-conferir', organization: 'anual' },
+    ]).length,
+    0,
+  );
+  const html = proensLayout({ year: 2027, campus: 'Test', periods: [], offers: [] }, [], null, {
     purpose: 'test',
   });
   assert.match(html, /CALENDÁRIO DE TESTE — SEM VALIDADE PARA ENVIO/);
@@ -175,27 +189,51 @@ test('explicit technical modality inherits scoped events and test PDF identifies
 
 test('combined calendars scope exclusions by modality and do not presume a postgraduate minimum', () => {
   const state = {
+    schemaVersion: 4 as const,
     year: 2027,
-    offer: 'subsequente',
-    modalities: ['subsequente', 'graduacao', 'posgraduacao'],
-    regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    periods: [{ id: 'p', name: 'Semana', start: '2027-02-01', end: '2027-02-05' }],
+    periods: [
+      {
+        id: 'p',
+        name: 'Semana',
+        start: '2027-02-01',
+        end: '2027-02-05',
+        association: {
+          status: 'defined' as const,
+          offers: ['subsequente', 'graduacao', 'posgraduacao'],
+          term: 'annual' as const,
+        },
+      },
+    ],
     events: [] as CalendarActivity[],
+    offers: [
+      {
+        id: 'subsequente',
+        kind: 'subsequente' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+      {
+        id: 'posgraduacao',
+        kind: 'posgraduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
   };
   const result = evaluateCalendar(state, [
-    {
-      id: 'e',
-      start: '2027-02-02',
-      end: '2027-02-02',
-      kind: 'exclude',
-      modalities: ['graduacao'],
-    },
+    { id: 'e', start: '2027-02-02', end: '2027-02-02', kind: 'exclude', offers: ['graduacao'] },
   ]);
-  assert.equal(result.byModality.subsequente.total, 5);
-  assert.equal(result.byModality.graduacao.total, 4);
-  assert.equal(result.byModality.posgraduacao.checks[0].expected, null);
+  assert.equal(result.byOffer.subsequente.total, 5);
+  assert.equal(result.byOffer.graduacao.total, 4);
+  assert.equal(result.byOffer.posgraduacao.checks[0].expected, null);
   const catalogue = {
     events: [
       {
@@ -207,14 +245,20 @@ test('combined calendars scope exclusions by modality and do not presume a postg
       },
     ],
   };
-  assert.equal(inheritedEvents(catalogue, 2027, ['subsequente', 'graduacao']).length, 1);
+  assert.equal(inheritedEvents(catalogue, 2027, state.offers).length, 1);
 });
 
 test('a single linked deadline cannot satisfy every assessment stage or semester', () => {
   const state = {
-    modalities: ['integrado'],
-    assessmentStagesByModality: { integrado: 4 },
-    regime: 'semestral',
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'semestral' as const,
+        stages: { perTerm: 2 },
+      },
+    ],
   };
   const activities = activityChecklist(state);
   assert.equal(activities.filter((a) => a.id.startsWith('results-')).length, 4);
@@ -236,13 +280,8 @@ test('2026 reviewed criterion is satisfied by a dated event without manual sourc
     catalogueRevision: 1,
     institutionalSnapshot: [],
     state: {
-      schemaVersion: 3,
+      schemaVersion: 4 as const,
       year: 2026,
-      offer: 'integrado',
-      modalities: ['integrado'],
-      regime: 'anual',
-      organizationByModality: { integrado: 'anual' as const },
-      assessmentStagesByModality: { integrado: 2 },
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
       periods: [
@@ -252,7 +291,7 @@ test('2026 reviewed criterion is satisfied by a dated event without manual sourc
           end: '2026-12-18',
           association: {
             status: 'defined' as const,
-            modalities: ['integrado'],
+            offers: ['integrado'],
             term: 'annual' as const,
           },
         },
@@ -264,7 +303,16 @@ test('2026 reviewed criterion is satisfied by a dated event without manual sourc
           start: '2026-02-02',
           end: '2026-02-02',
           kind: 'note',
-          modalities: ['integrado'],
+          offers: ['integrado'],
+        },
+      ],
+      offers: [
+        {
+          id: 'integrado',
+          kind: 'integrado' as const,
+          delivery: 'a-conferir' as const,
+          organization: 'anual' as const as 'anual' | 'semestral' | 'a-classificar',
+          stages: { perTerm: 2 },
         },
       ],
     },

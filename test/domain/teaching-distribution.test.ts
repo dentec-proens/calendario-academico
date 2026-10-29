@@ -6,24 +6,57 @@ import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
 
 const state = {
+  schemaVersion: 4 as const,
   year: 2027,
   campus: 'Teste',
-  offer: 'integrado',
-  modalities: ['integrado', 'graduacao'],
-  regime: 'semestral',
-  assessmentStagesByModality: { integrado: 4, graduacao: 2 },
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
   periods: [
-    { id: 'p1', name: '1º semestre', start: '2027-06-21', end: '2027-07-02' },
-    { id: 'p2', name: '2º semestre', start: '2027-08-02', end: '2027-08-13' },
+    {
+      id: 'p1',
+      name: '1º semestre',
+      start: '2027-06-21',
+      end: '2027-07-02',
+      association: {
+        status: 'defined' as const,
+        offers: ['integrado', 'graduacao'],
+        term: 'first' as const,
+      },
+    },
+    {
+      id: 'p2',
+      name: '2º semestre',
+      start: '2027-08-02',
+      end: '2027-08-13',
+      association: {
+        status: 'defined' as const,
+        offers: ['integrado', 'graduacao'],
+        term: 'second' as const,
+      },
+    },
+  ],
+  offers: [
+    {
+      id: 'integrado',
+      kind: 'integrado' as const,
+      delivery: 'a-conferir' as const,
+      organization: 'semestral' as const,
+      stages: { perTerm: 2 },
+    },
+    {
+      id: 'graduacao',
+      kind: 'graduacao' as const,
+      delivery: 'a-conferir' as const,
+      organization: 'semestral' as const,
+      stages: { perTerm: 1 },
+    },
   ],
 };
 const stage = (number: number, modality: string, start: string, end: string) => ({
   id: `${modality}${number}`,
   name: 'Etapa',
   requirementId: `stage-${number}:${modality}`,
-  modalities: [modality],
+  offers: [modality],
   start,
   end,
   kind: 'note',
@@ -41,7 +74,7 @@ const events: CalendarActivity[] = [
     start: '2027-06-22',
     end: '2027-06-22',
     kind: 'exclude',
-    modalities: ['integrado'],
+    offers: ['integrado'],
   },
   {
     id: 'saturday',
@@ -49,7 +82,7 @@ const events: CalendarActivity[] = [
     start: '2027-06-26',
     end: '2027-06-26',
     kind: 'include',
-    modalities: ['integrado'],
+    offers: ['integrado'],
   },
 ];
 
@@ -74,7 +107,10 @@ test('monthly, bimester, semester and annual weekday counts reconcile, respect o
   assert.equal(degree.semesters[0].byWeekday![2], 2);
   assert.equal(integrated.semesters[0].byWeekday![6], 1);
   assert.equal(degree.semesters[0].byWeekday![6], 0);
-  assert.equal(degree.stages.length, 0);
+  assert.deepEqual(
+    degree.stages.map((row) => row.total),
+    [10, 10],
+  );
   for (const report of [integrated, degree])
     for (const group of [
       report.months,
@@ -94,7 +130,7 @@ test('monthly, bimester, semester and annual weekday counts reconcile, respect o
   const html = proensLayout(input, events, result, { purpose: 'test' });
   for (const title of [
     'Distribuição por mês',
-    'Distribuição por bimestre',
+    'Etapas de avaliação — 1º semestre',
     'Distribuição por semestre letivo',
     'Consolidado anual',
     'Técnico integrado',
@@ -106,28 +142,42 @@ test('monthly, bimester, semester and annual weekday counts reconcile, respect o
   assert(html.includes('26/06/2027 a 02/07/2027'));
 });
 
-test('annual periods use the registered assessment intervals; missing or overlapping intervals are not invented', () => {
+test('annual periods preserve assessment totals without inventing semester boundaries', () => {
   const input = {
     ...state,
-    modalities: ['integrado'],
-    periods: [{ id: 'year', name: 'Anual', start: '2027-06-21', end: '2027-08-13' }],
+    periods: [
+      {
+        id: 'year',
+        name: 'Anual',
+        start: '2027-06-21',
+        end: '2027-08-13',
+        association: {
+          status: 'defined' as const,
+          offers: ['integrado', 'graduacao'],
+          term: 'annual' as const,
+        },
+      },
+    ],
     events,
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages: { perTerm: 4 },
+      },
+    ],
   };
   const withRecess: CalendarActivity[] = [
     ...events,
-    {
-      name: 'Recesso',
-      id: 'recess',
-      start: '2027-07-03',
-      end: '2027-08-01',
-      kind: 'exclude',
-    },
+    { name: 'Recesso', id: 'recess', start: '2027-07-03', end: '2027-08-01', kind: 'exclude' },
   ];
   const result = evaluateCalendar(input, withRecess),
     report = teachingDayBreakdown(input, withRecess, result, 'integrado');
   assert.deepEqual(
     report.semesters.map((r) => r.total),
-    [10, 10],
+    [null, null],
   );
   assert.equal(report.notes.length, 0);
   const partial = withRecess.filter((e) => e.requirementId !== 'stage-2:integrado');
@@ -138,13 +188,31 @@ test('annual periods use the registered assessment intervals; missing or overlap
   const overlapping = {
     ...input,
     periods: [
-      { id: 'a', start: '2027-06-21', end: '2027-07-05' },
-      { id: 'b', start: '2027-07-02', end: '2027-08-13' },
+      {
+        id: 'a',
+        start: '2027-06-21',
+        end: '2027-07-05',
+        association: {
+          status: 'defined' as const,
+          offers: ['integrado', 'graduacao'],
+          term: 'annual' as const,
+        },
+      },
+      {
+        id: 'b',
+        start: '2027-07-02',
+        end: '2027-08-13',
+        association: {
+          status: 'defined' as const,
+          offers: ['integrado', 'graduacao'],
+          term: 'annual' as const,
+        },
+      },
     ],
   };
   const invalid = teachingDayBreakdown(overlapping, withRecess, result, 'integrado');
   assert(invalid.semesters.every((r) => r.total === null));
-  assert(invalid.notes.some((n) => n.includes('sobreposição')));
+  assert.equal(invalid.showSemesters, false);
   const unknown = teachingDayBreakdown(input, withRecess, null, 'integrado');
   assert.equal(unknown.months[0].total, null);
 });
@@ -152,8 +220,24 @@ test('annual periods use the registered assessment intervals; missing or overlap
 test('trimestral offers retain their three assessment intervals alongside monthly, semester and annual totals', () => {
   const input = {
     ...state,
-    modalities: ['integrado'],
-    assessmentStagesByModality: { integrado: 3 },
+    periods: [
+      {
+        id: 'year',
+        name: 'Anoletivo',
+        start: '2027-06-21',
+        end: '2027-08-13',
+        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
+      },
+    ],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages: { perTerm: 3 },
+      },
+    ],
   };
   const trimesterEvents = [
     stage(1, 'integrado', '2027-06-21', '2027-06-25'),
@@ -167,13 +251,15 @@ test('trimestral offers retain their three assessment intervals alongside monthl
     'integrado',
   );
   assert.equal(report.stages.length, 3);
-  assert.equal(report.stageLabel, 'trimestre');
+  assert.equal(report.stageLabel, 'etapa de avaliação');
+  assert.equal(report.stageGroups[0].term, 'annual');
   assert.equal(
     report.stages.reduce((sum, r) => sum + r.total!, 0),
     report.annual.total,
   );
   assert.deepEqual(
-    report.semesters.map((r) => r.total),
-    [10, 10],
+    report.semesters.map((row) => row.total),
+    [null, null],
   );
+  assert.equal(report.showSemesters, false);
 });

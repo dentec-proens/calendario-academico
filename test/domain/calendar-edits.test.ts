@@ -6,14 +6,18 @@ import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 function calendar(): ActivityState {
   return {
+    schemaVersion: 4 as const,
     year: 2027,
-    offer: 'integrado',
-    modalities: ['integrado'],
-    regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    periods: [{ id: 'classes', start: '2027-03-01', end: '2027-03-26' }],
-    assessmentStagesByModality: { integrado: 4 },
+    periods: [
+      {
+        id: 'classes',
+        start: '2027-03-01',
+        end: '2027-03-26',
+        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
+      },
+    ],
     events: Array.from({ length: 4 }, (_, index) => ({
       id: `event-${index + 1}`,
       requirementId: `stage-${index + 1}:integrado`,
@@ -22,8 +26,17 @@ function calendar(): ActivityState {
       end: `2027-03-${String(index * 7 + 4).padStart(2, '0')}`,
       kind: 'note',
       category: 'limite',
-      modalities: ['integrado'],
+      offers: ['integrado'],
     })),
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages: { perTerm: 4 },
+      },
+    ],
   };
 }
 
@@ -32,13 +45,7 @@ test('recalculating periods preserves every entered stage date, including legacy
   state.events = state.events.map((event) => ({ ...event, assessmentAutoStart: '2027-03-01' }));
   const before = structuredClone(state);
   const next = recalculateCalendar(state, [
-    {
-      id: 'holiday',
-      name: 'Feriado',
-      start: '2027-03-01',
-      end: '2027-03-05',
-      kind: 'exclude',
-    },
+    { id: 'holiday', name: 'Feriado', start: '2027-03-01', end: '2027-03-05', kind: 'exclude' },
   ]);
   const expected = before.events;
   expect(next.events).toEqual(expected);
@@ -51,7 +58,7 @@ test('changing assessment organization preserves events while removing obsolete 
   state.events = state.events.map((event) => ({ ...event, assessmentAutoStart: '2027-03-01' }));
   const original = structuredClone(state);
   const changed = configureAssessment(state, { integrado: '2' }, []);
-  expect(changed.assessmentStagesByModality).toEqual({ integrado: 2 });
+  expect(changed.offers[0].stages).toEqual({ perTerm: 2 });
   expect(changed.events).toHaveLength(4);
   for (let index = 2; index < 4; index++) {
     const {

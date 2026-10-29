@@ -172,7 +172,7 @@ export function recordOffers(
   requirement?: ActivityRequirement,
 ) {
   const ids = offerIds(state);
-  const requiredOffer = requirement?.offerId ?? requirement?.modality;
+  const requiredOffer = requirement?.offerId;
   return requiredOffer
     ? ids.filter((id) => id === requiredOffer)
     : ids.filter((id) => !requirement?.offerIds || requirement.offerIds.includes(id));
@@ -189,7 +189,7 @@ export function activityDraft(
   );
   const modalities = pertinent.length
     ? pertinent
-    : requirement.modalities?.length && !(requirement.offerId ?? requirement.modality)
+    : requirement.modalities?.length && !requirement.offerId
       ? valid.filter((modality) =>
           requirement.modalities?.includes(offerFor(state, modality)!.kind),
         )

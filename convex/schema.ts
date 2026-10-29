@@ -54,8 +54,7 @@ export default defineSchema({
   calendars: defineTable({
     campusId: v.id('campuses'),
     year: v.number(),
-    modalities: v.optional(v.array(modality)),
-    offerKinds: v.optional(v.array(modality)),
+    offerKinds: v.array(modality),
     purpose,
     courses: v.string(),
     classes: v.string(),

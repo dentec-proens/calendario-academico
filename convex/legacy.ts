@@ -2,9 +2,6 @@ import { paginationOptsValidator } from 'convex/server';
 import type { PaginationOptions } from 'convex/server';
 import { v } from 'convex/values';
 import type { Infer } from 'convex/values';
-import { calendarV3OrphanKeys } from '../src/domain/calendar/normalization/conversion-v4';
-import { convertCalendarV2 } from '../src/domain/calendar/normalization/conversion';
-import { organizationForModality } from '../src/domain/calendar/organization/periods';
 import type { AssessmentSettings } from '../src/domain/calendar/model';
 import { policyFor } from '../src/domain/policies/registry';
 import { internalQuery } from './_generated/server';
@@ -157,9 +154,7 @@ function contentCounts(
 ) {
   const state = content.state;
   counts.contents++;
-  counts[
-    state.schemaVersion === 4 ? 'schemaV4' : state.schemaVersion === 3 ? 'schemaV3' : 'schemaV2'
-  ]++;
+  counts.schemaV4++;
   if (!calendar) counts.orphanContents++;
   if (calendar?.deletedAt !== undefined) counts.trashedContents++;
   if (state.schemaVersion === 4) {
@@ -167,7 +162,7 @@ function contentCounts(
     countHistoricalStages(state.offers, counts);
     counts.offersWithPendingStageCycle += state.offers.filter((offer) => !offer.stages).length;
   }
-  if (state.schemaVersion === 4 && state.legacySecondSemesterIntake !== undefined) {
+  if (state.legacySecondSemesterIntake !== undefined) {
     counts.legacySecondSemesterIntakeContents++;
     counts[
       state.legacySecondSemesterIntake
@@ -182,33 +177,10 @@ function contentCounts(
   }
   // Metadata is authoritative. An orphan cannot acquire a year or a kind from its content maps.
   if (!calendar) return;
-  const modalities = calendar.modalities ?? calendar.offerKinds ?? [];
-  const settings: AssessmentSettings =
-    state.schemaVersion === 4
-      ? { ...state, year: calendar.year }
-      : convertCalendarV2({ ...state, year: calendar.year, modalities });
-  let missingStages = 0;
-  if (state.schemaVersion === 4)
-    missingStages = state.offers.filter(
-      (offer) => !offer.stages && offer.legacyStageCount === undefined,
-    ).length;
-  else {
-    const orphanKeys = Object.values(
-      calendarV3OrphanKeys(state, { year: calendar.year, modalities }),
-    ).reduce((total, keys) => total + keys.length, 0);
-    counts.orphanKeys += orphanKeys;
-    if (orphanKeys) counts.contentsWithOrphanKeys++;
-    missingStages = modalities.filter(
-      (kind) => settings.assessmentStagesByModality?.[kind] === undefined,
-    ).length;
-    const semesterThree = modalities.filter(
-      (kind) =>
-        organizationForModality(settings, kind) === 'semestral' &&
-        settings.assessmentStagesByModality?.[kind] === 3,
-    ).length;
-    counts.liveLegacySemesterThreeOffers += semesterThree;
-    if (semesterThree) counts.liveLegacySemesterThreeContents++;
-  }
+  const settings: AssessmentSettings = { ...state, year: calendar.year };
+  const missingStages = state.offers.filter(
+    (offer) => !offer.stages && offer.legacyStageCount === undefined,
+  ).length;
   counts.offersWithoutStages += missingStages;
   if (missingStages) counts.contentsWithoutStages++;
   if (calendar.year !== 2027) return;

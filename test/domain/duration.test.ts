@@ -3,10 +3,18 @@ import assert from 'node:assert/strict';
 import { durationEnd } from '../../src/domain/calendar/counting/duration.ts';
 
 const state = {
+  schemaVersion: 4 as const,
   year: 2027,
-  modalities: ['integrado'],
   weekConfirmed: true,
   weekdays: [1, 2, 3, 4, 5],
+  offers: [
+    {
+      id: 'integrado',
+      kind: 'integrado' as const,
+      delivery: 'a-conferir' as const,
+      organization: 'anual' as const,
+    },
+  ],
 };
 test('inclusive vacation duration crosses months and leap day', () => {
   assert.equal(durationEnd('2027-01-02', 30), '2027-01-31');
@@ -31,8 +39,22 @@ test('preserves 100 days per semester as exclusions change and never overlaps pe
   const s = {
     ...state,
     periods: [
-      { id: 'one', name: '1º semestre', start: '2027-02-09', end: '2027-06-01', targetDays: 100 },
-      { id: 'two', name: '2º semestre', start: '2027-08-02', end: '2027-12-01', targetDays: 100 },
+      {
+        id: 'one',
+        name: '1º semestre',
+        start: '2027-02-09',
+        end: '2027-06-01',
+        targetDays: 100,
+        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
+      },
+      {
+        id: 'two',
+        name: '2º semestre',
+        start: '2027-08-02',
+        end: '2027-12-01',
+        targetDays: 100,
+        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
+      },
     ],
   };
   const before = JSON.stringify(s),

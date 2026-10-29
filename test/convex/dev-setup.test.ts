@@ -180,17 +180,16 @@ test('dev setup preserves every partial dataset, including isolated snapshots, A
     (ctx) =>
       ctx.db.insert('calendarSnapshots', {
         state: {
-          schemaVersion: 2,
+          schemaVersion: 4,
           year: 2027,
           campus: 'Snapshot original',
-          modalities: ['integrado'],
-          offer: 'integrado',
-          regime: 'anual',
+          offers: [
+            { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
+          ],
           weekdays: [1, 2, 3, 4, 5],
           weekConfirmed: false,
           periods: [],
           events: [],
-          assessmentStagesByModality: {},
         },
         at: 1,
         catalogueRevision: 34,

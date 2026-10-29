@@ -1,6 +1,6 @@
 import type { ActivityState, CalendarActivity, AssessmentSettings } from '../model.ts';
 import { datesBetween, parseDate } from '../counting/core.ts';
-import { periodsForModality } from '../organization/periods.ts';
+import { periodsForOffer } from '../organization/periods.ts';
 import { offerIds } from '../offers.ts';
 import { DomainError } from '../../errors.ts';
 
@@ -26,7 +26,7 @@ export function saturdayEvents(
       throw new DomainError('Selecione sábados do ano do calendário.');
     if (
       !offerIds(state).every((modality) =>
-        periodsForModality(state, modality).some((p) => p.start <= date && date <= p.end),
+        periodsForOffer(state, modality).some((p) => p.start <= date && date <= p.end),
       )
     )
       throw new DomainError(
@@ -115,7 +115,7 @@ export function saturdayYear(
           day: Number(date.slice(8)),
           weekday,
           inPeriod: offerIds(state).every((modality) =>
-            periodsForModality(state, modality).some((p) => p.start <= date && date <= p.end),
+            periodsForOffer(state, modality).some((p) => p.start <= date && date <= p.end),
           ),
           impediments: events
             .filter((e) => e.kind === 'exclude' && e.start <= date && date <= e.end)

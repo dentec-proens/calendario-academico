@@ -4,14 +4,10 @@ import type {
   CalendarPeriod,
   PeriodAssociation,
 } from '../model.ts';
-import {
-  samePeriodScope,
-  organizationSummary,
-  organizationForModality,
-} from '../organization/periods.ts';
+import { samePeriodScope, organizationForOffer } from '../organization/periods.ts';
 import { durationEnd } from '../counting/duration.ts';
 import { activityChecklist } from '../activities/checklist.ts';
-import { associationOffers, isStructured, offerFor, offerIds } from '../offers.ts';
+import { associationOffers, offerFor, offerIds } from '../offers.ts';
 import { recalculateCalendar, validateInterval } from './recalculate.ts';
 import { DomainError } from '../../errors.ts';
 
@@ -81,10 +77,8 @@ export function applyPeriod<S extends ActivityState>(
     if (
       associated.some(
         (m) =>
-          organizationForModality(state, m) !== organization &&
-          Object.entries(
-            (state.offers ? offerFor(state, m)?.intake : state.intakeByModality?.[m]) ?? {},
-          ).some(
+          organizationForOffer(state, m) !== organization &&
+          Object.entries(offerFor(state, m)?.intake ?? {}).some(
             ([term, entry]) => entry.required && (term === 'annual') !== (organization === 'anual'),
           ),
       )
@@ -101,14 +95,7 @@ export function applyPeriod<S extends ActivityState>(
       throw new DomainError(
         'Revise os editais vinculados a este período antes de alterar seu ciclo.',
       );
-    const organizationByModality = Object.fromEntries(
-      offerIds(state).map((m) => [
-        m,
-        associated.includes(m) ? organization : organizationForModality(state, m),
-      ]),
-    );
     if (
-      state.offers &&
       associated.some((id) => {
         const stages = offerFor(state, id)?.stages;
         return (
@@ -117,33 +104,24 @@ export function applyPeriod<S extends ActivityState>(
       })
     )
       throw new DomainError('Revise as etapas de avaliação antes de alterar o ciclo da oferta.');
-    const candidate = state.offers
-      ? {
-          ...state,
-          offers: state.offers.map((offer) =>
-            associated.includes(offer.id) ? { ...offer, organization } : offer,
-          ),
-        }
-      : {
-          ...state,
-          schemaVersion: 3 as const,
-          organizationByModality,
-          regime: organizationSummary(organizationByModality, offerIds(state)),
-        };
+    const candidate = {
+      ...state,
+      offers: state.offers.map((offer) =>
+        associated.includes(offer.id) ? { ...offer, organization } : offer,
+      ),
+    };
     const requirements = new Map(activityChecklist(candidate).map((item) => [item.id, item]));
     const incompatible = state.events.filter((event) => {
       if (!event.requirementId) return false;
       const requirement = requirements.get(event.requirementId);
       if (!requirement) return true;
-      const explicit = state.offers ? event.offers : event.modalities;
+      const explicit = event.offers;
       return (explicit?.length ? explicit : offerIds(state)).some(
         (m) =>
           associated.includes(m) &&
-          organizationForModality(state, m) !== organization &&
-          (((requirement.offerId ?? requirement.modality) &&
-            (requirement.offerId ?? requirement.modality) !== m) ||
-            (requirement.modalities &&
-              !requirement.modalities.includes(offerFor(state, m)?.kind ?? m))),
+          organizationForOffer(state, m) !== organization &&
+          ((requirement.offerId && requirement.offerId !== m) ||
+            (requirement.modalities && !requirement.modalities.includes(offerFor(state, m)!.kind))),
       );
     });
     if (incompatible.length)
@@ -166,12 +144,10 @@ export function applyPeriod<S extends ActivityState>(
     throw new DomainError(
       'Já existe um período para este ciclo da oferta. Edite o período existente.',
     );
-  if (isStructured(state) && values.days && !associated)
+  if (values.days && !associated)
     throw new DomainError('Classifique a oferta e o ciclo do período antes de calcular o término.');
   const scopedState = associated
-    ? state.offers
-      ? { ...state, offers: state.offers.filter((offer) => associated.includes(offer.id)) }
-      : { ...state, modalities: associated, offer: associated[0] }
+    ? { ...state, offers: state.offers.filter((offer) => associated.includes(offer.id)) }
     : state;
   const end = values.days
     ? durationEnd(values.start, values.days, scopedState, [...institutional, ...state.events])
@@ -185,7 +161,7 @@ export function applyPeriod<S extends ActivityState>(
           id: values.id ?? 'new',
           start: values.start,
           end,
-          association: values.association,
+          association: values.association ?? { status: 'a-classificar' },
         }) &&
         period.start <= end &&
         period.end >= values.start,
@@ -197,16 +173,10 @@ export function applyPeriod<S extends ActivityState>(
   const period: CalendarPeriod = {
     id: values.id || id(),
     name: values.name.trim(),
-    ...(state.offers
-      ? {
-          association:
-            values.association?.status === 'defined'
-              ? { status: 'defined' as const, offers: associated!, term: values.association.term }
-              : { status: 'a-classificar' as const },
-        }
-      : values.association
-        ? { association: values.association }
-        : {}),
+    association:
+      values.association?.status === 'defined'
+        ? { status: 'defined', offers: associated!, term: values.association.term }
+        : { status: 'a-classificar' },
     start: values.start,
     end,
     ...(values.days ? { targetDays: Number(values.days) } : {}),
@@ -214,23 +184,7 @@ export function applyPeriod<S extends ActivityState>(
   const periods = values.id
     ? state.periods.map((item) => (item.id === values.id ? period : item))
     : [...state.periods, period];
-  return recalculateCalendar(
-    {
-      ...state,
-      periods,
-      conversion: state.conversion
-        ? {
-            ...state.conversion,
-            organization:
-              periods.every((p) => p.association?.status === 'defined') &&
-              offerIds(state).every((m) => organizationForModality(state, m) !== 'a-classificar')
-                ? 'classified'
-                : 'pending',
-          }
-        : undefined,
-    },
-    institutional,
-  );
+  return recalculateCalendar({ ...state, periods }, institutional);
 }
 
 export function removePeriod<S extends ActivityState>(

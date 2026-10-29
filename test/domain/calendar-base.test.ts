@@ -1,7 +1,17 @@
 import { expect, test } from 'vitest';
 import { inspect, reconcile, reviewIsCurrent } from '../../src/domain/calendar/base.ts';
 
-const scope = { year: 2027, modalities: ['integrado'] };
+const scope = {
+  year: 2027,
+  offers: [
+    {
+      id: 'integrado',
+      kind: 'integrado' as const,
+      delivery: 'a-conferir' as const,
+      organization: 'anual' as const,
+    },
+  ],
+};
 const event = {
   id: 'e',
   name: 'Feriado',

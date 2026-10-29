@@ -28,7 +28,7 @@ async function fixture() {
     });
     const fields = {
       year: 2027,
-      modalities: ['integrado' as const],
+      offerKinds: ['integrado' as const],
       purpose: 'test' as const,
       courses: 'Teste',
       classes: '',

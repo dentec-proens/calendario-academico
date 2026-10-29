@@ -11,13 +11,8 @@ import { associationOffers } from '../../src/domain/calendar/offers.ts';
 
 function calendar(): ActivityState {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4 as const,
     year: 2027,
-    offer: 'integrado',
-    modalities: ['integrado', 'graduacao'],
-    regime: 'anual',
-    organizationByModality: { integrado: 'anual', graduacao: 'anual' },
-    assessmentStagesByModality: { integrado: 2, graduacao: 2 },
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     periods: [
@@ -26,7 +21,7 @@ function calendar(): ActivityState {
         name: 'Anual',
         start: '2027-03-01',
         end: '2027-03-26',
-        association: { status: 'defined', modalities: ['integrado', 'graduacao'], term: 'annual' },
+        association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'annual' },
       },
     ],
     events: ['integrado', 'graduacao'].flatMap((modality) =>
@@ -34,7 +29,7 @@ function calendar(): ActivityState {
         id: `${modality}-${index}`,
         name: `${index + 1}ª etapa`,
         requirementId: `stage-${index + 1}:${modality}`,
-        modalities: [modality],
+        offers: [modality],
         start: index ? '2027-03-15' : '2027-03-01',
         end: index ? '2027-03-26' : '2027-03-12',
         kind: 'note',
@@ -42,6 +37,22 @@ function calendar(): ActivityState {
         assessmentAutoStart: '2027-03-01',
       })),
     ),
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages: { perTerm: 2 },
+      },
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages: { perTerm: 2 },
+      },
+    ],
   };
 }
 let sequence = 0;
@@ -58,19 +69,19 @@ test('one application splits a shared period and keeps the other offer and all s
   expect(next.periods).toHaveLength(2);
   expect(next.periods.find((p) => p.id === 'shared')).toEqual({
     ...before.periods[0],
-    association: { status: 'defined', modalities: ['graduacao'], term: 'annual' },
+    association: { status: 'defined', offers: ['graduacao'], term: 'annual' },
   });
   const integrated = next.periods.find((p) =>
     associationOffers(p.association).includes('integrado'),
   )!;
   expect(integrated.id).not.toBe('shared');
   expect(integrated.targetDays).toBeUndefined();
-  expect(next.events.filter((e) => e.modalities?.includes('graduacao'))).toEqual(
-    before.events.filter((e) => e.modalities?.includes('graduacao')),
+  expect(next.events.filter((e) => e.offers?.includes('graduacao'))).toEqual(
+    before.events.filter((e) => e.offers?.includes('graduacao')),
   );
   expect(
     next.events
-      .filter((e) => e.modalities?.includes('integrado'))
+      .filter((e) => e.offers?.includes('integrado'))
       .map((e) => [e.id, e.start, e.end, e.assessmentAutoStart]),
   ).toEqual([
     ['integrado-0', '2027-03-01', '2027-03-12', undefined],
@@ -101,6 +112,7 @@ test('a stage cannot span the semester gap, overlap another stage or use another
   const state = calendar(),
     draft = offerOrganizationDraft(state, 'integrado');
   draft.organization = 'semestral';
+  draft.count = '1';
   draft.periods[0].end = '2027-03-12';
   draft.periods[1] = { sourceId: '', name: 'Segundo', start: '2027-03-22', end: '2027-03-26' };
   draft.stages[1].start = '2027-03-15';
@@ -126,7 +138,7 @@ test('existing inclusions are checked before changing periods; records are never
     id: 'sat',
     name: 'Reposição de sábado',
     kind: 'include',
-    modalities: ['integrado'],
+    offers: ['integrado'],
     start: '2027-03-06',
     end: '2027-03-06',
   });
@@ -149,7 +161,7 @@ test('splitting shared admission references preserves each offer link and dates'
     id: 'notice',
     name: 'Edital',
     kind: 'note',
-    modalities: ['integrado', 'graduacao'],
+    offers: ['integrado', 'graduacao'],
     start: '2027-02-01',
     end: '2027-02-01',
     publicationStatus: 'published',
@@ -163,15 +175,15 @@ test('splitting shared admission references preserves each offer link and dates'
   );
   const notices = next.events.filter((e) => e.admission);
   expect(notices).toHaveLength(2);
-  expect(notices.find((e) => e.modalities?.includes('graduacao'))).toMatchObject({
+  expect(notices.find((e) => e.offers?.includes('graduacao'))).toMatchObject({
     id: 'notice',
     admission: { periodId: 'shared' },
   });
-  const moved = notices.find((e) => e.modalities?.includes('integrado'))!;
+  const moved = notices.find((e) => e.offers?.includes('integrado'))!;
   expect(moved.admission?.periodId).not.toBe('shared');
   expect(next.periods.find((p) => p.id === moved.admission?.periodId)?.association).toEqual({
     status: 'defined',
-    modalities: ['integrado'],
+    offers: ['integrado'],
     term: 'annual',
   });
 });

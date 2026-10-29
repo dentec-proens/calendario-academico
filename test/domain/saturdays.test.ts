@@ -48,14 +48,28 @@ test('v4 Saturdays require the teaching period of every offer identity', () => {
 
 test('month selection adds only chosen Saturdays, survives serialization, and respects conflicts', () => {
   const s = {
+    schemaVersion: 4 as const,
     year: 2027,
-    offer: 'integrado',
-    modalities: ['integrado'],
-    regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    periods: [{ id: 'year', name: 'Ano', start: '2027-02-01', end: '2027-03-31' }],
+    periods: [
+      {
+        id: 'year',
+        name: 'Ano',
+        start: '2027-02-01',
+        end: '2027-03-31',
+        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
+      },
+    ],
     events: [] as CalendarActivity[],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
   };
   assert.deepEqual(monthSaturdays(2027, 2), [
     '2027-02-06',
@@ -71,13 +85,7 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
   assert.equal(saturdayEvents(s, ['2027-02-06'], 'Sábado', make).length, 0);
   const result = calendarResult(s, [
     ...s.events,
-    {
-      id: 'holiday',
-      name: 'Feriado',
-      start: '2027-02-20',
-      end: '2027-02-20',
-      kind: 'exclude',
-    },
+    { id: 'holiday', name: 'Feriado', start: '2027-02-20', end: '2027-02-20', kind: 'exclude' },
   ]);
   assert.equal(result.byWeekday[6], 1);
   assert.equal(result.conflicts.length, 1);
@@ -88,14 +96,27 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
 
 test('a confirmed annual selection includes Saturdays from different months in one atomic command', () => {
   const state: ActivityState = {
+    schemaVersion: 4 as const,
     year: 2027,
-    offer: 'integrado',
-    modalities: ['integrado'],
-    regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    periods: [{ id: 'year', start: '2027-02-01', end: '2027-12-17' }],
+    periods: [
+      {
+        id: 'year',
+        start: '2027-02-01',
+        end: '2027-12-17',
+        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
+      },
+    ],
     events: [],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
   };
   const original = structuredClone(state);
   const selected = {
@@ -128,14 +149,27 @@ test('a confirmed annual selection includes Saturdays from different months in o
 
 test('each Saturday keeps its activity and date without a source and a failed batch changes nothing', () => {
   const state: ActivityState = {
+    schemaVersion: 4 as const,
     year: 2027,
-    offer: 'integrado',
-    modalities: ['integrado'],
-    regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
-    periods: [{ id: 'year', start: '2027-02-01', end: '2027-12-17' }],
+    periods: [
+      {
+        id: 'year',
+        start: '2027-02-01',
+        end: '2027-12-17',
+        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
+      },
+    ],
     events: [],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
   };
   const original = structuredClone(state);
   const activities = [
@@ -174,13 +208,19 @@ test('each Saturday keeps its activity and date without a source and a failed ba
 });
 
 const yearState: ActivityState = {
+  schemaVersion: 4 as const,
   year: 2027,
-  offer: 'integrado',
-  modalities: ['integrado'],
-  regime: 'anual',
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
-  periods: [{ id: 'year', name: 'Ano', start: '2027-03-01', end: '2027-03-31' }],
+  periods: [
+    {
+      id: 'year',
+      name: 'Ano',
+      start: '2027-03-01',
+      end: '2027-03-31',
+      association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
+    },
+  ],
   events: [
     {
       id: 's1',
@@ -205,6 +245,14 @@ const yearState: ActivityState = {
       category: 'sabado',
       start: '2027-06-05',
       end: '2027-06-05',
+    },
+  ],
+  offers: [
+    {
+      id: 'integrado',
+      kind: 'integrado' as const,
+      delivery: 'a-conferir' as const,
+      organization: 'anual' as const,
     },
   ],
 };

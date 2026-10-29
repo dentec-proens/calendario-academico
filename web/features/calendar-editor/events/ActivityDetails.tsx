@@ -62,8 +62,8 @@ export default function ActivityDetails({
         <summary>Situação por oferta e conferência</summary>
         <ul className="activity-coverage" aria-label="Cobertura por oferta">
           {evidence.map((row) => (
-            <li key={row.modality}>
-              <strong>{labelFor(state, row.modality)}: </strong>
+            <li key={row.offerId}>
+              <strong>{labelFor(state, row.offerId)}: </strong>
               {row.applicability === 'optional'
                 ? 'Opcional'
                 : row.applicability === 'unconfigured'
@@ -86,12 +86,12 @@ export default function ActivityDetails({
                     ? 'sem critério normativo vinculado'
                     : 'aguardando revisão atualizada'}
               </small>
-              {offerFor(state, row.modality)?.kind === 'posgraduacao' && (
+              {offerFor(state, row.offerId)?.kind === 'posgraduacao' && (
                 <small>
                   Depende de norma própria; não há afirmação automática de conformidade.
                 </small>
               )}
-              {noteFor(row.modality) && <small>{noteFor(row.modality)}</small>}
+              {noteFor(row.offerId) && <small>{noteFor(row.offerId)}</small>}
               {row.issues.map((issue) => (
                 <small key={issue}>{issue}</small>
               ))}
@@ -126,7 +126,7 @@ export default function ActivityDetails({
                       counts[event.id]
                         .map(
                           (count) =>
-                            `${labelFor(state, count.modality)}: ${count.days} dias letivos (${count.saturdays} sábados; ${count.excluded} dias excluídos)`,
+                            `${labelFor(state, count.offerId)}: ${count.days} dias letivos (${count.saturdays} sábados; ${count.excluded} dias excluídos)`,
                         )
                         .join(' / ')
                     : ''}

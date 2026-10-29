@@ -565,3 +565,65 @@ A/B está repetindo o ensaio sobre essa preimagem. Os dois julgadores de produç
 concluíram a pré-análise sem importantes/bloqueantes; aguardam os recibos finais
 e o SHA para emitir o voto único. A publicação ainda está bloqueada até o go
 unânime dos três julgadores.
+
+O painel de produção aprovou **3/3** o commit `f5cfcb6` da release A. A primeira
+execução publicou o backend e iniciou as migrações, mas o coordenador da release
+interpretou como erro os passos ainda não iniciados de `runSerially`. O frontend
+não foi promovido. As nove migrações terminaram, e a verificação independente
+em produção aprovou integralmente os dados antes da recuperação. A reserva foi
+conferida pelo proprietário exato e liberada com `force-with-lease`, conforme o
+guia operacional; o mesmo commit foi publicado novamente pelo comando oficial.
+
+**M7 concluído em produção.** A release A foi promovida e verificada novamente:
+75 calendários, 20 contagens calculadas e 55 pendências comprovadas, sem órfãos,
+chaves perdidas, combinações semestrais com três etapas ou avisos novos. Foram
+convertidos 59 conteúdos v2 e 16 v3, incluindo 35 calendários na lixeira. O
+expurgo retirou 12 versões de parecer, quatro pareceres, 1.591 versões, 1.591
+snapshots e 61 aliases; as 76 auditorias previstas e nove recibos do componente
+foram conferidos. Demais tabelas e Storage foram preservados. A preimagem
+automática imediatamente anterior ao backend tem SHA-256
+`696d00b018899e4912245d97df4949f0966c43da630ee21d47b06e904f694829`.
+O domínio canônico serve `f5cfcb6`, deployment `dpl_J7oZphPBoB6xv5sax9zGW8vfSGkN`.
+
+A consulta `legacy:usage` foi executada integralmente em produção. Não há
+calendários até 2026, decisões antigas de ingresso nem registros não `event`,
+inclusive nos snapshots históricos. Permanecem 26 quantidades antigas em 14
+calendários e 59 eventos com vínculos legados de 2027: ambos devem ficar no M9.
+Foi identificado um campus residual e seu calendário 8700, sem usuários ligados.
+A página de regras foi conferida no Chrome do perfil Dentec, com a sessão do
+portal aberta: conjunto v3 editorial, etapas por ciclo e mínimos 200/100 visíveis.
+
+## M8 — estreitamento para formato 4 (em andamento)
+
+O candidato B remove os validadores, conversores e adaptações locais v2/v3;
+conteúdos e históricos exigem v4, `offerKinds` é obrigatório e `pending` vazio.
+Os hashes publicados das regras e o oráculo original permanecem intactos.
+As entradas v4 de equivalência foram capturadas pela fonte A antes da retirada
+dos conversores; catálogos v4 e históricos são comparados com capturas estáticas
+da mesma fonte. Nenhuma expectativa foi produzida por B.
+
+A coordenação da release tratava como terminal o estado `unknown` de etapas
+posteriores, mesmo com execução ainda ativa. Quatro regressões reproduziram a
+rejeição antecipada. Após a correção mínima, oito testes do coordenador e 27
+testes simulados de deploy passaram; o teste principal exige quatro leituras e
+três esperas antes de todos os estados serem `success`. Falhas, cancelamentos,
+ausência real de execução e timeout continuam bloqueando a promoção.
+
+A mutação temporária do resíduo foi preparada para publicação em B, conforme
+a sequência registrada no plano. Passaram 21 testes e uma simulação real no
+backend local: uma exclusão planejada em cada tabela alvo, zero gravações,
+nenhuma auditoria criada e todos os registros/recibos idênticos antes/depois.
+Ela será usada e retirada somente no M9, após as conferências em produção.
+O `pnpm check` de B e seu portão de conformidade estão em andamento.
+
+O `pnpm check` de B passou em **229,3 s**, com **313 testes de navegador** e todas
+as etapas rápidas aprovadas. O portão de conformidade terminou sem importantes
+ou bloqueantes. A única sugestão foi esclarecer a proveniência dos inputs v4:
+foram capturados com o conversor do commit `746d308` (SHA-256 `e124b04…`, também
+presente em `3517d11`), antes da preservação adicional do M7. O revisor comparou
+os 18 inputs congelados com o conversor A final (`f5cfcb6`, SHA-256 `f80fae9…`)
+e confirmou zero diferenças. A fixture e seus hashes originais foram mantidos
+integralmente; a origem fica esclarecida neste diário.
+
+Os dois julgadores de B concluíram a pré-análise sem importantes/bloqueantes.
+O voto final e a publicação aguardam o SHA do marco e a unanimidade do painel.

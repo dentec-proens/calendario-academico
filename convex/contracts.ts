@@ -2,8 +2,7 @@ import { v } from 'convex/values';
 import { publicMember } from './access/contracts';
 import {
   domainState,
-  contentStateV4,
-  historicalStateLegacy,
+  contentState,
   organization,
   calendarOffer,
   modality,
@@ -102,14 +101,10 @@ export const createInput = v.object({
   shifts: v.optional(v.string()),
   purpose: v.optional(purpose),
 });
-export const saveStateV4 = v.object({
-  ...contentStateV4.fields,
+export const saveState = v.object({
+  ...contentState.fields,
   year: v.number(),
   campus: v.string(),
-  teacherDayDate: v.optional(v.union(v.string(), v.null())),
-});
-const saveStateLegacy = v.object({
-  ...historicalStateLegacy.fields,
   teacherDayDate: v.optional(v.union(v.string(), v.null())),
 });
 const saveFields = {
@@ -117,12 +112,7 @@ const saveFields = {
   version: v.number(),
   catalogueRevision: v.number(),
 };
-export const saveInputV4 = v.object({ ...saveFields, state: saveStateV4 });
-// The legacy transport is accepted solely to return the update-required 409.
-export const saveInput = v.object({
-  ...saveFields,
-  state: v.union(saveStateV4, saveStateLegacy),
-});
+export const saveInput = v.object({ ...saveFields, state: saveState });
 export const baseSnapshotDto = v.object({
   rulesetVersion: v.optional(v.string()),
   revision: v.number(),

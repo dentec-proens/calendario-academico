@@ -4,8 +4,7 @@ import type { Member } from '../access/contracts';
 import { assertCampus } from '../lib/authorization';
 import type { Context } from '../lib/shared';
 import { fail, iso } from '../lib/shared';
-import type { DomainState, StoredContentState } from '../validators';
-import { convertCalendarV3 } from '../../src/domain/calendar/normalization/conversion-v4';
+import type { DomainState, ContentState } from '../validators';
 import { calendarAuthorship } from './authorship';
 
 export async function calendarRow(ctx: Context, user: Member, id: Id<'calendars'>, trash = false) {
@@ -30,7 +29,7 @@ export async function summary(ctx: Context, row: Doc<'calendars'>, campus: Doc<'
     name: calendarName(row.year, campus.name),
     campusId: row.campusId,
     year: row.year,
-    offerKinds: row.offerKinds ?? row.modalities ?? [],
+    offerKinds: row.offerKinds,
     purpose: row.purpose,
     courses: row.courses,
     classes: row.classes,
@@ -45,18 +44,11 @@ export async function summary(ctx: Context, row: Doc<'calendars'>, campus: Doc<'
 export function domainState(
   row: Doc<'calendars'>,
   campus: Doc<'campuses'>,
-  state: StoredContentState,
+  state: ContentState,
 ): DomainState {
-  const content =
-    state.schemaVersion === 4
-      ? state
-      : convertCalendarV3(state, {
-          year: row.year,
-          modalities: row.modalities ?? row.offerKinds ?? [],
-        });
   return {
-    ...content,
+    ...state,
     year: row.year,
     campus: campus.name,
-  } as DomainState;
+  };
 }

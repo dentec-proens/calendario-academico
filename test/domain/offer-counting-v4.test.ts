@@ -29,18 +29,12 @@ test('annual and semester undergraduate offers retain independent counting and m
   expect(
     checks
       .filter((check) => check.offerId === 'graduacao')
-      .map(({ scope, expected }) => ({
-        scope,
-        expected,
-      })),
+      .map(({ scope, expected }) => ({ scope, expected })),
   ).toEqual([{ scope: 'annual', expected: 200 }]);
   expect(
     checks
       .filter((check) => check.offerId === 'graduacao-2')
-      .map(({ scope, expected }) => ({
-        scope,
-        expected,
-      })),
+      .map(({ scope, expected }) => ({ scope, expected })),
   ).toEqual([
     { scope: 'annual', expected: 200 },
     { scope: 'graduacao-2-first', expected: 100 },
@@ -73,10 +67,10 @@ test('an exclusion uses the offer identity while minimums use that offer scope',
 test('assessment day counts select the suffixed offer and retain the annual ordinal', () => {
   const state = calendarOffersV4Fixture();
   expect(assessmentDayCounts(state, state.events)['graduacao-2-stage-1']).toEqual([
-    { modality: 'graduacao-2', offerId: 'graduacao-2', days: 55, saturdays: 0, excluded: 0 },
+    { offerId: 'graduacao-2', days: 55, saturdays: 0, excluded: 0 },
   ]);
   expect(assessmentDayCounts(state, state.events)['graduacao-2-stage-4']).toEqual([
-    { modality: 'graduacao-2', offerId: 'graduacao-2', days: 55, saturdays: 0, excluded: 0 },
+    { offerId: 'graduacao-2', days: 55, saturdays: 0, excluded: 0 },
   ]);
 });
 
@@ -107,10 +101,7 @@ test('duration and period recalculation select only the period associated offers
   expect(period.end).toBe('2027-03-05');
   expect(
     recalculatePeriods(
-      {
-        ...state,
-        periods: [{ ...period, association: { status: 'a-classificar' as const } }],
-      },
+      { ...state, periods: [{ ...period, association: { status: 'a-classificar' as const } }] },
       events,
     )[0].end,
   ).toBe('2027-03-05');
@@ -126,7 +117,6 @@ test('structure and readiness name the incomplete offer instead of its shared ki
   expect(diagnoseCalendar(state).structure).toEqual([
     {
       code: 'period-count',
-      modality: 'graduacao-2',
       offerId: 'graduacao-2',
       expected: 2,
       actual: 1,

@@ -18,15 +18,21 @@ const record = {
   version: 27,
   courses: 'Curso de teste',
   state: {
+    schemaVersion: 4 as const,
     year: 2027,
     campus: 'Pinhais',
-    offer: 'integrado',
-    modalities: ['integrado'],
-    regime: 'anual',
     weekdays: [],
     weekConfirmed: false,
     periods: [],
     events: [],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
   },
 };
 const oldIntroduction =

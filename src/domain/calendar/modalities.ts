@@ -1,8 +1,14 @@
+import type { CalendarOffer } from './model.ts';
 export { modalityLabels, selectableModalities } from './config.ts';
-export const calendarModalities = <T extends string>(state: { modalities?: T[] }): T[] =>
-  state.modalities ?? [];
 
-export function appliesTo(event: { modalities?: string[]; offers?: string[] }, offerId: string) {
-  const ids = event.offers ?? event.modalities;
-  return !ids?.length || ids.includes(offerId);
+/** Persisted institutional snapshots retain catalogue kinds; local records use offer identities. */
+export function appliesTo(
+  event: { offers?: string[]; institutional?: boolean; modalities?: string[] },
+  offer: string | Pick<CalendarOffer, 'id' | 'kind'>,
+) {
+  const id = typeof offer === 'string' ? offer : offer.id;
+  if (event.offers !== undefined) return !event.offers.length || event.offers.includes(id);
+  if (event.institutional === true && event.modalities?.length && typeof offer !== 'string')
+    return event.modalities.includes(offer.kind);
+  return true;
 }
