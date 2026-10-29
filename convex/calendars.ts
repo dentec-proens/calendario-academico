@@ -4,7 +4,7 @@ import { modalityIds } from '../src/domain/calendar/config';
 import { inspectBase, reconcileBase } from './calendars/base';
 import { assertWritesOpen, maintenanceAccess } from './lib/maintenance';
 import { normalizeCalendar } from '../src/domain/calendar/normalization/normalize';
-import { rulesetVersion } from '../src/domain/calendar/policies/resolve';
+import { rulesetVersion } from '../src/domain/policies/registry';
 import { inheritedEvents } from '../src/domain/institution/catalogue';
 import { query, mutation, internalQuery } from './_generated/server';
 import { requireNativeUser } from './access/identity';
@@ -22,7 +22,7 @@ import { currentDocuments } from './documents/model';
 import { appendAudit } from './lib/audit';
 import { calendarEditor, assertCampus } from './lib/authorization';
 import { pageBound } from './lib/pagination';
-import { fail, iso, text, clean } from './lib/shared';
+import { domainRule, fail, iso, text, clean } from './lib/shared';
 import * as validators from './validators';
 import { paginationOptsValidator } from 'convex/server';
 import { v, type Infer } from 'convex/values';
@@ -156,25 +156,27 @@ export const createCalendar = mutation({
       new Set(body.modalities).size !== body.modalities.length
     )
       fail('Selecione as formas de oferta/níveis do calendário.');
-    const state = normalizeCalendar({
-      schemaVersion: 3,
-      assessmentStagesByModality: {},
-      year: body.year,
-      campus: campus.name,
-      offer: body.modalities[0],
-      modalities: body.modalities,
-      regime: body.regime,
-      organizationByModality: Object.fromEntries(
-        body.modalities.map((modality) => [
-          modality,
-          body.regime === 'anual' || body.regime === 'semestral' ? body.regime : 'a-classificar',
-        ]),
-      ),
-      weekdays: [],
-      weekConfirmed: false,
-      periods: [],
-      events: [],
-    }) as validators.DomainState;
+    const state = domainRule(() =>
+      normalizeCalendar({
+        schemaVersion: 3,
+        assessmentStagesByModality: {},
+        year: body.year,
+        campus: campus.name,
+        offer: body.modalities[0],
+        modalities: body.modalities,
+        regime: body.regime,
+        organizationByModality: Object.fromEntries(
+          body.modalities.map((modality) => [
+            modality,
+            body.regime === 'anual' || body.regime === 'semestral' ? body.regime : 'a-classificar',
+          ]),
+        ),
+        weekdays: [],
+        weekConfirmed: false,
+        periods: [],
+        events: [],
+      }),
+    ) as validators.DomainState;
     const id = await ctx.db.insert('calendars', {
       campusId: campus._id,
       year: body.year,
@@ -230,19 +232,13 @@ export const saveCalendar = mutation({
       );
     const reconciliation = reconcileBase(compatibility, body.baseAcceptance);
     const savedContent = clean(content.state);
-    const prepared = (() => {
-      try {
-        return prepareCalendarSave(record.state, body.state, {
-          storedContent: savedContent,
-          catalogue: base,
-          recalculate: reconciliation.recalculate,
-        });
-      } catch (error) {
-        if (error instanceof Error && 'status' in error && error.status === 400)
-          fail(error.message);
-        throw error;
-      }
-    })();
+    const prepared = domainRule(() =>
+      prepareCalendarSave(record.state, body.state, {
+        storedContent: savedContent,
+        catalogue: base,
+        recalculate: reconciliation.recalculate,
+      }),
+    );
     // Convex validators constrain the transport; domain normalization preserves those literals.
     const state = prepared.state as validators.DomainState;
     const next = prepared.content as validators.ContentState;

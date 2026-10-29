@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { publicMember } from './authContracts';
+import { publicMember } from './access/contracts';
 import {
   domainState,
   modality,

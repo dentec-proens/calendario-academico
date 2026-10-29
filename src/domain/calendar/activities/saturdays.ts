@@ -2,6 +2,7 @@ import type { ActivityState, CalendarActivity, AssessmentSettings } from '../mod
 import { datesBetween, parseDate } from '../counting/core.ts';
 import { periodsForModality } from '../organization/periods.ts';
 import { calendarModalities } from '../modalities.ts';
+import { DomainError } from '../../errors.ts';
 
 export function monthSaturdays(year: number, month: number) {
   const prefix = `${year}-${String(month).padStart(2, '0')}`;
@@ -17,18 +18,18 @@ export function saturdayEvents(
   name: string,
   id: () => string,
 ) {
-  if (!dates.length) throw Error('Selecione pelo menos um sábado.');
-  if (!name.trim()) throw Error('Informe a atividade.');
+  if (!dates.length) throw new DomainError('Selecione pelo menos um sábado.');
+  if (!name.trim()) throw new DomainError('Informe a atividade.');
   const selected = [...new Set(dates)];
   for (const date of selected) {
     if (new Date(parseDate(date)).getUTCDay() !== 6 || Number(date.slice(0, 4)) !== state.year)
-      throw Error('Selecione sábados do ano do calendário.');
+      throw new DomainError('Selecione sábados do ano do calendário.');
     if (
       !calendarModalities(state).every((modality) =>
         periodsForModality(state, modality).some((p) => p.start <= date && date <= p.end),
       )
     )
-      throw Error(
+      throw new DomainError(
         'O sábado ' +
           date.split('-').reverse().join('/') +
           ' está fora dos períodos letivos. Cadastre ou ajuste o início e o término na etapa Períodos letivos e tente adicionar novamente.',

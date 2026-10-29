@@ -4,7 +4,7 @@ import { environments } from './config/environments.ts';
 import { defineConfig, loadEnv } from 'vite';
 import type { Plugin } from 'vite';
 import { fileURLToPath } from 'node:url';
-import { pageDocument } from './src/app-routes.ts';
+import { pageDocument } from './src/app/routes.ts';
 import { validateProductionBuild } from './scripts/environment.ts';
 import { validatePortalDeploymentUrl } from './config/client-deployment.ts';
 

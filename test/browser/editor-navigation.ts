@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect } from './test.ts';
-import type { EditorSection } from '../../src/app-routes.ts';
+import type { EditorSection } from '../../src/app/routes.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 /** Use the same expandable step picker offered to people on smaller screens. */

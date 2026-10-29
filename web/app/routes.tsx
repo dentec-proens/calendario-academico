@@ -1,6 +1,6 @@
 import { controlledLazy as lazy } from './controlled-lazy.tsx';
 import { createRootRouteWithContext, createRoute, redirect } from '@tanstack/react-router';
-import { parseEditorPath, type PortalPageId } from '../../src/app-routes.ts';
+import { parseEditorPath, type PortalPageId } from '#src/app/routes.ts';
 import type { PortalPermissions } from '../portal/permissions.ts';
 import { portalPermissions } from '../portal/permissions.ts';
 import type { SessionState } from './session.tsx';
@@ -9,9 +9,9 @@ import RootLayout from './layouts/RootLayout.tsx';
 import WorkspaceLayout from './layouts/WorkspaceLayout.tsx';
 import AuthenticatedLayout from './layouts/AuthenticatedLayout.tsx';
 import { ApplicationError, NotFoundPage } from './errors.tsx';
-import { loginReturnTarget } from '../../src/login-return.ts';
+import { loginReturnTarget } from '#src/app/login-return.ts';
 import { editorPages } from '../features/calendar-editor/editor-steps.ts';
-import { calendarReferenceAnchor, isCalendarReferenceHash } from '../../src/calendar-reference.ts';
+import { calendarReferenceAnchor, isCalendarReferenceHash } from '#src/app/calendar-reference.ts';
 
 export interface ApplicationContext {
   session: SessionState;

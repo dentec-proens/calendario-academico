@@ -1,3 +1,4 @@
+import { policyFor } from '#src/domain/policies/registry.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Select } from './fields.tsx';
@@ -20,13 +21,14 @@ export default function ScopeForm() {
     }));
     requestAnimationFrame(() => document.getElementById('scope-summary')?.focus());
   });
-  if (state.year !== 2027) return null;
+  const scope = policyFor(state.year).scope;
+  if (!scope) return null;
   return (
     <div className="panel">
       <h3>Norma aplicável ao calendário</h3>
       <p className="help">
-        A referência institucional de 2027 é a Resolução 292. Confirme se ela abrange os cursos
-        deste calendário. A oferta, sozinha, não identifica essa aplicação.
+        A referência institucional de {state.year} é a {scope.norm}. Confirme se ela abrange os
+        cursos deste calendário. A oferta, sozinha, não identifica essa aplicação.
       </p>
       <details open={!state.scopeConfirmation}>
         <summary id="scope-summary">
@@ -38,7 +40,7 @@ export default function ScopeForm() {
               {(field) => (
                 <Select field={field} id="calendar-scope" label="Norma aplicável">
                   <option value="">Selecione</option>
-                  <option value="covered">Resolução 292 — técnico ou graduação abrangido</option>
+                  <option value="covered">{`${scope.norm} — técnico ou graduação abrangido`}</option>
                   <option value="own-regulation">
                     Norma própria — EaD, qualificação, pós ou outro caso
                   </option>
@@ -46,7 +48,7 @@ export default function ScopeForm() {
               )}
             </form.Field>
             <p className="help">
-              Calendários com norma própria permanecem sem conclusão automática pela Resolução 292.
+              Calendários com norma própria permanecem sem conclusão automática pela {scope.norm}.
             </p>
             <button type="submit">Confirmar norma</button>
             <FormFeedback error={error} />

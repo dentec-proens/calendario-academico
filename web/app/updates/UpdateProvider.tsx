@@ -22,7 +22,7 @@ import {
 import { Notice } from '../../components/ui/Notice.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 import { documentTransition } from './transition.ts';
-import { portalPageForPath } from '../../../src/app-routes.ts';
+import { portalPageForPath } from '#src/app/routes.ts';
 import { createVersionDetector, recentDifference } from './detector.ts';
 import { createAttemptPolicy } from './attempts.ts';
 import './updates.css';

@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readFile, writeFile, rm, copyFile } from 'node:fs/promi
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { build } from 'vite';
-import { staticPortal } from '../../src/app-server.ts';
+import { staticPortal } from '../../src/runtime/app-server.ts';
 import type { Cleanup } from './test.ts';
 import { retainFrontendAssets } from '../../scripts/frontend-assets.ts';
 

@@ -16,9 +16,9 @@ import { EventEditorProvider, useEventEditor } from './events/EventEditorProvide
 import EventPanel from './events/EventPanel.tsx';
 import { CalendarExportProvider, useCalendarExport } from './export/CalendarExportProvider.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
-import { editorSections } from '../../../src/app-routes.ts';
+import { editorSections } from '#src/app/routes.ts';
 import { editorPages, editorSteps, editorNavigation, continueLabel } from './editor-steps.ts';
-import { modalityLabels } from '../../../src/domain/calendar/modalities.ts';
+import { modalityLabels } from '#src/domain/calendar/modalities.ts';
 import EditorSteps from './EditorSteps.tsx';
 import TeachingDaySummary from './TeachingDaySummary.tsx';
 import BaseUpdateCard from './BaseUpdateCard.tsx';

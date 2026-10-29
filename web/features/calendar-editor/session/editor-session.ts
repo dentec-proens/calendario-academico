@@ -1,10 +1,10 @@
 import type { CalendarRecord, CalendarState, CalendarSave } from '../types.ts';
-import { equalValues } from '../../../../src/equal.ts';
+import { equalValues } from '#src/shared/equal.ts';
 import { createAutosaver } from '../../../autosave.ts';
 import type { AutosaveStatus } from '../../../autosave.ts';
-import { inspectCalendar, reconcile } from '../../../../src/domain/calendar/base.ts';
-import { convertCalendarV2 } from '../../../../src/domain/calendar/normalization/conversion.ts';
-import { rulesetVersion } from '../../../../src/domain/calendar/policies/resolve.ts';
+import { inspectCalendar, reconcile } from '#src/domain/calendar/base.ts';
+import { convertCalendarV2 } from '#src/domain/calendar/normalization/conversion.ts';
+import { rulesetVersion } from '#src/domain/policies/registry.ts';
 
 export interface EditorSnapshot {
   record: CalendarRecord;

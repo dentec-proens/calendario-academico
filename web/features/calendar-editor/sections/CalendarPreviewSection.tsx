@@ -1,10 +1,10 @@
-import { proensLayout } from '../../../../src/printing/calendar-layout.ts';
+import { proensLayout } from '#src/printing/calendar-layout.ts';
 import logoUrl from '../../../../assets/printing/ifpr-logo.png?url';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarExport } from '../export/CalendarExportProvider.tsx';
 import '../../../../assets/printing/calendar.css';
-import { activityChecklist } from '../../../../src/domain/calendar/activities/checklist.ts';
-import { modalityLabels } from '../../../../src/domain/calendar/modalities.ts';
+import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { modalityLabels } from '#src/domain/calendar/modalities.ts';
 import { useEventEditor } from '../events/EventEditorProvider.tsx';
 import EventRecordDetails from '../events/EventRecordDetails.tsx';
 

@@ -15,7 +15,7 @@ import { eventCategory, validCategory } from '../activities/categories.ts';
 import { isStageRequirementId } from '../activities/metadata.ts';
 import { datesBetween } from '../counting/core.ts';
 import { convertCalendarV2 } from './conversion.ts';
-import { rulesetVersion } from '../policies/resolve.ts';
+import { rulesetVersion } from '../../policies/registry.ts';
 import { organizationSummary, samePeriodScope } from '../organization/periods.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
 

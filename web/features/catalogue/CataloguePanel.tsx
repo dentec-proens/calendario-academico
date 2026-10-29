@@ -3,8 +3,8 @@ import { Button } from '../../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 import { useEffect, useRef } from 'react';
 import { Pencil, Save, X } from 'lucide-react';
-import { categories } from '../../../src/domain/calendar/activities/categories.ts';
-import { modalityLabels, selectableModalities } from '../../../src/domain/calendar/modalities.ts';
+import { categories } from '#src/domain/calendar/activities/categories.ts';
+import { modalityLabels, selectableModalities } from '#src/domain/calendar/modalities.ts';
 import { institution } from '../../shared/convex/institution.ts';
 import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
 

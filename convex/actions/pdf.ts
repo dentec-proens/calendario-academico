@@ -1,9 +1,9 @@
 'use node';
 import { withActionLease } from '../lib/maintenance';
-import { nativePdf } from '../../src/native-pdf';
+import { nativePdf } from '../../src/runtime/pdf/native-pdf';
 import { internal } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
-import { chromiumArchives, parseChromiumManifest } from '../../src/printing/chromium-manifest';
+import { chromiumArchives, parseChromiumManifest } from '../../src/runtime/pdf/chromium-manifest';
 import { action } from '../_generated/server';
 import { pdfRequest, fileDownload } from '../validators';
 import type { Infer } from 'convex/values';

@@ -2,7 +2,7 @@ import {
   isYearSaturday,
   type YearMonth,
   type YearSaturday,
-} from '../../../../src/domain/calendar/activities/saturdays.ts';
+} from '#src/domain/calendar/activities/saturdays.ts';
 
 const weekdays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'SÁB'];
 

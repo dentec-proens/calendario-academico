@@ -3,7 +3,7 @@ import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import type { reviews } from '../../web/shared/convex/reviews.ts';
 import { initialConclusion } from '../../src/domain/reviews/conclusion.ts';
-import { reviewSupport } from '../../src/domain/reviews/support.ts';
+import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
 import { getFunctionName, type FunctionReference } from 'convex/server';
 import type { Bootstrap } from '../../web/shared/convex/types.ts';
 

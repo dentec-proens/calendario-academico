@@ -50,7 +50,7 @@ export default function BaseUpdateCard() {
   const hasDocuments =
     documents.added.length + documents.changed.length + documents.removed.length > 0;
   const title = hasRules
-    ? 'Regras de 2027 atualizadas: nova revisão necessária'
+    ? `Regras de ${latest.state.year} atualizadas: nova revisão necessária`
     : hasEvents
       ? 'Há mudanças que afetam este calendário'
       : 'Documentos de referência atualizados';

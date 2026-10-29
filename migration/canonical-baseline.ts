@@ -20,8 +20,10 @@ function record(value: unknown): Document {
   return value as Document;
 }
 async function load(root: string): Promise<Rules> {
-  async function exported(current: string, legacy: string, name: string): Promise<Fn> {
-    const file = existsSync(resolve(root, current)) ? current : legacy;
+  // Candidates go from the current layout to the oldest; archives keep the layout of their time.
+  async function exported(candidates: string[], name: string): Promise<Fn> {
+    const file =
+      candidates.find((candidate) => existsSync(resolve(root, candidate))) ?? candidates.at(-1)!;
     const module = (await import(pathToFileURL(resolve(root, file)).href)) as Record<
       string,
       unknown
@@ -31,11 +33,17 @@ async function load(root: string): Promise<Rules> {
     return fn as Fn;
   }
   const [count, layout, review, inherited, readiness] = await Promise.all([
-    exported('src/domain/calendar/counting/evaluation.ts', 'src/evaluation.ts', 'evaluateCalendar'),
-    exported('src/printing/calendar-layout.ts', 'src/printing/calendar-layout.ts', 'proensLayout'),
-    exported('src/domain/reviews/support.ts', 'src/review.ts', 'reviewSupport'),
-    exported('src/domain/institution/catalogue.ts', 'src/institution.ts', 'inheritedEvents'),
-    exported('src/domain/calendar/readiness.ts', 'src/release.ts', 'releaseReadiness'),
+    exported(
+      ['src/domain/calendar/counting/evaluation.ts', 'src/evaluation.ts'],
+      'evaluateCalendar',
+    ),
+    exported(['src/printing/calendar-layout.ts'], 'proensLayout'),
+    exported(
+      ['src/domain/reviews/technical-support.ts', 'src/domain/reviews/support.ts', 'src/review.ts'],
+      'reviewSupport',
+    ),
+    exported(['src/domain/institution/catalogue.ts', 'src/institution.ts'], 'inheritedEvents'),
+    exported(['src/domain/calendar/readiness.ts', 'src/release.ts'], 'releaseReadiness'),
   ]);
   return { count, layout, review, inherited, readiness };
 }

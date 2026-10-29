@@ -1,8 +1,8 @@
 import { ChevronDown, X } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
-import { modalityLabels } from '../../../src/domain/calendar/modalities.ts';
-import { periodsForModality } from '../../../src/domain/calendar/organization/periods.ts';
-import { evaluateCalendar } from '../../../src/domain/calendar/counting/evaluation.ts';
+import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { periodsForModality } from '#src/domain/calendar/organization/periods.ts';
+import { evaluateCalendar } from '#src/domain/calendar/counting/evaluation.ts';
 import { useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import './teaching-day-summary.css';
 

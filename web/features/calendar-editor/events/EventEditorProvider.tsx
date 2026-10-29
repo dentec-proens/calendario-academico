@@ -18,10 +18,10 @@ import {
   type EventContext,
   type EventValues,
 } from './event-draft.ts';
-import { applyEvent } from '../../../../src/domain/calendar/commands.ts';
-import { activityChecklist } from '../../../../src/domain/calendar/activities/checklist.ts';
-import { stageRequirement } from '../../../../src/domain/calendar/activities/assessment.ts';
-import { rulesetVersion } from '../../../../src/domain/calendar/policies/resolve.ts';
+import { applyEvent } from '#src/domain/calendar/commands/events.ts';
+import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
+import { rulesetVersion } from '#src/domain/policies/registry.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { editorPages } from '../editor-steps.ts';
 

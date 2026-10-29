@@ -1,7 +1,7 @@
 import { assertWritesOpen } from './lib/maintenance';
 import { query, mutation, internalQuery, internalMutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
-import type { Member } from './authContracts';
+import type { Member } from './access/contracts';
 import { globalRevision, bumpRevision } from './catalogue/model';
 import { documentValue, documentDto } from './documents/model';
 import { appendAudit } from './lib/audit';

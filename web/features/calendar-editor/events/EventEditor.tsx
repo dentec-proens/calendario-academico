@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { categories } from '../../../../src/domain/calendar/activities/categories.ts';
-import { modalityLabels } from '../../../../src/domain/calendar/modalities.ts';
-import { activityChecklist } from '../../../../src/domain/calendar/activities/checklist.ts';
-import { applicabilityFor } from '../../../../src/domain/calendar/policies/resolve.ts';
+import { categories } from '#src/domain/calendar/activities/categories.ts';
+import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { applicabilityFor, policyFor } from '#src/domain/policies/registry.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { eventTypes, noticeActive, recordOffers } from './event-draft.ts';
@@ -15,6 +15,7 @@ import { Notice } from '../../../components/ui/Notice.tsx';
 
 export default function EventEditor() {
   const { state, readOnly } = useCalendarEditor();
+  const regularAdmissionNotice = policyFor(state.year).notices?.regularAdmission;
   const editor = useEventEditor();
   const { form, values } = editor;
   const heading = useRef<HTMLHeadingElement>(null);
@@ -395,12 +396,8 @@ export default function EventEditor() {
                   )}
                 </form.Field>
               </div>
-              {values.admissionType === 'regular' && state.year === 2027 && (
-                <Notice tone="info">
-                  Art. 10: publicação do processo seletivo de 2028 até 15/06/2027. O prazo não
-                  preenche a data de publicação. Cronograma ajustado pela Proens exige conferência
-                  institucional.
-                </Notice>
+              {values.admissionType === 'regular' && regularAdmissionNotice && (
+                <Notice tone="info">{regularAdmissionNotice}</Notice>
               )}
               {values.admissionType === 'transfer' && (
                 <p className="help">

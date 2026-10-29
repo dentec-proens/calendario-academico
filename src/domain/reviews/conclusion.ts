@@ -1,4 +1,4 @@
-import type { reviewSupport } from './support.ts';
+import type { reviewSupport } from './technical-support.ts';
 import { reviewNorm } from './citation.ts';
 import type { ReviewEntry } from '../calendar/model.ts';
 export const partialConclusion =
@@ -7,7 +7,7 @@ export const favorableConclusion =
   'Como o Calendário Acadêmico e Administrativo proposto atende integralmente aos requisitos da Resolução Consup/IFPR nº XXX/2026, manifesta-se parecer favorável à proposta e encaminha-se o processo à Proens para aprovação.';
 
 export function suggestedConclusion(
-  criteria: { id: string }[],
+  criteria: readonly { id: string }[],
   entries: ReviewEntry[],
   norm?: string,
 ) {
@@ -27,7 +27,7 @@ export function suggestedConclusion(
 
 export function updateConclusion(
   text: string | undefined | null,
-  criteria: { id: string }[],
+  criteria: readonly { id: string }[],
   entries: ReviewEntry[],
   norm?: string,
 ) {

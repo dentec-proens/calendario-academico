@@ -1,6 +1,6 @@
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
-import type { Member } from '../authContracts';
+import type { Member } from './contracts';
 import type { Context } from './identity';
 import { internal } from '../_generated/api';
 import { purgeUserSessions } from './cleanup';

@@ -6,9 +6,9 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { WorkerMessageHandler } from 'pdfjs-dist/legacy/build/pdf.worker.mjs';
 import { writePrintAssets } from '../../scripts/print-assets.ts';
 import { prepareChromiumResources } from '../../scripts/chromium-resources.ts';
-import { chromiumArchives, chromiumVersion } from '../../src/printing/chromium-manifest.ts';
-import type { ChromiumRuntime } from '../../src/printing/chromium-manifest.ts';
-import type { nativePdf as NativePdf } from '../../src/native-pdf.ts';
+import { chromiumArchives, chromiumVersion } from '../../src/runtime/pdf/chromium-manifest.ts';
+import type { ChromiumRuntime } from '../../src/runtime/pdf/chromium-manifest.ts';
+import type { nativePdf as NativePdf } from '../../src/runtime/pdf/native-pdf.ts';
 
 // Parse the real browser output without downloading a PDF.js worker or fonts.
 (
@@ -46,7 +46,7 @@ beforeAll(async () => {
     })),
   };
   await writePrintAssets();
-  ({ nativePdf } = await import('../../src/native-pdf.ts'));
+  ({ nativePdf } = await import('../../src/runtime/pdf/native-pdf.ts'));
 });
 afterAll(async () => {
   if (!resourceServer) return;

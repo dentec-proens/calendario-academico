@@ -1,6 +1,6 @@
 import { assertWritesOpen } from '../lib/maintenance';
 import { query, internalQuery, internalMutation } from '../_generated/server';
-import { publicMember } from '../authContracts';
+import { publicMember } from './contracts';
 import { memberFromRow, requireNativeUser, requireRecentAdmin, safeMember } from './identity';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';

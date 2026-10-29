@@ -9,10 +9,11 @@ import type {
   IntakeConfiguration,
   CalendarConversion,
 } from '../model.ts';
+import { DomainError } from '../../errors.ts';
 
 /** JSON boundary shared by file imports and the domain normalizer. */
-export const invalidCalendar = (message: string, status = 400): never => {
-  throw Object.assign(Error(message), { status });
+export const invalidCalendar = (message: string, status: 400 | 409 = 400): never => {
+  throw new DomainError(message, status);
 };
 const object = (value: unknown): Record<string, unknown> => {
   if (!value || typeof value !== 'object' || Array.isArray(value))

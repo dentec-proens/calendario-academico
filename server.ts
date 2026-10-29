@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { staticPortal } from './src/app-server.ts';
+import { staticPortal } from './src/runtime/app-server.ts';
 
 try {
   process.loadEnvFile('.env.local');

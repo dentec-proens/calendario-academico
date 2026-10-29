@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import {
   activityStatusLabels,
   type ActivityStatus,
-} from '../../../../src/domain/calendar/activities/status.ts';
+} from '#src/domain/calendar/activities/status.ts';
 
 type Props = Omit<ComponentProps<'button'>, 'children' | 'type' | 'className' | 'aria-current'> & {
   label: string;

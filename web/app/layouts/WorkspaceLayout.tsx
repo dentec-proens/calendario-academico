@@ -12,7 +12,7 @@ import {
   ScrollText,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
-import { portalPaths } from '../../../src/app-routes.ts';
+import { portalPaths } from '#src/app/routes.ts';
 import { useAppSession } from '../session.tsx';
 import { scrollIntoView } from '../../scroll.ts';
 

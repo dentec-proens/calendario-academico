@@ -1,6 +1,6 @@
 import type { Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
-import type { Member } from '../authContracts';
+import type { Member } from '../access/contracts';
 import type { auditTarget } from '../validators';
 import type { Infer } from 'convex/values';
 

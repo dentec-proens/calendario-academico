@@ -10,10 +10,11 @@ import { datesBetween } from '../counting/core.ts';
 import { assessmentIntervalIssue } from '../activities/assessment-intervals.ts';
 import { calendarModalities, appliesTo, modalityLabels } from '../modalities.ts';
 import { organizationForModality, organizationSummary, periodsForModality } from './periods.ts';
-import { rulesetVersion } from '../policies/resolve.ts';
+import { rulesetVersion } from '../../policies/registry.ts';
 import { activityChecklist } from '../activities/checklist.ts';
 import { stageRequirement } from '../activities/assessment.ts';
 import { normalizeCalendar } from '../normalization/normalize.ts';
+import { DomainError } from '../../errors.ts';
 
 export interface OrganizationPeriodDraft {
   sourceId: string;
@@ -89,15 +90,18 @@ function withOffer<S extends ActivityState>(state: S, modality: string): S {
 /** New offers must arrive with their complete independent periods and stages. */
 export function validateAddedOffers(previous: readonly string[], next: ActivityState) {
   if (previous.some((modality) => !calendarModalities(next).includes(modality)))
-    throw new Error('Ofertas existentes não podem ser removidas por esta operação.');
+    throw new DomainError('Ofertas existentes não podem ser removidas por esta operação.');
   for (const modality of calendarModalities(next).filter(
     (modality) => !previous.includes(modality),
   )) {
-    if (!modalityIds.some((allowed) => allowed === modality)) throw new Error('Oferta inválida.');
+    if (!modalityIds.some((allowed) => allowed === modality))
+      throw new DomainError('Oferta inválida.');
     const draft = offerOrganizationDraft(next, modality);
     const issues = offerOrganizationIssues(next, modality, draft);
     if (issues.length)
-      throw new Error(`Configure a nova oferta ${modalityLabels[modality]}: ${issues[0].message}`);
+      throw new DomainError(
+        `Configure a nova oferta ${modalityLabels[modality]}: ${issues[0].message}`,
+      );
     const organization = organizationForModality(next, modality);
     const expected =
       organization === 'semestral' ? termsByOrganization.semestral : termsByOrganization.anual;
@@ -114,7 +118,7 @@ export function validateAddedOffers(previous: readonly string[], next: ActivityS
       ) ||
       stages.length !== Number(draft.count)
     )
-      throw new Error(
+      throw new DomainError(
         `Defina os períodos e todas as etapas da nova oferta ${modalityLabels[modality]} antes de aplicar.`,
       );
   }
@@ -246,7 +250,7 @@ export function applyOfferOrganization<S extends ActivityState>(
   id: () => string,
 ): S {
   const issues = offerOrganizationIssues(state, modality, draft);
-  if (issues.length) throw new Error(issues[0].message);
+  if (issues.length) throw new DomainError(issues[0].message);
   state = withOffer(state, modality);
   const count = Number(draft.count);
   const organization: 'anual' | 'semestral' =
@@ -257,12 +261,12 @@ export function applyOfferOrganization<S extends ActivityState>(
   const sourceIds = new Set(selected.map((period) => period.sourceId).filter(Boolean));
   for (const source of sourceIds) {
     const existing = state.periods.find((period) => period.id === source);
-    if (!existing) throw new Error('O período mudou. Reabra a organização desta oferta.');
+    if (!existing) throw new DomainError('O período mudou. Reabra a organização desta oferta.');
     if (
       existing.association?.status === 'defined' &&
       !existing.association.modalities.includes(modality)
     )
-      throw new Error('O período selecionado pertence a outra oferta.');
+      throw new DomainError('O período selecionado pertence a outra oferta.');
   }
   const retained = state.periods.flatMap((period) => {
     if (period.association?.status !== 'defined') return sourceIds.has(period.id) ? [] : [period];

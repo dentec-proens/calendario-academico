@@ -7,9 +7,9 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { createBrotliDecompress, createGzip } from 'node:zlib';
-import { chromiumArchives, chromiumVersion } from '../src/printing/chromium-manifest.ts';
-import type { ChromiumArchiveName } from '../src/printing/chromium-manifest.ts';
-import { extractChromiumTar } from '../src/printing/chromium-runtime.ts';
+import { chromiumArchives, chromiumVersion } from '../src/runtime/pdf/chromium-manifest.ts';
+import type { ChromiumArchiveName } from '../src/runtime/pdf/chromium-manifest.ts';
+import { extractChromiumTar } from '../src/runtime/pdf/chromium-runtime.ts';
 import { root } from './environment.ts';
 
 const armPackHash = 'b6874fc0d7af15e16a15ef1b73177731f698c296c73d26aa4a90840c0777a338';

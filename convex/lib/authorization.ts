@@ -1,5 +1,5 @@
 import type { Id } from '../_generated/dataModel';
-import type { Member } from '../authContracts';
+import type { Member } from '../access/contracts';
 import { fail } from './shared';
 
 export function admin(user: Member) {

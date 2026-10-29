@@ -2,7 +2,7 @@ import { inspectBase } from './base';
 import { releaseReadiness } from '../../src/domain/calendar/readiness';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
-import type { Member } from '../authContracts';
+import type { Member } from '../access/contracts';
 import { catalogue } from '../catalogue/model';
 import type * as contracts from '../contracts';
 import { documentDto, currentDocuments } from '../documents/model';

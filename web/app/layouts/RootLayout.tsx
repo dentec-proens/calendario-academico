@@ -8,7 +8,7 @@ import { sessionIdentity, useSessionState } from '../session.tsx';
 import { clearPrivateLinkWhenLeaving } from '../private-links.ts';
 import { FormDraftProvider } from '../../shared/forms/drafts.tsx';
 import { DevelopmentTools } from '../devtools.tsx';
-import { parseEditorPath } from '../../../src/app-routes.ts';
+import { parseEditorPath } from '#src/app/routes.ts';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { useArrivalFocus } from '../arrival-focus.ts';
 import ifprLogo from '../../assets/ifpr-logo-horizontal.png';

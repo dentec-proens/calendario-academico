@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { nativeError } from '../convex/errors.ts';
 import { useFormDrafts } from './drafts.tsx';
-import { equalValues } from '../../../src/equal.ts';
+import { equalValues } from '#src/shared/equal.ts';
 
 interface DraftFormOptions<T extends object> {
   defaultValues: T;

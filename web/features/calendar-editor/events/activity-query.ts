@@ -1,6 +1,6 @@
 import { useSearch } from '@tanstack/react-router';
 import { applicationSearch } from '../../../app/search.ts';
-export { activityGroups } from '../../../../src/domain/calendar/activities/metadata.ts';
+export { activityGroups } from '#src/domain/calendar/activities/metadata.ts';
 export const civilDate = (date: string) => date.split('-').reverse().join('/');
 
 /**

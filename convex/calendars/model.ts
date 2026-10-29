@@ -1,6 +1,6 @@
 import { calendarName } from '../../src/domain/calendar/label';
 import type { Doc, Id } from '../_generated/dataModel';
-import type { Member } from '../authContracts';
+import type { Member } from '../access/contracts';
 import { assertCampus } from '../lib/authorization';
 import type { Context } from '../lib/shared';
 import { fail, iso } from '../lib/shared';

@@ -5,7 +5,7 @@ import { convex, useFixtureAuth } from './editor-session-client.ts';
 import { AppSessionProvider } from '../../web/app/session.tsx';
 import { ApplicationRouter } from '../../web/app/router.tsx';
 import ConfirmationDialogHost from '../../web/components/ConfirmationDialog.tsx';
-import { editorUrl } from '../../src/app-routes.ts';
+import { editorUrl } from '../../src/app/routes.ts';
 import '../../web/style.css';
 import '../../web/portal.css';
 import '../../web/portal/react-portal.css';

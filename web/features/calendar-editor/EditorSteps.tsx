@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import type { EditorSection } from '../../../src/app-routes.ts';
+import type { EditorSection } from '#src/app/routes.ts';
 import { editorNavigation, editorSteps } from './editor-steps.ts';
 
 export default function EditorSteps({

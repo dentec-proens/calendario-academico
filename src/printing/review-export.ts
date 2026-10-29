@@ -2,7 +2,7 @@ import type { AssessmentSettings, ReviewEntry } from '../domain/calendar/model.t
 import { calendarModalities, modalityLabels } from '../domain/calendar/modalities.ts';
 import { reviewNorm } from '../domain/reviews/citation.ts';
 import { reviewCriteriaFor, reviewSourceFor } from '../domain/reviews/criteria.ts';
-import { rulesetVersion } from '../domain/calendar/policies/resolve.ts';
+import { rulesetVersion } from '../domain/policies/registry.ts';
 
 const esc = (s: string | number | undefined | null) =>
   String(s ?? '').replace(

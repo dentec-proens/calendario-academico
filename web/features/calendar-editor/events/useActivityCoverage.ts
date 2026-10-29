@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { activityCoverage } from '../../../../src/domain/calendar/activities/coverage.ts';
-import { assessmentDayCounts } from '../../../../src/domain/calendar/counting/assessment-days.ts';
-import { activityStatus } from '../../../../src/domain/calendar/activities/status.ts';
+import { activityCoverage } from '#src/domain/calendar/activities/coverage.ts';
+import { assessmentDayCounts } from '#src/domain/calendar/counting/assessment-days.ts';
+import { activityStatus } from '#src/domain/calendar/activities/status.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 
 /** Per-offer coverage, card status and stage day counts shared by the list and the side panel. */

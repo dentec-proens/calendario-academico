@@ -1,8 +1,9 @@
 import { Pencil, Trash2 } from 'lucide-react';
-import { modalityLabels } from '../../../../src/domain/calendar/modalities.ts';
-import { removeEvent } from '../../../../src/domain/calendar/commands.ts';
-import { activityStatusLabels } from '../../../../src/domain/calendar/activities/status.ts';
-import type { ActivityRequirement } from '../../../../src/domain/calendar/model.ts';
+import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { removeEvent } from '#src/domain/calendar/commands/events.ts';
+import { activityStatusLabels } from '#src/domain/calendar/activities/status.ts';
+import type { ActivityRequirement } from '#src/domain/calendar/model.ts';
+import { policyFor } from '#src/domain/policies/registry.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { useActivityCoverage } from './useActivityCoverage.ts';
@@ -23,6 +24,7 @@ export default function ActivityDetails({
   const { rowsFor, statusFor, counts } = useActivityCoverage();
   const evidence = rowsFor(item.id);
   const summary = statusFor(item.id);
+  const policy = policyFor(state.year);
   const registered = state.events.filter((event) => event.requirementId === item.id);
   const stage = item.variant === 'stage';
   const preparing = editor.open && editor.context?.kind === 'activity' && !editor.eventId;
@@ -83,11 +85,9 @@ export default function ActivityDetails({
                   Depende de norma própria; não há afirmação automática de conformidade.
                 </small>
               )}
-              {state.year === 2027 &&
-                row.modality === 'integrado' &&
-                /^(enrolment|adjustment|withdrawal)-/.test(item.id) && (
-                  <small>Não exigido por este inciso para o integrado; cadastro permitido.</small>
-                )}
+              {policy.applicabilityNote?.(item.id, row.modality) && (
+                <small>{policy.applicabilityNote(item.id, row.modality)}</small>
+              )}
               {row.issues.map((issue) => (
                 <small key={issue}>{issue}</small>
               ))}

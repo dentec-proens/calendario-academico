@@ -4,7 +4,7 @@ import { internal } from '../_generated/api';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
 import { query, mutation, action, internalMutation } from '../_generated/server';
-import { memberRole, invitationResult } from '../authContracts';
+import { memberRole, invitationResult } from './contracts';
 import { passwordCrypto, validatePassword } from '../authCrypto';
 import type { Context } from './identity';
 import { institutionalEmail, requireRecentAdmin, storedMember } from './identity';

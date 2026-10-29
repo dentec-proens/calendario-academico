@@ -1,5 +1,6 @@
 import { calendarLimits } from '../calendar/config.ts';
 import { datesBetween } from '../calendar/counting/core.ts';
+import { DomainError } from '../errors.ts';
 
 // Explicit institutional event identity: no other holiday can be moved by a campus.
 export const teacherDayId = 'inst:ifpr2027-16';
@@ -10,7 +11,7 @@ export function teacherDayWeek(year: number) {
     year < calendarLimits.minimumYear ||
     year > calendarLimits.maximumYear
   )
-    throw Error('Ano inválido.');
+    throw new DomainError('Ano inválido.');
   const date = new Date(`${year}-10-15T00:00:00Z`);
   const start = new Date(date.getTime() - ((date.getUTCDay() + 6) % 7) * 86400000);
   return {
@@ -21,13 +22,13 @@ export function teacherDayWeek(year: number) {
 
 export function validateTeacherDay(date: unknown, year: number) {
   if (date === undefined || date === null || date === '') return undefined;
-  if (typeof date !== 'string') throw Error('Data do Dia do Professor inválida.');
+  if (typeof date !== 'string') throw new DomainError('Data do Dia do Professor inválida.');
   datesBetween(date, date);
   if (Number(date.slice(0, 4)) !== year)
-    throw Error('O Dia do Professor deve permanecer no ano do calendário.');
+    throw new DomainError('O Dia do Professor deve permanecer no ano do calendário.');
   const week = teacherDayWeek(year);
   if (date < week.start || date > week.end)
-    throw Error(
+    throw new DomainError(
       'Escolha uma data na semana de 15 de outubro: ' +
         week.start.split('-').reverse().join('/') +
         ' a ' +
@@ -48,7 +49,7 @@ export function campusInstitutionalEvents<
 >(events: T[], state: { year: number; teacherDayDate?: string | null }): T[] {
   const date = validateTeacherDay(state.teacherDayDate, state.year);
   if (date && !events.some((e) => e.id === teacherDayId))
-    throw Error('Dia do Professor não disponível na base deste calendário.');
+    throw new DomainError('Dia do Professor não disponível na base deste calendário.');
   return events.map((e) => {
     if (e.id !== teacherDayId) return e;
     const originalStart = e.originalStart || e.start,

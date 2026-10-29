@@ -4,9 +4,8 @@ import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
 import { printLogo } from './assets.generated.mjs';
 import { calendarModalities, modalityLabels } from '../domain/calendar/modalities.ts';
 import { categories, eventCategory } from '../domain/calendar/activities/categories.ts';
-import { rulesetVersion } from '../domain/calendar/policies/resolve.ts';
+import { policyFor } from '../domain/policies/registry.ts';
 import { periodsForModality } from '../domain/calendar/organization/periods.ts';
-import { reviewSourceFor } from '../domain/reviews/criteria.ts';
 
 const esc = (s: unknown) =>
   String(s).replace(
@@ -97,10 +96,11 @@ export function proensLayout(
   record?: PrintRecord | null,
   logo = printLogo,
 ) {
-  const source = reviewSourceFor(state.year);
-  const ruleLabel = rulesetVersion(state);
+  const policy = policyFor(state.year);
+  const source = policy.review.source;
+  const ruleLabel = policy.rulesetVersion(state);
   const scopeLabel =
-    state.year === 2027 && state.scopeConfirmation?.status !== 'covered'
+    policy.scope && state.scopeConfirmation?.status !== 'covered'
       ? state.scopeConfirmation?.status === 'own-regulation'
         ? 'Aplicabilidade: calendário sujeito a norma própria.'
         : 'Aplicabilidade: escopo a conferir antes de afirmar conformidade.'

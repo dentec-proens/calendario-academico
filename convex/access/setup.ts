@@ -1,7 +1,7 @@
 import { withActionLease } from '../lib/maintenance';
 import { internal } from '../_generated/api';
 import { action, internalMutation } from '../_generated/server';
-import { setupInput } from '../authContracts';
+import { setupInput } from './contracts';
 import { passwordCrypto } from '../authCrypto';
 import { institutionalEmail } from './identity';
 import { appendAudit, setPassword } from './store';

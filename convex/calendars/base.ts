@@ -1,11 +1,11 @@
 import { applicableEvents, inspectCalendar, reconcile } from '../../src/domain/calendar/base';
-import { rulesetVersion } from '../../src/domain/calendar/policies/resolve';
+import { rulesetVersion } from '../../src/domain/policies/registry';
 import type { DomainState } from '../validators';
 import type { Doc } from '../_generated/dataModel';
 import type { catalogue } from '../catalogue/model';
 import type { currentDocuments } from '../documents/model';
 import { documentDto } from '../documents/model';
-import { fail, clean } from '../lib/shared';
+import { domainRule, clean } from '../lib/shared';
 
 type Content = Pick<
   Doc<'calendarContents'>,
@@ -44,9 +44,5 @@ export function inspectBase(
   };
 }
 export function reconcileBase(assessment: ReturnType<typeof inspectBase>, acceptance?: string) {
-  try {
-    return reconcile(assessment, acceptance);
-  } catch (cause) {
-    fail(cause instanceof Error ? cause.message : 'Não foi possível atualizar a base.', 409);
-  }
+  return domainRule(() => reconcile(assessment, acceptance));
 }

@@ -10,6 +10,7 @@
 
 import type * as access_admission from "../access/admission.js";
 import type * as access_cleanup from "../access/cleanup.js";
+import type * as access_contracts from "../access/contracts.js";
 import type * as access_identity from "../access/identity.js";
 import type * as access_invitations from "../access/invitations.js";
 import type * as access_members from "../access/members.js";
@@ -25,7 +26,6 @@ import type * as actions_pdf from "../actions/pdf.js";
 import type * as actions_uploads from "../actions/uploads.js";
 import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
-import type * as authContracts from "../authContracts.js";
 import type * as authCrypto from "../authCrypto.js";
 import type * as calendars from "../calendars.js";
 import type * as calendars_authorship from "../calendars/authorship.js";
@@ -68,6 +68,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   "access/admission": typeof access_admission;
   "access/cleanup": typeof access_cleanup;
+  "access/contracts": typeof access_contracts;
   "access/identity": typeof access_identity;
   "access/invitations": typeof access_invitations;
   "access/members": typeof access_members;
@@ -83,7 +84,6 @@ declare const fullApi: ApiFromModules<{
   "actions/uploads": typeof actions_uploads;
   audit: typeof audit;
   auth: typeof auth;
-  authContracts: typeof authContracts;
   authCrypto: typeof authCrypto;
   calendars: typeof calendars;
   "calendars/authorship": typeof calendars_authorship;

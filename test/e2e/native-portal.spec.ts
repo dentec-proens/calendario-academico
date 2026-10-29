@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../browser/test.ts';
-import { editorUrl, parseEditorPath } from '../../src/app-routes.ts';
+import { editorUrl, parseEditorPath } from '../../src/app/routes.ts';
 import { configuredE2ETarget } from '../../scripts/e2e-environment.ts';
 
 const restorationFixture = process.env.DENTEC_NATIVE_RESTORE_FIXTURE;

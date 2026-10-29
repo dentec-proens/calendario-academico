@@ -1,11 +1,11 @@
-import { reviewIsCurrent } from '../../../src/domain/calendar/base.ts';
+import { reviewIsCurrent } from '#src/domain/calendar/base.ts';
 import { useEffect, useRef, useState, type SetStateAction } from 'react';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { reviews } from '../../shared/convex/reviews.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
-import { updateConclusion } from '../../../src/domain/reviews/conclusion.ts';
-import { reviewNorm } from '../../../src/domain/reviews/citation.ts';
+import { updateConclusion } from '#src/domain/reviews/conclusion.ts';
+import { reviewNorm } from '#src/domain/reviews/citation.ts';
 import { scrollIntoView } from '../../scroll.ts';
 import ReviewFormView from './ReviewFormView.tsx';
 import { downloadDocument } from './review-export.tsx';

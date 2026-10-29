@@ -1,5 +1,5 @@
 import { WorkProtection } from '../../app/updates/work.ts';
-import { equalValues } from '../../../src/equal.ts';
+import { equalValues } from '#src/shared/equal.ts';
 import { createContext, useContext, useMemo, type PropsWithChildren } from 'react';
 
 export class FormDrafts {

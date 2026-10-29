@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import { modalityLabels } from '../../../../src/domain/calendar/modalities.ts';
+import { modalityLabels } from '#src/domain/calendar/modalities.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { activityGroups, useActivitySearch } from './activity-query.ts';
 

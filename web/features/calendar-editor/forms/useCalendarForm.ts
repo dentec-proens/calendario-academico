@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useDraftForm } from '../../../shared/forms/useDraftForm.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
-import { equalValues } from '../../../../src/equal.ts';
+import { equalValues } from '#src/shared/equal.ts';
 
 interface CalendarFormOptions<T> {
   successMessage?: (value: T) => string;

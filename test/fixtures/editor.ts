@@ -3,7 +3,7 @@ import { fixtureProfile, record } from './editor-client.ts';
 import type { Bootstrap } from '../../web/shared/convex/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { mountApplication } from './mount-application.ts';
-import { editorUrl } from '../../src/app-routes.ts';
+import { editorUrl } from '../../src/app/routes.ts';
 import '../../assets/printing/calendar.css';
 
 if (location.pathname === '/__editor')

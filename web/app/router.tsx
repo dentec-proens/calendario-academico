@@ -4,7 +4,7 @@ import type { RouterHistory } from '@tanstack/react-router';
 import { ApplicationError } from './errors.tsx';
 import { routeTree } from './routes.tsx';
 import { useSessionState, type SessionState } from './session.tsx';
-import { pageDocument } from '../../src/app-routes.ts';
+import { pageDocument } from '#src/app/routes.ts';
 import { parseApplicationSearch, stringifyApplicationSearch } from './search.ts';
 
 export function createApplicationRouter(

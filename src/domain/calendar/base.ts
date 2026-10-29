@@ -2,9 +2,10 @@ import { inheritedEvents } from '../institution/catalogue.ts';
 import { campusInstitutionalEvents, teacherDayId } from '../institution/teacher-day.ts';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
-import { equalValues } from '../../equal.ts';
+import { equalValues } from '../../shared/equal.ts';
 import type { CalendarActivity } from './model.ts';
-import { rulesetVersion } from './policies/resolve.ts';
+import { DomainError } from '../errors.ts';
+import { bindsRuleset, rulesetVersion } from '../policies/registry.ts';
 
 export type BaseEvent = CalendarActivity & { evidence?: string; source?: string };
 export interface BaseDocument {
@@ -77,9 +78,7 @@ function hasChanges(diff: { added: unknown[]; removed: unknown[]; changed: unkno
 }
 function identity(snapshot: BaseSnapshot, scope: BaseScope) {
   return (
-    (snapshot.rulesetVersion?.startsWith('consup-292-2027-')
-      ? `base-v2:${snapshot.rulesetVersion}:`
-      : 'base-v1:') +
+    (bindsRuleset(snapshot.rulesetVersion) ? `base-v2:${snapshot.rulesetVersion}:` : 'base-v1:') +
     bytesToHex(
       sha256(
         new TextEncoder().encode(
@@ -107,8 +106,7 @@ export function inspect<E extends BaseEvent, D extends BaseDocument>(
     before: previous.rulesetVersion,
     after: current.rulesetVersion,
     changed:
-      current.rulesetVersion?.startsWith('consup-292-2027-') === true &&
-      previous.rulesetVersion !== current.rulesetVersion,
+      bindsRuleset(current.rulesetVersion) && previous.rulesetVersion !== current.rulesetVersion,
   };
   const kind = rules.changed
     ? 'rules'
@@ -132,12 +130,14 @@ export function inspect<E extends BaseEvent, D extends BaseDocument>(
 /** An acceptance is tied to the exact applicable content presented, even if another revision arrives. */
 export function reconcile(assessment: ReturnType<typeof inspect>, acceptance?: string) {
   if (acceptance !== undefined && acceptance !== assessment.identity)
-    throw new Error(
+    throw new DomainError(
       'A base institucional mudou desde a comparação. Confira as mudanças novamente.',
+      409,
     );
   if (!assessment.compatible && acceptance === undefined)
-    throw new Error(
+    throw new DomainError(
       'Há mudanças aplicáveis na base institucional. Confira e incorpore antes de salvar.',
+      409,
     );
   return { incorporate: !assessment.compatible, recalculate: hasChanges(assessment.events) };
 }
@@ -158,7 +158,7 @@ export function reviewIsCurrent(
   const declaredRules =
     current.rulesetVersion ??
     (current.identity?.startsWith('base-v2:') ? current.identity.split(':')[1] : undefined);
-  const requiredRules = declaredRules?.startsWith('consup-292-2027-') ? declaredRules : undefined;
+  const requiredRules = bindsRuleset(declaredRules) ? declaredRules : undefined;
   return Boolean(
     review &&
     (!requiredRules || review.rulesetVersion === requiredRules) &&

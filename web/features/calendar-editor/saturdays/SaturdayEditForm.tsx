@@ -1,5 +1,6 @@
-import type { CalendarActivity } from '../../../../src/domain/calendar/model.ts';
-import { removeEvent, updateSaturdayActivity } from '../../../../src/domain/calendar/commands.ts';
+import type { CalendarActivity } from '#src/domain/calendar/model.ts';
+import { removeEvent } from '#src/domain/calendar/commands/events.ts';
+import { updateSaturdayActivity } from '#src/domain/calendar/commands/saturdays.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';

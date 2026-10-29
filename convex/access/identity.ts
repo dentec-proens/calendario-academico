@@ -1,6 +1,6 @@
 import type { Doc, Id } from '../_generated/dataModel';
 import type { QueryCtx, MutationCtx } from '../_generated/server';
-import type { Member, PublicMember } from '../authContracts';
+import type { Member, PublicMember } from './contracts';
 import { getAuthSessionId, getAuthUserId } from '@convex-dev/auth/server';
 import { ConvexError } from 'convex/values';
 

@@ -26,15 +26,13 @@ const commonCriteria: Record<string, string> = {
   'women-week': 'XXIV',
 };
 
-export function activityReviewCriterion(year: number | undefined, id: string): string | undefined {
-  if (year !== 2026 && year !== 2027) return undefined;
-  const activity = id.split(':')[0].replace(/-[0-4]$/, '');
-  if (activity === 'cultural-week') return year === 2027 ? 'XXVI' : 'XXV';
-  if (year === 2027) {
-    if (activity === 'rit') return 'XII';
-    if (activity === 'ethics-week') return 'XXV';
-    if (activity === 'regular-admission-notice') return 'admission-regular';
-  }
-  // New-student registration is local; do not infer a veteran criterion from its name.
-  return commonCriteria[activity];
+/**
+ * Builds a policy's activity-to-criterion lookup from the shared parecer items and the
+ * policy's own renumbering. New-student registration is local and never inherits a criterion.
+ */
+export function reviewCriterionLookup(overrides: Readonly<Record<string, string>> = {}) {
+  return (activityId: string): string | undefined => {
+    const activity = activityId.split(':')[0].replace(/-[0-4]$/, '');
+    return overrides[activity] ?? commonCriteria[activity];
+  };
 }

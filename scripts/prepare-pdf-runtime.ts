@@ -5,8 +5,8 @@ import {
   chromiumArchives,
   chromiumVersion,
   parseChromiumManifest,
-} from '../src/printing/chromium-manifest.ts';
-import type { ChromiumManifest } from '../src/printing/chromium-manifest.ts';
+} from '../src/runtime/pdf/chromium-manifest.ts';
+import type { ChromiumManifest } from '../src/runtime/pdf/chromium-manifest.ts';
 import { prepareChromiumResources } from './chromium-resources.ts';
 import { environments } from '../config/environments.ts';
 import { assertNoTargetOverrides, convexCli, root, readDevEnvironment } from './environment.ts';

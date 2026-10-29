@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { internalMutation, internalQuery } from './_generated/server';
 import type { Id } from './_generated/dataModel';
-import { chromiumArchives, parseChromiumManifest } from '../src/printing/chromium-manifest';
+import { chromiumArchives, parseChromiumManifest } from '../src/runtime/pdf/chromium-manifest';
 
 // Deployment tooling only. Runtime resources never enter document or calendar data.
 export const uploadUrl = internalMutation({

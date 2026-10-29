@@ -2,8 +2,8 @@ import { assertWritesOpen } from '../lib/maintenance';
 import { withActionLease } from '../lib/maintenance';
 import { internal } from '../_generated/api';
 import { mutation, action, internalMutation } from '../_generated/server';
-import type { CreatedMember } from '../authContracts';
-import { memberRole, createdMember, memberInput, memberCredentialsInput } from '../authContracts';
+import type { CreatedMember } from './contracts';
+import { memberRole, createdMember, memberInput, memberCredentialsInput } from './contracts';
 import { passwordCrypto, validatePassword } from '../authCrypto';
 import {
   institutionalEmail,

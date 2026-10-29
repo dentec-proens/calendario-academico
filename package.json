@@ -4,6 +4,9 @@
   "private": true,
   "license": "MIT",
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*"
+  },
   "packageManager": "pnpm@12.15.0",
   "scripts": {
     "dev": "tsx scripts/dev.ts",

@@ -1,12 +1,9 @@
 import { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { activityChecklist } from '../../../../src/domain/calendar/activities/checklist.ts';
-import { stageRequirement } from '../../../../src/domain/calendar/activities/assessment.ts';
-import { modalityLabels } from '../../../../src/domain/calendar/modalities.ts';
-import {
-  activityStatus,
-  type ActivityStatus,
-} from '../../../../src/domain/calendar/activities/status.ts';
+import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
+import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { activityStatus, type ActivityStatus } from '#src/domain/calendar/activities/status.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { useActivityCoverage } from './useActivityCoverage.ts';

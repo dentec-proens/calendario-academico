@@ -1,7 +1,7 @@
 import type { ActivityState, CalendarActivity } from './model.ts';
-import { equalValues } from '../../equal.ts';
+import { equalValues } from '../../shared/equal.ts';
 import { inheritedEvents } from '../institution/catalogue.ts';
-import { recalculateCalendar } from './commands.ts';
+import { recalculateCalendar } from './commands/recalculate.ts';
 import { normalizeCalendar } from './normalization/normalize.ts';
 import { calendarContent } from './normalization/content.ts';
 import { invalidCalendar } from './normalization/input.ts';

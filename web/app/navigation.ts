@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useRouterState, useSearch } from '@tanstack/react-router';
-import type { PortalPageId } from '../../src/app-routes.ts';
+import type { PortalPageId } from '#src/app/routes.ts';
 
 export function useAppLocation() {
   return useRouterState({ select: (state) => state.location });

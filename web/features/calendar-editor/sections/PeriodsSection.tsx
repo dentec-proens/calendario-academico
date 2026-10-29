@@ -1,4 +1,4 @@
-import { selectableModalities } from '../../../../src/domain/calendar/config.ts';
+import { selectableModalities } from '#src/domain/calendar/config.ts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import OfferOrganizationForm, {

@@ -66,7 +66,9 @@ Durante o desenvolvimento, rode primeiro os arquivos afetados, por exemplo `pnpm
 
 ## Organização e contratos do domínio
 
-`pnpm test:unit test/domain-architecture.test.ts test/academic-diagnostics.test.ts test/prepare-calendar-save.test.ts` verifica imports sem ciclos em runtime e sem dependências dos adaptadores no domínio acadêmico, coerência dos diagnósticos entre estado aplicado e confirmado e preparação pura do salvamento. As suítes de calendário, regras de 2027, base, adição de ofertas, revisão e persistência continuam exercitando os mesmos contratos públicos, agora importados de `src/domain/`.
+`pnpm test:unit test/architecture/boundaries.test.ts test/domain/academic-diagnostics.test.ts test/domain/prepare-calendar-save.test.ts` verifica imports sem ciclos em runtime e sem dependências dos adaptadores no domínio acadêmico, coerência dos diagnósticos entre estado aplicado e confirmado e preparação pura do salvamento. As suítes de calendário, regras de 2027, base, adição de ofertas, revisão e persistência continuam exercitando os mesmos contratos públicos, agora importados de `src/domain/`.
+
+Os testes unitários ficam agrupados pela camada exercitada: `test/domain/` (regras puras e impressão), `test/web/` (contratos da interface), `test/convex/` (funções e persistência com `convex-test`), `test/tooling/` (scripts, build, migrações e release) e `test/architecture/` (fronteiras entre módulos). `test/browser/`, `test/e2e/` e `test/runtime/` mantêm suas configurações próprias.
 
 ## Referências visuais
 
@@ -107,12 +109,12 @@ Para um deployment descartável configurado separadamente, informar `DENTEC_NATI
 
 ## Atualização segura entre versões
 
-Os contratos puros ficam em `test/frontend-updates.test.ts` e `test/frontend-build.test.ts`. A suíte verifica identidade única inclusive em chamada direta ao Vite, divergência cliente/manifesto, validação e limite de JSON, erro/timeout/abort, deduplicação, janela de observação e tentativas por alvo, rollback, fontes vivas e finalizações tardias. `test/form-drafts.test.ts` conserva os contratos anteriores do registro.
+Os contratos puros ficam em `test/web/frontend-updates.test.ts` e `test/tooling/frontend-build.test.ts`. A suíte verifica identidade única inclusive em chamada direta ao Vite, divergência cliente/manifesto, validação e limite de JSON, erro/timeout/abort, deduplicação, janela de observação e tentativas por alvo, rollback, fontes vivas e finalizações tardias. `test/web/form-drafts.test.ts` conserva os contratos anteriores do registro.
 
 `test/browser/updates.spec.ts` constrói A e B pelo mesmo `vite.config.ts` e plugin usados pela aplicação, em modo de produção. Usa a árvore real, componentes e CSS, usando doubles locais para serviços externos e sondas explícitas de teste para identidade de objetos/erro de renderização. Uma propriedade CSS de teste sem efeito visual distingue os estilos gerados de A e B. O servidor troca o diretório servido sem reiniciar o navegador; pode servir o manifesto público novo enquanto uma aba ainda executa A. As sondas de teste expõem somente referências dos proprietários, para comprovar a identidade da sessão e do registro após falhas, sem acrescentar hooks de teste ao código da aplicação.
 
 ```sh
-pnpm test:unit test/frontend-updates.test.ts test/frontend-build.test.ts test/form-drafts.test.ts
+pnpm test:unit test/web/frontend-updates.test.ts test/tooling/frontend-build.test.ts test/web/form-drafts.test.ts
 pnpm test:browser test/browser/updates.spec.ts
 pnpm test:visual test/browser/updates.visual.spec.ts
 ```
@@ -127,17 +129,17 @@ Essas provas são locais no Chromium/macOS, com viewport mobile. Não certificam
 
 As regressões de revisão cobrem descarte explícito seguido de desmontagem, habilitação do editor de conclusão sem alteração de conteúdo, OAuth com navegação de documento local, troca de identidade durante HTML atrasado, erro de renderização no painel, retorno ao mesmo build e reabertura do calendário remoto sem recarregar. O ensaio A/B também remove de fato um chunk da versão anterior e verifica a recuperação e o CSS da nova versão. As sondas de falha/referência e o marcador CSS existem somente no plugin da fixture; não são compilados no portal publicado.
 
-O manifesto interno do Vite não é publicado: `manifest` fica desabilitado na configuração do portal. `test/static-build.test.ts` solicita `--manifest` somente para inspecionar o grafo de chunks da compilação e verificar ausência de painéis de desenvolvimento/Node. O manifesto público de versão continua gerado pelo plugin e é o único JSON necessário ao runtime.
+O manifesto interno do Vite não é publicado: `manifest` fica desabilitado na configuração do portal. `test/tooling/static-build.test.ts` solicita `--manifest` somente para inspecionar o grafo de chunks da compilação e verificar ausência de painéis de desenvolvimento/Node. O manifesto público de versão continua gerado pelo plugin e é o único JSON necessário ao runtime.
 
 ## Regressões de segurança
 
-`pnpm exec vitest run test/security-hardening.test.ts test/storage-simulator.test.ts test/native-files.test.ts` exercita os fluxos reais de autenticação, quota e ingresso: mais de mil renovações/sessões, revogação e novo login com relógio congelado, geração legada, limpeza limitada, par incompatível de refresh, bloqueio/desbloqueio auditado, recência original do ADMIN antes do hash, reset intercalado após verificação real da senha e teto de trabalho em andamento mesmo após repor a quota de frequência. A suíte de Storage também verifica rollback externo e de subtransação do adaptador de testes. `test/browser/account-security.spec.ts` cobre a ação de desbloqueio com teclado em desktop/mobile.
+`pnpm exec vitest run test/convex/security-hardening.test.ts test/convex/storage-simulator.test.ts test/convex/native-files.test.ts` exercita os fluxos reais de autenticação, quota e ingresso: mais de mil renovações/sessões, revogação e novo login com relógio congelado, geração legada, limpeza limitada, par incompatível de refresh, bloqueio/desbloqueio auditado, recência original do ADMIN antes do hash, reset intercalado após verificação real da senha e teto de trabalho em andamento mesmo após repor a quota de frequência. A suíte de Storage também verifica rollback externo e de subtransação do adaptador de testes. `test/browser/account-security.spec.ts` cobre a ação de desbloqueio com teclado em desktop/mobile.
 
 `pnpm audit` consulta avisos conhecidos das dependências e complementa `pnpm check`. `pnpm exec tsx scripts/benchmark-passwords.ts` mede hashes sintéticos somente no Node local. O [guia operacional](seguranca.md) distingue esses resultados da validação remota ainda exigida antes de publicar auth e ingresso de bytes.
 
 ## Continuidade dos arquivos publicados
 
-`pnpm test:unit test/frontend-assets.test.ts test/static-build.test.ts` verifica a herança cumulativa A → B → C, adoção do portal anterior sem inventário, imports transitivos, CSS e worker, integridade e bloqueio de histórico ausente/corrompido. O build direto do Vite precisa emitir um inventário completo e a marca de adoção no HTML.
+`pnpm test:unit test/tooling/frontend-assets.test.ts test/tooling/static-build.test.ts` verifica a herança cumulativa A → B → C, adoção do portal anterior sem inventário, imports transitivos, CSS e worker, integridade e bloqueio de histórico ausente/corrompido. O build direto do Vite precisa emitir um inventário completo e a marca de adoção no HTML.
 
 `pnpm test:browser test/browser/updates.spec.ts` inclui uma aba preenchida antes de uma publicação: após servir B, a aba A abre a revisão sem erro, conserva o evento ainda não aplicado e as mesmas referências de sessão/formulários. Uma aba nova recebe B. Os cenários usam desktop e viewport mobile, com o menu real de etapas; um deles exercita a primeira adoção sem inventário. Os testes anteriores de remoção deliberada de arquivos continuam cobrindo a recuperação protegida quando o recurso realmente está indisponível.
 

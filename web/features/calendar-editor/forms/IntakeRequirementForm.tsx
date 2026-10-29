@@ -1,6 +1,7 @@
-import type { AcademicTerm, ActivityRequirement } from '../../../../src/domain/calendar/model.ts';
-import { configureIntakeRequirement } from '../../../../src/domain/calendar/commands.ts';
-import { modalityLabels } from '../../../../src/domain/calendar/modalities.ts';
+import type { AcademicTerm, ActivityRequirement } from '#src/domain/calendar/model.ts';
+import { configureIntakeRequirement } from '#src/domain/calendar/commands/organization.ts';
+import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { policyFor } from '#src/domain/policies/registry.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Check } from './fields.tsx';
@@ -46,8 +47,9 @@ function OfferRequirement({ modality, term }: { modality: string; term: Academic
 
 export default function IntakeRequirementForm({ item }: { item: ActivityRequirement }) {
   const { state } = useCalendarEditor();
+  const policy = policyFor(state.year);
   if (
-    state.year !== 2027 ||
+    !policy.intakeRequirements ||
     state.scopeConfirmation?.status === 'own-regulation' ||
     !item.id.startsWith('registration-') ||
     !item.term
@@ -62,7 +64,11 @@ export default function IntakeRequirementForm({ item }: { item: ActivityRequirem
         houver regra local. Isso não altera as obrigações de veteranos.
       </p>
       {state.modalities
-        .filter((m) => m !== 'posgraduacao' && (!item.modalities || item.modalities.includes(m)))
+        .filter(
+          (m) =>
+            !policy.excludedModalities.includes(m) &&
+            (!item.modalities || item.modalities.includes(m)),
+        )
         .map((m) => (
           <OfferRequirement key={`${m}:${term}`} modality={m} term={term} />
         ))}

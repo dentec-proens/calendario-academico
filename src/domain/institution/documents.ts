@@ -1,3 +1,4 @@
+import { DomainError } from '../errors.ts';
 interface DocumentRecord {
   id: string;
   year: number;
@@ -8,8 +9,8 @@ interface DocumentRecord {
   publishedBy?: string;
   archivedAt?: string;
 }
-const fail = (message: string, status = 400): never => {
-  throw Object.assign(Error(message), { status });
+const fail = (message: string, status: 400 | 404 | 409 = 400): never => {
+  throw new DomainError(message, status);
 };
 export const documentTypes = ['norma', 'referencia', 'parecer'];
 export const documentMetadata = <T extends { data?: unknown }>(item: T) => {

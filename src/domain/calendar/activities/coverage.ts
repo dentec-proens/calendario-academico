@@ -1,8 +1,6 @@
 import type { AssessmentSettings, CalendarActivity, CalendarPeriod } from '../model.ts';
 import { calendarModalities, appliesTo } from '../modalities.ts';
-import { legacyActivityChecklist } from '../policies/legacy-2026.ts';
-import { requirements2027 } from '../policies/consup-292-2027.ts';
-import { applicabilityFor } from '../policies/resolve.ts';
+import { policyFor } from '../../policies/registry.ts';
 import { temporalPosition, validateActivityRecord } from './validation.ts';
 import { periodsForModality } from '../organization/periods.ts';
 import { prorogatedDeadline } from './deadlines.ts';
@@ -17,20 +15,19 @@ export function activityCoverage(
   events: CalendarActivity[] = state.events,
   humanReview?: { current: boolean; reviewedCriterionIds: readonly string[] },
 ) {
-  const requirements =
-    state.year === 2027 ? requirements2027(state) : legacyActivityChecklist(state);
-  return requirements.flatMap((requirement) =>
+  const policy = policyFor(state.year);
+  return policy.requirements(state).flatMap((requirement) =>
     calendarModalities(state)
       .filter((m) => !requirement.modality || requirement.modality === m)
       .map((modality) => {
-        const applicability = applicabilityFor(state, requirement, modality);
+        const applicability = policy.applicability(state, requirement, modality);
         const linked = events.filter(
           (event) => event.requirementId === requirement.id && appliesTo(event, modality),
         );
         const issues: string[] = [],
           warnings: string[] = [];
         const valid = linked.filter((event) => {
-          if (state.year === 2027 && !event.modalities?.includes(modality)) {
+          if (policy.explicitRecordOffers && !event.modalities?.includes(modality)) {
             issues.push('Confirme explicitamente as ofertas abrangidas pelo registro legado.');
             return false;
           }

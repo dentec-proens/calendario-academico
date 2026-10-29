@@ -1,8 +1,9 @@
-import { countingMinimums } from '../policies/resolve.ts';
+import { countingMinimums } from '../../policies/registry.ts';
 import type { CountingEvent, TeachingState } from '../model.ts';
 import { countCalendar, automaticEventSource } from './core.ts';
 import { calendarModalities, appliesTo } from '../modalities.ts';
 import { organizationForModality, periodsForModality } from '../organization/periods.ts';
+import { DomainError } from '../../errors.ts';
 
 export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
   const byModality: Record<string, ReturnType<typeof countCalendar>> = {};
@@ -10,7 +11,7 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
     const scoped = events.filter((e) => appliesTo(e, modality));
     const periods = periodsForModality(s, modality);
     if (organizationForModality(s, modality) === 'a-classificar')
-      throw new Error(
+      throw new DomainError(
         'Organização a conferir: classifique os períodos por oferta antes de confirmar a contagem.',
       );
     const minimum = countingMinimums(s, modality);

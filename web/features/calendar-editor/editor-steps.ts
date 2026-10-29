@@ -1,4 +1,4 @@
-import { editorSections, type EditorSection } from '../../../src/app-routes.ts';
+import { editorSections, type EditorSection } from '#src/app/routes.ts';
 
 function defineEditorPage<Section extends EditorSection>(
   section: Section,

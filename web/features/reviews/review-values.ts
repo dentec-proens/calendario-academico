@@ -1,6 +1,6 @@
 import type { reviews } from '../../shared/convex/reviews.ts';
-import { updateConclusion } from '../../../src/domain/reviews/conclusion.ts';
-import { reviewNorm } from '../../../src/domain/reviews/citation.ts';
+import { updateConclusion } from '#src/domain/reviews/conclusion.ts';
+import { reviewNorm } from '#src/domain/reviews/citation.ts';
 export type ReviewSupport = Awaited<ReturnType<typeof reviews.get>>;
 export type ReviewEntry = Parameters<typeof reviews.save>[1]['entries'][number];
 export type ReviewDocument = Awaited<ReturnType<typeof reviews.export>>;

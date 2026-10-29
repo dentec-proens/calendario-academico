@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { chromiumArchives, parseChromiumManifest } from '../src/printing/chromium-manifest';
+import { chromiumArchives, parseChromiumManifest } from '../src/runtime/pdf/chromium-manifest';
 import type { Infer } from 'convex/values';
 import { environments } from '../config/environments';
 import { campusNames, initialCatalogue } from '../src/domain/institution/catalogue.ts';

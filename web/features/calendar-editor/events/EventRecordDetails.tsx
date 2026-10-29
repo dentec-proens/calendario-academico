@@ -1,5 +1,5 @@
-import { automaticEventSource } from '../../../../src/domain/calendar/counting/core.ts';
-import { categoryLabel } from '../../../../src/domain/calendar/activities/categories.ts';
+import { automaticEventSource } from '#src/domain/calendar/counting/core.ts';
+import { categoryLabel } from '#src/domain/calendar/activities/categories.ts';
 import type { EditorEvent } from '../types.ts';
 import { civilDate } from './activity-query.ts';
 

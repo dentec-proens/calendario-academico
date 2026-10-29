@@ -6,8 +6,8 @@
   "include": [
     "scripts/**/*.ts",
     "config/**/*.ts",
-    "src/app-server.ts",
-    "src/app-routes.ts",
+    "src/runtime/app-server.ts",
+    "src/app/routes.ts",
     "server.ts",
     "vite.config.ts",
     "test/helpers/**/*.ts",

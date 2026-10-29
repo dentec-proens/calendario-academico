@@ -5,9 +5,8 @@ import type { CalendarActivity, ActivityState, CalendarReview } from './model.ts
 import { calendarModalities, modalityLabels, appliesTo } from './modalities.ts';
 import { assessmentCount, scopedRequirement } from './activities/assessment.ts';
 import { evaluateCalendar as calendarResult } from './counting/evaluation.ts';
-import { reviewCriteriaFor } from '../reviews/criteria.ts';
 import { periodsForModality } from './organization/periods.ts';
-import { rulesetVersion, calendarWindow } from './policies/resolve.ts';
+import { policyFor } from '../policies/registry.ts';
 
 const plain = (value: string) =>
   String(value)
@@ -32,13 +31,9 @@ export function releaseReadiness(
 ) {
   const issues = [],
     warnings = [];
-  if (
-    record.state.year === 2027 &&
-    (!record.state.scopeConfirmation || record.state.scopeConfirmation.status !== 'covered')
-  )
-    issues.push(
-      'Confirme o escopo da Resolução 292: EaD, qualificação e pós-graduação exigem calendário e norma próprios; a oferta não identifica sozinha essa aplicabilidade.',
-    );
+  const policy = policyFor(record.state.year);
+  if (policy.scope && record.state.scopeConfirmation?.status !== 'covered')
+    issues.push(policy.scope.readinessIssue);
   const events = [...record.institutionalSnapshot, ...record.state.events];
   if (
     calendarModalities(record.state).some(
@@ -92,9 +87,11 @@ export function releaseReadiness(
     }
   }
 
-  const window = calendarWindow(record.state);
-  if (window && record.state.year === 2027)
-    for (const modality of calendarModalities(record.state).filter((m) => m !== 'posgraduacao')) {
+  const window = policy.window(record.state);
+  if (window && policy.windowInReadiness)
+    for (const modality of calendarModalities(record.state).filter(
+      (m) => !policy.excludedModalities.includes(m),
+    )) {
       const periods = periodsForModality(record.state, modality);
       const start = periods.map((p) => p.start).sort()[0],
         end = periods
@@ -140,20 +137,20 @@ export function releaseReadiness(
   const current = reviewIsCurrent(review, record.version, {
     revision: db.catalogue.revision,
     identity: db.base?.identity,
-    rulesetVersion: record.state.year === 2027 ? rulesetVersion(record.state) : undefined,
+    rulesetVersion: policy.rulesetPrefix ? policy.rulesetVersion(record.state) : undefined,
   });
   if (!current)
     issues.push('A DENTEC/PROENS precisa salvar a revisão desta versão do calendário e da base.');
   if (!review?.applicableNorm?.trim())
     issues.push('Identifique a norma vigente aplicável na revisão.');
-  for (const c of reviewCriteriaFor(record.state.year)) {
+  for (const c of policy.review.criteria) {
     const entry = current ? review?.entries.find((e) => e.id === c.id) : undefined;
     if (!entry?.reviewed || !['ATENDIDO', 'NAO_APLICAVEL'].includes(entry.status))
       issues.push(
         `${c.item}: ${c.title} — atendimento ou não aplicabilidade aguardando confirmação.`,
       );
     if (
-      record.state.year !== 2027 &&
+      policy.review.evidence === 'pattern' &&
       c.pattern &&
       entry?.status === 'ATENDIDO' &&
       !events.some((e) => new RegExp(c.pattern!).test(plain(e.name + ' ' + (e.category || ''))))

@@ -1,7 +1,7 @@
 import { reviewIsCurrent } from '../src/domain/calendar/base';
-import { rulesetVersion } from '../src/domain/calendar/policies/resolve';
+import { rulesetVersion } from '../src/domain/policies/registry';
 import { assertWritesOpen } from './lib/maintenance';
-import { reviewSupport } from '../src/domain/reviews/support';
+import { reviewSupport } from '../src/domain/reviews/technical-support';
 import { reviewCriteriaFor, reviewSourceFor } from '../src/domain/reviews/criteria';
 import { initialConclusion } from '../src/domain/reviews/conclusion';
 import { updateConclusion } from '../src/domain/reviews/conclusion';

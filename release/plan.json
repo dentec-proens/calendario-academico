@@ -10,13 +10,13 @@
   },
   "rationale": "Plano padrão reservado a expansões compatíveis. A retirada definitiva dos campos de fonte manual e dos contratos antigos pertence ao modo específico de contração, com política restrita, manutenção, backup e ensaio; não é autorizada por este plano de expansão.",
   "tests": [
-    "test/source-retirement-native.test.ts",
-    "test/manual-source-parity.test.ts",
-    "test/release.test.ts",
-    "test/release-contracts.test.ts",
-    "test/editor-session.test.ts",
-    "test/manual-source-presence.test.ts",
-    "test/frontend-assets.test.ts"
+    "test/convex/source-retirement-native.test.ts",
+    "test/domain/manual-source-parity.test.ts",
+    "test/domain/release.test.ts",
+    "test/tooling/release-contracts.test.ts",
+    "test/convex/editor-session.test.ts",
+    "test/tooling/manual-source-presence.test.ts",
+    "test/tooling/frontend-assets.test.ts"
   ],
   "migrations": []
 }
