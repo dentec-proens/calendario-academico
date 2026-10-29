@@ -22,7 +22,6 @@ import type * as access_setup from "../access/setup.js";
 import type * as access_store from "../access/store.js";
 import type * as actions_documents from "../actions/documents.js";
 import type * as actions_files from "../actions/files.js";
-import type * as actions_pdf from "../actions/pdf.js";
 import type * as actions_uploads from "../actions/uploads.js";
 import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
@@ -53,7 +52,6 @@ import type * as operations from "../operations.js";
 import type * as presence from "../presence.js";
 import type * as reviews from "../reviews.js";
 import type * as reviews_model from "../reviews/model.js";
-import type * as runtimeArtifacts from "../runtimeArtifacts.js";
 import type * as validators from "../validators.js";
 import type * as workspace from "../workspace.js";
 
@@ -78,7 +76,6 @@ declare const fullApi: ApiFromModules<{
   "access/store": typeof access_store;
   "actions/documents": typeof actions_documents;
   "actions/files": typeof actions_files;
-  "actions/pdf": typeof actions_pdf;
   "actions/uploads": typeof actions_uploads;
   audit: typeof audit;
   auth: typeof auth;
@@ -109,7 +106,6 @@ declare const fullApi: ApiFromModules<{
   presence: typeof presence;
   reviews: typeof reviews;
   "reviews/model": typeof reviews_model;
-  runtimeArtifacts: typeof runtimeArtifacts;
   validators: typeof validators;
   workspace: typeof workspace;
 }>;

@@ -191,19 +191,10 @@ test('native calendar trash is scoped and restores without destroying archive me
   assert.equal(full.calendars[0].versions[1].purpose, 'test');
 });
 
-test('native action boundaries recheck ownership and register only validated storage files', async () => {
+test('native document actions register only validated storage files', async () => {
   const { as, client, ids } = await fixture();
   const admin = as('admin'),
     campus = as('campus-a');
-  const created = await campus.write('/api/calendars', createBody());
-  const path = '/api/calendars/' + created.id;
-  await assert.rejects(
-    as('campus-b').actionContext(path + '/pdf', { version: 1, catalogueRevision: 1 }),
-    /Registro não encontrado/,
-  );
-  const context = await campus.actionContext(path + '/pdf', { version: 1, catalogueRevision: 1 });
-  assert.equal(context.record.id, created.id);
-  assert(!JSON.stringify(context).includes('private-'));
   const result = { size: 12, hash: 'a'.repeat(64), uploadId: 'native-test' };
   const documentResult = { ...result, uploadId: 'admin-upload' };
   await client.run(async (ctx) =>
@@ -231,10 +222,6 @@ test('native action boundaries recheck ownership and register only validated sto
     revision: 1,
   });
   assert.equal((await campus.read('/api/documents')).documents.length, 1);
-  await assert.rejects(
-    campus.actionContext(path + '/pdf', { version: 1, catalogueRevision: 2 }),
-    /Salve a versão atual/,
-  );
 });
 
 test('native calendar saves validate per-offer stages and preserve the selected second-semester intake', async () => {
@@ -316,14 +303,6 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
   assert.equal(loaded.state.teacherDayDate, '2027-10-13');
   assert.equal(
     loaded.institutionalSnapshot.find((e: CalendarActivity) => e.id === teacherDayId)!.start,
-    '2027-10-13',
-  );
-  const pdf = await campus.actionContext(path + '/pdf', {
-    version: loaded.version,
-    catalogueRevision: loaded.currentCatalogueRevision,
-  });
-  assert.equal(
-    pdf.record.institutionalSnapshot.find((e: CalendarActivity) => e.id === teacherDayId)!.start,
     '2027-10-13',
   );
   for (const teacherDayDate of ['2028-10-13', '2027-10-10', '2027-10-18']) {
@@ -454,13 +433,6 @@ test('native institutional publication requires admin confirmation and preserves
   assert.deepEqual(
     loaded.currentDocuments.map((doc: { id: string }) => doc.id),
     [ids.documents.next],
-  );
-  await assert.rejects(
-    campus.actionContext(path + '/pdf', {
-      version: 1,
-      catalogueRevision: 2,
-    }),
-    /Salve a versão atual/,
   );
   await campus.write(
     path,

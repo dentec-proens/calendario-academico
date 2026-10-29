@@ -40,7 +40,6 @@
   ],
   "ignorePatterns": [
     "convex/_generated/**",
-    "src/printing/assets.generated.mjs",
     "dist/**",
     "node_modules/**",
     "coverage/**",

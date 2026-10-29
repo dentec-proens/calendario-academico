@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 import { convexCli, readDevEnvironment, root } from './environment.ts';
 import { createServer } from 'vite';
 import type { ViteDevServer } from 'vite';
-import { writePrintAssets } from './print-assets.ts';
 
 let backend: ChildProcess | undefined;
 let frontend: ViteDevServer | undefined;
@@ -26,7 +25,6 @@ process.once('SIGTERM', () => {
 
 try {
   Object.assign(process.env, readDevEnvironment());
-  await writePrintAssets();
   await new Promise<void>((resolve, reject) => {
     const setup = spawn(
       process.execPath,

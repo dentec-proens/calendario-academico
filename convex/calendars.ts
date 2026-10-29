@@ -6,7 +6,7 @@ import { assertWritesOpen } from './lib/maintenance';
 import { normalizeCalendar } from '../src/domain/calendar/normalization/normalize';
 import { rulesetVersion } from '../src/domain/policies/registry';
 import { inheritedEvents } from '../src/domain/institution/catalogue';
-import { query, mutation, internalQuery } from './_generated/server';
+import { query, mutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
 import { calendarRow, summary } from './calendars/model';
 import {
@@ -380,32 +380,6 @@ export const makeDefinitive = mutation({
       version: saved.row.version,
       updatedAt: saved.record.updatedAt,
       readiness: saved.readiness,
-    };
-  },
-});
-
-export const pdfContext = internalQuery({
-  args: validators.pdfRequest.fields,
-  returns: v.object({
-    record: contracts.calendarDto,
-    proposalCopy: v.boolean(),
-    readiness: contracts.readiness,
-    currentCatalogueRevision: v.number(),
-  }),
-  handler: async (ctx, { id, version, copy }) => {
-    const { user } = await requireNativeUser(ctx);
-    const record = await fullRecord(ctx, user, id);
-    const { compatibility } = await baseRecord(ctx, user, id);
-    if (record.version !== version || !compatibility.compatible)
-      fail('Salve a versão atual com a base institucional atualizada antes de baixar.', 409);
-    const proposalCopy = copy === true && record.purpose !== 'test';
-    if (record.purpose !== 'test' && !record.readiness.ready && !proposalCopy)
-      fail('Geração definitiva bloqueada. ' + record.readiness.issues.join('\n'), 409);
-    return {
-      record,
-      proposalCopy,
-      readiness: record.readiness,
-      currentCatalogueRevision: record.currentCatalogueRevision,
     };
   },
 });

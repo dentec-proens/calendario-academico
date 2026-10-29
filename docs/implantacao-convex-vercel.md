@@ -118,12 +118,6 @@ A aplicação repõe um PDF indisponível pelo fluxo [Restaurar original](restau
 
 Os testes remotos exigem opt-in de deployment descartável ou do desenvolvimento atual autorizado, com destino verificado e registros exclusivos da suíte conforme a [Verificação](verificacao.md). Produção não recebe E2E. A release não executa `pnpm check`; ele é a validação obrigatória do desenvolvimento, antes do commit.
 
-## Recursos operacionais de PDF
-
-A preparação explícita de runtime gera recursos gzip das duas arquiteturas do Chromium fixado. A etapa usa os arquivos x64 da dependência verificada pelo lockfile e o pacote oficial ARM64 com SHA-256 fixado, converte no host e envia ao Convex Storage por funções internas. A configuração `DENTEC_CHROMIUM_RUNTIME` só é gravada após os uploads; a conferência exige os mesmos tamanhos e hashes dos metadados do Storage.
-
-A release não prepara nem troca o runtime; a configuração instalada permanece até a preparação explícita. Valide as duas arquiteturas antes de trocar essa configuração. Não substitua o runtime de actions em andamento sem comprovar a compatibilidade. O comando requer rede para o GitHub e upload de arquivos ao Storage; não usa os fluxos de documentos institucionais. Recursos já conferidos são reutilizados. As actions baixam os recursos por URLs obtidas diretamente do Storage e verificam integridade e arquitetura antes da extração gzip; não executam descompressão Brotli.
-
 ## Registro da retirada de calendários anteriores
 
 A retirada foi concluída em produção em 27/10/2026, com ensaio descartável, backup integral, manutenção, verificação dos dados e smoke do candidato antes da promoção. A manutenção foi encerrada e a reserva exclusiva liberada.

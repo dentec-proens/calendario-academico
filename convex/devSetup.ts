@@ -1,5 +1,4 @@
 import { v } from 'convex/values';
-import { chromiumArchives, parseChromiumManifest } from '../src/runtime/pdf/chromium-manifest';
 import type { Infer } from 'convex/values';
 import { environments } from '../config/environments';
 import { campusNames, initialCatalogue } from '../src/domain/institution/catalogue.ts';
@@ -145,17 +144,7 @@ export const initialize = internalMutation({
     for (const table of Object.keys(schema.tables) as TableNames[]) {
       if (await ctx.db.query(table).first()) return { initialized: false, setupRequired };
     }
-    const runtimeIds = new Set<string>();
-    try {
-      const manifest = parseChromiumManifest(process.env.DENTEC_CHROMIUM_RUNTIME);
-      for (const architecture of Object.values(manifest.architectures))
-        for (const name of chromiumArchives) runtimeIds.add(architecture[name].storageId);
-    } catch {
-      // Unrecognized storage remains protected as application data.
-    }
-    const files = await ctx.db.system.query('_storage').take(runtimeIds.size + 1);
-    if (files.some((file) => !runtimeIds.has(file._id)))
-      return { initialized: false, setupRequired };
+    if (await ctx.db.system.query('_storage').first()) return { initialized: false, setupRequired };
 
     for (const name of [...campusNames, 'Ponta Grossa', 'Toledo', 'Reitoria']) {
       await ctx.db.insert('campuses', { name, archived: false });

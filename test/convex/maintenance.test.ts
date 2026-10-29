@@ -56,7 +56,7 @@ test('maintenance admits work atomically and waits for every accepted action bef
   const client = convexTest(schema, convexModules);
   const commit = 'a'.repeat(40);
   const id = await client.mutation(internal.operations.begin, {
-    operation: 'actions.pdf.generatePdf',
+    operation: 'actions.documents.uploadDocument',
   });
   await client.mutation(internal.operations.pause, { commit });
   assert.deepEqual(await client.query(api.operations.availability, {}), { maintenance: true });

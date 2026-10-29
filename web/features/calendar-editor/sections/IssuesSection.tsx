@@ -1,16 +1,14 @@
 import { diagnoseCalendar, diagnoseTeachingDays } from '#src/domain/calendar/diagnostics.ts';
 import { Link } from '@tanstack/react-router';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
-import { useCalendarExport } from '../export/CalendarExportProvider.tsx';
 import { modalityLabels } from '#src/domain/calendar/modalities.ts';
-import { Download, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
 import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
 import ScopeForm from '../forms/ScopeForm.tsx';
 
 export default function IssuesSection() {
   const { state, record, dirty, evaluation } = useCalendarEditor();
-  const exporting = useCalendarExport();
   const issues: { mark: string; title: string; detail: string; requirementId?: string }[] = [];
   const diagnostics = diagnoseCalendar(state);
   for (const issue of diagnostics.structure) {
@@ -167,17 +165,6 @@ export default function IssuesSection() {
           >
             <Eye aria-hidden="true" /> Visualizar calendário
           </Link>
-          <button
-            type="button"
-            id="export-calendar"
-            className="secondary"
-            disabled={exporting.pending}
-            onClick={() => {
-              void exporting.pdf();
-            }}
-          >
-            <Download aria-hidden="true" /> Baixar calendário em PDF
-          </button>
         </div>
       </div>
     </section>

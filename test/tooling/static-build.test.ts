@@ -73,7 +73,7 @@ test(
         const source = await readFile(join(output, 'assets', filename), 'utf8');
         assert.doesNotMatch(
           source,
-          /Open TanStack Devtools|Resize TanStack Devtools panel|@sparticuz\/chromium|node:child_process|node:fs/,
+          /Open TanStack Devtools|Resize TanStack Devtools panel|node:child_process|node:fs/,
         );
       }
     } finally {

@@ -241,13 +241,6 @@ export type ContentState = Infer<typeof contentState>;
 export type DomainState = Infer<typeof domainState>;
 export type ReviewFields = { [K in keyof typeof reviewFields]: Infer<(typeof reviewFields)[K]> };
 
-export const pdfRequest = v.object({
-  id: v.id('calendars'),
-  version: v.number(),
-  catalogueRevision: v.number(),
-  copy: v.optional(v.boolean()),
-});
-
 export const documentUploadInput = v.object({
   uploadId: v.string(),
   filename: v.string(),

@@ -260,15 +260,16 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   const calendarId = parseEditorPath(new URL(page.url()).pathname)?.id;
   assert(calendarId);
   await page.locator('[data-view="calendar"]').click();
-  const calendarDownloadPromise = page.waitForEvent('download', { timeout: 120_000 });
-  await page.locator('#download-pdf').click();
-  const calendarDownload = await calendarDownloadPromise;
-  await expect(page.locator('#download-pdf')).toBeEnabled();
-  await expect(page.locator('#message')).toContainText('PDF gerado');
-  const expectedPdf = join(directory, `teste-calendario-${year}-v1.pdf`);
-  expect(calendarDownload.suggestedFilename()).toBe(`teste-calendario-${year}-v1.pdf`);
-  await calendarDownload.saveAs(expectedPdf);
-  const generatedPdf = await readFile(expectedPdf);
+  await page.evaluate(() => {
+    window.print = () => document.body.setAttribute('data-print-title', document.title);
+  });
+  await page.locator('#print').click();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-print-title',
+    `teste-calendario-${year}-v1`,
+  );
+  // The browser's print engine produces the PDF the user saves from the print dialog.
+  const generatedPdf = await page.pdf({ printBackground: true, preferCSSPageSize: true });
   assert(generatedPdf.subarray(0, 5).equals(Buffer.from('%PDF-')));
   await test
     .info()

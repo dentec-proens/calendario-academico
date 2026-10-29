@@ -1,5 +1,4 @@
 import { serializeE2EEnvironment } from './e2e-environment.ts';
-import { preparePdfRuntime } from './prepare-pdf-runtime.ts';
 import { spawn } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -87,8 +86,6 @@ await run(
   ],
   environment,
 );
-
-await preparePdfRuntime(environment, target);
 
 const names = new Set(
   (await run(['env', 'list', '--names-only', ...target], environment)).split(/\r?\n/),

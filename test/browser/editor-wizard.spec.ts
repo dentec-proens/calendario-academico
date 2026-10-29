@@ -78,7 +78,9 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 5 de 6');
     await selectEditorSection(page, 'issues');
     await expect(page.locator('#total')).toBeVisible();
-    await expect(page.locator('#export-calendar')).toBeVisible();
+    await expect(
+      page.locator('#issues').getByRole('link', { name: 'Visualizar calendário' }),
+    ).toBeVisible();
     await expect(page.locator('#make-definitive')).toHaveText('Concluir e tornar definitivo');
     await page.locator('#make-definitive').click();
     await expect(page.getByRole('alertdialog')).toContainText(

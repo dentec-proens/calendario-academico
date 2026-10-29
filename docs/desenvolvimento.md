@@ -31,13 +31,13 @@ pnpm build
 pnpm start
 ```
 
-O runtime Chromium dos PDFs usa Linux e seu teste roda pelo Docker Desktop; pré-requisitos, comandos e referências visuais estão em [Verificação](verificacao.md).
+Comandos e referências visuais estão em [Verificação](verificacao.md).
 
 ## Organização e tipos
 
-`web/app/` reúne navegação e sessão; `web/features/` contém os assuntos da interface; `web/shared/` oferece infraestrutura reutilizável. `src/domain/calendar/commands/` contém comandos puros, e `src/printing/` atende prévia e PDF sem importar a interface. Convex usa funções por domínio e contratos gerados.
+`web/app/` reúne navegação e sessão; `web/features/` contém os assuntos da interface; `web/shared/` oferece infraestrutura reutilizável. `src/domain/calendar/commands/` contém comandos puros, e `src/printing/` atende a prévia impressa sem importar a interface. Convex usa funções por domínio e contratos gerados.
 
-Todo código manual usa TypeScript estrito. Valores externos são validados antes de entrar nos contratos. `convex/_generated/` e `src/printing/assets.generated.mjs` são gerados, com tipos adjacentes; não os edite manualmente. `scripts/print-assets.ts` gera os recursos de impressão a partir de `assets/printing/`.
+Todo código manual usa TypeScript estrito. Valores externos são validados antes de entrar nos contratos. `convex/_generated/` é gerado; não o edite manualmente.
 
 TanStack Intent carrega a orientação das versões instaladas. Consulte `AGENTS.md`, use `pnpm exec intent list`, carregue a skill pertinente com `pnpm exec intent load IDENTIDADE` e execute `pnpm agents:check`. Devtools está disponível em desenvolvimento por `?devtools=1` nas rotas permitidas; credenciais, tokens e arquivos ficam fora da instrumentação.
 

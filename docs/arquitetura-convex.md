@@ -8,7 +8,7 @@ Este guia registra decisões, garantias e limites que o código não explica soz
 
 - `web/` é a interface: rotas, features por assunto e infraestrutura compartilhada de formulários e Convex.
 - `src/domain/` contém as regras acadêmicas puras, compartilhadas por editor, revisão, backend e impressão. Não importa React, Router, Convex nem runtime Node.
-- `src/printing/` é o modelo puro de prévia, impressão e PDF; `src/runtime/` executa o Chromium e o servidor estático em Node, fora dos bundles do navegador.
+- `src/printing/` é o modelo puro da prévia, que o navegador imprime ou salva em PDF; `src/runtime/` executa o servidor estático em Node, fora dos bundles do navegador.
 - `convex/` autoriza, persiste e orquestra; cada função adapta o domínio às transações.
 
 `test/architecture/boundaries.test.ts` mantém essas fronteiras. Imports apontam ao módulo responsável, sem fachadas de reexport.
@@ -69,7 +69,7 @@ Salvar confere versão e base e preserva atributos protegidos; uma gravação se
 
 PDFs ficam no Storage, e URLs são obtidas no acesso. Uploads têm proprietário, limite de 8 MB, assinatura PDF, SHA-256 e consumo único. Restauração exige o original exato e preserva ID, análises e vínculos. Tickets e temporários têm limpeza agendada.
 
-Prévia, impressão e PDF usam o mesmo modelo. O gerador controla o Chromium, bloqueia a rede do renderizador e usa somente recursos locais. Produção não carrega Devtools nem a depuração de formulários sensíveis.
+O PDF é a impressão da prévia pelo navegador, com `@page` A4 definido em `assets/printing/calendar.css`; não há gerador no servidor. O título da página sugere o nome do arquivo. Produção não carrega Devtools nem a depuração de formulários sensíveis.
 
 A admissão de actions e a pausa de manutenção são transacionais; mutations de domínio e criação de sessões verificam a manutenção. A presença mantém o ciclo próprio do componente, sem alterar o domínio acadêmico. Actions registram o lease no log e o removem em `finally`; um lease sem conclusão permanece visível e bloqueia publicação, pois idade não prova término. A recuperação está em [Implantação e operação](implantacao-convex-vercel.md), e a validação em [Verificação](verificacao.md).
 
@@ -113,7 +113,7 @@ Na grade de sábados, o estado aplicado vem dos comandos e a seleção pertence 
 
 A revisão numérica da base é um marcador técnico; a equivalência considera o conteúdo aplicável ao calendário: eventos, fontes, aplicabilidade e arquivos documentais. Ordem dos registros, ofertas externas e metadados operacionais não exigem decisão do usuário.
 
-Uma base equivalente não apresenta card: a sincronização atualiza somente a referência técnica, sem recalcular datas, alterar autoria ou criar versão, e não é pré-requisito para salvar ou gerar PDF. Alterações reais exigem confirmação vinculada à identidade do conteúdo exibido, verificada novamente na transação. Mudanças em eventos recalculam o calendário; mudanças apenas documentais preservam as datas. Ambas geram versão editorial.
+Uma base equivalente não apresenta card: a sincronização atualiza somente a referência técnica, sem recalcular datas, alterar autoria ou criar versão, e não é pré-requisito para salvar ou imprimir. Alterações reais exigem confirmação vinculada à identidade do conteúdo exibido, verificada novamente na transação. Mudanças em eventos recalculam o calendário; mudanças apenas documentais preservam as datas. Ambas geram versão editorial.
 
 Revisões humanas guardam a identidade da base. Uma mudança irrelevante no contador não invalida a análise; mudanças no conteúdo aplicável ou na versão editorial invalidam. Revisões antigas sem essa identidade continuam exigindo a revisão técnica original, pois não há evidência para declarar equivalência retroativa. A sincronização nunca reescreve uma revisão humana.
 

@@ -203,15 +203,6 @@ export async function createNativeFixture(overrides: Seed = {}) {
         }
         throw new Error('Unknown fixture mutation: ' + path);
       },
-      actionContext: async (path: string, body: Entity = {}): Promise<any> => {
-        const calendar = path.match(/^\/api\/calendars\/([^/]+)\/pdf$/);
-        if (calendar)
-          return query(internal.calendars.pdfContext, { id: calendarId(calendar[1]), ...body });
-        const document = path.match(/^\/api\/documents\/([^/]+)$/);
-        if (document)
-          return query(internal.documents.documentContext, { id: documentId(document[1]) });
-        throw new Error('Unknown fixture action context: ' + path);
-      },
       finishAction: async (path: string, body: Entity, result: Entity): Promise<any> => {
         if (path === '/api/documents')
           return mutation(internal.documents.attachDocument, {

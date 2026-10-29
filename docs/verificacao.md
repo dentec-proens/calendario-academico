@@ -40,8 +40,6 @@ pnpm test:browser:install
 | `pnpm test:browser:ui`         | Interface interativa do Playwright para investigar testes                                                |
 | `pnpm test:browser:trace`      | Suíte local com gravação de traces, preservados nas falhas                                               |
 | `pnpm test:visual:update`      | Atualização das referências visuais do sistema local, após revisão                                       |
-| `pnpm test:runtime`            | Geração real de PDFs com o Chromium serverless, executada dentro do container de `test:runtime:linux`    |
-| `pnpm test:runtime:linux`      | Teste do runtime PDF em Docker local, o único executado em Linux                                         |
 | `pnpm test:e2e`                | Integração Convex com destino descartável ou dev verificado e dados próprios                             |
 
 ## Validação local e release
@@ -74,15 +72,11 @@ Os testes unitários ficam agrupados pela camada exercitada: `test/domain/` (reg
 
 A suíte visual protege o portal, a criação de calendário, a consulta de documentos e seu leitor PDF, a revisão humana com confirmação pendente, o editor, a edição de evento e o diálogo de confirmação. Dados, relógio, idioma, fuso e viewports são fixos. As referências ficam versionadas em `test/browser/__screenshots__/`, somente para macOS (`darwin`), separadas por viewport. O teste falha quando falta uma referência; os testes obrigatórios não são pulados quando o navegador está ausente.
 
-Para uma mudança visual intencional, execute `pnpm test:visual:update`, confira cada screenshot alterado e execute `pnpm test:visual` novamente, sem atualização. Outros sistemas não têm referências versionadas, e a comparação visual falha neles. Ao atualizar Playwright, mantenha `playwright-core` e `@playwright/test` na mesma versão e confira as referências afetadas. Não aceite alterações de screenshots sem verificar o efeito na interface.
+Para uma mudança visual intencional, execute `pnpm test:visual:update`, confira cada screenshot alterado e execute `pnpm test:visual` novamente, sem atualização. Outros sistemas não têm referências versionadas, e a comparação visual falha neles. Ao atualizar Playwright, confira as referências afetadas. Não aceite alterações de screenshots sem verificar o efeito na interface.
 
-Para executar o teste do runtime PDF, instale o Docker Desktop, inicie o daemon e permita acesso à imagem `mcr.microsoft.com/playwright` e ao registro npm. Esse teste é independente do navegador local e mantém suas dependências em uma pasta temporária.
+## Impressão do calendário
 
-## Runtime de PDF
-
-O gerador de PDF usa `playwright-core` e o Chromium serverless fixado em `@sparticuz/chromium`. A preparação converte os recursos oficiais para gzip no computador de desenvolvimento ou publicação e os armazena no Convex Storage, separados dos documentos da aplicação. O pacote ARM64 tem digest SHA-256 fixado; os arquivos x64 vêm da dependência com integridade no lockfile. `dev:setup` e `e2e:setup` preparam e conferem automaticamente as duas arquiteturas; a release de frontend preserva o runtime instalado, com acesso ao GitHub e ao Storage. `pnpm runtime:prepare` repete a preparação somente no dev selecionado. A configuração operacional `DENTEC_CHROMIUM_RUNTIME` identifica versão, arquivos e hashes; o runtime confere tamanho, hash e arquitetura antes de extrair e executar. As actions usam apenas gzip, mantendo o bloqueio de Brotli do Convex.
-
-Os recursos ficam em cache por versão no `.temp/` local e na pasta temporária do worker. Eles não entram no bundle do navegador nem no catálogo institucional. A suíte `test/runtime/` executa esse mesmo caminho de download, verificação, extração e geração sem mocks, com recursos servidos localmente. Confere concorrência, conteúdo do modelo, identificação de teste/proposta, papel A4 e escape de conteúdo; é executada localmente quando houver mudanças no gerador, modelo de impressão ou dependências do runtime, com `pnpm test:runtime:linux` pelo Docker. Não há seleção de Chrome local nem variáveis de teste no caminho de produção do PDF.
+O PDF do calendário é a impressão da prévia pelo navegador. Os testes de navegador conferem o nome sugerido pelo título da página, e o E2E gera o PDF da prévia com `page.pdf()` do Chromium e confere seu texto.
 
 ## E2E com Convex
 

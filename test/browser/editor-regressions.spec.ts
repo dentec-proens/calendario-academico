@@ -8,12 +8,6 @@ import {
 } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
-declare global {
-  interface Window {
-    exportTest: { calls: number; reject: () => void };
-  }
-}
-
 test('an open event form adopts a newer confirmed value only while it has no local changes', async ({
   page,
   fixtureServer,
@@ -141,36 +135,23 @@ test('selecting a Saturday by keyboard keeps focus on its checkbox', async ({
   await expect(page.locator('#saturday-name')).toHaveValue('');
 });
 
-test('PDF controls share one pending operation and ignore failure after leaving the calendar', async ({
+test('printing suggests the calendar file name and restores the page title afterwards', async ({
   page,
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="calendar"]').click();
-  await expect(page.locator('#download-pdf')).toBeVisible();
-  await page.evaluate(async () => {
-    const modulePath = '/test/fixtures/editor-event-drafts-client.ts';
-    const { convex } = (await import(modulePath)) as { convex: { action: () => Promise<unknown> } };
-    window.exportTest = { calls: 0, reject: () => {} };
-    convex.action = () => {
-      window.exportTest.calls++;
-      return new Promise((_resolve, reject) => {
-        window.exportTest.reject = () => reject(new Error('Falha de uma exportação encerrada'));
-      });
-    };
+  const title = await page.title();
+  await page.evaluate(() => {
+    window.print = () => document.body.setAttribute('data-print-title', document.title);
   });
-  await page.locator('#download-pdf').click();
-  await page.waitForFunction(() => window.exportTest.calls === 1);
-  await expect(page.locator('#download-pdf')).toBeDisabled();
-  await expect(page.locator('#print')).toBeDisabled();
-  expect(await page.evaluate(() => window.exportTest.calls)).toBe(1);
-  await page.locator('.portal-back').click();
-  await expect(page).toHaveURL(/\/calendarios$/);
-  await page.evaluate(async () => {
-    window.exportTest.reject();
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  });
-  await expect(page.locator('#message')).not.toContainText('exportação encerrada');
+  await page.locator('#print').click();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-print-title',
+    /^(teste-|proposta-)?calendario-\d{4}-v\d+$/,
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  await expect(page).toHaveTitle(title);
 });
 
 test('metadata rejects an activity for another modality before applying or saving', async ({

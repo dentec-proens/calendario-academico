@@ -124,10 +124,6 @@
   }
 }
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 12mm;
-  }
   header,
   .intro,
   .notice,
@@ -484,8 +480,7 @@
     font-size: 7pt;
     padding: 2px;
   }
-  .print-legend,
-  #download-pdf-top {
+  .print-legend {
     display: none !important;
   }
 }

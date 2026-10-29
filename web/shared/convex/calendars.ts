@@ -28,11 +28,4 @@ export const calendars = {
     request(() =>
       convex.mutation(functions.calendars.makeDefinitive, { id: id as Id<'calendars'>, version }),
     ),
-  generatePdf: (
-    id: string,
-    options: Omit<FunctionArgs<typeof functions.actions.pdf.generatePdf>, 'id'>,
-  ) =>
-    request(() =>
-      convex.action(functions.actions.pdf.generatePdf, { id: id as Id<'calendars'>, ...options }),
-    ),
 };

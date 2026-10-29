@@ -13,17 +13,15 @@ import { confirmAction } from '../../../components/confirmation.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 
 function useExportController() {
-  const { session, record, notify } = useCalendarEditor();
+  const { session, record, notify, baseUpdate, readOnly } = useCalendarEditor();
   const protection = useFormDrafts()?.protection;
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
   const active = useRef(true);
-  const download = useRef<AbortController | null>(null);
   useEffect(() => {
     active.current = true;
     return () => {
       active.current = false;
-      download.current?.abort();
     };
   }, []);
   async function run(operation: () => Promise<void>) {
@@ -45,32 +43,18 @@ function useExportController() {
       if (active.current) setPending(false);
     }
   }
-  const pdf = () =>
-    run(async () => {
-      const saved = await session.flush();
-      if (!active.current) return;
-      const file = await calendars.generatePdf(saved.id, {
-        version: saved.version,
-        catalogueRevision: saved.currentCatalogueRevision,
-        copy: saved.purpose !== 'test' && !saved.readiness.ready,
-      });
-      if (!active.current) return;
-      download.current = new AbortController();
-      const response = await fetch(file.url, { signal: download.current.signal });
-      if (!response.ok) throw new Error('Não foi possível baixar o PDF. Tente novamente.');
-      const blob = await response.blob();
-      if (!active.current) return;
-      saveBlob(
-        blob,
-        `${saved.purpose === 'test' ? 'teste-' : !saved.readiness.ready ? 'proposta-' : ''}calendario-${saved.state.year}-v${saved.version}.pdf`,
-      );
-      notify('PDF gerado. Confira o arquivo antes do encaminhamento institucional.');
-    });
   const print = () =>
     run(async () => {
-      await session.flush();
+      if (!readOnly && !baseUpdate.compatible)
+        throw new Error('Incorpore a atualização da base institucional antes de imprimir.');
+      const saved = await session.flush();
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      if (active.current) window.print();
+      if (!active.current) return;
+      // The browser suggests the document title as the name of the saved PDF.
+      const title = document.title;
+      document.title = `${saved.purpose === 'test' ? 'teste-' : !saved.readiness.ready ? 'proposta-' : ''}calendario-${saved.state.year}-v${saved.version}`;
+      window.addEventListener('afterprint', () => (document.title = title), { once: true });
+      window.print();
     });
   const copy = () => {
     if (!active.current || protection?.locked) return;
@@ -98,12 +82,12 @@ function useExportController() {
         if (!active.current) return;
         session.confirmDefinitive(definitive);
         notify(
-          'Calendário convertido para definitivo. Confira as pendências antes de gerar o PDF definitivo.',
+          'Calendário convertido para definitivo. Confira as pendências antes de imprimir a versão definitiva.',
         );
       },
     });
   };
-  return { pending, pdf, print, copy, makeDefinitive, purpose: record.purpose };
+  return { pending, print, copy, makeDefinitive, purpose: record.purpose };
 }
 
 const ExportContext = createContext<ReturnType<typeof useExportController> | null>(null);

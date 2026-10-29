@@ -1,3 +1,0 @@
-{
-  "node": { "externalPackages": ["@sparticuz/chromium", "playwright-core"] }
-}

@@ -21,7 +21,7 @@
     "typecheck:tools": "tsc --noEmit -p tsconfig.tools.json",
     "lint": "oxlint --deny-warnings",
     "lint:fix": "oxlint --fix --deny-warnings",
-    "lint:types": "oxlint --type-aware --deny-warnings convex web scripts config src migration server.ts vite.config.ts vitest.config.ts vitest.runtime.config.ts playwright.config.ts playwright.e2e.config.ts test",
+    "lint:types": "oxlint --type-aware --deny-warnings convex web scripts config src migration server.ts vite.config.ts vitest.config.ts playwright.config.ts playwright.e2e.config.ts test",
     "format": "prettier --write . \"!**/*.{md,mdx,markdown}\"",
     "format:check": "prettier --check . \"!**/*.{md,mdx,markdown}\"",
     "format:docs": "prettier --write \"**/*.{md,mdx,markdown}\"",
@@ -37,8 +37,6 @@
     "test:visual": "playwright test --project=chromium-desktop --project=chromium-mobile",
     "test:visual:update": "pnpm run test:visual --update-snapshots",
     "test:e2e": "tsx scripts/run-e2e.ts",
-    "test:runtime": "vitest run --config vitest.runtime.config.ts",
-    "test:runtime:linux": "tsx scripts/test-runtime-linux.ts",
     "check": "pnpm run format:check && pnpm run lint && pnpm run lint:types && pnpm run typecheck && pnpm run agents:check && pnpm test && pnpm run build",
     "dev:setup": "tsx scripts/dev-setup.ts",
     "env:doctor": "tsx scripts/doctor.ts",
@@ -46,8 +44,7 @@
     "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
     "migrate:data": "tsx scripts/migrate-data.ts",
     "agents:check": "node scripts/check-agent-skills.ts",
-    "e2e:setup": "tsx scripts/setup-e2e.ts",
-    "runtime:prepare": "tsx scripts/prepare-pdf-runtime.ts"
+    "e2e:setup": "tsx scripts/setup-e2e.ts"
   },
   "engines": {
     "node": "24.x",
@@ -61,13 +58,11 @@
     "@convex-dev/presence": "0.4.0",
     "@convex-dev/rate-limiter": "0.4.2",
     "@noble/hashes": "2.0.1",
-    "@sparticuz/chromium": "153.0.0",
     "@tanstack/react-form": "1.33.5",
     "@tanstack/react-router": "1.170.46",
     "convex": "1.48.0",
     "lucide-react": "1.61.0",
     "pdfjs-dist": "6.3.289",
-    "playwright-core": "1.64.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tar-fs": "3.1.2"

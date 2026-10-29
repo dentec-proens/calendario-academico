@@ -9,11 +9,6 @@ import { api, internal } from '../../convex/_generated/api.js';
 import { environments } from '../../config/environments.ts';
 import { generateAuthKeys, validateAuthKeys } from '../../scripts/dev-setup.ts';
 import { initialCatalogue } from '../../src/domain/institution/catalogue.ts';
-import {
-  chromiumArchives,
-  chromiumVersion,
-  type ChromiumManifest,
-} from '../../src/runtime/pdf/chromium-manifest.ts';
 
 const { default: schema } = await import('../../convex/schema.ts');
 const devUrl = 'https://isolated-setup-test.convex.cloud';
@@ -40,44 +35,6 @@ const snapshot = (client: ReturnType<typeof fixture>) =>
     const tables = Object.fromEntries(entries) as { [T in TableNames]: Doc<T>[] };
     return { ...tables, _storage: await ctx.db.system.query('_storage').collect() };
   });
-
-test('operational Chromium resources do not prevent initialization while other stored files remain protected', async (t) => {
-  const client = fixture(t);
-  const previous = process.env.DENTEC_CHROMIUM_RUNTIME;
-  t.onTestFinished(() => {
-    if (previous === undefined) delete process.env.DENTEC_CHROMIUM_RUNTIME;
-    else process.env.DENTEC_CHROMIUM_RUNTIME = previous;
-  });
-  const manifest: ChromiumManifest = {
-    version: chromiumVersion,
-    architectures: {
-      x64: {} as ChromiumManifest['architectures']['x64'],
-      arm64: {} as ChromiumManifest['architectures']['arm64'],
-    },
-  };
-  await client.run(async (ctx) => {
-    for (const arch of ['x64', 'arm64'] as const)
-      for (const name of chromiumArchives) {
-        const storageId = await ctx.storage.store(
-          new Blob([`${arch}/${name}`], { type: 'application/gzip' }),
-        );
-        const metadata = (await ctx.db.system.get(storageId))!;
-        manifest.architectures[arch][name] = {
-          storageId,
-          size: metadata.size,
-          sha256: Buffer.from(metadata.sha256, 'base64').toString('hex'),
-        };
-      }
-  });
-  process.env.DENTEC_CHROMIUM_RUNTIME = JSON.stringify(manifest);
-  const userFile = await client.run((ctx) =>
-    ctx.storage.store(new Blob(['documento da aplicação'])),
-  );
-  assert.deepEqual(await initialize(client), { initialized: false, setupRequired: true });
-  await client.run((ctx) => ctx.storage.delete(userFile));
-  assert.deepEqual(await initialize(client), { initialized: true, setupRequired: true });
-  assert.equal((await snapshot(client))._storage.length, 8);
-});
 
 test('dev Auth key generation survives dotenv round trips and detects broken or mismatched existing keys', () => {
   const keys = generateAuthKeys();

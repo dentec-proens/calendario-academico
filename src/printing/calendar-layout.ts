@@ -1,7 +1,6 @@
 import { automaticEventSource } from '../domain/calendar/counting/core.ts';
 import type { PrintState, PrintResult, PrintRecord, PrintEvent, DistributionRow } from './types.ts';
 import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
-import { printLogo } from './assets.generated.mjs';
 import { calendarModalities, modalityLabels } from '../domain/calendar/modalities.ts';
 import { categories, eventCategory } from '../domain/calendar/activities/categories.ts';
 import { policyFor } from '../domain/policies/registry.ts';
@@ -94,7 +93,7 @@ export function proensLayout(
   events: PrintEvent[],
   result: PrintResult = null,
   record?: PrintRecord | null,
-  logo = printLogo,
+  logo = '',
 ) {
   const policy = policyFor(state.year);
   const source = policy.review.source;

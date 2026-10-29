@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { api, internal } from '../../convex/_generated/api.js';
+import { api } from '../../convex/_generated/api.js';
 import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
@@ -74,14 +74,6 @@ test('equivalence sync is idempotent, scoped and preserves version, timestamp, s
   const fresh = await account.query(api.calendars.calendar, { id: record.id });
   expect(inspectCalendar(fresh, fresh).kind).toBe('equivalent');
   expect((await account.query(api.reviews.review, { id: record.id })).stale).toBe(false);
-  // A compatible older technical revision does not block a test PDF.
-  await expect(
-    account.query(internal.calendars.pdfContext, {
-      id: record.id,
-      version: record.version,
-      catalogueRevision: record.catalogueRevision,
-    }),
-  ).resolves.toMatchObject({ record: { version: 1 } });
   await expect(
     asClient('campus-b').mutation(api.calendars.synchronizeBase, { id: record.id, version: 1 }),
   ).rejects.toThrow('Registro não encontrado');

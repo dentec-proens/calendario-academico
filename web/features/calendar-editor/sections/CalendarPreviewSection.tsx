@@ -29,23 +29,13 @@ export default function CalendarPreviewSection() {
                 void exporting.print();
               }}
             >
-              Imprimir
-            </button>
-            <button
-              type="button"
-              id="download-pdf"
-              disabled={exporting.pending}
-              onClick={() => {
-                void exporting.pdf();
-              }}
-            >
-              Baixar PDF
+              Imprimir ou salvar PDF
             </button>
           </div>
         </div>
         {dirty && (
           <p role="status">
-            Prévia das alterações aplicadas. A impressão e o PDF aguardam confirmação do salvamento.
+            Prévia das alterações aplicadas. A impressão aguarda confirmação do salvamento.
           </p>
         )}
         <div
