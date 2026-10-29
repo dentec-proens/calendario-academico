@@ -7,6 +7,7 @@ import {
   CalendarRange,
   ClipboardCheck,
   Library,
+  ListChecks,
   Menu,
   Users,
   ScrollText,
@@ -45,6 +46,7 @@ export default function WorkspaceLayout() {
       label: 'Feriados e eventos institucionais',
       Icon: CalendarRange,
     },
+    { id: 'rules', to: portalPaths.rules, label: 'Regras do calendário', Icon: ListChecks },
   ];
   const administrative = [
     ...(permissions.reviewCalendars

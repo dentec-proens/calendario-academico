@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
-import type { AssessmentSettings } from '../../src/domain/calendar/model.ts';
+import type { ActivityRequirement, AssessmentSettings } from '../../src/domain/calendar/model.ts';
+import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
 import type { CalendarPolicy, RulesetChange } from '../../src/domain/policies/contract.ts';
 import {
   equivalentRulesets,
@@ -11,17 +12,22 @@ import {
 } from '../../src/domain/policies/registry.ts';
 
 /**
- * Catalogue fingerprint of each bound ruleset version. When this test fails, append a version to
- * the policy's `rulesetChanges`, classify its effect and record its fingerprint here. Never edit
- * the fingerprint of a version that has already been released.
+ * Catalogue fingerprint of each policy version. When this test fails on a bound policy, append a
+ * version to its `rulesetChanges`, classify its effect and record the new version's fingerprint
+ * here; never edit the fingerprint of a released version. Policies without `rulesetChanges`
+ * (2026 and years without a norm) have one fixed version: record their new fingerprint in place
+ * after confirming the change. Changing `hidden` or `referenceSettings` recomputes every
+ * fingerprint, so do it alone, with the rules unchanged.
  */
 const catalogueFingerprints: Record<string, string> = {
-  'consup-292-2027-v2': '58f9d60baba8521a585b6d701304dd94e7508628d7b4bcf7402114ec90bbec93',
+  'legacy-2026-v1': 'b0e948ba297029f2f001473bd645baab6ed4f4a44c793835c9b3d0d6286a32df',
+  'consup-292-2027-v2': 'bc56d935878de0a5af2150b3c0fbdb4575d74db77afc0e8f143e4318f31e1e8d',
+  'unconfigured:2028': '85a305ec506d13408190b3ec133c33b76ae7518951b8325ed3edc82f8a666d32',
 };
 
-const referenceStates: AssessmentSettings[] = [
+/** Offer combinations, cycles and stage counts that exercise every catalogue branch. */
+const referenceSettings: Omit<AssessmentSettings, 'year'>[] = [
   {
-    year: 2027,
     modalities: ['integrado'],
     regime: 'anual',
     organizationByModality: { integrado: 'anual' },
@@ -29,7 +35,6 @@ const referenceStates: AssessmentSettings[] = [
     scopeConfirmation: { status: 'covered' },
   },
   {
-    year: 2027,
     modalities: ['subsequente', 'graduacao'],
     regime: 'misto',
     organizationByModality: { subsequente: 'anual', graduacao: 'semestral' },
@@ -38,12 +43,12 @@ const referenceStates: AssessmentSettings[] = [
       subsequente: { annual: { status: 'no' } },
       graduacao: { first: { status: 'yes', required: true }, second: { status: 'unknown' } },
     },
+    secondSemesterIntake: false,
     scopeConfirmation: { status: 'covered' },
   },
   {
-    year: 2027,
     modalities: ['integrado', 'subsequente', 'graduacao', 'posgraduacao'],
-    regime: 'misto',
+    regime: 'semestral',
     organizationByModality: {
       integrado: 'anual',
       subsequente: 'semestral',
@@ -52,39 +57,87 @@ const referenceStates: AssessmentSettings[] = [
     },
     assessmentStagesByModality: { integrado: 3, subsequente: 2, graduacao: 2, posgraduacao: 2 },
   },
+  {
+    modalities: ['graduacao'],
+    regime: 'semestral',
+    organizationByModality: { graduacao: 'semestral' },
+    assessmentStagesByModality: { graduacao: 2 },
+    scopeConfirmation: { status: 'own-regulation' },
+  },
+  {
+    modalities: ['integrado', 'subsequente'],
+    regime: 'misto',
+    organizationByModality: { integrado: 'anual', subsequente: 'anual' },
+    assessmentStagesByModality: { integrado: 4, subsequente: 5 },
+    intakeByModality: { integrado: { annual: { status: 'yes', required: false } } },
+    secondSemesterIntake: true,
+  },
 ];
 
-/** Everything a reviewer or campus would see change in the rules, for each reference state. */
-function catalogue(policy: CalendarPolicy) {
+/**
+ * Requirement fields left out of the hash because they act only through `byModality`. Every other
+ * field, including fields added later, is part of the fingerprint.
+ */
+const hidden = new Set<string>([
+  'required',
+  'applicability',
+  'optionalFor',
+] satisfies (keyof ActivityRequirement)[]);
+
+const note = (policy: CalendarPolicy, requirement: ActivityRequirement, modality: string) =>
+  policy.applicabilityNote?.(requirement, modality) ?? null;
+
+function catalogue(policy: CalendarPolicy, year: number) {
   return {
     criteria: policy.review.criteria,
     excludedModalities: policy.excludedModalities,
-    states: referenceStates.map((state) => ({
-      window: policy.window(state),
-      requirements: policy.requirements(state).map((requirement) => ({
-        ...requirement,
-        byModality: Object.fromEntries(
-          (state.modalities ?? []).map((modality) => [
-            modality,
-            {
-              applicability: policy.applicability(state, requirement, modality),
-              note: policy.applicabilityNote?.(requirement.id, modality) ?? null,
-              minimums: policy.countingMinimums(state, modality),
-            },
-          ]),
-        ),
-      })),
-    })),
+    states: referenceSettings.map((settings) => {
+      const state = { ...settings, year };
+      return {
+        window: policy.window(state),
+        requirements: activityChecklist(state).map((requirement) => ({
+          ...Object.fromEntries(Object.entries(requirement).filter(([key]) => !hidden.has(key))),
+          byModality: Object.fromEntries(
+            (state.modalities ?? []).map((modality) => [
+              modality,
+              {
+                applicability: policy.applicability(state, requirement, modality),
+                note: note(policy, requirement, modality),
+                minimums: policy.countingMinimums(state, modality),
+              },
+            ]),
+          ),
+        })),
+      };
+    }),
   };
 }
 
-const fingerprint = (policy: CalendarPolicy) =>
-  bytesToHex(sha256(new TextEncoder().encode(JSON.stringify(catalogue(policy)))));
+/** JSON with sorted keys and without undefined values, so field order never changes the hash. */
+const canonical = (value: unknown): unknown =>
+  Array.isArray(value)
+    ? value.map(canonical)
+    : value && typeof value === 'object'
+      ? Object.fromEntries(
+          Object.entries(value)
+            .filter(([, item]) => item !== undefined)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, item]) => [key, canonical(item)]),
+        )
+      : value;
 
-const boundPolicies = [policyFor(2027)];
+const fingerprint = (policy: CalendarPolicy, year: number) =>
+  bytesToHex(sha256(new TextEncoder().encode(JSON.stringify(canonical(catalogue(policy, year))))));
+
+const years = [2026, 2027, 2028];
+const boundPolicies = years.map(policyFor).filter((policy) => policy.rulesetPrefix);
+const versionOf = (policy: CalendarPolicy, year: number) =>
+  policy.rulesetVersion({ year, modalities: ['integrado'] });
 
 test('every bound ruleset has an ordered history ending at the current version', () => {
+  expect(boundPolicies.length).toBeGreaterThan(0);
   for (const policy of boundPolicies) {
+    expect(policy.catalogue?.length).toBeGreaterThan(0);
     const changes = policy.rulesetChanges ?? [];
     expect(changes.length).toBeGreaterThan(0);
     expect(changes[0].effect).toBe('establishes');
@@ -97,16 +150,72 @@ test('every bound ruleset has an ordered history ending at the current version',
       expect(change.source.trim() && change.summary.trim()).toBeTruthy();
       for (const id of change.criteria ?? []) expect(criteria.has(id)).toBe(true);
     }
-    expect(policy.rulesetVersion(referenceStates[0])).toBe(changes.at(-1)!.version);
+    expect(versionOf(policy, policy.year!)).toBe(changes.at(-1)!.version);
+  }
+});
+
+/**
+ * Activity IDs released by each bound policy. Saved events link to them, and normalization rejects
+ * an event whose activity left the checklist, so released activities are never removed.
+ */
+const releasedActivities: Record<number, readonly string[]> = {
+  2027: [
+    'stage',
+    'results',
+    'council',
+    'pedagogical-meeting',
+    'final',
+    'diary',
+    'recognition',
+    'final-appeal',
+    'admission-notice',
+    'enrolment',
+    'adjustment',
+    'withdrawal',
+    'registration',
+    'pit',
+    'rit',
+    'teaching-plan',
+    'extraordinary-council',
+    'family-meeting',
+    'campus-events',
+    'alumni-meeting',
+    'internship-event',
+    'regular-admission-notice',
+    'robotics',
+    'course-showcase',
+    'pedagogical-training',
+    'collective-planning',
+    'women-week',
+    'ethics-week',
+    'cultural-week',
+  ],
+};
+
+test('released activities stay declared so saved records keep resolving', () => {
+  for (const policy of boundPolicies) {
+    const released = releasedActivities[policy.year!] ?? [];
+    const declared = policy.catalogue!.flatMap((section) => section.rows.map((row) => row.id));
+    expect(
+      released.filter((id) => !declared.includes(id)),
+      'Uma atividade publicada saiu da tabela e invalidaria calendários que a vinculam. Mantenha a linha, por exemplo opcional com optionalFor.',
+    ).toEqual([]);
+    expect(
+      declared.filter((id) => !released.includes(id)),
+      'Registre a nova atividade em releasedActivities.',
+    ).toEqual([]);
   }
 });
 
 test('the rules catalogue changes only together with a new ruleset version', () => {
-  for (const policy of boundPolicies) {
-    const version = policy.rulesetVersion(referenceStates[0]);
+  for (const year of years) {
+    const policy = policyFor(year);
+    const version = versionOf(policy, year);
     expect(
-      fingerprint(policy),
-      `O catálogo de regras mudou sem nova versão. Acrescente uma entrada em rulesetChanges e registre a impressão digital de ${version} em catalogueFingerprints.`,
+      fingerprint(policy, year),
+      policy.rulesetChanges
+        ? `O catálogo de regras mudou sem nova versão. Acrescente uma entrada em rulesetChanges e registre a impressão digital da nova versão em catalogueFingerprints.`
+        : `O catálogo de ${version} mudou. Confirme que a mudança é intencional e registre a nova impressão digital de ${version} em catalogueFingerprints.`,
     ).toBe(catalogueFingerprints[version]);
   }
 });

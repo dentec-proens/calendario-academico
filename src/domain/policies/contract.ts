@@ -1,4 +1,5 @@
 import type { ActivityRequirement, AssessmentSettings } from '../calendar/model.ts';
+import type { RequirementSection } from '../calendar/activities/requirement-table.ts';
 import type { ReviewCriterion, ReviewSource } from '../reviews/parecer-items.ts';
 
 export type Applicability = 'required' | 'optional' | 'unconfigured';
@@ -50,6 +51,11 @@ export interface CalendarPolicy {
    */
   rulesetChanges?: readonly RulesetChange[];
   rulesetVersion(state: AssessmentSettings): string;
+  /**
+   * Declared requirement table, required with `rulesetPrefix`. `requirements` expands it, and
+   * the portal's rules page (`/regras`) shows it for review against the norm.
+   */
+  catalogue?: readonly RequirementSection[];
   /** Requirements linked to coverage; `activityChecklist` adds the fallback's applicability. */
   requirements(state: AssessmentSettings): ActivityRequirement[];
   applicability(
@@ -58,7 +64,7 @@ export interface CalendarPolicy {
     modality: string,
   ): Applicability;
   /** Short explanation shown next to an activity the norm leaves optional for an offer. */
-  applicabilityNote?(requirementId: string, modality: string): string | undefined;
+  applicabilityNote?(requirement: ActivityRequirement, modality: string): string | undefined;
   window(state: AssessmentSettings): CalendarWindow | null;
   /** Minimum teaching days actually enforced by counting; `null` means not configured. */
   countingMinimums(

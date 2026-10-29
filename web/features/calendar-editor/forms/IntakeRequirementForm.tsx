@@ -51,7 +51,7 @@ export default function IntakeRequirementForm({ item }: { item: ActivityRequirem
   if (
     !policy.intakeRequirements ||
     state.scopeConfirmation?.status === 'own-regulation' ||
-    !item.id.startsWith('registration-') ||
+    !item.intake ||
     !item.term
   )
     return null;

@@ -11,6 +11,11 @@ export function policyFor(year: number | string | undefined): CalendarPolicy {
   return policies.find((policy) => policy.year === Number(year)) ?? unconfiguredPolicy;
 }
 
+/** Years whose declared catalogue the portal's rules page shows. */
+export const documentedYears = policies.flatMap((policy) =>
+  policy.catalogue && policy.year ? [policy.year] : [],
+);
+
 /** Most recent configured year, offered by default when creating a calendar. */
 export const defaultCalendarYear = Math.max(...policies.map((policy) => policy.year ?? 0));
 

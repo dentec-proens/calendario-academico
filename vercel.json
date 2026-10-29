@@ -34,6 +34,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/regras",
+      "destination": "/index.html"
+    },
+    {
       "source": "/revisoes",
       "destination": "/index.html"
     },

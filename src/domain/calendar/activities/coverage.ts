@@ -125,7 +125,7 @@ export function activityCoverage(
           warnings.push(requirement.reviewInstruction);
         if (applicability === 'unconfigured')
           warnings.push(
-            requirement.id.startsWith('registration-')
+            requirement.intake
               ? 'Defina a configuração de ingresso por oferta e período.'
               : 'Escopo depende de norma própria ou classificação.',
           );

@@ -1,10 +1,8 @@
 import { operationalChecklist } from '../calendar/activities/operational-checklist.ts';
-import { reviewCriterionLookup } from '../calendar/activities/review-links.ts';
 import { parecerDayMinimums, parecerItems, parecerSource } from '../reviews/parecer-items.ts';
 import type { CalendarPolicy } from './contract.ts';
 
 const excludedModalities = ['posgraduacao'] as const;
-const reviewCriterionFor = reviewCriterionLookup({ 'cultural-week': 'XXV' });
 
 /** 2026 roteiro: operational checklist reviewed against the parecer, without counting thresholds. */
 export const legacy2026Policy: CalendarPolicy = {
@@ -14,7 +12,7 @@ export const legacy2026Policy: CalendarPolicy = {
   requirements: (state) =>
     operationalChecklist(state, {
       deadlines: { robotics: '2026-08-31', 'course-showcase': '2026-09-30' },
-      reviewCriterion: reviewCriterionFor,
+      criteria: { 'cultural-week': 'XXV' },
     }),
   applicability: (_state, requirement) =>
     requirement.required === false ? 'optional' : 'required',

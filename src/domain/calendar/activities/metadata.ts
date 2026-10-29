@@ -1,7 +1,7 @@
 import { assessmentStageRequirementPattern } from '../config.ts';
-import type { ActivityRequirement, CalendarActivity } from '../model.ts';
+import type { CalendarActivity } from '../model.ts';
 
-/** Subjects shown by the step 6 checklist, in display order. */
+/** Subjects shown by the step 6 checklist, in display order; each catalogue row declares one. */
 export const activityGroups = [
   ['admission', 'Ingresso e vida acadêmica'],
   ['teaching', 'Registros e prazos docentes'],
@@ -22,44 +22,3 @@ export const isStageRequirementId = (id: string | undefined) =>
 export const isAssessmentStageRecord = (
   event: Pick<CalendarActivity, 'requirementId' | 'recordType'>,
 ) => isStageRequirementId(event.requirementId) || event.recordType === 'retired-stage';
-
-function group(id: string): ActivityGroup {
-  if (
-    /^(registration|admission-notice|regular-admission|enrolment|adjustment|withdrawal|recognition|final-appeal)-/.test(
-      id,
-    )
-  )
-    return 'admission';
-  if (/^(final|diary|teaching-plan|pit|rit|results|stage|council|pedagogical-meeting)-/.test(id))
-    return 'teaching';
-  if (/week|training|planning|campus|meeting|event|robotics|showcase|council/.test(id))
-    return 'campus';
-  return 'other';
-}
-
-function variant(row: Pick<ActivityRequirement, 'id' | 'minHours' | 'admissionType'>) {
-  if (isStageRequirementId(row.id)) return 'stage';
-  if (
-    row.admissionType ||
-    row.id.startsWith('admission-notice-') ||
-    row.id === 'regular-admission-notice'
-  )
-    return 'admission-notice';
-  return row.minHours ? 'hours' : 'activity';
-}
-
-function defaultCategory(id: string) {
-  if (id.includes('council')) return 'conselho';
-  if (isStageRequirementId(id)) return 'limite';
-  return id === 'cultural-week' ? 'evento' : 'prazo';
-}
-
-/** The one place that derives display and form metadata from a catalogue identifier. */
-export function withActivityMetadata<Row extends ActivityRequirement>(row: Row): Row {
-  return {
-    ...row,
-    group: group(row.id),
-    defaultCategory: defaultCategory(row.id),
-    variant: variant(row),
-  };
-}

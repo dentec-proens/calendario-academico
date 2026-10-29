@@ -62,6 +62,10 @@ export interface ActivityRequirement {
   applicability?: 'required' | 'optional' | 'unconfigured';
   reviewInstruction?: string;
   admissionType?: 'regular' | 'transfer';
+  /** Offers for which the norm leaves the activity optional, with the note shown ('' for none). */
+  optionalFor?: Readonly<Record<string, string>>;
+  /** New-student registration, required per offer and cycle by the intake configuration. */
+  intake?: boolean;
   /** Checklist subject, filled by the catalogue. */
   group?: ActivityGroup;
   /** Category prepared for a new record of this activity. */

@@ -89,11 +89,19 @@ test('2027 requirements use offer and academic cycle while PE/PIT/RIT remain sem
       'subsequente',
     ),
   ).toBe('required');
+  const required = (id: string, modality: string) =>
+    applicabilityFor(
+      state,
+      requirements.find((r) => r.id === id)!,
+      modality,
+    );
   for (const prefix of ['teaching-plan', 'pit', 'rit'])
     for (const n of [1, 2])
-      expect(requirements.find((r) => r.id === `${prefix}-${n}`)?.required).toBe(true);
-  for (const id of ['council-1:graduacao', 'extraordinary-council'])
-    expect(requirements.find((r) => r.id === id)?.required).toBe(true);
+      for (const modality of ['integrado', 'subsequente', 'graduacao'])
+        expect(required(`${prefix}-${n}`, modality)).toBe('required');
+  expect(required('council-1:graduacao', 'graduacao')).toBe('required');
+  for (const modality of ['integrado', 'subsequente', 'graduacao'])
+    expect(required('extraordinary-council', modality)).toBe('required');
   const familyMeeting = requirements.find((r) => r.id === 'family-meeting')!;
   expect(familyMeeting.modalities).toEqual(['integrado']);
   expect(applicabilityFor(state, familyMeeting, 'integrado')).toBe('required');

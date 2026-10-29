@@ -35,6 +35,7 @@ test('native server serves portal and invitation routes without a Node API or en
       '/campi/novo',
       '/contas/nova',
       '/usuarios-online',
+      '/regras',
       '/revisoes/calendar-a',
     ]) {
       assert.equal(await (await fetch(origin + route)).text(), 'react portal root', route);

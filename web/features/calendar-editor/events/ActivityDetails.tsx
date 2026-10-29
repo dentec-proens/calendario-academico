@@ -86,8 +86,8 @@ export default function ActivityDetails({
                   Depende de norma própria; não há afirmação automática de conformidade.
                 </small>
               )}
-              {policy.applicabilityNote?.(item.id, row.modality) && (
-                <small>{policy.applicabilityNote(item.id, row.modality)}</small>
+              {policy.applicabilityNote?.(item, row.modality) && (
+                <small>{policy.applicabilityNote(item, row.modality)}</small>
               )}
               {row.issues.map((issue) => (
                 <small key={issue}>{issue}</small>

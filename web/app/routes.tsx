@@ -166,6 +166,12 @@ const editCatalogue = createRoute({
     creating: true,
   },
 });
+const rules = createRoute({
+  getParentRoute: () => workspace,
+  path: '/regras',
+  component: lazy(() => import('../features/rules/RulesPage.tsx')),
+  staticData: { title: 'Regras do calendário', page: 'rules' },
+});
 const reviews = createRoute({
   getParentRoute: () => workspace,
   path: '/revisoes',
@@ -319,6 +325,7 @@ export const routeTree = root.addChildren([
       catalogue,
       newCatalogue,
       editCatalogue,
+      rules,
       reviews,
       review,
       campuses,

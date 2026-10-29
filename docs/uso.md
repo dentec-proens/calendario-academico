@@ -2,7 +2,7 @@
 
 ## Navegação
 
-A barra lateral reúne **Calendários e referências** (Calendários, Documentos e normas e Feriados e eventos institucionais), com uma única tela por assunto. As ações e os filtros variam conforme as permissões: CAMPUS trabalha em sua unidade e consulta a base disponibilizada; ADMIN pode selecionar outros campi e manter a base. O grupo **Administração** reúne Revisões e pareceres, Campi, Contas e acessos e Usuários online para ADMIN; PARECERISTA acessa somente Revisões e pareceres nesse grupo. Em telas pequenas, use **Navegação** para abrir o menu.
+A barra lateral reúne **Calendários e referências** (Calendários, Documentos e normas, Feriados e eventos institucionais e Regras do calendário), com uma única tela por assunto. As ações e os filtros variam conforme as permissões: CAMPUS trabalha em sua unidade e consulta a base disponibilizada; ADMIN pode selecionar outros campi e manter a base. O grupo **Administração** reúne Revisões e pareceres, Campi, Contas e acessos e Usuários online para ADMIN; PARECERISTA acessa somente Revisões e pareceres nesse grupo. Em telas pequenas, use **Navegação** para abrir o menu.
 
 As coleções abrem pela lista. Use **Novo calendário**, **Cadastrar campus**, **Nova conta**, **Adicionar documento** ou **Novo evento institucional** para abrir o formulário correspondente. **Voltar à lista** preserva os campos em preenchimento na sessão. A troca de seções também preserva esses campos; recarregar ou sair da página pode descartá-los.
 
@@ -85,6 +85,8 @@ Se o acesso expirar, o editor pausa o preenchimento e apresenta somente **Entrar
 As novas cópias usam o formato v3. Uma cópia v2 é convertida explicitamente, conservando eventos, datas e classificação. Fontes manuais de cópias antigas são desconsideradas; as referências institucionais automáticas permanecem. Ingresso e publicação não são deduzidos pelo nome do evento. Um cliente antigo não pode sobrescrever conteúdo já salvo como v3; atualize a aplicação e conserve o preenchimento antes de retomar.
 
 ## Base institucional e documentos
+
+**Regras do calendário** mostra, para todos os perfis, as regras que o editor usa para indicar pendências e que a revisão confere: norma, conjunto de regras vigente, janela do ano letivo, cada atividade com sua base normativa e a aplicação por oferta (obrigatória, opcional, conforme ingresso ou norma própria), mínimos de dias letivos, histórico das versões e critérios da revisão. A aplicação por oferta considera um calendário de referência com todas as ofertas organizadas por ano letivo; a organização de cada calendário pode mudar os ciclos e as etapas exigidos.
 
 Em **Documentos e normas** e **Feriados e eventos institucionais**, CAMPUS consulta a base disponibilizada e ADMIN também acessa as ações de manutenção. Em Documentos e normas, ambos podem filtrar por ano; ADMIN pode filtrar por situação (rascunho, vigente ou arquivado). Esses filtros são aplicados antes da paginação. As mesmas telas atendem os dois perfis. Eventos indicam datas, categoria, efeito, ofertas e fonte. Mudanças na revisão institucional exigem conferir o impacto e confirmar a atualização no calendário; uma análise humana anterior pode ficar desatualizada.
 
