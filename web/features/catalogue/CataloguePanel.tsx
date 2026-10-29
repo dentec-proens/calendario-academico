@@ -111,7 +111,6 @@ export default function CataloguePanel({
 
   return (
     <CollectionPanel
-      title="Feriados e eventos institucionais"
       actionLabel={
         event.id
           ? 'Continuar edição do evento'

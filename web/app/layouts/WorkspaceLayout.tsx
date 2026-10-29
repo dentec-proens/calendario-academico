@@ -149,9 +149,6 @@ export default function WorkspaceLayout() {
       </aside>
       <div className="portal-content">
         <div className="workspace-heading">
-          <span className="area-badge">
-            {administration ? 'Administração PROENS' : 'Calendários e referências'}
-          </span>
           <h1 id="panel-title" ref={heading} tabIndex={-1}>
             {title}
           </h1>

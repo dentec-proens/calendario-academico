@@ -68,7 +68,6 @@ export default function CalendarsPanel({
   return (
     <section id="calendars" className="page" aria-busy={pending}>
       <CollectionPanel
-        title="Calendários registrados"
         actionLabel="Novo calendário"
         formTitle="Criar calendário"
         formOpen={creating}

@@ -374,15 +374,6 @@
   font-size: 0.875rem;
   margin: 6px 0 0;
 }
-.area-badge {
-  display: inline-block;
-  border-radius: 5px;
-  padding: 4px 8px;
-  background: var(--area-tint);
-  color: var(--area-color);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
 .collection-heading {
   display: flex;
   justify-content: space-between;
@@ -401,9 +392,13 @@
 #root .collection-back {
   margin-bottom: 24px;
 }
-.portal-workspace[data-area='admin'] .collection-heading > button {
-  background: var(--area-color);
-  border-color: var(--area-color);
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.page-action {
+  margin-left: auto;
 }
 #root .sidebar-toggle {
   display: none;

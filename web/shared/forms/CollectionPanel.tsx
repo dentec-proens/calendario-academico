@@ -4,14 +4,13 @@ import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { ArrowLeft, Plus } from 'lucide-react';
 
 interface CollectionPanelProps {
-  title: string;
+  title?: string;
   actionLabel: string;
   formTitle: string;
   formOpen: boolean;
   onFormOpen: (open: boolean) => void;
   busy?: boolean;
   canCreate?: boolean;
-  actionVariant?: 'primary' | 'secondary';
   children: ReactNode;
   form: ReactNode;
   feedback?: ReactNode;
@@ -25,7 +24,6 @@ export default function CollectionPanel({
   onFormOpen,
   busy = false,
   canCreate = true,
-  actionVariant = 'primary',
   children,
   form,
   feedback,
@@ -57,12 +55,15 @@ export default function CollectionPanel({
       {!formOpen ? (
         <div className="panel collection-list">
           <div className="collection-heading">
-            <h2 ref={listHeading} tabIndex={-1}>
-              {title}
-            </h2>
+            {title ? (
+              <h2 ref={listHeading} tabIndex={-1}>
+                {title}
+              </h2>
+            ) : null}
             {canCreate ? (
               <Button
-                variant={actionVariant}
+                variant="secondary"
+                className="page-action"
                 type="button"
                 aria-controls={id}
                 disabled={busy}

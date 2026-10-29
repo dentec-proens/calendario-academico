@@ -38,7 +38,6 @@ export default function DocumentsPanel({
     <CollectionPanel
       title="Base institucional"
       actionLabel="Adicionar documento"
-      actionVariant="secondary"
       formTitle="Adicionar nova versão"
       formOpen={creating}
       onFormOpen={setCreating}

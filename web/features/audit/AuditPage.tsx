@@ -56,6 +56,8 @@ export default function AuditPage() {
         </div>
         <Button
           type="button"
+          variant="secondary"
+          className="page-action"
           id="refresh-logs"
           disabled={pending}
           onClick={() => {

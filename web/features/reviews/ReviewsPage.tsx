@@ -123,17 +123,21 @@ export default function ReviewsPage() {
             ))}
           </select>
         </label>
-        <Button
-          type="button"
-          id="open-review"
-          disabled={!calendarId}
-          onClick={() => {
-            void openReview();
-          }}
-        >
-          <Eye size={18} aria-hidden="true" />
-          Abrir análise
-        </Button>
+        <div className="page-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            className="page-action"
+            id="open-review"
+            disabled={!calendarId}
+            onClick={() => {
+              void openReview();
+            }}
+          >
+            <Eye size={18} aria-hidden="true" />
+            Abrir análise
+          </Button>
+        </div>
         <Pagination pagination={pagination} label="Carregar mais calendários" />
         {requested ? <Link to="/revisoes">Voltar à lista de revisões</Link> : null}
         <div id="review-message" role="status" aria-live="polite">
