@@ -1,8 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { documentedYears } from '#src/domain/policies/registry.ts';
 import { useFeatureRoute } from '../../app/navigation.ts';
-import { Notice } from '../../components/ui/Notice.tsx';
-import { offerStatusLabels, referenceAssumption, rulesView, type RulesView } from './rules-view.ts';
+import { offerStatusLabels, rulesView, statusHelp, type RulesView } from './rules-view.ts';
 import './rules.css';
 
 const civilDate = (date: string) => date.split('-').reverse().join('/');
@@ -19,7 +18,7 @@ function Activities({
   return (
     <section className="rules-section" aria-labelledby={id}>
       <h4 id={id}>{section.title}</h4>
-      <p className="help">{section.help}</p>
+      {section.help ? <p className="help">{section.help}</p> : null}
       <table className="rules-table rules-activities">
         <thead>
           <tr>
@@ -129,9 +128,14 @@ export default function RulesPage() {
           <dd>{view.excluded.join(', ') || 'Nenhuma'}</dd>
         </div>
       </dl>
-      <Notice tone="info">{referenceAssumption}</Notice>
-
       <h3>Atividades exigidas</h3>
+      <p className="help rules-legend">
+        {statusHelp.map(([status, meaning]) => (
+          <span key={status}>
+            <strong>{offerStatusLabels[status]}</strong>: {meaning}.
+          </span>
+        ))}
+      </p>
       {view.sections.map((section, index) => (
         <Activities
           key={section.title}

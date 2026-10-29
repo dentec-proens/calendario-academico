@@ -41,8 +41,14 @@ const supported = (state: AssessmentSettings) =>
 const termNumber = (term: AcademicTerm) => (term === 'annual' ? 0 : term === 'first' ? 1 : 2);
 const stageCycle = ({ stages }: Slot) =>
   stages === 4 ? 'bimestral' : stages === 3 ? 'trimestral' : 'semestral';
-const forTerm = (label: string) => (s: Slot) => `${label} — ${termLabels[s.term!]}`;
-const forSemester = (label: string) => (s: Slot) => `${label} — ${s.n}º semestre`;
+const perTerm = (title: string) => ({
+  title,
+  name: (s: Slot) => `${title} — ${termLabels[s.term!]}`,
+});
+const perSemester = (title: string) => ({
+  title,
+  name: (s: Slot) => `${title} — ${s.n}º semestre`,
+});
 const familyMeetingOffers: readonly string[] = ['integrado'];
 const notOnIntegrated = {
   integrado: 'Não exigido por este inciso para o integrado; cadastro permitido.',
@@ -66,6 +72,7 @@ const sections: RequirementSection[] = [
     rows: [
       {
         id: 'stage',
+        title: 'Etapa de avaliação — início e término',
         name: (s) => `${s.n}ª etapa de avaliação — início e término — ${stageCycle(s)}`,
         basis: 'Art. 11, I',
         group: 'teaching',
@@ -75,6 +82,7 @@ const sections: RequirementSection[] = [
       },
       {
         id: 'results',
+        title: 'Prazo de lançamento dos resultados (rendimento e frequência) de cada etapa',
         name: (s) =>
           `Prazo de lançamento dos resultados (rendimento e frequência) da ${s.n}ª etapa — ${stageCycle(s)}`,
         basis: 'Art. 11, IX',
@@ -83,6 +91,7 @@ const sections: RequirementSection[] = [
       },
       {
         id: 'council',
+        title: 'Conselho de classe/coletivo pedagógico de cada etapa',
         name: (s) => `Conselho de classe/coletivo pedagógico da ${s.n}ª etapa — ${stageCycle(s)}`,
         basis: 'Art. 11, XIII',
         group: 'teaching',
@@ -91,6 +100,7 @@ const sections: RequirementSection[] = [
       },
       {
         id: 'pedagogical-meeting',
+        title: 'Reunião pedagógica após os resultados parciais de cada etapa',
         name: (s) =>
           `Reunião pedagógica após os resultados parciais da ${s.n}ª etapa — ${stageCycle(s)}`,
         basis: 'Art. 11, XIII',
@@ -113,21 +123,21 @@ const sections: RequirementSection[] = [
     rows: [
       {
         id: 'final',
-        name: forTerm('Prazo de lançamento do resultado final (rendimento e frequência)'),
+        ...perTerm('Prazo de lançamento do resultado final (rendimento e frequência)'),
         basis: 'Art. 11, X',
         group: 'teaching',
         criterion: 'X',
       },
       {
         id: 'diary',
-        name: forTerm('Prazo de fechamento e entrega dos diários de classe'),
+        ...perTerm('Prazo de fechamento e entrega dos diários de classe'),
         basis: 'Art. 11, XI',
         group: 'teaching',
         criterion: 'XI',
       },
       {
         id: 'recognition',
-        name: forTerm(
+        ...perTerm(
           'Aproveitamento de estudos, certificação de conhecimentos e equivalência de estágio',
         ),
         basis: 'Art. 11, VI',
@@ -136,14 +146,14 @@ const sections: RequirementSection[] = [
       },
       {
         id: 'final-appeal',
-        name: forTerm('Prazo para estudantes solicitarem revisão de resultados finais'),
+        ...perTerm('Prazo para estudantes solicitarem revisão de resultados finais'),
         basis: 'Art. 11, XIV',
         group: 'admission',
         criterion: 'XIV',
       },
       {
         id: 'admission-notice',
-        name: forTerm(
+        ...perTerm(
           'Publicação dos editais de transferência interna e externa, reingresso e portadores de diploma',
         ),
         basis: 'Art. 11, VIII',
@@ -154,7 +164,7 @@ const sections: RequirementSection[] = [
       },
       {
         id: 'enrolment',
-        name: forTerm('Rematrícula dos estudantes'),
+        ...perTerm('Rematrícula dos estudantes'),
         basis: 'Art. 11, V',
         reason: perCycle,
         optionalFor: notOnIntegrated,
@@ -163,7 +173,7 @@ const sections: RequirementSection[] = [
       },
       {
         id: 'adjustment',
-        name: forTerm('Ajuste de matrículas dos veteranos'),
+        ...perTerm('Ajuste de matrículas dos veteranos'),
         basis: 'Art. 11, V',
         reason: perCycle,
         optionalFor: notOnIntegrated,
@@ -172,7 +182,7 @@ const sections: RequirementSection[] = [
       },
       {
         id: 'withdrawal',
-        name: forTerm('Prazo de trancamento de curso e cancelamento de matrícula em componente'),
+        ...perTerm('Prazo de trancamento de curso e cancelamento de matrícula em componente'),
         basis: 'Art. 11, VII',
         reason: perCycle,
         optionalFor: notOnIntegrated,
@@ -181,7 +191,7 @@ const sections: RequirementSection[] = [
       },
       {
         id: 'registration',
-        name: forTerm('Período destinado à matrícula de ingressantes'),
+        ...perTerm('Período destinado à matrícula de ingressantes'),
         basis: 'Regra local de ingresso',
         reason: 'Defina ingresso e eventual exigência com fonte por oferta e período.',
         intake: true,
@@ -193,11 +203,11 @@ const sections: RequirementSection[] = [
     repeat: 'semester',
     each: { basis: 'Art. 11, XII', term: (s) => s.term, criterion: 'XII' },
     rows: [
-      { id: 'pit', name: forSemester('Prazo de entrega do PIT'), group: 'teaching' },
-      { id: 'rit', name: forSemester('Prazo de entrega do RIT'), group: 'teaching' },
+      { id: 'pit', ...perSemester('Prazo de entrega do PIT'), group: 'teaching' },
+      { id: 'rit', ...perSemester('Prazo de entrega do RIT'), group: 'teaching' },
       {
         id: 'teaching-plan',
-        name: forSemester('Prazo de entrega do Plano de Ensino'),
+        ...perSemester('Prazo de entrega do Plano de Ensino'),
         group: 'teaching',
       },
     ],

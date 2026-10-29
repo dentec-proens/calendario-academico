@@ -36,6 +36,8 @@ export type RequirementSpec = {
     /** Stable identifier; repeated rows append `-n` or `-n:offer`, as persisted records expect. */
     id: string;
     name: PerSlot<string>;
+    /** Name without the stage, cycle or semester, for the rules page; `name` when it is text. */
+    title?: string;
     group: ActivityGroup;
     /** Review criterion of the policy's parecer. */
     criterion?: string;
@@ -105,7 +107,7 @@ export function expandRequirements(
     slotsOf(section, state).flatMap(([slot, suffix]) =>
       section.rows.map((own) => {
         const spec = { ...section.each, ...defined(own) } as RequirementSpec;
-        const { id, group, criterion, category, variant, ...fields } = spec;
+        const { id, title: _title, group, criterion, category, variant, ...fields } = spec;
         const row: Record<string, unknown> = { id: id + suffix };
         for (const [key, value] of Object.entries(fields)) {
           const resolved = resolve(value, slot);

@@ -23,28 +23,31 @@ export const effectLabels: Record<RulesetChange['effect'], string> = {
 const repeatLabels = {
   stage: {
     title: 'Por etapa de avaliação',
-    help: 'Repetidas em cada etapa de cada oferta. Os rótulos mostram a 1ª etapa.',
+    help: 'Em cada etapa da oferta: 2 (semestral), 3 (trimestral) ou 4 (bimestral).',
   },
   cycle: {
     title: 'Por ciclo letivo',
-    help: 'Repetidas em cada ciclo organizado das ofertas. Os rótulos mostram o ano letivo.',
+    help: 'No ano letivo, nas ofertas anuais, ou no 1º e no 2º semestre, nas semestrais.',
   },
   semester: {
     title: 'Por semestre',
-    help: 'Repetidas no 1º e no 2º semestre. Os rótulos mostram o 1º semestre.',
+    help: 'No 1º e no 2º semestre, inclusive nas ofertas anuais.',
   },
-  once: { title: 'Uma vez por calendário', help: 'Registradas uma vez no ano letivo.' },
+  once: { title: 'Uma vez por ano letivo', help: '' },
 };
 const civilDate = (date: string) => date.split('-').reverse().join('/');
 
-/**
- * Applicability is shown as on a calendar with every offer organised annually in two assessment
- * stages and the norm's scope confirmed. A campus calendar can differ with its organisation.
- */
-export const referenceAssumption =
-  'A aplicação por oferta considera um calendário com todas as ofertas organizadas por ano letivo, duas etapas de avaliação e escopo da norma confirmado. A organização de cada calendário pode mudar os ciclos e as etapas exigidos.';
+/** Meaning of the statuses whose label alone does not explain them. */
+export const statusHelp = [
+  ['intake', 'exigida quando o campus declara ingresso com exigência local na oferta e no ciclo'],
+  ['unconfigured', 'oferta fora desta norma, com calendário e norma próprios'],
+] as const satisfies readonly (readonly [OfferStatus, string])[];
 
-/** Everything the rules page shows for one year, read from the policy that the editor uses. */
+/**
+ * Everything the rules page shows for one year, read from the policy that the editor uses. Rows
+ * come from one calendar with every offer; the organisation only repeats them, which
+ * `rules-view.test.ts` checks.
+ */
 export function rulesView(year: number) {
   const policy = policyFor(year);
   const offers = [...selectableModalities];
@@ -96,18 +99,15 @@ export function rulesView(year: number) {
           });
           return {
             id: spec.id,
-            name: sample.name,
+            name: spec.title ?? sample.name,
             basis: sample.basis,
             criterion: sample.reviewCriterionId,
             decision: sample.decision,
             byOffer,
             details: [
               sample.deadline &&
+                !sample.name.includes(civilDate(sample.deadline)) &&
                 `Prazo${sample.deadlinePolicy === 'reference' ? ' de referência' : ''}: ${civilDate(sample.deadline)}.`,
-              sample.month && `Mês exigido: ${sample.month}.`,
-              sample.minHours && `Mínimo de ${sample.minHours} horas.`,
-              sample.reason,
-              sample.reviewInstruction,
             ].filter((item): item is string => Boolean(item)),
           };
         }),

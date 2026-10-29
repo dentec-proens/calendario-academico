@@ -110,6 +110,10 @@
 .rules-cell-label {
   display: none;
 }
+.rules-legend {
+  display: grid;
+  gap: 2px;
+}
 .rules-compact {
   max-width: 720px;
 }
