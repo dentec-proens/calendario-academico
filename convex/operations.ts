@@ -2,12 +2,7 @@ import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { internalMutation, internalQuery, query } from './_generated/server';
 import type { Id } from './_generated/dataModel';
-import { assertWritesOpen, maintenanceAccess, maintenancePaused } from './lib/maintenance';
-import { paginationOptsValidator } from 'convex/server';
-import { catalogue } from './catalogue/model';
-import { inspectBase } from './calendars/base';
-import { domainState } from './calendars/model';
-import { currentDocuments } from './documents/model';
+import { assertWritesOpen, maintenancePaused } from './lib/maintenance';
 
 const statusValue = v.object({
   emergency: v.boolean(),
@@ -22,7 +17,7 @@ export const availability = query({
   args: {},
   returns: v.object({ maintenance: v.boolean() }),
   handler: async (ctx) => {
-    return { maintenance: (await maintenancePaused(ctx)) && !(await maintenanceAccess(ctx)) };
+    return { maintenance: await maintenancePaused(ctx) };
   },
 });
 
@@ -86,64 +81,6 @@ export const status = internalQuery({
   },
 });
 
-export const smokePreflight = internalQuery({
-  args: { userId: v.id('users'), email: v.string(), calendarId: v.id('calendars') },
-  returns: v.null(),
-  handler: async (ctx, { userId, email, calendarId }) => {
-    const user = await ctx.db.get(userId);
-    const calendar = await ctx.db.get(calendarId);
-    const content = await ctx.db
-      .query('calendarContents')
-      .withIndex('by_calendarId', (q) => q.eq('calendarId', calendarId))
-      .unique();
-    if (
-      !user ||
-      user.email !== email.trim().toLowerCase() ||
-      user.role !== 'ADMIN' ||
-      !user.active ||
-      user.loginMethod !== 'local' ||
-      user.removedAt !== undefined
-    )
-      throw Error(
-        'Confira identidade, e-mail e acesso local da conta operacional ADMIN antes de publicar.',
-      );
-    if (!calendar || calendar.deletedAt || calendar.purpose !== 'test' || !content)
-      throw Error(
-        'Confira o calendário de teste operacional e salve sua base atual antes de publicar.',
-      );
-    const campus = await ctx.db.get(calendar.campusId);
-    if (!campus) throw Error('Campus não encontrado.');
-    const assessment = inspectBase(
-      domainState(calendar, campus, content.state),
-      content,
-      await catalogue(ctx, calendar.year),
-      await currentDocuments(ctx, calendar.year),
-    );
-    if (!assessment.compatible)
-      throw Error('Confira a base do calendário operacional antes de publicar.');
-    return null;
-  },
-});
-
-export const scheduledPage = internalQuery({
-  args: { paginationOpts: paginationOptsValidator },
-  returns: v.object({
-    page: v.array(v.object({ name: v.string(), state: v.object({ kind: v.string() }) })),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
-  handler: async (ctx, { paginationOpts }) => {
-    if (paginationOpts.numItems < 1 || paginationOpts.numItems > 100)
-      throw Error('Página operacional inválida.');
-    const result = await ctx.db.system.query('_scheduled_functions').paginate(paginationOpts);
-    return {
-      page: result.page.map((job) => ({ name: job.name, state: { kind: job.state.kind } })),
-      isDone: result.isDone,
-      continueCursor: result.continueCursor,
-    };
-  },
-});
-
 export const resume = internalMutation({
   args: { commit: v.string() },
   returns: v.null(),
@@ -158,50 +95,7 @@ export const resume = internalMutation({
       throw Error('A manutenção não pertence a esta publicação.');
     if (await ctx.db.query('operationalLeases').withIndex('by_startedAt').first())
       throw Error('Há operações em andamento. A manutenção permanece ativa.');
-    await ctx.db.patch(control._id, {
-      paused: false,
-      smokeUserId: undefined,
-      changedAt: Date.now(),
-    });
-    return null;
-  },
-});
-
-export const authorizeSmoke = internalMutation({
-  args: { commit: v.string(), userId: v.id('users') },
-  returns: v.null(),
-  handler: async (ctx, { commit, userId }) => {
-    const control = await ctx.db
-      .query('operationalControl')
-      .withIndex('by_key', (q) => q.eq('key', 'release'))
-      .unique();
-    const user = await ctx.db.get(userId);
-    if (
-      !control?.paused ||
-      control.commit !== commit ||
-      !user ||
-      user.role !== 'ADMIN' ||
-      !user.active ||
-      user.loginMethod !== 'local' ||
-      user.removedAt !== undefined
-    )
-      throw Error('O smoke exige a janela conferida e uma conta operacional ADMIN local ativa.');
-    await ctx.db.patch(control._id, { smokeUserId: userId });
-    return null;
-  },
-});
-
-export const endSmoke = internalMutation({
-  args: { commit: v.string() },
-  returns: v.null(),
-  handler: async (ctx, { commit }) => {
-    const control = await ctx.db
-      .query('operationalControl')
-      .withIndex('by_key', (q) => q.eq('key', 'release'))
-      .unique();
-    if (!control?.paused || control.commit !== commit)
-      throw Error('A janela de smoke não pertence ao commit conferido.');
-    await ctx.db.patch(control._id, { smokeUserId: undefined });
+    await ctx.db.patch(control._id, { paused: false, changedAt: Date.now() });
     return null;
   },
 });

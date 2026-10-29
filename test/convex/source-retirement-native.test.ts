@@ -123,7 +123,6 @@ test('canonical records and historical restoration have no manual or generated s
       version: saved.version,
       catalogueRevision: created.currentCatalogueRevision,
       state: saved.state,
-      unchangedOnly: true,
     },
   });
   expect(unchanged.unchanged).toBe(true);

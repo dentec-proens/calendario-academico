@@ -55,7 +55,6 @@ test('calendar authorship distinguishes creation from content edits without expo
       version: saved.version,
       catalogueRevision: created.currentCatalogueRevision,
       state: saved.state,
-      unchangedOnly: true,
     },
   });
   assert.equal(unchanged.unchanged, true);

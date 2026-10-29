@@ -78,7 +78,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       const member = memberFromRow(row);
       if (!row || !member || member.email !== email)
         throw Error('Solicite seu acesso à administração.');
-      await assertWritesOpen(ctx as MutationCtx, row._id);
+      await assertWritesOpen(ctx as MutationCtx);
       if (args.provider.id === 'google') {
         const subject = args.profile.googleSubject;
         if (
@@ -92,7 +92,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       return row._id;
     },
     async beforeSessionCreation(ctx, { userId }) {
-      await assertWritesOpen(ctx as MutationCtx, userId);
+      await assertWritesOpen(ctx as MutationCtx);
       if (!memberFromRow(await ctx.db.get(userId)))
         throw Error('Solicite seu acesso à administração.');
     },

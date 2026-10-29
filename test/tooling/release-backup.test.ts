@@ -2,22 +2,22 @@ import { test, expect } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { backupForMigration } from '../../scripts/release-backend';
+import { backupProduction } from '../../scripts/release-backup';
 
-test('migration backup is private, outside the repository, and retains a digest receipt', async () => {
+test('production backup is private, outside the repository, and retains a digest receipt', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'release-backup-test-'));
   const root = join(directory, 'workspace');
   mkdirSync(root);
   try {
     await expect(
-      backupForMigration(root, 'a'.repeat(40), 'b'.repeat(40), () => undefined, root),
+      backupProduction(root, 'a'.repeat(40), 'b'.repeat(40), () => undefined, root),
     ).rejects.toThrow(/fora/);
     const misleading = join(root, '..private');
     mkdirSync(misleading);
     await expect(
-      backupForMigration(root, 'a'.repeat(40), 'b'.repeat(40), () => undefined, misleading),
+      backupProduction(root, 'a'.repeat(40), 'b'.repeat(40), () => undefined, misleading),
     ).rejects.toThrow(/fora/);
-    const path = await backupForMigration(
+    const path = await backupProduction(
       root,
       'a'.repeat(40),
       'b'.repeat(40),
@@ -32,7 +32,7 @@ test('migration backup is private, outside the repository, and retains a digest 
     expect(receipt.sha256).toMatch(/^[a-f0-9]{64}$/);
     expect(receipt.includesFileStorage).toBe(true);
     await expect(
-      backupForMigration(
+      backupProduction(
         root,
         'a'.repeat(40),
         'b'.repeat(40),

@@ -198,11 +198,7 @@ async function childFixture(t: TestContext) {
   const path = await localFixture(t);
   await mkdir(join(path, 'scripts'));
   await mkdir(join(path, 'config'));
-  await mkdir(join(path, 'convex/releases'), { recursive: true });
-  await copyFile(
-    join(repository, 'convex/releases/plan.ts'),
-    join(path, 'convex/releases/plan.ts'),
-  );
+  await mkdir(join(path, 'convex'));
   await symlink(
     join(repository, 'node_modules'),
     join(path, 'node_modules'),
@@ -214,12 +210,7 @@ async function childFixture(t: TestContext) {
     'environment.ts',
     'doctor.ts',
     'deploy-production.ts',
-    'release-coordination.ts',
-    'release-candidate.ts',
-    'release-backend.ts',
-    'release-contracts.ts',
-    'release-scheduled.ts',
-    'release-smoke-config.ts',
+    'release-snapshot.ts',
     'assert-production-target.ts',
   ])
     await copyFile(join(repository, 'scripts', name), join(path, 'scripts', name));

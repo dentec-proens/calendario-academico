@@ -1,121 +1,123 @@
 import { execFileSync, spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { environments } from '../config/environments.ts';
-import { assertNoTargetOverrides, convexCli, root } from './environment.ts';
-import { parseReleaseStatus } from './release-coordination.ts';
-import { productionCandidates } from './release-candidate.ts';
-import { randomUUID } from 'node:crypto';
-import { releaseSmokeConfiguration } from './release-smoke-config.ts';
-import {
-  backupForMigration,
-  changesBackend,
-  inspectBackend,
-  migrateAndVerify,
-} from './release-backend.ts';
-import { assertRemoteFunctions, fingerprint } from './release-contracts.ts';
-import type { Doc } from '../convex/_generated/dataModel.js';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import type * as EnvironmentConfig from '../config/environments.ts';
+import type * as EnvironmentTools from './environment.ts';
+import type * as BackupTools from './release-backup.ts';
+import type * as CandidateTools from './release-candidate.ts';
+import type * as CoordinationTools from './release-coordination.ts';
+import { createReleaseSnapshot } from './release-snapshot.ts';
 
 const args = process.argv.slice(2);
 const dryRun = args.length === 1 && args[0] === '--dry-run';
-const resume = args.length === 1 && args[0] === '--resume';
-const contract =
-  (args.length === 2 || (args.length === 3 && args[2] === '--resume')) &&
-  args[0] === '--contract-manual-sources'
-    ? args[1]
-    : undefined;
-const branch = environments.git.branch;
-
-function git(...values: string[]): string {
-  return execFileSync('git', values, {
-    cwd: root,
+const root = fileURLToPath(new URL('../', import.meta.url));
+let releaseRoot = root;
+const lockRef = 'refs/heads/codex/production-release-lock';
+function git(...args: string[]): string {
+  return execFileSync('git', args, {
+    cwd: releaseRoot,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
 }
-function run(command: string, values: string[], env = process.env): void {
-  const result = spawnSync(command, values, { cwd: root, env, stdio: 'inherit' });
+function run(command: string, args: string[], env = process.env): void {
+  const result = spawnSync(command, args, { cwd: releaseRoot, env, stdio: 'inherit' });
   if (result.error) throw result.error;
   if (result.status !== 0)
-    throw Error(`Falhou: ${command} ${values[0] ?? ''}. Publicação interrompida.`);
+    throw Error(`Falhou: ${command} ${args[0] ?? ''}. Release interrompida.`);
 }
-function runChecks(): void {
-  // Corepack pode fornecer pnpm em JS ou como binário nativo. No Windows,
-  // wrappers .cmd exigem cmd.exe; não use shell para argumentos variáveis.
-  const manager = process.env.npm_execpath;
-  if (manager && /\.(?:c|m)?js$/i.test(manager)) run(process.execPath, [manager, 'check']);
-  else if (process.platform === 'win32' && (!manager || /\.(?:cmd|bat)$/i.test(manager)))
-    run('cmd.exe', ['/d', '/s', '/c', 'pnpm check']);
-  else run(manager || 'pnpm', ['check']);
-}
-function assertClean(): void {
+function assertCode(commit?: string) {
   if (git('status', '--porcelain'))
-    throw Error('Faça commit das alterações e dos arquivos novos antes de publicar.');
+    throw Error('O snapshot da release foi alterado durante a publicação.');
   if (git('ls-files', '--others', '--ignored', '--exclude-standard', '--', 'convex'))
     throw Error('Mova os arquivos ignorados de convex/ para fora da pasta antes de publicar.');
+  if (commit && git('rev-parse', 'HEAD') !== commit)
+    throw Error('O commit mudou durante a publicação.');
 }
-function assertUnchanged(commit: string): void {
-  assertClean();
-  if (git('branch', '--show-current') !== branch || git('rev-parse', 'HEAD') !== commit)
-    throw Error('A branch ou o commit mudou durante a publicação.');
-}
-function assertOrigin(): void {
+function assertOrigin(repository: string) {
   const urls = git('remote', 'get-url', '--push', '--all', 'origin').split('\n');
-  const expected = environments.git.repository;
   if (
     urls.length !== 1 ||
     ![
-      `https://github.com/${expected}.git`,
-      `https://github.com/${expected}`,
-      `git@github.com:${expected}.git`,
-      `ssh://git@github.com/${expected}.git`,
+      `https://github.com/${repository}.git`,
+      `https://github.com/${repository}`,
+      `git@github.com:${repository}.git`,
+      `ssh://git@github.com/${repository}.git`,
     ].includes(urls[0]!)
   )
-    throw Error(`origin precisa apontar para github.com/${expected}.`);
+    throw Error(`origin precisa apontar para github.com/${repository}.`);
 }
 
 let temporary: string | undefined;
+let snapshot: ReturnType<typeof createReleaseSnapshot> | undefined;
 let lock: string | undefined;
 let completed = false;
+let backendAttempted = false;
 let promotionAttempted = false;
-let closeSession: (() => void) | undefined;
-const lockRef = 'refs/heads/codex/production-release-lock';
 try {
-  if (args.length && !dryRun && !resume && !contract)
-    throw Error(
-      'Uso: pnpm deploy:production [--dry-run|--resume|--contract-manual-sources DIRETORIO [--resume]]',
+  if (args.length && !dryRun) throw Error('Uso: pnpm deploy:production [--dry-run]');
+  if (dryRun) {
+    const { environments }: typeof EnvironmentConfig = await import('../config/environments.ts');
+    console.log(
+      `Destinos: Convex ${environments.production.deployment}; Vercel ${environments.vercel.team}/${environments.vercel.project}.`,
     );
-  assertNoTargetOverrides(process.env);
-  console.log(`Produção Convex: ${environments.production.deployment}`);
-  console.log(
-    'Ordem: conferir código → validar compatibilidade → candidato sem domínio público → smoke → promover.',
-  );
-  if (contract) {
-    const { contractManualSources } = await import('./release-manual-source-contract.ts');
-    await contractManualSources(
-      contract,
-      { check: runChecks, clean: assertClean, origin: assertOrigin, unchanged: assertUnchanged },
-      args.length === 3,
+    console.log(
+      'Ordem: capturar HEAD em checkout isolado e instalar dependências fixadas → conferir destinos/reservar → build Production Vercel → backup se o backend mudou → deploy Convex → migrações → promover.',
     );
-  } else if (dryRun) {
     console.log('Simulação: nenhum comando, conexão remota ou arquivo de ambiente foi alterado.');
   } else {
-    if (git('branch', '--show-current') !== branch) throw Error(`Publique pela branch ${branch}.`);
-    assertOrigin();
-    assertClean();
-    const commit = git('rev-parse', 'HEAD');
-    run('git', ['fetch', '--no-tags', 'origin', branch]);
-    run('git', ['merge-base', '--is-ancestor', `origin/${branch}`, 'HEAD']);
-    run('git', ['push', '--dry-run', 'origin', `HEAD:refs/heads/${branch}`]);
-    runChecks();
-    assertUnchanged(commit);
+    const sourceBranch = git('branch', '--show-current');
+    if (!sourceBranch) throw Error('A release exige uma branch de origem.');
+    const commit = git('rev-parse', `refs/heads/${sourceBranch}`);
+    snapshot = createReleaseSnapshot(root, commit);
+    releaseRoot = snapshot.directory;
+    assertCode(commit);
+    console.log(`Snapshot da release: ${commit}. Alterações locais não serão publicadas.`);
+    run('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts']);
+    assertCode(commit);
+    const { environments }: typeof EnvironmentConfig = await import(
+      pathToFileURL(join(releaseRoot, 'config/environments.ts')).href
+    );
+    const { assertNoTargetOverrides, convexCli }: typeof EnvironmentTools = await import(
+      pathToFileURL(join(releaseRoot, 'scripts/environment.ts')).href
+    );
+    const { backupProduction, changesBackend }: typeof BackupTools = await import(
+      pathToFileURL(join(releaseRoot, 'scripts/release-backup.ts')).href
+    );
+    const { productionCandidates }: typeof CandidateTools = await import(
+      pathToFileURL(join(releaseRoot, 'scripts/release-candidate.ts')).href
+    );
+    const { parseReleaseStatus, waitForMigrations }: typeof CoordinationTools = await import(
+      pathToFileURL(join(releaseRoot, 'scripts/release-coordination.ts')).href
+    );
+    assertNoTargetOverrides(process.env);
+    const branch = environments.git.branch;
+    if (sourceBranch !== branch) throw Error(`Publique pela branch ${branch}.`);
+    console.log(
+      `RELEASE — Convex ${environments.production.deployment}; Vercel ${environments.vercel.team}/${environments.vercel.project}.`,
+    );
+    console.log('Sem pnpm check ou testes. Typecheck do Convex preservado.');
+    assertCode(commit);
+    assertOrigin(environments.git.repository);
     const token = process.env.VERCEL_TOKEN;
     if (!token) throw Error('Configure VERCEL_TOKEN antes da release.');
-    const smoke = releaseSmokeConfiguration();
+    run('git', ['fetch', '--no-tags', 'origin', branch]);
+    run('git', ['merge-base', '--is-ancestor', `origin/${branch}`, commit]);
     const platform = productionCandidates(token);
     const previous = await platform.current();
     run('git', ['merge-base', '--is-ancestor', previous.commit, commit]);
+    const backend = changesBackend(
+      git('diff', '--no-renames', '--name-only', previous.commit, commit, '--')
+        .split('\n')
+        .filter(Boolean),
+    );
+    if (backend && !process.env.DENTEC_RELEASE_BACKUP_DIR)
+      throw Error(
+        'Configure DENTEC_RELEASE_BACKUP_DIR fora do repositório: o backend mudou e será exportado antes do deploy.',
+      );
     temporary = mkdtempSync(join(tmpdir(), 'calendario-release-'));
     const targetFile = join(temporary, 'production.env');
     writeFileSync(targetFile, `CONVEX_DEPLOYMENT=prod:${environments.production.deployment}\n`, {
@@ -135,79 +137,35 @@ try {
           '--codegen',
           'disable',
         ],
-        { cwd: root, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+        {
+          cwd: releaseRoot,
+          env,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        },
       ).trim();
     }
-    const control = (name: string, values: Record<string, unknown> = {}) =>
-      call(`operations:${name}`, values);
     function metadata() {
-      return JSON.parse(
+      const value = JSON.parse(
         execFileSync(process.execPath, [convexCli, 'function-spec', '--env-file', targetFile], {
-          cwd: root,
+          cwd: releaseRoot,
           env,
           encoding: 'utf8',
           maxBuffer: 16 * 1024 * 1024,
           stdio: ['ignore', 'pipe', 'pipe'],
         }),
       ) as { url: string; functions: Array<{ identifier?: string }> };
+      if (value.url !== environments.production.url || !Array.isArray(value.functions))
+        throw Error('Metadados do Convex não comprovam o destino de produção.');
+      return value;
     }
-    const remote = metadata();
-    const installed = remote.functions.some((fn) => fn.identifier === 'releases.js:installed')
-      ? 'releases:installed'
-      : 'releases:status';
-    const installedReceipt = remote.functions.some((fn) => fn.identifier === 'releases.js:status')
-      ? (JSON.parse(call(installed) || 'null') as Doc<'releaseProgress'> | null)
-      : null;
-    if (installedReceipt && 'mode' in installedReceipt) {
-      if (installedReceipt.phase !== 'complete')
-        throw Error(
-          'Fast release pendente exige reconciliação manual; --resume retoma somente a release normal.',
-        );
-      if (resume)
-        throw Error(
-          'Fast release já concluída. Para uma nova release normal, execute sem --resume.',
-        );
-    }
-    const receipt = installedReceipt && !('mode' in installedReceipt) ? installedReceipt : null;
-    if (receipt && receipt.phase !== 'complete' && (!resume || receipt.commit !== commit))
-      throw Error('Há uma expansão pendente. Retome o mesmo commit com --resume.');
-    if (resume && (!receipt || receipt.phase === 'complete' || receipt.commit !== commit))
-      throw Error('Não há expansão deste commit para retomar.');
-    const backendCommit = resume
-      ? receipt!.previousBackend
-      : (installedReceipt?.commit ?? process.env.DENTEC_RELEASE_BACKEND_COMMIT);
-    if (!backendCommit || !/^[a-f0-9]{40}$/.test(backendCommit))
-      throw Error('Configure DENTEC_RELEASE_BACKEND_COMMIT com o SHA comprovado para o bootstrap.');
+    metadata();
     function assertOnline() {
-      const status = parseReleaseStatus(control('status'));
+      const status = parseReleaseStatus(call('operations:status'));
       if (status.paused || status.emergency)
-        throw Error('Há uma manutenção ativa. Reconcilie-a antes da release online.');
-      if (!installedReceipt && status.commit !== backendCommit)
-        throw Error('O registro operacional diverge do recibo de bootstrap.');
+        throw Error('Há uma manutenção ativa. Reconcilie-a antes da release.');
     }
     assertOnline();
-    run('git', ['merge-base', '--is-ancestor', backendCommit, commit]);
-    const paths = git('diff', '--no-renames', '--name-only', backendCommit, commit, '--')
-      .split('\n')
-      .filter(Boolean);
-    const expansion = changesBackend(paths)
-      ? await inspectBackend(root, backendCommit, paths, remote, resume)
-      : null;
-    if (
-      resume &&
-      (!expansion ||
-        receipt!.planHash !== expansion.planHash ||
-        receipt!.contractHash !== expansion.contractHash)
-    )
-      throw Error('Código ou plano divergente da expansão pendente.');
-    control('smokePreflight', {
-      userId: smoke.userId,
-      email: smoke.email,
-      calendarId: smoke.calendarId,
-    });
-    run(process.execPath, ['--import', 'tsx', 'scripts/release-smoke.ts', '--check-browser'], env);
-    // The empty expected value atomically creates a reservation. Resume replaces
-    // only the exact previous owner, which is also checked by Convex mutations.
     const owner = git(
       'commit-tree',
       `${commit}^{tree}`,
@@ -216,186 +174,84 @@ try {
       '-m',
       `Release ${commit}; owner ${randomUUID()}`,
     );
-    const expectedOwner = resume ? receipt!.owner : '';
     console.log(`Reserva exclusiva: ${lockRef} (${owner}).`);
     try {
-      run('git', [
-        'push',
-        `--force-with-lease=${lockRef}:${expectedOwner}`,
-        'origin',
-        `${owner}:${lockRef}`,
-      ]);
+      run('git', ['push', `--force-with-lease=${lockRef}:`, 'origin', `${owner}:${lockRef}`]);
     } catch {
       throw Error(
-        `Não foi possível confirmar a reserva. Confira ${lockRef}; uma resposta perdida pode ter reservado ${owner}. Não remova a reserva de outra release.`,
+        `Reserva sem confirmação. Confira ${lockRef} e o proprietário ${owner} antes de repetir.`,
       );
     }
     lock = owner;
-    const previousFrontend = resume
-      ? await platform.deployment(receipt!.previousFrontend)
-      : previous;
-    if (resume && previous.id !== previousFrontend.id && previous.id !== receipt!.candidateId)
-      throw Error('O domínio diverge dos dois deployments da release pendente.');
-    if (!resume) await platform.assertCurrent(previous);
+    await platform.assertCurrent(previous);
     await platform.keepDomainsManual();
-    assertUnchanged(commit);
+    assertCode(commit);
     run('git', ['push', 'origin', `${commit}:refs/heads/${branch}`]);
-    const candidate =
-      resume && receipt!.candidateId
-        ? await platform.deployment(receipt!.candidateId)
-        : await platform.stage(commit);
-    if (candidate.commit !== commit) throw Error('O candidato não pertence ao commit retomado.');
-    console.log(`Candidato: ${candidate.id}, ${candidate.url}.`);
-    const sessionFile = join(temporary, 'session.json');
-    if (expansion) {
-      closeSession = () =>
-        run(
-          process.execPath,
-          ['--import', 'tsx', 'scripts/release-session-probe.ts', 'finish', sessionFile],
-          env,
-        );
-      run(
-        process.execPath,
-        ['--import', 'tsx', 'scripts/release-session-probe.ts', 'start', sessionFile],
-        env,
-      );
-      assertOnline();
-      if (!resume) {
-        if (expansion.plan.migrations.length) {
-          const backup = await backupForMigration(root, commit, backendCommit, (path) =>
-            run(
-              process.execPath,
-              [
-                convexCli,
-                'export',
-                '--env-file',
-                targetFile,
-                '--path',
-                path,
-                '--include-file-storage',
-              ],
-              env,
-            ),
-          );
-          console.log(`Backup privado com Storage conferido: ${backup}.`);
-        }
-        run(
-          process.execPath,
-          [
-            convexCli,
-            'deploy',
-            '--env-file',
-            targetFile,
-            '--yes',
-            '--codegen',
-            'disable',
-            '--cmd',
-            'node --import tsx scripts/assert-production-target.ts',
-            '--cmd-url-env-var-name',
-            'DENTEC_DEPLOYMENT_URL',
-            '--message',
-            `expand ${commit}`,
-          ],
-          env,
-        );
-      }
-      assertRemoteFunctions(metadata(), expansion.after, environments.production.url);
-      call('releases:begin', {
-        commit,
-        previousBackend: backendCommit,
-        previousFrontend: previousFrontend.id,
-        owner,
-        ...(resume ? { previousOwner: receipt!.owner } : {}),
-        contractHash: expansion.contractHash,
-        planHash: expansion.planHash,
-        plan: expansion.plan,
-      });
-      run(
-        process.execPath,
-        ['--import', 'tsx', 'scripts/release-session-probe.ts', 'verify', sessionFile],
-        env,
-      );
-      await migrateAndVerify(
-        expansion.plan,
-        (id, verify) =>
-          JSON.parse(call('releases:batch', { owner, id, verify })) as {
-            done: boolean;
-            count: number;
-          },
-      );
-      // Validate the actual previous frontend against expanded/migrated data,
-      // including when an ambiguous prior promotion has already switched aliases.
-      run(process.execPath, ['--import', 'tsx', 'scripts/release-smoke.ts'], {
-        ...env,
-        DENTEC_RELEASE_CANDIDATE_URL: previousFrontend.url,
-      });
-    }
-    run(process.execPath, ['--import', 'tsx', 'scripts/release-smoke.ts'], {
-      ...env,
-      DENTEC_RELEASE_CANDIDATE_URL: candidate.url,
-    });
-    assertUnchanged(commit);
-    assertOnline();
-    if (!expansion && fingerprint(metadata()) !== fingerprint(remote))
-      throw Error('Os contratos do backend mudaram durante a validação.');
-    if (expansion) {
-      assertRemoteFunctions(metadata(), expansion.after, environments.production.url);
-      const current = JSON.parse(call('releases:status')) as Doc<'releaseProgress'>;
-      if (
-        'mode' in current ||
-        current.owner !== owner ||
-        current.commit !== commit ||
-        current.planHash !== fingerprint(expansion.plan)
-      )
-        throw Error('A reserva ou o plano do backend mudou.');
-      run(
-        process.execPath,
-        ['--import', 'tsx', 'scripts/release-session-probe.ts', 'verify', sessionFile],
-        env,
-      );
-      call('releases:validated', { owner, candidateId: candidate.id });
-    }
-    if (previous.id !== candidate.id) {
-      await platform.assertCurrent(previousFrontend);
-      promotionAttempted = true;
-      await platform.promote(candidate, previousFrontend);
-    } else await platform.assertCurrent(candidate);
-    if (expansion) {
-      run(
-        process.execPath,
-        ['--import', 'tsx', 'scripts/release-session-probe.ts', 'verify', sessionFile],
-        env,
-      );
-      call('releases:complete', { owner, candidateId: candidate.id });
-    }
-    completed = true;
+    const candidate = await platform.stage(commit);
     console.log(
-      `Release ${commit.slice(0, 8)} confirmada. Deployment anterior para recuperação: ${previous.id}.`,
+      `Candidato Production READY: ${candidate.id}, ${candidate.url}. Anterior: ${previous.id}.`,
     );
+    assertCode(commit);
+    assertOnline();
+    await platform.assertCurrent(previous);
+    if (backend) {
+      const backup = await backupProduction(root, commit, previous.commit, (path) =>
+        run(
+          process.execPath,
+          [convexCli, 'export', '--env-file', targetFile, '--path', path, '--include-file-storage'],
+          env,
+        ),
+      );
+      console.log(`Backup privado com Storage conferido: ${backup}.`);
+    }
+    backendAttempted = true;
+    run(
+      process.execPath,
+      [
+        convexCli,
+        'deploy',
+        '--env-file',
+        targetFile,
+        '--yes',
+        '--codegen',
+        'disable',
+        '--cmd',
+        'node --import tsx scripts/assert-production-target.ts',
+        '--cmd-url-env-var-name',
+        'DENTEC_DEPLOYMENT_URL',
+        '--message',
+        `release ${commit}`,
+      ],
+      env,
+    );
+    if (metadata().functions.some((fn) => fn.identifier === 'migrations.js:start')) {
+      call('migrations:start');
+      const migrated = await waitForMigrations(() => JSON.parse(call('migrations:status')));
+      for (const { name, processed } of migrated)
+        console.log(`Migração ${name} concluída: ${processed} documentos.`);
+    }
+    assertCode(commit);
+    assertOnline();
+    promotionAttempted = true;
+    await platform.promote(candidate, previous);
+    completed = true;
+    console.log(`Release ${commit.slice(0, 8)} confirmada em produção. Anterior: ${previous.id}.`);
   }
 } catch (error) {
-  // Child-process errors may contain credentials in stderr; do not dump them.
   console.error(
     error instanceof Error && !('stderr' in error)
       ? error.message
-      : 'Uma operação da release falhou. Confira os registros locais e os destinos.',
+      : 'Uma operação da release falhou. Confira os registros e os destinos.',
   );
   console.error(
     promotionAttempted
-      ? 'A promoção pode ter ocorrido. Confira o deployment no domínio público antes de repetir; não restaure dados nem o backend automaticamente.'
-      : 'A release não promoveu o candidato. Confira o domínio público antes de recuperar uma operação ambígua.',
+      ? 'A promoção pode ter ocorrido. Confira o domínio e o backend antes de repetir.'
+      : backendAttempted
+        ? 'O backend pode ter sido publicado; o candidato não foi promovido. Depois de conferir, libere a reserva e repita a release: as migrações retomam de onde pararam.'
+        : 'Este comando não tentou publicar o backend nem promover o candidato.',
   );
   process.exitCode = 1;
 } finally {
-  if (closeSession)
-    try {
-      closeSession();
-    } catch {
-      console.error(
-        'Não foi possível encerrar a sessão operacional de conferência. As demais sessões foram preservadas.',
-      );
-      process.exitCode = 1;
-    }
   if (lock && completed) {
     try {
       run('git', ['push', `--force-with-lease=${lockRef}:${lock}`, 'origin', `:${lockRef}`]);
@@ -405,7 +261,15 @@ try {
     }
   } else if (lock)
     console.error(
-      `Reserva preservada em ${lockRef} (${lock}). Confira candidato, backend e domínio antes de removê-la com force-with-lease.`,
+      `Reserva preservada em ${lockRef} (${lock}). Confira domínio e backend antes de removê-la com force-with-lease.`,
     );
   if (temporary) rmSync(temporary, { recursive: true, force: true });
+  if (snapshot) {
+    try {
+      snapshot.dispose();
+    } catch {
+      console.error(`Não foi possível remover o checkout temporário ${snapshot.directory}.`);
+      process.exitCode = 1;
+    }
+  }
 }

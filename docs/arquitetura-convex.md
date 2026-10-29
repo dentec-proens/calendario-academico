@@ -71,7 +71,7 @@ PDFs ficam no Storage, e URLs são obtidas no acesso. Uploads têm proprietário
 
 Prévia, impressão e PDF usam o mesmo modelo. O gerador controla o Chromium, bloqueia a rede do renderizador e usa somente recursos locais. Produção não carrega Devtools nem a depuração de formulários sensíveis.
 
-A admissão de actions e a pausa de manutenção são transacionais; mutations de domínio e criação de sessões verificam a manutenção. A presença mantém o ciclo próprio do componente, sem alterar o domínio acadêmico. O smoke pode autorizar temporariamente uma conta ADMIN local na janela do commit. Actions registram o lease no log e o removem em `finally`; um lease sem conclusão permanece visível e bloqueia publicação, pois idade não prova término. A recuperação está em [Implantação e operação](implantacao-convex-vercel.md), e a validação em [Verificação](verificacao.md).
+A admissão de actions e a pausa de manutenção são transacionais; mutations de domínio e criação de sessões verificam a manutenção. A presença mantém o ciclo próprio do componente, sem alterar o domínio acadêmico. Actions registram o lease no log e o removem em `finally`; um lease sem conclusão permanece visível e bloqueia publicação, pois idade não prova término. A recuperação está em [Implantação e operação](implantacao-convex-vercel.md), e a validação em [Verificação](verificacao.md).
 
 ## Conteúdo v3 e política de 2027
 
@@ -113,7 +113,7 @@ Na grade de sábados, o estado aplicado vem dos comandos e a seleção pertence 
 
 A revisão numérica da base é um marcador técnico; a equivalência considera o conteúdo aplicável ao calendário: eventos, fontes, aplicabilidade e arquivos documentais. Ordem dos registros, ofertas externas e metadados operacionais não exigem decisão do usuário.
 
-Uma base equivalente não apresenta card: a sincronização atualiza somente a referência técnica, sem recalcular datas, alterar autoria ou criar versão, e não é pré-requisito para salvar ou gerar PDF. No smoke autorizado em manutenção, a sincronização não grava nada. Alterações reais exigem confirmação vinculada à identidade do conteúdo exibido, verificada novamente na transação. Mudanças em eventos recalculam o calendário; mudanças apenas documentais preservam as datas. Ambas geram versão editorial.
+Uma base equivalente não apresenta card: a sincronização atualiza somente a referência técnica, sem recalcular datas, alterar autoria ou criar versão, e não é pré-requisito para salvar ou gerar PDF. Alterações reais exigem confirmação vinculada à identidade do conteúdo exibido, verificada novamente na transação. Mudanças em eventos recalculam o calendário; mudanças apenas documentais preservam as datas. Ambas geram versão editorial.
 
 Revisões humanas guardam a identidade da base. Uma mudança irrelevante no contador não invalida a análise; mudanças no conteúdo aplicável ou na versão editorial invalidam. Revisões antigas sem essa identidade continuam exigindo a revisão técnica original, pois não há evidência para declarar equivalência retroativa. A sincronização nunca reescreve uma revisão humana.
 

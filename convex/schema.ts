@@ -1,7 +1,6 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 import { authTables } from '@convex-dev/auth/server';
-import { releaseTables } from './releases/schema';
 import {
   contentState,
   modality,
@@ -17,7 +16,6 @@ import {
 
 export default defineSchema({
   ...authTables,
-  ...releaseTables,
   users: defineTable({
     ...authTables.users.validator.fields,
     name: v.string(),
@@ -193,7 +191,6 @@ export default defineSchema({
     paused: v.boolean(),
     commit: v.string(),
     changedAt: v.number(),
-    smokeUserId: v.optional(v.id('users')),
   }).index('by_key', ['key']),
   operationalLeases: defineTable({
     operation: v.string(),

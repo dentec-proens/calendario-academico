@@ -322,7 +322,7 @@ test('abandoned public OAuth starts and expired credentials are cleaned within a
   });
 });
 
-test('maintenance pauses hygiene and preserves the original operational smoke exception', async () => {
+test('maintenance pauses hygiene and blocks every sign-in', async () => {
   const { client, ids } = await fixture();
   await client.run(async (ctx) => {
     await ctx.db.insert('operationalControl', {
@@ -330,7 +330,6 @@ test('maintenance pauses hygiene and preserves the original operational smoke ex
       paused: true,
       commit: 'synthetic-security',
       changedAt: Date.now(),
-      smokeUserId: ids.users.admin,
     });
     await ctx.db.insert('authAccounts', {
       userId: ids.users.admin,
@@ -349,11 +348,13 @@ test('maintenance pauses hygiene and preserves the original operational smoke ex
     continued: false,
   });
   assert.equal((await client.run((ctx) => ctx.db.query('passwordResets').collect())).length, 1);
-  const signedIn = await client.action(api.auth.signIn, {
-    provider: 'password',
-    params: { flow: 'signIn', email: 'admin@ifpr.edu.br', password: 'admin-synthetic-password' },
-  });
-  assert.ok(signedIn.tokens);
+  await assert.rejects(
+    client.action(api.auth.signIn, {
+      provider: 'password',
+      params: { flow: 'signIn', email: 'admin@ifpr.edu.br', password: 'admin-synthetic-password' },
+    }),
+    /manutenção/,
+  );
   await assert.rejects(
     client.action(api.auth.signIn, {
       provider: 'password',

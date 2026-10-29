@@ -179,6 +179,9 @@ importers:
       '@convex-dev/auth':
         specifier: 0.0.96
         version: 0.0.96(patch_hash=2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d)(@auth/core@0.41.3)(convex@1.48.0(react@19.3.1))(react@19.3.1)
+      '@convex-dev/migrations':
+        specifier: 0.3.7
+        version: 0.3.7(convex-helpers@0.1.129(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(convex@1.48.0(react@19.3.1))
       '@convex-dev/presence':
         specifier: 0.4.0
         version: 0.4.0(convex@1.48.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -341,6 +344,12 @@ packages:
     resolution: {integrity: sha512-kTxLGy1TXRN6WLcENcoRWWnvPshv1sIZp2EpPqGqCB4FxDI7m8tEHUr+jCLdhGtSZT1UHkWtb1w8YYuEzTxHWQ==}
     peerDependencies:
       convex: ^1.43.0
+
+  '@convex-dev/migrations@0.3.7':
+    resolution: {integrity: sha512-B5psv+FhfFLu2ttusIMcWiHS2fpxOiqWrvHl9wOjgcCwTy1Lqhvn2rY7LBQ8O6hVF5dPm8uoEbaNKPSHxkiD7A==}
+    peerDependencies:
+      convex: ^1.42.0
+      convex-helpers: ^0.1.115
 
   '@convex-dev/presence@0.4.0':
     resolution: {integrity: sha512-T1f2aHyS2D2dxvMnvY+qSJBIRG0W7ph8+mgOvZif52JLlLNscCHTangAgNWR4VLYGhXFFDxwSSpdh7vxzA/hPQ==}
@@ -2033,6 +2042,11 @@ snapshots:
       - react
       - typescript
       - zod
+
+  '@convex-dev/migrations@0.3.7(convex-helpers@0.1.129(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(convex@1.48.0(react@19.3.1))':
+    dependencies:
+      convex: 1.48.0(react@19.3.1)
+      convex-helpers: 0.1.129(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
 
   '@convex-dev/presence@0.4.0(convex@1.48.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:

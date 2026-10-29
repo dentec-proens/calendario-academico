@@ -30,7 +30,7 @@ pnpm test:browser:install
 pnpm check
 ```
 
-`check` executa localmente formatação, lint, tipos, testes unitários, testes de navegador e visuais e build. É a validação obrigatória antes de uma release normal; `deploy:production` a executa antes de publicar. O modo opcional `deploy:production:fast` exige pedido explícito de **fast release**, publica um snapshot do HEAD e permite continuar editando arquivos locais sem incluí-los na release. Ele omite essa validação e o smoke; consulte [Implantação e operação](docs/implantacao-convex-vercel.md#fast-release). O teste do runtime PDF usa Linux e roda pelo Docker Desktop, com `pnpm test:runtime:linux`. Consulte [comandos, desempenho, referências visuais e E2E](docs/verificacao.md).
+`check` executa localmente formatação, lint, tipos, testes unitários, testes de navegador e visuais e build. É a validação obrigatória do desenvolvimento. `deploy:production` publica um snapshot do HEAD sem repeti-la, permitindo continuar editando arquivos locais sem incluí-los na release; consulte [Implantação e operação](docs/implantacao-convex-vercel.md#publicação). O teste do runtime PDF usa Linux e roda pelo Docker Desktop, com `pnpm test:runtime:linux`. Consulte [comandos, desempenho, referências visuais e E2E](docs/verificacao.md).
 
 ## Documentação
 

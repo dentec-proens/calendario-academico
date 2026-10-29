@@ -2,101 +2,63 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 import {
   parseReleaseStatus,
-  waitForDrain,
-  waitForFrontend,
+  waitForMigrations,
+  type MigrationProgress,
 } from '../../scripts/release-coordination';
 
-const commit = 'a'.repeat(40);
-const requestUrl = (input: RequestInfo | URL) =>
-  typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+const migration = (state: MigrationProgress['state'], error: string | null = null) => ({
+  name: 'migrations:fillLabel',
+  state,
+  processed: 2,
+  error,
+});
 
-test('draining fails closed on incomplete evidence and does not expire accepted actions', async () => {
+test('operational status fails closed on incomplete evidence', () => {
   assert.throws(() => parseReleaseStatus('{"paused":true,"commit":null}'), /válido/);
-  let time = 0;
-  let polls = 0;
-  await assert.rejects(
-    waitForDrain(
-      commit,
-      () => {
-        polls++;
-        return {
-          emergency: false,
-          paused: true,
-          commit,
-          active: [{ id: 'lease', operation: 'pdf', startedAt: 0 }],
-        };
-      },
-      {
-        timeoutMs: 10,
-        now: () => time,
-        sleep: async () => {
-          time += 10;
-        },
-      },
-    ),
-    /conclusão das actions/,
-  );
-  assert.equal(polls, 2);
-  await assert.rejects(
-    waitForDrain(commit, () => ({ emergency: false, paused: false, commit, active: [] })),
-    /não pertence/,
-  );
-});
-
-test('a ready build cannot release maintenance until the production domain serves the same deployment', async () => {
-  let time = 0;
-  const fetcher: typeof fetch = async (url) => {
-    const deployment = { id: 'new', state: 'READY', meta: { githubCommitSha: commit } };
-    return Response.json(
-      requestUrl(url).includes('/v7/')
-        ? { deployments: [deployment] }
-        : { ...deployment, id: 'old', meta: { githubCommitSha: 'b'.repeat(40) } },
-    );
-  };
-  await assert.rejects(
-    waitForFrontend(
-      commit,
-      { team: 'team', project: 'project', portalUrl: 'https://portal.example' },
-      'private-token',
-      {
-        fetcher,
-        timeoutMs: 10,
-        now: () => time,
-        sleep: async () => {
-          time += 10;
-        },
-      },
-    ),
-    /domínio de produção/,
-  );
-});
-
-test('frontend verification scopes the commit and sends the token only to the Vercel API', async () => {
-  const calls: Array<{ url: string; authorization: string | null }> = [];
-  const fetcher: typeof fetch = async (url, init) => {
-    calls.push({
-      url: requestUrl(url),
-      authorization: new Headers(init?.headers).get('Authorization'),
-    });
-    if (requestUrl(url).startsWith('https://api.vercel.com/')) {
-      const deployment = { id: 'current', state: 'READY', meta: { githubCommitSha: commit } };
-      return Response.json(
-        requestUrl(url).includes('/v7/') ? { deployments: [deployment] } : deployment,
-      );
-    }
-    return new Response('<html></html>', { headers: { 'Content-Type': 'text/html' } });
-  };
-  await waitForFrontend(
-    commit,
-    { team: 'team', project: 'project', portalUrl: 'https://portal.example' },
-    'private-token',
-    { fetcher },
-  );
-  assert.equal(calls.length, 3);
-  assert.equal(new URL(calls[0].url).searchParams.get('sha'), commit);
-  assert.equal(new URL(calls[0].url).searchParams.get('slug'), 'team');
   assert.deepEqual(
-    calls.map((call) => call.authorization),
-    ['Bearer private-token', 'Bearer private-token', null],
+    parseReleaseStatus('{"emergency":false,"paused":false,"commit":null,"active":[]}'),
+    { emergency: false, paused: false, commit: null, active: [] },
+  );
+});
+
+test('migrations are awaited until every one succeeds', async () => {
+  const states = [[migration('inProgress')], [migration('success')]];
+  let sleeps = 0;
+  const result = await waitForMigrations(() => states.shift()!, {
+    sleep: async () => {
+      sleeps++;
+    },
+  });
+  assert.deepEqual(result, [migration('success')]);
+  assert.equal(sleeps, 1);
+  assert.deepEqual(await waitForMigrations(() => []), []);
+});
+
+test('a failed, canceled or unstarted migration stops the release with its error', async () => {
+  await assert.rejects(
+    waitForMigrations(() => [migration('failed', 'Invalid document')]),
+    /fillLabel terminou como failed: Invalid document/,
+  );
+  await assert.rejects(
+    waitForMigrations(() => [migration('canceled')]),
+    /canceled/,
+  );
+  await assert.rejects(
+    waitForMigrations(() => [migration('unknown')]),
+    /unknown/,
+  );
+});
+
+test('slow migrations time out without cancelling their progress', async () => {
+  let time = 0;
+  await assert.rejects(
+    waitForMigrations(() => [migration('inProgress')], {
+      timeoutMs: 10,
+      now: () => time,
+      sleep: async () => {
+        time += 10;
+      },
+    }),
+    /progresso no Convex foi preservado/,
   );
 });

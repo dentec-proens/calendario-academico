@@ -98,7 +98,6 @@ export const createInput = v.object({
   purpose: v.optional(purpose),
 });
 export const saveInput = v.object({
-  unchangedOnly: v.optional(v.boolean()),
   baseAcceptance: v.optional(v.string()),
   version: v.number(),
   catalogueRevision: v.number(),

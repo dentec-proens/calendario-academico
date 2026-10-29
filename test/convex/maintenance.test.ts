@@ -7,15 +7,14 @@ import { convexModules } from '../helpers/convex-modules';
 import { createNativeFixture } from '../helpers/native-database';
 import { assertWritesOpen } from '../../convex/lib/maintenance';
 
-test('maintenance grants smoke only to its explicit active local ADMIN and revokes access afterwards', async () => {
+test('maintenance blocks every account, including ADMIN, until it is resumed', async () => {
   const fixture = await createNativeFixture();
-  const { client, ids } = fixture;
+  const { client } = fixture;
   const admin = fixture.asClient('admin');
-  const campus = fixture.asClient('campus-a');
   const commit = 'c'.repeat(40);
   const record = await admin.mutation(api.calendars.createCalendar, {
     body: {
-      campusId: ids.campuses.a,
+      campusId: fixture.ids.campuses.a,
       year: 2027,
       modalities: ['integrado'],
       regime: 'anual',
@@ -23,67 +22,32 @@ test('maintenance grants smoke only to its explicit active local ADMIN and revok
       purpose: 'test',
     },
   });
-  await client.mutation(internal.operations.pause, { commit });
-  assert.deepEqual(await admin.query(api.operations.availability, {}), { maintenance: true });
-  await assert.rejects(
-    client.mutation(internal.operations.authorizeSmoke, { commit, userId: ids.users['campus-a'] }),
-    /ADMIN/,
-  );
-  await client.mutation(internal.operations.authorizeSmoke, { commit, userId: ids.users.admin });
-  assert.deepEqual(await admin.query(api.operations.availability, {}), { maintenance: false });
-  assert.deepEqual(await campus.query(api.operations.availability, {}), { maintenance: true });
-  await client.run((ctx) => assertWritesOpen(ctx, ids.users.admin));
-  await assert.rejects(
-    client.run((ctx) => assertWritesOpen(ctx, ids.users['campus-a'])),
-    /manutenção/,
-  );
   const body = {
     version: record.version,
     catalogueRevision: record.catalogueRevision,
     state: record.state,
-    unchangedOnly: true,
   };
-  const saved = await admin.mutation(api.calendars.saveCalendar, { id: record.id, body });
-  assert.equal(saved.unchanged, true);
+  await client.mutation(internal.operations.pause, { commit });
+  assert.deepEqual(await admin.query(api.operations.availability, {}), { maintenance: true });
   await assert.rejects(
-    admin.mutation(api.calendars.saveCalendar, {
-      id: record.id,
-      body: {
-        ...body,
-        state: {
-          ...record.state,
-          events: [
-            {
-              id: 'content-note',
-              name: 'Mudança proibida no smoke',
-              kind: 'note',
-              start: '2027-03-01',
-              end: '2027-03-01',
-              modalities: ['integrado'],
-            },
-          ],
-        },
-      },
-    }),
-    /Nenhuma alteração foi gravada/,
-  );
-  assert.equal(
-    (await admin.query(api.calendars.calendar, { id: record.id })).version,
-    record.version,
-  );
-  vi.stubEnv('DENTEC_MAINTENANCE', '1');
-  await assert.rejects(
-    client.run((ctx) => assertWritesOpen(ctx, ids.users.admin)),
+    client.run((ctx) => assertWritesOpen(ctx)),
     /manutenção/,
   );
-  vi.unstubAllEnvs();
-  await client.mutation(internal.operations.endSmoke, { commit });
-  assert.deepEqual(await admin.query(api.operations.availability, {}), { maintenance: true });
   await assert.rejects(
     admin.mutation(api.calendars.saveCalendar, { id: record.id, body }),
     /manutenção/,
   );
   await client.mutation(internal.operations.resume, { commit });
+  assert.deepEqual(await admin.query(api.operations.availability, {}), { maintenance: false });
+  vi.stubEnv('DENTEC_MAINTENANCE', '1');
+  assert.deepEqual(await admin.query(api.operations.availability, {}), { maintenance: true });
+  await assert.rejects(
+    client.run((ctx) => assertWritesOpen(ctx)),
+    /manutenção/,
+  );
+  vi.unstubAllEnvs();
+  const saved = await admin.mutation(api.calendars.saveCalendar, { id: record.id, body });
+  assert.equal(saved.unchanged, true);
 });
 
 afterEach(() => vi.unstubAllEnvs());

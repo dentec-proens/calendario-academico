@@ -2,7 +2,7 @@ import { prepareCalendarSave } from '../src/domain/calendar/prepare-save';
 import { calendarContent } from '../src/domain/calendar/normalization/content';
 import { modalityIds } from '../src/domain/calendar/config';
 import { inspectBase, reconcileBase } from './calendars/base';
-import { assertWritesOpen, maintenanceAccess } from './lib/maintenance';
+import { assertWritesOpen } from './lib/maintenance';
 import { normalizeCalendar } from '../src/domain/calendar/normalization/normalize';
 import { rulesetVersion } from '../src/domain/policies/registry';
 import { inheritedEvents } from '../src/domain/institution/catalogue';
@@ -244,7 +244,7 @@ export const saveCalendar = mutation({
     const next = prepared.content as validators.ContentState;
     const institutionalSnapshot = clean(prepared.institutionalSnapshot);
     if (prepared.unchanged && !reconciliation.incorporate) {
-      if (!body.unchangedOnly && content.catalogueRevision !== base.revision)
+      if (content.catalogueRevision !== base.revision)
         await ctx.db.patch(content._id, { catalogueRevision: base.revision });
       return {
         base: inspectBase(state, content, base, docs).dto,
@@ -255,11 +255,6 @@ export const saveCalendar = mutation({
         readiness: (await baseRecord(ctx, user, id)).readiness,
       };
     }
-    if (body.unchangedOnly)
-      fail(
-        'O smoke exige um calendário de teste já salvo com a base atual. Nenhuma alteração foi gravada.',
-        409,
-      );
     await archive(ctx, row, content);
     await ctx.db.patch(content._id, {
       state: next,
@@ -300,10 +295,7 @@ export const synchronizeBase = mutation({
     const { row, content, compatibility } = await baseRecord(ctx, user, id);
     if (row.version !== version) fail('Há versão mais recente. Reabra o calendário.', 409);
     reconcileBase(compatibility);
-    if (
-      content.catalogueRevision !== compatibility.snapshot.revision &&
-      !(await maintenanceAccess(ctx))
-    )
+    if (content.catalogueRevision !== compatibility.snapshot.revision)
       await ctx.db.patch(content._id, { catalogueRevision: compatibility.snapshot.revision });
     return fullRecord(ctx, user, id);
   },

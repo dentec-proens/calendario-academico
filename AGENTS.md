@@ -32,9 +32,9 @@ Before editing files for a substantial task:
 
 ## Release para produção
 
-- Pedidos de release, deploy ou publicação em produção usam `pnpm deploy:production`. Somente um pedido explícito de **fast release** autoriza `pnpm deploy:production:fast`; falhas no fluxo normal exigem correção, sem troca automática para o rápido.
-- Na fast release autorizada, execute apenas o comando rápido, sem `pnpm check` ou suítes adicionais. Ele preserva o typecheck do Convex e o build remoto da Vercel. A implementação de mudanças de código, inclusive nessa ferramenta, continua sujeita à validação de desenvolvimento acima.
-- Antes de publicar ou recuperar uma release parcial de qualquer modo, consulte [Implantação e operação](docs/implantacao-convex-vercel.md), incluindo recibos, reserva exclusiva e restrições de migração.
+- Pedidos de release, deploy ou publicação em produção usam `pnpm deploy:production`, sem `pnpm check` ou suítes adicionais. Ele preserva o typecheck do Convex e o build remoto da Vercel. A implementação de mudanças de código, inclusive nessa ferramenta, continua sujeita à validação de desenvolvimento acima.
+- Mudanças que alteram dados existentes usam migrações em `convex/migrations.ts`, publicadas em duas releases: schema alargado com a migração em `pending`, depois o schema estreitado.
+- Antes de publicar ou recuperar uma release parcial, consulte [Implantação e operação](docs/implantacao-convex-vercel.md), incluindo backup, reserva exclusiva e migrações.
 
 ## Commits
 

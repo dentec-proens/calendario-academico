@@ -47,12 +47,10 @@ import type * as lib_maintenance from "../lib/maintenance.js";
 import type * as lib_pagination from "../lib/pagination.js";
 import type * as lib_shared from "../lib/shared.js";
 import type * as lib_uploads from "../lib/uploads.js";
+import type * as migrations from "../migrations.js";
 import type * as nativeFiles from "../nativeFiles.js";
 import type * as operations from "../operations.js";
 import type * as presence from "../presence.js";
-import type * as releases from "../releases.js";
-import type * as releases_contract from "../releases/contract.js";
-import type * as releases_plan from "../releases/plan.js";
 import type * as reviews from "../reviews.js";
 import type * as reviews_model from "../reviews/model.js";
 import type * as runtimeArtifacts from "../runtimeArtifacts.js";
@@ -105,12 +103,10 @@ declare const fullApi: ApiFromModules<{
   "lib/pagination": typeof lib_pagination;
   "lib/shared": typeof lib_shared;
   "lib/uploads": typeof lib_uploads;
+  migrations: typeof migrations;
   nativeFiles: typeof nativeFiles;
   operations: typeof operations;
   presence: typeof presence;
-  releases: typeof releases;
-  "releases/contract": typeof releases_contract;
-  "releases/plan": typeof releases_plan;
   reviews: typeof reviews;
   "reviews/model": typeof reviews_model;
   runtimeArtifacts: typeof runtimeArtifacts;
@@ -147,4 +143,5 @@ export declare const internal: FilterApi<
 export declare const components: {
   presence: import("@convex-dev/presence/_generated/component.js").ComponentApi<"presence">;
   rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+  migrations: import("@convex-dev/migrations/_generated/component.js").ComponentApi<"migrations">;
 };

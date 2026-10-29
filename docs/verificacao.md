@@ -24,33 +24,33 @@ Na primeira execução, instale o navegador:
 pnpm test:browser:install
 ```
 
-| Comando                        | Cobertura                                                                                                     |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                   | Validação local completa antes de uma release: formatação de código/configuração, lint, tipos, testes e build |
-| `pnpm format`                  | Formatação de código e configuração, sem Markdown                                                             |
-| `pnpm format:check`            | Conferência da formatação de código e configuração, sem Markdown                                              |
-| `pnpm format:docs`             | Formatação da documentação Markdown                                                                           |
-| `pnpm format:docs:check`       | Conferência da formatação da documentação Markdown, fora de `pnpm check`                                      |
-| `pnpm test`                    | Vitest + toda a suíte sintética de navegador, incluindo regressão visual                                      |
-| `pnpm test:unit`               | Domínio, backend e infraestrutura em Vitest                                                                   |
-| `pnpm test:watch`              | Vitest em modo contínuo                                                                                       |
-| `pnpm test:browser`            | Interações e regressão visual em Playwright                                                                   |
-| `pnpm test:browser:functional` | Apenas os fluxos de interação                                                                                 |
-| `pnpm test:visual`             | Comparação de screenshots em desktop (1440 × 1000) e mobile (390 × 844)                                       |
-| `pnpm test:browser:ui`         | Interface interativa do Playwright para investigar testes                                                     |
-| `pnpm test:browser:trace`      | Suíte local com gravação de traces, preservados nas falhas                                                    |
-| `pnpm test:visual:update`      | Atualização das referências visuais do sistema local, após revisão                                            |
-| `pnpm test:runtime`            | Geração real de PDFs com o Chromium serverless, executada dentro do container de `test:runtime:linux`         |
-| `pnpm test:runtime:linux`      | Teste do runtime PDF em Docker local, o único executado em Linux                                              |
-| `pnpm test:e2e`                | Integração Convex com destino descartável ou dev verificado e dados próprios                                  |
+| Comando                        | Cobertura                                                                                                |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                   | Validação local completa antes do commit: formatação de código/configuração, lint, tipos, testes e build |
+| `pnpm format`                  | Formatação de código e configuração, sem Markdown                                                        |
+| `pnpm format:check`            | Conferência da formatação de código e configuração, sem Markdown                                         |
+| `pnpm format:docs`             | Formatação da documentação Markdown                                                                      |
+| `pnpm format:docs:check`       | Conferência da formatação da documentação Markdown, fora de `pnpm check`                                 |
+| `pnpm test`                    | Vitest + toda a suíte sintética de navegador, incluindo regressão visual                                 |
+| `pnpm test:unit`               | Domínio, backend e infraestrutura em Vitest                                                              |
+| `pnpm test:watch`              | Vitest em modo contínuo                                                                                  |
+| `pnpm test:browser`            | Interações e regressão visual em Playwright                                                              |
+| `pnpm test:browser:functional` | Apenas os fluxos de interação                                                                            |
+| `pnpm test:visual`             | Comparação de screenshots em desktop (1440 × 1000) e mobile (390 × 844)                                  |
+| `pnpm test:browser:ui`         | Interface interativa do Playwright para investigar testes                                                |
+| `pnpm test:browser:trace`      | Suíte local com gravação de traces, preservados nas falhas                                               |
+| `pnpm test:visual:update`      | Atualização das referências visuais do sistema local, após revisão                                       |
+| `pnpm test:runtime`            | Geração real de PDFs com o Chromium serverless, executada dentro do container de `test:runtime:linux`    |
+| `pnpm test:runtime:linux`      | Teste do runtime PDF em Docker local, o único executado em Linux                                         |
+| `pnpm test:e2e`                | Integração Convex com destino descartável ou dev verificado e dados próprios                             |
 
 ## Validação local e release
 
-A exceção operacional é o pedido explícito de [fast release](implantacao-convex-vercel.md#fast-release): `pnpm deploy:production:fast` omite `check`, testes, build local e smoke. Mantém o typecheck do deploy Convex e o build remoto Production da Vercel. Essa exceção se aplica à publicação solicitada; ao implementar ou alterar código, permanece obrigatória a validação de desenvolvimento com `pnpm check`. Validações omitidas pelo modo rápido ficam identificadas no recibo e não contam como aprovação.
+A [release](implantacao-convex-vercel.md#publicação) não repete `check`, testes ou build local. Mantém o typecheck do deploy Convex e o build remoto Production da Vercel. Ao implementar ou alterar código, permanece obrigatória a validação de desenvolvimento com `pnpm check`.
 
-O repositório não executa GitHub Actions. `pnpm check` é o bloqueio local de release: `pnpm deploy:production` executa essa checagem antes de criar o candidato, publicar expansões compatíveis do backend e promover o domínio público. A suíte local inclui os fluxos de navegador e as referências visuais desktop e mobile do macOS; não há execução desses testes em Linux ou Docker.
+O repositório não executa GitHub Actions. `pnpm check` é o bloqueio local antes do commit que será publicado. A suíte local inclui os fluxos de navegador e as referências visuais desktop e mobile do macOS; não há execução desses testes em Linux ou Docker.
 
-O E2E com Convex continua separado e exige o opt-in descrito abaixo. Execute-o quando a mudança exigir integração real, em destino de desenvolvimento autorizado ou descartável, antes da release. Os testes sintéticos de `check` não acessam o backend remoto. O smoke operacional de publicação mantém suas verificações de login, navegação e PDF no portal publicado.
+O E2E com Convex continua separado e exige o opt-in descrito abaixo. Execute-o quando a mudança exigir integração real, em destino de desenvolvimento autorizado ou descartável, antes da release. Os testes sintéticos de `check` não acessam o backend remoto.
 
 ## Desempenho e diagnóstico
 

@@ -18,7 +18,7 @@ const projectId = 'prj_AlAdqLCrChRgLBS1wRnjif72pF01';
 const teamId = 'team_IEsOK7eMdDWvSxzHFg3re3ZT';
 
 // All platform credentials stay inside this adapter. Callers receive only a
-// deployment identity and its immutable URL, never a mutable alias to smoke.
+// deployment identity and its immutable URL, never a mutable alias.
 export function productionCandidates(
   token: string,
   {
@@ -139,7 +139,7 @@ export function productionCandidates(
       }
     } finally {
       // Promotion can change this project setting. Git auto-deploy is also
-      // disabled in vercel.json; do not allow a later push to bypass smoke.
+      // disabled in vercel.json; do not allow a later push to bypass promotion.
       await keepDomainsManual();
     }
   }
