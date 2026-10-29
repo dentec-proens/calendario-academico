@@ -423,7 +423,7 @@ foi executado contra esse desenvolvimento. Os comandos desta execução de
 publicação/verificação foram direcionados ao backend local descartável.
 Produção continua sem backup, migração ou publicação desta execução.
 
-## M7 — ensaio e verificação da release A (em andamento)
+## M7 — ensaio e verificação da release A (concluído)
 
 O responsável informou que as sessões Convex/Vercel estão no perfil **Dentec**
 do Google Chrome. A autenticação da CLI e o token da release continuam sendo o
@@ -593,7 +593,7 @@ Foi identificado um campus residual e seu calendário 8700, sem usuários ligado
 A página de regras foi conferida no Chrome do perfil Dentec, com a sessão do
 portal aberta: conjunto v3 editorial, etapas por ciclo e mínimos 200/100 visíveis.
 
-## M8 — estreitamento para formato 4 (em andamento)
+## M8 — estreitamento para formato 4 (concluído)
 
 O candidato B remove os validadores, conversores e adaptações locais v2/v3;
 conteúdos e históricos exigem v4, `offerKinds` é obrigatório e `pending` vazio.
@@ -637,7 +637,7 @@ namespaces de presença seguiram seu ciclo normal, com prova independente do
 runtime fixado. Os runtimes A e B produziram a mesma projeção dos 75 calendários
 da exportação efetiva de produção.
 
-## M9 — retirada dos legados sem uso (em andamento)
+## M9 — retirada dos legados sem uso (concluído)
 
 O inventário real permite retirar a política de 2026 e sua decisão operacional,
 os tipos de registro sem uso, aliases e ferramentas v1/v2 com comandos,
@@ -699,3 +699,100 @@ e [valores assíncronos](https://tanstack.com/form/latest/docs/framework/react/g
 A retirada do seletor conserva o hook compartilhado, a identidade do formulário
 e o contrato de valores carregados. Após a suíte completa, só documentação e o
 título desse teste foram alterados; suas asserções e código funcional não mudaram.
+
+**M9 concluído em produção.** O painel independente aprovou **3/3** a exclusão
+estrita do resíduo e a release C, commit `0bd3756b`. A conferência imediatamente
+anterior repetiu o inventário e a simulação por IDs e versão. A execução removeu
+exatamente um conteúdo, um calendário técnico 8700 e seu campus sem usuários,
+com uma auditoria `PURGE_RELEASE_RESIDUE`. A exportação posterior confirmou esse
+delta, os demais documentos e o Storage; as únicas diferenças adicionais foram
+o ciclo de presença, reconciliado contra o runtime instalado.
+
+A release oficial `pnpm deploy:production` aceitou o schema, confirmou `pending`
+vazio e promoveu `dpl_7phX2z6WQD1psHeTKMZnsCmAnEjy`. A referência de reserva foi
+liberada. O inventário de funções confirma a ausência do executor temporário.
+O portal foi conferido em leitura no Chrome Dentec: regras por oferta, etapas
+por ciclo, mínimos 200/100 e histórico editorial v3 visíveis. Não houve E2E de
+escrita em produção.
+
+A comparação mais ampla entre o expurgo e o pós-release detectou uma rotação de
+autenticação durante a construção do candidato: um token de renovação foi
+marcado como usado e seu filho foi criado. A conferência independente do código
+instalado e dos três snapshots comprovou que a rotação já estava inteira no
+backup automático **anterior ao backend C**. Esse backup, SHA-256
+`93dee27f01b82a62c654ebb9547a8d6e9dedd1e5506661974837c78430328d9d`, e o
+pós-release têm todas as tabelas da aplicação e Storage idênticos. Só dois
+namespaces de presença mudaram dentro do contrato conferido. A comparação
+estrita original continua recusando a diferença de autenticação; nenhuma
+permissão genérica para ignorá-la foi acrescentada ao verificador.
+
+As provas privadas de C, incluindo restauração, simulações, recibo, inventários,
+delta do expurgo, projeções B/C e ciclo de autenticação, ficam em
+`/Users/gustavo/work/ofertas-v4-operacao-20261029T185409Z/production-c/`.
+O backup automático anterior ao backend fica em
+`/Users/gustavo/work/backups-calendario/release-0bd3756b-bgfpeE/`.
+Os backups integrais e dados dos ensaios são preservados fora do Git.
+
+## Relatório final — 29/10/2026
+
+- **Produção:** releases A, B e C concluídas pelo fluxo oficial, cada uma com go
+  unânime. O portal serve o código C `0bd3756b`; a última validação confirma schema
+  estrito v4, nenhuma migração pendente, nenhuma manutenção ou operação ativa e
+  executor temporário ausente. O commit posterior deste relatório só documenta
+  o encerramento, sem alterar o código publicado.
+- **Dados:** a migração converteu 75 conteúdos (59 v2 e 16 v3), incluindo 35 na
+  lixeira, com 20 contagens calculadas e 55 pendências comprovadas. A retirada do
+  resíduo deixa **74 calendários**, os mesmos 35 na lixeira, 20 contagens
+  calculadas e 54 pendências. Não houve órfãos, chaves perdidas ou avisos novos;
+  a limpeza técnica não modificou calendários de uso real.
+- **Expurgo de A:** 12 versões de parecer, quatro pareceres, 1.591 versões,
+  1.591 snapshots e 61 aliases; 76 auditorias e nove recibos de migração
+  conferidos. M9 acrescentou apenas a exclusão técnica descrita acima e sua
+  auditoria. Arquivos do Storage e demais dados foram preservados.
+- **Legados retirados:** formatos v2/v3 e conversores em execução, política de
+  2026 e sua decisão antiga, tipos de registro especiais sem uso, aliases,
+  ferramentas v1/v2 e comandos/dependências/testes exclusivos. A ferramenta
+  específica da exclusão foi retirada no próprio M9.
+- **Legados mantidos por uso real:** `legacyStageCount` em 26 ofertas de 14
+  calendários conserva as quantidades conhecidas sem inventar organização ou
+  ciclo. Os requisitos antigos de 2027 permanecem porque 59 eventos ainda os
+  referenciam. Nenhuma dessas pendências foi silenciosamente resolvida pela
+  migração. Oráculo, capturas independentes e fingerprints publicados foram
+  preservados.
+- **Validação:** `pnpm check` definitivo aprovado em **239,6 s**, incluindo
+  **311 testes de navegador** no macOS, desktop/mobile e impressão Chromium,
+  além de tipos, lint, build e testes rápidos. Os 116 testes do verificador
+  passaram; coordenação e deploy tiveram 35 testes dirigidos/simulados; o
+  executor temporário teve 21 testes antes da retirada. O ensaio local de M9
+  comprovou o delta exato e a idempotência; a restauração integral comprovou
+  todos os bytes, incluindo Storage. A comparação B/C sobre o snapshot real
+  final confirmou as mesmas projeções dos 74 calendários.
+- **Limites e pendências:** não há trabalho funcional ou publicação pendente.
+  A suíte de escrita remota não foi executada em produção, conforme a regra do
+  projeto; as operações autorizadas foram ensaiadas em backends descartáveis.
+  Fica registrada abaixo uma sugestão menor de organização dos imports de
+  testes, sem efeito no runtime ou nos dados.
+
+## Standards
+
+Revisão independente do diff completo `34e35b9…0bd3756`, em contexto limpo.
+Zero achados bloqueantes ou importantes.
+
+**Sugestão — violação documentada:**
+`src/domain/calendar/normalization/normalize.ts:1` tornou-se uma fachada que
+apenas reexporta `normalizeOfferCalendar` como `normalizeCalendar`. Contraria
+`docs/arquitetura-convex.md:14`: “Imports apontam ao módulo responsável, sem
+fachadas de reexport”. Os consumidores restantes são testes, como
+`test/domain/editor-import.test.ts:3`. Remover a fachada e atualizar esses
+imports elimina esse ponto de entrada intermediário. A sugestão fica
+registrada; não altera o comportamento publicado nem mantém leitura de
+formatos antigos.
+
+## Spec
+
+Revisão independente do mesmo diff completo, em contexto limpo. Zero achados
+bloqueantes, importantes ou sugestões, considerando as emendas aprovadas no
+plano.
+
+**Resultado por eixo:** Standards: um achado, de sugestão; Spec: zero achados.
+Nenhum bloqueante ou importante aberto em qualquer eixo.
