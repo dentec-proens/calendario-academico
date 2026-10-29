@@ -29,9 +29,10 @@ export function portalReview(id: string): Awaited<ReturnType<typeof reviews.get>
       state: {
         year: 2027,
         campus: 'Campus de teste',
-        offer: 'integrado',
-        modalities: ['integrado'],
-        regime: 'anual',
+        schemaVersion: 4,
+        offers: [
+          { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
+        ],
         weekdays: [],
         weekConfirmed: false,
         periods: [],
@@ -50,10 +51,23 @@ export function portalReview(id: string): Awaited<ReturnType<typeof reviews.get>
       ...support.calendar,
       id: id as Id<'calendars'>,
       campus: 'Campus de teste',
-      offer: 'integrado',
-      modalities: ['integrado'],
+      offerKinds: ['integrado'],
+      offers: [
+        { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
+      ],
       regime: 'anual',
     },
+    teachingDays: support.teachingDays.map((row) =>
+      'offerId' in row
+        ? row
+        : {
+            offerId: row.modality,
+            label: 'Técnico integrado',
+            total: row.total,
+            byPeriod: row.byPeriod,
+            provisional: row.provisional,
+          },
+    ),
     catalogueRevision: 1,
     officialApproval: false,
     initialConclusion: initialConclusion(support),

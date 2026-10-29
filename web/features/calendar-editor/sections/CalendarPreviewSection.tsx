@@ -4,7 +4,7 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarExport } from '../export/CalendarExportProvider.tsx';
 import '../../../../assets/printing/calendar.css';
 import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
-import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { useEventEditor } from '../events/EventEditorProvider.tsx';
 import EventRecordDetails from '../events/EventRecordDetails.tsx';
 
@@ -62,8 +62,8 @@ export default function CalendarPreviewSection() {
                   />
                   <small>
                     Ofertas:{' '}
-                    {(event.modalities?.length ? event.modalities : state.modalities)
-                      .map((modality) => modalityLabels[modality])
+                    {(event.offers?.length ? event.offers : offerIds(state))
+                      .map((modality) => labelFor(state, modality))
                       .join(', ')}
                   </small>
                 </div>

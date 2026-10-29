@@ -100,20 +100,20 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   const identityLayout = await page
     .locator('.calendar-identity-fields :is(input, select)')
     .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
-  expect(identityLayout.length).toBe(3);
+  expect(identityLayout.length).toBe(2);
   expect(
     identityLayout.every((top) => Math.abs(top - identityLayout[0]) < 1),
-    'campus, year and organization align on one row',
+    'campus and year align on one row',
   ).toBeTruthy();
   expect(
     await page
-      .locator('#calendar-modalities')
+      .locator('#calendar-offers')
       .evaluate(
         (node) =>
           node.getBoundingClientRect().top >
           document.querySelector('.calendar-identity-fields')!.getBoundingClientRect().bottom - 1,
       ),
-    'modalities have their own group below identification',
+    'offers have their own group below identification',
   ).toBeTruthy();
   for (const selector of [
     '#calendar-campus',
@@ -153,19 +153,21 @@ test('portal shares each subject across roles while preserving drafts, scoped co
     await page.locator('#calendar-courses').evaluate((node) => getComputedStyle(node).boxShadow),
     'hover preserves the focus highlight',
   ).not.toBe('none');
-  await page.locator('input[name="calendar-modality"]').first().check();
+  await page.locator('#calendar-offer-0-kind').selectOption('integrado');
+  const offerLayout = await page
+    .locator('[data-create-offer="0"] :is(input, select)')
+    .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
+  expect(offerLayout.length).toBe(3);
   expect(
-    await page
-      .locator('#calendar-modalities .check')
-      .first()
-      .evaluate((node) => getComputedStyle(node).flexDirection),
-  ).toBe('row');
+    Math.abs(offerLayout[0] - offerLayout[1]) < 1 && offerLayout[2] > offerLayout[0],
+    'type and organization share a row, with the offer label below',
+  ).toBe(true);
   expect(
     await page
       .locator('#create-calendar')
-      .evaluate((node) => new FormData(node as HTMLFormElement).getAll('calendar-modality').length),
-    'moving the group preserves submitted modalities',
-  ).toBe(1);
+      .evaluate((node) => new FormData(node as HTMLFormElement).get('offers[0].kind')),
+    'the offer type remains a named successful control',
+  ).toBe('integrado');
   await page.locator('[data-page="accounts"]').click();
   await expect(page.locator('#user-list')).toBeVisible();
   await expect(page.locator('#campus-list')).toBeHidden();
@@ -340,7 +342,7 @@ test('portal shares each subject across roles while preserving drafts, scoped co
     .locator('.calendar-identity-fields :is(input, select)')
     .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
   expect(
-    mobileLayout[0] < mobileLayout[1] && mobileLayout[1] < mobileLayout[2],
+    mobileLayout.length === 2 && mobileLayout[0] < mobileLayout[1],
     'identification fields stack on mobile',
   ).toBeTruthy();
 

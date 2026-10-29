@@ -1,4 +1,4 @@
-import { selectableModalities } from '#src/domain/calendar/config.ts';
+import { calendarLimits } from '#src/domain/calendar/config.ts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import OfferOrganizationForm, {
@@ -9,10 +9,16 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useActivitySearch } from '../events/activity-query.ts';
 import { editorPages } from '../editor-steps.ts';
 import { scrollIntoView } from '../../../scroll.ts';
+import { Button } from '../../../components/ui/Button.tsx';
+import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 
 export default function PeriodsSection() {
-  const { state, formEpoch, record } = useCalendarEditor();
+  const { state, formEpoch, record, readOnly } = useCalendarEditor();
+  const drafts = useFormDrafts();
+  const [showNew, setShowNew] = useState(() =>
+    Boolean(drafts?.has(`calendar:${record.id}:organization:new`)),
+  );
   const navigate = useNavigate();
   const checks = useRef(new Map<string, OrganizationCheck>());
   const [continuationError, setContinuationError] = useState('');
@@ -59,26 +65,53 @@ export default function PeriodsSection() {
               ))}
           </ul>
         )}
-        {selectableModalities.map((modality) => (
+        {state.offers.map((offer) => (
           <OfferOrganizationForm
-            key={`${modality}:${formEpoch}`}
-            modality={modality}
+            key={`${offer.id}:${formEpoch}`}
+            offerId={offer.id}
             registerCheck={registerCheck}
             onResolved={clearContinuationError}
             requestedStage={
-              atividade?.endsWith(`:${modality}`) && atividade.startsWith('stage-')
+              atividade?.endsWith(`:${offer.id}`) && atividade.startsWith('stage-')
                 ? atividade
                 : undefined
             }
           />
         ))}
+        {showNew && (
+          <OfferOrganizationForm
+            key={`new:${formEpoch}`}
+            registerCheck={registerCheck}
+            onResolved={() => {
+              clearContinuationError();
+              setShowNew(false);
+              requestAnimationFrame(() => document.getElementById('add-offer')?.focus());
+            }}
+          />
+        )}
+        {!readOnly && (
+          <Button
+            id="add-offer"
+            type="button"
+            variant="secondary"
+            disabled={showNew || state.offers.length >= calendarLimits.maximumOffers}
+            onClick={() => setShowNew(true)}
+          >
+            Adicionar oferta
+          </Button>
+        )}
+        {state.offers.length >= calendarLimits.maximumOffers && (
+          <p className="help">
+            Este calendário já contém o limite de {calendarLimits.maximumOffers} ofertas.
+          </p>
+        )}
       </section>
       <form
         id="organization-continue"
         onSubmit={(event) => {
           event.preventDefault();
-          for (const modality of selectableModalities) {
-            const pending = checks.current.get(modality)?.();
+          for (const check of checks.current.values()) {
+            const pending = check();
             if (pending) {
               setContinuationError(pending.message);
               pending.reveal();

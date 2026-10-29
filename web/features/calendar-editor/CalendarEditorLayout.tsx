@@ -19,7 +19,7 @@ import { CalendarExportProvider, useCalendarExport } from './export/CalendarExpo
 import { confirmAction } from '../../components/confirmation.ts';
 import { editorSections } from '#src/app/routes.ts';
 import { editorPages, editorSteps, editorNavigation, continueLabel } from './editor-steps.ts';
-import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import EditorSteps from './EditorSteps.tsx';
 import TeachingDaySummary from './TeachingDaySummary.tsx';
 import BaseUpdateCard from './BaseUpdateCard.tsx';
@@ -219,8 +219,8 @@ function EditorFrame() {
           <dt>Forma de oferta/nível</dt>
           <dd id="selected-modalities">
             <ul className="editor-offer-list" aria-label="Formas de oferta e níveis">
-              {state.modalities.map((item) => (
-                <li key={item}>{modalityLabels[item]}</li>
+              {offerIds(state).map((item) => (
+                <li key={item}>{labelFor(state, item)}</li>
               ))}
             </ul>
           </dd>

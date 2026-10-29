@@ -3,7 +3,7 @@ import { configureOffer, savedState, selectEditorSection } from './editor-naviga
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
-  test(`all offers are listed and a new offer is included only with its complete organization at ${width}px`, async ({
+  test(`a new offer is included only with its complete organization at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
@@ -12,34 +12,30 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     const original = await page.evaluate(() => structuredClone(window.editorTest.record.state));
     await selectEditorSection(page, 'periods');
-    await expect(page.locator('.offer-organization')).toHaveCount(4);
-    for (const modality of ['subsequente', 'graduacao', 'posgraduacao']) {
-      await expect(page.locator(`[data-offer="${modality}"]`)).toContainText(
-        'Não incluída neste calendário',
-      );
-      await expect(page.locator(`[data-edit-organization="${modality}"]`)).toHaveText(
-        'Incluir e configurar',
-      );
-    }
-    await page.locator('[data-edit-organization="graduacao"]').click();
-    await page.locator('#offer-graduacao-organization').selectOption('anual');
-    await page.locator('#offer-graduacao-period-0-start').fill('2027-03-01');
-    await expect(page.locator('#offer-graduacao-apply')).toBeDisabled();
+    await expect(page.locator('.offer-organization')).toHaveCount(1);
+    await page.locator('#add-offer').click();
+    await page.locator('#offer-new-kind').selectOption('graduacao');
+    await page.locator('#offer-new-organization').selectOption('anual');
+    await page.locator('#offer-new-period-0-start').fill('2027-03-01');
+    await expect(page.locator('#offer-new-apply')).toBeDisabled();
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
-    expect(await page.evaluate(() => window.editorTest.record.state.modalities)).toEqual([
-      'integrado',
-    ]);
-    await page.locator('#offer-graduacao-cancel').click();
-    await expect(page.locator('[data-edit-organization="graduacao"]')).toBeFocused();
-    expect(await page.evaluate(() => window.editorTest.record.state.modalities)).toEqual([
-      'integrado',
-    ]);
+    expect(
+      await page.evaluate(() => window.editorTest.record.state.offers.map((offer) => offer.id)),
+    ).toEqual(['integrado']);
+    await expect(page.locator('#unapplied-status')).toBeVisible();
+    await page.locator('#offer-new-cancel').click();
+    await expect(page.locator('#add-offer')).toBeFocused();
+    await expect(page.locator('#offer-new-form')).toHaveCount(0);
+    await expect(page.locator('#unapplied-status')).toBeHidden();
+    expect(
+      await page.evaluate(() => window.editorTest.record.state.offers.map((offer) => offer.id)),
+    ).toEqual(['integrado']);
     await configureOffer(page, 'graduacao', '2027-03-01', '2027-03-26');
     const saved = await savedState(page);
-    expect(saved.state.modalities).toEqual(['integrado', 'graduacao']);
+    expect(saved.state.offers.map((offer) => offer.id)).toEqual(['integrado', 'graduacao']);
     expect(saved.state.periods[0].association).toEqual({
       status: 'defined',
-      modalities: ['graduacao'],
+      offers: ['graduacao'],
       term: 'annual',
     });
     expect(

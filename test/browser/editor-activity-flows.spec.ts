@@ -43,7 +43,7 @@ test('a new activity record keeps the prepared link, offer, effect and category'
     requirementId: 'family-meeting',
     kind: 'note',
     category: 'prazo',
-    modalities: ['integrado'],
+    offers: ['integrado'],
     start: '2027-05-08',
     end: '2027-05-08',
   });
@@ -66,7 +66,7 @@ test('editing a linked record that changes the count keeps its effect, category 
       end: '2027-05-10',
       kind: 'exclude',
       category: 'recesso',
-      modalities: ['integrado'],
+      offers: ['integrado'],
     });
     record.version++;
     return window.publishReviewerCalendar();
@@ -243,9 +243,29 @@ test('the free event form opens in the side panel with a labelled offer group', 
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.modalities = record.state.modalities = ['integrado', 'graduacao'];
-    record.state.organizationByModality = { integrado: 'anual', graduacao: 'anual' };
-    record.state.assessmentStagesByModality = { integrado: 2 };
+    record.state.offers = (['integrado', 'graduacao'] as const).map((kind) => ({
+      id: kind,
+      kind,
+      delivery: 'a-conferir' as const,
+      organization: 'anual' as const,
+    }));
+    record.offerKinds = record.state.offers.map((offer) => offer.kind);
+    record.state.offers = record.state.offers.map((offer) => ({
+      ...offer,
+      organization:
+        offer.id === 'integrado'
+          ? ('anual' as const)
+          : offer.id === 'graduacao'
+            ? ('anual' as const)
+            : ('a-classificar' as const),
+    }));
+    record.state.offers = record.state.offers.map((offer) => ({
+      ...offer,
+      stages:
+        offer.id === 'integrado'
+          ? { perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const) }
+          : undefined,
+    }));
     record.version++;
     return window.publishReviewerCalendar();
   });
@@ -319,7 +339,7 @@ test('a record with a freely combined effect and category shows both fields when
       end: '2027-04-12',
       kind: 'exclude',
       category: 'formacao',
-      modalities: ['integrado'],
+      offers: ['integrado'],
     });
     record.version++;
     return window.publishReviewerCalendar();
@@ -492,7 +512,13 @@ test('a review link to an assessment stage opens it in the combined step and clo
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.state.assessmentStagesByModality = { integrado: 2 };
+    record.state.offers = record.state.offers.map((offer) => ({
+      ...offer,
+      stages:
+        offer.id === 'integrado'
+          ? { perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const) }
+          : undefined,
+    }));
     record.version++;
     return window.publishReviewerCalendar();
   });
@@ -533,8 +559,22 @@ test('the offer filter decides what is left to fill for that offer only', async 
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.modalities = record.state.modalities = ['integrado', 'graduacao'];
-    record.state.organizationByModality = { integrado: 'anual', graduacao: 'anual' };
+    record.state.offers = (['integrado', 'graduacao'] as const).map((kind) => ({
+      id: kind,
+      kind,
+      delivery: 'a-conferir' as const,
+      organization: 'anual' as const,
+    }));
+    record.offerKinds = record.state.offers.map((offer) => offer.kind);
+    record.state.offers = record.state.offers.map((offer) => ({
+      ...offer,
+      organization:
+        offer.id === 'integrado'
+          ? ('anual' as const)
+          : offer.id === 'graduacao'
+            ? ('anual' as const)
+            : ('a-classificar' as const),
+    }));
     record.version++;
     return window.publishReviewerCalendar();
   });

@@ -4,6 +4,7 @@ import type { Id } from '../../convex/_generated/dataModel.js';
 import { api } from '../../convex/_generated/api.js';
 import { getFunctionName, type FunctionReference } from 'convex/server';
 import { teacherDayId } from '../../src/domain/institution/teacher-day.ts';
+import { kinds } from '../../src/domain/calendar/offers.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 
 export const record: CalendarRecord = {
@@ -11,21 +12,16 @@ export const record: CalendarRecord = {
   campusId: 'campus-a' as Id<'campuses'>,
   name: '2027 — Campus de teste',
   year: 2027,
-  offer: 'integrado',
-  modalities: ['integrado'],
+  offerKinds: ['integrado'],
   state: {
-    schemaVersion: 3,
-    organizationByModality: { integrado: 'anual' },
+    schemaVersion: 4,
+    offers: [{ id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' }],
     campus: 'Campus de teste',
     year: 2027,
-    offer: 'integrado',
-    modalities: ['integrado'],
-    regime: 'anual',
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     periods: [],
     events: [],
-    assessmentStagesByModality: {},
   },
   purpose: 'test',
   courses: 'Curso sintético',
@@ -125,8 +121,7 @@ export const convex = {
           );
         calls.saves++;
         record.state = structuredClone(body.state);
-        record.modalities = [...body.state.modalities];
-        record.offer = body.state.offer;
+        record.offerKinds = kinds(body.state);
         record.version++;
         record.catalogueRevision = record.currentCatalogueRevision;
         record.institutionalSnapshot = structuredClone(record.institutionalEvents);

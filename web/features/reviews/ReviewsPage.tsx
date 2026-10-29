@@ -115,7 +115,7 @@ export default function ReviewsPage() {
             {pagination.results.map((calendar) => (
               <option key={calendar.id} value={calendar.id}>
                 {calendar.name} · {calendar.year} ·{' '}
-                {(calendar.modalities || [calendar.offer])
+                {calendar.offerKinds
                   .map((modality) => modalityLabels[modality] || modality)
                   .join(' + ')}
               </option>

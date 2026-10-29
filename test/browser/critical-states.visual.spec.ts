@@ -31,8 +31,9 @@ test('calendar creation form', async ({ page, fixtureServer }) => {
   await page.goto(await fixtureServer('portal'));
   await expect(page.locator('#calendar-list')).toBeVisible();
   await page.locator('#calendars .collection-heading button').click();
+  await expect(page.locator('#calendars .collection-form > h2')).toBeFocused();
   await page.locator('#calendar-courses').fill('Técnico em Informática');
-  await page.locator('input[name="calendar-modality"]').first().check();
+  await page.locator('#calendar-offer-0-kind').selectOption('integrado');
   await page.locator('#calendar-courses').blur();
   await expect(page.locator('#create-calendar')).toBeVisible();
   await assertNoOverflow(page);

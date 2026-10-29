@@ -19,13 +19,20 @@ export async function addPeriod(page: Page, start: string, end: string) {
 }
 
 export async function configureOffer(page: Page, modality: string, start: string, end: string) {
+  await expect(page.locator('#periods')).toBeVisible();
   const block = page.locator(`[data-offer="${modality}"]`);
-  if (!(await block.locator('form').isVisible()))
+  const creating = !(await block.count());
+  const prefix = creating ? 'offer-new' : `offer-${modality}`;
+  if (creating) {
+    await page.locator('#add-offer').click();
+    await page.locator('#offer-new-kind').selectOption(modality);
+  } else if (!(await block.locator('form').isVisible())) {
     await page.locator(`[data-edit-organization="${modality}"]`).click();
-  await page.locator(`#offer-${modality}-organization`).selectOption('anual');
-  await page.locator(`#offer-${modality}-period-0-start`).fill(start);
-  await page.locator(`#offer-${modality}-period-0-end`).fill(end);
-  await page.locator(`#offer-${modality}-count`).selectOption('2');
+  }
+  await page.locator(`#${prefix}-organization`).selectOption('anual');
+  await page.locator(`#${prefix}-period-0-start`).fill(start);
+  await page.locator(`#${prefix}-period-0-end`).fill(end);
+  await page.locator(`#${prefix}-count`).selectOption('2');
   const midpoint = Math.floor((Date.parse(start) + Date.parse(end)) / 2 / 86400000) * 86400000;
   const firstEnd = new Date(midpoint).toISOString().slice(0, 10);
   const secondStart = new Date(midpoint + 86400000).toISOString().slice(0, 10);
@@ -33,10 +40,11 @@ export async function configureOffer(page: Page, modality: string, start: string
     [start, firstEnd],
     [secondStart, end],
   ].entries()) {
-    await page.locator(`#offer-${modality}-stage-${index}-start`).fill(dates[0]);
-    await page.locator(`#offer-${modality}-stage-${index}-end`).fill(dates[1]);
+    await page.locator(`#${prefix}-stage-${index}-start`).fill(dates[0]);
+    await page.locator(`#${prefix}-stage-${index}-end`).fill(dates[1]);
   }
-  await page.locator(`#offer-${modality}-apply`).click();
+  await page.locator(`#${prefix}-apply`).click();
+  if (creating) await expect(page.locator('#offer-new-form')).toHaveCount(0);
   await expect(block.locator('form')).toBeHidden();
 }
 

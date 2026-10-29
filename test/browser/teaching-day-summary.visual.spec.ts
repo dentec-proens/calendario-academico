@@ -8,10 +8,11 @@ test('persistent teaching days and expanded period details', async ({ page, fixt
   await configureOffer(page, 'graduacao', '2027-03-08', '2027-05-14');
   await savedState(page);
   await selectEditorSection(page, 'issues');
-  await page.locator('#calendar-scope').selectOption('covered');
-
-  await page.locator('#scope-form button[type="submit"]').click();
-  await savedState(page);
+  for (const id of ['integrado', 'graduacao']) {
+    await page.locator(`#calendar-scope-${id}`).selectOption('covered');
+    await page.locator(`#scope-form-${id} button[type="submit"]`).click();
+    await savedState(page);
+  }
   await selectEditorSection(page, 'periods');
   await page.locator('.teaching-day-summary > summary').click();
   await expect(

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import type { CalendarRecord } from './types.ts';
+import { labelFor } from '#src/domain/calendar/offers.ts';
 
 type Event = CalendarRecord['institutionalEvents'][number];
 type Document = CalendarRecord['currentDocuments'][number];
@@ -10,6 +11,10 @@ const kindLabels: Record<string, string> = {
   note: 'Informativo',
 };
 function EventDescription({ event }: { event: Event }) {
+  const { state } = useCalendarEditor();
+  const offers =
+    event.offers ??
+    state.offers.filter((offer) => event.modalities?.includes(offer.kind)).map((offer) => offer.id);
   const date = (value: string) => value.split('-').reverse().join('/');
   return (
     <>
@@ -17,7 +22,7 @@ function EventDescription({ event }: { event: Event }) {
       {event.end !== event.start ? ` a ${date(event.end)}` : ''} ·{' '}
       {kindLabels[event.kind] || event.kind}
       {event.category ? ` · ${event.category}` : ''}
-      {event.modalities?.length ? ` · Ofertas: ${event.modalities.join(', ')}` : ''}
+      {offers.length ? ` · Ofertas: ${offers.map((id) => labelFor(state, id)).join(', ')}` : ''}
       {event.hours !== undefined ? ` · ${event.hours} horas` : ''}
       {event.evidence ? ` · Fonte: ${event.evidence}` : ''}
       {event.source ? ` · ${event.source}` : ''}

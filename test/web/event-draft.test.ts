@@ -12,7 +12,7 @@ const saved = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
   start: '2027-05-10',
   end: '2027-05-10',
   kind: 'note',
-  modalities: ['integrado'],
+  offers: ['integrado'],
   ...extra,
 });
 const edit = (base: CalendarEvent, change: Partial<EventValues> = {}) =>

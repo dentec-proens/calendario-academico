@@ -124,8 +124,11 @@ test('changing weekdays recalculates targets and preserves the draft when period
   await expect(page.locator('#weekdays input[value="5"]')).toBeVisible();
   await page.evaluate(async () => {
     const { record } = window.editorTest;
-    record.state.organizationByModality = { integrado: 'semestral' };
-    record.state.regime = 'semestral';
+    record.state.offers = record.state.offers.map((offer) => ({
+      ...offer,
+      organization: offer.id === 'integrado' ? ('semestral' as const) : ('a-classificar' as const),
+    }));
+
     record.state.periods = [
       {
         id: 'first',
@@ -133,7 +136,7 @@ test('changing weekdays recalculates targets and preserves the draft when period
         start: '2027-03-01',
         end: '2027-03-05',
         targetDays: 5,
-        association: { status: 'defined', modalities: ['integrado'], term: 'first' },
+        association: { status: 'defined', offers: ['integrado'], term: 'first' },
       },
     ];
     record.version++;
@@ -152,7 +155,7 @@ test('changing weekdays recalculates targets and preserves the draft when period
       start: '2027-03-08',
       end: '2027-03-12',
       targetDays: 5,
-      association: { status: 'defined', modalities: ['integrado'], term: 'second' },
+      association: { status: 'defined', offers: ['integrado'], term: 'second' },
     });
     record.version++;
     await window.publishReviewerCalendar();

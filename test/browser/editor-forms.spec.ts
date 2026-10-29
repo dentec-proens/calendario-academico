@@ -331,8 +331,8 @@ test('the Saturday panel keeps its selection summary without repeating teaching 
   await expect(page.locator('#saturday-summary')).toContainText('Nenhum sábado selecionado');
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'issues');
-  await page.locator('#calendar-scope').selectOption('covered');
-  await page.locator('#scope-form button[type="submit"]').click();
+  await page.locator('#calendar-scope-integrado').selectOption('covered');
+  await page.locator('#scope-form-integrado button[type="submit"]').click();
   await selectEditorSection(page, 'days');
   await expect(page.locator('.teaching-day-current strong')).toHaveText('45 / 200');
   await expect(page.locator('#saturday-day-count')).toHaveCount(0);

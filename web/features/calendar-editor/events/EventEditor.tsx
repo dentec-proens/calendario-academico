@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { categories } from '#src/domain/calendar/activities/categories.ts';
-import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
 import { applicabilityFor, policyFor } from '#src/domain/policies/registry.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -221,15 +221,15 @@ export default function EventEditor() {
               realizada.
             </Notice>
           )}
-          <form.Field name="modalities">
+          <form.Field name="offers">
             {(field) => {
               // Offers already chosen stay visible so a legacy scope can be corrected.
-              const choices = state.modalities.filter(
+              const choices = offerIds(state).filter(
                 (modality) => offers.includes(modality) || field.state.value.includes(modality),
               );
               return choices.length === 1 && field.state.value.join() === choices.join() ? (
                 <p id="event-modalities" className="event-scope">
-                  <strong>Oferta abrangida:</strong> {modalityLabels[choices[0]]}
+                  <strong>Oferta abrangida:</strong> {labelFor(state, choices[0])}
                 </p>
               ) : (
                 <fieldset id="event-modalities" className="event-scope">
@@ -249,7 +249,7 @@ export default function EventEditor() {
                           )
                         }
                       />
-                      {modalityLabels[modality]}
+                      {labelFor(state, modality)}
                       {requirement &&
                       offers.includes(modality) &&
                       applicabilityFor(state, requirement, modality) === 'required'

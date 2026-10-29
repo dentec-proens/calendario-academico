@@ -2,11 +2,12 @@ import type {
   ActivityRequirement,
   AssessmentSettings,
   CalendarPeriod,
+  CalendarOffer,
 } from '#src/domain/calendar/model.ts';
 import { applicabilityFor } from '#src/domain/policies/registry.ts';
 import { eventCategory } from '#src/domain/calendar/activities/categories.ts';
-import { associationOffers } from '#src/domain/calendar/offers.ts';
-import type { CalendarEvent, Modality } from '../types.ts';
+import { associationOffers, offerIds, offerFor } from '#src/domain/calendar/offers.ts';
+import type { CalendarEvent, OfferId } from '../types.ts';
 
 export type EventContext =
   | { kind: 'new' }
@@ -56,12 +57,12 @@ export interface EventValues {
   deadlineExtensionCause: '' | 'municipal-holiday' | 'municipal-recess';
   category: string;
   requirementId: string;
-  modalities: Modality[];
+  offers: OfferId[];
   hours: string;
   /** Interface answer to "O que é este evento?"; `kind` and `category` hold the record. */
   eventType: '' | EventType;
 }
-export const emptyEvent = (modalities: Modality[]): EventValues => ({
+export const emptyEvent = (offers: OfferId[]): EventValues => ({
   name: '',
   start: '',
   end: '',
@@ -76,11 +77,11 @@ export const emptyEvent = (modalities: Modality[]): EventValues => ({
   deadlineExtensionCause: '',
   category: 'recesso',
   requirementId: '',
-  modalities,
+  offers,
   hours: '',
   eventType: '',
 });
-export function eventValues(event: CalendarEvent, modalities: Modality[]): EventValues {
+export function eventValues(event: CalendarEvent, offers: OfferId[]): EventValues {
   return {
     name: event.name,
     start: event.start,
@@ -96,7 +97,7 @@ export function eventValues(event: CalendarEvent, modalities: Modality[]): Event
     deadlineExtensionCause: event.deadlineExtensionCause ?? '',
     category: eventCategory(event),
     requirementId: event.requirementId || '',
-    modalities: event.modalities?.length ? event.modalities : modalities,
+    offers: event.offers?.length ? event.offers : offers,
     hours: event.hours === undefined ? '' : String(event.hours),
     eventType: event.requirementId ? '' : eventTypeOf(event),
   };
@@ -158,7 +159,7 @@ export function eventFromValues(
       target.base && !target.base.category && value.category === eventCategory(target.base)
         ? undefined
         : value.category,
-    modalities: value.modalities,
+    offers: value.offers,
     requirementId: value.requirementId || undefined,
     hours: value.hours ? Number(value.hours) : undefined,
     deadlineExtensionCause: value.deadlineExtensionCause || undefined,
@@ -166,15 +167,20 @@ export function eventFromValues(
 }
 
 /** Offers a record of this activity may cover: a stage belongs to exactly one offer. */
-export function recordOffers(state: { modalities: Modality[] }, requirement?: ActivityRequirement) {
-  return requirement?.modality
-    ? state.modalities.filter((modality) => modality === requirement.modality)
-    : state.modalities;
+export function recordOffers(
+  state: { offers: CalendarOffer[] },
+  requirement?: ActivityRequirement,
+) {
+  const ids = offerIds(state);
+  const requiredOffer = requirement?.offerId ?? requirement?.modality;
+  return requiredOffer
+    ? ids.filter((id) => id === requiredOffer)
+    : ids.filter((id) => !requirement?.offerIds || requirement.offerIds.includes(id));
 }
 
 /** Values prepared for a new record of an activity, before any input. */
 export function activityDraft(
-  state: AssessmentSettings & { year: number; modalities: Modality[]; periods: CalendarPeriod[] },
+  state: AssessmentSettings & { year: number; offers: CalendarOffer[]; periods: CalendarPeriod[] },
   requirement: ActivityRequirement,
 ): EventValues {
   const valid = recordOffers(state, requirement);
@@ -183,8 +189,10 @@ export function activityDraft(
   );
   const modalities = pertinent.length
     ? pertinent
-    : requirement.modalities?.length && !requirement.modality
-      ? valid.filter((modality) => requirement.modalities?.includes(modality))
+    : requirement.modalities?.length && !(requirement.offerId ?? requirement.modality)
+      ? valid.filter((modality) =>
+          requirement.modalities?.includes(offerFor(state, modality)!.kind),
+        )
       : valid;
   const destinationPeriod = state.periods.find(
     (period) =>

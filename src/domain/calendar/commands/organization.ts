@@ -1,9 +1,43 @@
-import type { ActivityState, CalendarActivity, Organization, AcademicTerm } from '../model.ts';
+import type {
+  ActivityState,
+  CalendarActivity,
+  CalendarOffer,
+  Organization,
+  AcademicTerm,
+} from '../model.ts';
 import { organizationSummary, organizationForModality } from '../organization/periods.ts';
 import { activityChecklist } from '../activities/checklist.ts';
 import { associationOffers, offerFor, offerIds } from '../offers.ts';
 import { recalculateCalendar } from './recalculate.ts';
 import { DomainError } from '../../errors.ts';
+import { validateOffers } from '../normalization/normalize-v4.ts';
+
+/** Editable metadata never changes an offer's identity, type, periods or assessment records. */
+export function configureOfferMetadata<S extends ActivityState & { offers: CalendarOffer[] }>(
+  state: S,
+  id: string,
+  metadata: Pick<CalendarOffer, 'label' | 'delivery' | 'organizationBasis'>,
+): S {
+  if (!state.offers.some((offer) => offer.id === id))
+    throw new DomainError('A oferta não pertence ao calendário.');
+  if (!['presencial', 'ead', 'a-conferir'].includes(metadata.delivery))
+    throw new DomainError('Selecione o modo de oferta.');
+  const offers = validateOffers(
+    state.offers.map((offer) => {
+      if (offer.id !== id) return offer;
+      const { label: _label, organizationBasis: _basis, ...kept } = offer;
+      const label = metadata.label?.trim();
+      const basis = metadata.organizationBasis?.trim();
+      return {
+        ...kept,
+        delivery: metadata.delivery,
+        ...(label ? { label } : {}),
+        ...(basis ? { organizationBasis: basis } : {}),
+      };
+    }),
+  );
+  return { ...state, offers };
+}
 
 /** Change only the selected offer/cycle; existing intake declarations stay intact. */
 export function configureIntakeRequirement<S extends ActivityState>(

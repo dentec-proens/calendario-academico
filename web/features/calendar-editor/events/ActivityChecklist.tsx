@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
 import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
-import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { activityStatus, type ActivityStatus } from '#src/domain/calendar/activities/status.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
@@ -112,7 +112,7 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
     <>
       {!stages && (
         <ul id="activity-summary" className="activity-summary" role="status">
-          {state.modalities.map((modality) => {
+          {offerIds(state).map((modality) => {
             const required = mandatory.filter((row) => row.modality === modality);
             const fulfilled = required.filter((row) => row.coverage === 'complete').length;
             const unconfigured = coverage.filter(
@@ -124,14 +124,14 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
             return (
               <li key={modality}>
                 <span>
-                  <strong>{modalityLabels[modality]}:</strong> {fulfilled} de {required.length}{' '}
+                  <strong>{labelFor(state, modality)}:</strong> {fulfilled} de {required.length}{' '}
                   atividades obrigatórias com planejamento completo
                   {unconfigured ? ` · ${unconfigured} com aplicação a confirmar` : ''}.
                 </span>
                 <progress
                   value={fulfilled}
                   max={Math.max(required.length, 1)}
-                  aria-label={`Progresso de ${modalityLabels[modality]}`}
+                  aria-label={`Progresso de ${labelFor(state, modality)}`}
                 />
               </li>
             );
@@ -148,15 +148,18 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
       )}
       {stages ? (
         <div id="assessment-checklist">
-          {state.modalities.map((modality) => {
-            const items = rows.filter((item) => !item.modality || item.modality === modality);
+          {offerIds(state).map((modality) => {
+            const items = rows.filter(
+              (item) =>
+                !(item.offerId ?? item.modality) || (item.offerId ?? item.modality) === modality,
+            );
             return items.length ? (
               <section
                 key={modality}
                 className="activity-group"
-                aria-label={`Avaliações — ${modalityLabels[modality]}`}
+                aria-label={`Avaliações — ${labelFor(state, modality)}`}
               >
-                <h4>{modalityLabels[modality]}</h4>
+                <h4>{labelFor(state, modality)}</h4>
                 <ul className="activity-rows">{items.map(renderRow)}</ul>
               </section>
             ) : null;

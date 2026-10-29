@@ -44,7 +44,8 @@ export function useCalendarSummaryTool(
                 ? JSON.stringify({
                     campus: current.current.state.campus,
                     year: current.current.state.year,
-                    modalities: current.current.state.modalities,
+                    offers: current.current.state.offers,
+                    byOffer: current.current.evaluation?.byOffer ?? null,
                     periods: current.current.state.periods,
                     total: current.current.evaluation?.total ?? null,
                     saved: current.current.saved,

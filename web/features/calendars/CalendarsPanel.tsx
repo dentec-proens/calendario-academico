@@ -108,7 +108,7 @@ export default function CalendarsPanel({
                         ·{' '}
                       </>
                     )}
-                    {(c.modalities || [c.offer]).map((m) => modalityLabels[m] || m).join(' + ')}
+                    {c.offerKinds.map((m) => modalityLabels[m] || m).join(' + ')}
                   </p>
                   {(c.courses || c.classes || c.shifts) && (
                     <p className="calendar-list-courses">

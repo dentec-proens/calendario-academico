@@ -174,7 +174,13 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
   const draft = await page.evaluate(() => ({
     ...window.editorTest.record.state,
     periods: [
-      { id: 'imported', name: 'Período importado', start: '2027-02-01', end: '2027-03-01' },
+      {
+        id: 'imported',
+        name: 'Período importado',
+        start: '2027-02-01',
+        end: '2027-03-01',
+        association: { status: 'a-classificar' },
+      },
     ],
   }));
   await writeFile(file, JSON.stringify(draft));

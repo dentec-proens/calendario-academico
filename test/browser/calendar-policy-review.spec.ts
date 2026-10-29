@@ -50,8 +50,22 @@ for (const width of [1440, 390]) {
     await expect(card).not.toContainText('Pendente de data e fonte');
     await page.evaluate(() => {
       const { record } = window.editorTest;
-      record.modalities = record.state.modalities = ['integrado', 'graduacao'];
-      record.state.organizationByModality = { integrado: 'anual', graduacao: 'anual' };
+      record.state.offers = (['integrado', 'graduacao'] as const).map((kind) => ({
+        id: kind,
+        kind,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      }));
+      record.offerKinds = record.state.offers.map((offer) => offer.kind);
+      record.state.offers = record.state.offers.map((offer) => ({
+        ...offer,
+        organization:
+          offer.id === 'integrado'
+            ? ('anual' as const)
+            : offer.id === 'graduacao'
+              ? ('anual' as const)
+              : ('a-classificar' as const),
+      }));
       record.version++;
       return window.publishReviewerCalendar();
     });

@@ -8,7 +8,7 @@ record.state.events = [
     end: '2027-03-10',
     kind: 'note',
     category: 'evento',
-    modalities: ['integrado'],
+    offers: ['integrado'],
   },
   {
     id: 'activity-event',
@@ -18,7 +18,7 @@ record.state.events = [
     end: '2027-10-08',
     kind: 'note',
     category: 'evento',
-    modalities: ['integrado'],
+    offers: ['integrado'],
   },
 ];
 export const convex = baseConvex;

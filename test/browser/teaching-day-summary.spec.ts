@@ -63,9 +63,9 @@ for (const width of [1440, 390]) {
     await page.locator('#saturday-submit').click();
     await expect(summary.locator('.teaching-day-current strong')).toHaveText('46 dias');
     await selectEditorSection(page, 'issues');
-    await page.locator('#calendar-scope').selectOption('covered');
+    await page.locator('#calendar-scope-integrado').selectOption('covered');
 
-    await page.locator('#scope-form button[type="submit"]').click();
+    await page.locator('#scope-form-integrado button[type="submit"]').click();
     await expect(summary.locator('.teaching-day-current strong')).toHaveText('46 / 200');
     await expect(summary.locator('.teaching-day-status')).toHaveText('Faltam 154 dias');
     await expect(summary).toHaveAttribute('data-tone', 'warning');
@@ -82,35 +82,49 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     await page.evaluate(() => {
       const { record } = window.editorTest;
-      record.state.scopeConfirmation = { status: 'covered' };
-      record.modalities = ['integrado', 'graduacao', 'posgraduacao'];
-      record.state.modalities = record.modalities;
-      record.state.organizationByModality = {
-        integrado: 'anual',
-        graduacao: 'semestral',
-        posgraduacao: 'anual',
-      };
+      record.offerKinds = ['integrado', 'graduacao', 'posgraduacao'];
+      record.state.offers = record.offerKinds.map((kind) => ({
+        id: kind,
+        kind,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      }));
+      record.state.offers = record.state.offers.map((offer) => ({
+        ...offer,
+        organization:
+          offer.id === 'integrado'
+            ? ('anual' as const)
+            : offer.id === 'graduacao'
+              ? ('semestral' as const)
+              : offer.id === 'posgraduacao'
+                ? ('anual' as const)
+                : ('a-classificar' as const),
+      }));
+      record.state.offers = record.state.offers.map((offer) => ({
+        ...offer,
+        scope: offer.kind === 'posgraduacao' ? undefined : { status: 'covered' as const },
+      }));
       record.state.periods = [
         {
           id: 'annual',
           name: 'Ano integrado',
           start: '2027-01-04',
           end: '2027-12-23',
-          association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+          association: { status: 'defined', offers: ['integrado'], term: 'annual' },
         },
         {
           id: 'first-grad',
           name: '1º semestre',
           start: '2027-03-01',
           end: '2027-04-30',
-          association: { status: 'defined', modalities: ['graduacao'], term: 'first' },
+          association: { status: 'defined', offers: ['graduacao'], term: 'first' },
         },
         {
           id: 'second-grad',
           name: '2º semestre',
           start: '2027-08-02',
           end: '2027-08-31',
-          association: { status: 'defined', modalities: ['graduacao'], term: 'second' },
+          association: { status: 'defined', offers: ['graduacao'], term: 'second' },
         },
       ];
       record.version++;

@@ -11,8 +11,15 @@ import { modalityLabels, selectableModalities } from '#src/domain/calendar/modal
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
-type Modality = Bootstrap['calendars'][number]['offer'];
-type Regime = Parameters<typeof calendarClient.create>[0]['regime'];
+import type { OfferKind } from '#src/domain/calendar/model.ts';
+import { validateOffers } from '#src/domain/calendar/normalization/normalize-v4.ts';
+
+interface CreationOfferDraft {
+  key: string;
+  kind: OfferKind | '';
+  organization: 'anual' | 'semestral';
+  label: string;
+}
 
 export default function CreateCalendarForm({
   info,
@@ -25,8 +32,7 @@ export default function CreateCalendarForm({
   const defaults: {
     campusId: string;
     year: string;
-    modalities: Modality[];
-    regime: Regime;
+    offers: CreationOfferDraft[];
     courses: string;
     classes: string;
     shifts: string;
@@ -34,8 +40,7 @@ export default function CreateCalendarForm({
   } = {
     campusId: '',
     year: String(defaultCalendarYear),
-    modalities: [],
-    regime: 'anual',
+    offers: [{ key: 'offer-1', kind: '', organization: 'anual', label: '' }],
     courses: '',
     classes: '',
     shifts: '',
@@ -58,10 +63,29 @@ export default function CreateCalendarForm({
         throw new Error(
           'Nenhum campus ativo está disponível para esta conta. Solicite à administração PROENS a conferência do seu cadastro.',
         );
-      if (!value.modalities.length)
-        throw new Error('Selecione ao menos uma forma de oferta/nível.');
+      const offers = validateOffers(
+        value.offers.map((offer, index) => {
+          const kind = selectableModalities.find((kind) => kind === offer.kind);
+          if (!kind) throw new Error('Selecione o tipo de cada oferta.');
+          return {
+            id: `offer-${index + 1}`,
+            kind,
+            organization: offer.organization,
+            label: offer.label,
+            delivery: 'a-conferir',
+          };
+        }),
+      );
       const calendar = await calendarClient.create({
-        ...value,
+        courses: value.courses,
+        classes: value.classes,
+        shifts: value.shifts,
+        purpose: value.purpose,
+        offers: offers.map(({ kind, organization, label }) => ({
+          kind,
+          organization,
+          ...(label ? { label } : {}),
+        })),
         campusId: selectedCampus.id,
         year: Number(value.year),
       });
@@ -123,50 +147,110 @@ export default function CreateCalendarForm({
               required
             />
           </label>
-          <label>
-            Organização do calendário
-            <select
-              id="calendar-regime"
-              name="regime"
-              value={values.regime}
-              onChange={(event) => {
-                const value = event.target.value;
-                if (value === 'anual' || value === 'semestral' || value === 'misto')
-                  form.setFieldValue('regime', value);
-              }}
-            >
-              <option value="anual">Anual</option>
-              <option value="semestral">Semestral</option>
-              <option value="misto">Anual e semestral</option>
-            </select>
-          </label>
         </div>
-        <fieldset id="calendar-modalities" aria-describedby="calendar-modalities-help">
-          <legend>Forma de oferta/nível</legend>
-          <p id="calendar-modalities-help" className="help">
-            Selecione uma ou mais opções.
+        <fieldset
+          id="calendar-offers"
+          className="calendar-offer-list"
+          aria-describedby="calendar-offers-help"
+        >
+          <legend>Ofertas do calendário</legend>
+          <p id="calendar-offers-help" className="help">
+            Inclua cada oferta com sua organização. Ofertas do mesmo tipo precisam de nomes
+            distintos. As etapas, o modo de oferta e a norma aplicável serão definidos no editor.
           </p>
-          <div className="calendar-modality-options">
-            {selectableModalities.map((m) => (
-              <label className="check" key={m}>
-                <input
-                  type="checkbox"
-                  name="calendar-modality"
-                  value={m}
-                  checked={values.modalities.includes(m)}
-                  onChange={(event) =>
+          {values.offers.map((offer, index) => {
+            const repeated =
+              Boolean(offer.kind) &&
+              values.offers.filter((item) => item.kind === offer.kind).length > 1;
+            return (
+              <fieldset className="calendar-offer-create" key={offer.key} data-create-offer={index}>
+                <legend>Oferta {index + 1}</legend>
+                <div className="calendar-offer-fields">
+                  <label>
+                    Tipo de oferta
+                    <select
+                      id={`calendar-offer-${index}-kind`}
+                      name={`offers[${index}].kind`}
+                      value={offer.kind}
+                      required
+                      onChange={(event) => {
+                        const kind =
+                          selectableModalities.find((kind) => kind === event.target.value) ?? '';
+                        form.setFieldValue(`offers[${index}].kind`, kind);
+                      }}
+                    >
+                      <option value="">Selecione</option>
+                      {selectableModalities.map((kind) => (
+                        <option key={kind} value={kind}>
+                          {modalityLabels[kind]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Organização
+                    <select
+                      id={`calendar-offer-${index}-organization`}
+                      name={`offers[${index}].organization`}
+                      value={offer.organization}
+                      required
+                      onChange={(event) => {
+                        const organization = event.target.value;
+                        if (organization === 'anual' || organization === 'semestral')
+                          form.setFieldValue(`offers[${index}].organization`, organization);
+                      }}
+                    >
+                      <option value="anual">Anual</option>
+                      <option value="semestral">Semestral</option>
+                    </select>
+                  </label>
+                  <label>
+                    Nome da oferta {repeated ? '(obrigatório)' : '(opcional)'}
+                    <input
+                      id={`calendar-offer-${index}-label`}
+                      name={`offers[${index}].label`}
+                      value={offer.label}
+                      required={repeated}
+                      maxLength={calendarLimits.maximumTextLength}
+                      onChange={(event) =>
+                        form.setFieldValue(`offers[${index}].label`, event.target.value)
+                      }
+                      placeholder="Ex.: Licenciatura em Química"
+                    />
+                  </label>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={values.offers.length === 1}
+                  aria-label={`Remover oferta ${index + 1}`}
+                  onClick={() =>
                     form.setFieldValue(
-                      'modalities',
-                      event.target.checked
-                        ? [...values.modalities, m]
-                        : values.modalities.filter((item) => item !== m),
+                      'offers',
+                      values.offers.filter((_, position) => position !== index),
                     )
                   }
-                />
-                {modalityLabels[m]}
-              </label>
-            ))}
-          </div>
+                >
+                  Remover oferta
+                </Button>
+              </fieldset>
+            );
+          })}
+          <Button
+            id="calendar-add-offer"
+            type="button"
+            variant="secondary"
+            disabled={values.offers.length >= calendarLimits.maximumOffers}
+            onClick={() =>
+              form.setFieldValue('offers', [
+                ...values.offers,
+                { key: crypto.randomUUID(), kind: '', organization: 'anual', label: '' },
+              ])
+            }
+          >
+            Adicionar oferta
+          </Button>
+          <p className="help">Até {calendarLimits.maximumOffers} ofertas por calendário.</p>
         </fieldset>
         <div className="row-form calendar-course-fields">
           <label>

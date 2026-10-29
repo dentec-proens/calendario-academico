@@ -1,7 +1,7 @@
 import { diagnoseCalendar, diagnoseTeachingDays } from '#src/domain/calendar/diagnostics.ts';
 import { Link } from '@tanstack/react-router';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
-import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { labelFor } from '#src/domain/calendar/offers.ts';
 import { Eye } from 'lucide-react';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
 import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
@@ -27,7 +27,7 @@ export default function IssuesSection() {
     else if (issue.code === 'organization-unclassified' || issue.code === 'period-count')
       issues.push({
         mark: 'Pendente',
-        title: `Organização — ${modalityLabels[issue.modality]}`,
+        title: `Organização — ${labelFor(state, issue.modality)}`,
         detail:
           issue.code === 'organization-unclassified'
             ? 'Classifique a organização e a associação dos períodos na etapa 2.'
@@ -44,7 +44,7 @@ export default function IssuesSection() {
             : row.coverage === 'complete'
               ? 'Conferir'
               : 'Pendente',
-        title: `${modalityLabels[row.modality]} — ${row.requirement.name}`,
+        title: `${labelFor(state, row.modality)} — ${row.requirement.name}`,
         detail:
           [...row.issues, ...row.warnings].join(' ') ||
           'Planejamento pendente de registro e datas.',
@@ -60,7 +60,7 @@ export default function IssuesSection() {
             : check.status === 'NOT_MET'
               ? 'Corrigir'
               : 'Pendente',
-        title: `${modalityLabels[check.modality]} — ${check.scope === 'annual' ? 'Total anual' : state.periods.find((period) => period.id === check.scope)?.name || check.scope}`,
+        title: `${labelFor(state, check.modality)} — ${check.scope === 'annual' ? 'Total anual' : state.periods.find((period) => period.id === check.scope)?.name || check.scope}`,
         detail:
           check.expected === null
             ? 'Não há mínimo normativo configurado para este escopo.'
@@ -103,12 +103,12 @@ export default function IssuesSection() {
           <strong id="total">{evaluation?.total ?? '—'}</strong>
           <small id="goal">
             {evaluation
-              ? Object.entries(evaluation.byModality)
+              ? Object.entries(evaluation.byOffer)
                   .map(([modality, detail]) => {
                     const target = detail.checks.find(
                       (check) => check.scope === 'annual',
                     )?.expected;
-                    return `${modalityLabels[modality]}: ${target == null ? 'sem mínimo normativo confirmado para este escopo' : `mínimo anual de ${target} dias`}`;
+                    return `${labelFor(state, modality)}: ${target == null ? 'sem mínimo normativo confirmado para este escopo' : `mínimo anual de ${target} dias`}`;
                   })
                   .join(' · ')
               : 'A contagem depende da organização e dos períodos por oferta.'}

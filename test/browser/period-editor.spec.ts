@@ -121,25 +121,31 @@ test('editing one shared offer preserves the other offer and existing inclusions
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(async () => {
     const { record } = window.editorTest;
-    record.modalities = ['integrado', 'graduacao'];
-    record.state.modalities = record.modalities;
-    record.state.organizationByModality = { integrado: 'anual', graduacao: 'anual' };
+    record.offerKinds = ['integrado', 'graduacao'];
+    record.state.offers = record.offerKinds.map((kind) => ({
+      id: kind,
+      kind,
+      delivery: 'a-conferir',
+      organization: 'anual',
+    }));
     record.state.periods = [
       {
         id: 'shared',
         name: 'Anual',
         start: '2027-03-01',
         end: '2027-04-30',
-        association: { status: 'defined', modalities: ['integrado', 'graduacao'], term: 'annual' },
+        association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'annual' },
       },
     ];
-    record.state.assessmentStagesByModality = { integrado: 2, graduacao: 2 };
+    record.state.offers.forEach((offer) => {
+      offer.stages = { perTerm: 2 };
+    });
     record.state.events = ['integrado', 'graduacao'].flatMap((modality) =>
       [0, 1].map((index) => ({
         id: `${modality}-${index}`,
         name: `${index + 1}ª etapa`,
         requirementId: `stage-${index + 1}:${modality}`,
-        modalities: [modality as 'integrado' | 'graduacao'],
+        offers: [modality as 'integrado' | 'graduacao'],
         start: index ? '2027-04-01' : '2027-03-01',
         end: index ? '2027-04-30' : '2027-03-31',
         kind: 'note',
@@ -152,7 +158,7 @@ test('editing one shared offer preserves the other offer and existing inclusions
       start: '2027-03-06',
       end: '2027-03-06',
       kind: 'include',
-      modalities: ['integrado'],
+      offers: ['integrado'],
     });
     record.version++;
     await window.publishReviewerCalendar();
@@ -173,11 +179,11 @@ test('editing one shared offer preserves the other offer and existing inclusions
   expect(saved.periods).toHaveLength(2);
   expect(saved.periods.find((p) => p.id === 'shared')?.association).toEqual({
     status: 'defined',
-    modalities: ['graduacao'],
+    offers: ['graduacao'],
     term: 'annual',
   });
-  expect(saved.events.filter((e) => e.modalities?.includes('graduacao'))).toEqual(
-    original.events.filter((e) => e.modalities?.includes('graduacao')),
+  expect(saved.events.filter((e) => e.offers?.includes('graduacao'))).toEqual(
+    original.events.filter((e) => e.offers?.includes('graduacao')),
   );
   expect(saved.events.find((e) => e.id === 'sat')).toEqual(
     original.events.find((e) => e.id === 'sat'),

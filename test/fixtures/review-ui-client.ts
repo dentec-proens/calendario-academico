@@ -15,9 +15,10 @@ const support = reviewSupport(
     state: {
       year: 2027,
       campus: 'Campus de teste',
-      offer: 'integrado',
-      modalities: ['integrado'],
-      regime: 'anual',
+      schemaVersion: 4,
+      offers: [
+        { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
+      ],
       weekdays: [],
       weekConfirmed: false,
       periods: [],
@@ -69,8 +70,7 @@ const calendars: Bootstrap['calendars'] = [
     name: '2027 — Campus de teste',
     campusId: 'synthetic-campus' as Id<'campuses'>,
     year: 2027,
-    offer: 'integrado',
-    modalities: ['integrado'],
+    offerKinds: ['integrado'],
     purpose: 'test',
     courses: 'Curso de teste',
     classes: '',

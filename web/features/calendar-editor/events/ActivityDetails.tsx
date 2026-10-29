@@ -1,5 +1,5 @@
 import { Pencil, Trash2 } from 'lucide-react';
-import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { removeEvent } from '#src/domain/calendar/commands/events.ts';
 import { activityStatusLabels } from '#src/domain/calendar/activities/status.ts';
 import type { ActivityRequirement } from '#src/domain/calendar/model.ts';
@@ -63,7 +63,7 @@ export default function ActivityDetails({
         <ul className="activity-coverage" aria-label="Cobertura por oferta">
           {evidence.map((row) => (
             <li key={row.modality}>
-              <strong>{modalityLabels[row.modality]}: </strong>
+              <strong>{labelFor(state, row.modality)}: </strong>
               {row.applicability === 'optional'
                 ? 'Opcional'
                 : row.applicability === 'unconfigured'
@@ -86,7 +86,7 @@ export default function ActivityDetails({
                     ? 'sem critério normativo vinculado'
                     : 'aguardando revisão atualizada'}
               </small>
-              {row.modality === 'posgraduacao' && (
+              {offerFor(state, row.modality)?.kind === 'posgraduacao' && (
                 <small>
                   Depende de norma própria; não há afirmação automática de conformidade.
                 </small>
@@ -112,8 +112,8 @@ export default function ActivityDetails({
                 <strong>{event.name}</strong>
                 <small>
                   {civilDate(event.start)} a {civilDate(event.end)} ·{' '}
-                  {(event.modalities ?? state.modalities)
-                    .map((modality) => modalityLabels[modality])
+                  {(event.offers ?? offerIds(state))
+                    .map((modality) => labelFor(state, modality))
                     .join(', ')}
                   {event.recordType === 'prior-reference' ? ' · Referência anterior' : ''}
                   {event.publicationStatus === 'planned'
@@ -126,7 +126,7 @@ export default function ActivityDetails({
                       counts[event.id]
                         .map(
                           (count) =>
-                            `${modalityLabels[count.modality]}: ${count.days} dias letivos (${count.saturdays} sábados; ${count.excluded} dias excluídos)`,
+                            `${labelFor(state, count.modality)}: ${count.days} dias letivos (${count.saturdays} sábados; ${count.excluded} dias excluídos)`,
                         )
                         .join(' / ')
                     : ''}

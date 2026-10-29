@@ -1,5 +1,6 @@
 import { useSearch } from '@tanstack/react-router';
 import { applicationSearch } from '../../../app/search.ts';
+import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 export { activityGroups } from '#src/domain/calendar/activities/metadata.ts';
 export const civilDate = (date: string) => date.split('-').reverse().join('/');
 
@@ -8,5 +9,12 @@ export const civilDate = (date: string) => date.split('-').reverse().join('/');
  * invalid filter in the URL is validated again here instead of emptying the list.
  */
 export function useActivitySearch() {
-  return applicationSearch(useSearch({ from: '__root__' }));
+  const search = applicationSearch(useSearch({ from: '__root__' }));
+  const { state } = useCalendarEditor();
+  return {
+    ...search,
+    atividadeOferta: state.offers.some((offer) => offer.id === search.atividadeOferta)
+      ? search.atividadeOferta
+      : undefined,
+  };
 }

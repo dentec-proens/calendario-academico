@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { activityGroups, useActivitySearch } from './activity-query.ts';
 
@@ -59,9 +59,9 @@ export default function ActivityFilters() {
               onChange={(event) => update('atividadeOferta', event.target.value)}
             >
               <option value="">Todas as ofertas</option>
-              {state.modalities.map((modality) => (
+              {offerIds(state).map((modality) => (
                 <option key={modality} value={modality}>
-                  {modalityLabels[modality]}
+                  {labelFor(state, modality)}
                 </option>
               ))}
             </select>

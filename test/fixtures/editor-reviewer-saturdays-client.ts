@@ -6,7 +6,7 @@ record.state.periods = [
     name: 'Ano letivo',
     start: '2027-02-01',
     end: '2027-12-17',
-    association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+    association: { status: 'defined', offers: ['integrado'], term: 'annual' },
   },
 ];
 record.state.events.push({

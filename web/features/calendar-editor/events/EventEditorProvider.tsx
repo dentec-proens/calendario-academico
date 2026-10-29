@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type PropsWithChildren,
@@ -37,6 +38,7 @@ function useController() {
   const { state, institutional, session, record, notify, readOnly, formEpoch } =
     useCalendarEditor();
   const navigate = useNavigate();
+  const calendarOfferIds = useMemo(() => state.offers.map((offer) => offer.id), [state.offers]);
   const [context, setContext] = useState<EventContext | null>(null);
   const [open, setOpen] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
@@ -68,7 +70,7 @@ function useController() {
   );
   const result = useCalendarForm(
     'event',
-    emptyEvent(state.modalities),
+    emptyEvent(calendarOfferIds),
     function apply(value) {
       const id = eventId || crypto.randomUUID();
       session.apply((current) =>
@@ -103,10 +105,10 @@ function useController() {
     setEventId(null);
     setLinkUnlocked(false);
     setPanel(null);
-    eventForm.reset(emptyEvent(state.modalities));
+    eventForm.reset(emptyEvent(calendarOfferIds));
     clearDraft();
     session.setFormDirty('event', false);
-  }, [formEpoch, eventForm, clearDraft, session, state.modalities]);
+  }, [formEpoch, eventForm, clearDraft, session, calendarOfferIds]);
   useEffect(() => {
     if (!returnFocus) return;
     const frame = requestAnimationFrame(() => {
@@ -145,8 +147,8 @@ function useController() {
     previousVersion.current = record.version;
     if (!eventId || dirty) return;
     const event = state.events.find((item) => item.id === eventId);
-    if (event) result.form.reset(eventValues(event, state.modalities));
-  }, [dirty, eventId, record.version, result.form, state.events, state.modalities]);
+    if (event) result.form.reset(eventValues(event, calendarOfferIds));
+  }, [dirty, eventId, record.version, result.form, state.events, calendarOfferIds]);
   useEffect(() => {
     if (!context) session.setFormDirty('event', false);
   }, [context, session]);
@@ -212,7 +214,7 @@ function useController() {
     const next: EventContext = event.requirementId
       ? { kind: 'activity', requirementId: event.requirementId, eventId: id }
       : { kind: 'event', eventId: id };
-    begin(next, eventValues(event, state.modalities), id);
+    begin(next, eventValues(event, calendarOfferIds), id);
   }
   function prepare(requirementId: string) {
     if (stageRequirement(requirementId)) {
@@ -225,7 +227,7 @@ function useController() {
   }
   function discard() {
     if (result.pending) return;
-    result.form.reset(emptyEvent(state.modalities));
+    result.form.reset(emptyEvent(calendarOfferIds));
     result.clearDraft();
     session.setFormDirty('event', false);
     setContext(null);
@@ -319,7 +321,7 @@ function useController() {
         setReturnFocus('pending-event-title');
         return;
       }
-      begin({ kind: 'new' }, emptyEvent(state.modalities));
+      begin({ kind: 'new' }, emptyEvent(calendarOfferIds));
     },
   };
 }

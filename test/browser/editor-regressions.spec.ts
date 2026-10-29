@@ -162,9 +162,20 @@ test('metadata rejects an activity for another modality before applying or savin
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.state.modalities = ['integrado', 'graduacao'];
-    record.modalities = ['integrado', 'graduacao'];
-    record.state.assessmentStagesByModality = { graduacao: 2 };
+    record.state.offers = (['integrado', 'graduacao'] as const).map((kind) => ({
+      id: kind,
+      kind,
+      delivery: 'a-conferir' as const,
+      organization: 'anual' as const,
+    }));
+    record.offerKinds = ['integrado', 'graduacao'];
+    record.state.offers = record.state.offers.map((offer) => ({
+      ...offer,
+      stages:
+        offer.id === 'graduacao'
+          ? { perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const) }
+          : undefined,
+    }));
     record.version++;
     return window.publishReviewerCalendar();
   });
@@ -198,7 +209,7 @@ test('removing a campus exclusion recalculates the teaching-day target', async (
         start: '2027-03-01',
         end: '2027-03-05',
         targetDays: 5,
-        association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
     ];
     record.version++;
@@ -294,7 +305,13 @@ test('stage editing and activity changes always reveal the same draft in its des
   await page.goto(await fixtureServer('editor'));
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.state.assessmentStagesByModality = { integrado: 2 };
+    record.state.offers = record.state.offers.map((offer) => ({
+      ...offer,
+      stages:
+        offer.id === 'integrado'
+          ? { perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const) }
+          : undefined,
+    }));
     record.state.events.push({
       id: 'stage-existing',
       name: 'Primeira etapa salva',
@@ -303,7 +320,7 @@ test('stage editing and activity changes always reveal the same draft in its des
       end: '2027-03-12',
       kind: 'note',
       category: 'limite',
-      modalities: ['integrado'],
+      offers: ['integrado'],
     });
     record.version++;
     return window.publishReviewerCalendar();

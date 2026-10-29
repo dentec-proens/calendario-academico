@@ -32,7 +32,9 @@ for (const width of [1440, 390]) {
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(before.saves);
     await page.locator('#offer-integrado-apply').click();
     const saved = await savedState(page);
-    expect(saved.state.assessmentStagesByModality).toEqual({ integrado: 4 });
+    expect(saved.state.offers.find((offer) => offer.id === 'integrado')?.stages).toEqual({
+      perTerm: 4,
+    });
     expect(saved.state.events.filter((e) => e.requirementId?.startsWith('stage-'))).toHaveLength(4);
     const origin = new URL(page.url()).origin;
     await page.goto(origin + '/calendarios/synthetic-calendar/avaliacoes');
@@ -57,16 +59,15 @@ test('an existing local intake declaration survives explicit organization of its
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(async () => {
     const { record } = window.editorTest;
-    record.state.organizationByModality = { integrado: 'anual' };
-    record.state.intakeByModality = {
-      integrado: { annual: { status: 'yes', required: true } },
-    };
+    record.state.offers[0].intake = { annual: { status: 'yes', required: true } };
     record.version++;
     await window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'periods');
   await configureOffer(page, 'integrado', '2027-02-01', '2027-12-17');
-  expect((await savedState(page)).state.intakeByModality?.integrado?.annual).toEqual({
+  expect(
+    (await savedState(page)).state.offers.find((offer) => offer.id === 'integrado')?.intake?.annual,
+  ).toEqual({
     status: 'yes',
     required: true,
   });
@@ -80,16 +81,20 @@ test('changing an offer cycle immediately identifies activities that need review
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(async () => {
     const { record } = window.editorTest;
-    record.modalities = ['integrado', 'graduacao'];
-    record.state.modalities = record.modalities;
-    record.state.organizationByModality = { integrado: 'anual', graduacao: 'anual' };
+    record.offerKinds = ['integrado', 'graduacao'];
+    record.state.offers = record.offerKinds.map((kind) => ({
+      id: kind,
+      kind,
+      delivery: 'a-conferir',
+      organization: 'anual',
+    }));
     record.state.periods = [
       {
         id: 'grad',
         name: 'Anual da graduação',
         start: '2027-02-01',
         end: '2027-12-17',
-        association: { status: 'defined', modalities: ['graduacao'], term: 'annual' },
+        association: { status: 'defined', offers: ['graduacao'], term: 'annual' },
       },
     ];
     record.state.events = [
@@ -97,7 +102,7 @@ test('changing an offer cycle immediately identifies activities that need review
         id: 'final-result',
         name: 'Resultado final da graduação',
         requirementId: 'final-0',
-        modalities: ['graduacao'],
+        offers: ['graduacao'],
         start: '2027-12-17',
         end: '2027-12-17',
         kind: 'note',

@@ -1,4 +1,5 @@
 import type { ActivityState, CalendarActivity } from '../../src/domain/calendar/model.ts';
+import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
@@ -14,6 +15,36 @@ import {
   applySaturdays,
   updateSaturdayActivity,
 } from '../../src/domain/calendar/commands/saturdays.ts';
+
+test('v4 Saturdays require the teaching period of every offer identity', () => {
+  const state = calendarOffersV4Fixture();
+  const day = (date: string) =>
+    saturdayYear(state, [])
+      .flatMap((month) => month.days)
+      .find((day) => day.date === date) as YearSaturday;
+  assert.equal(day('2027-03-06').status, 'available');
+  assert.equal(day('2027-07-17').status, 'outside');
+  assert.throws(
+    () => saturdayEvents(state, ['2027-07-17'], 'Atividade', () => 'saturday'),
+    /fora dos períodos/,
+  );
+  const missing = {
+    ...state,
+    periods: state.periods.filter(
+      (period) =>
+        period.association.status !== 'defined' ||
+        !period.association.offers.includes('graduacao-2'),
+    ),
+  };
+  assert.throws(
+    () => saturdayEvents(missing, ['2027-03-06'], 'Atividade', () => 'saturday'),
+    /fora dos períodos/,
+  );
+  assert.throws(
+    () => saturdayEvents({ ...state, periods: [] }, ['2027-03-06'], 'Atividade', () => 'saturday'),
+    /fora dos períodos/,
+  );
+});
 
 test('month selection adds only chosen Saturdays, survives serialization, and respects conflicts', () => {
   const s = {

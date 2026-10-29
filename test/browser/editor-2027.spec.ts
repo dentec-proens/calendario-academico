@@ -65,16 +65,15 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.state.schemaVersion = 3;
-    record.state.rulesetVersion = 'consup-292-2027-v2';
-    record.state.organizationByModality = { integrado: 'anual' };
+    record.state.schemaVersion = 4;
+    record.state.rulesetVersion = 'consup-292-2027-v3';
     record.state.periods = [
       {
         id: 'annual-2027',
         name: 'Ciclo anual sintético',
         start: '2027-02-01',
         end: '2027-12-17',
-        association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
     ];
     record.version++;
@@ -144,15 +143,15 @@ test('coverage stays partial per offer while the second record is edited and rem
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.modalities = ['integrado', 'subsequente', 'graduacao'];
-    record.state.modalities = record.modalities;
-    record.state.schemaVersion = 3;
-    record.state.rulesetVersion = 'consup-292-2027-v2';
-    record.state.organizationByModality = {
-      integrado: 'anual',
-      subsequente: 'anual',
-      graduacao: 'anual',
-    };
+    record.offerKinds = ['integrado', 'subsequente', 'graduacao'];
+    record.state.offers = record.offerKinds.map((kind) => ({
+      id: kind,
+      kind,
+      delivery: 'a-conferir',
+      organization: 'anual',
+    }));
+    record.state.schemaVersion = 4;
+    record.state.rulesetVersion = 'consup-292-2027-v3';
     record.state.periods = [];
     record.state.events = ['subsequente', 'graduacao'].map((modality, index) => ({
       id: `veterans-${index}`,
@@ -160,7 +159,7 @@ test('coverage stays partial per offer while the second record is edited and rem
       start: '2027-02-01',
       end: '2027-02-02',
       kind: 'note',
-      modalities: [modality as 'subsequente' | 'graduacao'],
+      offers: [modality as 'subsequente' | 'graduacao'],
       requirementId: 'enrolment-0',
     }));
     record.version++;
@@ -234,7 +233,7 @@ test('URL filters validate invalid input and follow browser history without losi
   await expect(page.locator('#event-name')).toHaveValue('Rascunho com filtros');
 });
 
-test('ambiguous v2 organization preserves period IDs until explicit offer and cycle classification', async ({
+test('migrated pending organization preserves period IDs until explicit offer and cycle classification', async ({
   page,
   fixtureServer,
 }) => {
@@ -242,9 +241,9 @@ test('ambiguous v2 organization preserves period IDs until explicit offer and cy
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.state.schemaVersion = 2;
-    record.state.regime = 'misto';
-    delete record.state.organizationByModality;
+    record.state.schemaVersion = 4;
+    record.state.offers[0].organization = 'a-classificar';
+    delete record.state.offers[0].stages;
     delete record.state.rulesetVersion;
     record.state.periods = [
       {
@@ -252,6 +251,7 @@ test('ambiguous v2 organization preserves period IDs until explicit offer and cy
         name: 'Período legado sintético',
         start: '2027-02-01',
         end: '2027-12-17',
+        association: { status: 'a-classificar' },
       },
     ];
     record.version++;
@@ -265,7 +265,7 @@ test('ambiguous v2 organization preserves period IDs until explicit offer and cy
   await configureOffer(page, 'integrado', '2027-02-01', '2027-12-17');
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0].association))
-    .toEqual({ status: 'defined', modalities: ['integrado'], term: 'annual' });
+    .toEqual({ status: 'defined', offers: ['integrado'], term: 'annual' });
   expect(await page.evaluate(() => window.editorTest.record.state.periods[0].id)).toBe(
     'legacy-cycle',
   );
@@ -282,9 +282,13 @@ test('annual integrated and semester undergraduate offers keep independent overl
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.modalities = ['integrado', 'graduacao'];
-    record.state.modalities = record.modalities;
-    record.state.organizationByModality = { integrado: 'anual', graduacao: 'anual' };
+    record.offerKinds = ['integrado', 'graduacao'];
+    record.state.offers = record.offerKinds.map((kind) => ({
+      id: kind,
+      kind,
+      delivery: 'a-conferir',
+      organization: 'anual',
+    }));
     record.state.events = [];
     record.version++;
     return window.publishReviewerCalendar();
@@ -300,7 +304,7 @@ test('annual integrated and semester undergraduate offers keep independent overl
     await page.locator(`#offer-graduacao-period-${index}-start`).fill(start);
     await page.locator(`#offer-graduacao-period-${index}-end`).fill(end);
   }
-  await page.locator('#offer-graduacao-count').selectOption('2');
+  await page.locator('#offer-graduacao-count').selectOption('1');
   for (const [index, [start, end]] of [
     ['2027-02-01', '2027-06-30'],
     ['2027-08-02', '2027-12-17'],
@@ -324,12 +328,16 @@ test('annual integrated and semester undergraduate offers keep independent overl
   await expect
     .poll(() =>
       page.evaluate(
-        () => window.editorTest.record.state.intakeByModality?.graduacao?.second?.required,
+        () =>
+          window.editorTest.record.state.offers.find((offer) => offer.id === 'graduacao')?.intake
+            ?.second?.required,
       ),
     )
     .toBe(true);
   expect(
-    await page.evaluate(() => window.editorTest.record.state.intakeByModality?.integrado),
+    await page.evaluate(
+      () => window.editorTest.record.state.offers.find((offer) => offer.id === 'integrado')?.intake,
+    ),
   ).toBeUndefined();
   await page.locator('#close-event-panel').click();
   const details = page.locator('#event-panel .activity-details');

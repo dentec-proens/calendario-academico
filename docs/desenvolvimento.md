@@ -43,7 +43,7 @@ TanStack Intent carrega a orientação das versões instaladas. Consulte `AGENTS
 
 ## Dados e edição
 
-Novos conteúdos e cópias de calendários usam `schemaVersion: 3`, organização e períodos por oferta e modalidades explícitas. A leitura v2 permanece compatível por conversão explícita, sem reescrever snapshots antigos. Datas acadêmicas são `YYYY-MM-DD`. Regras de domínio, transações e validação de formulário possuem responsabilidades distintas. Consulte [Conteúdo v3 e política de 2027](arquitetura-convex.md#conteúdo-v3-e-política-de-2027).
+Novos conteúdos e cópias usam `schemaVersion: 4`, com IDs de ofertas independentes dos seus tipos e etapas configuradas por ciclo. Eventos e períodos se associam aos IDs; eventos institucionais continuam selecionados por tipo. Na release A, o armazenamento aceita legado para conversão, mas o cliente só troca v4 e não importa cópias antigas. Datas acadêmicas são `YYYY-MM-DD`. Regras de domínio, transações e formulários possuem responsabilidades distintas. Consulte [Conteúdo v4 e política de 2027](arquitetura-convex.md#conteúdo-v4-e-política-de-2027).
 
 O formulário conserva preenchimento ainda não aplicado; comandos atualizam o calendário da sessão; autosave confirma sua gravação no Convex. Rascunhos não sensíveis são isolados por usuário e entidade e limpos ao encerrar a sessão. Não há persistência durável offline.
 

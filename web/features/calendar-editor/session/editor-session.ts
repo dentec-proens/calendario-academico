@@ -3,7 +3,7 @@ import { equalValues } from '#src/shared/equal.ts';
 import { createAutosaver } from '../../../autosave.ts';
 import type { AutosaveStatus } from '../../../autosave.ts';
 import { inspectCalendar, reconcile } from '#src/domain/calendar/base.ts';
-import { convertCalendarV2 } from '#src/domain/calendar/normalization/conversion.ts';
+import { kinds } from '#src/domain/calendar/offers.ts';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
 
 export interface EditorSnapshot {
@@ -36,7 +36,7 @@ export function createEditorSession(
 ) {
   let current: EditorSnapshot = {
     record: structuredClone(record),
-    state: convertCalendarV2(record.state),
+    state: structuredClone(record.state),
     dirty: false,
     unapplied: false,
     status: 'idle',
@@ -102,8 +102,7 @@ export function createEditorSession(
       const confirmed = {
         ...current.record,
         ...value,
-        modalities: saved.state.modalities,
-        offer: saved.state.offer,
+        offerKinds: kinds(saved.state),
         catalogueRevision: base.revision,
         institutionalSnapshot: base.events,
         documentSnapshot: base.documents,
@@ -162,7 +161,7 @@ export function createEditorSession(
       if (current.status === 'blocked')
         throw new Error(current.error || 'Resolva o conflito antes de aplicar alterações.');
       const changed = command(structuredClone(current.state));
-      const state = { ...convertCalendarV2(changed), rulesetVersion: rulesetVersion(changed) };
+      const state = { ...structuredClone(changed), rulesetVersion: rulesetVersion(changed) };
       const dirty = !equalValues(state, current.record.state);
       publish({
         state,
@@ -213,7 +212,7 @@ export function createEditorSession(
       } else if (current.dirty || current.unapplied || current.status === 'saving')
         publish({ remote: fresh });
       else {
-        publish({ record: fresh, state: convertCalendarV2(fresh.state), remote: null });
+        publish({ record: fresh, state: structuredClone(fresh.state), remote: null });
       }
     },
     async retry() {
@@ -249,7 +248,7 @@ export function createEditorSession(
       publish({
         dirty: true,
         state: {
-          ...convertCalendarV2(current.state),
+          ...structuredClone(current.state),
           rulesetVersion: rulesetVersion(current.state),
         },
       });
@@ -270,7 +269,7 @@ export function createEditorSession(
       saver.resume();
       publish({
         record: structuredClone(fresh),
-        state: convertCalendarV2(fresh.state),
+        state: structuredClone(fresh.state),
         dirty: false,
         unapplied: false,
         status: 'idle',

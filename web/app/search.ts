@@ -1,4 +1,4 @@
-import { modalityIds, calendarLimits } from '#src/domain/calendar/config.ts';
+import { calendarLimits } from '#src/domain/calendar/config.ts';
 export type DocumentStatus = '' | 'rascunho' | 'vigente' | 'arquivado';
 
 function documentStatus(value: unknown): Exclude<DocumentStatus, ''> | undefined {
@@ -50,7 +50,8 @@ export function applicationSearch(input: Record<string, unknown>) {
     ...(typeof input.atividadeBusca === 'string' && input.atividadeBusca.trim()
       ? { atividadeBusca: input.atividadeBusca.slice(0, 200) }
       : {}),
-    ...(modalityIds.some((modality) => modality === input.atividadeOferta)
+    ...(typeof input.atividadeOferta === 'string' &&
+    /^[a-z][a-z0-9-]{0,99}$/.test(input.atividadeOferta)
       ? { atividadeOferta: String(input.atividadeOferta) }
       : {}),
     ...(['all', 'pending', 'partial', 'complete', 'optional', 'unconfigured'].includes(

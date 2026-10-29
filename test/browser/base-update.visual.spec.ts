@@ -30,9 +30,8 @@ test('legacy 2027 rules require explicit adoption without changing recorded date
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.state.schemaVersion = 2;
+    record.state.schemaVersion = 4;
     delete record.state.rulesetVersion;
-    delete record.state.organizationByModality;
     record.version++;
     return window.publishReviewerCalendar();
   });

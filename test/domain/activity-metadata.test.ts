@@ -1,3 +1,4 @@
+import { calendarOffers } from '../../src/domain/calendar/offers.ts';
 import { expect, test } from 'vitest';
 import type {
   ActivityRequirement,
@@ -12,7 +13,6 @@ import {
   activityDraft,
   eventFromValues,
 } from '../../web/features/calendar-editor/events/event-draft.ts';
-import type { Modality } from '../../web/features/calendar-editor/types.ts';
 
 // Rules that lived in the editor before the metadata moved into the catalogue.
 const previous = {
@@ -128,12 +128,16 @@ test('every year keeps a catalogue and prepares the same draft as before', () =>
         .every((state) => activityChecklist(state).length > 0),
     ).toBe(true);
   for (const state of settings) {
-    const draftState = { ...state, modalities: state.modalities as Modality[], periods: [] };
+    const draftState = { ...state, offers: calendarOffers(state), periods: [] };
     for (const row of activityChecklist(state)) {
       const expected = previousDraft(state, row);
       // A stage record may only cover its own offer; 2026 used to prepare every offer.
       if (row.modality) expected.modalities = expected.modalities.filter((m) => m === row.modality);
-      expect(activityDraft(draftState, row), `${state.year} ${row.id}`).toMatchObject(expected);
+      const { modalities, ...fields } = expected;
+      expect(activityDraft(draftState, row), `${state.year} ${row.id}`).toMatchObject({
+        ...fields,
+        offers: modalities,
+      });
     }
   }
 });
@@ -141,10 +145,23 @@ test('every year keeps a catalogue and prepares the same draft as before', () =>
 test('a 2026 stage prepared in a calendar with several offers can be applied', () => {
   const state = {
     year: 2026,
-    offer: 'integrado',
-    modalities: ['integrado', 'graduacao'] as Modality[],
-    regime: 'anual',
-    assessmentStagesByModality: { integrado: 4, graduacao: 2 },
+    schemaVersion: 4,
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages: { perTerm: 4 },
+      },
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+        stages: { perTerm: 2 },
+      },
+    ],
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     periods: [],
@@ -152,7 +169,7 @@ test('a 2026 stage prepared in a calendar with several offers can be applied', (
   };
   const row = activityChecklist(state).find((item) => item.id === 'stage-1:integrado')!;
   const draft = activityDraft(state, row);
-  expect(draft.modalities).toEqual(['integrado']);
+  expect(draft.offers).toEqual(['integrado']);
   const event = eventFromValues(
     { ...draft, start: '2026-03-02', end: '2026-04-30' },
     { id: 'stage' },
@@ -168,7 +185,7 @@ test('a 2026 stage prepared in a calendar with several offers can be applied', (
         end: '2026-12-18',
         association: {
           status: 'defined' as const,
-          modalities: ['integrado'],
+          offers: ['integrado'],
           term: 'annual' as const,
         },
       },

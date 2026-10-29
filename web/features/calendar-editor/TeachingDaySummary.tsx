@@ -1,6 +1,6 @@
 import { ChevronDown, X } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
-import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { periodsForModality } from '#src/domain/calendar/organization/periods.ts';
 import { evaluateCalendar } from '#src/domain/calendar/counting/evaluation.ts';
 import { useCalendarEditor } from './session/CalendarEditorProvider.tsx';
@@ -38,15 +38,16 @@ export default function TeachingDaySummary() {
   }, []);
   const offers = useMemo(
     () =>
-      state.modalities.map((modality) => {
+      offerIds(state).map((modality) => {
         const periods = periodsForModality(state, modality);
-        let result = periods.length ? evaluation?.byModality[modality] : undefined;
+        let result = periods.length ? evaluation?.byOffer[modality] : undefined;
         // An unfinished offer must not hide the count of offers already configured.
         if (!evaluation && state.weekConfirmed && periods.length) {
           try {
-            result = evaluateCalendar({ ...state, modalities: [modality] }, events).byModality[
-              modality
-            ];
+            result = evaluateCalendar(
+              { ...state, offers: state.offers.filter((offer) => offer.id === modality) },
+              events,
+            ).byOffer[modality];
           } catch {
             // Show the configuration prompt until this offer can be evaluated.
           }
@@ -88,7 +89,7 @@ export default function TeachingDaySummary() {
         <span className="teaching-day-offers" role="status" aria-live="polite" aria-atomic="true">
           {offers.map(({ modality, annual, missing, tone: offerTone }) => (
             <span className="teaching-day-current" key={modality} data-tone={offerTone}>
-              <span className="teaching-day-offer">{modalityLabels[modality]}</span>
+              <span className="teaching-day-offer">{labelFor(state, modality)}</span>
               {annual ? (
                 <>
                   <strong>
@@ -138,9 +139,9 @@ export default function TeachingDaySummary() {
           <section
             key={modality}
             className="teaching-day-detail-offer"
-            aria-label={modalityLabels[modality]}
+            aria-label={labelFor(state, modality)}
           >
-            <h3>{modalityLabels[modality]}</h3>
+            <h3>{labelFor(state, modality)}</h3>
             {result && offerAnnual ? (
               <dl>
                 {result.checks.map((check, index) => {

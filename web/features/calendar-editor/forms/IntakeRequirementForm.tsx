@@ -1,16 +1,21 @@
-import type { AcademicTerm, ActivityRequirement } from '#src/domain/calendar/model.ts';
+import type {
+  AcademicTerm,
+  ActivityRequirement,
+  CalendarOffer,
+} from '#src/domain/calendar/model.ts';
 import { configureIntakeRequirement } from '#src/domain/calendar/commands/organization.ts';
-import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { offerLabel } from '#src/domain/calendar/offers.ts';
+import { termsFor } from '#src/domain/calendar/organization/periods.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
-import { offerFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Check } from './fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 
-function OfferRequirement({ modality, term }: { modality: string; term: AcademicTerm }) {
+function OfferRequirement({ offer, term }: { offer: CalendarOffer; term: AcademicTerm }) {
   const { state, session, readOnly } = useCalendarEditor();
-  const current = state.intakeByModality?.[modality]?.[term];
+  const modality = offer.id;
+  const current = state.offers.find((item) => item.id === offer.id)?.intake?.[term];
   const { form, submit, error } = useCalendarForm(
     `intake-requirement:${modality}:${term}`,
     {
@@ -24,7 +29,7 @@ function OfferRequirement({ modality, term }: { modality: string; term: Academic
   return (
     <form onSubmit={submit} data-intake-requirement={`${modality}:${term}`}>
       <fieldset disabled={readOnly}>
-        <legend>{modalityLabels[modality]}</legend>
+        <legend>{offerLabel(offer)}</legend>
         {current?.status && current.status !== 'unknown' && (
           <p className="help">
             Ingresso informado: {current.status === 'yes' ? 'há ingresso' : 'não há ingresso'}.
@@ -49,13 +54,7 @@ function OfferRequirement({ modality, term }: { modality: string; term: Academic
 export default function IntakeRequirementForm({ item }: { item: ActivityRequirement }) {
   const { state } = useCalendarEditor();
   const policy = policyFor(state.year);
-  if (
-    !policy.intakeRequirements ||
-    state.scopeConfirmation?.status === 'own-regulation' ||
-    !item.intake ||
-    !item.term
-  )
-    return null;
+  if (!policy.intakeRequirements || !item.intake || !item.term) return null;
   const term = item.term;
   return (
     <details className="activity-detail">
@@ -64,17 +63,18 @@ export default function IntakeRequirementForm({ item }: { item: ActivityRequirem
         O cadastro de datas é permitido sem configurar ingresso. Exija esta atividade somente quando
         houver regra local. Isso não altera as obrigações de veteranos.
       </p>
-      {state.modalities
-        .filter((m) => {
-          const offer = offerFor(state, m);
-          return (
-            offer &&
+      {state.offers
+        .filter(
+          (offer) =>
             !policy.excludes(offer) &&
-            (!item.modalities || item.modalities.includes(offer.kind))
-          );
-        })
-        .map((m) => (
-          <OfferRequirement key={`${m}:${term}`} modality={m} term={term} />
+            offer.scope?.status !== 'own-regulation' &&
+            (!item.modalities || item.modalities.includes(offer.kind)) &&
+            (!item.offerIds || item.offerIds.includes(offer.id)) &&
+            (!(item.offerId ?? item.modality) || (item.offerId ?? item.modality) === offer.id) &&
+            termsFor(state, offer.id).includes(term),
+        )
+        .map((offer) => (
+          <OfferRequirement key={`${offer.id}:${term}`} offer={offer} term={term} />
         ))}
     </details>
   );

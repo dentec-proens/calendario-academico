@@ -18,10 +18,10 @@ for (const width of [1440, 390]) {
           name: 'Anual',
           start: '2027-03-01',
           end: '2027-03-26',
-          association: { status: 'defined', modalities: ['integrado'], term: 'annual' },
+          association: { status: 'defined', offers: ['integrado'], term: 'annual' },
         },
       ];
-      record.state.assessmentStagesByModality = { integrado: 3 };
+      record.state.offers[0].stages = { perTerm: 3 };
       record.version++;
       await window.publishReviewerCalendar();
     });
@@ -78,18 +78,19 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     await addPeriod(page, '2027-03-01', '2027-03-26');
     await savedState(page);
-    await page.locator('[data-edit-organization="graduacao"]').click();
-    await page.locator('#offer-graduacao-organization').selectOption('anual');
-    await page.locator('#offer-graduacao-period-0-start').fill('2027-03-01');
-    await page.locator('#offer-graduacao-period-0-end').fill('2027-03-26');
+    await page.locator('#add-offer').click();
+    await page.locator('#offer-new-kind').selectOption('graduacao');
+    await page.locator('#offer-new-organization').selectOption('anual');
+    await page.locator('#offer-new-period-0-start').fill('2027-03-01');
+    await page.locator('#offer-new-period-0-end').fill('2027-03-26');
     await page.locator('[data-edit-organization="graduacao"]').click();
     await expect(
       page.locator('[data-offer="graduacao"] [data-organization-progress]'),
     ).toContainText('defina a quantidade e as datas');
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/periodos$/);
-    await expect(page.locator('#offer-graduacao-count')).toBeFocused();
-    await page.locator('#offer-graduacao-cancel').click();
+    await expect(page.locator('#offer-new-count')).toBeFocused();
+    await page.locator('#offer-new-cancel').click();
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/dias$/);
   });
