@@ -52,7 +52,6 @@ import type * as operations from "../operations.js";
 import type * as presence from "../presence.js";
 import type * as reviews from "../reviews.js";
 import type * as reviews_model from "../reviews/model.js";
-import type * as runtimeRetirement from "../runtimeRetirement.js";
 import type * as validators from "../validators.js";
 import type * as workspace from "../workspace.js";
 
@@ -107,7 +106,6 @@ declare const fullApi: ApiFromModules<{
   presence: typeof presence;
   reviews: typeof reviews;
   "reviews/model": typeof reviews_model;
-  runtimeRetirement: typeof runtimeRetirement;
   validators: typeof validators;
   workspace: typeof workspace;
 }>;
