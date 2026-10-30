@@ -157,10 +157,7 @@ export default function RulesPage() {
                 <dt>
                   <strong>{rule.label}</strong>
                 </dt>
-                <dd>
-                  {rule.allowedDates.map(civilDate).join(', ')}
-                  <p className="help">{rule.basis}</p>
-                </dd>
+                <dd>{rule.allowedDates.map(civilDate).join(', ')}</dd>
               </div>
             ))}
           </dl>

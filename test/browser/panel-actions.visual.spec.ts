@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-10-23T12:00:00-03:00'));
 });
 
-test('Teacher Day groups the field, help and actions in the shared panel', async ({
+test('Teacher Day groups the field and actions in the shared panel', async ({
   page,
   fixtureServer,
 }) => {

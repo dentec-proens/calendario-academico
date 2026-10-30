@@ -56,7 +56,6 @@ export default function ObservanceForm({
                   field={field}
                   label={`${entry.label} neste calendário`}
                   id={`observance-date-${observanceKey}`}
-                  aria-describedby={`observance-help-${observanceKey}`}
                   required
                 >
                   {!entry.rule!.allowedDates.includes(field.state.value) && (
@@ -73,9 +72,6 @@ export default function ObservanceForm({
                 </Select>
               )}
             </form.Field>
-            <p id={`observance-help-${observanceKey}`} className="help editor-field-description">
-              {entry.rule.basis} A alteração vale apenas para este calendário.
-            </p>
           </>
         ) : (
           <Notice tone="warning">

@@ -38,6 +38,8 @@ for (const width of [1440, 390]) {
     const opener = page.locator('#open-observance-public-servant-day');
     await opener.click();
     const date = page.locator('#observance-date-public-servant-day');
+    await expect(page.locator('#observance-help-public-servant-day')).toHaveCount(0);
+    await expect(date).not.toHaveAttribute('aria-describedby');
     await expect(date.locator('option')).toHaveText([
       '28/10/2027 — data institucional',
       '29/10/2027',

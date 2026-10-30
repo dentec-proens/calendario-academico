@@ -21,9 +21,8 @@ for (const width of [1440, 390]) {
     const opener = page.locator('#open-observance-teacher-day');
     await opener.click();
     const date = page.locator('#observance-date-teacher-day');
-    await expect(page.locator('#observance-help-teacher-day')).toHaveText(
-      'Escolha do campus na semana de 15 de outubro, de segunda-feira a domingo. A alteração vale apenas para este calendário.',
-    );
+    await expect(page.locator('#observance-help-teacher-day')).toHaveCount(0);
+    await expect(date).not.toHaveAttribute('aria-describedby');
     await expect(page.locator('#discard-observance-teacher-day')).toBeHidden();
     await date.selectOption('2027-10-14');
     await page.locator('#close-event-panel').click();
