@@ -18,7 +18,7 @@ for (const width of [1440, 390]) {
       page.locator('#periods button').filter({ hasText: /sugerir|recalcular|distribuir/i }),
     ).toHaveCount(0);
     await page.locator('[data-edit-organization="integrado"]').click();
-    await page.locator('#offer-integrado-count').selectOption('4');
+    await page.locator(`#offer-integrado-count [data-choice="4"]`).click();
     const before = await savedState(page);
     for (const [index, [start, end]] of [
       ['2027-03-01', '2027-03-05'],
@@ -114,7 +114,7 @@ test('changing an offer cycle immediately identifies activities that need review
   });
   await selectEditorSection(page, 'periods');
   await page.locator('[data-edit-organization="graduacao"]').click();
-  await page.locator('#offer-graduacao-organization').selectOption('semestral');
+  await page.locator(`#offer-graduacao-organization [data-choice="semestral"]`).click();
   await expect(page.locator('[data-offer="graduacao"]')).toContainText(
     'Resultado final da graduação',
   );

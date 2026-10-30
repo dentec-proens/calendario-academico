@@ -188,7 +188,7 @@ export const createCalendar = mutation({
       offers.push({
         ...offer,
         id: nextOfferId({ offers, periods: [], events: [] }, offer.kind),
-        delivery: 'a-conferir',
+        delivery: 'presencial',
       });
     const state = domainRule(() =>
       normalizeOfferCalendar({

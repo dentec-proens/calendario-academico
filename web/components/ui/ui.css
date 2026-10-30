@@ -162,7 +162,7 @@ dialog.ui-panel-dialog--side {
 }
 .ui-choice-group {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--ui-choice-count, 3), minmax(0, 1fr));
   gap: var(--ui-space-2);
 }
 .ui-choice-group .ui-choice {

@@ -13,7 +13,9 @@ for (const editing of [false, true]) {
     await expect(page.locator('#autosave-status')).toHaveAttribute('data-state', 'saved');
     if (editing) {
       await page.locator('[data-edit-organization="integrado"]').click();
-      await expect(page.locator('#offer-integrado-organization')).toBeFocused();
+      await expect(
+        page.locator('#offer-integrado-organization [aria-checked="true"]'),
+      ).toBeFocused();
       await page.locator('#offer-integrado-period-0-start').fill('2027-02-22');
       await expect(page.locator('#offer-integrado-stage-0-error')).toContainText(
         'inteiramente dentro',

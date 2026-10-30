@@ -14,18 +14,18 @@ async function addUndergraduateOffer(
   await page.locator('#add-offer').click();
   await page.locator('#offer-new-kind').selectOption('graduacao');
   await page.locator('#offer-new-label').fill(label);
-  await page.locator('#offer-new-organization').selectOption(organization);
+  await page.locator(`#offer-new-organization [data-choice="${organization}"]`).click();
   for (const [index, [start, end]] of periods.entries()) {
     await page.locator(`#offer-new-period-${index}-start`).fill(start);
     await page.locator(`#offer-new-period-${index}-end`).fill(end);
   }
-  await page.locator('#offer-new-count').selectOption(String(perTerm));
+  await page.locator(`#offer-new-count [data-choice="${perTerm}"]`).click();
   const options = await page
-    .locator('#offer-new-count option')
-    .evaluateAll((items) => items.map((option) => option.getAttribute('value')));
-  expect(options).toEqual(organization === 'semestral' ? ['', '1', '2'] : ['', '2', '3', '4']);
+    .locator('#offer-new-count [role="radio"]')
+    .evaluateAll((items) => items.map((option) => option.getAttribute('data-choice')));
+  expect(options).toEqual(organization === 'semestral' ? ['1', '2'] : ['2', '3', '4']);
   if (organization === 'semestral') {
-    await expect(page.locator('#offer-new-form .offer-stage-cycle')).toHaveCount(2);
+    await expect(page.locator('#offer-new-form .offer-term')).toHaveCount(2);
     await expect(page.locator('#offer-new-form .offer-stage-fields > legend')).toHaveText(
       Array.from(
         { length: 2 * perTerm },

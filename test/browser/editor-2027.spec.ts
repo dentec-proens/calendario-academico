@@ -295,7 +295,7 @@ test('annual integrated and semester undergraduate offers keep independent overl
   await selectEditorSection(page, 'periods');
   await configureOffer(page, 'integrado', '2027-02-01', '2027-12-17');
   await page.locator('[data-edit-organization="graduacao"]').click();
-  await page.locator('#offer-graduacao-organization').selectOption('semestral');
+  await page.locator(`#offer-graduacao-organization [data-choice="semestral"]`).click();
   for (const [index, [start, end]] of [
     ['2027-02-01', '2027-06-30'],
     ['2027-08-02', '2027-12-17'],
@@ -303,7 +303,7 @@ test('annual integrated and semester undergraduate offers keep independent overl
     await page.locator(`#offer-graduacao-period-${index}-start`).fill(start);
     await page.locator(`#offer-graduacao-period-${index}-end`).fill(end);
   }
-  await page.locator('#offer-graduacao-count').selectOption('1');
+  await page.locator(`#offer-graduacao-count [data-choice="1"]`).click();
   for (const [index, [start, end]] of [
     ['2027-02-01', '2027-06-30'],
     ['2027-08-02', '2027-12-17'],

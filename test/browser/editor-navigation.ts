@@ -29,10 +29,10 @@ export async function configureOffer(page: Page, modality: string, start: string
   } else if (!(await block.locator('form').isVisible())) {
     await page.locator(`[data-edit-organization="${modality}"]`).click();
   }
-  await page.locator(`#${prefix}-organization`).selectOption('anual');
+  await page.locator(`#${prefix}-organization [data-choice="anual"]`).click();
   await page.locator(`#${prefix}-period-0-start`).fill(start);
   await page.locator(`#${prefix}-period-0-end`).fill(end);
-  await page.locator(`#${prefix}-count`).selectOption('2');
+  await page.locator(`#${prefix}-count [data-choice="2"]`).click();
   const midpoint = Math.floor((Date.parse(start) + Date.parse(end)) / 2 / 86400000) * 86400000;
   const firstEnd = new Date(midpoint).toISOString().slice(0, 10);
   const secondStart = new Date(midpoint + 86400000).toISOString().slice(0, 10);

@@ -142,18 +142,19 @@ for (const width of [1440, 390]) {
     await selectEditorSection(page, 'periods');
     await addPeriod(page, '2027-02-01', '2027-06-30');
     await page.locator('[data-edit-organization="integrado"]').click();
-    await expect(page.locator('#offer-integrado-organization')).toBeFocused();
-    await expect(page.locator('#offer-integrado-organization')).toBeInViewport({ ratio: 1 });
+    const organization = page.locator('#offer-integrado-organization [aria-checked="true"]');
+    await expect(organization).toBeFocused();
+    await expect(organization).toBeInViewport({ ratio: 1 });
     await expect
       .poll(() =>
-        page.locator('#offer-integrado-organization').evaluate((element) => {
+        organization.evaluate((element) => {
           const bounds = element.getBoundingClientRect();
           const feedback = document.querySelector('.editor-feedback')!.getBoundingClientRect();
           const hit = document.elementFromPoint(
             bounds.left + bounds.width / 2,
             bounds.top + bounds.height / 2,
           );
-          return bounds.top >= feedback.bottom && hit === element;
+          return bounds.top >= feedback.bottom && element.contains(hit);
         }),
       )
       .toBe(true);

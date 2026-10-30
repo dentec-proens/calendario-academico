@@ -26,7 +26,7 @@ for (const width of [1440, 390]) {
     const opener = page.locator('[data-edit-organization="integrado"]');
     await expect(opener).toBeFocused();
     await opener.press('Enter');
-    await expect(page.locator('#offer-integrado-organization')).toBeFocused();
+    await expect(page.locator('#offer-integrado-organization [aria-checked="true"]')).toBeFocused();
     await expect(page.locator('#offer-integrado-evidence')).toHaveCount(0);
     expect(
       before.state.events
@@ -39,11 +39,18 @@ for (const width of [1440, 390]) {
         return { x, y, width, height };
       }),
     );
+    // Stages are rows of their term; wide layouts place each row's dates beside its name.
+    expect(stageBounds[0].y + stageBounds[0].height).toBeLessThanOrEqual(stageBounds[1].y);
     if (width >= 720) {
-      expect(stageBounds[0].y).toBe(stageBounds[1].y);
-      expect(stageBounds[0].x + stageBounds[0].width).toBeLessThanOrEqual(stageBounds[1].x);
-    } else {
-      expect(stageBounds[0].y + stageBounds[0].height).toBeLessThanOrEqual(stageBounds[1].y);
+      const [legend, start, end] = await Promise.all(
+        [
+          '.offer-stage-fields >> nth=0 >> legend',
+          '#offer-integrado-stage-0-start',
+          '#offer-integrado-stage-0-end',
+        ].map((selector) => block.locator(selector).boundingBox()),
+      );
+      expect(start!.y).toBe(end!.y);
+      expect(legend!.x + legend!.width).toBeLessThanOrEqual(start!.x);
     }
     await page.locator('#offer-integrado-period-0-start').fill('2027-03-08');
     await expect(block.locator('#offer-integrado-stage-0-error')).toContainText(

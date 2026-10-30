@@ -80,7 +80,7 @@ for (const width of [1440, 390]) {
     await savedState(page);
     await page.locator('#add-offer').click();
     await page.locator('#offer-new-kind').selectOption('graduacao');
-    await page.locator('#offer-new-organization').selectOption('anual');
+    await page.locator(`#offer-new-organization [data-choice="anual"]`).click();
     await page.locator('#offer-new-period-0-start').fill('2027-03-01');
     await page.locator('#offer-new-period-0-end').fill('2027-03-26');
     await page.locator('[data-edit-organization="graduacao"]').click();
@@ -89,7 +89,7 @@ for (const width of [1440, 390]) {
     ).toContainText('defina a quantidade e as datas');
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/periodos$/);
-    await expect(page.locator('#offer-new-count')).toBeFocused();
+    await expect(page.locator('#offer-new-count [data-choice="2"]')).toBeFocused();
     await page.locator('#offer-new-cancel').click();
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/dias$/);

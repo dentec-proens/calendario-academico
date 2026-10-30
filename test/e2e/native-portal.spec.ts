@@ -71,10 +71,10 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   async function fillOrganization(page: Page, start: string, end: string) {
     if (!(await page.locator('#offer-integrado-form').isVisible()))
       await page.locator('[data-edit-organization="integrado"]').click();
-    await page.locator('#offer-integrado-organization').selectOption('anual');
+    await page.locator('#offer-integrado-organization [data-choice="anual"]').click();
     await page.locator('#offer-integrado-period-0-start').fill(start);
     await page.locator('#offer-integrado-period-0-end').fill(end);
-    await page.locator('#offer-integrado-count').selectOption('2');
+    await page.locator('#offer-integrado-count [data-choice="2"]').click();
     await page.locator('#offer-integrado-stage-0-start').fill(start);
     await page.locator('#offer-integrado-stage-0-end').fill(start.slice(0, 8) + '15');
     await page.locator('#offer-integrado-stage-1-start').fill(start.slice(0, 8) + '16');

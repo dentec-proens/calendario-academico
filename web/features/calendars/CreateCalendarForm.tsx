@@ -72,7 +72,7 @@ export default function CreateCalendarForm({
             kind,
             organization: offer.organization,
             label: offer.label,
-            delivery: 'a-conferir',
+            delivery: 'presencial',
           };
         }),
       );

@@ -49,7 +49,7 @@ test.each(['anual', 'semestral', 'a-classificar'] as const)(
     ]);
     expect(
       record.state.offers.every(
-        (offer) => offer.delivery === 'a-conferir' && !offer.stages && !offer.scope,
+        (offer) => offer.delivery === 'presencial' && !offer.stages && !offer.scope,
       ),
     ).toBe(true);
     expect(record.state.schemaVersion).toBe(4);

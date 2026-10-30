@@ -15,7 +15,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.offer-organization')).toHaveCount(1);
     await page.locator('#add-offer').click();
     await page.locator('#offer-new-kind').selectOption('graduacao');
-    await page.locator('#offer-new-organization').selectOption('anual');
+    await page.locator(`#offer-new-organization [data-choice="anual"]`).click();
     await page.locator('#offer-new-period-0-start').fill('2027-03-01');
     await expect(page.locator('#offer-new-apply')).toBeDisabled();
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);

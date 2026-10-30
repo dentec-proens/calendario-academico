@@ -34,11 +34,13 @@ for (const width of [1440, 390])
         `${count} etapas do formato anterior preservadas`,
       );
       await page.locator('[data-edit-organization="integrado"]').click();
-      await expect(page.locator('#offer-integrado-organization')).toHaveValue('');
-      await expect(page.locator('#offer-integrado-count')).toHaveValue('');
+      await expect(page.locator('#offer-integrado-organization [aria-checked="true"]')).toHaveCount(
+        0,
+      );
+      await expect(page.locator('#offer-integrado-count [aria-checked="true"]')).toHaveCount(0);
       await expect(page.locator('#offer-integrado-apply')).toBeDisabled();
-      await page.locator('#offer-integrado-organization').selectOption('anual');
-      await page.locator('#offer-integrado-count').selectOption(String(count));
+      await page.locator(`#offer-integrado-organization [data-choice="anual"]`).click();
+      await page.locator(`#offer-integrado-count [data-choice="${count}"]`).click();
       await page.locator('#offer-integrado-period-0-start').fill('2027-02-01');
       await page.locator('#offer-integrado-period-0-end').fill('2027-12-17');
       await expect(page.locator('#offer-integrado-apply')).toBeEnabled();

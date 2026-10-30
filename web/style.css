@@ -210,6 +210,16 @@ label:has(> input:is([type='checkbox'], [type='radio'])) {
   color: #52665c;
   margin: 0 0 20px;
 }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 fieldset {
   border: 0;
   padding: 0;
