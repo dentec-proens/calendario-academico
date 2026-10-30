@@ -3,7 +3,7 @@ import { Button } from '../../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 import { useEffect, useRef } from 'react';
 import { Pencil, Save, X } from 'lucide-react';
-import { categories } from '#src/domain/calendar/activities/categories.ts';
+import { categories, categoryLabel } from '#src/domain/calendar/activities/categories.ts';
 import { modalityLabels, selectableModalities } from '#src/domain/calendar/modalities.ts';
 import { institution } from '../../shared/convex/institution.ts';
 import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
@@ -13,6 +13,8 @@ import { useNavigate } from '@tanstack/react-router';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
+import { dateRangeLabel } from '../../shared/dates.ts';
+import './catalogue.css';
 
 type CatalogueEvent = Bootstrap['catalogue']['events'][number];
 const emptyEvent = (revision: number): CatalogueEvent & { revision: number } => ({
@@ -43,6 +45,7 @@ export default function CataloguePanel({
   const creating = route.creating;
   const missingEvent = Boolean(routeId && !catalogue.events.some((item) => item.id === routeId));
   const item = catalogue.events.find((entry) => entry.id === routeId);
+  const activeCount = catalogue.events.filter((entry) => entry.active).length;
   const {
     form,
     values: event,
@@ -130,6 +133,23 @@ export default function CataloguePanel({
         <form id="catalogue-form" onSubmit={submit}>
           <fieldset className="form-fields" disabled={pending}>
             <input type="hidden" id="catalogue-id" value={event.id} />
+            <button
+              type="button"
+              id="catalogue-active"
+              className="catalogue-status"
+              role="switch"
+              aria-checked={event.active}
+              aria-labelledby="catalogue-active-label"
+              onClick={() => form.setFieldValue('active', !event.active)}
+            >
+              <span id="catalogue-active-label">Evento ativo</span>
+              <span className="catalogue-status__control" aria-hidden="true">
+                {event.active ? 'Ativo' : 'Inativo'}
+                <span className="catalogue-status__track">
+                  <span className="catalogue-status__thumb" />
+                </span>
+              </span>
+            </button>
             <div className="row-form">
               <label>
                 Evento
@@ -225,20 +245,6 @@ export default function CataloguePanel({
                 </label>
               ))}
             </fieldset>
-            <label className="check">
-              <input
-                type="checkbox"
-                id="catalogue-active"
-                checked={event.active}
-                onChange={(e) => form.setFieldValue('active', e.target.checked)}
-              />
-              Registro ativo
-            </label>
-            <p className="help">Alterações válidas para todos os campi abrangidos.</p>
-            <p className="help">
-              Voltar à lista mantém este formulário. Cancelar {event.id ? 'edição' : 'cadastro'}{' '}
-              descarta as alterações não salvas.
-            </p>
             <div className="actions">
               <Button type="submit">
                 <Save aria-hidden="true" size={18} />
@@ -269,8 +275,8 @@ export default function CataloguePanel({
       }
     >
       <p id="catalogue-description" ref={listRef} tabIndex={-1}>
-        Versão {catalogue.revision} · {catalogue.events.filter((e) => e.active).length} registros
-        ativos.
+        {activeCount} {activeCount === 1 ? 'evento ativo' : 'eventos ativos'} · Versão{' '}
+        {catalogue.revision}
       </p>
       <ul id="catalogue-list" className="records">
         {[...catalogue.events]
@@ -282,10 +288,11 @@ export default function CataloguePanel({
                   {item.name}
                   {!item.active ? ' · Inativo' : ''}
                 </strong>
+                <span className="catalogue-date">{dateRangeLabel(item.start, item.end)}</span>
                 <small>
-                  {item.start} a {item.end} · {item.category} · {item.modalities.join(', ')}
+                  {categoryLabel(item)} · {item.modalities.map((m) => modalityLabels[m]).join(', ')}
                 </small>
-                <small>{item.evidence}</small>
+                <small>Fonte: {item.evidence}</small>
               </div>
               {canManage ? (
                 <Button
