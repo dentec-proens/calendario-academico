@@ -13,6 +13,12 @@ Before editing files for a substantial task:
 
 <!-- intent-skills:end -->
 
+## Fase do projeto
+
+- O app está em fase alpha. Refatorações que deixem o código mais claro, simples ou coeso são desejadas, inclusive quando surgem no caminho de outra tarefa: renomear conceitos, remover código morto e caminhos antigos, consolidar duplicações e ajustar os testes junto.
+- Não preserve compatibilidade de código: funções Convex, componentes, tipos e nomes podem mudar sem aliases, wrappers ou camadas de transição. A exceção são os dados já gravados em produção, que continuam exigindo migração conforme a seção de release.
+- Refatorações ligadas à área alterada dispensam consulta prévia; descreva-as no resumo final. Reestruturações amplas, fora do escopo da tarefa, devem ser propostas antes.
+
 ## Formulários e arquitetura
 
 - Ao criar ou alterar formulários, confira os exports e tipos da versão instalada de `@tanstack/react-form` e consulte a [composição oficial](https://tanstack.com/form/latest/docs/framework/react/guides/form-composition) e as [regras de valores assíncronos](https://tanstack.com/form/latest/docs/framework/react/guides/async-initial-values). Essa dependência não distribui uma skill no pacote; a descoberta Intent não substitui essa consulta.
