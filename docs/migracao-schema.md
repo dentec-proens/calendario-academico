@@ -111,3 +111,15 @@ Validação anterior à publicação: três testes dirigidos da manutenção, en
 completo com a cópia restaurada de produção e `pnpm check` aprovado em 231,1 s,
 incluindo 311 testes de navegador, desktop/mobile e impressão. A comparação do
 ensaio conferiu os estados anteriores arquivados, o delta exato e o Storage.
+
+**Concluído em produção:** release `250b3039`, deployment
+`dpl_7bc3BnsoXQSj2smpkn9JtpCuGSgD`. A migração concluiu os 74 documentos e a
+verificação posterior confirmou 66 ofertas preenchidas em 38 calendários,
+35 calendários e respectivos conteúdos removidos da lixeira e 39 restantes.
+Os estados anteriores dos calendários alterados foram arquivados; históricos
+anteriores, pareceres, usuários, campi, documentos e Storage permaneceram
+intactos. A comparação conferiu todas as tabelas; o ciclo normal de presença
+foi reconciliado separadamente. O redesenho da etapa 2 foi promovido na mesma
+release. O backup automático imediatamente anterior ao backend está em
+`/Users/gustavo/work/backups-calendario/release-250b3039-ZvF1BB/`, SHA-256
+`3384c5d61e61a06fb60c82faf6ae81e9e6ff8bc0b32756e48851b98cc5b80a0d`.
