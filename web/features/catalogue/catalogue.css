@@ -73,3 +73,47 @@
     background: Highlight;
   }
 }
+
+.catalogue-identity > label:first-child {
+  flex: 2 1 280px;
+}
+
+.catalogue-effect .ui-choice-group .ui-choice {
+  align-items: flex-start;
+}
+
+.catalogue-effect .ui-choice__radio {
+  margin-top: 2px;
+}
+
+.catalogue-effect .ui-choice > span {
+  display: grid;
+  gap: 4px;
+}
+
+.catalogue-effect .ui-choice small {
+  color: var(--ui-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.catalogue-evidence {
+  display: block;
+  margin-top: 16px;
+}
+
+.catalogue-evidence textarea {
+  display: block;
+  width: 100%;
+  field-sizing: content;
+  resize: vertical;
+}
+
+.catalogue-evidence small {
+  display: block;
+  margin-top: 4px;
+  color: var(--ui-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}

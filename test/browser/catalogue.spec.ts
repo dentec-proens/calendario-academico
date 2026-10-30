@@ -66,7 +66,7 @@ for (const width of [1440, 390, 320]) {
     await row.getByRole('button', { name: 'Editar', exact: true }).click();
     await expect(toggle).toBeChecked();
     await toggle.click();
-    await page.getByRole('button', { name: 'Salvar evento institucional', exact: true }).click();
+    await page.getByRole('button', { name: 'Salvar', exact: true }).click();
     await expect(page).toHaveURL(origin + '/eventos-institucionais');
     await expect(row).toContainText('Inativo');
     expect(await page.evaluate(() => window.portalRouterTest.catalogue.events[0].active)).toBe(

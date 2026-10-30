@@ -14,9 +14,29 @@ import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { dateRangeLabel } from '../../shared/dates.ts';
+import { ChoiceGroup } from '../../components/ui/ChoiceGroup.tsx';
 import './catalogue.css';
 
 type CatalogueEvent = Bootstrap['catalogue']['events'][number];
+// Mirrors counting/core.ts: exclusions block period dates, inclusions add dates inside periods.
+const effects: { value: CatalogueEvent['kind']; title: string; description: string }[] = [
+  {
+    value: 'exclude',
+    title: 'Retira da contagem',
+    description: 'Feriados e recessos. Dias que seriam de aula deixam de contar.',
+  },
+  {
+    value: 'include',
+    title: 'Acrescenta à contagem',
+    description:
+      'Sábados letivos e reposições. Dias sem aula passam a contar, se estiverem em um período letivo.',
+  },
+  {
+    value: 'note',
+    title: 'Não altera a contagem',
+    description: 'Datas comemorativas e avisos. Cada dia segue a semana normal de aulas.',
+  },
+];
 const emptyEvent = (revision: number): CatalogueEvent & { revision: number } => ({
   revision,
   id: '',
@@ -150,7 +170,7 @@ export default function CataloguePanel({
                 </span>
               </span>
             </button>
-            <div className="row-form">
+            <div className="row-form catalogue-identity">
               <label>
                 Evento
                 <input
@@ -163,7 +183,7 @@ export default function CataloguePanel({
                 />
               </label>
               <label>
-                Categoria
+                Categoria e cor
                 <select
                   id="catalogue-category"
                   value={event.category}
@@ -174,20 +194,6 @@ export default function CataloguePanel({
                       {label}
                     </option>
                   ))}
-                </select>
-              </label>
-              <label>
-                Efeito
-                <select
-                  id="catalogue-kind"
-                  value={event.kind}
-                  onChange={(e) =>
-                    form.setFieldValue('kind', e.target.value as CatalogueEvent['kind'])
-                  }
-                >
-                  <option value="exclude">Excluir da contagem</option>
-                  <option value="note">Sem efeito na contagem</option>
-                  <option value="include">Incluir atividade letiva confirmada</option>
                 </select>
               </label>
             </div>
@@ -212,17 +218,24 @@ export default function CataloguePanel({
                   onChange={(e) => form.setFieldValue('end', e.target.value)}
                 />
               </label>
-              <label>
-                Fonte e justificativa da alteração
-                <input
-                  id="catalogue-evidence"
-                  maxLength={240}
-                  required
-                  value={event.evidence}
-                  onChange={(e) => form.setFieldValue('evidence', e.target.value)}
-                />
-              </label>
             </div>
+            <ChoiceGroup<CatalogueEvent['kind']>
+              id="catalogue-kind"
+              className="catalogue-effect"
+              label="Efeito na contagem de dias letivos"
+              value={event.kind}
+              disabled={pending}
+              options={effects.map(({ value, title, description }) => ({
+                value,
+                label: (
+                  <>
+                    <strong>{title}</strong>
+                    <small>{description}</small>
+                  </>
+                ),
+              }))}
+              onValueChange={(kind) => form.setFieldValue('kind', kind)}
+            />
             <fieldset>
               <legend>Ofertas abrangidas</legend>
               {selectableModalities.map((m) => (
@@ -245,10 +258,25 @@ export default function CataloguePanel({
                 </label>
               ))}
             </fieldset>
+            <label className="catalogue-evidence">
+              Fonte e justificativa
+              <textarea
+                id="catalogue-evidence"
+                maxLength={240}
+                required
+                rows={2}
+                aria-describedby="catalogue-evidence-hint"
+                value={event.evidence}
+                onChange={(e) => form.setFieldValue('evidence', e.target.value)}
+              />
+              <small id="catalogue-evidence-hint">
+                Norma, processo SEI ou endereço que comprova a data.
+              </small>
+            </label>
             <div className="actions">
               <Button type="submit">
                 <Save aria-hidden="true" size={18} />
-                Salvar evento institucional
+                Salvar
               </Button>
               <Button
                 type="button"
@@ -259,7 +287,7 @@ export default function CataloguePanel({
                 }}
               >
                 <X aria-hidden="true" size={18} />
-                Cancelar {event.id ? 'edição' : 'cadastro'}
+                Cancelar
               </Button>
             </div>
           </fieldset>
