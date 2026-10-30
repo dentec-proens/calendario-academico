@@ -124,7 +124,7 @@ release. O backup automático imediatamente anterior ao backend está em
 `/Users/gustavo/work/backups-calendario/release-250b3039-ZvF1BB/`, SHA-256
 `3384c5d61e61a06fb60c82faf6ae81e9e6ff8bc0b32756e48851b98cc5b80a0d`.
 
-## Observâncias de 2027 — preparação
+## Observâncias de 2027 — concluído
 
 As escolhas locais passam de `teacherDayDate` para
 `observanceDates['teacher-day']`. A observância do Dia do Servidor Público
@@ -133,18 +133,18 @@ evento e conserva todas as escolhas do Professor, inclusive datas explícitas
 iguais à referência institucional.
 
 As migrações `migrateContentObservances20261030` e
-`migrateSnapshotObservances20261030` convertem conteúdos atuais e snapshots
+`migrateSnapshotObservances20261030` converteram conteúdos atuais e snapshots
 históricos. A conversão é idempotente, recusa conflitos entre os dois campos
 e não recalcula períodos, eventos ou contagens. Versões dos calendários,
 `updatedAt`, revisões da base, `rulesetVersion`, pareceres e vínculos são
 preservados.
 
-A publicação ocupa uma janela de manutenção com bloqueio de gravações,
+A publicação ocupou uma janela de manutenção com bloqueio de gravações,
 backup integral com Storage, expansão do schema, migração, conferência e
-contração do schema. As duas releases usam `pnpm deploy:production
---maintenance SHA_DA_JANELA`, conforme [Implantação e operação](implantacao-convex-vercel.md).
-O mapa novo é o único formato da aplicação; o campo antigo permanece
-temporariamente apenas no schema de armazenamento e no conversor da migração.
+contração do schema. As duas releases usaram `pnpm deploy:production --maintenance SHA_DA_JANELA`, conforme [Implantação e operação](implantacao-convex-vercel.md).
+O mapa novo é o único formato da aplicação. O campo antigo foi aceito
+temporariamente no armazenamento durante a conversão e retirado com os
+executores na contração.
 
 O inventário inicial encontrou 39 calendários, 109 snapshots, dois conteúdos
 e dois snapshots com o campo antigo e um arquivo em Storage. A exportação
@@ -154,8 +154,10 @@ conferiu 64 tabelas, os dois recibos esperados e somente as quatro conversões
 de campo. A comparação entre o código anterior e o novo abrangeu 148 estados:
 97 contagens equivalentes e 51 estados incompletos com a mesma validação. Evidências e backups
 ficam fora do Git, em `/Users/gustavo/work/operacao-observancias-20261030/`.
-Este inventário não comprova a execução em produção; o resultado será
-registrado após a operação.
+A execução em produção foi concluída em 30/10/2026. O schema foi estreitado,
+os executores temporários foram retirados e a manutenção foi encerrada.
+Os commits, o backup e as conferências ficam no
+[registro da execução](plans/2026-10-30-observancias-execucao.md).
 
 Validação da expansão: `pnpm check` aprovado em 243,4 s, incluindo os 335
 testes de navegador, desktop/mobile e impressão Chromium. O schema estrito

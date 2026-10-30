@@ -2,7 +2,7 @@
 
 Data: 30/10/2026.
 
-Status: implementação e validação em andamento; publicação e migração em produção autorizadas em 30/10/2026.
+Status: implementado e publicado em produção em 30/10/2026, com migração concluída e manutenção encerrada. Ver [registro da execução](2026-10-30-observancias-execucao.md).
 
 ## Objetivo e decisões de escopo
 
