@@ -85,3 +85,29 @@ As ferramentas de importação e conversão v1/v2, seus comandos, testes própri
 A quantidade histórica de etapas com organização pendente permanece no contrato v4: o ensaio encontrou 26 ofertas em 14 calendários, com distribuição 2/3/4 de 11/4/11. O inventário inclui conteúdos correntes, lixeira, órfãos e snapshots históricos. Os vínculos legados ainda usados pela política de 2027 também permanecem.
 
 O inventário de produção após a release A confirmou ausência de calendários até 2026 e de tipos especiais de registro, incluindo o histórico. Permanecem 26 marcadores de quantidade de etapas e 59 vínculos de requisitos legados. O estado final de M9 também retira a descoberta específica do resíduo depois da exclusão auditada; a execução e sua conferência são registradas no diário pelo responsável pela operação.
+
+## Presencial e lixeira — 30/10/2026
+
+A migração `initializePresencialAndPurgeTrash20261030` preenche com `presencial`
+as ofertas ainda `a-conferir` dos calendários ativos existentes na autorização.
+Conserva ofertas já classificadas, arquiva o estado anterior e avança a versão,
+para que um editor aberto não sobrescreva a alteração silenciosamente.
+
+Na mesma operação, remove calendários já na lixeira e seus conteúdos. A
+conferência de produção encontrou 35 calendários nessa condição, sem versões
+ou pareceres associados; a migração recusa a exclusão se encontrar esses
+vínculos inesperados. Campi, usuários, documentos, arquivos e auditorias
+anteriores são preservados. Uma auditoria registra cada preenchimento ou
+exclusão. O limite temporal fixo protege calendários criados ou enviados à
+lixeira depois da autorização; o componente de migrações registra a conclusão.
+
+O backup integral com Storage foi restaurado e comparado num backend local
+privado. O ensaio processou 74 calendários: 66 ofertas preenchidas em 38
+calendários, 35 itens da lixeira removidos e 39 calendários restantes. As provas
+ficam fora do Git em `/Users/gustavo/work/operacao-calendarios-20261030/`.
+A publicação inclui o redesenho da etapa 2 integrado em `main` (`4f0a27b`).
+
+Validação anterior à publicação: três testes dirigidos da manutenção, ensaio
+completo com a cópia restaurada de produção e `pnpm check` aprovado em 231,1 s,
+incluindo 311 testes de navegador, desktop/mobile e impressão. A comparação do
+ensaio conferiu os estados anteriores arquivados, o delta exato e o Storage.
