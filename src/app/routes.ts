@@ -100,12 +100,20 @@ export function portalFormForPath(pathname: string) {
   );
 }
 
+function isDocumentOpenPath(pathname: string) {
+  const match = /^\/documentos\/([^/]+)\/abrir$/.exec(pathname);
+  return !!match && !!routeId(match[1]);
+}
+
 const publicPaths = new Set(['/', '/logs', '/recuperar-senha', '/ativar-conta']);
 
 /** Only known application routes receive an HTML shell; assets and APIs keep real 404s. */
 export function pageDocument(pathname: string): 'index.html' | undefined {
   const path = withoutTrailingSlash(pathname);
-  return publicPaths.has(path) || portalPageForPath(path) || parseEditorPath(path)
+  return publicPaths.has(path) ||
+    portalPageForPath(path) ||
+    parseEditorPath(path) ||
+    isDocumentOpenPath(path)
     ? 'index.html'
     : undefined;
 }

@@ -21,7 +21,6 @@ import type * as access_session from "../access/session.js";
 import type * as access_setup from "../access/setup.js";
 import type * as access_store from "../access/store.js";
 import type * as actions_documents from "../actions/documents.js";
-import type * as actions_files from "../actions/files.js";
 import type * as actions_uploads from "../actions/uploads.js";
 import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
@@ -76,7 +75,6 @@ declare const fullApi: ApiFromModules<{
   "access/setup": typeof access_setup;
   "access/store": typeof access_store;
   "actions/documents": typeof actions_documents;
-  "actions/files": typeof actions_files;
   "actions/uploads": typeof actions_uploads;
   audit: typeof audit;
   auth: typeof auth;

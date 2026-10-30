@@ -200,8 +200,8 @@ test('missing originals remain unavailable and restoring requires owner, exact S
   );
   const before = await client.run((ctx) => ctx.db.get(id));
   await assert.rejects(
-    users[0].action(api.actions.documents.downloadDocument, { id }),
-    /aguarda a transferência/,
+    users[0].mutation(api.documents.openDocument, { id }),
+    /aguarda restauração/,
   );
   const foreign = await send('%PDF-fixture', 3);
   await assert.rejects(
@@ -243,6 +243,57 @@ test('missing originals remain unavailable and restoring requires owner, exact S
   assert.deepEqual(
     (await client.run((ctx) => ctx.db.query('audit').collect())).map((row) => row.action),
     ['RESTORE_DOCUMENT_ORIGINAL'],
+  );
+});
+
+test('opening documents authorizes publication and serves the original inline through an expiring link', async () => {
+  const { client, users, put } = await fixture();
+  const bytes = '%PDF-original';
+  const storageId = await put(bytes);
+  const id = await client.run((ctx) =>
+    ctx.db.insert('documents', {
+      year: 2027,
+      type: 'norma',
+      title: 'Documento',
+      source: 'Referência',
+      filename: 'resolução.pdf',
+      hash: createHash('sha256').update(bytes).digest('hex'),
+      storageId,
+      status: 'rascunho',
+      version: 1,
+      createdAt: 1,
+    }),
+  );
+  await assert.rejects(client.mutation(api.documents.openDocument, { id }), /Entre com sua conta/);
+  await assert.rejects(
+    users[0].mutation(api.documents.openDocument, { id }),
+    /Documento não encontrado/,
+  );
+  const draft = await users[2].mutation(api.documents.openDocument, { id });
+  assert.equal((await client.fetch(new URL(draft.url).pathname)).status, 200);
+  await client.run((ctx) => ctx.db.patch(id, { status: 'vigente', publishedAt: 1 }));
+  const { url } = await users[0].mutation(api.documents.openDocument, { id });
+  const response = await client.fetch(new URL(url).pathname);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('Content-Type'), 'application/pdf');
+  assert.equal(
+    response.headers.get('Content-Disposition'),
+    "inline; filename*=UTF-8''resolu%C3%A7%C3%A3o.pdf",
+  );
+  assert.equal(response.headers.get('Cache-Control'), 'no-store');
+  assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer');
+  assert.equal(await response.text(), bytes);
+  await client.run((ctx) => ctx.db.patch(id, { status: 'arquivado' }));
+  assert.ok((await users[0].mutation(api.documents.openDocument, { id })).url);
+  const token = new URL(url).pathname.slice('/files/'.length);
+  const ticket = await client.mutation(internal.nativeFiles.resolveTicket, { token });
+  await client.run((ctx) => ctx.db.patch(ticket!._id, { expiresAt: Date.now() - 1 }));
+  assert.equal((await client.fetch(new URL(url).pathname)).status, 404);
+  assert.equal((await client.fetch('/files/invalid')).status, 404);
+  await client.run((ctx) => ctx.storage.delete(storageId));
+  await assert.rejects(
+    users[0].mutation(api.documents.openDocument, { id }),
+    /aguarda restauração/,
   );
 });
 

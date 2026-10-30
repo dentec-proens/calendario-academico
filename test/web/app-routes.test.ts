@@ -61,6 +61,11 @@ describe('application paths', () => {
     '/assets/missing.js',
     '/not-a-route',
     '/revisoes/x/y',
+    '/documentos/%2f/abrir',
+    '/documentos/%5c/abrir',
+    '/documentos/%00/abrir',
+    '/documentos/%ZZ/abrir',
+    '/documentos/document-a/unknown',
     '/calendarios/x/not-a-section',
     '/calendarios/%2f/editar',
     '/calendarios/%5c/editar',
@@ -78,12 +83,13 @@ describe('application paths', () => {
     ) as { rewrites: Array<{ source: string; destination: string }> };
     for (const rewrite of config.rewrites)
       expect(
-        pageDocument(rewrite.source.replace(/:(?:calendar|event)Id/g, 'fixture')),
+        pageDocument(rewrite.source.replace(/:(?:calendar|event|document)Id/g, 'fixture')),
       ).toBeDefined();
     const routes = [
       ...Object.values(portalPaths),
       ...Object.values(portalCreationPaths).filter((path) => path !== undefined),
       '/revisoes/calendar-a',
+      '/documentos/document-a/abrir',
       '/eventos-institucionais/event-a/editar',
       '/calendarios/calendar-a/editar',
       '/calendarios/calendar-a/periodos',
@@ -101,7 +107,7 @@ describe('application paths', () => {
     ];
     for (const path of routes) {
       const rewrite = config.rewrites.find(({ source }) =>
-        new RegExp(`^${source.replace(/:(?:calendar|event)Id/g, '[^/]+')}$`).test(path),
+        new RegExp(`^${source.replace(/:(?:calendar|event|document)Id/g, '[^/]+')}$`).test(path),
       );
       expect(rewrite?.destination, path).toBe('/' + pageDocument(path));
     }
@@ -113,7 +119,7 @@ describe('application paths', () => {
     ]) {
       expect(
         config.rewrites.some(({ source }) =>
-          new RegExp(`^${source.replace(/:(?:calendar|event)Id/g, '[^/]+')}$`).test(path),
+          new RegExp(`^${source.replace(/:(?:calendar|event|document)Id/g, '[^/]+')}$`).test(path),
         ),
         path,
       ).toBe(false);

@@ -1499,7 +1499,8 @@
                   A prévia do calendário usa <code>src/printing/</code> e
                   <code>assets/printing/calendar.css</code>.
                   <strong>Imprimir ou salvar PDF</strong> chama <code>window.print()</code> no
-                  navegador, sem gerador PDF no servidor. PDF.js é o leitor dos documentos enviados.
+                  navegador, sem gerador PDF no servidor. Os documentos enviados abrem em outra aba,
+                  com leitura pelo próprio navegador.
                 </p>
                 <p>
                   <strong>Evidências:</strong>
@@ -1644,8 +1645,9 @@
                       <tr>
                         <td>Documentos e impressão</td>
                         <td>
-                          PDF.js <code>6.3.289</code> para leitura; impressão nativa do navegador
-                          para saída do calendário
+                          Leitura de documentos e impressão pelo navegador; PDF.js
+                          <code>6.3.289</code>
+                          somente nos testes da saída do calendário
                         </td>
                       </tr>
                       <tr>
@@ -2202,9 +2204,10 @@
                   Dependências, serviços e materiais de terceiros mantêm condições próprias; a
                   licença do software não concede direitos sobre marcas/logotipos. O inventário
                   atual inclui React, TanStack, Convex/Convex Auth/Migrations/Presence/Rate Limiter,
-                  Auth.js, Base UI, Lucide, PDF.js, Vercel e demais pacotes do lockfile. Google está
-                  preparado, mas desabilitado. O antigo runtime Chromium de produção e suas
-                  dependências diretas foram removidos; Playwright continua ferramenta de testes.
+                  Auth.js, Base UI, Lucide, Vercel e demais pacotes do lockfile. PDF.js fica nos
+                  testes. Google está preparado, mas desabilitado. O antigo runtime Chromium de
+                  produção e suas dependências diretas foram removidos; Playwright continua
+                  ferramenta de testes.
                 </p>
                 <p>
                   <strong>Não sei / documentação pendente:</strong> inventário completo de licenças
@@ -2340,8 +2343,9 @@
                   <code>package.json</code> contém dependências diretas;
                   <code>pnpm-lock.yaml</code>, resoluções/integridade e transitivas;
                   <code>pnpm-workspace.yaml</code>, regras e patches. O backend depende do Convex e
-                  seus componentes; a hospedagem usa Vercel. PDF.js é leitor de documentos. A
-                  impressão do calendário usa recursos nativos do navegador.
+                  seus componentes; a hospedagem usa Vercel. A leitura de documentos e a impressão
+                  do calendário usam recursos nativos do navegador. PDF.js é usado somente nos
+                  testes.
                 </p>
                 <p>
                   <strong>Pendente:</strong> inventário completo de licenças, suporte e condições

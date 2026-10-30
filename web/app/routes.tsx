@@ -140,6 +140,11 @@ const documents = createRoute({
   component: lazy(() => import('../features/documents/DocumentsPage.tsx')),
   staticData: { title: 'Documentos e normas', page: 'institution' },
 });
+const openDocument = createRoute({
+  getParentRoute: () => authenticated,
+  path: '/documentos/$documentId/abrir',
+  component: lazy(() => import('../features/documents/OpenDocumentPage.tsx')),
+});
 const newDocument = createRoute({
   getParentRoute: () => workspace,
   path: '/documentos/novo',
@@ -326,6 +331,7 @@ export const routeTree = root.addChildren([
   activation,
   recovery,
   authenticated.addChildren([
+    openDocument,
     workspace.addChildren([
       calendars,
       calendarTrash,

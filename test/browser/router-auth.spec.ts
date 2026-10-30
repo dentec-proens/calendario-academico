@@ -10,6 +10,7 @@ test('unauthenticated editor and audit URLs return to login with the requested d
     '/calendarios/calendar-a/historico',
     '/calendarios/calendar-a/eventos#calendario-anterior',
     '/logs',
+    '/documentos/document-a/abrir',
   ]) {
     await page.goto(origin + destination);
     await expect(page.getByRole('heading', { name: 'Entrar', exact: true })).toBeVisible();

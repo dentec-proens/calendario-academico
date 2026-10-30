@@ -147,6 +147,12 @@ export const convex = {
         });
         return finishMutation('saveCatalogue', { ok: true });
       }
+      case 'documents:openDocument':
+        if (args.id === 'document-missing')
+          return Promise.reject(new Error('Documento não encontrado.'));
+        return finishMutation('openDocument', {
+          url: window.location.origin + '/__synthetic-document.pdf',
+        });
       case 'documents:documentStatus':
         if (args.revision !== window.portalRouterTest.catalogue.revision)
           return Promise.reject(new Error('A base mudou. Atualize a lista antes de continuar.'));
@@ -189,11 +195,6 @@ export const convex = {
   },
   action: (reference: FunctionReference<'action'>, args: Record<string, unknown>) => {
     switch (getFunctionName(reference)) {
-      case 'actions/documents:downloadDocument':
-        return finishMutation('downloadDocument', {
-          url: window.location.origin + '/__synthetic-document.pdf',
-          filename: 'teste.pdf',
-        });
       case 'actions/uploads:completeUpload':
         return Promise.resolve({ uploadId: 'synthetic-upload' });
       case 'actions/documents:restoreDocumentOriginal':

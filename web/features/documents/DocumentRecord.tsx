@@ -1,6 +1,14 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
-import { controlledLazy as lazy } from '../../app/controlled-lazy.tsx';
-import { Archive, CheckCircle2, ChevronDown, Ellipsis, Eye, FileText, Upload } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { Link } from '@tanstack/react-router';
+import {
+  Archive,
+  CheckCircle2,
+  ChevronDown,
+  Ellipsis,
+  ExternalLink,
+  FileText,
+  Upload,
+} from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import { institution } from '../../shared/convex/institution.ts';
 import { confirmAction } from '../../components/confirmation.ts';
@@ -12,7 +20,6 @@ import { Notice } from '../../components/ui/Notice.tsx';
 import { documentTypeLabels } from './document-types.ts';
 
 type Document = DocumentsData['documents'][number];
-const DocumentReader = lazy(() => import('./DocumentReader.tsx'));
 const documentStatuses = { rascunho: 'Rascunho', vigente: 'Vigente', arquivado: 'Arquivado' };
 
 function RestoreDocumentForm({
@@ -165,7 +172,6 @@ export default function DocumentRecord({
   revision: number;
   onMessage: (message: string) => void;
 }) {
-  const [reading, setReading] = useState(false);
   return (
     <li className="document-record">
       <FileText className="document-record__icon" size={24} aria-hidden="true" />
@@ -181,13 +187,17 @@ export default function DocumentRecord({
         </p>
         <p className="document-record__meta">{document.source}</p>
         <div className="document-record__actions">
-          <Button
-            data-view-document={document.id}
-            disabled={Boolean(document.unavailableFile)}
-            onClick={() => setReading(true)}
-          >
-            <Eye size={16} aria-hidden="true" /> Visualizar PDF
-          </Button>
+          {!document.unavailableFile ? (
+            <Link
+              to="/documentos/$documentId/abrir"
+              params={{ documentId: document.id }}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="document-open-link"
+            >
+              <ExternalLink size={16} aria-hidden="true" /> Abrir PDF em outra aba
+            </Link>
+          ) : null}
           <details className="document-details">
             <summary>
               Detalhes <ChevronDown size={14} aria-hidden="true" />
@@ -223,11 +233,6 @@ export default function DocumentRecord({
         </div>
         {document.unavailableFile ? (
           <Notice tone="warning">PDF original aguardando restauração pela administração.</Notice>
-        ) : null}
-        {reading ? (
-          <Suspense fallback={<p role="status">Abrindo leitor de PDF…</p>}>
-            <DocumentReader document={document} onClose={() => setReading(false)} />
-          </Suspense>
         ) : null}
       </div>
     </li>

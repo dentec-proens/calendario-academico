@@ -1,5 +1,6 @@
+import { internal } from './_generated/api';
 import { assertWritesOpen } from './lib/maintenance';
-import { query, mutation, internalQuery, internalMutation } from './_generated/server';
+import { query, mutation, internalMutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
 import type { Member } from './access/contracts';
 import { globalRevision, bumpRevision } from './catalogue/model';
@@ -128,14 +129,22 @@ export const documentStatus = mutation({
   },
 });
 
-export const documentContext = internalQuery({
+export const openDocument = mutation({
   args: { id: v.id('documents') },
-  returns: v.object({ document: validators.documentMetadata }),
-  handler: async (ctx, { id }) => {
+  returns: v.object({ url: v.string() }),
+  handler: async (ctx, { id }): Promise<{ url: string }> => {
+    await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     const row = await ctx.db.get(id);
     if (!row || (user.role !== 'ADMIN' && !row.publishedAt)) fail('Documento não encontrado.', 404);
-    return { document: documentDto(documentValue(row)) };
+    if (!row.storageId || !(await ctx.db.system.get(row.storageId)))
+      fail('Este PDF original aguarda restauração pela administração.', 503);
+    const { url } = await ctx.runMutation(internal.nativeFiles.ticket, {
+      storageId: row.storageId,
+      filename: row.filename,
+      ephemeral: false,
+    });
+    return { url };
   },
 });
 

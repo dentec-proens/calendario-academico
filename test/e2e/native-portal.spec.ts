@@ -7,6 +7,9 @@ import { expect, test } from '../browser/test.ts';
 import { editorUrl, parseEditorPath } from '../../src/app/routes.ts';
 import { configuredE2ETarget } from '../../scripts/e2e-environment.ts';
 
+// Native PDF navigation requires Chromium's full browser rather than headless shell.
+test.use({ channel: 'chromium' });
+
 const restorationFixture = process.env.DENTEC_NATIVE_RESTORE_FIXTURE;
 
 function browserEnvironment() {
@@ -232,19 +235,22 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await page.locator(`[data-confirm-document="${documentId}"]`).click();
   await page.locator(`[data-document-id="${documentId}"][data-document-status="vigente"]`).click();
   await expect(page.locator('#document-message')).toContainText('Vigência atualizada');
-  await page.locator(`[data-view-document="${documentId}"]`).click();
-  await expect(page.locator('.document-reader__stage')).toHaveAttribute('aria-busy', 'false');
-  const documentDownloadPromise = page.waitForEvent('download');
-  await page.locator(`[data-download-document="${documentId}"]`).click();
-  const documentDownload = await documentDownloadPromise;
-  expect(documentDownload.suggestedFilename()).toBe('synthetic-reference.pdf');
-  const downloadedDocument = join(directory, 'synthetic-reference.pdf');
-  await documentDownload.saveAs(downloadedDocument);
+  const documentPopupPromise = page.waitForEvent('popup');
+  await page
+    .locator('#document-list li')
+    .filter({ hasText: marker })
+    .getByRole('link', { name: 'Abrir PDF em outra aba' })
+    .click();
+  const documentPopup = await documentPopupPromise;
+  await expect(documentPopup).toHaveURL(/\/files\/[a-f0-9]{64}$/);
+  const openedDocument = await page.request.get(documentPopup.url());
+  expect(openedDocument.status()).toBe(200);
+  expect(openedDocument.headers()['content-disposition']).toContain('inline;');
   assert(
-    (await readFile(downloadedDocument)).equals(await readFile(pdf)),
-    'download preserves the uploaded institutional PDF bytes',
+    (await openedDocument.body()).equals(await readFile(pdf)),
+    'opening preserves the uploaded institutional PDF bytes',
   );
-  await page.getByRole('button', { name: 'Voltar à lista' }).click();
+  await documentPopup.close();
 
   await page.locator('[data-page="calendars"]').click();
   await page.locator('#calendars .collection-heading button').click();
@@ -411,8 +417,6 @@ test('admin restores institutional originals created for E2E', async ({
   }
   const original = join(dirname(restorationFixture), 'restoration-upload.pdf');
   const expected = await readFile(original);
-  const directory = await mkdtemp(join(tmpdir(), 'dentec-restoration-browser-'));
-  cleanup(() => rm(directory, { recursive: true, force: true }));
   page.setDefaultTimeout(25_000);
   page.on('dialog', (dialog) => {
     void dialog.accept();
@@ -433,8 +437,6 @@ test('admin restores institutional originals created for E2E', async ({
     void dialog.accept();
   });
   documentPage.on('pageerror', (error) => errors.push(error.message));
-  const documentDirectory = join(directory, 'documents');
-  await mkdir(documentDirectory);
   await documentPage.goto(base);
   await documentPage.locator('#email').fill(email);
   await documentPage.locator('#password').fill(password);
@@ -463,26 +465,23 @@ test('admin restores institutional originals created for E2E', async ({
   await expect(
     documentPage.locator(`form[data-restore-document="${fixture.documentId}"]`),
   ).toHaveCount(0);
-  const downloadSelector = `[data-download-document="${fixture.documentId}"]`;
-  const responsePromise = documentPage.waitForResponse(
-    (response) =>
-      response.request().method() === 'GET' &&
-      /^\/files\/[a-f0-9]{64}$/.test(new URL(response.url()).pathname) &&
-      response.headers()['content-type']?.startsWith('application/pdf') === true,
-    { timeout: 10_000 },
+  const restoredPopupPromise = documentPage.waitForEvent('popup');
+  await documentPage
+    .locator('#document-list li')
+    .filter({ has: documentPage.locator(`[data-document-id="${fixture.documentId}"]`) })
+    .getByRole('link', { name: 'Abrir PDF em outra aba' })
+    .click();
+  const restoredPopup = await restoredPopupPromise;
+  await expect(restoredPopup).toHaveURL(/\/files\/[a-f0-9]{64}$/);
+  const restoredDocument = await documentPage.request.get(restoredPopup.url());
+  assert.equal(restoredDocument.status(), 200);
+  expect(restoredDocument.headers()['content-disposition']).toBe(
+    "inline; filename*=UTF-8''original-e2e.pdf",
   );
-  await documentPage.locator(`[data-view-document="${fixture.documentId}"]`).click();
-  const downloadResponse = await responsePromise;
-  assert.equal(downloadResponse.status(), 200);
-  const documentDownloadPromise = documentPage.waitForEvent('download');
-  await documentPage.locator(downloadSelector).click();
-  const documentDownload = await documentDownloadPromise;
-  expect(documentDownload.suggestedFilename()).toBe('original-e2e.pdf');
-  const restoredDocument = join(documentDirectory, 'original-e2e.pdf');
-  await documentDownload.saveAs(restoredDocument);
   assert(
-    (await readFile(restoredDocument)).equals(expected),
+    (await restoredDocument.body()).equals(expected),
     'restored institutional original keeps its bytes and stored filename',
   );
+  await restoredPopup.close();
   assert.deepEqual(errors, []);
 });

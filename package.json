@@ -61,7 +61,6 @@
     "@tanstack/react-router": "1.170.46",
     "convex": "1.48.0",
     "lucide-react": "1.61.0",
-    "pdfjs-dist": "6.3.289",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
@@ -78,6 +77,7 @@
     "fflate": "0.8.3",
     "oxlint": "1.89.0",
     "oxlint-tsgolint": "7.0.2005",
+    "pdfjs-dist": "6.3.289",
     "prettier": "3.9.10",
     "tsx": "4.23.15",
     "typescript": "7.0.2",

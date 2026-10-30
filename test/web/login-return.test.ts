@@ -6,6 +6,7 @@ describe('return to the requested work page after signing in', () => {
     '/calendarios/calendar-a/eventos',
     '/calendarios/calendar-a/eventos#calendario-anterior',
     '/documentos?ano=2027',
+    '/documentos/document-a/abrir',
     '/logs',
   ])('resumes %s', (path) => {
     expect(

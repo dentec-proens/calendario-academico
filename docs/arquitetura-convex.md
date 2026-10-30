@@ -71,7 +71,7 @@ Salvar confere versão e base e preserva atributos protegidos; uma gravação se
 
 ## Arquivos, impressão e manutenção
 
-PDFs ficam no Storage, e URLs são obtidas no acesso. Uploads têm proprietário, limite de 8 MB, assinatura PDF, SHA-256 e consumo único. Restauração exige o original exato e preserva ID, análises e vínculos. Tickets e temporários têm limpeza agendada.
+PDFs ficam no Storage. Um link abre uma nova aba da aplicação, que verifica a sessão e a publicação do documento, emite acesso temporário e encaminha ao original com `Content-Disposition: inline`. A leitura, impressão e cópia ficam a cargo do navegador; o portal não inclui leitor nem worker PDF. Uploads têm proprietário, limite de 8 MB, assinatura PDF, SHA-256 e consumo único. Restauração exige o original exato e preserva ID, análises e vínculos. Tickets e temporários têm limpeza agendada.
 
 O PDF é a impressão da prévia pelo navegador, com `@page` A4 definido em `assets/printing/calendar.css`; não há gerador no servidor. O título da página sugere o nome do arquivo. Produção não carrega Devtools nem a depuração de formulários sensíveis.
 

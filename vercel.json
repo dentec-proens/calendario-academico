@@ -62,6 +62,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/documentos/:documentId/abrir",
+      "destination": "/index.html"
+    },
+    {
       "source": "/documentos/novo",
       "destination": "/index.html"
     },

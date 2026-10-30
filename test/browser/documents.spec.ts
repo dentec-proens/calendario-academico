@@ -1,51 +1,40 @@
 import { test, expect } from './test.ts';
-import { documentPdf } from '../fixtures/document-pdf.ts';
+import { syntheticPdf } from '../helpers/synthetic-pdf.ts';
 import type {} from '../fixtures/portal-router-client.ts';
 
+// The full Chromium includes its native PDF viewer; headless shell forces downloads.
+test.use({ channel: 'chromium' });
+
 for (const width of [1440, 390]) {
-  test(`consultar PDF, paginar, ampliar e voltar aos filtros em ${width}px`, async ({
+  test(`abrir PDF em outra aba pelo teclado preserva a lista e os filtros em ${width}px`, async ({
     page,
+    context,
     fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
-    await page.route('**/__synthetic-document.pdf', (route) =>
-      route.fulfill({ contentType: 'application/pdf', body: documentPdf() }),
+    await context.route('**/__synthetic-document.pdf', (route) =>
+      route.fulfill({ contentType: 'application/pdf', body: syntheticPdf() }),
     );
     const origin = new URL(await fixtureServer('portal')).origin;
     await page.goto(origin + '/documentos?ano=2027&situacao=vigente');
-    const trigger = page.getByRole('button', { name: 'Visualizar PDF' });
-    await trigger.focus();
+    const link = page.getByRole('link', { name: 'Abrir PDF em outra aba' });
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(link).toHaveAttribute('href', '/documentos/document-1/abrir');
+    await link.focus();
+    const popupPromise = page.waitForEvent('popup');
     await page.keyboard.press('Enter');
-    const reader = page.getByRole('dialog', { name: 'Documento vigente' });
-    await expect(reader).toBeVisible();
-    await expect(reader.getByRole('button', { name: 'Voltar à lista' })).toBeFocused();
-    await expect(reader.locator('canvas')).toBeVisible();
-    await expect(reader.locator('.document-reader__stage')).toHaveAttribute('aria-busy', 'false');
-    await reader.getByText('Texto da página 1', { exact: true }).click();
-    await expect(reader.locator('.document-reader__text')).toContainText(
-      'Diretrizes institucionais',
-    );
-    await reader.getByRole('button', { name: 'Próxima página' }).click();
-    await expect(reader.locator('.document-reader__text')).toContainText(
-      'Conferencia do calendario',
-    );
-    await expect(reader.getByRole('button', { name: 'Próxima página' })).toBeDisabled();
-    await reader.getByLabel('Zoom').selectOption('2');
-    await expect(reader.locator('.document-reader__stage')).toHaveAttribute('aria-busy', 'false');
-    await expect
-      .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
-      .toBe(true);
-    await expect(
-      reader.getByRole('link', { name: 'Abrir PDF original em outra aba' }),
-    ).toHaveAttribute('href', /^blob:/);
-    const download = page.waitForEvent('download');
-    await reader.getByRole('button', { name: 'Baixar cópia' }).click();
-    expect((await download).suggestedFilename()).toBe('teste.pdf');
-    await page.keyboard.press('Escape');
-    await expect(reader).toHaveCount(0);
-    await expect(trigger).toBeFocused();
+    const popup = await popupPromise;
+    await expect(popup).toHaveURL(origin + '/__synthetic-document.pdf');
     await expect(page).toHaveURL(origin + '/documentos?ano=2027&situacao=vigente');
     await expect(page.locator('#document-year-filter')).toHaveValue('2027');
+    await expect(page.locator('#document-status-filter')).toHaveValue('vigente');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await popup.close();
+    await expect(link).toBeFocused();
   });
 }
 
@@ -74,55 +63,27 @@ test('ações de vigência ficam recolhidas e arquivar exige confirmação', asy
   await expect.poll(() => page.evaluate(() => window.portalRouterTest.mutations.length)).toBe(2);
 });
 
-test('falha no arquivo permite fechar e tentar novamente; original ausente não abre o leitor', async ({
+test('original indisponível não oferece link e mantém restauração para ADMIN', async ({
   page,
   fixtureServer,
 }) => {
   const origin = new URL(await fixtureServer('portal')).origin;
-  await page.route('**/__synthetic-document.pdf', (route) => route.fulfill({ status: 503 }));
   await page.goto(origin + '/documentos?missing-document=1');
   const missing = page.locator('#document-list li').filter({ hasText: 'Documento rascunho' });
-  await expect(missing.getByRole('button', { name: 'Visualizar PDF' })).toBeDisabled();
+  await expect(missing.getByRole('link', { name: 'Abrir PDF em outra aba' })).toHaveCount(0);
   await expect(missing).toContainText('aguardando restauração');
-  const current = page.locator('#document-list li').filter({ hasText: 'Documento vigente' });
-  await current.getByRole('button', { name: 'Visualizar PDF' }).click();
-  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
-    'Não foi possível exibir o PDF',
-  );
-  await page.getByRole('button', { name: 'Voltar à lista' }).click();
-  await page.route('**/__synthetic-document.pdf', (route) =>
-    route.fulfill({ contentType: 'application/pdf', body: documentPdf() }),
-  );
-  await current.getByRole('button', { name: 'Visualizar PDF' }).click();
-  await expect(page.locator('.document-reader__stage')).toHaveAttribute('aria-busy', 'false');
+  await missing.getByText('Gerenciar', { exact: true }).click();
+  await expect(missing.getByRole('button', { name: 'Restaurar PDF original' })).toBeVisible();
 });
 
-test('fechar enquanto o PDF carrega impede que uma resposta tardia reabra o leitor', async ({
+test('falha ao obter o link permite tentar novamente na aba de abertura', async ({
   page,
   fixtureServer,
 }) => {
   const origin = new URL(await fixtureServer('portal')).origin;
-  await page.goto(origin + '/documentos?role=CAMPUS');
-  await expect(page.getByText('Gerenciar', { exact: true })).toHaveCount(0);
-  await page.evaluate(() => {
-    window.portalRouterTest.deferNextMutation = true;
-  });
-  await page.getByRole('button', { name: 'Visualizar PDF' }).first().click();
-  await expect
-    .poll(() => page.evaluate(() => window.portalRouterTest.pendingMutation))
-    .toBe('downloadDocument');
-  const dialog = page.getByRole('dialog');
-  await expect(dialog.locator('.loading-indicator-bar')).toBeVisible();
-  await expect(dialog.locator('.loading-indicator').getByRole('status')).toHaveText(
-    'Carregando PDF…',
-  );
-  await expect(dialog.locator('.loading-indicator').getByRole('status')).toHaveCSS(
-    'clip-path',
-    'inset(50%)',
-  );
-  await expect(dialog.locator('.loading-indicator')).toHaveCount(1);
-  await page.keyboard.press('Escape');
-  await page.evaluate(() => window.portalRouterTest.resolvePendingMutation());
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Visualizar PDF' }).first()).toBeFocused();
+  await page.goto(origin + '/documentos/document-missing/abrir');
+  await expect(page.getByRole('alert')).toContainText('Documento não encontrado.');
+  await page.getByRole('button', { name: 'Tentar novamente' }).click();
+  await expect.poll(() => page.evaluate(() => window.portalRouterTest.mutations.length)).toBe(2);
+  await expect(page.getByRole('alert')).toContainText('Documento não encontrado.');
 });

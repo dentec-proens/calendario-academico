@@ -281,7 +281,7 @@ test('a legacy review cannot certify current rules or export without reevaluatin
   expect(support.review?.entries).toEqual(prior.entries);
   await expect(
     admin.query(api.reviews.exportReview, { id: record.id, revision: 1 }),
-  ).rejects.toThrow('desatualizada');
+  ).rejects.toThrow('O parecer está desatualizado. Reabra, confira e salve antes de exportar.');
   const body = {
     revision: 1,
     calendarVersion: record.version,

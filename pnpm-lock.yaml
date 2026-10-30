@@ -203,9 +203,6 @@ importers:
       lucide-react:
         specifier: 1.61.0
         version: 1.61.0(@types/react@19.3.0)(react@19.3.1)
-      pdfjs-dist:
-        specifier: 6.3.289
-        version: 6.3.289
       react:
         specifier: 19.3.1
         version: 19.3.1
@@ -249,6 +246,9 @@ importers:
       oxlint-tsgolint:
         specifier: 7.0.2005
         version: 7.0.2005
+      pdfjs-dist:
+        specifier: 6.3.289
+        version: 6.3.289
       prettier:
         specifier: 3.9.10
         version: 3.9.10

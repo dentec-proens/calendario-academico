@@ -4,6 +4,8 @@ import { convex, functions } from './client.ts';
 import { request } from './errors.ts';
 
 export const institution = {
+  openDocument: (id: string) =>
+    request(() => convex.mutation(functions.documents.openDocument, { id: id as Id<'documents'> })),
   createCampus: (name: string) =>
     request(() => convex.mutation(functions.campuses.createCampus, { name })),
   saveCatalogue: (body: FunctionArgs<typeof functions.catalogue.saveCatalogue>['body']) =>

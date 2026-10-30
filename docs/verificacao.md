@@ -70,7 +70,7 @@ Os testes unitários ficam agrupados pela camada exercitada: `test/domain/` (reg
 
 ## Referências visuais
 
-A suíte visual protege o portal, a criação de calendário, a consulta de documentos e seu leitor PDF, a revisão humana com confirmação pendente, o editor, a edição de evento e o diálogo de confirmação. Dados, relógio, idioma, fuso e viewports são fixos. As referências ficam versionadas em `test/browser/__screenshots__/`, somente para macOS (`darwin`), separadas por viewport. O teste falha quando falta uma referência; os testes obrigatórios não são pulados quando o navegador está ausente.
+A suíte visual protege o portal, a criação de calendário, a consulta de documentos com links para os originais, a revisão humana com confirmação pendente, o editor, a edição de evento e o diálogo de confirmação. Dados, relógio, idioma, fuso e viewports são fixos. As referências ficam versionadas em `test/browser/__screenshots__/`, somente para macOS (`darwin`), separadas por viewport. O teste falha quando falta uma referência; os testes obrigatórios não são pulados quando o navegador está ausente.
 
 Para uma mudança visual intencional, execute `pnpm test:visual:update`, confira cada screenshot alterado e execute `pnpm test:visual` novamente, sem atualização. Outros sistemas não têm referências versionadas, e a comparação visual falha neles. Ao atualizar Playwright, confira as referências afetadas. Não aceite alterações de screenshots sem verificar o efeito na interface.
 
@@ -79,6 +79,8 @@ O Chromium local no macOS usa a variante de controles nativos com `OverlayScroll
 Antes de abrir o navegador do worker, `chromium-native-theme.ts` consulta os argumentos reais da versão instalada pela API pública `launchServer().process().spawnargs` e fecha esse processo temporário. Mescla todas as features já desabilitadas pelo Playwright e pelos argumentos do projeto antes de acrescentar `OverlayScrollbar`, pois repetir `--disable-features` com uma lista parcial substituiria os defaults do Playwright. O teste de configuração confere essa preservação contra o Chromium instalado. As comparações mantêm as mesmas referências e tolerâncias; não há máscara de controles nem supressão de diferenças visuais.
 
 Os switches dedicados `--disable-overlay-scrollbar`, `--disable-overlay-scrollbars` e `--disable-blink-features=OverlayScrollbars` não estabilizaram essa variante no Chromium instalado. Por isso a configuração usa a mesclagem por feature. A sondagem acrescentou entre 0,10 e 0,14 segundo por worker neste Mac; encerra antes do navegador de execução, e uma regressão confirma o término do processo também quando a leitura dos argumentos falha.
+
+Os testes de abertura de documentos em `test/browser/documents.spec.ts` usam `channel: 'chromium'`, com o Chromium completo instalado por `pnpm test:browser:install`, para exercitar seu leitor nativo de PDF. O headless shell usado no restante da suíte força download nesse fluxo. Essa seleção segue a [configuração de navegadores do Playwright](https://playwright.dev/docs/browsers#chromium-new-headless-mode) e não muda as referências visuais.
 
 ## Impressão do calendário
 

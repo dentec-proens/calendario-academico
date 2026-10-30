@@ -100,7 +100,6 @@ async function startServer(
         'react/jsx-runtime',
         'react/jsx-dev-runtime',
         'lucide-react',
-        'pdfjs-dist',
         'convex/react',
         'convex/server',
         '@noble/hashes/sha2.js',

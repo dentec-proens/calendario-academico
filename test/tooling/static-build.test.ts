@@ -68,12 +68,17 @@ test(
         !Object.keys(manifest).some((key) => /devtools-panel|react-devtools/.test(key)),
         'development panel must not be emitted',
       );
-      for (const filename of await readdir(join(output, 'assets'))) {
+      const filenames = await readdir(join(output, 'assets'));
+      assert.ok(
+        !filenames.some((name) => /pdf\.worker|DocumentReader/.test(name)),
+        'the portal must not ship the removed PDF reader or its worker',
+      );
+      for (const filename of filenames) {
         if (!filename.endsWith('.js')) continue;
         const source = await readFile(join(output, 'assets', filename), 'utf8');
         assert.doesNotMatch(
           source,
-          /Open TanStack Devtools|Resize TanStack Devtools panel|node:child_process|node:fs/,
+          /Open TanStack Devtools|Resize TanStack Devtools panel|node:child_process|node:fs|pdfjsVersion/,
         );
       }
     } finally {

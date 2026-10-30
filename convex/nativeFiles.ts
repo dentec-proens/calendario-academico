@@ -217,7 +217,7 @@ export const expireTicket = internalMutation({
     return null;
   },
 });
-export const downloadHttp = httpAction(async (ctx, request) => {
+export const openPdfHttp = httpAction(async (ctx, request) => {
   const token = new URL(request.url).pathname.slice('/files/'.length);
   const ticket = await ctx.runMutation(internal.nativeFiles.resolveTicket, { token });
   const headers = {
@@ -234,7 +234,7 @@ export const downloadHttp = httpAction(async (ctx, request) => {
     headers: {
       ...headers,
       'Content-Type': 'application/pdf',
-      'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(ticket.filename),
+      'Content-Disposition': "inline; filename*=UTF-8''" + encodeURIComponent(ticket.filename),
     },
   });
 });

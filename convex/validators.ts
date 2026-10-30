@@ -254,7 +254,6 @@ export const documentUploadInput = v.object({
   title: v.string(),
   source: v.string(),
 });
-export const fileDownload = v.object({ url: v.string(), filename: v.string() });
 export const documentMetadata = v.object({
   ...documentSnapshot.fields,
   createdAt: v.string(),
