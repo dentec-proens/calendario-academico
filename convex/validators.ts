@@ -149,7 +149,7 @@ export const contentState = v.object({
   weekConfirmed: v.boolean(),
   periods: v.array(period),
   events: v.array(event),
-  teacherDayDate: v.optional(v.string()),
+  observanceDates: v.optional(v.record(v.string(), v.string())),
   teacherVacations: v.optional(vacations),
 });
 export const domainState = v.object({

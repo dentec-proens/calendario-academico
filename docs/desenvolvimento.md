@@ -51,7 +51,7 @@ O formulário conserva preenchimento ainda não aplicado; comandos atualizam o c
 
 `src/domain/calendar/config.ts` é a fonte comum de ofertas e rótulos, ciclos e organizações, quantidades permitidas de etapas, quantidade de períodos por organização, limites de ano e duração. O módulo não depende de React nem de Convex. A interface, os validadores Convex e as funções de domínio importam essas definições; `src/domain/calendar/modalities.ts` mantém os helpers de escopo e reexporta o catálogo por compatibilidade.
 
-As referências normativas de dias letivos pertencem às políticas de `src/domain/policies/`. Cada política decide sua aplicabilidade; por exemplo, os mínimos de contagem de 2027 exigem oferta abrangida e escopo confirmado, em `consup-292-2027.ts`. Para um novo ano, implemente `CalendarPolicy` num módulo próprio e registre-o em `registry.ts`. Alterar um mínimo não significa estendê-lo automaticamente a outro ano ou norma.
+As referências normativas de dias letivos pertencem às políticas de `src/domain/policies/`. Cada política decide sua aplicabilidade; por exemplo, os mínimos de contagem de 2027 exigem oferta abrangida e escopo confirmado, no módulo `consup-292-2027/`. Para um novo ano, implemente `CalendarPolicy` num módulo próprio e registre-o em `registry.ts`. Alterar um mínimo não significa estendê-lo automaticamente a outro ano ou norma.
 
 Nas políticas vinculadas, toda mudança no catálogo, inclusive de redação, acrescenta uma versão em `rulesetChanges` com fonte, resumo, critérios afetados e efeito; versões publicadas não são editadas. `test/domain/ruleset-history.test.ts` calcula uma impressão digital do que campus e revisores veem do catálogo (atividades, rótulos, aplicabilidade e notas por oferta, janela e mínimos) em calendários de referência, para 2026, 2027 e anos sem norma, e falha quando ele muda sem nova versão; registre a impressão da nova versão nesse teste. Todo campo de `ActivityRequirement` entra na impressão, exceto os que só atuam pela aplicação por oferta. A política de 2026 e a de anos sem norma não têm histórico: confirme a mudança e substitua a impressão delas. Refatorações que não mudam regras mantêm todas as impressões.
 
@@ -74,3 +74,19 @@ A publicação usa o [procedimento operacional](implantacao-convex-vercel.md), c
 O modo E2E de desenvolvimento usa somente o dev conferido em `.env.local` e exige opt-in explícito. `pnpm e2e:setup` prepara conta, campus, ano e fontes próprios, preservando registros preexistentes. As credenciais e a fixture ficam em arquivos ignorados pelo Git. Inicie o frontend local e execute `pnpm test:e2e` em outro terminal.
 
 O modo não usa a flag de ambiente descartável e não habilita produção. O frontend precisa apontar ao mesmo backend conferido. Pré-requisitos, variáveis e limites estão em [Verificação](verificacao.md).
+
+### Observâncias institucionais
+
+`CalendarPolicy.observances` declara quais eventos podem ter a observância
+ajustada, suas datas permitidas e o fundamento da decisão. O módulo anual
+separa requisitos, critérios, histórico e observâncias; os consumidores
+consultam `policyFor(year)`. A referência institucional vem do catálogo
+publicado e a escolha local fica em `observanceDates`, por calendário.
+
+`src/domain/calendar/observances.ts` concentra a projeção pura e idempotente
+e a validação compartilhada. A leitura preserva eventos confirmados quando
+há conflitos; a gravação recusa escolhas inválidas. Remover uma escolha
+restaura a referência institucional, mesmo quando o evento deixou a base.
+Snapshots históricos conservam as datas gravadas, sem reinterpretação pela
+policy atual. Observâncias possuem fingerprint próprio no histórico das
+regras, independente dos requisitos já publicados.

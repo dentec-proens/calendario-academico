@@ -29,7 +29,7 @@ function semanticProjection(
 ) {
   const policy = policyFor(state.year);
   const requirements = activityChecklist(state);
-  const institutional = inheritedEvents(catalogue, state.year, state.offers, state);
+  const institutional = inheritedEvents(catalogue, state.year, state.offers);
   const events = [...institutional, ...state.events];
   const diagnostic = diagnoseCalendar(state, events);
   const baseSnapshot = {

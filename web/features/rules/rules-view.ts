@@ -18,7 +18,7 @@ export const offerStatusLabels: Record<OfferStatus, string> = {
 export const effectLabels: Record<RulesetChange['effect'], string> = {
   establishes: 'Estabelece as regras',
   tightens: 'Amplia exigência',
-  relaxes: 'Dispensa exigência',
+  relaxes: 'Flexibiliza as regras',
   editorial: 'Redação',
 };
 const repeatLabels = {
@@ -84,6 +84,7 @@ export function rulesView(year: number) {
     window: policy.window(state),
     excluded: offers.filter((offer) => policy.excludes(offer)).map(offerLabel),
     offers: offers.map((offer) => ({ id: offer.id, label: offerLabel(offer) })),
+    observances: policy.observances,
     minimums,
     minimumSources: [
       ...new Set(

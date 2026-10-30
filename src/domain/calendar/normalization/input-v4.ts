@@ -168,6 +168,8 @@ export function readCalendarOfferInput(
   const row = calendarObject(value);
   if (row.schemaVersion !== 4)
     return fail('Formato de calendário incompatível. Use uma cópia de formato 4.');
+  if ('teacherDayDate' in row)
+    return fail('Esta cópia usa o campo antigo do Dia do Professor e não pode mais ser importada.');
   return {
     schemaVersion: 4,
     year: number(row.year),
@@ -178,7 +180,11 @@ export function readCalendarOfferInput(
     weekConfirmed: boolean(row.weekConfirmed),
     periods: array(row.periods, period),
     events: array(row.events, activity),
-    teacherDayDate: optional(row.teacherDayDate, text),
+    observanceDates: optional(row.observanceDates, (value) =>
+      Object.fromEntries(
+        Object.entries(calendarObject(value)).map(([key, date]) => [key, text(date)]),
+      ),
+    ),
     teacherVacations: optional(row.teacherVacations, vacations),
   };
 }

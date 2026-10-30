@@ -20,7 +20,7 @@ import { calendars } from '../../../shared/convex/calendars.ts';
 import { sessionIdentity, useAppSession } from '../../../app/session.tsx';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
-import { campusInstitutionalEvents } from '#src/domain/institution/teacher-day.ts';
+import { applyObservances, observanceIssues } from '#src/domain/calendar/observances.ts';
 import { evaluateCalendar } from '#src/domain/calendar/counting/evaluation.ts';
 import { createEditorSession } from './editor-session.ts';
 import type { CalendarRecord, CalendarState, EditorEvent } from '../types.ts';
@@ -159,8 +159,9 @@ function useSession(record: CalendarRecord) {
   });
   const institutional = useMemo(
     () =>
-      campusInstitutionalEvents(
-        snapshot.baseUpdate.compatible
+      applyObservances(
+        snapshot.baseUpdate.compatible &&
+          !observanceIssues(snapshot.record.institutionalEvents, snapshot.state).length
           ? snapshot.record.institutionalEvents
           : snapshot.record.institutionalSnapshot,
         snapshot.state,

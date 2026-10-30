@@ -1,5 +1,5 @@
 import { inheritedEvents } from '../institution/catalogue.ts';
-import { campusInstitutionalEvents, teacherDayId } from '../institution/teacher-day.ts';
+import { applyObservances, type ObservanceState } from './observances.ts';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { equalValues } from '../../shared/equal.ts';
@@ -234,10 +234,8 @@ export function referenceIsCurrent(
  * Applying the calendar still validates that adjustment through the normal commands. */
 export function applicableEvents<T extends BaseEvent & { active: boolean }>(
   catalogue: { events: T[] },
-  scope: BaseScope & { teacherDayDate?: string | null },
+  scope: BaseScope & ObservanceState,
 ) {
   const published = inheritedEvents(catalogue, scope.year, scope.offers);
-  return published.some((event) => event.id === teacherDayId)
-    ? campusInstitutionalEvents(published, scope)
-    : published;
+  return applyObservances(published, scope);
 }

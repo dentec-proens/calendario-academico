@@ -223,7 +223,9 @@ export function expectedV4(source: CalendarProjection, calendar: SnapshotRow) {
       ...event,
       ...(modalities === undefined ? {} : { offers: modalities }),
     })),
-    ...(state.teacherDayDate === undefined ? {} : { teacherDayDate: state.teacherDayDate }),
+    ...(state.teacherDayDate === undefined
+      ? {}
+      : { observanceDates: { 'teacher-day': state.teacherDayDate } }),
     ...(state.teacherVacations === undefined ? {} : { teacherVacations: state.teacherVacations }),
   });
 }

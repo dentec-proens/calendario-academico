@@ -227,7 +227,7 @@ function after(snapshot: Snapshot, frozen: FrozenSource): Snapshot {
       ...event,
       ...(modalities ? { offers: modalities } : {}),
     })),
-    teacherDayDate: state.teacherDayDate,
+    observanceDates: state.observanceDates,
     teacherVacations: state.teacherVacations,
   });
   const pending = offers.some(

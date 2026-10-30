@@ -34,7 +34,7 @@ childProcess.execFileSync = (command, args, options) => {
   }
   if (command === process.execPath && args[1] === 'run') {
     const name = args[2]; record(name);
-    if (name === 'operations:status') return JSON.stringify({emergency:scenario==='emergency',paused:scenario==='paused',commit:null,active:[]});
+    if (name === 'operations:status') return JSON.stringify({emergency:scenario==='emergency',paused:scenario==='paused'||scenario==='planned-maintenance',commit:scenario==='planned-maintenance'?commit:null,active:[]});
     if (name === 'migrations:start') return 'null';
     if (name === 'migrations:status') {
       statusReads++;
@@ -290,4 +290,13 @@ test('backend detection includes shared code, schema, runtime and dependencies',
   ]) {
     expect(changesBackend([path])).toBe(true);
   }
+});
+
+test('explicit maintenance deploys and promotes while preserving the owned window', async () => {
+  const result = await release('planned-maintenance', ['--maintenance', commit]);
+  expect(result.code, result.stderr).toBe(0);
+  expect(result.calls).toContain('backend-deploy');
+  expect(result.calls).toContain(promote);
+  expect(result.calls).not.toContain('operations:resume');
+  expect(result.stdout).toContain('O acesso permanecerá bloqueado');
 });

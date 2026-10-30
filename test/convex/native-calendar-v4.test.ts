@@ -7,7 +7,7 @@ import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { reviewCriteria } from '../../src/domain/reviews/criteria.ts';
 import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
 import { initialCatalogue } from '../../src/domain/institution/catalogue.ts';
-import { teacherDayId } from '../../src/domain/institution/teacher-day.ts';
+import { teacherDayId } from '../fixtures/observances.ts';
 
 async function setup() {
   const fixture = await createNativeFixture();
@@ -526,7 +526,7 @@ test('creation enforces labels and the twelve-offer limit before creating any re
   ]);
 });
 
-test('teacher-day null transport clears the choice and never persists null', async () => {
+test('removing the observance choice restores the institutional date', async () => {
   const catalogue = initialCatalogue();
   const fixture = await createNativeFixture({
       catalogue: { ...catalogue, events: catalogue.events.map((event) => ({ ...event })) },
@@ -545,7 +545,7 @@ test('teacher-day null transport clears the choice and never persists null', asy
     body: {
       version: record.version,
       catalogueRevision: record.catalogueRevision,
-      state: { ...record.state, teacherDayDate: '2027-10-16' },
+      state: { ...record.state, observanceDates: { 'teacher-day': '2027-10-16' } },
     },
   });
   expect(saved.base.events.find((event) => event.id === teacherDayId)?.start).toBe('2027-10-16');
@@ -554,10 +554,10 @@ test('teacher-day null transport clears the choice and never persists null', asy
     body: {
       version: saved.version,
       catalogueRevision: record.catalogueRevision,
-      state: { ...saved.state, teacherDayDate: null },
+      state: { ...saved.state, observanceDates: undefined },
     },
   });
-  expect(cleared.state).not.toHaveProperty('teacherDayDate');
+  expect(cleared.state).not.toHaveProperty('observanceDates');
   expect(cleared.base.events.find((event) => event.id === teacherDayId)?.start).toBe('2027-10-15');
   const content = await fixture.client.run((ctx) =>
     ctx.db
@@ -565,5 +565,5 @@ test('teacher-day null transport clears the choice and never persists null', asy
       .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
       .unique(),
   );
-  expect(content?.state).not.toHaveProperty('teacherDayDate');
+  expect(content?.state).not.toHaveProperty('observanceDates');
 });

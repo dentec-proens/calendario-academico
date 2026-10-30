@@ -6,7 +6,7 @@ import { datesBetween } from '../counting/core.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
 import { activityChecklist } from '../activities/checklist.ts';
 import { validCategory, eventCategory } from '../activities/categories.ts';
-import { validateTeacherDay } from '../../institution/teacher-day.ts';
+import { normalizeObservanceDates } from '../observances.ts';
 import { teacherVacations } from '../activities/teacher-vacations.ts';
 import { rulesetVersion } from '../../policies/registry.ts';
 import { associationOffers, offerFor, stageTerm } from '../offers.ts';
@@ -214,7 +214,7 @@ export function normalizeOfferCalendar(
     ...s,
     schemaVersion: 4,
     rulesetVersion: rulesetVersion(s),
-    teacherDayDate: validateTeacherDay(s.teacherDayDate, s.year),
+    observanceDates: normalizeObservanceDates(s.observanceDates),
   };
 }
 
@@ -227,7 +227,7 @@ export function offerCalendarContent(state: CalendarContentV4): CalendarContentV
     weekConfirmed,
     periods,
     events,
-    teacherDayDate,
+    observanceDates,
     teacherVacations,
   } = state;
   return JSON.parse(
@@ -239,7 +239,7 @@ export function offerCalendarContent(state: CalendarContentV4): CalendarContentV
       weekConfirmed,
       periods,
       events,
-      teacherDayDate,
+      observanceDates,
       teacherVacations,
     }),
   ) as CalendarContentV4;

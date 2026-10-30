@@ -18,9 +18,9 @@ test('Teacher Day groups the field, help and actions in the shared panel', async
   await expect(page.locator('#record-title')).toBeVisible();
   await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
-  await page.locator('#open-teacher-day').click();
+  await page.locator('#open-observance-teacher-day').click();
   await expect(page.locator('#event-panel')).toHaveScreenshot('teacher-day.png');
-  await page.locator('#teacher-day-date').fill('2027-10-14');
+  await page.locator('#observance-date-teacher-day').selectOption('2027-10-14');
   await expect(page.locator('#event-panel')).toHaveScreenshot('teacher-day-draft.png');
 });
 

@@ -1,14 +1,14 @@
 import type { ActivityState, CalendarActivity } from '../model.ts';
 import { datesBetween } from '../counting/core.ts';
 import { recalculatePeriods } from '../counting/duration.ts';
-import { campusInstitutionalEvents } from '../../institution/teacher-day.ts';
+import { applyObservances } from '../observances.ts';
 import { DomainError } from '../../errors.ts';
 
 export function recalculateCalendar<S extends ActivityState>(
   state: S,
   institutional: CalendarActivity[],
 ): S {
-  const inherited = campusInstitutionalEvents(institutional, state);
+  const inherited = applyObservances(institutional, state);
   const periods = recalculatePeriods(state, [...inherited, ...state.events]);
   const next = { ...state, periods };
   return next;

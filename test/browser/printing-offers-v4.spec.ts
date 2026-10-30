@@ -2,6 +2,8 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { test, expect } from './test.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
+import { inheritedEvents, initialCatalogue } from '../../src/domain/institution/catalogue.ts';
+import { applyObservances } from '../../src/domain/calendar/observances.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 
 for (const width of [1440, 390]) {
@@ -49,10 +51,15 @@ for (const width of [1440, 390]) {
       Promise.all(paths.map((path) => readFile(new URL(path, import.meta.url), 'utf8'))),
       readFile(new URL('../../assets/printing/ifpr-logo.png', import.meta.url)),
     ]);
+    state.observanceDates = { 'public-servant-day': '2027-10-29' };
+    const allEvents = [
+      ...applyObservances(inheritedEvents(initialCatalogue(), state.year, state.offers), state),
+      ...state.events,
+    ];
     const html = proensLayout(
       state,
-      state.events,
-      evaluateCalendar(state, state.events),
+      allEvents,
+      evaluateCalendar(state, allEvents),
       { purpose: 'test', version: 1 },
       `data:image/png;base64,${logo.toString('base64')}`,
     );
@@ -61,6 +68,16 @@ for (const width of [1440, 390]) {
       `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Calendário de referência v4</title><style>${styles.join('\n').replace(/@import[^;]+;/g, '')}</style></head><body><main class="main-column"><section id="calendar" class="view"><div class="panel"><div id="months">${html}</div></div></section></main></body></html>`,
     );
     await page.emulateMedia({ media: 'print' });
+    const october = page
+      .locator('.proens-month')
+      .filter({ has: page.getByRole('heading', { name: 'outubro 2027', exact: true }) });
+    await expect(
+      october
+        .locator('.event-grid tr')
+        .filter({ hasText: 'Dia do Servidor Público' })
+        .locator('td')
+        .first(),
+    ).toHaveText('29');
     await expect(page.locator('.proens-external-references tbody tr')).toHaveCount(3);
     await expect(page.locator('.proens-external-references')).toContainText(
       '15/12/2026 a 12/01/2027',

@@ -1,7 +1,7 @@
 import type { AssessmentSettings, ActivityRequirement, CalendarOffer } from '../calendar/model.ts';
 import { offerFor } from '../calendar/offers.ts';
 import { DomainError } from '../errors.ts';
-import { consup2922027Policy } from './consup-292-2027.ts';
+import { consup2922027Policy } from './consup-292-2027/index.ts';
 import type { CalendarPolicy, RulesetChange } from './contract.ts';
 import { unconfiguredPolicy } from './unconfigured.ts';
 

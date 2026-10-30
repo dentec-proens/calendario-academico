@@ -13,7 +13,13 @@ import { readReleaseEnvironment, releaseEnvFile } from './release-environment.ts
 import { createReleaseSnapshot } from './release-snapshot.ts';
 
 const args = process.argv.slice(2);
-const dryRun = args.length === 1 && args[0] === '--dry-run';
+const maintenanceIndex = args.indexOf('--maintenance');
+const maintenanceCommit = maintenanceIndex < 0 ? undefined : args[maintenanceIndex + 1];
+const flags =
+  maintenanceIndex < 0
+    ? args
+    : args.filter((_value, index) => index !== maintenanceIndex && index !== maintenanceIndex + 1);
+const dryRun = flags.length === 1 && flags[0] === '--dry-run';
 const root = fileURLToPath(new URL('../', import.meta.url));
 let releaseRoot = root;
 const lockRef = 'refs/heads/codex/production-release-lock';
@@ -59,7 +65,11 @@ let completed = false;
 let backendAttempted = false;
 let promotionAttempted = false;
 try {
-  if (args.length && !dryRun) throw Error('Uso: pnpm deploy:production [--dry-run]');
+  if (
+    (flags.length && !dryRun) ||
+    (maintenanceIndex >= 0 && !/^[a-f0-9]{40}$/.test(maintenanceCommit ?? ''))
+  )
+    throw Error('Uso: pnpm deploy:production [--dry-run] [--maintenance COMMIT_DA_JANELA]');
   const release = readReleaseEnvironment(root);
   if (dryRun) {
     const { environments }: typeof EnvironmentConfig = await import('../config/environments.ts');
@@ -93,7 +103,11 @@ try {
     const { productionCandidates }: typeof CandidateTools = await import(
       pathToFileURL(join(releaseRoot, 'scripts/release-candidate.ts')).href
     );
-    const { parseReleaseStatus, waitForMigrations }: typeof CoordinationTools = await import(
+    const {
+      parseReleaseStatus,
+      assertReleaseAvailability,
+      waitForMigrations,
+    }: typeof CoordinationTools = await import(
       pathToFileURL(join(releaseRoot, 'scripts/release-coordination.ts')).href
     );
     assertNoTargetOverrides(process.env);
@@ -166,10 +180,13 @@ try {
     }
     function assertOnline() {
       const status = parseReleaseStatus(call('operations:status'));
-      if (status.paused || status.emergency)
-        throw Error('Há uma manutenção ativa. Reconcilie-a antes da release.');
+      assertReleaseAvailability(status, maintenanceCommit);
     }
     assertOnline();
+    if (maintenanceCommit)
+      console.log(
+        `Janela de manutenção explícita: ${maintenanceCommit}. O acesso permanecerá bloqueado após esta release.`,
+      );
     const owner = git(
       'commit-tree',
       `${commit}^{tree}`,

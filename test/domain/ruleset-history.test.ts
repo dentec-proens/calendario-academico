@@ -259,3 +259,17 @@ test('only establishing or tightening versions bind reviews and base identities'
   ).toEqual(['consup-292-2027-v2']);
   expect(rulesetChangesBetween(undefined, 'consup-292-2027-v2')).toHaveLength(2);
 });
+
+/** Observances have their own baseline; published requirement archives stay untouched. */
+const observanceFingerprints: Record<string, string> = {
+  'consup-292-2027-v4': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
+};
+test('observance permissions are bound to the current ruleset history', () => {
+  for (const policy of boundPolicies) {
+    const version = versionOf(policy, policy.year!);
+    expect(bytesToHex(sha256(new TextEncoder().encode(JSON.stringify(policy.observances))))).toBe(
+      observanceFingerprints[version],
+    );
+  }
+  expect(equivalentRulesets('consup-292-2027-v3', 'consup-292-2027-v4')).toBe(true);
+});

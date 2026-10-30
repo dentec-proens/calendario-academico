@@ -40,7 +40,16 @@ export interface Minimum {
  * selected by `policyFor(year)` instead of comparing years, so a new year is one new module
  * registered in `registry.ts`.
  */
+export interface ObservanceRule {
+  key: string;
+  eventCode: string;
+  label: string;
+  allowedDates: readonly string[];
+  basis: string;
+}
+
 export interface CalendarPolicy {
+  observances: readonly ObservanceRule[];
   /** Civil year governed by the policy; absent only in the unconfigured fallback. */
   year?: number;
   /** False for the fallback, which keeps links but never asserts compliance. */

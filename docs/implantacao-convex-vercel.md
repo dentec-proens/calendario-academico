@@ -93,7 +93,9 @@ Depois de conferir, verificar `git ls-remote origin refs/heads/codex/production-
 
 A manutenção é confirmada no backend. `operationalControl` identifica o commit responsável, e `operationalLeases` mostra actions aceitas que ainda não concluíram. A configuração emergencial `DENTEC_MAINTENANCE=1` também bloqueia novas alterações. Não considerar o tempo decorrido como término de uma action.
 
-Os controles de manutenção permanecem disponíveis para intervenção planejada e recuperação de janelas anteriores; a release não os aciona, mas recusa publicar enquanto houver manutenção ativa. Uma falha após uma pausa explícita mantém o bloqueio. Uma resposta perdida da CLI pode ocorrer após o commit da pausa; conferir o estado também nesse caso. Conferir o estado pelo destino explícito, por exemplo:
+Os controles de manutenção permanecem disponíveis para intervenção planejada e recuperação de janelas anteriores. A release não os aciona e, por padrão, recusa publicar enquanto houver manutenção ativa.
+
+Para executar as duas releases de uma migração durante uma única manutenção planejada, pause antes com `operations:pause`, usando o SHA completo do commit responsável pela janela, e confira `operations:status`. Publique por `pnpm deploy:production --maintenance SHA_DA_JANELA`, tanto na expansão quanto na contração. A opção exige o mesmo proprietário, manutenção ativa, ausência de bloqueio emergencial e nenhuma action em andamento; essas condições são reconferidas antes do backend e da promoção. O comando mantém a manutenção ativa após concluir. O SHA da janela permanece o mesmo nas duas publicações, mesmo quando o commit publicado muda. Depois de conferir dados, contratos e domínio, reabra com `operations:resume` e o SHA original. Não usar essa opção para assumir uma manutenção de outro proprietário. Uma falha após uma pausa explícita mantém o bloqueio. Uma resposta perdida da CLI pode ocorrer após o commit da pausa; conferir o estado também nesse caso. Conferir o estado pelo destino explícito, por exemplo:
 
 ```sh
 pnpm exec convex run operations:status '{}' --deployment exuberant-cheetah-138 --codegen disable

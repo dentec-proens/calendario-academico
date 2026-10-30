@@ -108,7 +108,7 @@ export default defineSchema({
   }).index('by_key_and_reference', ['key', 'reference']),
   calendarContents: defineTable({
     calendarId: v.id('calendars'),
-    state: contentState,
+    state: v.object({ ...contentState.fields, teacherDayDate: v.optional(v.string()) }),
     catalogueRevision: v.number(),
     institutionalSnapshot: snapshotFields.institutionalEvents,
     documentSnapshot: snapshotFields.documentSnapshot,
@@ -120,7 +120,10 @@ export default defineSchema({
     catalogueRevision: v.number(),
     snapshotId: v.id('calendarSnapshots'),
   }).index('by_calendarId_and_version', ['calendarId', 'version']),
-  calendarSnapshots: defineTable(snapshotFields),
+  calendarSnapshots: defineTable({
+    ...snapshotFields,
+    state: v.object({ ...snapshotFields.state.fields, teacherDayDate: v.optional(v.string()) }),
+  }),
   documents: defineTable({
     year: v.number(),
     type: documentType,

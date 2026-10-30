@@ -14,7 +14,10 @@ for (const role of ['ADMIN', 'CAMPUS', 'PARECERISTA'] as const)
     await expect(link).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('#panel-title')).toHaveText('Regras do calendário');
     await expect(page.locator('#rules-title')).toHaveText('Regras do calendário de 2027');
-    await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v3');
+    await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v4');
+    await expect(page.locator('[data-observance-rule="public-servant-day"]')).toContainText(
+      '28/10/2027, 29/10/2027',
+    );
     const family = page.locator('[data-rule="family-meeting"]');
     await expect(family).toContainText('Decisão: exigida apenas no técnico integrado');
     await expect(family.locator('[data-offer="integrado"]')).toContainText('Obrigatória');
@@ -27,5 +30,5 @@ for (const role of ['ADMIN', 'CAMPUS', 'PARECERISTA'] as const)
     await expect(page.locator('[data-rule="registration"] [data-offer="graduacao"]')).toContainText(
       'Conforme ingresso',
     );
-    await expect(page.locator('.rules-history')).toContainText('Dispensa exigência');
+    await expect(page.locator('.rules-history')).toContainText('Flexibiliza as regras');
   });

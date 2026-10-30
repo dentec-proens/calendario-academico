@@ -55,8 +55,15 @@ type DeadlinesModule = {
 type ConversionModule = { convertCalendarV2(state: ActivityState): ActivityState };
 type ObligationsModule = { activityChecklist(state: ActivityState): HistoricRequirement[] };
 type ModalitiesModule = { calendarModalities(state: ActivityState): string[] };
+type ObservancesModule = {
+  applyObservances(this: void, events: HistoricEvent[], state: ActivityState): HistoricEvent[];
+};
 type TeacherDayModule = {
-  campusInstitutionalEvents(events: HistoricEvent[], state: ActivityState): HistoricEvent[];
+  campusInstitutionalEvents(
+    this: void,
+    events: HistoricEvent[],
+    state: ActivityState,
+  ): HistoricEvent[];
 };
 
 function option(name: string) {
@@ -110,9 +117,14 @@ async function main() {
   const modalities = (await import(
     moduleUrl('src/domain/calendar/modalities.ts', 'src/modalities.ts')
   )) as ModalitiesModule;
-  const teacherDay = (await import(
-    moduleUrl('src/domain/institution/teacher-day.ts', 'src/teacher-day.ts')
-  )) as TeacherDayModule;
+  const observancePath = join(codeRoot, 'src/domain/calendar/observances.ts');
+  const projectObservances = existsSync(observancePath)
+    ? ((await import(pathToFileURL(observancePath).href)) as ObservancesModule).applyObservances
+    : (
+        (await import(
+          moduleUrl('src/domain/institution/teacher-day.ts', 'src/teacher-day.ts')
+        )) as TeacherDayModule
+      ).campusInstitutionalEvents;
   const calendars = new Map((snapshot.tables.calendars ?? []).map((row) => [row._id, row]));
   const campuses = new Map((snapshot.tables.campuses ?? []).map((row) => [row._id, row]));
   const states: Record<string, unknown> = {};
@@ -139,10 +151,7 @@ async function main() {
         const institutional = (
           table === 'calendarContents' ? row.institutionalSnapshot : row.institutionalEvents
         ) as ActivityState['events'];
-        const events = [
-          ...teacherDay.campusInstitutionalEvents(institutional, state),
-          ...state.events,
-        ];
+        const events = [...projectObservances(institutional, state), ...state.events];
         const coverage = result(() =>
           rules.activityCoverage(state, events).map((item) => ({
             id: item.requirement.id,

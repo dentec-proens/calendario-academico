@@ -43,11 +43,11 @@ function useController() {
   const [open, setOpen] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
   const [linkUnlocked, setLinkUnlocked] = useState(false);
-  // What the side panel shows besides the form: an activity to consult or the Teacher Day.
+  // What the side panel shows besides the form: an activity to consult or an observance.
   const [panel, setPanel] = useState<
     | { kind: 'activity'; requirementId: string }
     | { kind: 'event'; eventId: string }
-    | { kind: 'teacher-day' }
+    | { kind: 'observance'; key: string }
     | null
   >(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -293,9 +293,9 @@ function useController() {
       rememberOpener();
       setPanel({ kind: 'event', eventId });
     },
-    viewTeacherDay: () => {
+    viewObservance: (key: string) => {
       rememberOpener();
-      setPanel({ kind: 'teacher-day' });
+      setPanel({ kind: 'observance', key });
     },
     close: () => {
       if (result.pending) return;

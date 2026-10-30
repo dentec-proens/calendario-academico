@@ -14,6 +14,7 @@ import { inspectBase, reconcileBase } from './calendars/base';
 import { assertWritesOpen } from './lib/maintenance';
 import { equivalentRulesets, rulesetVersion } from '../src/domain/policies/registry';
 import { inheritedEvents } from '../src/domain/institution/catalogue';
+import { applyObservances } from '../src/domain/calendar/observances';
 import { query, mutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
 import { calendarRow, summary } from './calendars/model';
@@ -218,7 +219,9 @@ export const createCalendar = mutation({
       calendarId: id,
       state: offerCalendarContent(state) as validators.ContentState,
       catalogueRevision: base.revision,
-      institutionalSnapshot: clean(inheritedEvents(base, body.year, state.offers, state)),
+      institutionalSnapshot: clean(
+        applyObservances(inheritedEvents(base, body.year, state.offers), state),
+      ),
       documentSnapshot: await currentDocuments(ctx, body.year),
     });
     await appendAudit(
@@ -253,7 +256,7 @@ export const saveCalendar = mutation({
       );
     const reconciliation = reconcileBase(compatibility, body.baseAcceptance);
     const savedContent = clean(content.state);
-    const proposedState = { ...body.state, teacherDayDate: body.state.teacherDayDate ?? undefined };
+    const proposedState = body.state;
     const prepared = domainRule(() => {
       const prepared = prepareOfferCalendarSave(record.state, proposedState, {
         storedContent: savedContent,

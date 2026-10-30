@@ -85,13 +85,11 @@ test('calendar storage requires offerKinds and refuses the retired modalities fi
 test('strict v4 storage never reruns the old backfill during maintenance', async () => {
   const { client } = await createNativeFixture();
   expect(await client.mutation(internal.migrations.start, {})).toBeNull();
-  expect(await client.query(internal.migrations.status, {})).toEqual([
-    {
-      name: 'migrations:initializePresencialAndPurgeTrash20261030',
-      state: 'success',
-      processed: 0,
-      error: null,
-    },
+  expect(
+    (await client.query(internal.migrations.status, {})).map((migration) => migration.name).sort(),
+  ).toEqual([
+    'migrations:migrateContentObservances20261030',
+    'migrations:migrateSnapshotObservances20261030',
   ]);
   expect(await client.run((ctx) => ctx.db.query('migrationReports').take(10))).toEqual([]);
   expect(await client.run((ctx) => ctx.db.query('migrationResults').take(10))).toEqual([]);

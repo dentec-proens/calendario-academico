@@ -9,6 +9,8 @@ import { appendAudit } from './lib/audit';
 import { admin } from './lib/authorization';
 import { fail, text } from './lib/shared';
 import { v } from 'convex/values';
+import { validateObservanceCatalogueEvent } from '../src/domain/calendar/observances';
+import { domainRule } from './lib/shared';
 
 const ok = v.object({ ok: v.boolean() });
 
@@ -49,6 +51,7 @@ export const saveCatalogue = mutation({
       modalities: body.modalities,
       active: body.active,
     };
+    domainRule(() => validateObservanceCatalogueEvent(fields, prior));
     const id = prior ? prior._id : await ctx.db.insert('institutionalEvents', fields);
     if (prior) await ctx.db.replace(prior._id, fields);
     await bumpRevision(ctx, year);

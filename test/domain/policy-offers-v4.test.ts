@@ -32,7 +32,9 @@ test('policy receives an opaque identity and applies kind, scope and source inde
 
 test('the offer editorial version preserves the review boundary and historical minima', () => {
   const policy = policyFor(2027);
-  expect(policy.rulesetChanges?.at(-1)).toMatchObject({
+  expect(
+    policy.rulesetChanges?.find((change) => change.version === 'consup-292-2027-v3'),
+  ).toMatchObject({
     version: 'consup-292-2027-v3',
     effect: 'editorial',
     date: '2026-10-29',

@@ -3,10 +3,10 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { PanelDialog, PanelHeader } from '../../../components/ui/Panel.tsx';
 import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
-import { teacherDayId } from '#src/domain/institution/teacher-day.ts';
+import { observanceRules } from '#src/domain/calendar/observances.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useAppSession } from '../../../app/session.tsx';
-import TeacherDayForm from '../forms/TeacherDayForm.tsx';
+import ObservanceForm from '../forms/ObservanceForm.tsx';
 import { useActivitySearch } from './activity-query.ts';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import ActivityDetails from './ActivityDetails.tsx';
@@ -36,10 +36,9 @@ export default function EventPanel() {
       ? editor.panel.requirementId
       : '';
   const activity = activityChecklist(state).find((item) => item.id === activityId);
-  const teacherDay =
-    !editor.open && editor.panel?.kind === 'teacher-day'
-      ? events.find((event) => event.id === teacherDayId)
-      : undefined;
+  const observanceKey =
+    !editor.open && editor.panel?.kind === 'observance' ? editor.panel.key : undefined;
+  const observance = observanceRules(state.year).find((rule) => rule.key === observanceKey);
   const campusEventId =
     !editor.open && editor.panel?.kind === 'event' ? editor.panel.eventId : undefined;
   const campusEvent = events.find((event) => event.id === campusEventId);
@@ -78,7 +77,7 @@ export default function EventPanel() {
         title={
           activity?.name ??
           campusEvent?.name ??
-          (teacherDay ? 'Dia do Professor' : 'Evento do campus')
+          (observanceKey ? (observance?.label ?? 'Ajuste de observância') : 'Evento do campus')
         }
         titleId="event-panel-title"
         closeId="close-event-panel"
@@ -127,11 +126,8 @@ export default function EventPanel() {
         </Notice>
       )}
       {campusEvent && <CampusEventDetails event={campusEvent} />}
-      {teacherDay && (
-        <TeacherDayForm
-          date={teacherDay.originalStart || teacherDay.start}
-          onClose={editor.close}
-        />
+      {observanceKey && (
+        <ObservanceForm key={observanceKey} observanceKey={observanceKey} onClose={editor.close} />
       )}
       <EventEditor />
     </PanelDialog>

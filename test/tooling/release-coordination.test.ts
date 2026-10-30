@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 import {
   parseReleaseStatus,
+  assertReleaseAvailability,
   waitForMigrations,
   type MigrationProgress,
 } from '../../scripts/release-coordination';
@@ -125,5 +126,29 @@ test('an active report with unstarted steps still respects the migration timeout
       },
     }),
     /progresso no Convex foi preservado/,
+  );
+});
+
+test('planned maintenance release requires the exact owner, no emergency and drained actions', () => {
+  const owner = 'a'.repeat(40);
+  const status = { emergency: false, paused: true, commit: owner, active: [] };
+  assert.doesNotThrow(() => assertReleaseAvailability(status, owner));
+  assert.throws(() => assertReleaseAvailability(status), /manutenção ativa/);
+  assert.throws(() => assertReleaseAvailability(status, 'b'.repeat(40)), /não pertence/);
+  assert.throws(
+    () => assertReleaseAvailability({ ...status, paused: false }, owner),
+    /não pertence/,
+  );
+  assert.throws(
+    () => assertReleaseAvailability({ ...status, emergency: true }, owner),
+    /emergencial/,
+  );
+  assert.throws(
+    () =>
+      assertReleaseAvailability(
+        { ...status, active: [{ id: 'lease', operation: 'upload', startedAt: 0 }] },
+        owner,
+      ),
+    /drenagem/,
   );
 });

@@ -9,6 +9,7 @@ import { assessmentCycleIssue } from './activities/assessment-intervals.ts';
 import { evaluateCalendar as calendarResult } from './counting/evaluation.ts';
 import { periodsForOffer } from './organization/periods.ts';
 import { policyFor } from '../policies/registry.ts';
+import { observanceIssues } from './observances.ts';
 
 const plain = (value: string) =>
   String(value)
@@ -46,6 +47,9 @@ export function releaseReadiness(
           issues.push(`${labelFor(record.state, offer.id)} — ${policy.scope.readinessIssue}`);
     }
   }
+  issues.push(
+    ...observanceIssues(record.institutionalSnapshot, record.state).map((issue) => issue.message),
+  );
   const events = [...record.institutionalSnapshot, ...record.state.events];
   if (
     offers.some(

@@ -1,54 +1,23 @@
-import { modalityIds, termLabels } from '../calendar/config.ts';
+import { modalityIds, termLabels } from '../../calendar/config.ts';
 import type {
   AssessmentSettings,
   ActivityRequirement,
   AcademicTerm,
   CalendarOffer,
-} from '../calendar/model.ts';
-import { calendarOffers, offerFor, stageCycle as offerStageCycle } from '../calendar/offers.ts';
-import { operationalRequirements } from '../calendar/activities/operational-checklist.ts';
+} from '../../calendar/model.ts';
+import { calendarOffers, offerFor, stageCycle as offerStageCycle } from '../../calendar/offers.ts';
+import { operationalRequirements } from '../../calendar/activities/operational-checklist.ts';
 import {
   expandRequirements,
   type RequirementSection,
   type RequirementSpec,
   type Slot,
-} from '../calendar/activities/requirement-table.ts';
-import { termsFor } from '../calendar/organization/periods.ts';
-import { frozenCriteria, parecerItems } from '../reviews/parecer-items.ts';
-import type { Applicability, CalendarPolicy, RulesetChange } from './contract.ts';
+} from '../../calendar/activities/requirement-table.ts';
+import { termsFor } from '../../calendar/organization/periods.ts';
+import type { Applicability } from '../contract.ts';
 
-const citation = 'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026';
-// Append a version for every catalogue change; `ruleset-history.test.ts` guards the catalogue.
-const rulesetChanges: readonly RulesetChange[] = [
-  {
-    version: 'consup-292-2027-v1',
-    date: '2026-10-26',
-    effect: 'establishes',
-    source: citation,
-    summary: 'Requisitos estruturados para as ofertas técnicas e de graduação.',
-  },
-  {
-    version: 'consup-292-2027-v2',
-    date: '2026-10-29',
-    effect: 'relaxes',
-    criteria: ['XVI'],
-    source: 'Decisão da gestão do sistema após retorno de campus',
-    summary:
-      'Reunião com familiares, responsáveis e comunidade passa a ser exigida apenas no técnico integrado.',
-  },
-  {
-    version: 'consup-292-2027-v3',
-    date: '2026-10-29',
-    effect: 'editorial',
-    source: 'Decisão da gestão do sistema após retorno de campus',
-    summary:
-      'Atividades aplicadas por oferta; etapas de avaliação numeradas por ciclo da organização. Sem mudança de obrigações.',
-  },
-];
-const rulesetVersion = rulesetChanges.at(-1)!.version;
-const dayMinimums = { annual: 200, semester: 100 } as const;
 const excludedModalities = ['posgraduacao'] as const;
-const excluded = (modality: string) => excludedModalities.some((item) => item === modality);
+export const excluded = (modality: string) => excludedModalities.some((item) => item === modality);
 const supported = (state: AssessmentSettings) =>
   calendarOffers(state).filter((offer) => !excluded(offer.kind));
 const supportedKinds = (state: AssessmentSettings) => [
@@ -78,7 +47,7 @@ const perCycle =
  * Resolução 292 is scoped to technical and undergraduate offers. Every row requires all covered
  * offers unless it declares `modalities` or `optionalFor`; pending interpretation remains human.
  */
-const sections: RequirementSection[] = [
+export const sections: RequirementSection[] = [
   {
     repeat: 'stage',
     each: {
@@ -374,7 +343,7 @@ const declared = new Map<string, RequirementSpec>(
   sections.flatMap((section) => section.rows.map((row) => [row.id, row] as const)),
 );
 
-function requirements(state: AssessmentSettings): ActivityRequirement[] {
+export function requirements(state: AssessmentSettings): ActivityRequirement[] {
   const rows = expandRequirements(sections, state).map(({ row }) => ({
     modalities: supportedKinds(state),
     ...row,
@@ -396,7 +365,7 @@ function requirements(state: AssessmentSettings): ActivityRequirement[] {
     }));
   return [...rows, ...legacy];
 }
-function applicability(
+export function applicability(
   _state: AssessmentSettings,
   requirement: ActivityRequirement,
   offer: CalendarOffer,
@@ -414,122 +383,3 @@ function applicability(
   }
   return requirement.applicability ?? (requirement.required === false ? 'optional' : 'required');
 }
-const criteria = frozenCriteria([
-  ...parecerItems.map((criterion) => ({
-    ...criterion,
-    page: [
-      'XII',
-      'XIII',
-      'XIV',
-      'XV',
-      'XVI',
-      'XVII',
-      'XVIII',
-      'XIX',
-      'XX',
-      'XXI',
-      'XXII',
-      'XXIII',
-      'XXIV',
-      'XXV',
-    ].includes(criterion.id)
-      ? 4
-      : 3,
-    item:
-      criterion.id === 'annual'
-        ? 'Art. 4º'
-        : criterion.id === 'semester'
-          ? 'Art. 4º, § 1º'
-          : criterion.id === 'window'
-            ? 'Art. 8º'
-            : criterion.item.replace('Art. 7º', 'Art. 11'),
-    title:
-      criterion.id === 'window'
-        ? 'Janela do ano letivo: 01/02 a 17/12/2027; início até 15/02/2027'
-        : criterion.id === 'XII'
-          ? 'Plano de Ensino, PIT e RIT em cada semestre'
-          : criterion.id === 'XXIV'
-            ? 'Semana de Valorização de Mulheres que Fizeram História — segunda semana de março'
-            : criterion.id === 'XXV'
-              ? 'Semana da Ética e da Cidadania — primeira semana de maio'
-              : criterion.title.replaceAll('2026', '2027'),
-    pattern: criterion.id === 'XXV' ? 'etica|cidadania' : criterion.pattern,
-  })),
-  {
-    id: 'XXVI',
-    title:
-      'Semana Cultural Interescolar em outubro: obrigatória nos técnicos e facultativa na graduação',
-    page: 4,
-    item: 'Art. 11, XXVI',
-    pattern: 'cultural|interescolar',
-  },
-  {
-    id: 'admission-regular',
-    title:
-      'Editais do Processo Seletivo 2028 até 15/06/2027; eventual ajuste pela Proens documentado',
-    page: 3,
-    item: 'Art. 10',
-    pattern: 'processo seletivo',
-  },
-]);
-
-/** Resolução CONSUP/IFPR nº 292/2026: structured requirements for technical and undergraduate offers. */
-export const consup2922027Policy: CalendarPolicy = {
-  year: 2027,
-  configured: true,
-  rulesetPrefix: 'consup-292-2027-',
-  rulesetChanges,
-  catalogue: sections,
-  rulesetVersion: (state) =>
-    calendarOffers(state).some((offer) => !excluded(offer.kind))
-      ? rulesetVersion
-      : 'unconfigured:2027',
-  requirements,
-  applicability,
-  applicabilityNote: (requirement, offer) => requirement.optionalFor?.[offer.kind] || undefined,
-  window: (state) =>
-    calendarOffers(state).some(
-      (offer) => !excluded(offer.kind) && offer.scope?.status !== 'own-regulation',
-    )
-      ? {
-          start: '2027-02-01',
-          latestStart: '2027-02-15',
-          end: '2027-12-17',
-          basis: 'Arts. 4º e 8º da Resolução CONSUP/IFPR nº 292/2026',
-        }
-      : null,
-  countingMinimums: (_state, offer) => {
-    const configured = !excluded(offer.kind) && offer.scope?.status === 'covered';
-    return {
-      annual: configured ? { days: dayMinimums.annual, basis: `Art. 4º da ${citation}` } : null,
-      semester: configured
-        ? { days: dayMinimums.semester, basis: `Art. 4º, § 1º, da ${citation}` }
-        : null,
-    };
-  },
-  excludes: (offer) => excluded(offer.kind),
-  scope: {
-    norm: 'Resolução 292',
-    readinessIssue:
-      'Confirme o escopo da Resolução 292: EaD, qualificação e pós-graduação exigem calendário e norma próprios; a oferta não identifica sozinha essa aplicabilidade.',
-  },
-  explicitRecordOffers: true,
-  intakeRequirements: true,
-  windowInReadiness: true,
-  review: {
-    source: {
-      id: 'SEI 4422750',
-      year: 2027,
-      title: 'Resolução de diretrizes para o calendário acadêmico de 2027',
-      norm: citation,
-    },
-    criteria,
-    citation,
-    evidence: 'coverage',
-    dayMinimums,
-  },
-  notices: {
-    regularAdmission:
-      'Art. 10: publicação do processo seletivo de 2028 até 15/06/2027. O prazo não preenche a data de publicação. Cronograma ajustado pela Proens exige conferência institucional.',
-  },
-};

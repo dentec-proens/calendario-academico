@@ -103,7 +103,7 @@ test('a changed institutional date remains explicit when a campus adjustment kee
     const modulePath = '/test/fixtures/editor-client.ts';
     const module = (await import(modulePath)) as typeof EditorFixture;
     const original = module.record.institutionalEvents[0]!;
-    module.record.state.teacherDayDate = '2027-10-14';
+    module.record.state.observanceDates = { 'teacher-day': '2027-10-14' };
     module.record.institutionalSnapshot = [
       {
         ...original,

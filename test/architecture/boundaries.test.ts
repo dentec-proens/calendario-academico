@@ -139,7 +139,7 @@ test('year-specific behaviour lives only in the policies selected by the registr
         if (!inside(policies, target) || target === contract || target === selector) continue;
         // Policies compose neutral bases from the domain, never another policy.
         expect(
-          file === selector,
+          file === selector || (inside(policies, file) && dirname(file) === dirname(target)),
           `${label} imports ${relative(repository, target)}; use policyFor()`,
         ).toBe(true);
       }

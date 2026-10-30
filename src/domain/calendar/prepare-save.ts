@@ -1,6 +1,7 @@
 import type { CalendarActivity, CalendarContentV4 } from './model.ts';
 import { equalValues } from '../../shared/equal.ts';
 import { inheritedEvents } from '../institution/catalogue.ts';
+import { applyObservances, validateObservances } from './observances.ts';
 import { recalculateCalendar } from './commands/recalculate.ts';
 import { invalidCalendar } from './normalization/input.ts';
 import {
@@ -59,19 +60,16 @@ export function prepareOfferCalendarSave<E extends CalendarActivity & { active: 
     }
   }
   validateAddedOffers(previousIds, state);
+  const inherited = inheritedEvents(context.catalogue, previous.year, state.offers);
+  validateObservances(inherited, state);
   if (context.recalculate || !equalValues(context.storedContent, offerCalendarContent(state)))
-    state = normalizeOfferCalendar(
-      recalculateCalendar(
-        state,
-        inheritedEvents(context.catalogue, previous.year, state.offers, state),
-      ),
-    );
+    state = normalizeOfferCalendar(recalculateCalendar(state, applyObservances(inherited, state)));
   const content = offerCalendarContent(state);
   return {
     state,
     content,
     offerKinds: kinds(state),
-    institutionalSnapshot: inheritedEvents(context.catalogue, previous.year, state.offers, state),
+    institutionalSnapshot: applyObservances(inherited, state),
     unchanged: equalValues(context.storedContent, content),
   };
 }

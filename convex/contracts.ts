@@ -119,7 +119,6 @@ export const saveState = v.object({
   ...contentState.fields,
   year: v.number(),
   campus: v.string(),
-  teacherDayDate: v.optional(v.union(v.string(), v.null())),
 });
 const saveFields = {
   baseAcceptance: v.optional(v.string()),

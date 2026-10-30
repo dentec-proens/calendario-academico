@@ -5,7 +5,6 @@ export interface CatalogueEvent extends CalendarActivity {
   modalities: string[];
   category: string;
 }
-import { campusInstitutionalEvents } from './teacher-day.ts';
 
 // User-supplied campus list, with Foz added by explicit request. Admin may extend it.
 export const campusNames = [
@@ -70,33 +69,53 @@ export function initialCatalogue() {
     active: true,
   }));
   const fixed = [
-    ['02-08', 'Recesso acadêmico e administrativo', 'recesso'],
-    ['02-09', 'Carnaval — recesso acadêmico e administrativo', 'recesso'],
-    ['02-10', 'Quarta-feira de Cinzas — recesso acadêmico e administrativo', 'recesso'],
-    ['03-26', 'Paixão de Cristo — impedimento previsto no calendário IFPR', 'feriado'],
-    ['04-14', 'Dia Nacional da Luta pela Educação Inclusiva', 'comemorativo'],
-    ['05-27', 'Corpus Christi — recesso acadêmico e administrativo', 'recesso'],
-    ['05-28', 'Recesso acadêmico e administrativo', 'recesso'],
-    ['05-31', 'Prazo para informar cursos e vagas à PROENS', 'prazo'],
-    ['06-05', 'Dia Mundial do Meio Ambiente', 'comemorativo'],
-    ['06-09', 'Dia Nacional de Imunização', 'comemorativo'],
-    ['06-15', 'Prazo de referência dos editais do Processo Seletivo 2028', 'prazo'],
-    ['07-06', 'Lei Brasileira de Inclusão da Pessoa com Deficiência', 'comemorativo'],
-    ['08-06', 'Dia Nacional dos Profissionais da Educação', 'comemorativo'],
-    ['08-11', 'Dia do Estudante', 'comemorativo'],
-    ['09-06', 'Recesso acadêmico e administrativo', 'recesso'],
-    ['10-11', 'Recesso acadêmico e administrativo', 'recesso'],
-    ['10-15', 'Dia do Professor — feriado escolar', 'feriado'],
-    ['10-28', 'Dia do Servidor Público — recesso acadêmico e administrativo', 'recesso'],
-    ['10-29', 'Recesso acadêmico e administrativo', 'recesso'],
-    ['11-01', 'Recesso acadêmico e administrativo', 'recesso'],
-    ['12-24', 'Recesso acadêmico e administrativo', 'recesso'],
-    ['12-29', 'Criação do IFPR e da Rede Federal de EPT', 'criacao'],
-    ['12-31', 'Recesso acadêmico e administrativo', 'recesso'],
+    ['ifpr2027-0', '02-08', 'Recesso acadêmico e administrativo', 'recesso'],
+    ['ifpr2027-1', '02-09', 'Carnaval — recesso acadêmico e administrativo', 'recesso'],
+    [
+      'ifpr2027-2',
+      '02-10',
+      'Quarta-feira de Cinzas — recesso acadêmico e administrativo',
+      'recesso',
+    ],
+    [
+      'ifpr2027-3',
+      '03-26',
+      'Paixão de Cristo — impedimento previsto no calendário IFPR',
+      'feriado',
+    ],
+    ['ifpr2027-4', '04-14', 'Dia Nacional da Luta pela Educação Inclusiva', 'comemorativo'],
+    ['ifpr2027-5', '05-27', 'Corpus Christi — recesso acadêmico e administrativo', 'recesso'],
+    ['ifpr2027-6', '05-28', 'Recesso acadêmico e administrativo', 'recesso'],
+    ['ifpr2027-7', '05-31', 'Prazo para informar cursos e vagas à PROENS', 'prazo'],
+    ['ifpr2027-8', '06-05', 'Dia Mundial do Meio Ambiente', 'comemorativo'],
+    ['ifpr2027-9', '06-09', 'Dia Nacional de Imunização', 'comemorativo'],
+    ['ifpr2027-10', '06-15', 'Prazo de referência dos editais do Processo Seletivo 2028', 'prazo'],
+    [
+      'ifpr2027-11',
+      '07-06',
+      'Lei Brasileira de Inclusão da Pessoa com Deficiência',
+      'comemorativo',
+    ],
+    ['ifpr2027-12', '08-06', 'Dia Nacional dos Profissionais da Educação', 'comemorativo'],
+    ['ifpr2027-13', '08-11', 'Dia do Estudante', 'comemorativo'],
+    ['ifpr2027-14', '09-06', 'Recesso acadêmico e administrativo', 'recesso'],
+    ['ifpr2027-15', '10-11', 'Recesso acadêmico e administrativo', 'recesso'],
+    ['ifpr2027-16', '10-15', 'Dia do Professor — feriado escolar', 'feriado'],
+    [
+      'ifpr2027-17',
+      '10-28',
+      'Dia do Servidor Público — recesso acadêmico e administrativo',
+      'recesso',
+    ],
+    ['ifpr2027-18', '10-29', 'Recesso acadêmico e administrativo', 'recesso'],
+    ['ifpr2027-19', '11-01', 'Recesso acadêmico e administrativo', 'recesso'],
+    ['ifpr2027-20', '12-24', 'Recesso acadêmico e administrativo', 'recesso'],
+    ['ifpr2027-21', '12-29', 'Criação do IFPR e da Rede Federal de EPT', 'criacao'],
+    ['ifpr2027-22', '12-31', 'Recesso acadêmico e administrativo', 'recesso'],
   ];
-  fixed.forEach(([date, name, category], i) =>
+  fixed.forEach(([id, date, name, category]) =>
     events.push({
-      id: `ifpr2027-${i}`,
+      id,
       name,
       start: `2027-${date}`,
       end: `2027-${date}`,
@@ -176,28 +195,20 @@ export function inheritedEvents<
     active: boolean;
     modalities?: string[];
   },
->(
-  catalogue: { events: T[] },
-  year: number,
-  offers: CalendarOffer[],
-  state: { year: number; teacherDayDate?: string | null } = { year },
-) {
+>(catalogue: { events: T[] }, year: number, offers: CalendarOffer[]) {
   const applies = (event: T, kind: string) =>
     !event.modalities?.length || event.modalities.includes(kind);
-  return campusInstitutionalEvents(
-    catalogue.events
-      .filter(
-        (e) =>
-          e.active &&
-          Number(e.start.slice(0, 4)) === year &&
-          offers.some((offer) => applies(e, offer.kind)),
-      )
-      .map((e) => ({
-        ...e,
-        id: `inst:${e.id}`,
-        institutional: true,
-        offers: offers.filter((offer) => applies(e, offer.kind)).map((offer) => offer.id),
-      })),
-    state,
-  );
+  return catalogue.events
+    .filter(
+      (e) =>
+        e.active &&
+        Number(e.start.slice(0, 4)) === year &&
+        offers.some((offer) => applies(e, offer.kind)),
+    )
+    .map((e) => ({
+      ...e,
+      id: `inst:${e.id}`,
+      institutional: true,
+      offers: offers.filter((offer) => applies(e, offer.kind)).map((offer) => offer.id),
+    }));
 }

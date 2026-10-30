@@ -32,7 +32,7 @@ export interface CalendarContentV4 {
   weekConfirmed: boolean;
   periods: CalendarPeriodV4[];
   events: CalendarActivityV4[];
-  teacherDayDate?: string;
+  observanceDates?: Record<string, string>;
   teacherVacations?: VacationPeriods;
 }
 export type PeriodAssociation = PeriodAssociationV4;
@@ -123,6 +123,7 @@ export interface TeachingState extends AssessmentSettings {
   periods: CalendarPeriod[];
 }
 export interface ActivityState extends TeachingState {
+  observanceDates?: Record<string, string>;
   events: CalendarActivity[];
   campus?: string;
 }

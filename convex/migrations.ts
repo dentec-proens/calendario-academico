@@ -64,8 +64,36 @@ export const initializePresencialAndPurgeTrash20261030 = migrations.define({
   batchSize: 1,
   migrateOne: initializePresencialAndPurgeTrash,
 });
+/** Representation-only conversion: never recalculate or advance calendar/review versions. */
+export function migrateObservanceState<
+  T extends { teacherDayDate?: string; observanceDates?: Record<string, string> },
+>(state: T) {
+  if (state.teacherDayDate === undefined) return null;
+  const { teacherDayDate, ...rest } = state;
+  const existing = state.observanceDates?.['teacher-day'];
+  if (existing !== undefined && existing !== teacherDayDate)
+    throw new Error('Escolhas divergentes do Dia do Professor; confira os dados antes de migrar.');
+  return { ...rest, observanceDates: { ...state.observanceDates, 'teacher-day': teacherDayDate } };
+}
+export const migrateContentObservances20261030 = migrations.define({
+  table: 'calendarContents',
+  batchSize: 10,
+  migrateOne: (_ctx, row) => {
+    const state = migrateObservanceState(row.state);
+    return state ? { state } : undefined;
+  },
+});
+export const migrateSnapshotObservances20261030 = migrations.define({
+  table: 'calendarSnapshots',
+  batchSize: 10,
+  migrateOne: (_ctx, row) => {
+    const state = migrateObservanceState(row.state);
+    return state ? { state } : undefined;
+  },
+});
 const pending: MigrationFunctionReference[] = [
-  internal.migrations.initializePresencialAndPurgeTrash20261030,
+  internal.migrations.migrateContentObservances20261030,
+  internal.migrations.migrateSnapshotObservances20261030,
 ];
 
 export const start = internalMutation({

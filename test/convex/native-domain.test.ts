@@ -7,7 +7,7 @@ import { api } from '../../convex/_generated/api.js';
 import { ConvexError } from 'convex/values';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { initialCatalogue } from '../../src/domain/institution/catalogue.ts';
-import { teacherDayId } from '../../src/domain/institution/teacher-day.ts';
+import { teacherDayId } from '../fixtures/observances.ts';
 import { createNativeFixture as fixture } from '../helpers/native-database.ts';
 
 const createBody = (campusId = 'a') => ({
@@ -302,11 +302,14 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
   const path = '/api/calendars/' + record.id;
   await campus.write(
     path,
-    { ...saveBody(record), state: { ...record.state, teacherDayDate: '2027-10-13' } },
+    {
+      ...saveBody(record),
+      state: { ...record.state, observanceDates: { 'teacher-day': '2027-10-13' } },
+    },
     'PUT',
   );
   let loaded = await campus.read(path);
-  assert.equal(loaded.state.teacherDayDate, '2027-10-13');
+  assert.equal(loaded.state.observanceDates?.['teacher-day'], '2027-10-13');
   assert.equal(
     loaded.institutionalSnapshot.find((e: CalendarActivity) => e.id === teacherDayId)!.start,
     '2027-10-13',
@@ -315,7 +318,10 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
     await assert.rejects(
       campus.write(
         path,
-        { ...saveBody(loaded), state: { ...loaded.state, teacherDayDate } },
+        {
+          ...saveBody(loaded),
+          state: { ...loaded.state, observanceDates: { 'teacher-day': teacherDayDate } },
+        },
         'PUT',
       ),
     );
@@ -345,7 +351,7 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
     path,
     {
       ...saveBody(loaded),
-      state: { ...loaded.state, teacherDayDate: null },
+      state: { ...loaded.state, observanceDates: undefined },
     },
     'PUT',
   );
@@ -359,7 +365,7 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
     full.catalogue.events.find((e: CalendarActivity) => 'inst:' + e.id === teacherDayId)!.start,
     '2027-10-15',
   );
-  assert.equal(full.calendars[0].versions[1].state.teacherDayDate, '2027-10-13');
+  assert.equal(full.calendars[0].versions[1].state.observanceDates?.['teacher-day'], '2027-10-13');
 });
 
 test('native institutional publication requires admin confirmation and preserves earlier document snapshots', async () => {

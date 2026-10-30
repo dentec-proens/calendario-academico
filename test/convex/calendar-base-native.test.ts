@@ -233,7 +233,7 @@ test('document incorporation preserves dates, invalidates the evidenced review a
 });
 
 test('removing Teacher Day leaves its local adjustment inspectable and permits explicit resolution', async () => {
-  const { teacherDayId } = await import('../../src/domain/institution/teacher-day.ts');
+  const { teacherDayId } = await import('../fixtures/observances.ts');
   const fixture = await createNativeFixture({
     catalogue: {
       revision: 1,
@@ -266,7 +266,7 @@ test('removing Teacher Day leaves its local adjustment inspectable and permits e
     body: {
       version: 1,
       catalogueRevision: 1,
-      state: { ...created.state, teacherDayDate: '2027-10-14' },
+      state: { ...created.state, observanceDates: { 'teacher-day': '2027-10-14' } },
     },
   });
   await account.mutation(api.catalogue.saveCatalogue, {
@@ -295,9 +295,9 @@ test('removing Teacher Day leaves its local adjustment inspectable and permits e
       version: adjusted.version,
       catalogueRevision: record.currentCatalogueRevision,
       baseAcceptance: assessment.identity,
-      state: { ...record.state, teacherDayDate: null },
+      state: { ...record.state, observanceDates: undefined },
     },
   });
-  expect(saved.state.teacherDayDate).toBeUndefined();
+  expect(saved.state.observanceDates?.['teacher-day']).toBeUndefined();
   expect(saved.base.events).toEqual([]);
 });

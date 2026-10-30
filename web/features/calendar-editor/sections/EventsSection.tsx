@@ -1,6 +1,10 @@
 import type { KeyboardEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { teacherDayId } from '#src/domain/institution/teacher-day.ts';
+import {
+  calendarObservances,
+  observanceForEvent,
+  observanceIssues,
+} from '#src/domain/calendar/observances.ts';
 import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useActivitySearch } from '../events/activity-query.ts';
@@ -38,9 +42,13 @@ export default function EventsSection() {
     .sort((a, b) => a.start.localeCompare(b.start))
     .filter(
       (event) =>
-        event.id === teacherDayId ||
+        Boolean(observanceForEvent(state.year, event.id)) ||
         (!event.institutional && !(event.requirementId && activities.has(event.requirementId))),
     );
+  const unresolved = observanceIssues(record.institutionalEvents, state);
+  const orphaned = calendarObservances(record.institutionalEvents, state).filter(
+    (entry) => !entry.event,
+  );
   const counts: Record<Tab, string> = {
     atividades: toFill ? ` · ${toFill} a preencher` : '',
     eventos: campusEvents.length ? ` · ${campusEvents.length}` : '',
@@ -107,6 +115,24 @@ export default function EventsSection() {
           aria-labelledby="tab-eventos"
           hidden={tab !== 'eventos'}
         >
+          {unresolved.length > 0 && (
+            <Notice tone="warning" title="Confira as observâncias">
+              {unresolved.map((issue) => (
+                <p key={`${issue.key}:${issue.message}`}>{issue.message}</p>
+              ))}
+            </Notice>
+          )}
+          {orphaned.map((entry) => (
+            <p key={entry.key}>
+              <button
+                type="button"
+                id={`open-orphan-observance-${entry.key}`}
+                onClick={() => editor.viewObservance(entry.key)}
+              >
+                Resolver observância: {entry.label}
+              </button>
+            </p>
+          ))}
           <div id="event-creation">
             <button
               id="new-event"

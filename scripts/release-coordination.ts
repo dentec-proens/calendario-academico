@@ -73,3 +73,19 @@ export async function waitForMigrations(
     await sleep(2000);
   }
 }
+
+/** A planned window must stay owned and drained through both schema releases. */
+export function assertReleaseAvailability(status: ReleaseStatus, maintenanceCommit?: string) {
+  if (status.emergency)
+    throw Error('Há um bloqueio emergencial ativo. Reconcilie-o antes da release.');
+  if (maintenanceCommit !== undefined) {
+    if (
+      !/^[a-f0-9]{40}$/.test(maintenanceCommit) ||
+      !status.paused ||
+      status.commit !== maintenanceCommit
+    )
+      throw Error('A manutenção não pertence à janela explicitamente informada.');
+    if (status.active.length)
+      throw Error('Há operações em andamento. Aguarde a drenagem da manutenção.');
+  } else if (status.paused) throw Error('Há uma manutenção ativa. Reconcilie-a antes da release.');
+}

@@ -145,6 +145,27 @@ export default function RulesPage() {
         />
       ))}
 
+      {view.observances.length > 0 && (
+        <section className="rules-section" aria-labelledby="rules-observances-title">
+          <h3 id="rules-observances-title">Datas de observância</h3>
+          <p className="help">
+            O campus escolhe uma das datas permitidas para cada calendário que contém o evento.
+          </p>
+          <dl>
+            {view.observances.map((rule) => (
+              <div key={rule.key} data-observance-rule={rule.key}>
+                <dt>
+                  <strong>{rule.label}</strong>
+                </dt>
+                <dd>
+                  {rule.allowedDates.map(civilDate).join(', ')}
+                  <p className="help">{rule.basis}</p>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
       <h3>Mínimos de dias letivos</h3>
       <p className="help">Aplicados na contagem depois que o escopo da norma é confirmado.</p>
       <table className="rules-table rules-compact">

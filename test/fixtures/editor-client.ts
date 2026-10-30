@@ -3,7 +3,7 @@ import type { Bootstrap } from '../../web/shared/convex/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { api } from '../../convex/_generated/api.js';
 import { getFunctionName, type FunctionReference } from 'convex/server';
-import { teacherDayId } from '../../src/domain/institution/teacher-day.ts';
+import { teacherDayId } from './observances.ts';
 import { kinds } from '../../src/domain/calendar/offers.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 

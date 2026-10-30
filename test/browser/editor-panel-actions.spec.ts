@@ -18,14 +18,14 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
-    const opener = page.locator('#open-teacher-day');
+    const opener = page.locator('#open-observance-teacher-day');
     await opener.click();
-    const date = page.locator('#teacher-day-date');
-    await expect(page.locator('#teacher-day-help')).toHaveText(
-      'Escolha de 11/10/2027 a 17/10/2027. A alteração vale apenas para este calendário.',
+    const date = page.locator('#observance-date-teacher-day');
+    await expect(page.locator('#observance-help-teacher-day')).toHaveText(
+      'Escolha do campus na semana de 15 de outubro, de segunda-feira a domingo. A alteração vale apenas para este calendário.',
     );
-    await expect(page.locator('#discard-teacher-day')).toBeHidden();
-    await date.fill('2027-10-14');
+    await expect(page.locator('#discard-observance-teacher-day')).toBeHidden();
+    await date.selectOption('2027-10-14');
     await page.locator('#close-event-panel').click();
     await expect(opener).toBeFocused();
     await opener.click();
@@ -34,10 +34,10 @@ for (const width of [1440, 390]) {
     await expect(opener).toBeFocused();
     await opener.click();
     await expect(date).toHaveValue('2027-10-14');
-    await page.locator('#apply-teacher-day').click();
-    await expect(page.locator('#discard-teacher-day')).toBeHidden();
-    await date.fill('2027-10-13');
-    const discard = page.locator('#discard-teacher-day');
+    await page.locator('#apply-observance-teacher-day').click();
+    await expect(page.locator('#discard-observance-teacher-day')).toBeHidden();
+    await date.selectOption('2027-10-13');
+    const discard = page.locator('#discard-observance-teacher-day');
     await discard.focus();
     await expect
       .poll(() =>
@@ -53,9 +53,9 @@ for (const width of [1440, 390]) {
     await opener.click();
     await expect(date).toHaveValue('2027-10-14');
     await expect(page.locator('#unapplied-status')).toBeHidden();
-    await page.locator('#reset-teacher-day').click();
+    await page.locator('#reset-observance-teacher-day').click();
     await expect(date).toHaveValue('2027-10-15');
-    await expect(page.locator('#discard-teacher-day')).toBeHidden();
+    await expect(page.locator('#discard-observance-teacher-day')).toBeHidden();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
