@@ -701,7 +701,9 @@ export default function OfferOrganizationForm({
                         })
                     ) : (
                       <p className="help offer-term-empty">
-                        As etapas aparecem aqui depois de escolher a quantidade.
+                        {values.organization
+                          ? 'Para informar as datas das etapas, escolha a quantidade de etapas em Estrutura do ano.'
+                          : 'Para informar as datas das etapas, escolha a organização e a quantidade de etapas em Estrutura do ano.'}
                       </p>
                     )}
                   </fieldset>
