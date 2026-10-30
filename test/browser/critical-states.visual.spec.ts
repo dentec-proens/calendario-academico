@@ -1,4 +1,5 @@
 import { test, expect } from './test.ts';
+import { fullPageScreenshot } from './full-page-screenshot.ts';
 import type { Page } from '@playwright/test';
 import {
   addPeriod,
@@ -99,9 +100,8 @@ test('step 6 lists activities and opens one in the side panel', async ({ page, f
   await selectEditorSection(page, 'events');
   await expect(page.locator('#activity-checklist')).toBeVisible();
   await assertNoOverflow(page);
-  // Capture the page with its persistent count: scrolling a section taller than the
-  // mobile viewport for each element capture moves the sticky bar between captures.
-  await expect(page).toHaveScreenshot('activity-list.png', { fullPage: true });
+  // Keep the full list and persistent count, without moving the emulated viewport.
+  expect(await fullPageScreenshot(page)).toMatchSnapshot('activity-list.png');
   await page.locator('[data-activity-open="recognition-0"]').click();
   await expect(page.locator('#event-form-title')).toBeFocused();
   await expect(page).toHaveScreenshot('activity-panel.png');

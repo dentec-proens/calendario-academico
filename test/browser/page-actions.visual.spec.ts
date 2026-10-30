@@ -7,11 +7,15 @@ for (const [path, name] of [
   ['/contas', 'accounts'],
   ['/revisoes', 'reviews'],
 ]) {
-  test(`page action on ${name}`, async ({ page, fixtureServer }) => {
+  test(`page controls on ${name}`, async ({ page, fixtureServer }) => {
     await page.clock.setFixedTime(new Date('2026-10-23T12:00:00-03:00'));
     const origin = new URL(await fixtureServer('portal')).origin;
     await page.goto(origin + path);
-    if (path === '/calendarios/lixeira')
+    if (path === '/revisoes') {
+      await expect(page.getByRole('link', { name: 'Iniciar parecer' })).toBeVisible();
+      await expect(page.locator('.review-queue-state')).toHaveText('Parecer não iniciado');
+      await expect(page.locator('.page-action')).toHaveCount(0);
+    } else if (path === '/calendarios/lixeira')
       await expect(page.locator('#calendar-trash-list')).toBeVisible();
     else await expect(page.locator('.page-action')).toBeVisible();
     await expect(page).toHaveScreenshot(`${name}.png`);

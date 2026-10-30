@@ -14,7 +14,6 @@ for (const width of [1440, 390, 320]) {
       '/campi',
       '/contas',
       '/logs',
-      '/revisoes',
     ]) {
       await page.goto(origin + path);
       const action = page.locator('.page-action');
@@ -55,5 +54,40 @@ for (const width of [1440, 390, 320]) {
         true,
       );
     }
+  });
+  test(`review row actions remain keyboard accessible and unobstructed at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const origin = new URL(await fixtureServer('portal')).origin;
+    await page.goto(origin + '/revisoes?multiple-reviews=1');
+    const rows = page.locator('#review-calendars > li');
+    await expect(rows).toHaveCount(2);
+    await expect(page.locator('.page-action')).toHaveCount(0);
+    const first = rows.nth(0).getByRole('link', { name: 'Iniciar parecer' });
+    const second = rows.nth(1).getByRole('link', { name: 'Iniciar parecer' });
+    await expect(first).toHaveAttribute('href', '/revisoes/calendar-a');
+    await expect(second).toHaveAttribute('href', '/revisoes/calendar-b');
+    await page.locator('#panel-title').focus();
+    await page.keyboard.press('Tab');
+    await expect(first).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(second).toBeFocused();
+    await expect(second).toBeInViewport();
+    expect(
+      await second.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return element.contains(
+          document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2),
+        );
+      }),
+    ).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(origin + '/revisoes/calendar-b');
+    await expect(page.locator('#review-content')).toContainText('Calendário calendar-b');
   });
 }
