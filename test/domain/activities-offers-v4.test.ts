@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
@@ -93,7 +94,7 @@ test('escopo e configuração de ingresso são independentes em ofertas do mesmo
 test('nova edição exige o próprio semestre sem impedir salvar outros dados migrados', () => {
   const state = calendarOffersV4Fixture();
   const original = state.events.find((event) => event.requirementId === 'stage-3:graduacao-2')!;
-  const migrated = { ...original, start: '2027-02-01', end: '2027-03-01' };
+  const migrated = { ...original, start: civilDate('2027-02-01'), end: civilDate('2027-03-01') };
   expect(assessmentCycleIssue(state, migrated)).toContain('2º semestre');
   expect(() => validateActivityRecord(state, migrated)).not.toThrow();
   expect(assessmentCycleIssue(state, original)).toBeUndefined();
@@ -113,7 +114,9 @@ test('nova edição exige o próprio semestre sem impedir salvar outros dados mi
 test('sequência de novas etapas é conferida dentro do ciclo da mesma oferta', () => {
   const state = calendarOffersV4Fixture();
   const second = state.events.find((event) => event.requirementId === 'stage-2:graduacao-2')!;
-  expect(assessmentCycleIssue(state, { ...second, start: '2027-04-16' })).toContain('sequência');
+  expect(assessmentCycleIssue(state, { ...second, start: civilDate('2027-04-16') })).toContain(
+    'sequência',
+  );
   const first = state.events.find((event) => event.requirementId === 'stage-1:graduacao-2')!;
   expect(
     assessmentCycleIssue(

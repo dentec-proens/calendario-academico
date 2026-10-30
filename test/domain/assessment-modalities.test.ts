@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
@@ -14,8 +15,8 @@ const state: ActivityState = {
   periods: [
     {
       id: 'p',
-      start: '2027-03-01',
-      end: '2027-03-26',
+      start: civilDate('2027-03-01'),
+      end: civilDate('2027-03-26'),
       association: {
         status: 'defined' as const,
         offers: ['integrado', 'graduacao'],
@@ -30,8 +31,8 @@ const state: ActivityState = {
       requirementId: `stage-${index + 1}:${modality}`,
       offers: [modality],
       kind: 'note',
-      start: index ? '2027-03-15' : '2027-03-01',
-      end: index ? '2027-03-26' : '2027-03-12',
+      start: civilDate(index ? '2027-03-15' : '2027-03-01'),
+      end: civilDate(index ? '2027-03-26' : '2027-03-12'),
     })),
   ),
   offers: [
@@ -93,16 +94,16 @@ test('holidays and inclusions update per-offer counts without moving any assessm
       id: 'h',
       name: 'Feriado',
       kind: 'exclude',
-      start: '2027-03-05',
-      end: '2027-03-05',
+      start: civilDate('2027-03-05'),
+      end: civilDate('2027-03-05'),
       offers: ['integrado'],
     },
     {
       id: 'sat',
       name: 'Sábado',
       kind: 'include',
-      start: '2027-03-06',
-      end: '2027-03-06',
+      start: civilDate('2027-03-06'),
+      end: civilDate('2027-03-06'),
       offers: ['integrado'],
     },
   ];

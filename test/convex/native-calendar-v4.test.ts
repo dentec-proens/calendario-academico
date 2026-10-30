@@ -1,3 +1,5 @@
+import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { api } from '../../convex/_generated/api.js';
 import type { DomainState } from '../../convex/validators.ts';
@@ -12,18 +14,20 @@ import { teacherDayId } from '../fixtures/observances.ts';
 async function setup() {
   const fixture = await createNativeFixture();
   const actor = fixture.asClient('campus-a');
-  const record = await actor.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      offers: [
-        { kind: 'integrado', organization: 'a-classificar' },
-        { kind: 'graduacao', organization: 'a-classificar' },
-      ],
-      courses: 'Ofertas sintéticas',
-      purpose: 'test',
-    },
-  });
+  const record = await actor
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        offers: [
+          { kind: 'integrado', organization: 'a-classificar' },
+          { kind: 'graduacao', organization: 'a-classificar' },
+        ],
+        courses: 'Ofertas sintéticas',
+        purpose: 'test',
+      },
+    })
+    .then(calendarRecordDates);
   return { ...fixture, actor, record };
 }
 
@@ -31,18 +35,20 @@ test.each(['anual', 'semestral', 'a-classificar'] as const)(
   'creation preserves organization %s and leaves later editor decisions undefined',
   async (organization) => {
     const { asClient, ids } = await createNativeFixture();
-    const record = await asClient('campus-a').mutation(api.calendars.createCalendar, {
-      body: {
-        campusId: ids.campuses.a,
-        year: 2027,
-        offers: [
-          { kind: 'integrado', organization },
-          { kind: 'graduacao', organization },
-        ],
-        courses: 'Sintético',
-        purpose: 'test',
-      },
-    });
+    const record = await asClient('campus-a')
+      .mutation(api.calendars.createCalendar, {
+        body: {
+          campusId: ids.campuses.a,
+          year: 2027,
+          offers: [
+            { kind: 'integrado', organization },
+            { kind: 'graduacao', organization },
+          ],
+          courses: 'Sintético',
+          purpose: 'test',
+        },
+      })
+      .then(calendarRecordDates);
     expect(record.state.offers.map((offer) => offer.organization)).toEqual([
       organization,
       organization,
@@ -56,7 +62,11 @@ test.each(['anual', 'semestral', 'a-classificar'] as const)(
     for (const field of ['offer', 'modalities', 'regime', 'organizationByModality', 'conversion'])
       expect(record.state).not.toHaveProperty(field);
     expect(
-      (await asClient('campus-a').query(api.calendars.calendar, { id: record.id })).state,
+      (
+        await asClient('campus-a')
+          .query(api.calendars.calendar, { id: record.id })
+          .then(calendarRecordDates)
+      ).state,
     ).toEqual(record.state);
   },
 );
@@ -77,22 +87,22 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
       {
         id: 'integrated-year',
         name: 'Ciclo anual',
-        start: '2027-02-01',
-        end: '2027-12-17',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
       {
         id: 'undergraduate-first',
         name: 'Primeiro semestre',
-        start: '2027-02-01',
-        end: '2027-06-30',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-06-30'),
         association: { status: 'defined', offers: ['graduacao'], term: 'first' },
       },
       {
         id: 'undergraduate-second',
         name: 'Segundo semestre',
-        start: '2027-08-02',
-        end: '2027-12-17',
+        start: civilDate('2027-08-02'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined', offers: ['graduacao'], term: 'second' },
       },
     ],
@@ -100,8 +110,8 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
       {
         id: 'previous-publication',
         name: 'Publicação sintética de 2026',
-        start: '2026-12-10',
-        end: '2026-12-10',
+        start: civilDate('2026-12-10'),
+        end: civilDate('2026-12-10'),
         kind: 'note',
         publicationStatus: 'published',
         admission: { type: 'transfer', year: 2027, term: 'first', periodId: 'undergraduate-first' },
@@ -110,25 +120,29 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
       {
         id: 'future-admission',
         name: 'Previsão sintética para ingresso 2028',
-        start: '2027-12-01',
-        end: '2027-12-01',
+        start: civilDate('2027-12-01'),
+        end: civilDate('2027-12-01'),
         kind: 'note',
         recordType: 'event',
         publicationStatus: 'planned',
         admission: { type: 'regular', year: 2028, term: 'annual' },
-        deadlineAdjustment: { date: '2027-12-15', reviewed: false },
+        deadlineAdjustment: { date: civilDate('2027-12-15'), reviewed: false },
         offers: ['integrado'],
       },
     ],
   };
-  const saved = await actor.mutation(api.calendars.saveCalendar, {
-    id: record.id,
-    body: { version: record.version, catalogueRevision: record.catalogueRevision, state },
-  });
-  const loaded = await actor.query(api.calendars.calendar, { id: record.id });
+  const saved = await actor
+    .mutation(api.calendars.saveCalendar, {
+      id: record.id,
+      body: { version: record.version, catalogueRevision: record.catalogueRevision, state },
+    })
+    .then(calendarSaveDates);
+  const loaded = await actor
+    .query(api.calendars.calendar, { id: record.id })
+    .then(calendarRecordDates);
   expect(loaded.state.events).toEqual(saved.state.events);
   expect(loaded.state.events[0]).toMatchObject({
-    start: '2026-12-10',
+    start: civilDate('2026-12-10'),
     publicationStatus: 'published',
     admission: { year: 2027, periodId: 'undergraduate-first' },
   });
@@ -148,18 +162,20 @@ test('a save cannot silently adopt another ruleset or change history', async () 
   const { actor, client, record } = await setup();
   for (const rulesetVersion of [undefined, 'forged'])
     await expect(
-      actor.mutation(api.calendars.saveCalendar, {
-        id: record.id,
-        body: {
-          version: record.version,
-          catalogueRevision: record.catalogueRevision,
-          state: { ...record.state, rulesetVersion },
-        },
-      }),
+      actor
+        .mutation(api.calendars.saveCalendar, {
+          id: record.id,
+          body: {
+            version: record.version,
+            catalogueRevision: record.catalogueRevision,
+            state: { ...record.state, rulesetVersion },
+          },
+        })
+        .then(calendarSaveDates),
     ).rejects.toThrow('conjunto de regras');
-  expect((await actor.query(api.calendars.calendar, { id: record.id })).state).toEqual(
-    record.state,
-  );
+  expect(
+    (await actor.query(api.calendars.calendar, { id: record.id }).then(calendarRecordDates)).state,
+  ).toEqual(record.state);
   expect(await client.run((ctx) => ctx.db.query('calendarVersions').take(10))).toEqual([]);
 });
 
@@ -168,8 +184,8 @@ test('direct backend writes retain temporal and offer-scope validation', async (
   const event = {
     id: 'forged-history',
     name: 'Fato sintético anterior',
-    start: '2026-12-01',
-    end: '2026-12-01',
+    start: civilDate('2026-12-01'),
+    end: civilDate('2026-12-01'),
     kind: 'note' as const,
     offers: ['integrado'],
   };
@@ -185,18 +201,21 @@ test('direct backend writes retain temporal and offer-scope validation', async (
     },
   ])
     await expect(
-      actor.mutation(api.calendars.saveCalendar, {
-        id: record.id,
-        body: {
-          version: record.version,
-          catalogueRevision: record.catalogueRevision,
-          state: { ...record.state, events: [forged] },
-        },
-      }),
+      actor
+        .mutation(api.calendars.saveCalendar, {
+          id: record.id,
+          body: {
+            version: record.version,
+            catalogueRevision: record.catalogueRevision,
+            state: { ...record.state, events: [forged] },
+          },
+        })
+        .then(calendarSaveDates),
     ).rejects.toThrow();
-  expect((await actor.query(api.calendars.calendar, { id: record.id })).version).toBe(
-    record.version,
-  );
+  expect(
+    (await actor.query(api.calendars.calendar, { id: record.id }).then(calendarRecordDates))
+      .version,
+  ).toBe(record.version);
 });
 
 test('a direct inclusion must fit every explicitly covered offer period', async () => {
@@ -211,15 +230,15 @@ test('a direct inclusion must fit every explicitly covered offer period', async 
       {
         id: 'integrated',
         name: 'Ciclo anual',
-        start: '2027-02-01',
-        end: '2027-12-17',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
       {
         id: 'undergraduate-first',
         name: 'Primeiro semestre',
-        start: '2027-08-02',
-        end: '2027-08-31',
+        start: civilDate('2027-08-02'),
+        end: civilDate('2027-08-31'),
         association: { status: 'defined', offers: ['graduacao'], term: 'first' },
       },
     ],
@@ -227,29 +246,33 @@ test('a direct inclusion must fit every explicitly covered offer period', async 
   const event = {
     id: 'scoped-inclusion',
     name: 'Inclusão sintética',
-    start: '2027-03-01',
-    end: '2027-03-01',
+    start: civilDate('2027-03-01'),
+    end: civilDate('2027-03-01'),
     kind: 'include' as const,
   };
   for (const offers of [['graduacao'], ['integrado', 'graduacao']])
     await expect(
-      actor.mutation(api.calendars.saveCalendar, {
-        id: record.id,
-        body: {
-          version: record.version,
-          catalogueRevision: record.catalogueRevision,
-          state: { ...state, events: [{ ...event, offers }] },
-        },
-      }),
+      actor
+        .mutation(api.calendars.saveCalendar, {
+          id: record.id,
+          body: {
+            version: record.version,
+            catalogueRevision: record.catalogueRevision,
+            state: { ...state, events: [{ ...event, offers }] },
+          },
+        })
+        .then(calendarSaveDates),
     ).rejects.toThrow('períodos cadastrados da oferta');
-  const saved = await actor.mutation(api.calendars.saveCalendar, {
-    id: record.id,
-    body: {
-      version: record.version,
-      catalogueRevision: record.catalogueRevision,
-      state: { ...state, events: [{ ...event, offers: ['integrado'] }] },
-    },
-  });
+  const saved = await actor
+    .mutation(api.calendars.saveCalendar, {
+      id: record.id,
+      body: {
+        version: record.version,
+        catalogueRevision: record.catalogueRevision,
+        state: { ...state, events: [{ ...event, offers: ['integrado'] }] },
+      },
+    })
+    .then(calendarSaveDates);
   expect(saved.state.events[0].offers).toEqual(['integrado']);
 });
 
@@ -354,8 +377,8 @@ test.each(['annual', 'semester', 'trimester', 'three'] as const)(
             {
               id: 'undergraduate',
               name: 'Evento institucional da graduação',
-              start: '2027-05-04',
-              end: '2027-05-04',
+              start: civilDate('2027-05-04'),
+              end: civilDate('2027-05-04'),
               kind: 'note',
               category: 'evento',
               evidence: 'Fonte sintética',
@@ -383,24 +406,30 @@ test.each(['annual', 'semester', 'trimester', 'three'] as const)(
       );
       reference.events = reference.events.filter((event) => !event.offers?.includes('integrado'));
     }
-    const created = await actor.mutation(api.calendars.createCalendar, {
-      body: {
-        campusId: fixture.ids.campuses.a,
-        year: 2027,
-        courses: 'Graduações sintéticas',
-        offers: reference.offers.map(({ kind, organization, label }) => ({
-          kind,
-          organization,
-          label,
-        })),
-      },
-    });
+    const created = await actor
+      .mutation(api.calendars.createCalendar, {
+        body: {
+          campusId: fixture.ids.campuses.a,
+          year: 2027,
+          courses: 'Graduações sintéticas',
+          offers: reference.offers.map(({ kind, organization, label }) => ({
+            kind,
+            organization,
+            label,
+          })),
+        },
+      })
+      .then(calendarRecordDates);
     const state = { ...reference, campus: created.state.campus } as DomainState;
-    const saved = await actor.mutation(api.calendars.saveCalendar, {
-      id: created.id,
-      body: { version: created.version, catalogueRevision: created.catalogueRevision, state },
-    });
-    const loaded = await actor.query(api.calendars.calendar, { id: created.id });
+    const saved = await actor
+      .mutation(api.calendars.saveCalendar, {
+        id: created.id,
+        body: { version: created.version, catalogueRevision: created.catalogueRevision, state },
+      })
+      .then(calendarSaveDates);
+    const loaded = await actor
+      .query(api.calendars.calendar, { id: created.id })
+      .then(calendarRecordDates);
     expect(loaded.state).toEqual(saved.state);
     expect(loaded.state.offers).toEqual(reference.offers);
     expect(loaded.state.periods).toEqual(reference.periods);
@@ -425,35 +454,41 @@ test('backend rejects a newly moved stage in the wrong semester but preserves un
   const fixture = await createNativeFixture(),
     actor = fixture.asClient('campus-a');
   const reference = oneOffer('graduacao-2', 'semestral', 2);
-  const record = await actor.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      courses: 'Sintético',
-      offers: [{ kind: 'graduacao', organization: 'semestral' }],
-    },
-  });
-  const saved = await actor.mutation(api.calendars.saveCalendar, {
-    id: record.id,
-    body: {
-      version: record.version,
-      catalogueRevision: record.catalogueRevision,
-      state: { ...reference, campus: record.state.campus } as DomainState,
-    },
-  });
+  const record = await actor
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        courses: 'Sintético',
+        offers: [{ kind: 'graduacao', organization: 'semestral' }],
+      },
+    })
+    .then(calendarRecordDates);
+  const saved = await actor
+    .mutation(api.calendars.saveCalendar, {
+      id: record.id,
+      body: {
+        version: record.version,
+        catalogueRevision: record.catalogueRevision,
+        state: { ...reference, campus: record.state.campus } as DomainState,
+      },
+    })
+    .then(calendarSaveDates);
   const bad = {
     ...saved.state,
     events: saved.state.events.map((event) =>
       event.requirementId === 'stage-3:graduacao'
-        ? { ...event, start: '2027-02-01', end: '2027-04-16' }
+        ? { ...event, start: civilDate('2027-02-01'), end: civilDate('2027-04-16') }
         : event,
     ),
   };
   await expect(
-    actor.mutation(api.calendars.saveCalendar, {
-      id: record.id,
-      body: { version: saved.version, catalogueRevision: record.catalogueRevision, state: bad },
-    }),
+    actor
+      .mutation(api.calendars.saveCalendar, {
+        id: record.id,
+        body: { version: saved.version, catalogueRevision: record.catalogueRevision, state: bad },
+      })
+      .then(calendarSaveDates),
   ).rejects.toThrow('2º semestre');
   await fixture.client.run(async (ctx) => {
     const content = (await ctx.db
@@ -463,23 +498,27 @@ test('backend rejects a newly moved stage in the wrong semester but preserves un
     const { year: _year, campus: _campus, ...state } = bad;
     await ctx.db.patch(content._id, { state });
   });
-  const migrated = await actor.query(api.calendars.calendar, { id: record.id });
+  const migrated = await actor
+    .query(api.calendars.calendar, { id: record.id })
+    .then(calendarRecordDates);
   const unrelated = {
     id: 'note',
     name: 'Ajuste em outra parte',
-    start: '2027-06-01',
-    end: '2027-06-01',
+    start: civilDate('2027-06-01'),
+    end: civilDate('2027-06-01'),
     kind: 'note' as const,
     offers: ['graduacao'],
   };
-  const kept = await actor.mutation(api.calendars.saveCalendar, {
-    id: record.id,
-    body: {
-      version: migrated.version,
-      catalogueRevision: migrated.catalogueRevision,
-      state: { ...migrated.state, events: [...migrated.state.events, unrelated] },
-    },
-  });
+  const kept = await actor
+    .mutation(api.calendars.saveCalendar, {
+      id: record.id,
+      body: {
+        version: migrated.version,
+        catalogueRevision: migrated.catalogueRevision,
+        state: { ...migrated.state, events: [...migrated.state.events, unrelated] },
+      },
+    })
+    .then(calendarSaveDates);
   expect(kept.state.events.find((event) => event.requirementId === 'stage-3:graduacao')).toEqual(
     bad.events.find((event) => event.requirementId === 'stage-3:graduacao'),
   );
@@ -507,19 +546,23 @@ test('creation enforces labels and the twelve-offer limit before creating any re
     repeated,
   ])
     await expect(
-      actor.mutation(api.calendars.createCalendar, {
-        body: { campusId: fixture.ids.campuses.a, year: 2027, courses: 'Sintético', offers },
-      }),
+      actor
+        .mutation(api.calendars.createCalendar, {
+          body: { campusId: fixture.ids.campuses.a, year: 2027, courses: 'Sintético', offers },
+        })
+        .then(calendarRecordDates),
     ).rejects.toThrow();
   expect(await fixture.client.run((ctx) => ctx.db.query('calendars').take(20))).toHaveLength(0);
-  const created = await actor.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      courses: 'Sintético',
-      offers: repeated.slice(0, 12),
-    },
-  });
+  const created = await actor
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        courses: 'Sintético',
+        offers: repeated.slice(0, 12),
+      },
+    })
+    .then(calendarRecordDates);
   expect(created.state.offers.map((offer) => offer.id)).toEqual([
     'graduacao',
     ...Array.from({ length: 11 }, (_, index) => `graduacao-${index + 2}`),
@@ -532,31 +575,37 @@ test('removing the observance choice restores the institutional date', async () 
       catalogue: { ...catalogue, events: catalogue.events.map((event) => ({ ...event })) },
     }),
     actor = fixture.asClient('campus-a');
-  const record = await actor.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      courses: 'Sintético',
-      offers: [{ kind: 'integrado', organization: 'anual' }],
-    },
-  });
-  const saved = await actor.mutation(api.calendars.saveCalendar, {
-    id: record.id,
-    body: {
-      version: record.version,
-      catalogueRevision: record.catalogueRevision,
-      state: { ...record.state, observanceDates: { 'teacher-day': '2027-10-16' } },
-    },
-  });
+  const record = await actor
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        courses: 'Sintético',
+        offers: [{ kind: 'integrado', organization: 'anual' }],
+      },
+    })
+    .then(calendarRecordDates);
+  const saved = await actor
+    .mutation(api.calendars.saveCalendar, {
+      id: record.id,
+      body: {
+        version: record.version,
+        catalogueRevision: record.catalogueRevision,
+        state: { ...record.state, observanceDates: { 'teacher-day': civilDate('2027-10-16') } },
+      },
+    })
+    .then(calendarSaveDates);
   expect(saved.base.events.find((event) => event.id === teacherDayId)?.start).toBe('2027-10-16');
-  const cleared = await actor.mutation(api.calendars.saveCalendar, {
-    id: record.id,
-    body: {
-      version: saved.version,
-      catalogueRevision: record.catalogueRevision,
-      state: { ...saved.state, observanceDates: undefined },
-    },
-  });
+  const cleared = await actor
+    .mutation(api.calendars.saveCalendar, {
+      id: record.id,
+      body: {
+        version: saved.version,
+        catalogueRevision: record.catalogueRevision,
+        state: { ...saved.state, observanceDates: undefined },
+      },
+    })
+    .then(calendarSaveDates);
   expect(cleared.state).not.toHaveProperty('observanceDates');
   expect(cleared.base.events.find((event) => event.id === teacherDayId)?.start).toBe('2027-10-15');
   const content = await fixture.client.run((ctx) =>
@@ -566,4 +615,77 @@ test('removing the observance choice restores the institutional date', async () 
       .unique(),
   );
   expect(content?.state).not.toHaveProperty('observanceDates');
+});
+
+test('saving an impossible civil date returns the public validation error and leaves the record intact', async () => {
+  const { actor, record } = await setup();
+  const proposed = {
+    ...record.state,
+    periods: [
+      {
+        id: 'invalid-date',
+        name: 'Período inválido',
+        start: '2027-02-30',
+        end: '2027-03-01',
+        association: { status: 'a-classificar' as const },
+      },
+    ],
+  };
+  await expect(
+    actor.mutation(api.calendars.saveCalendar, {
+      id: record.id,
+      body: {
+        version: record.version,
+        catalogueRevision: record.catalogueRevision,
+        state: proposed,
+      },
+    }),
+  ).rejects.toThrow('Data civil do calendário inválida.');
+  const unchanged = await actor.query(api.calendars.calendar, { id: record.id });
+  expect(unchanged.version).toBe(record.version);
+  expect(unchanged.state).toEqual(record.state);
+});
+
+test('a calendar saved with empty optional vacation fields still opens, reviews and saves', async () => {
+  const { actor, record, client, asClient } = await setup();
+  const vacations = {
+    firstStart: '2027-01-02',
+    firstEnd: '2027-01-31',
+    secondStart: '',
+    secondEnd: '',
+    thirdStart: '',
+    thirdEnd: '',
+  };
+  await client.run(async (ctx) => {
+    const content = await ctx.db
+      .query('calendarContents')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
+      .unique();
+    if (!content) throw new Error('Conteúdo esperado.');
+    await ctx.db.patch(content._id, { state: { ...content.state, teacherVacations: vacations } });
+  });
+  const loaded = await actor.query(api.calendars.calendar, { id: record.id });
+  expect(loaded.state.teacherVacations).toEqual({
+    firstStart: '2027-01-02',
+    firstEnd: '2027-01-31',
+  });
+  const reviewer = await asClient('admin').query(api.reviews.review, { id: record.id });
+  expect(reviewer.calendar.version).toBe(record.version);
+  const saved = await actor.mutation(api.calendars.saveCalendar, {
+    id: record.id,
+    body: {
+      version: loaded.version,
+      catalogueRevision: loaded.catalogueRevision,
+      state: { ...loaded.state, teacherVacations: vacations },
+    },
+  });
+  const expected = { firstStart: '2027-01-02', firstEnd: '2027-01-31' };
+  expect(saved.state.teacherVacations).toEqual(expected);
+  const stored = await client.run((ctx) =>
+    ctx.db
+      .query('calendarContents')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
+      .unique(),
+  );
+  expect(stored?.state.teacherVacations).toEqual(expected);
 });

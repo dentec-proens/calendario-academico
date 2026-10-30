@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import type {
   AcademicTerm,
   CalendarActivityV4,
@@ -17,8 +18,8 @@ const period = (
 ): CalendarPeriodV4 => ({
   id,
   name,
-  start,
-  end,
+  start: civilDate(start),
+  end: civilDate(end),
   association: { status: 'defined', offers: [offer], term },
 });
 
@@ -33,8 +34,8 @@ const stages = (
     name: `${perSemester ? (index % perSemester) + 1 : index + 1}ª etapa de avaliação${perSemester ? ` — ${Math.floor(index / perSemester) + 1}º semestre` : ''} — ${label}`,
     requirementId: `stage-${index + 1}:${offer}`,
     offers: [offer],
-    start,
-    end,
+    start: civilDate(start),
+    end: civilDate(end),
     kind: 'note',
     category: 'limite',
     recordType: 'event',

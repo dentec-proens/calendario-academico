@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { configureOfferMetadata } from '../../src/domain/calendar/commands/organization.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
@@ -47,7 +48,7 @@ test('remove metadados opcionais vazios sem exigir reclassificação de datas mi
   const state = calendarOffersV4Fixture();
   state.offers[0].label = 'Técnico em Informática';
   state.offers[0].organizationBasis = 'Fonte antiga';
-  state.events[0].start = '2027-01-01';
+  state.events[0].start = civilDate('2027-01-01');
   const next = configureOfferMetadata(state, 'integrado', {
     label: '  ',
     organizationBasis: '',

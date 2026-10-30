@@ -5,7 +5,7 @@ import type {
   CalendarActivity,
   CalendarPeriod,
 } from '../model.ts';
-import { parseDate } from '../counting/core.ts';
+import { parseDate } from '../../civil-date.ts';
 import { offerFor, offerIds } from '../offers.ts';
 import { isStageRequirementId } from './metadata.ts';
 import { assessmentIntervalIssue } from './assessment-intervals.ts';

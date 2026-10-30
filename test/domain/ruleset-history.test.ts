@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { sha256 } from '@noble/hashes/sha2.js';
@@ -225,7 +226,7 @@ test('only establishing or tightening versions bind reviews and base identities'
   const change = (version: string, effect: RulesetChange['effect']): RulesetChange => ({
     version,
     effect,
-    date: '2026-10-29',
+    date: civilDate('2026-10-29'),
     source: 'Fonte sintética',
     summary: 'Mudança sintética',
   });

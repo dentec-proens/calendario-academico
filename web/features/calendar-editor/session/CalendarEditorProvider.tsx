@@ -1,3 +1,4 @@
+import { calendarRecordDates } from '../../../shared/convex/calendar-dates.ts';
 import { LoadingIndicator } from '../../../components/ui/LoadingIndicator.tsx';
 import {
   createContext,
@@ -234,9 +235,13 @@ export function CalendarEditorProvider({
   children,
 }: PropsWithChildren<{ calendarId: string }>) {
   const { user, editorRecovery } = useAppSession();
-  const fresh = useQuery(
+  const wireRecord = useQuery(
     functions.calendars.calendar,
     editorRecovery ? 'skip' : { id: calendarId as Id<'calendars'> },
+  );
+  const fresh = useMemo(
+    () => (wireRecord ? calendarRecordDates(wireRecord) : wireRecord),
+    [wireRecord],
   );
   const [retained, setRetained] = useState(fresh);
   if (fresh && retained !== fresh) setRetained(fresh);

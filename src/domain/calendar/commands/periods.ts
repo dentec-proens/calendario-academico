@@ -1,3 +1,4 @@
+import { civilDate } from '../../civil-date.ts';
 import type {
   ActivityState,
   CalendarActivity,
@@ -151,7 +152,7 @@ export function applyPeriod<S extends ActivityState>(
     : state;
   const end = values.days
     ? durationEnd(values.start, values.days, scopedState, [...institutional, ...state.events])
-    : values.end;
+    : civilDate(values.end);
   validateInterval(state, values.start, end);
   if (
     state.periods.some(
@@ -159,7 +160,7 @@ export function applyPeriod<S extends ActivityState>(
         period.id !== values.id &&
         samePeriodScope(period, {
           id: values.id ?? 'new',
-          start: values.start,
+          start: civilDate(values.start),
           end,
           association: values.association ?? { status: 'a-classificar' },
         }) &&
@@ -177,7 +178,7 @@ export function applyPeriod<S extends ActivityState>(
       values.association?.status === 'defined'
         ? { status: 'defined', offers: associated!, term: values.association.term }
         : { status: 'a-classificar' },
-    start: values.start,
+    start: civilDate(values.start),
     end,
     ...(values.days ? { targetDays: Number(values.days) } : {}),
   };

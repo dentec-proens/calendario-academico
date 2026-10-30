@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import './audit-data.ts';
 import { mountApplication } from './mount-application.ts';
 import { getFunctionName } from 'convex/server';
@@ -82,8 +83,8 @@ const info: Bootstrap = {
       {
         id: 'synthetic-event',
         name: 'Evento institucional de teste',
-        start: '2027-01-01',
-        end: '2027-01-01',
+        start: civilDate('2027-01-01'),
+        end: civilDate('2027-01-01'),
         kind: 'exclude',
         category: 'feriado',
         evidence: 'Fonte de teste',

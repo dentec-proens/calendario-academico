@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import { expect, test } from 'vitest';
 import {
@@ -19,8 +20,8 @@ function calendar(): ActivityState {
       {
         id: 'shared',
         name: 'Anual',
-        start: '2027-03-01',
-        end: '2027-03-26',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-26'),
         association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'annual' },
       },
     ],
@@ -30,11 +31,11 @@ function calendar(): ActivityState {
         name: `${index + 1}ª etapa`,
         requirementId: `stage-${index + 1}:${modality}`,
         offers: [modality],
-        start: index ? '2027-03-15' : '2027-03-01',
-        end: index ? '2027-03-26' : '2027-03-12',
+        start: civilDate(index ? '2027-03-15' : '2027-03-01'),
+        end: civilDate(index ? '2027-03-26' : '2027-03-12'),
         kind: 'note',
         category: 'limite',
-        assessmentAutoStart: '2027-03-01',
+        assessmentAutoStart: civilDate('2027-03-01'),
       })),
     ),
     offers: [
@@ -62,8 +63,8 @@ test('one application splits a shared period and keeps the other offer and all s
   const state = calendar(),
     before = structuredClone(state),
     draft = offerOrganizationDraft(state, 'integrado');
-  draft.periods[0].end = '2027-03-31';
-  draft.stages[1].end = '2027-03-31';
+  draft.periods[0].end = civilDate('2027-03-31');
+  draft.stages[1].end = civilDate('2027-03-31');
   const next = applyOfferOrganization(state, 'integrado', draft, id);
   expect(state).toEqual(before);
   expect(next.periods).toHaveLength(2);
@@ -94,14 +95,14 @@ test('moving period endpoints reports live issues and the command rejects withou
   const state = calendar(),
     before = structuredClone(state),
     draft = offerOrganizationDraft(state, 'integrado');
-  draft.periods[0].start = '2027-03-08';
+  draft.periods[0].start = civilDate('2027-03-08');
   expect(offerOrganizationIssues(state, 'integrado', draft)).toContainEqual({
     path: 'stages[0]',
     message: expect.stringMatching(/inteiramente dentro/),
   });
   expect(() => applyOfferOrganization(state, 'integrado', draft, id)).toThrow(/etapa.*período/);
-  draft.periods[0].start = '2027-03-01';
-  draft.periods[0].end = '2027-03-20';
+  draft.periods[0].start = civilDate('2027-03-01');
+  draft.periods[0].end = civilDate('2027-03-20');
   expect(
     offerOrganizationIssues(state, 'integrado', draft).some((i) => i.path === 'stages[1]'),
   ).toBe(true);
@@ -113,22 +114,27 @@ test('a stage cannot span the semester gap, overlap another stage or use another
     draft = offerOrganizationDraft(state, 'integrado');
   draft.organization = 'semestral';
   draft.count = '1';
-  draft.periods[0].end = '2027-03-12';
-  draft.periods[1] = { sourceId: '', name: 'Segundo', start: '2027-03-22', end: '2027-03-26' };
-  draft.stages[1].start = '2027-03-15';
+  draft.periods[0].end = civilDate('2027-03-12');
+  draft.periods[1] = {
+    sourceId: '',
+    name: 'Segundo',
+    start: civilDate('2027-03-22'),
+    end: civilDate('2027-03-26'),
+  };
+  draft.stages[1].start = civilDate('2027-03-15');
   expect(
     offerOrganizationIssues(state, 'integrado', draft).some(
       (i) => i.path === 'stages[1]' && /inteiramente/.test(i.message),
     ),
   ).toBe(true);
-  draft.stages[1].start = '2027-03-22';
+  draft.stages[1].start = civilDate('2027-03-22');
   expect(offerOrganizationIssues(state, 'integrado', draft)).toEqual([]);
   const next = applyOfferOrganization(state, 'integrado', draft, id);
   expect(
     next.periods.filter((p) => associationOffers(p.association).includes('integrado')),
   ).toHaveLength(2);
   const bad = structuredClone(next);
-  bad.events.find((e) => e.id === 'integrado-1')!.start = '2027-03-15';
+  bad.events.find((e) => e.id === 'integrado-1')!.start = civilDate('2027-03-15');
   expect(() => normalizeOfferCalendar({ ...bad, ignoredHistory: [] })).toThrow(/etapa.*período/);
 });
 
@@ -139,12 +145,12 @@ test('existing inclusions are checked before changing periods; records are never
     name: 'Reposição de sábado',
     kind: 'include',
     offers: ['integrado'],
-    start: '2027-03-06',
-    end: '2027-03-06',
+    start: civilDate('2027-03-06'),
+    end: civilDate('2027-03-06'),
   });
   const draft = offerOrganizationDraft(state, 'integrado');
-  draft.periods[0].start = '2027-03-08';
-  draft.stages[0].start = '2027-03-08';
+  draft.periods[0].start = civilDate('2027-03-08');
+  draft.stages[0].start = civilDate('2027-03-08');
   expect(offerOrganizationIssues(state, 'integrado', draft)).toContainEqual({
     path: 'periods',
     message: expect.stringContaining('Reposição de sábado'),
@@ -162,8 +168,8 @@ test('splitting shared admission references preserves each offer link and dates'
     name: 'Edital',
     kind: 'note',
     offers: ['integrado', 'graduacao'],
-    start: '2027-02-01',
-    end: '2027-02-01',
+    start: civilDate('2027-02-01'),
+    end: civilDate('2027-02-01'),
     publicationStatus: 'published',
     admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'shared' },
   });
@@ -193,8 +199,8 @@ test('calendar records no longer require or retain manual references', () => {
   state.events.push({
     id: 'other',
     name: 'Evento',
-    start: '2027-03-01',
-    end: '2027-03-01',
+    start: civilDate('2027-03-01'),
+    end: civilDate('2027-03-01'),
     kind: 'note',
   });
   const draft = offerOrganizationDraft(state, 'integrado');
@@ -216,8 +222,8 @@ test('calendar records no longer require or retain manual references', () => {
   ).toBe('complete');
   expect(next.events.find((event) => event.id === 'other')).toMatchObject({
     id: 'other',
-    start: '2027-03-01',
-    end: '2027-03-01',
+    start: civilDate('2027-03-01'),
+    end: civilDate('2027-03-01'),
     kind: 'note',
   });
 });

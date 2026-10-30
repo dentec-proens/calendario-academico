@@ -1,3 +1,4 @@
+import { type CivilDate } from '../civil-date.ts';
 import type { ActivityGroup, ActivityVariant } from './activities/metadata.ts';
 
 /** Shared contracts for calendar activities and the operational checklist. */
@@ -32,7 +33,7 @@ export interface CalendarContentV4 {
   weekConfirmed: boolean;
   periods: CalendarPeriodV4[];
   events: CalendarActivityV4[];
-  observanceDates?: Record<string, string>;
+  observanceDates?: Record<string, CivilDate>;
   teacherVacations?: VacationPeriods;
 }
 export type PeriodAssociation = PeriodAssociationV4;
@@ -49,29 +50,29 @@ export interface IntakeConfiguration {
 export interface CalendarActivity {
   id: string;
   name: string;
-  start: string;
-  end: string;
+  start: CivilDate;
+  end: CivilDate;
   kind: string;
   category?: string;
   requirementId?: string;
   offers?: string[];
   hours?: number;
   days?: number;
-  originalStart?: string;
-  originalEnd?: string;
-  assessmentAutoStart?: string;
+  originalStart?: CivilDate;
+  originalEnd?: CivilDate;
+  assessmentAutoStart?: CivilDate;
   deadlineExtensionCause?: 'municipal-holiday' | 'municipal-recess';
   recordType?: 'event';
   publicationStatus?: 'planned' | 'published';
   admission?: Admission;
-  deadlineAdjustment?: { date: string; reviewed: boolean };
+  deadlineAdjustment?: { date: CivilDate; reviewed: boolean };
 }
 
 export interface ActivityRequirement {
   id: string;
   name: string;
   required?: boolean;
-  deadline?: string;
+  deadline?: CivilDate;
   deadlinePolicy?: 'reference' | 'fixed';
   minHours?: number;
   month?: number;
@@ -105,8 +106,8 @@ export interface ActivityRequirement {
 export interface CalendarPeriod {
   id: string;
   name?: string;
-  start: string;
-  end: string;
+  start: CivilDate;
+  end: CivilDate;
   targetDays?: number;
   association: PeriodAssociation;
 }
@@ -123,7 +124,7 @@ export interface TeachingState extends AssessmentSettings {
   periods: CalendarPeriod[];
 }
 export interface ActivityState extends TeachingState {
-  observanceDates?: Record<string, string>;
+  observanceDates?: Record<string, CivilDate>;
   events: CalendarActivity[];
   campus?: string;
 }
@@ -142,14 +143,14 @@ export interface CalendarReview {
   applicableNorm?: string;
   entries: ReviewEntry[];
 }
-export type DateRange = { start: string; end: string };
+export type DateRange = { start: CivilDate; end: CivilDate };
 export type VacationPeriods = {
-  firstStart: string;
-  firstEnd: string;
-  secondStart?: string;
-  secondEnd?: string;
-  thirdStart?: string;
-  thirdEnd?: string;
+  firstStart: CivilDate;
+  firstEnd: CivilDate;
+  secondStart?: CivilDate;
+  secondEnd?: CivilDate;
+  thirdStart?: CivilDate;
+  thirdEnd?: CivilDate;
 };
 
 export type CountingEvent = Pick<CalendarActivity, 'id' | 'kind' | 'start' | 'end' | 'offers'> & {

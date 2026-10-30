@@ -1,3 +1,4 @@
+import { civilDate, parseDate, type CivilDate } from '../../civil-date.ts';
 import { calendarLimits } from '../config.ts';
 export interface CalendarEvidence {
   confirmed: boolean;
@@ -5,14 +6,14 @@ export interface CalendarEvidence {
 }
 export interface CalendarEvent extends CalendarEvidence {
   id: string;
-  start: string;
-  end: string;
+  start: CivilDate;
+  end: CivilDate;
   offerIds: string[];
 }
 export interface CalendarInput {
   year: number;
   offerId: string;
-  periods: { id: string; start: string; end: string }[];
+  periods: { id: string; start: CivilDate; end: CivilDate }[];
   weekPattern: CalendarEvidence & { weekdays: number[] };
   inclusions: CalendarEvent[];
   exclusions: CalendarEvent[];
@@ -32,22 +33,13 @@ export function automaticEventSource(event: {
 /** Pure civil-date counting core. Not a complete institutional validator. */
 const DAY = 86400000;
 
-export function parseDate(value: string) {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value))
-    throw new TypeError('Data deve usar YYYY-MM-DD');
-  const time = Date.parse(`${value}T00:00:00.000Z`);
-  if (!Number.isFinite(time) || new Date(time).toISOString().slice(0, 10) !== value)
-    throw new RangeError('Data civil inválida');
-  return time;
-}
-
 export function datesBetween(start: string, end: string) {
   const a = parseDate(start),
     b = parseDate(end);
   if (a > b) throw new RangeError('Intervalo invertido');
   if ((b - a) / DAY > 732) throw new RangeError('Intervalo excede o limite do núcleo inicial');
   return Array.from({ length: (b - a) / DAY + 1 }, (_, i) =>
-    new Date(a + i * DAY).toISOString().slice(0, 10),
+    civilDate(new Date(a + i * DAY).toISOString().slice(0, 10)),
   );
 }
 
@@ -96,7 +88,7 @@ export function countCalendar(input: CalendarInput) {
   if (!thresholds.byPeriod || typeof thresholds.byPeriod !== 'object')
     throw new TypeError('Informe mínimos por período');
   const periodIds = new Set<string>(),
-    owner = new Map<string, string>();
+    owner = new Map<CivilDate, string>();
   for (const period of periods) {
     requiredString(period.id, 'period.id');
     if (periodIds.has(period.id)) throw new TypeError('Período duplicado');
@@ -111,8 +103,8 @@ export function countCalendar(input: CalendarInput) {
   }
   if (Object.keys(thresholds.byPeriod).some((id) => !periodIds.has(id)))
     throw new TypeError('Mínimo para período desconhecido');
-  const add = new Map<string, Evidence[]>(),
-    block = new Map<string, Evidence[]>(),
+  const add = new Map<CivilDate, Evidence[]>(),
+    block = new Map<CivilDate, Evidence[]>(),
     eventIds = new Set<string>();
   for (const [records, target, kind] of [
     [inclusions, add, 'include'],
@@ -211,13 +203,13 @@ export function countCalendar(input: CalendarInput) {
 }
 
 /** Caller supplies the already verified teaching-date set for this offer. */
-export function firstTeachingDateAfter(date: string, teachingDates: string[]) {
+export function firstTeachingDateAfter(date: CivilDate, teachingDates: CivilDate[]) {
   parseDate(date);
   for (const item of teachingDates) parseDate(item);
   return [...new Set(teachingDates)].sort().find((d) => d > date) ?? null;
 }
 
-export function daysBefore(date: string, days: number) {
+export function daysBefore(date: CivilDate, days: number) {
   if (!Number.isInteger(days) || days < 0) throw new TypeError('Antecedência inválida');
-  return new Date(parseDate(date) - days * DAY).toISOString().slice(0, 10);
+  return civilDate(new Date(parseDate(date) - days * DAY).toISOString().slice(0, 10));
 }

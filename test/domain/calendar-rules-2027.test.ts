@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import type { ActivityState, CalendarActivity } from '../../src/domain/calendar/model.ts';
 import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
@@ -21,22 +22,22 @@ function calendar(): ActivityState {
       {
         id: 'annual',
         name: 'Ano técnico',
-        start: '2027-02-01',
-        end: '2027-12-17',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined', offers: ['integrado', 'subsequente'], term: 'annual' },
       },
       {
         id: 'semester-one',
         name: '1º semestre graduação',
-        start: '2027-02-01',
-        end: '2027-06-30',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-06-30'),
         association: { status: 'defined', offers: ['graduacao'], term: 'first' },
       },
       {
         id: 'semester-two',
         name: '2º semestre graduação',
-        start: '2027-08-02',
-        end: '2027-12-17',
+        start: civilDate('2027-08-02'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined', offers: ['graduacao'], term: 'second' },
       },
     ],
@@ -71,8 +72,8 @@ function notice(extra: Partial<CalendarActivity> = {}): CalendarActivity {
     id: 'notice',
     name: 'Edital sintético',
     kind: 'note',
-    start: '2026-12-10',
-    end: '2026-12-10',
+    start: civilDate('2026-12-10'),
+    end: civilDate('2026-12-10'),
     offers: ['integrado'],
     publicationStatus: 'published',
     admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'annual' },
@@ -135,8 +136,8 @@ test('one event covers only the explicitly declared offers and does not waive ve
     {
       ...notice({
         id: 'veterans',
-        start: '2027-01-15',
-        end: '2027-01-15',
+        start: civilDate('2027-01-15'),
+        end: civilDate('2027-01-15'),
         recordType: 'event',
         requirementId: 'enrolment-0',
         offers: ['subsequente'],
@@ -175,8 +176,8 @@ test('mixed organizations count disjoint periods separately and keep simultaneou
       state,
       {
         name: 'Sobreposição graduação',
-        start: '2027-03-01',
-        end: '2027-04-01',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-04-01'),
         days: '',
         association: { status: 'defined', offers: ['graduacao'], term: 'first' },
       },
@@ -211,8 +212,8 @@ test('planned regular publication remains planned and December requires an expli
   const state = calendar();
   state.events = [
     notice({
-      start: '2027-12-01',
-      end: '2027-12-01',
+      start: civilDate('2027-12-01'),
+      end: civilDate('2027-12-01'),
       recordType: 'event',
       publicationStatus: 'planned',
       admission: { type: 'regular', year: 2028, term: 'annual' },
@@ -224,7 +225,7 @@ test('planned regular publication remains planned and December requires an expli
       (r) => r.offerId === 'integrado' && r.requirement.id === 'regular-admission-notice',
     ),
   ).toMatchObject({ coverage: 'partial', execution: 'planned' });
-  state.events[0].deadlineAdjustment = { date: '2027-12-02', reviewed: true };
+  state.events[0].deadlineAdjustment = { date: civilDate('2027-12-02'), reviewed: true };
   expect(
     activityCoverage(state).find(
       (r) => r.offerId === 'integrado' && r.requirement.id === 'regular-admission-notice',
@@ -249,8 +250,8 @@ test('prior/cross-year references are informative even if the received discrimin
     ).toThrow();
   }
   const old = notice({
-    start: '1900-01-01',
-    end: '2027-01-02',
+    start: civilDate('1900-01-01'),
+    end: civilDate('2027-01-02'),
     requirementId: undefined,
     admission: undefined,
     publicationStatus: undefined,
@@ -258,11 +259,13 @@ test('prior/cross-year references are informative even if the received discrimin
   expect(
     normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [old] }).events[0].start,
   ).toBe('1900-01-01');
+  expect(() =>
+    normalizeOfferCalendar({ ...state, events: [{ ...old, start: '2026-02-30' }] }),
+  ).toThrow();
   for (const changes of [
-    { start: '2026-02-30' },
-    { end: '2026-01-01' },
-    { start: '2028-01-01', end: '2028-01-02' },
-    { start: '2026-12-01', end: '2028-01-01' },
+    { end: civilDate('2026-01-01') },
+    { start: civilDate('2028-01-01'), end: civilDate('2028-01-02') },
+    { start: civilDate('2026-12-01'), end: civilDate('2028-01-01') },
     { kind: 'include' },
   ])
     expect(() => applyEvent(state, notice(changes), [])).toThrow();
@@ -313,8 +316,8 @@ test('article 3 extends only explicitly classified municipal causes to the first
   const holiday: CalendarActivity = {
     id: 'municipal',
     name: 'Feriado municipal sintético',
-    start: '2027-08-31',
-    end: '2027-09-02',
+    start: civilDate('2027-08-31'),
+    end: civilDate('2027-09-02'),
     kind: 'exclude',
     offers: ['integrado'],
     deadlineExtensionCause: 'municipal-holiday',
@@ -322,35 +325,43 @@ test('article 3 extends only explicitly classified municipal causes to the first
   const otherHoliday: CalendarActivity = {
     ...holiday,
     id: 'following',
-    start: '2027-09-03',
-    end: '2027-09-03',
+    start: civilDate('2027-09-03'),
+    end: civilDate('2027-09-03'),
     deadlineExtensionCause: undefined,
   };
   expect(
-    prorogatedDeadline(state, '2027-08-31', [holiday, otherHoliday], 'integrado'),
-  ).toMatchObject({ original: '2027-08-31', date: '2027-09-06', source: 'municipal-extension' });
+    prorogatedDeadline(state, civilDate('2027-08-31'), [holiday, otherHoliday], 'integrado'),
+  ).toMatchObject({
+    original: '2027-08-31',
+    date: civilDate('2027-09-06'),
+    source: 'municipal-extension',
+  });
   expect(
-    prorogatedDeadline(state, '2027-08-31', [holiday, otherHoliday], 'graduacao'),
-  ).toMatchObject({ date: '2027-08-31', source: 'norm' });
+    prorogatedDeadline(state, civilDate('2027-08-31'), [holiday, otherHoliday], 'graduacao'),
+  ).toMatchObject({ date: civilDate('2027-08-31'), source: 'norm' });
   expect(
     prorogatedDeadline(
       state,
-      '2027-08-31',
+      civilDate('2027-08-31'),
       [{ ...holiday, deadlineExtensionCause: undefined }],
       'integrado',
     ).date,
   ).toBe('2027-08-31');
   expect(
-    prorogatedDeadline({ ...state, weekConfirmed: false }, '2027-08-31', [holiday], 'integrado')
-      .date,
+    prorogatedDeadline(
+      { ...state, weekConfirmed: false },
+      civilDate('2027-08-31'),
+      [holiday],
+      'integrado',
+    ).date,
   ).toBeNull();
   state.events = [
     holiday,
     {
       id: 'robotics',
       name: 'Robótica sintética',
-      start: '2027-09-03',
-      end: '2027-09-03',
+      start: civilDate('2027-09-03'),
+      end: civilDate('2027-09-03'),
       kind: 'note',
       offers: ['integrado'],
       requirementId: 'robotics',
@@ -380,8 +391,8 @@ test('a legacy event without declared offers remains visible but never covers al
   state.events = [
     {
       ...notice({
-        start: '2027-02-01',
-        end: '2027-02-01',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-02-01'),
         recordType: 'event',
         requirementId: 'campus-events',
         offers: undefined,
@@ -400,8 +411,8 @@ test('commands and direct import reject teaching inclusion outside the selected 
   const event: CalendarActivity = {
     id: 'outside-undergraduate',
     name: 'Inclusão sintética',
-    start: '2027-07-20',
-    end: '2027-07-20',
+    start: civilDate('2027-07-20'),
+    end: civilDate('2027-07-20'),
     kind: 'include',
     offers: ['graduacao'],
   };

@@ -1,3 +1,4 @@
+import { civilDate, optionalCivilDate } from '../../civil-date.ts';
 import { academicTerms, modalityIds, organizations } from '../config.ts';
 import type {
   CalendarActivityV4,
@@ -16,6 +17,20 @@ export const calendarObject = (value: unknown): Record<string, unknown> => {
 };
 const text = (value: unknown): string =>
   typeof value === 'string' ? value : fail('Texto do calendário inválido.');
+const date = (value: unknown) => {
+  try {
+    return civilDate(value);
+  } catch {
+    return fail('Data civil do calendário inválida.');
+  }
+};
+const optionalDate = (value: unknown) => {
+  try {
+    return optionalCivilDate(value);
+  } catch {
+    return fail('Data civil do calendário inválida.');
+  }
+};
 const number = (value: unknown): number =>
   typeof value === 'number' && Number.isFinite(value)
     ? value
@@ -84,8 +99,8 @@ const period = (value: unknown): CalendarPeriodV4 => {
   return {
     id: text(row.id),
     name: text(row.name),
-    start: text(row.start),
-    end: text(row.end),
+    start: date(row.start),
+    end: date(row.end),
     ...(row.targetDays === undefined ? {} : { targetDays: number(row.targetDays) }),
     association:
       association.status === 'a-classificar'
@@ -108,14 +123,14 @@ const activity = (value: unknown): CalendarActivityV4 => {
   return {
     id: text(row.id),
     name: text(row.name),
-    start: text(row.start),
-    end: text(row.end),
+    start: date(row.start),
+    end: date(row.end),
     kind: choice(row.kind, ['include', 'exclude', 'note'], 'Efeito inválido.'),
     category: optional(row.category, text),
     requirementId: optional(row.requirementId, text),
     offers: optional(row.offers, (value) => array(value, text)),
     hours: optional(row.hours, number),
-    assessmentAutoStart: optional(row.assessmentAutoStart, text),
+    assessmentAutoStart: optional(row.assessmentAutoStart, date),
     recordType: optional(row.recordType, (value) =>
       choice(value, ['event'], 'Natureza do registro inválida.'),
     ),
@@ -142,7 +157,7 @@ const activity = (value: unknown): CalendarActivityV4 => {
     ...(adjustment
       ? {
           deadlineAdjustment: {
-            date: text(adjustment.date),
+            date: date(adjustment.date),
             reviewed: boolean(adjustment.reviewed),
           },
         }
@@ -152,12 +167,12 @@ const activity = (value: unknown): CalendarActivityV4 => {
 function vacations(value: unknown): VacationPeriods {
   const row = calendarObject(value);
   return {
-    firstStart: text(row.firstStart),
-    firstEnd: text(row.firstEnd),
-    secondStart: optional(row.secondStart, text),
-    secondEnd: optional(row.secondEnd, text),
-    thirdStart: optional(row.thirdStart, text),
-    thirdEnd: optional(row.thirdEnd, text),
+    firstStart: date(row.firstStart),
+    firstEnd: date(row.firstEnd),
+    secondStart: optionalDate(row.secondStart),
+    secondEnd: optionalDate(row.secondEnd),
+    thirdStart: optionalDate(row.thirdStart),
+    thirdEnd: optionalDate(row.thirdEnd),
   };
 }
 
@@ -182,7 +197,7 @@ export function readCalendarOfferInput(
     events: array(row.events, activity),
     observanceDates: optional(row.observanceDates, (value) =>
       Object.fromEntries(
-        Object.entries(calendarObject(value)).map(([key, date]) => [key, text(date)]),
+        Object.entries(calendarObject(value)).map(([key, value]) => [key, date(value)]),
       ),
     ),
     teacherVacations: optional(row.teacherVacations, vacations),

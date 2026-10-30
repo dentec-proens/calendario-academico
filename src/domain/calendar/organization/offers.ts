@@ -1,3 +1,5 @@
+import { readDateRange } from '../civil-dates.ts';
+import { civilDate } from '../../civil-date.ts';
 import {
   assessmentStageCounts,
   assessmentStageNumbers,
@@ -266,7 +268,11 @@ export function offerOrganizationIssues(
         draft.organization === 'semestral'
           ? periods.slice(Math.floor(index / count), Math.floor(index / count) + 1)
           : periods;
-      const message = assessmentIntervalIssue(cyclePeriods, stage.start, stage.end);
+      const message = assessmentIntervalIssue(
+        cyclePeriods.map(readDateRange),
+        stage.start,
+        stage.end,
+      );
       if (message) issue(path, message);
     }
     if (
@@ -342,8 +348,8 @@ export function applyOfferOrganization<S extends ActivityState>(
       name:
         value.name.trim() ||
         `${terms[index] === 'annual' ? 'Ano letivo' : index ? '2º semestre' : '1º semestre'} — ${labelFor(state, modality)}`,
-      start: value.start,
-      end: value.end,
+      start: civilDate(value.start),
+      end: civilDate(value.end),
       association: association([modality], terms[index]),
     };
   });
@@ -391,8 +397,8 @@ export function applyOfferOrganization<S extends ActivityState>(
         existing?.name ??
         `${organization === 'semestral' ? `${(index % count) + 1}ª etapa — ${Math.floor(index / count) + 1}º semestre` : `${index + 1}ª etapa de avaliação`} — ${labelFor(state, modality)}`,
       requirementId,
-      start: value.start,
-      end: value.end,
+      start: civilDate(value.start),
+      end: civilDate(value.end),
       kind: 'note',
       category: existing?.category ?? 'limite',
       offers: [modality],

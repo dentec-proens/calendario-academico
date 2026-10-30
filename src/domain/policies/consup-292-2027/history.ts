@@ -1,3 +1,4 @@
+import { civilDate } from '../../civil-date.ts';
 import type { RulesetChange } from '../contract.ts';
 
 export const citation = 'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026';
@@ -5,14 +6,14 @@ export const citation = 'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 202
 export const rulesetChanges: readonly RulesetChange[] = [
   {
     version: 'consup-292-2027-v1',
-    date: '2026-10-26',
+    date: civilDate('2026-10-26'),
     effect: 'establishes',
     source: citation,
     summary: 'Requisitos estruturados para as ofertas técnicas e de graduação.',
   },
   {
     version: 'consup-292-2027-v2',
-    date: '2026-10-29',
+    date: civilDate('2026-10-29'),
     effect: 'relaxes',
     criteria: ['XVI'],
     source: 'Decisão da gestão do sistema após retorno de campus',
@@ -21,7 +22,7 @@ export const rulesetChanges: readonly RulesetChange[] = [
   },
   {
     version: 'consup-292-2027-v3',
-    date: '2026-10-29',
+    date: civilDate('2026-10-29'),
     effect: 'editorial',
     source: 'Decisão da gestão do sistema após retorno de campus',
     summary:
@@ -29,7 +30,7 @@ export const rulesetChanges: readonly RulesetChange[] = [
   },
   {
     version: 'consup-292-2027-v4',
-    date: '2026-10-30',
+    date: civilDate('2026-10-30'),
     effect: 'relaxes',
     source: 'Decisão da gestão do sistema em 30/10/2026',
     summary:

@@ -1,3 +1,4 @@
+import { civilDate } from '../../../../src/domain/civil-date.ts';
 import type {
   ActivityRequirement,
   AssessmentSettings,
@@ -128,8 +129,8 @@ export function eventFromValues(
     ...kept,
     id: target.id,
     name: value.name,
-    start: value.start,
-    end: value.end,
+    start: civilDate(value.start),
+    end: civilDate(value.end),
     kind: value.kind,
     publicationStatus: (notice && value.publicationStatus) || undefined,
     admission:
@@ -145,7 +146,7 @@ export function eventFromValues(
       notice && value.adjustedDeadline
         ? adjustment?.date === value.adjustedDeadline
           ? { date: adjustment.date, reviewed: adjustment.reviewed }
-          : { date: value.adjustedDeadline, reviewed: false }
+          : { date: civilDate(value.adjustedDeadline), reviewed: false }
         : undefined,
     category:
       target.base && !target.base.category && value.category === eventCategory(target.base)

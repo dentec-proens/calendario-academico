@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
@@ -72,9 +73,9 @@ test('reducing semester stages keeps two bindings and retires excess dates witho
   const state = calendarOffersV4Fixture();
   const draft = offerOrganizationDraft(state, 'graduacao-2');
   draft.count = '1';
-  draft.stages[0].end = '2027-07-09';
-  draft.stages[1].start = '2027-07-26';
-  draft.stages[1].end = '2027-12-17';
+  draft.stages[0].end = civilDate('2027-07-09');
+  draft.stages[1].start = civilDate('2027-07-26');
+  draft.stages[1].end = civilDate('2027-12-17');
   const next = applyOfferOrganization(state, 'graduacao-2', draft, ids());
   expect(next.offers.find((offer) => offer.id === 'graduacao-2')?.stages).toEqual({ perTerm: 1 });
   expect(
@@ -104,8 +105,8 @@ test('organization edits reject a stage in the other semester even when it fits 
   const state = calendarOffersV4Fixture();
   const before = structuredClone(state);
   const draft = offerOrganizationDraft(state, 'graduacao-2');
-  draft.stages[2].start = '2027-05-01';
-  draft.stages[2].end = '2027-06-01';
+  draft.stages[2].start = civilDate('2027-05-01');
+  draft.stages[2].end = civilDate('2027-06-01');
   expect(
     offerOrganizationIssues(state, 'graduacao-2', draft).some(
       (issue) => issue.path === 'stages[2]' && issue.message.includes('período'),
@@ -143,7 +144,12 @@ test('event edits enforce the owning cycle and the explicit offer id', () => {
   const state = calendarOffersV4Fixture();
   const stage = state.events.find((event) => event.id === 'graduacao-2-stage-3')!;
   expect(() =>
-    applyEvent(state, { ...stage, start: '2027-02-01', end: '2027-04-16' }, [], true),
+    applyEvent(
+      state,
+      { ...stage, start: civilDate('2027-02-01'), end: civilDate('2027-04-16') },
+      [],
+      true,
+    ),
   ).toThrow('2º semestre');
   expect(() => applyEvent(state, { ...stage, offers: ['graduacao'] }, [], true)).toThrow('oferta');
   const next = applyEvent(
@@ -167,8 +173,8 @@ test('period edits select an offer id and allow overlap with another offer of th
     {
       id: 'graduacao-2-first',
       name: 'Primeiro semestre da Engenharia',
-      start: '2027-02-01',
-      end: '2027-07-09',
+      start: civilDate('2027-02-01'),
+      end: civilDate('2027-07-09'),
       days: '',
       association: { status: 'defined', offers: ['graduacao-2'], term: 'first' },
     },
@@ -193,8 +199,8 @@ test('adding an opaque offer identity freezes earlier implicit events and create
     id: 'earlier-global',
     name: 'Evento geral anterior',
     kind: 'note',
-    start: '2027-04-01',
-    end: '2027-04-01',
+    start: civilDate('2027-04-01'),
+    end: civilDate('2027-04-01'),
   });
   const newOffer: CalendarOffer = {
     id: 'graduacao-4',
@@ -206,10 +212,18 @@ test('adding an opaque offer identity freezes earlier implicit events and create
   const draft = offerOrganizationDraft(state, newOffer.id);
   draft.organization = 'semestral';
   draft.count = '1';
-  Object.assign(draft.periods[0], { name: 'Primeiro', start: '2027-02-01', end: '2027-07-09' });
-  Object.assign(draft.periods[1], { name: 'Segundo', start: '2027-07-26', end: '2027-12-17' });
-  Object.assign(draft.stages[0], { start: '2027-02-01', end: '2027-07-09' });
-  Object.assign(draft.stages[1], { start: '2027-07-26', end: '2027-12-17' });
+  Object.assign(draft.periods[0], {
+    name: 'Primeiro',
+    start: civilDate('2027-02-01'),
+    end: civilDate('2027-07-09'),
+  });
+  Object.assign(draft.periods[1], {
+    name: 'Segundo',
+    start: civilDate('2027-07-26'),
+    end: civilDate('2027-12-17'),
+  });
+  Object.assign(draft.stages[0], { start: civilDate('2027-02-01'), end: civilDate('2027-07-09') });
+  Object.assign(draft.stages[1], { start: civilDate('2027-07-26'), end: civilDate('2027-12-17') });
   const previousIds = offerIds(state);
   const next = applyOfferOrganization(state, newOffer.id, draft, ids(), newOffer);
   expect(next.offers.at(-1)).toEqual({ ...newOffer, stages: { perTerm: 1 } });
@@ -251,8 +265,8 @@ test('splitting a shared v4 period preserves both admission references by offer 
       {
         id: 'shared',
         name: 'Ano compartilhado',
-        start: '2027-02-01',
-        end: '2027-12-17',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined', offers: ['graduacao', 'graduacao-2'], term: 'annual' },
       },
     ],
@@ -261,8 +275,8 @@ test('splitting a shared v4 period preserves both admission references by offer 
         id: `${offer}-stage-${index + 1}`,
         name: `Etapa ${index + 1}`,
         kind: 'note',
-        start: index ? '2027-07-26' : '2027-02-01',
-        end: index ? '2027-12-17' : '2027-07-09',
+        start: civilDate(index ? '2027-07-26' : '2027-02-01'),
+        end: civilDate(index ? '2027-12-17' : '2027-07-09'),
         offers: [offer],
         requirementId: `stage-${index + 1}:${offer}`,
       })),
@@ -272,8 +286,8 @@ test('splitting a shared v4 period preserves both admission references by offer 
     id: 'notice',
     name: 'Edital compartilhado',
     kind: 'note',
-    start: '2027-01-01',
-    end: '2027-01-01',
+    start: civilDate('2027-01-01'),
+    end: civilDate('2027-01-01'),
     offers: ['graduacao', 'graduacao-2'],
     publicationStatus: 'published',
     admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'shared' },

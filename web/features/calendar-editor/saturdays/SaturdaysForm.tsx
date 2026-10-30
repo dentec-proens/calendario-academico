@@ -86,7 +86,7 @@ export default function SaturdaysForm() {
     [months],
   );
   const registered = saturdays.filter((day) => day.status === 'registered');
-  const registeredDates = new Set(registered.map((day) => day.date));
+  const registeredDates: ReadonlySet<string> = new Set(registered.map((day) => day.date));
   const selection = saturdays.filter(
     (day) => day.status !== 'registered' && values.dates.includes(day.date),
   );

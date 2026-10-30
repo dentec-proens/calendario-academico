@@ -1,3 +1,4 @@
+import { civilDate } from '../domain/civil-date.ts';
 import { automaticEventSource } from '../domain/calendar/counting/core.ts';
 import type { PrintState, PrintResult, PrintRecord, PrintEvent, DistributionRow } from './types.ts';
 import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
@@ -161,7 +162,7 @@ export function proensLayout(
     let cells = Array(first.getUTCDay()).fill('<td></td>'),
       total = 0;
     for (let day = 1; day <= length; day++) {
-      const date = prefix + '-' + String(day).padStart(2, '0'),
+      const date = civilDate(prefix + '-' + String(day).padStart(2, '0')),
         d = ledger.get(date),
         list = events.filter((e) => e.start <= date && e.end >= date);
       if (d?.counted) total++;

@@ -1,3 +1,5 @@
+import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { afterEach, expect, test, vi } from 'vitest';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
@@ -131,15 +133,18 @@ function editPeriodName<S extends CalendarState>(state: S, name: string): S {
 
 async function opened(withPeriod = true): Promise<CalendarRecord> {
   const fixture = await createNativeFixture();
-  const record = await fixture.asClient('admin').mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      offers: [{ kind: 'integrado', organization: 'anual' }],
-      courses: 'Curso de teste',
-      purpose: 'test',
-    },
-  });
+  const record = await fixture
+    .asClient('admin')
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        offers: [{ kind: 'integrado', organization: 'anual' }],
+        courses: 'Curso de teste',
+        purpose: 'test',
+      },
+    })
+    .then(calendarRecordDates);
   return {
     ...record,
     state: {
@@ -149,8 +154,8 @@ async function opened(withPeriod = true): Promise<CalendarRecord> {
             {
               id: 'session-period',
               name: 'Período base',
-              start: '2027-03-01',
-              end: '2027-03-26',
+              start: civilDate('2027-03-01'),
+              end: civilDate('2027-03-26'),
               association: { status: 'defined', offers: ['integrado'], term: 'annual' },
             },
           ]
@@ -162,59 +167,71 @@ async function opened(withPeriod = true): Promise<CalendarRecord> {
 test('the server rejects removal of the last period while registered stages still need it', async () => {
   const fixture = await createNativeFixture();
   const client = fixture.asClient('admin');
-  const created = await client.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      offers: [{ kind: 'integrado', organization: 'anual' }],
-      courses: 'Curso',
-      purpose: 'test',
-    },
-  });
-  const saved = await client.mutation(api.calendars.saveCalendar, {
-    id: created.id,
-    body: {
-      version: created.version,
-      catalogueRevision: created.currentCatalogueRevision,
-      state: {
-        ...created.state,
-        weekConfirmed: true,
-        weekdays: [1, 2, 3, 4, 5],
-        periods: [
-          {
-            id: 'first',
-            name: 'Primeiro período',
-            start: '2027-03-01',
-            end: '2027-03-26',
-            association: { status: 'defined', offers: ['integrado'], term: 'annual' },
-          },
-        ],
-        offers: created.state.offers.map((offer) => ({
-          ...offer,
-          stages: { perTerm: 2 as const },
-        })),
-        events: [1, 2].map((number): CalendarEvent => ({
-          id: `stage-${number}`,
-          name: `${number}ª etapa`,
-          requirementId: `stage-${number}:integrado`,
-          offers: ['integrado'],
-          start: number === 1 ? '2027-03-01' : '2027-03-15',
-          end: number === 1 ? '2027-03-12' : '2027-03-26',
-          assessmentAutoStart: '2027-03-01',
-          kind: 'note' as const,
-          category: 'limite',
-        })),
+  const created = await client
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        offers: [{ kind: 'integrado', organization: 'anual' }],
+        courses: 'Curso',
+        purpose: 'test',
       },
-    },
-  });
+    })
+    .then(calendarRecordDates);
+  const saved = await client
+    .mutation(api.calendars.saveCalendar, {
+      id: created.id,
+      body: {
+        version: created.version,
+        catalogueRevision: created.currentCatalogueRevision,
+        state: {
+          ...created.state,
+          weekConfirmed: true,
+          weekdays: [1, 2, 3, 4, 5],
+          periods: [
+            {
+              id: 'first',
+              name: 'Primeiro período',
+              start: civilDate('2027-03-01'),
+              end: civilDate('2027-03-26'),
+              association: { status: 'defined', offers: ['integrado'], term: 'annual' },
+            },
+          ],
+          offers: created.state.offers.map((offer) => ({
+            ...offer,
+            stages: { perTerm: 2 as const },
+          })),
+          events: [1, 2].map((number): CalendarEvent => ({
+            id: `stage-${number}`,
+            name: `${number}ª etapa`,
+            requirementId: `stage-${number}:integrado`,
+            offers: ['integrado'],
+            start: civilDate(number === 1 ? '2027-03-01' : '2027-03-15'),
+            end: civilDate(number === 1 ? '2027-03-12' : '2027-03-26'),
+            assessmentAutoStart: civilDate('2027-03-01'),
+            kind: 'note' as const,
+            category: 'limite',
+          })),
+        },
+      },
+    })
+    .then(calendarSaveDates);
   const state = removePeriod(saved.state, 'first', created.institutionalEvents);
   await expect(
-    client.mutation(api.calendars.saveCalendar, {
-      id: created.id,
-      body: { version: saved.version, catalogueRevision: created.currentCatalogueRevision, state },
-    }),
+    client
+      .mutation(api.calendars.saveCalendar, {
+        id: created.id,
+        body: {
+          version: saved.version,
+          catalogueRevision: created.currentCatalogueRevision,
+          state,
+        },
+      })
+      .then(calendarSaveDates),
   ).rejects.toThrow(/etapa.*período/);
-  const intact = await client.query(api.calendars.calendar, { id: created.id });
+  const intact = await client
+    .query(api.calendars.calendar, { id: created.id })
+    .then(calendarRecordDates);
   expect(intact.state.periods).toEqual(saved.state.periods);
   expect(intact.state.events).toEqual(saved.state.events);
 });
@@ -336,7 +353,7 @@ test('domain commands reject invalid changes atomically and recalculate teaching
     week,
     {
       name: 'Período',
-      start: '2027-02-01',
+      start: civilDate('2027-02-01'),
       end: '',
       days: '5',
       association: { status: 'defined', offers: ['integrado'], term: 'annual' },
@@ -350,8 +367,8 @@ test('domain commands reject invalid changes atomically and recalculate teaching
       first,
       {
         name: 'Sobreposto',
-        start: '2027-02-03',
-        end: '2027-02-06',
+        start: civilDate('2027-02-03'),
+        end: civilDate('2027-02-06'),
         days: '',
         association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
@@ -422,8 +439,8 @@ test('confirmation keeps the identity shown to the person instead of accepting a
       {
         id: 'inst:new',
         name: 'Novo feriado',
-        start: '2027-04-01',
-        end: '2027-04-01',
+        start: civilDate('2027-04-01'),
+        end: civilDate('2027-04-01'),
         kind: 'exclude',
         evidence: 'Portaria',
       },
@@ -447,8 +464,8 @@ test.each(['before-failure', 'after-failure'])(
         {
           id: 'inst:temporary',
           name: 'Evento temporário',
-          start: '2027-04-01',
-          end: '2027-04-01',
+          start: civilDate('2027-04-01'),
+          end: civilDate('2027-04-01'),
           kind: 'note' as const,
           evidence: 'Portaria',
         },
@@ -543,8 +560,8 @@ test('canonical state keeps manual sources absent on opening, save acknowledgeme
           id: 'local',
           name: 'Evento',
           kind: 'note',
-          start: '2027-03-01',
-          end: '2027-03-01',
+          start: civilDate('2027-03-01'),
+          end: civilDate('2027-03-01'),
           offers: ['integrado'],
         },
       ],

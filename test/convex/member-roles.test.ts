@@ -1,3 +1,4 @@
+import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api, internal } from '../../convex/_generated/api.js';
@@ -20,21 +21,26 @@ async function fixture() {
 
 test('reviewer reads across campuses and issues reviews but cannot modify calendars or accounts', async () => {
   const { client, reviewer, admin, campus, ids } = await fixture();
-  const record = await campus.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: ids.campuses.a,
-      year: 2027,
-      offers: [{ kind: 'integrado', organization: 'anual' }],
-      courses: 'Curso de teste',
-      classes: '',
-      shifts: '',
-      purpose: 'test',
-    },
-  });
+  const record = await campus
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: ids.campuses.a,
+        year: 2027,
+        offers: [{ kind: 'integrado', organization: 'anual' }],
+        courses: 'Curso de teste',
+        classes: '',
+        shifts: '',
+        purpose: 'test',
+      },
+    })
+    .then(calendarRecordDates);
   const bootstrap = await reviewer.query(api.workspace.bootstrap, {});
   assert.equal(bootstrap.campuses.length, 2);
   assert.equal(bootstrap.users.length, 0);
-  assert.equal((await reviewer.query(api.calendars.calendar, { id: record.id })).id, record.id);
+  assert.equal(
+    (await reviewer.query(api.calendars.calendar, { id: record.id }).then(calendarRecordDates)).id,
+    record.id,
+  );
   const support = await reviewer.query(api.reviews.review, { id: record.id });
   const body = {
     rulesetVersion: support.rulesetVersion,
@@ -60,28 +66,32 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
   );
   await assert.rejects(campus.query(api.reviews.review, { id: record.id }), /Acesso exclusivo/);
   await assert.rejects(
-    reviewer.mutation(api.calendars.createCalendar, {
-      body: {
-        campusId: ids.campuses.b,
-        year: 2027,
-        offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Teste',
-        classes: '',
-        shifts: '',
-        purpose: 'test',
-      },
-    }),
+    reviewer
+      .mutation(api.calendars.createCalendar, {
+        body: {
+          campusId: ids.campuses.b,
+          year: 2027,
+          offers: [{ kind: 'integrado', organization: 'anual' }],
+          courses: 'Teste',
+          classes: '',
+          shifts: '',
+          purpose: 'test',
+        },
+      })
+      .then(calendarRecordDates),
     /não podem alterar/,
   );
   await assert.rejects(
-    reviewer.mutation(api.calendars.saveCalendar, {
-      id: record.id,
-      body: {
-        state: record.state,
-        version: record.version,
-        catalogueRevision: record.currentCatalogueRevision,
-      },
-    }),
+    reviewer
+      .mutation(api.calendars.saveCalendar, {
+        id: record.id,
+        body: {
+          state: record.state,
+          version: record.version,
+          catalogueRevision: record.currentCatalogueRevision,
+        },
+      })
+      .then(calendarSaveDates),
     /não podem alterar/,
   );
   await assert.rejects(
@@ -232,13 +242,15 @@ test('campus cannot read or change another campus while admin can manage both', 
     courses: 'Teste isolado',
     purpose: 'test' as const,
   };
-  const other = await admin.mutation(api.calendars.createCalendar, { body });
+  const other = await admin
+    .mutation(api.calendars.createCalendar, { body })
+    .then(calendarRecordDates);
   await assert.rejects(
-    campus.mutation(api.calendars.createCalendar, { body }),
+    campus.mutation(api.calendars.createCalendar, { body }).then(calendarRecordDates),
     /Registro não encontrado/,
   );
   await assert.rejects(
-    campus.query(api.calendars.calendar, { id: other.id }),
+    campus.query(api.calendars.calendar, { id: other.id }).then(calendarRecordDates),
     /Registro não encontrado/,
   );
   await assert.rejects(
@@ -249,14 +261,16 @@ test('campus cannot read or change another campus while admin can manage both', 
     /Registro não encontrado/,
   );
   await assert.rejects(
-    campus.mutation(api.calendars.saveCalendar, {
-      id: other.id,
-      body: {
-        version: other.version,
-        catalogueRevision: other.currentCatalogueRevision,
-        state: other.state,
-      },
-    }),
+    campus
+      .mutation(api.calendars.saveCalendar, {
+        id: other.id,
+        body: {
+          version: other.version,
+          catalogueRevision: other.currentCatalogueRevision,
+          state: other.state,
+        },
+      })
+      .then(calendarSaveDates),
     /Registro não encontrado/,
   );
   await assert.rejects(
@@ -277,7 +291,10 @@ test('campus cannot read or change another campus while admin can manage both', 
     /Registro não encontrado/,
   );
   await admin.mutation(api.calendars.restoreCalendar, { id: other.id });
-  assert.equal((await admin.query(api.calendars.calendar, { id: other.id })).id, other.id);
+  assert.equal(
+    (await admin.query(api.calendars.calendar, { id: other.id }).then(calendarRecordDates)).id,
+    other.id,
+  );
 });
 
 test('concurrent profile edits compare the original role and campus atomically', async () => {
@@ -320,17 +337,19 @@ test('concurrent profile edits compare the original role and campus atomically',
 
 test('the review queue reports each parecer state without exposing it to campus accounts', async () => {
   const { client, reviewer, campus, ids } = await fixture();
-  const record = await campus.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: ids.campuses.a,
-      year: 2027,
-      offers: [{ kind: 'integrado', organization: 'anual' }],
-      courses: 'Curso de teste',
-      classes: '',
-      shifts: '',
-      purpose: 'test',
-    },
-  });
+  const record = await campus
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: ids.campuses.a,
+        year: 2027,
+        offers: [{ kind: 'integrado', organization: 'anual' }],
+        courses: 'Curso de teste',
+        classes: '',
+        shifts: '',
+        purpose: 'test',
+      },
+    })
+    .then(calendarRecordDates);
   const queue = async () =>
     (
       await reviewer.query(api.reviews.reviewQueue, {

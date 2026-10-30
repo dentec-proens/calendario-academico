@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
@@ -84,16 +85,16 @@ test('a migrated stage outside its own cycle prints its dates and warns without 
   const state = calendarOffersV4Fixture();
   const expected = evaluateCalendar(state, state.events).byOffer['graduacao-2'].total;
   const stage = state.events.find((event) => event.id === 'graduacao-2-stage-3')!;
-  stage.start = '2027-02-01';
-  stage.end = '2027-04-16';
+  stage.start = civilDate('2027-02-01');
+  stage.end = civilDate('2027-04-16');
   const result = evaluateCalendar(state, state.events);
   const report = teachingDayBreakdown(state, state.events, result, 'graduacao-2');
   expect(report.annual.total).toBe(expected);
   expect(report.stages[2]).toMatchObject({
     available: false,
     total: null,
-    start: '2027-02-01',
-    end: '2027-04-16',
+    start: civilDate('2027-02-01'),
+    end: civilDate('2027-04-16'),
   });
   expect(
     report.notes.some(

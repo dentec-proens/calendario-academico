@@ -1,3 +1,4 @@
+import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
 import { convexModules } from '../helpers/convex-modules.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
@@ -145,15 +146,17 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
   assert.equal(bootstrap.users.length, 1);
   assert.deepEqual(bootstrap.calendars, []);
   assert.deepEqual(bootstrap.catalogue, initialCatalogue());
-  const calendar = await admin.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: bootstrap.campuses[0].id,
-      year: 2027,
-      offers: [{ kind: 'integrado', organization: 'anual' }],
-      courses: 'Curso sintético',
-      purpose: 'test',
-    },
-  });
+  const calendar = await admin
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: bootstrap.campuses[0].id,
+        year: 2027,
+        offers: [{ kind: 'integrado', organization: 'anual' }],
+        courses: 'Curso sintético',
+        purpose: 'test',
+      },
+    })
+    .then(calendarRecordDates);
   assert.ok(calendar.id);
   assert.equal((await admin.query(api.workspace.bootstrap, {})).calendars.length, 1);
   const populated = await snapshot(client);

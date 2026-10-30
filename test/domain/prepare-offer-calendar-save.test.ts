@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import {
@@ -65,8 +66,8 @@ test('requires distinct labels for repeated kinds and validates stages per cycle
 test('saving another field keeps migrated stages in the wrong semester for readiness to flag', () => {
   const source = calendarOffersV4Fixture();
   const event = source.events.find((item) => item.requirementId === 'stage-3:graduacao-2')!;
-  event.start = '2027-05-03';
-  event.end = '2027-06-01';
+  event.start = civilDate('2027-05-03');
+  event.end = civilDate('2027-06-01');
   const previous = normalizeOfferCalendar(source);
   const prepared = prepareOfferCalendarSave(
     previous,

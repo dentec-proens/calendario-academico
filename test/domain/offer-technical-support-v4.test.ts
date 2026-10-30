@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
@@ -13,14 +14,16 @@ test('the parecer compares minima and window only for covered offers', () => {
     (item) =>
       item.association.status === 'defined' && item.association.offers.includes('graduacao-3'),
   )) {
-    period.start =
+    period.start = civilDate(
       period.association.status === 'defined' && period.association.term === 'first'
         ? '2027-01-01'
-        : '2027-01-11';
-    period.end =
+        : '2027-01-11',
+    );
+    period.end = civilDate(
       period.association.status === 'defined' && period.association.term === 'first'
         ? '2027-01-08'
-        : '2027-01-15';
+        : '2027-01-15',
+    );
   }
   const actual = support(state);
   expect(actual.criteria.find((item) => item.id === 'annual')?.initial.finding).toBe(
@@ -49,23 +52,23 @@ test('pending semester stages retain every assessment-dependent binding while ot
       {
         id: 'first',
         name: '1º semestre',
-        start: '2027-02-01',
-        end: '2027-07-09',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-07-09'),
         association: { status: 'defined' as const, offers: ['graduacao'], term: 'first' as const },
       },
       {
         id: 'second',
         name: '2º semestre',
-        start: '2027-07-26',
-        end: '2027-12-17',
+        start: civilDate('2027-07-26'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined' as const, offers: ['graduacao'], term: 'second' as const },
       },
     ],
     events: ['stage', 'results', 'council', 'pedagogical-meeting'].map((prefix) => ({
       id: prefix,
       name: prefix,
-      start: '2027-03-01',
-      end: '2027-03-02',
+      start: civilDate('2027-03-01'),
+      end: civilDate('2027-03-02'),
       kind: 'note',
       offers: ['graduacao'],
       requirementId: `${prefix}-1:graduacao`,
@@ -110,13 +113,13 @@ test('coverage-linked candidates carry only the fields of the review contract', 
   state.events.push({
     id: 'linked-stage',
     name: '1ª etapa de avaliação — início e término',
-    start: '2027-02-15',
-    end: '2027-05-17',
+    start: civilDate('2027-02-15'),
+    end: civilDate('2027-05-17'),
     kind: 'note',
     category: 'limite',
     offers: [offer],
     requirementId: `stage-1:${offer}`,
-    assessmentAutoStart: '2027-02-15',
+    assessmentAutoStart: civilDate('2027-02-15'),
   });
   const candidates = support(state).criteria.flatMap((item) => item.candidates);
   expect(candidates.some((item) => item.id === 'linked-stage')).toBe(true);

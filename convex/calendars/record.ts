@@ -1,3 +1,4 @@
+import { readActivityDates } from '../../src/domain/calendar/civil-dates.ts';
 import { inspectBase } from './base';
 import { releaseReadiness } from '../../src/domain/calendar/readiness';
 import type { Doc, Id } from '../_generated/dataModel';
@@ -28,7 +29,7 @@ export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>
     state: domainState(row, campus, content.state),
     catalogueRevision: content.catalogueRevision,
     documentSnapshot: content.documentSnapshot.map(documentDto),
-    institutionalSnapshot: content.institutionalSnapshot,
+    institutionalSnapshot: content.institutionalSnapshot.map(readActivityDates),
   };
   const compatibility = inspectBase(record.state, content, base, docs);
   const readiness = releaseReadiness(record, {

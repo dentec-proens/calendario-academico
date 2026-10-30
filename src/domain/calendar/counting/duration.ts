@@ -1,6 +1,8 @@
+import { civilDate } from '../../civil-date.ts';
 import { calendarLimits } from '../config.ts';
 import type { CountingEvent, CalendarPeriod, TeachingState } from '../model.ts';
-import { parseDate, datesBetween } from './core.ts';
+import { datesBetween } from './core.ts';
+import { parseDate } from '../../civil-date.ts';
 import { appliesTo } from '../modalities.ts';
 import { associationOffers, calendarOffers } from '../offers.ts';
 import { samePeriodScope } from '../organization/periods.ts';
@@ -56,7 +58,7 @@ export function durationEnd(
     throw new DomainError(
       `Informe uma quantidade inteira entre ${calendarLimits.minimumTargetDays} e ${calendarLimits.maximumTargetDays} dias.`,
     );
-  if (!state) return new Date(time + (count - 1) * 86400000).toISOString().slice(0, 10);
+  if (!state) return civilDate(new Date(time + (count - 1) * 86400000).toISOString().slice(0, 10));
   if (!state.weekConfirmed || !state.weekdays?.length)
     throw new DomainError('Confirme a semana letiva antes de calcular o término.');
   if (Number(start.slice(0, 4)) !== state.year)

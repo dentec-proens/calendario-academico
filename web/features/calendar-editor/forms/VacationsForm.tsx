@@ -1,3 +1,7 @@
+import {
+  readVacationDates,
+  type VacationInput,
+} from '../../../../src/domain/calendar/civil-dates.ts';
 import { useEffect } from 'react';
 import { durationEnd } from '#src/domain/calendar/counting/duration.ts';
 import { teacherVacations } from '#src/domain/calendar/activities/teacher-vacations.ts';
@@ -6,6 +10,19 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Input } from './fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
+
+function vacationDatesFromValues(value: VacationInput) {
+  if (
+    !value.firstStart ||
+    !value.firstEnd ||
+    (value.secondStart && !value.secondEnd) ||
+    (value.secondEnd && !value.secondStart) ||
+    (value.thirdStart && !value.thirdEnd) ||
+    (value.thirdEnd && !value.thirdStart)
+  )
+    throw new Error('Informe início e término de cada período de férias.');
+  return readVacationDates(value);
+}
 
 export default function VacationsForm() {
   const { state, session, institutional, readOnly } = useCalendarEditor();
@@ -24,7 +41,9 @@ export default function VacationsForm() {
     },
     function apply(value) {
       const { firstDays: _first, secondDays: _second, thirdDays: _third, ...periods } = value;
-      session.apply((current) => applyVacations(current, periods, institutional));
+      session.apply((current) =>
+        applyVacations(current, vacationDatesFromValues(periods), institutional),
+      );
     },
   );
   useEffect(() => {
@@ -42,7 +61,7 @@ export default function VacationsForm() {
   }, [form, values]);
   let preview = '';
   try {
-    const result = teacherVacations(state.year, values);
+    const result = teacherVacations(state.year, vacationDatesFromValues(values));
     preview = `Total informado: ${result.total} dias. Confira o quantitativo e a decisão do campus.`;
   } catch (cause) {
     preview = cause instanceof Error ? cause.message : '';

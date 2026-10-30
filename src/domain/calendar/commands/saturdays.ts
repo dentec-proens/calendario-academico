@@ -1,3 +1,4 @@
+import { civilDate } from '../../civil-date.ts';
 import type { ActivityState, CalendarActivity } from '../model.ts';
 import { isSaturdayRecord, saturdayEvents } from '../activities/saturdays.ts';
 import { recalculateCalendar } from './recalculate.ts';
@@ -11,7 +12,7 @@ export function applySaturdays<S extends ActivityState>(
 ): S {
   if (!values.confirmed)
     throw new DomainError('Confirme as atividades para a oferta deste calendário.');
-  const events = saturdayEvents(state, values.dates, values.name, id);
+  const events = saturdayEvents(state, values.dates.map(civilDate), values.name, id);
   return recalculateCalendar({ ...state, events: [...state.events, ...events] }, institutional);
 }
 
@@ -29,7 +30,7 @@ export function applySaturdayActivities<S extends ActivityState>(
       events.push(
         ...saturdayEvents(
           { ...state, events: [...state.events, ...events] },
-          [activity.date],
+          [civilDate(activity.date)],
           activity.name,
           id,
         ),

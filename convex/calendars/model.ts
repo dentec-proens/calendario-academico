@@ -1,3 +1,4 @@
+import { readCalendarDates } from '../../src/domain/calendar/civil-dates.ts';
 import { calendarName } from '../../src/domain/calendar/label';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { Member } from '../access/contracts';
@@ -47,7 +48,7 @@ export function domainState(
   state: ContentState,
 ): DomainState {
   return {
-    ...state,
+    ...readCalendarDates(state),
     year: row.year,
     campus: campus.name,
   };

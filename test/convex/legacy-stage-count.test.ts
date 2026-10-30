@@ -1,3 +1,5 @@
+import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
@@ -15,15 +17,17 @@ type Count = 2 | 3 | 4;
 async function setup(count?: Count) {
   const fixture = await createNativeFixture();
   const actor = fixture.asClient('campus-a');
-  const created = await actor.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      offers: [{ kind: 'integrado', organization: 'a-classificar' }],
-      courses: 'Configuração sintética migrada',
-      purpose: 'test',
-    },
-  });
+  const created = await actor
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        offers: [{ kind: 'integrado', organization: 'a-classificar' }],
+        courses: 'Configuração sintética migrada',
+        purpose: 'test',
+      },
+    })
+    .then(calendarRecordDates);
   if (count !== undefined)
     await fixture.client.run(async (ctx) => {
       const content = await ctx.db
@@ -45,17 +49,21 @@ async function setup(count?: Count) {
       }));
       await ctx.db.patch(content._id, { state });
     });
-  const record = await actor.query(api.calendars.calendar, { id: created.id });
+  const record = await actor
+    .query(api.calendars.calendar, { id: created.id })
+    .then(calendarRecordDates);
   const save = (state: typeof record.state, version = record.version) =>
-    actor.mutation(api.calendars.saveCalendar, {
-      id: record.id,
-      body: {
-        version,
-        catalogueRevision: record.catalogueRevision,
-        // Match the HTTP JSON boundary, which omits undefined optional fields.
-        state: JSON.parse(JSON.stringify(state)) as typeof state,
-      },
-    });
+    actor
+      .mutation(api.calendars.saveCalendar, {
+        id: record.id,
+        body: {
+          version,
+          catalogueRevision: record.catalogueRevision,
+          // Match the HTTP JSON boundary, which omits undefined optional fields.
+          state: JSON.parse(JSON.stringify(state)) as typeof state,
+        },
+      })
+      .then(calendarSaveDates);
   return { ...fixture, actor, record, save };
 }
 
@@ -91,9 +99,13 @@ test('direct payloads cannot introduce, change, omit or partially resolve the hi
   const introduced = structuredClone(fresh.record.state);
   Object.assign(introduced.offers[0], { legacyStageCount: 3 });
   await expect(fresh.save(introduced)).rejects.toThrow();
-  expect((await fresh.actor.query(api.calendars.calendar, { id: fresh.record.id })).version).toBe(
-    fresh.record.version,
-  );
+  expect(
+    (
+      await fresh.actor
+        .query(api.calendars.calendar, { id: fresh.record.id })
+        .then(calendarRecordDates)
+    ).version,
+  ).toBe(fresh.record.version);
 
   const migrated = await setup(3);
   for (const mutate of [
@@ -111,7 +123,9 @@ test('direct payloads cannot introduce, change, omit or partially resolve the hi
     const proposed = structuredClone(migrated.record.state);
     mutate(proposed);
     await expect(migrated.save(proposed)).rejects.toThrow();
-    const intact = await migrated.actor.query(api.calendars.calendar, { id: migrated.record.id });
+    const intact = await migrated.actor
+      .query(api.calendars.calendar, { id: migrated.record.id })
+      .then(calendarRecordDates);
     expect(intact.version).toBe(migrated.record.version);
     expect(intact.state).toEqual(migrated.record.state);
   }
@@ -132,7 +146,7 @@ test('new or changed stage dates require a real cycle even when the historical t
     {
       ...record.state,
       events: record.state.events.map((event, index) =>
-        index === 0 ? { ...event, end: '2027-02-21' } : event,
+        index === 0 ? { ...event, end: civilDate('2027-02-21') } : event,
       ),
     },
     {
@@ -151,8 +165,8 @@ test('direct complete classification cannot erase a previous required second-sem
   draft.periods[0] = {
     sourceId: '',
     name: 'Ano explícito',
-    start: '2027-02-01',
-    end: '2027-12-17',
+    start: civilDate('2027-02-01'),
+    end: civilDate('2027-12-17'),
   };
   draft.stages[0].start = '2027-02-01';
   draft.stages[0].end = '2027-07-09';
@@ -178,7 +192,9 @@ test('direct complete classification cannot erase a previous required second-sem
     await ctx.db.patch(content._id, { state });
   });
   await expect(save(configured)).rejects.toThrow(/matrícula/i);
-  const intact = await actor.query(api.calendars.calendar, { id: record.id });
+  const intact = await actor
+    .query(api.calendars.calendar, { id: record.id })
+    .then(calendarRecordDates);
   expect(intact.version).toBe(record.version);
   expect(intact.state).toEqual(previous);
 });
@@ -191,8 +207,8 @@ test('complete explicit configuration retires surplus bindings and retains the m
   draft.periods[0] = {
     sourceId: '',
     name: 'Ano explícito',
-    start: '2027-02-01',
-    end: '2027-12-17',
+    start: civilDate('2027-02-01'),
+    end: civilDate('2027-12-17'),
   };
   draft.stages[0].start = '2027-02-01';
   draft.stages[0].end = '2027-07-09';

@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
@@ -25,8 +26,8 @@ test('definitive release requires every reviewed criterion, current versions and
         {
           id: 'year',
           name: 'Ano',
-          start: '2027-02-01',
-          end: '2027-12-17',
+          start: civilDate('2027-02-01'),
+          end: civilDate('2027-12-17'),
           association: {
             status: 'defined' as const,
             offers: ['integrado'],
@@ -54,8 +55,8 @@ test('definitive release requires every reviewed criterion, current versions and
     .map((name, i) => ({
       id: 'e' + i,
       name,
-      start: '2027-02-01',
-      end: '2027-02-01',
+      start: civilDate('2027-02-01'),
+      end: civilDate('2027-02-01'),
       kind: 'note',
       category: 'institucional',
     }));
@@ -65,8 +66,8 @@ test('definitive release requires every reviewed criterion, current versions and
       requirementId: r.id,
       offers: r.offerId ? [r.offerId] : ['integrado'],
       name: r.name,
-      start: '2027-02-01',
-      end: '2027-02-01',
+      start: civilDate('2027-02-01'),
+      end: civilDate('2027-02-01'),
       kind: 'note',
     })),
   );
@@ -99,7 +100,8 @@ test('definitive release requires every reviewed criterion, current versions and
   for (const r of activityChecklist(record.state)) {
     const event = record.state.events.find((e) => e.requirementId === r.id)!;
     if (r.minHours) event!.hours = r.minHours;
-    if (r.month) event!.start = event!.end = `2027-${String(r.month).padStart(2, '0')}-10`;
+    if (r.month)
+      event!.start = event!.end = civilDate(`2027-${String(r.month).padStart(2, '0')}-10`);
     if (r.admissionType) {
       event.publicationStatus = 'planned';
       event.admission = {
@@ -109,7 +111,7 @@ test('definitive release requires every reviewed criterion, current versions and
         ...(r.admissionType === 'transfer' ? { periodId: 'year' } : {}),
       };
     }
-    if (r.id.startsWith('admission-notice-')) event!.start = event!.end = '2027-01-01';
+    if (r.id.startsWith('admission-notice-')) event!.start = event!.end = civilDate('2027-01-01');
   }
   assert.deepEqual(releaseReadiness(record, db).issues, []);
   assert(
@@ -119,8 +121,8 @@ test('definitive release requires every reviewed criterion, current versions and
   );
   const stage = record.state.events.find((e) => e.requirementId === 'stage-1:integrado')!;
   const results = record.state.events.find((e) => e.requirementId === 'results-1:integrado')!;
-  stage!.end = '2027-02-10';
-  results!.end = '2027-02-05';
+  stage!.end = civilDate('2027-02-10');
+  results!.end = civilDate('2027-02-05');
   const before = structuredClone(record.state.events),
     flexible = releaseReadiness(record, db);
   assert.equal(flexible.ready, true);
@@ -157,7 +159,7 @@ test('definitive release requires every reviewed criterion, current versions and
   review.calendarVersion = 0;
   assert.equal(releaseReadiness(record, db).ready, false);
   review.calendarVersion = 1;
-  record.state.periods[0].end = '2027-02-01';
+  record.state.periods[0].end = civilDate('2027-02-01');
   assert.equal(releaseReadiness(record, db).ready, false);
 });
 
@@ -165,8 +167,8 @@ test('explicit technical modality inherits scoped events and test PDF identifies
   const event = {
     id: 'e',
     active: true,
-    start: '2027-01-01',
-    end: '2027-01-01',
+    start: civilDate('2027-01-01'),
+    end: civilDate('2027-01-01'),
     modalities: ['subsequente'],
   };
   assert.equal(
@@ -197,8 +199,8 @@ test('combined calendars scope exclusions by modality and do not presume a postg
       {
         id: 'p',
         name: 'Semana',
-        start: '2027-02-01',
-        end: '2027-02-05',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-02-05'),
         association: {
           status: 'defined' as const,
           offers: ['subsequente', 'graduacao', 'posgraduacao'],
@@ -229,7 +231,13 @@ test('combined calendars scope exclusions by modality and do not presume a postg
     ],
   };
   const result = evaluateCalendar(state, [
-    { id: 'e', start: '2027-02-02', end: '2027-02-02', kind: 'exclude', offers: ['graduacao'] },
+    {
+      id: 'e',
+      start: civilDate('2027-02-02'),
+      end: civilDate('2027-02-02'),
+      kind: 'exclude',
+      offers: ['graduacao'],
+    },
   ]);
   assert.equal(result.byOffer.subsequente.total, 5);
   assert.equal(result.byOffer.graduacao.total, 4);
@@ -239,8 +247,8 @@ test('combined calendars scope exclusions by modality and do not presume a postg
       {
         id: 'same',
         active: true,
-        start: '2027-01-01',
-        end: '2027-01-01',
+        start: civilDate('2027-01-01'),
+        end: civilDate('2027-01-01'),
         modalities: ['subsequente', 'graduacao'],
       },
     ],

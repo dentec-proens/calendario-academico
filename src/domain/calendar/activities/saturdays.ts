@@ -1,5 +1,7 @@
+import { type CivilDate } from '../../civil-date.ts';
 import type { ActivityState, CalendarActivity, AssessmentSettings } from '../model.ts';
-import { datesBetween, parseDate } from '../counting/core.ts';
+import { datesBetween } from '../counting/core.ts';
+import { parseDate } from '../../civil-date.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 import { offerIds } from '../offers.ts';
 import { DomainError } from '../../errors.ts';
@@ -14,7 +16,7 @@ export function monthSaturdays(year: number, month: number) {
 
 export function saturdayEvents(
   state: Pick<ActivityState, 'year' | 'periods' | 'events'> & AssessmentSettings,
-  dates: string[],
+  dates: CivilDate[],
   name: string,
   id: () => string,
 ) {
@@ -65,7 +67,7 @@ const monthNames = [
 ];
 
 export interface YearDay {
-  date: string;
+  date: CivilDate;
   day: number;
   weekday: number;
   inPeriod: boolean;
@@ -151,7 +153,7 @@ export function saturdayYear(
 }
 
 // Preview only: counts selected Saturdays that are open and have no impediment.
-export function saturdayGain(months: YearMonth[], dates: string[]): number {
+export function saturdayGain(months: YearMonth[], dates: CivilDate[]): number {
   const selected = new Set(dates);
   return months
     .flatMap((month) => month.days)

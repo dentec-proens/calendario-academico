@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { categories, eventCategory } from '../../src/domain/calendar/activities/categories.ts';
@@ -28,8 +29,8 @@ test('PROENS palette matches reference and simultaneous classifications remain v
     .map(([category], i) => ({
       id: String(i),
       name: category,
-      start: '2027-02-06',
-      end: '2027-02-06',
+      start: civilDate('2027-02-06'),
+      end: civilDate('2027-02-06'),
       kind: 'note',
       category,
     }));
@@ -64,8 +65,8 @@ test('institutional and local scopes identify their actual offer in v4 printing'
   const event = {
     id: 'fixture',
     name: 'Feriado institucional',
-    start: '2027-02-06',
-    end: '2027-02-06',
+    start: civilDate('2027-02-06'),
+    end: civilDate('2027-02-06'),
     kind: 'exclude',
     category: 'feriado',
     offers: ['integrado'],

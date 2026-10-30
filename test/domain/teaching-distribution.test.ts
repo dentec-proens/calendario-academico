@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
@@ -15,8 +16,8 @@ const state = {
     {
       id: 'p1',
       name: '1º semestre',
-      start: '2027-06-21',
-      end: '2027-07-02',
+      start: civilDate('2027-06-21'),
+      end: civilDate('2027-07-02'),
       association: {
         status: 'defined' as const,
         offers: ['integrado', 'graduacao'],
@@ -26,8 +27,8 @@ const state = {
     {
       id: 'p2',
       name: '2º semestre',
-      start: '2027-08-02',
-      end: '2027-08-13',
+      start: civilDate('2027-08-02'),
+      end: civilDate('2027-08-13'),
       association: {
         status: 'defined' as const,
         offers: ['integrado', 'graduacao'],
@@ -57,8 +58,8 @@ const stage = (number: number, modality: string, start: string, end: string) => 
   name: 'Etapa',
   requirementId: `stage-${number}:${modality}`,
   offers: [modality],
-  start,
-  end,
+  start: civilDate(start),
+  end: civilDate(end),
   kind: 'note',
 });
 const events: CalendarActivity[] = [
@@ -71,16 +72,16 @@ const events: CalendarActivity[] = [
   {
     id: 'holiday',
     name: 'Feriado',
-    start: '2027-06-22',
-    end: '2027-06-22',
+    start: civilDate('2027-06-22'),
+    end: civilDate('2027-06-22'),
     kind: 'exclude',
     offers: ['integrado'],
   },
   {
     id: 'saturday',
     name: 'Sábado letivo',
-    start: '2027-06-26',
-    end: '2027-06-26',
+    start: civilDate('2027-06-26'),
+    end: civilDate('2027-06-26'),
     kind: 'include',
     offers: ['integrado'],
   },
@@ -149,8 +150,8 @@ test('annual periods preserve assessment totals without inventing semester bound
       {
         id: 'year',
         name: 'Anual',
-        start: '2027-06-21',
-        end: '2027-08-13',
+        start: civilDate('2027-06-21'),
+        end: civilDate('2027-08-13'),
         association: {
           status: 'defined' as const,
           offers: ['integrado', 'graduacao'],
@@ -171,7 +172,13 @@ test('annual periods preserve assessment totals without inventing semester bound
   };
   const withRecess: CalendarActivity[] = [
     ...events,
-    { name: 'Recesso', id: 'recess', start: '2027-07-03', end: '2027-08-01', kind: 'exclude' },
+    {
+      name: 'Recesso',
+      id: 'recess',
+      start: civilDate('2027-07-03'),
+      end: civilDate('2027-08-01'),
+      kind: 'exclude',
+    },
   ];
   const result = evaluateCalendar(input, withRecess),
     report = teachingDayBreakdown(input, withRecess, result, 'integrado');
@@ -190,8 +197,8 @@ test('annual periods preserve assessment totals without inventing semester bound
     periods: [
       {
         id: 'a',
-        start: '2027-06-21',
-        end: '2027-07-05',
+        start: civilDate('2027-06-21'),
+        end: civilDate('2027-07-05'),
         association: {
           status: 'defined' as const,
           offers: ['integrado', 'graduacao'],
@@ -200,8 +207,8 @@ test('annual periods preserve assessment totals without inventing semester bound
       },
       {
         id: 'b',
-        start: '2027-07-02',
-        end: '2027-08-13',
+        start: civilDate('2027-07-02'),
+        end: civilDate('2027-08-13'),
         association: {
           status: 'defined' as const,
           offers: ['integrado', 'graduacao'],
@@ -224,8 +231,8 @@ test('trimestral offers retain their three assessment intervals alongside monthl
       {
         id: 'year',
         name: 'Anoletivo',
-        start: '2027-06-21',
-        end: '2027-08-13',
+        start: civilDate('2027-06-21'),
+        end: civilDate('2027-08-13'),
         association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
     ],

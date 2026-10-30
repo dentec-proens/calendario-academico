@@ -1,3 +1,4 @@
+import { type CivilDate } from '../../civil-date.ts';
 import type { AssessmentSettings, ActivityRequirement } from '../model.ts';
 import {
   calendarOffers,
@@ -18,7 +19,7 @@ import {
 /** Year-specific details a policy may add to the undated operational checklist. */
 export interface OperationalChecklistOptions {
   /** Civil deadlines by activity ID; the label shows them in dd/mm/yyyy. */
-  deadlines?: Readonly<Record<string, string>>;
+  deadlines?: Readonly<Record<string, CivilDate>>;
   /** Review criteria are linked only when given; entries renumber criteria by activity ID. */
   criteria?: Readonly<Record<string, string>>;
 }

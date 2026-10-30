@@ -1,18 +1,18 @@
+import { civilDate, type CivilDate } from '../civil-date.ts';
 import type { ObservanceRule } from '../policies/contract.ts';
 import { policyFor } from '../policies/registry.ts';
 import { DomainError } from '../errors.ts';
-import { parseDate } from './counting/core.ts';
 
 export interface ObservanceState {
   year: number;
-  observanceDates?: Record<string, string>;
+  observanceDates?: Record<string, CivilDate>;
 }
 interface ObservanceEvent {
   id: string;
-  start: string;
-  end: string;
-  originalStart?: string;
-  originalEnd?: string;
+  start: CivilDate;
+  end: CivilDate;
+  originalStart?: CivilDate;
+  originalEnd?: CivilDate;
 }
 export const observanceEventId = (rule: ObservanceRule) => `inst:${rule.eventCode}`;
 export const observanceRules = (year: number) => policyFor(year).observances;
@@ -100,7 +100,7 @@ export function validateObservances(events: ObservanceEvent[], state: Observance
 export function chooseObservance<S extends ObservanceState>(
   state: S,
   key: string,
-  date: string | undefined,
+  date: CivilDate | undefined,
   events: ObservanceEvent[],
 ): S & ObservanceState {
   const choices = { ...state.observanceDates };
@@ -117,7 +117,9 @@ export function chooseObservance<S extends ObservanceState>(
 }
 
 /** Structural normalization does not apply a later policy to historical evidence. */
-export function normalizeObservanceDates(choices: Record<string, string> | undefined) {
+export function normalizeObservanceDates(
+  choices: Record<string, string> | undefined,
+): Record<string, CivilDate> | undefined {
   if (!choices || !Object.keys(choices).length) return undefined;
   if (Object.keys(choices).length > 32)
     throw new DomainError('Quantidade de observâncias inválida.');
@@ -128,18 +130,17 @@ export function normalizeObservanceDates(choices: Record<string, string> | undef
         if (!/^[a-z][a-z0-9-]{0,79}$/.test(key))
           throw new DomainError('Identidade de observância inválida.');
         try {
-          parseDate(date);
+          return [key, civilDate(date)];
         } catch {
           throw new DomainError('Data de observância inválida.');
         }
-        return [key, date];
       }),
   );
 }
 
 /** Protect both the old and proposed identity/year when an administrator edits the catalogue. */
 export function validateObservanceCatalogueEvent(
-  event: { code: string; year: number; start: string; end: string },
+  event: { code: string; year: number; start: CivilDate; end: CivilDate },
   previous?: { code: string; year: number } | null,
 ) {
   const rules = [

@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import type { CalendarInput } from '../../src/domain/calendar/counting/core.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
@@ -12,7 +13,7 @@ import {
 const fixture = (): CalendarInput => ({
   year: 2027,
   offerId: 'test-offer',
-  periods: [{ id: 'p1', start: '2027-02-01', end: '2027-02-07' }],
+  periods: [{ id: 'p1', start: civilDate('2027-02-01'), end: civilDate('2027-02-07') }],
   weekPattern: { weekdays: [1, 2, 3, 4, 5], confirmed: true, evidenceId: 'synthetic-week' },
   inclusions: [],
   exclusions: [],
@@ -20,8 +21,8 @@ const fixture = (): CalendarInput => ({
 });
 const event = (id: string, start: string, end = start, offerIds = ['test-offer']) => ({
   id,
-  start,
-  end,
+  start: civilDate(start),
+  end: civilDate(end),
   offerIds,
   confirmed: true,
   evidenceId: 'synthetic-' + id,
@@ -83,7 +84,7 @@ test('null minimum is not verifiable, zero is an explicit minimum', () => {
 });
 test('annual total cannot hide a period deficit', () => {
   const x = fixture();
-  x.periods.push({ id: 'p2', start: '2027-02-08', end: '2027-02-12' });
+  x.periods.push({ id: 'p2', start: civilDate('2027-02-08'), end: civilDate('2027-02-12') });
   x.thresholds = { annual: 10, byPeriod: { p1: 6, p2: 4 } };
   assert.deepEqual(
     countCalendar(x).checks.map((c) => c.status),
@@ -92,11 +93,11 @@ test('annual total cannot hide a period deficit', () => {
 });
 test('overlapping periods, foreign year and out-of-period inclusions rejected', () => {
   const x = fixture();
-  x.periods.push({ id: 'p2', start: '2027-02-07', end: '2027-02-09' });
+  x.periods.push({ id: 'p2', start: civilDate('2027-02-07'), end: civilDate('2027-02-09') });
   x.thresholds.byPeriod.p2 = 1;
   assert.throws(() => countCalendar(x));
   const y = fixture();
-  y.periods[0].start = '2026-12-31';
+  y.periods[0].start = civilDate('2026-12-31');
   assert.throws(() => countCalendar(y));
   const z = fixture();
   z.inclusions = [event('a', '2027-02-08')];
@@ -116,13 +117,17 @@ test('missing confirmation, scope and thresholds cannot silently pass', () => {
 });
 test('next teaching day is not presumed to be next weekday', () => {
   assert.equal(
-    firstTeachingDateAfter('2027-02-05', ['2027-02-09', '2027-02-05', '2027-02-06']),
+    firstTeachingDateAfter(civilDate('2027-02-05'), [
+      civilDate('2027-02-09'),
+      civilDate('2027-02-05'),
+      civilDate('2027-02-06'),
+    ]),
     '2027-02-06',
   );
-  assert.equal(firstTeachingDateAfter('2027-02-09', ['2027-02-09']), null);
+  assert.equal(firstTeachingDateAfter(civilDate('2027-02-09'), [civilDate('2027-02-09')]), null);
 });
 test('60-day administrative deadline crosses civil year', () => {
-  assert.equal(daysBefore('2027-02-01', 60), '2026-12-03');
+  assert.equal(daysBefore(civilDate('2027-02-01'), 60), '2026-12-03');
 });
 test('input remains unchanged and repeated calculation is identical', () => {
   const x = fixture(),

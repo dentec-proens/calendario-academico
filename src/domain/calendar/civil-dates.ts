@@ -1,0 +1,105 @@
+import { civilDate, optionalCivilDate, type CivilDate } from '../civil-date.ts';
+
+type RangeDates<T> = { [K in keyof T]: K extends 'start' | 'end' ? CivilDate : T[K] };
+type ActivityDateKey = 'start' | 'end' | 'originalStart' | 'originalEnd' | 'assessmentAutoStart';
+type AdjustmentDates<T> = T extends { date: string } ? Omit<T, 'date'> & { date: CivilDate } : T;
+type ActivityDates<T> = {
+  [K in keyof T]: K extends ActivityDateKey
+    ? CivilDate
+    : K extends 'deadlineAdjustment'
+      ? AdjustmentDates<T[K]>
+      : T[K];
+};
+type CalendarDates<T extends CalendarInput> = {
+  [K in keyof T]: K extends 'periods'
+    ? RangeDates<T['periods'][number]>[]
+    : K extends 'events'
+      ? ActivityDates<T['events'][number]>[]
+      : K extends 'observanceDates'
+        ? Record<string, CivilDate>
+        : K extends 'teacherVacations'
+          ? ReturnType<typeof readVacationDates>
+          : T[K];
+};
+interface CalendarInput {
+  periods: RangeInput[];
+  events: ActivityInput[];
+  observanceDates?: Record<string, string>;
+  teacherVacations?: VacationInput;
+}
+
+interface RangeInput {
+  start: string;
+  end: string;
+}
+interface ActivityInput extends RangeInput {
+  originalStart?: string;
+  originalEnd?: string;
+  assessmentAutoStart?: string;
+  deadlineAdjustment?: { date: string; reviewed: boolean };
+}
+export interface VacationInput {
+  firstStart: string;
+  firstEnd: string;
+  secondStart?: string;
+  secondEnd?: string;
+  thirdStart?: string;
+  thirdEnd?: string;
+}
+
+export function readDateRange<T extends RangeInput>(value: T) {
+  return { ...value, start: civilDate(value.start), end: civilDate(value.end) };
+}
+
+/** Decode civil dates without reinterpreting the policy or changing historical evidence. */
+export function readActivityDates<T extends ActivityInput>(value: T): ActivityDates<T> {
+  return {
+    ...readDateRange(value),
+    ...(value.originalStart === undefined ? {} : { originalStart: civilDate(value.originalStart) }),
+    ...(value.originalEnd === undefined ? {} : { originalEnd: civilDate(value.originalEnd) }),
+    ...(value.assessmentAutoStart === undefined
+      ? {}
+      : { assessmentAutoStart: civilDate(value.assessmentAutoStart) }),
+    ...(value.deadlineAdjustment === undefined
+      ? {}
+      : {
+          deadlineAdjustment: {
+            ...value.deadlineAdjustment,
+            date: civilDate(value.deadlineAdjustment.date),
+          },
+        }),
+  } as ActivityDates<T>;
+}
+
+export function readVacationDates(value: VacationInput) {
+  const secondStart = optionalCivilDate(value.secondStart),
+    secondEnd = optionalCivilDate(value.secondEnd),
+    thirdStart = optionalCivilDate(value.thirdStart),
+    thirdEnd = optionalCivilDate(value.thirdEnd);
+  return {
+    firstStart: civilDate(value.firstStart),
+    firstEnd: civilDate(value.firstEnd),
+    ...(secondStart === undefined ? {} : { secondStart }),
+    ...(secondEnd === undefined ? {} : { secondEnd }),
+    ...(thirdStart === undefined ? {} : { thirdStart }),
+    ...(thirdEnd === undefined ? {} : { thirdEnd }),
+  };
+}
+
+export function readCalendarDates<T extends CalendarInput>(value: T): CalendarDates<T> {
+  return {
+    ...value,
+    periods: value.periods.map((period: T['periods'][number]) => readDateRange(period)),
+    events: value.events.map((event: T['events'][number]) => readActivityDates(event)),
+    ...(value.observanceDates === undefined
+      ? {}
+      : {
+          observanceDates: Object.fromEntries(
+            Object.entries(value.observanceDates).map(([key, date]) => [key, civilDate(date)]),
+          ),
+        }),
+    ...(value.teacherVacations === undefined
+      ? {}
+      : { teacherVacations: readVacationDates(value.teacherVacations) }),
+  } as CalendarDates<T>;
+}

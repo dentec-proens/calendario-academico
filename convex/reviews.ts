@@ -99,6 +99,7 @@ export const review = query({
     ]);
     return clean({
       ...support,
+      calendar: { ...support.calendar, id: record.id, campus: record.state.campus },
       initialConclusion: initialConclusion(support),
       catalogueRevision: base.revision,
       review: prior ? reviewDto(prior) : null,

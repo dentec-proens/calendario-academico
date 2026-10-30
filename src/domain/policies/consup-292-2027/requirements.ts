@@ -1,3 +1,4 @@
+import { civilDate } from '../../civil-date.ts';
 import { modalityIds, termLabels } from '../../calendar/config.ts';
 import type {
   AssessmentSettings,
@@ -265,7 +266,7 @@ export const sections: RequirementSection[] = [
         id: 'regular-admission-notice',
         name: 'Publicação dos editais do Processo Seletivo 2028',
         basis: 'Art. 10',
-        deadline: '2027-06-15',
+        deadline: civilDate('2027-06-15'),
         deadlinePolicy: 'reference',
         acceptsPriorReference: true,
         admissionType: 'regular',
@@ -276,7 +277,7 @@ export const sections: RequirementSection[] = [
         id: 'robotics',
         name: 'Fase local da Olimpíada Brasileira de Robótica — até 31/08/2027',
         basis: 'Art. 11, XX',
-        deadline: '2027-08-31',
+        deadline: civilDate('2027-08-31'),
         group: 'campus',
         criterion: 'XX',
       },
@@ -284,7 +285,7 @@ export const sections: RequirementSection[] = [
         id: 'course-showcase',
         name: 'Mostra de Cursos do campus — até 30/09/2027',
         basis: 'Art. 11, XXI',
-        deadline: '2027-09-30',
+        deadline: civilDate('2027-09-30'),
         group: 'campus',
         criterion: 'XXI',
       },

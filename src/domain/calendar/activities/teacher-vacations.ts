@@ -1,17 +1,18 @@
+import { type CivilDate } from '../../civil-date.ts';
 import type { VacationPeriods } from '../model.ts';
 import { datesBetween } from '../counting/core.ts';
 import { DomainError } from '../../errors.ts';
 
 export function teacherVacations(year: number, periodsInput: Partial<VacationPeriods>) {
   const { firstStart, firstEnd, secondStart, secondEnd, thirdStart, thirdEnd } = periodsInput;
-  const periods: [string | undefined, string | undefined][] = [[firstStart, firstEnd]];
+  const periods: [CivilDate | undefined, CivilDate | undefined][] = [[firstStart, firstEnd]];
   if (secondStart || secondEnd) periods.push([secondStart, secondEnd]);
   if (thirdStart || thirdEnd) {
     if (!secondStart || !secondEnd)
       throw new DomainError('Preencha o segundo período antes do terceiro.');
     periods.push([thirdStart, thirdEnd]);
   }
-  const seen = new Set<string>();
+  const seen = new Set<CivilDate>();
   const events = periods.map(([start, end], i) => {
     if (!start || !end)
       throw new DomainError('Informe início e término de cada período de férias.');

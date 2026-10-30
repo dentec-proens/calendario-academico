@@ -1,3 +1,4 @@
+import type { readCalendarDates } from '../src/domain/calendar/civil-dates.ts';
 import { modalityIds, academicTerms, assessmentStageValues } from '../src/domain/calendar/config';
 import { v } from 'convex/values';
 import type { Infer } from 'convex/values';
@@ -241,7 +242,7 @@ export const auditTarget = v.union(
   v.object({ type: v.literal('archived'), reference: v.string() }),
 );
 export type ContentState = Infer<typeof contentState>;
-export type DomainState = Infer<typeof domainState>;
+export type DomainState = ReturnType<typeof readCalendarDates<Infer<typeof domainState>>>;
 export type ReviewFields = {
   [K in keyof typeof reviewFields]: Infer<(typeof reviewFields)[K]>;
 };

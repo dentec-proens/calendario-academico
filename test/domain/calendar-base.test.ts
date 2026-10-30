@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { inspect, reconcile, reviewIsCurrent } from '../../src/domain/calendar/base.ts';
 
@@ -15,8 +16,8 @@ const scope = {
 const event = {
   id: 'e',
   name: 'Feriado',
-  start: '2027-04-01',
-  end: '2027-04-01',
+  start: civilDate('2027-04-01'),
+  end: civilDate('2027-04-01'),
   kind: 'exclude',
   evidence: 'Portaria',
   modalities: ['integrado', 'graduacao'],
@@ -56,7 +57,7 @@ test('document changes require confirmation without recalculating dates', () => 
 test('event changes are identified even at the same revision and stale acceptance cannot incorporate them', () => {
   const result = inspect(
     snapshot,
-    { ...snapshot, events: [{ ...event, start: '2027-04-02' }] },
+    { ...snapshot, events: [{ ...event, start: civilDate('2027-04-02') }] },
     scope,
   );
   expect(result.kind).toBe('events');
@@ -71,8 +72,8 @@ test('campus adjustments do not manufacture institutional changes', () => {
         ...event,
         originalStart: event.start,
         originalEnd: event.end,
-        start: '2027-04-02',
-        end: '2027-04-02',
+        start: civilDate('2027-04-02'),
+        end: civilDate('2027-04-02'),
       },
     ],
   };

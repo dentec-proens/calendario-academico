@@ -1,3 +1,4 @@
+import { civilDate } from '../../../../src/domain/civil-date.ts';
 import { useState } from 'react';
 import { calendarObservances, chooseObservance } from '#src/domain/calendar/observances.ts';
 import { recalculateCalendar } from '#src/domain/calendar/commands/recalculate.ts';
@@ -9,7 +10,7 @@ import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { Button } from '../../../components/ui/Button.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 
-const civilDate = (date: string) => date.split('-').reverse().join('/');
+const dateLabel = (date: string) => date.split('-').reverse().join('/');
 
 export default function ObservanceForm({
   observanceKey,
@@ -29,13 +30,18 @@ export default function ObservanceForm({
   const applyDate = (selected: string | undefined) => {
     const changes: string[] = [];
     session.apply((current) => {
-      const chosen = chooseObservance(current, observanceKey, selected, record.institutionalEvents);
+      const chosen = chooseObservance(
+        current,
+        observanceKey,
+        selected === undefined ? undefined : civilDate(selected),
+        record.institutionalEvents,
+      );
       const next = recalculateCalendar(chosen, institutional);
       for (const period of next.periods) {
         const before = current.periods.find((item) => item.id === period.id);
         if (before && before.end !== period.end)
           changes.push(
-            `${period.name || 'Período letivo'}: término de ${civilDate(before.end)} para ${civilDate(period.end)}.`,
+            `${period.name || 'Período letivo'}: término de ${dateLabel(before.end)} para ${dateLabel(period.end)}.`,
           );
       }
       return next;
@@ -58,14 +64,14 @@ export default function ObservanceForm({
                   id={`observance-date-${observanceKey}`}
                   required
                 >
-                  {!entry.rule!.allowedDates.includes(field.state.value) && (
+                  {!entry.rule!.allowedDates.some((date) => date === field.state.value) && (
                     <option value={field.state.value}>
                       Escolha registrada: {field.state.value}
                     </option>
                   )}
                   {entry.rule!.allowedDates.map((allowed) => (
                     <option key={allowed} value={allowed}>
-                      {civilDate(allowed)}
+                      {dateLabel(allowed)}
                       {allowed === reference ? ' — data institucional' : ''}
                     </option>
                   ))}

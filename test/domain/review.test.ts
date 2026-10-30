@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
@@ -37,7 +38,12 @@ test('school vacation suggestions exclude teacher vacations and leave notes blan
     { id: 'teachers', name: 'Férias docentes', category: 'ferias' },
     { id: 'professors', name: 'Férias dos professores', category: 'ferias' },
     { id: 'teacher-vacation-january', name: 'Férias', category: 'ferias' },
-  ].map((e) => ({ ...e, start: '2027-01-02', end: '2027-01-31', evidence: 'Fonte' }));
+  ].map((e) => ({
+    ...e,
+    start: civilDate('2027-01-02'),
+    end: civilDate('2027-01-31'),
+    evidence: 'Fonte',
+  }));
   const support = reviewSupport(record, events);
   assert.deepEqual(
     support.criteria.find((c) => c.id === 'III')!.candidates.map((e) => e.id),
@@ -74,8 +80,8 @@ test('review extracts 29 active criteria, flags other years and treats name matc
       id: 'f',
       name: 'Formação pedagógica',
       category: 'formacao',
-      start: '2027-02-01',
-      end: '2027-02-01',
+      start: civilDate('2027-02-01'),
+      end: civilDate('2027-02-01'),
       evidence: 'Ata',
     },
   ]);
@@ -105,8 +111,8 @@ test('initial analysis identifies a measurable deficit without assuming document
         {
           id: 'a',
           name: 'Ano',
-          start: '2027-02-01',
-          end: '2027-12-17',
+          start: civilDate('2027-02-01'),
+          end: civilDate('2027-12-17'),
           association: {
             status: 'defined' as const,
             offers: ['integrado'],
@@ -129,7 +135,7 @@ test('initial analysis identifies a measurable deficit without assuming document
   let result = reviewSupport(record, []);
   assert.equal(result.criteria.find((c) => c.id === 'annual')!.initial.status, 'PENDENTE');
   assert.equal(result.criteria.find((c) => c.id === 'window')!.initial.status, 'ATENDIDO');
-  record.state.periods[0].end = '2027-02-10';
+  record.state.periods[0].end = civilDate('2027-02-10');
   result = reviewSupport(record, []);
   assert.equal(result.criteria.find((c) => c.id === 'annual')!.initial.status, 'NAO_ATENDIDO');
   assert.equal(result.criteria.find((c) => c.id === 'annual')!.initial.reviewed, false);
@@ -170,8 +176,8 @@ test('review displays separate registered totals and provisional counts without 
         {
           id: 'a',
           name: '1º semestre',
-          start: '2026-03-02',
-          end: '2026-03-06',
+          start: civilDate('2026-03-02'),
+          end: civilDate('2026-03-06'),
           association: {
             status: 'defined' as const,
             offers: ['integrado', 'graduacao'],
@@ -200,8 +206,8 @@ test('review displays separate registered totals and provisional counts without 
       id: 'h',
       name: 'Feriado',
       kind: 'exclude',
-      start: '2026-03-03',
-      end: '2026-03-03',
+      start: civilDate('2026-03-03'),
+      end: civilDate('2026-03-03'),
       evidence: 'Lei',
       offers: ['graduacao'],
     },
@@ -269,8 +275,8 @@ test('review coverage follows the criterion identity when its citation text chan
         {
           id: 'meeting',
           name: 'Atividade com ata',
-          start: '2027-03-05',
-          end: '2027-03-05',
+          start: civilDate('2027-03-05'),
+          end: civilDate('2027-03-05'),
           kind: 'note',
           evidence: 'Ata sintética',
           offers: ['integrado'],

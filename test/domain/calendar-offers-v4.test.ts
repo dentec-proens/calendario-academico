@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { describe, expect, it } from 'vitest';
 import type { CalendarContentV4, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import {
@@ -106,18 +107,25 @@ describe('identidade e tipo da oferta v4', () => {
       periods: [
         {
           id: 'p',
-          start: '',
-          end: '',
+          start: civilDate('2027-01-01'),
+          end: civilDate('2027-01-01'),
           association: { status: 'defined', offers: ['graduacao-2'], term: 'annual' },
         },
       ],
       events: [
-        { id: 'e', name: '', start: '', end: '', kind: 'note', offers: ['graduacao-3'] },
+        {
+          id: 'e',
+          name: '',
+          start: civilDate('2027-01-01'),
+          end: civilDate('2027-01-01'),
+          kind: 'note',
+          offers: ['graduacao-3'],
+        },
         {
           id: 's',
           name: '',
-          start: '',
-          end: '',
+          start: civilDate('2027-01-01'),
+          end: civilDate('2027-01-01'),
           kind: 'note',
           requirementId: 'stage-1:graduacao-4',
         },

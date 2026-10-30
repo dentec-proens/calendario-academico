@@ -1,3 +1,5 @@
+import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import type { FunctionReturnType } from 'convex/server';
 import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
@@ -19,7 +21,15 @@ const createBody = (campusId = 'a') => ({
 });
 const changedState = (state: Record<string, unknown>, name = 'Atividade') => ({
   ...state,
-  events: [{ id: 'event', name, start: '2027-02-01', end: '2027-02-01', kind: 'note' }],
+  events: [
+    {
+      id: 'event',
+      name,
+      start: civilDate('2027-02-01'),
+      end: civilDate('2027-02-01'),
+      kind: 'note',
+    },
+  ],
 });
 const saveBody = (
   record: {
@@ -150,8 +160,8 @@ test('native publication gates base revisions and reviews retain concurrent revi
     revision: 1,
     name: 'Feriado',
     active: true,
-    start: '2027-04-21',
-    end: '2027-04-21',
+    start: civilDate('2027-04-21'),
+    end: civilDate('2027-04-21'),
     kind: 'exclude',
     category: 'feriado',
     evidence: 'Lei',
@@ -246,15 +256,15 @@ test('native calendar saves validate per-offer stages and preserve the selected 
       {
         id: 'p',
         name: 'Primeiro semestre',
-        start: '2027-03-01',
-        end: '2027-03-12',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-12'),
         association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'first' },
       },
       {
         id: 'q',
         name: 'Segundo semestre',
-        start: '2027-04-01',
-        end: '2027-04-14',
+        start: civilDate('2027-04-01'),
+        end: civilDate('2027-04-14'),
         association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'second' },
       },
     ],
@@ -264,8 +274,8 @@ test('native calendar saves validate per-offer stages and preserve the selected 
         name: 'Graduação',
         requirementId: 'stage-1:graduacao',
         offers: ['graduacao'],
-        start: '2027-03-01',
-        end: '2027-03-12',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-12'),
         kind: 'note',
         category: 'limite',
       },
@@ -304,7 +314,7 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
     path,
     {
       ...saveBody(record),
-      state: { ...record.state, observanceDates: { 'teacher-day': '2027-10-13' } },
+      state: { ...record.state, observanceDates: { 'teacher-day': civilDate('2027-10-13') } },
     },
     'PUT',
   );
@@ -337,8 +347,8 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
             {
               id: 'inst:national-0',
               name: 'Tamper',
-              start: '2027-01-02',
-              end: '2027-01-02',
+              start: civilDate('2027-01-02'),
+              end: civilDate('2027-01-02'),
               kind: 'exclude',
             },
           ],
@@ -362,7 +372,7 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
   );
   const full = await inspect();
   assert.equal(
-    full.catalogue.events.find((e: CalendarActivity) => 'inst:' + e.id === teacherDayId)!.start,
+    full.catalogue.events.find((e) => 'inst:' + e.id === teacherDayId)!.start,
     '2027-10-15',
   );
   assert.equal(full.calendars[0].versions[1].state.observanceDates?.['teacher-day'], '2027-10-13');
@@ -516,8 +526,8 @@ test('institutional revisions affect only calendars and reviews for the changed 
   await admin.write('/api/catalogue', {
     revision: 2,
     name: 'Evento do outro ano',
-    start: '2028-04-21',
-    end: '2028-04-21',
+    start: civilDate('2028-04-21'),
+    end: civilDate('2028-04-21'),
     kind: 'exclude',
     category: 'feriado',
     evidence: 'Norma sintética',
@@ -538,14 +548,18 @@ test('calendar pagination applies campus and trash scope before advancing its cu
   const created = [];
   for (let index = 0; index < 5; index++)
     created.push(
-      await admin.mutation(api.calendars.createCalendar, {
-        body: { ...createBody(), campusId: ids.campuses.a, courses: 'Campus A ' + index },
-      }),
+      await admin
+        .mutation(api.calendars.createCalendar, {
+          body: { ...createBody(), campusId: ids.campuses.a, courses: 'Campus A ' + index },
+        })
+        .then(calendarRecordDates),
     );
   for (let index = 0; index < 3; index++)
-    await admin.mutation(api.calendars.createCalendar, {
-      body: { ...createBody(), campusId: ids.campuses.b, courses: 'Campus B ' + index },
-    });
+    await admin
+      .mutation(api.calendars.createCalendar, {
+        body: { ...createBody(), campusId: ids.campuses.b, courses: 'Campus B ' + index },
+      })
+      .then(calendarRecordDates);
   await admin.mutation(api.calendars.deleteCalendar, { id: created[0].id, version: 1 });
   await admin.mutation(api.calendars.deleteCalendar, { id: created[1].id, version: 1 });
   const loaded = [];
@@ -699,9 +713,11 @@ test('domain rule violations reach the client as ConvexError with their status a
   const { asClient, ids } = await fixture();
   const admin = asClient('admin');
   await assert.rejects(
-    admin.mutation(api.calendars.createCalendar, {
-      body: { ...createBody(), campusId: ids.campuses.a, year: 2027.5 },
-    }),
+    admin
+      .mutation(api.calendars.createCalendar, {
+        body: { ...createBody(), campusId: ids.campuses.a, year: 2027.5 },
+      })
+      .then(calendarRecordDates),
     (error: unknown) =>
       error instanceof ConvexError &&
       error.data?.status === 400 &&

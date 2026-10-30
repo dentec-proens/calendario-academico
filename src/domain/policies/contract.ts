@@ -1,3 +1,4 @@
+import { type CivilDate } from '../civil-date.ts';
 import type { ActivityRequirement, AssessmentSettings, CalendarOffer } from '../calendar/model.ts';
 import type { RequirementSection } from '../calendar/activities/requirement-table.ts';
 import type { ReviewCriterion, ReviewSource } from '../reviews/parecer-items.ts';
@@ -14,7 +15,7 @@ export type RulesetEffect = 'establishes' | 'tightens' | 'relaxes' | 'editorial'
 export interface RulesetChange {
   version: string;
   /** Date the change was adopted, `YYYY-MM-DD`. */
-  date: string;
+  date: CivilDate;
   effect: RulesetEffect;
   /** Review criteria whose requirements changed. */
   criteria?: readonly string[];
@@ -24,9 +25,9 @@ export interface RulesetChange {
 }
 
 export interface CalendarWindow {
-  start: string;
-  latestStart: string;
-  end: string;
+  start: CivilDate;
+  latestStart: CivilDate;
+  end: CivilDate;
   basis: string;
 }
 
@@ -44,7 +45,7 @@ export interface ObservanceRule {
   key: string;
   eventCode: string;
   label: string;
-  allowedDates: readonly string[];
+  allowedDates: readonly CivilDate[];
   basis: string;
 }
 

@@ -1,3 +1,4 @@
+import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { expect, test } from 'vitest';
 import { api } from '../../convex/_generated/api';
 import { createNativeFixture } from '../helpers/native-database';
@@ -12,22 +13,26 @@ test('server saves Servidor choices in snapshots, rejects other dates and protec
     },
   });
   const actor = fixture.asClient('admin');
-  const record = await actor.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      offers: [{ kind: 'integrado', organization: 'anual' }],
-      courses: 'Observâncias sintéticas',
-    },
-  });
-  const saved = await actor.mutation(api.calendars.saveCalendar, {
-    id: record.id,
-    body: {
-      version: record.version,
-      catalogueRevision: record.catalogueRevision,
-      state: { ...record.state, observanceDates: { 'public-servant-day': '2027-10-29' } },
-    },
-  });
+  const record = await actor
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        offers: [{ kind: 'integrado', organization: 'anual' }],
+        courses: 'Observâncias sintéticas',
+      },
+    })
+    .then(calendarRecordDates);
+  const saved = await actor
+    .mutation(api.calendars.saveCalendar, {
+      id: record.id,
+      body: {
+        version: record.version,
+        catalogueRevision: record.catalogueRevision,
+        state: { ...record.state, observanceDates: { 'public-servant-day': '2027-10-29' } },
+      },
+    })
+    .then(calendarSaveDates);
   expect(saved.version).toBe(record.version + 1);
   expect(saved.base.events.find((event) => event.id === publicServantDayId)).toMatchObject({
     start: '2027-10-29',
@@ -35,14 +40,16 @@ test('server saves Servidor choices in snapshots, rejects other dates and protec
   });
   for (const date of ['2027-10-27', '2027-10-30', '2027-11-01', '2027-11-02'])
     await expect(
-      actor.mutation(api.calendars.saveCalendar, {
-        id: record.id,
-        body: {
-          version: saved.version,
-          catalogueRevision: record.catalogueRevision,
-          state: { ...saved.state, observanceDates: { 'public-servant-day': date } },
-        },
-      }),
+      actor
+        .mutation(api.calendars.saveCalendar, {
+          id: record.id,
+          body: {
+            version: saved.version,
+            catalogueRevision: record.catalogueRevision,
+            state: { ...saved.state, observanceDates: { 'public-servant-day': date } },
+          },
+        })
+        .then(calendarSaveDates),
     ).rejects.toThrow('permitidas');
   await expect(
     actor.mutation(api.catalogue.saveCatalogue, {
@@ -64,14 +71,17 @@ test('server saves Servidor choices in snapshots, rejects other dates and protec
 
 test('contracted storage rejects the old field in current contents and historical snapshots', async () => {
   const fixture = await createNativeFixture();
-  const record = await fixture.asClient('campus-a').mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      offers: [{ kind: 'integrado', organization: 'anual' }],
-      courses: 'Contrato estrito',
-    },
-  });
+  const record = await fixture
+    .asClient('campus-a')
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        offers: [{ kind: 'integrado', organization: 'anual' }],
+        courses: 'Contrato estrito',
+      },
+    })
+    .then(calendarRecordDates);
   await expect(
     fixture.client.run(async (ctx) => {
       const content = (await ctx.db

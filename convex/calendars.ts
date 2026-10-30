@@ -1,3 +1,4 @@
+import { readCalendarOfferInput } from '../src/domain/calendar/normalization/input-v4.ts';
 import { prepareOfferCalendarSave } from '../src/domain/calendar/prepare-save';
 import {
   offerCalendarContent,
@@ -256,7 +257,7 @@ export const saveCalendar = mutation({
       );
     const reconciliation = reconcileBase(compatibility, body.baseAcceptance);
     const savedContent = clean(content.state);
-    const proposedState = body.state;
+    const proposedState = domainRule(() => readCalendarOfferInput(body.state));
     const prepared = domainRule(() => {
       const prepared = prepareOfferCalendarSave(record.state, proposedState, {
         storedContent: savedContent,

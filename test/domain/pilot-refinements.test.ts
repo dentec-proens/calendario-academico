@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
@@ -9,17 +10,27 @@ import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.
 test('teacher vacations count explicit inclusive ranges without sources and reject wrong years or inverted intervals', () => {
   for (const year of [2027, 2028]) {
     const v = teacherVacations(year, {
-      firstStart: `${year}-01-02`,
-      firstEnd: `${year}-01-31`,
-      secondStart: `${year}-07-17`,
-      secondEnd: `${year}-07-31`,
+      firstStart: civilDate(`${year}-01-02`),
+      firstEnd: civilDate(`${year}-01-31`),
+      secondStart: civilDate(`${year}-07-17`),
+      secondEnd: civilDate(`${year}-07-31`),
     });
     assert.equal(v.total, 45);
     assert(v.events.every((e: CalendarActivity) => e.kind === 'exclude'));
     assert(v.events.every((e: CalendarActivity) => !Object.hasOwn(e, 'evidence')));
   }
-  assert.throws(() => teacherVacations(2027, { firstStart: '2026-07-01', firstEnd: '2026-07-15' }));
-  assert.throws(() => teacherVacations(2027, { firstStart: '2027-07-15', firstEnd: '2027-07-01' }));
+  assert.throws(() =>
+    teacherVacations(2027, {
+      firstStart: civilDate('2026-07-01'),
+      firstEnd: civilDate('2026-07-15'),
+    }),
+  );
+  assert.throws(() =>
+    teacherVacations(2027, {
+      firstStart: civilDate('2027-07-15'),
+      firstEnd: civilDate('2027-07-01'),
+    }),
+  );
 });
 test('mixed calendar includes annual and semester obligations plus extraordinary council', () => {
   const rows = activityChecklist({
@@ -55,8 +66,8 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
       {
         id: 's1',
         name: 'S1',
-        start: '2027-02-01',
-        end: '2027-02-05',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-02-05'),
         association: {
           status: 'defined' as const,
           offers: ['subsequente'],
@@ -66,8 +77,8 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
       {
         id: 's2',
         name: 'S2',
-        start: '2027-08-02',
-        end: '2027-08-06',
+        start: civilDate('2027-08-02'),
+        end: civilDate('2027-08-06'),
         association: {
           status: 'defined' as const,
           offers: ['subsequente'],
@@ -145,8 +156,18 @@ test('assessment range colors only endpoints and preserves intervening holiday c
       ],
     },
     [
-      { start: '2027-02-01', end: '2027-04-30', category: 'limite', name: 'Etapa' },
-      { start: '2027-03-26', end: '2027-03-26', category: 'feriado', name: 'Feriado' },
+      {
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-04-30'),
+        category: 'limite',
+        name: 'Etapa',
+      },
+      {
+        start: civilDate('2027-03-26'),
+        end: civilDate('2027-03-26'),
+        category: 'feriado',
+        name: 'Feriado',
+      },
     ],
   );
   assert.equal((html.match(/<td class="cat-limite" title=/g) || []).length, 2);

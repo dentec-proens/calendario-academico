@@ -1,3 +1,5 @@
+import { readCalendarDates } from '../../src/domain/calendar/civil-dates.ts';
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { calendarContent } from '../../src/domain/calendar/normalization/content.ts';
@@ -19,8 +21,8 @@ function calendar() {
       {
         id: 'legacy',
         name: 'Registro anterior',
-        start: '2027-03-01',
-        end: '2027-03-01',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-01'),
         kind: 'note',
       },
     ],
@@ -67,8 +69,8 @@ test('accepting a changed institutional base recalculates unchanged input and pr
       {
         id: 'classes',
         name: 'Ano',
-        start: '2027-03-01',
-        end: '2027-03-05',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-05'),
         targetDays: 5,
         association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
@@ -78,8 +80,8 @@ test('accepting a changed institutional base recalculates unchanged input and pr
   const holiday = {
     id: 'holiday',
     name: 'Impedimento institucional',
-    start: '2027-03-02',
-    end: '2027-03-02',
+    start: civilDate('2027-03-02'),
+    end: civilDate('2027-03-02'),
     kind: 'exclude',
     active: true,
     evidence: 'Fonte institucional',
@@ -109,7 +111,7 @@ test('malformed civil dates remain structural errors rather than being relabelle
   const previous = calendar();
   const proposed = { ...previous, events: [{ ...previous.events[0], start: 'data inválida' }] };
   expect(() =>
-    prepareOfferCalendarSave(previous, proposed, {
+    prepareOfferCalendarSave(previous, readCalendarDates(proposed), {
       storedContent: calendarContent(previous),
       catalogue: { events: [] },
       recalculate: false,
@@ -121,13 +123,13 @@ test('adding an offer does not silently broaden a legacy event and does not muta
   const previous = calendar();
   const draft = offerOrganizationDraft(previous, 'graduacao');
   draft.organization = 'anual';
-  draft.periods[0].start = '2027-03-01';
-  draft.periods[0].end = '2027-03-26';
+  draft.periods[0].start = civilDate('2027-03-01');
+  draft.periods[0].end = civilDate('2027-03-26');
   draft.count = '2';
-  draft.stages[0].start = '2027-03-01';
-  draft.stages[0].end = '2027-03-12';
-  draft.stages[1].start = '2027-03-15';
-  draft.stages[1].end = '2027-03-26';
+  draft.stages[0].start = civilDate('2027-03-01');
+  draft.stages[0].end = civilDate('2027-03-12');
+  draft.stages[1].start = civilDate('2027-03-15');
+  draft.stages[1].end = civilDate('2027-03-26');
   let sequence = 0;
   const proposed = applyOfferOrganization(
     previous,

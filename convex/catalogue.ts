@@ -1,3 +1,4 @@
+import { readDateRange } from '../src/domain/calendar/civil-dates.ts';
 import { assertWritesOpen } from './lib/maintenance';
 import { datesBetween } from '../src/domain/calendar/counting/core';
 import { validCategory } from '../src/domain/calendar/activities/categories';
@@ -51,7 +52,7 @@ export const saveCatalogue = mutation({
       modalities: body.modalities,
       active: body.active,
     };
-    domainRule(() => validateObservanceCatalogueEvent(fields, prior));
+    domainRule(() => validateObservanceCatalogueEvent(readDateRange(fields), prior));
     const id = prior ? prior._id : await ctx.db.insert('institutionalEvents', fields);
     if (prior) await ctx.db.replace(prior._id, fields);
     await bumpRevision(ctx, year);

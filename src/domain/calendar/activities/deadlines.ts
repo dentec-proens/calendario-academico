@@ -1,5 +1,7 @@
+import { civilDate, type CivilDate } from '../../civil-date.ts';
 import type { AssessmentSettings, CalendarPeriod, CalendarActivity } from '../model.ts';
-import { parseDate, automaticEventSource } from '../counting/core.ts';
+import { automaticEventSource } from '../counting/core.ts';
+import { parseDate } from '../../civil-date.ts';
 import { appliesTo } from '../modalities.ts';
 import { offerFor } from '../offers.ts';
 import { periodsForOffer } from '../organization/periods.ts';
@@ -11,7 +13,7 @@ export function prorogatedDeadline(
     weekdays?: number[];
     weekConfirmed?: boolean;
   },
-  original: string,
+  original: CivilDate,
   events: CalendarActivity[],
   modality: string,
 ) {
@@ -40,7 +42,7 @@ export function prorogatedDeadline(
     time <= parseDate(`${state.year}-12-31`);
     time += 86400000
   ) {
-    const date = new Date(time).toISOString().slice(0, 10),
+    const date = civilDate(new Date(time).toISOString().slice(0, 10)),
       active = scoped.filter((e) => e.start <= date && e.end >= date);
     if (
       periods.some((p) => p.start <= date && p.end >= date) &&

@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { applyPeriod } from '../../src/domain/calendar/commands/periods.ts';
 import { configureIntakeRequirement } from '../../src/domain/calendar/commands/organization.ts';
@@ -137,8 +138,8 @@ test('editing a legacy period classifies it without changing its identity or dat
     {
       id: 'legacy',
       name: 'Anual',
-      start: '2027-02-01',
-      end: '2027-12-17',
+      start: civilDate('2027-02-01'),
+      end: civilDate('2027-12-17'),
       association: { status: 'a-classificar' },
     },
   ];
@@ -155,8 +156,8 @@ test('editing a legacy period classifies it without changing its identity or dat
   );
   expect(classified.periods[0]).toMatchObject({
     id: 'legacy',
-    start: '2027-02-01',
-    end: '2027-12-17',
+    start: civilDate('2027-02-01'),
+    end: civilDate('2027-12-17'),
   });
   expect(classified.offers[0].organization).toBe('anual');
   expect(state.offers[0].organization).toBe('a-classificar');
@@ -212,8 +213,8 @@ test('changing a cycle rejects activity records that would lose their offer even
       id: 'final-result',
       name: 'Resultado final da graduação',
       requirementId: 'final-0',
-      start: '2027-12-17',
-      end: '2027-12-17',
+      start: civilDate('2027-12-17'),
+      end: civilDate('2027-12-17'),
       kind: 'note',
       category: 'prazo',
       offers: ['graduacao'],
@@ -223,8 +224,8 @@ test('changing a cycle rejects activity records that would lose their offer even
   const changed = {
     id: 'undergraduate-year',
     name: 'Primeiro semestre',
-    start: '2027-02-01',
-    end: '2027-06-30',
+    start: civilDate('2027-02-01'),
+    end: civilDate('2027-06-30'),
     days: '',
     association: { status: 'defined' as const, offers: ['graduacao'], term: 'first' as const },
   };
@@ -251,8 +252,8 @@ test('semester teacher deadlines stay valid when their offer changes to annual o
     id: requirementId,
     requirementId,
     name: requirementId,
-    start: '2027-04-01',
-    end: '2027-04-01',
+    start: civilDate('2027-04-01'),
+    end: civilDate('2027-04-01'),
     kind: 'note',
     category: 'prazo',
     offers: ['graduacao'],
@@ -262,8 +263,8 @@ test('semester teacher deadlines stay valid when their offer changes to annual o
     {
       id: 'undergraduate-first',
       name: 'Ano letivo',
-      start: '2027-02-01',
-      end: '2027-12-17',
+      start: civilDate('2027-02-01'),
+      end: civilDate('2027-12-17'),
       days: '',
       association: { status: 'defined', offers: ['graduacao'], term: 'annual' },
     },

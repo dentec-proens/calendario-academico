@@ -1,3 +1,5 @@
+import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { makeFunctionReference } from 'convex/server';
 import { api } from '../../convex/_generated/api.js';
@@ -38,8 +40,8 @@ async function createRecord() {
         {
           id: 'holiday',
           name: 'Feriado institucional',
-          start: '2027-04-21',
-          end: '2027-04-21',
+          start: civilDate('2027-04-21'),
+          end: civilDate('2027-04-21'),
           kind: 'exclude',
           category: 'feriado',
           modalities: ['integrado'],
@@ -50,15 +52,17 @@ async function createRecord() {
     },
   });
   const actor = fixture.asClient('campus-a');
-  const created = await actor.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      offers: [{ kind: 'integrado', organization: 'anual' }],
-      courses: 'Sintético',
-      purpose: 'test',
-    },
-  });
+  const created = await actor
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        offers: [{ kind: 'integrado', organization: 'anual' }],
+        courses: 'Sintético',
+        purpose: 'test',
+      },
+    })
+    .then(calendarRecordDates);
   return { fixture, actor, created };
 }
 
@@ -79,13 +83,13 @@ test('canonical records and historical restoration have no manual or generated s
       scope: { status: 'covered' },
       intake: { annual: { status: 'yes', required: true } },
     })),
-    teacherVacations: { firstStart: '2027-01-04', firstEnd: '2027-01-15' },
+    teacherVacations: { firstStart: civilDate('2027-01-04'), firstEnd: civilDate('2027-01-15') },
     periods: [
       {
         id: 'annual',
         name: 'Anual',
-        start: '2027-02-01',
-        end: '2027-12-17',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
     ],
@@ -93,43 +97,51 @@ test('canonical records and historical restoration have no manual or generated s
       {
         id: 'notice',
         name: 'Edital',
-        start: '2027-07-01',
-        end: '2027-07-10',
+        start: civilDate('2027-07-01'),
+        end: civilDate('2027-07-10'),
         kind: 'note',
         offers: ['integrado'],
         requirementId: 'regular-admission-notice',
         publicationStatus: 'planned',
         admission: { type: 'regular', year: 2028, term: 'annual' },
-        deadlineAdjustment: { date: '2027-07-20', reviewed: false },
+        deadlineAdjustment: { date: civilDate('2027-07-20'), reviewed: false },
       },
       {
         id: 'detached-stage',
         name: 'Etapa excedente',
-        start: '2027-03-01',
-        end: '2027-03-02',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-02'),
         kind: 'note',
         offers: ['integrado'],
       },
     ],
   };
-  const saved = await actor.mutation(api.calendars.saveCalendar, {
-    id: created.id,
-    body: { version: created.version, catalogueRevision: created.currentCatalogueRevision, state },
-  });
+  const saved = await actor
+    .mutation(api.calendars.saveCalendar, {
+      id: created.id,
+      body: {
+        version: created.version,
+        catalogueRevision: created.currentCatalogueRevision,
+        state,
+      },
+    })
+    .then(calendarSaveDates);
   assertSourceFree(saved.state);
   expect(saved.state.events.find((event) => event.id === 'detached-stage')).toMatchObject({
     kind: 'note',
-    start: '2027-03-01',
-    end: '2027-03-02',
+    start: civilDate('2027-03-01'),
+    end: civilDate('2027-03-02'),
   });
-  const unchanged = await actor.mutation(api.calendars.saveCalendar, {
-    id: created.id,
-    body: {
-      version: saved.version,
-      catalogueRevision: created.currentCatalogueRevision,
-      state: saved.state,
-    },
-  });
+  const unchanged = await actor
+    .mutation(api.calendars.saveCalendar, {
+      id: created.id,
+      body: {
+        version: saved.version,
+        catalogueRevision: created.currentCatalogueRevision,
+        state: saved.state,
+      },
+    })
+    .then(calendarSaveDates);
   expect(unchanged.unchanged).toBe(true);
   expect(unchanged.version).toBe(saved.version);
   const initial = await actor.query(api.calendars.calendarVersion, {
@@ -137,14 +149,16 @@ test('canonical records and historical restoration have no manual or generated s
     version: created.version,
   });
   assertSourceFree(initial.state);
-  await actor.mutation(api.calendars.saveCalendar, {
-    id: created.id,
-    body: {
-      version: saved.version,
-      catalogueRevision: created.currentCatalogueRevision,
-      state: initial.state,
-    },
-  });
+  await actor
+    .mutation(api.calendars.saveCalendar, {
+      id: created.id,
+      body: {
+        version: saved.version,
+        catalogueRevision: created.currentCatalogueRevision,
+        state: initial.state,
+      },
+    })
+    .then(calendarSaveDates);
   const raw = await fixture.client.run(async (ctx) => ({
     contents: await ctx.db.query('calendarContents').take(10),
     snapshots: await ctx.db.query('calendarSnapshots').take(10),
@@ -154,7 +168,13 @@ test('canonical records and historical restoration have no manual or generated s
   expect(raw.contents[0].institutionalSnapshot).toEqual(created.institutionalSnapshot);
 });
 
-const event = { id: 'note', name: 'Nota', start: '2027-03-01', end: '2027-03-01', kind: 'note' };
+const event = {
+  id: 'note',
+  name: 'Nota',
+  start: civilDate('2027-03-01'),
+  end: civilDate('2027-03-01'),
+  kind: 'note',
+};
 const legacyFields: Array<[string, (state: DomainState) => Record<string, unknown>]> = [
   ['weekEvidence', (state) => ({ ...state, weekEvidence: secret })],
   ['events.evidence', (state) => ({ ...state, events: [{ ...event, evidence: secret }] })],
@@ -163,7 +183,10 @@ const legacyFields: Array<[string, (state: DomainState) => Record<string, unknow
     (state) => ({
       ...state,
       events: [
-        { ...event, deadlineAdjustment: { date: '2027-03-02', reviewed: false, evidence: secret } },
+        {
+          ...event,
+          deadlineAdjustment: { date: civilDate('2027-03-02'), reviewed: false, evidence: secret },
+        },
       ],
     }),
   ],
@@ -171,7 +194,11 @@ const legacyFields: Array<[string, (state: DomainState) => Record<string, unknow
     'teacherVacations.evidence',
     (state) => ({
       ...state,
-      teacherVacations: { firstStart: '2027-01-04', firstEnd: '2027-01-15', evidence: secret },
+      teacherVacations: {
+        firstStart: civilDate('2027-01-04'),
+        firstEnd: civilDate('2027-01-15'),
+        evidence: secret,
+      },
     }),
   ],
   [
@@ -206,7 +233,10 @@ test.each(legacyFields)(
     }));
     expect(raw.calendar?.version).toBe(created.version);
     expect(raw.snapshots).toHaveLength(0);
-    assertSourceFree((await actor.query(api.calendars.calendar, { id: created.id })).state);
+    assertSourceFree(
+      (await actor.query(api.calendars.calendar, { id: created.id }).then(calendarRecordDates))
+        .state,
+    );
   },
 );
 
@@ -239,8 +269,8 @@ test('current contents and historical storage refuse retired manual fields', asy
           {
             id: 'note',
             name: 'Nota',
-            start: '2027-03-01',
-            end: '2027-03-01',
+            start: civilDate('2027-03-01'),
+            end: civilDate('2027-03-01'),
             kind: 'note' as const,
             evidence: secret,
           },

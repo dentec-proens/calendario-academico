@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import type { ActivityState, CalendarPeriod } from '../../src/domain/calendar/model.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
@@ -53,8 +54,8 @@ test('an exclusion uses the offer identity while minimums use that offer scope',
     name: 'Impedimento exclusivo da engenharia',
     kind: 'exclude',
     offers: ['graduacao-2'],
-    start: '2027-02-02',
-    end: '2027-02-02',
+    start: civilDate('2027-02-02'),
+    end: civilDate('2027-02-02'),
   });
   const result = evaluateCalendar(state, state.events);
   expect(result.byOffer.graduacao.total).toBe(230);
@@ -79,8 +80,8 @@ test('duration and period recalculation select only the period associated offers
   const period: CalendarPeriod = {
     id: 'engineering-duration',
     name: 'Período da engenharia',
-    start: '2027-03-01',
-    end: '2027-03-05',
+    start: civilDate('2027-03-01'),
+    end: civilDate('2027-03-05'),
     targetDays: 5,
     association: { status: 'defined', offers: ['graduacao-2'], term: 'first' },
   };
@@ -89,8 +90,8 @@ test('duration and period recalculation select only the period associated offers
     {
       id: 'engineering-exclusion',
       kind: 'exclude',
-      start: '2027-03-02',
-      end: '2027-03-02',
+      start: civilDate('2027-03-02'),
+      end: civilDate('2027-03-02'),
       offers: ['graduacao-2'],
     },
   ];
@@ -138,7 +139,7 @@ test('scope confirmation and window warnings follow each offer', () => {
   );
   state.periods = state.periods.map((period) =>
     period.id === 'graduacao-3-first' || period.id === 'graduacao-2-first'
-      ? { ...period, start: '2027-01-18' }
+      ? { ...period, start: civilDate('2027-01-18') }
       : period,
   );
   const result = readiness(state);
@@ -162,7 +163,7 @@ test('an existing assessment stage outside its own semester remains a readiness 
   const state = calendarOffersV4Fixture();
   state.events = state.events.map((event) =>
     event.requirementId === 'stage-1:graduacao-2'
-      ? { ...event, start: '2027-08-02', end: '2027-08-06' }
+      ? { ...event, start: civilDate('2027-08-02'), end: civilDate('2027-08-06') }
       : event,
   );
   const result = readiness(state);

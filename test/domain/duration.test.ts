@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { durationEnd } from '../../src/domain/calendar/counting/duration.ts';
@@ -25,8 +26,8 @@ test('inclusive vacation duration crosses months and leap day', () => {
 test('teaching duration excludes holidays and includes explicit Saturdays', () => {
   assert.equal(durationEnd('2027-03-01', 5, state), '2027-03-05');
   const events = [
-    { start: '2027-03-05', end: '2027-03-05', kind: 'exclude' },
-    { start: '2027-03-06', end: '2027-03-06', kind: 'include' },
+    { start: civilDate('2027-03-05'), end: civilDate('2027-03-05'), kind: 'exclude' },
+    { start: civilDate('2027-03-06'), end: civilDate('2027-03-06'), kind: 'include' },
   ];
   assert.equal(durationEnd('2027-03-01', 5, state, events), '2027-03-06');
   assert.throws(() => durationEnd('2027-03-01', 5, { ...state, weekConfirmed: false }));
@@ -42,16 +43,16 @@ test('preserves 100 days per semester as exclusions change and never overlaps pe
       {
         id: 'one',
         name: '1º semestre',
-        start: '2027-02-09',
-        end: '2027-06-01',
+        start: civilDate('2027-02-09'),
+        end: civilDate('2027-06-01'),
         targetDays: 100,
         association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
       {
         id: 'two',
         name: '2º semestre',
-        start: '2027-08-02',
-        end: '2027-12-01',
+        start: civilDate('2027-08-02'),
+        end: civilDate('2027-12-01'),
         targetDays: 100,
         association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
@@ -59,7 +60,9 @@ test('preserves 100 days per semester as exclusions change and never overlaps pe
   };
   const before = JSON.stringify(s),
     base = recalculatePeriods(s, []),
-    changed = recalculatePeriods(s, [{ kind: 'exclude', start: '2027-03-01', end: '2027-03-05' }]);
+    changed = recalculatePeriods(s, [
+      { kind: 'exclude', start: civilDate('2027-03-01'), end: civilDate('2027-03-05') },
+    ]);
   assert(changed[0].end > base[0].end);
   assert.equal(changed[1].end, base[1].end);
   assert.equal(JSON.stringify(s), before);
@@ -67,7 +70,7 @@ test('preserves 100 days per semester as exclusions change and never overlaps pe
   assert.throws(
     () =>
       recalculatePeriods(
-        { ...s, periods: [s.periods[0], { ...s.periods[1], start: '2027-03-01' }] },
+        { ...s, periods: [s.periods[0], { ...s.periods[1], start: civilDate('2027-03-01') }] },
         [],
       ),
     /alcança/,

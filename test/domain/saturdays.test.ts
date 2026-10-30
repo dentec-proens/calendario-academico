@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import type { ActivityState, CalendarActivity } from '../../src/domain/calendar/model.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { test } from 'vitest';
@@ -25,7 +26,7 @@ test('v4 Saturdays require the teaching period of every offer identity', () => {
   assert.equal(day('2027-03-06').status, 'available');
   assert.equal(day('2027-07-17').status, 'outside');
   assert.throws(
-    () => saturdayEvents(state, ['2027-07-17'], 'Atividade', () => 'saturday'),
+    () => saturdayEvents(state, [civilDate('2027-07-17')], 'Atividade', () => 'saturday'),
     /fora dos períodos/,
   );
   const missing = {
@@ -37,11 +38,17 @@ test('v4 Saturdays require the teaching period of every offer identity', () => {
     ),
   };
   assert.throws(
-    () => saturdayEvents(missing, ['2027-03-06'], 'Atividade', () => 'saturday'),
+    () => saturdayEvents(missing, [civilDate('2027-03-06')], 'Atividade', () => 'saturday'),
     /fora dos períodos/,
   );
   assert.throws(
-    () => saturdayEvents({ ...state, periods: [] }, ['2027-03-06'], 'Atividade', () => 'saturday'),
+    () =>
+      saturdayEvents(
+        { ...state, periods: [] },
+        [civilDate('2027-03-06')],
+        'Atividade',
+        () => 'saturday',
+      ),
     /fora dos períodos/,
   );
 });
@@ -56,8 +63,8 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
       {
         id: 'year',
         name: 'Ano',
-        start: '2027-02-01',
-        end: '2027-03-31',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-03-31'),
         association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
     ],
@@ -79,19 +86,30 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
   ]);
   let id = 0;
   const make = () => String(++id);
-  s.events = saturdayEvents(s, ['2027-02-06', '2027-02-20', '2027-02-20'], 'Sábado letivo', make);
+  s.events = saturdayEvents(
+    s,
+    [civilDate('2027-02-06'), civilDate('2027-02-20'), civilDate('2027-02-20')],
+    'Sábado letivo',
+    make,
+  );
   const restored = JSON.parse(JSON.stringify(s));
   assert.equal(calendarResult(restored, restored.events).byWeekday[6], 2);
-  assert.equal(saturdayEvents(s, ['2027-02-06'], 'Sábado', make).length, 0);
+  assert.equal(saturdayEvents(s, [civilDate('2027-02-06')], 'Sábado', make).length, 0);
   const result = calendarResult(s, [
     ...s.events,
-    { id: 'holiday', name: 'Feriado', start: '2027-02-20', end: '2027-02-20', kind: 'exclude' },
+    {
+      id: 'holiday',
+      name: 'Feriado',
+      start: civilDate('2027-02-20'),
+      end: civilDate('2027-02-20'),
+      kind: 'exclude',
+    },
   ]);
   assert.equal(result.byWeekday[6], 1);
   assert.equal(result.conflicts.length, 1);
-  assert.throws(() => saturdayEvents(s, ['2027-04-03'], 'Sábado', make), /fora/);
-  assert.throws(() => saturdayEvents(s, ['2027-02-05'], 'Sábado', make), /sábados/);
-  assert.throws(() => saturdayEvents(s, ['2027-02-27'], '', make), /atividade/);
+  assert.throws(() => saturdayEvents(s, [civilDate('2027-04-03')], 'Sábado', make), /fora/);
+  assert.throws(() => saturdayEvents(s, [civilDate('2027-02-05')], 'Sábado', make), /sábados/);
+  assert.throws(() => saturdayEvents(s, [civilDate('2027-02-27')], '', make), /atividade/);
 });
 
 test('a confirmed annual selection includes Saturdays from different months in one atomic command', () => {
@@ -103,8 +121,8 @@ test('a confirmed annual selection includes Saturdays from different months in o
     periods: [
       {
         id: 'year',
-        start: '2027-02-01',
-        end: '2027-12-17',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
     ],
@@ -120,7 +138,7 @@ test('a confirmed annual selection includes Saturdays from different months in o
   };
   const original = structuredClone(state);
   const selected = {
-    dates: ['2027-03-06', '2027-08-07', '2027-03-06'],
+    dates: [civilDate('2027-03-06'), civilDate('2027-08-07'), civilDate('2027-03-06')],
     name: 'Atividades de reposição',
     confirmed: true,
   };
@@ -128,7 +146,7 @@ test('a confirmed annual selection includes Saturdays from different months in o
   const changed = applySaturdays(state, selected, [], () => String(++id));
   assert.deepEqual(
     changed.events.map((event) => event.start),
-    ['2027-03-06', '2027-08-07'],
+    [civilDate('2027-03-06'), civilDate('2027-08-07')],
   );
   assert.ok(changed.events.every((event) => !Object.hasOwn(event, 'evidence')));
   assert.equal(applySaturdays(changed, selected, [], () => String(++id)).events.length, 2);
@@ -139,8 +157,11 @@ test('a confirmed annual selection includes Saturdays from different months in o
   );
   assert.throws(
     () =>
-      applySaturdays(state, { ...selected, dates: ['2027-03-06', '2027-01-02'] }, [], () =>
-        String(++id),
+      applySaturdays(
+        state,
+        { ...selected, dates: [civilDate('2027-03-06'), civilDate('2027-01-02')] },
+        [],
+        () => String(++id),
       ),
     /fora dos períodos letivos/,
   );
@@ -156,8 +177,8 @@ test('each Saturday keeps its activity and date without a source and a failed ba
     periods: [
       {
         id: 'year',
-        start: '2027-02-01',
-        end: '2027-12-17',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
     ],
@@ -173,8 +194,8 @@ test('each Saturday keeps its activity and date without a source and a failed ba
   };
   const original = structuredClone(state);
   const activities = [
-    { date: '2027-03-06', name: 'Feira de ciências' },
-    { date: '2027-08-07', name: 'Reposição de aulas' },
+    { date: civilDate('2027-03-06'), name: 'Feira de ciências' },
+    { date: civilDate('2027-08-07'), name: 'Reposição de aulas' },
   ];
   let id = 0;
   const changed = applySaturdayActivities(state, activities, [], () => String(++id));
@@ -197,7 +218,7 @@ test('each Saturday keeps its activity and date without a source and a failed ba
     () =>
       applySaturdayActivities(
         state,
-        [activities[0]!, { ...activities[1]!, date: '2027-01-02' }],
+        [activities[0]!, { ...activities[1]!, date: civilDate('2027-01-02') }],
         [],
         () => String(++id),
       ),
@@ -216,8 +237,8 @@ const yearState: ActivityState = {
     {
       id: 'year',
       name: 'Ano',
-      start: '2027-03-01',
-      end: '2027-03-31',
+      start: civilDate('2027-03-01'),
+      end: civilDate('2027-03-31'),
       association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
     },
   ],
@@ -227,24 +248,24 @@ const yearState: ActivityState = {
       name: 'Feira de ciências',
       kind: 'include',
       category: 'sabado',
-      start: '2027-03-06',
-      end: '2027-03-06',
+      start: civilDate('2027-03-06'),
+      end: civilDate('2027-03-06'),
     },
     {
       id: 'semana',
       name: 'Semana acadêmica',
       kind: 'include',
       category: 'institucional',
-      start: '2027-03-22',
-      end: '2027-03-27',
+      start: civilDate('2027-03-22'),
+      end: civilDate('2027-03-27'),
     },
     {
       id: 's2',
       name: 'Reposição',
       kind: 'include',
       category: 'sabado',
-      start: '2027-06-05',
-      end: '2027-06-05',
+      start: civilDate('2027-06-05'),
+      end: civilDate('2027-06-05'),
     },
   ],
   offers: [
@@ -260,8 +281,8 @@ const holiday: CalendarActivity = {
   id: 'holiday',
   name: 'Feriado municipal',
   kind: 'exclude',
-  start: '2027-03-20',
-  end: '2027-03-20',
+  start: civilDate('2027-03-20'),
+  end: civilDate('2027-03-20'),
 };
 const pick = (event?: CalendarActivity) => ({ name: event?.name });
 
@@ -280,7 +301,15 @@ test('saturday year classifies each Saturday and keeps registered dates reachabl
   assert.deepEqual([sat('2027-03-27').status, sat('2027-03-27').editable], ['registered', false]);
   assert.equal(sat('2027-04-03').status, 'outside');
   assert.deepEqual([sat('2027-06-05').status, sat('2027-06-05').editable], ['registered', true]);
-  assert.equal(saturdayGain(months, ['2027-03-13', '2027-03-20', '2027-04-03', '2027-03-06']), 1);
+  assert.equal(
+    saturdayGain(months, [
+      civilDate('2027-03-13'),
+      civilDate('2027-03-20'),
+      civilDate('2027-04-03'),
+      civilDate('2027-03-06'),
+    ]),
+    1,
+  );
 });
 
 test('updating a Saturday activity trims values and rejects other records', () => {
@@ -310,8 +339,8 @@ test('a Saturday covered by a wider inclusion stays editable through its own rec
     name: 'Gincana',
     kind: 'include',
     category: 'sabado',
-    start: '2027-03-27',
-    end: '2027-03-27',
+    start: civilDate('2027-03-27'),
+    end: civilDate('2027-03-27'),
   };
   const months = saturdayYear({ ...yearState, events: [...yearState.events, own] }, []);
   const saturday = months[2]!.days.find((day) => day.date === '2027-03-27') as YearSaturday;

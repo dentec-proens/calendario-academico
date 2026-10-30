@@ -1,3 +1,4 @@
+import type { Infer } from 'convex/values';
 import { query } from './_generated/server';
 import { requireNativeUser, safeMember } from './access/identity';
 import { readAuditPage, logEntry } from './audit';
@@ -13,7 +14,7 @@ import { v } from 'convex/values';
 export const bootstrap = query({
   args: { includeCalendars: v.optional(v.boolean()) },
   returns: contracts.bootstrapDto,
-  handler: async (ctx, { includeCalendars }) => {
+  handler: async (ctx, { includeCalendars }): Promise<Infer<typeof contracts.bootstrapDto>> => {
     const { user } = await requireNativeUser(ctx);
     const rows = await ctx.db.query('campuses').withIndex('by_name').take(501);
     if (rows.length > 500) fail('Limite de unidades excedido.');

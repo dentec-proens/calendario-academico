@@ -1,3 +1,4 @@
+import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { expect, test } from 'vitest';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
@@ -6,15 +7,17 @@ import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 test('Convex includes a complete new offer atomically and preserves the earlier version scope', async () => {
   const fixture = await createNativeFixture(),
     actor = fixture.asClient('campus-a');
-  const record = await actor.mutation(api.calendars.createCalendar, {
-    body: {
-      campusId: fixture.ids.campuses.a,
-      year: 2027,
-      offers: [{ kind: 'posgraduacao', organization: 'anual' }],
-      courses: 'Pós-graduação sintética',
-      purpose: 'test',
-    },
-  });
+  const record = await actor
+    .mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: fixture.ids.campuses.a,
+        year: 2027,
+        offers: [{ kind: 'posgraduacao', organization: 'anual' }],
+        courses: 'Pós-graduação sintética',
+        purpose: 'test',
+      },
+    })
+    .then(calendarRecordDates);
   const offers: typeof record.state.offers = [
     ...record.state.offers,
     {
@@ -52,11 +55,15 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
       kind: 'note' as const,
     })),
   };
-  const saved = await actor.mutation(api.calendars.saveCalendar, {
-    id: record.id,
-    body: { version: record.version, catalogueRevision: record.catalogueRevision, state },
-  });
-  const loaded = await actor.query(api.calendars.calendar, { id: record.id });
+  const saved = await actor
+    .mutation(api.calendars.saveCalendar, {
+      id: record.id,
+      body: { version: record.version, catalogueRevision: record.catalogueRevision, state },
+    })
+    .then(calendarSaveDates);
+  const loaded = await actor
+    .query(api.calendars.calendar, { id: record.id })
+    .then(calendarRecordDates);
   expect(saved.version).toBe(record.version + 1);
   expect(loaded.offerKinds).toEqual(['integrado', 'posgraduacao']);
   expect(loaded.state.offers).toEqual(offers);
@@ -87,17 +94,20 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
     { ...loaded.state, year: 2028 },
   ]) {
     await expect(
-      actor.mutation(api.calendars.saveCalendar, {
-        id: record.id,
-        body: {
-          version: loaded.version,
-          catalogueRevision: loaded.catalogueRevision,
-          state: changed,
-        },
-      }),
+      actor
+        .mutation(api.calendars.saveCalendar, {
+          id: record.id,
+          body: {
+            version: loaded.version,
+            catalogueRevision: loaded.catalogueRevision,
+            state: changed,
+          },
+        })
+        .then(calendarSaveDates),
     ).rejects.toThrow();
-    expect((await actor.query(api.calendars.calendar, { id: record.id })).version).toBe(
-      loaded.version,
-    );
+    expect(
+      (await actor.query(api.calendars.calendar, { id: record.id }).then(calendarRecordDates))
+        .version,
+    ).toBe(loaded.version);
   }
 });

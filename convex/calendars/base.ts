@@ -1,3 +1,4 @@
+import { readActivityDates } from '../../src/domain/calendar/civil-dates.ts';
 import { applicableEvents, inspectCalendar, reconcile } from '../../src/domain/calendar/base';
 import { rulesetVersion } from '../../src/domain/policies/registry';
 import type { DomainState } from '../validators';
@@ -24,7 +25,11 @@ export function inspectBase(
     documents: docs,
   };
   const assessment = inspectCalendar(
-    { ...content, state },
+    {
+      ...content,
+      institutionalSnapshot: content.institutionalSnapshot.map(readActivityDates),
+      state,
+    },
     {
       currentCatalogueRevision: snapshot.revision,
       institutionalEvents: snapshot.events,

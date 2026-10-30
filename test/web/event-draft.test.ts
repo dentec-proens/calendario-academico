@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import {
   eventFromValues,
@@ -9,8 +10,8 @@ import type { CalendarEvent } from '../../web/features/calendar-editor/types.ts'
 const saved = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
   id: 'saved',
   name: 'Registro salvo',
-  start: '2027-05-10',
-  end: '2027-05-10',
+  start: civilDate('2027-05-10'),
+  end: civilDate('2027-05-10'),
   kind: 'note',
   offers: ['integrado'],
   ...extra,
@@ -32,14 +33,14 @@ test('an unchanged reviewed deadline adjustment keeps its review', () => {
     requirementId: 'regular-admission-notice',
     publicationStatus: 'planned',
     admission: { type: 'regular', year: 2028, term: 'annual' },
-    deadlineAdjustment: { date: '2027-07-01', reviewed: true },
+    deadlineAdjustment: { date: civilDate('2027-07-01'), reviewed: true },
   });
   expect(edit(base, { category: 'evento' }).deadlineAdjustment).toEqual({
-    date: '2027-07-01',
+    date: civilDate('2027-07-01'),
     reviewed: true,
   });
   expect(edit(base, { adjustedDeadline: '2027-07-02' }).deadlineAdjustment).toEqual({
-    date: '2027-07-02',
+    date: civilDate('2027-07-02'),
     reviewed: false,
   });
 });

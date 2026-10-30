@@ -1,3 +1,4 @@
+import { civilDate } from '../domain/civil-date.ts';
 import {
   assessmentStageCounts,
   termLabels,
@@ -41,8 +42,12 @@ export function teachingDayBreakdown(
   };
   const months = Array.from({ length: 12 }, (_, i) => {
     const prefix = `${state.year}-${String(i + 1).padStart(2, '0')}`;
-    const start = prefix + '-01',
-      end = prefix + '-' + new Date(Date.UTC(state.year, i + 1, 0)).getUTCDate();
+    const start = civilDate(prefix + '-01'),
+      end = civilDate(
+        prefix +
+          '-' +
+          String(new Date(Date.UTC(state.year, i + 1, 0)).getUTCDate()).padStart(2, '0'),
+      );
     return row(
       new Date(start + 'T00:00:00Z').toLocaleDateString('pt-BR', {
         month: 'long',
@@ -153,8 +158,8 @@ export function teachingDayBreakdown(
     showSemesters,
     semesters: semesterRows,
     annual: row('Total anual', {
-      start: `${state.year}-01-01`,
-      end: `${state.year}-12-31`,
+      start: civilDate(`${state.year}-01-01`),
+      end: civilDate(`${state.year}-12-31`),
     }),
     notes,
   };

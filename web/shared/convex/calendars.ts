@@ -1,3 +1,4 @@
+import { calendarRecordDates, calendarSaveDates } from './calendar-dates.ts';
 import type { FunctionArgs } from 'convex/server';
 import type { Infer } from 'convex/values';
 import type { saveInput } from '../../../convex/contracts.ts';
@@ -7,16 +8,27 @@ import { request } from './errors.ts';
 
 export const calendars = {
   get: (id: string) =>
-    request(() => convex.query(functions.calendars.calendar, { id: id as Id<'calendars'> })),
+    request(async () => {
+      const record = await convex.query(functions.calendars.calendar, {
+        id: id as Id<'calendars'>,
+      });
+      return calendarRecordDates(record);
+    }),
   create: (body: FunctionArgs<typeof functions.calendars.createCalendar>['body']) =>
-    request(() => convex.mutation(functions.calendars.createCalendar, { body })),
+    request(() =>
+      convex.mutation(functions.calendars.createCalendar, { body }).then(calendarRecordDates),
+    ),
   save: (id: string, body: Infer<typeof saveInput>) =>
     request(() =>
-      convex.mutation(functions.calendars.saveCalendar, { id: id as Id<'calendars'>, body }),
+      convex
+        .mutation(functions.calendars.saveCalendar, { id: id as Id<'calendars'>, body })
+        .then(calendarSaveDates),
     ),
   synchronizeBase: (id: string, version: number) =>
     request(() =>
-      convex.mutation(functions.calendars.synchronizeBase, { id: id as Id<'calendars'>, version }),
+      convex
+        .mutation(functions.calendars.synchronizeBase, { id: id as Id<'calendars'>, version })
+        .then(calendarRecordDates),
     ),
   remove: (id: string, version: number) =>
     request(() =>

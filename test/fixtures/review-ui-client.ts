@@ -29,6 +29,11 @@ const support = reviewSupport(
 );
 const initial = {
   ...support,
+  calendar: {
+    ...support.calendar,
+    id: support.calendar.id as Id<'calendars'>,
+    campus: support.calendar.campus ?? '',
+  },
   catalogueRevision: 1,
   initialConclusion: initialConclusion(support),
   review: null,

@@ -37,7 +37,9 @@ const effects: { value: CatalogueEvent['kind']; title: string; description: stri
     description: 'Datas comemorativas e avisos. Cada dia segue a semana normal de aulas.',
   },
 ];
-const emptyEvent = (revision: number): CatalogueEvent & { revision: number } => ({
+const emptyEvent = (
+  revision: number,
+): Omit<CatalogueEvent, 'start' | 'end'> & { start: string; end: string; revision: number } => ({
   revision,
   id: '',
   name: '',

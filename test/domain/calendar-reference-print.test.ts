@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
@@ -21,8 +22,8 @@ const events: CalendarActivity[] = [
   {
     id: 'prior',
     name: 'Edital anterior <documento>',
-    start: '2026-12-01',
-    end: '2026-12-01',
+    start: civilDate('2026-12-01'),
+    end: civilDate('2026-12-01'),
     kind: 'note',
     offers: ['integrado'],
     publicationStatus: 'published',
@@ -31,8 +32,8 @@ const events: CalendarActivity[] = [
   {
     id: 'planned',
     name: 'Publicação a planejar',
-    start: '2026-11-01',
-    end: '2026-11-01',
+    start: civilDate('2026-11-01'),
+    end: civilDate('2026-11-01'),
     kind: 'note',
     offers: ['integrado'],
     recordType: 'event',
@@ -42,16 +43,16 @@ const events: CalendarActivity[] = [
   {
     id: 'cross',
     name: 'Intervalo que cruza o ano',
-    start: '2026-12-15',
-    end: '2027-01-12',
+    start: civilDate('2026-12-15'),
+    end: civilDate('2027-01-12'),
     kind: 'note',
     offers: ['integrado'],
   },
   {
     id: 'current',
     name: 'Processo seletivo regular',
-    start: '2027-12-01',
-    end: '2027-12-01',
+    start: civilDate('2027-12-01'),
+    end: civilDate('2027-12-01'),
     kind: 'note',
     offers: ['integrado'],
     publicationStatus: 'planned',
@@ -91,22 +92,22 @@ test('print distributions use the semantic semester of each offer despite coinci
       {
         id: 'annual',
         name: 'Ano integrado',
-        start: '2027-02-01',
-        end: '2027-12-17',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
       {
         id: 'second',
         name: 'Segundo semestre graduação',
-        start: '2027-08-02',
-        end: '2027-12-17',
+        start: civilDate('2027-08-02'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined' as const, offers: ['graduacao'], term: 'second' as const },
       },
       {
         id: 'first',
         name: 'Primeiro semestre graduação',
-        start: '2027-02-01',
-        end: '2027-06-30',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-06-30'),
         association: { status: 'defined' as const, offers: ['graduacao'], term: 'first' as const },
       },
     ],

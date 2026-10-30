@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import {
   initialCatalogue,
@@ -24,7 +25,7 @@ test('source update rehearsal is idempotent and preserves locally changed instit
   expect(preview.conflicts).toEqual([]);
   expect(legacy).toEqual(before);
   const changed = legacy.map((event) =>
-    event.id === 'ifpr2027-0' ? { ...event, start: '2027-02-07' } : event,
+    event.id === 'ifpr2027-0' ? { ...event, start: civilDate('2027-02-07') } : event,
   );
   const protectedPreview = preview2027SourceUpdate(changed);
   expect(protectedPreview.updates.some((row) => row.id === 'ifpr2027-0')).toBe(false);

@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { countCalendar } from '../../src/domain/calendar/counting/core.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
@@ -41,22 +42,22 @@ function state(): AnnotatedState {
       {
         id: 'annual',
         name: 'Anual',
-        start: '2027-03-01',
-        end: '2027-03-26',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-26'),
         association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
       {
         id: 'first',
         name: 'Primeiro',
-        start: '2027-03-01',
-        end: '2027-03-12',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-12'),
         association: { status: 'defined', offers: ['graduacao'], term: 'first' },
       },
       {
         id: 'second',
         name: 'Segundo',
-        start: '2027-03-15',
-        end: '2027-03-26',
+        start: civilDate('2027-03-15'),
+        end: civilDate('2027-03-26'),
         association: { status: 'defined', offers: ['graduacao'], term: 'second' },
       },
     ],
@@ -64,24 +65,24 @@ function state(): AnnotatedState {
       {
         id: 'saturday',
         name: 'Sábado',
-        start: '2027-03-06',
-        end: '2027-03-06',
+        start: civilDate('2027-03-06'),
+        end: civilDate('2027-03-06'),
         kind: 'include',
         evidence: 'Ata manual do sábado',
       },
       {
         id: 'overlap',
         name: 'Reposição',
-        start: '2027-03-08',
-        end: '2027-03-08',
+        start: civilDate('2027-03-08'),
+        end: civilDate('2027-03-08'),
         kind: 'include',
         evidence: 'Fonte manual da reposição',
       },
       {
         id: 'local',
         name: 'Feriado local',
-        start: '2027-03-08',
-        end: '2027-03-08',
+        start: civilDate('2027-03-08'),
+        end: civilDate('2027-03-08'),
         kind: 'exclude',
         offers: ['integrado'],
         evidence: 'Fonte manual do feriado',
@@ -89,8 +90,8 @@ function state(): AnnotatedState {
       {
         id: 'inst:holiday',
         name: 'Feriado institucional',
-        start: '2027-03-10',
-        end: '2027-03-10',
+        start: civilDate('2027-03-10'),
+        end: civilDate('2027-03-10'),
         kind: 'exclude',
         evidence: 'Resolução institucional automática',
       },
@@ -171,8 +172,8 @@ test('the counting core requires applied confirmation, not a textual source', ()
     periods: [
       {
         id: 'one',
-        start: '2027-03-01',
-        end: '2027-03-05',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-05'),
         association: { status: 'defined' as const, offers: ['graduacao'], term: 'first' as const },
       },
     ],
@@ -194,8 +195,8 @@ function deadlineState(): ActivityState {
     periods: [
       {
         id: 'one',
-        start: '2027-08-01',
-        end: '2027-09-30',
+        start: civilDate('2027-08-01'),
+        end: civilDate('2027-09-30'),
         association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'annual' },
       },
     ],
@@ -210,8 +211,8 @@ function deadlineState(): ActivityState {
 const holiday = (overrides: Partial<AnnotatedEvent> = {}): AnnotatedEvent => ({
   id: 'municipal',
   name: 'Feriado municipal',
-  start: '2027-08-31',
-  end: '2027-08-31',
+  start: civilDate('2027-08-31'),
+  end: civilDate('2027-08-31'),
   kind: 'exclude',
   offers: ['integrado'],
   evidence: 'Lei manual',
@@ -228,19 +229,19 @@ for (const scenario of [
   },
   {
     name: 'municipal recess and a weekend',
-    events: [holiday({ end: '2027-09-03', deadlineExtensionCause: 'municipal-recess' })],
+    events: [holiday({ end: civilDate('2027-09-03'), deadlineExtensionCause: 'municipal-recess' })],
     expected: '2027-09-06',
     source: 'municipal-extension',
   },
   {
     name: 'an explicitly included Saturday',
     events: [
-      holiday({ end: '2027-09-03' }),
+      holiday({ end: civilDate('2027-09-03') }),
       {
         ...holiday(),
         id: 'saturday',
-        start: '2027-09-04',
-        end: '2027-09-04',
+        start: civilDate('2027-09-04'),
+        end: civilDate('2027-09-04'),
         kind: 'include',
         deadlineExtensionCause: undefined,
       },
@@ -264,8 +265,18 @@ for (const scenario of [
   test(`deadline is unchanged without manual sources: ${scenario.name}`, () => {
     const original = { ...deadlineState(), events: scenario.events };
     const stripped = removeManualSources(original);
-    const before = prorogatedDeadline(original, '2027-08-31', original.events, 'integrado');
-    const after = prorogatedDeadline(stripped, '2027-08-31', stripped.events, 'integrado');
+    const before = prorogatedDeadline(
+      original,
+      civilDate('2027-08-31'),
+      original.events,
+      'integrado',
+    );
+    const after = prorogatedDeadline(
+      stripped,
+      civilDate('2027-08-31'),
+      stripped.events,
+      'integrado',
+    );
     expect(before).toMatchObject({ date: scenario.expected, source: scenario.source });
     expect(after).toMatchObject({
       date: before.date,
@@ -317,12 +328,16 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
     requirementId: row.id,
     kind: 'note',
     offers: ['integrado'],
-    start: '2027-12-01',
-    end: '2027-12-01',
+    start: civilDate('2027-12-01'),
+    end: civilDate('2027-12-01'),
     evidence: 'Publicação manual',
     admission: { type: 'regular', year: 2028, term: 'annual' },
     publicationStatus: 'planned',
-    deadlineAdjustment: { date: '2027-12-03', evidence: 'Cronograma manual', reviewed: false },
+    deadlineAdjustment: {
+      date: civilDate('2027-12-03'),
+      evidence: 'Cronograma manual',
+      reviewed: false,
+    },
   };
   original.events = [event];
   const stripped = removeManualSources(original);
@@ -337,7 +352,7 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
   expect(after.coverage).toBe(before.coverage);
   expect(after.execution).toBe(before.execution);
   expect(stripped.events[0].deadlineAdjustment?.reviewed).toBe(false);
-  stripped.events[0].end = '2027-12-04';
+  stripped.events[0].end = civilDate('2027-12-04');
   expect(
     activityCoverage(stripped).find(
       (item) => item.requirement.id === row.id && item.offerId === 'integrado',
@@ -354,14 +369,14 @@ test('PDF omits manual source text but keeps automatic institutional references 
     {
       id: 'manual',
       name: 'Edital anterior',
-      start: '2026-12-01',
-      end: '2026-12-02',
+      start: civilDate('2026-12-01'),
+      end: civilDate('2026-12-02'),
       kind: 'note',
       evidence: 'SEGREDO MANUAL DO EVENTO',
       publicationStatus: 'published' as const,
       admission: { type: 'regular' as const, year: 2027, term: 'annual' as const },
       deadlineAdjustment: {
-        date: '2027-09-03',
+        date: civilDate('2027-09-03'),
         evidence: 'SEGREDO MANUAL DO AJUSTE',
         reviewed: false,
       },
@@ -370,8 +385,8 @@ test('PDF omits manual source text but keeps automatic institutional references 
       id: 'inst:previous',
       institutional: true,
       name: 'Edital institucional',
-      start: '2026-11-01',
-      end: '2026-11-02',
+      start: civilDate('2026-11-01'),
+      end: civilDate('2026-11-02'),
       evidence: 'REFERÊNCIA INSTITUCIONAL AUTOMÁTICA',
     },
   ];
@@ -404,24 +419,28 @@ test('municipal deadline preserves automatic institutional references while abse
     id: 'inst:municipal',
     evidence: 'Registro institucional automático',
   });
-  expect(prorogatedDeadline(input, '2027-08-31', [automatic], 'integrado')).toMatchObject({
-    date: '2027-09-01',
+  expect(
+    prorogatedDeadline(input, civilDate('2027-08-31'), [automatic], 'integrado'),
+  ).toMatchObject({
+    date: civilDate('2027-09-01'),
     evidence: ['Registro institucional automático'],
   });
   const stripped = {
     ...removeManualSources({ ...input, events: [holiday()] }),
     weekConfirmed: false,
   };
-  expect(prorogatedDeadline(stripped, '2027-08-31', stripped.events, 'integrado')).toMatchObject({
+  expect(
+    prorogatedDeadline(stripped, civilDate('2027-08-31'), stripped.events, 'integrado'),
+  ).toMatchObject({
     date: null,
     source: 'municipal-extension',
   });
   const endOfPeriod = {
     ...stripped,
     weekConfirmed: true,
-    periods: input.periods.map((period) => ({ ...period, end: '2027-08-31' })),
+    periods: input.periods.map((period) => ({ ...period, end: civilDate('2027-08-31') })),
   };
-  expect(prorogatedDeadline(endOfPeriod, '2027-08-31', stripped.events, 'integrado')).toMatchObject(
-    { date: null, source: 'municipal-extension' },
-  );
+  expect(
+    prorogatedDeadline(endOfPeriod, civilDate('2027-08-31'), stripped.events, 'integrado'),
+  ).toMatchObject({ date: null, source: 'municipal-extension' });
 });

@@ -1,4 +1,7 @@
-import type { CalendarRecord, CalendarState } from '../../web/features/calendar-editor/types.ts';
+import type { FunctionReturnType } from 'convex/server';
+type WireCalendarRecord = FunctionReturnType<typeof api.calendars.calendar>;
+import { civilDate } from '../../src/domain/civil-date.ts';
+import type { CalendarState } from '../../web/features/calendar-editor/types.ts';
 import type { Bootstrap } from '../../web/shared/convex/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { api } from '../../convex/_generated/api.js';
@@ -7,7 +10,7 @@ import { teacherDayId } from './observances.ts';
 import { kinds } from '../../src/domain/calendar/offers.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 
-export const record: CalendarRecord = {
+export const record: WireCalendarRecord = {
   id: 'synthetic-calendar' as Id<'calendars'>,
   campusId: 'campus-a' as Id<'campuses'>,
   name: '2027 — Campus de teste',
@@ -35,8 +38,8 @@ export const record: CalendarRecord = {
     {
       id: teacherDayId,
       name: 'Dia do Professor',
-      start: '2027-10-15',
-      end: '2027-10-15',
+      start: civilDate('2027-10-15'),
+      end: civilDate('2027-10-15'),
       kind: 'exclude',
       evidence: 'Base sintética',
       institutional: true,

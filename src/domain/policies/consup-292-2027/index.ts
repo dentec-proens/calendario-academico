@@ -1,3 +1,4 @@
+import { civilDate } from '../../civil-date.ts';
 import { calendarOffers } from '../../calendar/offers.ts';
 import type { CalendarPolicy } from '../contract.ts';
 import { citation, rulesetChanges, rulesetVersion } from './history.ts';
@@ -27,9 +28,9 @@ export const consup2922027Policy: CalendarPolicy = {
       (offer) => !excluded(offer.kind) && offer.scope?.status !== 'own-regulation',
     )
       ? {
-          start: '2027-02-01',
-          latestStart: '2027-02-15',
-          end: '2027-12-17',
+          start: civilDate('2027-02-01'),
+          latestStart: civilDate('2027-02-15'),
+          end: civilDate('2027-12-17'),
           basis: 'Arts. 4º e 8º da Resolução CONSUP/IFPR nº 292/2026',
         }
       : null,

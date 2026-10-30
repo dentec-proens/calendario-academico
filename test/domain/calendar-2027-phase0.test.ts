@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
@@ -69,13 +70,16 @@ test('a documented 2026 occurrence retains its actual dates through the event co
   const event = {
     id: 'previous-notice',
     name: 'Edital sintético de transferência para 2027',
-    start: '2026-12-01',
-    end: '2026-12-01',
+    start: civilDate('2026-12-01'),
+    end: civilDate('2026-12-01'),
     kind: 'note',
     publicationStatus: 'published' as const,
     offers: ['integrado'],
   };
   const applied = applyEvent(state, event, []);
   const normalized = normalizeOfferCalendar(applied);
-  expect(normalized.events[0]).toMatchObject({ start: '2026-12-01', end: '2026-12-01' });
+  expect(normalized.events[0]).toMatchObject({
+    start: civilDate('2026-12-01'),
+    end: civilDate('2026-12-01'),
+  });
 });

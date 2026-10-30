@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { configureAssessment } from '../../src/domain/calendar/commands/organization.ts';
 import { recalculateCalendar } from '../../src/domain/calendar/commands/recalculate.ts';
@@ -13,8 +14,8 @@ function calendar(): ActivityState {
     periods: [
       {
         id: 'classes',
-        start: '2027-03-01',
-        end: '2027-03-26',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-26'),
         association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
     ],
@@ -22,8 +23,8 @@ function calendar(): ActivityState {
       id: `event-${index + 1}`,
       requirementId: `stage-${index + 1}:integrado`,
       name: `${index + 1}ª etapa`,
-      start: `2027-03-${String(index * 7 + 1).padStart(2, '0')}`,
-      end: `2027-03-${String(index * 7 + 4).padStart(2, '0')}`,
+      start: civilDate(`2027-03-${String(index * 7 + 1).padStart(2, '0')}`),
+      end: civilDate(`2027-03-${String(index * 7 + 4).padStart(2, '0')}`),
       kind: 'note',
       category: 'limite',
       offers: ['integrado'],
@@ -42,10 +43,19 @@ function calendar(): ActivityState {
 
 test('recalculating periods preserves every entered stage date, including legacy automatic markers', () => {
   const state = calendar();
-  state.events = state.events.map((event) => ({ ...event, assessmentAutoStart: '2027-03-01' }));
+  state.events = state.events.map((event) => ({
+    ...event,
+    assessmentAutoStart: civilDate('2027-03-01'),
+  }));
   const before = structuredClone(state);
   const next = recalculateCalendar(state, [
-    { id: 'holiday', name: 'Feriado', start: '2027-03-01', end: '2027-03-05', kind: 'exclude' },
+    {
+      id: 'holiday',
+      name: 'Feriado',
+      start: civilDate('2027-03-01'),
+      end: civilDate('2027-03-05'),
+      kind: 'exclude',
+    },
   ]);
   const expected = before.events;
   expect(next.events).toEqual(expected);
@@ -55,7 +65,10 @@ test('recalculating periods preserves every entered stage date, including legacy
 
 test('changing assessment organization preserves events while removing obsolete activity links and automatic anchors', () => {
   const state = calendar();
-  state.events = state.events.map((event) => ({ ...event, assessmentAutoStart: '2027-03-01' }));
+  state.events = state.events.map((event) => ({
+    ...event,
+    assessmentAutoStart: civilDate('2027-03-01'),
+  }));
   const original = structuredClone(state);
   const changed = configureAssessment(state, { integrado: '2' }, []);
   expect(changed.offers[0].stages).toEqual({ perTerm: 2 });

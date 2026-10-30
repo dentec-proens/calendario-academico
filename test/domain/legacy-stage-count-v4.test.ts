@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
 import type { CalendarContentV4, CalendarOffer } from '../../src/domain/calendar/model.ts';
@@ -140,8 +141,8 @@ test('period and organization shortcuts refuse classification before the complet
       state,
       {
         name: 'Ano',
-        start: '2027-02-01',
-        end: '2027-12-17',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
         days: '',
         association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
@@ -158,8 +159,8 @@ test('new and changed assessment dates remain blocked until the organization def
       {
         id: 'old',
         name: 'Etapa antiga',
-        start: '2027-03-01',
-        end: '2027-03-12',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-12'),
         kind: 'note',
         requirementId: 'stage-1:integrado',
         offers: ['integrado'],
@@ -169,9 +170,9 @@ test('new and changed assessment dates remain blocked until the organization def
   expect(() => applyEvent(state, { ...state.events[0], id: 'new' }, [])).toThrow(
     /organização|etapa/i,
   );
-  expect(() => applyEvent(state, { ...state.events[0], end: '2027-03-15' }, [], true)).toThrow(
-    /organização|etapa/i,
-  );
+  expect(() =>
+    applyEvent(state, { ...state.events[0], end: civilDate('2027-03-15') }, [], true),
+  ).toThrow(/organização|etapa/i);
   // The global save boundary preserves the existing evidence while other sections change.
   expect(
     prepareOfferCalendarSave(
@@ -188,8 +189,8 @@ test('complete explicit configuration clears the marker and retains surplus stag
     events: [1, 2, 3].map((n) => ({
       id: `old-${n}`,
       name: `Etapa ${n}`,
-      start: `2027-0${n + 1}-01`,
-      end: `2027-0${n + 1}-12`,
+      start: civilDate(`2027-0${n + 1}-01`),
+      end: civilDate(`2027-0${n + 1}-12`),
       kind: 'note',
       requirementId: `stage-${n}:integrado`,
       offers: ['integrado'],
@@ -199,16 +200,21 @@ test('complete explicit configuration clears the marker and retains surplus stag
   expect(draft.count).toBe('');
   draft.organization = 'anual';
   draft.count = '2';
-  draft.periods[0] = { sourceId: '', name: 'Ano', start: '2027-02-01', end: '2027-12-17' };
-  draft.stages[0] = { id: 'old-1', start: '2027-02-01', end: '2027-07-09' };
-  draft.stages[1] = { id: 'old-2', start: '2027-07-26', end: '2027-12-17' };
+  draft.periods[0] = {
+    sourceId: '',
+    name: 'Ano',
+    start: civilDate('2027-02-01'),
+    end: civilDate('2027-12-17'),
+  };
+  draft.stages[0] = { id: 'old-1', start: civilDate('2027-02-01'), end: civilDate('2027-07-09') };
+  draft.stages[1] = { id: 'old-2', start: civilDate('2027-07-26'), end: civilDate('2027-12-17') };
   let seq = 0;
   const configured = applyOfferOrganization(state, 'integrado', draft, () => `generated-${++seq}`);
   expect(configured.offers[0]).not.toHaveProperty('legacyStageCount');
   expect(configured.offers[0]).toMatchObject({ organization: 'anual', stages: { perTerm: 2 } });
   expect(configured.events.find((e) => e.id === 'old-3')).toMatchObject({
-    start: '2027-04-01',
-    end: '2027-04-12',
+    start: civilDate('2027-04-01'),
+    end: civilDate('2027-04-12'),
     kind: 'note',
   });
   const saved = prepareOfferCalendarSave(state, configured, {
@@ -226,8 +232,8 @@ test('unclassified historical stage evidence retains its original interval findi
       {
         id: 'old-stage',
         name: 'Etapa anterior',
-        start: '2027-03-01',
-        end: '2027-03-12',
+        start: civilDate('2027-03-01'),
+        end: civilDate('2027-03-12'),
         kind: 'note',
         requirementId: 'stage-1:integrado',
         offers: ['integrado'],
@@ -248,7 +254,7 @@ test('unclassified historical stage evidence retains its original interval findi
       catalogue: { events: [] },
       recalculate: false,
     }).content.events[0],
-  ).toMatchObject({ start: '2027-03-01', end: '2027-03-12' });
+  ).toMatchObject({ start: civilDate('2027-03-01'), end: civilDate('2027-03-12') });
 });
 
 test('complete classification keeps linked results, councils and meetings and detaches only surplus ordinals', () => {
@@ -258,8 +264,8 @@ test('complete classification keeps linked results, councils and meetings and de
       [1, 3].map((n) => ({
         id: `${family}-${n}`,
         name: `${family} ${n}`,
-        start: '2027-05-28',
-        end: '2027-05-28',
+        start: civilDate('2027-05-28'),
+        end: civilDate('2027-05-28'),
         kind: 'note',
         requirementId: `${family}-${n}:integrado`,
         offers: ['integrado'],
@@ -269,9 +275,14 @@ test('complete classification keeps linked results, councils and meetings and de
   const draft = offerOrganizationDraft(state, 'integrado');
   draft.organization = 'anual';
   draft.count = '2';
-  draft.periods[0] = { sourceId: '', name: 'Ano', start: '2027-02-01', end: '2027-12-17' };
-  draft.stages[0] = { id: '', start: '2027-02-01', end: '2027-07-09' };
-  draft.stages[1] = { id: '', start: '2027-07-26', end: '2027-12-17' };
+  draft.periods[0] = {
+    sourceId: '',
+    name: 'Ano',
+    start: civilDate('2027-02-01'),
+    end: civilDate('2027-12-17'),
+  };
+  draft.stages[0] = { id: '', start: civilDate('2027-02-01'), end: civilDate('2027-07-09') };
+  draft.stages[1] = { id: '', start: civilDate('2027-07-26'), end: civilDate('2027-12-17') };
   let seq = 0;
   const configured = applyOfferOrganization(state, 'integrado', draft, () => `configured-${++seq}`);
   for (const family of ['results', 'council', 'pedagogical-meeting']) {
@@ -280,6 +291,6 @@ test('complete classification keeps linked results, councils and meetings and de
     );
     const excess = configured.events.find((event) => event.id === `${family}-3`)!;
     expect(excess.requirementId).toBeUndefined();
-    expect(excess).toMatchObject({ start: '2027-05-28', end: '2027-05-28' });
+    expect(excess).toMatchObject({ start: civilDate('2027-05-28'), end: civilDate('2027-05-28') });
   }
 });

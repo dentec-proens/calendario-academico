@@ -1,3 +1,4 @@
+import { civilDate, type CivilDate } from '../civil-date.ts';
 import type { CalendarActivity, CalendarOffer } from '../calendar/model.ts';
 export interface CatalogueEvent extends CalendarActivity {
   evidence: string;
@@ -60,8 +61,8 @@ export function initialCatalogue() {
   const events: CatalogueEvent[] = rows.map(([date, name, evidence], i) => ({
     id: `national-${i}`,
     name,
-    start: `2027-${date}`,
-    end: `2027-${date}`,
+    start: civilDate(`2027-${date}`),
+    end: civilDate(`2027-${date}`),
     kind: 'exclude',
     category: 'feriado',
     evidence: evidence!,
@@ -117,8 +118,8 @@ export function initialCatalogue() {
     events.push({
       id,
       name,
-      start: `2027-${date}`,
-      end: `2027-${date}`,
+      start: civilDate(`2027-${date}`),
+      end: civilDate(`2027-${date}`),
       kind: ['recesso', 'feriado'].includes(category) ? 'exclude' : 'note',
       category,
       evidence:
@@ -134,8 +135,8 @@ export function initialCatalogue() {
     events.push({
       id: `ifpr2027-${id}`,
       name,
-      start: `2027-${start}`,
-      end: `2027-${end}`,
+      start: civilDate(`2027-${start}`),
+      end: civilDate(`2027-${end}`),
       kind: 'note',
       category: 'comemorativo',
       evidence: 'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, art. 2º',
@@ -190,8 +191,8 @@ export function preview2027SourceUpdate(events: CatalogueEvent[]) {
 export function inheritedEvents<
   T extends {
     id: string;
-    start: string;
-    end: string;
+    start: CivilDate;
+    end: CivilDate;
     active: boolean;
     modalities?: string[];
   },

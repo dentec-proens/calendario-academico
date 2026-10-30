@@ -1,3 +1,4 @@
+import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../../convex/_generated/api.js';
@@ -14,29 +15,33 @@ const createBody = {
 test('calendar operations append immutable snapshots and roll back stale saves atomically', async () => {
   const { client, asClient, ids } = await createNativeFixture();
   const campus = asClient('campus-a');
-  const created = await campus.mutation(api.calendars.createCalendar, {
-    body: { ...createBody, campusId: ids.campuses.a },
-  });
-  const saved = await campus.mutation(api.calendars.saveCalendar, {
-    id: created.id,
-    body: {
-      version: created.version,
-      catalogueRevision: created.currentCatalogueRevision,
-      state: {
-        ...created.state,
-        events: [
-          {
-            id: 'content-note',
-            name: 'Atividade registrada',
-            kind: 'note' as const,
-            start: '2027-03-01',
-            end: '2027-03-01',
-            offers: ['integrado' as const],
-          },
-        ],
+  const created = await campus
+    .mutation(api.calendars.createCalendar, {
+      body: { ...createBody, campusId: ids.campuses.a },
+    })
+    .then(calendarRecordDates);
+  const saved = await campus
+    .mutation(api.calendars.saveCalendar, {
+      id: created.id,
+      body: {
+        version: created.version,
+        catalogueRevision: created.currentCatalogueRevision,
+        state: {
+          ...created.state,
+          events: [
+            {
+              id: 'content-note',
+              name: 'Atividade registrada',
+              kind: 'note' as const,
+              start: '2027-03-01',
+              end: '2027-03-01',
+              offers: ['integrado' as const],
+            },
+          ],
+        },
       },
-    },
-  });
+    })
+    .then(calendarSaveDates);
   assert.equal(saved.version, 2);
   const before = await client.run(async (ctx) => ({
     snapshots: await ctx.db.query('calendarSnapshots').collect(),
@@ -47,26 +52,28 @@ test('calendar operations append immutable snapshots and roll back stale saves a
   assert.equal(before.versions[0].version, 1);
   assert.deepEqual(before.snapshots[0].state, created.state);
   await assert.rejects(
-    campus.mutation(api.calendars.saveCalendar, {
-      id: created.id,
-      body: {
-        version: 1,
-        catalogueRevision: created.currentCatalogueRevision,
-        state: {
-          ...created.state,
-          events: [
-            {
-              id: 'content-note',
-              name: 'Tentativa concorrente',
-              kind: 'note' as const,
-              start: '2027-03-01',
-              end: '2027-03-01',
-              offers: ['integrado' as const],
-            },
-          ],
+    campus
+      .mutation(api.calendars.saveCalendar, {
+        id: created.id,
+        body: {
+          version: 1,
+          catalogueRevision: created.currentCatalogueRevision,
+          state: {
+            ...created.state,
+            events: [
+              {
+                id: 'content-note',
+                name: 'Tentativa concorrente',
+                kind: 'note' as const,
+                start: '2027-03-01',
+                end: '2027-03-01',
+                offers: ['integrado' as const],
+              },
+            ],
+          },
         },
-      },
-    }),
+      })
+      .then(calendarSaveDates),
     /Há versão mais recente/,
   );
   const after = await client.run(async (ctx) => ({
@@ -100,9 +107,11 @@ test('review saves preserve earlier authorship and rejected edits append no revi
   const { client, asClient, ids } = await createNativeFixture();
   const campus = asClient('campus-a');
   const admin = asClient('admin');
-  const created = await campus.mutation(api.calendars.createCalendar, {
-    body: { ...createBody, campusId: ids.campuses.a },
-  });
+  const created = await campus
+    .mutation(api.calendars.createCalendar, {
+      body: { ...createBody, campusId: ids.campuses.a },
+    })
+    .then(calendarRecordDates);
   const support = await admin.query(api.reviews.review, { id: created.id });
   const body = {
     rulesetVersion: support.rulesetVersion,
@@ -184,9 +193,11 @@ test('typed storage rejects legacy envelopes, invalid relationships and incomple
     ),
     /id|validator|unexpected/i,
   );
-  const record = await asClient('campus-a').mutation(api.calendars.createCalendar, {
-    body: { ...createBody, campusId: ids.campuses.a },
-  });
+  const record = await asClient('campus-a')
+    .mutation(api.calendars.createCalendar, {
+      body: { ...createBody, campusId: ids.campuses.a },
+    })
+    .then(calendarRecordDates);
   await assert.rejects(
     client.run((ctx) =>
       ctx.db.insert('calendarContents', {

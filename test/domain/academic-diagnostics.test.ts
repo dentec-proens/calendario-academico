@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { diagnoseCalendar, diagnoseTeachingDays } from '../../src/domain/calendar/diagnostics.ts';
@@ -13,14 +14,14 @@ function calendar(): ActivityState {
     periods: [
       {
         id: 'year-integrado',
-        start: '2027-02-01',
-        end: '2027-12-17',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
       {
         id: 'first',
-        start: '2027-02-01',
-        end: '2027-06-30',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-06-30'),
         association: { status: 'defined', offers: ['graduacao'], term: 'first' },
       },
     ],
@@ -64,8 +65,8 @@ test('local diagnostics and confirmed readiness require the same missing semeste
       ...state.periods,
       {
         id: 'second',
-        start: '2027-08-02',
-        end: '2027-12-17',
+        start: civilDate('2027-08-02'),
+        end: civilDate('2027-12-17'),
         association: { status: 'defined' as const, offers: ['graduacao'], term: 'second' as const },
       },
     ],

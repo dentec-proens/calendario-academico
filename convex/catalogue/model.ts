@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import type { MutationCtx } from '../_generated/server';
 import type { Context } from '../lib/shared';
 import { fail } from '../lib/shared';
@@ -56,8 +57,8 @@ export async function catalogue(ctx: Context, year?: number) {
       ({ code, name, start, end, kind, category, evidence, modalities, active }) => ({
         id: code,
         name,
-        start,
-        end,
+        start: civilDate(start),
+        end: civilDate(end),
         kind,
         category,
         evidence,

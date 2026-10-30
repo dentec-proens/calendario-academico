@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import type { ActivityState, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
@@ -36,8 +37,8 @@ const state: ActivityState = {
     {
       id: 'year',
       name: 'Período sintético',
-      start: '2027-03-01',
-      end: '2027-03-05',
+      start: civilDate('2027-03-01'),
+      end: civilDate('2027-03-05'),
       association: { status: 'defined', term: 'annual', offers: offers.map((offer) => offer.id) },
     },
   ],
@@ -47,8 +48,8 @@ const snapshot = {
   id: 'inst:synthetic',
   name: 'Impedimento institucional sintético',
   kind: 'exclude',
-  start: '2027-03-02',
-  end: '2027-03-02',
+  start: civilDate('2027-03-02'),
+  end: civilDate('2027-03-02'),
   institutional: true,
   modalities: ['graduacao'],
   evidence: 'Fonte institucional sintética',

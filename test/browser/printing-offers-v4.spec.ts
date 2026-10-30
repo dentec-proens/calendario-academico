@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { readFile, writeFile } from 'node:fs/promises';
 import { test, expect } from './test.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
@@ -15,8 +16,8 @@ for (const width of [1440, 390]) {
       {
         id: 'previous-publication',
         name: 'Publicação realizada antes do ano',
-        start: '2026-12-01',
-        end: '2026-12-01',
+        start: civilDate('2026-12-01'),
+        end: civilDate('2026-12-01'),
         kind: 'note',
         publicationStatus: 'published',
         admission: { type: 'transfer', year: 2027, term: 'annual' },
@@ -25,8 +26,8 @@ for (const width of [1440, 390]) {
       {
         id: 'previous-plan',
         name: 'Publicação prevista antes do ano',
-        start: '2026-11-01',
-        end: '2026-11-01',
+        start: civilDate('2026-11-01'),
+        end: civilDate('2026-11-01'),
         kind: 'note',
         publicationStatus: 'planned',
         offers: ['integrado'],
@@ -34,8 +35,8 @@ for (const width of [1440, 390]) {
       {
         id: 'cross-year-note',
         name: 'Registro informativo que atravessa o ano',
-        start: '2026-12-15',
-        end: '2027-01-12',
+        start: civilDate('2026-12-15'),
+        end: civilDate('2027-01-12'),
         kind: 'note',
         offers: ['integrado'],
       },
@@ -51,7 +52,7 @@ for (const width of [1440, 390]) {
       Promise.all(paths.map((path) => readFile(new URL(path, import.meta.url), 'utf8'))),
       readFile(new URL('../../assets/printing/ifpr-logo.png', import.meta.url)),
     ]);
-    state.observanceDates = { 'public-servant-day': '2027-10-29' };
+    state.observanceDates = { 'public-servant-day': civilDate('2027-10-29') };
     const allEvents = [
       ...applyObservances(inheritedEvents(initialCatalogue(), state.year, state.offers), state),
       ...state.events,

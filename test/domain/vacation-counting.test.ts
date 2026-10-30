@@ -1,3 +1,4 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
 import type { countCalendar } from '../../src/domain/calendar/counting/core.ts';
 import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
@@ -18,8 +19,8 @@ const state = {
     {
       id: 'oct',
       name: 'Outubro',
-      start: '2027-10-01',
-      end: '2027-10-31',
+      start: civilDate('2027-10-01'),
+      end: civilDate('2027-10-31'),
       association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
     },
   ],
@@ -33,7 +34,12 @@ const state = {
     },
   ],
 };
-const excluded = (date: string) => ({ id: date, start: date, end: date, kind: 'exclude' });
+const excluded = (date: string) => ({
+  id: date,
+  start: civilDate(date),
+  end: civilDate(date),
+  kind: 'exclude',
+});
 
 test('third vacation excludes only counted dates; PDF, stages and automatic duration agree', () => {
   // Synthetic dates reproduce 16 -> 13; they are not the campus dates.
@@ -41,12 +47,12 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
     excluded,
   );
   const vacation = teacherVacations(2027, {
-    firstStart: '2027-01-02',
-    firstEnd: '2027-01-16',
-    secondStart: '2027-07-01',
-    secondEnd: '2027-07-15',
-    thirdStart: '2027-10-06',
-    thirdEnd: '2027-10-08',
+    firstStart: civilDate('2027-01-02'),
+    firstEnd: civilDate('2027-01-16'),
+    secondStart: civilDate('2027-07-01'),
+    secondEnd: civilDate('2027-07-15'),
+    thirdStart: civilDate('2027-10-06'),
+    thirdEnd: civilDate('2027-10-08'),
   });
   assert(vacation.events.every((e: CalendarActivity) => e.kind === 'exclude'));
   assert.equal(evaluateCalendar(state, holidays).total, 16);
@@ -77,8 +83,8 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
               id: 'stage',
               kind: 'note',
               requirementId: 'stage-1:integrado',
-              start: '2027-10-01',
-              end: '2027-10-31',
+              start: civilDate('2027-10-01'),
+              end: civilDate('2027-10-31'),
             },
           ],
         },
@@ -94,12 +100,17 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
 test('vacation overlaps never double subtract holidays; Saturdays and offer scope remain respected', () => {
   const vacation = {
     id: 'teacher-vacation-third',
-    start: '2027-10-11',
-    end: '2027-10-17',
+    start: civilDate('2027-10-11'),
+    end: civilDate('2027-10-17'),
     kind: 'exclude',
     offers: ['integrado'],
   };
-  const saturday = { id: 'sat', start: '2027-10-16', end: '2027-10-16', kind: 'include' };
+  const saturday = {
+    id: 'sat',
+    start: civilDate('2027-10-16'),
+    end: civilDate('2027-10-16'),
+    kind: 'include',
+  };
   const mixed = {
     ...state,
     periods: state.periods.map((period) => ({
