@@ -58,11 +58,25 @@ Releases apenas de frontend também publicam o Convex do mesmo commit, sem mudan
 
 ## Migrações de dados
 
-Alterações de dados históricos usam o componente [`@convex-dev/migrations`](https://www.convex.dev/components/migrations), montado em `convex/convex.config.ts`. As migrações ficam em [`convex/migrations.ts`](../convex/migrations.ts) e a lista `pending` define, em ordem, o que a próxima release deve executar. O componente processa lotes de forma assíncrona, registra o cursor, ignora migrações já concluídas e retoma uma interrompida de onde parou.
+Alterações de dados já gravados usam o componente [`@convex-dev/migrations`](https://www.convex.dev/components/migrations), montado em `convex/convex.config.ts`. As migrações ficam em [`convex/migrations.ts`](../convex/migrations.ts) e a lista `pending` define, em ordem, o que a próxima release deve executar. O componente processa lotes em mutações transacionais, registra o cursor, ignora migrações já concluídas e retoma uma interrompida de onde parou.
 
-Uma mudança de schema que exige migrar dados ocupa duas releases:
+### Níveis de risco
 
-1. **Alargar.** O schema aceita o formato antigo e o novo (campo novo opcional, união dos dois tipos ou campo a remover marcado como opcional) e o código lê e grava os dois. Defina a migração e inclua-a em `pending`:
+O cuidado exigido depende do risco da mudança, não do tamanho do código. Na dúvida entre dois níveis, use o mais alto.
+
+| Nível                            | Exemplos                                                                                                                                     | O que exige                                                                                                                                                                                                                                             |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **0 — aditiva**                  | Campo opcional novo, tabela nova, índice novo (com `staged: true` em tabela grande)                                                          | Release comum. Nada entra em `pending`.                                                                                                                                                                                                                 |
+| **1 — conversão**                | Mover ou renomear campo, preencher valor padrão, normalizar representação. A conversão é idempotente e não exclui documentos nem informação. | Conversão em função pura com teste unitário (casos limite e conflitos), `dryRun` no deployment de desenvolvimento e uma release com o schema alargado e a migração em `pending`. A contração vai numa release posterior.                                |
+| **2 — destrutiva ou estrutural** | Excluir documentos ou valores sem equivalente, reescrever entre tabelas, mudar o significado de um dado, alterar auth, sessões ou Storage    | Plano próprio, ensaio sobre o backup restaurado num deployment descartável, conferência das exportações conforme [Operações administrativas de dados](migracao-schema.md) e [manutenção](#manutenção) quando gravações concorrentes puderem interferir. |
+
+Nos níveis 0 e 1, o ponto de recuperação é o backup com Storage que `pnpm deploy:production` já exporta quando o backend muda. Não é preciso outro backup, ensaio restaurado, janela de manutenção, verificador próprio nem registro da operação na documentação.
+
+### Alargar e estreitar
+
+Uma migração de nível 1 ou 2 é publicada em duas etapas, porque o deploy do Convex valida todos os documentos existentes contra o schema e recusa o estrito antes da conversão:
+
+1. **Alargar.** O schema de armazenamento aceita o formato antigo e o novo (campo novo opcional, união dos dois tipos ou campo a remover marcado como opcional). O código da aplicação e os validadores de argumentos usam somente o formato novo; o campo antigo aparece apenas no schema e no conversor. Defina a migração e inclua-a em `pending`:
 
    ```ts
    export const fillCampusLabel = migrations.define({
@@ -76,9 +90,13 @@ Uma mudança de schema que exige migrar dados ocupa duas releases:
 
    A release faz o backup, publica o schema alargado e conclui a migração antes de promover o frontend.
 
-2. **Estreitar.** Com a migração concluída, o schema e o código passam a exigir somente o formato novo; remova a definição de `pending`. Se algum documento ainda violar o schema, o próprio Convex recusa o deploy, antes da promoção.
+2. **Estreitar.** Em qualquer release posterior, inclusive junto com outra entrega, o schema deixa de aceitar o formato antigo e a definição sai de `pending` e de `convex/migrations.ts`. Não é preciso publicar logo em seguida nem dentro de uma janela. Se algum documento ainda violar o schema, o próprio Convex recusa o deploy antes da promoção. Enquanto a contração estiver pendente, deixe um comentário junto ao campo alargado no schema.
 
-Antes de publicar uma migração que altera ou remove valores existentes, teste-a no deployment de desenvolvimento e, se o risco justificar, restaure o último backup em um deployment descartável e execute-a lá. `npx convex run migrations:run '{"fn":"migrations:fillCampusLabel","dryRun":true}'` executa um lote e desfaz o resultado. O progresso pode ser acompanhado com `npx convex run --component migrations lib:getStatus --watch`. Conversões que não cabem em lotes por documento, como reescritas entre tabelas ou importações completas, exigem um plano próprio conforme [Operações administrativas de dados](migracao-schema.md).
+Como os validadores de argumentos já recusam o formato antigo, uma aba aberta com o frontend anterior não reintroduz dados antigos. Ela pode, porém, regravar um documento sem conhecer o campo novo e descartar o valor convertido (ver [continuidade dos arquivos](#continuidade-dos-arquivos-entre-publicações)). Quando essa perda importar, a migração arquiva o estado anterior e avança a versão do registro, como fez `initializePresencialAndPurgeTrash20261030` (commit `250b303`), e a gravação da aba antiga é recusada por conflito.
+
+### Comandos
+
+`pnpm exec convex run migrations:run '{"fn":"migrations:fillCampusLabel","dryRun":true}'` executa um lote no deployment de desenvolvimento e desfaz o resultado. O progresso pode ser acompanhado com `pnpm exec convex run --component migrations lib:getStatus --watch`. Conversões que não cabem em lotes por documento, como reescritas entre tabelas ou importações completas, são de nível 2.
 
 ## Falhas e recuperação
 
@@ -95,7 +113,7 @@ A manutenção é confirmada no backend. `operationalControl` identifica o commi
 
 Os controles de manutenção permanecem disponíveis para intervenção planejada e recuperação de janelas anteriores. A release não os aciona e, por padrão, recusa publicar enquanto houver manutenção ativa.
 
-Para executar as duas releases de uma migração durante uma única manutenção planejada, pause antes com `operations:pause`, usando o SHA completo do commit responsável pela janela, e confira `operations:status`. Publique por `pnpm deploy:production --maintenance SHA_DA_JANELA`, tanto na expansão quanto na contração. A opção exige o mesmo proprietário, manutenção ativa, ausência de bloqueio emergencial e nenhuma action em andamento; essas condições são reconferidas antes do backend e da promoção. O comando mantém a manutenção ativa após concluir. O SHA da janela permanece o mesmo nas duas publicações, mesmo quando o commit publicado muda. Depois de conferir dados, contratos e domínio, reabra com `operations:resume` e o SHA original. Não usar essa opção para assumir uma manutenção de outro proprietário. Uma falha após uma pausa explícita mantém o bloqueio. Uma resposta perdida da CLI pode ocorrer após o commit da pausa; conferir o estado também nesse caso. Conferir o estado pelo destino explícito, por exemplo:
+Quando uma operação de nível 2 precisar bloquear gravações durante as duas releases, pause antes com `operations:pause`, usando o SHA completo do commit responsável pela janela, e confira `operations:status`. Publique por `pnpm deploy:production --maintenance SHA_DA_JANELA`, tanto na expansão quanto na contração. A opção exige o mesmo proprietário, manutenção ativa, ausência de bloqueio emergencial e nenhuma action em andamento; essas condições são reconferidas antes do backend e da promoção. O comando mantém a manutenção ativa após concluir. O SHA da janela permanece o mesmo nas duas publicações, mesmo quando o commit publicado muda. Depois de conferir dados, contratos e domínio, reabra com `operations:resume` e o SHA original. Não usar essa opção para assumir uma manutenção de outro proprietário. Uma falha após uma pausa explícita mantém o bloqueio. Uma resposta perdida da CLI pode ocorrer após o commit da pausa; conferir o estado também nesse caso. Conferir o estado pelo destino explícito, por exemplo:
 
 ```sh
 pnpm exec convex run operations:status '{}' --deployment exuberant-cheetah-138 --codegen disable
@@ -113,21 +131,15 @@ A recuperação confere as revisões efetivamente instaladas de backend e fronte
 
 ## Backup e arquivos
 
-Exportar Convex completo com `--include-file-storage` quando houver PDFs. Manter ZIP, recibos e credenciais em local privado, fora do Git. Ensaiar restauração integral em um deployment descartável antes de operar sobre dados compartilhados; importação isolada de tabelas pode quebrar referências.
+Exportar Convex completo com `--include-file-storage` quando houver PDFs. Manter ZIP, recibos e credenciais em local privado, fora do Git. Em operações de nível 2, ensaiar a restauração integral num deployment descartável antes de operar sobre dados compartilhados; importação isolada de tabelas pode quebrar referências.
 
-A aplicação repõe um PDF indisponível pelo fluxo [Restaurar original](restauracao-de-originais.md), com conferência de hash. Operações sobre exportações usam a [ferramenta administrativa de dados](migracao-schema.md).
+A aplicação repõe um PDF indisponível pelo fluxo [Restaurar original](restauracao-de-originais.md), com conferência de hash. Operações sobre exportações seguem [Operações administrativas de dados](migracao-schema.md).
 
 Os testes remotos exigem opt-in de deployment descartável ou do desenvolvimento atual autorizado, com destino verificado e registros exclusivos da suíte conforme a [Verificação](verificacao.md). Produção não recebe E2E. A release não executa `pnpm check`; ele é a validação obrigatória do desenvolvimento, antes do commit.
 
-## Registro da retirada de calendários anteriores
+## Tabelas retiradas do schema
 
-A retirada foi concluída em produção em 27/10/2026, com ensaio descartável, backup integral, manutenção, verificação dos dados e smoke do candidato antes da promoção. A manutenção foi encerrada e a reserva exclusiva liberada.
-
-O executor temporário contract foi removido, sem comandos para repetir a retirada.
-
-Backups, planos, journals e recibos da operação continuam preservados em diretórios privados `backup-*`. Não executar novamente esses artefatos contra um banco já migrado. O procedimento administrativo geral está em [Operações administrativas de dados](migracao-schema.md).
-
-Os recibos de release (`releaseProgress`, `releaseReceipts` e `releaseMigrationDefinitions`) foram retirados do schema junto com o fluxo de expansão. Depois da primeira release sem eles, as tabelas permanecem no banco sem validação; exporte-as se quiser preservar o histórico e apague-as pelo dashboard do Convex.
+`releaseProgress`, `releaseReceipts`, `releaseMigrationDefinitions`, `migrationReports` e `migrationResults` guardavam recibos de operações já concluídas e saíram do schema. O Convex as mantém no banco sem validação. Exporte-as se quiser preservar o histórico e apague-as pelo dashboard do Convex.
 
 ## Identidade e passagem de versão no navegador
 
@@ -152,7 +164,3 @@ A adoção foi ensaiada por leitura pública contra o portal atual, sem criar ou
 ## Correções de autenticação de outubro de 2026
 
 A implementação descrita em [Segurança: operação e validação](seguranca.md) altera auth, schema, componentes e dependências. Ela exige janela administrativa específica e ensaio remoto autorizado antes de publicar. `pnpm deploy:production` não recusa automaticamente essa classe de alteração: não publicá-la por esse comando antes de preparar a janela. O guia lista validação de hash no runtime, ingresso de 8 MB, uploads legados, funções agendadas estáveis e contingência da conta operacional. O login Google está intencionalmente desabilitado até segundo aviso e deve permanecer assim durante a publicação; a validação dessa integração pertence a uma futura reativação explicitamente autorizada.
-
-## Contração definitiva dos campos de fonte manual
-
-O modo `--contract-manual-sources`, que removia os seis campos manuais do schema e dos contratos de calendário com manutenção, backup e ensaio, foi retirado junto com o fluxo de expansão. A limpeza dos dados foi concluída em 28/10/2026 (ver [Operações administrativas de dados](migracao-schema.md)), então o schema estrito é publicado pela release comum; a validação de schema do Convex recusaria o deploy se algum documento ainda contivesse esses campos.

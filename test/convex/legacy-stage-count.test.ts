@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { api, internal } from '../../convex/_generated/api.js';
+import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import {
   normalizeOfferCalendar,
@@ -11,12 +11,6 @@ import {
 } from '../../src/domain/calendar/organization/offers.ts';
 
 type Count = 2 | 3 | 4;
-const paginationOpts = {
-  numItems: 10,
-  cursor: null,
-  maximumRowsRead: 10,
-  maximumBytesRead: 4 * 1024 * 1024,
-};
 
 async function setup(count?: Count) {
   const fixture = await createNativeFixture();
@@ -189,8 +183,8 @@ test('direct complete classification cannot erase a previous required second-sem
   expect(intact.state).toEqual(previous);
 });
 
-test('complete explicit configuration retires surplus bindings and retains the marker in historical inventory', async () => {
-  const { client, actor, record, save } = await setup(3);
+test('complete explicit configuration retires surplus bindings and retains the marker in the archived version', async () => {
+  const { actor, record, save } = await setup(3);
   const draft = offerOrganizationDraft(record.state, 'integrado');
   draft.organization = 'anual';
   draft.count = '2';
@@ -228,13 +222,4 @@ test('complete explicit configuration retires surplus bindings and retains the m
     version: record.version,
   });
   expect(archived.state).toMatchObject({ offers: [{ legacyStageCount: 3 }] });
-  const live = await client.query(internal.legacy.usage, { phase: 'contents', paginationOpts });
-  const historical = await client.query(internal.legacy.usage, {
-    phase: 'historicalSnapshots',
-    paginationOpts,
-  });
-  expect(live.counts.legacyStageCountOffers).toBe(0);
-  expect(historical.counts.historicalLegacyStageCountContents).toBe(1);
-  expect(historical.counts.historicalLegacyStageCountOffers).toBe(1);
-  expect(historical.counts.historicalLegacyStageCount3Offers).toBe(1);
 });

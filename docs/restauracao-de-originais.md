@@ -1,6 +1,6 @@
 # Restauração dos PDFs originais
 
-Um registro com original indisponível conserva identidade, metadados e referências usadas nos calendários. Um ADMIN pode repor os bytes usando **Restaurar original** na lista de documentos institucionais. O recurso de calendário anterior, incluindo suas APIs de restauração, foi removido. A exclusão dos PDFs antigos e das análises é tratada na [migração de retirada](migracao-schema.md#retirada-do-calendário-anterior).
+Um registro com original indisponível conserva identidade, metadados e referências usadas nos calendários. Um ADMIN pode repor os bytes usando **Restaurar original** na lista de documentos institucionais. O recurso de calendário anterior, incluindo suas APIs de restauração, foi removido. Os PDFs antigos e as análises foram excluídos em 27/10/2026.
 
 ## Procedimento
 

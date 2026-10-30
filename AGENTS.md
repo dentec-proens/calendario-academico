@@ -39,7 +39,7 @@ Before editing files for a substantial task:
 ## Release para produção
 
 - Pedidos de release, deploy ou publicação em produção usam `pnpm deploy:production`, sem `pnpm check` ou suítes adicionais. Ele preserva o typecheck do Convex e o build remoto da Vercel. A implementação de mudanças de código, inclusive nessa ferramenta, continua sujeita à validação de desenvolvimento acima.
-- Mudanças que alteram dados existentes usam migrações em `convex/migrations.ts`, publicadas em duas releases: schema alargado com a migração em `pending`, depois o schema estreitado.
+- Mudanças que alteram dados existentes usam migrações em `convex/migrations.ts`: schema alargado com a migração em `pending` numa release, schema estreitado em qualquer release posterior. Classifique o risco pelos [níveis de migração](docs/implantacao-convex-vercel.md#níveis-de-risco) e aplique só o que o nível exige; ensaio restaurado, manutenção e verificadores próprios são do nível 2.
 - Antes de publicar ou recuperar uma release parcial, consulte [Implantação e operação](docs/implantacao-convex-vercel.md), incluindo backup, reserva exclusiva e migrações.
 
 ## Commits

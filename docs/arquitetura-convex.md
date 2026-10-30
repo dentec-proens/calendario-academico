@@ -83,7 +83,7 @@ Novos conteúdos e cópias usam `schemaVersion: 4`. Cada oferta tem `id` imutáv
 
 A organização é anual, semestral ou a classificar. Etapas são configuradas por ciclo: duas, três ou quatro no ano letivo, ou uma ou duas por semestre. Os vínculos `stage-1..4:offerId` conservam o ordinal global; a apresentação reinicia a numeração em cada semestre. Períodos são disjuntos por oferta e podem coincidir entre ofertas. Escopo e ingresso pertencem a cada oferta/ciclo. Modo e base da organização são informativos e não alteram obrigações ou mínimos.
 
-Durante a release A, as tabelas aceitam o legado e o formato novo, mas o cliente só troca v4. A leitura adapta conteúdo antigo em memória; a migração converte também a lixeira, sem aumentar versão ou alterar datas/revisões. Clientes antigos recebem 409 e pedido de atualização. Cópias de formato 2/3 são recusadas. A release B estreita o schema e retira os conversores. O ensaio e o estado da publicação são registrados em [Operações administrativas de dados](migracao-schema.md) e no [diário de execução](execucao-ofertas-v4.md).
+O armazenamento aceita somente o formato 4, inclusive em snapshots históricos e na lixeira, e importações de cópias de outro formato são recusadas. Os valores antigos que continuam válidos nesse formato estão em [Operações administrativas de dados](migracao-schema.md#formatos-antigos-que-permanecem-nos-dados).
 
 Conversões ambíguas preservam IDs e datas e mantêm a configuração pendente. Uma inconsistência migrada de ciclo gera aviso e permite salvar outra parte; uma etapa nova ou alterada precisa caber inteiramente no período do seu ciclo. A preparação preserva identidade e tipo de ofertas já salvas, cuja remoção permanece proibida.
 
@@ -93,7 +93,7 @@ O conjunto de regras apresentado é gravado com o conteúdo. O servidor resolve 
 
 A confirmação do escopo é humana e individual por oferta, sem alterar seu tipo. A extensão de prazos de referência pelo art. 3º, § 2º, exige causa municipal explícita e fonte. Um ajuste de cronograma declarado não representa autorização da Proens: cobertura objetiva e conferência humana atual são verificações separadas.
 
-O upload e a extração de PDFs de calendários anteriores foram retirados; referências digitadas pelo usuário continuam possíveis, com datas reais e fontes textuais. Os cuidados com dados antigos estão em [Operações administrativas de dados](migracao-schema.md#retirada-do-calendário-anterior).
+O upload e a extração de PDFs de calendários anteriores foram retirados; referências digitadas pelo usuário continuam possíveis, com datas reais e fontes textuais. Os PDFs anteriores e suas análises foram excluídos em 27/10/2026.
 
 A atualização da fonte institucional de 2027 foi apenas ensaiada: a prévia pura e idempotente propõe trocar a fonte antiga quando conteúdo, escopo e datas coincidem com a base inicial, e diferenças locais aparecem como conflitos. Nenhuma instalação é atualizada na inicialização; uma operação futura deve apresentar a prévia, usar controle de concorrência e incorporar o impacto explicitamente.
 
