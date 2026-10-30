@@ -42,7 +42,7 @@ test('calendar creation form', async ({ page, fixtureServer }) => {
 
 test('review with a pending confirmed criterion', async ({ page, fixtureServer }) => {
   await page.goto(await fixtureServer('review'));
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   const item = page.locator('#review-items > li').first();
   await expect(item.locator('textarea')).toBeEnabled();
   await expect(item.locator('textarea')).toBeHidden();

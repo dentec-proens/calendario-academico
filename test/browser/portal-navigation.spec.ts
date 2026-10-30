@@ -371,7 +371,7 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await expect(page.locator('[data-page="calendars"]')).toHaveCount(0);
   await expect(page.locator('#create-calendar')).toHaveCount(0);
   await expect(page.locator('#user-form')).toHaveCount(0);
-  expect(await page.locator('#open-review').count()).toBeTruthy();
+  expect(await page.locator('[data-open-review]').first().count()).toBeTruthy();
   await page.goto(origin + '/calendarios?role=PARECERISTA');
   await expect(page.locator('#review-panel')).toBeVisible();
   await page.goto(origin + '/documentos?role=PARECERISTA');

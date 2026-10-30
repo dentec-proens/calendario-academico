@@ -496,3 +496,59 @@
     display: none !important;
   }
 }
+/* Reviews list: the badge carries the parecer state and the link names the next step. */
+#review-calendars > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 13rem;
+  gap: 16px;
+  align-items: center;
+}
+#review-calendars .review-queue-details {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  min-width: 0;
+}
+#review-calendars .review-queue-offering {
+  margin: 0;
+  color: var(--ui-text);
+  font-size: 0.875rem;
+}
+#review-calendars .review-queue-state {
+  padding: 2px 8px;
+  border: 1px solid var(--ui-border-soft);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+#review-calendars .review-queue-state[data-tone='info'] {
+  border-color: var(--ui-info-border);
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
+}
+#review-calendars .review-queue-state[data-tone='warning'] {
+  border-color: var(--ui-warning-border);
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+#review-calendars .review-queue-state[data-tone='success'] {
+  border-color: var(--ui-success-border);
+  background: var(--ui-action-soft);
+  color: var(--ui-action);
+}
+#review-calendars small {
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+}
+#review-calendars > li > a {
+  min-height: 46px;
+  white-space: normal;
+  text-align: center;
+}
+@media (max-width: 700px) {
+  #review-calendars > li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

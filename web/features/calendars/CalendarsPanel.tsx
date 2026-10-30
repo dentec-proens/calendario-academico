@@ -11,17 +11,7 @@ import Pagination from '../../shared/forms/Pagination.tsx';
 import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
 import { useRouteForm } from '../../app/navigation.ts';
 import { Link } from '@tanstack/react-router';
-
-export function updatedLabel(value: string | null | undefined) {
-  const date = value ? new Date(value) : null;
-  return date && Number.isFinite(date.getTime())
-    ? date.toLocaleString('pt-BR', {
-        timeZone: 'America/Sao_Paulo',
-        dateStyle: 'short',
-        timeStyle: 'short',
-      })
-    : 'Data não disponível';
-}
+import { updatedLabel } from '../../shared/dates.ts';
 
 export default function CalendarsPanel({
   info,

@@ -51,7 +51,7 @@ export default function ReviewCriterion({
   const unavailableCount = signal.startsWith('Contagem indisponível:');
   const hint = entry.reviewed
     ? changed
-      ? 'Salve a análise para registrar esta conferência.'
+      ? 'Salve o parecer para registrar esta conferência.'
       : 'Se alterar a avaliação ou as observações, confirme novamente.'
     : pending
       ? 'Selecione uma avaliação para confirmar.'

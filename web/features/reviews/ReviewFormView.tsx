@@ -85,10 +85,10 @@ export default function ReviewFormView({
       </a>
       <div className="review-save-status" role="status">
         {dirty
-          ? 'Há alterações por salvar. Confirmar um critério não salva a análise.'
+          ? 'Há alterações por salvar. Confirmar um critério não salva o parecer.'
           : opened.review
             ? 'Todas as alterações foram salvas.'
-            : 'A análise ainda não foi salva.'}
+            : 'O parecer ainda não foi salvo.'}
       </div>
       <div className="actions review-export-actions">
         <Button
@@ -137,7 +137,7 @@ export default function ReviewFormView({
         </Button>
         <Button type="submit" form="review-form" disabled={busy}>
           <Save size={18} aria-hidden="true" />{' '}
-          {pending === 'save' ? 'Salvando análise…' : 'Salvar análise'}
+          {pending === 'save' ? 'Salvando parecer…' : 'Salvar parecer'}
         </Button>
       </div>
       <form id="review-form" onSubmit={submit}>
@@ -226,11 +226,11 @@ export default function ReviewFormView({
         </p>
         <Button type="submit" disabled={busy}>
           <Save size={18} aria-hidden="true" />{' '}
-          {pending === 'save' ? 'Salvando análise…' : 'Salvar análise'}
+          {pending === 'save' ? 'Salvando parecer…' : 'Salvar parecer'}
         </Button>
       </form>
       <p className="help">
-        Salve a análise antes de exportar. Confira a formatação ao colar no SEI.
+        Salve o parecer antes de exportar. Confira a formatação ao colar no SEI.
       </p>
       <FormFeedback error={error} />
       <ReviewPreview document={preview} previewRef={previewRef} />

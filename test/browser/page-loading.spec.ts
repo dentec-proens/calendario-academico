@@ -113,7 +113,8 @@ for (const width of [1440, 390]) {
         await expect(page.locator('#calendar-list li')).not.toHaveCount(0);
       if (path === '/documentos')
         await expect(page.locator('#document-list li')).not.toHaveCount(0);
-      if (path === '/revisoes') await expect(page.locator('#review-calendar')).toBeEnabled();
+      if (path === '/revisoes')
+        await expect(page.locator('#review-calendars li')).not.toHaveCount(0);
     });
   }
 }

@@ -210,7 +210,7 @@ test('review analysis has a direct URL and browser back returns to its list', as
 }) => {
   const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/revisoes');
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   await expect(page).toHaveURL(origin + '/revisoes/calendar-a');
   await expect(page.locator('#review-content')).toBeVisible();
   await page.reload();
@@ -230,7 +230,7 @@ test('review deep links work beyond the first result page and missing records ne
   const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/revisoes/calendar-offpage');
   await expect(page.locator('#review-heading')).toContainText('Calendário calendar-offpage');
-  await expect(page.locator('#review-calendar')).toHaveCount(0);
+  await expect(page.locator('#review-calendars')).toHaveCount(0);
   await page.goto(origin + '/revisoes/inexistente');
   await expect(page.locator('#review-message')).toContainText('Calendário não encontrado');
   await expect(page.locator('#review-content')).toBeHidden();
@@ -244,8 +244,7 @@ test('review drafts survive browser navigation between records', async ({
   await page.goto(origin + '/revisoes/calendar-b?multiple-reviews=1');
   await expect(page.locator('#review-heading')).toContainText('Calendário calendar-b');
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
-  await page.locator('#review-calendar').selectOption('calendar-a');
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review="calendar-a"]').click();
   await expect(page.locator('#review-heading')).toContainText('Calendário de teste');
   await page.locator('#review-process').fill('23354.000001/2027-01');
   await page.goBack();
@@ -283,16 +282,16 @@ test('an opened analysis names the calendar and links back to the review list', 
   const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/revisoes/calendar-a?multiple-reviews=1');
   await expect(page.locator('#review-content')).toBeVisible();
-  await expect(page.locator('#panel-title')).toHaveText('Análise do calendário');
-  await expect(page).toHaveTitle('Análise do calendário · PROENS');
+  await expect(page.locator('#panel-title')).toHaveText('Parecer do calendário');
+  await expect(page).toHaveTitle('Parecer do calendário · PROENS');
   await expect(page.getByRole('heading', { level: 2, name: /Calendário de teste/ })).toBeVisible();
-  await expect(page.locator('#review-calendar, #open-review')).toHaveCount(0);
+  await expect(page.locator('#review-calendars')).toHaveCount(0);
   await expect(page.locator('[data-page="review-panel"]')).toHaveAttribute('aria-current', 'page');
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
   await expect(page).toHaveURL(origin + '/revisoes');
   await expect(page.locator('#panel-title')).toHaveText('Revisões e pareceres');
   await expect(page.getByRole('navigation', { name: 'Trilha de navegação' })).toHaveCount(0);
-  await expect(page.locator('#open-review')).toBeVisible();
+  await expect(page.locator('[data-open-review]').first()).toBeVisible();
 });
 
 test('a delayed review response cannot reopen a section the user already left', async ({
@@ -301,11 +300,11 @@ test('a delayed review response cannot reopen a section the user already left', 
 }) => {
   const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/revisoes');
-  await expect(page.locator('#open-review')).toBeVisible();
+  await expect(page.locator('[data-open-review]').first()).toBeVisible();
   await page.evaluate(() => {
     window.portalRouterTest.deferNextReview = true;
   });
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   await expect
     .poll(() => page.evaluate(() => window.portalRouterTest.pendingReviewId))
     .toBe('calendar-a');

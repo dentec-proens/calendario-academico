@@ -7,7 +7,7 @@ for (const loading of ['bootstrap', 'authentication'] as const) {
     fixtureServer,
   }) => {
     await page.goto(await fixtureServer('review-session'));
-    await page.locator('#open-review').click();
+    await page.locator('[data-open-review]').first().click();
     const criterion = page.locator('#review-items > li').first();
     await criterion.locator('[data-choice="NAO_ATENDIDO"]').click();
     await criterion.locator('.review-item__notes summary').click();
@@ -27,8 +27,7 @@ for (const loading of ['bootstrap', 'authentication'] as const) {
     await expect(page.locator('#campus-filter')).toHaveValue('other-campus');
     await page.locator('#campus-filter').selectOption('');
     await page.locator('[data-page="review-panel"]').click();
-    await page.locator('#review-calendar').selectOption('synthetic-review');
-    await page.locator('#open-review').click();
+    await page.locator('[data-open-review="synthetic-review"]').click();
     await expect(page.locator('#review-items > li').first().locator('textarea')).toHaveValue(
       'Observação ainda não salva após filtrar campus.',
     );

@@ -112,7 +112,7 @@ test('native publication gates base revisions and reviews retain concurrent revi
   const support = await admin.read(reviewPath);
   await assert.rejects(
     admin.write(reviewPath + '/export', { revision: 0 }),
-    /Salve a análise inicial/,
+    /Salve o parecer antes de exportar/,
   );
   const body = {
     rulesetVersion: support.rulesetVersion,
@@ -137,7 +137,7 @@ test('native publication gates base revisions and reviews retain concurrent revi
   assert.equal((await admin.read(reviewPath)).stale, true);
   await assert.rejects(
     admin.write(reviewPath + '/export', { revision: 1 }),
-    /análise está desatualizada/,
+    /parecer está desatualizado/,
   );
   const second = { ...body, revision: 1, calendarVersion: 2 };
   await assert.rejects(admin.write(reviewPath, second, 'PUT'), /Confirme a reavaliação/);

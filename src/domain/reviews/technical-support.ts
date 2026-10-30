@@ -18,6 +18,18 @@ const normalize = (s: string) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
+// Candidates cross the review contract, so they carry only what the reviewer sees, never the
+// whole event (offers, requirement links and assessment anchors stay in the calendar).
+const reviewCandidate = (
+  e: Pick<CalendarActivity, 'id' | 'name' | 'start' | 'end'> &
+    Parameters<typeof automaticEventSource>[0],
+) => ({
+  id: e.id,
+  name: e.name,
+  start: e.start,
+  end: e.end,
+  evidence: automaticEventSource(e) ?? '',
+});
 export function reviewSupport<
   T extends {
     id: string;
@@ -139,13 +151,7 @@ export function reviewSupport<
                   String(e.id).startsWith('teacher-vacation')
                 )),
           )
-          .map((e) => ({
-            id: e.id,
-            name: e.name,
-            start: e.start,
-            end: e.end,
-            evidence: automaticEventSource(e) ?? '',
-          }));
+          .map(reviewCandidate);
         signal = candidates.length
           ? `${candidates.length} registro(s) possivelmente relacionado(s). A presença não comprova atendimento.`
           : 'Nenhum registro localizado por nome/categoria. Isso não comprova ausência no processo.';
@@ -223,10 +229,9 @@ export function reviewSupport<
             ' A presença não comprova atendimento. A conferência humana permanece necessária.';
           candidates = [
             ...new Map(
-              [...candidates, ...linked.flatMap((row) => row.events)].map((e) => [
-                e.id,
-                { ...e, evidence: automaticEventSource(e) ?? '' },
-              ]),
+              [...candidates, ...linked.flatMap((row) => row.events.map(reviewCandidate))].map(
+                (e) => [e.id, e],
+              ),
             ).values(),
           ];
         }

@@ -103,3 +103,23 @@ test('an offer with its own regulation does not change the semester criterion of
   expect(mixed.initial.status).toBe('NAO_APLICAVEL');
   expect(mixed.initial.finding).toBe('APLICABILIDADE');
 });
+
+test('coverage-linked candidates carry only the fields of the review contract', () => {
+  const state = calendarOffersV4Fixture();
+  const offer = state.offers[0].id;
+  state.events.push({
+    id: 'linked-stage',
+    name: '1ª etapa de avaliação — início e término',
+    start: '2027-02-15',
+    end: '2027-05-17',
+    kind: 'note',
+    category: 'limite',
+    offers: [offer],
+    requirementId: `stage-1:${offer}`,
+    assessmentAutoStart: '2027-02-15',
+  });
+  const candidates = support(state).criteria.flatMap((item) => item.candidates);
+  expect(candidates.some((item) => item.id === 'linked-stage')).toBe(true);
+  for (const item of candidates)
+    expect(Object.keys(item).sort()).toEqual(['end', 'evidence', 'id', 'name', 'start']);
+});

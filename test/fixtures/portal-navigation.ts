@@ -131,6 +131,9 @@ const documents: DocumentsData['documents'] = (['rascunho', 'vigente', 'arquivad
     ...(status !== 'rascunho' ? { publishedAt: '2026-10-23T12:00:00Z' } : {}),
   }),
 );
+function reviewQueueRows() {
+  return calendarRows(false).map((item) => ({ ...item, review: null }));
+}
 function calendarRows(deleted: boolean) {
   return [
     calendar,
@@ -183,7 +186,9 @@ const client = {
                   )
                 : name === 'calendars:calendarPage'
                   ? calendarRows(!!args.deleted)
-                  : [],
+                  : name === 'reviews:reviewQueue'
+                    ? reviewQueueRows()
+                    : [],
             isDone: true,
             continueCursor: '',
           };
@@ -209,6 +214,8 @@ const client = {
                 ...result,
                 page: calendarRows(!!args.deleted),
               };
+            if ('page' in result && name === 'reviews:reviewQueue')
+              result = { ...result, page: reviewQueueRows() };
           },
           notify: onUpdate,
         };
@@ -219,7 +226,9 @@ const client = {
       localQueryResult: () => {
         if (
           !collectionsReady &&
-          (name === 'documents:documentPage' || name === 'calendars:calendarPage')
+          (name === 'documents:documentPage' ||
+            name === 'calendars:calendarPage' ||
+            name === 'reviews:reviewQueue')
         )
           return undefined;
         if (name === 'workspace:logs') return window.auditTest.first;

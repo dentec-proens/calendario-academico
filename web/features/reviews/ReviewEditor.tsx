@@ -60,7 +60,7 @@ export default function ReviewEditor({
       setConclusionEditable(false);
       clearDraft();
       setPreview(null);
-      onMessage('Análise salva.');
+      onMessage('Parecer salvo.');
     },
     onError: (message) => onMessage(message, 'danger'),
   });
@@ -95,7 +95,7 @@ export default function ReviewEditor({
   useEffect(() => {
     if (!remoteChanged || dirty || pending || exporting) return;
     form.reset({ draft: initialDraft(opened) });
-    onMessage('A análise foi atualizada com as alterações recebidas de outra sessão.');
+    onMessage('O parecer foi atualizado com as alterações recebidas de outra sessão.');
   }, [remoteChanged, dirty, pending, exporting, opened, form, onMessage]);
   useEffect(() => {
     active.current = true;
@@ -150,7 +150,7 @@ export default function ReviewEditor({
   async function exportReview(action: 'preview' | 'copy' | 'html' | 'txt') {
     if (busy || exportBusy.current || protection?.locked) return;
     if (dirty || !draft.opened.review || remoteChanged) {
-      onMessage('Salve a análise antes de visualizar, copiar ou baixar o parecer.', 'warning');
+      onMessage('Salve o parecer antes de visualizar, copiar ou baixar.', 'warning');
       return;
     }
     const operation = protection?.begin();
@@ -199,7 +199,7 @@ export default function ReviewEditor({
       {remoteChanged && dirty ? (
         <Notice tone="warning" announce="polite">
           O calendário, a base institucional ou a revisão mudou em outra sessão. Suas alterações
-          foram preservadas. Salve uma cópia das observações e reabra a análise para conferir a
+          foram preservadas. Salve uma cópia das observações e reabra o parecer para conferir a
           versão atual.
         </Notice>
       ) : null}

@@ -86,6 +86,26 @@ function query(reference: FunctionReference<'query'>) {
       return structuredClone(snapshot);
     case 'calendars:calendarPage':
       return { page: calendars, isDone: true, continueCursor: '' };
+    case 'reviews:reviewQueue':
+      return {
+        page: calendars.map((calendar) => ({
+          ...calendar,
+          review: snapshot.review
+            ? {
+                revision: snapshot.review.revision,
+                reviewerName: snapshot.review.reviewer.name,
+                updatedAt: snapshot.review.updatedAt,
+                reviewed: snapshot.review.entries.filter(
+                  (entry) => entry.reviewed && entry.status !== 'PENDENTE',
+                ).length,
+                total: snapshot.criteria.length,
+                calendarChanged: snapshot.review.calendarVersion !== calendar.version,
+              }
+            : null,
+        })),
+        isDone: true,
+        continueCursor: '',
+      };
     default:
       throw new Error(`Consulta sintética não implementada: ${getFunctionName(reference)}`);
   }
@@ -127,7 +147,7 @@ export const convex = {
     )
       throw new Error('O calendário ou a base mudou. Reabra a revisão.');
     if (body.revision !== (snapshot.review?.revision ?? 0))
-      throw new Error('Outro revisor atualizou esta análise. Reabra antes de salvar.');
+      throw new Error('Outro revisor atualizou este parecer. Reabra antes de salvar.');
     snapshot.review = {
       calendarId: snapshot.calendar.id,
       calendarVersion: body.calendarVersion,

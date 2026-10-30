@@ -192,8 +192,8 @@ const review = createRoute({
   getParentRoute: () => workspace,
   path: '/revisoes/$calendarId',
   beforeLoad: permission('reviewCalendars'),
-  component: lazy(() => import('../features/reviews/ReviewsPage.tsx')),
-  staticData: { title: 'Análise do calendário', page: 'review-panel', back: 'review-panel' },
+  component: lazy(() => import('../features/reviews/ReviewPage.tsx')),
+  staticData: { title: 'Parecer do calendário', page: 'review-panel', back: 'review-panel' },
 });
 const campuses = createRoute({
   getParentRoute: () => workspace,

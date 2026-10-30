@@ -303,8 +303,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   }
   await page.goto(base);
   await page.locator('[data-page="review-panel"]').click();
-  await page.locator('#review-calendar').selectOption(calendarId);
-  await page.locator('#open-review').click();
+  await page.locator(`[data-open-review="${calendarId}"]`).click();
   await expect(page.locator('#review-content')).toBeVisible();
   const criterion = await page
     .locator('[data-confirm-criterion]')
@@ -330,8 +329,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
     await page.locator('#campus-filter').selectOption('');
   }
   await page.locator('[data-page="review-panel"]').click();
-  await page.locator('#review-calendar').selectOption(calendarId);
-  await page.locator('#open-review').click();
+  await page.locator(`[data-open-review="${calendarId}"]`).click();
   await expect(
     page.locator(`[data-notes="${criterion}"]`),
     'reopening the same calendar preserves the unsaved review after filtering the calendar list',
@@ -339,7 +337,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await page.locator(`[data-confirm-criterion="${criterion}"]`).click();
   if (await page.locator('#review-stale').count()) await page.locator('#review-stale').click();
   await page.locator('button[form="review-form"]').click();
-  await expect(page.locator('#review-message')).toContainText('Análise salva');
+  await expect(page.locator('#review-message')).toContainText('Parecer salvo');
   await page.locator('#preview-review').click();
   await expect(page.locator('#review-preview table')).toBeVisible();
   await expect(page.locator('#review-preview')).toContainText(
@@ -367,8 +365,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await expect(page.locator('#activity-checklist')).toBeVisible();
   await page.goto(base);
   await page.locator('[data-page="review-panel"]').click();
-  await page.locator('#review-calendar').selectOption(calendarId);
-  await page.locator('#open-review').click();
+  await page.locator(`[data-open-review="${calendarId}"]`).click();
   await expect(page.locator('#review-content')).toBeVisible();
   await expect(
     page.locator(`[data-notes="${criterion}"]`),

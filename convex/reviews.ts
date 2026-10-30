@@ -9,7 +9,8 @@ import { reviewDocument } from '../src/printing/review-export';
 import { reviewNorm } from '../src/domain/reviews/citation';
 import { query, mutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
-import { calendarRow } from './calendars/model';
+import { calendarRow, summary } from './calendars/model';
+import { calendarQuery } from './calendars/record';
 import { baseRecord } from './calendars/record';
 import * as contracts from './contracts';
 import { documentDto } from './documents/model';
@@ -17,12 +18,41 @@ import { appendAudit } from './lib/audit';
 import { reviewer } from './lib/authorization';
 import { pageBound } from './lib/pagination';
 import { fail, iso, clean } from './lib/shared';
-import { reviewRow, reviewDto } from './reviews/model';
+import { reviewRow, reviewDto, reviewProgress } from './reviews/model';
 import { paginationOptsValidator } from 'convex/server';
 import type { Infer } from 'convex/values';
 import { v } from 'convex/values';
 
 const idArgs = { id: v.id('calendars') };
+
+export const reviewQueue = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: v.object({
+    page: v.array(contracts.reviewQueueItem),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
+  handler: async (ctx, { paginationOpts }) => {
+    const { user } = await requireNativeUser(ctx);
+    reviewer(user);
+    pageBound(paginationOpts.numItems);
+    const result = await calendarQuery(ctx, user, false).order('desc').paginate(paginationOpts);
+    const page = await Promise.all(
+      result.page.map(async (row) => {
+        const [campus, review] = await Promise.all([
+          ctx.db.get(row.campusId),
+          reviewRow(ctx, row._id),
+        ]);
+        if (!campus) fail('Campus não encontrado.', 404);
+        return {
+          ...(await summary(ctx, row, campus)),
+          review: review ? reviewProgress(review, row) : null,
+        };
+      }),
+    );
+    return { page, isDone: result.isDone, continueCursor: result.continueCursor };
+  },
+});
 
 export const reviewHistory = query({
   args: { ...idArgs, paginationOpts: paginationOptsValidator },
@@ -114,7 +144,7 @@ export const saveReview = mutation({
     )
       fail('O calendário ou a base mudou. Reabra a revisão.', 409);
     if (body.revision !== (prior?.revision ?? 0))
-      fail('Outro revisor atualizou esta análise. Reabra antes de salvar.', 409);
+      fail('Outro revisor atualizou este parecer. Reabra antes de salvar.', 409);
     if (
       prior &&
       !reviewIsCurrent(prior, record.version, {
@@ -134,7 +164,7 @@ export const saveReview = mutation({
       if (!criteria.some((c) => c.id === e.id) || e.notes.length > 2000)
         fail('Critério ou observação inválidos.');
       if (e.status === 'PENDENTE' && e.reviewed)
-        fail('Selecione Atendido, Não atendido ou Não aplicável antes de confirmar a análise.');
+        fail('Selecione Atendido, Não atendido ou Não aplicável antes de confirmar o critério.');
     }
     const support = reviewSupport(record, [
       ...compatibility.snapshot.events,
@@ -191,7 +221,7 @@ export const exportReview = query({
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
     const { record, base, compatibility, review: prior } = await baseRecord(ctx, user, id);
-    if (!prior) fail('Salve a análise inicial ou a revisão antes de exportar.', 409);
+    if (!prior) fail('Salve o parecer antes de exportar.', 409);
     if (
       prior.revision !== revision ||
       !reviewIsCurrent(prior, record.version, {
@@ -200,7 +230,7 @@ export const exportReview = query({
         rulesetVersion: rulesetVersion(record.state),
       })
     )
-      fail('A análise está desatualizada. Reabra, confira e salve antes de exportar.', 409);
+      fail('O parecer está desatualizado. Reabra, confira e salve antes de exportar.', 409);
     return reviewDocument(record, reviewDto(prior)) as Infer<typeof contracts.exportDto>;
   },
 });

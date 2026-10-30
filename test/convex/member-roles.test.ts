@@ -317,3 +317,63 @@ test('concurrent profile edits compare the original role and campus atomically',
   );
   assert.equal((await client.run((ctx) => ctx.db.get(ids.users['campus-a'])))?.role, 'PARECERISTA');
 });
+
+test('the review queue reports each parecer state without exposing it to campus accounts', async () => {
+  const { client, reviewer, campus, ids } = await fixture();
+  const record = await campus.mutation(api.calendars.createCalendar, {
+    body: {
+      campusId: ids.campuses.a,
+      year: 2027,
+      offers: [{ kind: 'integrado', organization: 'anual' }],
+      courses: 'Curso de teste',
+      classes: '',
+      shifts: '',
+      purpose: 'test',
+    },
+  });
+  const queue = async () =>
+    (
+      await reviewer.query(api.reviews.reviewQueue, {
+        paginationOpts: { cursor: null, numItems: 10 },
+      })
+    ).page.find((item) => item.id === record.id)?.review;
+  assert.equal(await queue(), null);
+  const support = await reviewer.query(api.reviews.review, { id: record.id });
+  const criteria = reviewCriteriaFor(2027);
+  await reviewer.mutation(api.reviews.saveReview, {
+    id: record.id,
+    body: {
+      rulesetVersion: support.rulesetVersion,
+      baseIdentity: support.baseIdentity,
+      revision: 0,
+      calendarVersion: record.version,
+      catalogueRevision: support.catalogueRevision,
+      conclusion: support.initialConclusion,
+      entries: criteria.map((c, index) => ({
+        id: c.id,
+        status: index === 0 ? ('ATENDIDO' as const) : ('PENDENTE' as const),
+        notes: '',
+        reviewed: index === 0,
+      })),
+    },
+  });
+  assert.deepEqual(
+    { ...(await queue()), updatedAt: undefined },
+    {
+      revision: 1,
+      reviewerName: await client.run(
+        async (ctx) => (await ctx.db.get(ids.users['campus-b']))!.name,
+      ),
+      updatedAt: undefined,
+      reviewed: 1,
+      total: criteria.length,
+      calendarChanged: false,
+    },
+  );
+  await client.run((ctx) => ctx.db.patch(record.id, { version: record.version + 1 }));
+  assert.equal((await queue())?.calendarChanged, true);
+  await assert.rejects(
+    campus.query(api.reviews.reviewQueue, { paginationOpts: { cursor: null, numItems: 10 } }),
+    /Acesso exclusivo/,
+  );
+});

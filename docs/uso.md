@@ -118,13 +118,15 @@ O painel mantém um formulário ativo. **X** e **Esc** fecham o painel e conserv
 
 ## Revisão e saídas
 
-Em **Revisões e pareceres**, ADMIN abre a análise, confere as indicações e confirma os critérios. A busca por nome/categoria apenas localiza candidatos; não comprova atendimento ou ausência documental. As situações humanas são Pendente, Atendido, Não atendido e Não aplicável. A conclusão é um texto proposto que o parecerista pode editar.
+Em **Revisões e pareceres**, cada calendário aparece com a situação do seu parecer: não iniciado, em andamento (com quantos critérios já foram conferidos), com todos os critérios conferidos, ou com o calendário alterado depois da última revisão salva. A ação muda conforme a situação: **Iniciar parecer**, **Continuar parecer**, **Ver parecer** ou **Reavaliar parecer**. A lista compara apenas a versão do calendário; mudanças na base ou nas regras aparecem ao abrir o parecer.
+
+No parecer, ADMIN ou PARECERISTA confere as indicações e confirma os critérios. A busca por nome/categoria apenas localiza candidatos; não comprova atendimento ou ausência documental. As situações humanas são Pendente, Atendido, Não atendido e Não aplicável. A conclusão é um texto proposto que o parecerista pode editar.
 
 O roteiro de 2027 usa a Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026, SEI 4422750, com política compartilhada entre editor, revisão, backend e documentos. Pós-graduação depende de norma própria; o modelo ainda não identifica EaD e qualificação separadamente. Não se presume conformidade nesses escopos. A primeira/segunda semana das atividades tem mês validado e conferência humana, pois a resolução não define seu intervalo operacional.
 
 Uma revisão que não avaliou o conjunto vigente de regras de 2027 fica desatualizada mesmo sem alteração das datas ou do número da base. Revisões e snapshots anteriores permanecem preservados.
 
-**Salvar análise** é explícito e registra autoria e versões. Alterações posteriores no calendário ou na base tornam a revisão desatualizada e exigem reavaliação. A exportação do parecer requer revisão salva e atual e oferece prévia, HTML, texto e cópia para a área de transferência. Confira a formatação ao colar no SEI; assinatura e tramitação ocorrem fora da aplicação.
+**Salvar parecer** é explícito e registra autoria e versões. Alterações posteriores no calendário ou na base tornam a revisão desatualizada e exigem reavaliação. A exportação do parecer requer revisão salva e atual e oferece prévia, HTML, texto e cópia para a área de transferência. Confira a formatação ao colar no SEI; assinatura e tramitação ocorrem fora da aplicação.
 
 Em **Visualizar calendário**, **Imprimir ou salvar PDF** abre a impressão do navegador; escolha _Salvar como PDF_ como destino e desative cabeçalhos e rodapés. O calendário de teste é identificado como tal. Um calendário definitivo com pendências sai como **cópia da proposta para análise**, sem aprovação. A saída definitiva depende de contagem válida, ausência de conflitos, base atual, roteiro completo e revisão humana atualizada com os critérios atendidos ou não aplicáveis confirmados. Os impedimentos e alertas vêm das verificações implementadas; não constituem aprovação institucional.
 

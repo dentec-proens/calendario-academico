@@ -365,7 +365,7 @@ test('review edits, query preferences and reversion use their real owners', asyn
   await expect(page.locator('.portal-update')).toContainText(/para atualizar\./);
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
   await page.locator('[data-page="review-panel"]').click();
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   await page.locator('#review-items > li').first().locator('.review-item__notes summary').click();
   await expect(page.locator('#review-items > li').first().locator('textarea')).toHaveValue(
     'Observações ainda não confirmadas',

@@ -62,6 +62,20 @@ export const summary = v.object({
   updatedByName: v.optional(v.string()),
   deletedAt: v.optional(v.string()),
 });
+export const reviewQueueItem = v.object({
+  ...summary.fields,
+  review: v.union(
+    v.null(),
+    v.object({
+      revision: v.number(),
+      reviewerName: v.string(),
+      updatedAt: v.string(),
+      reviewed: v.number(),
+      total: v.number(),
+      calendarChanged: v.boolean(),
+    }),
+  ),
+});
 export const versionDto = v.object({
   version: v.number(),
   at: v.string(),

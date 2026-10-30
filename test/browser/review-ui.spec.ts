@@ -6,9 +6,9 @@ test('2027 rules invalidate legacy confirmations while preserving their observat
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('review'));
-  await expect(page.locator('#open-review')).toBeVisible();
+  await expect(page.locator('[data-open-review]').first()).toBeVisible();
   await page.evaluate(() => window.reviewUiTest.publishLegacy2027Review());
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   const ethics = page.locator('#criterion-title-XXV').locator('xpath=ancestor::li');
   await expect(ethics).toContainText('Ética e da Cidadania');
   await expect(ethics.locator('[data-origin]')).toHaveText('Pendente de conferência');
@@ -37,7 +37,7 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   });
   await page.setViewportSize({ width: 1360, height: 1000 });
   await page.goto(fixtureUrl);
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   const item = '#review-items > li:first-child';
   const confirm = `${item} [data-confirm-criterion]`;
   const notes = `${item} textarea`;
@@ -117,7 +117,7 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   await notesToggle.click();
   await expect(page.locator(notes)).toBeHidden();
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   await expect(page.locator('[data-origin="annual"]')).toHaveText('Conferido e salvo');
   await expect(notesToggle).toContainText('observação registrada');
   await expect(page.locator(notes)).toBeHidden();
@@ -133,7 +133,7 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   );
   await expect(page.locator(confirm)).toBeEnabled();
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   await expect(page.locator('[data-origin="annual"]')).toHaveText(
     'Avaliação salva · não confirmada',
   );
@@ -216,7 +216,7 @@ test('a review submission remains attached to its form while navigating away and
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('review'));
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   await page.locator('#review-process').fill('23354.000004/2027-04');
   await page.evaluate(() => {
     window.reviewUiTest.calls.deferNextSave = true;
@@ -225,7 +225,7 @@ test('a review submission remains attached to its form while navigating away and
   await expect.poll(() => page.evaluate(() => window.reviewUiTest.calls.pendingSave)).toBe(true);
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
   await expect(page.locator('#review-content')).toHaveCount(0);
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   await expect(page.locator('#review-process')).toHaveValue('23354.000004/2027-04');
   await expect(page.locator('button[form="review-form"]')).toBeDisabled();
   expect(await page.evaluate(() => window.reviewUiTest.calls.saves)).toBe(1);
@@ -241,7 +241,7 @@ test('a failure after a review remount retains values and permits an explicit re
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('review'));
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   await page.locator('#review-process').fill('23354.000005/2027-05');
   await page.evaluate(() => {
     window.reviewUiTest.calls.deferNextSave = true;
@@ -249,7 +249,7 @@ test('a failure after a review remount retains values and permits an explicit re
   await page.locator('button[form="review-form"]').click();
   await expect.poll(() => page.evaluate(() => window.reviewUiTest.calls.pendingSave)).toBe(true);
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   await expect(page.locator('button[form="review-form"]')).toBeDisabled();
   await page.evaluate(() => {
     window.reviewUiTest.calls.failSave = true;
@@ -271,7 +271,7 @@ test('review refreshes a pristine snapshot and rejects a stale draft without los
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('review'));
-  await page.locator('#open-review').click();
+  await page.locator('[data-open-review]').first().click();
   await page.locator('#review-process').fill('Processo inicial');
   await page.locator('button[form="review-form"]').click();
   await expect.poll(() => page.evaluate(() => window.reviewUiTest.calls.saves)).toBe(1);
@@ -287,4 +287,27 @@ test('review refreshes a pristine snapshot and rejects a stale draft without los
   );
   expect(await page.evaluate(() => window.reviewUiTest.calls.lastSave?.revision)).toBe(2);
   await expect(page.locator('#review-process')).toHaveValue('Processo do rascunho local');
+});
+
+test('the review list states each parecer and names the next step', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('review'));
+  const row = page.locator('#review-calendars > li').first();
+  const action = page.locator('[data-open-review="synthetic-review"]');
+  await expect(row.locator('.review-queue-state')).toHaveText('Parecer não iniciado');
+  await expect(action).toHaveText('Iniciar parecer');
+  await action.click();
+  const item = page.locator('#review-items > li').first();
+  await item.locator('[data-choice="ATENDIDO"]').click();
+  await item.locator('[data-confirm-criterion]').click();
+  await page.getByRole('button', { name: 'Salvar parecer' }).first().click();
+  await expect(page.locator('#review-message')).toContainText('Parecer salvo');
+  await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
+  await expect(row.locator('.review-queue-state')).toHaveText(
+    /^Em andamento · 1 de \d+ critérios conferidos$/,
+  );
+  await expect(row).toContainText('Rev. 1');
+  await expect(action).toHaveText('Continuar parecer');
 });
