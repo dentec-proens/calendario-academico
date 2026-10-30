@@ -140,8 +140,7 @@ function EditorFrame() {
               {record.purpose === 'test' ? 'Calendário de teste' : 'Calendário definitivo'}
             </span>
             <span className="editor-heading-status">
-              Versão {record.version} ·{' '}
-              {record.readiness.ready && !dirty ? 'Conferência registrada' : 'Em elaboração'}
+              · {record.readiness.ready && !dirty ? 'Conferência registrada' : 'Em elaboração'}
             </span>
           </p>
         </div>

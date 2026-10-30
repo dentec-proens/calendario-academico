@@ -15,6 +15,9 @@ for (const width of [1440, 390]) {
     await page.clock.install({ time: clockStart });
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#weekdays input[value="5"]')).toBeVisible();
+    await expect(page.locator('#record-heading')).toHaveText(
+      /Calendário de teste\s*· Em elaboração/,
+    );
     await page.clock.pauseAt(new Date(clockStart.getTime() + 60_000));
     await page.clock.runFor(2000);
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
@@ -29,6 +32,9 @@ for (const width of [1440, 390]) {
     await page.clock.runFor(1);
     const saved = await savedState(page);
     expect(saved.saves).toBe(1);
+    await expect(page.locator('#record-heading')).toHaveText(
+      /Calendário de teste\s*· Em elaboração/,
+    );
     expect(saved.state).toMatchObject({
       weekdays: [1, 2, 3],
       weekConfirmed: true,
@@ -142,12 +148,12 @@ test('changing weekdays recalculates targets and preserves the draft when period
     record.version++;
     await window.publishReviewerCalendar();
   });
-  await expect(page.locator('#record-heading')).toContainText('Versão 2');
+  await expect(page.locator('.teaching-day-details')).toContainText('Primeiro período');
   await page.locator('#weekdays input[value="5"]').uncheck();
   expect((await savedState(page)).state.periods[0].end).toBe('2027-03-08');
   await page.locator('#weekdays input[value="5"]').check();
   expect((await savedState(page)).state.periods[0].end).toBe('2027-03-05');
-  const version = await page.evaluate(async () => {
+  await page.evaluate(async () => {
     const { record } = window.editorTest;
     record.state.periods.push({
       id: 'second',
@@ -159,9 +165,8 @@ test('changing weekdays recalculates targets and preserves the draft when period
     });
     record.version++;
     await window.publishReviewerCalendar();
-    return record.version;
   });
-  await expect(page.locator('#record-heading')).toContainText(`Versão ${version}`);
+  await expect(page.locator('.teaching-day-details')).toContainText('Segundo período');
   const before = await savedState(page);
   await page.locator('#weekdays input[value="5"]').uncheck();
   await expect(page.locator('#week-form [role="alert"]')).toContainText('alcança Segundo período');
