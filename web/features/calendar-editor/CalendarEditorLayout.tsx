@@ -1,16 +1,8 @@
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { EditorErrorBoundary } from './EditorErrorBoundary.tsx';
 import { Suspense, useEffect, useRef } from 'react';
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Download,
-  Ellipsis,
-  Eye,
-  History,
-  CalendarDays,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Download, Ellipsis, Eye, History } from 'lucide-react';
+import { BackLink } from '../../components/ui/BackLink.tsx';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { CalendarEditorProvider, useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import { EventEditorProvider, useEventEditor } from './events/EventEditorProvider.tsx';
@@ -25,7 +17,7 @@ import TeachingDaySummary from './TeachingDaySummary.tsx';
 import BaseUpdateCard from './BaseUpdateCard.tsx';
 import { useCalendarSummaryTool } from '../../shared/integrations/webmcp.ts';
 import './calendar-editor.css';
-import { useSessionState } from '../../app/session.tsx';
+import { useAppSession, useSessionState } from '../../app/session.tsx';
 import { scrollIntoView, trackScrollInset } from '../../scroll.ts';
 import ImportCalendarForm from './forms/ImportCalendarForm.tsx';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
@@ -48,6 +40,7 @@ function EditorFrame() {
   } = useCalendarEditor();
   const { context, resume, open: eventEditorOpen } = useEventEditor();
   const { message } = useSessionState();
+  const { permissions } = useAppSession();
   const exporting = useCalendarExport();
   const navigate = useNavigate();
   const drafts = useFormDrafts();
@@ -61,6 +54,10 @@ function EditorFrame() {
     document.body.classList.add('calendar-editor');
     return () => document.body.classList.remove('calendar-editor');
   }, []);
+  // The editor sits outside the workspace layout, which names the tab for every other page.
+  useEffect(() => {
+    document.title = `${record.name} · PROENS`;
+  }, [record.name]);
   useEffect(() => {
     if (feedback.current) return trackScrollInset(feedback.current);
   }, []);
@@ -118,15 +115,19 @@ function EditorFrame() {
           }[status];
   return (
     <div className="calendar-editor-content">
-      <div className="editor-navigation" aria-label="Navegação do calendário">
-        <span className="editor-brand">
-          <CalendarDays aria-hidden="true" /> Calendários acadêmicos
-        </span>
-        <Link to={readOnly ? '/revisoes' : '/calendarios'} className="portal-back">
-          <ArrowLeft aria-hidden="true" />{' '}
-          {readOnly ? 'Voltar às revisões e pareceres' : 'Todos os calendários'}
-        </Link>
-      </div>
+      {permissions.editCalendars ? (
+        <BackLink to="/calendarios" className="editor-back">
+          Calendários
+        </BackLink>
+      ) : (
+        <BackLink
+          to="/revisoes/$calendarId"
+          params={{ calendarId: record.id }}
+          className="editor-back"
+        >
+          Revisões e pareceres
+        </BackLink>
+      )}
       <div className="editor-intro">
         <div className="editor-heading-group">
           <div className="editor-title-row">

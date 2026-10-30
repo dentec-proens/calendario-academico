@@ -12,11 +12,20 @@ import {
   Menu,
   Users,
   ScrollText,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
-import { portalPaths } from '#src/app/routes.ts';
+import { BackLink } from '../../components/ui/BackLink.tsx';
+import { portalPaths, type PortalPageId } from '#src/app/routes.ts';
 import { useAppSession } from '../session.tsx';
 import { scrollIntoView } from '../../scroll.ts';
+
+interface NavigationItem {
+  id: string;
+  to: (typeof portalPaths)[PortalPageId];
+  label: string;
+  Icon: LucideIcon;
+}
 
 export default function WorkspaceLayout() {
   const updateNavigation = useUpdateNavigation();
@@ -36,7 +45,7 @@ export default function WorkspaceLayout() {
     page === 'accounts' ||
     page === 'online-users' ||
     (page === 'logs' && info.user.role !== 'CAMPUS');
-  const navigation = [
+  const navigation: NavigationItem[] = [
     ...(permissions.editCalendars
       ? [{ id: 'calendars', to: portalPaths.calendars, label: 'Calendários', Icon: CalendarDays }]
       : []),
@@ -49,7 +58,7 @@ export default function WorkspaceLayout() {
     },
     { id: 'rules', to: portalPaths.rules, label: 'Regras do calendário', Icon: ListChecks },
   ];
-  const administrative = [
+  const administrative: NavigationItem[] = [
     ...(permissions.reviewCalendars
       ? [
           {
@@ -77,9 +86,16 @@ export default function WorkspaceLayout() {
         ]
       : []),
   ];
-  const auditNavigation = [
-    { id: 'logs', to: portalPaths.logs, label: 'Registro de operações', Icon: ScrollText },
-  ];
+  // The operation log belongs with the area it audits: the campus's own work, or administration.
+  const audit: NavigationItem = {
+    id: 'logs',
+    to: portalPaths.logs,
+    label: 'Registro de operações',
+    Icon: ScrollText,
+  };
+  if (info.user.role === 'CAMPUS') navigation.push(audit);
+  else administrative.push(audit);
+  const back = [...navigation, ...administrative].find(({ id }) => id === metadata?.back);
   useEffect(() => {
     document.title = `${title} · PROENS`;
     if (previous.current === activePath) return;
@@ -97,13 +113,7 @@ export default function WorkspaceLayout() {
     });
     return () => cancelAnimationFrame(frame);
   }, [activePath, metadata?.creating, title]);
-  function links(
-    items: Array<
-      | (typeof navigation)[number]
-      | (typeof administrative)[number]
-      | (typeof auditNavigation)[number]
-    >,
-  ) {
+  function links(items: NavigationItem[]) {
     return items.map(({ id, to, label, Icon }) => (
       <Link
         onClick={updateNavigation ?? undefined}
@@ -150,10 +160,10 @@ export default function WorkspaceLayout() {
               {links(administrative)}
             </div>
           ) : null}
-          {links(auditNavigation)}
         </nav>
       </aside>
       <div className="portal-content">
+        {back ? <BackLink to={back.to}>{back.label}</BackLink> : null}
         <div className="workspace-heading">
           <h1 id="panel-title" ref={heading} tabIndex={-1}>
             {title}

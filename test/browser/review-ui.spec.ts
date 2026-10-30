@@ -116,6 +116,7 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   expect(await page.evaluate(() => window.reviewUiTest.calls.saves)).toBe(1);
   await notesToggle.click();
   await expect(page.locator(notes)).toBeHidden();
+  await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
   await page.locator('#open-review').click();
   await expect(page.locator('[data-origin="annual"]')).toHaveText('Conferido e salvo');
   await expect(notesToggle).toContainText('observação registrada');
@@ -131,6 +132,7 @@ test('direct review distinguishes automatic indications, confirmation and saved 
     'Avaliação salva · não confirmada',
   );
   await expect(page.locator(confirm)).toBeEnabled();
+  await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
   await page.locator('#open-review').click();
   await expect(page.locator('[data-origin="annual"]')).toHaveText(
     'Avaliação salva · não confirmada',
@@ -160,6 +162,8 @@ test('direct review distinguishes automatic indications, confirmation and saved 
     await page.locator(`${item} [data-origin]`).evaluate((node) => node.textContent ?? ''),
     'failed persistence must retain the pending-save badge',
   ).toMatch(/por salvar/);
+  // Reopening from the list remounts the analysis with its notes collapsed.
+  await notesToggle.click();
   await page.locator(notes).fill('Nova observação precisa de confirmação.');
   await expect(page.locator(notes)).toHaveValue('Nova observação precisa de confirmação.');
   await page.locator(notes).focus();
@@ -219,7 +223,7 @@ test('a review submission remains attached to its form while navigating away and
   });
   await page.locator('button[form="review-form"]').click();
   await expect.poll(() => page.evaluate(() => window.reviewUiTest.calls.pendingSave)).toBe(true);
-  await page.getByRole('link', { name: 'Voltar à lista de revisões' }).click();
+  await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
   await expect(page.locator('#review-content')).toHaveCount(0);
   await page.locator('#open-review').click();
   await expect(page.locator('#review-process')).toHaveValue('23354.000004/2027-04');
@@ -244,7 +248,7 @@ test('a failure after a review remount retains values and permits an explicit re
   });
   await page.locator('button[form="review-form"]').click();
   await expect.poll(() => page.evaluate(() => window.reviewUiTest.calls.pendingSave)).toBe(true);
-  await page.getByRole('link', { name: 'Voltar à lista de revisões' }).click();
+  await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
   await page.locator('#open-review').click();
   await expect(page.locator('button[form="review-form"]')).toBeDisabled();
   await page.evaluate(() => {

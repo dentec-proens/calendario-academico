@@ -52,7 +52,7 @@ test('a blocked save offers an explicit discard path without trapping navigation
   await page.locator('#weekdays input[value="5"]').uncheck();
   await page.locator('#editor-continue').click();
   await expect(page.locator('#autosave-status')).toHaveAttribute('data-state', 'blocked');
-  await page.locator('.portal-back').click();
+  await page.locator('.ui-back-link').click();
   await page.locator('.confirmation-dialog__confirm').click();
   await expect(page.locator('dialog [role="alert"]')).toContainText('versão mais recente');
   await page.locator('.confirmation-dialog__cancel').click();
@@ -103,7 +103,7 @@ test('reverting a field clears unapplied state and annual Saturday selections su
     await checkbox.uncheck();
   }
   await expect(page.locator('#unapplied-status')).toBeHidden();
-  await page.locator('.portal-back').click();
+  await page.locator('.ui-back-link').click();
   await expect(page).toHaveURL(/\/calendarios$/);
   await expect(page.locator('dialog[open]')).toHaveCount(0);
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(saves);

@@ -44,34 +44,20 @@
 }
 
 /* The editor is a guided workspace; status is prominent only when action is needed. */
-.calendar-editor-content .editor-navigation {
-  margin-bottom: 0;
-  padding: 0 0 18px;
-}
-.editor-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--green);
-  font-size: 0.875rem;
-  font-weight: 650;
-}
 .calendar-editor-content svg {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
 }
-.calendar-editor-content .portal-back {
-  gap: 7px;
-  text-decoration: none;
-  color: var(--ui-muted);
+.calendar-editor-content .editor-back {
+  margin: 0;
 }
 .editor-intro {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 12px 0 16px;
+  padding: 0 0 16px;
 }
 .editor-title-row {
   display: flex;
@@ -542,19 +528,9 @@
   }
 }
 @media (max-width: 480px) {
-  .calendar-editor-content .editor-navigation {
-    gap: 8px;
-    padding-bottom: 12px;
-  }
-  .editor-navigation .editor-brand {
-    font-size: 0.75rem;
-  }
-  .calendar-editor-content .editor-navigation a {
-    font-size: 0.75rem;
-  }
   .editor-intro {
     gap: 12px;
-    padding: 10px 0 14px;
+    padding: 0 0 14px;
   }
   .editor-header-actions {
     gap: 5px;
@@ -567,7 +543,6 @@
   }
 }
 @media print {
-  .editor-navigation,
   .editor-intro,
   .editor-calendar-details,
   .editor-sidebar,

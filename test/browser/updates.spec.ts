@@ -108,7 +108,7 @@ test('a failed production section chunk preserves the editor and unapplied event
     page.getByRole('heading', { name: 'Não foi possível abrir esta página' }),
   ).toBeVisible();
   // The owner and controls survive below the failed section, rather than being recreated.
-  await expect(page.locator('.portal-back')).toBeVisible();
+  await expect(page.locator('.ui-back-link')).toBeVisible();
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.unroute('**/assets/PeriodsSection-*.js');
   const retried = page.waitForResponse((response) => response.url() === failedChunk);
@@ -644,7 +644,7 @@ test('explicitly discarded editor fields cannot reappear as a detached draft', a
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Preenchimento a descartar');
   await page.locator('#close-event-panel').click();
-  await page.locator('.portal-back').click();
+  await page.locator('.ui-back-link').click();
   await page.getByRole('button', { name: 'Salvar e sair', exact: true }).click();
   await expect(page.locator('#calendar-list')).toBeVisible();
   expect(await page.evaluate(() => window.updateDrafts.protection.getSnapshot())).toEqual([]);
@@ -661,7 +661,7 @@ test('enabling the conclusion editor without changing content is not pending wor
   await page.locator('#edit-conclusion').click();
   await expect(page.locator('#review-conclusion')).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeEnabled();
-  await page.getByRole('link', { name: 'Voltar à lista de revisões', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
   expect(await page.evaluate(() => window.updateDrafts.protection.getSnapshot())).toEqual([]);
 });
 

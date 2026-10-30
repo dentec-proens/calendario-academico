@@ -8,8 +8,9 @@ export function NotFoundPage() {
   return (
     <section className="panel">
       <h1 tabIndex={-1}>Página não encontrada</h1>
-      <p>Confira o endereço ou volte aos calendários.</p>
-      <Link to="/calendarios">Voltar aos calendários</Link>
+      <p>Confira o endereço ou volte à página inicial do seu perfil.</p>
+      {/* "/" sends each profile to its own start page; a fixed list would refuse reviewers. */}
+      <Link to="/">Ir para a página inicial</Link>
     </section>
   );
 }

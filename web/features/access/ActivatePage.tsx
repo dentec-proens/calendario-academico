@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { BackLink } from '../../components/ui/BackLink.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 import { useAccounts } from '../../shared/convex/accounts.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
@@ -45,6 +45,7 @@ export default function ActivatePage() {
   }, [token, accounts]);
   return (
     <section className="panel auth">
+      <BackLink to="/">Entrar</BackLink>
       <h1>Criar minha senha</h1>
       <p id="invite-info">
         {invitation
@@ -105,7 +106,6 @@ export default function ActivatePage() {
           <FormFeedback error={error} />
         </form>
       ) : null}
-      <Link to="/">Voltar ao login</Link>
     </section>
   );
 }

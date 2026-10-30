@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { BackLink } from '../../components/ui/BackLink.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 import { useAccounts } from '../../shared/convex/accounts.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
@@ -139,11 +139,9 @@ export default function RecoverPage() {
   const [token] = useState(() => readPrivateLinkToken('/recuperar-senha'));
   return (
     <section className="auth panel">
+      <BackLink to="/">Entrar</BackLink>
       <h1 id="title">{token ? 'Definir nova senha' : 'Recuperar senha'}</h1>
       {token ? <ResetPassword token={token} /> : <RequestRecovery />}
-      <p>
-        <Link to="/">Voltar para entrar</Link>
-      </p>
     </section>
   );
 }

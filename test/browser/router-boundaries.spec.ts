@@ -15,13 +15,13 @@ test('canceling an editor exit preserves the route, draft and React document', a
   await page.locator('#close-event-panel').click();
   const initial = page.url();
   const documentOrigin = await page.evaluate(() => performance.timeOrigin);
-  await page.locator('.portal-back').click();
+  await page.locator('.ui-back-link').click();
   await expect(page.getByRole('alertdialog', { name: 'Sair deste calendário?' })).toBeVisible();
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
   await expect(page).toHaveURL(initial);
   await expect(page.locator('#event-name')).toHaveValue('Alteração ainda não aplicada');
   expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentOrigin);
-  await page.locator('.portal-back').click();
+  await page.locator('.ui-back-link').click();
   await page.getByRole('button', { name: 'Salvar e sair', exact: true }).click();
   await expect(page).toHaveURL(origin + '/calendarios');
   await expect(page.locator('#calendar-list')).toBeVisible();

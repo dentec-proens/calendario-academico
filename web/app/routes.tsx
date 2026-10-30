@@ -21,6 +21,8 @@ declare module '@tanstack/react-router' {
   interface StaticDataRouteOption {
     title?: string;
     page?: PortalPageId;
+    /** Parent page linked above the heading of a detail page. */
+    back?: PortalPageId;
     creating?: boolean;
   }
 }
@@ -184,7 +186,7 @@ const review = createRoute({
   path: '/revisoes/$calendarId',
   beforeLoad: permission('reviewCalendars'),
   component: lazy(() => import('../features/reviews/ReviewsPage.tsx')),
-  staticData: { title: 'Revisões e pareceres', page: 'review-panel' },
+  staticData: { title: 'Análise do calendário', page: 'review-panel', back: 'review-panel' },
 });
 const campuses = createRoute({
   getParentRoute: () => workspace,

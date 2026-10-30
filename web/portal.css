@@ -27,10 +27,6 @@
   font-size: 0.8rem;
   border-radius: 4px;
 }
-.portal-back {
-  color: #0c503a;
-  font-size: 0.875rem;
-}
 #user-password {
   max-width: 400px;
 }
@@ -375,37 +371,6 @@
   #calendar-list > li[data-calendar-campus] {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
-  }
-}
-
-.editor-navigation {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px 24px;
-  margin: 0 0 28px;
-  padding: 0 0 16px;
-  border-bottom: 1px solid var(--line);
-}
-.editor-navigation a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 40px;
-  color: var(--green);
-  font-size: 0.9rem;
-  text-underline-offset: 4px;
-  line-height: 1.5;
-}
-.editor-navigation + .intro .eyebrow {
-  margin-top: 0;
-}
-@media (max-width: 600px) {
-  .editor-navigation {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 24px;
   }
 }
 

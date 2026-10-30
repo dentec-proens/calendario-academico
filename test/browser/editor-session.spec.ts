@@ -58,7 +58,7 @@ test('portal logout redirects to the access form without an active editor recove
 }) => {
   await page.goto(await fixtureServer('editor-session'));
   await expect(page.locator('#record-title')).toBeVisible();
-  await page.locator('.portal-back').click();
+  await page.locator('.ui-back-link').click();
   await expect(page.locator('#calendar-list')).toBeVisible();
   await page.locator('#logout').click();
   await expect(page.locator('#account')).toHaveText('Portal PROENS');
@@ -71,7 +71,7 @@ test('login focuses the destination title instead of announcing the access', asy
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('editor-session'));
-  await page.locator('.portal-back').click();
+  await page.locator('.ui-back-link').click();
   await expect(page.locator('#calendar-list')).toBeVisible();
   await page.locator('#logout').click();
   await page.locator('#email').fill('editor@example.invalid');

@@ -51,11 +51,11 @@ export default function ReviewFormView({
   const reviewedCount = draft.entries.filter((entry) => entry.reviewed).length;
   return (
     <div id="review-content">
-      <h3 id="review-heading">
+      <h2 id="review-heading">
         {opened.calendar.name === calendarName(opened.calendar.year, opened.calendar.campus)
           ? opened.calendar.name
           : `${opened.calendar.campus} · ${opened.calendar.name}`}
-      </h3>
+      </h2>
       <p id="review-progress">
         {reviewedCount} de {opened.criteria.length} critérios conferidos.
       </p>
