@@ -360,7 +360,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await page.locator(`[data-delete-calendar="${calendarId}"]`).click();
   await page.locator('.confirmation-dialog__confirm').click();
   await expect(page.locator('#message')).toContainText('movido para a lixeira');
-  await page.locator('.calendar-trash summary').click();
+  await page.getByRole('link', { name: 'Lixeira', exact: true }).click();
   await page.locator(`[data-restore-calendar="${calendarId}"]`).click();
   await expect(page.locator('#message')).toContainText('Calendário restaurado');
   await page.goto(base + editorUrl(calendarId, 'history'));

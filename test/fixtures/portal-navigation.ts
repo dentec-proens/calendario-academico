@@ -131,6 +131,22 @@ const documents: DocumentsData['documents'] = (['rascunho', 'vigente', 'arquivad
     ...(status !== 'rascunho' ? { publishedAt: '2026-10-23T12:00:00Z' } : {}),
   }),
 );
+function calendarRows(deleted: boolean) {
+  return [
+    calendar,
+    ...(multipleReviews
+      ? [{ ...calendar, id: 'calendar-b' as Id<'calendars'>, name: 'Calendário calendar-b' }]
+      : []),
+  ]
+    .filter((item) => removedCalendars.has(item.id) === deleted)
+    .map((item) => (deleted ? { ...item, deletedAt: 1793361600000 } : item));
+}
+window.portalRouterTest.restoreCalendar = (id) => {
+  removedCalendars.delete(id);
+  const listeners = [...queryListeners];
+  for (const listener of listeners) listener.refresh();
+  for (const listener of listeners) listener.notify();
+};
 const connection = {
   isWebSocketConnected: true,
   hasEverConnected: true,
@@ -165,19 +181,8 @@ const client = {
                       (!args.year || document.year === args.year) &&
                       (!args.status || document.status === args.status),
                   )
-                : name === 'calendars:calendarPage' && !args.deleted
-                  ? [
-                      calendar,
-                      ...(multipleReviews
-                        ? [
-                            {
-                              ...calendar,
-                              id: 'calendar-b' as Id<'calendars'>,
-                              name: 'Calendário calendar-b',
-                            },
-                          ]
-                        : []),
-                    ].filter((item) => !removedCalendars.has(item.id))
+                : name === 'calendars:calendarPage'
+                  ? calendarRows(!!args.deleted)
                   : [],
             isDone: true,
             continueCursor: '',
@@ -202,9 +207,7 @@ const client = {
             if ('page' in result && name === 'calendars:calendarPage')
               result = {
                 ...result,
-                page: (result.page as Bootstrap['calendars']).filter(
-                  (item) => !removedCalendars.has(item.id),
-                ),
+                page: calendarRows(!!args.deleted),
               };
           },
           notify: onUpdate,

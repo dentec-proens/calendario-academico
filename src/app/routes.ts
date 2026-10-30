@@ -80,6 +80,7 @@ export function portalPageForPath(pathname: string): PortalPageId | undefined {
   const page = (Object.keys(portalPaths) as PortalPageId[]).find(
     (id) => portalPaths[id] === path || portalCreationPaths[id] === path,
   );
+  if (path === '/calendarios/lixeira') return 'calendars';
   if (catalogueEventId(path)) return 'institution-events';
   return (
     page ??

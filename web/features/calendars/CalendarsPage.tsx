@@ -17,11 +17,6 @@ export default function CalendarsPage() {
     { deleted: false, ...(campus ? { campusId: campus.id } : {}) },
     { initialNumItems: 50 },
   );
-  const trash = usePaginatedQuery(
-    functions.calendars.calendarPage,
-    { deleted: true },
-    { initialNumItems: 50 },
-  );
   return (
     <CalendarsPanel
       info={{ ...info, calendars: pagination.results }}
@@ -32,8 +27,6 @@ export default function CalendarsPage() {
         void navigate({ to: '/calendarios', search: { campus: id || undefined }, replace: true });
       }}
       pagination={pagination}
-      trashPagination={trash}
-      liveTrash={trash.status === 'LoadingFirstPage' ? undefined : { calendars: trash.results }}
     />
   );
 }

@@ -54,6 +54,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/calendarios/lixeira",
+      "destination": "/index.html"
+    },
+    {
       "source": "/calendarios/novo",
       "destination": "/index.html"
     },

@@ -87,6 +87,7 @@ test('a page loaded before 200 ms leaves no loading bar or pending timer', async
 for (const width of [1440, 390]) {
   for (const [path, label] of [
     ['/calendarios', 'Carregando calendários…'],
+    ['/calendarios/lixeira', 'Carregando lixeira…'],
     ['/documentos', 'Carregando documentos…'],
     ['/revisoes', 'Carregando calendários para revisão…'],
   ]) {
@@ -105,13 +106,6 @@ for (const width of [1440, 390]) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
       );
-      if (path === '/calendarios') {
-        await page.locator('.calendar-trash summary').click();
-        await expect(page.locator('.loading-indicator-bar:visible')).toHaveCount(2);
-        await expect(page.locator('.calendar-trash').getByRole('status')).toHaveText(
-          'Carregando lixeira…',
-        );
-      }
       await page.screenshot({ path: `test-results/loading-${path.slice(1)}-${width}.png` });
       await page.evaluate(() => window.portalRouterTest.resolvePendingCollections());
       await expect(page.locator('.loading-indicator')).toHaveCount(0);

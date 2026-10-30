@@ -120,6 +120,13 @@ const calendars = createRoute({
   component: lazy(() => import('../features/calendars/CalendarsPage.tsx')),
   staticData: { title: 'Calendários', page: 'calendars' },
 });
+const calendarTrash = createRoute({
+  getParentRoute: () => workspace,
+  path: '/calendarios/lixeira',
+  beforeLoad: permission('editCalendars'),
+  component: lazy(() => import('../features/calendars/CalendarTrashPage.tsx')),
+  staticData: { title: 'Lixeira de calendários', page: 'calendars' },
+});
 const newCalendar = createRoute({
   getParentRoute: () => workspace,
   path: '/calendarios/novo',
@@ -321,6 +328,7 @@ export const routeTree = root.addChildren([
   authenticated.addChildren([
     workspace.addChildren([
       calendars,
+      calendarTrash,
       newCalendar,
       documents,
       newDocument,

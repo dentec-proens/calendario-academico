@@ -93,6 +93,9 @@ window.portalRouterTest = {
   pendingMutation: null,
   completedMutation: null,
   pendingReviewId: null,
+  restoreCalendar: () => {
+    throw new Error('Fixture de calendários ainda não iniciada.');
+  },
   removeCalendar: () => {
     throw new Error('Fixture de calendários ainda não iniciada.');
   },
@@ -126,6 +129,12 @@ export const convex = {
     const name = getFunctionName(reference);
     window.portalRouterTest.mutations.push({ name, args: structuredClone(args) });
     switch (name) {
+      case 'calendars:deleteCalendar':
+        window.portalRouterTest.removeCalendar(String(args.id));
+        return finishMutation('deleteCalendar', { ok: true });
+      case 'calendars:restoreCalendar':
+        window.portalRouterTest.restoreCalendar(String(args.id));
+        return finishMutation('restoreCalendar', { ok: true });
       case 'catalogue:saveCatalogue': {
         const body = args.body as Bootstrap['catalogue']['events'][number] & { revision: number };
         const catalogue = window.portalRouterTest.catalogue;
@@ -219,6 +228,7 @@ declare global {
       pendingMutation: string | null;
       completedMutation: string | null;
       removeCalendar(id: string): void;
+      restoreCalendar(id: string): void;
       pendingReviewId: string | null;
       resolvePendingCollections(): void;
       resolvePendingReview(): void;

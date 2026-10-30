@@ -20,6 +20,7 @@ test('Vite serves direct application URLs and keeps unknown routes and assets as
   const origin = `http://127.0.0.1:${address.port}`;
   for (const path of [
     '/calendarios/novo',
+    '/calendarios/lixeira',
     '/documentos',
     '/revisoes/calendar-a',
     '/eventos-institucionais/event-a/editar',

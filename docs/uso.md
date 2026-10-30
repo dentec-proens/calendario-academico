@@ -134,7 +134,7 @@ As etapas de preenchimento não solicitam fontes manuais. As referências autom�
 
 ## Lixeira e histórico
 
-**Excluir calendário** move o registro para a lixeira após confirmação. Ele sai das listas de trabalho e revisão; dados, versões e documentos são preservados. A exclusão exige a versão atual. **Restaurar calendário** devolve o registro ao trabalho, dentro do mesmo escopo de acesso. Não há descarte físico automático.
+**Excluir calendário** move o registro para a lixeira após confirmação. Ele sai das listas de trabalho e revisão; dados, versões e documentos são preservados. A exclusão exige a versão atual. Acesse o link **Lixeira** na linha do filtro de campus, acima da lista de calendários para consultar os excluídos em uma visualização própria. **Voltar aos calendários** retorna à lista de trabalho. **Restaurar calendário** devolve o registro ao trabalho, dentro do mesmo escopo de acesso. Não há descarte físico automático.
 
 **Histórico de alterações** consulta operações salvas com autoria e contexto autorizado. Campos em edição que ainda não foram gravados não aparecem no histórico.
 
