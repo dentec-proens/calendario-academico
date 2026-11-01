@@ -267,6 +267,12 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await expect(page.locator(`${ownRoleForm} button`)).toBeDisabled();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator('#accounts .collection-heading button').click();
+  await expect(page.locator('#user-role option')).toHaveText([
+    'Campus · Apenas sua unidade',
+    'Admin · Acesso completo',
+    'Parecerista · Revisões e pareceres',
+  ]);
+  await expect(page.locator('#create-user-button')).toHaveText('Criar conta Campus');
   expect(
     await page
       .locator('#user-name')

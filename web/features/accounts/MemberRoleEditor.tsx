@@ -1,3 +1,4 @@
+import { roleLabels } from '../../shared/role-labels.ts';
 import { Button } from '../../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 import { useAccounts } from '../../shared/convex/accounts.ts';
@@ -66,9 +67,9 @@ export default function MemberRoleEditor({
           disabled={pending}
           onChange={(event) => form.setFieldValue('role', event.target.value as typeof role)}
         >
-          <option value="ADMIN">Admin</option>
-          <option value="PARECERISTA">Parecerista</option>
-          <option value="CAMPUS">Campus</option>
+          <option value="ADMIN">{roleLabels.ADMIN}</option>
+          <option value="PARECERISTA">{roleLabels.PARECERISTA}</option>
+          <option value="CAMPUS">{roleLabels.CAMPUS}</option>
         </select>
       </label>
       {role === 'CAMPUS' ? (

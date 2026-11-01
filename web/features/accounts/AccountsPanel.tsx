@@ -1,3 +1,4 @@
+import { roleLabels } from '../../shared/role-labels.ts';
 import { scrollIntoView } from '../../scroll.ts';
 import { Button } from '../../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
@@ -80,7 +81,7 @@ export default function AccountsPanel({
         notify(
           value.method === 'google'
             ? 'Acesso Google autorizado para o e-mail cadastrado. Nenhum e-mail foi enviado; o login depende da configuração Google pela TI.'
-            : `Conta ${value.role} criada.`,
+            : `Conta ${roleLabels[value.role]} criada.`,
         );
     },
   });
@@ -192,7 +193,7 @@ export default function AccountsPanel({
                   }
                 >
                   <option value="invite">Convite por link · A pessoa cria a senha</option>
-                  <option value="local">Senha definida pelo ADMIN</option>
+                  <option value="local">Senha definida pelo Admin</option>
                   {googleEnabled ? (
                     <option value="google">Google institucional · sem criar senha local</option>
                   ) : null}
@@ -219,9 +220,11 @@ export default function AccountsPanel({
                     form.setFieldValue('role', e.target.value as Bootstrap['user']['role'])
                   }
                 >
-                  <option value="CAMPUS">CAMPUS · Apenas sua unidade</option>
-                  <option value="ADMIN">ADMIN · Acesso completo</option>
-                  <option value="PARECERISTA">PARECERISTA · Revisões e pareceres</option>
+                  <option value="CAMPUS">{roleLabels.CAMPUS} · Apenas sua unidade</option>
+                  <option value="ADMIN">{roleLabels.ADMIN} · Acesso completo</option>
+                  <option value="PARECERISTA">
+                    {roleLabels.PARECERISTA} · Revisões e pareceres
+                  </option>
                 </select>
               </label>
               {admin ? (
@@ -293,7 +296,7 @@ export default function AccountsPanel({
               ) : null}
               <Button type="submit" id="create-user-button">
                 <UserPlus aria-hidden="true" size={18} />
-                Criar conta {role}
+                Criar conta {roleLabels[role]}
               </Button>
             </fieldset>
             <FormFeedback error={error} />
@@ -313,7 +316,7 @@ export default function AccountsPanel({
                 <div className="account-identity">
                   <strong>{u.name}</strong>
                   <small>
-                    {u.email} · {u.role} ·{' '}
+                    {u.email} · {roleLabels[u.role]} ·{' '}
                     {u.loginMethod === 'invite'
                       ? 'Convite pendente'
                       : u.loginMethod === 'google'

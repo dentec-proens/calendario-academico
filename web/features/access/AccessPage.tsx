@@ -42,7 +42,7 @@ export default function AccessPage() {
       <h1 id="auth-title">{setup ? 'Criar administração' : 'Entrar'}</h1>
       {setup ? (
         <p id="auth-help">
-          Crie a primeira conta ADMIN com o e-mail autorizado e o código privado da implantação.
+          Crie a primeira conta Admin com o e-mail autorizado e o código privado da implantação.
           Escolha uma senha exclusiva para este sistema.
         </p>
       ) : null}
@@ -118,7 +118,7 @@ export default function AccessPage() {
             ) : (
               <LogIn aria-hidden="true" size={18} />
             )}
-            {pending ? 'Aguarde…' : setup ? 'Criar conta ADMIN' : 'Entrar'}
+            {pending ? 'Aguarde…' : setup ? 'Criar conta Admin' : 'Entrar'}
           </Button>
         </fieldset>
         <FormFeedback error={error} />

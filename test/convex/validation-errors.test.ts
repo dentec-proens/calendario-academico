@@ -181,7 +181,7 @@ test('setup refusals are safe client errors and leave no action lease', async ()
         code: 'synthetic-setup-code',
       },
     }),
-    'Conta ADMIN já criada.',
+    'Conta Admin já criada.',
     409,
   );
   assert.equal((await client.run((ctx) => ctx.db.query('operationalLeases').take(10))).length, 0);

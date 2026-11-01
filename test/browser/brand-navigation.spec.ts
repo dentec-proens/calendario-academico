@@ -1,6 +1,28 @@
 import { test, expect } from './test.ts';
 
 for (const width of [1440, 390]) {
+  for (const [role, label] of [
+    ['CAMPUS', 'Pessoa de teste · Campus de teste'],
+    ['ADMIN', 'Pessoa de teste · Admin'],
+    ['PARECERISTA', 'Pessoa de teste · Parecerista'],
+  ] as const) {
+    test(`the header identifies ${role} with its account scope at ${width}px`, async ({
+      page,
+      fixtureServer,
+    }) => {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+      const origin = new URL(await fixtureServer('portal')).origin;
+      await page.goto(`${origin}/calendarios?role=${role}`);
+      await expect(page.locator('#account')).toHaveText(label);
+      await expect(page.locator('#account')).toHaveAttribute('data-profile', role);
+      await expect(page.locator('#account')).toBeInViewport({ ratio: 1 });
+      await expect(page.locator('#logout')).toBeInViewport({ ratio: 1 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    });
+  }
+
   test(`navigation from a removed page button still focuses the destination heading at ${width}px`, async ({
     page,
     fixtureServer,

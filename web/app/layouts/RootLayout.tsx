@@ -1,3 +1,4 @@
+import { roleLabels } from '../../shared/role-labels.ts';
 import UpdateProvider from '../updates/UpdateProvider.tsx';
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { Suspense, useCallback, useEffect, useRef } from 'react';
@@ -22,6 +23,21 @@ export default function RootLayout() {
   });
   const editorPath = parseEditorPath(pathname);
   const identity = session.info ? sessionIdentity(session.info.user) : 'public';
+  const user = session.info?.user;
+  const accountScope =
+    user?.role === 'CAMPUS'
+      ? session.info?.campuses.find((campus) => campus.id === user.campusId)?.name
+      : user
+        ? roleLabels[user.role]
+        : undefined;
+  const accountLabel =
+    session.isLoading || session.editorRecovery?.checkingIdentity
+      ? 'Verificando sessão…'
+      : user
+        ? accountScope
+          ? `${user.name} · ${accountScope}`
+          : user.name
+        : null;
   const main = useRef<HTMLElement>(null);
   const { setArrivalPending } = session;
   useEffect(() => clearPrivateLinkWhenLeaving(pathname), [pathname]);
@@ -41,17 +57,15 @@ export default function RootLayout() {
               <span>PROENS</span>
             </span>
           </Link>
-          <span
-            className="badge"
-            id="account"
-            data-profile={session.isLoading ? undefined : session.info?.user.role}
-          >
-            {session.isLoading || session.editorRecovery?.checkingIdentity
-              ? 'Verificando sessão…'
-              : session.info
-                ? `${session.info.user.name} · ${session.info.user.role}`
-                : 'Portal PROENS'}
-          </span>
+          {accountLabel ? (
+            <span
+              className="badge"
+              id="account"
+              data-profile={session.isLoading ? undefined : session.info?.user.role}
+            >
+              {accountLabel}
+            </span>
+          ) : null}
           {session.isAuthenticated ? (
             <Button
               type="button"

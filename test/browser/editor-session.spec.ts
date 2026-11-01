@@ -52,19 +52,23 @@ test.describe('compact Saturday access interruptions', () => {
   }
 });
 
-test('portal logout redirects to the access form without an active editor recovery', async ({
-  page,
-  fixtureServer,
-}) => {
-  await page.goto(await fixtureServer('editor-session'));
-  await expect(page.locator('#record-title')).toBeVisible();
-  await page.locator('.ui-back-link').click();
-  await expect(page.locator('#calendar-list')).toBeVisible();
-  await page.locator('#logout').click();
-  await expect(page.locator('#account')).toHaveText('Portal PROENS');
-  await expect(page.locator('#auth-title')).toHaveText('Entrar');
-  await expect(page).toHaveURL(/\/?\?retorno=%2Fcalendarios$/);
-});
+for (const width of [1440, 390]) {
+  test(`portal logout redirects to the access form without an account badge at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(await fixtureServer('editor-session'));
+    await expect(page.locator('#record-title')).toBeVisible();
+    await expect(page.locator('#account')).toHaveText('Pessoa de teste · Admin');
+    await page.locator('.ui-back-link').click();
+    await expect(page.locator('#calendar-list')).toBeVisible();
+    await page.locator('#logout').click();
+    await expect(page.locator('#account')).toHaveCount(0);
+    await expect(page.locator('#auth-title')).toHaveText('Entrar');
+    await expect(page).toHaveURL(/\/?\?retorno=%2Fcalendarios$/);
+  });
+}
 
 test('login focuses the destination title instead of announcing the access', async ({
   page,

@@ -1,3 +1,4 @@
+import { roleLabels } from '../../shared/role-labels.ts';
 import { useEffect, useState } from 'react';
 import { BackLink } from '../../components/ui/BackLink.tsx';
 import { Button } from '../../components/ui/Button.tsx';
@@ -49,7 +50,7 @@ export default function ActivatePage() {
       <h1>Criar minha senha</h1>
       <p id="invite-info">
         {invitation
-          ? `Convite para ${invitation.name} · ${invitation.email} · ${invitation.role}${invitation.campus ? ' · ' + invitation.campus : ''}. Válido até ${new Date(invitation.expiresAt).toLocaleString('pt-BR')}.`
+          ? `Convite para ${invitation.name} · ${invitation.email} · ${roleLabels[invitation.role]}${invitation.campus ? ' · ' + invitation.campus : ''}. Válido até ${new Date(invitation.expiresAt).toLocaleString('pt-BR')}.`
           : message}
       </p>
       <p id="invite-message" role="status">

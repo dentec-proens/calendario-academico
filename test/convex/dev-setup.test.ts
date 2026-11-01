@@ -171,7 +171,7 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
         password: 'isolated-development-password',
       },
     }),
-    /ADMIN já criada/,
+    /Admin já criada/,
   );
 });
 

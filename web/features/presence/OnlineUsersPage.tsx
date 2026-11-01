@@ -1,3 +1,4 @@
+import { roleLabels } from '../../shared/role-labels.ts';
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { useNavigate } from '@tanstack/react-router';
 import { useFeatureRoute } from '../../app/navigation.ts';
@@ -104,7 +105,7 @@ export default function OnlineUsersPanel() {
                         <small>{user.email}</small>
                       </td>
                       <td>{user.campusName}</td>
-                      <td>{user.role}</td>
+                      <td>{roleLabels[user.role]}</td>
                       <td>
                         <span className="online-status">Online</span>
                       </td>

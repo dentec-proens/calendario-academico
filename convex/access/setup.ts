@@ -32,7 +32,7 @@ export const setupRecord = internalMutation({
   args: { email: v.string(), name: v.string(), secret: v.string() },
   returns: v.object({ ok: v.boolean() }),
   handler: async (ctx, { email, name, secret }) => {
-    if (await ctx.db.query('users').first()) fail('Conta ADMIN já criada.', 409);
+    if (await ctx.db.query('users').first()) fail('Conta Admin já criada.', 409);
     if (!name.trim() || name.length > 240) fail('Informe seu nome.');
     const id = await ctx.db.insert('users', {
       name: name.trim(),

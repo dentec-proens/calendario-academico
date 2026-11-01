@@ -37,6 +37,8 @@ test('online users renders live totals, search, campus filters and mobile layout
   ];
   await page.evaluate((users) => window.setOnlineFixture({ users, truncated: false }), users);
   await expect(page.locator('tbody tr')).toHaveCount(2);
+  await expect(page.locator('tbody tr').nth(0).locator('td').nth(2)).toHaveText('Campus');
+  await expect(page.locator('tbody tr').nth(1).locator('td').nth(2)).toHaveText('Admin');
   await expect(page.locator('.online-summary')).toContainText(/2 usuário.*1 campus/);
   await page.getByRole('searchbox').fill('ana@ifpr');
   await expect(page.locator('tbody tr')).toHaveCount(1);
