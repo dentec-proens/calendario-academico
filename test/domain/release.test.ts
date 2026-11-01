@@ -185,18 +185,18 @@ test('explicit technical modality inherits scoped events and the PDF mark depend
   );
   const layout = (record: Parameters<typeof proensLayout>[3]) =>
     proensLayout({ year: 2027, campus: 'Test', periods: [], offers: [] }, [], null, record);
-  assert.match(layout({ status: 'rascunho' }), /RASCUNHO — SEM VALIDADE/);
-  assert.match(layout({}), /RASCUNHO — SEM VALIDADE/);
-  assert.match(layout({ status: 'em_revisao' }), /CÓPIA PARA ANÁLISE DA PROENS/);
-  assert.match(layout({ status: 'devolvido' }), /EM AJUSTE — SEM VALIDADE/);
-  assert.match(layout({ status: 'revisado' }), /REVISADO — AGUARDANDO PUBLICAÇÃO/);
+  assert.match(layout({ status: 'rascunho' }), /Rascunho — sem validade/);
+  assert.match(layout({}), /Rascunho — sem validade/);
+  assert.match(layout({ status: 'em_revisao' }), /Cópia para análise da PROENS/);
+  assert.match(layout({ status: 'devolvido' }), /Em ajuste — sem validade/);
+  assert.match(layout({ status: 'revisado' }), /Revisado — aguardando publicação/);
   const published = layout({ status: 'vigente', seiProcess: '23411.000001/2027-11' });
-  assert.match(published, /PROCESSO SEI Nº 23411\.000001\/2027-11/);
+  assert.match(published, /Processo SEI nº 23411\.000001\/2027-11/);
   assert.doesNotMatch(published, /Sem aprovação oficial/);
-  assert.match(layout({ status: 'revisado' }), /Sem aprovação oficial/);
+  assert.doesNotMatch(layout({ status: 'revisado' }), /Sem aprovação oficial/);
   assert.match(
     layout({ status: 'arquivado', supersededByName: 'Calendário 2027 - Campus Test' }),
-    /SUBSTITUÍDO POR CALENDÁRIO 2027 - CAMPUS TEST/,
+    /Substituído por Calendário 2027 - Campus Test/,
   );
 });
 

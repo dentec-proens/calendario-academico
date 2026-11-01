@@ -140,7 +140,7 @@ test('monthly, bimester, semester and annual weekday counts reconcile, respect o
     assert(html.includes(title));
   assert(html.includes('Seg.'));
   assert(html.includes('Sáb.'));
-  assert(html.includes('26/06/2027 a 02/07/2027'));
+  assert(html.includes('26/06 a 02/07'));
 });
 
 test('annual periods preserve assessment totals without inventing semester boundaries', () => {

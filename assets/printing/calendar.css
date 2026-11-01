@@ -20,6 +20,9 @@
   font-weight: 650;
 }
 .proens-heading small {
+  display: block;
+  margin: 6px 0;
+  font-weight: 650;
   color: #194c8a;
   font-size: 0.8rem;
 }
@@ -423,7 +426,7 @@
     padding: 3px;
   }
   .proens-heading small {
-    font-size: 6pt;
+    font-size: 8pt;
   }
   .proens-month {
     grid-template-columns: 24% 1fr !important;

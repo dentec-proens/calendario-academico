@@ -102,26 +102,37 @@ test('a migrated stage outside its own cycle prints its dates and warns without 
     ),
   ).toBe(true);
   const html = proensLayout(state, state.events, result, null, '');
-  expect(html).toContain('01/02/2027 a 16/04/2027');
+  expect(html).toContain('01/02 a 16/04');
   expect(html).toContain('seu ciclo');
   expect(stage.requirementId).toBe('stage-3:graduacao-2');
 });
 
-test('scope and the normative window are printed for the applicable offer identities', () => {
+test('calendar print keeps only the concise status and the title year, leaving policy details to review', () => {
   const state = calendarOffersV4Fixture();
-  state.offers[1].scope = { status: 'own-regulation' };
-  delete state.offers[2].scope;
-  const html = proensLayout(state, state.events, null, null, '');
-  expect(html).toContain('Licenciatura em Química: norma própria.');
-  expect(html).toContain('Engenharia Elétrica: escopo a conferir antes de afirmar conformidade.');
-  const window = html.match(/<p>Janela do ano letivo:.*?<\/p>/)?.[0] ?? '';
-  expect(window).toContain('01/02/2027 a 17/12/2027');
-  expect(window).toContain('Engenharia Elétrica');
-  expect(window).not.toContain('Licenciatura em Química');
-  for (const offer of state.offers) offer.scope = { status: 'own-regulation' };
-  expect(proensLayout(state, state.events, null, null, '')).not.toContain(
-    '<p>Janela do ano letivo:',
+  const html = proensLayout(state, state.events, evaluateCalendar(state, state.events), {
+    status: 'rascunho',
+    version: 15,
+    currentCatalogueRevision: 2,
+  });
+  expect(html).toContain(
+    'CAMPUS ' +
+      state.campus +
+      '</h2><small class="proens-status-mark" data-status="rascunho">Rascunho — sem validade</small>',
   );
+  expect(html.match(/2027/g)).toHaveLength(1);
+  expect(html).toContain('CALENDÁRIO ACADÊMICO E ADMINISTRATIVO 2027');
+  for (const text of [
+    'Conjunto de regras',
+    'Fonte da política',
+    'Janela do ano letivo',
+    'escopo a conferir',
+    'Proposta preliminar',
+    'Versão 15',
+    'Base institucional',
+    'Sem aprovação oficial',
+    '<p></p>',
+  ])
+    expect(html).not.toContain(text);
 });
 
 test('print and review exports escape offer labels in HTML and preserve human text in the text export', () => {

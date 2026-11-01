@@ -13,7 +13,7 @@ test('a submitted calendar prints as a copy for analysis without approving or ch
     offers: [{ kind: 'graduacao', organization: 'semestral' }],
   });
   const path = '/api/calendars/' + record.id;
-  assert.match(proensLayout(record.state, [], null, record), /RASCUNHO — SEM VALIDADE/);
+  assert.match(proensLayout(record.state, [], null, record), /Rascunho — sem validade/);
   await campus.write(path + '/transition', { action: 'submit' });
   const before = await inspect();
   const reopened = await campus.read(path);
@@ -21,8 +21,8 @@ test('a submitted calendar prints as a copy for analysis without approving or ch
   assert.equal(reopened.readiness.ready, false);
   assert.equal(reopened.readiness.officialApproval, false);
   const html = proensLayout(reopened.state, [], null, reopened);
-  assert.match(html, /CÓPIA PARA ANÁLISE DA PROENS/);
-  assert.match(html, /Sem aprovação oficial/);
+  assert.match(html, /Cópia para análise da PROENS/);
+  assert.doesNotMatch(html, /Sem aprovação oficial/);
   assert.deepEqual(await inspect(), before, 'printing never writes');
   assert.deepEqual(reopened.state, record.state);
   assert.equal(reopened.version, record.version);

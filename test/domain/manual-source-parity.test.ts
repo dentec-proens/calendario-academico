@@ -395,8 +395,8 @@ test('PDF omits manual source text but keeps automatic institutional references 
   expect(html).not.toContain('Fonte a conferir');
   expect(html).toContain('REFERÊNCIA INSTITUCIONAL AUTOMÁTICA');
   expect(html).toContain('01/12/2026');
-  expect(html).toContain('Fonte da política');
-  expect(html).toContain('norma própria');
+  expect(html).not.toContain('Fonte da política');
+  expect(html).not.toContain('norma própria');
 });
 
 test('own-regulation status preserves unconfigured minimums after removing its manual reference', () => {

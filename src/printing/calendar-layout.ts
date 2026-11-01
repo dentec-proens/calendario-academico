@@ -1,31 +1,25 @@
-import { officialApproval, printMark } from '../domain/calendar/lifecycle.ts';
+import { printMark } from '../domain/calendar/lifecycle.ts';
 import { civilDate } from '../domain/civil-date.ts';
 import { automaticEventSource } from '../domain/calendar/counting/core.ts';
 import type { PrintState, PrintResult, PrintRecord, PrintEvent, DistributionRow } from './types.ts';
 import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
 import { categories, eventCategory } from '../domain/calendar/activities/categories.ts';
-import { policyFor } from '../domain/policies/registry.ts';
 import { periodsForOffer } from '../domain/calendar/organization/periods.ts';
-import {
-  associationOffers,
-  calendarOffers,
-  labelFor,
-  offerIds,
-  offerLabel,
-} from '../domain/calendar/offers.ts';
+import { associationOffers, labelFor, offerIds } from '../domain/calendar/offers.ts';
 
 const esc = (s: unknown) =>
   String(s).replace(
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
   );
-const dateLabel = (date: string | undefined) => date?.split('-').reverse().join('/') || '';
+const dateLabel = (date: string | undefined, year?: number) =>
+  (date?.startsWith(`${year}-`) ? date.slice(5) : date)?.split('-').reverse().join('/') || '';
 const fullInterval = (event: PrintEvent) =>
   dateLabel(event.start) + (event.end === event.start ? '' : ` a ${dateLabel(event.end)}`);
 const eventOffers = (state: PrintState, event: PrintEvent) =>
   event.offers?.map((id) => labelFor(state, id)).join(', ') ?? '';
 
-function publicationDetails(event: PrintEvent, includeSource = true) {
+function publicationDetails(event: PrintEvent, year: number, includeSource = true) {
   const labels = [];
   if (event.publicationStatus)
     labels.push(
@@ -37,7 +31,9 @@ function publicationDetails(event: PrintEvent, includeSource = true) {
       first: '1º semestre',
       second: '2º semestre',
     }[event.admission.term];
-    labels.push(`Ingresso ${event.admission.year} — ${term}`);
+    labels.push(
+      `Ingresso${event.admission.year === year ? '' : ` ${event.admission.year}`} — ${term}`,
+    );
     labels.push(
       event.admission.type === 'regular'
         ? 'Processo seletivo regular'
@@ -49,7 +45,7 @@ function publicationDetails(event: PrintEvent, includeSource = true) {
     labels.push(`Fonte: ${source}`);
   if (event.deadlineAdjustment)
     labels.push(
-      `Prazo ajustado declarado: ${dateLabel(event.deadlineAdjustment.date)}; consulte a conferência institucional no parecer`,
+      `Prazo ajustado declarado: ${dateLabel(event.deadlineAdjustment.date, year)}; consulte a conferência institucional no parecer`,
     );
   return labels.length ? `<small>${labels.map(esc).join(' · ')}</small>` : '';
 }
@@ -59,7 +55,7 @@ function externalReferences(state: PrintState, events: PrintEvent[]) {
   if (!rows.length) return '';
   const table = (title: string, items: PrintEvent[]) =>
     items.length
-      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade e finalidade</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${publicationDetails(event, false)}<small>${esc(eventOffers(state, event))}</small>${automaticEventSource(event) ? `<small>Fonte: ${esc(automaticEventSource(event))}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
+      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade e finalidade</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${publicationDetails(event, state.year, false)}<small>${esc(eventOffers(state, event))}</small>${automaticEventSource(event) ? `<small>Fonte: ${esc(automaticEventSource(event))}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
       : '';
   return `<section class="proens-external-references"><h3>Atividades e referências de outros anos</h3><p>As datas integrais são preservadas. Estes registros informativos não alteram a contagem de dias letivos.</p>${table(
     'Publicações previstas',
@@ -86,7 +82,7 @@ function distributionTables(state: PrintState, events: PrintEvent[], result: Pri
     [0, 'Dom.'],
   ];
   const table = (title: string, rows: DistributionRow[]) =>
-    `<table class="teaching-distribution"><caption>${esc(title)}</caption><thead><tr><th scope="col">Intervalo</th>${weekdays.map(([, name]) => `<th scope="col">${name}</th>`).join('')}<th scope="col">Total</th></tr></thead><tbody>${rows.map((r) => `<tr><th scope="row">${esc(r.label)}${r.start && r.end ? `<small>${dateLabel(r.start)} a ${dateLabel(r.end)}</small>` : ''}</th>${weekdays.map(([day]) => `<td>${r.available ? r.byWeekday![day] : '—'}</td>`).join('')}<td><strong>${r.available ? r.total : '—'}</strong></td></tr>`).join('')}</tbody></table>`;
+    `<table class="teaching-distribution"><caption>${esc(title)}</caption><thead><tr><th scope="col">Intervalo</th>${weekdays.map(([, name]) => `<th scope="col">${name}</th>`).join('')}<th scope="col">Total</th></tr></thead><tbody>${rows.map((r) => `<tr><th scope="row">${esc(r.label)}${r.start && r.end ? `<small>${dateLabel(r.start, state.year)} a ${dateLabel(r.end, state.year)}</small>` : ''}</th>${weekdays.map(([day]) => `<td>${r.available ? r.byWeekday![day] : '—'}</td>`).join('')}<td><strong>${r.available ? r.total : '—'}</strong></td></tr>`).join('')}</tbody></table>`;
   return offerIds(state)
     .map((modality) => {
       const report = teachingDayBreakdown(state, events, result, modality);
@@ -107,27 +103,8 @@ export function proensLayout(
   record?: PrintRecord | null,
   logo = '',
 ) {
-  const policy = policyFor(state.year);
   const status = record?.status ?? 'rascunho';
-  const source = policy.review.source;
-  const ruleLabel = policy.rulesetVersion(state);
-  const scopeLabel = policy.scope
-    ? calendarOffers(state)
-        .map(
-          (offer) =>
-            `${offerLabel(offer)}: ${policy.excludes(offer) || offer.scope?.status === 'own-regulation' ? 'norma própria' : offer.scope?.status === 'covered' ? 'escopo confirmado' : 'escopo a conferir antes de afirmar conformidade'}.`,
-        )
-        .join(' ')
-    : '';
-  const window = policy.window(state);
-  const windowOffers = window
-    ? calendarOffers(state)
-        .filter((offer) => policy.window({ ...state, offers: [offer] }) !== null)
-        .map(offerLabel)
-    : [];
-  const windowLabel = window
-    ? `<p>Janela do ano letivo: ${dateLabel(window.start)} a ${dateLabel(window.end)}; início até ${dateLabel(window.latestStart)}. Ofertas: ${esc(windowOffers.join(', '))}. ${esc(window.basis)}.</p>`
-    : '';
+  const details = [record?.courses, record?.classes, record?.shifts].filter(Boolean).join(' · ');
   const byOffer = result?.byOffer;
   const ledger = new Map(result?.ledger.map((d) => [d.date, d]) || []),
     boundary = new Set(state.periods.flatMap((p) => [p.start, p.end]));
@@ -212,7 +189,7 @@ export function proensLayout(
           b = e.end.startsWith(prefix) ? Number(e.end.slice(8)) : length;
         const crossesYear = e.start < `${state.year}-01-01`;
         const scope = eventOffers(state, e);
-        return `<tr><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(e.name)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e)}${(state.offers || !e.institutional) && scope ? ' [' + esc(scope) + ']' : ''}</td></tr>`;
+        return `<tr><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(e.name)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e, state.year)}${(state.offers || !e.institutional) && scope ? ' [' + esc(scope) + ']' : ''}</td></tr>`;
       });
     const middle = Math.max(6, Math.ceil(entries.length / 2)),
       columns = [entries.slice(0, middle), entries.slice(middle)];
@@ -224,7 +201,7 @@ export function proensLayout(
           `<table class="event-grid"><thead><tr><th>Dia(s)</th><th>Descrição</th></tr></thead><tbody>${column.join('')}</tbody></table>`,
       )
       .join('');
-    return `<section class="proens-month"><div><h3>${name} ${state.year}</h3><table class="month-grid"><thead><tr>${['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d) => '<th>' + d + '</th>').join('')}</tr></thead><tbody>${rows}</tbody></table><p class="monthly-total">${result ? total : '—'} dias letivos</p></div><div><h3>${name} ${state.year}</h3><div class="event-columns">${eventTables}</div></div></section>`;
+    return `<section class="proens-month"><div><h3>${name}</h3><table class="month-grid"><thead><tr>${['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d) => '<th>' + d + '</th>').join('')}</tr></thead><tbody>${rows}</tbody></table><p class="monthly-total">${result ? total : '—'} dias letivos</p></div><div><h3>${name}</h3><div class="event-columns">${eventTables}</div></div></section>`;
   }).join('');
   const countRows = state.periods
     .map((p) => {
@@ -243,11 +220,11 @@ export function proensLayout(
     })
     .join('');
   const dayDistribution = distributionTables(state, events, result);
-  return `<div class="proens-document"><div class="proens-heading"><img class="ifpr-logo" src="${esc(logo)}" alt="Instituto Federal do Paraná"><strong>INSTITUTO FEDERAL DO PARANÁ</strong><h2>CALENDÁRIO ACADÊMICO E ADMINISTRATIVO ${state.year}</h2><h2>CAMPUS ${esc(state.campus)}</h2><p>${esc(
+  return `<div class="proens-document"><div class="proens-heading"><img class="ifpr-logo" src="${esc(logo)}" alt="Instituto Federal do Paraná"><strong>INSTITUTO FEDERAL DO PARANÁ</strong><h2>CALENDÁRIO ACADÊMICO E ADMINISTRATIVO ${state.year}</h2><h2>CAMPUS ${esc(state.campus)}</h2><small class="proens-status-mark" data-status="${status}">${esc(printMark(status, { seiProcess: record?.seiProcess, supersededByName: record?.supersededByName }))}</small><p>${esc(
     offerIds(state)
       .map((m) => labelFor(state, m))
       .join(' + '),
-  )}</p><p>${esc(record?.courses || '')} ${record?.classes ? ' · ' + esc(record.classes) : ''} ${record?.shifts ? ' · ' + esc(record.shifts) : ''}</p><small class="proens-status-mark" data-status="${status}">${esc(printMark(status, { seiProcess: record?.seiProcess, supersededByName: record?.supersededByName }).toUpperCase())} · ${status === 'vigente' ? 'Calendário vigente' : 'Proposta preliminar'} · Versão ${record?.version ?? 'local'}${record ? ' · Base institucional ' + (record.currentCatalogueRevision ?? 'a conferir') : ''}${officialApproval(status) ? '' : ' · Sem aprovação oficial'}</small><p>Conjunto de regras: ${esc(ruleLabel)}.${ruleLabel.startsWith('unconfigured:') ? ' Escopo sem norma configurada.' : ` Fonte da política: ${esc(source.norm)} (${esc(source.id)}).`} ${esc(scopeLabel)} Planejamento e execução são conferidos separadamente.</p>${windowLabel}</div>${months}${externalReferences(state, events)}<section class="proens-summary"><h3>Legendas e contagem</h3><p>Marcação gráfica de dias: ${esc(labelFor(state, offerIds(state)[0] ?? ''))}.</p>${
+  )}</p>${details ? `<p>${esc(details)}</p>` : ''}</div>${months}${externalReferences(state, events)}<section class="proens-summary"><h3>Legendas e contagem</h3><p>Marcação gráfica de dias: ${esc(labelFor(state, offerIds(state)[0] ?? ''))}.</p>${
     byOffer
       ? `<table><thead><tr><th>Oferta</th><th>Total anual</th><th>Períodos</th></tr></thead><tbody>${Object.entries(
           byOffer,

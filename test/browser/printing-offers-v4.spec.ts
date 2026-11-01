@@ -68,10 +68,23 @@ for (const width of [1440, 390]) {
     await page.setContent(
       `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Calendário de referência v4</title><style>${styles.join('\n').replace(/@import[^;]+;/g, '')}</style></head><body><main class="main-column"><section id="calendar" class="view"><div class="panel"><div id="months">${html}</div></div></section></main></body></html>`,
     );
+    await expect(page.locator('.proens-status-mark')).toHaveText('Rascunho — sem validade');
+    await expect(page.locator('.proens-heading')).not.toContainText('Conjunto de regras');
+    await expect(page.locator('.proens-heading')).not.toContainText('Janela do ano letivo');
+    await expect(page.locator('.proens-month h3')).toHaveText(
+      Array.from({ length: 12 }, (_, month) =>
+        new Date(Date.UTC(2027, month, 1)).toLocaleDateString('pt-BR', {
+          month: 'long',
+          timeZone: 'UTC',
+        }),
+      ).flatMap((month) => [month, month]),
+    );
+    await page.screenshot({ path: testInfo.outputPath('calendar-preview.png') });
     await page.emulateMedia({ media: 'print' });
+    await page.screenshot({ path: testInfo.outputPath('calendar-print.png') });
     const october = page
       .locator('.proens-month')
-      .filter({ has: page.getByRole('heading', { name: 'outubro 2027', exact: true }) });
+      .filter({ has: page.getByRole('heading', { name: 'outubro', exact: true }) });
     await expect(
       october
         .locator('.event-grid tr')
@@ -132,6 +145,10 @@ for (const width of [1440, 390]) {
         '15/12/2026 a 12/01/2027',
       ])
         expect(text).toContain(label);
+      expect(text).toContain('Rascunho — sem validade');
+      expect(text).not.toContain('Proposta preliminar');
+      expect(text).not.toContain('Janela do ano letivo');
+      expect(text).not.toContain('outubro 2027');
       expect(text).not.toContain('undefined');
     } finally {
       await task.destroy();

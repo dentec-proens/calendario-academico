@@ -302,7 +302,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
     }
     const text = contents.join(' ').replace(/\s+/g, ' ');
     expect(text).toContain(`CALENDÁRIO ACADÊMICO E ADMINISTRATIVO ${year}`);
-    expect(text).toContain('RASCUNHO — SEM VALIDADE');
+    expect(text).toContain('Rascunho — sem validade');
     expect(text).toContain(marker);
   } finally {
     await pdfTask.destroy();

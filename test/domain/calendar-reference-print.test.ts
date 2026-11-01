@@ -78,7 +78,7 @@ test('print keeps full dates and execution outside the annual grid without manua
 test('an empty calendar has no fabricated historical section or execution certification', () => {
   const html = proensLayout(state, [], null, null, '');
   expect(html).not.toContain('Atividades e referências de outros anos');
-  expect(html).toContain('Sem aprovação oficial');
+  expect(html).toContain('Rascunho — sem validade');
   expect(proensLayout(state, [], null, { status: 'rascunho' }, '')).not.toContain('undefined');
 });
 
