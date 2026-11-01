@@ -1,5 +1,6 @@
 import { scryptAsync } from '@noble/hashes/scrypt.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
+import { fail } from './lib/shared';
 
 const legacyPrefix = 'dentec-scrypt-v1';
 const currentPrefix = 'dentec-scrypt-v2';
@@ -8,7 +9,7 @@ const hashPattern = /^[a-f0-9]{128}$/i;
 
 export function validatePassword(password: unknown): asserts password is string {
   if (typeof password !== 'string' || password.length < 10 || password.length > 128)
-    throw Error('A senha deve ter entre 10 e 128 caracteres.');
+    fail('A senha deve ter entre 10 e 128 caracteres.');
 }
 
 export function legacySecret(salt: string, hash: string) {

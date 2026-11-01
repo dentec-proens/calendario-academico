@@ -42,23 +42,22 @@ export const createMemberRecord = internalMutation({
     const email = institutionalEmail(data.email);
     const role = data.role ?? 'CAMPUS';
     const loginMethod = data.loginMethod || 'local';
-    if (!['ADMIN', 'CAMPUS', 'PARECERISTA'].includes(role)) throw Error('Perfil inválido.');
-    if (!['local', 'google', 'invite'].includes(loginMethod))
-      throw Error('Forma de acesso inválida.');
+    if (!['ADMIN', 'CAMPUS', 'PARECERISTA'].includes(role)) fail('Perfil inválido.');
+    if (!['local', 'google', 'invite'].includes(loginMethod)) fail('Forma de acesso inválida.');
     if (typeof data.name !== 'string' || !data.name.trim() || data.name.length > 240)
-      throw Error('Campo obrigatório ou texto muito longo.');
+      fail('Campo obrigatório ou texto muito longo.');
     const prior = await ctx.db
       .query('users')
       .withIndex('email', (q) => q.eq('email', email))
       .take(2);
-    if (prior.length) throw Error('E-mail já cadastrado.');
+    if (prior.length) fail('E-mail já cadastrado.');
     if (role === 'CAMPUS') {
       const campusId = data.campusId;
-      if (!campusId) throw Error('Campus inválido.');
+      if (!campusId) fail('Campus inválido.');
       const campus = await ctx.db.get(campusId);
-      if (!campus || campus.archived) throw Error('Campus inválido.');
+      if (!campus || campus.archived) fail('Campus inválido.');
     }
-    if (loginMethod === 'local' && !secret) throw Error('Informe a senha.');
+    if (loginMethod === 'local' && !secret) fail('Informe a senha.');
     const id = await ctx.db.insert('users', {
       name: data.name.trim(),
       email,

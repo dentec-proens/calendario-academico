@@ -292,6 +292,44 @@ test('native account creation checks administrator access before validating cred
   assert.equal((await client.run((ctx) => ctx.db.query('authAccounts').collect())).length, 2);
 });
 
+test('member creation exposes expected validation errors through the public action without partial writes', async () => {
+  const { client, asAdmin, campus } = await fixture();
+  const data = {
+    name: 'Conta sintética',
+    email: 'new-member@ifpr.edu.br',
+    password: 'synthetic-password',
+    role: 'CAMPUS' as const,
+    campusId: campus.user.campusId!,
+    loginMethod: 'local' as const,
+  };
+  for (const [changes, message] of [
+    [{ email: 'external@gmail.com' }, 'Use um e-mail @ifpr.edu.br.'],
+    [{ email: campus.user.email }, 'E-mail já cadastrado.'],
+    [{ campusId: undefined }, 'Campus inválido.'],
+    [{ name: ' ' }, 'Campo obrigatório ou texto muito longo.'],
+    [{ password: 'short' }, 'A senha deve ter entre 10 e 128 caracteres.'],
+  ] as const) {
+    await assert.rejects(
+      asAdmin.action(api.access.members.createMember, { data: { ...data, ...changes } }),
+      (error: unknown) =>
+        error instanceof ConvexError && error.data?.status === 400 && error.data.error === message,
+    );
+    assert.equal((await client.run((ctx) => ctx.db.query('users').take(10))).length, 2);
+    assert.equal((await client.run((ctx) => ctx.db.query('authAccounts').take(10))).length, 2);
+    assert.equal((await client.run((ctx) => ctx.db.query('audit').take(10))).length, 0);
+    assert.equal((await client.run((ctx) => ctx.db.query('operationalLeases').take(10))).length, 0);
+  }
+  const created = await asAdmin.action(api.access.members.createMember, {
+    data: { ...data, email: ' NEW-MEMBER@IFPR.EDU.BR ' },
+  });
+  assert.equal(created.email, 'new-member@ifpr.edu.br');
+  const signedIn = await client.action(api.auth.signIn, {
+    provider: 'password',
+    params: { flow: 'signIn', email: created.email, password: data.password },
+  });
+  assert.ok(signedIn.tokens!.token);
+});
+
 test('reissued native invitations invalidate earlier tokens and clear activation metadata', async () => {
   const { client, asAdmin, campus } = await fixture();
   const invited = await asAdmin.action(api.access.members.createMember, {

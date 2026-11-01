@@ -3,14 +3,15 @@ import type { QueryCtx, MutationCtx } from '../_generated/server';
 import type { Member, PublicMember } from './contracts';
 import { getAuthSessionId, getAuthUserId } from '@convex-dev/auth/server';
 import { ConvexError } from 'convex/values';
+import { fail } from '../lib/shared';
 
 export type Context = QueryCtx | MutationCtx;
 
 export function institutionalEmail(value: unknown): string {
-  if (typeof value !== 'string') throw Error('Use um e-mail @ifpr.edu.br.');
+  if (typeof value !== 'string') fail('Use um e-mail @ifpr.edu.br.');
   const email = value.trim().toLowerCase();
   if (email.length > 240 || !/^[^\s@]+@ifpr\.edu\.br$/.test(email))
-    throw Error('Use um e-mail @ifpr.edu.br.');
+    fail('Use um e-mail @ifpr.edu.br.');
   return email;
 }
 
