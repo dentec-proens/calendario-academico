@@ -4,6 +4,8 @@ export interface ConfirmationOptions {
   title: string;
   description: string;
   consequence?: string;
+  /** What the decision covers item by item, such as the issues still open. */
+  items?: readonly string[];
   intent?: DialogIntent;
   confirmLabel: string;
   cancelLabel?: string;

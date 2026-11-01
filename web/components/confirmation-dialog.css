@@ -51,6 +51,17 @@
   margin: 0 0 16px;
   line-height: 1.6;
 }
+.confirmation-dialog__items {
+  margin: 12px 0 0;
+  padding: 10px 12px 10px 30px;
+  border: 1px solid var(--ui-border-soft);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface-subtle);
+  font-size: 0.875rem;
+}
+.confirmation-dialog__items > li + li {
+  margin-top: 6px;
+}
 .confirmation-dialog__consequence.ui-notice {
   margin: 12px 0 0;
 }

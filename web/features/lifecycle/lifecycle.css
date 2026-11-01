@@ -118,7 +118,6 @@
   background: var(--ui-action-soft);
   color: var(--ui-action);
 }
-.editor-lifecycle,
 .review-lifecycle {
   margin-block: 4px 16px;
 }

@@ -227,8 +227,20 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
 
   await page.locator('[data-view="issues"]').click();
   const submit = page.locator('[data-lifecycle-action="submit"]');
+  // Open content issues never block the submission; they are listed for an explicit decision.
+  await expect(submit).toBeEnabled();
+  await expect(page.locator('#lifecycle-submit-issues')).toContainText(
+    /\d+ pendências de conteúdo/,
+  );
   await submit.click();
-  await expect(page.locator('dialog.confirmation-dialog--primary[open]')).toBeVisible();
+  await expect(page.locator('dialog.confirmation-dialog--warning[open] h2')).toHaveText(
+    /^Enviar com \d+ pendências\?$/,
+  );
+  await expect(page.locator('.confirmation-dialog__items li')).toHaveCount(7);
+  await expect(page.locator('.confirmation-dialog__items li').last()).toHaveText(
+    /^E mais \d+ pendências na etapa Revisão e conclusão\.$/,
+  );
+  await expect(page.locator('.confirmation-dialog__confirm')).toHaveText('Enviar mesmo assim');
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.keyboard.press('Escape');

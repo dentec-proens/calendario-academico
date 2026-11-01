@@ -69,6 +69,9 @@ const icons: Partial<Record<LifecycleAction, typeof Send>> = {
   reinstate: ArchiveRestore,
 };
 
+const shownIssues = 6;
+const pendencies = (count: number) => `${count} ${count === 1 ? 'pendência' : 'pendências'}`;
+
 /** Order in which the actions appear; the review starts on its own with the first save. */
 const offered: LifecycleAction[] = [
   'submit',
@@ -92,6 +95,9 @@ export default function LifecycleActions({
   prepare,
   submitSummary,
   guard,
+  unavailable,
+  submitIssues = [],
+  issuesLink,
   className = '',
 }: {
   calendar: LifecycleCalendar;
@@ -103,6 +109,12 @@ export default function LifecycleActions({
   submitSummary?: string;
   /** A reason to refuse every action now, such as unsaved work in the review form. */
   guard?: () => string | undefined;
+  /** Why an offered action cannot run now: the button stays visible, disabled, with the reason. */
+  unavailable?: Partial<Record<LifecycleAction, string>>;
+  /** Content issues still open: submitting stays possible, after confirming them one by one. */
+  submitIssues?: readonly string[];
+  /** Where the open issues are reviewed, shown beside their count. */
+  issuesLink?: ReactNode;
   className?: string;
 }) {
   const [form, setForm] = useState<'return' | 'publish' | null>(null);
@@ -116,6 +128,16 @@ export default function LifecycleActions({
       : 'skip',
   );
   if (!actions.length) return null;
+  const issueCount = pendencies(submitIssues.length);
+  // The dialog lists the first issues only; its buttons stay in view and the rest are a step away.
+  const listedIssues =
+    submitIssues.length > shownIssues
+      ? [
+          ...submitIssues.slice(0, shownIssues),
+          `E mais ${pendencies(submitIssues.length - shownIssues)} na etapa Revisão e conclusão.`,
+        ]
+      : submitIssues;
+  const submitNote = actions.includes('submit') && !unavailable?.submit && submitIssues.length > 0;
   const uncovered = [...new Set(preview?.replaced.flatMap((item) => item.uncovered) ?? [])].map(
     (kind) => modalityLabels[kind],
   );
@@ -147,6 +169,7 @@ export default function LifecycleActions({
         description: `Este calendário não inclui ${uncovered.join(', ')}, atendidos pelo calendário vigente que ele substituirá.`,
         consequence: 'Ao publicá-lo, esses tipos de oferta ficarão sem calendário vigente.',
         intent: 'warning',
+        items: listedIssues,
         confirmLabel: 'Confirmar substituição parcial e enviar',
         pendingLabel: 'Registrando…',
         onConfirm: () => perform('submit', { partial: true }),
@@ -158,6 +181,19 @@ export default function LifecycleActions({
       return;
     }
     const confirmation = confirmations[action]!;
+    if (action === 'submit' && submitIssues.length) {
+      void confirmAction({
+        title: `Enviar com ${issueCount}?`,
+        description: `${confirmation.description} Com as pendências abaixo, a PROENS pode devolvê-lo para ajustes.`,
+        items: listedIssues,
+        consequence: [submitSummary, confirmation.consequence].filter(Boolean).join(' '),
+        intent: 'warning',
+        confirmLabel: 'Enviar mesmo assim',
+        pendingLabel: 'Registrando…',
+        onConfirm: () => perform(action),
+      });
+      return;
+    }
     void confirmAction({
       title: `${actionLabels[action]}?`,
       description: confirmation.description,
@@ -190,13 +226,21 @@ export default function LifecycleActions({
       <div className="actions">
         {actions.map((action) => {
           const Icon = icons[action] ?? Send;
+          const reason = unavailable?.[action];
           return (
             <Button
               key={action}
               type="button"
               data-lifecycle-action={action}
               variant={action === 'return' || action === 'withdraw' ? 'secondary' : 'primary'}
-              disabled={pending}
+              disabled={pending || !!reason}
+              aria-describedby={
+                reason
+                  ? `lifecycle-${action}-unavailable`
+                  : action === 'submit' && submitNote
+                    ? 'lifecycle-submit-issues'
+                    : undefined
+              }
               aria-expanded={
                 action === 'return' || action === 'publish' ? form === action : undefined
               }
@@ -207,6 +251,18 @@ export default function LifecycleActions({
           );
         })}
       </div>
+      {actions.map((action) =>
+        unavailable?.[action] ? (
+          <p key={action} id={`lifecycle-${action}-unavailable`} className="lifecycle-unavailable">
+            {unavailable[action]}
+          </p>
+        ) : null,
+      )}
+      {submitNote ? (
+        <p id="lifecycle-submit-issues" className="lifecycle-unavailable">
+          {issueCount} de conteúdo. {issuesLink}
+        </p>
+      ) : null}
       {form === 'return' ? (
         <ReturnForm
           pending={pending}

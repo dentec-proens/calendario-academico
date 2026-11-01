@@ -19,7 +19,7 @@ for (const width of [1440, 390]) {
       'Semana letiva',
     );
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-    await expect(page.locator('.editor-calendar-details dt')).toHaveText(['Forma de oferta/nível']);
+    await expect(page.getByRole('list', { name: 'Formas de oferta e níveis' })).toBeVisible();
     await expect(page.locator('#campus, #year')).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Identificação', exact: true })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Semana letiva', exact: true })).toHaveCount(1);
@@ -133,6 +133,16 @@ test('secondary actions support the keyboard and the mobile step picker follows 
   await page.keyboard.press('Escape');
   await expect(toggle).toBeFocused();
   await expect(page.locator('.editor-more-content')).toBeHidden();
+  // The stacked header puts the menu on the left; it must still open inside the viewport.
+  for (const width of [850, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await toggle.click();
+    const box = (await page.locator('.editor-more-content').boundingBox())!;
+    expect(box.x, `${width}px`).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width, `${width}px`).toBeLessThanOrEqual(width);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.editor-more-content')).toBeHidden();
+  }
   await page.setViewportSize({ width: 390, height: 844 });
   const steps = page.locator('.editor-step-menu');
   await expect(steps).not.toHaveAttribute('open');

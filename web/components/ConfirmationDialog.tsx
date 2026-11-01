@@ -95,6 +95,13 @@ function ConfirmationDialog({ request }: { request: ConfirmationRequest }) {
         <h2 id={`${id}-title`}>{request.title}</h2>
         <div id={`${id}-description`}>
           <p>{request.description}</p>
+          {request.items?.length ? (
+            <ul className="confirmation-dialog__items">
+              {request.items.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </ul>
+          ) : null}
           {request.consequence ? (
             <Notice tone="warning" className="confirmation-dialog__consequence">
               {request.consequence}

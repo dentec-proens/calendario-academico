@@ -52,48 +52,69 @@
 .calendar-editor-content .editor-back {
   margin: 0;
 }
+/* Title and its data on the left; actions on the right, the lifecycle action last. A lifecycle
+   form (return, publish) or the reason an action is unavailable opens below, at full width. */
 .editor-intro {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 0 0 16px;
-}
-.editor-title-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 14px;
+  row-gap: 12px;
+  margin: 0 0 16px;
+  padding: 4px 0 18px;
+  border-bottom: 1px solid var(--line);
 }
 .editor-heading-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 18px;
+  display: grid;
+  gap: 8px;
   min-width: 0;
+  padding-right: 24px;
 }
-.editor-title-row h1 {
+.editor-heading-group h1 {
   font-size: 1.65rem;
-  line-height: 1.3;
+  line-height: 1.25;
   margin: 0;
+  overflow-wrap: anywhere;
 }
-.editor-intro #record-heading {
+.editor-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
-  margin: 0;
+  gap: 6px 12px;
   color: var(--ui-muted);
   font-size: 0.875rem;
 }
-.editor-heading-status {
-  white-space: nowrap;
-}
 .editor-header-actions {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-shrink: 0;
+}
+.calendar-editor-content .editor-header-actions > .editor-action {
+  min-height: 44px;
+}
+.editor-header-actions > .editor-action[data-status='active'] {
+  background: var(--ui-action-soft);
+}
+.editor-lifecycle {
+  display: contents;
+}
+.editor-lifecycle > .actions {
+  grid-column: 3;
+  grid-row: 1;
+  justify-content: flex-end;
+  margin-left: 8px;
+}
+.editor-lifecycle > :not(.actions) {
+  grid-column: 1 / -1;
+}
+.editor-lifecycle > .lifecycle-unavailable {
+  justify-self: end;
+  max-width: 48ch;
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+  text-align: right;
 }
 .calendar-editor-content .editor-action,
 .editor-step-footer button,
@@ -334,31 +355,6 @@
 }
 /* Offers share the editor's existing surface; only dividers separate their forms. */
 
-.editor-calendar-details {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-  margin: 0 0 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
-}
-.editor-calendar-details > div {
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-}
-.editor-calendar-details dt {
-  color: var(--ui-muted);
-  font-size: 0.8125rem;
-}
-.editor-calendar-details dd {
-  margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
 .editor-offer-list {
   display: flex;
   flex-wrap: wrap;
@@ -455,18 +451,37 @@
   grid-template-columns: 190px minmax(0, 1fr);
 }
 @media (max-width: 850px) {
-  .editor-calendar-details {
-    grid-template-columns: minmax(0, 2fr) minmax(80px, 1fr);
-    gap: 16px 18px;
-  }
   .editor-intro {
-    align-items: flex-start;
+    grid-template-columns: auto minmax(0, 1fr);
   }
-  .editor-title-row h1 {
+  .editor-heading-group {
+    grid-column: 1 / -1;
+    padding-right: 0;
+  }
+  .editor-heading-group h1 {
     font-size: 1.4rem;
   }
-  .editor-header-actions > .editor-action span {
-    display: none;
+  .editor-header-actions {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .editor-lifecycle > .actions {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  /* The menu now sits on the left: it opens from the header's left edge, within its width. */
+  .editor-intro {
+    position: relative;
+  }
+  .editor-more {
+    position: static;
+  }
+  .editor-more-content {
+    top: auto;
+    right: auto;
+    left: 0;
+    max-width: 100%;
+    margin-top: 7px;
   }
   .calendar-editor-content .editor-sections-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -497,7 +512,7 @@
     padding-top: 6px;
     padding-bottom: 6px;
   }
-  .editor-intro #record-heading {
+  .editor-meta {
     font-size: 0.8125rem;
   }
   .editor-section-heading,
@@ -520,15 +535,11 @@
   }
 }
 @media (max-width: 480px) {
-  .editor-intro {
-    gap: 12px;
-    padding: 0 0 14px;
-  }
-  .editor-header-actions {
-    gap: 5px;
-  }
   .calendar-editor-content .editor-header-actions > .editor-action {
     padding: 11px;
+  }
+  .editor-header-actions > .editor-action span {
+    display: none;
   }
   .editor-review-metrics {
     grid-template-columns: minmax(0, 1fr);
@@ -536,7 +547,6 @@
 }
 @media print {
   .editor-intro,
-  .editor-calendar-details,
   .editor-sidebar,
   .editor-step-footer,
   .editor-section-heading {

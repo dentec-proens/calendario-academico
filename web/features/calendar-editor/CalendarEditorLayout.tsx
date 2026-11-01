@@ -19,6 +19,7 @@ import { confirmAction } from '../../components/confirmation.ts';
 import { editorSections } from '#src/app/routes.ts';
 import { editorPages, editorSteps, editorNavigation, continueLabel } from './editor-steps.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
+import { contentIssues } from '#src/domain/calendar/readiness.ts';
 import EditorSteps from './EditorSteps.tsx';
 import TeachingDaySummary from './TeachingDaySummary.tsx';
 import BaseUpdateCard from './BaseUpdateCard.tsx';
@@ -40,6 +41,7 @@ function EditorFrame() {
     error,
     remote,
     connected,
+    baseUpdate,
     session,
     evaluation,
     readOnly,
@@ -123,6 +125,20 @@ function EditorFrame() {
       : !connected || remote
         ? 'warning'
         : 'info';
+  const openIssues = useMemo(
+    () => contentIssues(state, record.institutionalSnapshot).map((issue) => issue.message),
+    [state, record.institutionalSnapshot],
+  );
+  // The backend refuses these submissions too; saying why beats an error after confirming.
+  const submitUnavailable = !connected
+    ? 'Sem conexão. O envio volta a ficar disponível quando a conexão for restabelecida.'
+    : !baseUpdate.compatible
+      ? 'Incorpore a atualização da base institucional antes de enviar.'
+      : remote
+        ? 'O calendário mudou em outra sessão. Reabra-o antes de enviar.'
+        : status === 'error' || status === 'blocked'
+          ? 'Resolva o salvamento das alterações antes de enviar.'
+          : undefined;
   const saveLabel = readOnly
     ? 'Somente leitura'
     : !connected
@@ -155,23 +171,25 @@ function EditorFrame() {
       )}
       <div className="editor-intro">
         <div className="editor-heading-group">
-          <div className="editor-title-row">
-            <h1 id="record-title" tabIndex={-1}>
-              {record.name}
-            </h1>
-          </div>
-          <p id="record-heading">
+          <h1 id="record-title" tabIndex={-1}>
+            {record.name}
+          </h1>
+          <div id="record-heading" className="editor-meta">
             <StatusBadge status={record.status} />
-            {record.seiProcess ? (
-              <span className="editor-heading-status"> · Processo SEI nº {record.seiProcess}</span>
-            ) : null}
+            {record.seiProcess ? <span>Processo SEI nº {record.seiProcess}</span> : null}
             {record.supersededByName ? (
-              <span className="editor-heading-status">
-                {' '}
-                · Substituído por {record.supersededByName}
-              </span>
+              <span>Substituído por {record.supersededByName}</span>
             ) : null}
-          </p>
+            <ul
+              id="selected-modalities"
+              className="editor-offer-list"
+              aria-label="Formas de oferta e níveis"
+            >
+              {offerIds(state).map((item) => (
+                <li key={item}>{labelFor(state, item)}</li>
+              ))}
+            </ul>
+          </div>
         </div>
         <div className="editor-header-actions">
           <Link
@@ -180,9 +198,9 @@ function EditorFrame() {
             params={{ calendarId: record.id }}
             search={(previous) => previous}
             data-view="calendar"
-            aria-label={editorPages.calendar.title}
+            title={editorPages.calendar.title}
           >
-            <Eye aria-hidden="true" /> <span>{editorPages.calendar.title}</span>
+            <Eye aria-hidden="true" /> <span>Visualizar</span>
           </Link>
           <details
             className="editor-more"
@@ -242,21 +260,34 @@ function EditorFrame() {
             </div>
           </details>
         </div>
+        {permissions.editCalendars ? (
+          <LifecycleActions
+            className="editor-lifecycle"
+            calendar={record}
+            role={role}
+            notify={notify}
+            submitSummary={returned ? diffSummary(sinceReturn) : undefined}
+            unavailable={submitUnavailable ? { submit: submitUnavailable } : undefined}
+            submitIssues={openIssues}
+            issuesLink={
+              currentSection === 'issues' ? null : (
+                <Link
+                  to={editorPages.issues.path}
+                  params={{ calendarId: record.id }}
+                  search={(previous) => previous}
+                >
+                  Conferir
+                </Link>
+              )
+            }
+            prepare={async () => {
+              if (session.getSnapshot().unapplied)
+                throw new Error('Aplique ou descarte os campos em edição antes de enviar.');
+              return (await session.flush()).version;
+            }}
+          />
+        ) : null}
       </div>
-      {permissions.editCalendars ? (
-        <LifecycleActions
-          className="editor-lifecycle"
-          calendar={record}
-          role={role}
-          notify={notify}
-          submitSummary={returned ? diffSummary(sinceReturn) : undefined}
-          prepare={async () => {
-            if (session.getSnapshot().unapplied)
-              throw new Error('Aplique ou descarte os campos em edição antes de enviar.');
-            return (await session.flush()).version;
-          }}
-        />
-      ) : null}
       {locked && permissions.editCalendars ? (
         <p className="help" id="editor-locked">
           {record.status === 'vigente'
@@ -278,18 +309,6 @@ function EditorFrame() {
       ) : record.status === 'rascunho' && record.lastReturn ? (
         <ReturnNote lastReturn={record.lastReturn} />
       ) : null}
-      <dl className="editor-calendar-details" aria-label="Dados gerais do calendário">
-        <div>
-          <dt>Forma de oferta/nível</dt>
-          <dd id="selected-modalities">
-            <ul className="editor-offer-list" aria-label="Formas de oferta e níveis">
-              {offerIds(state).map((item) => (
-                <li key={item}>{labelFor(state, item)}</li>
-              ))}
-            </ul>
-          </dd>
-        </div>
-      </dl>
       <div className="editor-feedback" ref={feedback}>
         <div id="message" role="status" aria-live="polite">
           {message?.text ? (
