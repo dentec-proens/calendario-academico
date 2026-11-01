@@ -70,7 +70,7 @@ test('calendar authorship distinguishes creation from content edits without expo
   await campus.mutation(api.calendars.deleteCalendar, { id: created.id, version: saved.version });
   const trash = await campus.query(api.calendars.trash, {});
   assert.equal(trash.calendars[0].updatedByName, 'Admin');
-  await campus.mutation(api.calendars.restoreCalendar, { id: created.id });
+  await campus.mutation(api.calendars.restoreCalendar, { id: created.id, version: saved.version });
   assert.equal((await page()).page[0].updatedByName, 'Admin');
 
   const foreign = await asClient('campus-b').query(api.calendars.calendarPage, {
@@ -103,7 +103,8 @@ test('legacy authorship uses recorded labels and never guesses a missing creator
       campusId: ids.campuses.a,
       year: 2027,
       offerKinds: ['integrado'],
-      purpose: 'test',
+      status: 'rascunho' as const,
+      statusRevision: 0,
       courses: 'Calendário anterior',
       classes: '',
       shifts: '',

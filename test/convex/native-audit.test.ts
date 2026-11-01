@@ -29,7 +29,8 @@ async function fixture() {
     const fields = {
       year: 2027,
       offerKinds: ['integrado' as const],
-      purpose: 'test' as const,
+      status: 'rascunho' as const,
+      statusRevision: 0,
       courses: 'Teste',
       classes: '',
       shifts: '',

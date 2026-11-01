@@ -60,10 +60,8 @@ export default function ReviewQueue({ items }: { items: QueueItem[] }) {
               {calendar.submission ? (
                 <small data-submission={calendar.submission.sequence}>
                   Envio {calendar.submission.sequence}
-                  {calendar.submission.resubmission
-                    ? ` · reenvio ${calendar.submission.sequence - 1}`
-                    : ''}{' '}
-                  · {updatedLabel(calendar.submission.submittedAt)}
+                  {calendar.submission.resubmission ? ' · reenvio' : ''} ·{' '}
+                  {updatedLabel(calendar.submission.submittedAt)}
                 </small>
               ) : null}
               <p className="review-queue-offering">

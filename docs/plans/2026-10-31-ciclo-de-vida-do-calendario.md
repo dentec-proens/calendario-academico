@@ -2,7 +2,7 @@
 
 Data: 31/10/2026.
 
-Status: release 1 (alargar) implementada em 01/11/2026, sem o destaque na grade dos dias alterados, previsto para uma segunda etapa. A operação de nível 2 (exclusão do histórico) e a release 2 (estreitar) continuam pendentes.
+Status: concluído em 01/11/2026, salvo o destaque na grade dos dias alterados, previsto para uma segunda etapa. A release 1 foi publicada com a migração `calendarPurposeToStatus` (39 calendários); a operação de nível 2 apagou 218 versões e 218 snapshots do histórico em produção, depois de ensaio sobre o backup restaurado; a release 2 estreita o schema.
 
 ## Objetivo e decisões de escopo
 

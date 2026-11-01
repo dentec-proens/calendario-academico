@@ -60,7 +60,7 @@ const actor = (user: Member) => ({ id: user.id, name: user.name });
 export async function applyTransition(ctx: MutationCtx, user: Member, request: TransitionRequest) {
   const loaded = await baseRecord(ctx, user, request.id);
   const { row, status, content, review, readiness, compatibility, record } = loaded;
-  const statusRevision = row.statusRevision ?? 0;
+  const statusRevision = row.statusRevision;
   if (status !== request.from || statusRevision !== request.statusRevision)
     fail('A situação do calendário mudou em outra sessão. Atualize antes de continuar.', 409);
   const current =
@@ -150,6 +150,8 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
     case 'reopen': {
       const submission = await submissionRow(ctx, row.currentSubmissionId);
       if (request.action === 'conclude') {
+        if (!compatibility.compatible)
+          fail('A base institucional mudou depois do envio. Devolva o calendário ao campus.', 409);
         if (!reviewMatches(submission._id) || !reviewCurrent())
           fail('Salve o parecer deste envio antes de concluir a revisão.', 409);
         const criteria = reviewCriteriaFor(row.year);
@@ -175,6 +177,9 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
     case 'publish': {
       const sei = domainRule(() => validSei(request.sei ?? ''));
       const submission = await submissionRow(ctx, row.currentSubmissionId);
+      // A changed base is solved only by a return, so it is reported before the review.
+      if (!compatibility.compatible)
+        fail('A base institucional mudou depois do envio. Devolva o calendário ao campus.', 409);
       if (!reviewMatches(submission._id) || !reviewCurrent())
         fail('O parecer não corresponde ao envio revisado. Reabra a revisão.', 409);
       if (
@@ -182,8 +187,6 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
         contentHash(content) !== submission.contentHash
       )
         fail('O conteúdo do calendário difere do envio revisado.', 409);
-      if (!compatibility.compatible)
-        fail('A base institucional mudou depois do envio. Devolva o calendário ao campus.', 409);
       if (!readiness.ready) fail('Resolva as pendências da conferência antes de publicar.', 409);
       // The published calendars may have changed since the submission.
       const { replaced } = await replacedCalendars(ctx, row, {
@@ -193,7 +196,7 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
       for (const other of replaced) {
         await ctx.db.patch(other._id, {
           status: 'arquivado',
-          statusRevision: (other.statusRevision ?? 0) + 1,
+          statusRevision: other.statusRevision + 1,
           archivedAt: now,
           supersededBy: row._id,
         });

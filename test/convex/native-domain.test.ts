@@ -104,7 +104,6 @@ test('native mutations preserve immutable versions, reject stale writers and kee
   const full = await inspect();
   const record = full.calendars.find((c: { id: string }) => c.id === created.id)!;
   assert.equal(record.version, 3);
-  assert.deepEqual(record.versions, [], 'saves no longer archive a snapshot');
   assert.match(record.state.events[0].name, /^Sessão [AB]$/);
   const logs = await campus.read('/api/logs');
   assert.equal(logs.entries.length, 3);
@@ -196,10 +195,7 @@ test('native calendar trash is scoped and restores without destroying archive me
   const restored = await campus.read(path);
   assert.equal(restored.version, 2);
   assert.equal(restored.status, 'rascunho');
-  const ready = await campus.write(path + '/make-definitive', { version: 2 });
-  assert.equal(ready.purpose, 'definitive', 'the retired conversion answers without effect');
   const full = await inspect();
-  assert.equal(full.calendars[0].versions.length, 0);
   assert.equal(full.calendars[0].status, 'rascunho');
 });
 

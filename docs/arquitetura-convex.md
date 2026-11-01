@@ -91,7 +91,7 @@ Novos conteúdos e cópias usam `schemaVersion: 4`. Cada oferta tem `id` imutáv
 
 A organização é anual, semestral ou a classificar. Etapas são configuradas por ciclo: duas, três ou quatro no ano letivo, ou uma ou duas por semestre. Os vínculos `stage-1..4:offerId` conservam o ordinal global; a apresentação reinicia a numeração em cada semestre. Períodos são disjuntos por oferta e podem coincidir entre ofertas. Escopo e ingresso pertencem a cada oferta/ciclo. Modo e base da organização são informativos e não alteram obrigações ou mínimos.
 
-O armazenamento aceita somente o formato 4, inclusive nos envios, nos snapshots históricos ainda guardados e na lixeira, e importações de cópias de outro formato são recusadas. Os valores antigos que continuam válidos nesse formato estão em [Operações administrativas de dados](migracao-schema.md#formatos-antigos-que-permanecem-nos-dados).
+O armazenamento aceita somente o formato 4, inclusive nos envios e na lixeira, e importações de cópias de outro formato são recusadas. Os valores antigos que continuam válidos nesse formato estão em [Operações administrativas de dados](migracao-schema.md#formatos-antigos-que-permanecem-nos-dados).
 
 Conversões ambíguas preservam IDs e datas e mantêm a configuração pendente. Uma inconsistência migrada de ciclo gera aviso e permite salvar outra parte; uma etapa nova ou alterada precisa caber inteiramente no período do seu ciclo. A preparação preserva identidade e tipo de ofertas já salvas, cuja remoção permanece proibida.
 

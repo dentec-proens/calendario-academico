@@ -141,7 +141,6 @@ async function opened(withPeriod = true): Promise<CalendarRecord> {
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
         courses: 'Curso de teste',
-        purpose: 'test',
       },
     })
     .then(calendarRecordDates);
@@ -174,7 +173,6 @@ test('the server rejects removal of the last period while registered stages stil
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
         courses: 'Curso',
-        purpose: 'test',
       },
     })
     .then(calendarRecordDates);

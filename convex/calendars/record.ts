@@ -1,7 +1,7 @@
 import { readActivityDates } from '../../src/domain/calendar/civil-dates.ts';
 import { frozenBase, inspectBase } from './base';
 import { isPublished, isUnderReview, officialApproval } from '../../src/domain/calendar/lifecycle';
-import { lastReturn, outcome, statusOf } from './lifecycle';
+import { lastReturn, outcome } from './lifecycle';
 import { releaseReadiness } from '../../src/domain/calendar/readiness';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { Member } from '../access/contracts';
@@ -17,7 +17,7 @@ import type { Infer } from 'convex/values';
 
 export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>) {
   const row = await calendarRow(ctx, user, id),
-    status = statusOf(row),
+    status = row.status,
     [content, campus, base, docs, review] = await Promise.all([
       contents(ctx, id),
       ctx.db.get(row.campusId),

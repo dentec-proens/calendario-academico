@@ -1,9 +1,8 @@
 import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
 import { expect, test } from 'vitest';
 import { makeFunctionReference } from 'convex/server';
-import { api, internal } from '../../convex/_generated/api.js';
+import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
-import { purposeToStatus } from '../../convex/migrations.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, calendarStatus, readyContent, saveReview } from '../helpers/lifecycle.ts';
 
@@ -471,88 +470,18 @@ test('submission copies are read only through their own calendar chain', async (
   expect(copy.state).toMatchObject({ year: 2027, campus: 'A' });
 });
 
-test('the migration converts every calendar to a draft, keeps the version and is idempotent', () => {
-  const row = (fields: object) =>
-    ({ _id: 'c', version: 7, offerKinds: ['integrado'], ...fields }) as never;
-  expect(purposeToStatus(row({ purpose: 'test' }))).toEqual({
-    status: 'rascunho',
-    statusRevision: 0,
-    label: 'Teste',
-    purpose: undefined,
-  });
-  expect(purposeToStatus(row({ purpose: 'definitive', deletedAt: 1 }))).toEqual({
-    status: 'rascunho',
-    statusRevision: 0,
-    purpose: undefined,
-  });
-  expect(purposeToStatus(row({ purpose: 'test', label: 'Meu' }))).not.toHaveProperty('label');
-  expect(purposeToStatus(row({ status: 'rascunho', statusRevision: 0 }))).toBeUndefined();
-});
-
-test('the migration runs over the table, trash included, without touching contents or reviews', async () => {
-  const f = await fixture();
-  const ids = await f.client.run(async (ctx) => {
-    const row = {
-      campusId: f.ids.campuses.a,
-      year: 2027,
-      offerKinds: ['integrado' as const],
-      courses: 'Anterior',
-      classes: '',
-      shifts: '',
-      version: 4,
-      updatedAt: 1,
-    };
-    return [
-      await ctx.db.insert('calendars', { ...row, purpose: 'test' }),
-      await ctx.db.insert('calendars', { ...row, purpose: 'definitive', deletedAt: 2 }),
-    ];
-  });
-  for (let pass = 0; pass < 2; pass++)
-    await f.client.mutation(internal.migrations.calendarPurposeToStatus, {
-      cursor: null,
-      dryRun: false,
-    });
-  const rows = await f.client.run((ctx) => Promise.all(ids.map((id) => ctx.db.get(id))));
-  expect(rows.map((row) => [row?.status, row?.label, row?.purpose, row?.version])).toEqual([
-    ['rascunho', 'Teste', undefined, 4],
-    ['rascunho', undefined, undefined, 4],
-  ]);
-  // The former test calendar stays recognizable by its title.
-  const listed = await f.client.run((ctx) => ctx.db.get(ids[0]));
-  expect(listed?.label).toBe('Teste');
-  const [summary] = (
-    await f.campus.query(api.calendars.calendarPage, {
-      paginationOpts: { numItems: 10, cursor: null },
-    })
-  ).page.filter((item) => item.id === ids[0]);
-  expect(summary.name).toBe('Calendário 2027 - Campus A — Teste');
-});
-
-test('a row without status reads as a draft and creation ignores the previous purpose', async () => {
-  const f = await fixture();
-  const id = await f.campus
-    .mutation(api.calendars.createCalendar, {
-      body: {
-        campusId: f.ids.campuses.a,
-        year: 2027,
-        offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Curso',
-        purpose: 'definitive',
-      },
-    })
-    .then((record) => record.id);
-  await f.client.run((ctx) =>
-    ctx.db.patch(id, { status: undefined, statusRevision: undefined, purpose: 'test' }),
-  );
-  const legacy = await calendarStatus(f.campus, id);
-  expect(legacy).toMatchObject({ status: 'rascunho', statusRevision: 0 });
-  const raw = await f.client.run((ctx) => ctx.db.get(id));
-  expect(raw?.purpose).toBe('test');
-});
-
-test('the history queries are no longer callable', async () => {
+test('the history queries and the transitional functions are no longer callable', async () => {
   const f = await fixture();
   const id = await f.create();
+  await expect(
+    f.campus.mutation(makeFunctionReference<'mutation'>('calendars:makeDefinitive'), {
+      id,
+      version: 1,
+    }),
+  ).rejects.toThrow(/Could not find|no such export|not found/);
+  await expect(
+    f.client.mutation(makeFunctionReference<'mutation'>('historyPurge:purgeCalendarHistory'), {}),
+  ).rejects.toThrow(/Could not find|no such export|not found|Couldn't find/);
   for (const name of ['calendars:calendarHistory', 'calendars:calendarVersion'])
     await expect(
       f.campus.query(makeFunctionReference<'query'>(name), {
@@ -566,52 +495,121 @@ test('the history queries are no longer callable', async () => {
   expect(record).not.toHaveProperty('purpose');
 });
 
-test('the level 2 purge deletes only the per-save history, batch by batch', async () => {
+test('the review of each decision is read from the current or the archived revision', async () => {
   const f = await fixture();
   const id = await f.create();
-  const keep = await f.client.run(async (ctx) => {
+  await act(f.campus, id, 'submit');
+  await saveReview(f.reviewer, id, { status: 'NAO_ATENDIDO' });
+  await act(f.reviewer, id, 'return', { note: 'Ajuste o recesso.' });
+  await act(f.campus, id, 'submit');
+  await saveReview(f.reviewer, id);
+  const [first, second] = await f.submissions(id);
+  expect(first.decisions[0].reviewRevision).toBe(1);
+  const archived = await f.reviewer.query(api.reviews.submissionReview, {
+    id,
+    submissionId: first._id,
+    revision: 1,
+  });
+  expect(archived.revision).toBe(1);
+  expect(archived.entries.every((entry) => entry.status === 'NAO_ATENDIDO')).toBe(true);
+  const current = await f.reviewer.query(api.reviews.submissionReview, {
+    id,
+    submissionId: second._id,
+    revision: 2,
+  });
+  expect(current.submissionId).toBe(second._id);
+  await expect(
+    f.campus.query(api.reviews.submissionReview, { id, submissionId: first._id, revision: 1 }),
+  ).rejects.toThrow(/Acesso exclusivo/);
+  const other = await f.create(['subsequente']);
+  await expect(
+    f.reviewer.query(api.reviews.submissionReview, {
+      id: other,
+      submissionId: first._id,
+      revision: 1,
+    }),
+  ).rejects.toThrow(/Envio não encontrado/);
+});
+
+test('a submission above 900 KiB is refused with its own message and writes nothing', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await f.client.run(async (ctx) => {
     const content = (await ctx.db
       .query('calendarContents')
       .withIndex('by_calendarId', (q) => q.eq('calendarId', id))
       .unique())!;
-    for (let version = 1; version <= 3; version++) {
-      const snapshotId = await ctx.db.insert('calendarSnapshots', {
-        state: { ...content.state, year: 2027, campus: 'A' },
-        at: version,
-        catalogueRevision: content.catalogueRevision,
-        institutionalEvents: content.institutionalSnapshot,
-        documentSnapshot: [],
-      });
-      await ctx.db.insert('calendarVersions', {
-        calendarId: id,
-        version,
-        at: version,
-        catalogueRevision: content.catalogueRevision,
-        snapshotId,
-      });
-    }
-    return {
-      calendars: await ctx.db.query('calendars').collect(),
-      contents: await ctx.db.query('calendarContents').collect(),
-    };
+    const events = Array.from({ length: 860 }, (_, index) => ({
+      id: `large-${index}`,
+      name: 'x'.repeat(1100),
+      start: '2027-03-01',
+      end: '2027-03-01',
+      kind: 'note' as const,
+    }));
+    await ctx.db.patch(content._id, { state: { ...content.state, events } });
   });
-  const batches = [];
-  for (;;) {
-    const batch = await f.client.mutation(internal.historyPurge.purgeCalendarHistory, {
-      batchSize: 2,
+  await expect(act(f.campus, id, 'submit')).rejects.toThrow(/grande demais para ser enviado/);
+  expect(await f.submissions(id)).toEqual([]);
+  expect((await calendarStatus(f.campus, id)).status).toBe('rascunho');
+});
+
+test('one publication replaces every published calendar it covers', async () => {
+  const f = await fixture();
+  const integrated = await f.create(['integrado']);
+  const subsequent = await f.create(['subsequente']);
+  await f.client.run(async (ctx) => {
+    for (const id of [integrated, subsequent])
+      await ctx.db.patch(id, { status: 'vigente', statusRevision: 1 });
+  });
+  const combined = await f.create(['integrado', 'subsequente'], { ready: true });
+  await act(f.campus, combined, 'submit');
+  const preview = await f.admin.query(api.calendars.replacementPreview, { id: combined });
+  expect(preview.replaced.map((item) => item.id).sort()).toEqual([integrated, subsequent].sort());
+  expect(preview.replaced.every((item) => item.uncovered.length === 0)).toBe(true);
+  await saveReview(f.reviewer, combined);
+  await act(f.reviewer, combined, 'conclude');
+  await act(f.admin, combined, 'publish', { sei });
+  for (const id of [integrated, subsequent])
+    expect((await calendarStatus(f.campus, id)).record).toMatchObject({
+      status: 'arquivado',
+      supersededByName: 'Calendário 2027 - Campus A',
     });
-    batches.push(batch);
-    if (batch.done) break;
-  }
-  expect(batches).toEqual([
-    { versions: 2, snapshots: 0, done: false },
-    { versions: 1, snapshots: 1, done: false },
-    { versions: 0, snapshots: 2, done: true },
-  ]);
-  expect(
-    await f.client.run(async (ctx) => ({
-      calendars: await ctx.db.query('calendars').collect(),
-      contents: await ctx.db.query('calendarContents').collect(),
-    })),
-  ).toEqual(keep);
+});
+
+test('the review starts only by saving, and a changed base blocks conclusion before the review check', async () => {
+  const f = await fixture();
+  const id = await f.create(['integrado'], { ready: true });
+  await act(f.campus, id, 'submit');
+  await expect(act(f.reviewer, id, 'startReview')).rejects.toThrow(/começa ao salvar o parecer/);
+  await saveReview(f.reviewer, id);
+  await f.admin.mutation(api.catalogue.saveCatalogue, {
+    body: {
+      revision: 1,
+      name: 'Feriado',
+      active: true,
+      start: '2027-04-21',
+      end: '2027-04-21',
+      kind: 'exclude',
+      category: 'feriado',
+      evidence: 'Lei',
+      modalities: ['integrado'],
+    },
+  });
+  await expect(act(f.reviewer, id, 'conclude')).rejects.toThrow(/base institucional mudou/);
+});
+
+test('restoring always returns a draft, even for a row deleted outside the lifecycle', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await f.client.run((ctx) =>
+    ctx.db.patch(id, { status: 'revisado', statusRevision: 4, deletedAt: Date.now() }),
+  );
+  await expect(
+    f.campus.mutation(api.calendars.restoreCalendar, { id, version: 2 }),
+  ).rejects.toThrow(/Atualize a lixeira/);
+  await f.campus.mutation(api.calendars.restoreCalendar, { id, version: 1 });
+  expect(await calendarStatus(f.campus, id)).toMatchObject({
+    status: 'rascunho',
+    statusRevision: 5,
+  });
 });

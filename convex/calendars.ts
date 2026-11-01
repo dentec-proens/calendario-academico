@@ -29,7 +29,6 @@ import {
   lifecycleRole,
   lineage,
   overlapping,
-  statusOf,
 } from './calendars/lifecycle';
 import {
   canCreateVersion,
@@ -61,10 +60,10 @@ function calendarLabel(label: string | undefined) {
 }
 
 /** Autosave, base synchronization and offer corrections never write to a locked calendar. */
-function assertEditableStatus(status: Doc<'calendars'>['status'] & string) {
+function assertEditableStatus(status: Doc<'calendars'>['status']) {
   if (!isEditable(status))
     fail(
-      `O calendário está ${statusLabels[status].toLowerCase()} e não pode ser alterado. ${status === 'enviado' ? 'Recolha o envio para editar.' : status === 'vigente' ? 'Crie uma nova versão para alterá-lo.' : 'Aguarde a devolução para editar.'}`,
+      `O calendário está ${statusLabels[status].toLowerCase()} e não pode ser alterado. ${status === 'enviado' ? 'Recolha o envio para editar.' : status === 'vigente' ? 'Crie uma nova versão para alterá-lo.' : status === 'arquivado' ? 'Um calendário arquivado fica apenas para consulta.' : 'Aguarde a devolução para editar.'}`,
       409,
     );
 }
@@ -333,7 +332,7 @@ export const deleteCalendar = mutation({
     const row = await calendarRow(ctx, user, id);
     if (row.version !== version)
       fail('O calendário foi alterado. Atualize a lista antes de excluir.', 409);
-    const status = statusOf(row);
+    const status = row.status;
     if (!isDeletable(status))
       fail(
         `Um calendário ${statusLabels[status].toLowerCase()} não pode ir para a lixeira. Somente rascunhos e calendários devolvidos podem ser excluídos.`,
@@ -347,7 +346,7 @@ export const deleteCalendar = mutation({
       ...(status === 'devolvido'
         ? {
             status: 'rascunho' as const,
-            statusRevision: (row.statusRevision ?? 0) + 1,
+            statusRevision: row.statusRevision + 1,
             currentSubmissionId: undefined,
           }
         : {}),
@@ -364,7 +363,7 @@ export const deleteCalendar = mutation({
 });
 
 export const restoreCalendar = mutation({
-  args: { ...idArgs, version: v.optional(v.number()) },
+  args: { ...idArgs, version: v.number() },
   returns: ok,
   handler: async (ctx, { id, version }) => {
     await assertWritesOpen(ctx);
@@ -372,14 +371,20 @@ export const restoreCalendar = mutation({
     calendarEditor(user);
     const row = await calendarRow(ctx, user, id, true);
     if (!row.deletedAt) fail('Calendário já está ativo.', 409);
-    if (version !== undefined && row.version !== version)
+    if (row.version !== version)
       fail('O calendário foi alterado. Atualize a lixeira antes de restaurar.', 409);
-    // Always a draft, which takes no in-flow place.
+    // Always a draft, which takes no in-flow place, even for a row not deleted by this app.
     await ctx.db.patch(id, {
       deletedAt: undefined,
       deletedBy: undefined,
       offerKinds: row.offerKinds,
-      ...(statusOf(row) === 'rascunho' ? {} : { status: 'rascunho' as const }),
+      ...(row.status === 'rascunho'
+        ? {}
+        : {
+            status: 'rascunho' as const,
+            statusRevision: row.statusRevision + 1,
+            currentSubmissionId: undefined,
+          }),
     });
     await appendAudit(
       ctx,
@@ -389,28 +394,6 @@ export const restoreCalendar = mutation({
       { calendarId: id, campusId: row.campusId, version: row.version },
     );
     return { ok: true };
-  },
-});
-
-/** Pending contraction: the previous frontend still calls it; the lifecycle replaced it. */
-export const makeDefinitive = mutation({
-  args: { ...idArgs, version: v.number() },
-  returns: v.object({
-    purpose: validators.purpose,
-    version: v.number(),
-    updatedAt: v.string(),
-    readiness: contracts.readiness,
-  }),
-  handler: async (ctx, { id }) => {
-    const { user } = await requireNativeUser(ctx);
-    calendarEditor(user);
-    const saved = await baseRecord(ctx, user, id);
-    return {
-      purpose: 'definitive' as const,
-      version: saved.row.version,
-      updatedAt: saved.record.updatedAt,
-      readiness: saved.readiness,
-    };
   },
 });
 
@@ -429,6 +412,9 @@ export const transitionCalendar = mutation({
   handler: async (ctx, args) => {
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
+    // The review starts only with the first saved review of the submission.
+    if (args.action === 'startReview')
+      fail('A revisão começa ao salvar o parecer deste envio.', 409);
     return applyTransition(ctx, user, args);
   },
 });
@@ -442,7 +428,7 @@ export const createCalendarVersion = mutation({
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
     const row = await calendarRow(ctx, user, id);
-    if (!canCreateVersion(statusOf(row), lifecycleRole(user)))
+    if (!canCreateVersion(row.status, lifecycleRole(user)))
       fail('Somente um calendário vigente pode originar uma nova versão.', 409);
     const content = await contents(ctx, id);
     const copy = await ctx.db.insert('calendars', {
@@ -536,7 +522,7 @@ export const calendarSubmissions = query({
       }));
     const current = row.currentSubmissionId ? await ctx.db.get(row.currentSubmissionId) : null;
     let defaultBases: Doc<'calendarSubmissions'>['_id'][] = [];
-    if (statusOf(row) === 'devolvido' && current) defaultBases = [current._id];
+    if (row.status === 'devolvido' && current) defaultBases = [current._id];
     else if (current?.previousSubmissionId) defaultBases = [current.previousSubmissionId];
     else if (current) {
       const ancestors = new Set(chain.slice(1).map((ancestor) => ancestor._id));

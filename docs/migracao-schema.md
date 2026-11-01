@@ -42,10 +42,10 @@ Recibos, contagens e backups de uma operação concluída ficam na pasta privada
 
 ## Formatos antigos que permanecem nos dados
 
-O armazenamento aceita somente o formato 4 de calendário, inclusive nos envios e nos snapshots históricos. Alguns valores antigos continuam válidos nesse formato:
+O armazenamento aceita somente o formato 4 de calendário, inclusive nos envios. Alguns valores antigos continuam válidos nesse formato:
 
 - `legacyStageCount` representa a quantidade conhecida de etapas de uma oferta com organização pendente. Ele sai do conteúdo atual quando a oferta é configurada e permanece nas cópias de envio feitas antes disso.
-- `calendars.purpose` (teste ou definitivo) e as tabelas `calendarVersions` e `calendarSnapshots` estão em contração. A migração `calendarPurposeToStatus` converte todo calendário para rascunho, guarda a marca de teste em `label: 'Teste'` e remove `purpose`, sem alterar `version`. Nada mais grava nas duas tabelas de histórico; a exclusão delas é uma operação de nível 2, com ensaio sobre o backup restaurado, e o schema só se estreita depois dela.
+- Os calendários que eram de teste antes do ciclo de vida guardam a marca em `label: 'Teste'`. A migração `calendarPurposeToStatus` converteu todos para rascunho sem alterar `version`; `calendars.purpose` e as tabelas de histórico por salvamento (`calendarVersions` e `calendarSnapshots`) saíram do schema.
 - Pareceres anteriores aos envios não têm `submissionId` e precisam ser salvos de novo no primeiro envio.
 - Os envios seguem as migrações futuras de formato de `calendarContents`: a evidência preserva o significado, não os bytes.
 - A política de 2027 conserva como vínculos legados opcionais os IDs de requisitos da lista operacional anterior.

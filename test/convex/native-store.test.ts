@@ -44,13 +44,9 @@ test('calendar saves write only the current content and roll back stale saves at
   const stored = () =>
     client.run(async (ctx) => ({
       contents: await ctx.db.query('calendarContents').collect(),
-      snapshots: await ctx.db.query('calendarSnapshots').collect(),
-      versions: await ctx.db.query('calendarVersions').collect(),
       audit: await ctx.db.query('audit').collect(),
     }));
   const before = await stored();
-  assert.deepEqual(before.snapshots, [], 'saves no longer archive snapshots');
-  assert.deepEqual(before.versions, []);
   assert.equal(before.contents[0].state.events[0].name, 'Atividade registrada');
   await assert.rejects(
     campus
@@ -68,7 +64,6 @@ test('calendar saves write only the current content and roll back stale saves at
   assert.deepEqual(await stored(), before, 'a stale writer cannot change content or audit');
   await campus.mutation(api.calendars.deleteCalendar, { id: created.id, version: 2 });
   await campus.mutation(api.calendars.restoreCalendar, { id: created.id, version: 2 });
-  await campus.mutation(api.calendars.makeDefinitive, { id: created.id, version: 2 });
   const final = await client.run(async (ctx) => ({
     calendar: await ctx.db.get(created.id),
     contents: await ctx.db.query('calendarContents').collect(),

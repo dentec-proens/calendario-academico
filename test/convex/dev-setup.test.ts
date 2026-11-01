@@ -153,7 +153,6 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
         courses: 'Curso sintético',
-        purpose: 'test',
       },
     })
     .then(calendarRecordDates);
@@ -175,30 +174,12 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
   );
 });
 
-test('dev setup preserves every partial dataset, including isolated snapshots, Auth state and Storage', async (t) => {
+test('dev setup preserves every partial dataset, including isolated catalogue revisions, Auth state and Storage', async (t) => {
   const partials: ((
     ctx: Parameters<Parameters<ReturnType<typeof fixture>['run']>[0]>[0],
   ) => Promise<unknown>)[] = [
     (ctx) => ctx.db.insert('institutionSettings', { key: 'catalogue', revision: 34 }),
-    (ctx) =>
-      ctx.db.insert('calendarSnapshots', {
-        state: {
-          schemaVersion: 4,
-          year: 2027,
-          campus: 'Snapshot original',
-          offers: [
-            { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
-          ],
-          weekdays: [1, 2, 3, 4, 5],
-          weekConfirmed: false,
-          periods: [],
-          events: [],
-        },
-        at: 1,
-        catalogueRevision: 34,
-        institutionalEvents: [],
-        documentSnapshot: [],
-      }),
+    (ctx) => ctx.db.insert('catalogueRevisions', { year: 2027, revision: 34 }),
     (ctx) =>
       ctx.db.insert('authRateLimits', {
         identifier: 'synthetic',

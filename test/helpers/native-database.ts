@@ -202,9 +202,7 @@ export async function createNativeFixture(overrides: Seed = {}) {
                     (await query(api.reviews.review, { id: calendarId(review[1]) })).submission?.id,
                 },
               });
-        const calendar = path.match(
-          /^\/api\/calendars\/([^/]+)(?:\/(restore|make-definitive|transition))?$/,
-        );
+        const calendar = path.match(/^\/api\/calendars\/([^/]+)(?:\/(restore|transition))?$/);
         if (calendar) {
           const id = calendarId(calendar[1]);
           if (calendar[2] === 'transition') {
@@ -216,9 +214,16 @@ export async function createNativeFixture(overrides: Seed = {}) {
               ...body,
             });
           }
-          if (calendar[2] === 'restore') return mutation(api.calendars.restoreCalendar, { id });
-          if (calendar[2] === 'make-definitive')
-            return mutation(api.calendars.makeDefinitive, { id, version: body.version });
+          if (calendar[2] === 'restore')
+            return mutation(api.calendars.restoreCalendar, {
+              id,
+              version:
+                body.version ??
+                (await query(api.calendars.trash, {})).calendars.find(
+                  (row: { id: string }) => row.id === id,
+                )?.version ??
+                0,
+            });
           if (method === 'DELETE')
             return mutation(api.calendars.deleteCalendar, { id, version: body.version });
           return mutation(api.calendars.saveCalendar, { id, body });
@@ -240,8 +245,7 @@ export async function createNativeFixture(overrides: Seed = {}) {
       const [
         calendars,
         contents,
-        snapshots,
-        versions,
+        submissions,
         reviews,
         reviewVersions,
         events,
@@ -251,8 +255,7 @@ export async function createNativeFixture(overrides: Seed = {}) {
       ] = await Promise.all([
         ctx.db.query('calendars').collect(),
         ctx.db.query('calendarContents').collect(),
-        ctx.db.query('calendarSnapshots').collect(),
-        ctx.db.query('calendarVersions').collect(),
+        ctx.db.query('calendarSubmissions').collect(),
         ctx.db.query('reviews').collect(),
         ctx.db.query('reviewVersions').collect(),
         ctx.db.query('institutionalEvents').collect(),
@@ -271,13 +274,9 @@ export async function createNativeFixture(overrides: Seed = {}) {
               year: calendar.year,
               campus: calendar.campusId === ids.campuses.a ? 'A' : 'B',
             },
-            versions: versions
-              .filter((version) => version.calendarId === calendar._id)
-              .sort((a, b) => a.version - b.version)
-              .map((version) => ({
-                ...snapshots.find((snapshot) => snapshot._id === version.snapshotId)!,
-                version: version.version,
-              })),
+            submissions: submissions
+              .filter((submission) => submission.calendarId === calendar._id)
+              .sort((a, b) => a.sequence - b.sequence),
           };
         }),
         reviews: reviews.map((review) => ({

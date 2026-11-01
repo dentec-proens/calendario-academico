@@ -110,7 +110,7 @@ test('equivalence sync is idempotent, scoped and preserves version, timestamp, s
     documentSnapshot: record.documentSnapshot,
   });
   const db = await inspect();
-  expect(db.calendars[0]!.versions).toHaveLength(0);
+  expect(db.calendars[0]!.submissions).toHaveLength(1);
   expect(db.reviews[0]!.catalogueRevision).toBe(1);
   expect((await account.query(api.reviews.review, { id: record.id })).stale).toBe(false);
   // Without historical content evidence, a legacy review cannot be silently carried forward.
@@ -266,7 +266,6 @@ test('document incorporation preserves dates, invalidates the evidenced review a
     submission!.documentSnapshot,
     'the submission keeps the references it was reviewed with',
   ).toEqual([]);
-  expect(data.calendars[0]!.versions).toEqual([]);
   expect(data.reviews[0]!.documentSnapshot).toEqual([]);
 });
 

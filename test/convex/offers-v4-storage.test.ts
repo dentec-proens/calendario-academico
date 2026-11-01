@@ -47,21 +47,9 @@ test.each([2, 3])(
         await ctx.db.patch(content._id, { state: unsupported as never });
       }),
     ).rejects.toThrow(/Expected|Validation/);
-    await expect(
-      client.run((ctx) =>
-        ctx.db.insert('calendarSnapshots', {
-          state: unsupported as never,
-          at: 1,
-          catalogueRevision: record.catalogueRevision,
-          institutionalEvents: record.institutionalSnapshot,
-          documentSnapshot: [],
-        }),
-      ),
-    ).rejects.toThrow(/Expected|Validation/);
     expect((await actor.query(api.calendars.calendar, { id: record.id })).state).toEqual(
       record.state,
     );
-    expect(await client.run((ctx) => ctx.db.query('calendarSnapshots').take(10))).toEqual([]);
   },
 );
 
@@ -85,8 +73,6 @@ test('calendar storage requires offerKinds and refuses the retired modalities fi
 test('strict v4 storage never reruns the old backfill during maintenance', async () => {
   const { client } = await createNativeFixture();
   expect(await client.mutation(internal.migrations.start, {})).toBeNull();
-  expect(
-    (await client.query(internal.migrations.status, {})).map((migration) => migration.name),
-  ).toEqual(['migrations:calendarPurposeToStatus']);
+  expect(await client.query(internal.migrations.status, {})).toEqual([]);
   expect(await client.run((ctx) => ctx.db.query('audit').take(10))).toEqual([]);
 });

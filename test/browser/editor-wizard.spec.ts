@@ -13,7 +13,6 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.editor-step-number')).toHaveCount(6);
     await expect(page.locator('.autosave-panel')).toBeHidden();
     await expect(page.getByText('Salvamento automático ativo.')).toHaveCount(0);
-    await expect(page.locator('#make-definitive')).toHaveCount(0);
     await expect(page.locator('#total')).toHaveCount(0);
     await expect(page.locator('#editor-section-title')).toHaveText('Semana letiva');
     await expect(page.locator('[aria-current="page"] .editor-step-title')).toHaveText(

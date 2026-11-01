@@ -218,15 +218,73 @@ export default function SubmissionComparison({ calendarId }: { calendarId: strin
           Mostrando os 100 envios mais recentes. Os anteriores continuam registrados.
         </p>
       ) : null}
-      <SubmissionHistory submissions={page} current={targetSequence} />
+      <SubmissionHistory calendarId={calendarId} submissions={page} current={targetSequence} />
     </section>
   );
 }
 
+const reviewStatusLabels: Record<string, string> = {
+  PENDENTE: 'Pendente',
+  ATENDIDO: 'Atendido',
+  NAO_ATENDIDO: 'Não atendido',
+  NAO_APLICAVEL: 'Não aplicável',
+};
+
+/** The review a decision recorded, loaded only when opened. */
+function DecisionReview({
+  calendarId,
+  submissionId,
+  revision,
+}: {
+  calendarId: string;
+  submissionId: string;
+  revision: number;
+}) {
+  const review = useQuery(functions.reviews.submissionReview, {
+    id: calendarId as Id<'calendars'>,
+    submissionId: submissionId as Id<'calendarSubmissions'>,
+    revision,
+  });
+  if (!review) return <p className="help">Carregando o parecer…</p>;
+  const counts = Object.entries(
+    review.entries.reduce<Record<string, number>>((total, entry) => {
+      total[entry.status] = (total[entry.status] ?? 0) + 1;
+      return total;
+    }, {}),
+  );
+  return (
+    <div className="decision-review">
+      <p>
+        {review.reviewer.name} · {new Date(review.updatedAt).toLocaleString('pt-BR')} ·{' '}
+        {counts
+          .map(([status, count]) => `${count} ${reviewStatusLabels[status] ?? status}`)
+          .join(', ')}
+      </p>
+      <p className="return-note-text">{review.conclusion}</p>
+    </div>
+  );
+}
+
+function DecisionReviewToggle(props: {
+  calendarId: string;
+  submissionId: string;
+  revision: number;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <details onToggle={(event) => setOpen(event.currentTarget.open)}>
+      <summary data-decision-review={props.revision}>Ver parecer (rev. {props.revision})</summary>
+      {open ? <DecisionReview {...props} /> : null}
+    </details>
+  );
+}
+
 function SubmissionHistory({
+  calendarId,
   submissions,
   current,
 }: {
+  calendarId: string;
   submissions: Submission[];
   current?: number;
 }) {
@@ -245,6 +303,13 @@ function SubmissionHistory({
                   {new Date(decision.at).toLocaleString('pt-BR')}
                   {decision.by ? ` · ${decision.by.name}` : ''}
                   {decision.note ? <p className="return-note-text">{decision.note}</p> : null}
+                  {decision.reviewRevision !== undefined ? (
+                    <DecisionReviewToggle
+                      calendarId={calendarId}
+                      submissionId={submission.id}
+                      revision={decision.reviewRevision}
+                    />
+                  ) : null}
                 </li>
               ))}
             </ul>

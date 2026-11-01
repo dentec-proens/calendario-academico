@@ -6,7 +6,7 @@ import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { calendarOffer } from '../../convex/validators.ts';
 import { saveInput } from '../../convex/contracts.ts';
-import type { DomainState, historicalState } from '../../convex/validators.ts';
+import type { DomainState, domainState } from '../../convex/validators.ts';
 import type { Infer } from 'convex/values';
 import { preserveSubmission } from '../helpers/lifecycle.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
@@ -18,7 +18,7 @@ const oldSave = makeFunctionReference<
   unknown
 >('calendars:saveCalendar');
 
-function assertSourceFree(state: Infer<typeof historicalState>) {
+function assertSourceFree(state: Infer<typeof domainState>) {
   expect(state).not.toHaveProperty('weekEvidence');
   expect(state.teacherVacations ?? {}).not.toHaveProperty('evidence');
   for (const offer of state.offers) {
@@ -227,10 +227,10 @@ test.each(legacyFields)(
     ).rejects.toThrow(/Unexpected field|Expected/);
     const raw = await fixture.client.run(async (ctx) => ({
       calendar: await ctx.db.get(created.id),
-      snapshots: await ctx.db.query('calendarSnapshots').take(10),
+      submissions: await ctx.db.query('calendarSubmissions').take(10),
     }));
     expect(raw.calendar?.version).toBe(created.version);
-    expect(raw.snapshots).toHaveLength(0);
+    expect(raw.submissions).toHaveLength(0);
     assertSourceFree(
       (await actor.query(api.calendars.calendar, { id: created.id }).then(calendarRecordDates))
         .state,
@@ -247,7 +247,7 @@ test('nested intake records have no source slot in storage or public input', () 
   expect(Object.keys(submitted)).toEqual(['status', 'required']);
 });
 
-test('current contents and historical storage refuse retired manual fields', async () => {
+test('current contents and submission copies refuse retired manual fields', async () => {
   const { fixture, created } = await createRecord();
   await expect(
     fixture.client.run(async (ctx) => {
@@ -261,8 +261,9 @@ test('current contents and historical storage refuse retired manual fields', asy
   ).rejects.toThrow(/Unexpected field|Expected/);
   await expect(
     fixture.client.run(async (ctx) => {
+      const { year: _year, campus: _campus, ...content } = created.state;
       const invalid = {
-        ...created.state,
+        ...content,
         events: [
           {
             id: 'note',
@@ -274,12 +275,22 @@ test('current contents and historical storage refuse retired manual fields', asy
           },
         ],
       };
-      await ctx.db.insert('calendarSnapshots', {
+      const user = (await ctx.db.query('users').first())!;
+      await ctx.db.insert('calendarSubmissions', {
+        calendarId: created.id,
+        sequence: 1,
+        submittedAt: Date.now(),
+        submittedBy: { id: user._id, name: user.name },
+        submittedFrom: 'rascunho',
+        contentVersion: created.version,
+        contentHash: '0'.repeat(64),
         state: invalid,
-        at: Date.now(),
         catalogueRevision: created.catalogueRevision,
-        institutionalEvents: created.institutionalSnapshot,
+        institutionalSnapshot: created.institutionalSnapshot,
         documentSnapshot: [],
+        offerKinds: created.offerKinds,
+        campusName: 'A',
+        decisions: [],
       });
     }),
   ).rejects.toThrow(/Unexpected field|Expected/);

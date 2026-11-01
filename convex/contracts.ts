@@ -6,7 +6,6 @@ import {
   organization,
   calendarOffer,
   modality,
-  purpose,
   calendarStatus,
   regime,
   submissionDecision,
@@ -177,8 +176,6 @@ export const createInput = v.object({
   classes: v.optional(v.string()),
   shifts: v.optional(v.string()),
   label: v.optional(v.string()),
-  /** Accepted and ignored until the contraction, for the previous frontend. */
-  purpose: v.optional(purpose),
 });
 export const saveState = v.object({
   ...contentState.fields,

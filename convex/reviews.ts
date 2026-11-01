@@ -12,6 +12,7 @@ import { requireNativeUser } from './access/identity';
 import { calendarRow, summary } from './calendars/model';
 import { baseRecord, submissionSummary } from './calendars/record';
 import { applyTransition } from './calendars/transitions';
+import { lineage } from './calendars/lifecycle';
 import { calendarStatus } from './validators';
 import { officialApproval } from '../src/domain/calendar/lifecycle';
 import type { Doc } from './_generated/dataModel';
@@ -131,7 +132,7 @@ export const review = query({
       ...support,
       officialApproval: officialApproval(status),
       status,
-      statusRevision: row.statusRevision ?? 0,
+      statusRevision: row.statusRevision,
       submission: (await submissionSummary(ctx, user, row)).submission,
       calendar: { ...support.calendar, id: record.id, campus: record.state.campus },
       initialConclusion: initialConclusion(support),
@@ -265,7 +266,7 @@ export const saveReview = mutation({
       await applyTransition(ctx, user, {
         id,
         from: status,
-        statusRevision: row.statusRevision ?? 0,
+        statusRevision: row.statusRevision,
         action: 'startReview',
       });
     return { revision: next.revision };
@@ -291,5 +292,39 @@ export const exportReview = query({
     )
       fail('O parecer está desatualizado. Reabra, confira e salve antes de exportar.', 409);
     return reviewDocument(record, reviewDto(prior)) as Infer<typeof contracts.exportDto>;
+  },
+});
+
+/**
+ * The review a submission decision recorded: the current review when the revision is current,
+ * otherwise its archived revision. The submission must belong to the calendar's chain.
+ */
+export const submissionReview = query({
+  args: { ...idArgs, submissionId: v.id('calendarSubmissions'), revision: v.number() },
+  returns: contracts.reviewDto,
+  handler: async (ctx, { id, submissionId, revision }) => {
+    const { user } = await requireNativeUser(ctx);
+    reviewer(user);
+    const row = await calendarRow(ctx, user, id);
+    const submission = await ctx.db.get(submissionId);
+    const chain = new Set((await lineage(ctx, row)).map((item) => item._id));
+    if (!submission || !chain.has(submission.calendarId)) fail('Envio não encontrado.', 404);
+    const current = await reviewRow(ctx, submission.calendarId);
+    if (!current) fail('Parecer não encontrado.', 404);
+    if (current.revision === revision) return reviewDto(current);
+    const archived = await ctx.db
+      .query('reviewVersions')
+      .withIndex('by_reviewId_and_revision', (q) =>
+        q.eq('reviewId', current._id).eq('revision', revision),
+      )
+      .unique();
+    if (!archived) fail('Parecer não encontrado.', 404);
+    const { _id, _creationTime, reviewId: _reviewId, ...fields } = archived;
+    return {
+      ...fields,
+      updatedAt: iso(fields.updatedAt),
+      documentSnapshot: fields.documentSnapshot.map(documentDto),
+      officialApproval: false as const,
+    };
   },
 });

@@ -6,8 +6,6 @@ import type { Infer } from 'convex/values';
 
 export const modality = v.union(...modalityIds.map((id) => v.literal(id)));
 export const effect = v.union(v.literal('include'), v.literal('exclude'), v.literal('note'));
-/** Pending contraction: replaced by `calendarStatus` and removed with the history tables. */
-export const purpose = v.union(v.literal('test'), v.literal('definitive'));
 export const calendarStatus = v.union(...calendarStatuses.map((status) => v.literal(status)));
 export const lifecycleAction = v.union(
   v.literal('submit'),
@@ -172,8 +170,6 @@ export const domainState = v.object({
   year: v.number(),
   campus: v.string(),
 });
-/** Pending contraction: read only by `calendarSnapshots`, which receives no new writes. */
-export const historicalState = domainState;
 export const unavailableFile = v.object({
   sourceReference: v.string(),
   reason: v.literal('not_migrated'),
@@ -210,15 +206,6 @@ export const documentSnapshot = v.object({
   publishedBy: v.optional(v.id('users')),
   archivedAt: v.optional(v.number()),
 });
-/** `state` and `purpose` remain only while `calendarSnapshots` is in the schema. */
-export const snapshotFields = {
-  state: historicalState,
-  purpose: v.optional(purpose),
-  at: v.number(),
-  catalogueRevision: v.number(),
-  institutionalEvents: v.array(institutionalEventSnapshot),
-  documentSnapshot: v.array(documentSnapshot),
-};
 export const reviewEntry = v.object({
   id: v.string(),
   status: v.union(

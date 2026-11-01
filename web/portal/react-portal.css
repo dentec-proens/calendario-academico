@@ -26,9 +26,6 @@
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
-.calendar-purpose-help p {
-  margin: 0 0 var(--ui-space-3);
-}
 #calendar-modalities {
   display: block;
   min-width: 0;

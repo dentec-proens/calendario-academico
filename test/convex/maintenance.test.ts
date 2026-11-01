@@ -18,7 +18,6 @@ test('maintenance blocks every account, including ADMIN, until it is resumed', a
       year: 2027,
       offers: [{ kind: 'integrado', organization: 'anual' }],
       courses: 'Calendário operacional',
-      purpose: 'test',
     },
   });
   const body = {

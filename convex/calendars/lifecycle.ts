@@ -2,7 +2,6 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import {
   inFlowStatuses,
-  legacyStatus,
   sharedKinds,
   statusLabels,
   type CalendarStatus,
@@ -14,9 +13,6 @@ import type { MutationCtx } from '../_generated/server';
 import type { Member } from '../access/contracts';
 import type { Context } from '../lib/shared';
 import { fail } from '../lib/shared';
-
-export const statusOf = (row: Pick<Doc<'calendars'>, 'status'>): CalendarStatus =>
-  legacyStatus(row);
 
 export const lifecycleRole = (user: Member): LifecycleRole => user.role;
 
@@ -98,7 +94,7 @@ export async function assertUniqueInFlow(
           others.flatMap((other) => other.offerKinds),
           kinds,
         ),
-      )} neste campus e ano (${others.map((other) => statusLabels[statusOf(other)].toLowerCase()).join(', ')}). Recolha ou conclua o outro envio antes de continuar.`,
+      )} neste campus e ano (${others.map((other) => statusLabels[other.status].toLowerCase()).join(', ')}). Recolha ou conclua o outro envio antes de continuar.`,
       409,
     );
 }

@@ -93,15 +93,4 @@ test('contracted storage rejects the old field in current contents and historica
       } as never);
     }),
   ).rejects.toThrow(/teacherDayDate/);
-  await expect(
-    fixture.client.run((ctx) =>
-      ctx.db.insert('calendarSnapshots', {
-        state: { ...record.state, teacherDayDate: '2027-10-13' },
-        at: 0,
-        catalogueRevision: 1,
-        institutionalEvents: [],
-        documentSnapshot: [],
-      } as never),
-    ),
-  ).rejects.toThrow(/teacherDayDate/);
 });

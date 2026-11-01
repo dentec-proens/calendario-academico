@@ -15,7 +15,7 @@ test('reviewer consults the complete calendar and live changes without editing o
   await expect(page.locator('#autosave-status')).toContainText(/somente leitura/i);
   await page.locator('[data-view="edit"]').click();
   await expect(page.locator('#weekdays input').first()).toBeDisabled();
-  await expect(page.locator('button#make-definitive')).toBeHidden();
+  await expect(page.locator('[data-lifecycle-action]')).toHaveCount(0);
   await expect(page.locator('a.editor-history')).toBeHidden();
   await page.locator('[data-view="events"]').click();
   await page.locator('[data-tab="eventos"]').click();

@@ -131,14 +131,6 @@ export function canCreateVersion(status: CalendarStatus, role: LifecycleRole) {
   return status === 'vigente' && role !== 'PARECERISTA';
 }
 
-/**
- * The status of a row written before the lifecycle existed. The migration and the transitional
- * read model use this same function, so both agree while the field is optional.
- */
-export function legacyStatus(row: { status?: CalendarStatus }): CalendarStatus {
-  return row.status ?? 'rascunho';
-}
-
 /** The print mark depends only on the status, never on readiness. */
 export function printMark(
   status: CalendarStatus,

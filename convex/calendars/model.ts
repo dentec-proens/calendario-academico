@@ -7,7 +7,6 @@ import type { Context } from '../lib/shared';
 import { fail, iso } from '../lib/shared';
 import type { DomainState, ContentState } from '../validators';
 import { calendarAuthorship } from './authorship';
-import { statusOf } from './lifecycle';
 
 export async function calendarRow(ctx: Context, user: Member, id: Id<'calendars'>, trash = false) {
   const row = await ctx.db.get(id);
@@ -33,9 +32,8 @@ export async function summary(ctx: Context, row: Doc<'calendars'>, campus: Doc<'
     campusId: row.campusId,
     year: row.year,
     offerKinds: row.offerKinds,
-    // Until the contraction, a row without status reads as the migration would convert it.
-    status: statusOf(row),
-    statusRevision: row.statusRevision ?? 0,
+    status: row.status,
+    statusRevision: row.statusRevision,
     ...(row.label ? { label: row.label } : {}),
     ...(row.derivedFrom ? { derivedFrom: row.derivedFrom } : {}),
     ...(row.seiProcess ? { seiProcess: row.seiProcess } : {}),

@@ -139,7 +139,7 @@ Os testes remotos exigem opt-in de deployment descartável ou do desenvolvimento
 
 ## Tabelas retiradas do schema
 
-`releaseProgress`, `releaseReceipts`, `releaseMigrationDefinitions`, `migrationReports` e `migrationResults` guardavam recibos de operações já concluídas e saíram do schema. O Convex as mantém no banco sem validação. Exporte-as se quiser preservar o histórico e apague-as pelo dashboard do Convex.
+`releaseProgress`, `releaseReceipts`, `releaseMigrationDefinitions`, `migrationReports` e `migrationResults` guardavam recibos de operações já concluídas e saíram do schema. O Convex as mantém no banco sem validação. Exporte-as se quiser preservar o histórico e apague-as pelo dashboard do Convex. `calendarVersions` e `calendarSnapshots`, o histórico por salvamento substituído pelos envios do ciclo de vida, foram esvaziadas pela operação de nível 2 antes de sair do schema; se continuarem listadas vazias no dashboard, podem ser apagadas por lá.
 
 ## Identidade e passagem de versão no navegador
 

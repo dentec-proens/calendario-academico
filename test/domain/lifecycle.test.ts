@@ -5,7 +5,6 @@ import {
   canTransition,
   fileNamePrefix,
   isDeletable,
-  legacyStatus,
   lifecycleActions,
   officialApproval,
   printMark,
@@ -61,15 +60,13 @@ test('a refused transition outside the table is a conflict, a refused role is in
   expect(transition('enviado', 'withdraw', 'CAMPUS', 'rascunho')).toBe('rascunho');
 });
 
-test('versions, deletion, approval, legacy rows, marks and file names depend only on status', () => {
+test('versions, deletion, approval, marks and file names depend only on status', () => {
   expect(canCreateVersion('vigente', 'CAMPUS')).toBe(true);
   expect(canCreateVersion('vigente', 'ADMIN')).toBe(true);
   expect(canCreateVersion('vigente', 'PARECERISTA')).toBe(false);
   expect(canCreateVersion('revisado', 'CAMPUS')).toBe(false);
   expect(calendarStatuses.filter(isDeletable)).toEqual(['rascunho', 'devolvido']);
   expect(calendarStatuses.filter(officialApproval)).toEqual(['vigente']);
-  expect(legacyStatus({})).toBe('rascunho');
-  expect(legacyStatus({ status: 'vigente' })).toBe('vigente');
   expect(printMark('rascunho')).toBe('Rascunho — sem validade');
   expect(printMark('enviado')).toBe(printMark('em_revisao'));
   expect(printMark('vigente', { seiProcess: '23411.000001/2027-11' })).toBe(

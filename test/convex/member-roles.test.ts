@@ -31,7 +31,6 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
         courses: 'Curso de teste',
         classes: '',
         shifts: '',
-        purpose: 'test',
       },
     })
     .then(calendarRecordDates);
@@ -78,7 +77,6 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
           courses: 'Teste',
           classes: '',
           shifts: '',
-          purpose: 'test',
         },
       })
       .then(calendarRecordDates),
@@ -102,11 +100,7 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
     /não podem alterar/,
   );
   await assert.rejects(
-    reviewer.mutation(api.calendars.restoreCalendar, { id: record.id }),
-    /não podem alterar/,
-  );
-  await assert.rejects(
-    reviewer.mutation(api.calendars.makeDefinitive, { id: record.id, version: record.version }),
+    reviewer.mutation(api.calendars.restoreCalendar, { id: record.id, version: record.version }),
     /não podem alterar/,
   );
   await assert.rejects(
@@ -247,7 +241,6 @@ test('campus cannot read or change another campus while admin can manage both', 
     year: 2027,
     offers: [{ kind: 'integrado' as const, organization: 'anual' as const }],
     courses: 'Teste isolado',
-    purpose: 'test' as const,
   };
   const other = await admin
     .mutation(api.calendars.createCalendar, { body })
@@ -294,10 +287,10 @@ test('campus cannot read or change another campus while admin can manage both', 
   );
   await admin.mutation(api.calendars.deleteCalendar, { id: other.id, version: other.version });
   await assert.rejects(
-    campus.mutation(api.calendars.restoreCalendar, { id: other.id }),
+    campus.mutation(api.calendars.restoreCalendar, { id: other.id, version: other.version }),
     /Registro não encontrado/,
   );
-  await admin.mutation(api.calendars.restoreCalendar, { id: other.id });
+  await admin.mutation(api.calendars.restoreCalendar, { id: other.id, version: other.version });
   assert.equal(
     (await admin.query(api.calendars.calendar, { id: other.id }).then(calendarRecordDates)).id,
     other.id,
