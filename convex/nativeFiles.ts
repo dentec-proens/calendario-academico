@@ -1,14 +1,12 @@
 import { assertWritesOpen } from './lib/maintenance';
-import { v, ConvexError } from 'convex/values';
+import { v } from 'convex/values';
+import { fail } from './lib/shared';
 import { mutation, internalMutation, internalQuery, httpAction } from './_generated/server';
 import { internal } from './_generated/api';
 import { requireNativeUser, requireAdmin } from './access/identity';
 import type { MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 
-function failure(message: string, status = 400): never {
-  throw new ConvexError({ error: message, status });
-}
 const randomToken = () =>
   Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) =>
     b.toString(16).padStart(2, '0'),
@@ -56,7 +54,7 @@ export const issueUpload = mutation({
       size < 5 ||
       size > 8_000_000
     )
-      failure('Escolha um PDF de até 8 MB.');
+      fail('Escolha um PDF de até 8 MB.');
     const existing = await ctx.db
       .query('nativeUploads')
       .withIndex('by_ownerId', (q) => q.eq('ownerId', row._id))
@@ -65,7 +63,7 @@ export const issueUpload = mutation({
       existing.length > 100 ||
       existing.filter((u) => u.expiresAt > Date.now() && !u.consumedAt).length >= 3
     )
-      failure('Conclua os envios pendentes antes de enviar outro PDF.', 409);
+      fail('Conclua os envios pendentes antes de enviar outro PDF.', 409);
     const uploadId = randomToken();
     await ctx.db.insert('nativeUploads', {
       uploadId,
@@ -94,7 +92,7 @@ export const uploadContext = internalQuery({
       upload.expiresAt <= Date.now() ||
       upload.consumedAt
     )
-      failure('Envio expirado ou não encontrado.', 404);
+      fail('Envio expirado ou não encontrado.', 404);
     return upload;
   },
 });
@@ -104,7 +102,7 @@ export const finishUpload = internalMutation({
   returns: v.object({ uploadId: v.string() }),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return failure('Atualize a aplicação para enviar o arquivo pelo ingresso validado.', 409);
+    return fail('Atualize a aplicação para enviar o arquivo pelo ingresso validado.', 409);
   },
 });
 
@@ -124,7 +122,7 @@ export const receiveUpload = mutation({
       upload.expiresAt <= Date.now() ||
       upload.consumedAt
     ) {
-      failure('Envio expirado ou não encontrado.', 404);
+      fail('Envio expirado ou não encontrado.', 404);
     }
     const view = new Uint8Array(bytes);
     if (
@@ -136,15 +134,15 @@ export const receiveUpload = mutation({
       view[3] !== 70 ||
       view[4] !== 45
     ) {
-      failure('Envie um PDF de até 8 MB.');
+      fail('Envie um PDF de até 8 MB.');
     }
-    if (view.length !== upload.size) failure('O tamanho do PDF recebido é diferente do informado.');
+    if (view.length !== upload.size) fail('O tamanho do PDF recebido é diferente do informado.');
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (b) =>
       b.toString(16).padStart(2, '0'),
     ).join('');
     if (upload.completedAt) {
       if (upload.verifiedIngress && upload.hash === hash) return { uploadId };
-      failure('Envio já concluído.', 409);
+      fail('Envio já concluído.', 409);
     }
     // Convex 1.48 stores the file and its owner/ticket association in the same
     // transaction. Rejection above cannot leave an uploaded Storage object.
@@ -259,8 +257,8 @@ async function restorationUpload(
     !upload.storageId ||
     !upload.hash
   )
-    failure('Envio expirado, já utilizado ou incompatível.', 409);
-  if (upload.hash !== hash) failure('O SHA-256 não corresponde ao PDF original registrado.');
+    fail('Envio expirado, já utilizado ou incompatível.', 409);
+  if (upload.hash !== hash) fail('O SHA-256 não corresponde ao PDF original registrado.');
   const [document, stored] = await Promise.all([
     ctx.db
       .query('documents')
@@ -268,8 +266,8 @@ async function restorationUpload(
       .first(),
     ctx.db.system.get(upload.storageId),
   ]);
-  if (document) failure('Arquivo já cadastrado.', 409);
-  if (!stored) failure('Arquivo validado indisponível.', 409);
+  if (document) fail('Arquivo já cadastrado.', 409);
+  if (!stored) fail('Arquivo validado indisponível.', 409);
   await ctx.db.patch(upload._id, { consumedAt: Date.now() });
   return upload.storageId;
 }
@@ -279,10 +277,10 @@ export const restoreDocumentOriginal = internalMutation({
   returns: v.object({ id: v.id('documents'), restored: v.literal(true) }),
   handler: async (ctx, { id, uploadId }) => {
     const { user, row: member } = await requireNativeUser(ctx);
-    if (user.role !== 'ADMIN') failure('Acesso exclusivo da administração.', 403);
+    if (user.role !== 'ADMIN') fail('Acesso exclusivo da administração.', 403);
     const row = await ctx.db.get(id);
-    if (!row) failure('Documento não encontrado.', 404);
-    if (row.storageId || !row.unavailableFile) failure('O PDF original já está disponível.', 409);
+    if (!row) fail('Documento não encontrado.', 404);
+    if (row.storageId || !row.unavailableFile) fail('O PDF original já está disponível.', 409);
     const storageId = await restorationUpload(ctx, member._id, uploadId, row.hash);
     await ctx.db.patch(id, { storageId, unavailableFile: undefined });
     await ctx.db.insert('audit', {

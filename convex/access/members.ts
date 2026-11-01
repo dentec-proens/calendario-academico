@@ -88,13 +88,13 @@ export const updateMemberRole = mutation({
     await assertWritesOpen(ctx);
     const { user: actor } = await requireRecentAdmin(ctx);
     const row = await memberById(ctx, id);
-    if (!row || row.removedAt !== undefined) throw Error('Membro não encontrado.');
+    if (!row || row.removedAt !== undefined) fail('Membro não encontrado.', 404);
     if (row.role !== expected.role || (row.campusId ?? null) !== expected.campusId)
       fail('O perfil mudou em outra sessão. Atualize a lista antes de continuar.', 409);
     const selectedCampus = role === 'CAMPUS' ? (campusId ?? row.campusId) : undefined;
     if (role === 'CAMPUS') {
       const campus = selectedCampus ? await ctx.db.get(selectedCampus) : null;
-      if (!campus || campus.archived) throw Error('Selecione um campus ativo.');
+      if (!campus || campus.archived) fail('Selecione um campus ativo.');
     }
     if (row.role === role && row.campusId === selectedCampus) return { ok: true };
     if (row.role === 'ADMIN' && row.active && role !== 'ADMIN') {
@@ -103,7 +103,7 @@ export const updateMemberRole = mutation({
         .withIndex('by_role_and_active', (q) => q.eq('role', 'ADMIN').eq('active', true))
         .take(2);
       if (admins.filter((admin) => memberFromRow(admin)).length <= 1)
-        throw Error('É necessário manter um administrador ativo.');
+        fail('É necessário manter um administrador ativo.', 409);
     }
     await ctx.db.patch(id, { role, campusId: selectedCampus });
     await revokeSessions(ctx, id);
@@ -118,17 +118,17 @@ export const removeMember = mutation({
   handler: async (ctx, { id }) => {
     await assertWritesOpen(ctx);
     const { user: actor } = await requireRecentAdmin(ctx);
-    if (id === actor.id) throw Error('Você não pode excluir seu próprio acesso.');
+    if (id === actor.id) fail('Você não pode excluir seu próprio acesso.');
     const row = await memberById(ctx, id);
     const user = row && storedMember(row);
-    if (!row || !user || user.removedAt !== undefined) throw Error('Membro não encontrado.');
+    if (!row || !user || user.removedAt !== undefined) fail('Membro não encontrado.', 404);
     if (user.role === 'ADMIN' && user.active) {
       const rows = await ctx.db
         .query('users')
         .withIndex('by_role_and_active', (q) => q.eq('role', 'ADMIN').eq('active', true))
         .take(2);
       if (rows.filter((r) => memberFromRow(r)).length <= 1)
-        throw Error('É necessário manter um administrador ativo.');
+        fail('É necessário manter um administrador ativo.', 409);
     }
     user.active = false;
     user.removedAt = Date.now();

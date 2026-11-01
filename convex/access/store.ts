@@ -1,3 +1,4 @@
+import { fail } from '../lib/shared';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
 import type { Member } from './contracts';
@@ -54,7 +55,7 @@ export async function setPassword(ctx: MutationCtx, row: Doc<'users'>, secret: s
       q.eq('provider', 'password').eq('providerAccountId', row.email!),
     )
     .unique();
-  if (account && account.userId !== row._id) throw Error('E-mail já cadastrado.');
+  if (account && account.userId !== row._id) fail('E-mail já cadastrado.', 409);
   if (account) await ctx.db.patch(account._id, { secret });
   else
     await ctx.db.insert('authAccounts', {

@@ -1,3 +1,4 @@
+import { fail } from '../lib/shared';
 import { assertWritesOpen } from '../lib/maintenance';
 import { withActionLease } from '../lib/maintenance';
 import { internal } from '../_generated/api';
@@ -17,7 +18,7 @@ export const inviteError =
 export async function issueInvite(ctx: MutationCtx, row: Doc<'users'>, actor: Id<'users'>) {
   const user = storedMember(row);
   if (user.removedAt !== undefined || user.active || user.loginMethod !== 'invite')
-    throw Error(inviteError);
+    fail(inviteError);
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   const token = btoa(String.fromCharCode(...bytes))
     .replace(/\+/g, '-')
@@ -40,7 +41,7 @@ export async function issueInvite(ctx: MutationCtx, row: Doc<'users'>, actor: Id
 }
 
 export async function validInvitation(ctx: Context, token: string) {
-  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw Error(inviteError);
+  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) fail(inviteError);
   const hash = await digest(token);
   const inviteRow = await ctx.db
     .query('invitations')
@@ -61,7 +62,7 @@ export async function validInvitation(ctx: Context, token: string) {
     user.loginMethod !== 'invite' ||
     (user.nativeInviteHash && user.nativeInviteHash !== hash)
   )
-    throw Error(inviteError);
+    fail(inviteError);
   return { row, user, inviteRow: inviteRow!, invite };
 }
 
@@ -94,7 +95,7 @@ export const issueInvitation = mutation({
     await assertWritesOpen(ctx);
     const { user } = await requireRecentAdmin(ctx);
     const row = await memberById(ctx, id);
-    if (!row) throw Error('Membro não encontrado.');
+    if (!row) fail('Membro não encontrado.', 404);
     const result = await issueInvite(ctx, row, user.id);
     await appendAudit(ctx, user.id, 'REISSUE_INVITATION', id);
     return result;
@@ -116,10 +117,11 @@ export const acceptInvitation = action({
       email,
     });
     if (!admission.ok || !admission.leaseId)
-      throw Error(
+      fail(
         admission.retryAfter === null
           ? 'Há duas operações em andamento para este link. Aguarde sua conclusão.'
           : 'Muitas tentativas. Aguarde um minuto antes de tentar novamente.',
+        429,
       );
     return withActionLease(
       ctx,
@@ -140,7 +142,7 @@ export const consumeInvitation = internalMutation({
   returns: v.object({ ok: v.boolean() }),
   handler: async (ctx, { token, email, secret }) => {
     const { row, user, inviteRow } = await validInvitation(ctx, token);
-    if (user.email !== email) throw Error(inviteError);
+    if (user.email !== email) fail(inviteError);
     await setPassword(ctx, row, secret);
     user.active = true;
     user.loginMethod = 'local';

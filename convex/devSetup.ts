@@ -1,3 +1,4 @@
+import { fail } from './lib/shared';
 import { v } from 'convex/values';
 import type { Infer } from 'convex/values';
 import { environments } from '../config/environments';
@@ -16,19 +17,17 @@ function assertE2EDevelopment(expectedCloudUrl: string) {
     process.env.CONVEX_CLOUD_URL !== expectedCloudUrl ||
     !/^https:\/\/[a-z0-9]+(?:-[a-z0-9]+)*\.convex\.cloud$/.test(expectedCloudUrl)
   )
-    throw Error(
-      'A preparação E2E exige o desenvolvimento explicitamente conferido, nunca produção.',
-    );
+    fail('A preparação E2E exige o desenvolvimento explicitamente conferido, nunca produção.');
 }
 
 async function e2eCampus(ctx: MutationCtx, runId: string) {
-  if (!/^[a-f0-9]{12}$/.test(runId)) throw Error('Identificador E2E inválido.');
+  if (!/^[a-f0-9]{12}$/.test(runId)) fail('Identificador E2E inválido.');
   const name = `Testes E2E ${runId}`;
   const prior = await ctx.db
     .query('campuses')
     .withIndex('by_name', (q) => q.eq('name', name))
     .unique();
-  if (prior?.archived) throw Error('A unidade E2E está arquivada. Prepare outra execução.');
+  if (prior?.archived) fail('A unidade E2E está arquivada. Prepare outra execução.');
   return prior?._id ?? ctx.db.insert('campuses', { name, archived: false });
 }
 
@@ -42,7 +41,7 @@ export const prepareE2E = internalMutation({
   returns: v.object({ campusId: v.id('campuses'), userId: v.id('users'), year: v.number() }),
   handler: async (ctx, { expectedCloudUrl, runId, secret, preferredYear }) => {
     assertE2EDevelopment(expectedCloudUrl);
-    if (!isSupportedPasswordSecret(secret)) throw Error('Credencial de teste inválida.');
+    if (!isSupportedPasswordSecret(secret)) fail('Credencial de teste inválida.');
     const campusId = await e2eCampus(ctx, runId);
     const email = `e2e-${runId}@ifpr.edu.br`;
     const name = `Testes E2E ${runId}`;
@@ -58,7 +57,7 @@ export const prepareE2E = internalMutation({
         !existing.active ||
         existing.removedAt !== undefined)
     )
-      throw Error('A conta encontrada não pertence à preparação E2E.');
+      fail('A conta encontrada não pertence à preparação E2E.');
     let year = Math.max(7000, Math.min(8999, Math.trunc(preferredYear)));
     let available = false;
     for (let attempt = 0; attempt < 100; attempt++, year = year >= 8999 ? 7000 : year + 1) {
@@ -81,7 +80,7 @@ export const prepareE2E = internalMutation({
         break;
       }
     }
-    if (!available) throw Error('Não foi possível reservar um ano livre para os registros E2E.');
+    if (!available) fail('Não foi possível reservar um ano livre para os registros E2E.');
     const userId =
       existing?._id ??
       (await ctx.db.insert('users', {
@@ -104,7 +103,7 @@ export const prepareE2ERestoration = internalMutation({
   handler: async (ctx, { expectedCloudUrl, runId, year, hash }) => {
     assertE2EDevelopment(expectedCloudUrl);
     if (!Number.isInteger(year) || year < 7000 || year > 8999 || !/^[a-f0-9]{64}$/.test(hash))
-      throw Error('Fixture E2E inválida.');
+      fail('Fixture E2E inválida.');
     await e2eCampus(ctx, runId);
     const source = {
       filename: 'original-e2e.pdf',
@@ -136,7 +135,7 @@ export const initialize = internalMutation({
       !/^https:\/\/[a-z0-9]+(?:-[a-z0-9]+)*\.convex\.cloud$/.test(expectedCloudUrl) ||
       expectedCloudUrl !== actualUrl
     )
-      throw Error('A inicialização exige o mesmo deployment dev validado pelo dev:setup.');
+      fail('A inicialização exige o mesmo deployment dev validado pelo dev:setup.');
 
     const setupRequired = !(await ctx.db.query('users').first());
     // Derive the guard from the schema so a newly added table cannot silently

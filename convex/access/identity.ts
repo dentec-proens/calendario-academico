@@ -2,7 +2,6 @@ import type { Doc, Id } from '../_generated/dataModel';
 import type { QueryCtx, MutationCtx } from '../_generated/server';
 import type { Member, PublicMember } from './contracts';
 import { getAuthSessionId, getAuthUserId } from '@convex-dev/auth/server';
-import { ConvexError } from 'convex/values';
 import { fail } from '../lib/shared';
 
 export type Context = QueryCtx | MutationCtx;
@@ -75,31 +74,30 @@ export async function assertUserSession(
     session.expirationTime <= Date.now() ||
     (session.generation ?? 0) !== (row!.sessionGeneration ?? 0)
   )
-    throw new ConvexError({ status: 401, error: 'Entre com sua conta.' });
+    fail('Entre com sua conta.', 401);
   return { row: row!, user, session };
 }
 
 export async function requireNativeUser(ctx: Context) {
   const id = await getAuthUserId(ctx);
   const sessionId = await getAuthSessionId(ctx);
-  if (!id || !sessionId) throw new ConvexError({ status: 401, error: 'Entre com sua conta.' });
+  if (!id || !sessionId) fail('Entre com sua conta.', 401);
   return assertUserSession(ctx, id, sessionId);
 }
 
 export async function requireAdmin(ctx: Context) {
   const auth = await requireNativeUser(ctx);
-  if (auth.user.role !== 'ADMIN')
-    throw new ConvexError({ status: 403, error: 'Acesso exclusivo da administração.' });
+  if (auth.user.role !== 'ADMIN') fail('Acesso exclusivo da administração.', 403);
   return auth;
 }
 
 export async function requireRecentAdmin(ctx: MutationCtx) {
   const auth = await requireAdmin(ctx);
   if (Date.now() - (auth.session.authenticatedAt ?? auth.session._creationTime) > 15 * 60_000) {
-    throw new ConvexError({
-      status: 403,
-      error: 'Esta operação exige autenticação recente. Saia e entre novamente antes de continuar.',
-    });
+    fail(
+      'Esta operação exige autenticação recente. Saia e entre novamente antes de continuar.',
+      403,
+    );
   }
   return auth;
 }

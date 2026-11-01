@@ -1,4 +1,4 @@
-import { ConvexError } from 'convex/values';
+import { fail } from './shared';
 import { internal } from '../_generated/api';
 import type { ActionCtx, MutationCtx, QueryCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
@@ -13,10 +13,7 @@ export async function maintenancePaused(ctx: QueryCtx | MutationCtx) {
 
 export async function assertWritesOpen(ctx: QueryCtx | MutationCtx) {
   if (await maintenancePaused(ctx))
-    throw new ConvexError({
-      status: 503,
-      error: 'Aplicação em manutenção. Aguarde a conclusão e recarregue a página.',
-    });
+    fail('Aplicação em manutenção. Aguarde a conclusão e recarregue a página.', 503);
 }
 
 export async function withActionLease<T>(

@@ -35,6 +35,12 @@ Segredos pertencem ao ambiente Convex, sem prefixo `VITE_`, e arquivos privados 
 
 ## Sessões e contas
 
+As recusas esperadas do backend usam `fail(mensagem, status)` de `convex/lib/shared.ts`. O helper lança `ConvexError` com `{ error, status }`, contrato que a interface lê para exibir a orientação. Use 400 para preenchimento inválido, 401 para credenciais ou sessão inválidas, 403 para acesso recusado, 404 para recurso não encontrado, 409 para conflito de estado, 429 para limite de tentativas e 503 para manutenção ou serviço indisponível. Os status são dados do erro Convex, não uma mudança no status HTTP do transporte RPC.
+
+`throw Error(...)` fica reservado a falhas internas e invariantes quebradas, como uma resposta inesperada do provedor de autenticação ou usuário ausente num helper chamado após sua validação na mesma transação. Não converter indiscriminadamente exceções capturadas em `fail(error.message)`: isso exporia detalhes internos. Regras puras do domínio continuam lançando `DomainError`, convertido por `domainRule` na fronteira Convex.
+
+O login usa a mesma mensagem para conta desconhecida e senha incorreta. O limitador confirma a tentativa malsucedida na mutation antes de a action lançar `fail`; lançar dentro dessa mutation desfaria o contador. Retornos desconhecidos do provedor continuam sendo falhas internas. `test/convex/validation-errors.test.ts` verifica o contrato pela API e pelo adaptador de erros da interface, a preservação do contador e a distinção entre validações e invariantes.
+
 Cada usuário possui uma geração de sessões. A criação transacional de uma sessão grava essa geração e a hora de autenticação no servidor. Sessões legadas e usuários sem o campo representam geração zero. Redefinir senha, remover acesso ou mudar papel/campus incrementa a geração antes de qualquer limpeza. Consultas protegidas e a emissão/renovação de JWT verificam se a geração ainda corresponde. Um JWT antigo continua criptograficamente válido até expirar, mas perde acesso às funções protegidas imediatamente.
 
 A limpeza usa o índice de usuário/geração, exclui no máximo 100 refresh tokens e 25 sessões por transação e agenda continuação para gerações anteriores. Logins novos sobrevivem inclusive quando `Date.now()` não mudou. Não se usa `_creationTime` para inferir ordem de commit: a [documentação primária de commit timestamp](https://docs.convex.dev/database/advanced/commit-timestamp) informa que uma inserção posterior pode ter `_creationTime` anterior.

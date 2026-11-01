@@ -1,4 +1,5 @@
 import { assertWritesOpen } from './lib/maintenance';
+import { fail } from './lib/shared';
 import { ConvexCredentials } from '@convex-dev/auth/providers/ConvexCredentials';
 import { internal } from './_generated/api';
 import { initializeSession } from './access/store';
@@ -18,13 +19,23 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       async authorize(params, ctx) {
         // The application supports sign-in only; provisioning/reset remain in
         // the separately authorized application flows.
-        if (params.flow !== 'signIn') throw Error('Solicite seu acesso à administração.');
+        if (params.flow !== 'signIn') fail('Solicite seu acesso à administração.', 403);
         validatePassword(params.password);
         const result = await ctx.runMutation(internal.access.passwordSignIn.authorize, {
           email: institutionalEmail(params.email),
           password: params.password,
         });
-        if ('error' in result) throw Error(result.error);
+        if ('error' in result) {
+          switch (result.error) {
+            case 'InvalidAccountId':
+            case 'InvalidSecret':
+              fail('E-mail ou senha inválidos.', 401);
+            case 'TooManyFailedAttempts':
+              fail('Muitas tentativas. Aguarde antes de tentar novamente.', 429);
+            default:
+              throw Error('Resposta de autenticação inválida.');
+          }
+        }
         return result;
       },
     }),
@@ -34,7 +45,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
             clientId: process.env.AUTH_GOOGLE_ID,
             clientSecret: process.env.AUTH_GOOGLE_SECRET,
             profile(profile) {
-              if (profile.email_verified !== true) throw Error('E-mail Google não verificado.');
+              if (profile.email_verified !== true) fail('E-mail Google não verificado.', 403);
               return {
                 id: profile.sub,
                 googleSubject: profile.sub,
@@ -77,7 +88,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
             .unique();
       const member = memberFromRow(row);
       if (!row || !member || member.email !== email)
-        throw Error('Solicite seu acesso à administração.');
+        fail('Solicite seu acesso à administração.', 403);
       await assertWritesOpen(ctx as MutationCtx);
       if (args.provider.id === 'google') {
         const subject = args.profile.googleSubject;
@@ -86,7 +97,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           !subject ||
           (member.googleSubject && member.googleSubject !== subject)
         )
-          throw Error('Conta Google incompatível com o acesso cadastrado.');
+          fail('Conta Google incompatível com o acesso cadastrado.', 403);
         await db.patch(row._id, { googleSubject: subject, googleLastLoginAt: Date.now() });
       }
       return row._id;
@@ -94,7 +105,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     async beforeSessionCreation(ctx, { userId }) {
       await assertWritesOpen(ctx as MutationCtx);
       if (!memberFromRow(await ctx.db.get(userId)))
-        throw Error('Solicite seu acesso à administração.');
+        fail('Solicite seu acesso à administração.', 403);
     },
   },
 });

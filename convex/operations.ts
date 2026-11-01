@@ -1,3 +1,4 @@
+import { fail } from './lib/shared';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { internalMutation, internalQuery, query } from './_generated/server';
@@ -48,13 +49,13 @@ export const pause = internalMutation({
   args: { commit: v.string() },
   returns: v.null(),
   handler: async (ctx, { commit }) => {
-    if (!/^[a-f0-9]{40}$/.test(commit)) throw Error('Commit de publicação inválido.');
+    if (!/^[a-f0-9]{40}$/.test(commit)) fail('Commit de publicação inválido.');
     const control = await ctx.db
       .query('operationalControl')
       .withIndex('by_key', (q) => q.eq('key', 'release'))
       .unique();
     if (control?.paused && control.commit !== commit)
-      throw Error('Outra publicação está em andamento. Confira seu estado antes de continuar.');
+      fail('Outra publicação está em andamento. Confira seu estado antes de continuar.', 409);
     const value = { key: 'release' as const, paused: true, commit, changedAt: Date.now() };
     if (control) await ctx.db.replace(control._id, value);
     else await ctx.db.insert('operationalControl', value);
@@ -71,7 +72,7 @@ export const status = internalQuery({
       .withIndex('by_key', (q) => q.eq('key', 'release'))
       .unique();
     const active = await ctx.db.query('operationalLeases').withIndex('by_startedAt').take(1001);
-    if (active.length > 1000) throw Error('Não é possível comprovar a drenagem das operações.');
+    if (active.length > 1000) fail('Não é possível comprovar a drenagem das operações.', 503);
     return {
       emergency: process.env.DENTEC_MAINTENANCE === '1',
       paused: control?.paused === true,
@@ -86,15 +87,15 @@ export const resume = internalMutation({
   returns: v.null(),
   handler: async (ctx, { commit }) => {
     if (process.env.DENTEC_MAINTENANCE === '1')
-      throw Error('Remova o bloqueio emergencial DENTEC_MAINTENANCE antes de liberar o acesso.');
+      fail('Remova o bloqueio emergencial DENTEC_MAINTENANCE antes de liberar o acesso.', 409);
     const control = await ctx.db
       .query('operationalControl')
       .withIndex('by_key', (q) => q.eq('key', 'release'))
       .unique();
     if (!control?.paused || control.commit !== commit)
-      throw Error('A manutenção não pertence a esta publicação.');
+      fail('A manutenção não pertence a esta publicação.', 409);
     if (await ctx.db.query('operationalLeases').withIndex('by_startedAt').first())
-      throw Error('Há operações em andamento. A manutenção permanece ativa.');
+      fail('Há operações em andamento. A manutenção permanece ativa.', 409);
     await ctx.db.patch(control._id, { paused: false, changedAt: Date.now() });
     return null;
   },

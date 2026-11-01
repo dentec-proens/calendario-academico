@@ -1,6 +1,7 @@
 import { Presence } from '@convex-dev/presence';
 import { getAuthSessionId } from '@convex-dev/auth/server';
-import { ConvexError, v } from 'convex/values';
+import { v } from 'convex/values';
+import { fail } from './lib/shared';
 import { components } from './_generated/api';
 import { mutation, query } from './_generated/server';
 import { memberFromRow, requireNativeUser } from './access/identity';
@@ -14,7 +15,7 @@ export const heartbeat = mutation({
   returns: v.object({ sessionToken: v.string() }),
   handler: async (ctx, { tabId }) => {
     const { user } = await requireNativeUser(ctx);
-    if (!/^[a-f0-9-]{36}$/.test(tabId)) throw new ConvexError('Identificador de aba inválido.');
+    if (!/^[a-f0-9-]{36}$/.test(tabId)) fail('Identificador de aba inválido.');
     const sessionId = await getAuthSessionId(ctx);
     const { sessionToken } = await presence.heartbeat(
       ctx,
@@ -53,8 +54,7 @@ export const online = query({
   }),
   handler: async (ctx) => {
     const { user } = await requireNativeUser(ctx);
-    if (user.role !== 'ADMIN')
-      throw new ConvexError({ status: 403, error: 'Acesso exclusivo da administração.' });
+    if (user.role !== 'ADMIN') fail('Acesso exclusivo da administração.', 403);
     const entries = await presence.listRoom(ctx, room, true, limit + 1);
     const users = await Promise.all(
       entries.slice(0, limit).map(async (entry) => {

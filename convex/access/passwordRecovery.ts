@@ -1,3 +1,4 @@
+import { fail } from '../lib/shared';
 import { assertWritesOpen } from '../lib/maintenance';
 import { withActionLease } from '../lib/maintenance';
 import { internal } from '../_generated/api';
@@ -20,7 +21,7 @@ import { v } from 'convex/values';
 export const resetError = 'Link inválido, expirado ou já utilizado. Solicite uma nova recuperação.';
 
 export async function validReset(ctx: Context, token: string) {
-  if (!/^[a-f0-9]{64}$/.test(token)) throw Error(resetError);
+  if (!/^[a-f0-9]{64}$/.test(token)) fail(resetError);
   const hash = await digest(token);
   const resetRow = await ctx.db
     .query('passwordResets')
@@ -38,7 +39,7 @@ export async function validReset(ctx: Context, token: string) {
     user.loginMethod === 'google' ||
     (user.nativeResetHash && user.nativeResetHash !== hash)
   )
-    throw Error(resetError);
+    fail(resetError);
   return { row, user, resetRow: resetRow!, reset };
 }
 
@@ -57,7 +58,7 @@ export const passwordRecovery = mutation({
         .withIndex('userIdAndProvider', (q) => q.eq('userId', row._id).eq('provider', 'password'))
         .unique());
     if (!row || !user || !account || user.loginMethod === 'google')
-      throw Error(
+      fail(
         'A recuperação exige uma conta ativa com senha local. Para novos usuários, gere um convite.',
       );
     const token = randomHex(32),
@@ -81,10 +82,11 @@ export const resetPassword = action({
       token,
     });
     if (!admission.ok || !admission.leaseId)
-      throw Error(
+      fail(
         admission.retryAfter === null
           ? 'Há duas operações em andamento para este link. Aguarde sua conclusão.'
           : 'Muitas tentativas. Aguarde um minuto antes de tentar novamente.',
+        429,
       );
     return withActionLease(
       ctx,
@@ -119,8 +121,9 @@ export const requestPasswordRecovery = action({
   returns: v.object({ message: v.string() }),
   handler: async (ctx) => {
     await ctx.runQuery(internal.access.session.assertWritesAllowed, {});
-    throw Error(
+    fail(
       'A recuperação por e-mail ainda não está configurada. Entre em contato com dentec.proens@ifpr.edu.br.',
+      503,
     );
   },
 });

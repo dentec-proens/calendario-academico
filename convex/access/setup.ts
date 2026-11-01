@@ -1,3 +1,4 @@
+import { fail } from '../lib/shared';
 import { withActionLease } from '../lib/maintenance';
 import { internal } from '../_generated/api';
 import { action, internalMutation } from '../_generated/server';
@@ -18,7 +19,7 @@ export const setup = action({
         data.code !== process.env.DENTEC_SETUP_CODE ||
         (process.env.DENTEC_SETUP_EMAIL && email !== process.env.DENTEC_SETUP_EMAIL.toLowerCase())
       )
-        throw Error('Código ou e-mail de instalação incorreto.');
+        fail('Código ou e-mail de instalação incorreto.', 403);
       return ctx.runMutation(internal.access.setup.setupRecord, {
         email,
         name: data.name,
@@ -31,8 +32,8 @@ export const setupRecord = internalMutation({
   args: { email: v.string(), name: v.string(), secret: v.string() },
   returns: v.object({ ok: v.boolean() }),
   handler: async (ctx, { email, name, secret }) => {
-    if (await ctx.db.query('users').first()) throw Error('Conta ADMIN já criada.');
-    if (!name.trim() || name.length > 240) throw Error('Informe seu nome.');
+    if (await ctx.db.query('users').first()) fail('Conta ADMIN já criada.', 409);
+    if (!name.trim() || name.length > 240) fail('Informe seu nome.');
     const id = await ctx.db.insert('users', {
       name: name.trim(),
       email,

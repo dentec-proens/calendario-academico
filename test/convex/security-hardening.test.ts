@@ -229,7 +229,7 @@ test('administrators can auditably unlock password sign-in without disabling fai
       provider: 'password',
       params: { flow: 'signIn', email: 'a@ifpr.edu.br', password: 'synthetic-password' },
     }),
-    /TooManyFailedAttempts/,
+    /Muitas tentativas/,
   );
   await assert.rejects(
     asClient('campus-b').mutation(api.access.security.unlockPassword, {

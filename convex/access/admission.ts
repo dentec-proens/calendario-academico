@@ -1,3 +1,4 @@
+import { fail } from '../lib/shared';
 import { RateLimiter, MINUTE } from '@convex-dev/rate-limiter';
 import { v } from 'convex/values';
 import { components } from '../_generated/api';
@@ -29,7 +30,7 @@ export const credentialWork = internalMutation({
     let key: string;
     if (kind === 'invitation') {
       const { user, invite } = await validInvitation(ctx, token);
-      if (user.email !== institutionalEmail(email)) throw Error(inviteError);
+      if (user.email !== institutionalEmail(email)) fail(inviteError);
       key = `invitation:${invite.tokenHash}`;
     } else {
       const { reset } = await validReset(ctx, token);
