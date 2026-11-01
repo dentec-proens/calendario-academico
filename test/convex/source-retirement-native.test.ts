@@ -59,7 +59,6 @@ async function createRecord() {
         campusId: fixture.ids.campuses.a,
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Sintético',
       },
     })
     .then(calendarRecordDates);

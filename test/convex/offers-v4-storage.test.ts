@@ -12,7 +12,6 @@ async function setup() {
       campusId: fixture.ids.campuses.a,
       year: 2027,
       offers: [{ kind: 'integrado', organization: 'anual' }],
-      courses: 'Sintético',
     },
   });
   return { ...fixture, actor, record };

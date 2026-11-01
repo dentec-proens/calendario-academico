@@ -38,7 +38,9 @@ No painel de revisão, **Abrir calendário em outra aba** permite ao PARECERISTA
 
 Em **Contas e acessos**, o ADMIN pode escolher o perfil ao lado de cada conta e clicar em **Salvar perfil**. CAMPUS exige uma unidade ativa; ADMIN e PARECERISTA têm escopo institucional. A troca preserva a senha, fica registrada nos logs e encerra as sessões do usuário, que deverá entrar novamente. O sistema impede retirar o perfil do último administrador ativo. O perfil muda somente por uma alteração explícita.
 
-Em **Calendários → Novo calendário**, informe campus, ano, uma lista de ofertas, cursos e, opcionalmente, turmas e turnos. Cada oferta recebe um tipo, organização anual ou semestral e nome opcional; ao repetir um tipo, os nomes são obrigatórios e distintos. O nome é preenchido a partir de campus e ano, com um **Nome livre** opcional (até 120 caracteres) para diferenciar rascunhos. **Criar rascunho** abre o calendário no editor. Um calendário pode combinar até doze ofertas de Técnico integrado, Técnico subsequente, Graduação e Pós-graduação. Pode haver várias graduações, por exemplo uma anual e duas semestrais, com períodos e etapas independentes.
+Em **Calendários → Novo calendário**, escolha o ano letivo e marque as ofertas: Técnico integrado, Técnico subsequente, Graduação ou Pós-graduação, cada uma com organização anual ou semestral. A administração também escolhe o campus. O nome é formado por campus e ano e aparece antes de **Criar rascunho**, que abre o calendário no editor.
+
+O restante é ajustado no editor. A **Organização letiva por oferta** inclui outras ofertas, inclusive mais de uma do mesmo tipo com nomes distintos, até doze por calendário: pode haver, por exemplo, uma graduação anual e duas semestrais, com períodos e etapas independentes. A **Identificação**, sob o título do editor, reúne cursos, turmas, turnos e um apelido opcional (até 120 caracteres) que diferencia rascunhos do mesmo campus e ano. Ela é editável enquanto o calendário é rascunho ou está devolvido e não altera a versão do conteúdo. Os cursos são exigidos para enviar o calendário à PROENS.
 
 ## Ciclo de vida do calendário
 
@@ -54,7 +56,7 @@ Todo calendário começa como **Rascunho**. Rascunhos são ilimitados e servem t
 | Vigente    | ninguém    | Publicado pela administração com o número do processo SEI.                       |
 | Arquivado  | ninguém    | Substituído por outro vigente ou arquivado pela administração; só para consulta. |
 
-**Enviar para análise** salva o calendário e trava a edição. O envio é recusado enquanto houver campos não aplicados ou atualização da base por incorporar. Pode haver um único calendário em análise (enviado, em revisão, devolvido ou revisado) por campus, ano e tipo de oferta. Quando já existe um vigente para algum tipo de oferta, o novo calendário precisa incluir todos os tipos dele; a administração pode confirmar uma substituição parcial.
+**Enviar para análise** salva o calendário e trava a edição. O envio é recusado enquanto faltarem os cursos da identificação ou houver campos não aplicados ou atualização da base por incorporar. Pode haver um único calendário em análise (enviado, em revisão, devolvido ou revisado) por campus, ano e tipo de oferta. Quando já existe um vigente para algum tipo de oferta, o novo calendário precisa incluir todos os tipos dele; a administração pode confirmar uma substituição parcial.
 
 O parecerista **Devolve ao campus** com uma nota, **Conclui a revisão** (com o parecer deste envio salvo e completo, sem critério não atendido) ou **Reabre a revisão**. A administração **Publica** um calendário revisado informando o processo SEI no formato 00000.000000/0000-00. A publicação arquiva os vigentes que compartilham tipos de oferta. **Arquivar** e **Restabelecer** ficam com a administração.
 

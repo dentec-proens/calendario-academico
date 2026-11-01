@@ -175,10 +175,24 @@ export async function createNativeFixture(overrides: Seed = {}) {
         throw new Error('Unknown fixture query: ' + path);
       },
       write: async (path: string, body: Entity = {}, method = 'POST'): Promise<any> => {
-        if (path === '/api/calendars')
-          return mutation(api.calendars.createCalendar, {
-            body: { ...body, campusId: ids.campuses[String(body.campusId)] ?? body.campusId },
+        if (path === '/api/calendars') {
+          // The identity is seeded like stored data: its own mutation is tested apart.
+          const { courses, classes, shifts, label, ...draft } = body;
+          const created = await mutation(api.calendars.createCalendar, {
+            body: { ...draft, campusId: ids.campuses[String(body.campusId)] ?? body.campusId },
           });
+          if (courses === undefined && label === undefined) return created;
+          const text = (value: unknown) => (typeof value === 'string' ? value : '');
+          await client.run((ctx) =>
+            ctx.db.patch(created.id, {
+              courses: text(courses),
+              classes: text(classes),
+              shifts: text(shifts),
+              ...(text(label) ? { label: text(label) } : {}),
+            }),
+          );
+          return query(api.calendars.calendar, { id: created.id });
+        }
         if (path === '/api/catalogue') return mutation(api.catalogue.saveCatalogue, { body });
         if (path === '/api/campuses')
           return mutation(api.campuses.createCampus, { name: body.name });

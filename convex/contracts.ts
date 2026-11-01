@@ -172,10 +172,12 @@ export const createInput = v.object({
   campusId: v.id('campuses'),
   year: v.number(),
   offers: v.array(v.object({ kind: modality, organization, label: v.optional(v.string()) })),
+});
+export const identityInput = v.object({
   courses: v.string(),
-  classes: v.optional(v.string()),
-  shifts: v.optional(v.string()),
-  label: v.optional(v.string()),
+  classes: v.string(),
+  shifts: v.string(),
+  label: v.string(),
 });
 export const saveState = v.object({
   ...contentState.fields,

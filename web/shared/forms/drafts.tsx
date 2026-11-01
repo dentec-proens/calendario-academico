@@ -71,6 +71,11 @@ export class FormDrafts {
     return this.entries.has(key);
   }
 
+  /** Whether the draft differs from its baseline in fields that represent unapplied data. */
+  isEditing(key: string) {
+    return this.editing.has(key);
+  }
+
   read<T extends object>(key: string, defaults: T): T {
     // Each key is owned by a single typed form; values never come from storage.
     return structuredClone((this.entries.get(key) as T | undefined) ?? defaults);

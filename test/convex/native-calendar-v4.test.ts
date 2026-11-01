@@ -5,7 +5,7 @@ import { api } from '../../convex/_generated/api.js';
 import type { DomainState } from '../../convex/validators.ts';
 import type { CalendarContentV4, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
-import { act, preserveSubmission } from '../helpers/lifecycle.ts';
+import { act, preserveSubmission, seedCourses } from '../helpers/lifecycle.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { reviewCriteria } from '../../src/domain/reviews/criteria.ts';
 import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
@@ -24,10 +24,10 @@ async function setup() {
           { kind: 'integrado', organization: 'a-classificar' },
           { kind: 'graduacao', organization: 'a-classificar' },
         ],
-        courses: 'Ofertas sintéticas',
       },
     })
     .then(calendarRecordDates);
+  await seedCourses(fixture, record.id);
   return { ...fixture, actor, record };
 }
 
@@ -44,7 +44,6 @@ test.each(['anual', 'semestral', 'a-classificar'] as const)(
             { kind: 'integrado', organization },
             { kind: 'graduacao', organization },
           ],
-          courses: 'Sintético',
         },
       })
       .then(calendarRecordDates);
@@ -411,7 +410,6 @@ test.each(['annual', 'semester', 'trimester', 'three'] as const)(
         body: {
           campusId: fixture.ids.campuses.a,
           year: 2027,
-          courses: 'Graduações sintéticas',
           offers: reference.offers.map(({ kind, organization, label }) => ({
             kind,
             organization,
@@ -459,7 +457,6 @@ test('backend rejects a newly moved stage in the wrong semester but preserves un
       body: {
         campusId: fixture.ids.campuses.a,
         year: 2027,
-        courses: 'Sintético',
         offers: [{ kind: 'graduacao', organization: 'semestral' }],
       },
     })
@@ -548,7 +545,7 @@ test('creation enforces labels and the twelve-offer limit before creating any re
     await expect(
       actor
         .mutation(api.calendars.createCalendar, {
-          body: { campusId: fixture.ids.campuses.a, year: 2027, courses: 'Sintético', offers },
+          body: { campusId: fixture.ids.campuses.a, year: 2027, offers },
         })
         .then(calendarRecordDates),
     ).rejects.toThrow();
@@ -558,7 +555,6 @@ test('creation enforces labels and the twelve-offer limit before creating any re
       body: {
         campusId: fixture.ids.campuses.a,
         year: 2027,
-        courses: 'Sintético',
         offers: repeated.slice(0, 12),
       },
     })
@@ -580,7 +576,6 @@ test('removing the observance choice restores the institutional date', async () 
       body: {
         campusId: fixture.ids.campuses.a,
         year: 2027,
-        courses: 'Sintético',
         offers: [{ kind: 'integrado', organization: 'anual' }],
       },
     })

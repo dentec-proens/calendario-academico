@@ -24,6 +24,16 @@ export const calendars = {
         .mutation(functions.calendars.saveCalendar, { id: id as Id<'calendars'>, body })
         .then(calendarSaveDates),
     ),
+  updateIdentity: (
+    id: string,
+    args: Omit<FunctionArgs<typeof functions.calendars.updateCalendarIdentity>, 'id'>,
+  ) =>
+    request(() =>
+      convex.mutation(functions.calendars.updateCalendarIdentity, {
+        id: id as Id<'calendars'>,
+        ...args,
+      }),
+    ),
   synchronizeBase: (id: string, version: number) =>
     request(() =>
       convex

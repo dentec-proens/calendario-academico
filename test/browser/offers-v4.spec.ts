@@ -185,7 +185,7 @@ for (const width of [1440, 390]) {
     );
   });
 
-  test(`creation keeps repeated offer labels and organizations in the form draft at ${width}px`, async ({
+  test(`creation keeps marked offers and organizations in the form draft at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
@@ -193,17 +193,12 @@ for (const width of [1440, 390]) {
     const origin = new URL(await fixtureServer('portal')).origin;
     await page.goto(origin + '/calendarios/novo');
     await expect(page.locator('#create-calendar')).toBeVisible();
-    await page.locator('#calendar-offer-0-kind').selectOption('graduacao');
-    await page.locator('#calendar-offer-0-label').fill('Licenciatura em Química');
-    await page.locator('#calendar-add-offer').click();
-    await page.locator('#calendar-offer-1-kind').selectOption('graduacao');
-    await page.locator('#calendar-offer-1-organization').selectOption('semestral');
-    await page.locator('#calendar-offer-1-label').fill('Engenharia Elétrica');
-    await page.locator('#calendar-add-offer').click();
-    await page.locator('#calendar-offer-2-kind').selectOption('graduacao');
-    for (const index of [0, 1, 2])
-      await expect(page.locator(`#calendar-offer-${index}-label`)).toHaveAttribute('required', '');
-    await page.locator('#calendar-offer-2-label').fill('Tecnologia em Análise de Sistemas');
+    await page.locator('#calendar-offer-integrado').check();
+    await page.locator('#calendar-offer-graduacao').check();
+    const semestral = page.locator(
+      '#calendar-offer-graduacao-organization [data-choice="semestral"]',
+    );
+    await semestral.click();
     if (!(await page.locator('[data-page="accounts"]').isVisible()))
       await page.locator('.sidebar-toggle').click();
     await page.locator('[data-page="accounts"]').click();
@@ -212,11 +207,11 @@ for (const width of [1440, 390]) {
       await page.locator('.sidebar-toggle').click();
     await page.locator('[data-page="calendars"]').click();
     await page.locator('#calendars .collection-heading button').click();
-    await expect(page.locator('#calendar-offer-0-label')).toHaveValue('Licenciatura em Química');
-    await expect(page.locator('#calendar-offer-1-label')).toHaveValue('Engenharia Elétrica');
-    await expect(page.locator('#calendar-offer-1-organization')).toHaveValue('semestral');
-    await expect(page.locator('#calendar-offer-2-label')).toHaveValue(
-      'Tecnologia em Análise de Sistemas',
+    await expect(page.locator('#calendar-offer-integrado')).toBeChecked();
+    await expect(page.locator('#calendar-offer-graduacao')).toBeChecked();
+    await expect(semestral).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#calendar-offer-summary')).toContainText(
+      'Técnico integrado (anual) + Graduação (semestral)',
     );
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,

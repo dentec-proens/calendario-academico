@@ -5,7 +5,7 @@ import { api } from '../../convex/_generated/api.js';
 import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
-import { act } from '../helpers/lifecycle.ts';
+import { act, seedCourses } from '../helpers/lifecycle.ts';
 
 async function opened() {
   const fixture = await createNativeFixture({
@@ -33,10 +33,10 @@ async function opened() {
         campusId: fixture.ids.campuses.a!,
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Teste',
       },
     })
     .then(calendarRecordDates);
+  await seedCourses(fixture, record.id);
   return { ...fixture, account, record };
 }
 
@@ -296,7 +296,6 @@ test('removing Teacher Day leaves its local adjustment inspectable and permits e
         campusId: fixture.ids.campuses.a!,
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Teste',
       },
     })
     .then(calendarRecordDates);

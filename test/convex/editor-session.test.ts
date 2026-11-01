@@ -140,7 +140,6 @@ async function opened(withPeriod = true): Promise<CalendarRecord> {
         campusId: fixture.ids.campuses.a,
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Curso de teste',
       },
     })
     .then(calendarRecordDates);
@@ -172,7 +171,6 @@ test('the server rejects removal of the last period while registered stages stil
         campusId: fixture.ids.campuses.a,
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Curso',
       },
     })
     .then(calendarRecordDates);
@@ -294,6 +292,48 @@ test('remote updates cannot overwrite unapplied fields or dirty state', async ()
   expect(session.getSnapshot().record.version).toBe(record.version);
   expect(session.getSnapshot().state.periods[0].name).toBe(record.state.periods[0].name);
   expect(session.getSnapshot().remote?.version).toBe(remote.version);
+  session.dispose();
+});
+
+test('a save confirmation keeps the identity received from the subscription meanwhile', async () => {
+  const record = await opened();
+  let finish!: (value: CalendarSave) => void;
+  const session = createEditorSession(
+    record,
+    () =>
+      new Promise<CalendarSave>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  session.apply((state) => editPeriodName(state, 'Decisão em gravação'));
+  const flushing = session.flush();
+  await Promise.resolve();
+  const sent = session.getSnapshot().state;
+  // The identity changed while the save was in flight: the snapshot carries the saved content.
+  session.receive({
+    ...record,
+    version: record.version + 1,
+    state: sent,
+    courses: 'Técnico em Informática',
+    label: 'Proposta A',
+    name: `${record.name} — Proposta A`,
+  });
+  expect(session.getSnapshot().remote).not.toBeNull();
+  finish({
+    version: record.version + 1,
+    state: sent,
+    updatedAt: record.updatedAt,
+    readiness: record.readiness,
+    base: savedBase(record),
+  });
+  await flushing;
+  expect(session.getSnapshot().remote).toBeNull();
+  expect(session.getSnapshot().record).toMatchObject({
+    version: record.version + 1,
+    courses: 'Técnico em Informática',
+    label: 'Proposta A',
+    name: `${record.name} — Proposta A`,
+  });
   session.dispose();
 });
 

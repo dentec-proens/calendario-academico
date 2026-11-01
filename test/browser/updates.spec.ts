@@ -205,7 +205,7 @@ test('a detached draft blocks manual and menu updates without submitting or disc
   await page.clock.install();
   await page.goto(server.origin + '/calendarios');
   await page.getByRole('button', { name: 'Novo calendário' }).click();
-  await page.locator('#calendar-courses').fill('Curso ainda não enviado');
+  await page.locator('#calendar-offer-subsequente').check();
   await page.locator('[data-page="institution"]').click();
   const warning = page.waitForEvent('dialog');
   const reload = page.reload({ timeout: 1000 }).catch(() => undefined);
@@ -222,7 +222,7 @@ test('a detached draft blocks manual and menu updates without submitting or disc
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
   await page.locator('[data-page="calendars"]').click();
   await page.getByRole('button', { name: 'Novo calendário' }).click();
-  await expect(page.locator('#calendar-courses')).toHaveValue('Curso ainda não enviado');
+  await expect(page.locator('#calendar-offer-subsequente')).toBeChecked();
   await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
   expect(await page.evaluate(() => window.portalRouterTest.mutations)).toHaveLength(0);
 });
@@ -318,8 +318,8 @@ for (const { width, switchIdentity } of [
     await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
     await page.getByRole('button', { name: 'Novo calendário' }).click();
-    await page.locator('#calendar-courses').fill('Novo trabalho depois de cancelar');
-    await expect(page.locator('#calendar-courses')).toHaveValue('Novo trabalho depois de cancelar');
+    await page.locator('#calendar-offer-subsequente').check();
+    await expect(page.locator('#calendar-offer-subsequente')).toBeChecked();
     await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
   });
 }
@@ -331,7 +331,7 @@ test('a failed screen chunk preserves detached drafts and the exact draft owner'
   const server = await startUpdateServer(cleanup, 'portal-navigation');
   await page.goto(server.origin + '/calendarios');
   await page.getByRole('button', { name: 'Novo calendário' }).click();
-  await page.locator('#calendar-courses').fill('Curso preservado');
+  await page.locator('#calendar-offer-subsequente').check();
   await page.evaluate(() => {
     window.updateOwners = { editor: window.updateEditor, drafts: window.updateDrafts };
   });
@@ -343,7 +343,7 @@ test('a failed screen chunk preserves detached drafts and the exact draft owner'
   expect(await page.evaluate(() => window.updateOwners?.drafts === window.updateDrafts)).toBe(true);
   await page.locator('[data-page="calendars"]').click();
   await page.getByRole('button', { name: 'Novo calendário' }).click();
-  await expect(page.locator('#calendar-courses')).toHaveValue('Curso preservado');
+  await expect(page.locator('#calendar-offer-subsequente')).toBeChecked();
 });
 
 test('review edits, query preferences and reversion use their real owners', async ({
@@ -491,12 +491,12 @@ test('manual verification is cancelled by editing, and filters alone allow a lat
   const { arrival, release } = server.delayNext('/version.json');
   await page.getByRole('button', { name: 'Atualizar agora' }).click();
   await arrival;
-  await page.locator('#calendar-courses').fill('Edição durante a consulta');
+  await page.locator('#calendar-offer-subsequente').check();
   release();
   await expect(page.locator('.portal-update')).toContainText(/para atualizar\./);
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
-  await page.locator('#calendar-courses').fill('');
+  await page.locator('#calendar-offer-subsequente').uncheck();
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeEnabled();
   // Modified menu clicks retain native browser behavior and never authorize an update.
   await page.locator('[data-page="institution"]').click({ modifiers: ['Control'] });
@@ -777,7 +777,7 @@ test('a removed A chunk after serving B keeps drafts editable until protected re
   const server = await startUpdateServer(cleanup, 'portal-navigation');
   await page.clock.install();
   await page.goto(server.origin + '/calendarios/novo');
-  await page.locator('#calendar-courses').fill('Rascunho da versão A');
+  await page.locator('#calendar-offer-subsequente').check();
   await page.evaluate(() => {
     window.updateOwners = { editor: window.updateEditor, drafts: window.updateDrafts };
   });
@@ -794,8 +794,8 @@ test('a removed A chunk after serving B keeps drafts editable until protected re
   expect(await page.evaluate(() => window.updateOwners?.drafts === window.updateDrafts)).toBe(true);
   await page.locator('[data-page="calendars"]').click();
   await page.getByRole('button', { name: 'Novo calendário' }).click();
-  await expect(page.locator('#calendar-courses')).toHaveValue('Rascunho da versão A');
-  await page.locator('#calendar-courses').fill('');
+  await expect(page.locator('#calendar-offer-subsequente')).toBeChecked();
+  await page.locator('#calendar-offer-subsequente').uncheck();
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeEnabled();
   await page.locator('[data-page="institution"]').click();
   await expect(

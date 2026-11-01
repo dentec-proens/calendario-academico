@@ -19,7 +19,6 @@ test('server saves Servidor choices in snapshots, rejects other dates and protec
         campusId: fixture.ids.campuses.a,
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Observâncias sintéticas',
       },
     })
     .then(calendarRecordDates);
@@ -78,7 +77,6 @@ test('contracted storage rejects the old field in current contents and historica
         campusId: fixture.ids.campuses.a,
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Contrato estrito',
       },
     })
     .then(calendarRecordDates);

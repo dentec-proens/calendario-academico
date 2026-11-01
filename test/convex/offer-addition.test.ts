@@ -14,7 +14,6 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
         campusId: fixture.ids.campuses.a,
         year: 2027,
         offers: [{ kind: 'posgraduacao', organization: 'anual' }],
-        courses: 'Pós-graduação sintética',
       },
     })
     .then(calendarRecordDates);

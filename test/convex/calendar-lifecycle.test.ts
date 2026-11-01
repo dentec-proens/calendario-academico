@@ -35,11 +35,16 @@ async function fixture() {
           campusId: f.ids.campuses.a,
           year: 2027,
           offers: kinds.map((kind) => ({ kind, organization: 'anual' as const })),
-          courses: 'Curso sintético',
-          ...(options.label ? { label: options.label } : {}),
         },
       })
       .then(calendarRecordDates);
+    // Courses are required to submit; the identity mutation has its own tests.
+    await f.client.run((ctx) =>
+      ctx.db.patch(record.id, {
+        courses: 'Curso sintético',
+        ...(options.label ? { label: options.label } : {}),
+      }),
+    );
     if (options.ready)
       await f.client.run(async (ctx) => {
         const content = await ctx.db

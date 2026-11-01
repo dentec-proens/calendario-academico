@@ -3,13 +3,12 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
-import { act } from '../helpers/lifecycle.ts';
+import { act, seedCourses } from '../helpers/lifecycle.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 
 const createBody = {
   year: 2027,
   offers: [{ kind: 'integrado' as const, organization: 'anual' as const }],
-  courses: 'Curso sintético',
 };
 
 test('calendar saves write only the current content and roll back stale saves atomically', async () => {
@@ -82,6 +81,7 @@ test('review saves preserve earlier authorship and rejected edits append no revi
       body: { ...createBody, campusId: ids.campuses.a },
     })
     .then(calendarRecordDates);
+  await seedCourses({ client }, created.id);
   await act(campus, created.id, 'submit');
   const support = await admin.query(api.reviews.review, { id: created.id });
   const body = {
@@ -154,7 +154,7 @@ test('typed storage rejects legacy envelopes, invalid relationships and incomple
       ctx.db.insert('calendars', {
         year: createBody.year,
         offerKinds: createBody.offers.map((offer) => offer.kind),
-        courses: createBody.courses,
+        courses: 'Curso sintético',
         campusId: ids.users.admin,
         classes: '',
         shifts: '',

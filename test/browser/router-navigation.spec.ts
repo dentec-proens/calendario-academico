@@ -115,24 +115,24 @@ test('URL, browser history and collection drafts stay synchronized', async ({
   await page.goto(origin + '/calendarios');
   await page.getByRole('button', { name: 'Novo calendário' }).click();
   await expect(page).toHaveURL(origin + '/calendarios/novo');
-  await page.locator('#calendar-courses').fill('Curso ainda não enviado');
+  await page.locator('#calendar-offer-subsequente').check();
   await page.goBack();
   await expect(page).toHaveURL(origin + '/calendarios');
   await expect(page.locator('#calendar-list')).toBeVisible();
   await expect(page.locator('#create-calendar')).toBeHidden();
   await page.goForward();
   await expect(page.locator('#create-calendar')).toBeVisible();
-  await expect(page.locator('#calendar-courses')).toHaveValue('Curso ainda não enviado');
+  await expect(page.locator('#calendar-offer-subsequente')).toBeChecked();
   await page.locator('[data-page="institution"]').click();
   await expect(page).toHaveURL(origin + '/documentos');
   await page.goBack();
   await expect(page).toHaveURL(origin + '/calendarios/novo');
-  await expect(page.locator('#calendar-courses')).toHaveValue('Curso ainda não enviado');
+  await expect(page.locator('#calendar-offer-subsequente')).toBeChecked();
   await page.locator('#calendars').getByRole('button', { name: 'Voltar à lista' }).click();
   await expect(page).toHaveURL(origin + '/calendarios');
   await expect(page.locator('#calendar-list')).toBeVisible();
   await page.getByRole('button', { name: 'Novo calendário' }).click();
-  await expect(page.locator('#calendar-courses')).toHaveValue('Curso ainda não enviado');
+  await expect(page.locator('#calendar-offer-subsequente')).toBeChecked();
 });
 
 test('institutional event editing has a stable record URL and reload restores the saved event', async ({

@@ -49,15 +49,19 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   await Promise.all([login(editor, base, email, password), login(observer, base, email, password)]);
   const marker = 'Synthetic Convex React ' + Date.now();
   await editor.locator('#calendars .collection-heading button').click();
-  await editor.locator('#calendar-year').fill(String(year));
+  await editor.locator('#calendar-year [data-choice="outro"]').click();
+  await editor.locator('#calendar-year-other').fill(String(year));
   if (campusId) await editor.locator('#calendar-campus').selectOption(campusId);
-  await editor.locator('input[name="calendar-modality"]').first().check();
-  await editor.locator('#calendar-courses').fill(marker);
+  await editor.locator('input[name="calendar-offer"]').first().check();
   await Promise.all([
     editor.waitForURL('**/calendarios/*/editar'),
-    editor.locator('#create-calendar button[value="test"]').click(),
+    editor.locator('#create-calendar button[type="submit"]').click(),
   ]);
   await expect(editor.locator('#record-title')).toContainText(String(year));
+  await editor.locator('#calendar-identity-edit').click();
+  await editor.locator('#calendar-courses').fill(marker);
+  await editor.getByRole('button', { name: 'Salvar identificação' }).click();
+  await expect(editor.locator('#calendar-identity')).toContainText(marker);
   const id = parseEditorPath(new URL(editor.url()).pathname)?.id;
   assert(id);
   await expect(observer.locator('#calendar-list')).toContainText(marker);
@@ -254,15 +258,19 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
 
   await page.locator('[data-page="calendars"]').click();
   await page.locator('#calendars .collection-heading button').click();
-  await page.locator('#calendar-year').fill(String(year));
+  await page.locator('#calendar-year [data-choice="outro"]').click();
+  await page.locator('#calendar-year-other').fill(String(year));
   if (campusId) await page.locator('#calendar-campus').selectOption(campusId);
-  await page.locator('input[name="calendar-modality"]').first().check();
-  await page.locator('#calendar-courses').fill(marker);
+  await page.locator('input[name="calendar-offer"]').first().check();
   await Promise.all([
     page.waitForURL('**/calendarios/*/editar'),
     page.locator('#create-calendar button[type="submit"]').click(),
   ]);
   await expect(page.locator('#record-title')).toContainText(String(year));
+  await page.locator('#calendar-identity-edit').click();
+  await page.locator('#calendar-courses').fill(marker);
+  await page.getByRole('button', { name: 'Salvar identificação' }).click();
+  await expect(page.locator('#calendar-identity')).toContainText(marker);
   const calendarId = parseEditorPath(new URL(page.url()).pathname)?.id;
   assert(calendarId);
   await page.locator('[data-view="calendar"]').click();

@@ -2,7 +2,7 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
-import { act } from '../helpers/lifecycle.ts';
+import { act, seedCourses } from '../helpers/lifecycle.ts';
 
 test('calendar authorship distinguishes creation from content edits without exposing accounts', async () => {
   const { client, asClient, ids } = await createNativeFixture();
@@ -13,7 +13,6 @@ test('calendar authorship distinguishes creation from content edits without expo
       campusId: ids.campuses.a,
       year: 2027,
       offers: [{ kind: 'integrado', organization: 'anual' }],
-      courses: 'Curso sintético',
     },
   });
   assert.equal(created.createdByName, 'Campus A');
@@ -86,6 +85,7 @@ test('calendar authorship distinguishes creation from content edits without expo
   );
 
   // Transitions keep the content version, so they never claim authorship of the content.
+  await seedCourses({ client }, created.id);
   await act(campus, created.id, 'submit');
   await act(campus, created.id, 'withdraw');
   await client.run((ctx) =>

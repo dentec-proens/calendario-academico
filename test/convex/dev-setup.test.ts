@@ -152,7 +152,6 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
         campusId: bootstrap.campuses[0].id,
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Curso sintético',
       },
     })
     .then(calendarRecordDates);

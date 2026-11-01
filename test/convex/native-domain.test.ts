@@ -17,8 +17,9 @@ const createBody = (campusId = 'a') => ({
   campusId,
   year: 2027,
   offers: [{ kind: 'integrado' as const, organization: 'anual' as const }],
-  courses: 'Técnico',
 });
+/** The fixture dispatcher seeds the identity a calendar needs to be submitted. */
+const identifiedBody = (campusId = 'a') => ({ ...createBody(campusId), courses: 'Técnico' });
 const changedState = (state: Record<string, unknown>, name = 'Atividade') => ({
   ...state,
   events: [
@@ -52,8 +53,8 @@ test('native queries require a live Convex session and return safe campus scoped
   const status = await client.query(api.access.session.status, {});
   assert.equal(status.user, null);
   assert.equal(status.setupRequired, false);
-  const a = await as('campus-a').write('/api/calendars', createBody('a'));
-  await as('campus-b').write('/api/calendars', createBody('b'));
+  const a = await as('campus-a').write('/api/calendars', identifiedBody('a'));
+  await as('campus-b').write('/api/calendars', identifiedBody('b'));
   const bootstrap = await as('campus-a').read('/api/bootstrap');
   assert.deepEqual(
     bootstrap.calendars.map((c: { id: string }) => c.id),
@@ -70,7 +71,7 @@ test('native queries require a live Convex session and return safe campus scoped
   assert(!JSON.stringify(admin).includes('private-'));
   await assert.rejects(as('campus-b').read('/api/calendars/' + a.id), /Registro não encontrado/);
   await assert.rejects(
-    as('campus-b').write('/api/calendars', createBody('a')),
+    as('campus-b').write('/api/calendars', identifiedBody('a')),
     /Registro não encontrado/,
   );
   await assert.rejects(
@@ -82,7 +83,7 @@ test('native queries require a live Convex session and return safe campus scoped
 test('native mutations preserve immutable versions, reject stale writers and keep no-op saves stable', async () => {
   const { as, inspect } = await fixture();
   const campus = as('campus-a');
-  const created = await campus.write('/api/calendars', createBody());
+  const created = await campus.write('/api/calendars', identifiedBody());
   const path = '/api/calendars/' + created.id;
   const one = await campus.read(path);
   const saved = await campus.write(path, saveBody(one), 'PUT');
@@ -114,7 +115,7 @@ test('native publication gates base revisions and reviews retain concurrent revi
   const { as, inspect } = await fixture();
   const admin = as('admin'),
     campus = as('campus-a');
-  const created = await campus.write('/api/calendars', createBody());
+  const created = await campus.write('/api/calendars', identifiedBody());
   const path = '/api/calendars/' + created.id;
   const reviewPath = '/api/reviews/' + created.id;
   await campus.write(path + '/transition', { action: 'submit' });
@@ -181,7 +182,7 @@ test('native publication gates base revisions and reviews retain concurrent revi
 test('native calendar trash is scoped and restores without destroying archive metadata', async () => {
   const { as, inspect } = await fixture();
   const campus = as('campus-a');
-  const created = await campus.write('/api/calendars', createBody());
+  const created = await campus.write('/api/calendars', identifiedBody());
   const path = '/api/calendars/' + created.id;
   await campus.write(path, saveBody(await campus.read(path)), 'PUT');
   await assert.rejects(campus.write(path, { version: 1 }, 'DELETE'), /calendário foi alterado/);
@@ -236,7 +237,7 @@ test('native calendar saves validate per-offer stages and preserve the selected 
   const { as } = await fixture();
   const campus = as('campus-a');
   const record = await campus.write('/api/calendars', {
-    ...createBody(),
+    ...identifiedBody(),
     offers: [
       { kind: 'integrado', organization: 'semestral' },
       { kind: 'graduacao', organization: 'semestral' },
@@ -307,7 +308,7 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
     },
   });
   const campus = as('campus-a');
-  const record = await campus.write('/api/calendars', createBody());
+  const record = await campus.write('/api/calendars', identifiedBody());
   const path = '/api/calendars/' + record.id;
   await campus.write(
     path,
@@ -401,7 +402,7 @@ test('native institutional publication requires admin confirmation and preserves
   });
   const admin = as('admin');
   const campus = as('campus-a');
-  const record = await campus.write('/api/calendars', createBody());
+  const record = await campus.write('/api/calendars', identifiedBody());
   const submitted = await preserveSubmission(native, record.id);
   assert.deepEqual(
     record.documentSnapshot.map((doc: { id: string }) => doc.id),
@@ -494,7 +495,7 @@ test('institutional revisions affect only calendars and reviews for the changed 
   });
   const admin = as('admin');
   const campus = as('campus-a');
-  const record = await campus.write('/api/calendars', createBody());
+  const record = await campus.write('/api/calendars', identifiedBody());
   const path = '/api/calendars/' + record.id;
   const reviewPath = '/api/reviews/' + record.id;
   await campus.write(path + '/transition', { action: 'submit' });
@@ -553,14 +554,14 @@ test('calendar pagination applies campus and trash scope before advancing its cu
     created.push(
       await admin
         .mutation(api.calendars.createCalendar, {
-          body: { ...createBody(), campusId: ids.campuses.a, courses: 'Campus A ' + index },
+          body: { ...createBody(), campusId: ids.campuses.a },
         })
         .then(calendarRecordDates),
     );
   for (let index = 0; index < 3; index++)
     await admin
       .mutation(api.calendars.createCalendar, {
-        body: { ...createBody(), campusId: ids.campuses.b, courses: 'Campus B ' + index },
+        body: { ...createBody(), campusId: ids.campuses.b },
       })
       .then(calendarRecordDates);
   await admin.mutation(api.calendars.deleteCalendar, { id: created[0].id, version: 1 });

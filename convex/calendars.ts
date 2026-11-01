@@ -21,6 +21,7 @@ import { requireNativeUser } from './access/identity';
 import { calendarRow, campusName, contents, summary } from './calendars/model';
 import { applyTransition } from './calendars/transitions';
 import { calendarName } from '../src/domain/calendar/label';
+import { normalizeIdentity } from '../src/domain/calendar/identity';
 import type { Member } from './access/contracts';
 import { fullRecord, calendarSummaries, calendarQuery, baseRecord } from './calendars/record';
 import {
@@ -34,7 +35,6 @@ import {
   canCreateVersion,
   isDeletable,
   isEditable,
-  maximumLabelLength,
   statusLabels,
 } from '../src/domain/calendar/lifecycle';
 import { catalogue } from './catalogue/model';
@@ -43,7 +43,7 @@ import { currentDocuments, documentDto } from './documents/model';
 import { appendAudit } from './lib/audit';
 import { calendarEditor, assertCampus, reviewer } from './lib/authorization';
 import { pageBound } from './lib/pagination';
-import { domainRule, fail, iso, text, clean } from './lib/shared';
+import { domainRule, fail, iso, clean } from './lib/shared';
 import type { Doc } from './_generated/dataModel';
 import * as validators from './validators';
 import { paginationOptsValidator } from 'convex/server';
@@ -51,13 +51,6 @@ import { v, type Infer } from 'convex/values';
 
 const idArgs = { id: v.id('calendars') };
 const ok = v.object({ ok: v.boolean() });
-
-function calendarLabel(label: string | undefined) {
-  const value = label?.trim() ?? '';
-  if (value.length > maximumLabelLength)
-    fail(`O nome do calendário pode ter até ${maximumLabelLength} caracteres.`);
-  return value ? { label: value } : {};
-}
 
 /** Autosave, base synchronization and offer corrections never write to a locked calendar. */
 function assertEditableStatus(status: Doc<'calendars'>['status']) {
@@ -190,10 +183,10 @@ export const createCalendar = mutation({
       offerKinds: kinds(state),
       status: 'rascunho',
       statusRevision: 0,
-      ...calendarLabel(body.label),
-      courses: text(body.courses, 1000),
-      classes: (body.classes ?? '').slice(0, 500),
-      shifts: (body.shifts ?? '').slice(0, 200),
+      // Identity is filled in the editor; courses are required only to submit.
+      courses: '',
+      classes: '',
+      shifts: '',
       version: 1,
       updatedAt: Date.now(),
     });
@@ -319,6 +312,55 @@ export const synchronizeBase = mutation({
     if (content.catalogueRevision !== compatibility.snapshot.revision)
       await ctx.db.patch(content._id, { catalogueRevision: compatibility.snapshot.revision });
     return fullRecord(ctx, user, id);
+  },
+});
+
+/**
+ * Courses, classes, shifts and label describe the calendar without being part of its content:
+ * they keep the content version, so an open editor never sees this change as a conflict.
+ * `expected` is the identity the form started from, so a change from another session is
+ * reported instead of overwritten.
+ */
+export const updateCalendarIdentity = mutation({
+  args: { ...idArgs, expected: contracts.identityInput, body: contracts.identityInput },
+  returns: ok,
+  handler: async (ctx, { id, expected, body }) => {
+    await assertWritesOpen(ctx);
+    const { user } = await requireNativeUser(ctx);
+    calendarEditor(user);
+    const row = await calendarRow(ctx, user, id);
+    assertEditableStatus(row.status);
+    const next = domainRule(() => normalizeIdentity(body));
+    const stored = domainRule(() =>
+      normalizeIdentity({
+        courses: row.courses,
+        classes: row.classes,
+        shifts: row.shifts,
+        label: row.label ?? '',
+      }),
+    );
+    if (equalValues(next, stored)) return { ok: true };
+    if (
+      !equalValues(
+        domainRule(() => normalizeIdentity(expected)),
+        stored,
+      )
+    )
+      fail(
+        'A identificação foi alterada em outra sessão. Descarte as alterações para ver os valores atuais e edite novamente.',
+        409,
+      );
+    // An empty label is stored as an absent field, so the name falls back to campus and year.
+    const { label, ...fields } = next;
+    await ctx.db.patch(id, { ...fields, label: label || undefined, updatedAt: Date.now() });
+    await appendAudit(
+      ctx,
+      user,
+      'UPDATE_CALENDAR_IDENTITY',
+      { type: 'calendar', id },
+      { calendarId: id, campusId: row.campusId, version: row.version },
+    );
+    return { ok: true };
   },
 });
 

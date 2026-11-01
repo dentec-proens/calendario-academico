@@ -6,10 +6,27 @@ import { Eye } from 'lucide-react';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
 import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
 import ScopeForm from '../forms/ScopeForm.tsx';
+import { missingCoursesIssue } from '#src/domain/calendar/identity.ts';
+import { useIdentityPanel } from '../identity/CalendarIdentity.tsx';
 
 export default function IssuesSection() {
-  const { state, record, dirty, evaluation } = useCalendarEditor();
-  const issues: { mark: string; title: string; detail: string; requirementId?: string }[] = [];
+  const { state, record, dirty, evaluation, readOnly } = useCalendarEditor();
+  const openIdentity = useIdentityPanel();
+  const issues: {
+    mark: string;
+    title: string;
+    detail: string;
+    requirementId?: string;
+    identity?: true;
+  }[] = [];
+  // The backend refuses the submission without courses.
+  if (!record.courses)
+    issues.push({
+      mark: 'Pendente',
+      title: 'Identificação',
+      detail: missingCoursesIssue,
+      identity: true,
+    });
   const diagnostics = diagnoseCalendar(state);
   for (const issue of diagnostics.structure) {
     if (issue.code === 'week-unconfirmed')
@@ -152,6 +169,11 @@ export default function IssuesSection() {
                   >
                     Conferir esta atividade
                   </Link>
+                )}
+                {issue.identity && !readOnly && (
+                  <button type="button" className="link-button" onClick={openIdentity}>
+                    Informar cursos
+                  </button>
                 )}
               </div>
             </li>

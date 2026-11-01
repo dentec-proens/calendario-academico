@@ -24,17 +24,16 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: 'Voltar à lista' }).click();
     await open.focus();
     await page.keyboard.press('Enter');
-    const courses = page.getByLabel('Nome dos cursos');
-    await courses.fill('Rascunho iniciado antes do foco programado');
+    const offer = page.getByLabel('Técnico subsequente');
+    await offer.check();
     await page.clock.runFor(32);
-    await expect(courses).toBeFocused();
-    await page.keyboard.press('ControlOrMeta+A');
-    await page.keyboard.press('Delete');
-    await expect(courses).toHaveValue('');
+    await expect(offer).toBeFocused();
+    await page.keyboard.press('Space');
+    await expect(offer).not.toBeChecked();
   });
 }
 
-test('calendar creation presents the generated name as text and starts a draft', async ({
+test('calendar creation asks for year and offers and previews the draft name', async ({
   page,
   fixtureServer,
 }) => {
@@ -56,19 +55,39 @@ test('calendar creation presents the generated name as text and starts a draft',
   const name = page.getByLabel('Nome do calendário', { exact: true });
   await expect(name).toHaveJSProperty('tagName', 'OUTPUT');
   await expect(name).toHaveText('Calendário 2027 - Campus Campus de teste');
-  await expect(
-    page.getByText('Gerado automaticamente a partir do campus, do ano e do nome livre.'),
-  ).toBeVisible();
-  await page.getByLabel('Ano', { exact: true }).fill('2028');
+  await expect(page.locator('#create-calendar')).not.toContainText(/Nome dos cursos|Turmas|Turnos/);
+  await expect(page.locator('#calendar-year-help')).toHaveCount(0);
+  await page.locator('#calendar-year [data-choice="2028"]').click();
   await expect(name).toHaveText('Calendário 2028 - Campus Campus de teste');
-  await page.getByLabel('Turnos (opcional)').focus();
-  await page.keyboard.press('Shift+Tab');
-  await expect(page.getByLabel('Turmas (opcional)')).toBeFocused();
-  await page.keyboard.press('Shift+Tab');
-  await expect(page.getByLabel('Nome dos cursos')).toBeFocused();
-  await page.getByLabel('Nome livre (opcional)').fill('Proposta A');
-  await expect(name).toHaveText('Calendário 2028 - Campus Campus de teste — Proposta A');
-  await expect(page.locator('.calendar-draft-help')).toContainText('envie-o para análise');
+  await expect(page.locator('#calendar-year-help')).toContainText(
+    'Ainda não há norma configurada para 2028',
+  );
+  await expect(page.locator('#calendar-year-other')).toHaveCount(0);
+  await page.locator('#calendar-year [data-choice="outro"]').click();
+  await expect(page.locator('#calendar-year-other')).toHaveValue('2028');
+  await page.locator('#calendar-year-other').fill('2031');
+  await expect(name).toHaveText('Calendário 2031 - Campus Campus de teste');
+  await page.locator('#calendar-year [data-choice="2027"]').click();
+  await expect(page.locator('#calendar-year-other')).toHaveCount(0);
+  await expect(name).toHaveText('Calendário 2027 - Campus Campus de teste');
+  await expect(page.locator('#calendar-year-help')).toHaveCount(0);
+  const summary = page.locator('#calendar-offer-summary');
+  await expect(summary).toHaveText('Nenhuma oferta marcada · começa como rascunho');
+  await page.getByRole('button', { name: 'Criar rascunho' }).click();
+  await expect(page.locator('#create-calendar .form-feedback')).toContainText(
+    'Marque ao menos uma oferta.',
+  );
+  await page.getByLabel('Graduação', { exact: true }).check();
+  await page.getByLabel('Técnico integrado').check();
+  await expect(page.locator('#calendar-offer-integrado-organization [role="radio"]')).toHaveCount(
+    2,
+  );
+  await page.locator('#calendar-offer-integrado-organization [data-choice="semestral"]').click();
+  await expect(summary).toHaveText(
+    'Técnico integrado (semestral) + Graduação (anual) · começa como rascunho',
+  );
+  await page.getByLabel('Graduação', { exact: true }).uncheck();
+  await expect(page.locator('#calendar-offer-graduacao-organization')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Criar rascunho' })).toBeVisible();
   await expect(page.locator('.workspace-heading')).not.toContainText(/Perfil|Todos os campi/);
   await page.locator('[data-page="accounts"]').click();
@@ -100,30 +119,17 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await expect(page.locator('#create-calendar')).toBeHidden();
   await page.locator('#calendars .collection-heading button').click();
   await expect(page.locator('#create-calendar')).toBeVisible();
-  const identityLayout = await page
-    .locator('.calendar-identity-fields :is(input, select)')
-    .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
-  expect(identityLayout.length).toBe(2);
-  expect(
-    identityLayout.every((top) => Math.abs(top - identityLayout[0]) < 1),
-    'campus and year align on one row',
-  ).toBeTruthy();
   expect(
     await page
       .locator('#calendar-offers')
       .evaluate(
         (node) =>
           node.getBoundingClientRect().top >
-          document.querySelector('.calendar-identity-fields')!.getBoundingClientRect().bottom - 1,
+          document.querySelector('#calendar-year')!.getBoundingClientRect().bottom - 1,
       ),
-    'offers have their own group below identification',
+    'offers have their own group below the year',
   ).toBeTruthy();
-  for (const selector of [
-    '#calendar-campus',
-    '#calendar-year',
-    '#calendar-name',
-    '#calendar-courses',
-  ]) {
+  for (const selector of ['#calendar-campus']) {
     const label = await page.locator(selector).evaluate((node) => {
       const label = node.closest('label')!;
       const style = getComputedStyle(label);
@@ -144,33 +150,26 @@ test('portal shares each subject across roles while preserving drafts, scoped co
     }).toEqual({ weight: '600', align: 'stretch', textAlign: 'left', gap: '8px' });
     expect(Math.abs(label.left - label.controlLeft) < 1).toBeTruthy();
   }
-  await page.locator('#calendar-courses').fill('Curso em preenchimento');
-  await page.locator('#calendar-courses').hover();
-  await page.waitForFunction(() => {
-    const input = document.querySelector('#calendar-courses')!;
-    return (
-      getComputedStyle(input.closest('label')!).color === getComputedStyle(input).borderTopColor
-    );
-  });
-  expect(
-    await page.locator('#calendar-courses').evaluate((node) => getComputedStyle(node).boxShadow),
-    'hover preserves the focus highlight',
-  ).not.toBe('none');
-  await page.locator('#calendar-offer-0-kind').selectOption('integrado');
+  await page.locator('#calendar-offer-integrado').check();
   const offerLayout = await page
-    .locator('[data-create-offer="0"] :is(input, select)')
-    .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
-  expect(offerLayout.length).toBe(3);
+    .locator('[data-create-offer]')
+    .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect()));
+  expect(offerLayout.length).toBe(4);
   expect(
-    Math.abs(offerLayout[0] - offerLayout[1]) < 1 && offerLayout[2] > offerLayout[0],
-    'type and organization share a row, with the offer label below',
+    Math.abs(offerLayout[0].top - offerLayout[1].top) < 1 &&
+      offerLayout[2].top > offerLayout[0].bottom - 1,
+    'offers form two columns on desktop',
+  ).toBe(true);
+  expect(
+    offerLayout[1].height < offerLayout[0].height,
+    'an unmarked offer keeps its own height beside a marked one',
   ).toBe(true);
   expect(
     await page
       .locator('#create-calendar')
-      .evaluate((node) => new FormData(node as HTMLFormElement).get('offers[0].kind')),
-    'the offer type remains a named successful control',
-  ).toBe('integrado');
+      .evaluate((node) => new FormData(node as HTMLFormElement).getAll('calendar-offer')),
+    'each marked offer remains a named successful control',
+  ).toEqual(['integrado']);
   await page.locator('[data-page="accounts"]').click();
   await expect(page.locator('#user-list')).toBeVisible();
   await expect(page.locator('#campus-list')).toBeHidden();
@@ -291,7 +290,7 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await expect(page.locator('input#user-name')).toHaveValue('Nome ainda não enviado');
   await page.locator('[data-page="calendars"]').click();
   await page.getByRole('button', { name: 'Novo calendário' }).click();
-  await expect(page.locator('input#calendar-courses')).toHaveValue('Curso em preenchimento');
+  await expect(page.locator('#calendar-offer-integrado')).toBeChecked();
   await page.locator('[data-page="institution"]').click();
   await expect(page.locator('#document-status-filter')).toBeVisible();
   await expect(page.locator('#document-list')).toContainText(/Documento rascunho/);
@@ -348,11 +347,11 @@ test('portal shares each subject across roles while preserving drafts, scoped co
     ).toBeTruthy();
   }
   const mobileLayout = await page
-    .locator('.calendar-identity-fields :is(input, select)')
-    .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
+    .locator('[data-create-offer]')
+    .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
   expect(
-    mobileLayout.length === 2 && mobileLayout[0] < mobileLayout[1],
-    'identification fields stack on mobile',
+    mobileLayout.length === 4 && mobileLayout.every((left) => Math.abs(left - mobileLayout[0]) < 1),
+    'offers stack in one column on mobile',
   ).toBeTruthy();
 
   await page.goto(origin + '/contas?role=CAMPUS');

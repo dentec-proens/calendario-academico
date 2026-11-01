@@ -148,6 +148,24 @@ export const convex = {
           readiness: record.readiness,
         });
       }
+      case 'calendars:updateCalendarIdentity': {
+        const body = args.body as {
+          courses: string;
+          classes: string;
+          shifts: string;
+          label: string;
+        };
+        const base = record.name.split(' — ').slice(0, 2).join(' — ');
+        Object.assign(record, {
+          courses: body.courses.trim(),
+          classes: body.classes.trim(),
+          shifts: body.shifts.trim(),
+          label: body.label.trim() || undefined,
+          name: body.label.trim() ? `${base} — ${body.label.trim()}` : base,
+        });
+        publish();
+        return Promise.resolve({ ok: true });
+      }
       case 'calendars:transitionCalendar': {
         calls.transitions++;
         if (calls.failTransition) return Promise.reject(new Error('Falha sintética ao enviar.'));

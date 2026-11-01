@@ -33,9 +33,10 @@ test('calendar creation form', async ({ page, fixtureServer }) => {
   await expect(page.locator('#calendar-list')).toBeVisible();
   await page.locator('#calendars .collection-heading button').click();
   await expect(page.locator('#calendars .collection-form > h2')).toBeFocused();
-  await page.locator('#calendar-courses').fill('Técnico em Informática');
-  await page.locator('#calendar-offer-0-kind').selectOption('integrado');
-  await page.locator('#calendar-courses').blur();
+  await page.locator('#calendar-offer-integrado').check();
+  await page.locator('#calendar-offer-subsequente').check();
+  await page.locator('#calendar-offer-subsequente-organization [data-choice="semestral"]').click();
+  await page.locator('#calendar-offer-subsequente-organization [data-choice="semestral"]').blur();
   await expect(page.locator('#create-calendar')).toBeVisible();
   await assertNoOverflow(page);
   await expect(page).toHaveScreenshot('calendar-creation.png', { fullPage: true });
@@ -92,6 +93,21 @@ test('calendar editor and its event form', async ({ page, fixtureServer }) => {
   // scroll it again and can crop away the heading or reposition sticky feedback.
   await expect(page).toHaveScreenshot('calendar-editor-event.png');
   await expect(eventHeading).toBeInViewport({ ratio: 1 });
+});
+
+test('missing courses in the header and the identity panel', async ({ page, fixtureServer }) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await page.evaluate(() => {
+    window.editorTest.record.courses = '';
+    return window.publishReviewerCalendar();
+  });
+  await expect(page.locator('#calendar-identity')).toContainText('Cursos não informados');
+  await assertNoOverflow(page);
+  await expect(page.locator('.editor-intro')).toHaveScreenshot('identity-missing.png');
+  await page.locator('#calendar-identity-edit').click();
+  await page.locator('#calendar-courses').fill('Técnico em Informática');
+  await assertNoOverflow(page);
+  await expect(page).toHaveScreenshot('identity-panel.png');
 });
 
 test('step 6 lists activities and opens one in the side panel', async ({ page, fixtureServer }) => {

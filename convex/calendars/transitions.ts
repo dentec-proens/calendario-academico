@@ -1,4 +1,5 @@
 import { reviewIsCurrent } from '../../src/domain/calendar/base';
+import { missingCoursesIssue } from '../../src/domain/calendar/identity';
 import {
   maximumNoteLength,
   transition,
@@ -84,6 +85,7 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
     case 'submit': {
       if (request.version !== undefined && request.version !== row.version)
         fail('Há versão mais recente. Reabra o calendário antes de enviar.', 409);
+      if (!row.courses.trim()) fail(missingCoursesIssue, 409);
       if (!compatibility.compatible)
         fail('Incorpore a atualização da base institucional antes de enviar.', 409);
       await assertUniqueInFlow(ctx, row);

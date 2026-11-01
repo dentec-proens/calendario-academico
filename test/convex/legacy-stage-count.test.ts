@@ -24,7 +24,6 @@ async function setup(count?: Count) {
         campusId: fixture.ids.campuses.a,
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'a-classificar' }],
-        courses: 'Configuração sintética migrada',
       },
     })
     .then(calendarRecordDates);

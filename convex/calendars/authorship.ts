@@ -14,22 +14,29 @@ export async function calendarAuthorship(
       )
       .order(order)
       .first();
-  const [original, derived, saved, converted] = await Promise.all([
+  const [original, derived, saved, converted, identified] = await Promise.all([
     entry('CREATE_CALENDAR', 'asc'),
     entry('CREATE_CALENDAR_VERSION', 'asc'),
     entry('SAVE_CALENDAR', 'desc'),
     entry('MAKE_CALENDAR_DEFINITIVE', 'desc'),
+    entry('UPDATE_CALENDAR_IDENTITY', 'desc'),
   ]);
   const created = original ?? derived;
   // Uploads, reviews, trash operations and lifecycle transitions keep updatedAt and version.
-  const latest = [created, saved, converted]
+  const latest = [created, saved, converted, identified]
     .filter((item) => item !== null)
     .filter(
       (item) =>
         item.version === calendar.version ||
         (item.version === undefined && item.at === calendar.updatedAt),
     )
-    .sort((a, b) => b.at - a.at || (b.version ?? 0) - (a.version ?? 0))[0];
+    .sort(
+      (a, b) =>
+        b.at - a.at ||
+        (b.version ?? 0) - (a.version ?? 0) ||
+        // Entries of the same millisecond keep their insertion order.
+        b._creationTime - a._creationTime,
+    )[0];
   const name = async (row: Doc<'audit'> | null | undefined) => {
     if (!row) return undefined;
     if (row.actorLabel?.trim()) return row.actorLabel.trim();

@@ -30,6 +30,8 @@ import { scrollIntoView, trackScrollInset } from '../../scroll.ts';
 import ImportCalendarForm from './forms/ImportCalendarForm.tsx';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
+import { IdentityPanelProvider, IdentitySummary } from './identity/CalendarIdentity.tsx';
+import { missingCoursesIssue } from '#src/domain/calendar/identity.ts';
 
 function EditorFrame() {
   const {
@@ -138,7 +140,9 @@ function EditorFrame() {
         ? 'O calendário mudou em outra sessão. Reabra-o antes de enviar.'
         : status === 'error' || status === 'blocked'
           ? 'Resolva o salvamento das alterações antes de enviar.'
-          : undefined;
+          : !record.courses
+            ? missingCoursesIssue
+            : undefined;
   const saveLabel = readOnly
     ? 'Somente leitura'
     : !connected
@@ -190,6 +194,7 @@ function EditorFrame() {
               ))}
             </ul>
           </div>
+          <IdentitySummary />
         </div>
         <div className="editor-header-actions">
           <Link
@@ -512,9 +517,11 @@ export default function CalendarEditorLayout({ calendarId }: { calendarId: strin
     <CalendarEditorProvider calendarId={calendarId}>
       <CalendarExportProvider>
         <EventEditorProvider>
-          <EditorErrorBoundary>
-            <EditorFrame />
-          </EditorErrorBoundary>
+          <IdentityPanelProvider>
+            <EditorErrorBoundary>
+              <EditorFrame />
+            </EditorErrorBoundary>
+          </IdentityPanelProvider>
         </EventEditorProvider>
       </CalendarExportProvider>
     </CalendarEditorProvider>

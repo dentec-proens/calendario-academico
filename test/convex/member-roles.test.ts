@@ -3,7 +3,7 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api, internal } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
-import { act } from '../helpers/lifecycle.ts';
+import { act, seedCourses } from '../helpers/lifecycle.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { portalPermissions } from '../../web/portal/permissions.ts';
 
@@ -28,12 +28,10 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
         campusId: ids.campuses.a,
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Curso de teste',
-        classes: '',
-        shifts: '',
       },
     })
     .then(calendarRecordDates);
+  await seedCourses({ client }, record.id);
   await act(campus, record.id, 'submit');
   const bootstrap = await reviewer.query(api.workspace.bootstrap, {});
   assert.equal(bootstrap.campuses.length, 2);
@@ -74,9 +72,6 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
           campusId: ids.campuses.b,
           year: 2027,
           offers: [{ kind: 'integrado', organization: 'anual' }],
-          courses: 'Teste',
-          classes: '',
-          shifts: '',
         },
       })
       .then(calendarRecordDates),
@@ -240,7 +235,6 @@ test('campus cannot read or change another campus while admin can manage both', 
     campusId: ids.campuses.b,
     year: 2027,
     offers: [{ kind: 'integrado' as const, organization: 'anual' as const }],
-    courses: 'Teste isolado',
   };
   const other = await admin
     .mutation(api.calendars.createCalendar, { body })
@@ -343,9 +337,6 @@ test('the review queue reports each parecer state without exposing it to campus 
         campusId: ids.campuses.a,
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
-        courses: 'Curso de teste',
-        classes: '',
-        shifts: '',
       },
     })
     .then(calendarRecordDates);
@@ -357,6 +348,7 @@ test('the review queue reports each parecer state without exposing it to campus 
       })
     ).page.find((item) => item.id === record.id)?.review;
   assert.equal(await queue(), undefined, 'a draft never reaches the queue');
+  await seedCourses({ client }, record.id);
   await act(campus, record.id, 'submit');
   assert.equal(await queue(), null);
   const support = await reviewer.query(api.reviews.review, { id: record.id });

@@ -12,7 +12,6 @@ test('previous calendar actions are no longer callable', async () => {
       campusId: ids.campuses.a,
       year: 2027,
       offers: [{ kind: 'integrado', organization: 'anual' }],
-      courses: 'Arquivo preservado',
     },
   });
   for (const name of [

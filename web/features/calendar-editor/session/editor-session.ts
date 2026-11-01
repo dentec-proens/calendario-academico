@@ -99,8 +99,16 @@ export function createEditorSession(
     onSaved: (saved, sent) => {
       const unchanged = equalValues(current.state, sent.state);
       const { base, unchanged: _unchanged, ...value } = saved;
+      // The save result has no identity; a snapshot received meanwhile carries the latest one.
+      const described =
+        current.remote && current.remote.version <= saved.version ? current.remote : current.record;
       const confirmed = {
         ...current.record,
+        courses: described.courses,
+        classes: described.classes,
+        shifts: described.shifts,
+        label: described.label,
+        name: described.name,
         ...value,
         offerKinds: kinds(saved.state),
         catalogueRevision: base.revision,

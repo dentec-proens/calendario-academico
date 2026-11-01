@@ -83,6 +83,47 @@
   color: var(--ui-muted);
   font-size: 0.875rem;
 }
+.editor-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 0;
+  color: var(--ui-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.editor-identity-missing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border: 1px solid var(--ui-warning-border);
+  border-radius: 999px;
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+  font-weight: 600;
+}
+#root .editor-identity-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 6px;
+  border: 0;
+  background: none;
+  color: var(--ui-action);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+#root .editor-identity-edit:hover {
+  color: var(--ui-action-hover);
+  background: var(--ui-action-soft);
+}
 .editor-header-actions {
   grid-column: 2;
   grid-row: 1;

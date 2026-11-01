@@ -133,6 +133,17 @@ export async function saveReview(
   });
 }
 
+/** Seeds the courses a calendar needs to be submitted, without an identity audit entry. */
+export async function seedCourses(
+  fixture: Pick<Awaited<ReturnType<typeof createNativeFixture>>, 'client'>,
+  id: Id<'calendars'>,
+  courses = 'Curso sintético',
+) {
+  await fixture.client.run(async (ctx) => {
+    if (!(await ctx.db.get(id))?.courses) await ctx.db.patch(id, { courses });
+  });
+}
+
 /**
  * Submits and returns a calendar so it stays editable while its submission keeps the content as
  * evidence. Returns a reader for that preserved copy, shaped like a calendar state.
@@ -142,6 +153,7 @@ export async function preserveSubmission(
   id: Id<'calendars'>,
 ) {
   const admin = fixture.asClient('admin');
+  await seedCourses(fixture, id);
   await act(admin, id, 'submit');
   await act(admin, id, 'return', { note: 'Evidência preservada.' });
   return async () => {
