@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../browser/test.ts';
-import { editorUrl, parseEditorPath } from '../../src/app/routes.ts';
+import { editorUrl, parseEditorPath, portalPaths } from '../../src/app/routes.ts';
 import { configuredE2ETarget } from '../../scripts/e2e-environment.ts';
 
 // Native PDF navigation requires Chromium's full browser rather than headless shell.
@@ -52,7 +52,7 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   await editor.locator('#calendar-year [data-choice="outro"]').click();
   await editor.locator('#calendar-year-other').fill(String(year));
   if (campusId) await editor.locator('#calendar-campus').selectOption(campusId);
-  await editor.locator('input[name="calendar-offer"]').first().check();
+  await editor.locator('#calendar-offer-integrado').check();
   await Promise.all([
     editor.waitForURL('**/calendarios/*/editar'),
     editor.locator('#create-calendar button[type="submit"]').click(),
@@ -102,16 +102,19 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   await editor.locator('[data-view="periods"]').click();
   await expect(editor.locator('[data-offer="integrado"]')).toContainText(`01/03/${year}`);
   await observer.locator('[data-edit-organization="integrado"]').click();
-  await observer.locator('#offer-integrado-period-0-start').fill('2027-02-16');
-  await applyOrganization(`${year}-04-01`, `${year}-04-30`);
-  await expect(
-    observer.getByText('O calendário ou a base mudou em outra sessão.', { exact: false }),
-  ).toContainText('Suas alterações foram preservadas');
-  await expect(observer.locator('#offer-integrado-period-0-start')).toHaveValue('2027-02-16');
+  // The observer's form opens from the organization applied in the other session.
   await expect(observer.locator('#offer-integrado-period-0-start')).toHaveValue(`${year}-03-01`);
+  await observer.locator('#offer-integrado-period-0-start').fill(`${year}-02-16`);
+  await applyOrganization(`${year}-04-01`, `${year}-04-30`);
+  await expect(observer.locator('#editor-remote-change')).toContainText(
+    'Suas alterações foram preservadas',
+  );
+  await expect(observer.locator('#offer-integrado-period-0-start')).toHaveValue(`${year}-02-16`);
+  // Applying still works locally; the stale version is refused only when it is saved.
   await fillOrganization(observer, `${year}-05-01`, `${year}-05-31`);
   await observer.locator('#offer-integrado-apply').click();
   await expect(observer.locator('#autosave-status')).toHaveAttribute('data-state', 'blocked');
+  await expect(observer.locator('button#server-save')).toBeVisible();
   await expect(observer.locator('[data-offer="integrado"]')).toContainText(`01/05/${year}`);
   await editor.reload();
   await editor.locator('[data-view="periods"]').click();
@@ -261,7 +264,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await page.locator('#calendar-year [data-choice="outro"]').click();
   await page.locator('#calendar-year-other').fill(String(year));
   if (campusId) await page.locator('#calendar-campus').selectOption(campusId);
-  await page.locator('input[name="calendar-offer"]').first().check();
+  await page.locator('#calendar-offer-integrado').check();
   await Promise.all([
     page.waitForURL('**/calendarios/*/editar'),
     page.locator('#create-calendar button[type="submit"]').click(),
@@ -315,6 +318,11 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   } finally {
     await pdfTask.destroy();
   }
+  // Drafts never reach the review queue: the campus submits first, confirming the open issues.
+  await page.locator('[data-lifecycle-action="submit"]').click();
+  await page.locator('.confirmation-dialog__confirm').click();
+  await expect(page.locator('[data-lifecycle-action="withdraw"]')).toBeVisible();
+  await expect(page.locator('#editor-locked')).toContainText('Recolha o envio');
   await page.goto(base);
   await page.locator('[data-page="review-panel"]').click();
   await page.locator(`[data-open-review="${calendarId}"]`).click();
@@ -334,12 +342,22 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
     .locator(`[data-notes="${criterion}"]`)
     .fill('Observação sintética preservada no Convex.');
   await page.locator('[data-page="calendars"]').click();
+  // A submitted calendar has no delete control, so the row is found by its synthetic courses.
+  const calendarRow = page.locator('#calendar-list > li').filter({ hasText: marker });
+  await expect(calendarRow).toHaveCount(1);
+  const calendarCampus = await calendarRow.getAttribute('data-calendar-campus');
   const otherCampus = await page
     .locator('#campus-filter option')
-    .evaluateAll((options) => (options[2] as HTMLOptionElement | undefined)?.value);
+    .evaluateAll(
+      (options, own) =>
+        options
+          .map((option) => (option as HTMLOptionElement).value)
+          .find((value) => value && value !== own),
+      calendarCampus,
+    );
   if (otherCampus) {
     await page.locator('#campus-filter').selectOption(otherCampus);
-    await expect(page.locator(`[data-delete-calendar="${calendarId}"]`)).toHaveCount(0);
+    await expect(calendarRow).toHaveCount(0);
     await page.locator('#campus-filter').selectOption('');
   }
   await page.locator('[data-page="review-panel"]').click();
@@ -357,6 +375,12 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await expect(page.locator('#review-preview')).toContainText(
     'Observação sintética preservada no Convex.',
   );
+  // Only drafts and returned calendars go to the trash, so the review returns it to the campus.
+  await page.locator('[data-lifecycle-action="return"]').click();
+  const returnForm = page.getByRole('form', { name: 'Devolver ao campus' });
+  await returnForm.locator('#lifecycle-return-note').fill('Devolução sintética do E2E.');
+  await returnForm.getByRole('button', { name: 'Devolver ao campus' }).click();
+  await expect(page.locator('#review-status')).toContainText('Devolvido');
   await page.locator('[data-page="institution"]').click();
   await page
     .locator('#document-list li')
@@ -377,9 +401,9 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await expect(page.locator('#message')).toContainText('Calendário restaurado');
   await page.goto(base + editorUrl(calendarId, 'history'));
   await expect(page.locator('#activity-checklist')).toBeVisible();
-  await page.goto(base);
-  await page.locator('[data-page="review-panel"]').click();
-  await page.locator(`[data-open-review="${calendarId}"]`).click();
+  // A restored calendar is a draft outside the queue; its review is still open by address.
+  await page.goto(`${base}${portalPaths['review-panel']}/${calendarId}`);
+  await expect(page.locator('#review-draft-notice')).toBeVisible();
   await expect(page.locator('#review-content')).toBeVisible();
   await expect(
     page.locator(`[data-notes="${criterion}"]`),
