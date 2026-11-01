@@ -61,7 +61,7 @@ for (const width of [1440, 390]) {
       state,
       allEvents,
       evaluateCalendar(state, allEvents),
-      { purpose: 'test', version: 1 },
+      { status: 'rascunho', version: 1 },
       `data:image/png;base64,${logo.toString('base64')}`,
     );
     await page.setViewportSize({ width, height: 1000 });

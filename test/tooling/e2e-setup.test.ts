@@ -132,7 +132,7 @@ test('E2E reserves its own year/campus/account and publishing its fixture preser
     assert.equal(
       await ctx.db
         .query('calendars')
-        .withIndex('by_campusId_and_year', (q) =>
+        .withIndex('by_campusId_and_year_and_status', (q) =>
           q.eq('campusId', prepared.campusId).eq('year', prepared.year),
         )
         .first(),

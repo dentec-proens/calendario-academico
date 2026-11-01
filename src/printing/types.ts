@@ -1,3 +1,4 @@
+import type { CalendarStatus } from '../domain/calendar/lifecycle.ts';
 import type {
   CalendarActivity,
   CalendarPeriod,
@@ -28,9 +29,9 @@ export interface PrintRecord {
   courses?: string;
   classes?: string;
   shifts?: string;
-  purpose?: string;
-  proposalCopy?: boolean;
-  readiness?: { ready: boolean };
+  status?: CalendarStatus;
+  seiProcess?: string;
+  supersededByName?: string;
   version?: number;
   currentCatalogueRevision?: number;
 }

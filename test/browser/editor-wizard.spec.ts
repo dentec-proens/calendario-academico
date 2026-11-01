@@ -96,14 +96,13 @@ for (const width of [1440, 390]) {
     await expect(
       page.locator('#issues').getByRole('link', { name: 'Visualizar calendário' }),
     ).toBeVisible();
-    await expect(page.locator('#make-definitive')).toHaveText('Concluir e tornar definitivo');
-    await page.locator('#make-definitive').click();
-    await expect(page.getByRole('alertdialog')).toContainText(
-      'Isso não representa aprovação institucional.',
-    );
+    const submit = page.locator('[data-lifecycle-action="submit"]');
+    await expect(submit).toHaveText('Enviar para análise');
+    await submit.click();
+    await expect(page.getByRole('alertdialog')).toContainText('ficará travado para edição');
     await page.keyboard.press('Escape');
-    await expect(page.locator('#make-definitive')).toBeFocused();
-    expect(await page.evaluate(() => window.editorTest.calls.conversions)).toBe(0);
+    await expect(submit).toBeFocused();
+    expect(await page.evaluate(() => window.editorTest.calls.transitions)).toBe(0);
     await selectEditorSection(page, 'edit');
     const saves = await page.evaluate(() => window.editorTest.calls.saves);
     await page.locator('#weekdays input[value="1"]').uncheck();

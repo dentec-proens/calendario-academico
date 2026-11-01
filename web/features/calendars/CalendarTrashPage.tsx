@@ -42,7 +42,7 @@ export default function CalendarTrashPage() {
                   disabled={pending}
                   onClick={() =>
                     run(async () => {
-                      await calendarClient.restore(c.id);
+                      await calendarClient.restore(c.id, c.version);
                       notify('Calendário restaurado.');
                     })
                   }

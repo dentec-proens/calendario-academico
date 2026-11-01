@@ -9,7 +9,12 @@ export async function appendAudit(
   user: Member,
   action: string,
   target: Infer<typeof auditTarget>,
-  scope: { campusId?: Id<'campuses'>; calendarId?: Id<'calendars'>; version?: number } = {},
+  scope: {
+    campusId?: Id<'campuses'>;
+    calendarId?: Id<'calendars'>;
+    version?: number;
+    details?: string;
+  } = {},
 ) {
   await ctx.db.insert('audit', { at: Date.now(), actorId: user.id, action, target, ...scope });
 }

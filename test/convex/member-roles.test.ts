@@ -3,6 +3,7 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api, internal } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
+import { act } from '../helpers/lifecycle.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { portalPermissions } from '../../web/portal/permissions.ts';
 
@@ -34,6 +35,7 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
       },
     })
     .then(calendarRecordDates);
+  await act(campus, record.id, 'submit');
   const bootstrap = await reviewer.query(api.workspace.bootstrap, {});
   assert.equal(bootstrap.campuses.length, 2);
   assert.equal(bootstrap.users.length, 0);
@@ -45,6 +47,7 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
   const body = {
     rulesetVersion: support.rulesetVersion,
     baseIdentity: support.baseIdentity,
+    submissionId: support.submission!.id,
     revision: 0,
     calendarVersion: record.version,
     catalogueRevision: support.catalogueRevision,
@@ -104,6 +107,10 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
   );
   await assert.rejects(
     reviewer.mutation(api.calendars.makeDefinitive, { id: record.id, version: record.version }),
+    /não podem alterar/,
+  );
+  await assert.rejects(
+    reviewer.mutation(api.calendars.createCalendarVersion, { id: record.id }),
     /não podem alterar/,
   );
   await assert.rejects(
@@ -346,16 +353,18 @@ test('the review queue reports each parecer state without exposing it to campus 
         courses: 'Curso de teste',
         classes: '',
         shifts: '',
-        purpose: 'test',
       },
     })
     .then(calendarRecordDates);
-  const queue = async () =>
+  const queue = async (status: 'enviado' | 'em_revisao' = 'enviado') =>
     (
       await reviewer.query(api.reviews.reviewQueue, {
+        status,
         paginationOpts: { cursor: null, numItems: 10 },
       })
     ).page.find((item) => item.id === record.id)?.review;
+  assert.equal(await queue(), undefined, 'a draft never reaches the queue');
+  await act(campus, record.id, 'submit');
   assert.equal(await queue(), null);
   const support = await reviewer.query(api.reviews.review, { id: record.id });
   const criteria = reviewCriteriaFor(2027);
@@ -368,6 +377,7 @@ test('the review queue reports each parecer state without exposing it to campus 
       calendarVersion: record.version,
       catalogueRevision: support.catalogueRevision,
       conclusion: support.initialConclusion,
+      submissionId: support.submission!.id,
       entries: criteria.map((c, index) => ({
         id: c.id,
         status: index === 0 ? ('ATENDIDO' as const) : ('PENDENTE' as const),
@@ -376,8 +386,9 @@ test('the review queue reports each parecer state without exposing it to campus 
       })),
     },
   });
+  assert.equal(await queue(), undefined, 'the first save starts the review');
   assert.deepEqual(
-    { ...(await queue()), updatedAt: undefined },
+    { ...(await queue('em_revisao')), updatedAt: undefined },
     {
       revision: 1,
       reviewerName: await client.run(
@@ -387,10 +398,11 @@ test('the review queue reports each parecer state without exposing it to campus 
       reviewed: 1,
       total: criteria.length,
       calendarChanged: false,
+      otherSubmission: false,
     },
   );
   await client.run((ctx) => ctx.db.patch(record.id, { version: record.version + 1 }));
-  assert.equal((await queue())?.calendarChanged, true);
+  assert.equal((await queue('em_revisao'))?.calendarChanged, true);
   await assert.rejects(
     campus.query(api.reviews.reviewQueue, { paginationOpts: { cursor: null, numItems: 10 } }),
     /Acesso exclusivo/,

@@ -34,12 +34,24 @@ export const calendars = {
     request(() =>
       convex.mutation(functions.calendars.deleteCalendar, { id: id as Id<'calendars'>, version }),
     ),
-  restore: (id: string) =>
+  restore: (id: string, version: number) =>
     request(() =>
-      convex.mutation(functions.calendars.restoreCalendar, { id: id as Id<'calendars'> }),
+      convex.mutation(functions.calendars.restoreCalendar, { id: id as Id<'calendars'>, version }),
     ),
-  makeDefinitive: (id: string, version: number) =>
+  transition: (
+    id: string,
+    args: Omit<FunctionArgs<typeof functions.calendars.transitionCalendar>, 'id'>,
+  ) =>
     request(() =>
-      convex.mutation(functions.calendars.makeDefinitive, { id: id as Id<'calendars'>, version }),
+      convex.mutation(functions.calendars.transitionCalendar, {
+        id: id as Id<'calendars'>,
+        ...args,
+      }),
+    ),
+  createVersion: (id: string) =>
+    request(() =>
+      convex
+        .mutation(functions.calendars.createCalendarVersion, { id: id as Id<'calendars'> })
+        .then(calendarRecordDates),
     ),
 };

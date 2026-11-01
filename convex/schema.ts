@@ -5,7 +5,9 @@ import {
   contentState,
   modality,
   purpose,
+  calendarStatus,
   snapshotFields,
+  submissionFields,
   reviewFields,
   fileFields,
   documentType,
@@ -55,7 +57,19 @@ export default defineSchema({
     campusId: v.id('campuses'),
     year: v.number(),
     offerKinds: v.array(modality),
-    purpose,
+    /** Pending contraction: the migration removes it and `status` becomes required. */
+    purpose: v.optional(purpose),
+    status: v.optional(calendarStatus),
+    statusRevision: v.optional(v.number()),
+    label: v.optional(v.string()),
+    currentSubmissionId: v.optional(v.id('calendarSubmissions')),
+    publishedSubmissionId: v.optional(v.id('calendarSubmissions')),
+    derivedFrom: v.optional(v.id('calendars')),
+    seiProcess: v.optional(v.string()),
+    publishedAt: v.optional(v.number()),
+    publishedBy: v.optional(v.id('users')),
+    archivedAt: v.optional(v.number()),
+    supersededBy: v.optional(v.id('calendars')),
     courses: v.string(),
     classes: v.string(),
     shifts: v.string(),
@@ -64,7 +78,8 @@ export default defineSchema({
     deletedAt: v.optional(v.number()),
     deletedBy: v.optional(v.id('users')),
   })
-    .index('by_campusId_and_year', ['campusId', 'year'])
+    .index('by_campusId_and_year_and_status', ['campusId', 'year', 'status'])
+    .index('by_status_and_deletedAt', ['status', 'deletedAt'])
     .index('by_campusId_and_deletedAt', ['campusId', 'deletedAt'])
     .index('by_year', ['year'])
     .index('by_deletedAt', ['deletedAt']),
@@ -75,6 +90,11 @@ export default defineSchema({
     institutionalSnapshot: snapshotFields.institutionalEvents,
     documentSnapshot: snapshotFields.documentSnapshot,
   }).index('by_calendarId', ['calendarId']),
+  calendarSubmissions: defineTable(submissionFields).index('by_calendarId_and_sequence', [
+    'calendarId',
+    'sequence',
+  ]),
+  /** Pending deletion (level 2): no new writes; removed from the schema in the contraction. */
   calendarVersions: defineTable({
     calendarId: v.id('calendars'),
     version: v.number(),

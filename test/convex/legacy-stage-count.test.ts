@@ -3,6 +3,7 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
+import { preserveSubmission } from '../helpers/lifecycle.ts';
 import {
   normalizeOfferCalendar,
   offerCalendarContent,
@@ -24,7 +25,6 @@ async function setup(count?: Count) {
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'a-classificar' }],
         courses: 'Configuração sintética migrada',
-        purpose: 'test',
       },
     })
     .then(calendarRecordDates);
@@ -199,8 +199,9 @@ test('direct complete classification cannot erase a previous required second-sem
   expect(intact.state).toEqual(previous);
 });
 
-test('complete explicit configuration retires surplus bindings and retains the marker in the archived version', async () => {
-  const { actor, record, save } = await setup(3);
+test('complete explicit configuration retires surplus bindings and retains the marker in the submitted copy', async () => {
+  const { actor: _actor, record, save, ...fixture } = await setup(3);
+  const submitted = await preserveSubmission(fixture, record.id);
   const draft = offerOrganizationDraft(record.state, 'integrado');
   draft.organization = 'anual';
   draft.count = '2';
@@ -233,9 +234,5 @@ test('complete explicit configuration retires surplus bindings and retains the m
   expect(
     saved.state.events.find((event) => event.id === oldExcess.id)?.requirementId,
   ).toBeUndefined();
-  const archived = await actor.query(api.calendars.calendarVersion, {
-    id: record.id,
-    version: record.version,
-  });
-  expect(archived.state).toMatchObject({ offers: [{ legacyStageCount: 3 }] });
+  expect((await submitted()).state).toMatchObject({ offers: [{ legacyStageCount: 3 }] });
 });

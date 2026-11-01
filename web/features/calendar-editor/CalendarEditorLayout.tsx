@@ -1,7 +1,14 @@
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { EditorErrorBoundary } from './EditorErrorBoundary.tsx';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, ArrowRight, Check, Download, Ellipsis, Eye, History } from 'lucide-react';
+import LifecycleActions, { ReturnNote, StatusBadge } from '../lifecycle/LifecycleActions.tsx';
+import {
+  ReturnComparison,
+  diffSummary,
+  useReturnComparison,
+} from '../lifecycle/SubmissionComparison.tsx';
+import type { DiffSide } from '#src/domain/calendar/diff.ts';
 import { BackLink } from '../../components/ui/BackLink.tsx';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { CalendarEditorProvider, useCalendarEditor } from './session/CalendarEditorProvider.tsx';
@@ -36,12 +43,30 @@ function EditorFrame() {
     session,
     evaluation,
     readOnly,
+    locked,
+    role,
+    notify,
     formEpoch,
   } = useCalendarEditor();
   const { context, resume, open: eventEditorOpen } = useEventEditor();
   const { message } = useSessionState();
   const { permissions } = useAppSession();
   const exporting = useCalendarExport();
+  const currentContent = useMemo<DiffSide>(
+    () => ({
+      state,
+      institutionalSnapshot: record.institutionalSnapshot,
+      documentSnapshot: record.documentSnapshot,
+      catalogueRevision: record.catalogueRevision,
+    }),
+    [state, record.institutionalSnapshot, record.documentSnapshot, record.catalogueRevision],
+  );
+  const returned = record.status === 'devolvido' ? record.lastReturn : null;
+  const sinceReturn = useReturnComparison(
+    record.id,
+    returned?.submissionId,
+    returned ? currentContent : null,
+  );
   const navigate = useNavigate();
   const drafts = useFormDrafts();
   const pathname = useRouterState({ select: (router) => router.matches.at(-1)?.pathname });
@@ -136,12 +161,16 @@ function EditorFrame() {
             </h1>
           </div>
           <p id="record-heading">
-            <span className="editor-purpose">
-              {record.purpose === 'test' ? 'Calendário de teste' : 'Calendário definitivo'}
-            </span>
-            <span className="editor-heading-status">
-              · {record.readiness.ready && !dirty ? 'Conferência registrada' : 'Em elaboração'}
-            </span>
+            <StatusBadge status={record.status} />
+            {record.seiProcess ? (
+              <span className="editor-heading-status"> · Processo SEI nº {record.seiProcess}</span>
+            ) : null}
+            {record.supersededByName ? (
+              <span className="editor-heading-status">
+                {' '}
+                · Substituído por {record.supersededByName}
+              </span>
+            ) : null}
           </p>
         </div>
         <div className="editor-header-actions">
@@ -214,6 +243,41 @@ function EditorFrame() {
           </details>
         </div>
       </div>
+      {permissions.editCalendars ? (
+        <LifecycleActions
+          className="editor-lifecycle"
+          calendar={record}
+          role={role}
+          notify={notify}
+          submitSummary={returned ? diffSummary(sinceReturn) : undefined}
+          prepare={async () => {
+            if (session.getSnapshot().unapplied)
+              throw new Error('Aplique ou descarte os campos em edição antes de enviar.');
+            return (await session.flush()).version;
+          }}
+        />
+      ) : null}
+      {locked && permissions.editCalendars ? (
+        <p className="help" id="editor-locked">
+          {record.status === 'vigente'
+            ? 'Calendário publicado. Para alterá-lo, crie uma nova versão na lista de calendários.'
+            : record.status === 'enviado'
+              ? 'Calendário enviado para análise. Recolha o envio para voltar a editar.'
+              : 'Calendário em análise ou concluído: a edição volta após uma devolução.'}
+        </p>
+      ) : null}
+      {returned ? (
+        <ReturnNote lastReturn={returned}>
+          <ReturnComparison
+            calendarId={record.id}
+            returnedSubmissionId={returned.submissionId}
+            sequence={returned.sequence}
+            diff={sinceReturn}
+          />
+        </ReturnNote>
+      ) : record.status === 'rascunho' && record.lastReturn ? (
+        <ReturnNote lastReturn={record.lastReturn} />
+      ) : null}
       <dl className="editor-calendar-details" aria-label="Dados gerais do calendário">
         <div>
           <dt>Forma de oferta/nível</dt>
@@ -416,15 +480,6 @@ function EditorFrame() {
               >
                 <ArrowLeft aria-hidden="true" /> Voltar à revisão
               </Link>
-            ) : !readOnly && record.purpose === 'test' ? (
-              <button
-                id="make-definitive"
-                type="button"
-                disabled={exporting.pending}
-                onClick={exporting.makeDefinitive}
-              >
-                <Check aria-hidden="true" /> Concluir e tornar definitivo
-              </button>
             ) : null}
           </div>
         </div>

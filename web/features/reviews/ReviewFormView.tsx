@@ -13,6 +13,8 @@ import { Notice } from '../../components/ui/Notice.tsx';
 interface Props {
   draft: ReviewDraft;
   busy: boolean;
+  /** The review is saved only while the calendar is submitted or under review. */
+  readOnly: boolean;
   pending: string;
   error: string;
   preview: ReviewDocument | null;
@@ -33,6 +35,7 @@ interface Props {
 export default function ReviewFormView({
   draft,
   busy,
+  readOnly,
   pending,
   error,
   preview,
@@ -84,11 +87,13 @@ export default function ReviewFormView({
         <ExternalLink size={16} aria-hidden="true" /> Abrir calendário em outra aba
       </a>
       <div className="review-save-status" role="status">
-        {dirty
-          ? 'Há alterações por salvar. Confirmar um critério não salva o parecer.'
-          : opened.review
-            ? 'Todas as alterações foram salvas.'
-            : 'O parecer ainda não foi salvo.'}
+        {readOnly
+          ? 'Parecer em consulta: só pode ser alterado com o calendário enviado ou em revisão.'
+          : dirty
+            ? 'Há alterações por salvar. Confirmar um critério não salva o parecer.'
+            : opened.review
+              ? 'Todas as alterações foram salvas.'
+              : 'O parecer ainda não foi salvo.'}
       </div>
       <div className="actions review-export-actions">
         <Button
@@ -135,7 +140,7 @@ export default function ReviewFormView({
         >
           <ClipboardCopy size={18} aria-hidden="true" /> Copiar parecer para SEI
         </Button>
-        <Button type="submit" form="review-form" disabled={busy}>
+        <Button type="submit" form="review-form" disabled={busy || readOnly}>
           <Save size={18} aria-hidden="true" />{' '}
           {pending === 'save' ? 'Salvando parecer…' : 'Salvar parecer'}
         </Button>
@@ -147,7 +152,7 @@ export default function ReviewFormView({
             id="review-process"
             maxLength={100}
             placeholder="Informe o número do processo"
-            disabled={busy}
+            disabled={busy || readOnly}
             value={draft.processNumber}
             onValueChange={(value) => changeField('processNumber', value)}
           />
@@ -156,7 +161,7 @@ export default function ReviewFormView({
             id="review-norm"
             maxLength={1000}
             placeholder="Resolução e identificação oficial"
-            disabled={busy}
+            disabled={busy || readOnly}
             value={draft.applicableNorm}
             onValueChange={(value) => changeField('applicableNorm', value)}
           />
@@ -180,7 +185,7 @@ export default function ReviewFormView({
               entry={draft.entries.find((entry) => entry.id === criterion.id) || criterion.initial}
               changed={Boolean(draft.changed[criterion.id])}
               saved={Boolean(opened.review?.entries.some((entry) => entry.id === criterion.id))}
-              busy={busy}
+              busy={busy || readOnly}
               onChange={(field, value) => changeEntry(criterion.id, field, value)}
               onConfirm={() => confirmEntry(criterion.id)}
             />
@@ -190,7 +195,7 @@ export default function ReviewFormView({
           type="button"
           id="edit-conclusion"
           variant="secondary"
-          disabled={busy}
+          disabled={busy || readOnly}
           onClick={onEditConclusion}
         >
           <Pencil size={16} aria-hidden="true" /> Editar texto do parecer
@@ -200,7 +205,7 @@ export default function ReviewFormView({
           <textarea
             id="review-conclusion"
             ref={conclusionRef}
-            disabled={!conclusionEditable || busy}
+            disabled={!conclusionEditable || busy || readOnly}
             maxLength={8000}
             rows={5}
             value={draft.conclusion}
@@ -213,7 +218,7 @@ export default function ReviewFormView({
               id="review-stale"
               type="checkbox"
               required
-              disabled={busy}
+              disabled={busy || readOnly}
               checked={draft.acknowledgeStale}
               onChange={(event) => changeField('acknowledgeStale', event.target.checked)}
             />
@@ -224,7 +229,7 @@ export default function ReviewFormView({
           Use as observações para registrar evidências ou justificar sua avaliação quando
           necessário.
         </p>
-        <Button type="submit" disabled={busy}>
+        <Button type="submit" disabled={busy || readOnly}>
           <Save size={18} aria-hidden="true" />{' '}
           {pending === 'save' ? 'Salvando parecer…' : 'Salvar parecer'}
         </Button>

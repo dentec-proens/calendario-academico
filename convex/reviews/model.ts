@@ -36,5 +36,8 @@ export function reviewProgress(row: Doc<'reviews'>, calendar: Doc<'calendars'>) 
     ).length,
     total: criteria.length,
     calendarChanged: row.calendarVersion !== calendar.version,
+    // A review of another round never counts for the open submission, even without edits.
+    otherSubmission:
+      !!calendar.currentSubmissionId && row.submissionId !== calendar.currentSubmissionId,
   };
 }

@@ -100,7 +100,8 @@ const calendar: Bootstrap['calendars'][number] = {
   campusId,
   year: 2027,
   offerKinds: ['integrado'],
-  purpose: 'test',
+  status: 'rascunho',
+  statusRevision: 0,
   courses: 'Curso de teste',
   classes: '',
   shifts: '',
@@ -133,7 +134,14 @@ const documents: DocumentsData['documents'] = (['rascunho', 'vigente', 'arquivad
   }),
 );
 function reviewQueueRows() {
-  return calendarRows(false).map((item) => ({ ...item, review: null }));
+  // The queue lists submitted calendars only.
+  return calendarRows(false).map((item) => ({
+    ...item,
+    status: 'enviado' as const,
+    statusRevision: 1,
+    submission: null,
+    review: null,
+  }));
 }
 function calendarRows(deleted: boolean) {
   return [

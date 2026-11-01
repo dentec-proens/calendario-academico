@@ -10,8 +10,11 @@ import { reviewNorm } from '../src/domain/reviews/citation';
 import { query, mutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
 import { calendarRow, summary } from './calendars/model';
-import { calendarQuery } from './calendars/record';
-import { baseRecord } from './calendars/record';
+import { baseRecord, submissionSummary } from './calendars/record';
+import { applyTransition } from './calendars/transitions';
+import { calendarStatus } from './validators';
+import { officialApproval } from '../src/domain/calendar/lifecycle';
+import type { Doc } from './_generated/dataModel';
 import * as contracts from './contracts';
 import { documentDto } from './documents/model';
 import { appendAudit } from './lib/audit';
@@ -24,28 +27,55 @@ import type { Infer } from 'convex/values';
 import { v } from 'convex/values';
 
 const idArgs = { id: v.id('calendars') };
+const queueStatus = v.union(
+  ...calendarStatus.members.filter((member) => member.value !== 'rascunho'),
+);
 
+/** A review counts only for the submission it was saved in, besides the content version. */
+function reviewForSubmission(
+  review: Doc<'reviews'> | null,
+  row: Pick<Doc<'calendars'>, 'currentSubmissionId'>,
+) {
+  return !!review && !!row.currentSubmissionId && review.submissionId === row.currentSubmissionId;
+}
+
+/** The reviewer works by status; drafts never reach the queue. */
 export const reviewQueue = query({
-  args: { paginationOpts: paginationOptsValidator },
+  args: { paginationOpts: paginationOptsValidator, status: v.optional(queueStatus) },
   returns: v.object({
     page: v.array(contracts.reviewQueueItem),
     isDone: v.boolean(),
     continueCursor: v.string(),
   }),
-  handler: async (ctx, { paginationOpts }) => {
+  handler: async (ctx, { paginationOpts, status = 'enviado' }) => {
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
     pageBound(paginationOpts.numItems);
-    const result = await calendarQuery(ctx, user, false).order('desc').paginate(paginationOpts);
+    const result = await ctx.db
+      .query('calendars')
+      .withIndex('by_status_and_deletedAt', (q) =>
+        q.eq('status', status).eq('deletedAt', undefined),
+      )
+      .order('desc')
+      .paginate(paginationOpts);
     const page = await Promise.all(
       result.page.map(async (row) => {
-        const [campus, review] = await Promise.all([
+        const [campus, review, submission] = await Promise.all([
           ctx.db.get(row.campusId),
           reviewRow(ctx, row._id),
+          row.currentSubmissionId ? ctx.db.get(row.currentSubmissionId) : null,
         ]);
         if (!campus) fail('Campus não encontrado.', 404);
         return {
           ...(await summary(ctx, row, campus)),
+          submission: submission
+            ? {
+                id: submission._id,
+                sequence: submission.sequence,
+                submittedAt: iso(submission.submittedAt),
+                resubmission: submission.previousSubmissionId !== undefined,
+              }
+            : null,
           review: review ? reviewProgress(review, row) : null,
         };
       }),
@@ -92,26 +122,31 @@ export const review = query({
   handler: async (ctx, { id }) => {
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
-    const { record, base, compatibility, review: prior } = await baseRecord(ctx, user, id);
+    const { row, status, record, compatibility, review: prior } = await baseRecord(ctx, user, id);
     const support = reviewSupport(record, [
       ...compatibility.snapshot.events,
       ...record.state.events,
     ]);
     return clean({
       ...support,
+      officialApproval: officialApproval(status),
+      status,
+      statusRevision: row.statusRevision ?? 0,
+      submission: (await submissionSummary(ctx, user, row)).submission,
       calendar: { ...support.calendar, id: record.id, campus: record.state.campus },
       initialConclusion: initialConclusion(support),
-      catalogueRevision: base.revision,
+      catalogueRevision: compatibility.snapshot.revision,
       review: prior ? reviewDto(prior) : null,
       baseIdentity: compatibility.identity,
       rulesetVersion: rulesetVersion(record.state),
       stale:
         !!prior &&
-        !reviewIsCurrent(prior, record.version, {
-          revision: base.revision,
-          identity: compatibility.identity,
-          rulesetVersion: rulesetVersion(record.state),
-        }),
+        (!reviewForSubmission(prior, row) ||
+          !reviewIsCurrent(prior, record.version, {
+            revision: compatibility.snapshot.revision,
+            identity: compatibility.identity,
+            rulesetVersion: rulesetVersion(record.state),
+          })),
     }) as Infer<typeof contracts.reviewSupportDto>;
   },
 });
@@ -123,7 +158,19 @@ export const saveReview = mutation({
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
-    const { record, base, docs, compatibility, review: prior } = await baseRecord(ctx, user, id);
+    const {
+      row,
+      status,
+      record,
+      base,
+      docs,
+      compatibility,
+      review: prior,
+    } = await baseRecord(ctx, user, id);
+    if (status !== 'enviado' && status !== 'em_revisao')
+      fail('O parecer só pode ser alterado enquanto o calendário está enviado ou em revisão.', 409);
+    if (!body.submissionId || body.submissionId !== row.currentSubmissionId)
+      fail('O calendário foi reenviado ou recolhido. Reabra a revisão do envio atual.', 409);
     const currentRules = rulesetVersion(record.state);
     const criteria = reviewCriteriaFor(record.state.year);
     if (!equivalentRulesets(body.rulesetVersion, currentRules))
@@ -148,11 +195,12 @@ export const saveReview = mutation({
       fail('Outro revisor atualizou este parecer. Reabra antes de salvar.', 409);
     if (
       prior &&
-      !reviewIsCurrent(prior, record.version, {
-        revision: base.revision,
-        identity: compatibility.identity,
-        rulesetVersion: currentRules,
-      }) &&
+      (!reviewForSubmission(prior, row) ||
+        !reviewIsCurrent(prior, record.version, {
+          revision: base.revision,
+          identity: compatibility.identity,
+          rulesetVersion: currentRules,
+        })) &&
       !body.acknowledgeStale
     )
       fail('Confirme a reavaliação das conclusões anteriores após a mudança de versão.', 409);
@@ -185,6 +233,7 @@ export const saveReview = mutation({
       fail('Síntese ou identificação muito longa.');
     const next = {
       calendarId: id,
+      submissionId: body.submissionId,
       calendarVersion: record.version,
       catalogueRevision: base.revision,
       baseIdentity: compatibility.identity,
@@ -211,6 +260,14 @@ export const saveReview = mutation({
       { type: 'calendar', id },
       { calendarId: id, campusId: record.campusId, version: record.version },
     );
+    // The first save of the current submission starts its review.
+    if (status === 'enviado')
+      await applyTransition(ctx, user, {
+        id,
+        from: status,
+        statusRevision: row.statusRevision ?? 0,
+        action: 'startReview',
+      });
     return { revision: next.revision };
   },
 });
@@ -221,12 +278,13 @@ export const exportReview = query({
   handler: async (ctx, { id, revision }) => {
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
-    const { record, base, compatibility, review: prior } = await baseRecord(ctx, user, id);
+    const { row, record, compatibility, review: prior } = await baseRecord(ctx, user, id);
     if (!prior) fail('Salve o parecer antes de exportar.', 409);
     if (
       prior.revision !== revision ||
+      !reviewForSubmission(prior, row) ||
       !reviewIsCurrent(prior, record.version, {
-        revision: base.revision,
+        revision: compatibility.snapshot.revision,
         identity: compatibility.identity,
         rulesetVersion: rulesetVersion(record.state),
       })

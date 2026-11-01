@@ -1,0 +1,124 @@
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--ui-border-soft);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status-badge[data-status='enviado'],
+.status-badge[data-status='em_revisao'] {
+  border-color: var(--ui-info-border);
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
+}
+.status-badge[data-status='devolvido'] {
+  border-color: var(--ui-warning-border);
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+.status-badge[data-status='revisado'],
+.status-badge[data-status='vigente'] {
+  border-color: var(--ui-success-border);
+  background: var(--ui-action-soft);
+  color: var(--ui-action);
+}
+
+.lifecycle-actions,
+.lifecycle-form,
+.submission-comparison,
+.submission-history {
+  display: grid;
+  gap: 12px;
+}
+.lifecycle-form {
+  padding: 16px;
+  border: 1px solid var(--ui-border-soft);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface-subtle);
+}
+.lifecycle-replaced ul,
+.submission-history ol {
+  margin: 0;
+  padding-left: 20px;
+}
+.return-note-text {
+  white-space: pre-wrap;
+}
+
+.submission-comparison h3,
+.submission-comparison h4 {
+  margin: 0;
+}
+.submission-comparison section {
+  display: grid;
+  gap: 6px;
+}
+.diff-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.diff-list > li {
+  padding: 8px 12px;
+  border-left: 3px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+}
+.diff-list > li[data-kind='added'] {
+  border-left-color: var(--ui-action);
+}
+.diff-list > li[data-kind='removed'] {
+  border-left-color: var(--ui-danger);
+}
+.diff-list > li[data-kind='changed'],
+.diff-list > li[data-kind='reidentified'] {
+  border-left-color: var(--ui-info);
+}
+.diff-fields {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+.diff-days {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.diff-days th,
+.diff-days td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--ui-border-soft);
+  text-align: left;
+}
+.diff-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.diff-pair label {
+  display: grid;
+  gap: 4px;
+  min-width: min(100%, 240px);
+}
+
+.review-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.review-tabs [aria-selected='true'] {
+  border-color: var(--ui-action);
+  background: var(--ui-action-soft);
+  color: var(--ui-action);
+}
+.editor-lifecycle,
+.review-lifecycle {
+  margin-block: 4px 16px;
+}

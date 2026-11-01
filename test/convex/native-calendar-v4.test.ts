@@ -5,6 +5,7 @@ import { api } from '../../convex/_generated/api.js';
 import type { DomainState } from '../../convex/validators.ts';
 import type { CalendarContentV4, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
+import { act, preserveSubmission } from '../helpers/lifecycle.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { reviewCriteria } from '../../src/domain/reviews/criteria.ts';
 import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
@@ -24,7 +25,6 @@ async function setup() {
           { kind: 'graduacao', organization: 'a-classificar' },
         ],
         courses: 'Ofertas sintéticas',
-        purpose: 'test',
       },
     })
     .then(calendarRecordDates);
@@ -45,7 +45,6 @@ test.each(['anual', 'semestral', 'a-classificar'] as const)(
             { kind: 'graduacao', organization },
           ],
           courses: 'Sintético',
-          purpose: 'test',
         },
       })
       .then(calendarRecordDates);
@@ -72,7 +71,7 @@ test.each(['anual', 'semestral', 'a-classificar'] as const)(
 );
 
 test('v4 round-trip preserves independent organization, intake, actual dates and intended admission', async () => {
-  const { actor, record } = await setup();
+  const { actor, record, ...fixture } = await setup();
   const state: DomainState = {
     ...record.state,
     offers: record.state.offers.map((offer): DomainState['offers'][number] => ({
@@ -131,6 +130,7 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
       },
     ],
   };
+  const submitted = await preserveSubmission(fixture, record.id);
   const saved = await actor
     .mutation(api.calendars.saveCalendar, {
       id: record.id,
@@ -152,10 +152,7 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
   });
   expect(loaded.state.offers).toEqual(state.offers);
   expect(loaded.state.periods).toEqual(state.periods);
-  expect(
-    (await actor.query(api.calendars.calendarVersion, { id: record.id, version: record.version }))
-      .state,
-  ).toEqual(record.state);
+  expect((await submitted()).state).toEqual(record.state);
 });
 
 test('a save cannot silently adopt another ruleset or change history', async () => {
@@ -176,7 +173,7 @@ test('a save cannot silently adopt another ruleset or change history', async () 
   expect(
     (await actor.query(api.calendars.calendar, { id: record.id }).then(calendarRecordDates)).state,
   ).toEqual(record.state);
-  expect(await client.run((ctx) => ctx.db.query('calendarVersions').take(10))).toEqual([]);
+  expect(await client.run((ctx) => ctx.db.query('calendarSubmissions').take(10))).toEqual([]);
 });
 
 test('direct backend writes retain temporal and offer-scope validation', async () => {
@@ -276,9 +273,10 @@ test('a direct inclusion must fit every explicitly covered offer period', async 
   expect(saved.state.events[0].offers).toEqual(['integrado']);
 });
 
-test('a legacy review cannot certify current rules or export without reevaluating the criteria', async () => {
+test('a legacy review without submission cannot certify current rules or export without reevaluating the criteria', async () => {
   const { client, asClient, ids, record } = await setup(),
     admin = asClient('admin');
+  await act(admin, record.id, 'submit');
   const prior = {
     calendarId: record.id,
     calendarVersion: record.version,
@@ -305,11 +303,13 @@ test('a legacy review cannot certify current rules or export without reevaluatin
   await expect(
     admin.query(api.reviews.exportReview, { id: record.id, revision: 1 }),
   ).rejects.toThrow('O parecer está desatualizado. Reabra, confira e salve antes de exportar.');
+  expect(support.review).not.toHaveProperty('submissionId');
   const body = {
     revision: 1,
     calendarVersion: record.version,
     catalogueRevision: record.catalogueRevision,
     baseIdentity: support.baseIdentity,
+    submissionId: support.submission!.id,
     acknowledgeStale: true,
     entries: prior.entries,
     conclusion: prior.conclusion,

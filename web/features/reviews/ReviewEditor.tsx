@@ -21,8 +21,11 @@ import { Notice, type NoticeTone } from '../../components/ui/Notice.tsx';
 export default function ReviewEditor({
   opened,
   onMessage,
+  onWorkChange,
 }: {
   opened: ReviewSupport;
+  /** Reports unsaved or saving work, which the lifecycle actions must not skip over. */
+  onWorkChange?: (pending: boolean) => void;
   /** Reports an outcome; confirmations are the default tone. */
   onMessage: (message: string, tone?: NoticeTone) => void;
 }) {
@@ -53,6 +56,7 @@ export default function ReviewEditor({
         baseIdentity: base.baseIdentity,
         rulesetVersion: base.rulesetVersion,
         acknowledgeStale: draft.acknowledgeStale,
+        ...(base.submission ? { submissionId: base.submission.id } : {}),
       });
       const updated = await reviews.get(base.calendar.id);
       if (!isCurrent()) return;
@@ -66,7 +70,12 @@ export default function ReviewEditor({
   });
   const draft = values.draft;
   const dirty = draft.dirty;
-  const previewRevision = `${draft.opened.calendar.version}:${draft.opened.baseIdentity ?? draft.opened.catalogueRevision}:${draft.opened.review?.revision || 0}`;
+  const readOnly = opened.status !== 'enviado' && opened.status !== 'em_revisao';
+  useEffect(() => {
+    onWorkChange?.(dirty || pending);
+  }, [dirty, pending, onWorkChange]);
+  useEffect(() => () => onWorkChange?.(false), [onWorkChange]);
+  const previewRevision = `${draft.opened.submission?.id ?? ''}:${draft.opened.calendar.version}:${draft.opened.baseIdentity ?? draft.opened.catalogueRevision}:${draft.opened.review?.revision || 0}`;
   const preview = previewData?.revision === previewRevision ? previewData.document : null;
   const setPreview = (document: ReviewDocument | null) =>
     setPreviewData(document ? { document, revision: previewRevision } : null);
@@ -91,7 +100,10 @@ export default function ReviewEditor({
         identity: opened.baseIdentity,
         rulesetVersion: opened.rulesetVersion,
       },
-    ) || (opened.review?.revision || 0) !== (draft.opened.review?.revision || 0);
+    ) ||
+    (opened.review?.revision || 0) !== (draft.opened.review?.revision || 0) ||
+    // A round opened before a withdrawal or resubmission never writes to the new one.
+    opened.submission?.id !== draft.opened.submission?.id;
   useEffect(() => {
     if (!remoteChanged || dirty || pending || exporting) return;
     form.reset({ draft: initialDraft(opened) });
@@ -206,6 +218,7 @@ export default function ReviewEditor({
       <ReviewFormView
         draft={draft}
         busy={busy}
+        readOnly={readOnly}
         pending={pending ? 'save' : exporting ? 'export' : ''}
         error={error}
         preview={preview}

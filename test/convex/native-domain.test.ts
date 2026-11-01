@@ -11,13 +11,13 @@ import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { initialCatalogue } from '../../src/domain/institution/catalogue.ts';
 import { teacherDayId } from '../fixtures/observances.ts';
 import { createNativeFixture as fixture } from '../helpers/native-database.ts';
+import { preserveSubmission } from '../helpers/lifecycle.ts';
 
 const createBody = (campusId = 'a') => ({
   campusId,
   year: 2027,
   offers: [{ kind: 'integrado' as const, organization: 'anual' as const }],
   courses: 'Técnico',
-  purpose: 'test' as const,
 });
 const changedState = (state: Record<string, unknown>, name = 'Atividade') => ({
   ...state,
@@ -104,9 +104,8 @@ test('native mutations preserve immutable versions, reject stale writers and kee
   const full = await inspect();
   const record = full.calendars.find((c: { id: string }) => c.id === created.id)!;
   assert.equal(record.version, 3);
-  assert.equal(record.versions.length, 2);
-  assert.deepEqual(JSON.parse(JSON.stringify(record.versions[0].state)), created.state);
-  assert.equal(record.versions[1].state.events[0].name, 'Atividade');
+  assert.deepEqual(record.versions, [], 'saves no longer archive a snapshot');
+  assert.match(record.state.events[0].name, /^Sessão [AB]$/);
   const logs = await campus.read('/api/logs');
   assert.equal(logs.entries.length, 3);
   assert(logs.entries.every((entry: { actor: string }) => entry.actor === 'Campus A'));
@@ -119,6 +118,7 @@ test('native publication gates base revisions and reviews retain concurrent revi
   const created = await campus.write('/api/calendars', createBody());
   const path = '/api/calendars/' + created.id;
   const reviewPath = '/api/reviews/' + created.id;
+  await campus.write(path + '/transition', { action: 'submit' });
   const support = await admin.read(reviewPath);
   await assert.rejects(
     admin.write(reviewPath + '/export', { revision: 0 }),
@@ -143,12 +143,14 @@ test('native publication gates base revisions and reviews retain concurrent revi
   assert.match(exported.html, /minuta/i);
   assert.match(exported.text, /Não constitui aprovação oficial/i);
   await assert.rejects(admin.write(reviewPath, body, 'PUT'), /Outro revisor/);
+  await admin.write(path + '/transition', { action: 'return', note: 'Ajuste a atividade.' });
   await campus.write(path, saveBody(await campus.read(path)), 'PUT');
   assert.equal((await admin.read(reviewPath)).stale, true);
   await assert.rejects(
     admin.write(reviewPath + '/export', { revision: 1 }),
     /parecer está desatualizado/,
   );
+  await campus.write(path + '/transition', { action: 'submit' });
   const second = { ...body, revision: 1, calendarVersion: 2 };
   await assert.rejects(admin.write(reviewPath, second, 'PUT'), /Confirme a reavaliação/);
   assert.equal(
@@ -156,6 +158,7 @@ test('native publication gates base revisions and reviews retain concurrent revi
     2,
   );
   await assert.rejects(campus.read(reviewPath), /Acesso exclusivo/);
+  await admin.write(path + '/transition', { action: 'return', note: 'Confira a base.' });
   await admin.write('/api/catalogue', {
     revision: 1,
     name: 'Feriado',
@@ -192,12 +195,12 @@ test('native calendar trash is scoped and restores without destroying archive me
   await campus.write(path + '/restore');
   const restored = await campus.read(path);
   assert.equal(restored.version, 2);
-  assert.equal(restored.versions.length, 1);
+  assert.equal(restored.status, 'rascunho');
   const ready = await campus.write(path + '/make-definitive', { version: 2 });
-  assert.equal(ready.purpose, 'definitive');
+  assert.equal(ready.purpose, 'definitive', 'the retired conversion answers without effect');
   const full = await inspect();
-  assert.equal(full.calendars[0].versions.length, 2);
-  assert.equal(full.calendars[0].versions[1].purpose, 'test');
+  assert.equal(full.calendars[0].versions.length, 0);
+  assert.equal(full.calendars[0].status, 'rascunho');
 });
 
 test('native document actions register only validated storage files', async () => {
@@ -301,7 +304,7 @@ test('native calendar saves validate per-offer stages and preserve the selected 
 });
 
 test('native calendar retains the campus teacher-day choice in immutable PDF inputs and protects institutional events', async () => {
-  const { as, inspect } = await fixture({
+  const { as, inspect, ...native } = await fixture({
     catalogue: {
       ...initialCatalogue(),
       events: initialCatalogue().events.map((event) => ({ ...event })),
@@ -357,6 +360,7 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
       'PUT',
     ),
   );
+  const submitted = await preserveSubmission(native, record.id);
   await campus.write(
     path,
     {
@@ -375,11 +379,11 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
     full.catalogue.events.find((e) => 'inst:' + e.id === teacherDayId)!.start,
     '2027-10-15',
   );
-  assert.equal(full.calendars[0].versions[1].state.observanceDates?.['teacher-day'], '2027-10-13');
+  assert.equal((await submitted()).state.observanceDates?.['teacher-day'], '2027-10-13');
 });
 
 test('native institutional publication requires admin confirmation and preserves earlier document snapshots', async () => {
-  const { as, inspect, ids } = await fixture({
+  const { as, ids, ...native } = await fixture({
     documents: [
       {
         id: 'prior',
@@ -402,6 +406,7 @@ test('native institutional publication requires admin confirmation and preserves
   const admin = as('admin');
   const campus = as('campus-a');
   const record = await campus.write('/api/calendars', createBody());
+  const submitted = await preserveSubmission(native, record.id);
   assert.deepEqual(
     record.documentSnapshot.map((doc: { id: string }) => doc.id),
     [ids.documents.prior],
@@ -472,7 +477,7 @@ test('native institutional publication requires admin confirmation and preserves
     updated.documentSnapshot.map((doc: { id: string }) => doc.id),
     [ids.documents.next],
   );
-  const archived = (await inspect()).calendars[0].versions[0];
+  const archived = await submitted();
   assert.deepEqual(
     archived.documentSnapshot.map((doc: { id: string }) => doc.id),
     [ids.documents.prior],
@@ -482,7 +487,7 @@ test('native institutional publication requires admin confirmation and preserves
   assert.deepEqual((await campus.read(path)).currentDocuments, []);
   await admin.write('/api/documents/next/status', { revision: 3, status: 'arquivado' });
   assert.equal((await admin.read('/api/documents')).revision, 3, 'repeated status is idempotent');
-  assert.deepEqual((await inspect()).calendars[0].versions[0], archived);
+  assert.deepEqual(await submitted(), archived);
 });
 
 test('institutional revisions affect only calendars and reviews for the changed year', async () => {
@@ -496,6 +501,7 @@ test('institutional revisions affect only calendars and reviews for the changed 
   const record = await campus.write('/api/calendars', createBody());
   const path = '/api/calendars/' + record.id;
   const reviewPath = '/api/reviews/' + record.id;
+  await campus.write(path + '/transition', { action: 'submit' });
   const support = await admin.read(reviewPath);
   await admin.write(
     reviewPath,
@@ -537,7 +543,8 @@ test('institutional revisions affect only calendars and reviews for the changed 
   const unaffected = await campus.read(path);
   assert.equal(unaffected.currentCatalogueRevision, record.currentCatalogueRevision);
   assert.equal((await admin.read(reviewPath)).stale, false);
-  const saved = await campus.write(path, saveBody(unaffected), 'PUT');
+  await admin.write(path + '/transition', { action: 'return', note: 'Ajuste.' });
+  const saved = await campus.write(path, saveBody(await campus.read(path)), 'PUT');
   assert.equal(saved.version, 2, 'saving the original year still uses its existing base revision');
 });
 

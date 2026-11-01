@@ -7,9 +7,8 @@ import {
   type PropsWithChildren,
 } from 'react';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
-import { calendars } from '../../../shared/convex/calendars.ts';
 import { saveBlob } from '../../../shared/convex/files.ts';
-import { confirmAction } from '../../../components/confirmation.ts';
+import { fileNamePrefix } from '#src/domain/calendar/lifecycle.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 
 function useExportController() {
@@ -52,7 +51,7 @@ function useExportController() {
       if (!active.current) return;
       // The browser suggests the document title as the name of the saved PDF.
       const title = document.title;
-      document.title = `${saved.purpose === 'test' ? 'teste-' : !saved.readiness.ready ? 'proposta-' : ''}calendario-${saved.state.year}-v${saved.version}`;
+      document.title = `${fileNamePrefix(saved.status)}calendario-${saved.state.year}-v${saved.version}`;
       window.addEventListener('afterprint', () => (document.title = title), { once: true });
       window.print();
     });
@@ -65,29 +64,7 @@ function useExportController() {
     );
     notify('Download solicitado. Somente dados aplicados foram incluídos.');
   };
-  const makeDefinitive = () => {
-    void confirmAction({
-      title: 'Tornar calendário definitivo?',
-      description:
-        'Os dados e o histórico serão mantidos. Você poderá continuar editando o calendário.',
-      consequence:
-        'Isso não representa aprovação institucional. A geração definitiva exige a revisão prevista no sistema.',
-      confirmLabel: 'Tornar definitivo',
-      pendingLabel: 'Convertendo…',
-      intent: 'primary',
-      onConfirm: async () => {
-        const saved = await session.flush();
-        if (!active.current) throw new Error('A sessão de edição foi encerrada.');
-        const definitive = await calendars.makeDefinitive(saved.id, saved.version);
-        if (!active.current) return;
-        session.confirmDefinitive(definitive);
-        notify(
-          'Calendário convertido para definitivo. Confira as pendências antes de imprimir a versão definitiva.',
-        );
-      },
-    });
-  };
-  return { pending, print, copy, makeDefinitive, purpose: record.purpose };
+  return { pending, print, copy, status: record.status };
 }
 
 const ExportContext = createContext<ReturnType<typeof useExportController> | null>(null);

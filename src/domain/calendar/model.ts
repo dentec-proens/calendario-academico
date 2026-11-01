@@ -140,6 +140,7 @@ export interface CalendarReview {
   calendarId: string;
   calendarVersion: number;
   catalogueRevision: number;
+  submissionId?: string;
   applicableNorm?: string;
   entries: ReviewEntry[];
 }

@@ -128,7 +128,7 @@ test('monthly, bimester, semester and annual weekday counts reconcile, respect o
           report.annual.byWeekday![weekday],
         );
     }
-  const html = proensLayout(input, events, result, { purpose: 'test' });
+  const html = proensLayout(input, events, result, { status: 'rascunho' });
   for (const title of [
     'Distribuição por mês',
     'Etapas de avaliação — 1º semestre',

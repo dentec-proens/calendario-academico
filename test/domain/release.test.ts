@@ -163,7 +163,7 @@ test('definitive release requires every reviewed criterion, current versions and
   assert.equal(releaseReadiness(record, db).ready, false);
 });
 
-test('explicit technical modality inherits scoped events and test PDF identifies its purpose', () => {
+test('explicit technical modality inherits scoped events and the PDF mark depends only on the status', () => {
   const event = {
     id: 'e',
     active: true,
@@ -183,10 +183,21 @@ test('explicit technical modality inherits scoped events and test PDF identifies
     ]).length,
     0,
   );
-  const html = proensLayout({ year: 2027, campus: 'Test', periods: [], offers: [] }, [], null, {
-    purpose: 'test',
-  });
-  assert.match(html, /CALENDÁRIO DE TESTE — SEM VALIDADE PARA ENVIO/);
+  const layout = (record: Parameters<typeof proensLayout>[3]) =>
+    proensLayout({ year: 2027, campus: 'Test', periods: [], offers: [] }, [], null, record);
+  assert.match(layout({ status: 'rascunho' }), /RASCUNHO — SEM VALIDADE/);
+  assert.match(layout({}), /RASCUNHO — SEM VALIDADE/);
+  assert.match(layout({ status: 'em_revisao' }), /CÓPIA PARA ANÁLISE DA PROENS/);
+  assert.match(layout({ status: 'devolvido' }), /EM AJUSTE — SEM VALIDADE/);
+  assert.match(layout({ status: 'revisado' }), /REVISADO — AGUARDANDO PUBLICAÇÃO/);
+  const published = layout({ status: 'vigente', seiProcess: '23411.000001/2027-11' });
+  assert.match(published, /PROCESSO SEI Nº 23411\.000001\/2027-11/);
+  assert.doesNotMatch(published, /Sem aprovação oficial/);
+  assert.match(layout({ status: 'revisado' }), /Sem aprovação oficial/);
+  assert.match(
+    layout({ status: 'arquivado', supersededByName: 'Calendário 2027 - Campus Test' }),
+    /SUBSTITUÍDO POR CALENDÁRIO 2027 - CAMPUS TEST/,
+  );
 });
 
 test('combined calendars scope exclusions by modality and do not presume a postgraduate minimum', () => {

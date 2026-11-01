@@ -8,6 +8,10 @@ import ReviewEditor from './ReviewEditor.tsx';
 import type { ReviewSupport } from './review-values.ts';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { Notice, type NoticeTone } from '../../components/ui/Notice.tsx';
+import { useAppSession } from '../../app/session.tsx';
+import LifecycleActions, { StatusBadge } from '../lifecycle/LifecycleActions.tsx';
+import SubmissionComparison from '../lifecycle/SubmissionComparison.tsx';
+import { statusLabels } from '#src/domain/calendar/lifecycle.ts';
 
 export default function ReviewPage() {
   const calendarId = useFeatureRoute().calendarId || '';
@@ -20,6 +24,8 @@ export default function ReviewPage() {
     [],
   );
   const drafts = useFormDrafts();
+  const { info } = useAppSession();
+  const [reviewWork, setReviewWork] = useState(false);
   // useQueries reports a removed calendar as a value instead of throwing to the error boundary.
   const requests = useMemo<RequestForQueries>(
     () => ({
@@ -56,7 +62,47 @@ export default function ReviewPage() {
           {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
         </div>
         {opened ? (
-          <ReviewEditor key={opened.calendar.id} opened={opened} onMessage={report} />
+          <>
+            <p id="review-status">
+              <StatusBadge status={opened.status} />
+              {opened.submission ? ` Envio ${opened.submission.sequence}` : ''}
+            </p>
+            <LifecycleActions
+              className="review-lifecycle"
+              calendar={{
+                id: opened.calendar.id,
+                name: opened.calendar.name,
+                status: opened.status,
+                statusRevision: opened.statusRevision,
+              }}
+              role={info.user.role}
+              notify={(text, error) => report(text, error ? 'danger' : 'success')}
+              // Concluding or returning always acts on the saved review, never on unsaved edits.
+              guard={() =>
+                reviewWork
+                  ? 'Salve ou descarte as alterações do parecer antes de mudar a situação do calendário.'
+                  : undefined
+              }
+            />
+            {opened.status === 'rascunho' ? (
+              <Notice tone="info" id="review-draft-notice">
+                Calendário em rascunho: o parecer só pode ser registrado depois do envio pelo
+                campus.
+              </Notice>
+            ) : opened.status !== 'enviado' && opened.status !== 'em_revisao' ? (
+              <Notice tone="info" id="review-locked-notice">
+                Calendário {statusLabels[opened.status].toLowerCase()}: o parecer está disponível
+                para consulta e exportação. Reabra a revisão para alterá-lo.
+              </Notice>
+            ) : null}
+            {opened.submission ? <SubmissionComparison calendarId={opened.calendar.id} /> : null}
+            <ReviewEditor
+              key={`${opened.calendar.id}:${opened.submission?.id ?? ''}`}
+              opened={opened}
+              onMessage={report}
+              onWorkChange={setReviewWork}
+            />
+          </>
         ) : null}
       </div>
     </section>

@@ -2,6 +2,7 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
+import { act } from '../helpers/lifecycle.ts';
 
 test('calendar authorship distinguishes creation from content edits without exposing accounts', async () => {
   const { client, asClient, ids } = await createNativeFixture();
@@ -13,7 +14,6 @@ test('calendar authorship distinguishes creation from content edits without expo
       year: 2027,
       offers: [{ kind: 'integrado', organization: 'anual' }],
       courses: 'Curso sintético',
-      purpose: 'test',
     },
   });
   assert.equal(created.createdByName, 'Campus A');
@@ -85,13 +85,15 @@ test('calendar authorship distinguishes creation from content edits without expo
     /Registro não encontrado/,
   );
 
-  await campus.mutation(api.calendars.makeDefinitive, { id: created.id, version: saved.version });
+  // Transitions keep the content version, so they never claim authorship of the content.
+  await act(campus, created.id, 'submit');
+  await act(campus, created.id, 'withdraw');
   await client.run((ctx) =>
     ctx.db.patch(ids.users['campus-a'], { active: false, removedAt: Date.now() }),
   );
   const bootstrap = await admin.query(api.workspace.bootstrap, {});
   assert.equal(bootstrap.calendars[0].createdByName, 'Campus A');
-  assert.equal(bootstrap.calendars[0].updatedByName, 'Campus A');
+  assert.equal(bootstrap.calendars[0].updatedByName, 'Admin');
 });
 
 test('legacy authorship uses recorded labels and never guesses a missing creator from an editor', async () => {

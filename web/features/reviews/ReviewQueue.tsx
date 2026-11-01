@@ -3,6 +3,7 @@ import type { FunctionReturnType } from 'convex/server';
 import { FilePlus2, FileText, PenLine, RefreshCw } from 'lucide-react';
 import type { functions } from '../../shared/convex/client.ts';
 import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { StatusBadge } from '../lifecycle/LifecycleActions.tsx';
 import { updatedLabel } from '../../shared/dates.ts';
 
 type QueueItem = FunctionReturnType<typeof functions.reviews.reviewQueue>['page'][number];
@@ -15,6 +16,13 @@ export function reviewState(review: QueueItem['review']) {
       label: 'Parecer não iniciado',
       action: 'Iniciar parecer',
       Icon: FilePlus2,
+    } as const;
+  if (review.otherSubmission)
+    return {
+      tone: 'warning',
+      label: `Parecer de outro envio (rev. ${review.revision})`,
+      action: 'Reavaliar parecer',
+      Icon: RefreshCw,
     } as const;
   if (review.calendarChanged)
     return {
@@ -47,9 +55,17 @@ export default function ReviewQueue({ items }: { items: QueueItem[] }) {
           <li key={calendar.id} data-review-state={state.tone}>
             <div className="review-queue-details">
               <strong>
-                {calendar.purpose === 'test' ? '[TESTE] ' : ''}
-                {calendar.name}
+                <StatusBadge status={calendar.status} /> {calendar.name}
               </strong>
+              {calendar.submission ? (
+                <small data-submission={calendar.submission.sequence}>
+                  Envio {calendar.submission.sequence}
+                  {calendar.submission.resubmission
+                    ? ` · reenvio ${calendar.submission.sequence - 1}`
+                    : ''}{' '}
+                  · {updatedLabel(calendar.submission.submittedAt)}
+                </small>
+              ) : null}
               <p className="review-queue-offering">
                 {calendar.offerKinds.map((m) => modalityLabels[m] || m).join(' + ')}
                 {calendar.courses ? ` · ${calendar.courses}` : ''}

@@ -61,13 +61,21 @@ Exportações que exigem persistência aguardam as alterações aplicadas releva
 
 ## Persistência e autorização
 
-O estado editável fica separado dos metadados do calendário; versões, snapshots e revisões são registros próprios e imutáveis. Documentos e catálogo usam revisão por ano. Datas operacionais são timestamps; datas acadêmicas são civis. O histórico de versões continua disponível após a retirada das tabelas de extração de calendários anteriores.
+O estado editável fica separado dos metadados do calendário. Documentos e catálogo usam revisão por ano. Datas operacionais são timestamps; datas acadêmicas são civis.
+
+O calendário tem um ciclo de vida explícito (`calendars.status`): rascunho, enviado, em revisão, devolvido, revisado, vigente e arquivado. A tabela de transições é uma função pura em `src/domain/calendar/lifecycle.ts`; `transitionCalendar` a aplica e confere papel, campus, unicidade, cobertura e as condições de cada ação na mesma mutation, junto da auditoria. `calendars.version` conta só o conteúdo e avança apenas em `saveCalendar`; as transições usam `statusRevision` como controle de concorrência. Assim, a autoria, a prontidão e o parecer não mudam com uma transição.
+
+Há um calendário em análise (enviado, em revisão, devolvido ou revisado) e um vigente por campus, ano e tipo de oferta. `offerKinds` é um array, que um índice não filtra por elemento: a mutation lê `by_campusId_and_year_and_status` para cada status, sem truncar, descarta a lixeira e compara em memória. A transação serializável do Convex protege a regra contra envios simultâneos. Um devolvido que acrescenta oferta passa pela mesma conferência no salvamento.
+
+Cada envio grava um registro em `calendarSubmissions` com a cópia do conteúdo enviado (estado, bases, ofertas e nome do campus), uma impressão digital do conteúdo e uma lista de decisões só de acréscimos (recolhido, devolvido, concluído, reaberto, publicado). A sequência nunca é reaproveitada. `currentSubmissionId` aponta o envio aberto, ou o devolvido em um calendário devolvido. O parecer guarda `submissionId` e só vale para o envio atual; a publicação confere ainda a versão e a impressão digital do conteúdo. O salvamento não arquiva mais um snapshot completo: o envio é a evidência do que cada parecer avaliou. A comparação entre envios (`src/domain/calendar/diff.ts`) é pura e calculada no navegador, a partir das cópias, que não mudam; nenhuma query reativa a recalcula a cada salvamento automático.
+
+Nos estados publicados, a avaliação e a impressão usam só a base congelada no conteúdo. Em enviado, em revisão e revisado, uma mudança da base aparece como aviso e impede a publicação; a saída é devolver o calendário ao campus.
 
 Convex Auth é a biblioteca `@convex-dev/auth`, configurada pela aplicação para autenticar no próprio backend; não é um serviço externo nem é ativada automaticamente ao criar o banco. O login Google está intencionalmente desabilitado até segundo aviso e só deve ser reativado mediante instrução explícita, conforme [Acesso e contas](recuperacao-de-senha.md#google-institucional).
 
 O backend deriva identidade, papel e campus da sessão. CAMPUS só atua na unidade autorizada; ADMIN gerencia o sistema; PARECERISTA revisa sem editar calendários. Guards organizam as telas, mas cada função Convex autoriza a operação.
 
-Salvar confere versão e base e preserva atributos protegidos; uma gravação sem mudança não cria versão artificial. A revisão humana tem salvamento explícito e depende da versão do calendário, da base e da revisão do parecer. Atualização institucional exige incorporação explícita.
+Salvar confere versão, status e base e preserva atributos protegidos; uma gravação sem mudança não cria versão artificial. Salvar e sincronizar a base só gravam em rascunho e devolvido; o editor deriva o modo somente leitura do papel e do status e recria a sessão quando o status muda em outra aba. A revisão humana tem salvamento explícito e depende da versão do calendário, da base e da revisão do parecer. Atualização institucional exige incorporação explícita.
 
 ## Arquivos, impressão e manutenção
 
@@ -83,7 +91,7 @@ Novos conteúdos e cópias usam `schemaVersion: 4`. Cada oferta tem `id` imutáv
 
 A organização é anual, semestral ou a classificar. Etapas são configuradas por ciclo: duas, três ou quatro no ano letivo, ou uma ou duas por semestre. Os vínculos `stage-1..4:offerId` conservam o ordinal global; a apresentação reinicia a numeração em cada semestre. Períodos são disjuntos por oferta e podem coincidir entre ofertas. Escopo e ingresso pertencem a cada oferta/ciclo. Modo e base da organização são informativos e não alteram obrigações ou mínimos.
 
-O armazenamento aceita somente o formato 4, inclusive em snapshots históricos e na lixeira, e importações de cópias de outro formato são recusadas. Os valores antigos que continuam válidos nesse formato estão em [Operações administrativas de dados](migracao-schema.md#formatos-antigos-que-permanecem-nos-dados).
+O armazenamento aceita somente o formato 4, inclusive nos envios, nos snapshots históricos ainda guardados e na lixeira, e importações de cópias de outro formato são recusadas. Os valores antigos que continuam válidos nesse formato estão em [Operações administrativas de dados](migracao-schema.md#formatos-antigos-que-permanecem-nos-dados).
 
 Conversões ambíguas preservam IDs e datas e mantêm a configuração pendente. Uma inconsistência migrada de ciclo gera aviso e permite salvar outra parte; uma etapa nova ou alterada precisa caber inteiramente no período do seu ciclo. A preparação preserva identidade e tipo de ofertas já salvas, cuja remoção permanece proibida.
 
@@ -109,7 +117,7 @@ A primeira e a segunda semana das atividades mantêm conferência humana, pois a
 
 ## Períodos, atividades e painéis
 
-Períodos e avaliações são organizados juntos, por oferta, e aplicados num único comando. Uma oferta nova só entra no calendário com organização completa; a mutation grava conteúdo, ofertas e versão na mesma transação, preservando o escopo dos snapshots anteriores. Ciclos conflitantes exigem correção explícita, e legado ambíguo conserva IDs e datas até a classificação. Períodos de ofertas diferentes podem coincidir, mas não se sobrepõem dentro da mesma oferta. Quantidade de avaliações não representa quantidade de períodos.
+Períodos e avaliações são organizados juntos, por oferta, e aplicados num único comando. Uma oferta nova só entra no calendário com organização completa; a mutation grava conteúdo, ofertas e versão na mesma transação, preservando o escopo dos envios anteriores. Ciclos conflitantes exigem correção explícita, e legado ambíguo conserva IDs e datas até a classificação. Períodos de ofertas diferentes podem coincidir, mas não se sobrepõem dentro da mesma oferta. Quantidade de avaliações não representa quantidade de períodos.
 
 A exigência local de matrícula é declarada no detalhe da atividade, com fonte e oferta/ciclo próprios. Cadastrar um evento não declara sozinho uma nova exigência normativa.
 
@@ -125,7 +133,7 @@ Uma base equivalente não apresenta card: a sincronização atualiza somente a r
 
 Revisões humanas guardam a identidade da base. Uma mudança irrelevante no contador não invalida a análise; mudanças no conteúdo aplicável ou na versão editorial invalidam. Revisões antigas sem essa identidade continuam exigindo a revisão técnica original, pois não há evidência para declarar equivalência retroativa. A sincronização nunca reescreve uma revisão humana.
 
-Quando a política vincula base e revisão ao conjunto de regras, como em 2027, a identidade da base inclui esse conjunto. Anos sem essa vinculação mantêm a identidade anterior e não recebem falsa mudança global. Snapshots permanecem imutáveis.
+Quando a política vincula base e revisão ao conjunto de regras, como em 2027, a identidade da base inclui esse conjunto. Anos sem essa vinculação mantêm a identidade anterior e não recebem falsa mudança global. Os envios permanecem imutáveis.
 
 ### Mudanças de regra
 

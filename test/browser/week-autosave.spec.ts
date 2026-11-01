@@ -15,9 +15,7 @@ for (const width of [1440, 390]) {
     await page.clock.install({ time: clockStart });
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#weekdays input[value="5"]')).toBeVisible();
-    await expect(page.locator('#record-heading')).toHaveText(
-      /Calendário de teste\s*· Em elaboração/,
-    );
+    await expect(page.locator('#record-heading')).toHaveText(/Rascunho/);
     await page.clock.pauseAt(new Date(clockStart.getTime() + 60_000));
     await page.clock.runFor(2000);
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
@@ -32,9 +30,7 @@ for (const width of [1440, 390]) {
     await page.clock.runFor(1);
     const saved = await savedState(page);
     expect(saved.saves).toBe(1);
-    await expect(page.locator('#record-heading')).toHaveText(
-      /Calendário de teste\s*· Em elaboração/,
-    );
+    await expect(page.locator('#record-heading')).toHaveText(/Rascunho/);
     expect(saved.state).toMatchObject({
       weekdays: [1, 2, 3],
       weekConfirmed: true,

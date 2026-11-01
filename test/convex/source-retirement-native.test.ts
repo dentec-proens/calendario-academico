@@ -8,6 +8,7 @@ import { calendarOffer } from '../../convex/validators.ts';
 import { saveInput } from '../../convex/contracts.ts';
 import type { DomainState, historicalState } from '../../convex/validators.ts';
 import type { Infer } from 'convex/values';
+import { preserveSubmission } from '../helpers/lifecycle.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 
 const secret = 'Fonte manual que não pertence ao contrato';
@@ -59,7 +60,6 @@ async function createRecord() {
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
         courses: 'Sintético',
-        purpose: 'test',
       },
     })
     .then(calendarRecordDates);
@@ -69,6 +69,7 @@ async function createRecord() {
 test('canonical records and historical restoration have no manual or generated source slots', async () => {
   const { fixture, actor, created } = await createRecord();
   assertSourceFree(created.state);
+  const submitted = await preserveSubmission(fixture, created.id);
   expect(
     created.institutionalSnapshot.some(
       (event) => event.evidence === 'Referência institucional preservada',
@@ -144,10 +145,7 @@ test('canonical records and historical restoration have no manual or generated s
     .then(calendarSaveDates);
   expect(unchanged.unchanged).toBe(true);
   expect(unchanged.version).toBe(saved.version);
-  const initial = await actor.query(api.calendars.calendarVersion, {
-    id: created.id,
-    version: created.version,
-  });
+  const initial = await submitted();
   assertSourceFree(initial.state);
   await actor
     .mutation(api.calendars.saveCalendar, {
@@ -161,9 +159,9 @@ test('canonical records and historical restoration have no manual or generated s
     .then(calendarSaveDates);
   const raw = await fixture.client.run(async (ctx) => ({
     contents: await ctx.db.query('calendarContents').take(10),
-    snapshots: await ctx.db.query('calendarSnapshots').take(10),
+    submissions: await ctx.db.query('calendarSubmissions').take(10),
   }));
-  for (const row of raw.snapshots) assertSourceFree(row.state);
+  for (const row of raw.submissions) assertSourceFree({ ...row.state, year: 2027, campus: 'A' });
   expect(JSON.stringify(raw)).not.toContain('registro:');
   expect(raw.contents[0].institutionalSnapshot).toEqual(created.institutionalSnapshot);
 });

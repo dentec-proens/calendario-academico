@@ -26,7 +26,8 @@ export const record: WireCalendarRecord = {
     periods: [],
     events: [],
   },
-  purpose: 'test',
+  status: 'rascunho',
+  statusRevision: 0,
   courses: 'Curso sintético',
   classes: '',
   shifts: '',
@@ -47,13 +48,14 @@ export const record: WireCalendarRecord = {
   ],
   documentSnapshot: [],
   institutionalSnapshot: [],
-  versions: [],
+  submission: null,
+  lastReturn: null,
   currentDocuments: [],
   readiness: { ready: false, issues: [], warnings: [], officialApproval: false },
 };
 record.state.rulesetVersion = rulesetVersion(record.state);
 record.institutionalSnapshot = structuredClone(record.institutionalEvents);
-export const calls = { synchronizations: 0, saves: 0, conversions: 0, failConversion: false };
+export const calls = { synchronizations: 0, saves: 0, transitions: 0, failTransition: false };
 export const fixtureProfile: { role: Bootstrap['user']['role'] } = { role: 'ADMIN' };
 export const functions = api;
 const listeners = new Set<() => void>();
@@ -78,6 +80,10 @@ function result(name: string) {
       return { maintenance: false };
     case 'presence:online':
       return [];
+    case 'calendars:replacementPreview':
+      return { replaced: [], suggestedSei: '' };
+    case 'calendars:calendarSubmissions':
+      return { page: [], isDone: true, continueCursor: '', defaultBases: [], related: [] };
     default:
       return { page: [], isDone: true, continueCursor: '' };
   }
@@ -142,18 +148,15 @@ export const convex = {
           readiness: record.readiness,
         });
       }
-      case 'calendars:makeDefinitive':
-        calls.conversions++;
-        if (calls.failConversion) return Promise.reject(new Error('Falha sintética ao converter.'));
-        record.purpose = 'definitive';
-        record.version++;
+      case 'calendars:transitionCalendar': {
+        calls.transitions++;
+        if (calls.failTransition) return Promise.reject(new Error('Falha sintética ao enviar.'));
+        const { action } = args as { action: string };
+        record.status = action === 'submit' ? 'enviado' : 'rascunho';
+        record.statusRevision++;
         publish();
-        return Promise.resolve({
-          purpose: record.purpose,
-          version: record.version,
-          updatedAt: record.updatedAt,
-          readiness: record.readiness,
-        });
+        return Promise.resolve({ status: record.status, statusRevision: record.statusRevision });
+      }
       default:
         return Promise.reject(
           new Error(`Mutação sintética não implementada: ${getFunctionName(reference)}`),

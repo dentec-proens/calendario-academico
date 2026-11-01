@@ -38,6 +38,16 @@ const initial = {
   initialConclusion: initialConclusion(support),
   review: null,
   stale: false,
+  status: 'enviado',
+  statusRevision: 1,
+  submission: {
+    id: 'synthetic-submission' as Id<'calendarSubmissions'>,
+    sequence: 1,
+    submittedAt: '2026-10-23T15:00:00Z',
+    submittedBy: 'Campus de teste',
+    submittedFrom: 'rascunho',
+    outcome: 'submitted',
+  },
 } as Support;
 let snapshot = structuredClone(initial);
 const calls = {
@@ -76,7 +86,8 @@ const calendars: Bootstrap['calendars'] = [
     campusId: 'synthetic-campus' as Id<'campuses'>,
     year: 2027,
     offerKinds: ['integrado'],
-    purpose: 'test',
+    status: 'enviado',
+    statusRevision: 1,
     courses: 'Curso de teste',
     classes: '',
     shifts: '',
@@ -95,6 +106,12 @@ function query(reference: FunctionReference<'query'>) {
       return {
         page: calendars.map((calendar) => ({
           ...calendar,
+          submission: {
+            id: 'synthetic-submission' as Id<'calendarSubmissions'>,
+            sequence: 1,
+            submittedAt: '2026-10-23T15:00:00Z',
+            resubmission: false,
+          },
           review: snapshot.review
             ? {
                 revision: snapshot.review.revision,
@@ -105,12 +122,15 @@ function query(reference: FunctionReference<'query'>) {
                 ).length,
                 total: snapshot.criteria.length,
                 calendarChanged: snapshot.review.calendarVersion !== calendar.version,
+                otherSubmission: false,
               }
             : null,
         })),
         isDone: true,
         continueCursor: '',
       };
+    case 'calendars:calendarSubmissions':
+      return { page: [], isDone: true, continueCursor: '', defaultBases: [], related: [] };
     default:
       throw new Error(`Consulta sintética não implementada: ${getFunctionName(reference)}`);
   }

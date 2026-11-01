@@ -71,6 +71,8 @@ for (const width of [1440, 390, 320]) {
     await expect(second).toHaveAttribute('href', '/revisoes/calendar-b');
     await page.locator('#panel-title').focus();
     await page.keyboard.press('Tab');
+    await expect(page.getByRole('tab', { name: 'Aguardando análise' })).toBeFocused();
+    await page.keyboard.press('Tab');
     await expect(first).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(second).toBeFocused();

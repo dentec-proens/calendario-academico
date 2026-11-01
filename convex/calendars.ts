@@ -18,27 +18,56 @@ import { inheritedEvents } from '../src/domain/institution/catalogue';
 import { applyObservances } from '../src/domain/calendar/observances';
 import { query, mutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
-import { calendarRow, summary } from './calendars/model';
+import { calendarRow, campusName, contents, summary } from './calendars/model';
+import { applyTransition } from './calendars/transitions';
+import { calendarName } from '../src/domain/calendar/label';
+import type { Member } from './access/contracts';
+import { fullRecord, calendarSummaries, calendarQuery, baseRecord } from './calendars/record';
 import {
-  fullRecord,
-  calendarSummaries,
-  calendarQuery,
-  baseRecord,
-  archive,
-} from './calendars/record';
+  assertUniqueInFlow,
+  decisionsFor,
+  lifecycleRole,
+  lineage,
+  overlapping,
+  statusOf,
+} from './calendars/lifecycle';
+import {
+  canCreateVersion,
+  isDeletable,
+  isEditable,
+  maximumLabelLength,
+  statusLabels,
+} from '../src/domain/calendar/lifecycle';
 import { catalogue } from './catalogue/model';
 import * as contracts from './contracts';
-import { currentDocuments } from './documents/model';
+import { currentDocuments, documentDto } from './documents/model';
 import { appendAudit } from './lib/audit';
-import { calendarEditor, assertCampus } from './lib/authorization';
+import { calendarEditor, assertCampus, reviewer } from './lib/authorization';
 import { pageBound } from './lib/pagination';
 import { domainRule, fail, iso, text, clean } from './lib/shared';
+import type { Doc } from './_generated/dataModel';
 import * as validators from './validators';
 import { paginationOptsValidator } from 'convex/server';
 import { v, type Infer } from 'convex/values';
 
 const idArgs = { id: v.id('calendars') };
 const ok = v.object({ ok: v.boolean() });
+
+function calendarLabel(label: string | undefined) {
+  const value = label?.trim() ?? '';
+  if (value.length > maximumLabelLength)
+    fail(`O nome do calendário pode ter até ${maximumLabelLength} caracteres.`);
+  return value ? { label: value } : {};
+}
+
+/** Autosave, base synchronization and offer corrections never write to a locked calendar. */
+function assertEditableStatus(status: Doc<'calendars'>['status'] & string) {
+  if (!isEditable(status))
+    fail(
+      `O calendário está ${statusLabels[status].toLowerCase()} e não pode ser alterado. ${status === 'enviado' ? 'Recolha o envio para editar.' : status === 'vigente' ? 'Crie uma nova versão para alterá-lo.' : 'Aguarde a devolução para editar.'}`,
+      409,
+    );
+}
 
 /** Preserve inconsistent migrated evidence, but validate every new interval or changed cycle. */
 function validateEditedAssessmentCycles(previous: ActivityState, next: ActivityState) {
@@ -127,54 +156,6 @@ export const trash = query({
   }),
 });
 
-export const calendarHistory = query({
-  args: { ...idArgs, paginationOpts: paginationOptsValidator },
-  returns: v.object({
-    page: v.array(contracts.versionDto),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
-  handler: async (ctx, { id, paginationOpts }) => {
-    pageBound(paginationOpts.numItems);
-    const { user } = await requireNativeUser(ctx);
-    await calendarRow(ctx, user, id);
-    const result = await ctx.db
-      .query('calendarVersions')
-      .withIndex('by_calendarId_and_version', (q) => q.eq('calendarId', id))
-      .order('desc')
-      .paginate(paginationOpts);
-    return {
-      page: result.page.map((r) => ({
-        version: r.version,
-        at: iso(r.at),
-        catalogueRevision: r.catalogueRevision,
-      })),
-      isDone: result.isDone,
-      continueCursor: result.continueCursor,
-    };
-  },
-});
-
-export const calendarVersion = query({
-  args: { ...idArgs, version: v.number() },
-  returns: v.object({ version: v.number(), ...validators.snapshotFields }),
-  handler: async (ctx, { id, version }) => {
-    const { user } = await requireNativeUser(ctx);
-    await calendarRow(ctx, user, id);
-    const row = await ctx.db
-      .query('calendarVersions')
-      .withIndex('by_calendarId_and_version', (q) => q.eq('calendarId', id).eq('version', version))
-      .unique();
-    const snapshot = row && (await ctx.db.get(row.snapshotId));
-    if (!row || !snapshot) fail('Versão histórica não encontrada.', 404);
-    const { _id, _creationTime, ...value } = snapshot;
-    return {
-      version: row.version,
-      ...value,
-    };
-  },
-});
-
 export const createCalendar = mutation({
   args: { body: contracts.createInput },
   returns: contracts.calendarDto,
@@ -208,7 +189,9 @@ export const createCalendar = mutation({
       campusId: campus._id,
       year: body.year,
       offerKinds: kinds(state),
-      purpose: body.purpose ?? 'definitive',
+      status: 'rascunho',
+      statusRevision: 0,
+      ...calendarLabel(body.label),
       courses: text(body.courses, 1000),
       classes: (body.classes ?? '').slice(0, 500),
       shifts: (body.shifts ?? '').slice(0, 200),
@@ -243,8 +226,13 @@ export const saveCalendar = mutation({
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
-    const { row, content, record, base, docs, compatibility } = await baseRecord(ctx, user, id);
+    const { row, status, content, record, base, docs, compatibility } = await baseRecord(
+      ctx,
+      user,
+      id,
+    );
     if (row.version !== body.version) fail('Há versão mais recente. Reabra o calendário.', 409);
+    assertEditableStatus(status);
     if (
       !equivalentRulesets(
         body.state.rulesetVersion,
@@ -255,6 +243,10 @@ export const saveCalendar = mutation({
         'O conjunto de regras mudou. Atualize a aplicação e confira o preenchimento antes de salvar.',
         409,
       );
+    // Offers cannot be removed: an overlap born here between transitions could not be undone.
+    const proposedKinds = kinds(body.state);
+    if (status === 'devolvido' && proposedKinds.some((kind) => !row.offerKinds.includes(kind)))
+      await assertUniqueInFlow(ctx, row, proposedKinds);
     const reconciliation = reconcileBase(compatibility, body.baseAcceptance);
     const savedContent = clean(content.state);
     const proposedState = domainRule(() => readCalendarOfferInput(body.state));
@@ -285,7 +277,6 @@ export const saveCalendar = mutation({
         readiness: (await baseRecord(ctx, user, id)).readiness,
       };
     }
-    await archive(ctx, row, content);
     await ctx.db.patch(content._id, {
       state: next,
       catalogueRevision: base.revision,
@@ -322,8 +313,9 @@ export const synchronizeBase = mutation({
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
-    const { row, content, compatibility } = await baseRecord(ctx, user, id);
+    const { row, status, content, compatibility } = await baseRecord(ctx, user, id);
     if (row.version !== version) fail('Há versão mais recente. Reabra o calendário.', 409);
+    assertEditableStatus(status);
     reconcileBase(compatibility);
     if (content.catalogueRevision !== compatibility.snapshot.revision)
       await ctx.db.patch(content._id, { catalogueRevision: compatibility.snapshot.revision });
@@ -341,10 +333,24 @@ export const deleteCalendar = mutation({
     const row = await calendarRow(ctx, user, id);
     if (row.version !== version)
       fail('O calendário foi alterado. Atualize a lista antes de excluir.', 409);
+    const status = statusOf(row);
+    if (!isDeletable(status))
+      fail(
+        `Um calendário ${statusLabels[status].toLowerCase()} não pode ir para a lixeira. Somente rascunhos e calendários devolvidos podem ser excluídos.`,
+        409,
+      );
+    // A deleted returned calendar becomes a draft and frees its in-flow place; submissions stay.
     await ctx.db.patch(id, {
       deletedAt: Date.now(),
       deletedBy: user.id,
       offerKinds: row.offerKinds,
+      ...(status === 'devolvido'
+        ? {
+            status: 'rascunho' as const,
+            statusRevision: (row.statusRevision ?? 0) + 1,
+            currentSubmissionId: undefined,
+          }
+        : {}),
     });
     await appendAudit(
       ctx,
@@ -358,18 +364,22 @@ export const deleteCalendar = mutation({
 });
 
 export const restoreCalendar = mutation({
-  args: idArgs,
+  args: { ...idArgs, version: v.optional(v.number()) },
   returns: ok,
-  handler: async (ctx, { id }) => {
+  handler: async (ctx, { id, version }) => {
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
     const row = await calendarRow(ctx, user, id, true);
     if (!row.deletedAt) fail('Calendário já está ativo.', 409);
+    if (version !== undefined && row.version !== version)
+      fail('O calendário foi alterado. Atualize a lixeira antes de restaurar.', 409);
+    // Always a draft, which takes no in-flow place.
     await ctx.db.patch(id, {
       deletedAt: undefined,
       deletedBy: undefined,
       offerKinds: row.offerKinds,
+      ...(statusOf(row) === 'rascunho' ? {} : { status: 'rascunho' as const }),
     });
     await appendAudit(
       ctx,
@@ -382,6 +392,7 @@ export const restoreCalendar = mutation({
   },
 });
 
+/** Pending contraction: the previous frontend still calls it; the lifecycle replaced it. */
 export const makeDefinitive = mutation({
   args: { ...idArgs, version: v.number() },
   returns: v.object({
@@ -390,35 +401,215 @@ export const makeDefinitive = mutation({
     updatedAt: v.string(),
     readiness: contracts.readiness,
   }),
-  handler: async (ctx, { id, version }) => {
-    await assertWritesOpen(ctx);
+  handler: async (ctx, { id }) => {
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
-    const { row, content } = await baseRecord(ctx, user, id);
-    if (row.version !== version)
-      fail('Há versão mais recente. Reabra o calendário antes de torná-lo definitivo.', 409);
-    if (row.purpose === 'test') {
-      await archive(ctx, row, content);
-      await ctx.db.patch(id, {
-        purpose: 'definitive',
-        offerKinds: row.offerKinds,
-        version: row.version + 1,
-        updatedAt: Date.now(),
-      });
-      await appendAudit(
-        ctx,
-        user,
-        'MAKE_CALENDAR_DEFINITIVE',
-        { type: 'calendar', id },
-        { calendarId: id, campusId: row.campusId, version: row.version + 1 },
-      );
-    }
     const saved = await baseRecord(ctx, user, id);
     return {
-      purpose: saved.row.purpose,
+      purpose: 'definitive' as const,
       version: saved.row.version,
       updatedAt: saved.record.updatedAt,
       readiness: saved.readiness,
+    };
+  },
+});
+
+export const transitionCalendar = mutation({
+  args: {
+    ...idArgs,
+    from: validators.calendarStatus,
+    statusRevision: v.number(),
+    action: validators.lifecycleAction,
+    version: v.optional(v.number()),
+    note: v.optional(v.string()),
+    sei: v.optional(v.string()),
+    partial: v.optional(v.boolean()),
+  },
+  returns: v.object({ status: validators.calendarStatus, statusRevision: v.number() }),
+  handler: async (ctx, args) => {
+    await assertWritesOpen(ctx);
+    const { user } = await requireNativeUser(ctx);
+    return applyTransition(ctx, user, args);
+  },
+});
+
+/** A published calendar is never edited in place: its next version starts as a new draft. */
+export const createCalendarVersion = mutation({
+  args: idArgs,
+  returns: contracts.calendarDto,
+  handler: async (ctx, { id }) => {
+    await assertWritesOpen(ctx);
+    const { user } = await requireNativeUser(ctx);
+    calendarEditor(user);
+    const row = await calendarRow(ctx, user, id);
+    if (!canCreateVersion(statusOf(row), lifecycleRole(user)))
+      fail('Somente um calendário vigente pode originar uma nova versão.', 409);
+    const content = await contents(ctx, id);
+    const copy = await ctx.db.insert('calendars', {
+      campusId: row.campusId,
+      year: row.year,
+      offerKinds: row.offerKinds,
+      status: 'rascunho',
+      statusRevision: 0,
+      ...(row.label ? { label: row.label } : {}),
+      derivedFrom: row._id,
+      courses: row.courses,
+      classes: row.classes,
+      shifts: row.shifts,
+      version: 1,
+      updatedAt: Date.now(),
+    });
+    // The review belongs to the published calendar and is not copied.
+    await ctx.db.insert('calendarContents', {
+      calendarId: copy,
+      state: content.state,
+      catalogueRevision: content.catalogueRevision,
+      institutionalSnapshot: content.institutionalSnapshot,
+      documentSnapshot: content.documentSnapshot,
+    });
+    await appendAudit(
+      ctx,
+      user,
+      'CREATE_CALENDAR_VERSION',
+      { type: 'calendar', id: copy },
+      { calendarId: copy, campusId: row.campusId, version: 1, details: `Derivado de ${row._id}` },
+    );
+    return fullRecord(ctx, user, copy);
+  },
+});
+
+function submissionItem(user: Member, row: Doc<'calendarSubmissions'>) {
+  return {
+    id: row._id,
+    calendarId: row.calendarId,
+    sequence: row.sequence,
+    submittedAt: iso(row.submittedAt),
+    submittedBy: row.submittedBy.name,
+    submittedFrom: row.submittedFrom,
+    ...(row.previousSubmissionId ? { previousSubmissionId: row.previousSubmissionId } : {}),
+    contentVersion: row.contentVersion,
+    decisions: decisionsFor(user, row.decisions).map((decision) => ({
+      ...decision,
+      at: iso(decision.at),
+    })),
+  };
+}
+
+/**
+ * The submissions of a calendar, metadata only, and the default comparison bases: the last
+ * returned submission on a resubmission, or the published submissions of the calendars that a
+ * first submission of a new version would replace, when they share its `derivedFrom` chain.
+ */
+export const calendarSubmissions = query({
+  args: { ...idArgs, paginationOpts: paginationOptsValidator },
+  returns: v.object({
+    page: v.array(contracts.submissionListItem),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+    defaultBases: v.array(v.id('calendarSubmissions')),
+    related: v.array(
+      v.object({
+        submissionId: v.id('calendarSubmissions'),
+        calendarId: v.id('calendars'),
+        name: v.string(),
+      }),
+    ),
+  }),
+  handler: async (ctx, { id, paginationOpts }) => {
+    const { user } = await requireNativeUser(ctx);
+    pageBound(paginationOpts.numItems);
+    const row = await calendarRow(ctx, user, id);
+    const result = await ctx.db
+      .query('calendarSubmissions')
+      .withIndex('by_calendarId_and_sequence', (q) => q.eq('calendarId', id))
+      .order('desc')
+      .paginate(paginationOpts);
+    const chain = await lineage(ctx, row);
+    const campus = await campusName(ctx, row);
+    const related = chain
+      .slice(1)
+      .filter((ancestor) => ancestor.publishedSubmissionId)
+      .map((ancestor) => ({
+        submissionId: ancestor.publishedSubmissionId!,
+        calendarId: ancestor._id,
+        name: calendarName(ancestor.year, campus, ancestor.label),
+      }));
+    const current = row.currentSubmissionId ? await ctx.db.get(row.currentSubmissionId) : null;
+    let defaultBases: Doc<'calendarSubmissions'>['_id'][] = [];
+    if (statusOf(row) === 'devolvido' && current) defaultBases = [current._id];
+    else if (current?.previousSubmissionId) defaultBases = [current.previousSubmissionId];
+    else if (current) {
+      const ancestors = new Set(chain.slice(1).map((ancestor) => ancestor._id));
+      const replaced = await overlapping(ctx, row, ['vigente']);
+      defaultBases = replaced
+        .filter((other) => ancestors.has(other._id) && other.publishedSubmissionId)
+        .map((other) => other.publishedSubmissionId!);
+    }
+    return {
+      page: result.page.map((submission) => submissionItem(user, submission)),
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+      defaultBases,
+      related,
+    };
+  },
+});
+
+/** The copy of one submission, for the comparison computed in the browser. */
+export const submissionContent = query({
+  args: { ...idArgs, submissionId: v.id('calendarSubmissions') },
+  returns: contracts.submissionContentDto,
+  handler: async (ctx, { id, submissionId }) => {
+    const { user } = await requireNativeUser(ctx);
+    const row = await calendarRow(ctx, user, id);
+    const submission = await ctx.db.get(submissionId);
+    // Identifiers alone never reach another calendar's or campus's submissions.
+    const chain = new Set((await lineage(ctx, row)).map((item) => item._id));
+    if (!submission || !chain.has(submission.calendarId)) fail('Envio não encontrado.', 404);
+    const owner = await ctx.db.get(submission.calendarId);
+    if (!owner) fail('Envio não encontrado.', 404);
+    return clean({
+      ...submissionItem(user, submission),
+      state: { ...submission.state, year: owner.year, campus: submission.campusName },
+      catalogueRevision: submission.catalogueRevision,
+      institutionalSnapshot: submission.institutionalSnapshot,
+      documentSnapshot: submission.documentSnapshot.map(documentDto),
+      offerKinds: submission.offerKinds,
+    });
+  },
+});
+
+/** What a publication would replace, for the administration to confirm before publishing. */
+export const replacementPreview = query({
+  args: idArgs,
+  returns: v.object({
+    replaced: v.array(
+      v.object({
+        id: v.id('calendars'),
+        name: v.string(),
+        offerKinds: v.array(validators.modality),
+        uncovered: v.array(validators.modality),
+      }),
+    ),
+    suggestedSei: v.string(),
+  }),
+  handler: async (ctx, { id }) => {
+    const { user } = await requireNativeUser(ctx);
+    reviewer(user);
+    const row = await calendarRow(ctx, user, id);
+    const campus = await campusName(ctx, row);
+    const review = await ctx.db
+      .query('reviews')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', id))
+      .unique();
+    return {
+      replaced: (await overlapping(ctx, row, ['vigente'])).map((other) => ({
+        id: other._id,
+        name: calendarName(other.year, campus, other.label),
+        offerKinds: other.offerKinds,
+        uncovered: other.offerKinds.filter((kind) => !row.offerKinds.includes(kind)),
+      })),
+      suggestedSei: row.seiProcess ?? review?.processNumber ?? '',
     };
   },
 });

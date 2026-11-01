@@ -7,7 +7,9 @@ import {
   calendarOffer,
   modality,
   purpose,
+  calendarStatus,
   regime,
+  submissionDecision,
   reviewFields,
   reviewEntry,
   institutionalEventSnapshot,
@@ -24,7 +26,8 @@ export const readiness = v.object({
   ready: v.boolean(),
   issues: v.array(v.string()),
   warnings: v.array(v.string()),
-  officialApproval: v.literal(false),
+  /** True only for a published calendar. */
+  officialApproval: v.boolean(),
 });
 export const campusDto = v.object({
   id: v.id('campuses'),
@@ -52,7 +55,14 @@ export const summary = v.object({
   campusId: v.id('campuses'),
   year: v.number(),
   offerKinds: v.array(modality),
-  purpose,
+  status: calendarStatus,
+  statusRevision: v.number(),
+  label: v.optional(v.string()),
+  derivedFrom: v.optional(v.id('calendars')),
+  seiProcess: v.optional(v.string()),
+  publishedAt: v.optional(v.string()),
+  archivedAt: v.optional(v.string()),
+  supersededByName: v.optional(v.string()),
   courses: v.string(),
   classes: v.string(),
   shifts: v.string(),
@@ -64,6 +74,15 @@ export const summary = v.object({
 });
 export const reviewQueueItem = v.object({
   ...summary.fields,
+  submission: v.union(
+    v.null(),
+    v.object({
+      id: v.id('calendarSubmissions'),
+      sequence: v.number(),
+      submittedAt: v.string(),
+      resubmission: v.boolean(),
+    }),
+  ),
   review: v.union(
     v.null(),
     v.object({
@@ -73,13 +92,56 @@ export const reviewQueueItem = v.object({
       reviewed: v.number(),
       total: v.number(),
       calendarChanged: v.boolean(),
+      otherSubmission: v.boolean(),
     }),
   ),
 });
-export const versionDto = v.object({
-  version: v.number(),
+export const decisionDto = v.object({
+  ...submissionDecision.fields,
   at: v.string(),
+  by: v.optional(submissionDecision.fields.by),
+});
+export const currentSubmissionDto = v.object({
+  id: v.id('calendarSubmissions'),
+  sequence: v.number(),
+  submittedAt: v.string(),
+  submittedBy: v.string(),
+  submittedFrom: v.union(v.literal('rascunho'), v.literal('devolvido')),
+  previousSubmissionId: v.optional(v.id('calendarSubmissions')),
+  outcome: v.union(
+    v.literal('submitted'),
+    v.literal('withdrawn'),
+    v.literal('returned'),
+    v.literal('concluded'),
+    v.literal('reopened'),
+    v.literal('published'),
+  ),
+});
+export const lastReturnDto = v.object({
+  submissionId: v.id('calendarSubmissions'),
+  sequence: v.number(),
+  at: v.string(),
+  note: v.string(),
+  by: v.optional(v.string()),
+});
+export const submissionListItem = v.object({
+  id: v.id('calendarSubmissions'),
+  calendarId: v.id('calendars'),
+  sequence: v.number(),
+  submittedAt: v.string(),
+  submittedBy: v.string(),
+  submittedFrom: v.union(v.literal('rascunho'), v.literal('devolvido')),
+  previousSubmissionId: v.optional(v.id('calendarSubmissions')),
+  contentVersion: v.number(),
+  decisions: v.array(decisionDto),
+});
+export const submissionContentDto = v.object({
+  ...submissionListItem.fields,
+  state: domainState,
   catalogueRevision: v.number(),
+  institutionalSnapshot: v.array(institutionalEventSnapshot),
+  documentSnapshot: v.array(documentMetadata),
+  offerKinds: v.array(modality),
 });
 export const reviewDto = v.object({
   ...reviewFields,
@@ -93,7 +155,8 @@ export const calendarDto = v.object({
   catalogueRevision: v.number(),
   documentSnapshot: v.array(documentMetadata),
   institutionalSnapshot: v.array(institutionalEventSnapshot),
-  versions: v.array(versionDto),
+  submission: v.union(v.null(), currentSubmissionDto),
+  lastReturn: v.union(v.null(), lastReturnDto),
   readiness,
   institutionalEvents: v.array(institutionalEventSnapshot),
   currentCatalogueRevision: v.number(),
@@ -113,6 +176,8 @@ export const createInput = v.object({
   courses: v.string(),
   classes: v.optional(v.string()),
   shifts: v.optional(v.string()),
+  label: v.optional(v.string()),
+  /** Accepted and ignored until the contraction, for the previous frontend. */
   purpose: v.optional(purpose),
 });
 export const saveState = v.object({
@@ -151,6 +216,8 @@ export const reviewInput = v.object({
   processNumber: v.optional(v.string()),
   applicableNorm: v.optional(v.string()),
   acknowledgeStale: v.optional(v.boolean()),
+  /** The round the reviewer opened; a review never lands on a later submission. */
+  submissionId: v.optional(v.id('calendarSubmissions')),
 });
 export const catalogueInput = v.object({
   ...catalogueEventDto.fields,
@@ -183,7 +250,10 @@ export const reviewSupportDto = v.object({
     norm: v.string(),
   }),
   sameYear: v.boolean(),
-  officialApproval: v.literal(false),
+  officialApproval: v.boolean(),
+  status: calendarStatus,
+  statusRevision: v.number(),
+  submission: v.union(v.null(), currentSubmissionDto),
   calendar: v.object({
     id: v.id('calendars'),
     name: v.string(),

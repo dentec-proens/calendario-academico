@@ -18,3 +18,13 @@ export function calendarSaveDates(saved: FunctionReturnType<typeof api.calendars
     base: { ...saved.base, events: saved.base.events.map(readActivityDates) },
   };
 }
+
+export function submissionDates(
+  submission: FunctionReturnType<typeof api.calendars.submissionContent>,
+) {
+  return {
+    ...submission,
+    state: readCalendarDates(submission.state),
+    institutionalSnapshot: submission.institutionalSnapshot.map(readActivityDates),
+  };
+}

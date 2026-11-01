@@ -1,8 +1,9 @@
 import { readActivityDates } from '../../src/domain/calendar/civil-dates.ts';
-import { inspectBase } from './base';
+import { frozenBase, inspectBase } from './base';
+import { isPublished, isUnderReview, officialApproval } from '../../src/domain/calendar/lifecycle';
+import { lastReturn, outcome, statusOf } from './lifecycle';
 import { releaseReadiness } from '../../src/domain/calendar/readiness';
 import type { Doc, Id } from '../_generated/dataModel';
-import type { MutationCtx } from '../_generated/server';
 import type { Member } from '../access/contracts';
 import { catalogue } from '../catalogue/model';
 import type * as contracts from '../contracts';
@@ -16,6 +17,7 @@ import type { Infer } from 'convex/values';
 
 export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>) {
   const row = await calendarRow(ctx, user, id),
+    status = statusOf(row),
     [content, campus, base, docs, review] = await Promise.all([
       contents(ctx, id),
       ctx.db.get(row.campusId),
@@ -31,13 +33,53 @@ export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>
     documentSnapshot: content.documentSnapshot.map(documentDto),
     institutionalSnapshot: content.institutionalSnapshot.map(readActivityDates),
   };
-  const compatibility = inspectBase(record.state, content, base, docs);
-  const readiness = releaseReadiness(record, {
-    base: compatibility,
-    catalogue: base,
-    reviews: review ? [reviewDto(review)] : [],
-  }) as Infer<typeof contracts.readiness>;
-  return { row, content, record, base, docs, review, readiness, compatibility };
+  // A later base change never alters a published calendar.
+  const compatibility = isPublished(status)
+    ? frozenBase(record.state, content)
+    : inspectBase(record.state, content, base, docs);
+  const readiness = {
+    ...releaseReadiness(record, {
+      base: compatibility,
+      catalogue: { revision: compatibility.snapshot.revision },
+      reviews: review ? [reviewDto(review)] : [],
+      submissionId: row.currentSubmissionId ?? null,
+      locked: isUnderReview(status),
+    }),
+    officialApproval: officialApproval(status),
+  } as Infer<typeof contracts.readiness>;
+  return { row, status, content, record, base, docs, review, readiness, compatibility };
+}
+
+export async function submissionSummary(ctx: Context, user: Member, row: Doc<'calendars'>) {
+  const submission = row.currentSubmissionId ? await ctx.db.get(row.currentSubmissionId) : null;
+  const returned =
+    submission && outcome(submission) === 'returned' ? submission : await lastReturn(ctx, row._id);
+  const decision = returned?.decisions.at(-1);
+  return {
+    submission: submission
+      ? {
+          id: submission._id,
+          sequence: submission.sequence,
+          submittedAt: iso(submission.submittedAt),
+          submittedBy: submission.submittedBy.name,
+          submittedFrom: submission.submittedFrom,
+          ...(submission.previousSubmissionId
+            ? { previousSubmissionId: submission.previousSubmissionId }
+            : {}),
+          outcome: outcome(submission),
+        }
+      : null,
+    lastReturn:
+      returned && decision
+        ? {
+            submissionId: returned._id,
+            sequence: returned.sequence,
+            at: iso(decision.at),
+            note: decision.note ?? '',
+            ...(user.role === 'CAMPUS' ? {} : { by: decision.by.name }),
+          }
+        : null,
+  };
 }
 
 export async function fullRecord(
@@ -45,47 +87,14 @@ export async function fullRecord(
   user: Member,
   id: Id<'calendars'>,
 ): Promise<Infer<typeof contracts.calendarDto>> {
-  const { record, base, docs, readiness, compatibility } = await baseRecord(ctx, user, id);
-  const versions = await ctx.db
-    .query('calendarVersions')
-    .withIndex('by_calendarId_and_version', (q) => q.eq('calendarId', id))
-    .order('desc')
-    .take(50);
+  const { row, record, readiness, compatibility } = await baseRecord(ctx, user, id);
   return clean({
     ...record,
-    versions: versions.map((row) => ({
-      version: row.version,
-      at: iso(row.at),
-      catalogueRevision: row.catalogueRevision,
-    })),
+    ...(await submissionSummary(ctx, user, row)),
     readiness,
     institutionalEvents: compatibility.snapshot.events,
-    currentCatalogueRevision: base.revision,
-    currentDocuments: docs.map(documentDto),
-  });
-}
-
-export async function archive(
-  ctx: MutationCtx,
-  row: Doc<'calendars'>,
-  content: Doc<'calendarContents'>,
-) {
-  const campus = await ctx.db.get(row.campusId);
-  if (!campus) fail('Campus não encontrado.', 404);
-  const snapshotId = await ctx.db.insert('calendarSnapshots', {
-    state: domainState(row, campus, content.state),
-    purpose: row.purpose,
-    at: row.updatedAt,
-    catalogueRevision: content.catalogueRevision,
-    institutionalEvents: content.institutionalSnapshot,
-    documentSnapshot: content.documentSnapshot,
-  });
-  await ctx.db.insert('calendarVersions', {
-    calendarId: row._id,
-    version: row.version,
-    at: row.updatedAt,
-    catalogueRevision: content.catalogueRevision,
-    snapshotId,
+    currentCatalogueRevision: compatibility.snapshot.revision,
+    currentDocuments: compatibility.snapshot.documents.map(documentDto),
   });
 }
 

@@ -14,12 +14,14 @@ export async function calendarAuthorship(
       )
       .order(order)
       .first();
-  const [created, saved, converted] = await Promise.all([
+  const [original, derived, saved, converted] = await Promise.all([
     entry('CREATE_CALENDAR', 'asc'),
+    entry('CREATE_CALENDAR_VERSION', 'asc'),
     entry('SAVE_CALENDAR', 'desc'),
     entry('MAKE_CALENDAR_DEFINITIVE', 'desc'),
   ]);
-  // Uploads, reviews and trash operations do not change the calendar's updatedAt/version.
+  const created = original ?? derived;
+  // Uploads, reviews, trash operations and lifecycle transitions keep updatedAt and version.
   const latest = [created, saved, converted]
     .filter((item) => item !== null)
     .filter(

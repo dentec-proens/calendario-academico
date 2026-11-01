@@ -107,7 +107,7 @@ test('React confirmation handles focus, keyboard, backdrop, async failure and du
   expect(errors).toEqual([]);
 });
 
-test('TypeScript editor preserves cancelled imports and saves before converting to definitive', async ({
+test('TypeScript editor preserves cancelled imports and saves before submitting for analysis', async ({
   page,
   fixtureServer,
   cleanup,
@@ -226,27 +226,38 @@ test('TypeScript editor preserves cancelled imports and saves before converting 
   await expect(page.locator('input#offer-integrado-period-0-start')).toHaveValue('2027-02-17');
 
   await page.locator('[data-view="issues"]').click();
-  await page.locator('#make-definitive').click();
+  const submit = page.locator('[data-lifecycle-action="submit"]');
+  await submit.click();
   await expect(page.locator('dialog.confirmation-dialog--primary[open]')).toBeVisible();
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.keyboard.press('Escape');
   await expect(page.locator('dialog')).toBeHidden();
-  expect(await page.evaluate(() => window.editorTest.calls.conversions)).toBe(0);
-  await page.evaluate(() => {
-    window.editorTest.calls.failConversion = true;
-  });
-  await page.locator('#make-definitive').click();
+  // A field still being filled never travels silently: the submission waits for it.
+  await submit.click();
   await page.locator('.confirmation-dialog__confirm').click();
-  await expect(page.locator('dialog [role="alert"]')).toBeVisible();
-  expect(await page.evaluate(() => window.editorTest.record.purpose)).toBe('test');
+  await expect(page.locator('dialog [role="alert"]')).toContainText('Aplique ou descarte');
+  expect(await page.evaluate(() => window.editorTest.calls.transitions)).toBe(0);
+  await page.locator('.confirmation-dialog__cancel').click();
+  await page.locator('[data-view="periods"]').click();
+  await page.locator('#offer-integrado-period-0-start').fill('');
+  await expect(page.locator('#unapplied-status')).toBeHidden();
   await page.evaluate(() => {
-    window.editorTest.calls.failConversion = false;
+    window.editorTest.calls.failTransition = true;
+  });
+  await submit.click();
+  await page.locator('.confirmation-dialog__confirm').click();
+  await expect(page.locator('dialog [role="alert"]')).toContainText('Falha sintética');
+  expect(await page.evaluate(() => window.editorTest.record.status)).toBe('rascunho');
+  await page.evaluate(() => {
+    window.editorTest.calls.failTransition = false;
   });
   await page.locator('.confirmation-dialog__confirm').click();
-  await page.waitForFunction(() => window.editorTest.record.purpose === 'definitive');
+  await page.waitForFunction(() => window.editorTest.record.status === 'enviado');
   await expect(page.locator('dialog')).toBeHidden();
-  await expect(page.locator('button#make-definitive')).toBeHidden();
-  expect(await page.evaluate(() => window.editorTest.calls.conversions)).toBe(2);
+  await expect(submit).toBeHidden();
+  await expect(page.locator('[data-lifecycle-action="withdraw"]')).toBeVisible();
+  await expect(page.locator('#editor-locked')).toContainText('Recolha o envio');
+  expect(await page.evaluate(() => window.editorTest.calls.transitions)).toBe(2);
   expect(errors).toEqual([]);
 });

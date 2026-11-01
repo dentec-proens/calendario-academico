@@ -1,11 +1,25 @@
 import type { readCalendarDates } from '../src/domain/calendar/civil-dates.ts';
 import { modalityIds, academicTerms, assessmentStageValues } from '../src/domain/calendar/config';
+import { calendarStatuses } from '../src/domain/calendar/lifecycle.ts';
 import { v } from 'convex/values';
 import type { Infer } from 'convex/values';
 
 export const modality = v.union(...modalityIds.map((id) => v.literal(id)));
 export const effect = v.union(v.literal('include'), v.literal('exclude'), v.literal('note'));
+/** Pending contraction: replaced by `calendarStatus` and removed with the history tables. */
 export const purpose = v.union(v.literal('test'), v.literal('definitive'));
+export const calendarStatus = v.union(...calendarStatuses.map((status) => v.literal(status)));
+export const lifecycleAction = v.union(
+  v.literal('submit'),
+  v.literal('withdraw'),
+  v.literal('startReview'),
+  v.literal('return'),
+  v.literal('conclude'),
+  v.literal('reopen'),
+  v.literal('publish'),
+  v.literal('archive'),
+  v.literal('reinstate'),
+);
 export const regime = v.union(
   v.literal('anual'),
   v.literal('semestral'),
@@ -158,6 +172,7 @@ export const domainState = v.object({
   year: v.number(),
   campus: v.string(),
 });
+/** Pending contraction: read only by `calendarSnapshots`, which receives no new writes. */
 export const historicalState = domainState;
 export const unavailableFile = v.object({
   sourceReference: v.string(),
@@ -195,6 +210,7 @@ export const documentSnapshot = v.object({
   publishedBy: v.optional(v.id('users')),
   archivedAt: v.optional(v.number()),
 });
+/** `state` and `purpose` remain only while `calendarSnapshots` is in the schema. */
 export const snapshotFields = {
   state: historicalState,
   purpose: v.optional(purpose),
@@ -216,6 +232,8 @@ export const reviewEntry = v.object({
 });
 export const reviewFields = {
   rulesetVersion: v.optional(v.string()),
+  /** Absent in reviews written before submissions existed; saving again binds the review. */
+  submissionId: v.optional(v.id('calendarSubmissions')),
   baseIdentity: v.optional(v.string()),
   calendarId: v.id('calendars'),
   calendarVersion: v.number(),
@@ -229,6 +247,39 @@ export const reviewFields = {
   applicableNorm: v.string(),
   reviewer: v.object({ id: v.id('users'), name: v.string() }),
   updatedAt: v.number(),
+};
+export const actorRef = v.object({ id: v.id('users'), name: v.string() });
+export const submissionDecision = v.object({
+  action: v.union(
+    v.literal('withdrawn'),
+    v.literal('returned'),
+    v.literal('concluded'),
+    v.literal('reopened'),
+    v.literal('published'),
+  ),
+  at: v.number(),
+  by: actorRef,
+  reviewRevision: v.optional(v.number()),
+  note: v.optional(v.string()),
+});
+export const submissionFields = {
+  calendarId: v.id('calendars'),
+  sequence: v.number(),
+  submittedAt: v.number(),
+  submittedBy: actorRef,
+  submittedFrom: v.union(v.literal('rascunho'), v.literal('devolvido')),
+  /** The returned submission this one answers, when sent again after a return. */
+  previousSubmissionId: v.optional(v.id('calendarSubmissions')),
+  contentVersion: v.number(),
+  contentHash: v.string(),
+  state: contentState,
+  catalogueRevision: v.number(),
+  institutionalSnapshot: v.array(institutionalEventSnapshot),
+  documentSnapshot: v.array(documentSnapshot),
+  offerKinds: v.array(modality),
+  campusName: v.string(),
+  /** Append only: the current outcome is the last decision. */
+  decisions: v.array(submissionDecision),
 };
 export const auditTarget = v.union(
   v.object({ type: v.literal('user'), id: v.id('users') }),

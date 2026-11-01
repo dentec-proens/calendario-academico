@@ -17,23 +17,18 @@ const plain = (value: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
-// Fail closed: machine checks never replace a current, evidenced human review.
-export function releaseReadiness(
-  record: {
-    id: string;
-    version?: number;
-    catalogueRevision: number;
-    institutionalSnapshot: CalendarActivity[];
-    state: ActivityState;
-  },
-  db: {
-    catalogue: { revision: number };
-    reviews?: CalendarReview[];
-    base?: { compatible: boolean; identity: string };
-  },
-) {
-  const issues = [],
-    warnings = [];
+/** A content issue with a code that does not depend on its wording, for comparisons. */
+export interface ContentIssue {
+  code: string;
+  message: string;
+}
+type ContentRecord = { institutionalSnapshot: CalendarActivity[]; state: ActivityState };
+
+/** Content checks only: no institutional-base or human-review issues. */
+export function contentAssessment(record: ContentRecord) {
+  const issues: ContentIssue[] = [],
+    warnings: string[] = [];
+  const issue = (code: string, message: string) => issues.push({ code, message });
   const policy = policyFor(record.state.year);
   const offers = calendarOffers(record.state);
   if (policy.scope) {
@@ -41,15 +36,17 @@ export function releaseReadiness(
     const pending = included.filter((offer) => offer.scope?.status !== 'covered');
     if (pending.length) {
       if (new Set(included.map((offer) => offer.scope?.status)).size === 1)
-        issues.push(policy.scope.readinessIssue);
+        issue('scope', policy.scope.readinessIssue);
       else
         for (const offer of pending)
-          issues.push(`${labelFor(record.state, offer.id)} — ${policy.scope.readinessIssue}`);
+          issue(
+            `scope:${offer.id}`,
+            `${labelFor(record.state, offer.id)} — ${policy.scope.readinessIssue}`,
+          );
     }
   }
-  issues.push(
-    ...observanceIssues(record.institutionalSnapshot, record.state).map((issue) => issue.message),
-  );
+  for (const item of observanceIssues(record.institutionalSnapshot, record.state))
+    issue(`observance:${item.key}:${item.message}`, item.message);
   const events = [...record.institutionalSnapshot, ...record.state.events];
   if (
     offers.some(
@@ -61,15 +58,16 @@ export function releaseReadiness(
             : offer.organization === 'semestral' && [1, 2].includes(offer.stages.perTerm))),
     )
   )
-    issues.push('Informe a quantidade de etapas de avaliação (2, 3 ou 4).');
+    issue('stages', 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).');
   const diagnostics = diagnoseCalendar(record.state, events);
   const coverage = diagnostics.coverage;
   for (const row of coverage) {
     const prefix = `${labelFor(record.state, row.offerId)} — ${row.requirement.name}`;
+    const code = `coverage:${row.offerId}:${row.requirement.id}`;
     if (row.applicability === 'required' && row.coverage === 'pending')
-      issues.push(`${prefix}: vincule um evento com datas no roteiro de atividades.`);
+      issue(`${code}:pending`, `${prefix}: vincule um evento com datas no roteiro de atividades.`);
     if (row.applicability === 'required' || row.events.length)
-      for (const issue of row.issues) issues.push(`${prefix}: ${issue}`);
+      for (const item of row.issues) issue(`${code}:${item}`, `${prefix}: ${item}`);
     for (const warning of row.warnings) warnings.push(`${prefix}: ${warning}`);
   }
   for (const offer of offers) {
@@ -91,7 +89,7 @@ export function releaseReadiness(
         ? `${position.number}ª etapa — ${position.term}º semestre`
         : `${n}ª etapa`;
       if (start && end && start.start > end.end)
-        issues.push(`${stage}: término anterior ao início.`);
+        issue(`stage-order:${offer.id}:${n}`, `${stage}: término anterior ao início.`);
       if (start && offer.legacyStageCount === undefined) {
         const cycleIssue = assessmentCycleIssue(record.state, start);
         if (cycleIssue)
@@ -137,40 +135,99 @@ export function releaseReadiness(
     }
   // Campus event requirements come from the same checklist displayed in the editor.
   // Do not add hidden, duplicate keyword requirements when generating the calendar.
-  if (!referenceIsCurrent(record.catalogueRevision, db.catalogue.revision, db.base))
-    issues.push('Salve o calendário com a base institucional atualizada.');
+  // The release check places the base issue here, before the counting issues.
+  const baseIssueAt = issues.length;
   try {
     const result = calendarResult(record.state, [
       ...record.institutionalSnapshot,
       ...record.state.events,
     ]);
-    for (const issue of diagnostics.structure) {
-      if (issue.code === 'periods-missing') issues.push('Cadastre os períodos letivos.');
-      else if (issue.code === 'organization-unclassified')
-        issues.push(
-          `${labelFor(record.state, issue.offerId)} — Organização a conferir antes de confirmar contagem e conclusão.`,
+    for (const item of diagnostics.structure) {
+      if (item.code === 'periods-missing')
+        issue('periods-missing', 'Cadastre os períodos letivos.');
+      else if (item.code === 'organization-unclassified')
+        issue(
+          `organization-unclassified:${item.offerId}`,
+          `${labelFor(record.state, item.offerId)} — Organização a conferir antes de confirmar contagem e conclusão.`,
         );
-      else if (issue.code === 'period-count')
-        issues.push(
-          `${labelFor(record.state, issue.offerId)} — Cadastre ${issue.expected === 1 ? 'o ciclo anual' : 'os dois semestres letivos'}.`,
+      else if (item.code === 'period-count')
+        issue(
+          `period-count:${item.offerId}`,
+          `${labelFor(record.state, item.offerId)} — Cadastre ${item.expected === 1 ? 'o ciclo anual' : 'os dois semestres letivos'}.`,
         );
     }
     for (const check of diagnoseTeachingDays(record.state, result))
-      if (check.status !== 'MET')
-        issues.push(
-          `${labelFor(record.state, check.offerId)} — ${check.scope === 'annual' ? 'Total anual' : record.state.periods.find((p) => p.id === check.scope)?.name}: mínimo de dias não atendido ou não configurado.`,
+      if (check.status !== 'MET') {
+        const period = record.state.periods.find((p) => p.id === check.scope);
+        // A period split changes its identifier, so the code names the term instead.
+        const scope =
+          check.scope === 'annual'
+            ? 'annual'
+            : period?.association.status === 'defined'
+              ? period.association.term
+              : check.scope;
+        issue(
+          `teaching-days:${check.offerId}:${scope}`,
+          `${labelFor(record.state, check.offerId)} — ${check.scope === 'annual' ? 'Total anual' : period?.name}: mínimo de dias não atendido ou não configurado.`,
         );
+      }
     if (Object.values(result.byOffer).some((r) => r.conflicts.length))
-      issues.push('Resolva os conflitos entre dias letivos e exclusões.');
+      issue('conflicts', 'Resolva os conflitos entre dias letivos e exclusões.');
   } catch {
-    issues.push('Complete e confira a semana letiva, os períodos e os dados da contagem.');
+    issue(
+      'count-unavailable',
+      'Complete e confira a semana letiva, os períodos e os dados da contagem.',
+    );
+  }
+  return { issues, warnings, events, baseIssueAt };
+}
+
+export function contentIssues(
+  state: ActivityState,
+  institutionalSnapshot: CalendarActivity[],
+): ContentIssue[] {
+  return contentAssessment({ state, institutionalSnapshot }).issues;
+}
+
+export const baseOutdatedIssue = 'Salve o calendário com a base institucional atualizada.';
+export const lockedBaseIssue =
+  'A base institucional mudou depois do envio. Devolva o calendário para o campus reconciliar e reenviar.';
+
+// Fail closed: machine checks never replace a current, evidenced human review.
+export function releaseReadiness(
+  record: ContentRecord & {
+    id: string;
+    version?: number;
+    catalogueRevision: number;
+  },
+  db: {
+    catalogue: { revision: number };
+    reviews?: CalendarReview[];
+    base?: { compatible: boolean; identity: string };
+    /** When given, a review counts only for this submission (`null`: no open submission). */
+    submissionId?: string | null;
+    /** The calendar is locked: the campus cannot reconcile a changed base before a return. */
+    locked?: boolean;
+  },
+) {
+  const assessment = contentAssessment(record);
+  const issues = assessment.issues.map((item) => item.message),
+    warnings = assessment.warnings;
+  const events = assessment.events;
+  const policy = policyFor(record.state.year);
+  if (!referenceIsCurrent(record.catalogueRevision, db.catalogue.revision, db.base)) {
+    issues.splice(assessment.baseIssueAt, 0, db.locked ? lockedBaseIssue : baseOutdatedIssue);
+    if (db.locked) warnings.push(lockedBaseIssue);
   }
   const review = (db.reviews || []).find((r) => r.calendarId === record.id);
-  const current = reviewIsCurrent(review, record.version, {
-    revision: db.catalogue.revision,
-    identity: db.base?.identity,
-    rulesetVersion: policy.rulesetPrefix ? policy.rulesetVersion(record.state) : undefined,
-  });
+  const current =
+    reviewIsCurrent(review, record.version, {
+      revision: db.catalogue.revision,
+      identity: db.base?.identity,
+      rulesetVersion: policy.rulesetPrefix ? policy.rulesetVersion(record.state) : undefined,
+    }) &&
+    (db.submissionId === undefined ||
+      (db.submissionId !== null && review?.submissionId === db.submissionId));
   if (!current)
     issues.push('A DENTEC/PROENS precisa salvar a revisão desta versão do calendário e da base.');
   if (!review?.applicableNorm?.trim())

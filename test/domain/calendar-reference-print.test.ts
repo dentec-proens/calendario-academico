@@ -79,7 +79,7 @@ test('an empty calendar has no fabricated historical section or execution certif
   const html = proensLayout(state, [], null, null, '');
   expect(html).not.toContain('Atividades e referências de outros anos');
   expect(html).toContain('Sem aprovação oficial');
-  expect(proensLayout(state, [], null, { purpose: 'test' }, '')).not.toContain('undefined');
+  expect(proensLayout(state, [], null, { status: 'rascunho' }, '')).not.toContain('undefined');
 });
 
 test('print distributions use the semantic semester of each offer despite coincident annual periods', () => {

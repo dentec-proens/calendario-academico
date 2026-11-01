@@ -26,11 +26,14 @@ import { evaluateCalendar } from '#src/domain/calendar/counting/evaluation.ts';
 import { createEditorSession } from './editor-session.ts';
 import type { CalendarRecord, CalendarState, EditorEvent } from '../types.ts';
 import EditorAccessNotice from './EditorAccessNotice.tsx';
+import { isEditable } from '#src/domain/calendar/lifecycle.ts';
 
 function useSession(record: CalendarRecord) {
   const { info, status, notify, registerEditor, editorRecovery, maintenance } = useAppSession();
   const drafts = useFormDrafts();
-  const readOnly = info.user.role === 'PARECERISTA';
+  // A locked calendar is read-only for everyone: autosave, flush and base sync never write to it.
+  const locked = !isEditable(record.status);
+  const readOnly = info.user.role === 'PARECERISTA' || locked;
   const [session] = useState(() =>
     createEditorSession(
       record,
@@ -206,6 +209,8 @@ function useSession(record: CalendarRecord) {
     events,
     evaluation,
     readOnly: readOnly || suspended,
+    locked,
+    role: info.user.role,
     isAdmin: info.user.role === 'ADMIN',
     connected: connection.isWebSocketConnected,
     notify,
@@ -248,7 +253,8 @@ export function CalendarEditorProvider({
   const record = fresh ?? (editorRecovery?.calendarId === calendarId ? retained : null);
   if (!record) return <LoadingIndicator label="Carregando calendário…" />;
   return (
-    <OpenEditor key={`${calendarId}:${sessionIdentity(user)}`} record={record}>
+    // A status change, here or in another tab, opens a new session with the right access.
+    <OpenEditor key={`${calendarId}:${sessionIdentity(user)}:${record.status}`} record={record}>
       {children}
     </OpenEditor>
   );

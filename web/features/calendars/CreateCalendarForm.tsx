@@ -1,6 +1,6 @@
 import { calendarLimits } from '#src/domain/calendar/config.ts';
+import { maximumLabelLength } from '#src/domain/calendar/lifecycle.ts';
 import { defaultCalendarYear } from '#src/domain/policies/registry.ts';
-import type { FormEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { CalendarPlus } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
@@ -36,7 +36,7 @@ export default function CreateCalendarForm({
     courses: string;
     classes: string;
     shifts: string;
-    purpose: 'test' | 'definitive';
+    label: string;
   } = {
     campusId: '',
     year: String(defaultCalendarYear),
@@ -44,7 +44,7 @@ export default function CreateCalendarForm({
     courses: '',
     classes: '',
     shifts: '',
-    purpose: 'test',
+    label: '',
   };
   const {
     form,
@@ -80,7 +80,7 @@ export default function CreateCalendarForm({
         courses: value.courses,
         classes: value.classes,
         shifts: value.shifts,
-        purpose: value.purpose,
+        ...(value.label.trim() ? { label: value.label.trim() } : {}),
         offers: offers.map(({ kind, organization, label }) => ({
           kind,
           organization,
@@ -100,18 +100,10 @@ export default function CreateCalendarForm({
   const { year } = values;
   const pending = submitting;
   const campus = info.campuses.find((item) => item.id === values.campusId) || info.campuses[0];
-  const name = campus ? calendarName(year, campus.name) : '';
-  function createCalendar(event: FormEvent<HTMLFormElement>) {
-    const submitter = (event.nativeEvent as SubmitEvent).submitter;
-    form.setFieldValue(
-      'purpose',
-      submitter?.getAttribute('value') === 'definitive' ? 'definitive' : 'test',
-    );
-    submit(event);
-  }
+  const name = campus ? calendarName(year, campus.name, values.label) : '';
 
   return (
-    <form id="create-calendar" onSubmit={createCalendar}>
+    <form id="create-calendar" onSubmit={submit}>
       {!campus ? (
         <Notice tone="warning" id="calendar-campus-notice" announce="polite">
           Nenhum campus ativo vinculado à conta. Solicite a regularização à administração PROENS.
@@ -264,7 +256,24 @@ export default function CreateCalendarForm({
               {name || 'Nenhum campus disponível'}
             </output>
             <small id="calendar-name-help">
-              Gerado automaticamente a partir do campus e do ano.
+              Gerado automaticamente a partir do campus, do ano e do nome livre.
+            </small>
+          </label>
+          <label>
+            <span id="calendar-label-label">
+              Nome livre <span className="field-optional">(opcional)</span>
+            </span>
+            <input
+              id="calendar-label"
+              name="label"
+              value={values.label}
+              onChange={(event) => form.setFieldValue('label', event.target.value)}
+              maxLength={maximumLabelLength}
+              aria-labelledby="calendar-label-label"
+              aria-describedby="calendar-label-help"
+            />
+            <small id="calendar-label-help">
+              Diferencia rascunhos do mesmo campus e ano. Ex.: Proposta com recesso em julho.
             </small>
           </label>
           <label>
@@ -320,29 +329,15 @@ export default function CreateCalendarForm({
             </small>
           </label>
         </div>
-        <div className="calendar-purpose-help">
-          <p>
-            <strong>De teste:</strong> para experimentar a ferramenta. Os PDFs recebem a indicação
-            de teste. Você pode convertê-lo em definitivo depois, mantendo os dados.
-          </p>
-          <p>
-            <strong>Definitivo:</strong> para preparar o calendário que será encaminhado para
-            análise. Enquanto houver pendências, você pode gerar um PDF da proposta para análise. O
-            PDF final exige as verificações de dias letivos, conflitos e critérios, além da revisão
-            humana atualizada.
-          </p>
-          <p className="help">
-            Criar um calendário definitivo não significa que ele já esteja aprovado.
-          </p>
-        </div>
+        <p className="help calendar-draft-help">
+          O calendário começa como rascunho, que você pode editar e testar à vontade. Quando estiver
+          pronto, envie-o para análise da PROENS no editor. Um rascunho nunca enviado não tem
+          validade.
+        </p>
         <div className="actions">
-          <Button type="submit" name="purpose" value="test">
+          <Button type="submit">
             <CalendarPlus aria-hidden="true" size={18} />
-            Criar calendário de teste
-          </Button>
-          <Button type="submit" name="purpose" value="definitive">
-            <CalendarPlus aria-hidden="true" size={18} />
-            Criar calendário definitivo
+            Criar rascunho
           </Button>
         </div>
       </fieldset>

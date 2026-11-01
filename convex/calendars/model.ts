@@ -7,6 +7,7 @@ import type { Context } from '../lib/shared';
 import { fail, iso } from '../lib/shared';
 import type { DomainState, ContentState } from '../validators';
 import { calendarAuthorship } from './authorship';
+import { statusOf } from './lifecycle';
 
 export async function calendarRow(ctx: Context, user: Member, id: Id<'calendars'>, trash = false) {
   const row = await ctx.db.get(id);
@@ -25,13 +26,24 @@ export async function contents(ctx: Context, id: Id<'calendars'>) {
 }
 
 export async function summary(ctx: Context, row: Doc<'calendars'>, campus: Doc<'campuses'>) {
+  const successor = row.supersededBy ? await ctx.db.get(row.supersededBy) : null;
   return {
     id: row._id,
-    name: calendarName(row.year, campus.name),
+    name: calendarName(row.year, campus.name, row.label),
     campusId: row.campusId,
     year: row.year,
     offerKinds: row.offerKinds,
-    purpose: row.purpose,
+    // Until the contraction, a row without status reads as the migration would convert it.
+    status: statusOf(row),
+    statusRevision: row.statusRevision ?? 0,
+    ...(row.label ? { label: row.label } : {}),
+    ...(row.derivedFrom ? { derivedFrom: row.derivedFrom } : {}),
+    ...(row.seiProcess ? { seiProcess: row.seiProcess } : {}),
+    ...(row.publishedAt ? { publishedAt: iso(row.publishedAt) } : {}),
+    ...(row.archivedAt ? { archivedAt: iso(row.archivedAt) } : {}),
+    ...(successor
+      ? { supersededByName: calendarName(successor.year, campus.name, successor.label) }
+      : {}),
     courses: row.courses,
     classes: row.classes,
     shifts: row.shifts,
@@ -52,4 +64,10 @@ export function domainState(
     year: row.year,
     campus: campus.name,
   };
+}
+
+export async function campusName(ctx: Context, row: Pick<Doc<'calendars'>, 'campusId'>) {
+  const campus = await ctx.db.get(row.campusId);
+  if (!campus) fail('Campus não encontrado.', 404);
+  return campus.name;
 }

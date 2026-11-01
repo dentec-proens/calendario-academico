@@ -1,7 +1,8 @@
 import { readActivityDates } from '../../src/domain/calendar/civil-dates.ts';
 import { applicableEvents, inspectCalendar, reconcile } from '../../src/domain/calendar/base';
 import { rulesetVersion } from '../../src/domain/policies/registry';
-import type { DomainState } from '../validators';
+import type { DomainState, documentSnapshot, institutionalEventSnapshot } from '../validators';
+import type { Infer } from 'convex/values';
 import type { Doc } from '../_generated/dataModel';
 import type { catalogue } from '../catalogue/model';
 import type { currentDocuments } from '../documents/model';
@@ -12,18 +13,13 @@ type Content = Pick<
   Doc<'calendarContents'>,
   'catalogueRevision' | 'institutionalSnapshot' | 'documentSnapshot'
 >;
-export function inspectBase(
-  state: DomainState,
-  content: Content,
-  base: Awaited<ReturnType<typeof catalogue>>,
-  docs: Awaited<ReturnType<typeof currentDocuments>>,
-) {
-  const snapshot = {
-    rulesetVersion: rulesetVersion(state),
-    revision: base.revision,
-    events: clean(applicableEvents(base, state)),
-    documents: docs,
-  };
+type Snapshot = {
+  rulesetVersion?: string;
+  revision: number;
+  events: ReturnType<typeof readActivityDates<Infer<typeof institutionalEventSnapshot>>>[];
+  documents: Infer<typeof documentSnapshot>[];
+};
+function assess(state: DomainState, content: Content, snapshot: Snapshot) {
   const assessment = inspectCalendar(
     {
       ...content,
@@ -44,9 +40,33 @@ export function inspectBase(
       revision: snapshot.revision,
       rulesetVersion: snapshot.rulesetVersion,
       events: snapshot.events,
-      documents: docs.map(documentDto),
+      documents: snapshot.documents.map(documentDto),
     },
   };
+}
+export function inspectBase(
+  state: DomainState,
+  content: Content,
+  base: Awaited<ReturnType<typeof catalogue>>,
+  docs: Awaited<ReturnType<typeof currentDocuments>>,
+) {
+  return assess(state, content, {
+    rulesetVersion: rulesetVersion(state),
+    revision: base.revision,
+    events: (
+      clean(applicableEvents(base, state)) as Infer<typeof institutionalEventSnapshot>[]
+    ).map(readActivityDates),
+    documents: docs,
+  });
+}
+/** A published calendar reads only the base frozen with its content. */
+export function frozenBase(state: DomainState, content: Content) {
+  return assess(state, content, {
+    rulesetVersion: state.rulesetVersion ?? rulesetVersion(state),
+    revision: content.catalogueRevision,
+    events: content.institutionalSnapshot.map(readActivityDates),
+    documents: content.documentSnapshot,
+  });
 }
 export function reconcileBase(assessment: ReturnType<typeof inspectBase>, acceptance?: string) {
   return domainRule(() => reconcile(assessment, acceptance));

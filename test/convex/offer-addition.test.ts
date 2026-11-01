@@ -2,6 +2,7 @@ import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/
 import { expect, test } from 'vitest';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
+import { preserveSubmission } from '../helpers/lifecycle.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 
 test('Convex includes a complete new offer atomically and preserves the earlier version scope', async () => {
@@ -14,10 +15,10 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
         year: 2027,
         offers: [{ kind: 'posgraduacao', organization: 'anual' }],
         courses: 'Pós-graduação sintética',
-        purpose: 'test',
       },
     })
     .then(calendarRecordDates);
+  const submitted = await preserveSubmission(fixture, record.id);
   const offers: typeof record.state.offers = [
     ...record.state.offers,
     {
@@ -69,10 +70,7 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
   expect(loaded.state.offers).toEqual(offers);
   expect(loaded.state.periods).toEqual(saved.state.periods);
   expect(loaded.state.events).toEqual(saved.state.events);
-  const previous = await actor.query(api.calendars.calendarVersion, {
-    id: record.id,
-    version: record.version,
-  });
+  const previous = await submitted();
   expect(previous.state.schemaVersion).toBe(4);
   if (previous.state.schemaVersion !== 4) throw Error('Snapshot v4 esperado.');
   expect(previous.state.offers.map((offer) => offer.id)).toEqual(['posgraduacao']);

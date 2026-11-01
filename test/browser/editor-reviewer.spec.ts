@@ -58,8 +58,8 @@ test('reviewer consults the complete calendar and live changes without editing o
   expect(await page.evaluate(() => window.editorTest.calls)).toEqual({
     synchronizations: 0,
     saves: 0,
-    conversions: 0,
-    failConversion: false,
+    transitions: 0,
+    failTransition: false,
   });
   expect(errors).toEqual([]);
 });

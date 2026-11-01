@@ -1,3 +1,7 @@
+import {
+  statusLabels as calendarStatusLabels,
+  type CalendarStatus,
+} from '../domain/calendar/lifecycle.ts';
 import type { AssessmentSettings, ReviewEntry } from '../domain/calendar/model.ts';
 import { calendarOffers, offerLabel } from '../domain/calendar/offers.ts';
 import { reviewNorm } from '../domain/reviews/citation.ts';
@@ -20,6 +24,8 @@ export function reviewDocument(
   record: {
     state: AssessmentSettings & { year: number; campus?: string };
     courses?: string;
+    status?: CalendarStatus;
+    seiProcess?: string;
   },
   review: {
     calendarVersion?: number;
@@ -42,7 +48,8 @@ export function reviewDocument(
   const notice = `Minuta para revisão humana e inserção no SEI. ${assessed}/${reviewCriteria.length} critérios conferidos pelo parecerista. Não é documento assinado nem aprovação oficial.`;
   const metadata = [
     ['Conjunto de regras', rulesetVersion(record.state)],
-    ['Processo nº', review.processNumber || 'Não informado'],
+    ['Processo nº', record.seiProcess || review.processNumber || 'Não informado'],
+    ...(record.status ? [['Situação do calendário', calendarStatusLabels[record.status]]] : []),
     ['Assunto', `Calendário Acadêmico e Administrativo ${record.state.year}`],
     ['Campus', record.state.campus],
     [

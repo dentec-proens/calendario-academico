@@ -192,10 +192,30 @@ export async function createNativeFixture(overrides: Seed = {}) {
                 id: calendarId(review[1]),
                 revision: body.revision,
               })
-            : mutation(api.reviews.saveReview, { id: calendarId(review[1]), body });
-        const calendar = path.match(/^\/api\/calendars\/([^/]+)(?:\/(restore|make-definitive))?$/);
+            : mutation(api.reviews.saveReview, {
+                id: calendarId(review[1]),
+                // Reviews bind to the open submission, as the review page does.
+                body: {
+                  ...body,
+                  submissionId:
+                    body.submissionId ??
+                    (await query(api.reviews.review, { id: calendarId(review[1]) })).submission?.id,
+                },
+              });
+        const calendar = path.match(
+          /^\/api\/calendars\/([^/]+)(?:\/(restore|make-definitive|transition))?$/,
+        );
         if (calendar) {
           const id = calendarId(calendar[1]);
+          if (calendar[2] === 'transition') {
+            const current = await query(api.calendars.calendar, { id });
+            return mutation(api.calendars.transitionCalendar, {
+              id,
+              from: current.status,
+              statusRevision: current.statusRevision,
+              ...body,
+            });
+          }
           if (calendar[2] === 'restore') return mutation(api.calendars.restoreCalendar, { id });
           if (calendar[2] === 'make-definitive')
             return mutation(api.calendars.makeDefinitive, { id, version: body.version });

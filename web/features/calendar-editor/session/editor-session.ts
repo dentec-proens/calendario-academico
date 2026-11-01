@@ -224,15 +224,6 @@ export function createEditorSession(
       if (!readOnly) await saver.flush();
       return current.record;
     },
-    confirmDefinitive(
-      value: Pick<CalendarRecord, 'purpose' | 'version' | 'updatedAt' | 'readiness'>,
-    ) {
-      assertEditing();
-      publish({
-        record: { ...current.record, ...value },
-        remote: current.remote && current.remote.version <= value.version ? null : current.remote,
-      });
-    },
     async confirmBase(acceptance: string) {
       assertEditing();
       if (current.unapplied)

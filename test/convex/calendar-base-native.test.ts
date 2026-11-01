@@ -5,6 +5,7 @@ import { api } from '../../convex/_generated/api.js';
 import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
+import { act } from '../helpers/lifecycle.ts';
 
 async function opened() {
   const fixture = await createNativeFixture({
@@ -33,7 +34,6 @@ async function opened() {
         year: 2027,
         offers: [{ kind: 'integrado', organization: 'anual' }],
         courses: 'Teste',
-        purpose: 'test',
       },
     })
     .then(calendarRecordDates);
@@ -42,10 +42,12 @@ async function opened() {
 
 test('equivalence sync is idempotent, scoped and preserves version, timestamp, snapshots and review evidence', async () => {
   const { client, account, record, asClient, inspect } = await opened();
+  await act(account, record.id, 'submit');
   const review = await account.query(api.reviews.review, { id: record.id });
   await account.mutation(api.reviews.saveReview, {
     id: record.id,
     body: {
+      submissionId: review.submission!.id,
       revision: 0,
       calendarVersion: record.version,
       catalogueRevision: review.catalogueRevision,
@@ -60,6 +62,8 @@ test('equivalence sync is idempotent, scoped and preserves version, timestamp, s
       })),
     },
   });
+  // The campus reconciles the base only after a return; the returned review stays bound.
+  await act(account, record.id, 'return', { note: 'Confira a base.' });
   // An event for another offer increments this year's revision but cannot affect this calendar.
   await account.mutation(api.catalogue.saveCatalogue, {
     body: {
@@ -196,10 +200,12 @@ test('real changes require the displayed content acceptance and events recalcula
 
 test('document incorporation preserves dates, invalidates the evidenced review and archives the old references', async () => {
   const { client, account, record, inspect } = await opened();
+  await act(account, record.id, 'submit');
   const support = await account.query(api.reviews.review, { id: record.id });
   await account.mutation(api.reviews.saveReview, {
     id: record.id,
     body: {
+      submissionId: support.submission!.id,
       revision: 0,
       calendarVersion: 1,
       catalogueRevision: 1,
@@ -214,6 +220,7 @@ test('document incorporation preserves dates, invalidates the evidenced review a
       })),
     },
   });
+  await act(account, record.id, 'return', { note: 'Incorpore a norma.' });
   const id = await client.run((ctx) =>
     ctx.db.insert('documents', {
       year: 2027,
@@ -254,7 +261,12 @@ test('document incorporation preserves dates, invalidates the evidenced review a
   expect(saved.version).toBe(2);
   expect(saved.base.documents[0]!.id).toBe(id);
   const data = await inspect();
-  expect(data.calendars[0]!.versions[0]!.documentSnapshot).toEqual([]);
+  const [submission] = await client.run((ctx) => ctx.db.query('calendarSubmissions').collect());
+  expect(
+    submission!.documentSnapshot,
+    'the submission keeps the references it was reviewed with',
+  ).toEqual([]);
+  expect(data.calendars[0]!.versions).toEqual([]);
   expect(data.reviews[0]!.documentSnapshot).toEqual([]);
 });
 

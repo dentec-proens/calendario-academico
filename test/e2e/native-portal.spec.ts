@@ -260,7 +260,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await page.locator('#calendar-courses').fill(marker);
   await Promise.all([
     page.waitForURL('**/calendarios/*/editar'),
-    page.locator('#create-calendar button[value="test"]').click(),
+    page.locator('#create-calendar button[type="submit"]').click(),
   ]);
   await expect(page.locator('#record-title')).toContainText(String(year));
   const calendarId = parseEditorPath(new URL(page.url()).pathname)?.id;
@@ -272,7 +272,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await page.locator('#print').click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-print-title',
-    `teste-calendario-${year}-v1`,
+    `rascunho-calendario-${year}-v1`,
   );
   // The browser's print engine produces the PDF the user saves from the print dialog.
   const generatedPdf = await page.pdf({ printBackground: true, preferCSSPageSize: true });
@@ -302,7 +302,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
     }
     const text = contents.join(' ').replace(/\s+/g, ' ');
     expect(text).toContain(`CALENDÁRIO ACADÊMICO E ADMINISTRATIVO ${year}`);
-    expect(text).toContain('CALENDÁRIO DE TESTE');
+    expect(text).toContain('RASCUNHO — SEM VALIDADE');
     expect(text).toContain(marker);
   } finally {
     await pdfTask.destroy();

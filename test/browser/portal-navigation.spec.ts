@@ -34,7 +34,7 @@ for (const width of [1440, 390]) {
   });
 }
 
-test('calendar creation presents the generated name as text and explains each purpose', async ({
+test('calendar creation presents the generated name as text and starts a draft', async ({
   page,
   fixtureServer,
 }) => {
@@ -56,7 +56,9 @@ test('calendar creation presents the generated name as text and explains each pu
   const name = page.getByLabel('Nome do calendário', { exact: true });
   await expect(name).toHaveJSProperty('tagName', 'OUTPUT');
   await expect(name).toHaveText('Calendário 2027 - Campus Campus de teste');
-  await expect(page.getByText('Gerado automaticamente a partir do campus e do ano.')).toBeVisible();
+  await expect(
+    page.getByText('Gerado automaticamente a partir do campus, do ano e do nome livre.'),
+  ).toBeVisible();
   await page.getByLabel('Ano', { exact: true }).fill('2028');
   await expect(name).toHaveText('Calendário 2028 - Campus Campus de teste');
   await page.getByLabel('Turnos (opcional)').focus();
@@ -64,9 +66,10 @@ test('calendar creation presents the generated name as text and explains each pu
   await expect(page.getByLabel('Turmas (opcional)')).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(page.getByLabel('Nome dos cursos')).toBeFocused();
-  await expect(page.locator('.calendar-purpose-help')).toContainText('experimentar a ferramenta');
-  await expect(page.locator('.calendar-purpose-help')).toContainText('proposta para análise');
-  await expect(page.locator('.calendar-purpose-help')).toContainText('revisão humana');
+  await page.getByLabel('Nome livre (opcional)').fill('Proposta A');
+  await expect(name).toHaveText('Calendário 2028 - Campus Campus de teste — Proposta A');
+  await expect(page.locator('.calendar-draft-help')).toContainText('envie-o para análise');
+  await expect(page.getByRole('button', { name: 'Criar rascunho' })).toBeVisible();
   await expect(page.locator('.workspace-heading')).not.toContainText(/Perfil|Todos os campi/);
   await page.locator('[data-page="accounts"]').click();
   await expect(page.locator('.workspace-heading')).not.toContainText(/Perfil|Todos os campi/);
