@@ -11,7 +11,7 @@ for (const width of [1440, 390]) {
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#record-title')).toBeVisible();
     await addPeriod(page, '2027-03-01', '2027-03-26');
-    await expect(page.locator('#editor-section-title')).toHaveText('Organização letiva por oferta');
+    await expect(page.locator('#editor-section-title')).toHaveText('Organização por oferta');
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 6');
     await expect(page.locator('#periods .panel')).toHaveCount(0);
     await expect(

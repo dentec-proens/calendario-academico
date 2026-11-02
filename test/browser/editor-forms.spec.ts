@@ -268,7 +268,7 @@ test('without teaching periods the Saturday step explains what is pending and li
   await expect(page.locator('#saturday-panel')).toContainText(
     'Não há sábados disponíveis para seleção.',
   );
-  await pending.getByRole('link', { name: 'Organização letiva por oferta' }).click();
+  await pending.getByRole('link', { name: 'Organização por oferta' }).click();
   await expect(page).toHaveURL(/\/periodos$/);
   await expect(page.locator('[data-edit-organization="integrado"]')).toBeVisible();
 

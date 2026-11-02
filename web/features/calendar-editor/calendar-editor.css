@@ -322,12 +322,6 @@
   font-size: 0.8125rem;
   font-weight: 650;
 }
-.editor-step-detail {
-  display: block;
-  font-size: 0.75rem;
-  margin-top: 3px;
-  line-height: 1.5;
-}
 .editor-events-link {
   display: block;
   padding: 0 10px 12px 49px;
@@ -373,12 +367,6 @@
   font-size: 1.5rem;
   margin: 0;
   letter-spacing: -0.025em;
-}
-.editor-section-description {
-  font-size: 0.875rem;
-  color: var(--ui-muted);
-  margin: 9px 0 0;
-  max-width: 660px;
 }
 .editor-section-content > .view {
   padding: 6px 28px 24px;

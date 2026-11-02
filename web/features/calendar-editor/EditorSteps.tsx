@@ -62,10 +62,7 @@ export default function EditorSteps({
                 aria-current={active?.section === step.section ? 'page' : undefined}
               >
                 <span className="editor-step-number">{index + 1}</span>
-                <span>
-                  <span className="editor-step-title">{step.title}</span>
-                  <span className="editor-step-detail">{step.detail}</span>
-                </span>
+                <span className="editor-step-title">{step.title}</span>
               </Link>
             </div>
           ))}

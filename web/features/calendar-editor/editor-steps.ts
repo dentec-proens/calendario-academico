@@ -2,7 +2,7 @@ import { editorSections, type EditorSection } from '#src/app/routes.ts';
 
 function defineEditorPage<Section extends EditorSection>(
   section: Section,
-  copy: { title: string; detail: string; description: string },
+  copy: { title: string },
 ) {
   return {
     section,
@@ -15,50 +15,30 @@ function defineEditorPage<Section extends EditorSection>(
 export const editorPages = {
   edit: defineEditorPage('edit', {
     title: 'Semana letiva',
-    detail: 'Dias regulares de atividades',
-    description: 'Defina os dias regulares de atividades letivas.',
   }),
   periods: defineEditorPage('periods', {
-    title: 'Organização letiva por oferta',
-    detail: 'Períodos e etapas de avaliação',
-    description: 'Defina os períodos de aulas e as etapas de avaliação em conjunto, por oferta.',
+    title: 'Organização por oferta',
   }),
   assessments: defineEditorPage('assessments', {
     title: 'Etapas de avaliação',
-    detail: 'Etapas e prazos por oferta',
-    description: 'Organize as etapas de avaliação de cada oferta e confira suas datas.',
   }),
   days: defineEditorPage('days', {
     title: 'Sábados letivos',
-    detail: 'Atividades ao longo do ano',
-    description:
-      'Selecione sábados no calendário e informe a atividade. Para editar um registro, selecione a data.',
   }),
   vacations: defineEditorPage('vacations', {
     title: 'Férias docentes',
-    detail: 'Períodos de férias do campus',
-    description: 'Informe até três períodos de férias docentes do campus.',
   }),
   events: defineEditorPage('events', {
     title: 'Atividades e datas',
-    detail: 'Resolução e atividades do campus',
-    description: 'Registre as atividades e eventos da Resolução e do campus.',
   }),
   history: defineEditorPage('history', {
     title: 'Atividades e datas',
-    detail: 'Resolução e atividades do campus',
-    description: 'Registre as atividades e eventos da Resolução e do campus.',
   }),
   issues: defineEditorPage('issues', {
     title: 'Revisão e conclusão',
-    detail: 'Conferência e exportação',
-    description: 'Confira as pendências e o resultado antes de concluir a elaboração.',
   }),
   calendar: defineEditorPage('calendar', {
     title: 'Visualizar calendário',
-    detail: 'Distribuição do ano letivo',
-    description:
-      'Consulte a distribuição do ano e retorne à elaboração para ajustar as informações.',
   }),
 } satisfies { [Section in EditorSection]: { section: Section } };
 

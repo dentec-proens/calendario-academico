@@ -33,7 +33,7 @@ for (const width of [1440, 390]) {
     for (const checkbox of await weekdays.all()) await checkbox.uncheck();
 
     await page
-      .getByRole('button', { name: 'Continuar para organização letiva por oferta', exact: true })
+      .getByRole('button', { name: 'Continuar para organização por oferta', exact: true })
       .click();
     await expect(page.locator('#week-form [role="alert"]')).toContainText(
       'Selecione pelo menos um dia regular.',
@@ -43,12 +43,12 @@ for (const width of [1440, 390]) {
 
     await page.locator('#weekdays input[value="1"]').check();
     await page
-      .getByRole('button', { name: 'Continuar para organização letiva por oferta', exact: true })
+      .getByRole('button', { name: 'Continuar para organização por oferta', exact: true })
       .click();
     await expect(page).toHaveURL(/\/periodos$/);
     await expect(page.locator('#editor-section-title')).toBeFocused();
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 6');
-    await expect(page.locator('#editor-section-title')).toHaveText('Organização letiva por oferta');
+    await expect(page.locator('#editor-section-title')).toHaveText('Organização por oferta');
     await expect(page.locator('#assessment-area')).toBeVisible();
     await expect(page.locator('#organization-form, #intake-form, #calendar-scope')).toHaveCount(0);
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para sábados letivos');
@@ -64,9 +64,6 @@ for (const width of [1440, 390]) {
     await expect(page).toHaveURL(/\/dias$/);
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 3 de 6');
     await expect(page.getByRole('heading', { name: /Sábados letivos/ })).toHaveCount(1);
-    await expect(page.locator('.editor-section-description')).toHaveText(
-      'Selecione sábados no calendário e informe a atividade. Para editar um registro, selecione a data.',
-    );
     await expect(page.locator('#days > .panel > h3, #days > .panel > .help')).toHaveCount(0);
     await expect(
       page.getByText('Selecione sábados disponíveis no calendário para informar a atividade.', {
@@ -79,9 +76,6 @@ for (const width of [1440, 390]) {
     await expect(page).toHaveURL(/\/ferias$/);
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 4 de 6');
     await expect(page.getByRole('heading', { name: /férias docentes/i })).toHaveCount(1);
-    await expect(page.locator('.editor-section-description')).toHaveText(
-      'Informe até três períodos de férias docentes do campus.',
-    );
     await expect(page.locator('#vacations > .panel > .help')).toHaveCount(0);
     await expect(page.locator('#editor-continue')).toHaveText(
       'Continuar para atividades e datas',

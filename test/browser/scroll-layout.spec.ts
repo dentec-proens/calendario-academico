@@ -108,7 +108,7 @@ for (const width of [1440, 390]) {
       .toBeGreaterThan(originalHeight);
     await page.locator('#close-event-panel').click();
     await selectEditorSection(page, 'periods');
-    await expect(page.locator('#editor-section-title')).toHaveText('Organização letiva por oferta');
+    await expect(page.locator('#editor-section-title')).toHaveText('Organização por oferta');
     await expect
       .poll(() =>
         page.locator('#editor-section-title').evaluate((element) => {

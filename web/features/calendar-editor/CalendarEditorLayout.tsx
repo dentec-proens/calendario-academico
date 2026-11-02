@@ -449,7 +449,6 @@ function EditorFrame() {
             <h2 id="editor-section-title" ref={heading} tabIndex={-1}>
               {current.title}
             </h2>
-            <p className="editor-section-description">{current.description}</p>
           </div>
           <Suspense fallback={<LoadingIndicator layout="overlay" label="Carregando seção…" />}>
             <Outlet key={formEpoch} />
