@@ -7,7 +7,7 @@ import type { CalendarEvent, InstitutionalEventSnapshot } from '../../src/domain
  * Phase 2, step 2 of docs/plans/2026-11-02-atividades-e-datas.md: the vocabulary Atividade + Data
  * replaces the old code names without aliases or re-exports. A date is `CalendarEvent`, a
  * generated activity row is `ActivityPlanItem` from `activityPlan()`, and the counting core works
- * on `CountingInterval`.
+ * on `CountingInterval`. Step 3: an activity of a norm is an `ActivityRule` (`activities/rules.ts`).
  */
 const repository = resolve(import.meta.dirname, '../..');
 const self = relative(repository, import.meta.filename);
@@ -31,6 +31,10 @@ const retired = [
   /\bactivityChecklist\b/,
   /activities\/checklist\b/,
   /\bBaseEvent\b/,
+  // Step 3: activity rules carry their repetition base, without sections.
+  /\bRequirement(Spec|Section)\b/,
+  /\b(expandRequirements|ExpandedRequirement|operationalSections)\b/,
+  /activities\/requirement-table\b/,
 ];
 
 test('old names of dates, activity rows and the activity plan are gone from the code', async () => {

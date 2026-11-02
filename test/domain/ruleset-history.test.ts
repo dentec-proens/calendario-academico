@@ -195,7 +195,7 @@ const releasedActivities: Record<number, readonly string[]> = {
 test('released activities stay declared so saved records keep resolving', () => {
   for (const policy of boundPolicies) {
     const released = releasedActivities[policy.year!] ?? [];
-    const declared = policy.catalogue!.flatMap((section) => section.rows.map((row) => row.id));
+    const declared = policy.catalogue!.map((rule) => rule.id);
     expect(
       released.filter((id) => !declared.includes(id)),
       'Uma atividade publicada saiu da tabela e invalidaria calendários que a vinculam. Mantenha a linha, por exemplo opcional com optionalFor.',

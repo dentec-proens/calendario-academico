@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { termsFor } from '#src/domain/calendar/organization/periods.ts';
-import { expandRequirements } from '#src/domain/calendar/activities/requirement-table.ts';
+import { expandRules } from '#src/domain/calendar/activities/rules.ts';
 import { applicabilityFor, documentedYears, policyFor } from '#src/domain/policies/registry.ts';
 import { rulesView } from '../../web/features/rules/rules-view.ts';
 import { selectableModalities } from '#src/domain/calendar/modalities.ts';
@@ -24,7 +24,7 @@ test('the rules page shows the applicability the editor computes for each offer'
     };
     const rows = activityPlan(state);
     const declared = view.sections.flatMap((section) => section.activities);
-    expect(declared.length).toBe(policyFor(year).catalogue!.flatMap((s) => s.rows).length);
+    expect(declared.length).toBe(policyFor(year).catalogue!.length);
     for (const activity of declared)
       for (const { offer, status } of activity.byOffer) {
         const row = rows.find(
@@ -82,9 +82,7 @@ test('applicability per offer does not depend on organisation or stage count', (
         ),
       ),
     );
-    const repeat = new Map(
-      policy.catalogue!.flatMap((section) => section.rows.map((row) => [row.id, section.repeat])),
-    );
+    const repeat = new Map(policy.catalogue!.map((rule) => [rule.id, rule.repeat]));
     const organizations = [
       ['anual', 'anual', 'anual', 'anual'],
       ['semestral', 'semestral', 'semestral', 'semestral'],
@@ -107,7 +105,7 @@ test('applicability per offer does not depend on organisation or stage count', (
             })),
           };
           const declared = new Set(
-            expandRequirements(policy.catalogue!, state).map((item) => item.row.id),
+            expandRules(policy.catalogue!, state).map((item) => item.row.id),
           );
           // Legacy rows keep old IDs optional on purpose; only declared rows carry the table's rules.
           for (const row of activityPlan(state).filter((item) => declared.has(item.id))) {

@@ -2,7 +2,7 @@ import { civilDate } from '../../civil-date.ts';
 import { calendarOffers } from '../../calendar/offers.ts';
 import type { CalendarPolicy } from '../contract.ts';
 import { citation, rulesetChanges, rulesetVersion } from './history.ts';
-import { sections, requirements, applicability, excluded } from './requirements.ts';
+import { rules, requirements, applicability, excluded } from './requirements.ts';
 import { criteria } from './criteria.ts';
 import { observances } from './observances.ts';
 
@@ -14,7 +14,7 @@ export const consup2922027Policy: CalendarPolicy = {
   configured: true,
   rulesetPrefix: 'consup-292-2027-',
   rulesetChanges,
-  catalogue: sections,
+  catalogue: rules,
   observances,
   rulesetVersion: (state) =>
     calendarOffers(state).some((offer) => !excluded(offer.kind))

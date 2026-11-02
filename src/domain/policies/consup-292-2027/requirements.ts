@@ -9,11 +9,11 @@ import type {
 import { calendarOffers, offerFor, stageCycle as offerStageCycle } from '../../calendar/offers.ts';
 import { operationalRequirements } from '../../calendar/activities/operational-checklist.ts';
 import {
-  expandRequirements,
-  type RequirementSection,
-  type RequirementSpec,
+  declareRules,
+  expandRules,
+  type ActivityRule,
   type Slot,
-} from '../../calendar/activities/requirement-table.ts';
+} from '../../calendar/activities/rules.ts';
 import { termsFor } from '../../calendar/organization/periods.ts';
 import type { Applicability } from '../contract.ts';
 
@@ -48,15 +48,17 @@ const perCycle =
  * Resolução 292 is scoped to technical and undergraduate offers. Every row requires all covered
  * offers unless it declares `modalities` or `optionalFor`; pending interpretation remains human.
  */
-export const sections: RequirementSection[] = [
-  {
-    repeat: 'stage',
-    each: {
-      modalities: (s) => [s.offer!.kind],
-      reason: (s) =>
-        excluded(s.offer!.kind) ? 'Pós-graduação depende de norma própria.' : undefined,
+export const rules: ActivityRule[] = [
+  ...declareRules(
+    {
+      repeat: 'stage',
+      each: {
+        modalities: (s) => [s.offer!.kind],
+        reason: (s) =>
+          excluded(s.offer!.kind) ? 'Pós-graduação depende de norma própria.' : undefined,
+      },
     },
-    rows: [
+    [
       {
         id: 'stage',
         title: 'Etapa de avaliação — início e término',
@@ -97,31 +99,33 @@ export const sections: RequirementSection[] = [
         criterion: 'XIII',
       },
     ],
-  },
-  {
-    repeat: 'cycle',
-    cycles: (state) =>
-      (['annual', 'first', 'second'] as const)
-        .map((term) => ({
-          n: termNumber(term),
-          term,
-          offers: supported(state)
-            .filter((offer) => termsFor(state, offer.id).includes(term))
-            .map((offer) => offer.id),
-        }))
-        .filter((cycle) => cycle.offers.length),
-    each: {
-      modalities: (s) => [
-        ...new Set(
-          s.offers?.flatMap((id) => {
-            const offer = offerFor(s.state, id);
-            return offer ? [offer.kind] : [];
-          }),
-        ),
-      ],
-      term: (s) => s.term,
+  ),
+  ...declareRules(
+    {
+      repeat: 'cycle',
+      cycles: (state) =>
+        (['annual', 'first', 'second'] as const)
+          .map((term) => ({
+            n: termNumber(term),
+            term,
+            offers: supported(state)
+              .filter((offer) => termsFor(state, offer.id).includes(term))
+              .map((offer) => offer.id),
+          }))
+          .filter((cycle) => cycle.offers.length),
+      each: {
+        modalities: (s) => [
+          ...new Set(
+            s.offers?.flatMap((id) => {
+              const offer = offerFor(s.state, id);
+              return offer ? [offer.kind] : [];
+            }),
+          ),
+        ],
+        term: (s) => s.term,
+      },
     },
-    rows: [
+    [
       {
         id: 'final',
         ...perTerm('Prazo de lançamento do resultado final (rendimento e frequência)'),
@@ -199,11 +203,13 @@ export const sections: RequirementSection[] = [
         group: 'admission',
       },
     ],
-  },
-  {
-    repeat: 'semester',
-    each: { basis: 'Art. 11, XII', term: (s) => s.term, criterion: 'XII' },
-    rows: [
+  ),
+  ...declareRules(
+    {
+      repeat: 'semester',
+      each: { basis: 'Art. 11, XII', term: (s) => s.term, criterion: 'XII' },
+    },
+    [
       { id: 'pit', ...perSemester('Prazo de entrega do PIT'), group: 'teaching' },
       { id: 'rit', ...perSemester('Prazo de entrega do RIT'), group: 'teaching' },
       {
@@ -212,147 +218,142 @@ export const sections: RequirementSection[] = [
         group: 'teaching',
       },
     ],
-  },
-  {
-    repeat: 'once',
-    rows: [
-      {
-        id: 'extraordinary-council',
-        name: 'Conselho de classe/coletivo pedagógico extraordinário para revisão dos resultados finais',
-        basis: 'Art. 11, XV',
-        group: 'campus',
-        criterion: 'XV',
-        category: 'conselho',
-      },
-      {
-        id: 'family-meeting',
-        name: 'Reunião com familiares, responsáveis e comunidade',
-        basis: 'Art. 11, XVI',
-        decision: 'exigida apenas no técnico integrado (consup-292-2027-v2)',
-        modalities: ({ state }) =>
-          supported(state)
-            .filter((offer) => familyMeetingOffers.includes(offer.kind))
-            .map((offer) => offer.kind),
-        optionalFor: Object.fromEntries(
-          modalityIds
-            .filter((m) => !familyMeetingOffers.includes(m))
-            .map((m) => [m, 'Exigida apenas para o integrado; cadastro permitido.']),
-        ),
-        group: 'campus',
-        criterion: 'XVI',
-      },
-      {
-        id: 'campus-events',
-        name: 'Eventos de ensino, pesquisa, extensão e inovação do campus',
-        basis: 'Art. 11, XVII',
-        group: 'campus',
-        criterion: 'XVII',
-      },
-      {
-        id: 'alumni-meeting',
-        name: 'Encontro dos egressos',
-        basis: 'Art. 11, XVIII',
-        group: 'campus',
-        criterion: 'XVIII',
-      },
-      {
-        id: 'internship-event',
-        name: 'Evento sobre a temática de estágios',
-        basis: 'Art. 11, XIX',
-        group: 'campus',
-        criterion: 'XIX',
-      },
-      {
-        id: 'regular-admission-notice',
-        name: 'Publicação dos editais do Processo Seletivo 2028',
-        basis: 'Art. 10',
-        deadline: civilDate('2027-06-15'),
-        deadlinePolicy: 'reference',
-        acceptsPriorReference: true,
-        admissionType: 'regular',
-        group: 'admission',
-        criterion: 'admission-regular',
-      },
-      {
-        id: 'robotics',
-        name: 'Fase local da Olimpíada Brasileira de Robótica — até 31/08/2027',
-        basis: 'Art. 11, XX',
-        deadline: civilDate('2027-08-31'),
-        group: 'campus',
-        criterion: 'XX',
-      },
-      {
-        id: 'course-showcase',
-        name: 'Mostra de Cursos do campus — até 30/09/2027',
-        basis: 'Art. 11, XXI',
-        deadline: civilDate('2027-09-30'),
-        group: 'campus',
-        criterion: 'XXI',
-      },
-      {
-        id: 'pedagogical-training',
-        name: 'Formação pedagógica — mínimo de 40 horas anuais',
-        basis: 'Art. 11, XXII',
-        minHours: 40,
-        group: 'campus',
-        criterion: 'XXII',
-      },
-      {
-        id: 'collective-planning',
-        name: 'Planejamento/replanejamento coletivo — mínimo de 20 horas anuais',
-        basis: 'Art. 11, XXIII',
-        minHours: 20,
-        group: 'campus',
-        criterion: 'XXIII',
-      },
-      {
-        id: 'women-week',
-        name: 'Semana de Valorização de Mulheres que Fizeram História — segunda semana de março',
-        basis: 'Art. 11, XXIV',
-        month: 3,
-        reviewInstruction:
-          'Confira a segunda semana de março; o critério operacional de semana depende de definição institucional.',
-        optionalFor: optionalOnUndergraduate,
-        group: 'campus',
-        criterion: 'XXIV',
-      },
-      {
-        id: 'ethics-week',
-        name: 'Semana da Ética e da Cidadania — primeira semana de maio',
-        basis: 'Art. 11, XXV',
-        month: 5,
-        reviewInstruction:
-          'Confira a primeira semana de maio; o critério operacional de semana depende de definição institucional.',
-        optionalFor: optionalOnUndergraduate,
-        group: 'campus',
-        criterion: 'XXV',
-      },
-      {
-        id: 'cultural-week',
-        name: 'Semana Cultural Interescolar — outubro',
-        basis: 'Art. 11, XXVI',
-        month: 10,
-        optionalFor: optionalOnUndergraduate,
-        group: 'campus',
-        criterion: 'XXVI',
-        category: 'evento',
-      },
-    ],
-  },
+  ),
+  ...declareRules({ repeat: 'once' }, [
+    {
+      id: 'extraordinary-council',
+      name: 'Conselho de classe/coletivo pedagógico extraordinário para revisão dos resultados finais',
+      basis: 'Art. 11, XV',
+      group: 'campus',
+      criterion: 'XV',
+      category: 'conselho',
+    },
+    {
+      id: 'family-meeting',
+      name: 'Reunião com familiares, responsáveis e comunidade',
+      basis: 'Art. 11, XVI',
+      decision: 'exigida apenas no técnico integrado (consup-292-2027-v2)',
+      modalities: ({ state }) =>
+        supported(state)
+          .filter((offer) => familyMeetingOffers.includes(offer.kind))
+          .map((offer) => offer.kind),
+      optionalFor: Object.fromEntries(
+        modalityIds
+          .filter((m) => !familyMeetingOffers.includes(m))
+          .map((m) => [m, 'Exigida apenas para o integrado; cadastro permitido.']),
+      ),
+      group: 'campus',
+      criterion: 'XVI',
+    },
+    {
+      id: 'campus-events',
+      name: 'Eventos de ensino, pesquisa, extensão e inovação do campus',
+      basis: 'Art. 11, XVII',
+      group: 'campus',
+      criterion: 'XVII',
+    },
+    {
+      id: 'alumni-meeting',
+      name: 'Encontro dos egressos',
+      basis: 'Art. 11, XVIII',
+      group: 'campus',
+      criterion: 'XVIII',
+    },
+    {
+      id: 'internship-event',
+      name: 'Evento sobre a temática de estágios',
+      basis: 'Art. 11, XIX',
+      group: 'campus',
+      criterion: 'XIX',
+    },
+    {
+      id: 'regular-admission-notice',
+      name: 'Publicação dos editais do Processo Seletivo 2028',
+      basis: 'Art. 10',
+      deadline: civilDate('2027-06-15'),
+      deadlinePolicy: 'reference',
+      acceptsPriorReference: true,
+      admissionType: 'regular',
+      group: 'admission',
+      criterion: 'admission-regular',
+    },
+    {
+      id: 'robotics',
+      name: 'Fase local da Olimpíada Brasileira de Robótica — até 31/08/2027',
+      basis: 'Art. 11, XX',
+      deadline: civilDate('2027-08-31'),
+      group: 'campus',
+      criterion: 'XX',
+    },
+    {
+      id: 'course-showcase',
+      name: 'Mostra de Cursos do campus — até 30/09/2027',
+      basis: 'Art. 11, XXI',
+      deadline: civilDate('2027-09-30'),
+      group: 'campus',
+      criterion: 'XXI',
+    },
+    {
+      id: 'pedagogical-training',
+      name: 'Formação pedagógica — mínimo de 40 horas anuais',
+      basis: 'Art. 11, XXII',
+      minHours: 40,
+      group: 'campus',
+      criterion: 'XXII',
+    },
+    {
+      id: 'collective-planning',
+      name: 'Planejamento/replanejamento coletivo — mínimo de 20 horas anuais',
+      basis: 'Art. 11, XXIII',
+      minHours: 20,
+      group: 'campus',
+      criterion: 'XXIII',
+    },
+    {
+      id: 'women-week',
+      name: 'Semana de Valorização de Mulheres que Fizeram História — segunda semana de março',
+      basis: 'Art. 11, XXIV',
+      month: 3,
+      reviewInstruction:
+        'Confira a segunda semana de março; o critério operacional de semana depende de definição institucional.',
+      optionalFor: optionalOnUndergraduate,
+      group: 'campus',
+      criterion: 'XXIV',
+    },
+    {
+      id: 'ethics-week',
+      name: 'Semana da Ética e da Cidadania — primeira semana de maio',
+      basis: 'Art. 11, XXV',
+      month: 5,
+      reviewInstruction:
+        'Confira a primeira semana de maio; o critério operacional de semana depende de definição institucional.',
+      optionalFor: optionalOnUndergraduate,
+      group: 'campus',
+      criterion: 'XXV',
+    },
+    {
+      id: 'cultural-week',
+      name: 'Semana Cultural Interescolar — outubro',
+      basis: 'Art. 11, XXVI',
+      month: 10,
+      optionalFor: optionalOnUndergraduate,
+      group: 'campus',
+      criterion: 'XXVI',
+      category: 'evento',
+    },
+  ]),
 ];
-const declared = new Map<string, RequirementSpec>(
-  sections.flatMap((section) => section.rows.map((row) => [row.id, row] as const)),
-);
+const declared = new Map<string, ActivityRule>(rules.map((rule) => [rule.id, rule]));
 
 export function requirements(state: AssessmentSettings): ActivityPlanItem[] {
-  const rows = expandRequirements(sections, state).map(({ row }) => ({
+  const rows = expandRules(rules, state).map(({ row }) => ({
     modalities: supportedKinds(state),
     ...row,
   }));
   // Keep every legacy ID resolvable. It is evidence awaiting classification, never silently rebound.
   const legacy = operationalRequirements(state, { criteria: { 'cultural-week': 'XXVI' } })
     .filter(({ row }) => !rows.some((r) => r.id === row.id))
-    .map(({ row, slot, spec }) => ({
+    .map(({ row, slot, rule }) => ({
       ...row,
       required: false,
       applicability: 'optional' as const,
@@ -360,8 +361,8 @@ export function requirements(state: AssessmentSettings): ActivityPlanItem[] {
       basis: 'Classificação legada',
       modalities: calendarOffers(state).map((offer) => offer.kind),
       term: slot.term,
-      ...(declared.get(spec.id)?.optionalFor && {
-        optionalFor: declared.get(spec.id)!.optionalFor,
+      ...(declared.get(rule.id)?.optionalFor && {
+        optionalFor: declared.get(rule.id)!.optionalFor,
       }),
     }));
   return [...rows, ...legacy];

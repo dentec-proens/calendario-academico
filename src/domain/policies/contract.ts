@@ -1,6 +1,6 @@
 import { type CivilDate } from '../civil-date.ts';
 import type { ActivityPlanItem, AssessmentSettings, CalendarOffer } from '../calendar/model.ts';
-import type { RequirementSection } from '../calendar/activities/requirement-table.ts';
+import type { ActivityRule } from '../calendar/activities/rules.ts';
 import type { ReviewCriterion, ReviewSource } from '../reviews/parecer-items.ts';
 
 export type Applicability = 'required' | 'optional' | 'unconfigured';
@@ -67,10 +67,10 @@ export interface CalendarPolicy {
   rulesetChanges?: readonly RulesetChange[];
   rulesetVersion(state: AssessmentSettings): string;
   /**
-   * Declared requirement table, required with `rulesetPrefix`. `requirements` expands it, and
-   * the portal's rules page (`/regras`) shows it for review against the norm.
+   * Declared activity rules, required with `rulesetPrefix`. `requirements` expands them, and
+   * the portal's rules page (`/regras`) shows them for review against the norm.
    */
-  catalogue?: readonly RequirementSection[];
+  catalogue?: readonly ActivityRule[];
   /** Requirements linked to coverage; `activityPlan` adds the fallback's applicability. */
   requirements(state: AssessmentSettings): ActivityPlanItem[];
   applicability(

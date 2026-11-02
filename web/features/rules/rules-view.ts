@@ -1,7 +1,7 @@
 import type { AssessmentSettings, CalendarOffer } from '#src/domain/calendar/model.ts';
 import { selectableModalities } from '#src/domain/calendar/modalities.ts';
 import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
-import { expandRequirements } from '#src/domain/calendar/activities/requirement-table.ts';
+import { expandRules, type ActivityRule } from '#src/domain/calendar/activities/rules.ts';
 import type { RulesetChange } from '#src/domain/policies/contract.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
 import { offerLabel } from '#src/domain/calendar/offers.ts';
@@ -37,6 +37,13 @@ const repeatLabels = {
   once: { title: 'Uma vez por ano letivo', help: '' },
 };
 const civilDate = (date: string) => date.split('-').reverse().join('/');
+
+/** Rules grouped by repetition base, in the order each base first appears. */
+function byRepeat(rules: readonly ActivityRule[]) {
+  const groups = new Map<ActivityRule['repeat'], ActivityRule[]>();
+  for (const rule of rules) groups.set(rule.repeat, [...(groups.get(rule.repeat) ?? []), rule]);
+  return [...groups];
+}
 
 /** Meaning of the statuses whose label alone does not explain them. */
 export const statusHelp = [
@@ -99,14 +106,14 @@ export function rulesView(year: number) {
       date: civilDate(change.date),
       effect: effectLabels[change.effect],
     })),
-    sections: (policy.catalogue ?? []).map((section) => {
-      const expanded = expandRequirements([section], state);
+    sections: byRepeat(policy.catalogue ?? []).map(([repeat, rules]) => {
+      const expanded = expandRules(rules, state);
       return {
-        ...repeatLabels[section.repeat],
-        activities: section.rows.map((spec) => {
-          // The checklist rows, not the bare expansion, carry the policy's own defaults.
+        ...repeatLabels[repeat],
+        activities: rules.map((rule) => {
+          // The plan rows, not the bare expansion, carry the policy's own defaults.
           const own = expanded
-            .filter((item) => item.spec.id === spec.id)
+            .filter((item) => item.rule.id === rule.id)
             .map((item) => rows.get(item.row.id)!);
           const rowFor = (id: string) => own.find((row) => !row.offerId || row.offerId === id);
           const sample = own[0];
@@ -121,8 +128,8 @@ export function rulesView(year: number) {
             return { offer: offer.id, status, note: policy.applicabilityNote?.(row, offer) };
           });
           return {
-            id: spec.id,
-            name: spec.title ?? sample.name,
+            id: rule.id,
+            name: rule.title ?? sample.name,
             basis: sample.basis,
             criterion: sample.reviewCriterionId,
             decision: sample.decision,

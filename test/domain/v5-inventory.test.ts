@@ -14,7 +14,7 @@ import {
   reviewFields,
 } from '../../convex/validators.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
-import { operationalSections } from '../../src/domain/calendar/activities/operational-checklist.ts';
+import { operationalRules } from '../../src/domain/calendar/activities/operational-checklist.ts';
 import type { RepeatBase as DomainRepeat } from '../../src/domain/calendar/migration/inventory.ts';
 import {
   blockingForms,
@@ -31,7 +31,7 @@ import {
   type V4Form,
 } from '../../src/domain/calendar/migration/inventory.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
-import { sections as policySections } from '../../src/domain/policies/consup-292-2027/requirements.ts';
+import { rules as policyRules } from '../../src/domain/policies/consup-292-2027/requirements.ts';
 import { readOracle, v4CatalogueRows, v4Cases, type V4Case } from '../helpers/v4-fixtures.ts';
 
 const repository = resolve(import.meta.dirname, '../..');
@@ -58,17 +58,16 @@ const byName = (name: string) => cases.find((item) => item.name === name)!;
 
 describe('frozen declarations', () => {
   const byBase = (
-    sections: readonly { repeat: string; rows: readonly { id: string }[] }[],
+    rules: readonly { repeat: string; id: string }[],
   ): Record<DomainRepeat, string[]> => {
     const bases: Record<DomainRepeat, string[]> = { stage: [], cycle: [], semester: [], once: [] };
-    for (const section of sections)
-      bases[section.repeat as DomainRepeat].push(...section.rows.map((row) => row.id));
+    for (const rule of rules) bases[rule.repeat as DomainRepeat].push(rule.id);
     return bases;
   };
 
   test('match the 2027 policy and the operational catalogue the v4 code declares', () => {
-    expect(byBase(policySections)).toEqual(v4Declarations['consup-292-2027']);
-    expect(byBase(operationalSections())).toEqual(v4Declarations.operational);
+    expect(byBase(policyRules)).toEqual(v4Declarations['consup-292-2027']);
+    expect(byBase(operationalRules())).toEqual(v4Declarations.operational);
   });
 
   test('read the repetition base of the catalogue of the year, never only the numeric suffix', () => {
