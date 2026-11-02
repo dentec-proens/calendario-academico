@@ -6,6 +6,7 @@ import {
   applyOfferOrganization,
   offerOrganizationDraft,
   offerOrganizationIssues,
+  offerOrganizationWarnings,
 } from '../../src/domain/calendar/organization/offers.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
@@ -92,21 +93,25 @@ test('one application splits a shared period and keeps the other offer and all s
   expect(normalizeOfferCalendar({ ...next, ignoredHistory: [] }).events).toHaveLength(4);
 });
 
-test('moving period endpoints reports live issues and the command rejects without changing anything', () => {
+test('moving period endpoints only warns about unchanged stages and validates edited ones', () => {
   const state = calendar(),
     before = structuredClone(state),
     draft = offerOrganizationDraft(state, 'integrado');
   draft.periods[0].start = civilDate('2027-03-08');
+  // A configuration change is never refused by the recorded stage it leaves out of its cycle.
+  expect(offerOrganizationIssues(state, 'integrado', draft)).toEqual([]);
+  expect(offerOrganizationWarnings(state, 'integrado', draft)).toEqual([
+    { path: 'organization', message: expect.stringContaining('(Fora do período do ciclo)') },
+  ]);
+  expect(
+    linksToReview(applyOfferOrganization(state, 'integrado', draft, id)).get('integrado-0'),
+  ).toBe('out-of-cycle');
+  draft.stages[0].start = civilDate('2027-03-02');
   expect(offerOrganizationIssues(state, 'integrado', draft)).toContainEqual({
     path: 'stages[0]',
     message: expect.stringMatching(/inteiramente dentro/),
   });
   expect(() => applyOfferOrganization(state, 'integrado', draft, id)).toThrow(/etapa.*período/);
-  draft.periods[0].start = civilDate('2027-03-01');
-  draft.periods[0].end = civilDate('2027-03-20');
-  expect(
-    offerOrganizationIssues(state, 'integrado', draft).some((i) => i.path === 'stages[1]'),
-  ).toBe(true);
   expect(state).toEqual(before);
 });
 
@@ -122,7 +127,7 @@ test('a stage cannot span the semester gap, overlap another stage or use another
     start: civilDate('2027-03-22'),
     end: civilDate('2027-03-26'),
   };
-  draft.stages[1].start = civilDate('2027-03-15');
+  draft.stages[1].start = civilDate('2027-03-16');
   expect(
     offerOrganizationIssues(state, 'integrado', draft).some(
       (i) => i.path === 'stages[1]' && /inteiramente/.test(i.message),
@@ -136,7 +141,9 @@ test('a stage cannot span the semester gap, overlap another stage or use another
   ).toHaveLength(2);
   const bad = structuredClone(next);
   bad.events.find((e) => e.id === 'integrado-1')!.start = civilDate('2027-03-15');
-  expect(() => normalizeOfferCalendar({ ...bad, ignoredHistory: [] })).toThrow(/etapa.*período/);
+  expect(() => normalizeOfferCalendar({ ...bad, ignoredHistory: [] }, next)).toThrow(
+    /etapa.*período/,
+  );
 });
 
 test('existing inclusions are checked before changing periods; records are never silently deleted', () => {

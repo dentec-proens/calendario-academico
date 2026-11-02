@@ -1,5 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import { expect, test } from 'vitest';
+import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
+import { describe, expect, test } from 'vitest';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
@@ -222,7 +223,7 @@ test('a preexisting duplicated stage saves, is reviewed and never counts as fulf
   )!;
   expect(coverage.events.map((event) => event.id)).toEqual(['stage-twice-a', 'stage-twice-b']);
   expect(coverage.coverage).toBe('partial');
-  expect(coverage.issues[0]).toMatch(/^Etapa duplicada/);
+  expect(coverage.warnings[0]).toMatch(/^Etapa duplicada/);
   const first = activityCoverage(state).find((row) => row.requirement.id === 'stage-1:integrado')!;
   expect(first.coverage).toBe('complete');
   // Creating another duplicate is refused.
@@ -267,4 +268,79 @@ test('readings of a kept link without activity do not fail; review warns without
   const edited = structuredClone(side);
   edited.state.events[0].name = 'Outra descrição';
   expect(compareContents(side, edited).campusChanges).toBe(1);
+});
+
+describe('findings of the independent review of phase 1', () => {
+  test('a stage kept without generated activity can still have its dates edited', () => {
+    const state = conflictingLinks();
+    const reduced = {
+      ...state,
+      offers: state.offers.map((offer) =>
+        offer.id === 'integrado' ? { ...offer, stages: { perTerm: 3 } } : offer,
+      ),
+    };
+    const early = reduced.events.find((event) => event.id === 'stage-early')!;
+    const moved = { ...early, end: civilDate('2027-09-29') };
+    expect(() => applyEvent(reduced, moved, [], true)).not.toThrow();
+    const edited = {
+      ...reduced,
+      events: reduced.events.map((e) => (e.id === early.id ? moved : e)),
+    };
+    expect(() => normalizeOfferCalendar(edited, reduced)).not.toThrow();
+  });
+
+  test('dates to review warn in the review without blocking its conclusion', () => {
+    const state = conflictingLinks();
+    const readiness = releaseReadiness(
+      { id: 'c', version: 1, catalogueRevision: 1, state, institutionalSnapshot: [] },
+      { catalogue: { revision: 1 } },
+    );
+    expect(readiness.issues.filter((issue) => /duplicada|sequência/i.test(issue))).toEqual([]);
+    expect(readiness.warnings.some((warning) => warning.includes('Etapa duplicada'))).toBe(true);
+  });
+
+  test('the organization form reports the refusal its command would raise', () => {
+    const state = conflictingLinks();
+    const draft = offerOrganizationDraft(state, 'integrado');
+    draft.stages[1] = { ...draft.stages[1], start: '2027-04-01', end: '2027-05-30' };
+    expect(offerOrganizationIssues(state, 'integrado', draft).map((i) => i.message)).toContainEqual(
+      expect.stringContaining('duplicadas'),
+    );
+  });
+
+  test('an unchanged recorded stage never blocks a period change in the organization form', () => {
+    const state = conflictingLinks();
+    const draft = offerOrganizationDraft(state, 'integrado');
+    draft.periods[0] = { ...draft.periods[0], start: '2027-02-15' };
+    expect(
+      offerOrganizationIssues(state, 'integrado', draft).filter((i) => i.path === 'stages[0]'),
+    ).toEqual([]);
+  });
+
+  test('an edited link must cover one of the date offers', () => {
+    const state = conflictingLinks();
+    const semester = {
+      ...state,
+      offers: state.offers.map((offer) =>
+        offer.id === 'subsequente'
+          ? { ...offer, organization: 'semestral' as const, stages: { perTerm: 1 } }
+          : offer,
+      ),
+      periods: [],
+      events: [] as CalendarActivity[],
+    };
+    const event: CalendarActivity = {
+      id: 'new-final',
+      name: 'Resultado do semestre',
+      requirementId: 'final-1',
+      start: civilDate('2027-06-30'),
+      end: civilDate('2027-06-30'),
+      kind: 'note',
+      offers: ['integrado'],
+    };
+    expect(() => applyEvent(semester, event, [])).toThrow(/oferta/);
+    expect(() => normalizeOfferCalendar({ ...semester, events: [event] }, semester)).toThrow(
+      /oferta/,
+    );
+  });
 });

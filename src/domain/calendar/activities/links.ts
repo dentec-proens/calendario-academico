@@ -89,7 +89,7 @@ export function linksToReview(
  * The generated row is scoped to at least one offer of the date (all offers when absent): a stage
  * row to its offer, a cycle row to the offers organised in that cycle.
  */
-function coversDate(
+export function coversDate(
   state: Pick<LinkState, 'offers'>,
   activity: ActivityRequirement,
   event: Pick<CalendarActivity, 'offers'>,
@@ -176,9 +176,15 @@ export function validateLinks(
     );
   for (const event of next.events) {
     if (!event.requirementId || !dateEdited(before.get(event.id), event)) continue;
-    const required = requirements.get(event.requirementId)?.offerId;
-    if (required && (event.offers?.length !== 1 || event.offers[0] !== required))
+    const activity = requirements.get(event.requirementId);
+    // A kept link without generated activity has no cycle or scope to check its dates against.
+    if (!activity) continue;
+    if (activity.offerId && (event.offers?.length !== 1 || event.offers[0] !== activity.offerId))
       throw new DomainError('A etapa deve estar vinculada à sua oferta.');
+    if (!coversDate(next, activity, event))
+      throw new DomainError(
+        `A atividade vinculada não abrange as ofertas da data “${event.name}”.`,
+      );
     const issue = assessmentCycleIssue(next, event);
     if (issue) throw new DomainError(issue);
   }

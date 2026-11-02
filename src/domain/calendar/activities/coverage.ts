@@ -32,8 +32,9 @@ export function activityCoverage(
           warnings: string[] = [];
         const valid = linked.filter((event) => {
           const reason = review.get(event.id);
+          // Until the link can be corrected in the editor, review reasons warn without blocking.
           if (reason) {
-            issues.push(`${linkIssueLabels[reason]}: ${linkIssueActions[reason]}`);
+            warnings.push(`${linkIssueLabels[reason]}: ${linkIssueActions[reason]}`);
             return false;
           }
           if (policy.explicitRecordOffers && !event.offers?.includes(modality)) {

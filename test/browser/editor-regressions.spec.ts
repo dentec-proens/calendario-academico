@@ -308,6 +308,16 @@ test('stage editing and activity changes always reveal the same draft in its des
           ? { perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const) }
           : undefined,
     }));
+    // A stage inside its cycle; one out of it would be under “Vínculo a conferir”.
+    record.state.periods = [
+      {
+        id: 'year',
+        name: 'Ano letivo',
+        start: '2027-02-01',
+        end: '2027-12-17',
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
+      },
+    ];
     record.state.events.push({
       id: 'stage-existing',
       name: 'Primeira etapa salva',

@@ -17,6 +17,8 @@ for (const editing of [false, true]) {
         page.locator('#offer-integrado-organization [aria-checked="true"]'),
       ).toBeFocused();
       await page.locator('#offer-integrado-period-0-start').fill('2027-02-22');
+      // An edited stage is validated against the new period.
+      await page.locator('#offer-integrado-stage-0-start').fill('2027-02-16');
       await expect(page.locator('#offer-integrado-stage-0-error')).toContainText(
         'inteiramente dentro',
       );

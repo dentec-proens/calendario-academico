@@ -6,7 +6,7 @@ import { validateActivityRecord } from '../activities/validation.ts';
 import { activityChecklist } from '../activities/checklist.ts';
 import { stageRequirement } from '../activities/assessment.ts';
 import { assessmentCycleIssue } from '../activities/assessment-intervals.ts';
-import { dateEdited, linkKept } from '../activities/links.ts';
+import { coversDate, dateEdited, linkKept } from '../activities/links.ts';
 import { offerIds } from '../offers.ts';
 import { recalculateCalendar } from './recalculate.ts';
 import { vacationIds } from './vacations.ts';
@@ -57,7 +57,7 @@ export function applyEvent<S extends ActivityState>(
   const activity = activityChecklist(state).find((item) => item.id === event.requirementId);
   const kept = linkKept(previous, event);
   validateActivityRecord(state, event, {
-    stageInterval: edited,
+    stageInterval: edited && !(kept && !activity),
     keptWithoutActivity: kept && !activity,
   });
   if (!event.name.trim()) throw new DomainError('Informe a descrição.');
@@ -75,7 +75,10 @@ export function applyEvent<S extends ActivityState>(
   const activityOfferId = activity?.offerId;
   if (edited && activityOfferId && (modalities.length !== 1 || modalities[0] !== activityOfferId))
     throw new DomainError('Selecione somente a oferta da atividade.');
-  const cycleIssue = edited ? assessmentCycleIssue(state, event) : undefined;
+  if (edited && activity && !coversDate(state, activity, event))
+    throw new DomainError('A atividade vinculada não abrange as ofertas selecionadas.');
+  // A kept link without generated activity has no cycle to check its dates against.
+  const cycleIssue = edited && activity ? assessmentCycleIssue(state, event) : undefined;
   if (cycleIssue) throw new DomainError(cycleIssue);
   if (
     event.hours !== undefined &&

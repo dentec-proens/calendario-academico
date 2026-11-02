@@ -22,13 +22,20 @@ import {
 import { applyEvent } from '#src/domain/calendar/commands/events.ts';
 import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
 import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
+import { linksToReview } from '#src/domain/calendar/activities/links.ts';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { editorPages } from '../editor-steps.ts';
 
 /** Every date is filled in the Activities step; assessment intervals in their own area. */
 function destination(context: EventContext | null, requirementId: string) {
-  const activity = context?.kind === 'activity' ? context.requirementId : requirementId;
+  // A date edited as a date (campus or under review) stays in the Activities step.
+  const activity =
+    context?.kind === 'activity'
+      ? context.requirementId
+      : context?.kind === 'event'
+        ? ''
+        : requirementId;
   if (stageRequirement(activity)) return { to: editorPages.periods.path, hash: 'assessment-area' };
   return { to: editorPages.events.path, hash: '' };
 }
@@ -217,7 +224,9 @@ function useController() {
   function edit(id: string) {
     const event = state.events.find((item) => item.id === id);
     if (!event) return;
-    if (stageRequirement(event.requirementId)) {
+    // A stage under review is no longer in the organization form: it is edited as a date.
+    const review = linksToReview(state).has(id);
+    if (stageRequirement(event.requirementId) && !review) {
       openOrganization(event.requirementId!);
       return;
     }
@@ -228,6 +237,7 @@ function useController() {
     // A link without generated activity is edited as a date; its link is kept as recorded.
     const next: EventContext =
       event.requirementId &&
+      !review &&
       activityChecklist(state).some((item) => item.id === event.requirementId)
         ? { kind: 'activity', requirementId: event.requirementId, eventId: id }
         : { kind: 'event', eventId: id };

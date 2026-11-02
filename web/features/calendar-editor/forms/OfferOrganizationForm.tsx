@@ -604,8 +604,8 @@ export default function OfferOrganizationForm({
               </div>
               {savedTotal && count && count < savedTotal ? (
                 <p className="help">
-                  Etapas e atividades além da quantidade escolhida serão preservadas como registros
-                  sem vínculo de avaliação.
+                  Etapas e atividades além da quantidade escolhida serão preservadas com o vínculo
+                  gravado e aparecerão em Vínculo a conferir, na etapa Atividades.
                 </p>
               ) : null}
             </section>

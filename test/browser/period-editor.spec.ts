@@ -3,7 +3,7 @@ import { addPeriod, savedState, selectEditorSection } from './editor-navigation.
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
-  test(`one offer applies periods and stages atomically with immediate bounds feedback at ${width}px`, async ({
+  test(`one offer applies periods and stages atomically with immediate cycle feedback at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
@@ -51,19 +51,23 @@ for (const width of [1440, 390]) {
       expect(start!.y).toBe(end!.y);
       expect(legend!.x + legend!.width).toBeLessThanOrEqual(start!.x);
     }
+    // Moving the period never blocks it: the recorded stage left out is previewed to review.
     await page.locator('#offer-integrado-period-0-start').fill('2027-03-08');
+    const warnings = page.locator('#offer-integrado-link-warnings');
+    await expect(warnings).toContainText('Fora do período do ciclo');
+    await expect(block.locator('#offer-integrado-stage-0-error')).toBeEmpty();
+    await expect(page.locator('#offer-integrado-apply')).toBeEnabled();
+    expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(before.saves);
+    expect(await page.evaluate(() => window.editorTest.record.state)).toEqual(before.state);
+    // An edited stage is validated: it must fit the new period.
+    await page.locator('#offer-integrado-stage-0-start').fill('2027-03-05');
     await expect(block.locator('#offer-integrado-stage-0-error')).toContainText(
       'inteiramente dentro',
     );
-    await expect(page.locator('#offer-integrado-stage-0-start')).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
     await expect(page.locator('#offer-integrado-apply')).toBeDisabled();
-    expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(before.saves);
-    expect(await page.evaluate(() => window.editorTest.record.state)).toEqual(before.state);
     await page.locator('#offer-integrado-stage-0-start').fill('2027-03-08');
     await expect(block.locator('#offer-integrado-stage-0-error')).toBeEmpty();
+    await expect(warnings).toHaveCount(0);
     await page.locator('#offer-integrado-stage-0-start').focus();
     expect(
       await page.locator('#offer-integrado-stage-0-start').evaluate((element) => {
@@ -98,15 +102,11 @@ for (const width of [1440, 390]) {
     );
     await opener.click();
     await page.locator('#offer-integrado-period-0-end').fill('2027-04-20');
-    await expect(page.locator('#offer-integrado-stage-1-error')).toContainText(
-      'inteiramente dentro',
-    );
+    await expect(warnings).toContainText('Fora do período do ciclo');
     await selectEditorSection(page, 'events');
     await selectEditorSection(page, 'periods');
     await expect(page.locator('#offer-integrado-period-0-end')).toHaveValue('2027-04-20');
-    await expect(page.locator('#offer-integrado-stage-1-error')).toContainText(
-      'inteiramente dentro',
-    );
+    await expect(warnings).toContainText('Fora do período do ciclo');
     await page.locator('#offer-integrado-cancel').click();
     await expect(opener).toBeFocused();
     expect((await savedState(page)).state).toEqual(after.state);

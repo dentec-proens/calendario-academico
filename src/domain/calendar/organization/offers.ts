@@ -147,6 +147,7 @@ export function offerOrganizationIssues(
 ): OrganizationIssue[] {
   const issues: OrganizationIssue[] = [];
   const issue = (path: string, message: string) => issues.push({ path, message });
+  const original = state;
   if (!(
     offerFor(state, modality) ||
     (newOffer?.id === modality && modalityIds.some((kind) => kind === newOffer.kind))
@@ -216,21 +217,18 @@ export function offerOrganizationIssues(
     .every(Boolean);
   if (periods.length === 2 && periodsValid && periods[0].end >= periods[1].start)
     issue('periods[1]', 'O segundo semestre deve começar depois do término do primeiro.');
-  const review = linksToReview(state);
-  for (const [index, stage] of draft.stages.slice(0, stageCount).entries()) {
-    const path = `stages[${index}]`;
-    // A recorded stage kept with its dates is never refused for a conflict it already had: it
-    // stays under “Vínculo a conferir” (`links.ts`). Conflicts created by the draft are shown.
+  const unchanged = (index: number) => {
+    const stage = draft.stages[index];
     const recorded = state.events.find(
       (event) => event.id === stage.id && event.requirementId === `stage-${index + 1}:${modality}`,
     );
-    if (
-      recorded &&
-      recorded.start === stage.start &&
-      recorded.end === stage.end &&
-      review.has(recorded.id)
-    )
-      continue;
+    return Boolean(recorded && recorded.start === stage.start && recorded.end === stage.end);
+  };
+  for (const [index, stage] of draft.stages.slice(0, stageCount).entries()) {
+    const path = `stages[${index}]`;
+    // A recorded stage kept with its dates is never refused: a configuration change is never
+    // refused by existing dates; the preview lists it under “Vínculo a conferir” (`links.ts`).
+    if (unchanged(index)) continue;
     const valid = interval(stage.start, stage.end, path);
     if (valid && periodsValid) {
       const cyclePeriods =
@@ -266,6 +264,26 @@ export function offerOrganizationIssues(
           'periods',
           `A inclusão letiva “${event.name}” (${event.start.split('-').reverse().join('/')}) ficaria fora dos períodos desta oferta. Ajuste as datas ou revise a inclusão antes de aplicar.`,
         );
+    }
+  // Edited stages are also checked against every other recorded date, as saving does.
+  let sequence = 0;
+  let candidate: ActivityState | undefined;
+  try {
+    candidate = issues.length
+      ? undefined
+      : organize(original, modality, draft, () => `draft-${++sequence}`, newOffer);
+  } catch {
+    // A draft that cannot be built (a period that changed) is reported by applying it.
+  }
+  if (candidate)
+    try {
+      normalizeOfferCalendar(candidate, original);
+    } catch (error) {
+      const edited = draft.stages.slice(0, stageCount).findIndex((_, index) => !unchanged(index));
+      issue(
+        edited < 0 ? 'stages' : `stages[${edited}]`,
+        error instanceof Error ? error.message : String(error),
+      );
     }
   return issues;
 }
@@ -311,6 +329,20 @@ export function applyOfferOrganization<S extends ActivityState>(
 ): S {
   const issues = offerOrganizationIssues(state, modality, draft, newOffer);
   if (issues.length) throw new DomainError(issues[0].message);
+  const candidate = organize(state, modality, draft, id, newOffer);
+  // Same normalization called by calendars:saveCalendar. No invalid intermediate state is emitted.
+  normalizeOfferCalendar(candidate, state);
+  return candidate;
+}
+
+/** The organized state, without validation; callers check it as saving does. */
+function organize<S extends ActivityState>(
+  state: S,
+  modality: string,
+  draft: OfferOrganizationDraft,
+  id: () => string,
+  newOffer?: CalendarOffer,
+): S {
   state = withOffer(state, modality, newOffer);
   const count = Number(draft.count);
   const stageCount = count * (draft.organization === 'semestral' ? 2 : 1);
@@ -423,8 +455,6 @@ export function applyOfferOrganization<S extends ActivityState>(
     rulesetVersion: rulesetVersion(next),
     events,
   };
-  // Same normalization called by calendars:saveCalendar. No invalid intermediate state is emitted.
-  normalizeOfferCalendar(candidate, state);
   return candidate;
 }
 

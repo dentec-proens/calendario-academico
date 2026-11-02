@@ -143,8 +143,9 @@ export default function ActivityChecklist() {
           }
           onClick={() => {
             if (observance) editor.viewObservance(observance.key);
-            // Assessment intervals are edited in their own area, also when under review.
-            else if (stageRequirement(event.requirementId) && !event.institutional)
+            // Assessment intervals are edited in their own area; one under review opens its
+            // details, where it can be removed or have its dates adjusted.
+            else if (stageRequirement(event.requirementId) && !event.institutional && !issue)
               editor.edit(event.id);
             else if (activity) view(activity.id);
             else editor.viewEvent(event.id);

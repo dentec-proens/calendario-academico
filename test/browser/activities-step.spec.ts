@@ -2,9 +2,10 @@ import type { Page } from '@playwright/test';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { test, expect } from './test.ts';
 import type { FixtureServer } from './fixture-server.ts';
-import { selectEditorSection } from './editor-navigation.ts';
+import { savedState, selectEditorSection } from './editor-navigation.ts';
 import {
   cascavelDraft,
+  conflictingLinks,
   ivaiporaDraft,
   type PendingLinksFixture,
 } from '../fixtures/pending-links-2027.ts';
@@ -175,4 +176,24 @@ test('the institutional base group opens when an action shows one of its dates',
   await page.locator('#activity-origin').selectOption('base');
   await expect(base).toHaveAttribute('open', '');
   await expect(base.locator('[data-date-row]')).toHaveCount(1);
+});
+
+test('a stage under review opens its details, can have its dates edited and be removed', async ({
+  page,
+  fixtureServer,
+}) => {
+  await open(page, fixtureServer, conflictingLinks());
+  const twin = page.locator('#link-review [data-open-event="stage-twice-b"]');
+  await twin.click();
+  await expect(page.locator('#link-review-reason')).toContainText('Etapa duplicada');
+  await page.locator('[data-edit-event="stage-twice-b"]').click();
+  await expect(page).toHaveURL(/\/atividades/);
+  await expect(page.locator('#event-kept-link')).toContainText('stage-2:integrado');
+  await page.locator('#close-event-panel').click();
+  await page.locator('#link-review [data-open-event="stage-twice-b"]').click();
+  await page.locator('[data-remove-event="stage-twice-b"]').click();
+  const saved = await savedState(page);
+  expect(saved.state.events.some((event) => event.id === 'stage-twice-b')).toBe(false);
+  // The remaining stage is no longer a duplicate.
+  await expect(page.locator('#link-review [data-date-row="stage-twice-a"]')).toHaveCount(0);
 });
