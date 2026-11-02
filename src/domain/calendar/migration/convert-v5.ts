@@ -21,8 +21,9 @@
  * `offers` becomes `scope: { offers, confirmed }` on local dates (plan, section 5.3): a non-empty
  * list keeps its IDs and order and is confirmed; an absent or empty one lists the offers of its
  * own state, unconfirmed. Materialized lists (candidates or proven, step 1) convert as any
- * explicit list and are flagged in the manifest; a state without offers or an orphan offer stops
- * the conversion (blocking shapes of the inventory). Snapshots keep their scope by offer type.
+ * explicit list and are flagged in the manifest; the copy of a submission that proves one
+ * converts confirmed too (`provenScopes`). A state without offers or an orphan offer stops the
+ * conversion (blocking shapes of the inventory). Snapshots keep their scope by offer type.
  */
 import {
   inventoryCatalogueRow,
@@ -202,11 +203,11 @@ function convertDate(item: DateV4, offers: readonly string[]) {
  * unconfirmed, which keeps the day count (absent meant every offer present) and the 2027
  * coverage (absent never counted under explicit offers).
  */
-function convertScope(item: JsonObject, stateOffers: readonly string[]) {
+function convertScope(item: JsonObject, stateOffers: readonly string[], proven = false) {
   const stored = item.offers as string[] | undefined;
   const scope = stored?.length
     ? { offers: [...stored], confirmed: true }
-    : { offers: [...stateOffers], confirmed: false };
+    : { offers: [...stateOffers], confirmed: proven };
   const converted: JsonObject = {};
   for (const [key, value] of Object.entries(item))
     if (key === 'offers') converted.scope = scope;
@@ -238,18 +239,28 @@ function convertEvents(
   path: string,
   inventory: Inventory,
   manifest: ManifestEntry[],
+  proven?: { ids: readonly string[]; sequence: number },
 ) {
   return events.map((event, index) => {
     const at = `${path}[${index}]`;
     // A date without offers reaches every offer of its own state (plan, section 5.3).
     const offers = event.offers?.length ? event.offers : stateOffers;
     const date = convertDate(event, offers);
-    const scope = convertScope(date.converted, stateOffers);
+    // A submission copy that proves a materialized list keeps the confirmation of that list.
+    const proves = !event.offers?.length && Boolean(proven?.ids.includes(event.id));
+    const scope = convertScope(date.converted, stateOffers, proves);
     const link = inventory.links.find((item) => item.path === `${at}.requirementId`)?.link;
     const forms = formsAt(inventory, at);
-    const materialized = forms.some((form) => form.startsWith('event.offers:materialized-'))
-      ? inventory.materialized.find((item) => item.eventId === event.id)
-      : undefined;
+    const materialized = proves
+      ? {
+          eventId: event.id,
+          offers: [...stateOffers],
+          status: 'proven' as const,
+          proofs: [proven!.sequence],
+        }
+      : forms.some((form) => form.startsWith('event.offers:materialized-'))
+        ? inventory.materialized.find((item) => item.eventId === event.id)
+        : undefined;
     const review = scopeReview(scope.scope, materialized);
     manifest.push({
       path: at,
@@ -294,7 +305,16 @@ const snapshotIsV5 = (value: unknown) =>
  */
 export function convertContentV5(
   document: unknown,
-  context: ContentContext & { source?: 'content' | 'submission' },
+  context: ContentContext & {
+    source?: 'content' | 'submission';
+    /**
+     * Submission only: IDs of the dates whose list in the current content is materialized and
+     * proven by this submission (`provenScopeIds`). Their copy without offers converts confirmed,
+     * as the list it proves, so comparing the submission with the content shows no confirmation
+     * the campus never made (plan, sections 5.3 and 10).
+     */
+    provenScopes?: readonly string[];
+  },
 ): Conversion<JsonObject> | null {
   if (isObject(document) && isObject(document.state) && document.state.schemaVersion === 5)
     return null;
@@ -323,6 +343,9 @@ export function convertContentV5(
     `${source}.state.events`,
     inventory,
     manifest,
+    source === 'submission' && context.provenScopes?.length
+      ? { ids: context.provenScopes, sequence: Number((stored as JsonObject).sequence) }
+      : undefined,
   );
   const institutionalSnapshot = convertSnapshotEvents(
     stored.institutionalSnapshot,
@@ -338,6 +361,21 @@ export function convertContentV5(
     },
     manifest,
   };
+}
+
+/**
+ * IDs of the dates whose list in the converted content is materialized and proven by the
+ * submission of `sequence`, to convert that submission (`provenScopes`).
+ */
+export function provenScopeIds(contentManifest: readonly ManifestEntry[], sequence: number) {
+  return contentManifest
+    .filter(
+      (entry) =>
+        entry.path.startsWith('content.state.events') &&
+        entry.scope?.status === 'materialized-proven' &&
+        entry.scope.proofs.includes(sequence),
+    )
+    .map((entry) => entry.id);
 }
 
 /**

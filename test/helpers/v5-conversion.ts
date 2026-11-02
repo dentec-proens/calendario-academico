@@ -1,6 +1,7 @@
 import {
   convertCatalogueEventV5,
   convertContentV5,
+  provenScopeIds,
 } from '../../src/domain/calendar/migration/convert-v5.ts';
 import type { V4Case, V4CatalogueRow, V4Content, V4Submission } from './v4-fixtures.ts';
 
@@ -12,9 +13,16 @@ export const convertedContent = (item: V4Case): V4Content =>
   convertContentV5(item.content, { year: item.year, submissions: item.submissions })!
     .document as unknown as V4Content;
 
+/** A submission converted as the migration does, with the lists of the content it proves. */
 export const convertedSubmission = (item: V4Case, submission: V4Submission): V4Submission =>
-  convertContentV5(submission, { year: item.year, source: 'submission' })!
-    .document as unknown as V4Submission;
+  convertContentV5(submission, {
+    year: item.year,
+    source: 'submission',
+    provenScopes: provenScopeIds(
+      convertContentV5(item.content, { year: item.year, submissions: item.submissions })!.manifest,
+      submission.sequence,
+    ),
+  })!.document as unknown as V4Submission;
 
 export const convertedCatalogueRow = (row: V4CatalogueRow): V4CatalogueRow =>
   convertCatalogueEventV5(row)!.document as unknown as V4CatalogueRow;

@@ -432,14 +432,10 @@ function organize<S extends ActivityState>(
           end: civilDate(stage.end),
           effect: 'note' as const,
           category: event.category ?? 'limite',
-          // The stage keeps its confirmation when it already had exactly its offer.
-          scope: {
-            offers: [modality],
-            confirmed:
-              event.scope.offers.length === 1 && event.scope.offers[0] === modality
-                ? event.scope.confirmed
-                : true,
-          },
+          // The editor opens a stage only in this form, so saving it is the campus's choice of
+          // offer: it confirms a scope converted unconfirmed (plan, section 5.3), as the date form
+          // does for other dates. Saving the calendar alone never confirms.
+          scope: { offers: [modality], confirmed: true },
         },
       ];
     }
