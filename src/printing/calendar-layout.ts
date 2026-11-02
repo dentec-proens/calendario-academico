@@ -23,7 +23,7 @@ function publicationDetails(event: PrintEvent, year: number, includeSource = tru
   const labels = [];
   if (event.publicationStatus)
     labels.push(
-      event.publicationStatus === 'planned' ? 'Publicação prevista' : 'Publicação realizada',
+      event.publicationStatus === 'planned' ? 'Publicação programada' : 'Publicação realizada',
     );
   if (event.admission) {
     const term = {
@@ -58,7 +58,7 @@ function externalReferences(state: PrintState, events: PrintEvent[]) {
       ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade e finalidade</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${publicationDetails(event, state.year, false)}<small>${esc(eventOffers(state, event))}</small>${automaticEventSource(event) ? `<small>Fonte: ${esc(automaticEventSource(event))}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
       : '';
   return `<section class="proens-external-references"><h3>Atividades e referências de outros anos</h3><p>As datas integrais são preservadas. Estes registros informativos não alteram a contagem de dias letivos.</p>${table(
-    'Publicações previstas',
+    'Publicações programadas',
     rows.filter((event) => event.publicationStatus === 'planned'),
   )}${table(
     'Fatos anteriores registrados',

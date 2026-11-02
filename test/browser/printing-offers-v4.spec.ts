@@ -25,7 +25,7 @@ for (const width of [1440, 390]) {
       },
       {
         id: 'previous-plan',
-        name: 'Publicação prevista antes do ano',
+        name: 'Publicação programada antes do ano',
         start: civilDate('2026-11-01'),
         end: civilDate('2026-11-01'),
         kind: 'note',
@@ -137,7 +137,7 @@ for (const width of [1440, 390]) {
         '2ª etapa — 2º semestre',
         'Consolidado anual',
         'Publicação realizada antes do ano',
-        'Publicação prevista antes do ano',
+        'Publicação programada antes do ano',
         'Registro informativo que atravessa o ano',
         '01/12/2026',
         '15/12/2026 a 12/01/2027',

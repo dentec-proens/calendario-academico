@@ -146,7 +146,7 @@ export default function IssuesSection() {
         <p>A saída definitiva depende das verificações e da revisão humana atualizada.</p>
         <p>
           Conjunto de regras: {rulesetVersion(state)}. Planejamento completo e execução comprovada
-          são conferências distintas. A passagem do tempo não transforma publicação prevista em
+          são conferências distintas. A passagem do tempo não transforma publicação programada em
           realizada.
         </p>
         <ul id="issue-list" className="records">

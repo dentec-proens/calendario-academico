@@ -99,7 +99,7 @@ export function validateActivityRecord(
     if (event.kind !== 'note')
       throw new DomainError('Publicação de edital é um registro informativo.');
     if (!event.publicationStatus)
-      throw new DomainError('Informe se a publicação é prevista ou realizada.');
+      throw new DomainError('Informe se a publicação é programada ou realizada.');
     if (a.periodId && (typeof a.periodId !== 'string' || a.periodId.length > 100))
       throw new DomainError('Período de ingresso inválido.');
     // Deleted periods remain visible as unresolved evidence instead of being reassigned.

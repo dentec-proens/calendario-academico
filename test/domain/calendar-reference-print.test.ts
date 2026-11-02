@@ -63,12 +63,12 @@ const events: CalendarActivity[] = [
 test('print keeps full dates and execution outside the annual grid without manual source labels', () => {
   const html = proensLayout(state, events, null, null, '');
   expect(html).toContain('Atividades e referências de outros anos');
-  expect(html).toContain('Publicações previstas');
+  expect(html).toContain('Publicações programadas');
   expect(html).toContain('Fatos anteriores registrados');
   expect(html).toContain('01/12/2026');
   expect(html).toContain('15/12/2026 a 12/01/2027');
   expect(html).toContain('Ingresso 2028');
-  expect(html).toContain('Publicação prevista');
+  expect(html).toContain('Publicação programada');
   expect(html).not.toContain('Fonte &lt;original&gt; &amp; conferida');
   expect(html).not.toContain('Fonte a conferir');
   expect(html).not.toContain('Edital anterior <documento>');

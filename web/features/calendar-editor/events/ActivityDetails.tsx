@@ -92,7 +92,7 @@ export default function ActivityDetails({
                   ? 'parcial'
                   : 'pendente'}
               {row.events.length
-                ? ` · ${row.execution === 'planned' ? 'Publicação prevista' : row.execution === 'published' ? 'Publicação realizada' : 'Execução a conferir'}`
+                ? ` · ${row.execution === 'planned' ? 'Publicação programada' : row.execution === 'published' ? 'Publicação realizada' : 'Execução a conferir'}`
                 : ''}
               <small>
                 Conferência humana:{' '}
@@ -133,7 +133,7 @@ export default function ActivityDetails({
                     .join(', ')}
                   {showHours ? ` · ${formatHours(event.hours ?? 0)}` : ''}
                   {event.publicationStatus === 'planned'
-                    ? ' · Publicação prevista'
+                    ? ' · Publicação programada'
                     : event.publicationStatus === 'published'
                       ? ' · Publicação realizada'
                       : ''}

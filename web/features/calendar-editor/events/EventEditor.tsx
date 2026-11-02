@@ -162,7 +162,7 @@ export default function EventEditor() {
                     publication
                       ? realDate
                         ? 'Data real de início da publicação'
-                        : 'Data prevista de início da publicação'
+                        : 'Data programada de início da publicação'
                       : 'Início'
                   }
                   id="event-start"
@@ -179,7 +179,7 @@ export default function EventEditor() {
                     publication
                       ? realDate
                         ? 'Data real de término da publicação'
-                        : 'Data prevista de término da publicação'
+                        : 'Data programada de término da publicação'
                       : 'Término'
                   }
                   id="event-end"
@@ -316,7 +316,7 @@ export default function EventEditor() {
                       required
                     >
                       <option value="">Selecione</option>
-                      <option value="planned">Publicação prevista</option>
+                      <option value="planned">Publicação programada</option>
                       <option value="published">Publicação realizada</option>
                     </Select>
                   )}

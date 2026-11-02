@@ -113,7 +113,7 @@ export default function ActivityChecklist() {
         : activityStatus
           ? activityStatusLabels[activityStatus]
           : planned
-            ? 'Publicação prevista'
+            ? 'Publicação programada'
             : 'Data do campus';
     return (
       <li key={event.id} data-date-row={event.id} data-origin={origin}>

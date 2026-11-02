@@ -31,7 +31,7 @@ export default function EventRecordDetails({
       {source && <small>Fonte: {source}</small>}
       {event.publicationStatus && (
         <small>
-          {event.publicationStatus === 'planned' ? 'Publicação prevista' : 'Publicação realizada'}
+          {event.publicationStatus === 'planned' ? 'Publicação programada' : 'Publicação realizada'}
         </small>
       )}
       {event.admission && (
