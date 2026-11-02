@@ -26,7 +26,9 @@
  * conversion (blocking shapes of the inventory). Snapshots keep their scope by offer type.
  * Slice 4 (step 8): the offer's `legacyStageCount` becomes `stages: { status: 'reported', count }`
  * and `stages: { perTerm }` becomes `stages: { status: 'defined', perTerm }` (plan, section 5.5);
- * stage links keep their v4 form until step 9b.
+ * stage links keep their v4 form until step 9b. Step 9a: `convertLink` maps each classified
+ * `requirementId` to its `ActivityRef` (plan, section 5.1) by the declaration and the repetition
+ * base the inventory read, never by the numeric suffix alone; the dates emit it from step 9b.
  */
 import {
   inventoryCatalogueRow,
@@ -37,6 +39,8 @@ import {
   type Inventory,
   type LinkShape,
   type MaterializedScope,
+  UnknownShapeError,
+  v4Declarations,
   type V4Form,
 } from './inventory.ts';
 
@@ -136,6 +140,62 @@ function refuseBlocking(inventory: Inventory) {
 
 const formsAt = (inventory: Inventory, path: string) =>
   inventory.occurrences.filter((item) => item.path === path).map((item) => item.form);
+
+/**
+ * v5 link (`ActivityRef`, plan section 5.1), frozen here as the converter's output: the domain
+ * type brands the IDs it validates (`activity-ref.ts`), and the tests check every converted link
+ * against it.
+ */
+type TermV5 = 'annual' | 'first' | 'second';
+export type ActivityRefV5 =
+  | { activityId: string }
+  | { activityId: string; term: TermV5 }
+  | { activityId: string; semester: 'first' | 'second' }
+  | {
+      activityId: string;
+      offerId: string;
+      position:
+        | { status: 'unclassified'; reportedOrdinal: number }
+        | { status: 'defined'; term: TermV5; number: number };
+    };
+
+/**
+ * The v5 link of a stored `requirementId`, already classified by the inventory
+ * (`classifyRequirementId`, which throws for an unknown or ambiguous ID): a single activity, an
+ * offer cycle, a reference semester or an offer stage, by the base of its declaration, never by
+ * the numeric suffix alone. A stage reads as `defined` (cycle and number) only under an organised
+ * offer whose count covers it; under an unclassified organisation, above the count or without
+ * one it keeps the reported ordinal, `unclassified`. A stage of an offer outside the calendar is
+ * a blocking shape, and a link whose declaration the frozen catalogue of its origin does not have
+ * in that base is unknown.
+ */
+export function convertLink(link: LinkShape, path = 'requirementId'): ActivityRefV5 {
+  const catalogue = link.origin === 'consup-292-2027' ? link.origin : 'operational';
+  if (!v4Declarations[catalogue][link.base]?.includes(link.declaration))
+    throw new UnknownShapeError(
+      path,
+      `vínculo “${link.requirementId}” sem a declaração “${link.declaration}” (${link.base}) em ${catalogue}`,
+    );
+  switch (link.base) {
+    case 'once':
+      return { activityId: link.declaration };
+    case 'cycle':
+      return { activityId: link.declaration, term: link.term! };
+    case 'semester':
+      return { activityId: link.declaration, semester: link.semester! };
+    case 'stage':
+      if (link.position === 'orphan-offer')
+        throw new BlockedConversionError([{ path, form: 'event.stagePosition:orphan-offer' }]);
+      return {
+        activityId: link.declaration,
+        offerId: link.offerId!,
+        position:
+          link.position === 'defined'
+            ? { status: 'defined', term: link.term!, number: link.number! }
+            : { status: 'unclassified', reportedOrdinal: link.ordinal! },
+      };
+  }
+}
 
 /**
  * `kind` → `effect` in place of the old key, keeping the order of the other keys, and `recordType`

@@ -1,6 +1,8 @@
 import type { AssessmentSettings, ActivityPlanItem, CalendarOffer } from '../calendar/model.ts';
 import { offerFor } from '../calendar/offers.ts';
 import { DomainError } from '../errors.ts';
+import { operationalRules } from '../calendar/activities/operational-checklist.ts';
+import type { ActivityRule } from '../calendar/activities/rules.ts';
 import { consup2922027Policy } from './consup-292-2027/index.ts';
 import type { CalendarPolicy, RulesetChange } from './contract.ts';
 import { unconfiguredPolicy } from './unconfigured.ts';
@@ -11,6 +13,16 @@ const policies: readonly CalendarPolicy[] = [consup2922027Policy];
 export function policyFor(year: number | string | undefined): CalendarPolicy {
   return policies.find((policy) => policy.year === Number(year)) ?? unconfiguredPolicy;
 }
+
+/**
+ * Every activity a date can be linked to: the declared catalogues of the policies and the
+ * operational catalogue of years without one. A link is valid by these declarations, never by
+ * the rows a configuration generates (plan, section 5.1).
+ */
+export const declaredActivityRules = (): readonly ActivityRule[] => [
+  ...policies.flatMap((policy) => policy.catalogue ?? []),
+  ...operationalRules(),
+];
 
 /** Years whose declared catalogue the portal's rules page shows. */
 export const documentedYears = policies.flatMap((policy) =>

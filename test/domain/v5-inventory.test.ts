@@ -188,6 +188,11 @@ describe('frozen declarations', () => {
         else expect(link.origin, link.requirementId).toBe('legacy-operational');
         expect(link.base === 'stage', link.requirementId).toBe(Boolean(row.offerId));
         if (link.base === 'stage') expect(link.offerId).toBe(row.offerId);
+        // A defined stage reads the cycle of the generated row (step 9a); others have none.
+        if (link.base === 'stage')
+          expect(link.term, link.requirementId).toBe(
+            link.position === 'defined' ? row.term : undefined,
+          );
         // Operational rows do not carry their cycle; policy rows do.
         if (row.term !== undefined && !legacy && link.base !== 'stage')
           expect(row.term, link.requirementId).toBe(link.term ?? link.semester);

@@ -110,7 +110,7 @@ export interface LinkShape {
   origin: LinkOrigin;
   declaration: string;
   base: RepeatBase;
-  /** Cycle links: the offer cycle. */
+  /** Cycle links: the offer cycle; stage links with a `defined` position: the cycle of the stage. */
   term?: AcademicTerm;
   /** Semester links: the reference semester. */
   semester?: 'first' | 'second';
@@ -118,6 +118,8 @@ export interface LinkShape {
   ordinal?: number;
   offerId?: string;
   position?: StagePositionShape;
+  /** Stage links with a `defined` position: number of the stage within its cycle. */
+  number?: number;
 }
 
 export type ScopeShape =
@@ -510,29 +512,59 @@ export function classifyRequirementId(
           : match.ordinal! > offer.stageCount
             ? 'beyond-count'
             : 'defined';
+    if (link.position === 'defined') Object.assign(link, stageInCycle(offer!, match.ordinal!));
     return link;
   }
   return fail('requirementId', `vínculo não declarado “${requirementId}” em ${year}`);
 }
 
-function matchDeclaration(
+/**
+ * The declaration and base an ID has in one catalogue, each ID read whole against the declared
+ * names of every base. An ID that two bases of the same catalogue could both have produced is
+ * ambiguous and throws, instead of being resolved by the order of the checks.
+ */
+export function matchDeclaration(
   declarations: Readonly<Record<RepeatBase, readonly string[]>>,
   requirementId: string,
 ): Omit<LinkShape, 'requirementId' | 'origin'> | undefined {
+  const matches: Omit<LinkShape, 'requirementId' | 'origin'>[] = [];
   for (const declaration of declarations.once)
-    if (requirementId === declaration) return { declaration, base: 'once' };
+    if (requirementId === declaration) matches.push({ declaration, base: 'once' });
   const suffix = /^(.+)-(\d+)$/.exec(requirementId);
   if (suffix) {
     const [, declaration, n] = suffix;
     if (declarations.cycle.includes(declaration) && cycleTerms[n])
-      return { declaration, base: 'cycle', term: cycleTerms[n] };
+      matches.push({ declaration, base: 'cycle', term: cycleTerms[n] });
     if (declarations.semester.includes(declaration) && semesters[n])
-      return { declaration, base: 'semester', semester: semesters[n] };
+      matches.push({ declaration, base: 'semester', semester: semesters[n] });
   }
   const stage = /^(.+)-([1-9]\d*):(.+)$/.exec(requirementId);
   if (stage && declarations.stage.includes(stage[1]))
-    return { declaration: stage[1], base: 'stage', ordinal: Number(stage[2]), offerId: stage[3] };
-  return undefined;
+    matches.push({
+      declaration: stage[1],
+      base: 'stage',
+      ordinal: Number(stage[2]),
+      offerId: stage[3],
+    });
+  if (matches.length > 1)
+    return fail(
+      'requirementId',
+      `vínculo ambíguo “${requirementId}”: ${matches.map((item) => `${item.declaration} (${item.base})`).join(', ')}`,
+    );
+  return matches[0];
+}
+
+/**
+ * Cycle and number of a stage within it, for an organised offer whose stage count covers the
+ * ordinal (frozen from the v4 `stageTerm`/`stageInTerm`): annual stages number on in the year;
+ * semester stages split evenly between the first and second cycles.
+ */
+function stageInCycle(offer: OfferShape, ordinal: number): { term: AcademicTerm; number: number } {
+  if (offer.organization === 'anual') return { term: 'annual', number: ordinal };
+  const perTerm = offer.stageCount! / 2;
+  return ordinal <= perTerm
+    ? { term: 'first', number: ordinal }
+    : { term: 'second', number: ordinal - perTerm };
 }
 
 interface OfferShape {
