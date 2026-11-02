@@ -30,7 +30,7 @@ export default function SaturdayRegisteredList({
                     {...(day.editable && { 'data-edit-saturday': day.registration!.id })}
                     onClick={() => onOpen(day.registration!.id)}
                   >
-                    <strong>{shortDate(day.date)}</strong> {day.registration!.name}
+                    <strong>{shortDate(day.date)}</strong> <span>{day.registration!.name}</span>
                   </button>
                 </li>
               ))}

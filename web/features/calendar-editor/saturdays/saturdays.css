@@ -379,13 +379,19 @@ dialog#saturday-panel::backdrop {
   padding: 0;
   list-style: none;
 }
-.saturday-registrations button {
-  display: flex;
-  justify-content: flex-start;
+#saturday-panel .saturday-registrations button {
+  display: grid;
+  grid-template-columns: 3.25em minmax(0, 1fr);
+  align-items: baseline;
+  justify-content: stretch;
   gap: 8px;
   width: 100%;
   padding: 6px 10px;
   font-size: 0.8125rem;
   font-weight: 500;
   text-align: left;
+}
+#saturday-panel .saturday-registrations strong {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
