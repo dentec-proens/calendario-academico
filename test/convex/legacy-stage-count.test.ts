@@ -34,9 +34,9 @@ async function setup(count?: Count) {
         .query('calendarContents')
         .withIndex('by_calendarId', (q) => q.eq('calendarId', created.id))
         .unique();
-      if (!content || content.state.schemaVersion !== 5) throw Error('Conteúdo v4 esperado.');
+      if (!content || content.state.schemaVersion !== 5) throw Error('Conteúdo v5 esperado.');
       const state = structuredClone(content.state);
-      Object.assign(state.offers[0], { legacyStageCount: count });
+      Object.assign(state.offers[0], { stages: { status: 'reported', count } });
       state.events = Array.from({ length: count }, (_, index) => ({
         id: `old-stage-${index + 1}`,
         requirementId: `stage-${index + 1}:integrado`,
@@ -68,7 +68,7 @@ async function setup(count?: Count) {
 }
 
 test.each([2, 3, 4] as const)(
-  'direct saves and format-4 copy retain %i historical stages while metadata changes',
+  'direct saves and the JSON copy retain %i reported stages while metadata changes',
   async (count) => {
     const { record, save } = await setup(count);
     const state = {
@@ -82,7 +82,7 @@ test.each([2, 3, 4] as const)(
     const saved = await save(state);
     expect(saved.state.offers[0]).toMatchObject({
       organization: 'a-classificar',
-      legacyStageCount: count,
+      stages: { status: 'reported', count },
       label: 'Identificação conferida',
     });
     expect(saved.state.events).toEqual(record.state.events);
@@ -90,15 +90,15 @@ test.each([2, 3, 4] as const)(
     const copy = normalizeOfferCalendar(JSON.parse(JSON.stringify(saved.state)), saved.state);
     expect(offerCalendarContent(copy)).toEqual(offerCalendarContent(saved.state));
     const unchanged = await save(copy as typeof record.state, saved.version);
-    expect(unchanged.state.offers[0]).toMatchObject({ legacyStageCount: count });
+    expect(unchanged.state.offers[0]).toMatchObject({ stages: { status: 'reported', count } });
     expect(unchanged.version).toBe(saved.version);
   },
 );
 
-test('direct payloads cannot introduce, change, omit or partially resolve the historical quantity', async () => {
+test('direct payloads cannot introduce, change, omit or partially resolve the reported total', async () => {
   const fresh = await setup();
   const introduced = structuredClone(fresh.record.state);
-  Object.assign(introduced.offers[0], { legacyStageCount: 3 });
+  Object.assign(introduced.offers[0], { stages: { status: 'reported', count: 3 } });
   await expect(fresh.save(introduced)).rejects.toThrow();
   expect(
     (
@@ -111,15 +111,18 @@ test('direct payloads cannot introduce, change, omit or partially resolve the hi
   const migrated = await setup(3);
   for (const mutate of [
     (state: typeof migrated.record.state) =>
-      Object.assign(state.offers[0], { legacyStageCount: 4 }),
+      Object.assign(state.offers[0], { stages: { status: 'reported', count: 4 } }),
+    (state: typeof migrated.record.state) => Reflect.deleteProperty(state.offers[0], 'stages'),
     (state: typeof migrated.record.state) =>
-      Reflect.deleteProperty(state.offers[0], 'legacyStageCount'),
+      Object.assign(state.offers[0], { stages: { status: 'defined', perTerm: 3 } }),
     (state: typeof migrated.record.state) =>
-      Object.assign(state.offers[0], { stages: { perTerm: 3 } }),
-    (state: typeof migrated.record.state) => {
-      Reflect.deleteProperty(state.offers[0], 'legacyStageCount');
-      Object.assign(state.offers[0], { organization: 'anual', stages: { perTerm: 3 } });
-    },
+      Object.assign(state.offers[0], {
+        organization: 'anual',
+        stages: { status: 'defined', perTerm: 3 },
+      }),
+    // The format before step 8 is not accepted by the transport.
+    (state: typeof migrated.record.state) =>
+      Object.assign(state.offers[0], { stages: undefined, legacyStageCount: 3 }),
   ]) {
     const proposed = structuredClone(migrated.record.state);
     mutate(proposed);
@@ -132,16 +135,20 @@ test('direct payloads cannot introduce, change, omit or partially resolve the hi
   }
 });
 
-test('the transport accepts only literal historical counts 2, 3 or 4', async () => {
+test('the transport accepts only literal reported totals 2, 3 or 4', async () => {
   const { record, save } = await setup();
-  for (const count of [0, 1, 5, 2.5]) {
+  for (const stages of [
+    ...[0, 1, 5, 2.5].map((count) => ({ status: 'reported', count })),
+    { count: 3 },
+    { status: 'unknown', count: 3 },
+  ]) {
     const proposed = structuredClone(record.state);
-    Object.assign(proposed.offers[0], { legacyStageCount: count });
+    Object.assign(proposed.offers[0], { stages });
     await expect(save(proposed)).rejects.toThrow();
   }
 });
 
-test('new or changed stage dates require a real cycle even when the historical total is known', async () => {
+test('new or changed stage dates require a real cycle even when the reported total is known', async () => {
   const { record, save } = await setup(3);
   for (const state of [
     {
@@ -187,7 +194,7 @@ test('direct complete classification cannot erase a previous required second-sem
       .query('calendarContents')
       .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
       .unique();
-    if (!content || content.state.schemaVersion !== 5) throw Error('Conteúdo v4 esperado.');
+    if (!content || content.state.schemaVersion !== 5) throw Error('Conteúdo v5 esperado.');
     const state = structuredClone(content.state);
     state.offers[0].intake = previous.offers[0].intake;
     await ctx.db.patch(content._id, { state });
@@ -200,7 +207,7 @@ test('direct complete classification cannot erase a previous required second-sem
   expect(intact.state).toEqual(previous);
 });
 
-test('complete explicit configuration keeps surplus bindings to review and retains the marker in the submitted copy', async () => {
+test('complete explicit configuration keeps surplus bindings to review and retains the reported total in the submitted copy', async () => {
   const { actor: _actor, record, save, ...fixture } = await setup(3);
   const submitted = await preserveSubmission(fixture, record.id);
   const draft = offerOrganizationDraft(record.state, 'integrado');
@@ -225,9 +232,13 @@ test('complete explicit configuration keeps surplus bindings to review and retai
     () => `configured-${++sequence}`,
   );
   const saved = await save(configured);
-  expect(saved.state.offers[0]).not.toHaveProperty('legacyStageCount');
-  expect(saved.state.offers[0]).toMatchObject({ organization: 'anual', stages: { perTerm: 2 } });
+  expect(saved.state.offers[0]).toMatchObject({
+    organization: 'anual',
+    stages: { status: 'defined', perTerm: 2 },
+  });
   expect(saved.state.events.find((event) => event.id === oldExcess.id)).toEqual(oldExcess);
   expect(linksToReview({ ...saved.state, year: 2027 }).get(oldExcess.id)).toBe('unclassified');
-  expect((await submitted()).state).toMatchObject({ offers: [{ legacyStageCount: 3 }] });
+  expect((await submitted()).state).toMatchObject({
+    offers: [{ stages: { status: 'reported', count: 3 } }],
+  });
 });

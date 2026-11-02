@@ -81,7 +81,7 @@ for (const width of [1440, 390]) {
     expect(organized.saves).toBeGreaterThan(edited.saves);
     expect(organized.state.offers.find((offer) => offer.id === 'integrado')).toMatchObject({
       organization: 'anual',
-      stages: { perTerm: 2 },
+      stages: { status: 'defined', perTerm: 2 },
     });
     expect(linked(organized.state.events)).toMatchObject(links);
   });

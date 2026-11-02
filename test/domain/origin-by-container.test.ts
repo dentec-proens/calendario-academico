@@ -61,7 +61,7 @@ function state(): ActivityState {
         kind: 'integrado',
         delivery: 'a-conferir',
         organization: 'anual',
-        stages: { perTerm: 2 },
+        stages: { status: 'defined', perTerm: 2 },
       },
     ],
   };

@@ -58,8 +58,8 @@ export function contentAssessment(record: ContentRecord) {
   if (
     offers.some(
       (offer) =>
-        offer.legacyStageCount === undefined &&
-        (!offer.stages ||
+        offer.stages?.status !== 'reported' &&
+        (offer.stages?.status !== 'defined' ||
           !(offer.organization === 'anual'
             ? assessmentStageCounts.includes(offer.stages.perTerm)
             : offer.organization === 'semestral' && [1, 2].includes(offer.stages.perTerm))),
@@ -89,7 +89,7 @@ export function contentAssessment(record: ContentRecord) {
         results = eventFor('results-' + n),
         council = eventFor('council-' + n);
       const position =
-        offer.organization === 'semestral' && offer.stages
+        offer.organization === 'semestral' && offer.stages?.status === 'defined'
           ? stageInTerm(n, offer.stages.perTerm)
           : undefined;
       const stage = position
@@ -97,7 +97,7 @@ export function contentAssessment(record: ContentRecord) {
         : `${n}ª etapa`;
       if (start && end && start.start > end.end)
         issue(`stage-order:${offer.id}:${n}`, `${stage}: término anterior ao início.`);
-      if (start && offer.legacyStageCount === undefined) {
+      if (start && offer.stages?.status !== 'reported') {
         const cycleIssue = assessmentCycleIssue(record.state, start);
         if (cycleIssue)
           warnings.push(`${labelFor(record.state, offer.id)} — ${stage}: ${cycleIssue}`);

@@ -144,7 +144,7 @@ test('editing one shared offer preserves the other offer and existing inclusions
       },
     ];
     record.state.offers.forEach((offer) => {
-      offer.stages = { perTerm: 2 };
+      offer.stages = { status: 'defined', perTerm: 2 };
     });
     record.state.events = ['integrado', 'graduacao'].flatMap((modality) =>
       [0, 1].map((index) => ({

@@ -42,14 +42,14 @@ const state = {
       kind: 'integrado' as const,
       delivery: 'a-conferir' as const,
       organization: 'semestral' as const,
-      stages: { perTerm: 2 },
+      stages: { status: 'defined' as const, perTerm: 2 },
     },
     {
       id: 'graduacao',
       kind: 'graduacao' as const,
       delivery: 'a-conferir' as const,
       organization: 'semestral' as const,
-      stages: { perTerm: 1 },
+      stages: { status: 'defined' as const, perTerm: 1 },
     },
   ],
 };
@@ -166,7 +166,7 @@ test('annual periods preserve assessment totals without inventing semester bound
         kind: 'integrado' as const,
         delivery: 'a-conferir' as const,
         organization: 'anual' as const,
-        stages: { perTerm: 4 },
+        stages: { status: 'defined' as const, perTerm: 4 },
       },
     ],
   };
@@ -243,7 +243,7 @@ test('trimestral offers retain their three assessment intervals alongside monthl
         kind: 'integrado' as const,
         delivery: 'a-conferir' as const,
         organization: 'anual' as const,
-        stages: { perTerm: 3 },
+        stages: { status: 'defined' as const, perTerm: 3 },
       },
     ],
   };

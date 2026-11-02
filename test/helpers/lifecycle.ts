@@ -36,7 +36,7 @@ export function readyContent(): CalendarContent {
         kind: 'integrado' as const,
         delivery: 'presencial' as const,
         organization: 'anual' as const,
-        stages: { perTerm: 4 },
+        stages: { status: 'defined' as const, perTerm: 4 },
         scope: { status: 'covered' as const },
       },
     ],

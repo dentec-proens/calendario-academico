@@ -144,7 +144,11 @@ test('reducing stages of an unchanged calendar is saved; surplus and moved cycle
     ...state,
     offers: state.offers.map((offer) =>
       offer.id === 'integrado'
-        ? { ...offer, organization: 'semestral', stages: { perTerm: 2 } }
+        ? {
+            ...offer,
+            organization: 'semestral',
+            stages: { status: 'defined' as const, perTerm: 2 },
+          }
         : offer,
     ),
     periods: [
@@ -176,7 +180,9 @@ test('reducing stages of an unchanged calendar is saved; surplus and moved cycle
   const reduced = {
     ...semester,
     offers: semester.offers.map((offer) =>
-      offer.id === 'integrado' ? { ...offer, stages: { perTerm: 1 } } : offer,
+      offer.id === 'integrado'
+        ? { ...offer, stages: { status: 'defined' as const, perTerm: 1 } }
+        : offer,
     ),
   };
   const saved = save(semester, reduced);
@@ -284,7 +290,9 @@ describe('findings of the independent review of phase 1', () => {
     const reduced = {
       ...state,
       offers: state.offers.map((offer) =>
-        offer.id === 'integrado' ? { ...offer, stages: { perTerm: 3 } } : offer,
+        offer.id === 'integrado'
+          ? { ...offer, stages: { status: 'defined' as const, perTerm: 3 } }
+          : offer,
       ),
     };
     const early = reduced.events.find((event) => event.id === 'stage-early')!;
@@ -331,7 +339,11 @@ describe('findings of the independent review of phase 1', () => {
       ...state,
       offers: state.offers.map((offer) =>
         offer.id === 'subsequente'
-          ? { ...offer, organization: 'semestral' as const, stages: { perTerm: 1 } }
+          ? {
+              ...offer,
+              organization: 'semestral' as const,
+              stages: { status: 'defined' as const, perTerm: 1 },
+            }
           : offer,
       ),
       periods: [],

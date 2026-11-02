@@ -59,7 +59,7 @@ test('requires distinct labels for repeated kinds and validates stages per cycle
   source.offers[1].label = source.offers[2].label;
   expect(() => normalizeOfferCalendar(source)).toThrow('únicos');
   source.offers[1].label = 'Química';
-  source.offers[2].stages = { perTerm: 3 };
+  source.offers[2].stages = { status: 'defined', perTerm: 3 };
   expect(() => normalizeOfferCalendar(source)).toThrow('duas etapas por semestre');
 });
 

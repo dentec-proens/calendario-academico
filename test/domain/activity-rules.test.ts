@@ -16,14 +16,14 @@ const state: AssessmentSettings = {
       kind: 'integrado',
       delivery: 'a-conferir',
       organization: 'anual',
-      stages: { perTerm: 2 },
+      stages: { status: 'defined', perTerm: 2 },
     },
     {
       id: 'graduacao',
       kind: 'graduacao',
       delivery: 'a-conferir',
       organization: 'semestral',
-      stages: { perTerm: 1 },
+      stages: { status: 'defined', perTerm: 1 },
     },
   ],
 };

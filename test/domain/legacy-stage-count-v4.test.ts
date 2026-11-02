@@ -19,9 +19,9 @@ import {
   offerOrganizationDraft,
 } from '../../src/domain/calendar/organization/offers.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
+import { readCalendarOfferInput } from '../../src/domain/calendar/normalization/input-v4.ts';
 
 type Count = 2 | 3 | 4;
-type LegacyOffer = CalendarOffer & { legacyStageCount?: Count };
 type StageState = CalendarContent & { year: number; campus: string };
 const fixture = (count: Count = 3): StageState => ({
   schemaVersion: 5 as const,
@@ -34,8 +34,8 @@ const fixture = (count: Count = 3): StageState => ({
       kind: 'integrado',
       delivery: 'a-conferir',
       organization: 'a-classificar',
-      legacyStageCount: count,
-    } satisfies LegacyOffer,
+      stages: { status: 'reported', count },
+    } satisfies CalendarOffer,
   ],
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
@@ -73,21 +73,35 @@ test.each(archive.cases)(
   },
 );
 
-test('normalization and v4 copy keep known historical quantity, without inventing a cycle', () => {
+test('normalization and the JSON copy keep the reported total, without inventing a cycle', () => {
   const state = fixture();
-  expect(offerCalendarContent(normalizeOfferCalendar(state)).offers[0]).toMatchObject({
-    legacyStageCount: 3,
+  const content = offerCalendarContent(normalizeOfferCalendar(state));
+  expect(content.offers[0]).toMatchObject({
+    stages: { status: 'reported', count: 3 },
     organization: 'a-classificar',
   });
+  expect(content.offers[0]).not.toHaveProperty('legacyStageCount');
+  // Exporting and importing the copy keeps the reported total.
+  expect(
+    readCalendarOfferInput(JSON.parse(JSON.stringify({ ...content, year: 2027 }))).offers[0],
+  ).toEqual(content.offers[0]);
   for (const malformed of [
-    { ...state, offers: [{ ...state.offers[0], legacyStageCount: 1 }] },
+    { ...state, offers: [{ ...state.offers[0], stages: { status: 'reported', count: 1 } }] },
     { ...state, offers: [{ ...state.offers[0], organization: 'anual' }] },
-    { ...state, offers: [{ ...state.offers[0], stages: { perTerm: 3 } }] },
-  ])
+    { ...state, offers: [{ ...state.offers[0], stages: { status: 'defined', perTerm: 3 } }] },
+  ] as StageState[])
     expect(() => normalizeOfferCalendar(malformed)).toThrow(/etapas|quantidade|organização/i);
+  for (const stages of [{ status: 'reported', count: 5 }, { count: 3 }, { perTerm: 3 }])
+    expect(() =>
+      readCalendarOfferInput({
+        ...content,
+        year: 2027,
+        offers: [{ ...content.offers[0], stages }],
+      }),
+    ).toThrow(/etapas|quantidade/i);
 });
 
-test('metadata and unrelated saves preserve the marker while direct edits cannot add, change or drop it', () => {
+test('metadata and unrelated saves preserve the reported total while direct edits cannot add, change or drop it', () => {
   const state = fixture();
   const changed = configureOfferMetadata(state, 'integrado', {
     delivery: 'ead',
@@ -100,16 +114,19 @@ test('metadata and unrelated saves preserve the marker while direct edits cannot
     recalculate: false,
   };
   const saved = prepareOfferCalendarSave(state, changed, context);
-  expect(saved.content.offers[0]).toMatchObject({ legacyStageCount: 3, delivery: 'ead' });
+  expect(saved.content.offers[0]).toMatchObject({
+    stages: { status: 'reported', count: 3 },
+    delivery: 'ead',
+  });
   const without = {
     ...state,
-    offers: state.offers.map(({ legacyStageCount: _count, ...offer }) => offer),
+    offers: state.offers.map(({ stages: _stages, ...offer }) => offer),
   };
   expect(() => prepareOfferCalendarSave(state, without, context)).toThrow(/etapas|quantidade/i);
   expect(() =>
     prepareOfferCalendarSave(
       state,
-      { ...state, offers: [{ ...state.offers[0], legacyStageCount: 2 }] },
+      { ...state, offers: [{ ...state.offers[0], stages: { status: 'reported', count: 2 } }] },
       context,
     ),
   ).toThrow(/etapas|quantidade/i);
@@ -121,7 +138,13 @@ test('metadata and unrelated saves preserve the marker while direct edits cannot
   ).toThrow(/etapas|quantidade/i);
   const fake = {
     ...without,
-    offers: [{ ...without.offers[0], organization: 'anual' as const, stages: { perTerm: 2 } }],
+    offers: [
+      {
+        ...without.offers[0],
+        organization: 'anual' as const,
+        stages: { status: 'defined' as const, perTerm: 2 },
+      },
+    ],
   };
   expect(() => prepareOfferCalendarSave(state, fake, context)).toThrow(
     /etapas|períodos|nova oferta/i,
@@ -156,10 +179,10 @@ test('new and changed assessment dates remain blocked until the organization def
       { ...state, campus: 'A' },
       { storedContent: offerCalendarContent(state), catalogue: { events: [] }, recalculate: false },
     ).content.offers[0],
-  ).toMatchObject({ legacyStageCount: 3 });
+  ).toMatchObject({ stages: { status: 'reported', count: 3 } });
 });
 
-test('complete explicit configuration clears the marker and keeps surplus stage dates with their link', () => {
+test('complete explicit configuration resolves the reported total and keeps surplus stage dates with their link', () => {
   const state: StageState = {
     ...fixture(),
     events: [1, 2, 3].map((n) => ({
@@ -186,8 +209,10 @@ test('complete explicit configuration clears the marker and keeps surplus stage 
   draft.stages[1] = { id: 'old-2', start: civilDate('2027-07-26'), end: civilDate('2027-12-17') };
   let seq = 0;
   const configured = applyOfferOrganization(state, 'integrado', draft, () => `generated-${++seq}`);
-  expect(configured.offers[0]).not.toHaveProperty('legacyStageCount');
-  expect(configured.offers[0]).toMatchObject({ organization: 'anual', stages: { perTerm: 2 } });
+  expect(configured.offers[0]).toMatchObject({
+    organization: 'anual',
+    stages: { status: 'defined', perTerm: 2 },
+  });
   expect(configured.events.find((e) => e.id === 'old-3')).toEqual(state.events[2]);
   expect(linksToReview(configured).get('old-3')).toBe('unclassified');
   const saved = prepareOfferCalendarSave(state, configured, {
@@ -195,7 +220,7 @@ test('complete explicit configuration clears the marker and keeps surplus stage 
     catalogue: { events: [] },
     recalculate: false,
   });
-  expect(saved.content.offers[0]).not.toHaveProperty('legacyStageCount');
+  expect(saved.content.offers[0].stages).toEqual({ status: 'defined', perTerm: 2 });
 });
 
 test('unclassified historical stage evidence retains its original interval finding without blocking preservation', () => {

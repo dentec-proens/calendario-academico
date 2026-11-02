@@ -72,14 +72,14 @@ describe('identidade e tipo da oferta v4', () => {
   });
 
   it.each([2, 3, 4])('preserva %i etapas anuais', (perTerm) => {
-    const annual = offer({ stages: { perTerm } });
+    const annual = offer({ stages: { status: 'defined', perTerm } });
     expect(stageCount(annual)).toBe(perTerm);
     expect(stageTerm(annual, perTerm)).toBe('annual');
     expect(stageCycle(annual)).toBe({ 2: 'semestral', 3: 'trimestral', 4: 'bimestral' }[perTerm]);
   });
 
   it.each([1, 2])('reinicia a numeração com %i etapas por semestre', (perTerm) => {
-    const semester = offer({ organization: 'semestral', stages: { perTerm } });
+    const semester = offer({ organization: 'semestral', stages: { status: 'defined', perTerm } });
     expect(stageCount(semester)).toBe(2 * perTerm);
     expect(stageInTerm(perTerm + 1, perTerm)).toEqual({ term: 2, number: 1 });
     expect(stageTerm(semester, perTerm)).toBe('first');
@@ -92,7 +92,9 @@ describe('identidade e tipo da oferta v4', () => {
     expect(stageCount(offer())).toBe(0);
     expect(stageTerm(offer(), 1)).toBeUndefined();
     expect(
-      stageCycle(offer({ organization: 'a-classificar', stages: { perTerm: 2 } })),
+      stageCycle(
+        offer({ organization: 'a-classificar', stages: { status: 'defined', perTerm: 2 } }),
+      ),
     ).toBeUndefined();
     expect(() => stageInTerm(1, 0)).toThrow();
     expect(() => stageInTerm(0, 2)).toThrow();

@@ -251,8 +251,16 @@ test('native calendar saves validate per-offer stages and preserve the selected 
   const state = {
     ...record.state,
     offers: [
-      { ...record.state.offers[0], stages: { perTerm: 2 }, intake: { second: { status: 'no' } } },
-      { ...record.state.offers[1], stages: { perTerm: 1 }, intake: { second: { status: 'no' } } },
+      {
+        ...record.state.offers[0],
+        stages: { status: 'defined', perTerm: 2 },
+        intake: { second: { status: 'no' } },
+      },
+      {
+        ...record.state.offers[1],
+        stages: { status: 'defined', perTerm: 1 },
+        intake: { second: { status: 'no' } },
+      },
     ],
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,

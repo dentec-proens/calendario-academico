@@ -29,6 +29,7 @@ for (const width of [1440, 390]) {
     await page.locator('#offer-integrado-apply').click();
     const saved = await savedState(page);
     expect(saved.state.offers.find((offer) => offer.id === 'integrado')?.stages).toEqual({
+      status: 'defined',
       perTerm: 4,
     });
     expect(saved.state.events.filter((e) => e.requirementId?.startsWith('stage-'))).toHaveLength(4);

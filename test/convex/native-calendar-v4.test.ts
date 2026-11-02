@@ -361,7 +361,13 @@ function oneOffer(
   const fixture = calendarOffersV4Fixture();
   const old = fixture.offers.find((offer) => offer.id === source)!;
   const offers: CalendarOffer[] = [
-    { ...old, id: 'graduacao', kind: 'graduacao', organization, stages: { perTerm } },
+    {
+      ...old,
+      id: 'graduacao',
+      kind: 'graduacao',
+      organization,
+      stages: { status: 'defined', perTerm },
+    },
   ];
   return {
     ...fixture,

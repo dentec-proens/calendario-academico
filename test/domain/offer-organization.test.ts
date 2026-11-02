@@ -46,14 +46,14 @@ function calendar(): ActivityState {
         kind: 'integrado' as const,
         delivery: 'a-conferir' as const,
         organization: 'anual' as const,
-        stages: { perTerm: 2 },
+        stages: { status: 'defined', perTerm: 2 },
       },
       {
         id: 'graduacao',
         kind: 'graduacao' as const,
         delivery: 'a-conferir' as const,
         organization: 'anual' as const,
-        stages: { perTerm: 2 },
+        stages: { status: 'defined', perTerm: 2 },
       },
     ],
   };

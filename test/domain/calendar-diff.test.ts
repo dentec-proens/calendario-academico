@@ -366,3 +366,22 @@ test('a notice change shows its publication and its admission with destinations 
   reordered.state.events.at(-1)!.notice!.admission!.destinations.reverse();
   expect(compareContents(before, reordered).events).toEqual([]);
 });
+
+test('resolving a reported total shows the assessment stages before and after (plan, section 5.5)', () => {
+  const reported = side((value) => {
+    value.state.offers[0] = {
+      ...value.state.offers[0],
+      organization: 'a-classificar',
+      stages: { status: 'reported', count: 3 },
+    };
+  });
+  const diff = compareContents(reported, side());
+  const change = diff.offers.find((item) => item.id === reported.state.offers[0].id)!;
+  const stages = change.fields.find((field) => field.field === 'stages')!;
+  expect(stages.label).toBe('Etapas de avaliação');
+  expect(describeValue('stages', stages.before)).toBe('3 etapas informadas; ciclos a conferir');
+  expect(describeValue('stages', stages.after)).toBe(
+    `${(side().state.offers[0].stages as { perTerm: number }).perTerm} por ciclo`,
+  );
+  expect(Object.keys(fieldLabels.offer)).not.toContain('legacyStageCount');
+});

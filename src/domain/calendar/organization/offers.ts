@@ -18,7 +18,7 @@ import type {
 import { datesBetween } from '../counting/core.ts';
 import { assessmentIntervalIssue } from '../activities/assessment-intervals.ts';
 import { appliesTo } from '../modalities.ts';
-import { associationOffers, offerFor, offerIds, labelFor } from '../offers.ts';
+import { associationOffers, offerFor, offerIds, labelFor, stagesPerTerm } from '../offers.ts';
 import { organizationForOffer, periodsForOffer } from './periods.ts';
 import { rulesetVersion } from '../../policies/registry.ts';
 import { stageRequirement } from '../activities/assessment.ts';
@@ -57,7 +57,8 @@ export function offerOrganizationDraft(
   const organization = organizationForOffer(state, modality);
   return {
     organization: organization === 'a-classificar' ? '' : organization,
-    count: String(offerFor(state, modality)?.stages?.perTerm ?? ''),
+    // A reported total has no cycle yet: the campus chooses the count per cycle explicitly.
+    count: String(stagesPerTerm(offerFor(state, modality) ?? {}) ?? ''),
     periods: termsByOrganization.semestral.map((_, index) => {
       const term = organization === 'semestral' ? (index ? 'second' : 'first') : 'annual';
       const period =
@@ -391,8 +392,8 @@ function organize<S extends ActivityState>(
     ...state,
     offers: state.offers.map((offer) => {
       if (offer.id !== modality) return offer;
-      const { legacyStageCount: _legacy, ...configured } = offer;
-      return { ...configured, organization, stages: { perTerm: count } };
+      // Confirming resolves the reported total into the count and cycles (plan, section 5.5).
+      return { ...offer, organization, stages: { status: 'defined' as const, perTerm: count } };
     }),
     periods: [...retained, ...periods],
   };

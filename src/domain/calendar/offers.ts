@@ -51,20 +51,30 @@ export function stageInTerm(n: number, perTerm: number): { term: number; number:
   return { term, number: n - (term - 1) * perTerm };
 }
 
+/** Stages per cycle of a defined organization; undefined while only a total was reported. */
+export const stagesPerTerm = (offer: Pick<CalendarOffer, 'stages'>): number | undefined =>
+  offer.stages?.status === 'defined' ? offer.stages.perTerm : undefined;
+
+/** Total reported without a confirmed cycle (plan, section 5.5). */
+export const reportedStageCount = (offer: Pick<CalendarOffer, 'stages'>): number | undefined =>
+  offer.stages?.status === 'reported' ? offer.stages.count : undefined;
+
 export function stageTerm(offer: CalendarOffer, n: number): AcademicTerm | undefined {
-  if (!offer.stages || offer.organization === 'a-classificar') return undefined;
+  const perTerm = stagesPerTerm(offer);
+  if (perTerm === undefined || offer.organization === 'a-classificar') return undefined;
   if (n < 1 || n > stageCount(offer) || !Number.isInteger(n)) return undefined;
   return offer.organization === 'anual'
     ? 'annual'
-    : stageInTerm(n, offer.stages.perTerm).term === 1
+    : stageInTerm(n, perTerm).term === 1
       ? 'first'
       : 'second';
 }
 
 export function stageCount(offer: CalendarOffer): number {
-  if (offer.organization === 'a-classificar') return offer.legacyStageCount ?? 0;
-  if (!offer.stages) return 0;
-  return offer.stages.perTerm * (offer.organization === 'semestral' ? 2 : 1);
+  if (offer.organization === 'a-classificar') return reportedStageCount(offer) ?? 0;
+  const perTerm = stagesPerTerm(offer);
+  if (perTerm === undefined) return 0;
+  return perTerm * (offer.organization === 'semestral' ? 2 : 1);
 }
 
 export function stageCycle(offer: CalendarOffer): string | undefined {

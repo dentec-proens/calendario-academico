@@ -50,7 +50,12 @@ const settings: (AssessmentSettings & { year: number })[] = [2027, 2028].flatMap
             organization,
             ...(organization === 'semestral' && total === 3
               ? {}
-              : { stages: { perTerm: total / (organization === 'semestral' ? 2 : 1) } }),
+              : {
+                  stages: {
+                    status: 'defined',
+                    perTerm: total / (organization === 'semestral' ? 2 : 1),
+                  },
+                }),
           };
         }),
       }),

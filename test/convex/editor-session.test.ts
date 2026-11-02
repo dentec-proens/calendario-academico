@@ -191,7 +191,7 @@ test('removing the last period is saved and leaves the unchanged stages to revie
           ],
           offers: created.state.offers.map((offer) => ({
             ...offer,
-            stages: { perTerm: 2 as const },
+            stages: { status: 'defined' as const, perTerm: 2 as const },
           })),
           events: [1, 2].map((number): CalendarEvent => ({
             id: `stage-${number}`,

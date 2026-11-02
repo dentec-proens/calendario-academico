@@ -41,14 +41,14 @@ const state: ActivityState = {
       kind: 'integrado' as const,
       delivery: 'a-conferir' as const,
       organization: 'anual' as const,
-      stages: { perTerm: 4 },
+      stages: { status: 'defined' as const, perTerm: 4 },
     },
     {
       id: 'graduacao',
       kind: 'graduacao' as const,
       delivery: 'a-conferir' as const,
       organization: 'anual' as const,
-      stages: { perTerm: 2 },
+      stages: { status: 'defined' as const, perTerm: 2 },
     },
   ],
 };
@@ -62,6 +62,7 @@ test('cleared offer does not inherit the old shared count or affect another offe
         { graduacao: 2 }[offer.id] === undefined
           ? undefined
           : {
+              status: 'defined' as const,
               perTerm:
                 Number({ graduacao: 2 }[offer.id]) / (offer.organization === 'semestral' ? 2 : 1),
             },
@@ -80,7 +81,10 @@ test('cleared offer does not inherit the old shared count or affect another offe
         stages:
           {}[offer.id] === undefined
             ? undefined
-            : { perTerm: Number({}[offer.id]) / (offer.organization === 'semestral' ? 2 : 1) },
+            : {
+                status: 'defined' as const,
+                perTerm: Number({}[offer.id]) / (offer.organization === 'semestral' ? 2 : 1),
+              },
       })),
     }).filter((r) => r.id.startsWith('stage-')).length,
     0,
@@ -128,6 +132,7 @@ test('different quantities of manual assessment stages coexist by offer', () => 
         { integrado: 3, graduacao: 2 }[offer.id] === undefined
           ? undefined
           : {
+              status: 'defined' as const,
               perTerm:
                 Number({ integrado: 3, graduacao: 2 }[offer.id]) /
                 (offer.organization === 'semestral' ? 2 : 1),

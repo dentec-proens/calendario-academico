@@ -173,8 +173,8 @@ export function conflictingLinks(): PendingLinksFixture {
     year: 2027,
     campus: 'Campus sintético de conflitos',
     offers: [
-      { ...offer('integrado'), organization: 'anual', stages: { perTerm: 4 } },
-      { ...offer('subsequente'), organization: 'anual', stages: { perTerm: 2 } },
+      { ...offer('integrado'), organization: 'anual', stages: { status: 'defined', perTerm: 4 } },
+      { ...offer('subsequente'), organization: 'anual', stages: { status: 'defined', perTerm: 2 } },
     ],
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,

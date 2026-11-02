@@ -33,7 +33,7 @@ function calendar(): ActivityState {
         kind: 'integrado' as const,
         delivery: 'a-conferir' as const,
         organization: 'anual' as const,
-        stages: { perTerm: 4 },
+        stages: { status: 'defined', perTerm: 4 },
       },
     ],
   };

@@ -21,7 +21,7 @@ for (const width of [1440, 390]) {
           association: { status: 'defined', offers: ['integrado'], term: 'annual' },
         },
       ];
-      record.state.offers[0].stages = { perTerm: 3 };
+      record.state.offers[0].stages = { status: 'defined', perTerm: 3 };
       record.version++;
       await window.publishReviewerCalendar();
     });

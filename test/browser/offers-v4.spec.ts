@@ -106,27 +106,32 @@ for (const width of [1440, 390]) {
         stages,
       })),
     ).toMatchObject([
-      { id: 'integrado', kind: 'integrado', organization: 'anual', stages: { perTerm: 2 } },
+      {
+        id: 'integrado',
+        kind: 'integrado',
+        organization: 'anual',
+        stages: { status: 'defined', perTerm: 2 },
+      },
       {
         id: 'graduacao',
         kind: 'graduacao',
         label: 'Licenciatura em Química',
         organization: 'anual',
-        stages: { perTerm: 3 },
+        stages: { status: 'defined', perTerm: 3 },
       },
       {
         id: 'graduacao-2',
         kind: 'graduacao',
         label: 'Engenharia Elétrica',
         organization: 'semestral',
-        stages: { perTerm: 2 },
+        stages: { status: 'defined', perTerm: 2 },
       },
       {
         id: 'graduacao-3',
         kind: 'graduacao',
         label: 'Tecnologia em Análise de Sistemas',
         organization: 'semestral',
-        stages: { perTerm: 1 },
+        stages: { status: 'defined', perTerm: 1 },
       },
     ]);
     expect(

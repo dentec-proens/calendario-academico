@@ -53,7 +53,7 @@ export function calendarOffersV4Fixture(): CalendarOffersV4Fixture {
         kind: 'integrado',
         delivery: 'a-conferir',
         organization: 'anual',
-        stages: { perTerm: 4 },
+        stages: { status: 'defined', perTerm: 4 },
         scope: { status: 'covered' },
       },
       {
@@ -62,7 +62,7 @@ export function calendarOffersV4Fixture(): CalendarOffersV4Fixture {
         label: 'Licenciatura em Química',
         delivery: 'a-conferir',
         organization: 'anual',
-        stages: { perTerm: 3 },
+        stages: { status: 'defined', perTerm: 3 },
         scope: { status: 'covered' },
       },
       {
@@ -71,7 +71,7 @@ export function calendarOffersV4Fixture(): CalendarOffersV4Fixture {
         label: 'Engenharia Elétrica',
         delivery: 'a-conferir',
         organization: 'semestral',
-        stages: { perTerm: 2 },
+        stages: { status: 'defined', perTerm: 2 },
         scope: { status: 'covered' },
       },
       {
@@ -80,7 +80,7 @@ export function calendarOffersV4Fixture(): CalendarOffersV4Fixture {
         label: 'Tecnologia em Análise de Sistemas',
         delivery: 'a-conferir',
         organization: 'semestral',
-        stages: { perTerm: 1 },
+        stages: { status: 'defined', perTerm: 1 },
         scope: { status: 'covered' },
       },
     ],

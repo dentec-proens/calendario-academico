@@ -128,11 +128,18 @@ export const calendarOffer = v.object({
   label: v.optional(v.string()),
   delivery: v.union(v.literal('presencial'), v.literal('ead'), v.literal('a-conferir')),
   organization,
-  legacyStageCount: v.optional(v.union(v.literal(2), v.literal(3), v.literal(4))),
+  // Reported total without a confirmed cycle, or stages per cycle (plan, section 5.5).
   stages: v.optional(
-    v.object({
-      perTerm: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),
-    }),
+    v.union(
+      v.object({
+        status: v.literal('reported'),
+        count: v.union(v.literal(2), v.literal(3), v.literal(4)),
+      }),
+      v.object({
+        status: v.literal('defined'),
+        perTerm: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),
+      }),
+    ),
   ),
   scope: v.optional(
     v.object({

@@ -246,7 +246,10 @@ test('the free event form opens in the side panel with a labelled offer group', 
       ...offer,
       stages:
         offer.id === 'integrado'
-          ? { perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const) }
+          ? {
+              status: 'defined',
+              perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const),
+            }
           : undefined,
     }));
     record.version++;
@@ -501,7 +504,10 @@ test('a review link to an assessment stage opens it in the combined step and clo
       ...offer,
       stages:
         offer.id === 'integrado'
-          ? { perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const) }
+          ? {
+              status: 'defined',
+              perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const),
+            }
           : undefined,
     }));
     record.version++;

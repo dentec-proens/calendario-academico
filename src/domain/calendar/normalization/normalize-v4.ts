@@ -43,13 +43,11 @@ export function validateOffers(offers: CalendarOffer[]): CalendarOffer[] {
       labels.add(key);
     }
     if (
-      offer.legacyStageCount !== undefined &&
-      (![2, 3, 4].includes(offer.legacyStageCount) ||
-        offer.organization !== 'a-classificar' ||
-        offer.stages !== undefined)
+      offer.stages?.status === 'reported' &&
+      (![2, 3, 4].includes(offer.stages.count) || offer.organization !== 'a-classificar')
     )
-      fail('A quantidade anterior de etapas exige organização a conferir, sem etapas por ciclo.');
-    if (offer.stages) {
+      fail('A quantidade informada de etapas exige organização a conferir, sem etapas por ciclo.');
+    if (offer.stages?.status === 'defined') {
       const allowed =
         offer.organization === 'anual'
           ? [2, 3, 4]

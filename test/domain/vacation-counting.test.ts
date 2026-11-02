@@ -29,7 +29,7 @@ const state = {
       kind: 'integrado' as const,
       delivery: 'a-conferir' as const,
       organization: 'anual' as const,
-      stages: { perTerm: 2 },
+      stages: { status: 'defined' as const, perTerm: 2 },
     },
   ],
 };

@@ -16,10 +16,22 @@ import {
   formatFourCopyMessage,
   readCalendarOfferInput,
 } from '../../src/domain/calendar/normalization/input-v4.ts';
-import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { noticeDestinationIssues } from '../../src/domain/calendar/activities/validation.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { contentAssessment } from '../../src/domain/calendar/readiness.ts';
+import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
+import { stageCount, stageTerm } from '../../src/domain/calendar/offers.ts';
+import {
+  applyOfferOrganization,
+  offerOrganizationDraft,
+  offerOrganizationWarnings,
+} from '../../src/domain/calendar/organization/offers.ts';
+import {
+  normalizeOfferCalendar,
+  offerCalendarContent,
+} from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
+import { convertedState } from '../helpers/v5-conversion.ts';
 import {
   readOracle,
   v4CatalogueRows,
@@ -97,6 +109,20 @@ function expectedNotice(stored: Json, stateOffers: readonly string[]) {
   };
 }
 
+/**
+ * Offer expected for a stored v4 offer (plan, section 5.5): `legacyStageCount` becomes the reported
+ * total and `stages: { perTerm }` the stages per cycle; every other field is kept.
+ */
+function expectedOffer(stored: Json) {
+  const { legacyStageCount, stages, ...rest } = stored as Json & {
+    legacyStageCount?: number;
+    stages?: { perTerm: number };
+  };
+  if (legacyStageCount !== undefined)
+    return { ...rest, stages: { status: 'reported', count: legacyStageCount } };
+  return stages ? { ...rest, stages: { status: 'defined', perTerm: stages.perTerm } } : rest;
+}
+
 /** Applies the manifest backwards: each change restores the field as stored in v4. */
 function revert<T>(conversion: Conversion<T>, root: string): unknown {
   const document = copy(conversion.document) as unknown;
@@ -160,9 +186,16 @@ describe('conversion of every frozen v4 document', () => {
     expect(item.content).toEqual(stored);
     expect(convertContentV5(item.content, context(item))).toEqual(conversion);
     expect(converted.state.schemaVersion).toBe(5);
-    const { events: _before, schemaVersion: _from, ...state } = stored.state;
-    const { events: _after, schemaVersion: _to, ...convertedState } = converted.state;
+    const { events: _before, schemaVersion: _from, offers: storedOffers, ...state } = stored.state;
+    const {
+      events: _after,
+      schemaVersion: _to,
+      offers: convertedOffers,
+      ...convertedState
+    } = converted.state;
     expect(convertedState).toEqual(state);
+    expect(convertedOffers).toEqual(storedOffers.map(expectedOffer));
+    for (const offer of convertedOffers) expect(offer).not.toHaveProperty('legacyStageCount');
     expect(converted.documentSnapshot).toEqual(stored.documentSnapshot);
     expect(converted.catalogueRevision).toBe(stored.catalogueRevision);
     expect(converted.calendarId).toBe(stored.calendarId);
@@ -172,11 +205,18 @@ describe('conversion of every frozen v4 document', () => {
       changes: [{ field: 'schemaVersion', before: 4, after: 5 }],
     });
     expect(stateEntry.forms).toContain('state.schemaVersion:4');
+    const offers = entries.filter((entry) => entry.path.startsWith('content.state.offers'));
     const events = entries.filter((entry) => entry.path.startsWith('content.state.events'));
     const snapshot = entries.filter((entry) =>
       entry.path.startsWith('content.institutionalSnapshot'),
     );
-    expect(events.length + snapshot.length).toBe(entries.length);
+    expect(offers.length + events.length + snapshot.length).toBe(entries.length);
+    // Only offers with stages or a reported total change, each recorded once.
+    expect(offers.map((entry) => entry.id)).toEqual(
+      storedOffers
+        .filter((offer) => offer.stages !== undefined || offer.legacyStageCount !== undefined)
+        .map((offer) => String(offer.id)),
+    );
     expectDatesConverted(
       stored.state.events,
       converted.state.events,
@@ -254,10 +294,13 @@ describe('conversion of every frozen v4 document', () => {
   });
 
   test('every date and catalogue row of the oracles is converted exactly once', () => {
+    const isDate = (entry: ManifestEntry) => !/^\w+\.state(\.offers|$)/.test(entry.path);
     const dates = cases.flatMap((item) => [
-      ...convertContentV5(item.content, context(item))!.manifest.slice(1),
+      ...convertContentV5(item.content, context(item))!.manifest.filter(isDate),
       ...item.submissions.flatMap((submission) =>
-        convertContentV5(submission, { year: item.year, source: 'submission' })!.manifest.slice(1),
+        convertContentV5(submission, { year: item.year, source: 'submission' })!.manifest.filter(
+          isDate,
+        ),
       ),
     ]);
     const stored = cases.flatMap((item) =>
@@ -288,6 +331,18 @@ describe('the conversion refuses what the inventory does not know', () => {
     ['effect beside kind', (c) => void (event(c, 'forms-pit').effect = 'note')],
     ['schema version 3', (c) => void (c.state.schemaVersion = 3)],
     ['undeclared link', (c) => void (event(c, 'forms-pit').requirementId = 'pit-3')],
+    [
+      'reported total beside stages per cycle',
+      (c) => void Object.assign(c.state.offers[0], { stages: { perTerm: 2 }, legacyStageCount: 3 }),
+    ],
+    [
+      'stages already in format 5',
+      (c) => void (c.state.offers[0].stages = { status: 'defined', perTerm: 2 }),
+    ],
+    [
+      'reported total in format 5',
+      (c) => void (c.state.offers[0].stages = { status: 'reported', count: 3 }),
+    ],
     [
       'snapshot with activity',
       (c) => void c.institutionalSnapshot.push({ ...snapshotEvent, activity: {} }),
@@ -511,6 +566,141 @@ describe('notice and destination by offer (plan, section 5.4; phase 2, step 6)',
     expect((all.notice as { admission: Json }).admission.destinations).toEqual(
       content.state.offers.map((offer) => ({ offerId: offer.id, periodId: 'year' })),
     );
+  });
+});
+
+describe('reported stages (plan, section 5.5; phase 2, step 8)', () => {
+  const asState = (item: V4Case, content = item.content) =>
+    ({
+      ...(convertContentV5(content, context(item))!.document as unknown as V4Case['content']).state,
+      year: item.year,
+      campus: item.campus,
+    }) as unknown as ActivityState;
+
+  test.each([2, 3, 4])(
+    'a total of %i kept without cycle becomes reported, recorded in the manifest',
+    (count) => {
+      const item = byName(`Quantidade anterior de ${count} etapas`);
+      const conversion = convertContentV5(item.content, context(item))!;
+      const [offer] = (conversion.document as unknown as V4Case['content']).state.offers;
+      expect(offer).toEqual({
+        id: 'integrado',
+        kind: 'integrado',
+        delivery: 'a-conferir',
+        organization: 'a-classificar',
+        stages: { status: 'reported', count },
+      });
+      expect(conversion.manifest.find((entry) => entry.path === 'content.state.offers[0]')).toEqual(
+        {
+          path: 'content.state.offers[0]',
+          id: 'integrado',
+          forms: [
+            'offer.organization:a-classificar',
+            'offer.stages:absent',
+            `offer.legacyStageCount:${count}`,
+          ],
+          changes: [
+            { field: 'legacyStageCount', before: count },
+            { field: 'stages', after: { status: 'reported', count } },
+          ],
+        },
+      );
+      expect(revert(conversion, 'content')).toEqual(item.content);
+      // The domain reads the same total, still without a cycle, and an unrelated save keeps it.
+      const state = asState(item);
+      expect(stageCount(state.offers[0])).toBe(count);
+      expect(stageTerm(state.offers[0], 1)).toBeUndefined();
+      const stored = state as unknown as Parameters<typeof prepareOfferCalendarSave>[0];
+      const saved = prepareOfferCalendarSave(stored, stored, {
+        storedContent: offerCalendarContent(stored),
+        catalogue: { events: [] },
+        recalculate: false,
+      });
+      expect(saved.content.offers).toEqual(state.offers);
+    },
+  );
+
+  test('stages per cycle become defined, with the same total and cycle of every stage', () => {
+    let checked = 0;
+    for (const item of cases) {
+      const state = asState(item);
+      item.content.state.offers.forEach((stored, index) => {
+        const offer = state.offers[index];
+        const perTerm = (stored.stages as { perTerm?: number } | undefined)?.perTerm;
+        if (perTerm === undefined) return;
+        checked++;
+        expect(offer.stages).toEqual({ status: 'defined', perTerm });
+        const total =
+          stored.organization === 'semestral'
+            ? perTerm * 2
+            : stored.organization === 'anual'
+              ? perTerm
+              : 0;
+        expect(stageCount(offer), `${item.name} ${offer.id}`).toBe(total);
+        for (let n = 1; n <= total; n++)
+          expect(stageTerm(offer, n)).toBe(
+            stored.organization === 'anual' ? 'annual' : n <= perTerm ? 'first' : 'second',
+          );
+      });
+    }
+    expect(checked).toBeGreaterThan(30);
+  });
+
+  test('confirming the organization resolves only count and cycles; stage links stay as in phase 1', () => {
+    const item = byName('Quantidade anterior de 3 etapas');
+    const content = copy(item.content);
+    content.state.events = [1, 2, 3].map((n) => ({
+      id: `old-${n}`,
+      name: `${n}ª etapa preservada`,
+      start: `2027-0${n + 1}-02`,
+      end: `2027-0${n + 1}-12`,
+      kind: 'note',
+      category: 'limite',
+      requirementId: `stage-${n}:integrado`,
+      offers: ['integrado'],
+    }));
+    const state = convertedState({ ...content.state, year: item.year, campus: item.campus });
+    const converted = state as unknown as ActivityState;
+    expect(converted.events.map((event) => event.requirementId)).toEqual([
+      'stage-1:integrado',
+      'stage-2:integrado',
+      'stage-3:integrado',
+    ]);
+    // The reported total still generates its stage rows, so no link waits for review (phase 1).
+    expect(Object.fromEntries(linksToReview(converted))).toEqual({});
+    const draft = offerOrganizationDraft(converted, 'integrado');
+    expect(draft.count).toBe('');
+    expect(draft.stages.slice(0, 3).map((stage) => stage.id)).toEqual(['old-1', 'old-2', 'old-3']);
+    draft.organization = 'anual';
+    draft.count = '2';
+    draft.periods[0] = { sourceId: '', name: 'Ano', start: '2027-02-01', end: '2027-12-17' };
+    draft.stages[0] = { id: 'old-1', start: '2027-02-01', end: '2027-07-09' };
+    draft.stages[1] = { id: 'old-2', start: '2027-07-26', end: '2027-12-17' };
+    // The preview names the surplus stage, which keeps its link to review.
+    expect(offerOrganizationWarnings(converted, 'integrado', draft)).toEqual([
+      {
+        path: 'organization',
+        message: '“3ª etapa preservada” ficará em Vínculo a conferir (Classificação pendente).',
+      },
+    ]);
+    let sequence = 0;
+    const configured = applyOfferOrganization(
+      converted,
+      'integrado',
+      draft,
+      () => `configured-${++sequence}`,
+    );
+    expect(configured.offers[0]).toMatchObject({
+      organization: 'anual',
+      stages: { status: 'defined', perTerm: 2 },
+    });
+    expect(configured.events.map((event) => [event.id, event.requirementId])).toEqual([
+      ['old-1', 'stage-1:integrado'],
+      ['old-2', 'stage-2:integrado'],
+      ['old-3', 'stage-3:integrado'],
+    ]);
+    expect(configured.events[2]).toEqual(converted.events[2]);
+    expect(Object.fromEntries(linksToReview(configured))).toEqual({ 'old-3': 'unclassified' });
   });
 });
 

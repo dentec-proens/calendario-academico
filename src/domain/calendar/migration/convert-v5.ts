@@ -24,6 +24,9 @@
  * explicit list and are flagged in the manifest; the copy of a submission that proves one
  * converts confirmed too (`provenScopes`). A state without offers or an orphan offer stops the
  * conversion (blocking shapes of the inventory). Snapshots keep their scope by offer type.
+ * Slice 4 (step 8): the offer's `legacyStageCount` becomes `stages: { status: 'reported', count }`
+ * and `stages: { perTerm }` becomes `stages: { status: 'defined', perTerm }` (plan, section 5.5);
+ * stage links keep their v4 form until step 9b.
  */
 import {
   inventoryCatalogueRow,
@@ -62,9 +65,14 @@ interface CatalogueRowV4 extends JsonObject {
   code: string;
   kind: KindV4;
 }
+interface OfferV4 extends JsonObject {
+  id: string;
+  stages?: { perTerm: 1 | 2 | 3 | 4 };
+  legacyStageCount?: 2 | 3 | 4;
+}
 interface StateV4 extends JsonObject {
   schemaVersion: 4;
-  offers: { id: string }[];
+  offers: OfferV4[];
   events: DateV4[];
 }
 
@@ -82,7 +90,7 @@ export interface FieldChange {
 export interface ManifestEntry {
   /** Path of the object inside the document, in the inventory notation (`content.state.events[3]`). */
   path: string;
-  /** ID of the date or catalogue row; the calendar ID for the state. */
+  /** ID of the date, offer or catalogue row; the calendar ID for the state. */
   id: string;
   forms: V4Form[];
   link?: LinkShape;
@@ -233,6 +241,46 @@ function scopeReview(
   };
 }
 
+/**
+ * Stages of an offer (plan, section 5.5), in place of the old keys: the total kept while the
+ * organization had no confirmed cycle (`legacyStageCount`) becomes `reported`, and the stages per
+ * cycle become `defined`. The inventory has already refused both together and any other value;
+ * an offer without either is unchanged and has no manifest entry.
+ */
+function convertOffers(
+  offers: readonly OfferV4[],
+  path: string,
+  inventory: Inventory,
+  manifest: ManifestEntry[],
+) {
+  return offers.map((offer, index) => {
+    const { stages, legacyStageCount } = offer;
+    if (stages === undefined && legacyStageCount === undefined) return offer;
+    const next =
+      legacyStageCount === undefined
+        ? { status: 'defined' as const, perTerm: stages!.perTerm }
+        : { status: 'reported' as const, count: legacyStageCount };
+    const converted: JsonObject = {};
+    for (const [key, value] of Object.entries(offer))
+      if (key === 'stages' || key === 'legacyStageCount') {
+        if (!('stages' in converted)) converted.stages = next;
+      } else converted[key] = value;
+    const at = `${path}[${index}]`;
+    manifest.push({
+      path: at,
+      id: offer.id,
+      forms: formsAt(inventory, at),
+      changes: [
+        ...(legacyStageCount === undefined
+          ? []
+          : [{ field: 'legacyStageCount', before: legacyStageCount }]),
+        { field: 'stages', ...(stages === undefined ? {} : { before: stages }), after: next },
+      ],
+    });
+    return converted;
+  });
+}
+
 function convertEvents(
   events: readonly DateV4[],
   stateOffers: readonly string[],
@@ -337,6 +385,7 @@ export function convertContentV5(
       changes: [{ field: 'schemaVersion', before: 4, after: 5 }],
     },
   ];
+  const offers = convertOffers(stored.state.offers, `${source}.state.offers`, inventory, manifest);
   const events = convertEvents(
     stored.state.events,
     stored.state.offers.map((offer) => offer.id),
@@ -356,7 +405,7 @@ export function convertContentV5(
   return {
     document: {
       ...stored,
-      state: { ...stored.state, schemaVersion: 5, events },
+      state: { ...stored.state, schemaVersion: 5, offers, events },
       institutionalSnapshot,
     },
     manifest,

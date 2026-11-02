@@ -25,7 +25,7 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
       kind: 'integrado',
       delivery: 'a-conferir',
       organization: 'anual',
-      stages: { perTerm: 2 },
+      stages: { status: 'defined', perTerm: 2 },
     },
   ];
   const state = {

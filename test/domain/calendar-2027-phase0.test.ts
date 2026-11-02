@@ -20,7 +20,7 @@ const state: ActivityState & { ignoredHistory: string[] } = {
       kind: 'integrado' as const,
       delivery: 'a-conferir' as const,
       organization: 'anual' as const,
-      stages: { perTerm: 4 },
+      stages: { status: 'defined', perTerm: 4 },
     },
   ],
 };
@@ -51,6 +51,7 @@ test('2027 family meeting is pending only for the integrated offer', () => {
               Object.fromEntries(modalities.map((m) => [m, 2]))[kind] === undefined
                 ? undefined
                 : {
+                    status: 'defined',
                     perTerm: Number(Object.fromEntries(modalities.map((m) => [m, 2]))[kind]) / 1,
                   },
           })),

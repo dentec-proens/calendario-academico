@@ -98,7 +98,7 @@ function state(): AnnotatedState {
         kind: 'integrado' as const,
         delivery: 'a-conferir' as const,
         organization: 'anual' as const,
-        stages: { perTerm: 2 },
+        stages: { status: 'defined' as const, perTerm: 2 },
         scope: { status: 'covered', source: 'Referência manual de escopo' },
       },
       {
@@ -106,7 +106,7 @@ function state(): AnnotatedState {
         kind: 'graduacao' as const,
         delivery: 'a-conferir' as const,
         organization: 'semestral' as const,
-        stages: { perTerm: 1 },
+        stages: { status: 'defined' as const, perTerm: 1 },
         scope: { status: 'covered', source: 'Referência manual de escopo' },
       },
     ],
@@ -322,7 +322,7 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
         kind: 'integrado' as const,
         delivery: 'a-conferir' as const,
         organization: 'anual' as const,
-        stages: { perTerm: 2 },
+        stages: { status: 'defined' as const, perTerm: 2 },
       },
     ],
   };

@@ -75,7 +75,10 @@ test('reducing semester stages keeps every binding and leaves excess dates to re
   draft.stages[1].start = civilDate('2027-07-26');
   draft.stages[1].end = civilDate('2027-12-17');
   const next = applyOfferOrganization(state, 'graduacao-2', draft, ids());
-  expect(next.offers.find((offer) => offer.id === 'graduacao-2')?.stages).toEqual({ perTerm: 1 });
+  expect(next.offers.find((offer) => offer.id === 'graduacao-2')?.stages).toEqual({
+    status: 'defined',
+    perTerm: 1,
+  });
   expect(
     next.events
       .filter((event) => event.requirementId?.endsWith(':graduacao-2'))
@@ -195,7 +198,7 @@ test('adding an opaque offer identity keeps earlier scopes and creates its own p
   Object.assign(draft.stages[1], { start: civilDate('2027-07-26'), end: civilDate('2027-12-17') });
   const previousIds = offerIds(state);
   const next = applyOfferOrganization(state, newOffer.id, draft, ids(), newOffer);
-  expect(next.offers.at(-1)).toEqual({ ...newOffer, stages: { perTerm: 1 } });
+  expect(next.offers.at(-1)).toEqual({ ...newOffer, stages: { status: 'defined', perTerm: 1 } });
   // Neither extended nor confirmed (plan, section 5.3).
   expect(next.events.find((event) => event.id === 'earlier-global')?.scope).toEqual({
     offers: previousIds,
@@ -226,7 +229,7 @@ test('splitting a shared period remaps only the destination of the reorganized o
         label: 'Curso A',
         delivery: 'a-conferir',
         organization: 'anual',
-        stages: { perTerm: 2 },
+        stages: { status: 'defined', perTerm: 2 },
       },
       {
         id: 'graduacao-2',
@@ -234,7 +237,7 @@ test('splitting a shared period remaps only the destination of the reorganized o
         label: 'Curso B',
         delivery: 'a-conferir',
         organization: 'anual',
-        stages: { perTerm: 2 },
+        stages: { status: 'defined', perTerm: 2 },
       },
     ],
     periods: [

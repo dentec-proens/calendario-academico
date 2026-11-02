@@ -11,21 +11,21 @@ const offers: CalendarOffer[] = [
     kind: 'graduacao',
     delivery: 'presencial',
     organization: 'anual',
-    stages: { perTerm: 2 },
+    stages: { status: 'defined', perTerm: 2 },
   },
   {
     id: 'curso-b',
     kind: 'graduacao',
     delivery: 'ead',
     organization: 'anual',
-    stages: { perTerm: 2 },
+    stages: { status: 'defined', perTerm: 2 },
   },
   {
     id: 'especializacao',
     kind: 'posgraduacao',
     delivery: 'presencial',
     organization: 'anual',
-    stages: { perTerm: 2 },
+    stages: { status: 'defined', perTerm: 2 },
   },
 ];
 const state: ActivityState = {

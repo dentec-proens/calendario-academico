@@ -42,7 +42,7 @@ test('definitive release requires every reviewed criterion, current versions and
           kind: 'integrado' as const,
           delivery: 'a-conferir' as const,
           organization: 'anual' as const as 'anual' | 'semestral' | 'a-classificar',
-          stages: { perTerm: 4 },
+          stages: { status: 'defined' as const, perTerm: 4 },
           scope: {
             status: 'covered' as const,
           },
@@ -284,7 +284,7 @@ test('a single linked deadline cannot satisfy every assessment stage or semester
         kind: 'integrado' as const,
         delivery: 'a-conferir' as const,
         organization: 'semestral' as const,
-        stages: { perTerm: 2 },
+        stages: { status: 'defined' as const, perTerm: 2 },
       },
     ],
   };

@@ -4,7 +4,7 @@ import type {
   AssessmentSettings,
   CalendarOffer,
 } from '../model.ts';
-import { calendarOffers, stageCount, stageInTerm, stageTerm } from '../offers.ts';
+import { calendarOffers, stageCount, stageInTerm, stagesPerTerm, stageTerm } from '../offers.ts';
 import type { ActivityGroup, ActivityVariant } from './metadata.ts';
 
 /** Position of one generated row: an offer's assessment stage, an academic cycle or a semester. */
@@ -110,7 +110,7 @@ function slotsOf(basis: RepeatBasis, state: AssessmentSettings): [Slot, string][
               n,
               number:
                 offer.organization === 'semestral'
-                  ? stageInTerm(n, offer.stages!.perTerm).number
+                  ? stageInTerm(n, stagesPerTerm(offer)!).number
                   : n,
               offer,
               stages: stageCount(offer),

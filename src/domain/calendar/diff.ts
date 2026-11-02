@@ -59,8 +59,7 @@ export const fieldLabels = {
     label: 'Nome da oferta',
     delivery: 'Modo de oferta',
     organization: 'Organização',
-    legacyStageCount: 'Quantidade anterior de etapas',
-    stages: 'Etapas por período',
+    stages: 'Etapas de avaliação',
     scope: 'Escopo da norma',
     intake: 'Ingresso de estudantes',
     organizationBasis: 'Fundamento da organização',
@@ -530,6 +529,10 @@ export function describeValue(field: string, value: unknown, state?: ActivitySta
   if (typeof value === 'object') {
     const record = value as Record<string, unknown>;
     if (field === 'notice.admission') return admissionDescription(record, state);
+    if (field === 'stages' && record.status === 'reported')
+      return `${String(record.count)} etapas informadas; ciclos a conferir`;
+    if (field === 'stages' && record.status === 'defined')
+      return `${String(record.perTerm)} por ciclo`;
     if (field === 'association')
       return record.status === 'defined'
         ? `${describeValue('offers', record.offers, state)} · ${termLabels[record.term as AcademicTerm] ?? String(record.term)}`

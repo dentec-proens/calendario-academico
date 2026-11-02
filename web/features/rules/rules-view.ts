@@ -68,7 +68,7 @@ export function rulesView(year: number) {
       kind,
       delivery: 'a-conferir',
       organization: 'anual',
-      stages: { perTerm: 2 },
+      stages: { status: 'defined', perTerm: 2 },
     };
     return policy.excludes(offer) ? offer : { ...offer, scope: { status: 'covered' } };
   });

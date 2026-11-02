@@ -36,6 +36,7 @@ import {
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { rules as policyRules } from '../../src/domain/policies/consup-292-2027/requirements.ts';
 import { readOracle, v4CatalogueRows, v4Cases, type V4Case } from '../helpers/v4-fixtures.ts';
+import { convertedContent } from '../helpers/v5-conversion.ts';
 
 const repository = resolve(import.meta.dirname, '../..');
 const cases = v4Cases();
@@ -163,8 +164,9 @@ describe('frozen declarations', () => {
   test('agree with the v4 checklist on every link it generates', () => {
     let checked = 0;
     for (const item of cases) {
+      // The code reads the current format: the offers' stages are converted (step 8).
       const state = {
-        ...item.content.state,
+        ...convertedContent(item).state,
         year: item.year,
         campus: item.campus,
       } as unknown as ActivityState;

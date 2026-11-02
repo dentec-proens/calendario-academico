@@ -8,6 +8,7 @@ import {
   type CalendarOffer,
   type CalendarPeriod,
   type IntakeConfiguration,
+  type OfferStages,
   type VacationPeriods,
 } from '../model.ts';
 import { invalidCalendar as fail } from './input.ts';
@@ -47,14 +48,22 @@ function choice<const T extends string>(value: unknown, choices: readonly T[], m
   return choices.find((candidate) => candidate === value) ?? fail(message);
 }
 const term = (value: unknown) => choice(value, academicTerms, 'Ciclo letivo inválido.');
+/** Reported total without a confirmed cycle, or stages per cycle (plan, section 5.5). */
+function offerStages(value: unknown): OfferStages {
+  const row = calendarObject(value);
+  const status = choice(row.status, ['reported', 'defined'], 'Etapas da oferta inválidas.');
+  return status === 'reported'
+    ? {
+        status,
+        count:
+          ([2, 3, 4] as const).find((count) => count === row.count) ??
+          fail('Quantidade informada de etapas inválida.'),
+      }
+    : { status, perTerm: number(row.perTerm) };
+}
 function offer(value: unknown): CalendarOffer {
   const row = calendarObject(value);
   const organization = choice(row.organization, organizations, 'Organização da oferta inválida.');
-  const legacyStageCount =
-    row.legacyStageCount === undefined
-      ? undefined
-      : (([2, 3, 4] as const).find((count) => count === row.legacyStageCount) ??
-        fail('Quantidade anterior de etapas inválida.'));
   const intake: CalendarOffer['intake'] = row.intake === undefined ? undefined : {};
   if (intake)
     for (const [key, raw] of Object.entries(calendarObject(row.intake))) {
@@ -73,14 +82,11 @@ function offer(value: unknown): CalendarOffer {
     kind: choice(row.kind, modalityIds, 'Tipo de oferta inválido.'),
     delivery: choice(row.delivery, ['presencial', 'ead', 'a-conferir'], 'Modo da oferta inválido.'),
     organization,
-    ...(legacyStageCount === undefined ? {} : { legacyStageCount }),
     ...(row.label === undefined ? {} : { label: text(row.label) }),
     ...(row.organizationBasis === undefined
       ? {}
       : { organizationBasis: text(row.organizationBasis) }),
-    ...(row.stages === undefined
-      ? {}
-      : { stages: { perTerm: number(calendarObject(row.stages).perTerm) } }),
+    ...(row.stages === undefined ? {} : { stages: offerStages(row.stages) }),
     ...(row.scope === undefined
       ? {}
       : {

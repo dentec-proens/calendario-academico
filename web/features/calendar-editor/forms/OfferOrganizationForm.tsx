@@ -20,7 +20,13 @@ import {
 } from '#src/domain/calendar/organization/offers.ts';
 import { configureOfferMetadata } from '#src/domain/calendar/commands/organization.ts';
 import { validateOffers } from '#src/domain/calendar/normalization/normalize-v4.ts';
-import { nextOfferId, offerLabel, stageCount } from '#src/domain/calendar/offers.ts';
+import {
+  nextOfferId,
+  offerLabel,
+  reportedStageCount,
+  stageCount,
+  stagesPerTerm,
+} from '#src/domain/calendar/offers.ts';
 import type {
   CalendarOffer,
   OfferDelivery,
@@ -283,7 +289,8 @@ export default function OfferOrganizationForm({
   const allowedCounts: readonly number[] = semestral ? [1, 2] : assessmentStageCounts;
   const validCount = allowedCounts.includes(perTerm);
   const count = validCount ? perTerm * (semestral ? 2 : 1) : 0;
-  const savedCount = savedOffer?.stages?.perTerm;
+  const savedCount = savedOffer && stagesPerTerm(savedOffer);
+  const reportedCount = savedOffer && reportedStageCount(savedOffer);
   const savedTotal = savedOffer ? stageCount(savedOffer) : 0;
   const unclassified = state.periods.filter((period) => period.association?.status !== 'defined');
   const datedStages = values.stages
@@ -355,10 +362,10 @@ export default function OfferOrganizationForm({
       <div className="offer-organization-heading">
         <div className="offer-organization-title">
           <h4 id={`${prefix}-heading`}>{label}</h4>
-          {savedOffer?.legacyStageCount !== undefined && (
-            <p className="help" data-legacy-stage-count>
-              {savedOffer.legacyStageCount} etapas do formato anterior preservadas. Confirme a
-              organização e a quantidade por ciclo para classificá-las.
+          {reportedCount !== undefined && (
+            <p className="help" data-reported-stages>
+              {reportedCount} etapas informadas, sem ciclo confirmado. Confirme a organização e a
+              quantidade por ciclo para classificá-las.
             </p>
           )}
           {(included || dirty) && (
@@ -369,8 +376,8 @@ export default function OfferOrganizationForm({
               role="status"
             >
               {!validCount
-                ? savedOffer?.legacyStageCount !== undefined
-                  ? 'Organização e etapas por ciclo a definir; quantidade anterior preservada.'
+                ? reportedCount !== undefined
+                  ? 'Organização e etapas por ciclo a definir; quantidade informada preservada.'
                   : 'Etapas pendentes: defina a quantidade e as datas.'
                 : datedStages < count
                   ? `Etapas pendentes: datas de ${datedStages} de ${count} etapas definidas.`
@@ -419,8 +426,8 @@ export default function OfferOrganizationForm({
                   ? savedOffer.organization === 'semestral'
                     ? `${savedCount} etapa${savedCount === 1 ? '' : 's'} por semestre (${savedTotal} no ano)`
                     : `${savedCount} etapas no ano`
-                  : savedOffer.legacyStageCount !== undefined
-                    ? `${savedOffer.legacyStageCount} etapas anteriores preservadas; ciclos a conferir`
+                  : reportedCount !== undefined
+                    ? `${reportedCount} etapas informadas; ciclos a conferir`
                     : 'Etapas a definir'}
               </li>
             </ul>

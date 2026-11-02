@@ -18,7 +18,7 @@ test('the rules page shows the applicability the editor computes for each offer'
         kind,
         delivery: 'a-conferir',
         organization: 'anual',
-        stages: { perTerm: 2 },
+        stages: { status: 'defined', perTerm: 2 },
         scope: { status: 'covered' },
       })),
     };
@@ -99,6 +99,7 @@ test('applicability per offer does not depend on organisation or stage count', (
               delivery: 'a-conferir',
               organization: organization[index],
               stages: {
+                status: 'defined',
                 perTerm: organization[index] === 'semestral' ? semesterStages : annualStages,
               },
               scope: { status: 'covered' },

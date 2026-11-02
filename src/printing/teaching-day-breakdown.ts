@@ -101,7 +101,7 @@ export function teachingDayBreakdown(
   const stageRows = stages.map((range, i) => {
     const term = offer ? stageTerm(offer, i + 1) : undefined;
     const label =
-      offer?.organization === 'semestral' && offer.stages
+      offer?.organization === 'semestral' && offer.stages?.status === 'defined'
         ? `${stageInTerm(i + 1, offer.stages.perTerm).number}ª etapa — ${term ? termLabels[term] : 'ciclo a conferir'}`
         : `${i + 1}ª etapa — ${offer ? (stageCycle(offer) ?? 'ciclo a conferir') : 'ciclo a conferir'}`;
     const item = row(label, range);

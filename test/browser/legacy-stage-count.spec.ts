@@ -4,7 +4,7 @@ import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390])
   for (const count of [2, 3, 4] as const)
-    test(`historical total ${count} requires explicit cycle configuration at ${width}px`, async ({
+    test(`reported total ${count} requires explicit cycle configuration at ${width}px`, async ({
       page,
       fixtureServer,
     }) => {
@@ -14,8 +14,7 @@ for (const width of [1440, 390])
       await page.evaluate((count) => {
         const { record } = window.editorTest;
         record.state.offers[0].organization = 'a-classificar';
-        delete record.state.offers[0].stages;
-        record.state.offers[0].legacyStageCount = count;
+        record.state.offers[0].stages = { status: 'reported', count };
         record.state.events = Array.from({ length: count }, (_, index) => ({
           id: `preserved-stage-${index + 1}`,
           name: `${index + 1}ª etapa preservada`,
@@ -30,9 +29,12 @@ for (const width of [1440, 390])
         return window.publishReviewerCalendar();
       }, count);
       await selectEditorSection(page, 'periods');
-      await expect(page.locator('[data-legacy-stage-count]')).toContainText(
-        `${count} etapas do formato anterior preservadas`,
+      await expect(page.locator('[data-reported-stages]')).toContainText(
+        `${count} etapas informadas, sem ciclo confirmado`,
       );
+      await expect(
+        page.locator('.offer-organization[data-offer="integrado"] .offer-tags'),
+      ).toContainText(`${count} etapas informadas; ciclos a conferir`);
       await page.locator('[data-edit-organization="integrado"]').click();
       await expect(page.locator('#offer-integrado-organization [aria-checked="true"]')).toHaveCount(
         0,
@@ -46,10 +48,9 @@ for (const width of [1440, 390])
       await expect(page.locator('#offer-integrado-apply')).toBeEnabled();
       await page.locator('#offer-integrado-apply').click();
       const saved = await savedState(page);
-      expect(saved.state.offers[0]).not.toHaveProperty('legacyStageCount');
       expect(saved.state.offers[0]).toMatchObject({
         organization: 'anual',
-        stages: { perTerm: count },
+        stages: { status: 'defined', perTerm: count },
       });
-      await expect(page.locator('[data-legacy-stage-count]')).toHaveCount(0);
+      await expect(page.locator('[data-reported-stages]')).toHaveCount(0);
     });

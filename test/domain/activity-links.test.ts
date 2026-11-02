@@ -79,7 +79,9 @@ test('unchanged date: never refused for a conflict, which becomes a review reaso
   const reduced = {
     ...state,
     offers: state.offers.map((offer) =>
-      offer.id === 'integrado' ? { ...offer, stages: { perTerm: 3 } } : offer,
+      offer.id === 'integrado'
+        ? { ...offer, stages: { status: 'defined' as const, perTerm: 3 } }
+        : offer,
     ),
     periods: state.periods.map((period) => ({ ...period, end: civilDate('2027-11-30') })),
   };
@@ -123,7 +125,11 @@ test('a generated activity of another offer does not cover the date: classificat
     ...annual,
     offers: state.offers.map((offer) =>
       offer.id === 'subsequente'
-        ? { ...offer, organization: 'semestral' as const, stages: { perTerm: 1 } }
+        ? {
+            ...offer,
+            organization: 'semestral' as const,
+            stages: { status: 'defined' as const, perTerm: 1 },
+          }
         : offer,
     ),
   };

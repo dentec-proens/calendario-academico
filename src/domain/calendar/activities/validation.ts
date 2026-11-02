@@ -115,7 +115,7 @@ export function validateActivityRecord(
     const offer = offerFor(state, modality);
     if (!offer) throw new DomainError('A oferta da etapa de avaliação não pertence ao calendário.');
     const issue =
-      offer.organization === 'a-classificar' && offer.legacyStageCount === undefined
+      offer.organization === 'a-classificar' && offer.stages?.status !== 'reported'
         ? ''
         : assessmentIntervalIssue(
             periodsForOffer({ ...state, periods: state.periods }, modality),

@@ -120,7 +120,7 @@ test('confirming the organization of a draft offer is saved and keeps the links 
   const saved = await save(configured);
   expect(saved.state.offers.find((offer) => offer.id === 'graduacao')).toMatchObject({
     organization: 'semestral',
-    stages: { perTerm: 1 },
+    stages: { status: 'defined', perTerm: 1 },
   });
   for (const event of record.state.events)
     expect(saved.state.events.find((item) => item.id === event.id)?.requirementId).toBe(
@@ -192,7 +192,7 @@ test('preexisting conflicts save; edits that create one are refused', async () =
     {
       ...vacations.state,
       offers: vacations.state.offers.map((offer) =>
-        offer.id === 'integrado' ? { ...offer, stages: { perTerm: 3 } } : offer,
+        offer.id === 'integrado' ? { ...offer, stages: { status: 'defined', perTerm: 3 } } : offer,
       ),
     },
     vacations.version,

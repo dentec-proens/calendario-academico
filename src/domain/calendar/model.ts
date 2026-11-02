@@ -13,13 +13,18 @@ export interface CalendarOffer {
   label?: string;
   delivery: OfferDelivery;
   organization: Organization;
-  stages?: { perTerm: number };
-  /** Previous annual ordinals, retained only while organization has no classified cycle. */
-  legacyStageCount?: 2 | 3 | 4;
+  stages?: OfferStages;
   scope?: { status: 'covered' | 'own-regulation' };
   intake?: Partial<Record<AcademicTerm, IntakeConfiguration>>;
   organizationBasis?: string;
 }
+/**
+ * Assessment stages of an offer (plan, section 5.5): a total reported while the organization has
+ * no confirmed cycle (`reported`, only with `a-classificar`), or the stages of each cycle of a
+ * defined organization (`defined`). Confirming the organization turns `reported` into `defined`.
+ */
+export type OfferStages =
+  { status: 'reported'; count: 2 | 3 | 4 } | { status: 'defined'; perTerm: number };
 export type PeriodAssociation =
   { status: 'defined'; offers: string[]; term: AcademicTerm } | { status: 'a-classificar' };
 /** Stored format version of a calendar's content (`calendarContents.state`). */

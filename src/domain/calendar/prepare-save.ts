@@ -10,7 +10,7 @@ import {
   offerOrganizationIssues,
 } from './organization/offers.ts';
 import { normalizeOfferCalendar, offerCalendarContent } from './normalization/normalize-v4.ts';
-import { kinds } from './offers.ts';
+import { kinds, reportedStageCount, stagesPerTerm } from './offers.ts';
 
 type OfferState = CalendarContent & { year: number; campus?: string };
 
@@ -32,12 +32,16 @@ export function prepareOfferCalendarSave<E extends DateFields & { active: boolea
   let state = normalizeOfferCalendar({ ...proposed, campus: previous.campus ?? '' }, previous);
   for (const offer of state.offers) {
     const old = previous.offers.find((item) => item.id === offer.id);
-    if (offer.legacyStageCount !== undefined && offer.legacyStageCount !== old?.legacyStageCount)
-      invalidCalendar('A quantidade anterior de etapas não pode ser criada nem alterada.');
-    if (old?.legacyStageCount !== undefined && offer.legacyStageCount === undefined) {
-      if (offer.organization === 'a-classificar' || !offer.stages)
+    // A reported total is never created or changed here; only confirming the organization, with
+    // its cycles and stages, resolves it (plan, section 5.5).
+    const reported = reportedStageCount(offer);
+    const previousReported = old && reportedStageCount(old);
+    if (reported !== undefined && reported !== previousReported)
+      invalidCalendar('A quantidade informada de etapas não pode ser criada nem alterada.');
+    if (previousReported !== undefined && reported === undefined) {
+      if (offer.organization === 'a-classificar' || stagesPerTerm(offer) === undefined)
         invalidCalendar(
-          'Configure a organização e todas as etapas antes de retirar a quantidade anterior.',
+          'Configure a organização e todas as etapas antes de retirar a quantidade informada.',
         );
       const issues = offerOrganizationIssues(
         previous,

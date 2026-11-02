@@ -47,7 +47,16 @@ const archive = JSON.parse(
   v4Settings: Omit<AssessmentSettings, 'year'>[];
   v4Catalogues: Record<string, unknown>;
 };
-const referenceSettings = archive.v4Settings;
+// The archive keeps the v4 offer stages; the code reads `{ status: 'defined', perTerm }` (step 8).
+const referenceSettings = archive.v4Settings.map((settings) => ({
+  ...settings,
+  offers: settings.offers.map((offer) => {
+    const stored = offer.stages as { perTerm: number } | undefined;
+    return stored
+      ? { ...offer, stages: { status: 'defined' as const, perTerm: stored.perTerm } }
+      : offer;
+  }),
+}));
 
 /**
  * Requirement fields left out of the hash because they act only through `byModality`. Every other

@@ -39,7 +39,7 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
         kind: 'integrado',
         delivery: 'a-conferir',
         organization: 'anual',
-        stages: { perTerm: 4 },
+        stages: { status: 'defined', perTerm: 4 },
       },
       { id: 'graduacao', kind: 'graduacao', delivery: 'a-conferir', organization: 'semestral' },
     ],

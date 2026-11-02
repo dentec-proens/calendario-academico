@@ -172,7 +172,10 @@ test('metadata rejects an activity for another modality before applying or savin
       ...offer,
       stages:
         offer.id === 'graduacao'
-          ? { perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const) }
+          ? {
+              status: 'defined',
+              perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const),
+            }
           : undefined,
     }));
     record.version++;
@@ -305,7 +308,10 @@ test('stage editing and activity changes always reveal the same draft in its des
       ...offer,
       stages:
         offer.id === 'integrado'
-          ? { perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const) }
+          ? {
+              status: 'defined',
+              perTerm: offer.organization === 'semestral' ? (1 as const) : (2 as const),
+            }
           : undefined,
     }));
     // A stage inside its cycle; one out of it would be under “Vínculo a conferir”.
