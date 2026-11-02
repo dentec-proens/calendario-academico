@@ -106,11 +106,7 @@
       "destination": "/index.html"
     },
     {
-      "source": "/calendarios/:calendarId/eventos",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/calendarios/:calendarId/atividades-campus",
+      "source": "/calendarios/:calendarId/atividades",
       "destination": "/index.html"
     },
     {

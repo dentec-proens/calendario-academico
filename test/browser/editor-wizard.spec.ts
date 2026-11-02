@@ -10,7 +10,7 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#record-title')).toBeVisible();
-    await expect(page.locator('.editor-step-number')).toHaveCount(7);
+    await expect(page.locator('.editor-step-number')).toHaveCount(6);
     await expect(page.locator('.autosave-panel')).toBeHidden();
     await expect(page.locator('#total')).toHaveCount(0);
     await expect(page.locator('#editor-section-title')).toHaveText('Semana letiva');
@@ -41,7 +41,7 @@ for (const width of [1440, 390]) {
       .click();
     await expect(page).toHaveURL(/\/periodos$/);
     await expect(page.locator('#editor-section-title')).toBeFocused();
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 7');
+    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 6');
     await expect(page.locator('#editor-section-title')).toHaveText('Organização por oferta');
     await expect(page.locator('#assessment-area')).toBeVisible();
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para sábados letivos');
@@ -55,28 +55,21 @@ for (const width of [1440, 390]) {
     await configureOffer(page, 'integrado', '2027-03-01', '2027-03-26');
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/dias$/);
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 3 de 7');
+    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 3 de 6');
     await expect(page.getByRole('heading', { name: /Sábados letivos/ })).toHaveCount(1);
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para férias docentes');
     await expect(page.locator('#vacation-form')).toHaveCount(0);
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/ferias$/);
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 4 de 7');
+    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 4 de 6');
     await expect(page.getByRole('heading', { name: /férias docentes/i })).toHaveCount(1);
-    await expect(page.locator('#editor-continue')).toHaveText(
-      'Continuar para atividades da resolução',
-    );
+    await expect(page.locator('#editor-continue')).toHaveText('Continuar para atividades');
     await expect(page.locator('#saturday-form')).toHaveCount(0);
     await page.locator('#editor-continue').click();
-    await expect(page).toHaveURL(/\/eventos$/);
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 5 de 7');
-    await expect(page.locator('#editor-continue')).toHaveText(
-      'Continuar para atividades do campus',
-    );
-    await page.locator('#editor-continue').click();
-    await expect(page).toHaveURL(/\/atividades-campus$/);
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 6 de 7');
-    await expect(page.locator('#new-event')).toBeVisible();
+    await expect(page).toHaveURL(/\/atividades$/);
+    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 5 de 6');
+    await expect(page.locator('#new-event')).toHaveText('Nova data do campus');
+    await expect(page.locator('#editor-continue')).toHaveText('Continuar para revisão e conclusão');
     await selectEditorSection(page, 'issues');
     await expect(page.locator('#total')).toBeVisible();
     await expect(
@@ -137,7 +130,7 @@ test('secondary actions support the keyboard and the mobile step picker follows 
   await page.keyboard.press('Enter');
   await expect(page.locator('[data-view="events"]')).toBeVisible();
   await page.locator('[data-view="events"]').click();
-  await expect(steps.locator('summary')).toContainText('Etapa 5 de 7');
+  await expect(steps.locator('summary')).toContainText('Etapa 5 de 6');
   await expect(steps).not.toHaveAttribute('open');
   await expect(page.locator('#editor-section-title')).toBeFocused();
 });

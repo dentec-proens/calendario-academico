@@ -726,7 +726,7 @@
 }
 .activity-more-filters > div {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: 0 0.75rem;
   padding-top: 0.5rem;
 }
@@ -1004,12 +1004,6 @@ fieldset.event-fields {
   }
   .activity-row-meta {
     justify-content: flex-start;
-  }
-}
-
-@media print {
-  #calendar-records {
-    display: none;
   }
 }
 
@@ -1344,5 +1338,35 @@ fieldset.event-fields {
   .offer-period-fields > :not(legend),
   .offer-stage-fields > :not(legend) {
     margin-left: 9rem;
+  }
+}
+
+/* Activities step: the view spans the row; the special groups follow the subjects. */
+.activity-mode {
+  grid-column: 1 / -1;
+}
+.activity-row-note {
+  color: var(--ui-muted);
+  overflow-wrap: anywhere;
+}
+.activity-base > summary {
+  cursor: pointer;
+  list-style-position: inside;
+}
+.activity-base > summary > h4 {
+  display: inline;
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+.activity-base > .activity-rows {
+  margin-top: 0.25rem;
+}
+.calendar-dates-link {
+  margin-block: 1rem 0;
+}
+@media print {
+  .calendar-dates-link {
+    display: none;
   }
 }

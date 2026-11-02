@@ -3,15 +3,10 @@ import logoUrl from '../../../../assets/printing/ifpr-logo.png?url';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarExport } from '../export/CalendarExportProvider.tsx';
 import '../../../../assets/printing/calendar.css';
-import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
-import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
-import { useEventEditor } from '../events/EventEditorProvider.tsx';
-import EventRecordDetails from '../events/EventRecordDetails.tsx';
+import { Link } from '@tanstack/react-router';
 
 export default function CalendarPreviewSection() {
-  const { state, events, evaluation, record, dirty, readOnly } = useCalendarEditor();
-  const editor = useEventEditor();
-  const activities = new Map(activityChecklist(state).map((item) => [item.id, item.name]));
+  const { state, events, evaluation, record, dirty } = useCalendarEditor();
   const exporting = useCalendarExport();
   return (
     <section id="calendar" className="view">
@@ -45,45 +40,18 @@ export default function CalendarPreviewSection() {
           }}
         />
       </div>
-      <div className="panel" id="calendar-records">
-        <h3>Registros do calendário</h3>
-        <p className="help">
-          Datas institucionais e registros do campus, com vínculo, efeito e ofertas.
-        </p>
-        <ul id="calendar-record-list" className="records">
-          {[...events]
-            .sort((a, b) => a.start.localeCompare(b.start))
-            .map((event) => (
-              <li key={event.id}>
-                <div>
-                  <EventRecordDetails
-                    event={event}
-                    activity={event.requirementId ? activities.get(event.requirementId) : ''}
-                  />
-                  <small>
-                    Ofertas:{' '}
-                    {(event.offers?.length ? event.offers : offerIds(state))
-                      .map((modality) => labelFor(state, modality))
-                      .join(', ')}
-                  </small>
-                </div>
-                {event.institutional ? (
-                  <span className="institution-label">Base PROENS</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="secondary"
-                    data-open-event={event.id}
-                    disabled={readOnly}
-                    onClick={() => editor.edit(event.id)}
-                  >
-                    Abrir registro
-                  </button>
-                )}
-              </li>
-            ))}
-        </ul>
-      </div>
+      <p className="calendar-dates-link">
+        <Link
+          id="calendar-dates"
+          to="/calendarios/$calendarId/atividades"
+          params={{ calendarId: record.id }}
+          search={(previous) => ({ ...previous, atividadeVisao: 'data' as const })}
+          hashScrollIntoView={false}
+        >
+          Ver por data
+        </Link>{' '}
+        todas as datas do calendário, com vínculo, efeito e ofertas.
+      </p>
     </section>
   );
 }

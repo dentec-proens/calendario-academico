@@ -1,7 +1,7 @@
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 
-/** Main action of the campus activities step, shown beside the step heading. */
+/** Campus date without activity, the main action beside the Activities step heading. */
 export default function NewEventButton() {
   const { readOnly } = useCalendarEditor();
   const editor = useEventEditor();
@@ -14,7 +14,7 @@ export default function NewEventButton() {
       aria-describedby={hasPendingEvent ? 'pending-event-description' : undefined}
       onClick={editor.newEvent}
     >
-      Adicionar novo evento
+      Nova data do campus
     </button>
   );
 }

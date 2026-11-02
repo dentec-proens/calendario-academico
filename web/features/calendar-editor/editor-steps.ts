@@ -29,13 +29,10 @@ export const editorPages = {
     title: 'Férias docentes',
   }),
   events: defineEditorPage('events', {
-    title: 'Atividades da Resolução',
-  }),
-  campus: defineEditorPage('campus', {
-    title: 'Atividades do Campus',
+    title: 'Atividades',
   }),
   history: defineEditorPage('history', {
-    title: 'Atividades da Resolução',
+    title: 'Atividades',
   }),
   issues: defineEditorPage('issues', {
     title: 'Revisão e conclusão',
@@ -53,7 +50,6 @@ export const editorSteps = [
   editorPages.days,
   editorPages.vacations,
   editorPages.events,
-  editorPages.campus,
   editorPages.issues,
 ] as const;
 

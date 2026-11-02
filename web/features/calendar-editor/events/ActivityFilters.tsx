@@ -2,37 +2,60 @@ import { useNavigate } from '@tanstack/react-router';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { activityGroups, useActivitySearch } from './activity-query.ts';
-import { activityViews, useActivityList } from './activity-list.ts';
+import { useActivityList } from './activity-list.ts';
+import { activityViews, originFilters, pendencyFilters } from './activity-step.ts';
+
+type FilterKey =
+  | 'atividadeBusca'
+  | 'atividadeVisao'
+  | 'atividadePendencia'
+  | 'atividadeOferta'
+  | 'atividadeSituacao'
+  | 'atividadeOrigem'
+  | 'atividadeAssunto';
 
 export default function ActivityFilters() {
   const { state, record } = useCalendarEditor();
   const search = useActivitySearch();
   const navigate = useNavigate();
-  function update(
-    key:
-      | 'atividadeBusca'
-      | 'atividadeVisao'
-      | 'atividadeOferta'
-      | 'atividadeSituacao'
-      | 'atividadeAssunto',
-    value: string,
-  ) {
+  function update(key: FilterKey, value: string) {
     void navigate({
-      to: '/calendarios/$calendarId/eventos',
+      to: '/calendarios/$calendarId/atividades',
       params: { calendarId: record.id },
       search: (previous) => ({ ...previous, [key]: value || undefined }),
       replace: key === 'atividadeBusca',
       hashScrollIntoView: false,
     });
   }
-  const { counts } = useActivityList();
-  const extra = [search.atividadeSituacao, search.atividadeOferta, search.atividadeAssunto].filter(
-    Boolean,
-  ).length;
+  const { counts, view } = useActivityList();
+  const extra = [
+    search.atividadeSituacao,
+    search.atividadeOrigem,
+    search.atividadeOferta,
+    search.atividadeAssunto,
+  ].filter(Boolean).length;
   return (
-    <section className="activity-filters" aria-label="Consultar atividades">
+    <section className="activity-filters" aria-label="Consultar atividades e datas">
+      <fieldset id="activity-mode" className="activity-view activity-mode">
+        <legend>Visão</legend>
+        <div className="activity-view-options">
+          {activityViews.map(([id, label]) => (
+            <label key={id}>
+              <input
+                type="radio"
+                name="activity-mode"
+                id={`activity-mode-${id}`}
+                value={id}
+                checked={view === id}
+                onChange={() => update('atividadeVisao', id === 'data' ? id : '')}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <label>
-        Buscar atividade
+        Buscar
         <input
           id="activity-search"
           type="search"
@@ -41,18 +64,18 @@ export default function ActivityFilters() {
           onChange={(event) => update('atividadeBusca', event.target.value)}
         />
       </label>
-      <fieldset id="activity-view" className="activity-view">
-        <legend>Visão</legend>
+      <fieldset id="activity-pendency" className="activity-view">
+        <legend>Pendência</legend>
         <div className="activity-view-options">
-          {activityViews.map(([id, label]) => (
+          {pendencyFilters.map(([id, label]) => (
             <label key={id || 'todas'}>
               <input
                 type="radio"
-                name="activity-view"
-                id={`activity-view-${id || 'todas'}`}
+                name="activity-pendency"
+                id={`activity-pendency-${id || 'todas'}`}
                 value={id}
-                checked={(search.atividadeVisao ?? '') === id}
-                onChange={() => update('atividadeVisao', id)}
+                checked={(search.atividadePendencia ?? '') === id}
+                onChange={() => update('atividadePendencia', id)}
               />
               {label} <span className="activity-view-count">({counts[id]})</span>
             </label>
@@ -63,7 +86,7 @@ export default function ActivityFilters() {
         <summary>Mais filtros{extra ? ` (${extra})` : ''}</summary>
         <div>
           <label>
-            Situação
+            Situação da atividade
             <select
               id="activity-status"
               value={search.atividadeSituacao ?? ''}
@@ -75,6 +98,20 @@ export default function ActivityFilters() {
               <option value="complete">Completo</option>
               <option value="optional">Opcional</option>
               <option value="unconfigured">Aplicação a confirmar</option>
+            </select>
+          </label>
+          <label>
+            Origem
+            <select
+              id="activity-origin"
+              value={search.atividadeOrigem ?? ''}
+              onChange={(event) => update('atividadeOrigem', event.target.value)}
+            >
+              {originFilters.map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
             </select>
           </label>
           <label>

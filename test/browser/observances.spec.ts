@@ -76,7 +76,7 @@ for (const width of [1440, 390]) {
       await window.publishReviewerCalendar();
     });
     await selectCampusEvents(page);
-    await page.locator('#open-orphan-observance-retired-observance').click();
+    await page.locator('#open-observance-retired-observance').click();
     await expect(page.locator('#event-panel')).toContainText('não está disponível');
     await page.locator('#reset-observance-retired-observance').click();
     expect((await savedState(page)).state.observanceDates).toBeUndefined();

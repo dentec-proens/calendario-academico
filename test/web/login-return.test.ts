@@ -3,8 +3,8 @@ import { loginReturnTarget } from '../../src/app/login-return.ts';
 
 describe('return to the requested work page after signing in', () => {
   it.each([
-    '/calendarios/calendar-a/eventos',
-    '/calendarios/calendar-a/eventos#calendario-anterior',
+    '/calendarios/calendar-a/atividades',
+    '/calendarios/calendar-a/atividades#calendario-anterior',
     '/documentos?ano=2027',
     '/documentos/document-a/abrir',
     '/logs',
@@ -26,7 +26,7 @@ describe('return to the requested work page after signing in', () => {
       loginReturnTarget('?retorno=' + encodeURIComponent(path), 'https://portal.example'),
     ).toBeUndefined();
   });
-  it.each(['/logs#calendario-anterior', '/calendarios/calendar-a/eventos#token=secret'])(
+  it.each(['/logs#calendario-anterior', '/calendarios/calendar-a/atividades#token=secret'])(
     'strips unrecognized or misplaced fragments from %s',
     (path) => {
       expect(

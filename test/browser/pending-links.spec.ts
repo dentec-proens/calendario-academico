@@ -28,7 +28,7 @@ for (const width of [1440, 390]) {
     expect(Object.keys(links)).toHaveLength(11);
 
     // An unrelated change is saved with every link.
-    await selectEditorSection(page, 'campus');
+    await selectEditorSection(page, 'events');
     const annual = 'ivaipora-annual-final';
     await page.locator(`[data-open-event="${annual}"]`).click();
     await page.locator(`[data-edit-event="${annual}"]`).click();

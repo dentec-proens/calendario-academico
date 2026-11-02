@@ -289,48 +289,22 @@ const vacations = createRoute({
   component: lazy(() => import('../features/calendar-editor/sections/VacationsSection.tsx')),
   staticData: { title: editorPages.vacations.title },
 });
-/** Links saved while campus activities were a tab of the resolution step keep working. */
-function redirectLegacyTab({
-  params,
-  search,
-}: {
-  params: { calendarId: string };
-  search: { aba?: 'eventos' };
-}) {
-  if (search.aba !== 'eventos') return;
-  throw redirect({
-    to: editorPages.campus.path,
-    params,
-    hash: '',
-    replace: true,
-    search: (previous) => ({ ...previous, aba: undefined }),
-    hashScrollIntoView: false,
-  });
-}
 const events = createRoute({
   getParentRoute: () => editor,
-  path: '/eventos',
-  beforeLoad: redirectLegacyTab,
+  path: '/atividades',
   component: lazy(() => import('../features/calendar-editor/sections/EventsSection.tsx')),
   staticData: { title: editorPages.events.title },
-});
-const campus = createRoute({
-  getParentRoute: () => editor,
-  path: '/atividades-campus',
-  component: lazy(() => import('../features/calendar-editor/sections/CampusSection.tsx')),
-  staticData: { title: editorPages.campus.title },
 });
 const history = createRoute({
   getParentRoute: () => editor,
   path: '/historico',
-  beforeLoad: ({ params, search }) => {
-    redirectLegacyTab({ params, search });
+  beforeLoad: ({ params }) => {
     throw redirect({
       to: editorPages.events.path,
       params,
       hash: '',
       replace: true,
-      search: (previous) => ({ ...previous, aba: undefined }),
+      search: (previous) => previous,
       hashScrollIntoView: false,
     });
   },
@@ -381,7 +355,6 @@ export const routeTree = root.addChildren([
       days,
       vacations,
       events,
-      campus,
       history,
       issues,
       preview,

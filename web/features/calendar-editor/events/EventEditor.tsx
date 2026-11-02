@@ -142,13 +142,7 @@ export default function EventEditor() {
         </button>
       )}
       <h3 id="event-form-title" ref={heading} tabIndex={-1}>
-        {activityRecord
-          ? editor.eventId
-            ? 'Editar período'
-            : 'Novo período'
-          : editor.eventId
-            ? 'Editar evento local'
-            : 'Novo evento local'}
+        {editor.eventId ? 'Editar data' : activityRecord ? 'Adicionar data' : 'Nova data do campus'}
       </h3>
       <fieldset disabled={readOnly || editor.pending}>
         <fieldset className="event-fields">
@@ -418,13 +412,7 @@ export default function EventEditor() {
         </fieldset>
         <FormFeedback error={editor.error} />
         <FormActions preserveOnClose={editor.dirty}>
-          <Button type="submit">
-            {editor.eventId
-              ? 'Aplicar alterações'
-              : activityRecord
-                ? 'Adicionar período'
-                : 'Adicionar evento'}
-          </Button>
+          <Button type="submit">{editor.eventId ? 'Aplicar alterações' : 'Adicionar data'}</Button>
           {editor.dirty && (
             <Button id="discard-event-form" variant="secondary" onClick={editor.discard}>
               Descartar alterações

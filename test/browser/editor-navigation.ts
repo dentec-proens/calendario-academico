@@ -57,18 +57,20 @@ export async function savedState(page: Page) {
   }));
 }
 
-/** Show the campus activities step with the campus events and the Teacher Day. */
+/** Show the Activities step with the campus dates and the base group, where Teacher Day is. */
 export async function selectCampusEvents(page: Page) {
-  await selectEditorSection(page, 'campus');
-  await expect(page.locator('#campus-activities')).toBeVisible();
+  await selectEditorSection(page, 'events');
+  await expect(page.locator('#events')).toBeVisible();
+  if (await page.locator('#base-dates').count()) await openBaseDates(page);
 }
 
 /** Open an activity in the side panel, listing every activity when the filter hides it. */
 export async function openActivity(page: Page, id: string) {
-  if (await page.locator('#campus-activities').isVisible())
-    await selectEditorSection(page, 'events');
+  if (!(await page.locator('#events').isVisible())) await selectEditorSection(page, 'events');
+  if (await page.locator('#activity-mode-data').isChecked())
+    await page.locator('#activity-mode-atividade').check();
   const row = page.locator(`[data-activity-open="${id}"]`);
-  if (!(await row.isVisible())) await page.locator('#activity-view-todas').check();
+  if (!(await row.isVisible())) await page.locator('#activity-pendency-todas').check();
   await row.click();
   await expect(page.locator('#event-panel')).toBeVisible();
 }
@@ -84,4 +86,11 @@ export async function editCampusEvent(page: Page, id: string) {
   await openCampusEvent(page, id);
   await page.locator(`[data-edit-event="${id}"]`).click();
   await expect(page.locator('#event-panel #event-form')).toBeVisible();
+}
+
+/** Expand the institutional base group, collapsed by default, where adjustable dates live. */
+export async function openBaseDates(page: Page) {
+  const base = page.locator('#base-dates');
+  if ((await base.getAttribute('open')) === null) await base.locator(':scope > summary').click();
+  await expect(base).toHaveAttribute('open', '');
 }

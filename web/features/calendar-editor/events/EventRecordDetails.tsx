@@ -24,7 +24,9 @@ export default function EventRecordDetails({
             : 'Sem efeito na contagem'}
       </small>
       {activity !== undefined && (
-        <small>{activity ? `Atividade: ${activity}` : 'Sem vínculo'}</small>
+        <small>
+          {activity ? `Atividade vinculada: ${activity}` : 'Data do campus, sem vínculo'}
+        </small>
       )}
       {source && <small>Fonte: {source}</small>}
       {event.publicationStatus && (

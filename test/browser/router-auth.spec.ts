@@ -8,7 +8,7 @@ test('unauthenticated editor and audit URLs return to login with the requested d
   const origin = new URL(await fixtureServer('router-auth')).origin;
   for (const destination of [
     '/calendarios/calendar-a/historico',
-    '/calendarios/calendar-a/eventos#calendario-anterior',
+    '/calendarios/calendar-a/atividades#calendario-anterior',
     '/logs',
     '/documentos/document-a/abrir',
   ]) {

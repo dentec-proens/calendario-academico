@@ -10,15 +10,18 @@ type Props = Omit<ComponentProps<'button'>, 'children' | 'type' | 'className' | 
   status: ActivityStatus;
   statusLabel?: string;
   dates: string;
+  /** Context shown after the dates, such as the activity or the recorded link of a date. */
+  note?: string;
   selected?: boolean;
 };
 
-/** Shared compact row for resolution activities, assessments and campus records. */
+/** Shared compact row for activities and dates of the Activities step. */
 export default function ActivityRow({
   label,
   status,
   statusLabel = activityStatusLabels[status],
   dates,
+  note,
   selected = false,
   ...props
 }: Props) {
@@ -32,6 +35,7 @@ export default function ActivityRow({
             {statusLabel}
           </span>
           <span>{dates}</span>
+          {note && <span className="activity-row-note">{note}</span>}
         </span>
       </span>
       <ChevronRight className="activity-row-chevron" aria-hidden="true" />

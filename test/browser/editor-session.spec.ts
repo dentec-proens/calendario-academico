@@ -4,7 +4,7 @@ import { test, expect } from './test.ts';
 import type {} from '../fixtures/editor-session-client.ts';
 
 async function editAppliedEvent(page: Page, name = 'Evento aplicado sem confirmação') {
-  await selectEditorSection(page, 'campus');
+  await selectEditorSection(page, 'events');
   await editCampusEvent(page, 'local-event');
   await page.locator('#event-name').fill(name);
   await page.getByRole('button', { name: 'Aplicar alterações', exact: true }).click();

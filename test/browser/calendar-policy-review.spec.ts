@@ -12,6 +12,8 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     await selectEditorSection(page, 'events');
     await openActivity(page, 'enrolment-0');
+    // Without dates the form opens first; the activity view is one step back.
+    await page.locator('#back-to-activity').click();
     const card = page.locator('#event-panel .activity-details');
     await expect(card).toContainText('Técnico integrado: Opcional');
     await expect(card).not.toContainText('Pendente de data e fonte');

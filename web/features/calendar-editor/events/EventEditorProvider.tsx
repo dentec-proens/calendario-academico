@@ -8,8 +8,7 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import { useNavigate, useRouterState } from '@tanstack/react-router';
-import { parseEditorPath, type EditorSection } from '#src/app/routes.ts';
+import { useNavigate } from '@tanstack/react-router';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
 import {
@@ -26,38 +25,20 @@ import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts'
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { editorPages } from '../editor-steps.ts';
-import { resolutionActivities } from './campus-events.ts';
 
-function destination(
-  context: EventContext | null,
-  requirementId: string,
-  activities: ReadonlySet<string>,
-  section: EditorSection | undefined,
-) {
+/** Every date is filled in the Activities step; assessment intervals in their own area. */
+function destination(context: EventContext | null, requirementId: string) {
   const activity = context?.kind === 'activity' ? context.requirementId : requirementId;
   if (stageRequirement(activity)) return { to: editorPages.periods.path, hash: 'assessment-area' };
-  // A form keeps the activities step it was opened from, even when its activity changes.
-  const page =
-    section === 'events' || section === 'campus'
-      ? editorPages[section]
-      : context?.kind === 'activity' && activities.has(context.requirementId)
-        ? editorPages.events
-        : editorPages.campus;
-  return { to: page.path, hash: '' };
+  return { to: editorPages.events.path, hash: '' };
 }
 
 function useController() {
   const { state, institutional, session, record, notify, readOnly, formEpoch } =
     useCalendarEditor();
   const navigate = useNavigate();
-  const pathname = useRouterState({ select: (router) => router.location.pathname });
-  const destinationFor = (next: EventContext | null, requirementId: string, stay = true) =>
-    destination(
-      next,
-      requirementId,
-      resolutionActivities(state),
-      stay ? parseEditorPath(pathname)?.section : undefined,
-    );
+  const destinationFor = (next: EventContext | null, requirementId: string) =>
+    destination(next, requirementId);
   const calendarOfferIds = useMemo(() => state.offers.map((offer) => offer.id), [state.offers]);
   const [context, setContext] = useState<EventContext | null>(null);
   const [open, setOpen] = useState(false);
@@ -84,6 +65,13 @@ function useController() {
     (requirementId: string) => {
       rememberOpener();
       setPanel({ kind: 'activity', requirementId });
+    },
+    [rememberOpener],
+  );
+  const viewEvent = useCallback(
+    (eventId: string) => {
+      rememberOpener();
+      setPanel({ kind: 'event', eventId });
     },
     [rememberOpener],
   );
@@ -119,7 +107,7 @@ function useController() {
     },
     {
       successMessage: (value) =>
-        `Evento “${value.name}” aplicado. Confira o indicador de salvamento.`,
+        `Data “${value.name}” aplicada. Confira o indicador de salvamento.`,
     },
   );
   const dirty = result.dirty;
@@ -188,7 +176,7 @@ function useController() {
     }
     if (context && dirty) {
       notify(
-        'Há um preenchimento em andamento. Retome-o ou use Descartar alterações antes de abrir outro evento.',
+        'Há um preenchimento em andamento. Retome-o ou use Descartar alterações antes de abrir outra data.',
         true,
       );
       return false;
@@ -237,9 +225,12 @@ function useController() {
       void navigate({ to: '/calendarios/$calendarId/ferias', params: { calendarId: record.id } });
       return;
     }
-    const next: EventContext = event.requirementId
-      ? { kind: 'activity', requirementId: event.requirementId, eventId: id }
-      : { kind: 'event', eventId: id };
+    // A link without generated activity is edited as a date; its link is kept as recorded.
+    const next: EventContext =
+      event.requirementId &&
+      activityChecklist(state).some((item) => item.id === event.requirementId)
+        ? { kind: 'activity', requirementId: event.requirementId, eventId: id }
+        : { kind: 'event', eventId: id };
     begin(next, eventValues(event, calendarOfferIds), id);
   }
   function prepare(requirementId: string) {
@@ -265,7 +256,7 @@ function useController() {
   async function resume() {
     await navigate({
       // Resuming leads to the step where the draft's record is listed.
-      ...destinationFor(context, result.form.state.values.requirementId, false),
+      ...destinationFor(context, result.form.state.values.requirementId),
       params: { calendarId: record.id },
       search: (previous) => previous,
       hashScrollIntoView: false,
@@ -333,10 +324,7 @@ function useController() {
     panel,
     /** Consult an activity in the side panel without opening a form. */
     view,
-    viewEvent: (eventId: string) => {
-      rememberOpener();
-      setPanel({ kind: 'event', eventId });
-    },
+    viewEvent,
     viewObservance: (key: string) => {
       rememberOpener();
       setPanel({ kind: 'observance', key });

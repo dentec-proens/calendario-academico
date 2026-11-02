@@ -19,13 +19,23 @@ test('typed filters retain readable scalar URLs and reject repeated or invalid v
   expect(applicationSearch({ ano: 1899, situacao: ['vigente'], campus: ['campus-a'] })).toEqual({});
 });
 
-test('activity views and situations are separate filters and the former "all" is dropped', () => {
+test('view, pendency, origin and situation are separate step filters without aliases', () => {
   expect(
     applicationSearch(
-      parseApplicationSearch('?atividadeVisao=preencher&atividadeSituacao=partial'),
+      parseApplicationSearch(
+        '?atividadeVisao=data&atividadePendencia=preencher&atividadeOrigem=campus&atividadeSituacao=partial',
+      ),
     ),
-  ).toEqual({ atividadeVisao: 'preencher', atividadeSituacao: 'partial' });
+  ).toEqual({
+    atividadeVisao: 'data',
+    atividadePendencia: 'preencher',
+    atividadeOrigem: 'campus',
+    atividadeSituacao: 'partial',
+  });
+  // Former view values and the former "all" situation are dropped, like any unknown value.
   expect(
-    applicationSearch(parseApplicationSearch('?atividadeVisao=todas&atividadeSituacao=all')),
+    applicationSearch(
+      parseApplicationSearch('?atividadeVisao=preencher&atividadeSituacao=all&aba=eventos'),
+    ),
   ).toEqual({});
 });

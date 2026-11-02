@@ -121,7 +121,7 @@ export default function ActivityDetails({
       </details>
       <IntakeRequirementForm item={item} />
       {registered.length > 0 && (
-        <ul className="activity-records" aria-label="Registros desta atividade">
+        <ul className="activity-records" aria-label="Datas desta atividade">
           {registered.map((event) => (
             <li key={event.id} className="activity-record">
               <p>
@@ -201,7 +201,7 @@ export default function ActivityDetails({
         disabled={readOnly}
         onClick={() => editor.prepare(item.id)}
       >
-        {registered.length ? 'Adicionar período' : 'Preencher atividade'}
+        {registered.length ? 'Adicionar data' : 'Preencher atividade'}
       </Button>
     </div>
   );

@@ -14,10 +14,10 @@ for (const width of [1440, 390]) {
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     const origin = new URL(await fixtureServer('editor')).origin;
-    await page.goto(origin + '/calendarios/synthetic-calendar/atividades-campus');
+    await page.goto(origin + '/calendarios/synthetic-calendar/atividades');
     const row = page.locator('[data-open-event="local-event"]');
     await expect(row).toContainText('Evento local salvo');
-    await expect(row).toContainText('Registrado');
+    await expect(row).toContainText('Data do campus');
     await expect(row).toContainText('10/03/2027');
     await expect(
       page.locator('#event-list [data-edit-event], #event-list [data-remove-event]'),
@@ -59,7 +59,7 @@ test('campus consultation preserves another activity draft and prevents replacin
   fixtureServer,
 }) => {
   const origin = new URL(await fixtureServer('editor')).origin;
-  await page.goto(origin + '/calendarios/synthetic-calendar/eventos');
+  await page.goto(origin + '/calendarios/synthetic-calendar/atividades');
   await openActivity(page, 'family-meeting');
   await page.locator('#event-start').fill('2027-05-08');
 
@@ -84,7 +84,7 @@ for (const width of [1440, 390]) {
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     const origin = new URL(await fixtureServer('editor-reviewer')).origin;
-    await page.goto(origin + '/calendarios/synthetic-calendar/atividades-campus');
+    await page.goto(origin + '/calendarios/synthetic-calendar/atividades');
     const row = page.locator('[data-open-event="local-event"]');
     await row.focus();
     await page.keyboard.press('Enter');

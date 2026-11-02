@@ -67,7 +67,7 @@ test('calendar editor and its event form', async ({ page, fixtureServer }) => {
   await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
   await assertNoOverflow(page);
   await expect(page).toHaveScreenshot('calendar-editor.png', { fullPage: true });
-  await selectEditorSection(page, 'campus');
+  await selectEditorSection(page, 'events');
   await editCampusEvent(page, 'local-event');
   await expect(page.locator('#event-form')).toBeVisible();
   await assertNoOverflow(page);
@@ -128,7 +128,7 @@ test('event creation explains the pending draft beside the visible action', asyn
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await expect(page.locator('#record-title')).toBeVisible();
-  await selectEditorSection(page, 'campus');
+  await selectEditorSection(page, 'events');
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Encontro com as famílias');
   await page.locator('#close-event-panel').click();
@@ -136,7 +136,7 @@ test('event creation explains the pending draft beside the visible action', asyn
   await expect(page.locator('#pending-event-title')).toBeFocused();
   await expect(page.locator('#new-event')).toBeVisible();
   await assertNoOverflow(page);
-  await expect(page.locator('#event-creation')).toHaveScreenshot('event-pending-draft.png');
+  await expect(page.locator('#pending-event')).toHaveScreenshot('event-pending-draft.png');
 });
 
 test('destructive confirmation with preserved data explained', async ({ page, fixtureServer }) => {

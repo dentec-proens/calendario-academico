@@ -54,8 +54,15 @@ export function applicationSearch(input: Record<string, unknown>) {
     /^[a-z][a-z0-9-]{0,99}$/.test(input.atividadeOferta)
       ? { atividadeOferta: String(input.atividadeOferta) }
       : {}),
-    ...(['preencher', 'sem-pendencias'].includes(String(input.atividadeVisao))
-      ? { atividadeVisao: String(input.atividadeVisao) as 'preencher' | 'sem-pendencias' }
+    // Activities step: the view (by activity, the default, or by date) and its filters.
+    ...(input.atividadeVisao === 'data' ? { atividadeVisao: 'data' as const } : {}),
+    ...(['preencher', 'sem-pendencias'].includes(String(input.atividadePendencia))
+      ? {
+          atividadePendencia: String(input.atividadePendencia) as 'preencher' | 'sem-pendencias',
+        }
+      : {}),
+    ...(['vinculadas', 'campus', 'base'].includes(String(input.atividadeOrigem))
+      ? { atividadeOrigem: String(input.atividadeOrigem) as 'vinculadas' | 'campus' | 'base' }
       : {}),
     // The former "all" situation is the default view now and is dropped like an unknown value.
     ...(['pending', 'partial', 'complete', 'optional', 'unconfigured'].includes(
@@ -66,8 +73,6 @@ export function applicationSearch(input: Record<string, unknown>) {
     ...(['admission', 'teaching', 'campus', 'other'].includes(String(input.atividadeAssunto))
       ? { atividadeAssunto: String(input.atividadeAssunto) }
       : {}),
-    // Only read to redirect links from when campus activities were a tab of the resolution step.
-    ...(input.aba === 'eventos' ? { aba: 'eventos' as const } : {}),
     ...(typeof input.atividade === 'string' && /^[a-z0-9:-]{1,100}$/.test(input.atividade)
       ? { atividade: input.atividade }
       : {}),

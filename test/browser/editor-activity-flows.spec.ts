@@ -146,7 +146,7 @@ test('a new activity period asks for dates first and keeps category and effect c
     .locator('[data-activity-row="family-meeting"] .activity-row-name')
     .textContent())!.trim();
   await openActivity(page, 'family-meeting');
-  await expect(page.locator('#event-form-title')).toHaveText('Novo período');
+  await expect(page.locator('#event-form-title')).toHaveText('Adicionar data');
   await expect(page.locator('#back-to-activity')).toBeVisible();
   // The panel was opened from this activity, so the link is not offered for change.
   await expect(page.locator('#event-requirement')).toHaveCount(0);
@@ -201,14 +201,12 @@ test('going back to the activity keeps an unapplied period pending and a saved o
   // Saving returns to the activity, where the new period is listed.
   await expect(page.locator('#event-form')).toBeHidden();
   await expect(page.locator('#event-panel .activity-records')).toContainText('12/06/2027');
-  await expect(page.locator('#event-panel [data-prepare-activity]')).toHaveText(
-    'Adicionar período',
-  );
+  await expect(page.locator('#event-panel [data-prepare-activity]')).toHaveText('Adicionar data');
   await expect(page.locator('#event-panel [data-prepare-activity]')).toBeFocused();
 
   const saved = await savedEvent(page, (_, id) => !['local-event', 'activity-event'].includes(id));
   await page.locator(`[data-edit-activity-event="${saved!.id}"]`).click();
-  await expect(page.locator('#event-form-title')).toHaveText('Editar período');
+  await expect(page.locator('#event-form-title')).toHaveText('Editar data');
   await expect(page.locator('#event-panel .activity-records')).toHaveCount(0);
   await expect(page.locator('#event-requirement')).toHaveCount(0);
   await page.locator('#back-to-activity').click();
@@ -427,30 +425,35 @@ test('the list shows every activity and the views split what is left to fill', a
   const count = async (view: string) =>
     Number(
       (await page
-        .locator(`label:has(#activity-view-${view}) .activity-view-count`)
+        .locator(`label:has(#activity-pendency-${view}) .activity-view-count`)
         .textContent())!.replace(/\D/g, ''),
     );
   // The cultural week is complete in the fixture and the integrated enrolment is optional.
-  await expect(page.locator('#activity-view-todas')).toBeChecked();
+  await expect(page.locator('#activity-pendency-todas')).toBeChecked();
   await expect(rows('cultural-week')).toBeVisible();
   await expect(rows('enrolment-0')).toBeVisible();
   await expect(rows('family-meeting')).toBeVisible();
   expect(await count('todas')).toBe((await count('preencher')) + (await count('sem-pendencias')));
 
-  await page.locator('#activity-view-preencher').check();
-  await expect(page).toHaveURL(/atividadeVisao=preencher/);
+  await page.locator('#activity-pendency-preencher').check();
+  await expect(page).toHaveURL(/atividadePendencia=preencher/);
   await expect(rows('cultural-week')).toHaveCount(0);
   await expect(rows('enrolment-0')).toHaveCount(0);
   await expect(rows('family-meeting')).toBeVisible();
-  await expect(page.locator('[data-activity-row]')).toHaveCount(await count('preencher'));
+  // By activity, the counter also includes the dates of the special groups.
+  await expect(
+    page.locator(
+      '#activity-checklist :is([data-activity-row], [data-date-row]), [data-adjustable]',
+    ),
+  ).toHaveCount(await count('preencher'));
 
-  await page.locator('#activity-view-sem-pendencias').check();
+  await page.locator('#activity-pendency-sem-pendencias').check();
   await expect(rows('cultural-week')).toBeVisible();
   await expect(rows('enrolment-0')).toBeVisible();
   await expect(rows('family-meeting')).toHaveCount(0);
 
   // The situation filter uses the status shown on each row.
-  await page.locator('#activity-view-todas').check();
+  await page.locator('#activity-pendency-todas').check();
   await page.locator('.activity-more-filters > summary').click();
   await page.locator('#activity-status').selectOption('complete');
   await expect(page.locator('.activity-more-filters > summary')).toHaveText('Mais filtros (1)');
@@ -467,7 +470,7 @@ test('a reviewer consults activities and records without editing or saving', asy
   fixtureServer,
 }) => {
   const fixtureUrl = await fixtureServer('editor-reviewer');
-  await page.goto(new URL('/calendarios/synthetic-calendar/eventos', fixtureUrl).href);
+  await page.goto(new URL('/calendarios/synthetic-calendar/atividades', fixtureUrl).href);
   await expect(page.locator('#record-title')).toBeVisible();
   await openActivity(page, 'family-meeting');
   await expect(page.locator('#event-panel .activity-details')).toBeVisible();
@@ -475,9 +478,12 @@ test('a reviewer consults activities and records without editing or saving', asy
   await expect(page.locator('#event-panel [data-prepare-activity]')).toBeDisabled();
   await page.locator('#close-event-panel').click();
   await selectEditorSection(page, 'calendar');
-  const records = page.locator('#calendar-record-list');
-  await expect(records).toContainText('Evento local salvo');
-  for (const control of await records.locator('button').all()) await expect(control).toBeDisabled();
+  await page.locator('#calendar-dates').click();
+  await expect(page).toHaveURL(/\/atividades\?.*atividadeVisao=data/);
+  const dates = page.locator('#date-list');
+  await expect(dates).toContainText('Evento local salvo');
+  await dates.locator('[data-open-event="local-event"]').click();
+  await expect(page.locator('[data-edit-event="local-event"]')).toBeDisabled();
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });
 
@@ -556,7 +562,7 @@ test('the offer filter decides what is left to fill for that offer only', async 
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'events');
-  await page.locator('#activity-view-preencher').check();
+  await page.locator('#activity-pendency-preencher').check();
   // Women's week is required for the integrated course and optional for undergraduates.
   await expect(page.locator('[data-activity-row="women-week"]')).toBeVisible();
   await page.locator('.activity-more-filters > summary').click();
@@ -566,15 +572,15 @@ test('the offer filter decides what is left to fill for that offer only', async 
   await expect(page.locator('[data-activity-row="women-week"]')).toBeVisible();
 });
 
-test('the complete record list stays out of the printed calendar', async ({
+test('the link to every date stays out of the printed calendar', async ({
   page,
   fixtureServer,
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await selectEditorSection(page, 'calendar');
-  await expect(page.locator('#calendar-records')).toBeVisible();
+  await expect(page.locator('#calendar-dates')).toBeVisible();
   await page.emulateMedia({ media: 'print' });
-  await expect(page.locator('#calendar-records')).toBeHidden();
+  await expect(page.locator('#calendar-dates')).toBeHidden();
   await expect(page.locator('#months .proens-document')).toBeVisible();
 });
 

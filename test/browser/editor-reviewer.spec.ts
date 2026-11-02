@@ -17,7 +17,7 @@ test('reviewer consults the complete calendar and live changes without editing o
   await expect(page.locator('#weekdays input').first()).toBeDisabled();
   await expect(page.locator('[data-lifecycle-action]')).toHaveCount(0);
   await expect(page.locator('a.editor-history')).toBeHidden();
-  await page.locator('[data-view="campus"]').click();
+  await page.locator('[data-view="events"]').click();
   await expect(page.locator('#event-list')).toBeVisible();
   await expect(page.locator('#event-list')).toContainText(/Evento local salvo/);
   await expect(page.locator('button#new-event')).toBeDisabled();
@@ -49,7 +49,7 @@ test('reviewer consults the complete calendar and live changes without editing o
     window.editorTest.record.version++;
     await window.publishReviewerCalendar();
   });
-  await page.locator('[data-view="campus"]').click();
+  await page.locator('[data-view="events"]').click();
   await expect(page.locator('#event-list')).toContainText(/Evento atualizado pelo campus/);
   for (const control of await eventControls.all()) await expect(control).toBeEnabled();
   expect(await page.evaluate(() => window.editorTest.calls)).toEqual({

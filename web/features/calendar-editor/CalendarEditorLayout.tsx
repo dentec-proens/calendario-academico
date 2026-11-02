@@ -452,7 +452,7 @@ function EditorFrame() {
                 {current.title}
               </h2>
             </div>
-            {currentSection === 'campus' && <NewEventButton />}
+            {currentSection === 'events' && <NewEventButton />}
           </div>
           <Suspense fallback={<LoadingIndicator layout="overlay" label="Carregando seção…" />}>
             <Outlet key={formEpoch} />

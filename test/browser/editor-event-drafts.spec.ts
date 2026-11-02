@@ -26,7 +26,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('[data-open-event="local-event"]')).toBeFocused();
     await expect(page.locator('#resume-event')).toBeHidden();
     await add.press('Enter');
-    await expect(page.locator('#event-form-title')).toHaveText('Novo evento local');
+    await expect(page.locator('#event-form-title')).toHaveText('Nova data do campus');
     await page.locator('#event-name').fill('Evento para continuar depois');
 
     await page.locator('#event-start').fill('2027-04-05');
@@ -79,12 +79,12 @@ for (const width of [1440, 390]) {
     await page.locator('#event-start').fill('2027-04-07');
     await page.locator('#event-end').fill('2027-04-07');
     await page.locator('#event-form button[type="submit"]').click();
-    await expect(page.locator('#event-form-title')).toHaveText('Editar evento local');
+    await expect(page.locator('#event-form-title')).toHaveText('Editar data');
     await expect(notice).toBeHidden();
     await page.locator('#close-event-panel').click();
     await expect(add).toBeEnabled();
     await add.click();
-    await expect(page.locator('#event-form-title')).toHaveText('Novo evento local');
+    await expect(page.locator('#event-form-title')).toHaveText('Nova data do campus');
     await expect(page.locator('#event-name')).toHaveValue('');
     await expect(page.locator('#event-list')).toContainText('Primeiro evento incluído');
     await expect
@@ -129,7 +129,7 @@ test('editor separates creation from editing and preserves closed activity draft
   await expect(page.locator('#event-form')).toBeHidden();
   await editCampusEvent(page, 'local-event');
   await expect(page.locator('#new-event')).toBeVisible();
-  await expect(page.locator('#event-form-title')).toHaveText('Editar evento local');
+  await expect(page.locator('#event-form-title')).toHaveText('Editar data');
   await page.locator('#event-name').fill('Edição local ainda não aplicada');
 
   await setDates('2027-03-11', '2027-03-12');
@@ -149,7 +149,7 @@ test('editor separates creation from editing and preserves closed activity draft
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
   await expect(page.locator('#new-event')).toBeVisible();
   await page.locator('#new-event').click();
-  await expect(page.locator('#event-form-title')).toHaveText('Novo evento local');
+  await expect(page.locator('#event-form-title')).toHaveText('Nova data do campus');
   await page.locator('#event-name').fill('Texto antes de escolher a atividade');
   await page.selectOption('#event-requirement', 'family-meeting');
   await expect(page.locator('input#event-name')).toHaveValue('Texto antes de escolher a atividade');
@@ -167,7 +167,7 @@ test('editor separates creation from editing and preserves closed activity draft
     ),
   );
   expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(3);
-  await expect(page.locator('#event-form-title')).toHaveText('Editar evento local');
+  await expect(page.locator('#event-form-title')).toHaveText('Editar data');
   await expect(page.locator('#discard-event-form')).toBeHidden();
   await page.locator('#close-event-panel').click();
 

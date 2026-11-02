@@ -77,7 +77,7 @@ export default function EventPanel() {
         title={
           activity?.name ??
           campusEvent?.name ??
-          (observanceKey ? (observance?.label ?? 'Ajuste de observância') : 'Evento do campus')
+          (observanceKey ? (observance?.label ?? 'Ajuste de observância') : 'Nova data do campus')
         }
         titleId="event-panel-title"
         closeId="close-event-panel"
@@ -120,7 +120,7 @@ export default function EventPanel() {
         >
           <p>
             Há alterações ainda não aplicadas em{' '}
-            <strong>{editor.values.name.trim() || 'Novo evento'}</strong>. Continue ou descarte esse
+            <strong>{editor.values.name.trim() || 'Nova data'}</strong>. Continue ou descarte esse
             preenchimento antes de abrir outro.
           </p>
         </Notice>

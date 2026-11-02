@@ -161,10 +161,15 @@ export default function IssuesSection() {
                     to={
                       stageRequirement(issue.requirementId)
                         ? '/calendarios/$calendarId/periodos'
-                        : '/calendarios/$calendarId/eventos'
+                        : '/calendarios/$calendarId/atividades'
                     }
                     params={{ calendarId: record.id }}
-                    search={(previous) => ({ ...previous, atividade: issue.requirementId })}
+                    // A link to an activity opens the by-activity view, whatever the URL had.
+                    search={(previous) => ({
+                      ...previous,
+                      atividade: issue.requirementId,
+                      atividadeVisao: undefined,
+                    })}
                     hashScrollIntoView={false}
                   >
                     Conferir esta atividade

@@ -57,7 +57,7 @@ describe('calendar wizard metadata', () => {
       'Continuar para organização por oferta',
       'Continuar para sábados letivos',
       'Continuar para férias docentes',
-      'Continuar para atividades e datas',
+      'Continuar para atividades',
       'Continuar para revisão e conclusão',
     ]);
   });
