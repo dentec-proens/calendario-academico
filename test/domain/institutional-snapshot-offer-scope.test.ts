@@ -47,7 +47,7 @@ const state: ActivityState = {
 const snapshot = {
   id: 'inst:synthetic',
   name: 'Impedimento institucional sintético',
-  kind: 'exclude',
+  effect: 'exclude' as const,
   start: civilDate('2027-03-02'),
   end: civilDate('2027-03-02'),
   institutional: true,

@@ -17,7 +17,7 @@ async function setup() {
   return { ...fixture, actor, record };
 }
 
-test.each([2, 3])(
+test.each([2, 3, 4])(
   'storage and the public save reject schema v%i before writing',
   async (schemaVersion) => {
     const { client, actor, record } = await setup();

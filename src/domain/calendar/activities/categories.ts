@@ -15,9 +15,10 @@ export const categories: [string, string, string | null][] = [
 ];
 export const validCategory = (value: unknown) => categories.some(([key]) => key === value);
 
-export function eventCategory(e: { category?: string; id?: string; name?: string; kind?: string }) {
+/** Effective category: the stored one when valid, otherwise the default of the date's effect. */
+export function eventCategory(e: { category?: string; effect?: string }) {
   if (e.category && validCategory(e.category)) return e.category;
-  return e.kind === 'include' ? 'sabado' : e.kind === 'exclude' ? 'recesso' : 'institucional';
+  return e.effect === 'include' ? 'sabado' : e.effect === 'exclude' ? 'recesso' : 'institucional';
 }
 
 export const categoryLabel = (e: Parameters<typeof eventCategory>[0]) =>

@@ -18,7 +18,7 @@ const event = {
   name: 'Feriado',
   start: civilDate('2027-04-01'),
   end: civilDate('2027-04-01'),
-  kind: 'exclude',
+  effect: 'exclude' as const,
   evidence: 'Portaria',
   modalities: ['integrado', 'graduacao'],
 };

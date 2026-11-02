@@ -68,9 +68,9 @@ export function durationEnd(
     let total = 0;
     for (const date of datesBetween(start, `${state.year}-12-31`)) {
       const active = scoped.filter((e) => e.start <= date && e.end >= date);
-      if (active.some((e) => e.kind === 'exclude')) continue;
+      if (active.some((e) => e.effect === 'exclude')) continue;
       if (
-        active.some((e) => e.kind === 'include') ||
+        active.some((e) => e.effect === 'include') ||
         state.weekdays.includes(new Date(parseDate(date)).getUTCDay())
       ) {
         if (++total === count) return date;

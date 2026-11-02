@@ -48,13 +48,18 @@ function eventKinds(event: InstitutionalEventSnapshot, scope: BaseScope): string
   return event.modalities ?? scopeKinds(scope);
 }
 
+/**
+ * Content compared by the base identity. The keys are historical (format 4): `kind` carries the
+ * effect, so identities stored in reviews (`reviews.baseIdentity`) keep matching after the v5
+ * conversion without a new identity version (plan, phase 2, step 5).
+ */
 function eventContent(event: InstitutionalEventSnapshot, scope: BaseScope) {
   return {
     id: event.id,
     name: event.name,
     start: event.originalStart ?? event.start,
     end: event.originalEnd ?? event.end,
-    kind: event.kind,
+    kind: event.effect,
     category: event.category ?? '',
     evidence: event.evidence,
     source: event.source ?? '',

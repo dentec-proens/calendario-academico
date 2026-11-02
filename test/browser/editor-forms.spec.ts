@@ -92,7 +92,7 @@ test('Saturday panel applies one activity to the selected dates without moving f
       page.evaluate(() =>
         window.editorTest.record.state.events
           .filter((event) => event.category === 'sabado')
-          .map(({ start, end, name, kind }) => ({ start, end, name, kind }))
+          .map(({ start, end, name, effect }) => ({ start, end, name, effect }))
           .sort((a, b) => a.start.localeCompare(b.start)),
       ),
     )
@@ -101,7 +101,7 @@ test('Saturday panel applies one activity to the selected dates without moving f
         start: date,
         end: date,
         name: 'Reposição de aulas',
-        kind: 'include',
+        effect: 'include',
       })),
     );
   await expect(page.locator('[data-saturday="2027-03-06"]')).toHaveAttribute(
@@ -400,7 +400,7 @@ test('multi-day inclusions over a Saturday are registered but edited in Campus a
   await page.locator('#event-type-extra-day').check();
   await page.locator('#event-more-options > summary').click();
   await page.selectOption('#event-category', 'evento');
-  await expect(page.locator('#event-kind')).toHaveValue('include');
+  await expect(page.locator('#event-effect')).toHaveValue('include');
   await page.locator('#event-start').fill('2027-03-22');
   await page.locator('#event-end').fill('2027-03-27');
 

@@ -101,7 +101,7 @@ test('changing an offer cycle previews linked dates to review and keeps their li
         offers: ['graduacao'],
         start: '2027-12-17',
         end: '2027-12-17',
-        kind: 'note',
+        effect: 'note',
         category: 'prazo',
       },
     ];

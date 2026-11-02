@@ -85,7 +85,7 @@ const info: Bootstrap = {
         name: 'Evento institucional de teste',
         start: civilDate('2027-01-01'),
         end: civilDate('2027-01-01'),
-        kind: 'exclude',
+        effect: 'exclude',
         category: 'feriado',
         evidence: 'Fonte de teste',
         modalities: ['integrado'],

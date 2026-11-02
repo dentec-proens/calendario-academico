@@ -58,7 +58,7 @@ test('server saves Servidor choices in snapshots, rejects other dates and protec
         name: 'Dia do Servidor Público',
         start: '2028-10-28',
         end: '2028-10-28',
-        kind: 'exclude',
+        effect: 'exclude',
         category: 'recesso',
         evidence: 'Teste',
         modalities: ['integrado'],

@@ -100,7 +100,7 @@ export async function createNativeFixture(overrides: Seed = {}) {
         name: String(event.name),
         start: String(event.start),
         end: String(event.end),
-        kind: event.kind as 'include' | 'exclude' | 'note',
+        effect: event.effect as 'include' | 'exclude' | 'note',
         category: String(event.category),
         evidence: String(event.evidence),
         modalities: (event.modalities ?? event.offers) as Array<

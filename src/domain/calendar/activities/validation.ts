@@ -36,19 +36,17 @@ export function validateActivityRecord(
   options: { stageInterval?: boolean; keptWithoutActivity?: boolean } = {},
 ) {
   const position = temporalPosition(state, event);
-  if (!['include', 'exclude', 'note'].includes(event.kind))
+  if (!['include', 'exclude', 'note'].includes(event.effect))
     throw new DomainError('Efeito inválido.');
   if (
     event.deadlineExtensionCause !== undefined &&
     (!['municipal-holiday', 'municipal-recess'].includes(event.deadlineExtensionCause) ||
-      event.kind !== 'exclude' ||
+      event.effect !== 'exclude' ||
       position !== 'current')
   )
     throw new DomainError(
       'A prorrogação municipal exige feriado ou recesso decorrente e exclusão no ano.',
     );
-  if (event.recordType !== undefined && event.recordType !== 'event')
-    throw new DomainError('Natureza do registro inválida.');
   if (
     event.publicationStatus !== undefined &&
     !['planned', 'published'].includes(event.publicationStatus)
@@ -60,7 +58,7 @@ export function validateActivityRecord(
     );
   const outOfYear = position !== 'current';
   if (outOfYear) {
-    if (event.kind !== 'note')
+    if (event.effect !== 'note')
       throw new DomainError(
         'Referências e ocorrências fora do ano são informativas, sem efeito letivo.',
       );
@@ -90,7 +88,7 @@ export function validateActivityRecord(
       a.year > calendarLimits.maximumYear
     )
       throw new DomainError('Finalidade de ingresso inválida.');
-    if (event.kind !== 'note')
+    if (event.effect !== 'note')
       throw new DomainError('Publicação de edital é um registro informativo.');
     if (!event.publicationStatus)
       throw new DomainError('Informe se a publicação é programada ou realizada.');
@@ -116,7 +114,7 @@ export function validateActivityRecord(
           );
     if (issue) throw new DomainError(issue);
   }
-  if (event.kind === 'include' && state.periods) {
+  if (event.effect === 'include' && state.periods) {
     const declared = event.offers;
     const scope = declared?.length ? declared : offerIds(state);
     for (let time = parseDate(event.start); time <= parseDate(event.end); time += 86400000) {

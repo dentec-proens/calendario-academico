@@ -47,13 +47,12 @@ export const event = v.object({
   name: v.string(),
   start: v.string(),
   end: v.string(),
-  kind: effect,
+  effect,
   category: v.optional(v.string()),
   requirementId: v.optional(v.string()),
   offers: v.optional(v.array(v.string())),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
-  recordType: v.optional(v.literal('event')),
   publicationStatus: v.optional(v.union(v.literal('planned'), v.literal('published'))),
   admission: v.optional(
     v.object({
@@ -72,26 +71,25 @@ export const institutionalEvent = v.object({
   name: v.string(),
   start: v.string(),
   end: v.string(),
-  kind: effect,
+  effect,
   category: v.string(),
   evidence: v.string(),
   modalities: v.array(modality),
   active: v.boolean(),
 });
+/** Institutional dates never carry an activity link (plan, phase 2, step 1 inventory). */
 export const institutionalEventSnapshot = v.object({
   id: v.string(),
   name: v.string(),
   start: v.string(),
   end: v.string(),
-  kind: effect,
+  effect,
   evidence: v.string(),
   category: v.optional(v.string()),
-  requirementId: v.optional(v.string()),
   modalities: v.optional(v.array(modality)),
   offers: v.optional(v.array(v.string())),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
-  recordType: v.optional(v.literal('event')),
   publicationStatus: v.optional(v.union(v.literal('planned'), v.literal('published'))),
   admission: v.optional(
     v.object({
@@ -155,7 +153,7 @@ export const calendarOffer = v.object({
   organizationBasis: v.optional(v.string()),
 });
 export const contentState = v.object({
-  schemaVersion: v.literal(4),
+  schemaVersion: v.literal(5),
   rulesetVersion: v.optional(v.string()),
   offers: v.array(calendarOffer),
   weekdays: v.array(v.number()),

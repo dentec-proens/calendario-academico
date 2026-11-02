@@ -18,22 +18,28 @@ import { applyObservances } from '../../src/domain/calendar/observances.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
 import { readOracle, v4Cases, writeOracle, type V4Case } from '../helpers/v4-fixtures.ts';
+import { convertedContent, convertedSubmission } from '../helpers/v5-conversion.ts';
 
 /**
  * Oracle “before” of phase 2 (step 1): what the v4 code computes for every frozen document.
  * Later steps rename and convert; these values must stay equal (the conversion steps say which
  * differences they allow). `UPDATE_V4_ORACLE=1` rewrites the file and is only for step 1.
+ *
+ * From step 5 the stored documents are v4 and the code reads v5: every value is computed over the
+ * converted document (`convertContentV5`), except the stored content hashes, which belong to the
+ * v4 documents; the hash relation between contents and submissions is checked after conversion.
  */
 const hash = (value: string) => bytesToHex(sha256(new TextEncoder().encode(value)));
 const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 function before(item: V4Case) {
+  const content = convertedContent(item);
   const state = {
-    ...item.content.state,
+    ...content.state,
     year: item.year,
     campus: item.campus,
   } as unknown as ActivityState & { rulesetVersion?: string };
-  const snapshot = item.content.institutionalSnapshot as unknown as InstitutionalEventSnapshot[];
+  const snapshot = content.institutionalSnapshot as unknown as InstitutionalEventSnapshot[];
   // Step 4 (origin by container): the editor projection must keep every oracle value.
   const events = projectDates(applyObservances(snapshot, state), state.events);
   let evaluation: ReturnType<typeof evaluateCalendar> | null = null;
@@ -45,9 +51,9 @@ function before(item: V4Case) {
   }
   const coverage = activityCoverage(state);
   const base = {
-    revision: item.content.catalogueRevision,
+    revision: content.catalogueRevision,
     events: snapshot,
-    documents: item.content.documentSnapshot as unknown as BaseDocument[],
+    documents: content.documentSnapshot as unknown as BaseDocument[],
     rulesetVersion: state.rulesetVersion,
   };
   const html = proensLayout(state, events, evaluation, null, '');
@@ -133,6 +139,20 @@ test('submissions keep their stored hash; some equal the current content and one
   for (const submission of submissions)
     expect(submission.contentHash).toBe(submission.storedContentHash);
   expect(submissions.map((submission) => submission.equalToContent)).toEqual([true, false, true]);
+});
+
+test('after conversion, each submission keeps its equality of hash with the current content', () => {
+  const hashOf = (content: V4Case['content'] | V4Case['submissions'][number]) =>
+    contentHash(content as unknown as Doc<'calendarContents'>);
+  const relation = cases.flatMap((item) =>
+    item.submissions.map(
+      (submission) =>
+        hashOf(convertedSubmission(item, submission)) === hashOf(convertedContent(item)),
+    ),
+  );
+  expect(relation).toEqual([true, false, true]);
+  // The hash changes with the format, so the migration recalculates it (plan, section 6).
+  for (const item of cases) expect(hashOf(convertedContent(item))).not.toBe(hashOf(item.content));
 });
 
 test('the oracle records the 21 audited links of section 11 under review', () => {

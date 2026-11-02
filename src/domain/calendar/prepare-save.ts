@@ -1,4 +1,4 @@
-import type { CalendarEvent, CalendarContentV4 } from './model.ts';
+import type { CalendarEvent, CalendarContent } from './model.ts';
 import { equalValues } from '../../shared/equal.ts';
 import { inheritedEvents } from '../institution/catalogue.ts';
 import { applyObservances, validateObservances } from './observances.ts';
@@ -12,7 +12,7 @@ import {
 import { normalizeOfferCalendar, offerCalendarContent } from './normalization/normalize-v4.ts';
 import { kinds } from './offers.ts';
 
-type OfferState = CalendarContentV4 & { year: number; campus?: string };
+type OfferState = CalendarContent & { year: number; campus?: string };
 
 /** V4 save boundary; the backend retains concurrency, authorization and final confirmation. */
 export function prepareOfferCalendarSave<E extends CalendarEvent & { active: boolean }>(

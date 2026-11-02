@@ -5,7 +5,7 @@ import { labelFor } from '#src/domain/calendar/offers.ts';
 
 type Event = CalendarRecord['institutionalEvents'][number];
 type Document = CalendarRecord['currentDocuments'][number];
-const kindLabels: Record<string, string> = {
+const effectLabels: Record<string, string> = {
   include: 'Inclusão letiva',
   exclude: 'Exclusão letiva',
   note: 'Informativo',
@@ -20,7 +20,7 @@ function EventDescription({ event }: { event: Event }) {
     <>
       {event.name} · {date(event.start)}
       {event.end !== event.start ? ` a ${date(event.end)}` : ''} ·{' '}
-      {kindLabels[event.kind] || event.kind}
+      {effectLabels[event.effect] || event.effect}
       {event.category ? ` · ${event.category}` : ''}
       {offers.length ? ` · Ofertas: ${offers.map((id) => labelFor(state, id)).join(', ')}` : ''}
       {event.hours !== undefined ? ` · ${event.hours} horas` : ''}

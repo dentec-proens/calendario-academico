@@ -9,7 +9,7 @@ import { setPassword } from './access/store';
 import type { MutationCtx } from './_generated/server';
 import type { TableNames } from './_generated/dataModel';
 import schema from './schema';
-import type { effect, modality } from './validators';
+import type { modality } from './validators';
 
 function assertE2EDevelopment(expectedCloudUrl: string) {
   if (
@@ -158,7 +158,7 @@ export const initialize = internalMutation({
         evidence: item.evidence ?? '',
         code,
         year: Number(item.start.slice(0, 4)),
-        kind: item.kind as Infer<typeof effect>,
+        effect: item.effect,
         modalities: item.modalities as Infer<typeof modality>[],
       });
     }

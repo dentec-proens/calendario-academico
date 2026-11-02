@@ -253,7 +253,7 @@ export function offerOrganizationIssues(
   }
   if (periodsValid)
     for (const event of state.events.filter(
-      (event) => event.kind === 'include' && appliesTo(event, modality),
+      (event) => event.effect === 'include' && appliesTo(event, modality),
     )) {
       if (
         datesBetween(event.start, event.end).some(
@@ -412,7 +412,7 @@ function organize<S extends ActivityState>(
         requirementId,
         start: civilDate(value.start),
         end: civilDate(value.end),
-        kind: 'note',
+        effect: 'note',
         category: 'limite',
         offers: [modality],
       });
@@ -428,7 +428,7 @@ function organize<S extends ActivityState>(
           ...previous,
           start: civilDate(stage.start),
           end: civilDate(stage.end),
-          kind: 'note' as const,
+          effect: 'note' as const,
           category: event.category ?? 'limite',
           offers: [modality],
         },

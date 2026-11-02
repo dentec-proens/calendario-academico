@@ -77,7 +77,7 @@ test('29 October is excluded once and 28 October becomes eligible, including dur
     chooseObservance(state, 'public-servant-day', civilDate('2027-10-29'), base()),
   );
   expect(
-    moved.filter((event) => event.start === '2027-10-29' && event.kind === 'exclude'),
+    moved.filter((event) => event.start === '2027-10-29' && event.effect === 'exclude'),
   ).toHaveLength(2);
   expect(durationEnd('2027-10-28', 1, state, base())).toBe('2027-11-03');
   expect(durationEnd('2027-10-28', 1, state, moved)).toBe('2027-10-28');

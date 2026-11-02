@@ -14,7 +14,7 @@ import { Button } from '../../../components/ui/Button.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 
-const kindLabels = {
+const effectLabels = {
   exclude: 'Exclui dias letivos',
   include: 'Inclui dias letivos',
   note: 'Sem efeito na contagem',
@@ -54,11 +54,11 @@ export default function EventEditor() {
   const answered = eventTypes.find(
     (type) =>
       type.id === values.eventType &&
-      type.kind === values.kind &&
+      type.effect === values.effect &&
       type.category === values.category,
   );
   // Effect and category chosen freely in an earlier edit are shown as they are.
-  const askType = freeEvent && (!values.kind || Boolean(answered));
+  const askType = freeEvent && (!values.effect || Boolean(answered));
   const nameField = (
     <form.Field name="name">
       {(field) => (
@@ -79,10 +79,10 @@ export default function EventEditor() {
       )}
     </form.Field>
   );
-  const kindField = (
-    <form.Field name="kind">
+  const effectField = (
+    <form.Field name="effect">
       {(field) => (
-        <Select field={field} label="Efeito na contagem" id="event-kind" required={!askType}>
+        <Select field={field} label="Efeito na contagem" id="event-effect" required={!askType}>
           <option value="">Escolha o efeito</option>
           <option value="exclude">Excluir dias · feriado ou recesso</option>
           <option value="include">Incluir dias · sábado ou reposição</option>
@@ -107,7 +107,7 @@ export default function EventEditor() {
                 checked={field.state.value === type.id}
                 onChange={() => {
                   field.handleChange(type.id);
-                  form.setFieldValue('kind', type.kind);
+                  form.setFieldValue('effect', type.effect);
                   form.setFieldValue('category', type.category);
                 }}
               />
@@ -251,15 +251,15 @@ export default function EventEditor() {
               Categoria e efeito
               <span className="event-more-summary">
                 {categories.find(([id]) => id === values.category)?.[1] ?? 'Sem categoria'} ·{' '}
-                {kindLabels[values.kind as keyof typeof kindLabels] ?? 'Efeito a definir'}
+                {effectLabels[values.effect as keyof typeof effectLabels] ?? 'Efeito a definir'}
               </span>
             </summary>
             <div className="row-form">
               {categoryField}
-              {kindField}
+              {effectField}
             </div>
           </details>
-          {(values.kind === 'exclude' || values.deadlineExtensionCause) && (
+          {(values.effect === 'exclude' || values.deadlineExtensionCause) && (
             <form.Field name="deadlineExtensionCause">
               {(field) => (
                 <Select

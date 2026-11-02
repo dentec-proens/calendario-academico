@@ -17,7 +17,7 @@ export const record: WireCalendarRecord = {
   year: 2027,
   offerKinds: ['integrado'],
   state: {
-    schemaVersion: 4,
+    schemaVersion: 5,
     offers: [{ id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' }],
     campus: 'Campus de teste',
     year: 2027,
@@ -41,7 +41,7 @@ export const record: WireCalendarRecord = {
       name: 'Dia do Professor',
       start: civilDate('2027-10-15'),
       end: civilDate('2027-10-15'),
-      kind: 'exclude',
+      effect: 'exclude',
       evidence: 'Base sintética',
       institutional: true,
     },

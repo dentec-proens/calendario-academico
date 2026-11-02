@@ -21,7 +21,7 @@ for (const width of [1440, 390])
           name: `${index + 1}ª etapa preservada`,
           requirementId: `stage-${index + 1}:integrado`,
           offers: ['integrado'],
-          kind: 'note' as const,
+          effect: 'note' as const,
           category: 'limite',
           start: `2027-0${index + 2}-01`,
           end: `2027-0${index + 2}-20`,

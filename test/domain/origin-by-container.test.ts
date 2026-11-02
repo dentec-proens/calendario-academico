@@ -21,7 +21,7 @@ const base: InstitutionalEventSnapshot = {
   name: 'Feriado institucional',
   start: civilDate('2027-03-10'),
   end: civilDate('2027-03-10'),
-  kind: 'exclude',
+  effect: 'exclude',
   evidence: 'Resolução institucional automática',
 };
 // Local dates never persist `evidence` or `institutional`; the extra fields model a forged or
@@ -31,7 +31,7 @@ const lookalike = {
   name: 'Semana cultural do campus',
   start: civilDate('2027-03-11'),
   end: civilDate('2027-03-11'),
-  kind: 'exclude',
+  effect: 'exclude',
   offers: ['integrado'],
   evidence: 'SEGREDO MANUAL',
   institutional: true,
@@ -41,7 +41,7 @@ const lookalike = {
 
 function state(): ActivityState {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     year: 2027,
     campus: 'Campus de teste',
     weekdays: [1, 2, 3, 4, 5],

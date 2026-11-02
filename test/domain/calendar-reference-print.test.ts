@@ -24,7 +24,7 @@ const events: CalendarEvent[] = [
     name: 'Edital anterior <documento>',
     start: civilDate('2026-12-01'),
     end: civilDate('2026-12-01'),
-    kind: 'note',
+    effect: 'note',
     offers: ['integrado'],
     publicationStatus: 'published',
     admission: { type: 'transfer', year: 2027, term: 'annual' },
@@ -34,9 +34,8 @@ const events: CalendarEvent[] = [
     name: 'Publicação a planejar',
     start: civilDate('2026-11-01'),
     end: civilDate('2026-11-01'),
-    kind: 'note',
+    effect: 'note',
     offers: ['integrado'],
-    recordType: 'event',
     publicationStatus: 'planned',
     admission: { type: 'regular', year: 2028, term: 'first' },
   },
@@ -45,7 +44,7 @@ const events: CalendarEvent[] = [
     name: 'Intervalo que cruza o ano',
     start: civilDate('2026-12-15'),
     end: civilDate('2027-01-12'),
-    kind: 'note',
+    effect: 'note',
     offers: ['integrado'],
   },
   {
@@ -53,7 +52,7 @@ const events: CalendarEvent[] = [
     name: 'Processo seletivo regular',
     start: civilDate('2027-12-01'),
     end: civilDate('2027-12-01'),
-    kind: 'note',
+    effect: 'note',
     offers: ['integrado'],
     publicationStatus: 'planned',
     admission: { type: 'regular', year: 2028, term: 'annual' },
@@ -85,7 +84,7 @@ test('an empty calendar has no fabricated historical section or execution certif
 test('print distributions use the semantic semester of each offer despite coincident annual periods', () => {
   const input = {
     ...state,
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     periods: [

@@ -29,7 +29,7 @@ export function prorogatedDeadline(
   const causes = events.filter(
     (event) =>
       event.deadlineExtensionCause &&
-      event.kind === 'exclude' &&
+      event.effect === 'exclude' &&
       appliesTo(event, offer ?? modality) &&
       event.start <= original &&
       event.end >= original,
@@ -53,9 +53,9 @@ export function prorogatedDeadline(
       active = scoped.filter((e) => e.start <= date && e.end >= date);
     if (
       periods.some((p) => p.start <= date && p.end >= date) &&
-      !active.some((e) => e.kind === 'exclude') &&
+      !active.some((e) => e.effect === 'exclude') &&
       (state.weekdays.includes(new Date(time).getUTCDay()) ||
-        active.some((e) => e.kind === 'include'))
+        active.some((e) => e.effect === 'include'))
     )
       return { date, original, source: 'municipal-extension' as const, evidence };
   }

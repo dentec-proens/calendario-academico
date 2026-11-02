@@ -6,7 +6,7 @@ import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import type {
   CalendarEvent,
-  CalendarContentV4,
+  CalendarContent,
   VacationPeriods,
 } from '../../src/domain/calendar/model.ts';
 import type { ObservanceRule, CalendarWindow } from '../../src/domain/policies/contract.ts';
@@ -16,7 +16,7 @@ test('CivilDate is a validated primitive string, distinct from arbitrary input a
   expectTypeOf<CivilDate>().toExtend<string>();
   expectTypeOf<ObservanceRule['allowedDates'][number]>().toEqualTypeOf<CivilDate>();
   expectTypeOf<CalendarEvent['start']>().toEqualTypeOf<CivilDate>();
-  expectTypeOf<CalendarContentV4['observanceDates']>().toEqualTypeOf<
+  expectTypeOf<CalendarContent['observanceDates']>().toEqualTypeOf<
     Record<string, CivilDate> | undefined
   >();
   expectTypeOf<VacationPeriods['firstStart']>().toEqualTypeOf<CivilDate>();
@@ -77,7 +77,7 @@ test('reading persisted dates preserves historical choices, metadata and the exa
     events: [
       {
         id: 'historic',
-        kind: 'note',
+        effect: 'note',
         name: 'Referência histórica',
         start: '2027-10-29',
         end: '2027-10-29',

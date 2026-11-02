@@ -248,6 +248,8 @@ export interface MaterializedScope {
 
 export interface Inventory {
   forms: Partial<Record<V4Form, number>>;
+  /** Every shape found, by the path of the stored object that has it (for the manifest). */
+  occurrences: { path: string; form: V4Form }[];
   blocking: { path: string; form: V4Form }[];
   links: { path: string; eventId: string; link: LinkShape }[];
   materialized: MaterializedScope[];
@@ -454,11 +456,20 @@ function stored(kind: StoredObject, value: unknown, path: string, system = false
   return record(value, path, [...required], [...optional, ...(system ? systemFields : [])]);
 }
 
+const emptyInventory = (): Inventory => ({
+  forms: {},
+  occurrences: [],
+  blocking: [],
+  links: [],
+  materialized: [],
+});
+
 class Collector {
-  readonly inventory: Inventory = { forms: {}, blocking: [], links: [], materialized: [] };
+  readonly inventory: Inventory = emptyInventory();
 
   form(form: V4Form, path: string) {
     this.inventory.forms[form] = (this.inventory.forms[form] ?? 0) + 1;
+    this.inventory.occurrences.push({ path, form });
     if (blockingForms.has(form)) this.inventory.blocking.push({ path, form });
   }
 }
@@ -1010,6 +1021,16 @@ export function inventorySubmission(
   return out.inventory;
 }
 
+/**
+ * Inventory of an institutional snapshot (`institutionalSnapshot` of a content or submission),
+ * on its own: the conversion of a snapshot reads it without the state it belongs to.
+ */
+export function inventorySnapshot(value: unknown, path = 'institutionalSnapshot'): Inventory {
+  const out = new Collector();
+  readSnapshot(value, path, out);
+  return out.inventory;
+}
+
 /** Inventory of one `institutionalEvents` row (the catalogue). */
 export function inventoryCatalogueRow(row: unknown): Inventory {
   const out = new Collector();
@@ -1035,12 +1056,13 @@ export function inventoryCatalogueRow(row: unknown): Inventory {
   return out.inventory;
 }
 
-/** Sums inventories, keeping paths of blocking shapes, links and materialized lists. */
+/** Sums inventories, keeping paths of occurrences, blocking shapes, links and materialized lists. */
 export function mergeInventories(inventories: readonly Inventory[]): Inventory {
-  const total: Inventory = { forms: {}, blocking: [], links: [], materialized: [] };
+  const total = emptyInventory();
   for (const inventory of inventories) {
     for (const [form, count] of Object.entries(inventory.forms) as [V4Form, number][])
       total.forms[form] = (total.forms[form] ?? 0) + count;
+    total.occurrences.push(...inventory.occurrences);
     total.blocking.push(...inventory.blocking);
     total.links.push(...inventory.links);
     total.materialized.push(...inventory.materialized);

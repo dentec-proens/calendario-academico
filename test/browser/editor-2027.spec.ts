@@ -67,7 +67,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.state.schemaVersion = 4;
+    record.state.schemaVersion = 5;
     record.state.rulesetVersion = 'consup-292-2027-v3';
     record.state.periods = [
       {
@@ -149,7 +149,7 @@ test('coverage stays partial per offer while the second record is edited and rem
       delivery: 'a-conferir',
       organization: 'anual',
     }));
-    record.state.schemaVersion = 4;
+    record.state.schemaVersion = 5;
     record.state.rulesetVersion = 'consup-292-2027-v3';
     record.state.periods = [];
     record.state.events = ['subsequente', 'graduacao'].map((modality, index) => ({
@@ -157,7 +157,7 @@ test('coverage stays partial per offer while the second record is edited and rem
       name: `Veteranos ${modality}`,
       start: '2027-02-01',
       end: '2027-02-02',
-      kind: 'note',
+      effect: 'note',
       offers: [modality as 'subsequente' | 'graduacao'],
       requirementId: 'enrolment-0',
     }));
@@ -240,7 +240,7 @@ test('migrated pending organization preserves period IDs until explicit offer an
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    record.state.schemaVersion = 4;
+    record.state.schemaVersion = 5;
     record.state.offers[0].organization = 'a-classificar';
     delete record.state.offers[0].stages;
     delete record.state.rulesetVersion;

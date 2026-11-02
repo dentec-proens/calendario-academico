@@ -1,4 +1,8 @@
-import type { AssessmentSettings, CalendarOffer } from '#src/domain/calendar/model.ts';
+import {
+  calendarSchemaVersion,
+  type AssessmentSettings,
+  type CalendarOffer,
+} from '#src/domain/calendar/model.ts';
 import { selectableModalities } from '#src/domain/calendar/modalities.ts';
 import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { expandRules, type ActivityRule } from '#src/domain/calendar/activities/rules.ts';
@@ -70,7 +74,7 @@ export function rulesView(year: number) {
   });
   const state: AssessmentSettings = {
     year,
-    schemaVersion: 4,
+    schemaVersion: calendarSchemaVersion,
     offers,
   };
   const rows = new Map(activityPlan(state).map((row) => [row.id, row]));

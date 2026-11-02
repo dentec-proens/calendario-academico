@@ -3,7 +3,7 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { api } from '../../convex/_generated/api.js';
 import type { DomainState } from '../../convex/validators.ts';
-import type { CalendarContentV4, CalendarOffer } from '../../src/domain/calendar/model.ts';
+import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, preserveSubmission, seedCourses } from '../helpers/lifecycle.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
@@ -56,7 +56,7 @@ test.each(['anual', 'semestral', 'a-classificar'] as const)(
         (offer) => offer.delivery === 'presencial' && !offer.stages && !offer.scope,
       ),
     ).toBe(true);
-    expect(record.state.schemaVersion).toBe(4);
+    expect(record.state.schemaVersion).toBe(5);
     for (const field of ['offer', 'modalities', 'regime', 'organizationByModality', 'conversion'])
       expect(record.state).not.toHaveProperty(field);
     expect(
@@ -110,7 +110,7 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
         name: 'Publicação sintética de 2026',
         start: civilDate('2026-12-10'),
         end: civilDate('2026-12-10'),
-        kind: 'note',
+        effect: 'note',
         publicationStatus: 'published',
         admission: { type: 'transfer', year: 2027, term: 'first', periodId: 'undergraduate-first' },
         offers: ['graduacao'],
@@ -120,8 +120,7 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
         name: 'Previsão sintética para ingresso 2028',
         start: civilDate('2027-12-01'),
         end: civilDate('2027-12-01'),
-        kind: 'note',
-        recordType: 'event',
+        effect: 'note',
         publicationStatus: 'planned',
         admission: { type: 'regular', year: 2028, term: 'annual' },
         deadlineAdjustment: { date: civilDate('2027-12-15'), reviewed: false },
@@ -182,13 +181,13 @@ test('direct backend writes retain temporal and offer-scope validation', async (
     name: 'Fato sintético anterior',
     start: civilDate('2026-12-01'),
     end: civilDate('2026-12-01'),
-    kind: 'note' as const,
+    effect: 'note' as const,
     offers: ['integrado'],
   };
   for (const forged of [
-    { ...event, kind: 'include' as const },
-    { ...event, kind: 'exclude' as const },
-    { ...event, recordType: 'event' as const, kind: 'include' as const },
+    { ...event, effect: 'include' as const },
+    { ...event, effect: 'exclude' as const },
+    { ...event, recordType: 'event' as const, effect: 'include' as const },
     { ...event, hours: 40, requirementId: 'pedagogical-training' },
     {
       ...event,
@@ -244,7 +243,7 @@ test('a direct inclusion must fit every explicitly covered offer period', async 
     name: 'Inclusão sintética',
     start: civilDate('2027-03-01'),
     end: civilDate('2027-03-01'),
-    kind: 'include' as const,
+    effect: 'include' as const,
   };
   for (const offers of [['graduacao'], ['integrado', 'graduacao']])
     await expect(
@@ -336,7 +335,7 @@ function oneOffer(
   source: string,
   organization: 'anual' | 'semestral',
   perTerm: number,
-): CalendarContentV4 & { year: number; campus: string } {
+): CalendarContent & { year: number; campus: string } {
   const fixture = calendarOffersV4Fixture();
   const old = fixture.offers.find((offer) => offer.id === source)!;
   const offers: CalendarOffer[] = [
@@ -378,7 +377,7 @@ test.each(['annual', 'semester', 'trimester', 'three'] as const)(
               name: 'Evento institucional da graduação',
               start: civilDate('2027-05-04'),
               end: civilDate('2027-05-04'),
-              kind: 'note',
+              effect: 'note',
               category: 'evento',
               evidence: 'Fonte sintética',
               modalities: ['graduacao'],
@@ -501,7 +500,7 @@ test('backend rejects a newly moved stage in the wrong semester but preserves un
     name: 'Ajuste em outra parte',
     start: civilDate('2027-06-01'),
     end: civilDate('2027-06-01'),
-    kind: 'note' as const,
+    effect: 'note' as const,
     offers: ['graduacao'],
   };
   const kept = await actor

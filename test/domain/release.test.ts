@@ -18,7 +18,7 @@ test('definitive release requires every reviewed criterion, current versions and
     catalogueRevision: 1,
     institutionalSnapshot: [],
     state: {
-      schemaVersion: 4 as const,
+      schemaVersion: 5 as const,
       year: 2027,
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
@@ -57,7 +57,7 @@ test('definitive release requires every reviewed criterion, current versions and
       name,
       start: civilDate('2027-02-01'),
       end: civilDate('2027-02-01'),
-      kind: 'note',
+      effect: 'note' as const,
       category: 'institucional',
     }));
   record.state.events.push(
@@ -68,7 +68,7 @@ test('definitive release requires every reviewed criterion, current versions and
       name: r.name,
       start: civilDate('2027-02-01'),
       end: civilDate('2027-02-01'),
-      kind: 'note',
+      effect: 'note' as const,
     })),
   );
   const db = {
@@ -205,7 +205,7 @@ test('explicit technical modality inherits scoped events and the PDF mark depend
 
 test('combined calendars scope exclusions by modality and do not presume a postgraduate minimum', () => {
   const state = {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -249,7 +249,7 @@ test('combined calendars scope exclusions by modality and do not presume a postg
       id: 'e',
       start: civilDate('2027-02-02'),
       end: civilDate('2027-02-02'),
-      kind: 'exclude',
+      effect: 'exclude' as const,
       offers: ['graduacao'],
     },
   ]);

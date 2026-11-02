@@ -1,13 +1,13 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import type {
   CalendarEvent,
-  CalendarContentV4,
+  CalendarContent,
   CalendarOffer,
   OfferKind,
 } from '../../src/domain/calendar/model.ts';
 import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
 
-export type PendingLinksFixture = CalendarContentV4 & { year: number; campus: string };
+export type PendingLinksFixture = CalendarContent & { year: number; campus: string };
 
 /** Day and month as in the audited drafts (section 11 of the plan); every date is in 2027. */
 const day = (value: string) => {
@@ -33,7 +33,7 @@ function draft(
   extra: (event: CalendarEvent) => CalendarEvent = (event) => event,
 ): PendingLinksFixture {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     rulesetVersion: 'consup-292-2027-v3',
     year: 2027,
     campus,
@@ -62,7 +62,7 @@ function draft(
         name: `Data sintética ${requirementId}`,
         start: day(start),
         end: day(end),
-        kind: 'note',
+        effect: 'note',
         category: 'prazo',
         requirementId,
         offers: scope ?? [...offers],
@@ -114,7 +114,7 @@ export function ivaiporaDraft(): PendingLinksFixture {
       name: `Registro anual sintético ${name}`,
       start: day(start),
       end: day(end),
-      kind: 'note',
+      effect: 'note',
       category: 'prazo',
       offers: ['integrado', 'subsequente'],
       ...(name === 'final-appeal' ? { hours: 40 } : {}),
@@ -162,13 +162,13 @@ export function conflictingLinks(): PendingLinksFixture {
     requirementId: `stage-${n}:integrado`,
     start: day(start),
     end: day(end),
-    kind: 'note',
+    effect: 'note',
     category: 'limite',
     offers: ['integrado'],
   });
   const vacation = teacherVacations(2027, vacations).events[0];
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     rulesetVersion: 'consup-292-2027-v3',
     year: 2027,
     campus: 'Campus sintético de conflitos',
@@ -200,7 +200,7 @@ export function conflictingLinks(): PendingLinksFixture {
         name: 'Edital de transferência sintético',
         start: day('03/05'),
         end: day('03/05'),
-        kind: 'note',
+        effect: 'note',
         category: 'prazo',
         requirementId: 'admission-notice-2',
         offers: ['integrado', 'subsequente'],

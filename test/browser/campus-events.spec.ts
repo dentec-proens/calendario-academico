@@ -112,7 +112,7 @@ test('a local date whose ID imitates the base prefix stays a campus date', async
       name: 'Data local com prefixo da base',
       start: '2027-03-11',
       end: '2027-03-11',
-      kind: 'note',
+      effect: 'note',
       category: 'evento',
       offers: ['integrado'],
       evidence: 'Fonte que não é da base',

@@ -35,7 +35,7 @@ import { proensLayout } from '../../src/printing/calendar-layout.ts';
 
 function state(): AnnotatedState {
   return {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -69,7 +69,7 @@ function state(): AnnotatedState {
         name: 'Sábado',
         start: civilDate('2027-03-06'),
         end: civilDate('2027-03-06'),
-        kind: 'include',
+        effect: 'include' as const,
         evidence: 'Ata manual do sábado',
       },
       {
@@ -77,7 +77,7 @@ function state(): AnnotatedState {
         name: 'Reposição',
         start: civilDate('2027-03-08'),
         end: civilDate('2027-03-08'),
-        kind: 'include',
+        effect: 'include' as const,
         evidence: 'Fonte manual da reposição',
       },
       {
@@ -85,7 +85,7 @@ function state(): AnnotatedState {
         name: 'Feriado local',
         start: civilDate('2027-03-08'),
         end: civilDate('2027-03-08'),
-        kind: 'exclude',
+        effect: 'exclude' as const,
         offers: ['integrado'],
         evidence: 'Fonte manual do feriado',
       },
@@ -117,7 +117,7 @@ const baseHoliday: InstitutionalEventSnapshot = {
   name: 'Feriado institucional',
   start: civilDate('2027-03-10'),
   end: civilDate('2027-03-10'),
-  kind: 'exclude',
+  effect: 'exclude' as const,
   evidence: 'Resolução institucional automática',
 };
 
@@ -217,7 +217,7 @@ const holiday = (overrides: Partial<AnnotatedEvent> = {}): AnnotatedEvent => ({
   name: 'Feriado municipal',
   start: civilDate('2027-08-31'),
   end: civilDate('2027-08-31'),
-  kind: 'exclude',
+  effect: 'exclude' as const,
   offers: ['integrado'],
   evidence: 'Lei manual',
   deadlineExtensionCause: 'municipal-holiday',
@@ -246,7 +246,7 @@ for (const scenario of [
         id: 'saturday',
         start: civilDate('2027-09-04'),
         end: civilDate('2027-09-04'),
-        kind: 'include',
+        effect: 'include' as const,
         deadlineExtensionCause: undefined,
       },
     ],
@@ -330,7 +330,7 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
     id: 'notice',
     name: row.name,
     requirementId: row.id,
-    kind: 'note',
+    effect: 'note' as const,
     offers: ['integrado'],
     start: civilDate('2027-12-01'),
     end: civilDate('2027-12-01'),
@@ -375,7 +375,7 @@ test('PDF omits manual source text but keeps automatic institutional references 
       name: 'Edital anterior',
       start: civilDate('2026-12-01'),
       end: civilDate('2026-12-02'),
-      kind: 'note',
+      effect: 'note' as const,
       evidence: 'SEGREDO MANUAL DO EVENTO',
       publicationStatus: 'published' as const,
       admission: { type: 'regular' as const, year: 2027, term: 'annual' as const },

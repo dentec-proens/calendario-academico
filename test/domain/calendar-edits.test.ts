@@ -5,7 +5,7 @@ import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 function calendar(): ActivityState {
   return {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -23,7 +23,7 @@ function calendar(): ActivityState {
       name: `${index + 1}ª etapa`,
       start: civilDate(`2027-03-${String(index * 7 + 1).padStart(2, '0')}`),
       end: civilDate(`2027-03-${String(index * 7 + 4).padStart(2, '0')}`),
-      kind: 'note',
+      effect: 'note',
       category: 'limite',
       offers: ['integrado'],
     })),
@@ -52,7 +52,7 @@ test('recalculating periods preserves every entered stage date, including legacy
       name: 'Feriado',
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-05'),
-      kind: 'exclude',
+      effect: 'exclude',
     },
   ]);
   const expected = before.events;

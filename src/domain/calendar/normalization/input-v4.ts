@@ -1,12 +1,14 @@
 import { civilDate, optionalCivilDate } from '../../civil-date.ts';
 import { academicTerms, modalityIds, organizations } from '../config.ts';
-import type {
-  CalendarEventV4,
-  CalendarContentV4,
-  CalendarOffer,
-  CalendarPeriodV4,
-  IntakeConfiguration,
-  VacationPeriods,
+import {
+  calendarSchemaVersion,
+  eventEffects,
+  type CalendarEvent,
+  type CalendarContent,
+  type CalendarOffer,
+  type CalendarPeriod,
+  type IntakeConfiguration,
+  type VacationPeriods,
 } from '../model.ts';
 import { invalidCalendar as fail } from './input.ts';
 
@@ -93,7 +95,7 @@ function offer(value: unknown): CalendarOffer {
     ...(intake === undefined ? {} : { intake }),
   };
 }
-const period = (value: unknown): CalendarPeriodV4 => {
+const period = (value: unknown): CalendarPeriod => {
   const row = calendarObject(value),
     association = calendarObject(row.association);
   return {
@@ -114,7 +116,7 @@ const period = (value: unknown): CalendarPeriodV4 => {
           : fail('Associação do período inválida.'),
   };
 };
-const activity = (value: unknown): CalendarEventV4 => {
+const activity = (value: unknown): CalendarEvent => {
   const row = calendarObject(value);
   if ('modalities' in row) return fail('Formato de atividade incompatível.');
   const admission = row.admission === undefined ? undefined : calendarObject(row.admission);
@@ -125,15 +127,12 @@ const activity = (value: unknown): CalendarEventV4 => {
     name: text(row.name),
     start: date(row.start),
     end: date(row.end),
-    kind: choice(row.kind, ['include', 'exclude', 'note'], 'Efeito inválido.'),
+    effect: choice(row.effect, eventEffects, 'Efeito inválido.'),
     category: optional(row.category, text),
     requirementId: optional(row.requirementId, text),
     offers: optional(row.offers, (value) => array(value, text)),
     hours: optional(row.hours, number),
     assessmentAutoStart: optional(row.assessmentAutoStart, date),
-    recordType: optional(row.recordType, (value) =>
-      choice(value, ['event'], 'Natureza do registro inválida.'),
-    ),
     publicationStatus: optional(row.publicationStatus, (value) =>
       choice(value, ['planned', 'published'], 'Situação de publicação inválida.'),
     ),
@@ -176,17 +175,27 @@ function vacations(value: unknown): VacationPeriods {
   };
 }
 
-/** The v4 boundary never infers offer identity or organization from a legacy summary. */
+/**
+ * Message for a copy exported before format 5. It is refused, never converted: the conversion
+ * belongs only to the migration (plan `docs/plans/2026-11-02-atividades-e-datas.md`, decision 1).
+ */
+export const formatFourCopyMessage =
+  'Esta cópia está no formato 4, anterior à atualização de atividades e datas. Exporte uma nova cópia do calendário.';
+
+/** The v5 boundary never infers offer identity or organization from a legacy summary. */
 export function readCalendarOfferInput(
   value: unknown,
-): CalendarContentV4 & { year: number; campus: string } {
+): CalendarContent & { year: number; campus: string } {
   const row = calendarObject(value);
-  if (row.schemaVersion !== 4)
-    return fail('Formato de calendário incompatível. Use uma cópia de formato 4.');
+  if (row.schemaVersion === 4) return fail(formatFourCopyMessage);
+  if (row.schemaVersion !== calendarSchemaVersion)
+    return fail(
+      `Formato de calendário incompatível. Use uma cópia de formato ${calendarSchemaVersion}.`,
+    );
   if ('teacherDayDate' in row)
     return fail('Esta cópia usa o campo antigo do Dia do Professor e não pode mais ser importada.');
   return {
-    schemaVersion: 4,
+    schemaVersion: calendarSchemaVersion,
     year: number(row.year),
     campus: row.campus === undefined ? '' : text(row.campus),
     rulesetVersion: optional(row.rulesetVersion, text),

@@ -87,11 +87,11 @@ A admissão de actions e a pausa de manutenção são transacionais; mutations d
 
 ## Conteúdo v4 e política de 2027
 
-Novos conteúdos e cópias usam `schemaVersion: 4`. Cada oferta tem `id` imutável, `kind` para aplicabilidade normativa, rótulo, modo e organização. É possível repetir um tipo com rótulos distintos. Eventos e associações de períodos usam IDs de ofertas; o catálogo institucional continua selecionado por tipo e é materializado para todas as ofertas daquele tipo. `offerKinds` no registro é um resumo dos tipos distintos e ordenados; organização geral e ingresso geral são derivados, não persistidos.
+Novos conteúdos e cópias usam `schemaVersion: 5`; o efeito de cada data na contagem fica em `effect`. Cada oferta tem `id` imutável, `kind` para aplicabilidade normativa, rótulo, modo e organização. É possível repetir um tipo com rótulos distintos. Eventos e associações de períodos usam IDs de ofertas; o catálogo institucional continua selecionado por tipo e é materializado para todas as ofertas daquele tipo. `offerKinds` no registro é um resumo dos tipos distintos e ordenados; organização geral e ingresso geral são derivados, não persistidos.
 
 A organização é anual, semestral ou a classificar. Etapas são configuradas por ciclo: duas, três ou quatro no ano letivo, ou uma ou duas por semestre. Os vínculos `stage-1..4:offerId` conservam o ordinal global; a apresentação reinicia a numeração em cada semestre. Períodos são disjuntos por oferta e podem coincidir entre ofertas. Escopo e ingresso pertencem a cada oferta/ciclo. Modo e base da organização são informativos e não alteram obrigações ou mínimos.
 
-O armazenamento aceita somente o formato 4, inclusive nos envios e na lixeira, e importações de cópias de outro formato são recusadas. Os valores antigos que continuam válidos nesse formato estão em [Operações administrativas de dados](migracao-schema.md#formatos-antigos-que-permanecem-nos-dados).
+O código aceita somente o formato 5, inclusive nos envios e na lixeira, e importações de cópias de outro formato são recusadas; cópias do formato 4 recebem mensagem própria. A conversão dos dados gravados no formato 4 e os valores antigos que continuam válidos estão em [Operações administrativas de dados](migracao-schema.md#formatos-antigos-que-permanecem-nos-dados).
 
 Conversões ambíguas preservam IDs e datas e mantêm a configuração pendente. Uma inconsistência migrada de ciclo gera aviso e permite salvar outra parte; uma etapa nova ou alterada precisa caber inteiramente no período do seu ciclo. A preparação preserva identidade e tipo de ofertas já salvas, cuja remoção permanece proibida.
 

@@ -6,7 +6,7 @@ import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 const state: ActivityState & { ignoredHistory: string[] } = {
-  schemaVersion: 4 as const,
+  schemaVersion: 5 as const,
   year: 2027,
   campus: 'Campus sintético',
   weekdays: [1, 2, 3, 4, 5],
@@ -72,7 +72,7 @@ test('a documented 2026 occurrence retains its actual dates through the event co
     name: 'Edital sintético de transferência para 2027',
     start: civilDate('2026-12-01'),
     end: civilDate('2026-12-01'),
-    kind: 'note',
+    effect: 'note' as const,
     publicationStatus: 'published' as const,
     offers: ['integrado'],
   };

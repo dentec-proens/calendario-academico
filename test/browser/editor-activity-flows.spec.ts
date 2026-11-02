@@ -41,13 +41,12 @@ test('a new activity record keeps the prepared link, offer, effect and category'
   expect(event).toMatchObject({
     name: title,
     requirementId: 'family-meeting',
-    kind: 'note',
+    effect: 'note',
     category: 'prazo',
     offers: ['integrado'],
     start: '2027-05-08',
     end: '2027-05-08',
   });
-  expect(event?.recordType ?? 'event').toBe('event');
 });
 
 test('editing a linked record that changes the count keeps its effect, category and identity', async ({
@@ -64,7 +63,7 @@ test('editing a linked record that changes the count keeps its effect, category 
       requirementId: 'family-meeting',
       start: '2027-05-10',
       end: '2027-05-10',
-      kind: 'exclude',
+      effect: 'exclude',
       category: 'recesso',
       offers: ['integrado'],
     });
@@ -77,7 +76,7 @@ test('editing a linked record that changes the count keeps its effect, category 
   );
   await openActivity(page, 'family-meeting');
   await page.locator('[data-edit-activity-event="linked-exclusion"]').click();
-  await expect(page.locator('#event-kind')).toHaveValue('exclude');
+  await expect(page.locator('#event-effect')).toHaveValue('exclude');
   await page.locator('#event-name').fill('Encontro com recesso retificado');
 
   await applyEvent(page);
@@ -124,7 +123,7 @@ test('a free admission notice is registered without an activity link', async ({
     .toBe(true);
   const event = await savedEvent(page, (name) => name === 'Edital local de transferência');
   expect(event).toMatchObject({
-    kind: 'note',
+    effect: 'note',
     category: 'prazo',
     publicationStatus: 'planned',
     admission: { type: 'transfer', year: 2027, term: 'second' },
@@ -155,18 +154,18 @@ test('a new activity period asks for dates first and keeps category and effect c
   await expect(page.locator('#event-modalities input')).toHaveCount(0);
   await expect(page.locator('#event-name')).toHaveValue(title);
   await expect(page.locator('#event-more-options')).not.toHaveAttribute('open');
-  await expect(page.locator('#event-kind')).toBeHidden();
+  await expect(page.locator('#event-effect')).toBeHidden();
 
   // A field hidden in the collapsed group is revealed when the browser rejects it.
   await page.locator('#event-more-options > summary').click();
-  await page.locator('#event-kind').selectOption('');
+  await page.locator('#event-effect').selectOption('');
   await page.locator('#event-more-options > summary').click();
   await page.locator('#event-start').fill('2027-05-08');
   await page.locator('#event-end').fill('2027-05-08');
 
   await applyEvent(page);
   await expect(page.locator('#event-more-options')).toHaveAttribute('open', '');
-  await expect(page.locator('#event-kind')).toBeFocused();
+  await expect(page.locator('#event-effect')).toBeFocused();
   expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(2);
 });
 
@@ -273,7 +272,7 @@ test('a free event asks what it is and the answer sets its effect and category',
   await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await expect(page.locator('#event-type > legend')).toHaveText('O que é este evento?');
-  await expect(page.locator('#event-kind')).toBeHidden();
+  await expect(page.locator('#event-effect')).toBeHidden();
   await page.locator('#event-name').fill('Feriado municipal sintético');
   await page.locator('#event-start').fill('2027-06-24');
   await page.locator('#event-end').fill('2027-06-24');
@@ -284,7 +283,7 @@ test('a free event asks what it is and the answer sets its effect and category',
   expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(2);
   await page.locator('#event-type-holiday').check();
   await page.locator('#event-more-options > summary').click();
-  await expect(page.locator('#event-kind')).toHaveValue('exclude');
+  await expect(page.locator('#event-effect')).toHaveValue('exclude');
   await expect(page.locator('#event-category')).toHaveValue('feriado');
   await page.locator('#event-type-notice').check();
   await expect(page.locator('#event-admission-type')).toHaveAttribute('required', '');
@@ -298,7 +297,7 @@ test('a free event asks what it is and the answer sets its effect and category',
         ),
       ),
     )
-    .toMatchObject({ kind: 'exclude', category: 'recesso' });
+    .toMatchObject({ effect: 'exclude', category: 'recesso' });
 });
 
 test('a record with a freely combined effect and category shows both fields when edited', async ({
@@ -314,7 +313,7 @@ test('a record with a freely combined effect and category shows both fields when
       name: 'Formação com efeito livre',
       start: '2027-04-12',
       end: '2027-04-12',
-      kind: 'exclude',
+      effect: 'exclude',
       category: 'formacao',
       offers: ['integrado'],
     });
@@ -326,8 +325,8 @@ test('a record with a freely combined effect and category shows both fields when
   await expect(page.locator('#event-type')).toHaveCount(0);
   await expect(page.locator('#event-more-options > summary')).toContainText('Exclui dias letivos');
   await page.locator('#event-more-options > summary').click();
-  await expect(page.locator('#event-kind')).toBeVisible();
-  await expect(page.locator('#event-kind')).toHaveValue('exclude');
+  await expect(page.locator('#event-effect')).toBeVisible();
+  await expect(page.locator('#event-effect')).toHaveValue('exclude');
   await expect(page.locator('#event-category')).toHaveValue('formacao');
   await expect(page.locator('#event-panel #event-form')).toBeVisible();
 });
@@ -361,7 +360,7 @@ test('answering another type after a notice keeps its draft but writes no notice
     )
     .toBe(true);
   const event = await savedEvent(page, (name) => name === 'Recesso após edital');
-  expect(event).toMatchObject({ kind: 'exclude', category: 'recesso' });
+  expect(event).toMatchObject({ effect: 'exclude', category: 'recesso' });
   expect(event?.admission).toBeUndefined();
   expect(event?.publicationStatus).toBeUndefined();
 });

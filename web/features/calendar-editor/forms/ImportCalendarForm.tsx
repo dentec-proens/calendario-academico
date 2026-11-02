@@ -4,6 +4,8 @@ import { useDraftForm } from '../../../shared/forms/useDraftForm.ts';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { normalizeOfferCalendar } from '#src/domain/calendar/normalization/normalize-v4.ts';
+import { formatFourCopyMessage } from '#src/domain/calendar/normalization/input-v4.ts';
+import { calendarSchemaVersion } from '#src/domain/calendar/model.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { CalendarState } from '../types.ts';
@@ -19,16 +21,17 @@ export default function ImportCalendarForm() {
       if (!value.file || value.file.size > 2_000_000)
         throw new Error('Escolha uma cópia JSON de até 2 MB.');
       const parsed: unknown = JSON.parse(await value.file.text());
-      if (
-        !parsed ||
-        typeof parsed !== 'object' ||
-        !('schemaVersion' in parsed) ||
-        parsed.schemaVersion !== 4
-      )
+      const version =
+        parsed && typeof parsed === 'object' && 'schemaVersion' in parsed
+          ? parsed.schemaVersion
+          : undefined;
+      // A format 4 copy is refused, never converted: conversion belongs only to the migration.
+      if (version === 4) throw new Error(formatFourCopyMessage);
+      if (version !== calendarSchemaVersion)
         throw new Error(
           'Esta cópia foi gerada por uma versão anterior do sistema e não pode mais ser importada.',
         );
-      // Importing is saving: normalization validates the v4 literals and keeps only the links
+      // Importing is saving: normalization validates the v5 literals and keeps only the links
       // already recorded on the same dates; any other link needs a generated activity.
       const imported = normalizeOfferCalendar(parsed, record.state) as CalendarState;
       if (imported.year !== state.year || imported.campus !== state.campus)
@@ -45,7 +48,7 @@ export default function ImportCalendarForm() {
       if (!isCurrent()) return;
       await confirmAction({
         title: 'Aplicar cópia ao calendário?',
-        description: `Os dados aplicados serão substituídos pelo conteúdo conferido do arquivo. Formato 4: ${imported.offers.length} ofertas, ${imported.periods.length} períodos e ${imported.events.length} eventos.`,
+        description: `Os dados aplicados serão substituídos pelo conteúdo conferido do arquivo. Formato ${calendarSchemaVersion}: ${imported.offers.length} ofertas, ${imported.periods.length} períodos e ${imported.events.length} eventos.`,
         consequence: 'Os campos em preenchimento devem ser conferidos antes de continuar.',
         confirmLabel: 'Aplicar cópia',
         intent: 'warning',

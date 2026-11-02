@@ -63,7 +63,7 @@ export default function SaturdaysForm() {
           .filter(
             (date) =>
               !current.events.some(
-                (event) => event.kind === 'include' && event.start <= date && date <= event.end,
+                (event) => event.effect === 'include' && event.start <= date && date <= event.end,
               ),
           )
           .sort();

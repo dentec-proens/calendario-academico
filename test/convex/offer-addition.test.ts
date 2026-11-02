@@ -52,7 +52,7 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
       offers: ['integrado'],
       start: index ? '2027-03-15' : '2027-03-01',
       end: index ? '2027-03-26' : '2027-03-12',
-      kind: 'note' as const,
+      effect: 'note' as const,
     })),
   };
   const saved = await actor
@@ -70,8 +70,8 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
   expect(loaded.state.periods).toEqual(saved.state.periods);
   expect(loaded.state.events).toEqual(saved.state.events);
   const previous = await submitted();
-  expect(previous.state.schemaVersion).toBe(4);
-  if (previous.state.schemaVersion !== 4) throw Error('Snapshot v4 esperado.');
+  expect(previous.state.schemaVersion).toBe(5);
+  if (previous.state.schemaVersion !== 5) throw Error('Snapshot v4 esperado.');
   expect(previous.state.offers.map((offer) => offer.id)).toEqual(['posgraduacao']);
   expect(previous.state.periods).toEqual([]);
   for (const changed of [

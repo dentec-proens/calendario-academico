@@ -55,7 +55,7 @@ test('v4 Saturdays require the teaching period of every offer identity', () => {
 
 test('month selection adds only chosen Saturdays, survives serialization, and respects conflicts', () => {
   const s = {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -102,7 +102,7 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
       name: 'Feriado',
       start: civilDate('2027-02-20'),
       end: civilDate('2027-02-20'),
-      kind: 'exclude',
+      effect: 'exclude',
     },
   ]);
   assert.equal(result.byWeekday[6], 1);
@@ -114,7 +114,7 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
 
 test('a confirmed annual selection includes Saturdays from different months in one atomic command', () => {
   const state: ActivityState = {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -170,7 +170,7 @@ test('a confirmed annual selection includes Saturdays from different months in o
 
 test('each Saturday keeps its activity and date without a source and a failed batch changes nothing', () => {
   const state: ActivityState = {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -229,7 +229,7 @@ test('each Saturday keeps its activity and date without a source and a failed ba
 });
 
 const yearState: ActivityState = {
-  schemaVersion: 4 as const,
+  schemaVersion: 5 as const,
   year: 2027,
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
@@ -246,7 +246,7 @@ const yearState: ActivityState = {
     {
       id: 's1',
       name: 'Feira de ciências',
-      kind: 'include',
+      effect: 'include',
       category: 'sabado',
       start: civilDate('2027-03-06'),
       end: civilDate('2027-03-06'),
@@ -254,7 +254,7 @@ const yearState: ActivityState = {
     {
       id: 'semana',
       name: 'Semana acadêmica',
-      kind: 'include',
+      effect: 'include',
       category: 'institucional',
       start: civilDate('2027-03-22'),
       end: civilDate('2027-03-27'),
@@ -262,7 +262,7 @@ const yearState: ActivityState = {
     {
       id: 's2',
       name: 'Reposição',
-      kind: 'include',
+      effect: 'include',
       category: 'sabado',
       start: civilDate('2027-06-05'),
       end: civilDate('2027-06-05'),
@@ -280,7 +280,7 @@ const yearState: ActivityState = {
 const holiday: CalendarEvent = {
   id: 'holiday',
   name: 'Feriado municipal',
-  kind: 'exclude',
+  effect: 'exclude',
   start: civilDate('2027-03-20'),
   end: civilDate('2027-03-20'),
 };
@@ -337,7 +337,7 @@ test('a Saturday covered by a wider inclusion stays editable through its own rec
   const own: CalendarEvent = {
     id: 's3',
     name: 'Gincana',
-    kind: 'include',
+    effect: 'include',
     category: 'sabado',
     start: civilDate('2027-03-27'),
     end: civilDate('2027-03-27'),

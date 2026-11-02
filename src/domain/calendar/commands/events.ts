@@ -40,7 +40,6 @@ function sameOccurrence(a: CalendarEvent, b: CalendarEvent) {
     a.name.toLocaleLowerCase() === b.name.trim().toLocaleLowerCase() &&
     a.start === b.start &&
     a.end === b.end &&
-    (a.recordType ?? 'event') === (b.recordType ?? 'event') &&
     equalValues(a.admission, b.admission) &&
     equalValues([...(a.offers ?? [])].sort(), [...(b.offers ?? [])].sort())
   );
@@ -66,7 +65,7 @@ export function applyEvent<S extends ActivityState>(
     keptWithoutActivity: kept && !activity,
   });
   if (!event.name.trim()) throw new DomainError('Informe a descrição.');
-  if (!['include', 'exclude', 'note'].includes(event.kind))
+  if (!['include', 'exclude', 'note'].includes(event.effect))
     throw new DomainError('Tipo de evento inválido.');
   const modalities = event.offers;
   if (
@@ -93,7 +92,7 @@ export function applyEvent<S extends ActivityState>(
   if (editing && !state.events.some((item) => item.id === event.id))
     throw new DomainError('O evento não existe mais. Reabra o calendário.');
   if (
-    event.kind === 'include' &&
+    event.effect === 'include' &&
     datesBetween(event.start, event.end).some((date) =>
       modalities.some(
         (modality) =>

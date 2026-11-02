@@ -43,7 +43,7 @@ async function createRecord() {
           name: 'Feriado institucional',
           start: civilDate('2027-04-21'),
           end: civilDate('2027-04-21'),
-          kind: 'exclude',
+          effect: 'exclude',
           category: 'feriado',
           modalities: ['integrado'],
           evidence: 'Referência institucional preservada',
@@ -99,7 +99,7 @@ test('canonical records and historical restoration have no manual or generated s
         name: 'Edital',
         start: civilDate('2027-07-01'),
         end: civilDate('2027-07-10'),
-        kind: 'note',
+        effect: 'note',
         offers: ['integrado'],
         requirementId: 'regular-admission-notice',
         publicationStatus: 'planned',
@@ -111,7 +111,7 @@ test('canonical records and historical restoration have no manual or generated s
         name: 'Etapa excedente',
         start: civilDate('2027-03-01'),
         end: civilDate('2027-03-02'),
-        kind: 'note',
+        effect: 'note',
         offers: ['integrado'],
       },
     ],
@@ -128,7 +128,7 @@ test('canonical records and historical restoration have no manual or generated s
     .then(calendarSaveDates);
   assertSourceFree(saved.state);
   expect(saved.state.events.find((event) => event.id === 'detached-stage')).toMatchObject({
-    kind: 'note',
+    effect: 'note',
     start: civilDate('2027-03-01'),
     end: civilDate('2027-03-02'),
   });
@@ -170,7 +170,7 @@ const event = {
   name: 'Nota',
   start: civilDate('2027-03-01'),
   end: civilDate('2027-03-01'),
-  kind: 'note',
+  effect: 'note',
 };
 const legacyFields: Array<[string, (state: DomainState) => Record<string, unknown>]> = [
   ['weekEvidence', (state) => ({ ...state, weekEvidence: secret })],
@@ -269,7 +269,7 @@ test('current contents and submission copies refuse retired manual fields', asyn
             name: 'Nota',
             start: civilDate('2027-03-01'),
             end: civilDate('2027-03-01'),
-            kind: 'note' as const,
+            effect: 'note' as const,
             evidence: secret,
           },
         ],

@@ -437,7 +437,7 @@ test('a base change warns in review and refuses publication, but never alters a 
       active: true,
       start: '2027-04-21',
       end: '2027-04-21',
-      kind: 'exclude',
+      effect: 'exclude',
       category: 'feriado',
       evidence: 'Lei',
       modalities: ['integrado'],
@@ -549,7 +549,7 @@ test('a submission above 900 KiB is refused with its own message and writes noth
       name: 'x'.repeat(1100),
       start: '2027-03-01',
       end: '2027-03-01',
-      kind: 'note' as const,
+      effect: 'note' as const,
     }));
     await ctx.db.patch(content._id, { state: { ...content.state, events } });
   });
@@ -594,7 +594,7 @@ test('the review starts only by saving, and a changed base blocks conclusion bef
       active: true,
       start: '2027-04-21',
       end: '2027-04-21',
-      kind: 'exclude',
+      effect: 'exclude',
       category: 'feriado',
       evidence: 'Lei',
       modalities: ['integrado'],

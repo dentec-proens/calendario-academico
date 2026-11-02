@@ -324,7 +324,7 @@ test('stage editing and activity changes always reveal the same draft in its des
       requirementId: 'stage-1:integrado',
       start: '2027-03-01',
       end: '2027-03-12',
-      kind: 'note',
+      effect: 'note',
       category: 'limite',
       offers: ['integrado'],
     });

@@ -4,7 +4,7 @@ import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/
 
 function draft() {
   return {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     campus: 'Campus de teste',
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
@@ -73,7 +73,7 @@ test('editor rejects invalid JSON structures and dates before replacing the curr
           name: 'Data inválida',
           start: '2027-02-30',
           end: '2027-02-30',
-          kind: 'note',
+          effect: 'note',
           evidence: 'Teste',
         },
       ],
@@ -89,7 +89,7 @@ test('v4 JSON copies keep events and dates while discarding retired PDF links an
     name: 'Evento preservado',
     start: '2027-03-10',
     end: '2027-03-10',
-    kind: 'note',
+    effect: 'note',
     evidence: 'Ata do campus',
     offers: ['integrado'],
   };

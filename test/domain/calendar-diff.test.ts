@@ -15,7 +15,7 @@ const institutional = (id: string, start: string, offers?: string[]) => ({
   name: `Evento ${id}`,
   start: civilDate(start),
   end: civilDate(start),
-  kind: 'exclude',
+  effect: 'exclude' as const,
   evidence: 'Base sintética',
   institutional: true,
   ...(offers ? { offers } : {}),
@@ -68,7 +68,7 @@ test('items are added, removed and changed by id in offers, periods and events',
       name: 'Reunião',
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-01'),
-      kind: 'note',
+      effect: 'note' as const,
     });
   });
   const diff = compareContents(side(), after);
@@ -109,7 +109,7 @@ test('observances by key, week and vacations field by field, derived vacation ev
       name: 'Férias',
       start: civilDate('2027-01-04'),
       end: civilDate(end),
-      kind: 'exclude',
+      effect: 'exclude' as const,
     });
   };
   const before = side((value) => vacations(value, '2027-01-29'));
@@ -148,7 +148,7 @@ test('implicit offers equal every offer, and an offer inclusion alone is no diff
       name: 'Nota',
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-01'),
-      kind: 'note',
+      effect: 'note' as const,
     });
   });
   const after = side((value) => {
@@ -158,7 +158,7 @@ test('implicit offers equal every offer, and an offer inclusion alone is no diff
       name: 'Nota',
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-01'),
-      kind: 'note',
+      effect: 'note' as const,
       offers: ids.slice(0, 3),
     });
   });
@@ -236,7 +236,7 @@ test('the effect aggregates teaching days by offer and term, and a side without 
       name: 'Recesso',
       start: civilDate('2027-03-02'),
       end: civilDate('2027-03-03'),
-      kind: 'exclude',
+      effect: 'exclude' as const,
     });
     value.state.rulesetVersion = 'outra';
   });

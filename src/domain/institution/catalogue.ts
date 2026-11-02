@@ -63,7 +63,7 @@ export function initialCatalogue() {
     name,
     start: civilDate(`2027-${date}`),
     end: civilDate(`2027-${date}`),
-    kind: 'exclude',
+    effect: 'exclude',
     category: 'feriado',
     evidence: evidence!,
     modalities: ['integrado', 'subsequente', 'graduacao'],
@@ -120,7 +120,7 @@ export function initialCatalogue() {
       name,
       start: civilDate(`2027-${date}`),
       end: civilDate(`2027-${date}`),
-      kind: ['recesso', 'feriado'].includes(category) ? 'exclude' : 'note',
+      effect: ['recesso', 'feriado'].includes(category) ? 'exclude' : 'note',
       category,
       evidence:
         'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º',
@@ -137,7 +137,7 @@ export function initialCatalogue() {
       name,
       start: civilDate(`2027-${start}`),
       end: civilDate(`2027-${end}`),
-      kind: 'note',
+      effect: 'note',
       category: 'comemorativo',
       evidence: 'Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, art. 2º',
       modalities: ['integrado', 'subsequente', 'graduacao'],
@@ -163,7 +163,7 @@ export function preview2027SourceUpdate(events: CatalogueEvent[]) {
     if (
       previous.start !== next.start ||
       previous.end !== next.end ||
-      previous.kind !== next.kind ||
+      previous.effect !== next.effect ||
       previous.name !== next.name ||
       previous.category !== next.category ||
       previous.active !== next.active ||

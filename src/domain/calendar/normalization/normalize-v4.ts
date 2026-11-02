@@ -1,5 +1,10 @@
 import { calendarLimits, academicTerms } from '../config.ts';
-import type { CalendarEvent, CalendarOffer, CalendarContentV4 } from '../model.ts';
+import {
+  calendarSchemaVersion,
+  type CalendarEvent,
+  type CalendarOffer,
+  type CalendarContent,
+} from '../model.ts';
 import { readCalendarOfferInput } from './input-v4.ts';
 import { invalidCalendar as fail } from './input.ts';
 import { datesBetween } from '../counting/core.ts';
@@ -80,7 +85,7 @@ export function validateOffers(offers: CalendarOffer[]): CalendarOffer[] {
 export function normalizeOfferCalendar(
   input: unknown,
   previous?: { events: readonly CalendarEvent[] },
-): CalendarContentV4 & { year: number; campus: string } {
+): CalendarContent & { year: number; campus: string } {
   const s = readCalendarOfferInput(input);
   if (
     !Number.isInteger(s.year) ||
@@ -201,13 +206,13 @@ export function normalizeOfferCalendar(
   validateLinks(previous, s);
   return {
     ...s,
-    schemaVersion: 4,
+    schemaVersion: calendarSchemaVersion,
     rulesetVersion: rulesetVersion(s),
     observanceDates: normalizeObservanceDates(s.observanceDates),
   };
 }
 
-export function offerCalendarContent(state: CalendarContentV4): CalendarContentV4 {
+export function offerCalendarContent(state: CalendarContent): CalendarContent {
   const {
     schemaVersion,
     rulesetVersion,
@@ -231,5 +236,5 @@ export function offerCalendarContent(state: CalendarContentV4): CalendarContentV
       observanceDates,
       teacherVacations,
     }),
-  ) as CalendarContentV4;
+  ) as CalendarContent;
 }

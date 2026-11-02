@@ -19,7 +19,7 @@ import './catalogue.css';
 
 type CatalogueEvent = Bootstrap['catalogue']['events'][number];
 // Mirrors counting/core.ts: exclusions block period dates, inclusions add dates inside periods.
-const effects: { value: CatalogueEvent['kind']; title: string; description: string }[] = [
+const effects: { value: CatalogueEvent['effect']; title: string; description: string }[] = [
   {
     value: 'exclude',
     title: 'Retira da contagem',
@@ -44,7 +44,7 @@ const emptyEvent = (
   id: '',
   name: '',
   category: categories[0][0],
-  kind: 'exclude',
+  effect: 'exclude',
   start: '',
   end: '',
   evidence: '',
@@ -221,11 +221,11 @@ export default function CataloguePanel({
                 />
               </label>
             </div>
-            <ChoiceGroup<CatalogueEvent['kind']>
-              id="catalogue-kind"
+            <ChoiceGroup<CatalogueEvent['effect']>
+              id="catalogue-effect"
               className="catalogue-effect"
               label="Efeito na contagem de dias letivos"
-              value={event.kind}
+              value={event.effect}
               disabled={pending}
               options={effects.map(({ value, title, description }) => ({
                 value,
@@ -236,7 +236,7 @@ export default function CataloguePanel({
                   </>
                 ),
               }))}
-              onValueChange={(kind) => form.setFieldValue('kind', kind)}
+              onValueChange={(effect) => form.setFieldValue('effect', effect)}
             />
             <fieldset>
               <legend>Ofertas abrangidas</legend>

@@ -1,6 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { describe, expect, it } from 'vitest';
-import type { CalendarContentV4, CalendarOffer } from '../../src/domain/calendar/model.ts';
+import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import {
   kindOf,
   levelOf,
@@ -99,8 +99,8 @@ describe('identidade e tipo da oferta v4', () => {
   });
 
   it('reserva ids citados em períodos, eventos e vínculos', () => {
-    const state: CalendarContentV4 = {
-      schemaVersion: 4,
+    const state: CalendarContent = {
+      schemaVersion: 5,
       offers: [offer()],
       weekdays: [],
       weekConfirmed: false,
@@ -118,7 +118,7 @@ describe('identidade e tipo da oferta v4', () => {
           name: '',
           start: civilDate('2027-01-01'),
           end: civilDate('2027-01-01'),
-          kind: 'note',
+          effect: 'note',
           offers: ['graduacao-3'],
         },
         {
@@ -126,7 +126,7 @@ describe('identidade e tipo da oferta v4', () => {
           name: '',
           start: civilDate('2027-01-01'),
           end: civilDate('2027-01-01'),
-          kind: 'note',
+          effect: 'note',
           requirementId: 'stage-1:graduacao-4',
         },
       ],

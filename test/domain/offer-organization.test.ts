@@ -14,7 +14,7 @@ import { associationOffers } from '../../src/domain/calendar/offers.ts';
 
 function calendar(): ActivityState {
   return {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -35,7 +35,7 @@ function calendar(): ActivityState {
         offers: [modality],
         start: civilDate(index ? '2027-03-15' : '2027-03-01'),
         end: civilDate(index ? '2027-03-26' : '2027-03-12'),
-        kind: 'note',
+        effect: 'note',
         category: 'limite',
         assessmentAutoStart: civilDate('2027-03-01'),
       })),
@@ -151,7 +151,7 @@ test('existing inclusions are checked before changing periods; records are never
   state.events.push({
     id: 'sat',
     name: 'Reposição de sábado',
-    kind: 'include',
+    effect: 'include',
     offers: ['integrado'],
     start: civilDate('2027-03-06'),
     end: civilDate('2027-03-06'),
@@ -174,7 +174,7 @@ test('splitting shared admission references preserves each offer link and dates'
   state.events.push({
     id: 'notice',
     name: 'Edital',
-    kind: 'note',
+    effect: 'note',
     offers: ['integrado', 'graduacao'],
     start: civilDate('2027-02-01'),
     end: civilDate('2027-02-01'),
@@ -209,7 +209,7 @@ test('calendar records no longer require or retain manual references', () => {
     name: 'Evento',
     start: civilDate('2027-03-01'),
     end: civilDate('2027-03-01'),
-    kind: 'note',
+    effect: 'note',
   });
   const draft = offerOrganizationDraft(state, 'integrado');
   expect(draft).not.toHaveProperty('evidence');
@@ -232,7 +232,7 @@ test('calendar records no longer require or retain manual references', () => {
     id: 'other',
     start: civilDate('2027-03-01'),
     end: civilDate('2027-03-01'),
-    kind: 'note',
+    effect: 'note',
   });
 });
 
@@ -257,7 +257,7 @@ test('reducing date-only stages keeps the retired dates and their links to revie
     ['stage-3:integrado', '2027-03-15', '2027-03-19'],
     ['stage-4:integrado', '2027-03-22', '2027-03-26'],
   ]);
-  expect(retired.every((event) => event.kind === 'note')).toBe(true);
+  expect(retired.every((event) => event.effect === 'note')).toBe(true);
   expect(normalizeOfferCalendar({ ...two, ignoredHistory: [] }, four).events).toHaveLength(
     two.events.length,
   );

@@ -35,7 +35,7 @@ test('the parecer compares minima and window only for covered offers', () => {
 
 test('pending semester stages retain every assessment-dependent binding while other data is edited', () => {
   const state = {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     campus: 'Campus sintético',
     offers: [
@@ -69,7 +69,7 @@ test('pending semester stages retain every assessment-dependent binding while ot
       name: prefix,
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-02'),
-      kind: 'note',
+      effect: 'note' as const,
       offers: ['graduacao'],
       requirementId: `${prefix}-1:graduacao`,
     })),
@@ -115,7 +115,7 @@ test('coverage-linked candidates carry only the fields of the review contract', 
     name: '1ª etapa de avaliação — início e término',
     start: civilDate('2027-02-15'),
     end: civilDate('2027-05-17'),
-    kind: 'note',
+    effect: 'note' as const,
     category: 'limite',
     offers: [offer],
     requirementId: `stage-1:${offer}`,

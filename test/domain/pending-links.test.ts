@@ -335,7 +335,7 @@ describe('findings of the independent review of phase 1', () => {
       requirementId: 'final-1',
       start: civilDate('2027-06-30'),
       end: civilDate('2027-06-30'),
-      kind: 'note',
+      effect: 'note',
       offers: ['integrado'],
     };
     expect(() => applyEvent(semester, event, [])).toThrow(/oferta/);

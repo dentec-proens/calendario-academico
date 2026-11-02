@@ -52,7 +52,7 @@ test('an exclusion uses the offer identity while minimums use that offer scope',
   state.events.push({
     id: 'only-engineering',
     name: 'Impedimento exclusivo da engenharia',
-    kind: 'exclude',
+    effect: 'exclude' as const,
     offers: ['graduacao-2'],
     start: civilDate('2027-02-02'),
     end: civilDate('2027-02-02'),
@@ -89,7 +89,7 @@ test('duration and period recalculation select only the period associated offers
   const events = [
     {
       id: 'engineering-exclusion',
-      kind: 'exclude',
+      effect: 'exclude' as const,
       start: civilDate('2027-03-02'),
       end: civilDate('2027-03-02'),
       offers: ['graduacao-2'],

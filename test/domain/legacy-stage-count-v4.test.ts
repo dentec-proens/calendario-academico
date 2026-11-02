@@ -1,7 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
-import type { CalendarContentV4, CalendarOffer } from '../../src/domain/calendar/model.ts';
+import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
@@ -22,9 +22,9 @@ import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save
 
 type Count = 2 | 3 | 4;
 type LegacyOffer = CalendarOffer & { legacyStageCount?: Count };
-type StageState = CalendarContentV4 & { year: number; campus: string };
+type StageState = CalendarContent & { year: number; campus: string };
 const fixture = (count: Count = 3): StageState => ({
-  schemaVersion: 4 as const,
+  schemaVersion: 5 as const,
   year: 2027,
   campus: 'A',
   rulesetVersion: 'consup-292-2027-v3',
@@ -137,7 +137,7 @@ test('new and changed assessment dates remain blocked until the organization def
         name: 'Etapa antiga',
         start: civilDate('2027-03-01'),
         end: civilDate('2027-03-12'),
-        kind: 'note',
+        effect: 'note',
         requirementId: 'stage-1:integrado',
         offers: ['integrado'],
       },
@@ -167,7 +167,7 @@ test('complete explicit configuration clears the marker and keeps surplus stage 
       name: `Etapa ${n}`,
       start: civilDate(`2027-0${n + 1}-01`),
       end: civilDate(`2027-0${n + 1}-12`),
-      kind: 'note',
+      effect: 'note',
       requirementId: `stage-${n}:integrado`,
       offers: ['integrado'],
     })),
@@ -207,7 +207,7 @@ test('unclassified historical stage evidence retains its original interval findi
         name: 'Etapa anterior',
         start: civilDate('2027-03-01'),
         end: civilDate('2027-03-12'),
-        kind: 'note',
+        effect: 'note',
         requirementId: 'stage-1:integrado',
         offers: ['integrado'],
       },
@@ -239,7 +239,7 @@ test('complete classification keeps every linked result, council and meeting, su
         name: `${family} ${n}`,
         start: civilDate('2027-05-28'),
         end: civilDate('2027-05-28'),
-        kind: 'note',
+        effect: 'note',
         requirementId: `${family}-${n}:integrado`,
         offers: ['integrado'],
       })),

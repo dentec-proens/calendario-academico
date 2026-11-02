@@ -26,7 +26,7 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
         confirmed: s.weekConfirmed,
       },
       inclusions: scoped
-        .filter((e) => e.kind === 'include')
+        .filter((e) => e.effect === 'include')
         .map((e) => ({
           ...e,
           offerIds: [offer.id],
@@ -34,7 +34,7 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
           evidenceId: automaticEventSource(e),
         })),
       exclusions: scoped
-        .filter((e) => e.kind === 'exclude')
+        .filter((e) => e.effect === 'exclude')
         .map((e) => ({
           ...e,
           offerIds: [offer.id],

@@ -47,5 +47,5 @@ export type PrintEvent = Pick<
   | 'admission'
   | 'deadlineAdjustment'
 > &
-  Partial<Pick<CalendarEvent, 'kind' | 'id' | 'name'>> &
+  Partial<Pick<CalendarEvent, 'effect' | 'id' | 'name'>> &
   Pick<InstitutionalEventSnapshot, 'institutional' | 'evidence'>;

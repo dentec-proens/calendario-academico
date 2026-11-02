@@ -15,6 +15,7 @@ import {
   offerLabel,
   offerFor,
 } from '../../src/domain/calendar/offers.ts';
+import { convertedCatalogueEvents, convertedState } from '../helpers/v5-conversion.ts';
 
 /**
  * Static v3 oracle captured before the M2/M3 implementation, from commit 34e35b9.
@@ -196,12 +197,19 @@ test('retains the immutable pre-v4 oracle and all independently captured v4 inpu
   expect(inputs.cases.map(({ name }) => name)).toEqual(oracle.cases.map(({ name }) => name));
 });
 
+// The frozen inputs and catalogue are stored v4; the current code reads them converted (phase 2).
+const catalogue = {
+  ...oracle.catalogue,
+  events: convertedCatalogueEvents(oracle.catalogue.events),
+};
+
 test.each(inputs.cases.filter(({ input }) => input.year > 2026))(
-  'preserves the captured semantics in v4: $name',
-  ({ name, input }) => {
+  'preserves the captured semantics after the v5 conversion: $name',
+  ({ name, input: stored }) => {
     const expected = oracle.cases.find((item) => item.name === name)!.expected;
+    const input = convertedState(stored);
     const before = structuredClone(input);
-    expect(readinessTokens(semanticProjection(input, oracle.catalogue), input)).toEqual(
+    expect(readinessTokens(semanticProjection(input, catalogue), input)).toEqual(
       readinessTokens(expected, input),
     );
     expect(input).toEqual(before);

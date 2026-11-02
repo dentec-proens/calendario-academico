@@ -8,7 +8,7 @@ import type { ActivityState, AcademicTerm } from '../../src/domain/calendar/mode
 
 function calendar(): ActivityState {
   return {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -133,7 +133,7 @@ test('semester teacher deadlines stay valid when their offer changes to annual o
     name: requirementId,
     start: civilDate('2027-04-01'),
     end: civilDate('2027-04-01'),
-    kind: 'note',
+    effect: 'note',
     category: 'prazo',
     offers: ['graduacao'],
   }));

@@ -34,7 +34,7 @@ async function setup(count?: Count) {
         .query('calendarContents')
         .withIndex('by_calendarId', (q) => q.eq('calendarId', created.id))
         .unique();
-      if (!content || content.state.schemaVersion !== 4) throw Error('Conteúdo v4 esperado.');
+      if (!content || content.state.schemaVersion !== 5) throw Error('Conteúdo v4 esperado.');
       const state = structuredClone(content.state);
       Object.assign(state.offers[0], { legacyStageCount: count });
       state.events = Array.from({ length: count }, (_, index) => ({
@@ -43,7 +43,7 @@ async function setup(count?: Count) {
         name: `${index + 1}ª etapa preservada`,
         start: `2027-0${index + 2}-01`,
         end: `2027-0${index + 2}-20`,
-        kind: 'note' as const,
+        effect: 'note' as const,
         category: 'limite',
         offers: ['integrado'],
       }));
@@ -187,7 +187,7 @@ test('direct complete classification cannot erase a previous required second-sem
       .query('calendarContents')
       .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
       .unique();
-    if (!content || content.state.schemaVersion !== 4) throw Error('Conteúdo v4 esperado.');
+    if (!content || content.state.schemaVersion !== 5) throw Error('Conteúdo v4 esperado.');
     const state = structuredClone(content.state);
     state.offers[0].intake = previous.offers[0].intake;
     await ctx.db.patch(content._id, { state });

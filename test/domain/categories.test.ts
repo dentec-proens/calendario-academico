@@ -16,14 +16,7 @@ test('PROENS palette matches reference and simultaneous classifications remain v
       css,
       new RegExp(`\\.cat-${key}\\s*\\{\\s*background:\\s*${color}(?=[\\s;}])`, 'u'),
     );
-  assert.equal(
-    eventCategory({
-      id: 'inst:ifpr2027-21',
-      name: 'Criação do IFPR e da Rede Federal de EPT',
-      category: 'criacao',
-    }),
-    'criacao',
-  );
+  assert.equal(eventCategory({ category: 'criacao' }), 'criacao');
   const events = categories
     .filter((c) => c[2])
     .map(([category], i) => ({
@@ -31,7 +24,7 @@ test('PROENS palette matches reference and simultaneous classifications remain v
       name: category,
       start: civilDate('2027-02-06'),
       end: civilDate('2027-02-06'),
-      kind: 'note',
+      effect: 'note' as const,
       category,
     }));
   const html = proensLayout(
@@ -67,7 +60,7 @@ test('institutional and local scopes identify their actual offer in v4 printing'
     name: 'Feriado institucional',
     start: civilDate('2027-02-06'),
     end: civilDate('2027-02-06'),
-    kind: 'exclude',
+    effect: 'exclude' as const,
     category: 'feriado',
     offers: ['integrado'],
   };

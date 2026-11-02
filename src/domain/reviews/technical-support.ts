@@ -47,7 +47,7 @@ export function reviewSupport<
     Partial<
       Pick<
         CalendarEvent,
-        | 'kind'
+        | 'effect'
         | 'requirementId'
         | 'publicationStatus'
         | 'admission'
@@ -63,7 +63,7 @@ export function reviewSupport<
   try {
     result = calendarResult(
       record.state,
-      events.map((event) => ({ ...event, kind: event.kind ?? 'note' })),
+      events.map((event) => ({ ...event, effect: event.effect ?? 'note' })),
     );
   } catch (cause) {
     error = 'Contagem indisponível: ' + (cause instanceof Error ? cause.message : String(cause));
@@ -77,7 +77,7 @@ export function reviewSupport<
           },
           events.map((e) => ({
             ...e,
-            kind: e.kind ?? 'note',
+            effect: e.effect ?? 'note',
           })),
         );
         provisional = true;
@@ -120,7 +120,7 @@ export function reviewSupport<
     policy.review.evidence === 'coverage'
       ? activityCoverage({
           ...record.state,
-          events: events.map((event) => ({ ...event, kind: event.kind ?? 'note' })),
+          events: events.map((event) => ({ ...event, effect: event.effect ?? 'note' })),
         })
       : [];
   return {

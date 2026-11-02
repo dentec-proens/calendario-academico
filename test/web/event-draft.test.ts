@@ -12,7 +12,7 @@ const saved = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
   name: 'Registro salvo',
   start: civilDate('2027-05-10'),
   end: civilDate('2027-05-10'),
-  kind: 'note',
+  effect: 'note',
   offers: ['integrado'],
   ...extra,
 });
@@ -20,11 +20,11 @@ const edit = (base: CalendarEvent, change: Partial<EventValues> = {}) =>
   eventFromValues({ ...eventValues(base, ['integrado']), ...change }, { id: base.id, base });
 
 test('a record without category keeps it absent when only its link changes', () => {
-  const base = saved({ kind: 'exclude' });
+  const base = saved({ effect: 'exclude' });
   expect(eventValues(base, ['integrado']).category).toBe('recesso');
   const result = edit(base, { requirementId: 'family-meeting' });
   expect(result.category).toBeUndefined();
-  expect(result).toMatchObject({ kind: 'exclude', requirementId: 'family-meeting' });
+  expect(result).toMatchObject({ effect: 'exclude', requirementId: 'family-meeting' });
   expect(edit(base, { category: 'feriado' }).category).toBe('feriado');
 });
 
@@ -59,7 +59,7 @@ test('notice metadata is written only while the free event is answered as a noti
     admission: { type: 'transfer', year: 2027 },
   });
   const recess = eventFromValues(
-    { ...values, eventType: 'recess', kind: 'exclude', category: 'recesso' },
+    { ...values, eventType: 'recess', effect: 'exclude', category: 'recesso' },
     { id: 'new' },
   );
   expect(recess.admission).toBeUndefined();

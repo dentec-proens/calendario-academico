@@ -28,7 +28,7 @@ export function teacherVacations(year: number, periodsInput: Partial<VacationPer
       name: `Férias docentes — ${days.length} dias`,
       start,
       end,
-      kind: 'exclude' as const,
+      effect: 'exclude' as const,
       category: 'ferias',
     };
   });

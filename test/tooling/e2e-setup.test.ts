@@ -87,7 +87,7 @@ test('E2E reserves its own year/campus/account and publishing its fixture preser
       name: 'Evento existente',
       start: '7002-01-01',
       end: '7002-01-01',
-      kind: 'note',
+      effect: 'note',
       category: 'outro',
       evidence: 'Fonte existente',
       modalities: ['integrado'],

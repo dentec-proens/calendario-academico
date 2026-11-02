@@ -23,7 +23,7 @@ test('calendar saves write only the current content and roll back stale saves at
     {
       id: 'content-note',
       name,
-      kind: 'note' as const,
+      effect: 'note' as const,
       start: '2027-03-01',
       end: '2027-03-01',
       offers: ['integrado' as const],
@@ -193,5 +193,5 @@ test('typed storage rejects legacy envelopes, invalid relationships and incomple
   );
   assert(content);
   for (const key of ['campus', 'year', 'offer']) assert(!(key in content.state));
-  assert.equal(content.state.schemaVersion, 4);
+  assert.equal(content.state.schemaVersion, 5);
 });

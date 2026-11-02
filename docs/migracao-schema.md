@@ -42,7 +42,7 @@ Recibos, contagens e backups de uma operação concluída ficam na pasta privada
 
 ## Formatos antigos que permanecem nos dados
 
-O armazenamento aceita somente o formato 4 de calendário, inclusive nos envios. Alguns valores antigos continuam válidos nesse formato:
+O código exige o formato 5 de calendário, inclusive nos envios e no catálogo: o efeito de uma data na contagem passa de `kind` a `effect` e `recordType` deixa de existir. Os dados já gravados estão no formato 4 até a migração do plano [Atividades e datas](plans/2026-11-02-atividades-e-datas.md) (seção 6), que ainda não foi publicada: o conversor puro `src/domain/calendar/migration/convert-v5.ts` e os validadores congelados do formato 4 (`convex/legacyValidators.ts`) existem só para ela. Até lá, não publique a `main` nem rode `pnpm dev` contra um deployment com documentos do formato 4. Alguns valores antigos continuam válidos no formato atual:
 
 - `legacyStageCount` representa a quantidade conhecida de etapas de uma oferta com organização pendente. Ele sai do conteúdo atual quando a oferta é configurada e permanece nas cópias de envio feitas antes disso.
 - Os calendários que eram de teste antes do ciclo de vida guardam a marca em `label: 'Teste'`. A migração `calendarPurposeToStatus` converteu todos para rascunho sem alterar `version`; `calendars.purpose` e as tabelas de histórico por salvamento (`calendarVersions` e `calendarSnapshots`) saíram do schema.

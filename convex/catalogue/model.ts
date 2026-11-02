@@ -54,12 +54,12 @@ export async function catalogue(ctx: Context, year?: number) {
   return {
     revision: year === undefined ? await globalRevision(ctx) : await yearRevision(ctx, year),
     events: rows.map(
-      ({ code, name, start, end, kind, category, evidence, modalities, active }) => ({
+      ({ code, name, start, end, effect, category, evidence, modalities, active }) => ({
         id: code,
         name,
         start: civilDate(start),
         end: civilDate(end),
-        kind,
+        effect,
         category,
         evidence,
         modalities,

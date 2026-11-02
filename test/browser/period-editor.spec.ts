@@ -154,7 +154,7 @@ test('editing one shared offer preserves the other offer and existing inclusions
         offers: [modality as 'integrado' | 'graduacao'],
         start: index ? '2027-04-01' : '2027-03-01',
         end: index ? '2027-04-30' : '2027-03-31',
-        kind: 'note',
+        effect: 'note',
         category: 'limite',
       })),
     );
@@ -163,7 +163,7 @@ test('editing one shared offer preserves the other offer and existing inclusions
       name: 'Sábado do integrado',
       start: '2027-03-06',
       end: '2027-03-06',
-      kind: 'include',
+      effect: 'include',
       offers: ['integrado'],
     });
     record.version++;

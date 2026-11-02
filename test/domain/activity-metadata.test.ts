@@ -105,7 +105,7 @@ function previousDraft(state: (typeof settings)[number], row: ActivityPlanItem) 
     admissionTerm: row.term ?? 'annual',
     publicationStatus: notice ? 'planned' : '',
     category: previous.category(row.id),
-    kind: 'note',
+    effect: 'note',
     name: row.name,
     requirementId: row.id,
   };

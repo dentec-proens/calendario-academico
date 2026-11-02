@@ -5,7 +5,7 @@ import {
   normalizeOfferCalendar,
 } from '../src/domain/calendar/normalization/normalize-v4';
 import { kinds, nextOfferId } from '../src/domain/calendar/offers';
-import type { CalendarOffer } from '../src/domain/calendar/model';
+import { calendarSchemaVersion, type CalendarOffer } from '../src/domain/calendar/model';
 import { equalValues } from '../src/shared/equal';
 import { inspectBase, reconcileBase } from './calendars/base';
 import { assertWritesOpen } from './lib/maintenance';
@@ -131,7 +131,7 @@ export const createCalendar = mutation({
       });
     const state = domainRule(() =>
       normalizeOfferCalendar({
-        schemaVersion: 4,
+        schemaVersion: calendarSchemaVersion,
         year: body.year,
         campus: campus.name,
         offers,

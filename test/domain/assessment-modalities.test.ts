@@ -8,7 +8,7 @@ import { recalculateCalendar } from '../../src/domain/calendar/commands/recalcul
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 const state: ActivityState = {
-  schemaVersion: 4 as const,
+  schemaVersion: 5 as const,
   year: 2027,
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
@@ -30,7 +30,7 @@ const state: ActivityState = {
       name: `${index + 1}ª etapa`,
       requirementId: `stage-${index + 1}:${modality}`,
       offers: [modality],
-      kind: 'note',
+      effect: 'note' as const,
       start: civilDate(index ? '2027-03-15' : '2027-03-01'),
       end: civilDate(index ? '2027-03-26' : '2027-03-12'),
     })),
@@ -93,7 +93,7 @@ test('holidays and inclusions update per-offer counts without moving any assessm
     {
       id: 'h',
       name: 'Feriado',
-      kind: 'exclude',
+      effect: 'exclude' as const,
       start: civilDate('2027-03-05'),
       end: civilDate('2027-03-05'),
       offers: ['integrado'],
@@ -101,7 +101,7 @@ test('holidays and inclusions update per-offer counts without moving any assessm
     {
       id: 'sat',
       name: 'Sábado',
-      kind: 'include',
+      effect: 'include' as const,
       start: civilDate('2027-03-06'),
       end: civilDate('2027-03-06'),
       offers: ['integrado'],

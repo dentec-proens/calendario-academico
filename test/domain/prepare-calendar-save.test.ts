@@ -11,7 +11,7 @@ import {
 
 function calendar() {
   return normalizeOfferCalendar({
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     campus: 'Campus confirmado',
     weekdays: [],
@@ -23,7 +23,7 @@ function calendar() {
         name: 'Registro anterior',
         start: civilDate('2027-03-01'),
         end: civilDate('2027-03-01'),
-        kind: 'note',
+        effect: 'note' as const,
       },
     ],
     offers: [
@@ -82,7 +82,7 @@ test('accepting a changed institutional base recalculates unchanged input and pr
     name: 'Impedimento institucional',
     start: civilDate('2027-03-02'),
     end: civilDate('2027-03-02'),
-    kind: 'exclude',
+    effect: 'exclude' as const,
     active: true,
     evidence: 'Fonte institucional',
     modalities: ['integrado'],

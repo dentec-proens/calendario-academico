@@ -17,9 +17,9 @@ export default function EventRecordDetails({
       <strong>{event.name}</strong>
       <small>
         {civilDate(event.start)} a {civilDate(event.end)} ·{' '}
-        {event.kind === 'include'
+        {event.effect === 'include'
           ? 'Inclusão letiva'
-          : event.kind === 'exclude'
+          : event.effect === 'exclude'
             ? 'Exclusão'
             : 'Sem efeito na contagem'}
       </small>

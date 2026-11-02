@@ -20,23 +20,22 @@ export interface CalendarOffer {
   intake?: Partial<Record<AcademicTerm, IntakeConfiguration>>;
   organizationBasis?: string;
 }
-export type PeriodAssociationV4 =
+export type PeriodAssociation =
   { status: 'defined'; offers: string[]; term: AcademicTerm } | { status: 'a-classificar' };
-export type CalendarPeriodV4 = CalendarPeriod;
-export type CalendarEventV4 = CalendarEvent;
-/** Version four persists offer configuration, never its derived summaries. */
-export interface CalendarContentV4 {
-  schemaVersion: 4;
+/** Stored format version of a calendar's content (`calendarContents.state`). */
+export const calendarSchemaVersion = 5;
+/** Version five persists offer configuration, never its derived summaries. */
+export interface CalendarContent {
+  schemaVersion: typeof calendarSchemaVersion;
   rulesetVersion?: string;
   offers: CalendarOffer[];
   weekdays: number[];
   weekConfirmed: boolean;
-  periods: CalendarPeriodV4[];
-  events: CalendarEventV4[];
+  periods: CalendarPeriod[];
+  events: CalendarEvent[];
   observanceDates?: Record<string, CivilDate>;
   teacherVacations?: VacationPeriods;
 }
-export type PeriodAssociation = PeriodAssociationV4;
 export interface Admission {
   type: 'regular' | 'transfer';
   year: number;
@@ -47,19 +46,21 @@ export interface IntakeConfiguration {
   status: 'unknown' | 'yes' | 'no';
   required?: boolean;
 }
+/** How a date affects the count of school days (arts. 4º and 5º). */
+export type EventEffect = 'include' | 'exclude' | 'note';
+export const eventEffects: readonly EventEffect[] = ['include', 'exclude', 'note'];
 export interface CalendarEvent {
   id: string;
   name: string;
   start: CivilDate;
   end: CivilDate;
-  kind: string;
+  effect: EventEffect;
   category?: string;
   requirementId?: string;
   offers?: string[];
   hours?: number;
   assessmentAutoStart?: CivilDate;
   deadlineExtensionCause?: 'municipal-holiday' | 'municipal-recess';
-  recordType?: 'event';
   publicationStatus?: 'planned' | 'published';
   admission?: Admission;
   deadlineAdjustment?: { date: CivilDate; reviewed: boolean };
@@ -124,7 +125,7 @@ export interface CalendarPeriod {
 export interface AssessmentSettings {
   offers: CalendarOffer[];
   year?: number;
-  schemaVersion?: 4;
+  schemaVersion?: typeof calendarSchemaVersion;
   rulesetVersion?: string;
 }
 export interface TeachingState extends AssessmentSettings {
@@ -167,7 +168,7 @@ export type VacationPeriods = {
 /** A local or institutional date as the day count reads it. */
 export type CountingEvent = Pick<
   InstitutionalEventSnapshot,
-  'id' | 'kind' | 'start' | 'end' | 'offers' | 'evidence' | 'institutional'
+  'id' | 'effect' | 'start' | 'end' | 'offers' | 'evidence' | 'institutional'
 >;
 export type StageEvent = CountingEvent &
   Pick<CalendarEvent, 'requirementId' | 'assessmentAutoStart'>;

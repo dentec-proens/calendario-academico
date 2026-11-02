@@ -105,7 +105,7 @@ export function countCalendar(input: CalendarInput) {
   const add = new Map<CivilDate, Evidence[]>(),
     block = new Map<CivilDate, Evidence[]>(),
     eventIds = new Set<string>();
-  for (const [records, target, kind] of [
+  for (const [records, target, effect] of [
     [inclusions, add, 'include'],
     [exclusions, block, 'exclude'],
   ] as const) {
@@ -123,7 +123,7 @@ export function countCalendar(input: CalendarInput) {
       const dates = datesBetween(record.start, record.end);
       if (!record.offerIds.includes(offerId)) continue;
       for (const date of dates) {
-        if (kind === 'include' && !owner.has(date))
+        if (effect === 'include' && !owner.has(date))
           throw new RangeError('Inclusão letiva fora dos períodos');
         if (!owner.has(date)) continue;
         if (!target.has(date)) target.set(date, []);

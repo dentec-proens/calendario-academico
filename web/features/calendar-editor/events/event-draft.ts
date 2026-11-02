@@ -16,18 +16,28 @@ export type EventContext =
   | { kind: 'activity'; requirementId: string; eventId?: string };
 /** Campus events described by their purpose; each answer sets the count effect and category. */
 export const eventTypes = [
-  { id: 'holiday', label: 'Feriado (suspende aulas)', kind: 'exclude', category: 'feriado' },
-  { id: 'recess', label: 'Recesso (suspende aulas)', kind: 'exclude', category: 'recesso' },
-  { id: 'extra-day', label: 'Dia letivo extra ou reposição', kind: 'include', category: 'sabado' },
-  { id: 'campus-event', label: 'Evento ou atividade do campus', kind: 'note', category: 'evento' },
-  { id: 'deadline', label: 'Prazo', kind: 'note', category: 'prazo' },
-  { id: 'notice', label: 'Publicação de edital', kind: 'note', category: 'prazo' },
+  { id: 'holiday', label: 'Feriado (suspende aulas)', effect: 'exclude', category: 'feriado' },
+  { id: 'recess', label: 'Recesso (suspende aulas)', effect: 'exclude', category: 'recesso' },
+  {
+    id: 'extra-day',
+    label: 'Dia letivo extra ou reposição',
+    effect: 'include',
+    category: 'sabado',
+  },
+  {
+    id: 'campus-event',
+    label: 'Evento ou atividade do campus',
+    effect: 'note',
+    category: 'evento',
+  },
+  { id: 'deadline', label: 'Prazo', effect: 'note', category: 'prazo' },
+  { id: 'notice', label: 'Publicação de edital', effect: 'note', category: 'prazo' },
 ] as const;
 export type EventType = (typeof eventTypes)[number]['id'];
 
 /** The answer matching a saved effect and category, or none when they were combined freely. */
 export function eventTypeOf(event: {
-  kind: string;
+  effect: string;
   category?: string;
   admission?: unknown;
   admissionType?: string;
@@ -36,7 +46,7 @@ export function eventTypeOf(event: {
   return (
     eventTypes.find(
       (type) =>
-        type.kind === event.kind &&
+        type.effect === event.effect &&
         type.category === event.category &&
         (type.category !== 'prazo' || (type.id === 'notice') === notice),
     )?.id ?? ''
@@ -47,7 +57,7 @@ export interface EventValues {
   name: string;
   start: string;
   end: string;
-  kind: '' | 'include' | 'exclude' | 'note';
+  effect: '' | 'include' | 'exclude' | 'note';
   publicationStatus: '' | 'planned' | 'published';
   admissionType: '' | 'regular' | 'transfer';
   admissionYear: string;
@@ -59,14 +69,14 @@ export interface EventValues {
   requirementId: string;
   offers: OfferId[];
   hours: string;
-  /** Interface answer to "O que é este evento?"; `kind` and `category` hold the record. */
+  /** Interface answer to "O que é este evento?"; `effect` and `category` hold the record. */
   eventType: '' | EventType;
 }
 export const emptyEvent = (offers: OfferId[]): EventValues => ({
   name: '',
   start: '',
   end: '',
-  kind: '',
+  effect: '',
   publicationStatus: '',
   admissionType: '',
   admissionYear: '',
@@ -85,7 +95,7 @@ export function eventValues(event: CalendarEvent, offers: OfferId[]): EventValue
     name: event.name,
     start: event.start,
     end: event.end,
-    kind: event.kind,
+    effect: event.effect,
     publicationStatus: event.publicationStatus ?? '',
     admissionType: event.admission?.type ?? '',
     admissionYear: event.admission ? String(event.admission.year) : '',
@@ -119,7 +129,7 @@ export function eventFromValues(
     base?: CalendarEvent;
   },
 ): CalendarEvent {
-  if (!value.kind) throw new Error('Escolha o efeito na contagem.');
+  if (!value.effect) throw new Error('Escolha o efeito na contagem.');
   const notice = noticeActive(value);
   // An unchanged adjustment keeps its institutional review; a new date needs another.
   const adjustment = target.base?.deadlineAdjustment;
@@ -131,7 +141,7 @@ export function eventFromValues(
     name: value.name,
     start: civilDate(value.start),
     end: civilDate(value.end),
-    kind: value.kind,
+    effect: value.effect,
     publicationStatus: (notice && value.publicationStatus) || undefined,
     admission:
       notice && value.admissionType
@@ -199,7 +209,7 @@ export function activityDraft(
     ...emptyEvent(modalities),
     name: requirement.name,
     requirementId: requirement.id,
-    kind: 'note',
+    effect: 'note',
     admissionType: requirement.admissionType ?? '',
     admissionYear: notice
       ? String(requirement.admissionType === 'regular' ? state.year + 1 : state.year)

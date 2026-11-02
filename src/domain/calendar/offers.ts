@@ -2,7 +2,7 @@ import { modalityIds, modalityLabels } from './config.ts';
 import { DomainError } from '../errors.ts';
 import type {
   CalendarOffer,
-  CalendarContentV4,
+  CalendarContent,
   OfferKind,
   Organization,
   AcademicTerm,
@@ -88,7 +88,7 @@ export function secondSemesterIntake(offers: readonly CalendarOffer[]): boolean 
 
 /** References reserve identities even when the current form no longer contains the offer. */
 export function nextOfferId(
-  state: Pick<CalendarContentV4, 'offers' | 'periods' | 'events'>,
+  state: Pick<CalendarContent, 'offers' | 'periods' | 'events'>,
   kind: OfferKind,
 ): string {
   const used = new Set(state.offers.map((offer) => offer.id));

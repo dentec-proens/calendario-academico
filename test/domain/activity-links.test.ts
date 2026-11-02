@@ -104,7 +104,7 @@ test('a generated activity of another offer does not cover the date: classificat
     requirementId: 'final-0',
     start: civilDate('2027-12-17'),
     end: civilDate('2027-12-17'),
-    kind: 'note',
+    effect: 'note',
     offers: ['subsequente'],
   };
   const annual = { ...state, events: [result] };

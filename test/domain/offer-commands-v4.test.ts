@@ -164,7 +164,7 @@ test('adding an opaque offer identity freezes earlier implicit events and create
   state.events.push({
     id: 'earlier-global',
     name: 'Evento geral anterior',
-    kind: 'note',
+    effect: 'note',
     start: civilDate('2027-04-01'),
     end: civilDate('2027-04-01'),
   });
@@ -205,7 +205,7 @@ test('adding an opaque offer identity freezes earlier implicit events and create
 
 test('splitting a shared v4 period preserves both admission references by offer identity', () => {
   const state: ActivityState = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -240,7 +240,7 @@ test('splitting a shared v4 period preserves both admission references by offer 
       [0, 1].map((index) => ({
         id: `${offer}-stage-${index + 1}`,
         name: `Etapa ${index + 1}`,
-        kind: 'note',
+        effect: 'note',
         start: civilDate(index ? '2027-07-26' : '2027-02-01'),
         end: civilDate(index ? '2027-12-17' : '2027-07-09'),
         offers: [offer],
@@ -251,7 +251,7 @@ test('splitting a shared v4 period preserves both admission references by offer 
   state.events.push({
     id: 'notice',
     name: 'Edital compartilhado',
-    kind: 'note',
+    effect: 'note',
     start: civilDate('2027-01-01'),
     end: civilDate('2027-01-01'),
     offers: ['graduacao', 'graduacao-2'],

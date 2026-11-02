@@ -1,15 +1,18 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
+import { v, type GenericValidator } from 'convex/values';
 import schema from '../../convex/schema.ts';
 import {
-  calendarOffer,
-  contentState,
+  contentStateV4,
+  eventV4 as localEvent,
+  institutionalEventSnapshotV4 as institutionalEventSnapshot,
+  institutionalEventV4,
+} from '../../convex/legacyValidators.ts';
+import {
   documentSnapshot,
-  event as localEvent,
   institutionalEvent,
-  period as storedPeriod,
-  institutionalEventSnapshot,
+  institutionalEventSnapshot as institutionalEventSnapshotV5,
   reviewEntry,
   reviewFields,
 } from '../../convex/validators.ts';
@@ -192,7 +195,7 @@ describe('frozen declarations', () => {
   });
 });
 
-test('accepted fields are exactly those of the v4 storage validators', () => {
+test('accepted fields are exactly those of the frozen v4 storage validators', () => {
   const fields = (validators: Record<string, { isOptional: string }>) => {
     const entries = Object.entries(validators);
     const names = (optional: boolean) =>
@@ -206,17 +209,24 @@ test('accepted fields are exactly those of the v4 storage validators', () => {
     required: [...v4StorageFields[kind].required].sort((a, b) => a.localeCompare(b)),
     optional: [...v4StorageFields[kind].optional].sort((a, b) => a.localeCompare(b)),
   });
-  const table = (name: 'calendarContents' | 'calendarSubmissions' | 'institutionalEvents') =>
+  const table = (name: 'calendarContents' | 'calendarSubmissions') =>
     fields(schema.tables[name].validator.fields);
-  expect(accepted('offer')).toEqual(fields(calendarOffer.fields));
-  expect(accepted('period')).toEqual(fields(storedPeriod.fields));
+  // The v4 offer and period are reached through the frozen state, which keeps them private.
+  const element = (validator: GenericValidator) =>
+    (validator as unknown as { element: { fields: Record<string, { isOptional: string }> } })
+      .element.fields;
+  expect(accepted('offer')).toEqual(fields(element(contentStateV4.fields.offers)));
+  expect(accepted('period')).toEqual(fields(element(contentStateV4.fields.periods)));
   expect(accepted('event')).toEqual(fields(localEvent.fields));
   expect(accepted('snapshot')).toEqual(fields(institutionalEventSnapshot.fields));
-  expect(accepted('state')).toEqual(fields(contentState.fields));
+  expect(accepted('state')).toEqual(fields(contentStateV4.fields));
+  // Document envelopes keep their fields in v5; only the nested state and snapshot change.
   expect(accepted('content')).toEqual(table('calendarContents'));
   expect(accepted('submission')).toEqual(table('calendarSubmissions'));
   expect(accepted('document')).toEqual(fields(documentSnapshot.fields));
-  expect(accepted('institutionalEvent')).toEqual(table('institutionalEvents'));
+  expect(accepted('institutionalEvent')).toEqual(
+    fields({ code: v.string(), year: v.number(), ...institutionalEventV4.fields }),
+  );
 });
 
 describe('inventory of the frozen v4 documents', () => {
@@ -479,15 +489,18 @@ describe('searches the plan asks for', () => {
       ],
       'convex/calendars/transitions.ts': ['institutionalSnapshot: content.institutionalSnapshot'],
       'convex/catalogue/model.ts': [
-        '({ code, name, start, end, kind, category, evidence, modalities, active }) => ({',
+        '({ code, name, start, end, effect, category, evidence, modalities, active }) => ({',
       ],
     };
     for (const [file, snippets] of Object.entries(writers)) {
       const text = await readFile(resolve(repository, file), 'utf8');
       for (const snippet of snippets) expect(text, file).toContain(snippet);
     }
-    // The storage validator still accepts the optional field, so the inventory checks it.
+    // The v4 storage validator accepted the optional field, so the inventory checks it; the v5
+    // snapshot has no link at all (plan, phase 2, step 5).
     expect(Object.keys(institutionalEventSnapshot.fields)).toContain('requirementId');
+    for (const field of ['requirementId', 'activity'])
+      expect(Object.keys(institutionalEventSnapshotV5.fields)).not.toContain(field);
   });
 
   test('reviews and review versions store criteria, not links', () => {

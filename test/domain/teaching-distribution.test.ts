@@ -7,7 +7,7 @@ import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
 
 const state = {
-  schemaVersion: 4 as const,
+  schemaVersion: 5 as const,
   year: 2027,
   campus: 'Teste',
   weekdays: [1, 2, 3, 4, 5],
@@ -60,7 +60,7 @@ const stage = (number: number, modality: string, start: string, end: string) => 
   offers: [modality],
   start: civilDate(start),
   end: civilDate(end),
-  kind: 'note',
+  effect: 'note' as const,
 });
 const events: CalendarEvent[] = [
   stage(1, 'integrado', '2027-06-21', '2027-06-25'),
@@ -74,7 +74,7 @@ const events: CalendarEvent[] = [
     name: 'Feriado',
     start: civilDate('2027-06-22'),
     end: civilDate('2027-06-22'),
-    kind: 'exclude',
+    effect: 'exclude' as const,
     offers: ['integrado'],
   },
   {
@@ -82,7 +82,7 @@ const events: CalendarEvent[] = [
     name: 'Sábado letivo',
     start: civilDate('2027-06-26'),
     end: civilDate('2027-06-26'),
-    kind: 'include',
+    effect: 'include' as const,
     offers: ['integrado'],
   },
 ];
@@ -177,7 +177,7 @@ test('annual periods preserve assessment totals without inventing semester bound
       id: 'recess',
       start: civilDate('2027-07-03'),
       end: civilDate('2027-08-01'),
-      kind: 'exclude',
+      effect: 'exclude' as const,
     },
   ];
   const result = evaluateCalendar(input, withRecess),

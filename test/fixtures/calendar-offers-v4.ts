@@ -1,12 +1,12 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import type {
   AcademicTerm,
-  CalendarEventV4,
-  CalendarContentV4,
-  CalendarPeriodV4,
+  CalendarEvent,
+  CalendarContent,
+  CalendarPeriod,
 } from '../../src/domain/calendar/model.ts';
 
-export type CalendarOffersV4Fixture = CalendarContentV4 & { year: number; campus: string };
+export type CalendarOffersV4Fixture = CalendarContent & { year: number; campus: string };
 
 const period = (
   id: string,
@@ -15,7 +15,7 @@ const period = (
   name: string,
   start: string,
   end: string,
-): CalendarPeriodV4 => ({
+): CalendarPeriod => ({
   id,
   name,
   start: civilDate(start),
@@ -28,7 +28,7 @@ const stages = (
   label: string,
   dates: readonly (readonly [string, string])[],
   perSemester?: number,
-): CalendarEventV4[] =>
+): CalendarEvent[] =>
   dates.map(([start, end], index) => ({
     id: `${offer}-stage-${index + 1}`,
     name: `${perSemester ? (index % perSemester) + 1 : index + 1}ª etapa de avaliação${perSemester ? ` — ${Math.floor(index / perSemester) + 1}º semestre` : ''} — ${label}`,
@@ -36,15 +36,14 @@ const stages = (
     offers: [offer],
     start: civilDate(start),
     end: civilDate(end),
-    kind: 'note',
+    effect: 'note',
     category: 'limite',
-    recordType: 'event',
   }));
 
 /** Independent annual and semester undergraduate offers share one institutional calendar. */
 export function calendarOffersV4Fixture(): CalendarOffersV4Fixture {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     rulesetVersion: 'consup-292-2027-v3',
     year: 2027,
     campus: 'Campus de referência sintético',

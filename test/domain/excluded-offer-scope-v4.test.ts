@@ -3,16 +3,19 @@ import { readFileSync } from 'node:fs';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import { policyFor } from '../../src/domain/policies/registry.ts';
+import { convertedState } from '../helpers/v5-conversion.ts';
 
 const fixture = JSON.parse(
   readFileSync(new URL('../fixtures/offers-v4-oracle-inputs.json', import.meta.url), 'utf8'),
 ) as { cases: { name: string; input: ActivityState }[] };
-const source = fixture.cases.find(
-  (row) =>
-    row.input.year === 2027 &&
-    row.input.offers.length === 1 &&
-    row.input.offers[0].kind === 'posgraduacao',
-)!.input;
+const source = convertedState(
+  fixture.cases.find(
+    (row) =>
+      row.input.year === 2027 &&
+      row.input.offers.length === 1 &&
+      row.input.offers[0].kind === 'posgraduacao',
+  )!.input,
+);
 const readiness = (state: ActivityState) =>
   releaseReadiness(
     { id: 'synthetic', version: 1, catalogueRevision: 1, institutionalSnapshot: [], state },

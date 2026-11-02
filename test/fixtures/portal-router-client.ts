@@ -29,7 +29,7 @@ export function portalReview(id: string): Awaited<ReturnType<typeof reviews.get>
       state: {
         year: 2027,
         campus: 'Campus de teste',
-        schemaVersion: 4,
+        schemaVersion: 5,
         offers: [
           { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
         ],

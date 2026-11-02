@@ -13,7 +13,7 @@ import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.
 
 function calendar(): ActivityState {
   return {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -70,7 +70,7 @@ function notice(extra: Partial<CalendarEvent> = {}): CalendarEvent {
   return {
     id: 'notice',
     name: 'Edital sintético',
-    kind: 'note',
+    effect: 'note' as const,
     start: civilDate('2026-12-10'),
     end: civilDate('2026-12-10'),
     offers: ['integrado'],
@@ -137,7 +137,6 @@ test('one event covers only the explicitly declared offers and does not waive ve
         id: 'veterans',
         start: civilDate('2027-01-15'),
         end: civilDate('2027-01-15'),
-        recordType: 'event',
         requirementId: 'enrolment-0',
         offers: ['subsequente'],
       }),
@@ -166,7 +165,7 @@ test('mixed organizations count disjoint periods separately and keep simultaneou
   const state = calendar();
   const normalized = normalizeOfferCalendar({ ...state, ignoredHistory: [] }),
     count = evaluateCalendar(normalized, []);
-  expect(normalized.schemaVersion).toBe(4);
+  expect(normalized.schemaVersion).toBe(5);
   expect(count.byOffer.integrado.byPeriod).toHaveProperty('annual');
   expect(count.byOffer.integrado.byPeriod).not.toHaveProperty('semester-one');
   expect(count.byOffer.graduacao.byPeriod).not.toHaveProperty('annual');
@@ -214,7 +213,6 @@ test('planned regular publication remains planned and December requires an expli
     notice({
       start: civilDate('2027-12-01'),
       end: civilDate('2027-12-01'),
-      recordType: 'event',
       publicationStatus: 'planned',
       admission: { type: 'regular', year: 2028, term: 'annual' },
       requirementId: 'regular-admission-notice',
@@ -237,13 +235,13 @@ test('planned regular publication remains planned and December requires an expli
 test('prior/cross-year references are informative even if the received discriminator claims event', () => {
   const state = calendar();
   for (const changes of [
-    { kind: 'include' },
-    { kind: 'exclude' },
+    { effect: 'include' as const },
+    { effect: 'exclude' as const },
     { hours: 40 },
     { requirementId: 'pedagogical-training' },
     { requirementId: 'stage-1:integrado' },
   ]) {
-    const event = notice({ ...changes, recordType: 'event' });
+    const event = notice(changes);
     expect(() => applyEvent(state, event, [])).toThrow();
     expect(() =>
       normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [event] }),
@@ -266,7 +264,7 @@ test('prior/cross-year references are informative even if the received discrimin
     { end: civilDate('2026-01-01') },
     { start: civilDate('2028-01-01'), end: civilDate('2028-01-02') },
     { start: civilDate('2026-12-01'), end: civilDate('2028-01-01') },
-    { kind: 'include' },
+    { effect: 'include' as const },
   ])
     expect(() => applyEvent(state, notice(changes), [])).toThrow();
 });
@@ -318,7 +316,7 @@ test('article 3 extends only explicitly classified municipal causes to the first
     name: 'Feriado municipal sintético',
     start: civilDate('2027-08-31'),
     end: civilDate('2027-09-02'),
-    kind: 'exclude',
+    effect: 'exclude' as const,
     offers: ['integrado'],
     deadlineExtensionCause: 'municipal-holiday',
   };
@@ -362,7 +360,7 @@ test('article 3 extends only explicitly classified municipal causes to the first
       name: 'Robótica sintética',
       start: civilDate('2027-09-03'),
       end: civilDate('2027-09-03'),
-      kind: 'note',
+      effect: 'note' as const,
       offers: ['integrado'],
       requirementId: 'robotics',
     },
@@ -393,7 +391,6 @@ test('a legacy event without declared offers remains visible but never covers al
       ...notice({
         start: civilDate('2027-02-01'),
         end: civilDate('2027-02-01'),
-        recordType: 'event',
         requirementId: 'campus-events',
         offers: undefined,
       }),
@@ -413,7 +410,7 @@ test('commands and direct import reject teaching inclusion outside the selected 
     name: 'Inclusão sintética',
     start: civilDate('2027-07-20'),
     end: civilDate('2027-07-20'),
-    kind: 'include',
+    effect: 'include' as const,
     offers: ['graduacao'],
   };
   expect(() => applyEvent(state, event, [])).toThrow('períodos');

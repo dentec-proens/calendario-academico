@@ -46,7 +46,7 @@ export const saveCatalogue = mutation({
       name: text(body.name, 160),
       start: body.start,
       end: body.end,
-      kind: body.kind,
+      effect: body.effect,
       category: text(body.category, 40),
       evidence: text(body.evidence),
       modalities: body.modalities,

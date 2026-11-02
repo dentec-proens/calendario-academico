@@ -39,12 +39,13 @@ export function saturdayEvents(
   }
   return selected
     .filter(
-      (date) => !state.events.some((e) => e.kind === 'include' && e.start <= date && date <= e.end),
+      (date) =>
+        !state.events.some((e) => e.effect === 'include' && e.start <= date && date <= e.end),
     )
     .map((date) => ({
       id: id(),
       name: name.trim(),
-      kind: 'include' as const,
+      effect: 'include' as const,
       category: 'sabado',
       start: date,
       end: date,
@@ -103,7 +104,7 @@ export function isYearSaturday(day: YearDay | YearSaturday): day is YearSaturday
 // so it can still be removed: registered takes precedence over outside.
 export function saturdayYear(
   state: Pick<ActivityState, 'year' | 'periods' | 'events'> & AssessmentSettings,
-  events: Pick<CalendarEvent, 'kind' | 'start' | 'end' | 'name'>[],
+  events: Pick<CalendarEvent, 'effect' | 'start' | 'end' | 'name'>[],
 ): YearMonth[] {
   return monthNames.map((name, index) => {
     const month = index + 1;
@@ -120,12 +121,12 @@ export function saturdayYear(
             periodsForOffer(state, modality).some((p) => p.start <= date && date <= p.end),
           ),
           impediments: events
-            .filter((e) => e.kind === 'exclude' && e.start <= date && date <= e.end)
+            .filter((e) => e.effect === 'exclude' && e.start <= date && date <= e.end)
             .map((e) => e.name),
         };
         if (weekday !== 6) return day;
         const covering = state.events.filter(
-          (e) => e.kind === 'include' && e.start <= date && date <= e.end,
+          (e) => e.effect === 'include' && e.start <= date && date <= e.end,
         );
         // A Saturday's own record wins over a wider inclusion, so it stays editable here.
         const registration = covering.find(isSaturdayRecord) ?? covering[0];

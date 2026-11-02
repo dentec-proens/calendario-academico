@@ -16,7 +16,7 @@ test('school vacation suggestions exclude teacher vacations and leave notes blan
     name: 'Teste',
     version: 1,
     state: {
-      schemaVersion: 4 as const,
+      schemaVersion: 5 as const,
       year: 2027,
       campus: 'Foz',
       weekdays: [],
@@ -58,7 +58,7 @@ test('review extracts 29 active criteria, flags other years and treats name matc
     name: 'Teste',
     version: 1,
     state: {
-      schemaVersion: 4 as const,
+      schemaVersion: 5 as const,
       year: 2028,
       campus: 'Foz',
       weekdays: [],
@@ -101,7 +101,7 @@ test('initial analysis identifies a measurable deficit without assuming document
     version: 1,
     courses: 'Curso',
     state: {
-      schemaVersion: 4 as const,
+      schemaVersion: 5 as const,
       year: 2027,
       campus: 'Foz',
       weekdays: [1, 2, 3, 4, 5],
@@ -166,7 +166,7 @@ test('review displays separate registered totals and provisional counts without 
     name: 'Teste',
     version: 1,
     state: {
-      schemaVersion: 4 as const,
+      schemaVersion: 5 as const,
       year: 2026,
       campus: 'Foz',
       weekdays: [1, 2, 3, 4, 5],
@@ -205,7 +205,7 @@ test('review displays separate registered totals and provisional counts without 
     {
       id: 'h',
       name: 'Feriado',
-      kind: 'exclude',
+      effect: 'exclude' as const,
       start: civilDate('2026-03-03'),
       end: civilDate('2026-03-03'),
       evidence: 'Lei',
@@ -255,7 +255,7 @@ test('review coverage follows the criterion identity when its citation text chan
         name: 'Calendário sintético',
         version: 1,
         state: {
-          schemaVersion: 4 as const,
+          schemaVersion: 5 as const,
           year: 2027,
           weekdays: [],
           weekConfirmed: false,
@@ -277,7 +277,7 @@ test('review coverage follows the criterion identity when its citation text chan
           name: 'Atividade com ata',
           start: civilDate('2027-03-05'),
           end: civilDate('2027-03-05'),
-          kind: 'note',
+          effect: 'note' as const,
           evidence: 'Ata sintética',
           offers: ['integrado'],
           requirementId: 'family-meeting',

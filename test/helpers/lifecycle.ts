@@ -1,5 +1,5 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import type { CalendarEvent, CalendarContentV4 } from '../../src/domain/calendar/model.ts';
+import type { CalendarEvent, CalendarContent } from '../../src/domain/calendar/model.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
@@ -14,9 +14,9 @@ type Client = Pick<
 >;
 
 /** Content that passes every machine check for 2027, as in the release test. */
-export function readyContent(): CalendarContentV4 {
+export function readyContent(): CalendarContent {
   const state = {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -46,7 +46,7 @@ export function readyContent(): CalendarContentV4 {
     name: criterion.title,
     start: civilDate('2027-02-01'),
     end: civilDate('2027-02-01'),
-    kind: 'note',
+    effect: 'note',
     category: 'institucional',
     offers: ['integrado'],
   }));
@@ -58,7 +58,7 @@ export function readyContent(): CalendarContentV4 {
       name: requirement.name,
       start: civilDate('2027-02-01'),
       end: civilDate('2027-02-01'),
-      kind: 'note',
+      effect: 'note',
     };
     if (requirement.minHours) event.hours = requirement.minHours;
     if (requirement.month)
