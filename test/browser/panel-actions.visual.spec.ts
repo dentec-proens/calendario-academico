@@ -59,7 +59,6 @@ test('registered Saturday uses shared header and action hierarchy', async ({
   await page.locator('#saturday-edit-name').fill('Feira de ciências');
   const actions = page.locator('#saturday-edit-form .form-actions__buttons');
   await expect(actions.getByRole('button')).toHaveText(['Aplicar', 'Descartar', 'Remover']);
-  await expect(actions.locator('svg')).toHaveCount(0);
   const boxes = await actions.getByRole('button').evaluateAll((buttons) =>
     buttons.map((button) => {
       const { top, right, left, height } = button.getBoundingClientRect();

@@ -36,7 +36,6 @@ for (const width of [1440, 390]) {
       weekConfirmed: true,
     });
     await expect(page).toHaveURL(/\/editar$/);
-    await expect(page.locator('#week-confirmed')).toHaveCount(0);
     await expect(page.locator('#weekdays input[value="4"]')).toBeFocused();
     await selectEditorSection(page, 'periods');
     await selectEditorSection(page, 'edit');

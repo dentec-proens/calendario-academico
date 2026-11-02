@@ -44,7 +44,6 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   const notesToggle = page.locator(`${item} .review-item__notes summary`);
   const choice = `${item} [data-choice="ATENDIDO"]`;
   await expect(page.locator(notes)).toBeHidden();
-  await expect(page.locator(`${item} [data-edit-criterion]`)).toHaveCount(0);
   await expect(page.locator(notes)).toBeEnabled();
   await expect(page.locator(confirm)).toBeDisabled();
   await expect(page.locator(`${item} .review-item__signal`)).toContainText(

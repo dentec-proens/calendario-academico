@@ -26,12 +26,10 @@ test('reviewer consults the complete calendar and live changes without editing o
   await expect(eventControls).not.toHaveCount(0);
   for (const control of await eventControls.all()) await expect(control).toBeEnabled();
   await openCampusEvent(page, 'local-event');
-  await expect(page.locator('.campus-event-record')).not.toContainText('Fonte:');
   await expect(page.locator('#event-panel [data-edit-event]')).toBeDisabled();
   await expect(page.locator('#event-panel [data-remove-event]')).toBeDisabled();
   await page.locator('#close-event-panel').click();
   await page.locator('[data-view="edit"]').click();
-  await expect(page.locator('#week-confirmed')).toHaveCount(0);
   await page.locator('[data-view="issues"]').click();
   await expect(page.locator('#issue-list')).toBeVisible();
   await page

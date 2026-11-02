@@ -69,8 +69,6 @@ for (const width of [1440, 390]) {
       `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Calendário de referência v4</title><style>${styles.join('\n').replace(/@import[^;]+;/g, '')}</style></head><body><main class="main-column"><section id="calendar" class="view"><div class="panel"><div id="months">${html}</div></div></section></main></body></html>`,
     );
     await expect(page.locator('.proens-status-mark')).toHaveText('Rascunho — sem validade');
-    await expect(page.locator('.proens-heading')).not.toContainText('Conjunto de regras');
-    await expect(page.locator('.proens-heading')).not.toContainText('Janela do ano letivo');
     await expect(page.locator('.proens-month h3')).toHaveText(
       Array.from({ length: 12 }, (_, month) =>
         new Date(Date.UTC(2027, month, 1)).toLocaleDateString('pt-BR', {

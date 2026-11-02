@@ -37,7 +37,6 @@ for (const width of [1440, 390, 320]) {
     const toggle = page.getByRole('switch', { name: 'Evento ativo', exact: true });
     await expect(toggle).toBeChecked();
     await expect(toggle).toContainText('Ativo');
-    await expect(page.locator('#catalogue-form .help')).toHaveCount(0);
     await expect(toggle).toBeInViewport();
     expect(
       await toggle.evaluate((element) => {

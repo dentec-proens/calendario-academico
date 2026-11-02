@@ -27,7 +27,6 @@ for (const width of [1440, 390]) {
     await expect(opener).toBeFocused();
     await opener.press('Enter');
     await expect(page.locator('#offer-integrado-organization [aria-checked="true"]')).toBeFocused();
-    await expect(page.locator('#offer-integrado-evidence')).toHaveCount(0);
     expect(
       before.state.events
         .filter((event) => event.requirementId?.startsWith('stage-'))

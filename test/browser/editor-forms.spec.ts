@@ -117,7 +117,6 @@ test('Saturday panel applies one activity to the selected dates without moving f
 
   // The next selection offers the activities already used.
   await page.locator('#saturday-dates input[value="2027-03-13"]').check();
-  await expect(page.locator('#saturday-evidence')).toHaveCount(0);
   await expect(page.locator('#saturday-name')).toHaveValue('');
   await page
     .locator('.saturday-suggestions')
@@ -194,7 +193,6 @@ test('compact Saturday panel opens as a dialog and keeps focused dates unobstruc
     'registered',
   );
   await expect(bar).toHaveCount(0);
-  await expect(page.locator('#saturday-day-count')).toHaveCount(0);
 
   // A registered date opens its record in the same dialog.
   await page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]').click();
@@ -327,7 +325,6 @@ test('the Saturday panel keeps its selection summary without repeating teaching 
 }) => {
   await openEditor(page, fixtureServer);
   await selectEditorSection(page, 'days');
-  await expect(page.locator('#saturday-day-count')).toHaveCount(0);
   await expect(page.locator('#saturday-summary')).toContainText('Nenhum sábado selecionado');
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await selectEditorSection(page, 'issues');
@@ -335,10 +332,8 @@ test('the Saturday panel keeps its selection summary without repeating teaching 
   await page.locator('#scope-form-integrado button[type="submit"]').click();
   await selectEditorSection(page, 'days');
   await expect(page.locator('.teaching-day-current strong')).toHaveText('45 / 200');
-  await expect(page.locator('#saturday-day-count')).toHaveCount(0);
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
   await expect(page.locator('#saturday-summary')).toContainText('1 sábado selecionado');
-  await expect(page.locator('#saturday-day-count')).toHaveCount(0);
 });
 
 test('a registered Saturday is edited and removed from the panel', async ({

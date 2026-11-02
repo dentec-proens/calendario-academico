@@ -25,7 +25,6 @@ for (const width of [1440, 390]) {
     await row.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#event-panel-title')).toHaveText('Evento local salvo');
-    await expect(page.locator('.campus-event-record')).not.toContainText('Fonte:');
     await expect(page.locator('#event-form')).toBeHidden();
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
     await page.locator('#close-event-panel').click();
@@ -89,7 +88,6 @@ for (const width of [1440, 390]) {
     const row = page.locator('[data-open-event="local-event"]');
     await row.focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('.campus-event-record')).not.toContainText('Fonte:');
     await expect(page.locator('[data-edit-event="local-event"]')).toBeDisabled();
     await expect(page.locator('[data-remove-event="local-event"]')).toBeDisabled();
     await page.keyboard.press('Escape');

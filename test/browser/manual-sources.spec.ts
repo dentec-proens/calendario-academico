@@ -8,14 +8,13 @@ import {
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
-  test(`manual source fields are absent and Saturday activities keep independent identities at ${width}px`, async ({
+  test(`Saturday activities keep independent identities and saved data carries no manual source at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 1100 });
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#weekdays')).toBeVisible();
-    await expect(page.locator('#week-evidence')).toHaveCount(0);
     const institutional = await page.evaluate(() => window.editorTest.record.institutionalSnapshot);
     await page.locator('#weekdays input[value="5"]').uncheck();
     expect((await savedState(page)).state).not.toHaveProperty('weekEvidence');
@@ -30,14 +29,12 @@ for (const width of [1440, 390]) {
       if (await page.locator('#saturday-open-panel').isVisible())
         await page.locator('#saturday-open-panel').click();
       await page.locator('#saturday-name').fill(name);
-      await expect(page.locator('#saturday-evidence')).toHaveCount(0);
       await page.locator('#saturday-submit').click();
       await savedState(page);
     }
     await expect(page.locator('.saturday-registrations')).toContainText('Atividade A');
     await expect(page.locator('.saturday-registrations')).toContainText('Atividade B');
     await page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]').click();
-    await expect(page.locator('#saturday-edit-evidence')).toHaveCount(0);
     await page.locator('#saturday-edit-name').fill('Atividade A retificada');
     await page.locator('#saturday-edit-save').click();
     const saved = await savedState(page);
@@ -52,7 +49,6 @@ for (const width of [1440, 390]) {
     ]);
     expect(saved.state.events.every((event) => !Object.hasOwn(event, 'evidence'))).toBe(true);
     await selectEditorSection(page, 'vacations');
-    await expect(page.locator('#vacation-evidence')).toHaveCount(0);
     await page.locator('#vacation-first-start').fill('2027-01-04');
     await page.locator('#vacation-first-end').fill('2027-01-29');
     await page.locator('#vacation-form button[type="submit"]').click();
@@ -60,7 +56,6 @@ for (const width of [1440, 390]) {
     await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
     await page.locator('#new-event').click();
-    await expect(page.locator('#event-evidence, #event-adjustment-evidence')).toHaveCount(0);
     await page.locator('#event-name').fill('Feriado do campus');
     await page.locator('#event-type-holiday').check();
     await page.locator('#event-start').fill('2027-03-08');

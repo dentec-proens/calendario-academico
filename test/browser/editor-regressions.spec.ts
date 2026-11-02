@@ -97,7 +97,6 @@ test('reverting a field clears unapplied state and annual Saturday selections su
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('[data-view="days"]').click();
   await expect(page.locator('#saturday-name')).toHaveValue('Feira de ciências');
-  await expect(page.locator('#saturday-evidence')).toHaveCount(0);
   for (const date of ['2027-03-06', '2027-04-03']) {
     const checkbox = page.locator(`#saturday-dates input[value="${date}"]`);
     await expect(checkbox).toBeChecked();

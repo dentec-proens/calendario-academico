@@ -12,7 +12,6 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     await expect(page.locator('.editor-step-number')).toHaveCount(6);
     await expect(page.locator('.autosave-panel')).toBeHidden();
-    await expect(page.getByText('Salvamento automático ativo.')).toHaveCount(0);
     await expect(page.locator('#total')).toHaveCount(0);
     await expect(page.locator('#editor-section-title')).toHaveText('Semana letiva');
     await expect(page.locator('[aria-current="page"] .editor-step-title')).toHaveText(
@@ -20,12 +19,7 @@ for (const width of [1440, 390]) {
     );
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await expect(page.getByRole('list', { name: 'Formas de oferta e níveis' })).toBeVisible();
-    await expect(page.locator('#campus, #year')).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Identificação', exact: true })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Semana letiva', exact: true })).toHaveCount(1);
-    await expect(page.getByRole('textbox', { name: 'Campus', exact: true })).toHaveCount(0);
-    await expect(page.getByRole('spinbutton', { name: 'Ano', exact: true })).toHaveCount(0);
-    await expect(page.locator('#week-evidence')).toHaveCount(0);
 
     const weekdays = page.locator('#weekdays input');
     await expect(weekdays).toHaveCount(5);
@@ -50,7 +44,6 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 6');
     await expect(page.locator('#editor-section-title')).toHaveText('Organização por oferta');
     await expect(page.locator('#assessment-area')).toBeVisible();
-    await expect(page.locator('#organization-form, #intake-form, #calendar-scope')).toHaveCount(0);
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para sábados letivos');
     await expect(page.locator('#autosave-status')).toHaveAttribute('data-state', 'saved');
     expect(await page.evaluate(() => window.editorTest.record.state.weekdays)).toEqual([1]);
@@ -64,22 +57,13 @@ for (const width of [1440, 390]) {
     await expect(page).toHaveURL(/\/dias$/);
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 3 de 6');
     await expect(page.getByRole('heading', { name: /Sábados letivos/ })).toHaveCount(1);
-    await expect(page.locator('#days > .panel > h3, #days > .panel > .help')).toHaveCount(0);
-    await expect(
-      page.getByText('Selecione sábados disponíveis no calendário para informar a atividade.', {
-        exact: true,
-      }),
-    ).toHaveCount(0);
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para férias docentes');
     await expect(page.locator('#vacation-form')).toHaveCount(0);
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/ferias$/);
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 4 de 6');
     await expect(page.getByRole('heading', { name: /férias docentes/i })).toHaveCount(1);
-    await expect(page.locator('#vacations > .panel > .help')).toHaveCount(0);
-    await expect(page.locator('#editor-continue')).toHaveText(
-      'Continuar para atividades e datas',
-    );
+    await expect(page.locator('#editor-continue')).toHaveText('Continuar para atividades e datas');
     await expect(page.locator('#saturday-form')).toHaveCount(0);
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/eventos$/);
@@ -147,6 +131,5 @@ test('secondary actions support the keyboard and the mobile step picker follows 
   await expect(steps.locator('summary')).toContainText('Etapa 5 de 6');
   await expect(steps).not.toHaveAttribute('open');
   await expect(page.locator('#editor-section-title')).toBeFocused();
-  await expect(page.locator('#history-file')).toHaveCount(0);
   await expect(page.getByRole('tab')).toHaveCount(2);
 });

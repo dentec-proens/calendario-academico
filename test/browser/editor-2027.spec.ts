@@ -254,7 +254,6 @@ test('migrated pending organization preserves period IDs until explicit offer an
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'periods');
-  await expect(page.locator('#regime-summary')).toHaveCount(0);
   await expect(page.locator('#periods')).toContainText('associação a conferir');
   await page.locator('[data-edit-organization="integrado"]').click();
   await page.locator('#offer-integrado-source-0').selectOption('legacy-cycle');

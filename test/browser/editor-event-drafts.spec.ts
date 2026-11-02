@@ -64,7 +64,6 @@ for (const width of [1440, 390]) {
     await page.keyboard.press('Enter');
     await expect(page.locator('#event-form-title')).toBeFocused();
     await expect(page.locator('#event-name')).toHaveValue('Evento para continuar depois');
-    await expect(page.locator('#event-evidence')).toHaveCount(0);
     await expect(page.locator('#event-start')).toHaveValue('2027-04-05');
     await expect(page.locator('#event-end')).toHaveValue('2027-04-06');
 

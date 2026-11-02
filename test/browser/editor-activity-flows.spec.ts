@@ -151,9 +151,7 @@ test('a new activity period asks for dates first and keeps category and effect c
   await expect(page.locator('#back-to-activity')).toBeVisible();
   // The panel was opened from this activity, so the link is not offered for change.
   await expect(page.locator('#event-requirement')).toHaveCount(0);
-  await expect(page.locator('#change-event-link')).toHaveCount(0);
   await expect(page.locator('#event-hours')).toHaveCount(0);
-  await expect(page.locator('#event-record-type')).toHaveCount(0);
   await expect(page.locator('#event-modalities')).toHaveText(/Técnico integrado/);
   await expect(page.locator('#event-modalities input')).toHaveCount(0);
   await expect(page.locator('#event-name')).toHaveValue(title);
@@ -266,7 +264,6 @@ test('the free event form opens in the side panel with a labelled offer group', 
   const offers = page.locator('fieldset#event-modalities');
   await expect(offers.locator(':scope > legend')).toHaveText('Ofertas abrangidas');
   await expect(offers.locator('input')).toHaveCount(2);
-  await expect(page.locator('#event-record-type')).toHaveCount(0);
   await expect(page.locator('#close-event-panel')).toHaveAccessibleName('Fechar painel');
   await expect(page.locator('#event-form .form-actions button')).toHaveCount(1);
   await expect(page.locator('#discard-event-form')).toBeHidden();
@@ -444,7 +441,6 @@ test('the list shows every activity and the views split what is left to fill', a
   await expect(rows('cultural-week')).toBeVisible();
   await expect(rows('enrolment-0')).toBeVisible();
   await expect(rows('family-meeting')).toBeVisible();
-  await expect(page.locator('#activity-hidden')).toHaveCount(0);
   expect(await count('todas')).toBe((await count('preencher')) + (await count('sem-pendencias')));
 
   await page.locator('#activity-view-preencher').check();

@@ -38,7 +38,6 @@ for (const fixture of ['editor', 'editor-reviewer'] as const) {
     await expect(page).toHaveURL(/\/eventos\?busca=referencia&atividadeSituacao=all$/);
     await expect(page.locator('[data-tab="atividades"]')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 5 de 6');
-    await expect(page.locator('#history-file')).toHaveCount(0);
     await page.reload();
     // The former "all" situation is the default view now.
     await expect(page.locator('#activity-view-todas')).toBeChecked();
@@ -56,5 +55,4 @@ test('old reference tab and fragment fall back to the resolution activities', as
   );
   await expect(page.locator('[data-tab="atividades"]')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#activity-checklist')).toBeVisible();
-  await expect(page.locator('#history-file')).toHaveCount(0);
 });

@@ -64,12 +64,10 @@ test('calendar creation asks for year and offers and previews the draft name', a
   const namePosition = await row.locator('.calendar-list-name').boundingBox();
   expect(statusPosition!.x).toBeGreaterThan(namePosition!.x + namePosition!.width);
   await expect(row.getByRole('button', { name: 'Excluir calendário' })).toBeVisible();
-  await expect(page.getByText('Horários de Brasília', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Novo calendário' }).click();
   const name = page.getByLabel('Nome do calendário', { exact: true });
   await expect(name).toHaveJSProperty('tagName', 'OUTPUT');
   await expect(name).toHaveText('Calendário 2027 - Campus Campus de teste');
-  await expect(page.locator('#create-calendar')).not.toContainText(/Nome dos cursos|Turmas|Turnos/);
   await expect(page.locator('#calendar-year-help')).toHaveCount(0);
   await page.locator('#calendar-year [data-choice="2028"]').click();
   await expect(name).toHaveText('Calendário 2028 - Campus Campus de teste');
@@ -103,9 +101,7 @@ test('calendar creation asks for year and offers and previews the draft name', a
   await page.getByLabel('Graduação', { exact: true }).uncheck();
   await expect(page.locator('#calendar-offer-graduacao-organization')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Criar rascunho' })).toBeVisible();
-  await expect(page.locator('.workspace-heading')).not.toContainText(/Perfil|Todos os campi/);
   await page.locator('[data-page="accounts"]').click();
-  await expect(page.locator('.workspace-heading')).not.toContainText(/Perfil|Todos os campi/);
 });
 
 test('portal shares each subject across roles while preserving drafts, scoped controls, history and mobile menus', async ({

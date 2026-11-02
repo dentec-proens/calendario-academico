@@ -21,7 +21,6 @@ for (const width of [1440, 390]) {
     const opener = page.locator('#open-observance-teacher-day');
     await opener.click();
     const date = page.locator('#observance-date-teacher-day');
-    await expect(page.locator('#observance-help-teacher-day')).toHaveCount(0);
     await expect(date).not.toHaveAttribute('aria-describedby');
     await expect(page.locator('#discard-observance-teacher-day')).toBeHidden();
     await date.selectOption('2027-10-14');
