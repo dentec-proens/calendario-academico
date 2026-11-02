@@ -15,7 +15,8 @@ import type { CalendarEvent, OfferId } from '../types.ts';
 export type EventContext =
   | { kind: 'new' }
   | { kind: 'event'; eventId: string }
-  | { kind: 'activity'; itemId: string; eventId?: string };
+  /** A generated activity, by the key of its link (`activityKey`); `eventId` when editing a date. */
+  | { kind: 'activity'; key: string; eventId?: string };
 /** Campus events described by their purpose; each answer sets the count effect and category. */
 export const eventTypes = [
   { id: 'holiday', label: 'Feriado (suspende aulas)', effect: 'exclude', category: 'feriado' },

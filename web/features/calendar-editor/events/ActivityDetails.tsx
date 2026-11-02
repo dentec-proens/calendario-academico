@@ -3,6 +3,7 @@ import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { removeEvent } from '#src/domain/calendar/commands/events.ts';
 import { activityStatusLabels } from '#src/domain/calendar/activities/status.ts';
 import { linkedTo } from '#src/domain/calendar/activities/links.ts';
+import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
 import type { ActivityPlanItem } from '#src/domain/calendar/model.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
 import { offerFor } from '#src/domain/calendar/offers.ts';
@@ -27,8 +28,10 @@ export default function ActivityDetails({
   const { state, institutional, applyCommand, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const { rowsFor, statusFor, counts } = useActivityCoverage();
-  const evidence = rowsFor(item.id);
-  const summary = statusFor(item.id);
+  // The activity is addressed by the key of its link, as in the list and the URL.
+  const key = activityKey(item.activity);
+  const evidence = rowsFor(key);
+  const summary = statusFor(key);
   const policy = policyFor(state.year);
   const noteFor = (id: string) => {
     const offer = offerFor(state, id);
@@ -50,7 +53,7 @@ export default function ActivityDetails({
   // The form replaces the activity view; Voltar à atividade brings it back.
   if (editor.open && editor.context?.kind === 'activity') return null;
   return (
-    <div className="activity-details" data-activity-details={item.id}>
+    <div className="activity-details" data-activity-details={key}>
       <p className="activity-meta">
         <span className="activity-status" data-status={summary.status}>
           {activityStatusLabels[summary.status]}
@@ -72,7 +75,7 @@ export default function ActivityDetails({
       </p>
       <details
         className="activity-detail"
-        data-activity-detail={item.id}
+        data-activity-detail={key}
         open={detailOpen || summary.diverges || summary.problems}
       >
         <summary>Situação por oferta e conferência</summary>
@@ -176,7 +179,7 @@ export default function ActivityDetails({
                     ) {
                       // The panel stays on the activity whose record was removed.
                       editor.discard();
-                      editor.view(item.id);
+                      editor.view(key);
                     }
                   }}
                 >
@@ -189,7 +192,7 @@ export default function ActivityDetails({
         </ul>
       )}
       {showHours && registered.length > 0 && (
-        <p className="activity-hours-total" data-activity-hours={item.id}>
+        <p className="activity-hours-total" data-activity-hours={key}>
           <strong>Carga horária registrada: </strong>
           {sameTotal
             ? formatHours(hourTotals[0].hours)
@@ -201,9 +204,9 @@ export default function ActivityDetails({
       )}
       <Button
         type="button"
-        data-prepare-activity={item.id}
+        data-prepare-activity={key}
         disabled={readOnly}
-        onClick={() => editor.prepare(item.id)}
+        onClick={() => editor.prepare(key)}
       >
         {registered.length ? 'Adicionar data' : 'Preencher atividade'}
       </Button>

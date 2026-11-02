@@ -436,14 +436,14 @@ test('the list shows every activity and the views split what is left to fill', a
   // The cultural week is complete in the fixture and the integrated enrolment is optional.
   await expect(page.locator('#activity-pendency-todas')).toBeChecked();
   await expect(rows('cultural-week')).toBeVisible();
-  await expect(rows('enrolment-0')).toBeVisible();
+  await expect(rows('enrolment:cycle:annual')).toBeVisible();
   await expect(rows('family-meeting')).toBeVisible();
   expect(await count('todas')).toBe((await count('preencher')) + (await count('sem-pendencias')));
 
   await page.locator('#activity-pendency-preencher').check();
   await expect(page).toHaveURL(/atividadePendencia=preencher/);
   await expect(rows('cultural-week')).toHaveCount(0);
-  await expect(rows('enrolment-0')).toHaveCount(0);
+  await expect(rows('enrolment:cycle:annual')).toHaveCount(0);
   await expect(rows('family-meeting')).toBeVisible();
   // By activity, the counter also includes the dates of the special groups.
   await expect(
@@ -454,7 +454,7 @@ test('the list shows every activity and the views split what is left to fill', a
 
   await page.locator('#activity-pendency-sem-pendencias').check();
   await expect(rows('cultural-week')).toBeVisible();
-  await expect(rows('enrolment-0')).toBeVisible();
+  await expect(rows('enrolment:cycle:annual')).toBeVisible();
   await expect(rows('family-meeting')).toHaveCount(0);
 
   // The situation filter uses the status shown on each row.
@@ -463,7 +463,7 @@ test('the list shows every activity and the views split what is left to fill', a
   await page.locator('#activity-status').selectOption('complete');
   await expect(page.locator('.activity-more-filters > summary')).toHaveText('Mais filtros (1)');
   await expect(rows('cultural-week')).toBeVisible();
-  await expect(rows('enrolment-0')).toHaveCount(0);
+  await expect(rows('enrolment:cycle:annual')).toHaveCount(0);
   for (const status of await page
     .locator('[data-activity-row]')
     .evaluateAll((items) => items.map((item) => item.getAttribute('data-status'))))
@@ -514,8 +514,9 @@ test('a review link to an assessment stage opens it in the combined step and clo
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'issues');
-  await page.locator('a[href*="atividade=stage-1"]').first().click();
-  await expect(page).toHaveURL(/\/periodos\?.*atividade=stage-1/);
+  // The link carries the complete key of the stage link: activity, base, position and offer.
+  await page.locator('a[href*="atividade=stage:stage:"]').first().click();
+  await expect(page).toHaveURL(/\/periodos\?.*atividade=stage:stage:(annual|first):1:integrado/);
   await expect(page.locator('#offer-integrado-form')).toBeVisible();
   await expect(page.locator('#offer-integrado-stage-0-start')).toBeFocused();
   await page.locator('#offer-integrado-cancel').click();

@@ -180,6 +180,41 @@ export function activityKey(ref: ActivityRef): string {
   return ref.activityId;
 }
 
+/**
+ * The link a complete activity key names, for keys read from a URL (`?atividade=`). The key is
+ * split by the shapes `activityKey()` produces, validated by `activityRef()` and accepted only when
+ * it produces the same key again: a format 4 identifier (`final-1`, `stage-1:integrado`), a prefix,
+ * an undeclared ID or a key in another base is refused, with undefined. It is not an alias of the
+ * format 4 identifier and is never used to read a stored link.
+ */
+export function activityFromKey(key: string): ActivityRef | undefined {
+  const [activityId, base, ...rest] = key.split(':');
+  const ordinal = (value: string | undefined) =>
+    value && /^[1-9]\d{0,5}$/.test(value) ? Number(value) : undefined;
+  let candidate: Record<string, unknown>;
+  if (base === undefined) candidate = { activityId };
+  else if (base === 'cycle' && rest.length === 1) candidate = { activityId, term: rest[0] };
+  else if (base === 'semester' && rest.length === 1) candidate = { activityId, semester: rest[0] };
+  else if (base === 'stage' && rest.length >= 3) {
+    const [status, number, ...offer] = rest;
+    candidate = {
+      activityId,
+      offerId: offer.join(':'),
+      position:
+        status === 'unclassified'
+          ? { status, reportedOrdinal: ordinal(number) }
+          : { status: 'defined', term: status, number: ordinal(number) },
+    };
+  } else return undefined;
+  try {
+    const ref = activityRef(candidate);
+    return activityKey(ref) === key ? ref : undefined;
+  } catch (error) {
+    if (error instanceof DomainError) return undefined;
+    throw error;
+  }
+}
+
 /** Link by offer stage: stages, results, councils and meetings of one offer. */
 export type StageActivityRef = Extract<ActivityRef, { position: StagePosition }>;
 

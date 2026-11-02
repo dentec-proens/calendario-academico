@@ -2,7 +2,7 @@ import { useWorkRisk } from '../../../shared/forms/useWorkRisk.ts';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { PanelDialog, PanelHeader } from '../../../components/ui/Panel.tsx';
-import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
+import { generatedActivities } from '#src/domain/calendar/activities/links.ts';
 import { observanceRules } from '#src/domain/calendar/observances.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useAppSession } from '../../../app/session.tsx';
@@ -28,14 +28,14 @@ export default function EventPanel() {
   // Keep the access notice reachable while preserving the panel and its draft.
   const open = (editor.open || editor.panel !== null) && !paused;
   useWorkRisk('interaction', open);
-  const activityId = editor.open
+  const activityKey = editor.open
     ? editor.context?.kind === 'activity'
-      ? editor.context.itemId
+      ? editor.context.key
       : ''
     : editor.panel?.kind === 'activity'
-      ? editor.panel.itemId
+      ? editor.panel.key
       : '';
-  const activity = activityPlan(state).find((item) => item.id === activityId);
+  const activity = activityKey ? generatedActivities(state).get(activityKey) : undefined;
   const observanceKey =
     !editor.open && editor.panel?.kind === 'observance' ? editor.panel.key : undefined;
   const observance = observanceRules(state.year).find((rule) => rule.key === observanceKey);
@@ -89,7 +89,7 @@ export default function EventPanel() {
         onClose={editor.close}
       />
       {activity && (
-        <ActivityDetails item={activity} detailOpen={search.atividade === activity.id} />
+        <ActivityDetails item={activity} detailOpen={search.atividade === activityKey} />
       )}
       {!editor.open && editor.context && editor.dirty && (
         <Notice

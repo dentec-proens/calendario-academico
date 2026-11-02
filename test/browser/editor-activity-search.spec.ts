@@ -11,13 +11,15 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     await selectEditorSection(page, 'events');
     const search = page.getByRole('searchbox', { name: 'Buscar' });
-    const enrolment = page.locator('[data-activity-row="enrolment-0"]');
+    const enrolment = page.locator('[data-activity-row="enrolment:cycle:annual"]');
     for (const query of ['matrícula', 'matri\u0301cula', 'MATRICULA']) {
       await search.fill('');
       await search.pressSequentially(query);
       await expect(search).toHaveValue(query);
       await expect(enrolment, `Busca: ${query}`).toBeVisible();
-      await expect(page.locator('[data-activity-row="admission-notice-0"]')).toHaveCount(0);
+      await expect(page.locator('[data-activity-row="admission-notice:cycle:annual"]')).toHaveCount(
+        0,
+      );
       expect(new URL(page.url()).searchParams.get('atividadeBusca')).toBe(query);
     }
     await page.reload();

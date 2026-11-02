@@ -344,7 +344,7 @@ test('stage editing and activity changes always reveal the same draft in its des
   await selectEditorSection(page, 'events');
   await page.locator('#activity-mode-data').check();
   await page.locator('[data-open-event="stage-existing"]').click();
-  await expect(page).toHaveURL(/\/periodos\?.*atividade=stage-1/);
+  await expect(page).toHaveURL(/\/periodos\?.*atividade=stage:stage:annual:1:integrado/);
   await expect(page.locator('#offer-integrado-form')).toBeVisible();
   await page.locator('#offer-integrado-stage-0-end').fill('2027-03-11');
   await selectEditorSection(page, 'events');

@@ -4,7 +4,7 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { labelFor } from '#src/domain/calendar/offers.ts';
 import { Eye } from 'lucide-react';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
-import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
+import { activityKey, isAssessmentStage } from '#src/domain/calendar/activities/activity-ref.ts';
 import ScopeForm from '../forms/ScopeForm.tsx';
 import { missingCoursesIssue } from '#src/domain/calendar/identity.ts';
 import { useIdentityPanel } from '../identity/CalendarIdentity.tsx';
@@ -16,7 +16,8 @@ export default function IssuesSection() {
     mark: string;
     title: string;
     detail: string;
-    itemId?: string;
+    /** Review link: the key of the activity's link and whether it is an assessment interval. */
+    activity?: { key: string; stage: boolean };
     identity?: true;
   }[] = [];
   // The backend refuses the submission without courses.
@@ -65,7 +66,10 @@ export default function IssuesSection() {
         detail:
           [...row.issues, ...row.warnings].join(' ') ||
           'Planejamento pendente de registro e datas.',
-        itemId: row.requirement.id,
+        activity: {
+          key: activityKey(row.requirement.activity),
+          stage: isAssessmentStage(row.requirement.activity),
+        },
       });
   }
   if (evaluation) {
@@ -156,10 +160,10 @@ export default function IssuesSection() {
               <div>
                 <strong>{issue.title}</strong>
                 <small>{issue.detail}</small>
-                {issue.itemId && (
+                {issue.activity && (
                   <Link
                     to={
-                      stageRequirement(issue.itemId)
+                      issue.activity.stage
                         ? '/calendarios/$calendarId/periodos'
                         : '/calendarios/$calendarId/atividades'
                     }
@@ -167,7 +171,7 @@ export default function IssuesSection() {
                     // A link to an activity opens the by-activity view, whatever the URL had.
                     search={(previous) => ({
                       ...previous,
-                      atividade: issue.itemId,
+                      atividade: issue.activity?.key,
                       atividadeVisao: undefined,
                     })}
                     hashScrollIntoView={false}

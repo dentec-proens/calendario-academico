@@ -6,7 +6,6 @@ import {
   organizationLabels,
   termsByOrganization,
   periodCountByOrganization,
-  assessmentStageRequirementPattern,
 } from '#src/domain/calendar/config.ts';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
@@ -128,7 +127,8 @@ export default function OfferOrganizationForm({
   onResolved,
 }: {
   offerId?: string;
-  requestedStage?: string;
+  /** Ordinal in the year of the assessment interval a review link names (from 1). */
+  requestedStage?: number;
   registerCheck: RegisterOrganizationCheck;
   onResolved: () => void;
 }) {
@@ -243,7 +243,7 @@ export default function OfferOrganizationForm({
   useEffect(() => {
     if (!requestedStage) return;
     const frame = requestAnimationFrame(() => {
-      const number = Number(requestedStage.match(assessmentStageRequirementPattern)?.[1] ?? 1) - 1;
+      const number = requestedStage - 1;
       const target =
         document.getElementById(`${prefix}-stage-${number}-start`) ?? focusableField(firstField);
       target?.focus({ preventScroll: true });

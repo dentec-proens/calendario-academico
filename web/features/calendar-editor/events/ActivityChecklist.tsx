@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
-import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
 import { activityKey, isAssessmentStage } from '#src/domain/calendar/activities/activity-ref.ts';
-import { linkIssueLabels, linksToReview } from '#src/domain/calendar/activities/links.ts';
+import {
+  generatedActivities,
+  linkIssueLabels,
+  linksToReview,
+} from '#src/domain/calendar/activities/links.ts';
 import { activityStatusLabels } from '#src/domain/calendar/activities/status.ts';
 import { observanceForEvent } from '#src/domain/calendar/observances.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
@@ -35,21 +37,21 @@ export default function ActivityChecklist() {
   const list = useActivityList();
   const { selected, view: mode } = list;
   const { view, viewEvent } = editor;
+  // A review link names an activity by the complete key of its link, validated by the Router.
   // Assessment intervals answer their links in the assessment area, not here.
-  const linked = activityPlan(state).find(
-    (item) => item.id === search.atividade && item.variant !== 'stage',
-  )?.id;
+  const generated = search.atividade ? generatedActivities(state).get(search.atividade) : undefined;
+  const assessmentStage = generated?.variant === 'stage';
+  const linked = generated && !assessmentStage ? search.atividade : undefined;
   // A review link may also name the recorded link of a date under “Vínculo a conferir”.
   const review = linksToReview(state);
-  const linkedDate =
-    linked || stageRequirement(search.atividade)
-      ? undefined
-      : state.events.find(
-          (event) =>
-            event.activity &&
-            activityKey(event.activity) === search.atividade &&
-            review.has(event.id),
-        )?.id;
+  const linkedDate = linked
+    ? undefined
+    : state.events.find(
+        (event) =>
+          event.activity &&
+          activityKey(event.activity) === search.atividade &&
+          review.has(event.id),
+      )?.id;
   // A link to an activity opens the by-activity view, even from a by-date URL.
   useEffect(() => {
     if (linked && mode === 'data')
@@ -79,17 +81,17 @@ export default function ActivityChecklist() {
         : undefined;
   const panelObservance = editor.panel?.kind === 'observance' ? editor.panel.key : undefined;
   const mandatory = coverage.filter(
-    (row) => row.applicability === 'required' && !stageRequirement(row.requirement.id),
+    (row) => row.applicability === 'required' && !isAssessmentStage(row.requirement.activity),
   );
 
-  const renderActivity = ({ item, status, dates }: ActivityLine) => (
-    <li key={item.id} data-activity-row={item.id} data-status={status.status}>
+  const renderActivity = ({ key, item, status, dates }: ActivityLine) => (
+    <li key={key} data-activity-row={key} data-status={status.status}>
       <ActivityRow
-        id={`activity-${item.id}`}
-        data-activity-open={item.id}
+        id={`activity-${key}`}
+        data-activity-open={key}
         label={item.name}
         status={status.status}
-        selected={selected === item.id}
+        selected={selected === key}
         dates={
           dates.length
             ? `${range(dates[0])}${dates.length > 1 ? ` (+${dates.length - 1})` : ''}`
@@ -97,8 +99,8 @@ export default function ActivityChecklist() {
         }
         onClick={() =>
           dates.length || readOnly || (editor.context && editor.dirty)
-            ? view(item.id)
-            : editor.prepare(item.id)
+            ? view(key)
+            : editor.prepare(key)
         }
       />
     </li>
@@ -107,7 +109,8 @@ export default function ActivityChecklist() {
     const { event, origin, activity, issue } = line;
     const observance = observanceForEvent(state.year, event.id);
     const planned = event.notice?.publication === 'planned';
-    const activityStatus = activity ? statusFor(activity.id).status : undefined;
+    const key = activity && activityKey(activity.activity);
+    const activityStatus = key ? statusFor(key).status : undefined;
     const statusLabel = issue
       ? linkIssueLabels[issue]
       : origin === 'base'
@@ -143,7 +146,7 @@ export default function ActivityChecklist() {
           selected={
             panelEvent === event.id ||
             (panelObservance !== undefined && observance?.key === panelObservance) ||
-            (activity !== undefined && selected === activity.id)
+            (key !== undefined && selected === key)
           }
           onClick={() => {
             if (observance) editor.viewObservance(observance.key);
@@ -151,7 +154,7 @@ export default function ActivityChecklist() {
             // details, where it can be removed or have its dates adjusted.
             else if (isAssessmentStage(event.activity) && !event.institutional && !issue)
               editor.edit(event.id);
-            else if (activity) view(activity.id);
+            else if (key) view(key);
             else editor.viewEvent(event.id);
           }}
         />
@@ -211,7 +214,7 @@ export default function ActivityChecklist() {
                 (row) =>
                   row.offerId === modality &&
                   row.applicability === 'unconfigured' &&
-                  !stageRequirement(row.requirement.id),
+                  !isAssessmentStage(row.requirement.activity),
               ).length;
               return (
                 <li key={modality}>
@@ -314,9 +317,15 @@ export default function ActivityChecklist() {
           })}
         </div>
       )}
-      {!linked && !linkedDate && search.atividade && !stageRequirement(search.atividade) && (
+      {!linked && !linkedDate && search.atividade && !assessmentStage && (
         <Notice tone="warning" id="activity-link-missing">
           A atividade indicada no link não existe na organização atual deste calendário.
+        </Notice>
+      )}
+      {search.atividadeInvalida && (
+        <Notice tone="warning" id="activity-link-invalid">
+          O link não indica uma atividade reconhecida. Ele pode ser anterior à atualização de
+          atividades e datas; abra a atividade pela lista.
         </Notice>
       )}
       {empty && (

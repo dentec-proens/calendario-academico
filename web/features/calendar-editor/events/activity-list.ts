@@ -12,9 +12,9 @@ export function useActivityList() {
   const { coverage } = useActivityCoverage();
   const selected =
     editor.context?.kind === 'activity'
-      ? editor.context.itemId
+      ? editor.context.key
       : editor.panel?.kind === 'activity'
-        ? editor.panel.itemId
+        ? editor.panel.key
         : '';
   const step = activityStep({
     state,

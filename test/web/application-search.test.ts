@@ -39,3 +39,32 @@ test('view, pendency, origin and situation are separate step filters without ali
     ),
   ).toEqual({});
 });
+
+test('the activity of a review link is a complete key, kept readable in the URL', () => {
+  for (const key of [
+    'family-meeting',
+    'final:cycle:first',
+    'pit:semester:second',
+    'stage:stage:unclassified:3:integrado',
+    'results:stage:first:2:graduacao',
+  ]) {
+    expect(applicationSearch(parseApplicationSearch(`?atividade=${key}`))).toEqual({
+      atividade: key,
+    });
+    expect(stringifyApplicationSearch({ atividade: key })).toBe(`?atividade=${key}`);
+    expect(
+      applicationSearch(parseApplicationSearch(`?atividade=${encodeURIComponent(key)}`)),
+    ).toEqual({ atividade: key });
+  }
+});
+
+test('any other activity value is dropped and flagged, and the flag never reaches the URL', () => {
+  for (const value of ['final-1', 'stage-1:integrado', 'final:cycle', 'unknown-activity']) {
+    const search = applicationSearch(parseApplicationSearch(`?atividade=${value}&ano=2027`));
+    expect(search).toEqual({ ano: '2027', atividadeInvalida: true });
+    expect(stringifyApplicationSearch(search)).toBe('?ano=2027');
+  }
+  expect(applicationSearch({ atividade: 'x'.repeat(201) })).toEqual({ atividadeInvalida: true });
+  expect(applicationSearch({ atividade: '' })).toEqual({});
+  expect(applicationSearch({ atividade: ['final:cycle:first'] })).toEqual({});
+});

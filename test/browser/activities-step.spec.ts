@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { activityKey } from '../../src/domain/calendar/activities/activity-ref.ts';
+import { onceLink } from '../helpers/activity-links.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { test, expect } from './test.ts';
 import type { FixtureServer } from './fixture-server.ts';
@@ -132,30 +133,93 @@ test('an orphaned observance is resolvable in both views', async ({ page, fixtur
   await expect(page.locator('#reset-observance-retired-observance')).toBeVisible();
 });
 
-test('a review link opens its activity by activity, even from the by-date view', async ({
-  page,
-  fixtureServer,
-}) => {
-  await open(page, fixtureServer, ivaiporaDraft());
-  await page.locator('#activity-mode-data').check();
-  await page.evaluate(() => {
+/** Follow a review link in place, as the issues list does, keeping the other URL keys. */
+async function followLink(page: Page, atividade: string) {
+  await page.evaluate((value) => {
     const url = new URL(location.href);
-    url.searchParams.set('atividade', 'family-meeting');
+    url.searchParams.set('atividade', value);
     history.pushState(null, '', url);
     dispatchEvent(new PopStateEvent('popstate'));
+  }, atividade);
+}
+
+for (const width of [1440, 390])
+  test(`a review link names an activity by its complete key, with or without dates, at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const state = ivaiporaDraft();
+    state.events.push({
+      id: 'family-meeting-date',
+      name: 'Reunião sintética com familiares',
+      start: civilDate('2027-03-10'),
+      end: civilDate('2027-03-10'),
+      effect: 'note',
+      category: 'evento',
+      activity: onceLink('family-meeting'),
+      scope: { offers: ['integrado', 'subsequente'], confirmed: true },
+    });
+    await open(page, fixtureServer, state);
+    const panel = page.locator('#event-panel');
+
+    // An activity without dates, from the by-date view: the by-activity view and its panel open.
+    await page.locator('#activity-mode-data').check();
+    await followLink(page, 'final:cycle:annual');
+    await expect(page.locator('#activity-mode-atividade')).toBeChecked();
+    await expect(panel.locator('[data-activity-detail="final:cycle:annual"]')).toHaveAttribute(
+      'open',
+      '',
+    );
+    await expect(panel.locator('[data-prepare-activity="final:cycle:annual"]')).toHaveText(
+      'Preencher atividade',
+    );
+    await expect(
+      page.locator('#activity-checklist [data-activity-row="final:cycle:annual"]'),
+    ).toHaveCount(1);
+    await page.locator('#close-event-panel').click();
+    await expect(page).not.toHaveURL(/atividade=/);
+
+    // An activity with dates lists them; the URL keeps the key readable.
+    await page.locator('#activity-mode-data').check();
+    await followLink(page, 'family-meeting');
+    await expect(page.locator('#activity-mode-atividade')).toBeChecked();
+    await expect(page.locator('#event-panel-title')).toContainText('Reunião com familiares');
+    await expect(panel.locator('[aria-label="Datas desta atividade"]')).toContainText(
+      'Reunião sintética com familiares',
+    );
+    await expect(panel.locator('[data-prepare-activity="family-meeting"]')).toHaveText(
+      'Adicionar data',
+    );
+    await page.locator('#close-event-panel').click();
+
+    // The key of a date under “Vínculo a conferir” opens that date, with its pending reason.
+    await followLink(page, 'final:cycle:first');
+    await expect(page.locator('#link-review-reason')).toContainText('Classificação pendente');
+    await expect(page.locator('#link-review-reason')).toContainText('final:cycle:first');
+    await page.locator('#close-event-panel').click();
+
+    // A complete key that names neither a generated activity nor a date to review warns.
+    await followLink(page, 'council:stage:unclassified:3:integrado');
+    await expect(page.locator('#activity-link-missing')).toBeVisible();
+    await expect(page.locator('#activity-link-invalid')).toHaveCount(0);
+
+    // A format 4 identifier or a partial key is not a key: the Router drops it and the step warns.
+    for (const value of [
+      'final-1',
+      'stage-1:integrado',
+      'final:cycle',
+      'family-meeting:cycle:first',
+    ]) {
+      await followLink(page, value);
+      await expect(page.locator('#activity-link-invalid')).toBeVisible();
+      await expect(page.locator('#activity-link-missing')).toHaveCount(0);
+      await expect(panel).toBeHidden();
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
   });
-  await expect(page.locator('#activity-mode-atividade')).toBeChecked();
-  await expect(page.locator('#event-panel-title')).toContainText('Reunião com familiares');
-  await page.locator('#close-event-panel').click();
-  // A key that names neither a generated activity nor a date to review warns.
-  await page.evaluate(() => {
-    const url = new URL(location.href);
-    url.searchParams.set('atividade', 'unknown-activity');
-    history.pushState(null, '', url);
-    dispatchEvent(new PopStateEvent('popstate'));
-  });
-  await expect(page.locator('#activity-link-missing')).toBeVisible();
-});
 
 test('the institutional base group opens when an action shows one of its dates', async ({
   page,

@@ -6,10 +6,15 @@ import {
   dateOrigin,
 } from '../../web/features/calendar-editor/events/activity-step.ts';
 import { applicationSearch } from '../../web/app/search.ts';
+import { activityKey } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { cascavelDraft, ivaiporaDraft } from '../fixtures/pending-links-2027.ts';
 import type { CalendarState } from '../../web/features/calendar-editor/types.ts';
 
-const step = (fixture: typeof ivaiporaDraft, search: Record<string, string> = {}) => {
+const step = (
+  fixture: typeof ivaiporaDraft,
+  search: Record<string, string> = {},
+  pinned?: string,
+) => {
   const state = fixture() as unknown as CalendarState;
   return activityStep({
     state,
@@ -17,6 +22,7 @@ const step = (fixture: typeof ivaiporaDraft, search: Record<string, string> = {}
     institutional: [],
     coverage: activityCoverage(state),
     search: applicationSearch(search),
+    pinned,
   });
 };
 
@@ -52,4 +58,18 @@ test('counters follow the unit of each view and every filter but pendency', () =
   expect(toFill.review).toHaveLength(11);
   // Former values of the view are not aliases of the pendency filter.
   expect(applicationSearch({ atividadeVisao: 'preencher' })).toEqual({});
+});
+
+test('activities are addressed by the key of their link, which pins them past the filters', () => {
+  const all = step(ivaiporaDraft);
+  for (const line of all.activities) expect(line.key).toBe(activityKey(line.item.activity));
+  expect(all.activities.map((line) => line.key)).toContain('final:cycle:annual');
+  // The campus origin hides activities, except the one a review link or the panel pins.
+  const filters = { atividadeOrigem: 'campus', atividadePendencia: 'sem-pendencias' };
+  expect(step(ivaiporaDraft, filters).activities).toHaveLength(0);
+  expect(
+    step(ivaiporaDraft, filters, 'final:cycle:annual').activities.map((line) => line.key),
+  ).toEqual(['final:cycle:annual']);
+  // A format 4 identifier pins nothing.
+  expect(step(ivaiporaDraft, filters, 'final-0').activities).toHaveLength(0);
 });

@@ -15,7 +15,7 @@ for (const width of [1440, 390]) {
     await expect
       .poll(() =>
         page
-          .locator('[data-activity-row="enrolment-0"] .activity-status')
+          .locator('[data-activity-row="enrolment:cycle:annual"] .activity-status')
           .first()
           .evaluate((element) => {
             const text = document.createRange();
@@ -82,7 +82,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'events');
-  await openActivity(page, 'admission-notice-0');
+  await openActivity(page, 'admission-notice:cycle:annual');
   await page.locator('#event-publication-status').selectOption('published');
   await expect(page.locator('#event-admission-year')).toHaveValue('2027');
   await expect(page.locator('#event-admission-period')).toHaveValue('annual-2027');
@@ -103,7 +103,9 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
       ),
     )
     .toBe('2026-12-01');
-  await expect(page.locator('[data-activity-row="admission-notice-0"]')).toContainText('Completo');
+  await expect(page.locator('[data-activity-row="admission-notice:cycle:annual"]')).toContainText(
+    'Completo',
+  );
   await page.locator('#close-event-panel').click();
   await openActivity(page, 'regular-admission-notice');
   await expect(page.locator('#event-admission-year')).toHaveValue('2028');
@@ -168,7 +170,7 @@ test('coverage stays partial per offer while the second record is edited and rem
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'events');
-  await openActivity(page, 'enrolment-0');
+  await openActivity(page, 'enrolment:cycle:annual');
   const card = page.locator('#event-panel .activity-details');
   await card.locator('[data-edit-activity-event="veterans-1"]').click();
   await expect(page.locator('#event-name')).toHaveValue('Veteranos graduacao');
@@ -190,7 +192,7 @@ test('coverage stays partial per offer while the second record is edited and rem
   await expect(card).toContainText('Graduação: Obrigatório · Planejamento pendente');
   await expect(card).toContainText('Técnico subsequente: Obrigatório · Planejamento completo');
   await expect(card).toContainText('Técnico integrado: Opcional');
-  await card.locator('[data-prepare-activity="enrolment-0"]').click();
+  await card.locator('[data-prepare-activity="enrolment:cycle:annual"]').click();
   await expect(page.locator('#event-name')).not.toHaveValue('Veteranos subsequente');
   await expect(page.locator('#event-modalities input[value="integrado"]')).not.toBeChecked();
 });
@@ -321,7 +323,7 @@ test('annual integrated and semester undergraduate offers keep independent overl
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods.length))
     .toBe(3);
   await selectEditorSection(page, 'events');
-  await openActivity(page, 'registration-2');
+  await openActivity(page, 'registration:cycle:second');
   // Without records the form opens first; the local rule belongs to the activity view.
   await page.locator('#back-to-activity').click();
   await page.getByText('Exigência por regra local', { exact: true }).click();
@@ -345,9 +347,9 @@ test('annual integrated and semester undergraduate offers keep independent overl
   await page.locator('#close-event-panel').click();
   const details = page.locator('#event-panel .activity-details');
   for (const [activity, text] of [
-    ['enrolment-2', 'Graduação: Obrigatório'],
-    ['registration-2', 'Graduação: Obrigatório'],
-    ['enrolment-0', 'Técnico integrado: Opcional'],
+    ['enrolment:cycle:second', 'Graduação: Obrigatório'],
+    ['registration:cycle:second', 'Graduação: Obrigatório'],
+    ['enrolment:cycle:annual', 'Técnico integrado: Opcional'],
   ]) {
     await openActivity(page, activity);
     const back = page.locator('#back-to-activity');

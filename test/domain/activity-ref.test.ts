@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  activityFromKey,
   activityIds,
   activityKey,
   activityRef,
@@ -9,6 +10,8 @@ import {
 import { operationalRules } from '../../src/domain/calendar/activities/operational-checklist.ts';
 import { rules as rules2027 } from '../../src/domain/policies/consup-292-2027/requirements.ts';
 import { DomainError } from '../../src/domain/errors.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
+import { calendarSchemaVersion, type AssessmentSettings } from '../../src/domain/calendar/model.ts';
 
 /**
  * `ActivityRef` (plan `docs/plans/2026-11-02-atividades-e-datas.md`, section 5.1; phase 2,
@@ -195,5 +198,71 @@ describe('activityKey()', () => {
       activityId: 'results',
     });
     expect(activityKey(reordered)).toBe('results:stage:first:2:integrado');
+  });
+});
+
+describe('activityFromKey() validates a complete key read from a URL', () => {
+  test('returns the link of every key activityKey() produces, for every generated row', () => {
+    const offers = ['anual', 'semestral', 'a-classificar'] as const;
+    const keys = new Set<string>();
+    for (const year of [2026, 2027])
+      for (const organization of offers) {
+        const state: AssessmentSettings = {
+          year,
+          schemaVersion: calendarSchemaVersion,
+          offers: [
+            {
+              id: 'integrado',
+              kind: 'integrado',
+              delivery: 'a-conferir',
+              organization,
+              stages:
+                organization === 'a-classificar'
+                  ? { status: 'reported', count: 3 }
+                  : { status: 'defined', perTerm: organization === 'anual' ? 2 : 1 },
+            },
+          ],
+        };
+        for (const row of activityPlan(state)) {
+          const key = activityKey(row.activity);
+          keys.add(key);
+          expect(activityFromKey(key), key).toEqual(row.activity);
+        }
+      }
+    // Every base appears: single, cycle, reference semester and stage.
+    for (const pattern of [/^[a-z-]+$/, /:cycle:/, /:semester:/, /:stage:/])
+      expect(
+        [...keys].some((key) => pattern.test(key)),
+        String(pattern),
+      ).toBe(true);
+  });
+
+  test.each([
+    'stage:stage:unclassified:3:integrado',
+    'results:stage:first:2:graduacao',
+    'pit:semester:second',
+  ])('accepts the declared key %s, generated or not', (key) => {
+    expect(activityKey(activityFromKey(key)!)).toBe(key);
+  });
+
+  test.each([
+    ['format 4 identifiers', 'final-1'],
+    ['format 4 stage identifiers', 'stage-1:integrado'],
+    ['an undeclared activity', 'unknown-activity'],
+    ['a prefix of a key', 'final:cycle'],
+    ['a key in another base', 'family-meeting:cycle:first'],
+    ['a single activity named by a repeated ID', 'final'],
+    ['an unknown cycle', 'final:cycle:third'],
+    ['an unknown reference semester', 'pit:semester:annual'],
+    ['a meeting with a stage position', 'family-meeting:stage:annual:1:integrado'],
+    ['a stage without offer', 'stage:stage:annual:1:'],
+    ['a stage without number', 'stage:stage:annual::integrado'],
+    ['a non-canonical number', 'stage:stage:annual:01:integrado'],
+    ['a zero ordinal', 'stage:stage:unclassified:0:integrado'],
+    ['an unknown stage status', 'stage:stage:pending:1:integrado'],
+    ['extra parts', 'final:cycle:first:integrado'],
+    ['an empty key', ''],
+  ])('refuses %s', (_, key) => {
+    expect(activityFromKey(key)).toBeUndefined();
   });
 });

@@ -1,5 +1,3 @@
-import { assessmentStageRequirementPattern } from '../config.ts';
-
 /** Subjects shown by the step 6 checklist, in display order; each catalogue row declares one. */
 export const activityGroups = [
   ['admission', 'Ingresso e vida acadêmica'],
@@ -14,6 +12,3 @@ export type ActivityGroup = (typeof activityGroups)[number][0];
  * (`minHours`, the stage identifier); the variant only selects the form blocks.
  */
 export type ActivityVariant = 'activity' | 'hours' | 'admission-notice' | 'stage';
-
-export const isStageRequirementId = (id: string | undefined) =>
-  assessmentStageRequirementPattern.test(id || '');

@@ -11,7 +11,7 @@ for (const width of [1440, 390]) {
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toBeVisible();
     await selectEditorSection(page, 'events');
-    await openActivity(page, 'enrolment-0');
+    await openActivity(page, 'enrolment:cycle:annual');
     // Without dates the form opens first; the activity view is one step back.
     await page.locator('#back-to-activity').click();
     const card = page.locator('#event-panel .activity-details');

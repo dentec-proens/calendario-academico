@@ -20,14 +20,14 @@ import {
   type EventValues,
 } from './event-draft.ts';
 import { applyEvent } from '#src/domain/calendar/commands/events.ts';
-import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
-import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
 import {
   generatedActivities,
   generatedActivity,
   linksToReview,
 } from '#src/domain/calendar/activities/links.ts';
 import {
+  activityFromKey,
+  activityKey,
   isAssessmentStage,
   type ActivityRef,
 } from '#src/domain/calendar/activities/activity-ref.ts';
@@ -40,7 +40,7 @@ function destination(context: EventContext | null, activity: ActivityRef | undef
   // A date edited as a date (campus or under review) stays in the Activities step.
   const stage =
     context?.kind === 'activity'
-      ? stageRequirement(context.itemId)
+      ? isAssessmentStage(activityFromKey(context.key))
       : context?.kind === 'event'
         ? false
         : isAssessmentStage(activity);
@@ -58,9 +58,9 @@ function useController() {
   const [context, setContext] = useState<EventContext | null>(null);
   const [open, setOpen] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
-  // What the side panel shows besides the form: an activity to consult or an observance.
+  // What the side panel shows besides the form: an activity (by its key) or an observance.
   const [panel, setPanel] = useState<
-    | { kind: 'activity'; itemId: string }
+    | { kind: 'activity'; key: string }
     | { kind: 'event'; eventId: string }
     | { kind: 'observance'; key: string }
     | null
@@ -77,9 +77,9 @@ function useController() {
     if (active instanceof HTMLElement && !active.closest('#event-panel')) opener.current = active;
   }, []);
   const view = useCallback(
-    (itemId: string) => {
+    (key: string) => {
       rememberOpener();
-      setPanel({ kind: 'activity', itemId });
+      setPanel({ kind: 'activity', key });
     },
     [rememberOpener],
   );
@@ -111,7 +111,7 @@ function useController() {
         setContext(null);
         setOpen(false);
         setEventId(null);
-        setPanel({ kind: 'activity', itemId: context.itemId });
+        setPanel({ kind: 'activity', key: context.key });
         requestAnimationFrame(() =>
           document.querySelector<HTMLElement>('#event-panel [data-prepare-activity]')?.focus(),
         );
@@ -213,17 +213,17 @@ function useController() {
     result.form.reset(values);
     setContext(next);
     setEventId(id);
-    setPanel(next.kind === 'activity' ? { kind: 'activity', itemId: next.itemId } : null);
+    setPanel(next.kind === 'activity' ? { kind: 'activity', key: next.key } : null);
     setOpen(true);
     return true;
   }
-  function openOrganization(itemId: string) {
+  function openOrganization(key: string) {
     setOpen(false);
     setPanel(null);
     void navigate({
       to: editorPages.periods.path,
       params: { calendarId: record.id },
-      search: (previous) => ({ ...previous, atividade: itemId }),
+      search: (previous) => ({ ...previous, atividade: key }),
       hashScrollIntoView: false,
     });
   }
@@ -236,7 +236,7 @@ function useController() {
       ? undefined
       : generatedActivity(generatedActivities(state), event.activity);
     if (isAssessmentStage(event.activity) && generated) {
-      openOrganization(generated.id);
+      openOrganization(activityKey(generated.activity));
       return;
     }
     if (id.startsWith('teacher-vacation-')) {
@@ -245,18 +245,18 @@ function useController() {
     }
     // A link without generated activity is edited as a date; its link is kept as recorded.
     const next: EventContext = generated
-      ? { kind: 'activity', itemId: generated.id, eventId: id }
+      ? { kind: 'activity', key: activityKey(generated.activity), eventId: id }
       : { kind: 'event', eventId: id };
     begin(next, eventValues(event), id);
   }
-  function prepare(itemId: string) {
-    if (stageRequirement(itemId)) {
-      openOrganization(itemId);
+  function prepare(key: string) {
+    if (isAssessmentStage(activityFromKey(key))) {
+      openOrganization(key);
       return;
     }
-    const requirement = activityPlan(state).find((item) => item.id === itemId);
+    const requirement = generatedActivities(state).get(key);
     if (!requirement) return;
-    begin({ kind: 'activity', itemId }, activityDraft(state, requirement));
+    begin({ kind: 'activity', key }, activityDraft(state, requirement));
   }
   function discard() {
     if (result.pending) return;
@@ -277,7 +277,7 @@ function useController() {
       search: (previous) => previous,
       hashScrollIntoView: false,
     });
-    setPanel(context?.kind === 'activity' ? { kind: 'activity', itemId: context.itemId } : null);
+    setPanel(context?.kind === 'activity' ? { kind: 'activity', key: context.key } : null);
     setOpen(true);
     requestAnimationFrame(() => {
       const heading = document.getElementById('event-form-title');
@@ -296,7 +296,7 @@ function useController() {
       setOpen(false);
       setEventId(null);
     }
-    setPanel({ kind: 'activity', itemId: context.itemId });
+    setPanel({ kind: 'activity', key: context.key });
     requestAnimationFrame(() =>
       (
         document.getElementById('panel-resume-event') ??

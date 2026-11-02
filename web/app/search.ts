@@ -1,4 +1,5 @@
 import { calendarLimits } from '#src/domain/calendar/config.ts';
+import { activityFromKey } from '#src/domain/calendar/activities/activity-ref.ts';
 export type DocumentStatus = '' | 'rascunho' | 'vigente' | 'arquivado';
 
 function documentStatus(value: unknown): Exclude<DocumentStatus, ''> | undefined {
@@ -28,7 +29,8 @@ export function stringifyApplicationSearch(values: Record<string, unknown>) {
     )
       parameters.set(key, String(value));
   }
-  const search = parameters.toString();
+  // Colons are valid in a query (RFC 3986) and keep activity keys readable (`final:cycle:first`).
+  const search = parameters.toString().replaceAll('%3A', ':');
   return search ? '?' + search : '';
 }
 
@@ -73,8 +75,19 @@ export function applicationSearch(input: Record<string, unknown>) {
     ...(['admission', 'teaching', 'campus', 'other'].includes(String(input.atividadeAssunto))
       ? { atividadeAssunto: String(input.atividadeAssunto) }
       : {}),
-    ...(typeof input.atividade === 'string' && /^[a-z0-9:-]{1,100}$/.test(input.atividade)
-      ? { atividade: input.atividade }
-      : {}),
+    ...activityLink(input.atividade),
   };
+}
+
+/**
+ * The activity a review link names: a complete key of `activityKey()`, validated here. Any other
+ * value, as a format 4 identifier (`final-1`) from an older link, is dropped and leaves only
+ * `atividadeInvalida`, a flag the step shows as a warning; it is a boolean, so
+ * `stringifyApplicationSearch` never writes it back to the URL.
+ */
+function activityLink(value: unknown): { atividade?: string; atividadeInvalida?: true } {
+  if (typeof value !== 'string' || !value) return {};
+  return value.length <= 200 && activityFromKey(value)
+    ? { atividade: value }
+    : { atividadeInvalida: true };
 }

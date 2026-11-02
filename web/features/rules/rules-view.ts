@@ -4,7 +4,8 @@ import {
   type CalendarOffer,
 } from '#src/domain/calendar/model.ts';
 import { selectableModalities } from '#src/domain/calendar/modalities.ts';
-import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
+import { generatedActivities } from '#src/domain/calendar/activities/links.ts';
+import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
 import { expandRules, type ActivityRule } from '#src/domain/calendar/activities/rules.ts';
 import type { RulesetChange } from '#src/domain/policies/contract.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
@@ -77,7 +78,7 @@ export function rulesView(year: number) {
     schemaVersion: calendarSchemaVersion,
     offers,
   };
-  const rows = new Map(activityPlan(state).map((row) => [row.id, row]));
+  const rows = generatedActivities(state);
   const minimums = offers.map((offer) => {
     const values = policy.countingMinimums(state, offer);
     return {
@@ -115,10 +116,11 @@ export function rulesView(year: number) {
       return {
         ...repeatLabels[repeat],
         activities: rules.map((rule) => {
-          // The plan rows, not the bare expansion, carry the policy's own defaults.
+          // The plan rows, not the bare expansion, carry the policy's own defaults; both are matched
+          // by the key of their link.
           const own = expanded
             .filter((item) => item.rule.id === rule.id)
-            .map((item) => rows.get(item.row.id)!);
+            .map((item) => rows.get(activityKey(item.row.activity))!);
           const rowFor = (id: string) => own.find((row) => !row.offerId || row.offerId === id);
           const sample = own[0];
           const byOffer = offers.map((offer) => {

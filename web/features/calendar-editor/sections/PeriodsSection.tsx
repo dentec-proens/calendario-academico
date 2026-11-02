@@ -7,6 +7,11 @@ import OfferOrganizationForm, {
 } from '../forms/OfferOrganizationForm.tsx';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useActivitySearch } from '../events/activity-query.ts';
+import {
+  activityFromKey,
+  isAssessmentStage,
+} from '#src/domain/calendar/activities/activity-ref.ts';
+import { stageLocation } from '#src/domain/calendar/activities/links.ts';
 import { editorPages } from '../editor-steps.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { Button } from '../../../components/ui/Button.tsx';
@@ -30,6 +35,12 @@ export default function PeriodsSection() {
     };
   }, []);
   const { atividade } = useActivitySearch();
+  // A review link to an assessment interval opens its offer's form at that stage.
+  const linkedStage = atividade ? activityFromKey(atividade) : undefined;
+  const requestedStage = (offerId: string) =>
+    isAssessmentStage(linkedStage) && linkedStage.offerId === offerId
+      ? (stageLocation(state, linkedStage)?.ordinal ?? 1)
+      : undefined;
   const hash = useRouterState({ select: (router) => router.location.hash });
   useEffect(() => {
     if (hash !== 'assessment-area' || atividade) return;
@@ -71,11 +82,7 @@ export default function PeriodsSection() {
             offerId={offer.id}
             registerCheck={registerCheck}
             onResolved={clearContinuationError}
-            requestedStage={
-              atividade?.endsWith(`:${offer.id}`) && atividade.startsWith('stage-')
-                ? atividade
-                : undefined
-            }
+            requestedStage={requestedStage(offer.id)}
           />
         ))}
         {showNew && (

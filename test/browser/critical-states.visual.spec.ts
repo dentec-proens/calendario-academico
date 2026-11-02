@@ -117,7 +117,7 @@ test('step 6 lists activities and opens one in the side panel', async ({ page, f
   await assertNoOverflow(page);
   // Keep the full list and persistent count, without moving the emulated viewport.
   expect(await fullPageScreenshot(page)).toMatchSnapshot('activity-list.png');
-  await page.locator('[data-activity-open="recognition-0"]').click();
+  await page.locator('[data-activity-open="recognition:cycle:annual"]').click();
   await expect(page.locator('#event-form-title')).toBeFocused();
   await expect(page).toHaveScreenshot('activity-panel.png');
 });
