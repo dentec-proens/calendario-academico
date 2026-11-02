@@ -8,7 +8,10 @@ import {
   type Conversion,
   type ManifestEntry,
 } from '../../src/domain/calendar/migration/convert-v5.ts';
-import { UnknownShapeError } from '../../src/domain/calendar/migration/inventory.ts';
+import {
+  inventoryContent,
+  UnknownShapeError,
+} from '../../src/domain/calendar/migration/inventory.ts';
 import {
   formatFourCopyMessage,
   readCalendarOfferInput,
@@ -73,10 +76,9 @@ function expectedNotice(stored: Json, stateOffers: readonly string[]) {
             type: admission.type,
             year: admission.year,
             term: admission.term,
-            destinations:
-              admission.periodId === undefined
-                ? []
-                : offers.map((offerId) => ({ offerId, periodId: admission.periodId })),
+            destinations: admission.periodId
+              ? offers.map((offerId) => ({ offerId, periodId: admission.periodId }))
+              : [],
           },
         }),
   };
@@ -439,6 +441,35 @@ describe('notice and destination by offer (plan, section 5.4; phase 2, step 6)',
       publication: 'published',
       admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
     });
+  });
+
+  test('an empty v4 period stays not informed: no destination, and the calendar still saves', () => {
+    // Format 4 accepted `periodId: ''` in storage and in the JSON copy and read it as not informed
+    // (`a.periodId && …`, `admission.periodId ? … : undefined`), never as an orphan period.
+    const item = byName('Vínculos em conflito (fase 1)');
+    const content = copy(item.content);
+    const stored = content.state.events.find((event) => event.id === 'transfer-notice')!;
+    (stored.admission as { periodId?: string }).periodId = '';
+    expect(
+      inventoryContent(content, context(item))
+        .occurrences.filter(({ path }) =>
+          path.endsWith(`[${content.state.events.indexOf(stored)}]`),
+        )
+        .map(({ form }) => form)
+        .filter((form) => form.startsWith('event.admission:')),
+    ).toEqual(['event.admission:without-period']);
+    const conversion = convertContentV5(content, context(item))!;
+    const document = conversion.document as unknown as V4Case['content'];
+    const event = document.state.events.find((entry) => entry.id === 'transfer-notice')!;
+    expect((event.notice as { admission: Json }).admission.destinations).toEqual([]);
+    // The manifest keeps the stored empty period, so the change is recorded and reversible.
+    expect(revert(conversion, 'content')).toEqual(content);
+    const converted = { ...document.state, year: item.year, campus: item.campus };
+    expect(noticeDestinationIssuesOf(converted as unknown as ActivityState)).toEqual([]);
+    // Any later save runs the save validation on every date, the notice included.
+    expect(() =>
+      normalizeOfferCalendar(converted, { events: readCalendarOfferInput(converted).events }),
+    ).not.toThrow();
   });
 
   test('the period of a date is copied for each of its offers, or every offer of a date without offers', () => {

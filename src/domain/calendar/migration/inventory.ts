@@ -668,7 +668,8 @@ function readAdmission(value: unknown, path: string) {
   number(admission.year, `${path}.year`);
   literal(admission.term, `${path}.term`, terms);
   optionalText(admission.periodId, `${path}.periodId`);
-  return admission.periodId as string | undefined;
+  // Format 4 read an empty period as not informed (`a.periodId && …`), never as an orphan.
+  return (admission.periodId as string | undefined) || undefined;
 }
 
 interface ScopeContext {

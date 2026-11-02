@@ -127,8 +127,9 @@ function convertEffect<T extends JsonObject & { kind: KindV4; recordType?: 'even
 /**
  * `publicationStatus` and `admission` grouped in `notice`, in place of the first of them. The old
  * `periodId` becomes the destination of each offer of the date (`offers`), unconfirmed: an orphan
- * or incompatible period is copied and diagnosed later, never dropped. Without either field the
- * date has no `notice`.
+ * or incompatible period is copied and diagnosed later, never dropped. An empty `periodId`, which
+ * v4 accepted and read as not informed, gives no destination, as an absent one; the manifest keeps
+ * the stored `admission`. Without either field the date has no `notice`.
  */
 function convertNotice(item: JsonObject, offers: readonly string[]) {
   const { publicationStatus, admission } = item as Pick<DateV4, 'publicationStatus' | 'admission'>;
@@ -143,10 +144,10 @@ function convertNotice(item: JsonObject, offers: readonly string[]) {
             type: admission.type,
             year: admission.year,
             term: admission.term,
-            destinations:
-              admission.periodId === undefined
-                ? []
-                : offers.map((offerId) => ({ offerId, periodId: admission.periodId! })),
+            // An empty period was “not informed” in v4, like an absent one: no destination.
+            destinations: admission.periodId
+              ? offers.map((offerId) => ({ offerId, periodId: admission.periodId! }))
+              : [],
           },
         }),
   };
