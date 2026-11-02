@@ -2,8 +2,11 @@ import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import { expect, test } from 'vitest';
-import { definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
-import { isAssessmentStage } from '../../src/domain/calendar/activities/activity-ref.ts';
+import { definedStage } from '../helpers/activity-links.ts';
+import {
+  isAssessmentStage,
+  sameActivity,
+} from '../../src/domain/calendar/activities/activity-ref.ts';
 import {
   applyOfferOrganization,
   offerOrganizationDraft,
@@ -141,8 +144,14 @@ test('a stage cannot span the semester gap, overlap another stage or use another
   expect(
     next.periods.filter((p) => associationOffers(p.association).includes('integrado')),
   ).toHaveLength(2);
+  // The annual stages keep their positions, to review; the semester stages are new dates.
+  expect(next.events.find((e) => e.id === 'integrado-1')!.activity).toEqual(
+    definedStage('stage', 'integrado', 'annual', 2),
+  );
   const bad = structuredClone(next);
-  bad.events.find((e) => e.id === 'integrado-1')!.start = civilDate('2027-03-15');
+  bad.events.find((e) =>
+    sameActivity(e.activity, definedStage('stage', 'integrado', 'second', 1)),
+  )!.start = civilDate('2027-03-15');
   expect(() => normalizeOfferCalendar({ ...bad, ignoredHistory: [] }, next)).toThrow(
     /etapa.*período/,
   );
@@ -289,10 +298,10 @@ test('reducing date-only stages keeps the retired dates and their links to revie
   const two = applyOfferOrganization(four, 'integrado', twoDraft, id);
   const review = linksToReview(two);
   const retired = two.events.filter((event) => review.has(event.id));
-  // Surplus ordinals keep their ordinal in the year, without a cycle in the reduced organization.
+  // Surplus stages keep their confirmed position, which the reduced organization does not have.
   expect(retired.map((event) => [event.activity, event.start, event.end])).toEqual([
-    [unclassifiedStage('stage', 'integrado', 3), '2027-03-15', '2027-03-19'],
-    [unclassifiedStage('stage', 'integrado', 4), '2027-03-22', '2027-03-26'],
+    [definedStage('stage', 'integrado', 'annual', 3), '2027-03-15', '2027-03-19'],
+    [definedStage('stage', 'integrado', 'annual', 4), '2027-03-22', '2027-03-26'],
   ]);
   expect(retired.every((event) => event.effect === 'note')).toBe(true);
   expect(normalizeOfferCalendar({ ...two, ignoredHistory: [] }, four).events).toHaveLength(

@@ -21,7 +21,7 @@ import { labelFor } from './offers.ts';
 import { contentIssues, type ContentIssue } from './readiness.ts';
 import { termLabels, type AcademicTerm } from './config.ts';
 import { activityKey, type ActivityRef } from './activities/activity-ref.ts';
-import { generatedActivities, generatedActivity } from './activities/links.ts';
+import { generatedActivities, generatedActivity, sameLink } from './activities/links.ts';
 
 export interface DiffSide {
   state: ActivityState & {
@@ -38,6 +38,8 @@ export interface FieldChange {
   label: string;
   before: unknown;
   after: unknown;
+  /** The values as shown, when they depend on the side's configuration (`activity`). */
+  text?: { before: string; after: string };
 }
 export interface ItemChange {
   kind: 'added' | 'removed' | 'changed' | 'reidentified';
@@ -391,7 +393,28 @@ export function compareContents(before: DiffSide, after: DiffSide) {
     side.state.events.filter((event) => !derivedVacation(event)).map(comparable);
   const eventKey = (event: CalendarEvent) =>
     event.activity ? `${activityKey(event.activity)}|${event.scope.offers.join(',')}` : undefined;
-  const events = compareItems(eventSide(before), eventSide(after), fieldLabels.event, eventKey);
+  // A stage link re-expressed in the cycles its offer confirmed is the same link (`sameLink`); a
+  // different one is shown by the names of the rows each side generates, never by its key.
+  const events = compareItems(eventSide(before), eventSide(after), fieldLabels.event, eventKey)
+    .map((change) => ({
+      ...change,
+      fields: change.fields.flatMap((field) => {
+        if (field.field !== 'activity') return [field];
+        const old = field.before as ActivityRef | undefined,
+          next = field.after as ActivityRef | undefined;
+        if (sameLink(before.state, old, after.state, next)) return [];
+        return [
+          {
+            ...field,
+            text: {
+              before: describeValue('activity', old, before.state),
+              after: describeValue('activity', next, after.state),
+            },
+          },
+        ];
+      }),
+    }))
+    .filter((change) => change.kind !== 'changed' || change.fields.length);
 
   const year = after.state.year;
   const observanceLabel = (key: string) =>

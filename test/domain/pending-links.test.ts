@@ -143,7 +143,7 @@ test('confirming an offer organization warns about links instead of refusing, an
   expect(reconfirmed.events).toHaveLength(saved.state.events.length);
 });
 
-test('reducing stages of an unchanged calendar is saved; surplus and moved cycles are reviewed', () => {
+test('reducing stages of an unchanged calendar is saved; positions without a stage are reviewed', () => {
   const state = conflictingLinks();
   // The semester organization of the integrated offer, with its stages at their positions in
   // the two cycles, as confirming the organization records them.
@@ -192,31 +192,31 @@ test('reducing stages of an unchanged calendar is saved; surplus and moved cycle
       .map((event) => (positions[event.id] ? { ...event, activity: positions[event.id] } : event)),
   };
   expect(linksToReview(semester).get('stage-twice-a')).toBeUndefined();
-  // The organization form keeps the recorded stage dates and only reduces the count per cycle.
+  // The organization form only reduces the count per cycle; the second cycle's stage is the one
+  // already recorded at that position.
   const draft = offerOrganizationDraft(semester, 'integrado');
   draft.count = '1';
+  draft.stages[1] = { ...draft.stages[2] };
   expect(offerOrganizationIssues(semester, 'integrado', draft)).toEqual([]);
   const reduced = applyOfferOrganization(semester, 'integrado', draft, () => 'unused');
   const saved = save(semester, reduced);
-  // Each stage keeps its ordinal in the year (format 4 `stage-N`), at the position the reduced
-  // organization gives it; ordinals beyond the new count keep the reported ordinal.
+  // A confirmed stage keeps its position when the count changes (plan, section 5.1); positions
+  // the reduced organization does not have go to review.
   expect(linksById(saved.state)).toMatchObject({
     'stage-first': 'stage:stage:first:1:integrado',
-    'stage-twice-a': 'stage:stage:second:1:integrado',
-    'stage-late': 'stage:stage:unclassified:3:integrado',
-    'stage-early': 'stage:stage:unclassified:4:integrado',
+    'stage-twice-a': 'stage:stage:first:2:integrado',
+    'stage-late': 'stage:stage:second:1:integrado',
+    'stage-early': 'stage:stage:second:2:integrado',
   });
   const dates = (events: readonly CalendarEvent[]) =>
     events
       .map((event) => `${event.id} ${event.start} ${event.end}`)
       .sort((a, b) => a.localeCompare(b));
   expect(dates(saved.state.events)).toEqual(dates(semester.events));
-  expect(Object.fromEntries(linksToReview(saved.state))).toMatchObject({
-    'stage-twice-a': 'out-of-cycle',
-    'stage-late': 'unclassified',
+  expect(Object.fromEntries(linksToReview(saved.state))).toEqual({
+    'stage-twice-a': 'unclassified',
     'stage-early': 'unclassified',
   });
-  expect(linksToReview(saved.state).has('stage-first')).toBe(false);
 });
 
 test('regenerated teacher vacations keep the link recorded for the same date ID', () => {

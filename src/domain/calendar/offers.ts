@@ -87,10 +87,15 @@ export function stagePosition(offer: CalendarOffer, n: number): StagePosition {
 
 /**
  * Ordinal in the year of a stage position under the offer's current organization, the inverse of
- * `stagePosition`; undefined for a defined position the organization does not have.
+ * `stagePosition`; undefined for a defined position the organization does not have. An
+ * unclassified position is a stage of the offer only while its organization or count is not
+ * confirmed: once confirmed, it is a link to review, never the stage with that ordinal.
  */
 export function stageOrdinal(offer: CalendarOffer, position: StagePosition): number | undefined {
-  if (position.status === 'unclassified') return position.reportedOrdinal;
+  if (position.status === 'unclassified')
+    return offer.organization === 'a-classificar' || stagesPerTerm(offer) === undefined
+      ? position.reportedOrdinal
+      : undefined;
   const perTerm = stagesPerTerm(offer);
   if (perTerm === undefined) return undefined;
   const ordinal = position.term === 'second' ? perTerm + position.number : position.number;

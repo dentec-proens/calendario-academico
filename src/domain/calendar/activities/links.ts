@@ -7,7 +7,7 @@ import type {
 } from '../model.ts';
 import { equalValues } from '../../../shared/equal.ts';
 import { DomainError } from '../../errors.ts';
-import { offerFor, stageOrdinal, stageTerm } from '../offers.ts';
+import { offerFor, stageOrdinal, stagePosition, stageTerm } from '../offers.ts';
 import { activityPlan } from './plan.ts';
 import { assessmentCycleIssue, assessmentIntervalIssue } from './assessment-intervals.ts';
 import {
@@ -54,10 +54,12 @@ export function stageLocation(state: OfferState, activity: StageActivityRef) {
 }
 
 /**
- * The same link in two states of one calendar: the same key, or, for a link by offer stage, the
- * same activity, offer and ordinal in the year. Confirming an offer's organization re-expresses
- * the position of its stages in the new cycles, as the format 4 identifier (`stage-N:offer`) did
- * by its ordinal; whether a position is reinterpreted is decided in step 9e of the plan.
+ * The same link in two states of one calendar: the same key, or, for a link by offer stage whose
+ * offer had its organization or stages changed, the same activity, offer and ordinal in the year,
+ * with the exact position the new organization gives that ordinal. Confirming an offer's
+ * organization re-expresses an unconfirmed position in the new cycles, as the format 4 identifier
+ * (`stage-N:offer`) did by its ordinal; a confirmed position is kept (plan, section 5.1). With the
+ * organization unchanged, a different position is a swap, never the same link.
  */
 export function sameLink(
   before: OfferState | undefined,
@@ -74,8 +76,20 @@ export function sameLink(
     previous.offerId !== next.offerId
   )
     return false;
+  const beforeOffer = offerFor(before, previous.offerId);
+  const afterOffer = offerFor(after, next.offerId);
+  if (
+    !beforeOffer ||
+    !afterOffer ||
+    (beforeOffer.organization === afterOffer.organization &&
+      equalValues(beforeOffer.stages, afterOffer.stages))
+  )
+    return false;
   const ordinal = stageLocation(before, previous)?.ordinal;
-  return ordinal !== undefined && ordinal === stageLocation(after, next)?.ordinal;
+  return (
+    ordinal !== undefined &&
+    sameActivity(next, { ...next, position: stagePosition(afterOffer, ordinal) })
+  );
 }
 
 /** States of one calendar compared by date ID; without them, links compare by key only. */

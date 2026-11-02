@@ -1,7 +1,7 @@
 import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
-import { cycleLink } from '../helpers/activity-links.ts';
+import { cycleLink, unclassifiedStage } from '../helpers/activity-links.ts';
 import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
@@ -187,6 +187,62 @@ test('new, swapped and removed links are refused and the stored calendar stays i
     await expect(save({ ...record.state, events })).rejects.toThrow(
       /Vínculo de atividade inválido|não perde nem troca/,
     );
+  expect((await current()).state).toEqual(record.state);
+});
+
+test('a stage position is never swapped for another of the same ordinal by a save', async () => {
+  const { record, save, current } = await stored(conflictingLinks());
+  // With the organization unchanged, the reported ordinal of the stored stage is another link.
+  await expect(
+    save({
+      ...record.state,
+      events: record.state.events.map((event) =>
+        event.id === 'stage-first'
+          ? { ...event, activity: unclassifiedStage('stage', 'integrado', 1) }
+          : event,
+      ),
+    }),
+  ).rejects.toThrow('não perde nem troca');
+  expect((await current()).state).toEqual(record.state);
+});
+
+test('a reported total is not withdrawn by a save that leaves its stages unclassified', async () => {
+  const fixture = ivaiporaDraft();
+  const integrado = fixture.offers.find((offer) => offer.id === 'integrado')!;
+  integrado.stages = { status: 'reported', count: 2 };
+  fixture.events.push(
+    ...[1, 2].map((n) => ({
+      id: `old-${n}`,
+      name: `${n}ª etapa preservada`,
+      start: civilDate(`2027-0${n + 2}-02`),
+      end: civilDate(`2027-0${n + 2}-12`),
+      effect: 'note' as const,
+      category: 'limite',
+      activity: unclassifiedStage('stage', 'integrado', n),
+      scope: { offers: ['integrado'], confirmed: true },
+    })),
+  );
+  const { record, save, current } = await stored(fixture);
+  await expect(
+    save({
+      ...record.state,
+      offers: record.state.offers.map((offer) =>
+        offer.id === 'integrado'
+          ? { ...offer, organization: 'anual', stages: { status: 'defined', perTerm: 2 } }
+          : offer,
+      ),
+      periods: [
+        ...record.state.periods,
+        {
+          id: 'integrado-annual',
+          name: 'Ano letivo',
+          start: civilDate('2027-02-01'),
+          end: civilDate('2027-12-17'),
+          association: { status: 'defined', offers: ['integrado'], term: 'annual' },
+        },
+      ],
+    }),
+  ).rejects.toThrow('Configure');
   expect((await current()).state).toEqual(record.state);
 });
 

@@ -338,8 +338,8 @@ function Fields({ fields }: { fields: FieldChange[] }) {
     <ul className="diff-fields">
       {fields.map((field) => (
         <li key={field.field}>
-          {field.label}: {describeValue(field.field, field.before)} →{' '}
-          {describeValue(field.field, field.after)}
+          {field.label}: {field.text?.before ?? describeValue(field.field, field.before)} →{' '}
+          {field.text?.after ?? describeValue(field.field, field.after)}
         </li>
       ))}
     </ul>
@@ -372,8 +372,8 @@ function FieldSection({ title, fields }: { title: string; fields: FieldChange[] 
       <ul className="diff-list">
         {fields.map((field) => (
           <li key={field.field} data-kind="changed">
-            {field.label}: {describeValue(field.field, field.before)} →{' '}
-            {describeValue(field.field, field.after)}
+            {field.label}: {field.text?.before ?? describeValue(field.field, field.before)} →{' '}
+            {field.text?.after ?? describeValue(field.field, field.after)}
           </li>
         ))}
       </ul>

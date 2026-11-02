@@ -1,6 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
-import { definedStage, rowLink, unclassifiedStage } from '../helpers/activity-links.ts';
+import { definedStage, rowLink } from '../helpers/activity-links.ts';
 import { isStageActivity } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
@@ -76,6 +76,9 @@ test('reducing semester stages keeps every binding and leaves excess dates to re
     status: 'defined',
     perTerm: 1,
   });
+  const recorded = (id: string) => state.events.find((event) => event.id === id)!;
+  // A confirmed stage keeps its position when the count changes (plan, section 5.1): each draft
+  // stage updates the date already at its position, and the others stay as recorded, to review.
   expect(
     next.events
       .filter(
@@ -91,25 +94,25 @@ test('reducing semester stages keeps every binding and leaves excess dates to re
     ],
     [
       'graduacao-2-stage-2',
+      definedStage('stage', 'graduacao-2', 'first', 2),
+      recorded('graduacao-2-stage-2').start,
+      recorded('graduacao-2-stage-2').end,
+    ],
+    [
+      'graduacao-2-stage-3',
       definedStage('stage', 'graduacao-2', 'second', 1),
       '2027-07-26',
       '2027-12-17',
     ],
     [
-      'graduacao-2-stage-3',
-      unclassifiedStage('stage', 'graduacao-2', 3),
-      '2027-07-26',
-      '2027-10-01',
-    ],
-    [
       'graduacao-2-stage-4',
-      unclassifiedStage('stage', 'graduacao-2', 4),
-      '2027-10-04',
-      '2027-12-17',
+      definedStage('stage', 'graduacao-2', 'second', 2),
+      recorded('graduacao-2-stage-4').start,
+      recorded('graduacao-2-stage-4').end,
     ],
   ]);
   const review = linksToReview(next);
-  expect(review.get('graduacao-2-stage-3')).toBe('unclassified');
+  expect(review.get('graduacao-2-stage-2')).toBe('unclassified');
   expect(review.get('graduacao-2-stage-4')).toBe('unclassified');
   expect(offerOrganizationWarnings(state, 'graduacao-2', draft).map((w) => w.message)).toEqual([
     expect.stringContaining('ficará em Vínculo a conferir (Classificação pendente)'),
