@@ -95,7 +95,10 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
       page.evaluate(
         () =>
           window.editorTest.record.state.events.find(
-            (event) => event.requirementId === 'admission-notice-0',
+            (event) =>
+              event.activity?.activityId === 'admission-notice' &&
+              'term' in event.activity &&
+              event.activity.term === 'annual',
           )?.start,
       ),
     )
@@ -113,7 +116,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
       page.evaluate(
         () =>
           window.editorTest.record.state.events.find(
-            (event) => event.requirementId === 'regular-admission-notice',
+            (event) => event.activity?.activityId === 'regular-admission-notice',
           )?.start,
       ),
     )
@@ -159,7 +162,7 @@ test('coverage stays partial per offer while the second record is edited and rem
       end: '2027-02-02',
       effect: 'note',
       scope: { offers: [modality as 'subsequente' | 'graduacao'], confirmed: true },
-      requirementId: 'enrolment-0',
+      activity: { activityId: 'enrolment', term: 'annual' as const },
     }));
     record.version++;
     return window.publishReviewerCalendar();

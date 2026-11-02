@@ -53,7 +53,7 @@ export function readyContent(): CalendarContent {
   for (const requirement of activityPlan(state)) {
     const event: CalendarEvent = {
       id: requirement.id.replace(/:/g, '-'),
-      requirementId: requirement.id,
+      activity: requirement.activity,
       scope: { offers: [requirement.offerId ?? 'integrado'], confirmed: true },
       name: requirement.name,
       start: civilDate('2027-02-01'),

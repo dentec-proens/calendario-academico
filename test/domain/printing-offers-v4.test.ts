@@ -1,5 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { rowLink } from '../helpers/activity-links.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
@@ -50,13 +51,8 @@ test('semester distributions group stages by cycle and restart displayed numberi
   expect(
     state.events
       .filter((event) => event.scope.offers.includes('graduacao-2'))
-      .map((event) => event.requirementId),
-  ).toEqual([
-    'stage-1:graduacao-2',
-    'stage-2:graduacao-2',
-    'stage-3:graduacao-2',
-    'stage-4:graduacao-2',
-  ]);
+      .map((event) => event.activity),
+  ).toEqual([1, 2, 3, 4].map((n) => rowLink(state, `stage-${n}:graduacao-2`)));
 });
 
 test('annual distributions retain the stage cycle and all displayed totals come from their own ledgers', () => {
@@ -104,7 +100,7 @@ test('a migrated stage outside its own cycle prints its dates and warns without 
   const html = proensLayout(state, state.events, result, null, '');
   expect(html).toContain('01/02 a 16/04');
   expect(html).toContain('seu ciclo');
-  expect(stage.requirementId).toBe('stage-3:graduacao-2');
+  expect(stage.activity).toEqual(rowLink(state, 'stage-3:graduacao-2'));
 });
 
 test('calendar print keeps only the concise status and the title year, leaving policy details to review', () => {

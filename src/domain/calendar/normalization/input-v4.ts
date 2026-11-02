@@ -11,6 +11,7 @@ import {
   type OfferStages,
   type VacationPeriods,
 } from '../model.ts';
+import { activityRef } from '../activities/activity-ref.ts';
 import { invalidCalendar as fail } from './input.ts';
 
 export const calendarObject = (value: unknown): Record<string, unknown> => {
@@ -140,7 +141,7 @@ const activity = (value: unknown): CalendarEvent => {
     end: date(row.end),
     effect: choice(row.effect, eventEffects, 'Efeito inválido.'),
     category: optional(row.category, text),
-    requirementId: optional(row.requirementId, text),
+    activity: optional(row.activity, activityRef),
     scope: eventScope(row.scope),
     hours: optional(row.hours, number),
     assessmentAutoStart: optional(row.assessmentAutoStart, date),

@@ -1,4 +1,8 @@
 import { test, expect } from './test.ts';
+import {
+  activityKey,
+  type ActivityRef,
+} from '../../src/domain/calendar/activities/activity-ref.ts';
 import { addPeriod, savedState, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -20,16 +24,14 @@ for (const width of [1440, 390]) {
     );
     await addPeriod(page, '2027-03-01', '2027-04-30');
     const before = await savedState(page);
-    expect(before.state.events.filter((e) => e.requirementId?.startsWith('stage-'))).toHaveLength(
-      2,
-    );
+    expect(before.state.events.filter((e) => e.activity?.activityId === 'stage')).toHaveLength(2);
     const opener = page.locator('[data-edit-organization="integrado"]');
     await expect(opener).toBeFocused();
     await opener.press('Enter');
     await expect(page.locator('#offer-integrado-organization [aria-checked="true"]')).toBeFocused();
     expect(
       before.state.events
-        .filter((event) => event.requirementId?.startsWith('stage-'))
+        .filter((event) => event.activity?.activityId === 'stage')
         .every((event) => !Object.hasOwn(event, 'evidence')),
     ).toBe(true);
     const stageBounds = await block.locator('.offer-stage-fields').evaluateAll((elements) =>
@@ -94,12 +96,11 @@ for (const width of [1440, 390]) {
     await expect(opener).toBeFocused();
     const after = await savedState(page);
     expect(after.state.periods[0].start).toBe('2027-03-08');
-    expect(after.state.events.find((e) => e.requirementId === 'stage-1:integrado')?.start).toBe(
-      '2027-03-08',
-    );
-    expect(after.state.events.find((e) => e.requirementId === 'stage-2:integrado')).toEqual(
-      before.state.events.find((e) => e.requirementId === 'stage-2:integrado'),
-    );
+    const stage = (n: number) => (e: { activity?: unknown }) =>
+      e.activity !== undefined &&
+      activityKey(e.activity as ActivityRef) === `stage:stage:annual:${n}:integrado`;
+    expect(after.state.events.find(stage(1))?.start).toBe('2027-03-08');
+    expect(after.state.events.find(stage(2))).toEqual(before.state.events.find(stage(2)));
     await opener.click();
     await page.locator('#offer-integrado-period-0-end').fill('2027-04-20');
     await expect(warnings).toContainText('Fora do período do ciclo');
@@ -150,7 +151,11 @@ test('editing one shared offer preserves the other offer and existing inclusions
       [0, 1].map((index) => ({
         id: `${modality}-${index}`,
         name: `${index + 1}ª etapa`,
-        requirementId: `stage-${index + 1}:${modality}`,
+        activity: {
+          activityId: 'stage',
+          offerId: modality,
+          position: { status: 'defined' as const, term: 'annual' as const, number: index + 1 },
+        },
         scope: { offers: [modality as 'integrado' | 'graduacao'], confirmed: true },
         start: index ? '2027-04-01' : '2027-03-01',
         end: index ? '2027-04-30' : '2027-03-31',

@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import { cycleLink, onceLink } from '../helpers/activity-links.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import {
   activityStep,
@@ -25,13 +26,13 @@ test.each([
 ])('links without generated activity are reviewed, never campus dates', (fixture, count) => {
   const result = step(fixture);
   expect(result.review).toHaveLength(count);
-  expect(result.campus.every((line) => !line.event.requirementId)).toBe(true);
+  expect(result.campus.every((line) => !line.event.activity)).toBe(true);
   expect(result.dates).toHaveLength(fixture().events.length);
 });
 
 test('origin is computed from container and link', () => {
-  expect(dateOrigin({ institutional: true, requirementId: 'x' })).toBe('base');
-  expect(dateOrigin({ requirementId: 'final-1' })).toBe('linked');
+  expect(dateOrigin({ institutional: true, activity: onceLink('family-meeting') })).toBe('base');
+  expect(dateOrigin({ activity: cycleLink('final', 'first') })).toBe('linked');
   expect(dateOrigin({})).toBe('campus');
 });
 

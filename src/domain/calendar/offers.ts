@@ -9,6 +9,7 @@ import type {
   AssessmentSettings,
   PeriodAssociation,
 } from './model.ts';
+import type { StagePosition } from './activities/activity-ref.ts';
 
 /** All live domain inputs carry explicit offers. */
 export const calendarOffers = (state: AssessmentSettings): CalendarOffer[] => state.offers;
@@ -70,6 +71,35 @@ export function stageTerm(offer: CalendarOffer, n: number): AcademicTerm | undef
       : 'second';
 }
 
+/**
+ * Position of the offer's `n`-th stage (ordinal in the year) under its current organization: the
+ * cycle and the number within it once organised and counted, else the reported ordinal.
+ */
+export function stagePosition(offer: CalendarOffer, n: number): StagePosition {
+  const term = stageTerm(offer, n);
+  if (!term) return { status: 'unclassified', reportedOrdinal: n };
+  return {
+    status: 'defined',
+    term,
+    number: offer.organization === 'semestral' ? stageInTerm(n, stagesPerTerm(offer)!).number : n,
+  };
+}
+
+/**
+ * Ordinal in the year of a stage position under the offer's current organization, the inverse of
+ * `stagePosition`; undefined for a defined position the organization does not have.
+ */
+export function stageOrdinal(offer: CalendarOffer, position: StagePosition): number | undefined {
+  if (position.status === 'unclassified') return position.reportedOrdinal;
+  const perTerm = stagesPerTerm(offer);
+  if (perTerm === undefined) return undefined;
+  const ordinal = position.term === 'second' ? perTerm + position.number : position.number;
+  const back = stagePosition(offer, ordinal);
+  return back.status === 'defined' && back.term === position.term && back.number === position.number
+    ? ordinal
+    : undefined;
+}
+
 export function stageCount(offer: CalendarOffer): number {
   if (offer.organization === 'a-classificar') return reportedStageCount(offer) ?? 0;
   const perTerm = stagesPerTerm(offer);
@@ -107,8 +137,7 @@ export function nextOfferId(
       for (const id of period.association.offers) used.add(id);
   for (const event of state.events) {
     for (const id of event.scope.offers) used.add(id);
-    const suffix = event.requirementId?.split(':').at(1);
-    if (suffix) used.add(suffix);
+    if (event.activity && 'offerId' in event.activity) used.add(event.activity.offerId);
   }
   if (!used.has(kind)) return kind;
   let n = 2;

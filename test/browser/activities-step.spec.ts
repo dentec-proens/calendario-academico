@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { activityKey } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { test, expect } from './test.ts';
 import type { FixtureServer } from './fixture-server.ts';
@@ -37,13 +38,13 @@ for (const width of [1440, 390])
       await page.setViewportSize({ width, height: 1000 });
       const state = fixture();
       await open(page, fixtureServer, state);
-      const linked = state.events.filter((event) => event.requirementId);
+      const linked = state.events.filter((event) => event.activity);
       const review = page.locator('#link-review');
       await expect(review.locator('[data-date-row]')).toHaveCount(linked.length);
       await expect(review.locator('h4')).toHaveText(`Vínculo a conferir (${linked.length})`);
       for (const event of linked)
         await expect(review.locator(`[data-date-row="${event.id}"]`)).toContainText(
-          `Vínculo gravado: ${event.requirementId}`,
+          `Vínculo gravado: ${activityKey(event.activity!)}`,
         );
       // None of them is listed as a campus date.
       for (const event of linked)
@@ -58,7 +59,7 @@ for (const width of [1440, 390])
       const [first] = linked;
       await page.locator(`#date-list [data-open-event="${first.id}"]`).click();
       await expect(page.locator('#link-review-reason')).toContainText('Classificação pendente');
-      await expect(page.locator('#link-review-reason')).toContainText(first.requirementId!);
+      await expect(page.locator('#link-review-reason')).toContainText(activityKey(first.activity!));
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
       );
@@ -188,7 +189,7 @@ test('a stage under review opens its details, can have its dates edited and be r
   await expect(page.locator('#link-review-reason')).toContainText('Etapa duplicada');
   await page.locator('[data-edit-event="stage-twice-b"]').click();
   await expect(page).toHaveURL(/\/atividades/);
-  await expect(page.locator('#event-kept-link')).toContainText('stage-2:integrado');
+  await expect(page.locator('#event-kept-link')).toContainText('stage:stage:annual:2:integrado');
   await page.locator('#close-event-panel').click();
   await page.locator('#link-review [data-open-event="stage-twice-b"]').click();
   await page.locator('[data-remove-event="stage-twice-b"]').click();

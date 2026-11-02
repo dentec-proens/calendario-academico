@@ -16,7 +16,7 @@ export default function IssuesSection() {
     mark: string;
     title: string;
     detail: string;
-    requirementId?: string;
+    itemId?: string;
     identity?: true;
   }[] = [];
   // The backend refuses the submission without courses.
@@ -65,7 +65,7 @@ export default function IssuesSection() {
         detail:
           [...row.issues, ...row.warnings].join(' ') ||
           'Planejamento pendente de registro e datas.',
-        requirementId: row.requirement.id,
+        itemId: row.requirement.id,
       });
   }
   if (evaluation) {
@@ -156,10 +156,10 @@ export default function IssuesSection() {
               <div>
                 <strong>{issue.title}</strong>
                 <small>{issue.detail}</small>
-                {issue.requirementId && (
+                {issue.itemId && (
                   <Link
                     to={
-                      stageRequirement(issue.requirementId)
+                      stageRequirement(issue.itemId)
                         ? '/calendarios/$calendarId/periodos'
                         : '/calendarios/$calendarId/atividades'
                     }
@@ -167,7 +167,7 @@ export default function IssuesSection() {
                     // A link to an activity opens the by-activity view, whatever the URL had.
                     search={(previous) => ({
                       ...previous,
-                      atividade: issue.requirementId,
+                      atividade: issue.itemId,
                       atividadeVisao: undefined,
                     })}
                     hashScrollIntoView={false}

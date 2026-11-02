@@ -8,10 +8,15 @@ import { equalValues } from '../../../shared/equal.ts';
 import { datesBetween } from '../counting/core.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
-import { activityPlan } from '../activities/plan.ts';
-import { stageRequirement } from '../activities/assessment.ts';
+import { isAssessmentStage, sameActivity } from '../activities/activity-ref.ts';
 import { assessmentCycleIssue } from '../activities/assessment-intervals.ts';
-import { coversDate, dateEdited, linkKept } from '../activities/links.ts';
+import {
+  coversDate,
+  dateEdited,
+  generatedActivities,
+  generatedActivity,
+  linkKept,
+} from '../activities/links.ts';
 import { offerIds } from '../offers.ts';
 import { recalculateCalendar } from './recalculate.ts';
 import { vacationIds } from './vacations.ts';
@@ -55,10 +60,10 @@ export function applyEvent<S extends ActivityState>(
   // Link rule (`links.ts`): an edit keeps the date's own link, even without a generated activity;
   // interval and association checks apply only when start, end, offers or link change.
   const previous = editing ? existing : undefined;
-  if (previous && previous.requirementId !== event.requirementId)
+  if (previous && !sameActivity(previous.activity, event.activity))
     throw new DomainError('Uma data salva não perde nem troca a atividade vinculada.');
   const edited = dateEdited(previous, event);
-  const activity = activityPlan(state).find((item) => item.id === event.requirementId);
+  const activity = generatedActivity(generatedActivities(state), event.activity);
   const kept = linkKept(previous, event);
   validateActivityRecord(state, event, {
     stageInterval: edited && !(kept && !activity),
@@ -74,7 +79,7 @@ export function applyEvent<S extends ActivityState>(
     modalities.some((item) => !offerIds(state).includes(item))
   )
     throw new DomainError('Selecione ao menos uma forma de oferta/nível válida para o evento.');
-  if (event.requirementId && !activity && !kept)
+  if (event.activity && !activity && !kept)
     throw new DomainError('Atividade inválida para este calendário.');
   const activityOfferId = activity?.offerId;
   if (edited && activityOfferId && (modalities.length !== 1 || modalities[0] !== activityOfferId))
@@ -122,10 +127,10 @@ export function applyEvent<S extends ActivityState>(
   let events = editing
     ? state.events.map((item) => (item.id === event.id ? updated : item))
     : [...state.events, updated];
-  if (editing && stageRequirement(event.requirementId))
+  if (editing && isAssessmentStage(event.activity))
     events = events.map((item) => {
       if (
-        !stageRequirement(item.requirementId) ||
+        !isAssessmentStage(item.activity) ||
         !item.scope.offers.some((modality) => modalities.includes(modality))
       )
         return item;

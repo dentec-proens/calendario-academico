@@ -63,7 +63,8 @@ function eventContent(event: InstitutionalEventSnapshot, scope: BaseScope) {
     category: event.category ?? '',
     evidence: event.evidence,
     source: event.source ?? '',
-    requirementId: event.requirementId ?? '',
+    // Snapshots have no activity link (plan, phase 2, steps 1 and 5): the historical key is constant.
+    requirementId: '',
     hours: event.hours ?? null,
     modalities: [
       ...new Set(eventKinds(event, scope).filter((item) => scopeKinds(scope).includes(item))),

@@ -62,6 +62,44 @@ test('old names of dates, activity rows and the activity plan are gone from the 
   expect(found).toEqual([]);
 });
 
+/**
+ * Step 9b: a date carries its link as `activity` (`ActivityRef`). The format 4 field survives only
+ * where the plan keeps it: the converter and classifier, the frozen storage validators, the
+ * constant historical key of the base identity and, in tests, the frozen oracles and the tests of
+ * the conversion that read them.
+ */
+const requirementIdAllowed = new Set([
+  'src/domain/calendar/migration/convert-v5.ts',
+  'src/domain/calendar/migration/inventory.ts',
+  'convex/legacyValidators.ts',
+  'src/domain/calendar/base.ts',
+  'test/domain/v5-inventory.test.ts',
+  'test/domain/v5-conversion.test.ts',
+  'test/domain/v5-activity-links.test.ts',
+  'test/domain/activity-link-consumers.test.ts',
+  // The frozen v3 oracle names each linked date by the row its link resolves to.
+  'test/domain/offers-equivalence.test.ts',
+]);
+
+test('requirementId remains only in the converter, frozen validators, oracles and base identity', async () => {
+  const files = (
+    await Promise.all(
+      ['src', 'web', 'convex', 'scripts', 'test'].map((folder) =>
+        sources(resolve(repository, folder)),
+      ),
+    )
+  ).flat();
+  const found: string[] = [];
+  for (const file of files) {
+    const path = relative(repository, file);
+    if (path === self || requirementIdAllowed.has(path)) continue;
+    if ((await readFile(file, 'utf8')).includes('requirementId')) found.push(path);
+  }
+  expect(found).toEqual([]);
+  const base = await readFile(resolve(repository, 'src/domain/calendar/base.ts'), 'utf8');
+  expect(base.match(/requirementId.*/g)).toEqual(["requirementId: '',"]);
+});
+
 test('the counting core names its input intervals, not calendar events', async () => {
   const core = await readFile(resolve(repository, 'src/domain/calendar/counting/core.ts'), 'utf8');
   expect(core).not.toMatch(/\bCalendarEvent\b/);

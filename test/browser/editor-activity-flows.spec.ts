@@ -41,7 +41,7 @@ test('a new activity record keeps the prepared link, offer, effect and category'
   const event = await savedEvent(page, (_, id) => !['local-event', 'activity-event'].includes(id));
   expect(event).toMatchObject({
     name: title,
-    requirementId: 'family-meeting',
+    activity: { activityId: 'family-meeting' },
     effect: 'note',
     category: 'prazo',
     // Saving the form confirms the contextual offers (plan, section 5.3).
@@ -62,7 +62,7 @@ test('editing a linked record that changes the count keeps its effect, category 
     record.state.events.push({
       id: 'linked-exclusion',
       name: 'Encontro com recesso',
-      requirementId: 'family-meeting',
+      activity: { activityId: 'family-meeting' },
       start: '2027-05-10',
       end: '2027-05-10',
       effect: 'exclude',
@@ -132,7 +132,7 @@ test('a free admission notice is registered without an activity link', async ({
       admission: { type: 'transfer', year: 2027, term: 'second', destinations: [] },
     },
   });
-  expect(event?.requirementId).toBeUndefined();
+  expect(event?.activity).toBeUndefined();
 });
 
 async function chooseNoticeType(page: Page) {
@@ -196,7 +196,7 @@ test('going back to the activity keeps an unapplied period pending and a saved o
       page.evaluate(
         () =>
           window.editorTest.record.state.events.find(
-            (event) => event.requirementId === 'family-meeting',
+            (event) => event.activity?.activityId === 'family-meeting',
           )?.start,
       ),
     )

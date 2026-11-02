@@ -112,7 +112,7 @@ function previousDraft(state: (typeof settings)[number], row: ActivityPlanItem) 
     category: previous.category(row.id),
     effect: 'note',
     name: row.name,
-    requirementId: row.id,
+    activity: row.activity,
   };
 }
 

@@ -1,6 +1,12 @@
 import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import type { activityCoverage } from '#src/domain/calendar/activities/coverage.ts';
-import { linksToReview, type LinkIssue } from '#src/domain/calendar/activities/links.ts';
+import {
+  generatedActivities,
+  generatedActivity,
+  linkedTo,
+  linksToReview,
+  type LinkIssue,
+} from '#src/domain/calendar/activities/links.ts';
 import { activityStatus, type ActivityStatus } from '#src/domain/calendar/activities/status.ts';
 import { appliesTo } from '#src/domain/calendar/modalities.ts';
 import { calendarObservances, observanceIssues } from '#src/domain/calendar/observances.ts';
@@ -59,10 +65,8 @@ export function searchText(value: string) {
   return value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR');
 }
 
-export function dateOrigin(
-  event: Pick<EditorEvent, 'institutional' | 'requirementId'>,
-): DateOrigin {
-  return event.institutional ? 'base' : event.requirementId ? 'linked' : 'campus';
+export function dateOrigin(event: Pick<EditorEvent, 'institutional' | 'activity'>): DateOrigin {
+  return event.institutional ? 'base' : event.activity ? 'linked' : 'campus';
 }
 
 /**
@@ -86,7 +90,7 @@ export function activityStep(input: {
   const query = searchText(search.atividadeBusca ?? '');
   const review = linksToReview(state);
   const checklist = activityPlan(state).filter((item) => item.variant !== 'stage');
-  const generated = new Map(activityPlan(state).map((item) => [item.id, item]));
+  const generated = generatedActivities(state);
   // Only the offers being consulted decide an activity's status.
   const consulted = (id: string) =>
     coverage.filter((row) => row.requirement.id === id && (!offer || row.offerId === offer.id));
@@ -112,7 +116,7 @@ export function activityStep(input: {
       status: statusOf(item.id),
       pending: pendingStatus(item.id),
       dates: state.events
-        .filter((event) => event.requirementId === item.id && !review.has(event.id))
+        .filter((event) => linkedTo(event, item) && !review.has(event.id))
         .sort((a, b) => a.start.localeCompare(b.start)),
     }));
 
@@ -120,8 +124,7 @@ export function activityStep(input: {
     .sort((a, b) => a.start.localeCompare(b.start) || a.name.localeCompare(b.name))
     .map((event) => {
       const issue = event.institutional ? undefined : review.get(event.id);
-      const activity =
-        event.requirementId && !issue ? generated.get(event.requirementId) : undefined;
+      const activity = issue ? undefined : generatedActivity(generated, event.activity);
       return {
         event,
         origin: dateOrigin(event),

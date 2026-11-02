@@ -9,6 +9,8 @@ import type { PrintState, PrintResult, PrintEvent, DistributionRow } from './typ
 import { appliesTo } from '../domain/calendar/modalities.ts';
 import { periodsForOffer } from '../domain/calendar/organization/periods.ts';
 import { linksToReview } from '../domain/calendar/activities/links.ts';
+import { sameActivity } from '../domain/calendar/activities/activity-ref.ts';
+import { stageActivity } from '../domain/calendar/activities/assessment.ts';
 import {
   offerFor,
   stageCount,
@@ -72,8 +74,8 @@ export function teachingDayBreakdown(
   const stages = Array.from(
     { length: assessmentStageCounts.includes(count) ? count : 0 },
     (_, i) => {
-      const id = String(i + 1),
-        matches = candidates.filter((e) => e.requirementId === `stage-${id}:${modality}`);
+      const link = stageActivity(state, 'stage', modality, i + 1);
+      const matches = candidates.filter((e) => e.activity && sameActivity(e.activity, link));
       if (matches.length === 1) return { start: matches[0].start, end: matches[0].end };
       return null;
     },

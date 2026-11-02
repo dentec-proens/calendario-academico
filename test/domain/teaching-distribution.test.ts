@@ -1,6 +1,10 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
+import { stageActivity } from '../../src/domain/calendar/activities/assessment.ts';
+import { isStageActivity } from '../../src/domain/calendar/activities/activity-ref.ts';
+import type { AssessmentSettings } from '../../src/domain/calendar/model.ts';
+import { definedStage } from '../helpers/activity-links.ts';
 import assert from 'node:assert/strict';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
@@ -53,10 +57,16 @@ const state = {
     },
   ],
 };
-const stage = (number: number, modality: string, start: string, end: string) => ({
+const stage = (
+  number: number,
+  modality: string,
+  start: string,
+  end: string,
+  settings: AssessmentSettings = state,
+) => ({
   id: `${modality}${number}`,
   name: 'Etapa',
-  requirementId: `stage-${number}:${modality}`,
+  activity: stageActivity(settings, 'stage', modality, number),
   scope: { offers: [modality], confirmed: true },
   start: civilDate(start),
   end: civilDate(end),
@@ -159,7 +169,15 @@ test('annual periods preserve assessment totals without inventing semester bound
         },
       },
     ],
-    events,
+    // The same stage dates, at the positions of the annual organization (ordinal in the year).
+    events: events.map((event) =>
+      isStageActivity(event.activity) && event.activity.offerId === 'integrado'
+        ? {
+            ...event,
+            activity: definedStage('stage', 'integrado', 'annual', Number(event.id.slice(-1))),
+          }
+        : event,
+    ),
     offers: [
       {
         id: 'integrado',
@@ -171,7 +189,7 @@ test('annual periods preserve assessment totals without inventing semester bound
     ],
   };
   const withRecess: CalendarEvent[] = [
-    ...events,
+    ...input.events,
     {
       name: 'Recesso',
       id: 'recess',
@@ -188,7 +206,7 @@ test('annual periods preserve assessment totals without inventing semester bound
     [null, null],
   );
   assert.equal(report.notes.length, 0);
-  const partial = withRecess.filter((e) => e.requirementId !== 'stage-2:integrado');
+  const partial = withRecess.filter((e) => e.id !== 'integrado2');
   const missing = teachingDayBreakdown(input, partial, result, 'integrado');
   assert.equal(missing.semesters[0].total, null);
   assert.equal(missing.stages[1].total, null);
@@ -248,9 +266,9 @@ test('trimestral offers retain their three assessment intervals alongside monthl
     ],
   };
   const trimesterEvents = [
-    stage(1, 'integrado', '2027-06-21', '2027-06-25'),
-    stage(2, 'integrado', '2027-06-28', '2027-08-05'),
-    stage(3, 'integrado', '2027-08-06', '2027-08-13'),
+    stage(1, 'integrado', '2027-06-21', '2027-06-25', input),
+    stage(2, 'integrado', '2027-06-28', '2027-08-05', input),
+    stage(3, 'integrado', '2027-08-06', '2027-08-13', input),
   ];
   const report = teachingDayBreakdown(
     input,

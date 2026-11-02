@@ -1,6 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
+import { definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
 import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
@@ -53,11 +54,17 @@ test.each(archive.cases)(
   ({ count, requirements, readiness }) => {
     const state = fixture(count),
       offer = state.offers[0];
-    const rows = activityPlan(state).map(({ offerId, offerIds: _ids, ...row }) => ({
-      ...row,
-      ...(offerId ? { modality: offerId } : {}),
-      applicability: policyFor(state.year).applicability(state, { ...row, offerId }, offer),
-    }));
+    const rows = activityPlan(state).map(
+      ({ offerId, offerIds: _ids, activity: _link, ...row }) => ({
+        ...row,
+        ...(offerId ? { modality: offerId } : {}),
+        applicability: policyFor(state.year).applicability(
+          state,
+          { ...row, activity: _link, offerId },
+          offer,
+        ),
+      }),
+    );
     expect(JSON.parse(JSON.stringify(rows))).toEqual(requirements);
     expect(
       releaseReadiness(
@@ -161,7 +168,7 @@ test('new and changed assessment dates remain blocked until the organization def
         start: civilDate('2027-03-01'),
         end: civilDate('2027-03-12'),
         effect: 'note',
-        requirementId: 'stage-1:integrado',
+        activity: unclassifiedStage('stage', 'integrado', 1),
         scope: { offers: ['integrado'], confirmed: true },
       },
     ],
@@ -191,7 +198,7 @@ test('complete explicit configuration resolves the reported total and keeps surp
       start: civilDate(`2027-0${n + 1}-01`),
       end: civilDate(`2027-0${n + 1}-12`),
       effect: 'note',
-      requirementId: `stage-${n}:integrado`,
+      activity: unclassifiedStage('stage', 'integrado', n),
       scope: { offers: ['integrado'], confirmed: true },
     })),
   };
@@ -233,7 +240,7 @@ test('unclassified historical stage evidence retains its original interval findi
         start: civilDate('2027-03-01'),
         end: civilDate('2027-03-12'),
         effect: 'note',
-        requirementId: 'stage-1:integrado',
+        activity: unclassifiedStage('stage', 'integrado', 1),
         scope: { offers: ['integrado'], confirmed: true },
       },
     ],
@@ -265,7 +272,7 @@ test('complete classification keeps every linked result, council and meeting, su
         start: civilDate('2027-05-28'),
         end: civilDate('2027-05-28'),
         effect: 'note',
-        requirementId: `${family}-${n}:integrado`,
+        activity: unclassifiedStage(family, 'integrado', n),
         scope: { offers: ['integrado'], confirmed: true },
       })),
     ),
@@ -284,8 +291,9 @@ test('complete classification keeps every linked result, council and meeting, su
   let seq = 0;
   const configured = applyOfferOrganization(state, 'integrado', draft, () => `configured-${++seq}`);
   for (const family of ['results', 'council', 'pedagogical-meeting']) {
-    expect(configured.events.find((event) => event.id === `${family}-1`)?.requirementId).toBe(
-      `${family}-1:integrado`,
+    // The confirmed ordinal takes its position in the annual cycle, as the v4 `results-1` did.
+    expect(configured.events.find((event) => event.id === `${family}-1`)?.activity).toEqual(
+      definedStage(family, 'integrado', 'annual', 1),
     );
     const excess = configured.events.find((event) => event.id === `${family}-3`)!;
     expect(excess).toEqual(state.events.find((event) => event.id === `${family}-3`));

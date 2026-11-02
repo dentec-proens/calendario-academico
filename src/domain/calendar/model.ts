@@ -1,5 +1,6 @@
 import { type CivilDate } from '../civil-date.ts';
 import type { ActivityGroup, ActivityVariant } from './activities/metadata.ts';
+import type { ActivityRef } from './activities/activity-ref.ts';
 
 /** Shared contracts for calendar dates, generated activities and the operational catalogue. */
 import type { AcademicTerm, Organization } from './config.ts';
@@ -89,7 +90,6 @@ export interface DateFields {
   end: CivilDate;
   effect: EventEffect;
   category?: string;
-  requirementId?: string;
   hours?: number;
   assessmentAutoStart?: CivilDate;
   deadlineExtensionCause?: 'municipal-holiday' | 'municipal-recess';
@@ -99,6 +99,8 @@ export interface DateFields {
 /** A local date of the calendar (`state.events`). */
 export interface CalendarEvent extends DateFields {
   scope: EventScope;
+  /** Activity the date serves (plan, section 5.1); absent for a campus date. */
+  activity?: ActivityRef;
 }
 /**
  * Institutional date copied into a calendar (`institutionalSnapshot`) or projected in the editor.
@@ -118,6 +120,8 @@ export interface InstitutionalEventSnapshot extends DateFields {
 
 export interface ActivityPlanItem {
   id: string;
+  /** Link a date of this row carries: the declaration, its base and the row's slot. */
+  activity: ActivityRef;
   name: string;
   required?: boolean;
   deadline?: CivilDate;
@@ -207,8 +211,7 @@ export type CountingEvent = Pick<
   InstitutionalEventSnapshot,
   'id' | 'effect' | 'start' | 'end' | 'offers' | 'evidence' | 'institutional'
 > & { scope?: EventScope };
-export type StageEvent = CountingEvent &
-  Pick<CalendarEvent, 'requirementId' | 'assessmentAutoStart'>;
+export type StageEvent = CountingEvent & Pick<CalendarEvent, 'activity' | 'assessmentAutoStart'>;
 /** A local stage date, with its listed scope. */
 export type LocalStageEvent = StageEvent & Pick<CalendarEvent, 'scope'>;
 

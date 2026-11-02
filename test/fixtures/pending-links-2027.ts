@@ -6,6 +6,8 @@ import type {
   OfferKind,
 } from '../../src/domain/calendar/model.ts';
 import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
+import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
+import { cycleLink, definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
 
 export type PendingLinksFixture = CalendarContent & { year: number; campus: string };
 
@@ -23,7 +25,19 @@ const offer = (id: OfferKind): CalendarOffer => ({
   scope: { status: 'covered' },
 });
 
-type Row = readonly [requirementId: string, start: string, end: string, offers?: string[]];
+/**
+ * A semester date of the audited drafts: its ID suffix (the format 4 identifier, `final-1`), the
+ * offer cycle it was recorded for, its dates and offers. Every link is by offer cycle in 2027.
+ */
+type Row = readonly [
+  suffix: string,
+  activity: ActivityRef,
+  start: string,
+  end: string,
+  offers?: string[],
+];
+const first = (activityId: string) => cycleLink(activityId, 'first');
+const second = (activityId: string) => cycleLink(activityId, 'second');
 
 function draft(
   campus: string,
@@ -56,15 +70,15 @@ function draft(
         association: { status: 'a-classificar' },
       },
     ],
-    events: rows.map(([requirementId, start, end, scope]) =>
+    events: rows.map(([suffix, activity, start, end, scope]) =>
       extra({
-        id: `${prefix}-${requirementId}`,
-        name: `Data sintética ${requirementId}`,
+        id: `${prefix}-${suffix}`,
+        name: `Data sintética ${suffix}`,
         start: day(start),
         end: day(end),
         effect: 'note',
         category: 'prazo',
-        requirementId,
+        activity,
         scope: { offers: scope ?? [...offers], confirmed: true },
       }),
     ),
@@ -81,22 +95,22 @@ export function ivaiporaDraft(): PendingLinksFixture {
     'ivaipora',
     ['integrado', 'subsequente'],
     [
-      ['final-1', '22/06', '22/06'],
-      ['final-2', '14/12', '17/12'],
-      ['diary-1', '01/07', '01/07'],
-      ['diary-2', '20/12', '23/12'],
-      ['final-appeal-1', '18/06', '24/06'],
-      ['final-appeal-2', '15/12', '20/12'],
-      ['registration-1', '25/01', '29/01'],
-      ['admission-notice-1', '20/11', '20/11'],
-      ['admission-notice-2', '17/06', '17/06'],
-      ['recognition-1', '11/02', '19/02'],
-      ['recognition-2', '20/07', '29/07'],
+      ['final-1', first('final'), '22/06', '22/06'],
+      ['final-2', second('final'), '14/12', '17/12'],
+      ['diary-1', first('diary'), '01/07', '01/07'],
+      ['diary-2', second('diary'), '20/12', '23/12'],
+      ['final-appeal-1', first('final-appeal'), '18/06', '24/06'],
+      ['final-appeal-2', second('final-appeal'), '15/12', '20/12'],
+      ['registration-1', first('registration'), '25/01', '29/01'],
+      ['admission-notice-1', first('admission-notice'), '20/11', '20/11'],
+      ['admission-notice-2', second('admission-notice'), '17/06', '17/06'],
+      ['recognition-1', first('recognition'), '11/02', '19/02'],
+      ['recognition-2', second('recognition'), '20/07', '29/07'],
     ],
     (event) =>
-      event.requirementId === 'final-appeal-2'
+      event.id === 'ivaipora-final-appeal-2'
         ? { ...event, hours: 28 }
-        : event.requirementId === 'admission-notice-1'
+        : event.id === 'ivaipora-admission-notice-1'
           ? { ...event, name: 'Edital de ingresso do 1º semestre' }
           : event,
   );
@@ -130,19 +144,19 @@ export function cascavelDraft(): PendingLinksFixture {
     'cascavel',
     ['integrado', 'graduacao'],
     [
-      ['final-1', '21/07', '21/07'],
-      ['final-2', '21/12', '21/12'],
-      ['diary-1', '11/07', '11/07'],
-      ['diary-2', '23/12', '23/12'],
-      ['final-appeal-1', '16/12', '16/12'],
-      ['final-appeal-2', '16/12', '16/12'],
-      ['admission-notice-1', '04/01', '04/01'],
-      ['admission-notice-2', '05/07', '05/07', ['graduacao']],
-      ['recognition-1', '31/03', '31/03'],
-      ['recognition-2', '31/08', '31/08', ['graduacao']],
+      ['final-1', first('final'), '21/07', '21/07'],
+      ['final-2', second('final'), '21/12', '21/12'],
+      ['diary-1', first('diary'), '11/07', '11/07'],
+      ['diary-2', second('diary'), '23/12', '23/12'],
+      ['final-appeal-1', first('final-appeal'), '16/12', '16/12'],
+      ['final-appeal-2', second('final-appeal'), '16/12', '16/12'],
+      ['admission-notice-1', first('admission-notice'), '04/01', '04/01'],
+      ['admission-notice-2', second('admission-notice'), '05/07', '05/07', ['graduacao']],
+      ['recognition-1', first('recognition'), '31/03', '31/03'],
+      ['recognition-2', second('recognition'), '31/08', '31/08', ['graduacao']],
     ],
     (event) =>
-      event.requirementId === 'admission-notice-2'
+      event.id === 'cascavel-admission-notice-2'
         ? { ...event, name: 'Edital de ingresso — Cursos semestrais' }
         : event,
   );
@@ -159,7 +173,7 @@ export function conflictingLinks(): PendingLinksFixture {
   const stage = (id: string, n: number, start: string, end: string): CalendarEvent => ({
     id,
     name: `${n}ª etapa sintética`,
-    requirementId: `stage-${n}:integrado`,
+    activity: definedStage('stage', 'integrado', 'annual', n),
     start: day(start),
     end: day(end),
     effect: 'note',
@@ -196,7 +210,7 @@ export function conflictingLinks(): PendingLinksFixture {
       stage('stage-early', 4, '02/08', '30/09'),
       {
         ...vacation,
-        requirementId: 'diary-1',
+        activity: first('diary'),
         scope: { offers: ['integrado', 'subsequente'], confirmed: false },
       },
       {
@@ -206,7 +220,7 @@ export function conflictingLinks(): PendingLinksFixture {
         end: day('03/05'),
         effect: 'note',
         category: 'prazo',
-        requirementId: 'admission-notice-2',
+        activity: second('admission-notice'),
         scope: { offers: ['integrado', 'subsequente'], confirmed: true },
         notice: {
           publication: 'planned',
@@ -221,6 +235,53 @@ export function conflictingLinks(): PendingLinksFixture {
           },
         },
       },
+    ],
+  };
+}
+
+/**
+ * Results and councils linked by offer stage that the configuration does not generate: under an
+ * unclassified organization without a reported count, and beyond the count of an annual offer.
+ * The first annual stage is generated and serves as the control.
+ */
+export function stageLinksToReview(): PendingLinksFixture {
+  const date = (id: string, activity: ActivityRef, offerId: string): CalendarEvent => ({
+    id,
+    name: `Data sintética ${id}`,
+    start: day('28/05'),
+    end: day('28/05'),
+    effect: 'note',
+    category: 'prazo',
+    activity,
+    scope: { offers: [offerId], confirmed: true },
+  });
+  return {
+    schemaVersion: 5,
+    rulesetVersion: 'consup-292-2027-v3',
+    year: 2027,
+    campus: 'Campus sintético de etapas',
+    offers: [
+      offer('integrado'),
+      { ...offer('subsequente'), organization: 'anual', stages: { status: 'defined', perTerm: 2 } },
+    ],
+    weekdays: [1, 2, 3, 4, 5],
+    weekConfirmed: true,
+    periods: [
+      {
+        id: 'year',
+        name: 'Ano letivo',
+        start: day('01/02'),
+        end: day('17/12'),
+        association: { status: 'defined', offers: ['subsequente'], term: 'annual' },
+      },
+    ],
+    events: [
+      date('results-unclassified', unclassifiedStage('results', 'integrado', 1), 'integrado'),
+      date('council-unclassified', unclassifiedStage('council', 'integrado', 1), 'integrado'),
+      date('results-beyond', definedStage('results', 'subsequente', 'annual', 3), 'subsequente'),
+      date('council-beyond', definedStage('council', 'subsequente', 'annual', 3), 'subsequente'),
+      date('results-generated', definedStage('results', 'subsequente', 'annual', 1), 'subsequente'),
+      date('council-generated', definedStage('council', 'subsequente', 'annual', 1), 'subsequente'),
     ],
   };
 }

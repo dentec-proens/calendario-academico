@@ -16,6 +16,7 @@ import {
   associationOffers,
 } from '../calendar/offers.ts';
 import { automaticEventSource } from '../calendar/counting/core.ts';
+import type { ActivityRef } from '../calendar/activities/activity-ref.ts';
 import { evaluateCalendar as calendarResult } from '../calendar/counting/evaluation.ts';
 import { activityCoverage } from '../calendar/activities/coverage.ts';
 import { organizationForOffer, periodsForOffer } from '../calendar/organization/periods.ts';
@@ -48,12 +49,10 @@ export function reviewSupport<
 >(
   record: T,
   events: (Pick<DateFields, 'id' | 'name' | 'start' | 'end' | 'category'> &
-    Partial<
-      Pick<DateFields, 'effect' | 'requirementId' | 'notice' | 'deadlineAdjustment' | 'hours'>
-    > & { scope?: EventScope } & Pick<
-      InstitutionalEventSnapshot,
-      'evidence' | 'institutional' | 'offers'
-    >)[],
+    Partial<Pick<DateFields, 'effect' | 'notice' | 'deadlineAdjustment' | 'hours'>> & {
+      scope?: EventScope;
+      activity?: ActivityRef;
+    } & Pick<InstitutionalEventSnapshot, 'evidence' | 'institutional' | 'offers'>)[],
 ) {
   // Local dates always list their scope; institutional ones keep their own offers.
   const projected = events.map((event) => ({

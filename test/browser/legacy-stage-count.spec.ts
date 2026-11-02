@@ -18,7 +18,11 @@ for (const width of [1440, 390])
         record.state.events = Array.from({ length: count }, (_, index) => ({
           id: `preserved-stage-${index + 1}`,
           name: `${index + 1}ª etapa preservada`,
-          requirementId: `stage-${index + 1}:integrado`,
+          activity: {
+            activityId: 'stage',
+            offerId: 'integrado',
+            position: { status: 'unclassified' as const, reportedOrdinal: index + 1 },
+          },
           scope: { offers: ['integrado'], confirmed: true },
           effect: 'note' as const,
           category: 'limite',

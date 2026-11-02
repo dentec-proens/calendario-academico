@@ -1,5 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { onceLink } from '../helpers/activity-links.ts';
 import {
   eventFromValues,
   emptyEvent,
@@ -24,15 +25,15 @@ const edit = (base: CalendarEvent, change: Partial<EventValues> = {}) =>
 test('a record without category keeps it absent when only its link changes', () => {
   const base = saved({ effect: 'exclude' });
   expect(eventValues(base).category).toBe('recesso');
-  const result = edit(base, { requirementId: 'family-meeting' });
+  const result = edit(base, { activity: onceLink('family-meeting') });
   expect(result.category).toBeUndefined();
-  expect(result).toMatchObject({ effect: 'exclude', requirementId: 'family-meeting' });
+  expect(result).toMatchObject({ effect: 'exclude', activity: onceLink('family-meeting') });
   expect(edit(base, { category: 'feriado' }).category).toBe('feriado');
 });
 
 test('an unchanged reviewed deadline adjustment keeps its review', () => {
   const base = saved({
-    requirementId: 'regular-admission-notice',
+    activity: onceLink('regular-admission-notice'),
     notice: {
       publication: 'planned',
       admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },

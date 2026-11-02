@@ -56,6 +56,20 @@ export const notice = v.object({
 });
 /** Offers of a local date, always listed, and whether the campus chose them (plan, 5.3). */
 export const eventScope = v.object({ offers: v.array(v.string()), confirmed: v.boolean() });
+/**
+ * Link of a date with the activity it serves (plan, section 5.1): one shape per repetition base.
+ * The declared IDs of each base are checked by the domain (`activityRef()`), not by prefix.
+ */
+const stagePosition = v.union(
+  v.object({ status: v.literal('unclassified'), reportedOrdinal: v.number() }),
+  v.object({ status: v.literal('defined'), term: academicTerm, number: v.number() }),
+);
+export const activityRef = v.union(
+  v.object({ activityId: v.string() }),
+  v.object({ activityId: v.string(), term: academicTerm }),
+  v.object({ activityId: v.string(), semester: v.union(v.literal('first'), v.literal('second')) }),
+  v.object({ activityId: v.string(), offerId: v.string(), position: stagePosition }),
+);
 export const event = v.object({
   id: v.string(),
   name: v.string(),
@@ -63,7 +77,7 @@ export const event = v.object({
   end: v.string(),
   effect,
   category: v.optional(v.string()),
-  requirementId: v.optional(v.string()),
+  activity: v.optional(activityRef),
   scope: eventScope,
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),

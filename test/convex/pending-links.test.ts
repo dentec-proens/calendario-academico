@@ -1,6 +1,8 @@
 import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { cycleLink } from '../helpers/activity-links.ts';
+import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize-v4.ts';
@@ -15,6 +17,7 @@ import {
   cascavelDraft,
   conflictingLinks,
   ivaiporaDraft,
+  stageLinksToReview,
   type PendingLinksFixture,
 } from '../fixtures/pending-links-2027.ts';
 
@@ -63,8 +66,8 @@ async function stored(fixture: PendingLinksFixture) {
   return { record, save, current };
 }
 
-const linkOf = (state: { events: { id: string; requirementId?: string }[] }) =>
-  Object.fromEntries(state.events.map(({ id, requirementId }) => [id, requirementId]));
+const linkOf = (state: { events: { id: string; activity?: ActivityRef }[] }) =>
+  Object.fromEntries(state.events.map(({ id, activity }) => [id, activity]));
 
 test.each([
   ['Ivaiporã', ivaiporaDraft],
@@ -77,9 +80,47 @@ test.each([
   expect(saved.state.events).toHaveLength(record.state.events.length);
 });
 
+test('the 21 audited dates are stored with their activity and saved under “Vínculo a conferir”', async () => {
+  let audited = 0;
+  for (const fixture of [ivaiporaDraft, cascavelDraft]) {
+    const { record, save } = await stored(fixture());
+    const saved = await save({ ...record.state, weekdays: [1, 2, 3, 4] });
+    const linked = saved.state.events.filter((event) => event.activity);
+    audited += linked.length;
+    for (const event of linked) {
+      expect(event.activity).toEqual(
+        fixture().events.find((item) => item.id === event.id)?.activity,
+      );
+    }
+    const review = linksToReview({ ...saved.state, year: 2027 });
+    expect(linked.map((event) => review.get(event.id))).toEqual(linked.map(() => 'unclassified'));
+  }
+  expect(audited).toBe(21);
+});
+
+test('results and councils by stage without generated stage are saved under review', async () => {
+  const { record, save } = await stored(stageLinksToReview());
+  const saved = await save({ ...record.state, weekdays: [1, 2, 3, 4] });
+  expect(linkOf(saved.state)).toEqual(linkOf(record.state));
+  expect(Object.fromEntries(linksToReview({ ...saved.state, year: 2027 }))).toEqual({
+    'results-unclassified': 'unclassified',
+    'council-unclassified': 'unclassified',
+    'results-beyond': 'unclassified',
+    'council-beyond': 'unclassified',
+  });
+  // A new link to a stage the configuration does not generate is still refused.
+  const [beyond] = record.state.events.filter((event) => event.id === 'results-beyond');
+  await expect(
+    save(
+      { ...saved.state, events: [...saved.state.events, { ...beyond, id: 'results-new' }] },
+      saved.version,
+    ),
+  ).rejects.toThrow(/Vínculo de atividade inválido/);
+});
+
 test('a pending date is edited and saved with its link', async () => {
   const { record, save } = await stored(ivaiporaDraft());
-  const pending = record.state.events.find((event) => event.requirementId === 'recognition-2')!;
+  const pending = record.state.events.find((event) => event.id === 'ivaipora-recognition-2')!;
   const edited = applyEvent(
     record.state,
     {
@@ -94,7 +135,7 @@ test('a pending date is edited and saved with its link', async () => {
   );
   const saved = await save(edited);
   expect(saved.state.events.find((event) => event.id === pending.id)).toMatchObject({
-    requirementId: 'recognition-2',
+    activity: cycleLink('recognition', 'second'),
     name: 'Reconhecimento revisado',
     start: '2027-07-21',
     scope: { offers: ['subsequente'], confirmed: true },
@@ -123,8 +164,8 @@ test('confirming the organization of a draft offer is saved and keeps the links 
     stages: { status: 'defined', perTerm: 1 },
   });
   for (const event of record.state.events)
-    expect(saved.state.events.find((item) => item.id === event.id)?.requirementId).toBe(
-      event.requirementId,
+    expect(saved.state.events.find((item) => item.id === event.id)?.activity).toEqual(
+      event.activity,
     );
   // Every semester link now has its activity for the graduation offer: none is left to review.
   expect(linksToReview({ ...record.state, year: 2027 }).size).toBe(10);
@@ -137,10 +178,10 @@ test('new, swapped and removed links are refused and the stored calendar stays i
   for (const events of [
     [...record.state.events, { ...first, id: 'another-final' }],
     record.state.events.map((event) =>
-      event.id === first.id ? { ...event, requirementId: 'diary-1' } : event,
+      event.id === first.id ? { ...event, activity: cycleLink('diary', 'first') } : event,
     ),
-    record.state.events.map(({ requirementId, ...event }) =>
-      event.id === first.id ? event : { ...event, requirementId },
+    record.state.events.map(({ activity, ...event }) =>
+      event.id === first.id ? event : { ...event, activity },
     ),
   ])
     await expect(save({ ...record.state, events })).rejects.toThrow(
@@ -175,7 +216,7 @@ test('preexisting conflicts save; edits that create one are refused', async () =
   );
   expect(
     vacations.state.events.find((event) => event.id === 'teacher-vacation-january'),
-  ).toMatchObject({ requirementId: 'diary-1', start: '2027-01-05' });
+  ).toMatchObject({ activity: cycleLink('diary', 'first'), start: '2027-01-05' });
   await expect(
     save(
       {

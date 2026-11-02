@@ -2,7 +2,7 @@ import { calendarLimits } from '../config.ts';
 import type { ActivityState, AssessmentSettings, CalendarEvent, CalendarPeriod } from '../model.ts';
 import { parseDate } from '../../civil-date.ts';
 import { offerFor } from '../offers.ts';
-import { isStageRequirementId } from './metadata.ts';
+import { isAssessmentStage, sameActivity } from './activity-ref.ts';
 import { assessmentIntervalIssue } from './assessment-intervals.ts';
 import { policyFor } from '../../policies/registry.ts';
 import { periodsForOffer } from '../organization/periods.ts';
@@ -68,12 +68,12 @@ export function validateActivityRecord(
       throw new DomainError(
         'Referência anterior não comprova horas, férias, sábados ou etapas atuais.',
       );
-    const requirement = event.requirementId
+    const requirement = event.activity
       ? policyFor(state.year)
           .requirements(state)
-          .find((r) => r.id === event.requirementId)
+          .find((r) => sameActivity(r.activity, event.activity))
       : undefined;
-    if (event.requirementId && !options.keptWithoutActivity && !requirement?.acceptsPriorReference)
+    if (event.activity && !options.keptWithoutActivity && !requirement?.acceptsPriorReference)
       throw new DomainError('Esta atividade não aceita referência anterior ou datas fora do ano.');
   }
   if (notice?.admission) {
@@ -106,12 +106,8 @@ export function validateActivityRecord(
     // Removed or incompatible periods remain as unresolved evidence (`noticeDestinationIssues`)
     // instead of being dropped or reassigned.
   }
-  if (
-    isStageRequirementId(event.requirementId) &&
-    state.periods &&
-    options.stageInterval !== false
-  ) {
-    const modality = event.requirementId!.split(':')[1];
+  if (isAssessmentStage(event.activity) && state.periods && options.stageInterval !== false) {
+    const modality = event.activity.offerId;
     const offer = offerFor(state, modality);
     if (!offer) throw new DomainError('A oferta da etapa de avaliação não pertence ao calendário.');
     const issue =
@@ -151,11 +147,7 @@ export function validateActivityRecord(
         'Ajuste de prazo exige edital regular, data válida e indicação de conferência.',
       );
   }
-  if (
-    notice?.publication &&
-    !notice.admission &&
-    event.requirementId?.startsWith('admission-notice')
-  )
+  if (notice?.publication && !notice.admission && event.activity?.activityId === 'admission-notice')
     throw new DomainError('Identifique a finalidade de ingresso do edital.');
 }
 

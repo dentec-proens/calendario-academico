@@ -6,6 +6,8 @@ import type {
   CalendarPeriod,
 } from '../../src/domain/calendar/model.ts';
 
+import { definedStage } from '../helpers/activity-links.ts';
+
 export type CalendarOffersV4Fixture = CalendarContent & { year: number; campus: string };
 
 const period = (
@@ -32,7 +34,14 @@ const stages = (
   dates.map(([start, end], index) => ({
     id: `${offer}-stage-${index + 1}`,
     name: `${perSemester ? (index % perSemester) + 1 : index + 1}ª etapa de avaliação${perSemester ? ` — ${Math.floor(index / perSemester) + 1}º semestre` : ''} — ${label}`,
-    requirementId: `stage-${index + 1}:${offer}`,
+    activity: perSemester
+      ? definedStage(
+          'stage',
+          offer,
+          index < perSemester ? 'first' : 'second',
+          (index % perSemester) + 1,
+        )
+      : definedStage('stage', offer, 'annual', index + 1),
     scope: { offers: [offer], confirmed: true },
     start: civilDate(start),
     end: civilDate(end),

@@ -1,4 +1,5 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
+import { onceLink } from '../helpers/activity-links.ts';
 import { record, convex as baseConvex } from './editor-client.ts';
 export { functions } from './editor-client.ts';
 record.state.events = [
@@ -14,7 +15,7 @@ record.state.events = [
   {
     id: 'activity-event',
     name: 'Semana Cultural salva',
-    requirementId: 'cultural-week',
+    activity: onceLink('cultural-week'),
     start: civilDate('2027-10-04'),
     end: civilDate('2027-10-08'),
     effect: 'note',

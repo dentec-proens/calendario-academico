@@ -64,7 +64,7 @@ test('definitive release requires every reviewed criterion, current versions and
   record.state.events.push(
     ...activityPlan(record.state).map((r) => ({
       id: r.id,
-      requirementId: r.id,
+      activity: r.activity,
       scope: { offers: r.offerId ? [r.offerId] : ['integrado'], confirmed: true },
       name: r.name,
       start: civilDate('2027-02-01'),
@@ -99,7 +99,7 @@ test('definitive release requires every reviewed criterion, current versions and
   db.reviews = [review];
   assert(releaseReadiness(record, db).issues.some((i) => i.includes('40 horas')));
   for (const r of activityPlan(record.state)) {
-    const event = record.state.events.find((e) => e.requirementId === r.id)!;
+    const event = record.state.events.find((e) => e.id === r.id)!;
     if (r.minHours) event!.hours = r.minHours;
     if (r.month)
       event!.start = event!.end = civilDate(`2027-${String(r.month).padStart(2, '0')}-10`);
@@ -128,8 +128,8 @@ test('definitive release requires every reviewed criterion, current versions and
       /supervisão|segunda chamada|confirmação de matrícula/i.test(e.name),
     ),
   );
-  const stage = record.state.events.find((e) => e.requirementId === 'stage-1:integrado')!;
-  const results = record.state.events.find((e) => e.requirementId === 'results-1:integrado')!;
+  const stage = record.state.events.find((e) => e.id === 'stage-1:integrado')!;
+  const results = record.state.events.find((e) => e.id === 'results-1:integrado')!;
   stage!.end = civilDate('2027-02-10');
   results!.end = civilDate('2027-02-05');
   const before = structuredClone(record.state.events),
@@ -149,13 +149,11 @@ test('definitive release requires every reviewed criterion, current versions and
     ),
   );
   record.state.events.push(results);
-  const training = record.state.events.find((e) => e.requirementId === 'pedagogical-training')!;
+  const training = record.state.events.find((e) => e.id === 'pedagogical-training')!;
   training!.hours = 39;
   assert(releaseReadiness(record, db).issues.some((i) => i.includes('40 horas')));
   training!.hours = 40;
-  const extraordinary = record.state.events.find(
-    (e) => e.requirementId === 'extraordinary-council',
-  )!;
+  const extraordinary = record.state.events.find((e) => e.id === 'extraordinary-council')!;
   record.state.events = record.state.events.filter((e) => e !== extraordinary);
   assert(releaseReadiness(record, db).issues.some((i) => i.includes('extraordinário')));
   record.state.events.push(extraordinary);

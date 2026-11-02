@@ -1,5 +1,6 @@
 import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { expect, test } from 'vitest';
+import { definedStage } from '../helpers/activity-links.ts';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { preserveSubmission } from '../helpers/lifecycle.ts';
@@ -48,7 +49,7 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
     events: [0, 1].map((index) => ({
       id: `stage-${index + 1}`,
       name: `${index + 1}ª etapa`,
-      requirementId: `stage-${index + 1}:integrado`,
+      activity: definedStage('stage', 'integrado', 'annual', index + 1),
       scope: { offers: ['integrado'], confirmed: true },
       start: index ? '2027-03-15' : '2027-03-01',
       end: index ? '2027-03-26' : '2027-03-12',

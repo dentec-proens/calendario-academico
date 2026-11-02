@@ -9,14 +9,18 @@ import { readCalendarOfferInput } from './input-v4.ts';
 import { invalidCalendar as fail } from './input.ts';
 import { datesBetween } from '../counting/core.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
-import { activityPlan } from '../activities/plan.ts';
-import { linkKept, validateLinks } from '../activities/links.ts';
+import {
+  generatedActivities,
+  generatedActivity,
+  linkKept,
+  validateLinks,
+} from '../activities/links.ts';
 import { validCategory, eventCategory } from '../activities/categories.ts';
 import { normalizeObservanceDates } from '../observances.ts';
 import { regeneratedVacations, teacherVacations } from '../activities/teacher-vacations.ts';
 import { rulesetVersion } from '../../policies/registry.ts';
 import { associationOffers, offerFor } from '../offers.ts';
-import { isStageRequirementId } from '../activities/metadata.ts';
+import { isAssessmentStage } from '../activities/activity-ref.ts';
 
 function text(value: string, maximum = calendarLimits.maximumTextLength): string {
   if (!value.trim() || value.length > maximum)
@@ -82,7 +86,7 @@ export function validateOffers(offers: CalendarOffer[]): CalendarOffer[] {
  */
 export function normalizeOfferCalendar(
   input: unknown,
-  previous?: { events: readonly CalendarEvent[] },
+  previous?: { offers: readonly CalendarOffer[]; events: readonly CalendarEvent[] },
 ): CalendarContent & { year: number; campus: string } {
   const s = readCalendarOfferInput(input);
   if (
@@ -169,8 +173,9 @@ export function normalizeOfferCalendar(
         fail('Há mais de um período para o mesmo ciclo da oferta.');
       if (a.start <= b.end && a.end >= b.start) fail('Períodos sobrepostos.');
     }
-  const generated = new Set(activityPlan(s).map((row) => row.id));
+  const generated = generatedActivities(s);
   const before = new Map(previous?.events.map((event) => [event.id, event]));
+  const states = previous && { before: { offers: [...previous.offers] }, after: s };
   for (const event of s.events) {
     text(event.id, 100);
     text(event.name, 160);
@@ -182,7 +187,8 @@ export function normalizeOfferCalendar(
     validateActivityRecord(s, event, {
       // Edited stage intervals are checked against their cycle by `validateLinks`.
       stageInterval: false,
-      keptWithoutActivity: linkKept(old, event) && !generated.has(event.requirementId!),
+      keptWithoutActivity:
+        linkKept(old, event, states) && !generatedActivity(generated, event.activity),
     });
     if (
       event.hours !== undefined &&
@@ -193,7 +199,7 @@ export function normalizeOfferCalendar(
       datesBetween(event.assessmentAutoStart, event.assessmentAutoStart);
       if (
         Number(event.assessmentAutoStart.slice(0, 4)) !== s.year ||
-        !isStageRequirementId(event.requirementId)
+        !isAssessmentStage(event.activity)
       )
         fail('Distribuição automática de etapas inválida.');
     }
@@ -201,7 +207,7 @@ export function normalizeOfferCalendar(
       fail('Categoria PROENS inválida.');
     event.category = eventCategory(event);
   }
-  validateLinks(previous, s);
+  validateLinks(previous && { offers: [...previous.offers], events: previous.events }, s);
   return {
     ...s,
     schemaVersion: calendarSchemaVersion,

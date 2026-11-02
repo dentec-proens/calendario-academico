@@ -1,4 +1,5 @@
 import { civilDate, optionalCivilDate, type CivilDate } from '../civil-date.ts';
+import { activityRef, type ActivityRef } from './activities/activity-ref.ts';
 
 type RangeDates<T> = { [K in keyof T]: K extends 'start' | 'end' ? CivilDate : T[K] };
 type ActivityDateKey = 'start' | 'end' | 'originalStart' | 'originalEnd' | 'assessmentAutoStart';
@@ -8,7 +9,9 @@ type ActivityDates<T> = {
     ? CivilDate
     : K extends 'deadlineAdjustment'
       ? AdjustmentDates<T[K]>
-      : T[K];
+      : K extends 'activity'
+        ? ActivityRef | Extract<T[K], undefined>
+        : T[K];
 };
 type CalendarDates<T extends CalendarInput> = {
   [K in keyof T]: K extends 'periods'
@@ -37,6 +40,7 @@ interface ActivityInput extends RangeInput {
   originalEnd?: string;
   assessmentAutoStart?: string;
   deadlineAdjustment?: { date: string; reviewed: boolean };
+  activity?: unknown;
 }
 export interface VacationInput {
   firstStart: string;
@@ -51,7 +55,10 @@ export function readDateRange<T extends RangeInput>(value: T) {
   return { ...value, start: civilDate(value.start), end: civilDate(value.end) };
 }
 
-/** Decode civil dates without reinterpreting the policy or changing historical evidence. */
+/**
+ * Decode civil dates and the activity link (checked against the declared IDs, `activityRef()`)
+ * without reinterpreting the policy or changing historical evidence.
+ */
 export function readActivityDates<T extends ActivityInput>(value: T): ActivityDates<T> {
   return {
     ...readDateRange(value),
@@ -68,6 +75,7 @@ export function readActivityDates<T extends ActivityInput>(value: T): ActivityDa
             date: civilDate(value.deadlineAdjustment.date),
           },
         }),
+    ...(value.activity === undefined ? {} : { activity: activityRef(value.activity) }),
   } as ActivityDates<T>;
 }
 

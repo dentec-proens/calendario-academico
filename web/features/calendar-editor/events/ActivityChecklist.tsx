@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
+import { activityKey, isAssessmentStage } from '#src/domain/calendar/activities/activity-ref.ts';
 import { linkIssueLabels, linksToReview } from '#src/domain/calendar/activities/links.ts';
 import { activityStatusLabels } from '#src/domain/calendar/activities/status.ts';
 import { observanceForEvent } from '#src/domain/calendar/observances.ts';
@@ -44,7 +45,10 @@ export default function ActivityChecklist() {
     linked || stageRequirement(search.atividade)
       ? undefined
       : state.events.find(
-          (event) => event.requirementId === search.atividade && review.has(event.id),
+          (event) =>
+            event.activity &&
+            activityKey(event.activity) === search.atividade &&
+            review.has(event.id),
         )?.id;
   // A link to an activity opens the by-activity view, even from a by-date URL.
   useEffect(() => {
@@ -131,7 +135,7 @@ export default function ActivityChecklist() {
           dates={range(event)}
           note={
             issue
-              ? `Vínculo gravado: ${event.requirementId}`
+              ? `Vínculo gravado: ${event.activity && activityKey(event.activity)}`
               : activity
                 ? `Atividade: ${activity.name}`
                 : undefined
@@ -145,7 +149,7 @@ export default function ActivityChecklist() {
             if (observance) editor.viewObservance(observance.key);
             // Assessment intervals are edited in their own area; one under review opens its
             // details, where it can be removed or have its dates adjusted.
-            else if (stageRequirement(event.requirementId) && !event.institutional && !issue)
+            else if (isAssessmentStage(event.activity) && !event.institutional && !issue)
               editor.edit(event.id);
             else if (activity) view(activity.id);
             else editor.viewEvent(event.id);

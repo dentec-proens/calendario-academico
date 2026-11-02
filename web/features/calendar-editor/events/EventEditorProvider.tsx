@@ -22,21 +22,29 @@ import {
 import { applyEvent } from '#src/domain/calendar/commands/events.ts';
 import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
-import { linksToReview } from '#src/domain/calendar/activities/links.ts';
+import {
+  generatedActivities,
+  generatedActivity,
+  linksToReview,
+} from '#src/domain/calendar/activities/links.ts';
+import {
+  isAssessmentStage,
+  type ActivityRef,
+} from '#src/domain/calendar/activities/activity-ref.ts';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { editorPages } from '../editor-steps.ts';
 
 /** Every date is filled in the Activities step; assessment intervals in their own area. */
-function destination(context: EventContext | null, requirementId: string) {
+function destination(context: EventContext | null, activity: ActivityRef | undefined) {
   // A date edited as a date (campus or under review) stays in the Activities step.
-  const activity =
+  const stage =
     context?.kind === 'activity'
-      ? context.requirementId
+      ? stageRequirement(context.itemId)
       : context?.kind === 'event'
-        ? ''
-        : requirementId;
-  if (stageRequirement(activity)) return { to: editorPages.periods.path, hash: 'assessment-area' };
+        ? false
+        : isAssessmentStage(activity);
+  if (stage) return { to: editorPages.periods.path, hash: 'assessment-area' };
   return { to: editorPages.events.path, hash: '' };
 }
 
@@ -44,15 +52,15 @@ function useController() {
   const { state, institutional, session, record, notify, readOnly, formEpoch } =
     useCalendarEditor();
   const navigate = useNavigate();
-  const destinationFor = (next: EventContext | null, requirementId: string) =>
-    destination(next, requirementId);
+  const destinationFor = (next: EventContext | null, activity: ActivityRef | undefined) =>
+    destination(next, activity);
   const calendarOfferIds = useMemo(() => state.offers.map((offer) => offer.id), [state.offers]);
   const [context, setContext] = useState<EventContext | null>(null);
   const [open, setOpen] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
   // What the side panel shows besides the form: an activity to consult or an observance.
   const [panel, setPanel] = useState<
-    | { kind: 'activity'; requirementId: string }
+    | { kind: 'activity'; itemId: string }
     | { kind: 'event'; eventId: string }
     | { kind: 'observance'; key: string }
     | null
@@ -69,9 +77,9 @@ function useController() {
     if (active instanceof HTMLElement && !active.closest('#event-panel')) opener.current = active;
   }, []);
   const view = useCallback(
-    (requirementId: string) => {
+    (itemId: string) => {
       rememberOpener();
-      setPanel({ kind: 'activity', requirementId });
+      setPanel({ kind: 'activity', itemId });
     },
     [rememberOpener],
   );
@@ -103,7 +111,7 @@ function useController() {
         setContext(null);
         setOpen(false);
         setEventId(null);
-        setPanel({ kind: 'activity', requirementId: context.requirementId });
+        setPanel({ kind: 'activity', itemId: context.itemId });
         requestAnimationFrame(() =>
           document.querySelector<HTMLElement>('#event-panel [data-prepare-activity]')?.focus(),
         );
@@ -196,7 +204,7 @@ function useController() {
     if (readOnly) return;
     if (!same) rememberOpener();
     void navigate({
-      ...destinationFor(next, values.requirementId),
+      ...destinationFor(next, values.activity),
       params: { calendarId: record.id },
       search: (previous) => previous,
       hashScrollIntoView: false,
@@ -205,19 +213,17 @@ function useController() {
     result.form.reset(values);
     setContext(next);
     setEventId(id);
-    setPanel(
-      next.kind === 'activity' ? { kind: 'activity', requirementId: next.requirementId } : null,
-    );
+    setPanel(next.kind === 'activity' ? { kind: 'activity', itemId: next.itemId } : null);
     setOpen(true);
     return true;
   }
-  function openOrganization(requirementId: string) {
+  function openOrganization(itemId: string) {
     setOpen(false);
     setPanel(null);
     void navigate({
       to: editorPages.periods.path,
       params: { calendarId: record.id },
-      search: (previous) => ({ ...previous, atividade: requirementId }),
+      search: (previous) => ({ ...previous, atividade: itemId }),
       hashScrollIntoView: false,
     });
   }
@@ -226,8 +232,11 @@ function useController() {
     if (!event) return;
     // A stage under review is no longer in the organization form: it is edited as a date.
     const review = linksToReview(state).has(id);
-    if (stageRequirement(event.requirementId) && !review) {
-      openOrganization(event.requirementId!);
+    const generated = review
+      ? undefined
+      : generatedActivity(generatedActivities(state), event.activity);
+    if (isAssessmentStage(event.activity) && generated) {
+      openOrganization(generated.id);
       return;
     }
     if (id.startsWith('teacher-vacation-')) {
@@ -235,22 +244,19 @@ function useController() {
       return;
     }
     // A link without generated activity is edited as a date; its link is kept as recorded.
-    const next: EventContext =
-      event.requirementId &&
-      !review &&
-      activityPlan(state).some((item) => item.id === event.requirementId)
-        ? { kind: 'activity', requirementId: event.requirementId, eventId: id }
-        : { kind: 'event', eventId: id };
+    const next: EventContext = generated
+      ? { kind: 'activity', itemId: generated.id, eventId: id }
+      : { kind: 'event', eventId: id };
     begin(next, eventValues(event), id);
   }
-  function prepare(requirementId: string) {
-    if (stageRequirement(requirementId)) {
-      openOrganization(requirementId);
+  function prepare(itemId: string) {
+    if (stageRequirement(itemId)) {
+      openOrganization(itemId);
       return;
     }
-    const requirement = activityPlan(state).find((item) => item.id === requirementId);
+    const requirement = activityPlan(state).find((item) => item.id === itemId);
     if (!requirement) return;
-    begin({ kind: 'activity', requirementId }, activityDraft(state, requirement));
+    begin({ kind: 'activity', itemId }, activityDraft(state, requirement));
   }
   function discard() {
     if (result.pending) return;
@@ -266,16 +272,12 @@ function useController() {
   async function resume() {
     await navigate({
       // Resuming leads to the step where the draft's record is listed.
-      ...destinationFor(context, result.form.state.values.requirementId),
+      ...destinationFor(context, result.form.state.values.activity),
       params: { calendarId: record.id },
       search: (previous) => previous,
       hashScrollIntoView: false,
     });
-    setPanel(
-      context?.kind === 'activity'
-        ? { kind: 'activity', requirementId: context.requirementId }
-        : null,
-    );
+    setPanel(context?.kind === 'activity' ? { kind: 'activity', itemId: context.itemId } : null);
     setOpen(true);
     requestAnimationFrame(() => {
       const heading = document.getElementById('event-form-title');
@@ -294,7 +296,7 @@ function useController() {
       setOpen(false);
       setEventId(null);
     }
-    setPanel({ kind: 'activity', requirementId: context.requirementId });
+    setPanel({ kind: 'activity', itemId: context.itemId });
     requestAnimationFrame(() =>
       (
         document.getElementById('panel-resume-event') ??

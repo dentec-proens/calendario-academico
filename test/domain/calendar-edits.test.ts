@@ -1,5 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { definedStage } from '../helpers/activity-links.ts';
 import { recalculateCalendar } from '../../src/domain/calendar/commands/recalculate.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
@@ -19,7 +20,7 @@ function calendar(): ActivityState {
     ],
     events: Array.from({ length: 4 }, (_, index) => ({
       id: `event-${index + 1}`,
-      requirementId: `stage-${index + 1}:integrado`,
+      activity: definedStage('stage', 'integrado', 'annual', index + 1),
       name: `${index + 1}ª etapa`,
       start: civilDate(`2027-03-${String(index * 7 + 1).padStart(2, '0')}`),
       end: civilDate(`2027-03-${String(index * 7 + 4).padStart(2, '0')}`),

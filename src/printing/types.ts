@@ -38,7 +38,7 @@ export interface PrintRecord {
 }
 export type PrintEvent = Pick<
   CalendarEvent,
-  'start' | 'end' | 'category' | 'requirementId' | 'notice' | 'deadlineAdjustment'
+  'start' | 'end' | 'category' | 'notice' | 'deadlineAdjustment'
 > &
-  Partial<Pick<CalendarEvent, 'effect' | 'id' | 'name' | 'scope'>> &
+  Partial<Pick<CalendarEvent, 'effect' | 'id' | 'name' | 'scope' | 'activity'>> &
   Pick<InstitutionalEventSnapshot, 'institutional' | 'evidence' | 'offers'>;

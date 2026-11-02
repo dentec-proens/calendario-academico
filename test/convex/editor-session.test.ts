@@ -1,6 +1,7 @@
 import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { afterEach, expect, test, vi } from 'vitest';
+import { definedStage } from '../helpers/activity-links.ts';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { inspectCalendar } from '../../src/domain/calendar/base.ts';
@@ -196,7 +197,7 @@ test('removing the last period is saved and leaves the unchanged stages to revie
           events: [1, 2].map((number): CalendarEvent => ({
             id: `stage-${number}`,
             name: `${number}ª etapa`,
-            requirementId: `stage-${number}:integrado`,
+            activity: definedStage('stage', 'integrado', 'annual', number),
             scope: { offers: ['integrado'], confirmed: true },
             start: civilDate(number === 1 ? '2027-03-01' : '2027-03-15'),
             end: civilDate(number === 1 ? '2027-03-12' : '2027-03-26'),
@@ -220,8 +221,8 @@ test('removing the last period is saved and leaves the unchanged stages to revie
     })
     .then(calendarSaveDates);
   expect(removed.state.periods).toEqual([]);
-  expect(removed.state.events.map(({ id, requirementId }) => ({ id, requirementId }))).toEqual(
-    saved.state.events.map(({ id, requirementId }) => ({ id, requirementId })),
+  expect(removed.state.events.map(({ id, activity }) => ({ id, activity }))).toEqual(
+    saved.state.events.map(({ id, activity }) => ({ id, activity })),
   );
   expect([...linksToReview({ ...removed.state, year: 2027 })]).toEqual([
     ['stage-1', 'out-of-cycle'],

@@ -1,5 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { cycleLink, definedStage, onceLink } from '../helpers/activity-links.ts';
 import type { ActivityState, CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
@@ -83,7 +84,7 @@ function notice(extra: Partial<CalendarEvent> = {}): CalendarEvent {
         destinations: [{ offerId: 'integrado', periodId: 'annual' }],
       },
     },
-    requirementId: 'admission-notice-0',
+    activity: cycleLink('admission-notice', 'annual'),
     ...extra,
   };
 }
@@ -144,7 +145,7 @@ test('one event covers only the explicitly declared offers and does not waive ve
         id: 'veterans',
         start: civilDate('2027-01-15'),
         end: civilDate('2027-01-15'),
-        requirementId: 'enrolment-0',
+        activity: cycleLink('enrolment', 'annual'),
         scope: { offers: ['subsequente'], confirmed: true },
       }),
       notice: undefined,
@@ -225,7 +226,7 @@ test('planned regular publication remains planned and December requires an expli
         publication: 'planned',
         admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
       },
-      requirementId: 'regular-admission-notice',
+      activity: onceLink('regular-admission-notice'),
     }),
   ];
   expect(
@@ -248,8 +249,8 @@ test('prior/cross-year references are informative even if the received discrimin
     { effect: 'include' as const },
     { effect: 'exclude' as const },
     { hours: 40 },
-    { requirementId: 'pedagogical-training' },
-    { requirementId: 'stage-1:integrado' },
+    { activity: onceLink('pedagogical-training') },
+    { activity: definedStage('stage', 'integrado', 'annual', 1) },
   ]) {
     const event = notice(changes);
     expect(() => applyEvent(state, event, [])).toThrow();
@@ -260,7 +261,7 @@ test('prior/cross-year references are informative even if the received discrimin
   const old = notice({
     start: civilDate('1900-01-01'),
     end: civilDate('2027-01-02'),
-    requirementId: undefined,
+    activity: undefined,
     notice: undefined,
   });
   expect(
@@ -371,7 +372,7 @@ test('article 3 extends only explicitly classified municipal causes to the first
       end: civilDate('2027-09-03'),
       effect: 'note' as const,
       scope: { offers: ['integrado'], confirmed: true },
-      requirementId: 'robotics',
+      activity: onceLink('robotics'),
     },
   ];
   expect(
@@ -400,7 +401,7 @@ test('an unconfirmed scope remains visible but never covers its offers in 2027',
       ...notice({
         start: civilDate('2027-02-01'),
         end: civilDate('2027-02-01'),
-        requirementId: 'campus-events',
+        activity: onceLink('campus-events'),
         scope: { offers: state.offers.map((offer) => offer.id), confirmed: false },
       }),
       notice: undefined,

@@ -2,6 +2,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { removeEvent } from '#src/domain/calendar/commands/events.ts';
 import { activityStatusLabels } from '#src/domain/calendar/activities/status.ts';
+import { linkedTo } from '#src/domain/calendar/activities/links.ts';
 import type { ActivityPlanItem } from '#src/domain/calendar/model.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
 import { offerFor } from '#src/domain/calendar/offers.ts';
@@ -33,7 +34,7 @@ export default function ActivityDetails({
     const offer = offerFor(state, id);
     return offer ? policy.applicabilityNote?.(item, offer) : undefined;
   };
-  const registered = state.events.filter((event) => event.requirementId === item.id);
+  const registered = state.events.filter((event) => linkedTo(event, item));
   const stage = item.variant === 'stage';
   // Hours are summed per offer, since each period may cover a different set of offers.
   const showHours = Boolean(item.minHours) || registered.some((event) => event.hours);

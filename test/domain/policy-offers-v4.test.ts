@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { policyFor, equivalentRulesets } from '../../src/domain/policies/registry.ts';
 
@@ -14,6 +15,7 @@ test('policy receives an opaque identity and applies kind, scope and source inde
     policy.applicabilityNote?.(
       {
         id: 'synthetic',
+        activity: { activityId: 'synthetic' } as ActivityRef,
         name: 'Nota',
         optionalFor: { graduacao: 'Cadastro permitido para graduação.' },
       },

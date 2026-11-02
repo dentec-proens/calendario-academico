@@ -1,5 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { linkedToRow } from '../helpers/activity-links.ts';
+import { isStageActivity } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import {
   normalizeOfferCalendar,
@@ -65,7 +67,7 @@ test('requires distinct labels for repeated kinds and validates stages per cycle
 
 test('saving another field keeps migrated stages in the wrong semester for readiness to flag', () => {
   const source = calendarOffersV4Fixture();
-  const event = source.events.find((item) => item.requirementId === 'stage-3:graduacao-2')!;
+  const event = source.events.find(linkedToRow(source, 'stage-3:graduacao-2'))!;
   event.start = civilDate('2027-05-03');
   event.end = civilDate('2027-06-01');
   const previous = normalizeOfferCalendar(source, source);
@@ -82,7 +84,9 @@ test('saving migrated semester stages without a classified count retains their l
   delete source.offers[2].stages;
   const previous = normalizeOfferCalendar(source, source);
   expect(
-    previous.events.filter((event) => event.requirementId?.endsWith(':graduacao-2')),
+    previous.events.filter(
+      (event) => isStageActivity(event.activity) && event.activity.offerId === 'graduacao-2',
+    ),
   ).toHaveLength(4);
   expect(prepareOfferCalendarSave(previous, previous, context(previous)).content.events).toEqual(
     previous.events,

@@ -41,7 +41,10 @@ for (const width of [1440, 390]) {
       term: 'annual',
     });
     expect(
-      saved.state.events.filter((event) => event.requirementId?.endsWith(':graduacao')),
+      saved.state.events.filter(
+        (event) =>
+          event.activity && 'offerId' in event.activity && event.activity.offerId === 'graduacao',
+      ),
     ).toHaveLength(2);
     expect(
       saved.state.events.filter((event) => original.events.some((old) => old.id === event.id)),

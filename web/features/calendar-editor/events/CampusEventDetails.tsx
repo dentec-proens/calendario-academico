@@ -1,11 +1,13 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import { removeEvent } from '#src/domain/calendar/commands/events.ts';
-import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import {
+  generatedActivities,
+  generatedActivity,
   linkIssueActions,
   linkIssueLabels,
   linksToReview,
 } from '#src/domain/calendar/activities/links.ts';
+import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
 import { Notice } from '../../../components/ui/Notice.tsx';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { EditorEvent } from '../types.ts';
@@ -22,9 +24,9 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
   const { state, institutional, applyCommand, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const issue = event.institutional ? undefined : linksToReview(state).get(event.id);
-  const activity = event.requirementId
-    ? (activityPlan(state).find((item) => item.id === event.requirementId)?.name ??
-      event.requirementId)
+  const activity = event.activity
+    ? (generatedActivity(generatedActivities(state), event.activity)?.name ??
+      activityKey(event.activity))
     : undefined;
   return (
     <section className="campus-event-details" aria-label="Detalhes da data">
@@ -38,7 +40,8 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
           title={`Vínculo a conferir: ${linkIssueLabels[issue]}`}
         >
           <p>
-            Vínculo gravado: <code>{event.requirementId}</code>. {linkIssueActions[issue]}
+            Vínculo gravado: <code>{event.activity && activityKey(event.activity)}</code>.{' '}
+            {linkIssueActions[issue]}
           </p>
         </Notice>
       )}

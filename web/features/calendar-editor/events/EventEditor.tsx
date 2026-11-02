@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { categories } from '#src/domain/calendar/activities/categories.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
-import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
+import { generatedActivities, generatedActivity } from '#src/domain/calendar/activities/links.ts';
+import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
 import { applicabilityFor, policyFor } from '#src/domain/policies/registry.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
@@ -47,8 +48,7 @@ export default function EventEditor() {
     });
     return () => cancelAnimationFrame(frame);
   }, [editor.open, editor.context]);
-  const checklist = activityPlan(state);
-  const requirement = checklist.find((item) => item.id === values.requirementId);
+  const requirement = generatedActivity(generatedActivities(state), values.activity);
   const publication =
     (Boolean(values.admissionType) && noticeActive(values)) ||
     requirement?.variant === 'admission-notice';
@@ -80,7 +80,7 @@ export default function EventEditor() {
   // Inside an activity the link is fixed: the panel was opened from that activity.
   const activityRecord = editor.context?.kind === 'activity';
   const offers = recordOffers(state, requirement);
-  const freeEvent = !values.requirementId;
+  const freeEvent = !values.activity;
   const answered = eventTypes.find(
     (type) =>
       type.id === values.eventType &&
@@ -177,9 +177,9 @@ export default function EventEditor() {
         <fieldset className="event-fields">
           {/* The link comes from the context and is never edited here: a campus date has none,
               and a date kept with a link without generated activity shows it read-only. */}
-          {!activityRecord && values.requirementId && (
+          {!activityRecord && values.activity && (
             <p className="help" id="event-kept-link">
-              Atividade vinculada: <code>{values.requirementId}</code> (preservada; somente
+              Atividade vinculada: <code>{activityKey(values.activity)}</code> (preservada; somente
               leitura).
             </p>
           )}
@@ -313,7 +313,7 @@ export default function EventEditor() {
           {(publication ||
             values.eventType === 'notice' ||
             (!askType &&
-              !values.requirementId &&
+              !values.activity &&
               ['prazo', 'evento', 'institucional'].includes(values.category))) && (
             <form.Field name="admissionType">
               {(field) => (
@@ -321,7 +321,7 @@ export default function EventEditor() {
                   field={field}
                   label="Tipo de edital (quando aplicável)"
                   id="event-admission-type"
-                  required={values.eventType === 'notice' && !values.requirementId}
+                  required={values.eventType === 'notice' && !values.activity}
                 >
                   <option value="">Não é edital de ingresso / classificação pendente</option>
                   <option value="regular">Processo seletivo regular</option>

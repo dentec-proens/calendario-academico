@@ -7,6 +7,11 @@ import type {
   ProjectedDate,
 } from '../../src/domain/calendar/model.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
+import {
+  generatedActivities,
+  generatedActivity,
+} from '../../src/domain/calendar/activities/links.ts';
+import { activityKey } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { diagnoseCalendar, diagnoseTeachingDays } from '../../src/domain/calendar/diagnostics.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
@@ -34,6 +39,7 @@ function semanticProjection(
 ) {
   const policy = policyFor(state.year);
   const requirements = activityPlan(state);
+  const generated = generatedActivities(state);
   const institutional = inheritedEvents(catalogue, state.year, state.offers);
   const events = [...institutional, ...state.events] as ProjectedDate[];
   const diagnostic = diagnoseCalendar(state, events);
@@ -49,7 +55,14 @@ function semanticProjection(
       .sort((a, b) => b.name.length - a.name.length)
       .reduce((text, row) => text.replaceAll(row.name, `[${row.id}]`), message);
   const normativeFields = (requirement: ActivityPlanItem) => {
-    const { name: _editorial, offerId, offerIds: _cycleIdentities, term, ...fields } = requirement;
+    const {
+      name: _editorial,
+      activity: _link,
+      offerId,
+      offerIds: _cycleIdentities,
+      term,
+      ...fields
+    } = requirement;
     // A v4 stage has an explicit cycle and offer identity. The old stage already
     // encoded its identity in modality and its annual ordinal in the stable ID.
     // Applicability below still checks every offer, including cycle restrictions.
@@ -103,11 +116,14 @@ function semanticProjection(
   return JSON.parse(
     JSON.stringify({
       periods: state.periods.map(({ id, start, end }) => ({ id, start, end })),
-      events: state.events.map(({ id, start, end, requirementId }) => ({
+      // Step 9b: a link is the generated row it resolves to, whose ID the oracle recorded.
+      events: state.events.map(({ id, start, end, activity }) => ({
         id,
         start,
         end,
-        requirementId,
+        requirementId: activity
+          ? (generatedActivity(generated, activity)?.id ?? activityKey(activity))
+          : undefined,
       })),
       requirements: requirements.map(normativeFields),
       minimums: Object.fromEntries(

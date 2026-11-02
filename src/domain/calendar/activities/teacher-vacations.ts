@@ -54,19 +54,19 @@ export function teacherVacations(year: number, periodsInput: Partial<VacationPer
 export function regeneratedVacations(
   generated: ReturnType<typeof teacherVacations>['events'],
   offers: readonly string[],
-  recorded: readonly Pick<CalendarEvent, 'id' | 'requirementId' | 'scope'>[],
+  recorded: readonly Pick<CalendarEvent, 'id' | 'activity' | 'scope'>[],
 ): CalendarEvent[] {
-  const links = new Map<string, string>();
+  const links = new Map<string, NonNullable<CalendarEvent['activity']>>();
   const confirmed = new Map<string, boolean>();
   for (const event of recorded) {
-    if (event.requirementId) links.set(event.id, event.requirementId);
+    if (event.activity) links.set(event.id, event.activity);
     if (event.scope) confirmed.set(event.id, event.scope.confirmed);
   }
   return generated.map((event) => {
-    const requirementId = links.get(event.id);
+    const activity = links.get(event.id);
     return {
       ...event,
-      ...(requirementId ? { requirementId } : {}),
+      ...(activity ? { activity } : {}),
       scope: { offers: [...offers], confirmed: confirmed.get(event.id) ?? false },
     };
   });

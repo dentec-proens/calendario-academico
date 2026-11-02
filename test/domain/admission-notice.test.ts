@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import { cycleLink } from '../helpers/activity-links.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import {
@@ -25,7 +26,7 @@ const notice = (
   effect: 'note',
   category: 'prazo',
   scope: { offers: ['integrado', 'graduacao'], confirmed: true },
-  requirementId: 'admission-notice-0',
+  activity: cycleLink('admission-notice', 'annual'),
   notice: {
     publication: 'planned',
     admission: { type: 'transfer', year: 2027, term: 'annual', destinations },

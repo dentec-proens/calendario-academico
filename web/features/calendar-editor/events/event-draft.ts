@@ -9,12 +9,13 @@ import type {
 import { applicabilityFor } from '#src/domain/policies/registry.ts';
 import { eventCategory } from '#src/domain/calendar/activities/categories.ts';
 import { associationOffers, offerIds, offerFor } from '#src/domain/calendar/offers.ts';
+import type { ActivityRef } from '#src/domain/calendar/activities/activity-ref.ts';
 import type { CalendarEvent, OfferId } from '../types.ts';
 
 export type EventContext =
   | { kind: 'new' }
   | { kind: 'event'; eventId: string }
-  | { kind: 'activity'; requirementId: string; eventId?: string };
+  | { kind: 'activity'; itemId: string; eventId?: string };
 /** Campus events described by their purpose; each answer sets the count effect and category. */
 export const eventTypes = [
   { id: 'holiday', label: 'Feriado (suspende aulas)', effect: 'exclude', category: 'feriado' },
@@ -70,7 +71,8 @@ export interface EventValues {
   adjustedDeadline: string;
   deadlineExtensionCause: '' | 'municipal-holiday' | 'municipal-recess';
   category: string;
-  requirementId: string;
+  /** Link kept from the saved date or taken from the activity being filled; never edited here. */
+  activity?: ActivityRef;
   offers: OfferId[];
   hours: string;
   /** Interface answer to "O que é este evento?"; `effect` and `category` hold the record. */
@@ -127,7 +129,7 @@ export const emptyEvent = (offers: OfferId[]): EventValues => ({
   adjustedDeadline: '',
   deadlineExtensionCause: '',
   category: 'recesso',
-  requirementId: '',
+  activity: undefined,
   offers,
   hours: '',
   eventType: '',
@@ -148,10 +150,10 @@ export function eventValues(event: CalendarEvent): EventValues {
     adjustedDeadline: event.deadlineAdjustment?.date ?? '',
     deadlineExtensionCause: event.deadlineExtensionCause ?? '',
     category: eventCategory(event),
-    requirementId: event.requirementId || '',
+    activity: event.activity,
     offers: dateOffers,
     hours: event.hours === undefined ? '' : String(event.hours),
-    eventType: event.requirementId ? '' : eventTypeOf(event),
+    eventType: event.activity ? '' : eventTypeOf(event),
   };
 }
 /**
@@ -212,7 +214,7 @@ export function eventFromValues(
         : value.category,
     // Saving the date form confirms the offers chosen in it (plan, section 5.3).
     scope: { offers: value.offers, confirmed: true },
-    requirementId: value.requirementId || undefined,
+    activity: value.activity,
     hours: value.hours ? Number(value.hours) : undefined,
     deadlineExtensionCause: value.deadlineExtensionCause || undefined,
   };
@@ -257,7 +259,7 @@ export function activityDraft(
   return {
     ...emptyEvent(modalities),
     name: requirement.name,
-    requirementId: requirement.id,
+    activity: requirement.activity,
     effect: 'note',
     admissionType: requirement.admissionType ?? '',
     admissionYear: notice

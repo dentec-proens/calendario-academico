@@ -1,5 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { test } from 'vitest';
+import { onceLink } from '../helpers/activity-links.ts';
 import assert from 'node:assert/strict';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
 import {
@@ -280,7 +281,7 @@ test('review coverage follows the criterion identity when its citation text chan
           effect: 'note' as const,
           evidence: 'Ata sintética',
           scope: { offers: ['integrado'], confirmed: true },
-          requirementId: 'family-meeting',
+          activity: onceLink('family-meeting'),
         },
       ],
     );

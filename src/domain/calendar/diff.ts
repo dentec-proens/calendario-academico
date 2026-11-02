@@ -20,6 +20,8 @@ import { observanceForEvent, observanceRules } from './observances.ts';
 import { labelFor } from './offers.ts';
 import { contentIssues, type ContentIssue } from './readiness.ts';
 import { termLabels, type AcademicTerm } from './config.ts';
+import { activityKey, type ActivityRef } from './activities/activity-ref.ts';
+import { generatedActivities, generatedActivity } from './activities/links.ts';
 
 export interface DiffSide {
   state: ActivityState & {
@@ -77,7 +79,7 @@ export const fieldLabels = {
     end: 'Término',
     effect: 'Efeito na contagem',
     category: 'Categoria',
-    requirementId: 'Atividade vinculada',
+    activity: 'Atividade vinculada',
     'scope.offers': 'Ofertas',
     'scope.confirmed': 'Abrangência confirmada',
     hours: 'Carga horária',
@@ -388,7 +390,7 @@ export function compareContents(before: DiffSide, after: DiffSide) {
   const eventSide = (side: DiffSide) =>
     side.state.events.filter((event) => !derivedVacation(event)).map(comparable);
   const eventKey = (event: CalendarEvent) =>
-    event.requirementId ? `${event.requirementId}|${event.scope.offers.join(',')}` : undefined;
+    event.activity ? `${activityKey(event.activity)}|${event.scope.offers.join(',')}` : undefined;
   const events = compareItems(eventSide(before), eventSide(after), fieldLabels.event, eventKey);
 
   const year = after.state.year;
@@ -529,6 +531,13 @@ export function describeValue(field: string, value: unknown, state?: ActivitySta
   if (typeof value === 'object') {
     const record = value as Record<string, unknown>;
     if (field === 'notice.admission') return admissionDescription(record, state);
+    if (field === 'activity') {
+      const activity = record as unknown as ActivityRef;
+      return (
+        (state && generatedActivity(generatedActivities(state), activity)?.name) ??
+        activityKey(activity)
+      );
+    }
     if (field === 'stages' && record.status === 'reported')
       return `${String(record.count)} etapas informadas; ciclos a conferir`;
     if (field === 'stages' && record.status === 'defined')

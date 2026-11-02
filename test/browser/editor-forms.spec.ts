@@ -1,4 +1,8 @@
 import type { FixtureServer } from './fixture-server.ts';
+import {
+  activityKey,
+  type ActivityRef,
+} from '../../src/domain/calendar/activities/activity-ref.ts';
 import type { Page } from '@playwright/test';
 import { test, expect } from './test.ts';
 import {
@@ -56,15 +60,19 @@ test('offer organization applies manual assessment dates and preserves them afte
   await page.locator('#offer-integrado-apply').click();
   const applied = await savedState(page);
   expect(
-    applied.state.events.filter((event) => event.requirementId?.startsWith('stage-')),
+    applied.state.events.filter((event) => event.activity?.activityId === 'stage'),
   ).toHaveLength(2);
   expect(
-    applied.state.events.find((event) => event.requirementId === 'stage-1:integrado')?.end,
+    applied.state.events.find(
+      (event) =>
+        event.activity &&
+        activityKey(event.activity as ActivityRef) === 'stage:stage:annual:1:integrado',
+    )?.end,
   ).toBe('2027-03-14');
   expect(applied.state.periods).toEqual(before.state.periods);
   expect(
     applied.state.events
-      .filter((event) => event.requirementId?.startsWith('stage-'))
+      .filter((event) => event.activity?.activityId === 'stage')
       .every((event) => !event.assessmentAutoStart),
   ).toBe(true);
 });

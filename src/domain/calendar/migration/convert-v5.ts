@@ -28,7 +28,8 @@
  * and `stages: { perTerm }` becomes `stages: { status: 'defined', perTerm }` (plan, section 5.5);
  * stage links keep their v4 form until step 9b. Step 9a: `convertLink` maps each classified
  * `requirementId` to its `ActivityRef` (plan, section 5.1) by the declaration and the repetition
- * base the inventory read, never by the numeric suffix alone; the dates emit it from step 9b.
+ * base the inventory read, never by the numeric suffix alone. Step 9b: the dates carry it as
+ * `activity`, in place of `requirementId`.
  */
 import {
   inventoryCatalogueRow,
@@ -358,6 +359,7 @@ function convertEvents(
     const proves = !event.offers?.length && Boolean(proven?.ids.includes(event.id));
     const scope = convertScope(date.converted, stateOffers, proves);
     const link = inventory.links.find((item) => item.path === `${at}.requirementId`)?.link;
+    const activity = convertActivity(scope.converted, link, `${at}.requirementId`);
     const forms = formsAt(inventory, at);
     const materialized = proves
       ? {
@@ -375,11 +377,34 @@ function convertEvents(
       id: event.id,
       forms,
       ...(link ? { link } : {}),
-      changes: [...date.changes, ...scope.changes],
+      changes: [...date.changes, ...scope.changes, ...activity.changes],
       ...(review ? { scope: review } : {}),
     });
-    return scope.converted;
+    return activity.converted;
   });
+}
+
+/**
+ * `requirementId` → `activity` in place of the old key (step 9b): the link the inventory classified
+ * for this date, converted by `convertLink`. A stored link the inventory did not classify is an
+ * unknown shape, never dropped.
+ */
+function convertActivity(item: JsonObject, link: LinkShape | undefined, path: string) {
+  if (item.requirementId === undefined) {
+    if (link) throw new UnknownShapeError(path, 'vínculo classificado sem identificador gravado');
+    return { converted: item, changes: [] as FieldChange[] };
+  }
+  if (!link) throw new UnknownShapeError(path, 'vínculo não classificado pelo inventário');
+  const activity = convertLink(link, path);
+  const converted: JsonObject = {};
+  for (const [key, value] of Object.entries(item))
+    if (key === 'requirementId') converted.activity = activity;
+    else converted[key] = value;
+  const changes: FieldChange[] = [
+    { field: 'requirementId', before: item.requirementId },
+    { field: 'activity', after: activity },
+  ];
+  return { converted, changes };
 }
 
 function convertSnapshotEvents(

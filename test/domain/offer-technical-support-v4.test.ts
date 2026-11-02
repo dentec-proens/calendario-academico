@@ -1,5 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
@@ -71,14 +72,14 @@ test('pending semester stages retain every assessment-dependent binding while ot
       end: civilDate('2027-03-02'),
       effect: 'note' as const,
       scope: { offers: ['graduacao'], confirmed: true },
-      requirementId: `${prefix}-1:graduacao`,
+      activity: unclassifiedStage(prefix, 'graduacao', 1),
     })),
   };
   const before = structuredClone(state);
   const saved = normalizeOfferCalendar(state, before);
   expect(saved.offers[0].stages).toBeUndefined();
-  expect(saved.events.map((event) => event.requirementId)).toEqual(
-    before.events.map((event) => event.requirementId),
+  expect(saved.events.map((event) => event.activity)).toEqual(
+    before.events.map((event) => event.activity),
   );
   expect(state).toEqual(before);
 });
@@ -118,7 +119,7 @@ test('coverage-linked candidates carry only the fields of the review contract', 
     effect: 'note' as const,
     category: 'limite',
     scope: { offers: [offer], confirmed: true },
-    requirementId: `stage-1:${offer}`,
+    activity: definedStage('stage', offer, 'annual', 1),
     assessmentAutoStart: civilDate('2027-02-15'),
   });
   const candidates = support(state).criteria.flatMap((item) => item.candidates);

@@ -1,5 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { semesterLink } from '../helpers/activity-links.ts';
 import { configureIntakeRequirement } from '../../src/domain/calendar/commands/organization.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
@@ -127,10 +128,10 @@ test('semester teacher deadlines stay valid when their offer changes to annual o
       offer.id === 'integrado' ? 'anual' : offer.id === 'graduacao' ? 'semestral' : 'a-classificar',
   }));
   state = add(state, 'graduacao', 'first', 'undergraduate-first', '2027-02-01', '2027-06-30');
-  state.events = ['pit-1', 'rit-1', 'teaching-plan-1'].map((requirementId) => ({
-    id: requirementId,
-    requirementId,
-    name: requirementId,
+  state.events = ['pit', 'rit', 'teaching-plan'].map((activityId) => ({
+    id: `${activityId}-1`,
+    activity: semesterLink(activityId, 'first'),
+    name: `${activityId}-1`,
     start: civilDate('2027-04-01'),
     end: civilDate('2027-04-01'),
     effect: 'note',

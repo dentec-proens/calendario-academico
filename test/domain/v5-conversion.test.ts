@@ -3,6 +3,7 @@ import { eventCategory } from '../../src/domain/calendar/activities/categories.t
 import {
   BlockedConversionError,
   convertCatalogueEventV5,
+  convertLink,
   convertContentV5,
   convertSnapshotV5,
   type Conversion,
@@ -32,6 +33,8 @@ import {
 } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
 import { convertedState } from '../helpers/v5-conversion.ts';
+import { activityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
+import { definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
 import {
   readOracle,
   v4CatalogueRows,
@@ -61,6 +64,8 @@ const byName = (name: string) => cases.find((item) => item.name === name)!;
 /** Fields other than the converted ones stay identical. */
 const withoutEffect = ({ kind: _kind, recordType: _type, effect: _effect, ...rest }: Json) => rest;
 const unchanged = ({
+  requirementId: _link,
+  activity: _activity,
   publicationStatus: _publication,
   admission: _admission,
   notice: _notice,
@@ -166,6 +171,20 @@ function expectDatesConverted(
     const notice = expectedNotice(stored, stateOffers ?? []);
     if (notice === undefined) expect(converted).not.toHaveProperty('notice');
     else expect(converted.notice).toEqual(notice);
+    // Step 9b: the stored link becomes `activity`, as `convertLink` maps the classified link.
+    expect(converted).not.toHaveProperty('requirementId');
+    if (stored.requirementId === undefined) expect(converted).not.toHaveProperty('activity');
+    else {
+      expect(manifest[index].link?.requirementId).toBe(stored.requirementId);
+      expect(converted.activity).toEqual(convertLink(manifest[index].link!));
+      expect(activityRef(converted.activity)).toEqual(converted.activity);
+      expect(manifest[index].changes).toEqual(
+        expect.arrayContaining([
+          { field: 'requirementId', before: stored.requirementId },
+          { field: 'activity', after: converted.activity },
+        ]),
+      );
+    }
     if (stateOffers) {
       expect(converted.scope).toEqual(expectedScope(stored, stateOffers));
       expect(converted).not.toHaveProperty('offers');
@@ -467,7 +486,9 @@ describe('notice and destination by offer (plan, section 5.4; phase 2, step 6)',
     const audited = cases.filter((item) => item.name.endsWith('(seção 11)'));
     const notices = audited
       .flatMap(dates)
-      .filter((event) => String(event.requirementId).startsWith('admission-notice'));
+      .filter(
+        (event) => (event.activity as { activityId?: string })?.activityId === 'admission-notice',
+      );
     expect(new Set(notices.map((event) => event.id))).toEqual(
       new Set([
         'ivaipora-admission-notice-1',
@@ -544,7 +565,7 @@ describe('notice and destination by offer (plan, section 5.4; phase 2, step 6)',
     expect(noticeDestinationIssuesOf(converted as unknown as ActivityState)).toEqual([]);
     // Any later save runs the save validation on every date, the notice included.
     expect(() =>
-      normalizeOfferCalendar(converted, { events: readCalendarOfferInput(converted).events }),
+      normalizeOfferCalendar(converted, readCalendarOfferInput(converted)),
     ).not.toThrow();
   });
 
@@ -646,7 +667,7 @@ describe('reported stages (plan, section 5.5; phase 2, step 8)', () => {
     expect(checked).toBeGreaterThan(30);
   });
 
-  test('confirming the organization resolves only count and cycles; stage links stay as in phase 1', () => {
+  test('confirming the organization resolves count and cycles; stage links keep their ordinal', () => {
     const item = byName('Quantidade anterior de 3 etapas');
     const content = copy(item.content);
     content.state.events = [1, 2, 3].map((n) => ({
@@ -661,11 +682,9 @@ describe('reported stages (plan, section 5.5; phase 2, step 8)', () => {
     }));
     const state = convertedState({ ...content.state, year: item.year, campus: item.campus });
     const converted = state as unknown as ActivityState;
-    expect(converted.events.map((event) => event.requirementId)).toEqual([
-      'stage-1:integrado',
-      'stage-2:integrado',
-      'stage-3:integrado',
-    ]);
+    expect(converted.events.map((event) => event.activity)).toEqual(
+      [1, 2, 3].map((n) => unclassifiedStage('stage', 'integrado', n)),
+    );
     // The reported total still generates its stage rows, so no link waits for review (phase 1).
     expect(Object.fromEntries(linksToReview(converted))).toEqual({});
     const draft = offerOrganizationDraft(converted, 'integrado');
@@ -694,10 +713,12 @@ describe('reported stages (plan, section 5.5; phase 2, step 8)', () => {
       organization: 'anual',
       stages: { status: 'defined', perTerm: 2 },
     });
-    expect(configured.events.map((event) => [event.id, event.requirementId])).toEqual([
-      ['old-1', 'stage-1:integrado'],
-      ['old-2', 'stage-2:integrado'],
-      ['old-3', 'stage-3:integrado'],
+    // Confirmed stages take their position in the new cycle by the reported ordinal, as the v4
+    // `stage-N` did; the surplus one keeps its reported ordinal (step 9e decides reinterpretation).
+    expect(configured.events.map((event) => [event.id, event.activity])).toEqual([
+      ['old-1', definedStage('stage', 'integrado', 'annual', 1)],
+      ['old-2', definedStage('stage', 'integrado', 'annual', 2)],
+      ['old-3', unclassifiedStage('stage', 'integrado', 3)],
     ]);
     expect(configured.events[2]).toEqual(converted.events[2]);
     expect(Object.fromEntries(linksToReview(configured))).toEqual({ 'old-3': 'unclassified' });

@@ -70,7 +70,8 @@ function before(item: V4Case) {
     })),
     baseIdentity: inspect(base, base, state).identity,
     linksToReview: Object.fromEntries(linksToReview(state)),
-    activities: activityPlan(state),
+    // Step 9b: each row also carries its link (`activity`), checked against the rows below.
+    activities: activityPlan(state).map(({ activity: _link, ...row }) => row),
     coverage: coverage.map((row) => ({
       activity: row.requirement.id,
       offerId: row.offerId,

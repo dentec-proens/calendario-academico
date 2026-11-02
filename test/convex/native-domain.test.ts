@@ -4,6 +4,7 @@ import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import type { FunctionReturnType } from 'convex/server';
 import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
+import { definedStage } from '../helpers/activity-links.ts';
 import assert from 'node:assert/strict';
 import { api } from '../../convex/_generated/api.js';
 import { ConvexError } from 'convex/values';
@@ -284,7 +285,7 @@ test('native calendar saves validate per-offer stages and preserve the selected 
       {
         id: 'stage',
         name: 'Graduação',
-        requirementId: 'stage-1:graduacao',
+        activity: definedStage('stage', 'graduacao', 'first', 1),
         scope: { offers: ['graduacao'], confirmed: true },
         start: civilDate('2027-03-01'),
         end: civilDate('2027-03-12'),
@@ -296,7 +297,7 @@ test('native calendar saves validate per-offer stages and preserve the selected 
   await campus.write(path, { ...saveBody(record), state }, 'PUT');
   const loaded = await campus.read(path);
   assert.deepEqual(loaded.state.offers, state.offers);
-  assert.equal(loaded.state.events[0].requirementId, 'stage-1:graduacao');
+  assert.deepEqual(loaded.state.events[0].activity, definedStage('stage', 'graduacao', 'first', 1));
   assert.equal(loaded.state.offers[1].intake.second.status, 'no');
   for (const invalid of [
     {

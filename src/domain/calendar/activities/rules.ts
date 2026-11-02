@@ -4,7 +4,15 @@ import type {
   AssessmentSettings,
   CalendarOffer,
 } from '../model.ts';
-import { calendarOffers, stageCount, stageInTerm, stagesPerTerm, stageTerm } from '../offers.ts';
+import {
+  calendarOffers,
+  stageCount,
+  stageInTerm,
+  stagePosition,
+  stagesPerTerm,
+  stageTerm,
+} from '../offers.ts';
+import type { ActivityRef } from './activity-ref.ts';
 import type { ActivityGroup, ActivityVariant } from './metadata.ts';
 
 /** Position of one generated row: an offer's assessment stage, an academic cycle or a semester. */
@@ -26,7 +34,7 @@ export interface Slot {
 type PerSlot<T> = T | ((slot: Slot) => T);
 type Fields = Omit<
   ActivityPlanItem,
-  'id' | 'group' | 'defaultCategory' | 'variant' | 'reviewCriterionId'
+  'id' | 'activity' | 'group' | 'defaultCategory' | 'variant' | 'reviewCriterionId'
 >;
 
 /** Offer-level declarations are plain values: policies read them from rows of any slot. */
@@ -132,6 +140,27 @@ function slotsOf(basis: RepeatBasis, state: AssessmentSettings): [Slot, string][
 /** Rules with the same base expand together; cycle rules share a base only with the same `cycles`. */
 const basisOf = (rule: ActivityRule) => (rule.repeat === 'cycle' ? rule.cycles : rule.repeat);
 
+/**
+ * Link of the row's slot (plan, section 5.1), by the rule's base: the declared ID never carries
+ * the slot. The IDs come from declared rules, the set `activityRef()` validates against.
+ */
+function rowActivity(rule: ActivityRule, slot: Slot): ActivityRef {
+  switch (rule.repeat) {
+    case 'once':
+      return { activityId: rule.id } as ActivityRef;
+    case 'cycle':
+      return { activityId: rule.id, term: slot.term! } as ActivityRef;
+    case 'semester':
+      return { activityId: rule.id, semester: slot.term as 'first' | 'second' } as ActivityRef;
+    case 'stage':
+      return {
+        activityId: rule.id,
+        offerId: slot.offer!.id,
+        position: stagePosition(slot.offer!, slot.n),
+      } as ActivityRef;
+  }
+}
+
 const resolve = (value: unknown, slot: Slot) =>
   typeof value === 'function' ? (value as (slot: Slot) => unknown)(slot) : value;
 
@@ -146,7 +175,7 @@ function expandRule(rule: ActivityRule, slot: Slot, suffix: string): ActivityPla
     repeat: _repeat,
     ...fields
   } = rule;
-  const row: Record<string, unknown> = { id: id + suffix };
+  const row: Record<string, unknown> = { id: id + suffix, activity: rowActivity(rule, slot) };
   for (const [key, value] of Object.entries(fields)) {
     if (key === 'cycles') continue;
     const resolved = resolve(value, slot);

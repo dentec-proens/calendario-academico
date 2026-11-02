@@ -1,5 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { definedStage, rowLink, unclassifiedStage } from '../helpers/activity-links.ts';
+import { isStageActivity } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
 import { configureIntakeRequirement } from '../../src/domain/calendar/commands/organization.ts';
@@ -43,13 +45,8 @@ test('applying one semester offer keeps four annual stage bindings and preserves
   expect(
     next.events
       .filter((event) => event.scope.offers.includes('graduacao-2'))
-      .map((event) => event.requirementId),
-  ).toEqual([
-    'stage-1:graduacao-2',
-    'stage-2:graduacao-2',
-    'stage-3:graduacao-2',
-    'stage-4:graduacao-2',
-  ]);
+      .map((event) => event.activity),
+  ).toEqual([1, 2, 3, 4].map((n) => rowLink(next, `stage-${n}:graduacao-2`)));
   expect(next.events.filter((event) => !event.scope.offers.includes('graduacao-2'))).toEqual(
     before.events.filter((event) => !event.scope.offers.includes('graduacao-2')),
   );
@@ -81,13 +78,35 @@ test('reducing semester stages keeps every binding and leaves excess dates to re
   });
   expect(
     next.events
-      .filter((event) => event.requirementId?.endsWith(':graduacao-2'))
-      .map((event) => [event.id, event.requirementId, event.start, event.end]),
+      .filter(
+        (event) => isStageActivity(event.activity) && event.activity.offerId === 'graduacao-2',
+      )
+      .map((event) => [event.id, event.activity, event.start, event.end]),
   ).toEqual([
-    ['graduacao-2-stage-1', 'stage-1:graduacao-2', '2027-02-01', '2027-07-09'],
-    ['graduacao-2-stage-2', 'stage-2:graduacao-2', '2027-07-26', '2027-12-17'],
-    ['graduacao-2-stage-3', 'stage-3:graduacao-2', '2027-07-26', '2027-10-01'],
-    ['graduacao-2-stage-4', 'stage-4:graduacao-2', '2027-10-04', '2027-12-17'],
+    [
+      'graduacao-2-stage-1',
+      definedStage('stage', 'graduacao-2', 'first', 1),
+      '2027-02-01',
+      '2027-07-09',
+    ],
+    [
+      'graduacao-2-stage-2',
+      definedStage('stage', 'graduacao-2', 'second', 1),
+      '2027-07-26',
+      '2027-12-17',
+    ],
+    [
+      'graduacao-2-stage-3',
+      unclassifiedStage('stage', 'graduacao-2', 3),
+      '2027-07-26',
+      '2027-10-01',
+    ],
+    [
+      'graduacao-2-stage-4',
+      unclassifiedStage('stage', 'graduacao-2', 4),
+      '2027-10-04',
+      '2027-12-17',
+    ],
   ]);
   const review = linksToReview(next);
   expect(review.get('graduacao-2-stage-3')).toBe('unclassified');
@@ -207,8 +226,8 @@ test('adding an opaque offer identity keeps earlier scopes and creates its own p
   expect(
     next.events
       .filter((event) => event.scope.offers.includes(newOffer.id))
-      .map((event) => event.requirementId),
-  ).toEqual(['stage-1:graduacao-4', 'stage-2:graduacao-4']);
+      .map((event) => event.activity),
+  ).toEqual([1, 2].map((n) => rowLink(next, `stage-${n}:graduacao-4`)));
   expect(() => validateAddedOffers(previousIds, next)).not.toThrow();
   expect(state.events.find((event) => event.id === 'earlier-global')?.scope).toEqual({
     offers: previousIds,
@@ -257,7 +276,7 @@ test('splitting a shared period remaps only the destination of the reorganized o
         start: civilDate(index ? '2027-07-26' : '2027-02-01'),
         end: civilDate(index ? '2027-12-17' : '2027-07-09'),
         scope: { offers: [offer], confirmed: true },
-        requirementId: `stage-${index + 1}:${offer}`,
+        activity: definedStage('stage', offer, 'annual', index + 1),
       })),
     ),
   };

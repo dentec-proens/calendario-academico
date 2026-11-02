@@ -164,7 +164,7 @@ export function activityRef(value: unknown): ActivityRef {
 /**
  * Key of a linked activity, for grouping and URLs: the declaration, the base and its position,
  * with the offer last. Pure and injective (declared IDs never contain `:`); it is not a parser
- * and has nothing in common with the old `requirementId`.
+ * and has nothing in common with the format 4 identifier (`stage-1:integrado`).
  */
 export function activityKey(ref: ActivityRef): string {
   if ('term' in ref) return `${ref.activityId}:cycle:${ref.term}`;
@@ -179,3 +179,17 @@ export function activityKey(ref: ActivityRef): string {
   }
   return ref.activityId;
 }
+
+/** Link by offer stage: stages, results, councils and meetings of one offer. */
+export type StageActivityRef = Extract<ActivityRef, { position: StagePosition }>;
+
+export const isStageActivity = (ref: ActivityRef | undefined): ref is StageActivityRef =>
+  Boolean(ref && 'position' in ref);
+
+/** An assessment interval (`stage`, art. 11, I), edited under “Etapas de avaliação”. */
+export const isAssessmentStage = (ref: ActivityRef | undefined): ref is StageActivityRef =>
+  isStageActivity(ref) && ref.activityId === 'stage';
+
+/** Two links are the same when they have the same key; two absent links are the same. */
+export const sameActivity = (a: ActivityRef | undefined, b: ActivityRef | undefined) =>
+  a === b || (!!a && !!b && activityKey(a) === activityKey(b));

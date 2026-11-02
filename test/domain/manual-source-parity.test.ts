@@ -331,7 +331,7 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
   const event: AnnotatedEvent = {
     id: 'notice',
     name: row.name,
-    requirementId: row.id,
+    activity: row.activity,
     effect: 'note' as const,
     scope: { offers: ['integrado'], confirmed: true },
     start: civilDate('2027-12-01'),

@@ -1,5 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { definedStage } from '../helpers/activity-links.ts';
 import assert from 'node:assert/strict';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { assessmentCount } from '../../src/domain/calendar/activities/assessment.ts';
@@ -28,7 +29,7 @@ const state: ActivityState = {
     [0, 1].map((index) => ({
       id: `${modality}-${index}`,
       name: `${index + 1}ª etapa`,
-      requirementId: `stage-${index + 1}:${modality}`,
+      activity: definedStage('stage', modality, 'annual', index + 1),
       scope: { offers: [modality], confirmed: true },
       effect: 'note' as const,
       start: civilDate(index ? '2027-03-15' : '2027-03-01'),

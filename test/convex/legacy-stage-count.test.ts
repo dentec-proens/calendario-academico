@@ -1,6 +1,7 @@
 import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { unclassifiedStage } from '../helpers/activity-links.ts';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { preserveSubmission } from '../helpers/lifecycle.ts';
@@ -39,7 +40,7 @@ async function setup(count?: Count) {
       Object.assign(state.offers[0], { stages: { status: 'reported', count } });
       state.events = Array.from({ length: count }, (_, index) => ({
         id: `old-stage-${index + 1}`,
-        requirementId: `stage-${index + 1}:integrado`,
+        activity: unclassifiedStage('stage', 'integrado', index + 1),
         name: `${index + 1}ª etapa preservada`,
         start: `2027-0${index + 2}-01`,
         end: `2027-0${index + 2}-20`,

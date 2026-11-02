@@ -1,5 +1,5 @@
 import type { LocalStageEvent, StageEvent, TeachingState } from '../model.ts';
-import { stageRequirement } from '../activities/assessment.ts';
+import { isAssessmentStage } from '../activities/activity-ref.ts';
 import { evaluateCalendar } from './evaluation.ts';
 import { appliesTo } from '../modalities.ts';
 import { calendarOffers } from '../offers.ts';
@@ -14,7 +14,7 @@ export function assessmentDayCounts(
   const review = linksToReview(state);
   return Object.fromEntries(
     state.events
-      .filter((e) => stageRequirement(e.requirementId) && !review.has(e.id))
+      .filter((e) => isAssessmentStage(e.activity) && !review.has(e.id))
       .map((e) => [
         e.id,
         calendarOffers(state)

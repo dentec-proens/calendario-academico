@@ -1,5 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { cycleLink } from '../helpers/activity-links.ts';
 import {
   dateEdited,
   linkKept,
@@ -27,10 +28,10 @@ test('identity of the link: a date that keeps its link needs no generated activi
   );
   const added = { ...state, events: [...state.events, { ...event, id: 'new-final-1' }] };
   expect(() => validateLinks(state, added)).toThrow(/new-final-1|21\/07\/2027/);
-  expect(() => validateLinks(state, moved(state, event.id, { requirementId: 'diary-1' }))).toThrow(
-    'não perde nem troca',
-  );
-  expect(() => validateLinks(state, moved(state, event.id, { requirementId: undefined }))).toThrow(
+  expect(() =>
+    validateLinks(state, moved(state, event.id, { activity: cycleLink('diary', 'first') })),
+  ).toThrow('não perde nem troca');
+  expect(() => validateLinks(state, moved(state, event.id, { activity: undefined }))).toThrow(
     'não perde nem troca',
   );
   expect(() =>
@@ -113,7 +114,7 @@ test('a generated activity of another offer does not cover the date: classificat
   const result = {
     id: 'annual-result',
     name: 'Resultado final do subsequente',
-    requirementId: 'final-0',
+    activity: cycleLink('final', 'annual'),
     start: civilDate('2027-12-17'),
     end: civilDate('2027-12-17'),
     effect: 'note',

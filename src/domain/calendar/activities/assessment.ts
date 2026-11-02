@@ -1,10 +1,25 @@
 import type { AssessmentSettings } from '../model.ts';
 import { isStageRequirementId } from './metadata.ts';
-import { offerFor, stageCount } from '../offers.ts';
+import { offerFor, stageCount, stagePosition } from '../offers.ts';
+import type { StageActivityRef } from './activity-ref.ts';
 export function assessmentCount(state: AssessmentSettings, modality: string) {
   const offer = offerFor(state, modality);
   return offer ? stageCount(offer) : 0;
 }
+/** Plan row ID of an assessment interval (`stage-N:offer`), as the editor URL still carries it. */
 export const stageRequirement = isStageRequirementId;
-export const scopedRequirement = (_state: AssessmentSettings, id: string, modality: string) =>
-  `${id}:${modality}`;
+/**
+ * Link of the offer's `n`-th stage of an activity repeated by stage, at the position the current
+ * organization gives it; undefined for an offer outside the calendar.
+ */
+export function stageActivity(
+  state: AssessmentSettings,
+  activityId: string,
+  offerId: string,
+  n: number,
+): StageActivityRef | undefined {
+  const offer = offerFor(state, offerId);
+  return offer
+    ? ({ activityId, offerId, position: stagePosition(offer, n) } as StageActivityRef)
+    : undefined;
+}

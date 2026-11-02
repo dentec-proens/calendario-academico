@@ -1,6 +1,7 @@
 import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { onceLink } from '../helpers/activity-links.ts';
 import { makeFunctionReference } from 'convex/server';
 import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
@@ -101,7 +102,7 @@ test('canonical records and historical restoration have no manual or generated s
         end: civilDate('2027-07-10'),
         effect: 'note',
         scope: { offers: ['integrado'], confirmed: true },
-        requirementId: 'regular-admission-notice',
+        activity: onceLink('regular-admission-notice'),
         notice: {
           publication: 'planned',
           admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },

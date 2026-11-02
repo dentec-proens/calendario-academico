@@ -1,4 +1,8 @@
 import type { Page } from '@playwright/test';
+import {
+  activityKey,
+  type ActivityRef,
+} from '../../src/domain/calendar/activities/activity-ref.ts';
 import { test, expect } from './test.ts';
 import { configureOffer, savedState, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
@@ -136,13 +140,18 @@ for (const width of [1440, 390]) {
     ]);
     expect(
       saved.state.events
-        .filter((event) => event.requirementId?.endsWith(':graduacao-2'))
-        .map((event) => event.requirementId),
+        .filter(
+          (event) =>
+            event.activity &&
+            'offerId' in event.activity &&
+            event.activity.offerId === 'graduacao-2',
+        )
+        .map((event) => event.activity && activityKey(event.activity as ActivityRef)),
     ).toEqual([
-      'stage-1:graduacao-2',
-      'stage-2:graduacao-2',
-      'stage-3:graduacao-2',
-      'stage-4:graduacao-2',
+      'stage:stage:first:1:graduacao-2',
+      'stage:stage:first:2:graduacao-2',
+      'stage:stage:second:1:graduacao-2',
+      'stage:stage:second:2:graduacao-2',
     ]);
     await expect(page.locator('[data-offer="graduacao-2"]')).toContainText(
       '2 etapas por semestre (4 no ano)',

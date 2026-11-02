@@ -11,7 +11,7 @@ import { policyFor } from '../../policies/registry.ts';
 import { admissionDestination, temporalPosition, validateActivityRecord } from './validation.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 import { prorogatedDeadline } from './deadlines.ts';
-import { linkIssueActions, linkIssueLabels, linksToReview } from './links.ts';
+import { linkIssueActions, linkIssueLabels, linkedTo, linksToReview } from './links.ts';
 export function activityCoverage(
   state: AssessmentSettings & {
     year: number;
@@ -34,7 +34,7 @@ export function activityCoverage(
         const modality = offer.id;
         const applicability = policy.applicability(state, requirement, offer);
         const linked = local.filter(
-          (event) => event.requirementId === requirement.id && appliesTo(event, offer),
+          (event) => linkedTo(event, requirement) && appliesTo(event, offer),
         );
         const issues: string[] = [],
           warnings: string[] = [];

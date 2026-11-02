@@ -18,11 +18,22 @@ import type {
 import { datesBetween } from '../counting/core.ts';
 import { assessmentIntervalIssue } from '../activities/assessment-intervals.ts';
 import { appliesTo } from '../modalities.ts';
-import { associationOffers, offerFor, offerIds, labelFor, stagesPerTerm } from '../offers.ts';
+import {
+  associationOffers,
+  offerFor,
+  offerIds,
+  labelFor,
+  stagePosition,
+  stagesPerTerm,
+} from '../offers.ts';
 import { organizationForOffer, periodsForOffer } from './periods.ts';
 import { rulesetVersion } from '../../policies/registry.ts';
-import { stageRequirement } from '../activities/assessment.ts';
-import { linksToReview, linkIssueLabels } from '../activities/links.ts';
+import {
+  isAssessmentStage,
+  isStageActivity,
+  type StageActivityRef,
+} from '../activities/activity-ref.ts';
+import { linksToReview, linkIssueLabels, stageLocation } from '../activities/links.ts';
 import { normalizeOfferCalendar } from '../normalization/normalize-v4.ts';
 import { DomainError } from '../../errors.ts';
 import { admissionDestination } from '../activities/validation.ts';
@@ -48,6 +59,21 @@ export interface OrganizationIssue {
   path: string;
   message: string;
 }
+
+/** Assessment interval date of the offer's `n`-th stage (ordinal in the year), if recorded. */
+const stageDate = (
+  state: Pick<ActivityState, 'offers' | 'events'>,
+  modality: string,
+  n: number,
+  id?: string,
+) =>
+  state.events.find(
+    (event) =>
+      (id === undefined || event.id === id) &&
+      isAssessmentStage(event.activity) &&
+      event.activity.offerId === modality &&
+      stageLocation(state, event.activity)?.ordinal === n,
+  );
 
 export function offerOrganizationDraft(
   state: ActivityState,
@@ -75,9 +101,7 @@ export function offerOrganizationDraft(
       };
     }),
     stages: assessmentStageNumbers.map((number) => {
-      const event = state.events.find(
-        (item) => item.requirementId === `stage-${number}:${modality}`,
-      );
+      const event = stageDate(state, modality, number);
       return {
         id: event?.id ?? '',
         start: event?.start ?? '',
@@ -116,8 +140,7 @@ export function validateAddedOffers(previous: readonly string[], next: ActivityS
       organization === 'semestral' ? termsByOrganization.semestral : termsByOrganization.anual;
     const periods = periodsForOffer(next, modality);
     const stages = next.events.filter(
-      (event) =>
-        stageRequirement(event.requirementId) && event.requirementId?.endsWith(`:${modality}`),
+      (event) => isAssessmentStage(event.activity) && event.activity.offerId === modality,
     );
     if (
       periods.length !== expected.length ||
@@ -222,9 +245,7 @@ export function offerOrganizationIssues(
     issue('periods[1]', 'O segundo semestre deve começar depois do término do primeiro.');
   const unchanged = (index: number) => {
     const stage = draft.stages[index];
-    const recorded = state.events.find(
-      (event) => event.id === stage.id && event.requirementId === `stage-${index + 1}:${modality}`,
-    );
+    const recorded = stageDate(state, modality, index + 1, stage.id);
     return Boolean(recorded && recorded.start === stage.start && recorded.end === stage.end);
   };
   for (const [index, stage] of draft.stages.slice(0, stageCount).entries()) {
@@ -314,7 +335,8 @@ export function offerOrganizationWarnings(
     .filter(
       (event) =>
         review.has(event.id) &&
-        (appliesTo(event, modality) || event.requirementId?.endsWith(`:${modality}`)),
+        (appliesTo(event, modality) ||
+          (isStageActivity(event.activity) && event.activity.offerId === modality)),
     )
     .map((event) => ({
       path: 'organization',
@@ -397,21 +419,34 @@ function organize<S extends ActivityState>(
     }),
     periods: [...retained, ...periods],
   };
+  const organized = offerFor(next, modality)!;
+  /**
+   * Links by stage of this offer keep their ordinal in the year and take the position the new
+   * organization gives it, as the format 4 identifier (`stage-N:offer`) did; a position the old
+   * organization did not have is kept as recorded (`links.ts`, `sameLink`).
+   */
+  const reorganized = (activity: StageActivityRef): StageActivityRef => {
+    const ordinal = stageLocation(state, activity)?.ordinal;
+    return ordinal === undefined
+      ? activity
+      : { ...activity, position: stagePosition(organized, ordinal) };
+  };
   // Each draft stage updates the date already recorded for it, never a second one.
   const stageDates = new Map<string, OrganizationStageDraft>();
   const added: CalendarEvent[] = [];
   for (const [index, value] of draft.stages.slice(0, stageCount).entries()) {
-    const requirementId = `stage-${index + 1}:${modality}`;
     const existing =
-      state.events.find(
-        (event) => event.id === value.id && event.requirementId === requirementId,
-      ) ?? state.events.find((event) => event.requirementId === requirementId);
+      stageDate(state, modality, index + 1, value.id) ?? stageDate(state, modality, index + 1);
     if (existing) stageDates.set(existing.id, value);
     else
       added.push({
         id: id(),
         name: `${organization === 'semestral' ? `${(index % count) + 1}ª etapa — ${Math.floor(index / count) + 1}º semestre` : `${index + 1}ª etapa de avaliação`} — ${labelFor(state, modality)}`,
-        requirementId,
+        activity: {
+          activityId: 'stage',
+          offerId: modality,
+          position: stagePosition(organized, index + 1),
+        } as StageActivityRef,
         start: civilDate(value.start),
         end: civilDate(value.end),
         effect: 'note',
@@ -422,7 +457,11 @@ function organize<S extends ActivityState>(
   }
   // Links are never removed here: retired, duplicate or incompatible dates keep their link and
   // appear under “Vínculo a conferir” (`linksToReview`).
-  const events: CalendarEvent[] = state.events.flatMap((event) => {
+  const events: CalendarEvent[] = state.events.flatMap((stored) => {
+    const event =
+      isStageActivity(stored.activity) && stored.activity.offerId === modality
+        ? { ...stored, activity: reorganized(stored.activity) }
+        : stored;
     const stage = stageDates.get(event.id);
     if (stage) {
       const { assessmentAutoStart: _auto, ...previous } = event;

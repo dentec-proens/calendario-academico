@@ -30,10 +30,10 @@ export default function EventPanel() {
   useWorkRisk('interaction', open);
   const activityId = editor.open
     ? editor.context?.kind === 'activity'
-      ? editor.context.requirementId
+      ? editor.context.itemId
       : ''
     : editor.panel?.kind === 'activity'
-      ? editor.panel.requirementId
+      ? editor.panel.itemId
       : '';
   const activity = activityPlan(state).find((item) => item.id === activityId);
   const observanceKey =

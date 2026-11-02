@@ -188,8 +188,7 @@ test('metadata rejects an activity for another modality before applying or savin
   expect(
     await page.evaluate(
       () =>
-        window.editorTest.record.state.events.find((event) => event.id === 'local-event')
-          ?.requirementId,
+        window.editorTest.record.state.events.find((event) => event.id === 'local-event')?.activity,
     ),
   ).toBeUndefined();
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
@@ -327,7 +326,11 @@ test('stage editing and activity changes always reveal the same draft in its des
     record.state.events.push({
       id: 'stage-existing',
       name: 'Primeira etapa salva',
-      requirementId: 'stage-1:integrado',
+      activity: {
+        activityId: 'stage',
+        offerId: 'integrado',
+        position: { status: 'defined', term: 'annual', number: 1 },
+      },
       start: '2027-03-01',
       end: '2027-03-12',
       effect: 'note',

@@ -1,5 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { linkedToRow } from '../helpers/activity-links.ts';
 import type { ActivityState, CalendarPeriod } from '../../src/domain/calendar/model.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessment-days.ts';
@@ -162,7 +163,7 @@ test('scope confirmation and window warnings follow each offer', () => {
 test('an existing assessment stage outside its own semester remains a readiness warning', () => {
   const state = calendarOffersV4Fixture();
   state.events = state.events.map((event) =>
-    event.requirementId === 'stage-1:graduacao-2'
+    linkedToRow(state, 'stage-1:graduacao-2')(event)
       ? { ...event, start: civilDate('2027-08-02'), end: civilDate('2027-08-06') }
       : event,
   );

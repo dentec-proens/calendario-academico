@@ -1,15 +1,88 @@
-import type { ActivityPlanItem, ActivityState, CalendarEvent, CalendarPeriod } from '../model.ts';
+import type {
+  ActivityPlanItem,
+  ActivityState,
+  AssessmentSettings,
+  CalendarEvent,
+  CalendarPeriod,
+} from '../model.ts';
 import { equalValues } from '../../../shared/equal.ts';
 import { DomainError } from '../../errors.ts';
-import { offerFor, stageTerm } from '../offers.ts';
+import { offerFor, stageOrdinal, stageTerm } from '../offers.ts';
 import { activityPlan } from './plan.ts';
 import { assessmentCycleIssue, assessmentIntervalIssue } from './assessment-intervals.ts';
-import { isStageRequirementId } from './metadata.ts';
+import {
+  activityKey,
+  isAssessmentStage,
+  isStageActivity,
+  sameActivity,
+  type ActivityRef,
+  type StageActivityRef,
+} from './activity-ref.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 
 type LinkState = Pick<ActivityState, 'year' | 'offers' | 'periods' | 'events'> &
   Partial<Pick<ActivityState, 'schemaVersion' | 'rulesetVersion'>>;
-type LinkedDate = Pick<CalendarEvent, 'id' | 'requirementId' | 'start' | 'end' | 'scope'>;
+type LinkedDate = Pick<CalendarEvent, 'id' | 'activity' | 'start' | 'end' | 'scope'>;
+type OfferState = Pick<AssessmentSettings, 'offers'>;
+
+/** Rows the current configuration generates, by the key of their link (`activityKey`). */
+export function generatedActivities(state: AssessmentSettings): Map<string, ActivityPlanItem> {
+  return new Map(activityPlan(state).map((row) => [activityKey(row.activity), row]));
+}
+
+/** The generated row a link refers to; undefined without a link or a generated row. */
+export const generatedActivity = (
+  generated: ReadonlyMap<string, ActivityPlanItem>,
+  activity: ActivityRef | undefined,
+) => (activity ? generated.get(activityKey(activity)) : undefined);
+
+/** The date is linked to this row: the same link, whatever the date's other fields. */
+export const linkedTo = (
+  event: Pick<CalendarEvent, 'activity'>,
+  row: Pick<ActivityPlanItem, 'activity'>,
+) => sameActivity(event.activity, row.activity);
+
+/**
+ * Position of a stage link in its offer under the current organization: the ordinal in the year
+ * and its cycle; undefined when the offer is not in the calendar or has no such position.
+ */
+export function stageLocation(state: OfferState, activity: StageActivityRef) {
+  const offer = offerFor(state, activity.offerId);
+  const ordinal = offer && stageOrdinal(offer, activity.position);
+  if (!offer || ordinal === undefined) return undefined;
+  return { offerId: offer.id, ordinal, term: stageTerm(offer, ordinal) };
+}
+
+/**
+ * The same link in two states of one calendar: the same key, or, for a link by offer stage, the
+ * same activity, offer and ordinal in the year. Confirming an offer's organization re-expresses
+ * the position of its stages in the new cycles, as the format 4 identifier (`stage-N:offer`) did
+ * by its ordinal; whether a position is reinterpreted is decided in step 9e of the plan.
+ */
+export function sameLink(
+  before: OfferState | undefined,
+  previous: ActivityRef | undefined,
+  after: OfferState,
+  next: ActivityRef | undefined,
+) {
+  if (sameActivity(previous, next)) return true;
+  if (
+    !before ||
+    !isStageActivity(previous) ||
+    !isStageActivity(next) ||
+    previous.activityId !== next.activityId ||
+    previous.offerId !== next.offerId
+  )
+    return false;
+  const ordinal = stageLocation(before, previous)?.ordinal;
+  return ordinal !== undefined && ordinal === stageLocation(after, next)?.ordinal;
+}
+
+/** States of one calendar compared by date ID; without them, links compare by key only. */
+export interface LinkStates {
+  before: OfferState;
+  after: OfferState;
+}
 
 /**
  * Why a dated link cannot be accepted as fulfilment. The link is kept as recorded; the date is
@@ -37,28 +110,29 @@ export const linkIssueActions: Record<LinkIssue, string> = {
 export function linksToReview(
   state: Omit<LinkState, 'events'> & { events: readonly LinkedDate[] },
 ): Map<string, LinkIssue> {
-  const generated = new Map(activityPlan(state).map((row) => [row.id, row]));
+  const generated = generatedActivities(state);
   const issues = new Map<string, LinkIssue>();
   for (const event of state.events) {
-    if (!event.requirementId) continue;
-    const activity = generated.get(event.requirementId);
+    if (!event.activity) continue;
+    const activity = generatedActivity(generated, event.activity);
     if (!activity || !coversDate(state, activity, event)) issues.set(event.id, 'unclassified');
   }
   const stages = state.events.filter(
-    (event) => isStageRequirementId(event.requirementId) && !issues.has(event.id),
+    (event): event is LinkedDate & { activity: StageActivityRef } =>
+      isAssessmentStage(event.activity) && !issues.has(event.id),
   );
   for (const event of stages)
     if (
-      stages.some((other) => other.id !== event.id && other.requirementId === event.requirementId)
+      stages.some((other) => other.id !== event.id && sameActivity(other.activity, event.activity))
     )
       issues.set(event.id, 'duplicate-stage');
   for (const event of stages) {
     if (issues.has(event.id)) continue;
-    const position = stagePosition(state, event);
+    const position = stageLocation(state, event.activity);
     if (!position) continue;
     for (const other of stages) {
       if (other.id === event.id || issues.get(other.id) === 'duplicate-stage') continue;
-      const next = stagePosition(state, other);
+      const next = stageLocation(state, other.activity);
       if (!next || next.offerId !== position.offerId || next.term !== position.term) continue;
       if (
         (next.ordinal < position.ordinal && other.end >= event.start) ||
@@ -71,7 +145,7 @@ export function linksToReview(
   }
   for (const event of stages) {
     if (issues.has(event.id)) continue;
-    const position = stagePosition(state, event);
+    const position = stageLocation(state, event.activity);
     if (!position?.term) continue;
     const periods = cyclePeriods(state, position.offerId, position.term);
     if (assessmentIntervalIssue(periods, event.start, event.end))
@@ -98,14 +172,6 @@ export function coversDate(
   );
 }
 
-function stagePosition(state: Pick<LinkState, 'offers'>, event: LinkedDate) {
-  const [stage, offerId] = event.requirementId!.split(':');
-  const offer = offerFor(state, offerId);
-  if (!offer) return undefined;
-  const ordinal = Number(stage.slice('stage-'.length));
-  return { offerId, ordinal, term: stageTerm(offer, ordinal) };
-}
-
 function cyclePeriods(
   state: Pick<LinkState, 'offers' | 'periods'>,
   offerId: string,
@@ -116,20 +182,37 @@ function cyclePeriods(
   );
 }
 
+const keptLink = (
+  previous: CalendarEvent | undefined,
+  next: CalendarEvent,
+  states: LinkStates | undefined,
+) =>
+  states
+    ? sameLink(states.before, previous?.activity, states.after, next.activity)
+    : sameActivity(previous?.activity, next.activity);
+
 /** Dates whose start, end, offers and link match the previous state are left as they are. */
-export function dateEdited(previous: CalendarEvent | undefined, next: CalendarEvent) {
+export function dateEdited(
+  previous: CalendarEvent | undefined,
+  next: CalendarEvent,
+  states?: LinkStates,
+) {
   return (
     !previous ||
     previous.start !== next.start ||
     previous.end !== next.end ||
-    previous.requirementId !== next.requirementId ||
+    !keptLink(previous, next, states) ||
     !equalValues(previous.scope.offers, next.scope.offers)
   );
 }
 
 /** The date keeps exactly the link it already had: no generated activity is required for it. */
-export function linkKept(previous: CalendarEvent | undefined, next: CalendarEvent) {
-  return !!next.requirementId && previous?.requirementId === next.requirementId;
+export function linkKept(
+  previous: CalendarEvent | undefined,
+  next: CalendarEvent,
+  states?: LinkStates,
+) {
+  return !!next.activity && !!previous?.activity && keptLink(previous, next, states);
 }
 
 const describe = (event: CalendarEvent) =>
@@ -145,14 +228,15 @@ const describe = (event: CalendarEvent) =>
  * A recorded date never loses or swaps its link by these paths; only removing the date does.
  */
 export function validateLinks(
-  previous: { events: readonly CalendarEvent[] } | undefined,
+  previous: (OfferState & { events: readonly CalendarEvent[] }) | undefined,
   next: LinkState,
 ) {
   const before = new Map(previous?.events.map((event) => [event.id, event]));
-  const requirements = new Map(activityPlan(next).map((row) => [row.id, row]));
+  const states = previous && { before: previous, after: next };
+  const requirements = generatedActivities(next);
   const changed = next.events.filter((event) => {
     const old = before.get(event.id);
-    return old?.requirementId !== undefined && old.requirementId !== event.requirementId;
+    return old?.activity !== undefined && !linkKept(old, event, states);
   });
   if (changed.length)
     throw new DomainError(
@@ -160,17 +244,17 @@ export function validateLinks(
     );
   const unknown = next.events.filter(
     (event) =>
-      event.requirementId &&
-      !requirements.has(event.requirementId) &&
-      !linkKept(before.get(event.id), event),
+      event.activity &&
+      !generatedActivity(requirements, event.activity) &&
+      !linkKept(before.get(event.id), event, states),
   );
   if (unknown.length)
     throw new DomainError(
       `Vínculo de atividade inválido para esta organização: ${unknown.map(describe).join('; ')}.`,
     );
   for (const event of next.events) {
-    if (!event.requirementId || !dateEdited(before.get(event.id), event)) continue;
-    const activity = requirements.get(event.requirementId);
+    if (!event.activity || !dateEdited(before.get(event.id), event, states)) continue;
+    const activity = generatedActivity(requirements, event.activity);
     // A kept link without generated activity has no cycle or scope to check its dates against.
     if (!activity) continue;
     const offers = event.scope.offers;

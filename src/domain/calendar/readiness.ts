@@ -9,7 +9,8 @@ import {
 } from './model.ts';
 import { appliesTo } from './modalities.ts';
 import { calendarOffers, labelFor, stageInTerm } from './offers.ts';
-import { assessmentCount, scopedRequirement } from './activities/assessment.ts';
+import { assessmentCount, stageActivity } from './activities/assessment.ts';
+import { sameActivity } from './activities/activity-ref.ts';
 import { assessmentCycleIssue } from './activities/assessment-intervals.ts';
 import { linkIssueActions, linkIssueLabels, linksToReview } from './activities/links.ts';
 import { noticeDestinationIssues } from './activities/validation.ts';
@@ -78,16 +79,16 @@ export function contentAssessment(record: ContentRecord) {
     for (const warning of row.warnings) warnings.push(`${prefix}: ${warning}`);
   }
   for (const offer of offers) {
-    const eventFor = (id: string) =>
-      record.state.events.find(
-        (e) =>
-          e.requirementId === scopedRequirement(record.state, id, offer.id) && appliesTo(e, offer),
-      );
     for (let n = 1; n <= (assessmentCount(record.state, offer.id) || 0); n++) {
-      const start = eventFor('stage-' + n),
-        end = eventFor('stage-' + n),
-        results = eventFor('results-' + n),
-        council = eventFor('council-' + n);
+      const link = (id: string) => stageActivity(record.state, id, offer.id, n);
+      const eventFor = (id: string) =>
+        record.state.events.find(
+          (e) => e.activity && sameActivity(e.activity, link(id)) && appliesTo(e, offer),
+        );
+      const start = eventFor('stage'),
+        end = eventFor('stage'),
+        results = eventFor('results'),
+        council = eventFor('council');
       const position =
         offer.organization === 'semestral' && offer.stages?.status === 'defined'
           ? stageInTerm(n, offer.stages.perTerm)
@@ -108,7 +109,7 @@ export function contentAssessment(record: ContentRecord) {
         );
       const councilRequired = coverage.some(
         (row) =>
-          row.requirement.id === scopedRequirement(record.state, 'council-' + n, offer.id) &&
+          sameActivity(row.requirement.activity, link('council')) &&
           row.offerId === offer.id &&
           row.applicability === 'required',
       );
@@ -116,7 +117,7 @@ export function contentAssessment(record: ContentRecord) {
         warnings.push(
           `${labelFor(record.state, offer.id)} — ${stage}: o conselho antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.`,
         );
-      const meeting = eventFor('pedagogical-meeting-' + n);
+      const meeting = eventFor('pedagogical-meeting');
       if (results && meeting && meeting.start < results.end)
         warnings.push(
           `${labelFor(record.state, offer.id)} — ${stage}: a reunião pedagógica antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.`,

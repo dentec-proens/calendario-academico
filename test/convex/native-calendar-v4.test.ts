@@ -1,6 +1,7 @@
 import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
+import { onceLink } from '../helpers/activity-links.ts';
 import { api } from '../../convex/_generated/api.js';
 import type { DomainState } from '../../convex/validators.ts';
 import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
@@ -201,7 +202,7 @@ test('direct backend writes retain temporal and offer-scope validation', async (
     { ...event, effect: 'include' as const },
     { ...event, effect: 'exclude' as const },
     { ...event, recordType: 'event' as const, effect: 'include' as const },
-    { ...event, hours: 40, requirementId: 'pedagogical-training' },
+    { ...event, hours: 40, activity: onceLink('pedagogical-training') },
     {
       ...event,
       notice: {
@@ -388,7 +389,10 @@ function oneOffer(
         ...event,
         id: event.id.replace(source, 'graduacao'),
         scope: { offers: ['graduacao'], confirmed: true },
-        requirementId: event.requirementId?.replace(`:${source}`, ':graduacao'),
+        activity:
+          event.activity && 'offerId' in event.activity
+            ? { ...event.activity, offerId: 'graduacao' }
+            : event.activity,
       })),
   };
 }
@@ -461,10 +465,8 @@ test.each(['annual', 'semester', 'trimester', 'three'] as const)(
     expect(loaded.state.offers).toEqual(reference.offers);
     expect(loaded.state.periods).toEqual(reference.periods);
     expect(
-      loaded.state.events.map((event) => [event.id, event.requirementId, event.start, event.end]),
-    ).toEqual(
-      reference.events.map((event) => [event.id, event.requirementId, event.start, event.end]),
-    );
+      loaded.state.events.map((event) => [event.id, event.activity, event.start, event.end]),
+    ).toEqual(reference.events.map((event) => [event.id, event.activity, event.start, event.end]));
     const institutional = loaded.institutionalEvents.find(
       (event) => event.id === 'inst:undergraduate',
     );
@@ -501,7 +503,7 @@ test('backend rejects a newly moved stage in the wrong semester but preserves un
   const bad = {
     ...saved.state,
     events: saved.state.events.map((event) =>
-      event.requirementId === 'stage-3:graduacao'
+      event.id === 'graduacao-stage-3'
         ? { ...event, start: civilDate('2027-02-01'), end: civilDate('2027-04-16') }
         : event,
     ),
@@ -543,8 +545,8 @@ test('backend rejects a newly moved stage in the wrong semester but preserves un
       },
     })
     .then(calendarSaveDates);
-  expect(kept.state.events.find((event) => event.requirementId === 'stage-3:graduacao')).toEqual(
-    bad.events.find((event) => event.requirementId === 'stage-3:graduacao'),
+  expect(kept.state.events.find((event) => event.id === 'graduacao-stage-3')).toEqual(
+    bad.events.find((event) => event.id === 'graduacao-stage-3'),
   );
   expect(kept.readiness.issues.join(' ')).toContain('2º semestre');
 });

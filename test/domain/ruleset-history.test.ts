@@ -59,13 +59,16 @@ const referenceSettings = archive.v4Settings.map((settings) => ({
 }));
 
 /**
- * Requirement fields left out of the hash because they act only through `byModality`. Every other
- * field, including fields added later, is part of the fingerprint.
+ * Requirement fields left out of the hash because they act only through `byModality`, and the
+ * row's link (`activity`, phase 2, step 9b), which is derived from the ID and the slot already
+ * in the fingerprint and carries no normative content. Every other field, including fields
+ * added later, is part of the fingerprint.
  */
 const hidden = new Set<string>([
   'required',
   'applicability',
   'optionalFor',
+  'activity',
 ] satisfies (keyof ActivityPlanItem)[]);
 
 const note = (policy: CalendarPolicy, requirement: ActivityPlanItem, offer: CalendarOffer) =>

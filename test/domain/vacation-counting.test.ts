@@ -1,6 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import type { countCalendar } from '../../src/domain/calendar/counting/core.ts';
 import { test } from 'vitest';
+import { definedStage } from '../helpers/activity-links.ts';
 import assert from 'node:assert/strict';
 import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
@@ -82,7 +83,7 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
               id: 'stage',
               effect: 'note' as const,
               scope: { offers: ['integrado'], confirmed: true },
-              requirementId: 'stage-1:integrado',
+              activity: definedStage('stage', 'integrado', 'annual', 1),
               start: civilDate('2027-10-01'),
               end: civilDate('2027-10-31'),
             },

@@ -1,11 +1,17 @@
 import { test, expect } from './test.ts';
+import {
+  activityKey,
+  type ActivityRef,
+} from '../../src/domain/calendar/activities/activity-ref.ts';
 import { savedState, selectEditorSection } from './editor-navigation.ts';
 import { ivaiporaDraft } from '../fixtures/pending-links-2027.ts';
 import type {} from '../fixtures/editor-client.ts';
 
-const linked = (events: { id: string; requirementId?: string }[]) =>
+const linked = (events: { id: string; activity?: unknown }[]) =>
   Object.fromEntries(
-    events.flatMap(({ id, requirementId }) => (requirementId ? [[id, requirementId]] : [])),
+    events.flatMap(({ id, activity }) =>
+      activity ? [[id, activityKey(activity as ActivityRef)]] : [],
+    ),
   );
 
 for (const width of [1440, 390]) {
@@ -46,7 +52,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#event-panel #event-form')).toBeVisible();
     // No activity selector: the kept link is shown read-only.
     await expect(page.locator('#event-requirement')).toHaveCount(0);
-    await expect(page.locator('#event-kept-link')).toContainText('recognition-2');
+    await expect(page.locator('#event-kept-link')).toContainText('recognition:cycle:second');
     await page.locator('#event-name').fill('Reconhecimento revisado');
     await page.locator('#event-end').fill('2027-07-30');
     await page.locator('#event-form button[type="submit"]').click();
@@ -55,7 +61,7 @@ for (const width of [1440, 390]) {
     expect(edited.state.events.find((event) => event.id === pending)).toMatchObject({
       name: 'Reconhecimento revisado',
       end: '2027-07-30',
-      requirementId: 'recognition-2',
+      activity: { activityId: 'recognition', term: 'second' },
     });
 
     // Confirming the organization previews the dates to review and keeps their links.

@@ -32,7 +32,7 @@ for (const width of [1440, 390]) {
       status: 'defined',
       perTerm: 4,
     });
-    expect(saved.state.events.filter((e) => e.requirementId?.startsWith('stage-'))).toHaveLength(4);
+    expect(saved.state.events.filter((e) => e.activity?.activityId === 'stage')).toHaveLength(4);
     const origin = new URL(page.url()).origin;
     await page.goto(origin + '/calendarios/synthetic-calendar/avaliacoes');
     await expect(page).toHaveURL(
@@ -98,7 +98,7 @@ test('changing an offer cycle previews linked dates to review and keeps their li
       {
         id: 'final-result',
         name: 'Resultado final da graduação',
-        requirementId: 'final-0',
+        activity: { activityId: 'final', term: 'annual' },
         scope: { offers: ['graduacao'], confirmed: true },
         start: '2027-12-17',
         end: '2027-12-17',
@@ -137,7 +137,7 @@ test('changing an offer cycle previews linked dates to review and keeps their li
   await page.locator('#offer-graduacao-apply').click();
   const saved = await savedState(page);
   expect(saved.state.events.find((event) => event.id === 'final-result')).toMatchObject({
-    requirementId: 'final-0',
+    activity: { activityId: 'final', term: 'annual' },
     start: '2027-12-17',
   });
 });
