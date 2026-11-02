@@ -100,7 +100,7 @@ test('canonical records and historical restoration have no manual or generated s
         start: civilDate('2027-07-01'),
         end: civilDate('2027-07-10'),
         effect: 'note',
-        offers: ['integrado'],
+        scope: { offers: ['integrado'], confirmed: true },
         requirementId: 'regular-admission-notice',
         notice: {
           publication: 'planned',
@@ -114,7 +114,7 @@ test('canonical records and historical restoration have no manual or generated s
         start: civilDate('2027-03-01'),
         end: civilDate('2027-03-02'),
         effect: 'note',
-        offers: ['integrado'],
+        scope: { offers: ['integrado'], confirmed: true },
       },
     ],
   };
@@ -173,6 +173,7 @@ const event = {
   start: civilDate('2027-03-01'),
   end: civilDate('2027-03-01'),
   effect: 'note',
+  scope: { offers: ['integrado'], confirmed: true },
 };
 const legacyFields: Array<[string, (state: DomainState) => Record<string, unknown>]> = [
   ['weekEvidence', (state) => ({ ...state, weekEvidence: secret })],
@@ -272,6 +273,7 @@ test('current contents and submission copies refuse retired manual fields', asyn
             start: civilDate('2027-03-01'),
             end: civilDate('2027-03-01'),
             effect: 'note' as const,
+            scope: { offers: ['integrado'], confirmed: true },
             evidence: secret,
           },
         ],

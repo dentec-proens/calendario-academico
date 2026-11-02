@@ -31,7 +31,7 @@ test('calendar authorship distinguishes creation from content edits without expo
             effect: 'note' as const,
             start: '2027-03-01',
             end: '2027-03-01',
-            offers: ['integrado' as const],
+            scope: { offers: ['integrado' as const], confirmed: true },
           },
         ],
       },

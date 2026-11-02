@@ -26,7 +26,7 @@ test('calendar saves write only the current content and roll back stale saves at
       effect: 'note' as const,
       start: '2027-03-01',
       end: '2027-03-01',
-      offers: ['integrado' as const],
+      scope: { offers: ['integrado' as const], confirmed: true },
     },
   ];
   const saved = await campus

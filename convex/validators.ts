@@ -54,6 +54,8 @@ export const notice = v.object({
     }),
   ),
 });
+/** Offers of a local date, always listed, and whether the campus chose them (plan, 5.3). */
+export const eventScope = v.object({ offers: v.array(v.string()), confirmed: v.boolean() });
 export const event = v.object({
   id: v.string(),
   name: v.string(),
@@ -62,7 +64,7 @@ export const event = v.object({
   effect,
   category: v.optional(v.string()),
   requirementId: v.optional(v.string()),
-  offers: v.optional(v.array(v.string())),
+  scope: eventScope,
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
   notice: v.optional(notice),

@@ -79,7 +79,7 @@ export function contentAssessment(record: ContentRecord) {
   }
   for (const offer of offers) {
     const eventFor = (id: string) =>
-      events.find(
+      record.state.events.find(
         (e) =>
           e.requirementId === scopedRequirement(record.state, id, offer.id) && appliesTo(e, offer),
       );

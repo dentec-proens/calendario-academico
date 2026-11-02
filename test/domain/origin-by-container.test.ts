@@ -32,7 +32,7 @@ const lookalike = {
   start: civilDate('2027-03-11'),
   end: civilDate('2027-03-11'),
   effect: 'exclude',
-  offers: ['integrado'],
+  scope: { offers: ['integrado'], confirmed: true },
   evidence: 'SEGREDO MANUAL',
   institutional: true,
   deadlineExtensionCause: 'municipal-holiday',

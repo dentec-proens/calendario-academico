@@ -1,7 +1,11 @@
-import type {
-  CalendarEvent,
-  InstitutionalEventSnapshot,
-  TeachingState,
+import {
+  isLocalDate,
+  type CalendarEvent,
+  type DateFields,
+  type EventScope,
+  type InstitutionalEventSnapshot,
+  type ProjectedDate,
+  type TeachingState,
 } from '../calendar/model.ts';
 import {
   calendarOffers,
@@ -43,27 +47,24 @@ export function reviewSupport<
   },
 >(
   record: T,
-  events: (Pick<CalendarEvent, 'id' | 'name' | 'start' | 'end' | 'category' | 'offers'> &
+  events: (Pick<DateFields, 'id' | 'name' | 'start' | 'end' | 'category'> &
     Partial<
-      Pick<
-        CalendarEvent,
-        | 'effect'
-        | 'requirementId'
-        | 'notice'
-        | 'deadlineAdjustment'
-        | 'hours'
-      >
-    > &
-    Pick<InstitutionalEventSnapshot, 'evidence' | 'institutional'>)[],
+      Pick<DateFields, 'effect' | 'requirementId' | 'notice' | 'deadlineAdjustment' | 'hours'>
+    > & { scope?: EventScope } & Pick<
+      InstitutionalEventSnapshot,
+      'evidence' | 'institutional' | 'offers'
+    >)[],
 ) {
+  // Local dates always list their scope; institutional ones keep their own offers.
+  const projected = events.map((event) => ({
+    ...event,
+    effect: event.effect ?? 'note',
+  })) as ProjectedDate[];
   let result: ReturnType<typeof calendarResult> | null = null,
     error: string | null = null,
     provisional = false;
   try {
-    result = calendarResult(
-      record.state,
-      events.map((event) => ({ ...event, effect: event.effect ?? 'note' })),
-    );
+    result = calendarResult(record.state, projected);
   } catch (cause) {
     error = 'Contagem indisponível: ' + (cause instanceof Error ? cause.message : String(cause));
     // A numerical preview uses only registered weekdays and events, never an assumed week.
@@ -74,10 +75,7 @@ export function reviewSupport<
             ...record.state,
             weekConfirmed: true,
           },
-          events.map((e) => ({
-            ...e,
-            effect: e.effect ?? 'note',
-          })),
+          projected,
         );
         provisional = true;
         error = 'Contagem provisória: confirme a semana letiva no editor.';
@@ -117,10 +115,7 @@ export function reviewSupport<
     windowEnd = window?.end ?? '';
   const coverage =
     policy.review.evidence === 'coverage'
-      ? activityCoverage({
-          ...record.state,
-          events: events.map((event) => ({ ...event, effect: event.effect ?? 'note' })),
-        })
+      ? activityCoverage({ ...record.state, events: projected.filter(isLocalDate) }, projected)
       : [];
   return {
     source,

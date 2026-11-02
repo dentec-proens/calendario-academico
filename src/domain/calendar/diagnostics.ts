@@ -1,4 +1,4 @@
-import type { ActivityState } from './model.ts';
+import type { ActivityState, ProjectedDate } from './model.ts';
 import { activityCoverage } from './activities/coverage.ts';
 import { calendarOffers, offerFor } from './offers.ts';
 import { periodsForOffer } from './organization/periods.ts';
@@ -11,7 +11,10 @@ export type CalendarDiagnostic =
   | { code: 'period-count'; offerId: string; expected: number; actual: number };
 
 /** Examines an explicit snapshot. It never claims that local work has been saved or approved. */
-export function diagnoseCalendar(state: ActivityState, events = state.events) {
+export function diagnoseCalendar(
+  state: ActivityState,
+  events: readonly ProjectedDate[] = state.events,
+) {
   const structure: CalendarDiagnostic[] = [];
   if (!state.weekConfirmed) structure.push({ code: 'week-unconfirmed' });
   if (!state.periods.length) structure.push({ code: 'periods-missing' });

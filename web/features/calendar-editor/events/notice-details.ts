@@ -36,7 +36,7 @@ export function destinationText(
 /** Destination problems of a date, one line per offer (plan, section 5.4). */
 export function destinationIssueLines(
   state: Parameters<typeof noticeDestinationIssues>[0],
-  event: Pick<CalendarEvent, 'notice' | 'offers'>,
+  event: Pick<CalendarEvent, 'notice' | 'scope'>,
 ): (NoticeDestinationIssue & { text: string })[] {
   return noticeDestinationIssues(state, event).map((issue) => ({
     ...issue,

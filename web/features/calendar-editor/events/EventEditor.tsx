@@ -61,11 +61,11 @@ export default function EventEditor() {
   const distinctSaved =
     commonDestination(
       saved?.notice?.admission?.destinations ?? [],
-      saved?.offers?.length ? saved.offers : offerIds(state),
+      saved ? saved.scope.offers : offerIds(state),
     ) === keptDestinations;
   const destinations = publication ? draftDestinations(values, saved) : [];
   const destinationIssues = destinationIssueLines(state, {
-    offers: values.offers,
+    scope: { offers: values.offers, confirmed: true },
     notice: {
       admission: {
         type: values.admissionType || 'regular',

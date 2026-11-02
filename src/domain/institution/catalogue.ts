@@ -1,6 +1,6 @@
 import { civilDate, type CivilDate } from '../civil-date.ts';
-import type { CalendarEvent, CalendarOffer } from '../calendar/model.ts';
-export interface CatalogueEvent extends CalendarEvent {
+import type { CalendarOffer, DateFields } from '../calendar/model.ts';
+export interface CatalogueEvent extends DateFields {
   evidence: string;
   active: boolean;
   modalities: string[];

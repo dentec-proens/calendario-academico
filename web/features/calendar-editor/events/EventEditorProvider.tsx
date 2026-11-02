@@ -169,7 +169,7 @@ function useController() {
     previousVersion.current = record.version;
     if (!eventId || dirty) return;
     const event = state.events.find((item) => item.id === eventId);
-    if (event) result.form.reset(eventValues(event, calendarOfferIds));
+    if (event) result.form.reset(eventValues(event));
   }, [dirty, eventId, record.version, result.form, state.events, calendarOfferIds]);
   useEffect(() => {
     if (!context) session.setFormDirty('event', false);
@@ -241,7 +241,7 @@ function useController() {
       activityPlan(state).some((item) => item.id === event.requirementId)
         ? { kind: 'activity', requirementId: event.requirementId, eventId: id }
         : { kind: 'event', eventId: id };
-    begin(next, eventValues(event, calendarOfferIds), id);
+    begin(next, eventValues(event), id);
   }
   function prepare(requirementId: string) {
     if (stageRequirement(requirementId)) {

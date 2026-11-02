@@ -24,7 +24,7 @@ const notice = (
   end: civilDate('2027-01-10'),
   effect: 'note',
   category: 'prazo',
-  offers: ['integrado', 'graduacao'],
+  scope: { offers: ['integrado', 'graduacao'], confirmed: true },
   requirementId: 'admission-notice-0',
   notice: {
     publication: 'planned',
@@ -74,7 +74,7 @@ test('a destination of another offer or cycle, or an offer left without one, is 
         { offerId: 'integrado', periodId: 'graduacao-annual' },
         { offerId: 'graduacao-2', periodId: 'graduacao-2-second' },
       ],
-      { offers: ['integrado', 'graduacao', 'graduacao-2'] },
+      { scope: { offers: ['integrado', 'graduacao', 'graduacao-2'], confirmed: true } },
     ),
   );
   expect(

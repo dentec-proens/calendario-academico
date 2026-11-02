@@ -6,6 +6,7 @@ import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
 import { categories, eventCategory } from '../domain/calendar/activities/categories.ts';
 import { periodsForOffer } from '../domain/calendar/organization/periods.ts';
 import { associationOffers, labelFor, offerIds } from '../domain/calendar/offers.ts';
+import { listedOffers } from '../domain/calendar/modalities.ts';
 
 const esc = (s: unknown) =>
   String(s).replace(
@@ -16,8 +17,26 @@ const dateLabel = (date: string | undefined, year?: number) =>
   (date?.startsWith(`${year}-`) ? date.slice(5) : date)?.split('-').reverse().join('/') || '';
 const fullInterval = (event: PrintEvent) =>
   dateLabel(event.start) + (event.end === event.start ? '' : ` a ${dateLabel(event.end)}`);
-const eventOffers = (state: PrintState, event: PrintEvent) =>
-  event.offers?.map((id) => labelFor(state, id)).join(', ') ?? '';
+/**
+ * Offers printed beside a date. An unconfirmed scope over every offer of the calendar is the
+ * format 4 date without its own list (plan, section 5.3) and prints without a list, as before.
+ */
+function eventOffers(state: PrintState, event: PrintEvent) {
+  const scope = event.scope;
+  const all = state.offers ? offerIds(state) : [];
+  if (
+    scope &&
+    !scope.confirmed &&
+    scope.offers.length === all.length &&
+    all.every((id) => scope.offers.includes(id))
+  )
+    return '';
+  return (
+    listedOffers(event)
+      ?.map((id) => labelFor(state, id))
+      .join(', ') ?? ''
+  );
+}
 
 function publicationDetails(event: PrintEvent, year: number, includeSource = true) {
   const labels = [];

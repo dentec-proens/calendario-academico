@@ -65,7 +65,7 @@ function draft(
         effect: 'note',
         category: 'prazo',
         requirementId,
-        offers: scope ?? [...offers],
+        scope: { offers: scope ?? [...offers], confirmed: true },
       }),
     ),
   };
@@ -116,7 +116,7 @@ export function ivaiporaDraft(): PendingLinksFixture {
       end: day(end),
       effect: 'note',
       category: 'prazo',
-      offers: ['integrado', 'subsequente'],
+      scope: { offers: ['integrado', 'subsequente'], confirmed: true },
       ...(name === 'final-appeal' ? { hours: 40 } : {}),
     })),
   );
@@ -164,7 +164,7 @@ export function conflictingLinks(): PendingLinksFixture {
     end: day(end),
     effect: 'note',
     category: 'limite',
-    offers: ['integrado'],
+    scope: { offers: ['integrado'], confirmed: true },
   });
   const vacation = teacherVacations(2027, vacations).events[0];
   return {
@@ -194,7 +194,11 @@ export function conflictingLinks(): PendingLinksFixture {
       stage('stage-twice-b', 2, '05/04', '20/05'),
       stage('stage-late', 3, '01/10', '10/12'),
       stage('stage-early', 4, '02/08', '30/09'),
-      { ...vacation, requirementId: 'diary-1' },
+      {
+        ...vacation,
+        requirementId: 'diary-1',
+        scope: { offers: ['integrado', 'subsequente'], confirmed: false },
+      },
       {
         id: 'transfer-notice',
         name: 'Edital de transferência sintético',
@@ -203,7 +207,7 @@ export function conflictingLinks(): PendingLinksFixture {
         effect: 'note',
         category: 'prazo',
         requirementId: 'admission-notice-2',
-        offers: ['integrado', 'subsequente'],
+        scope: { offers: ['integrado', 'subsequente'], confirmed: true },
         notice: {
           publication: 'planned',
           admission: {

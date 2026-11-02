@@ -1,4 +1,4 @@
-import type { CalendarEvent, CalendarContent } from './model.ts';
+import type { CalendarContent, DateFields } from './model.ts';
 import { equalValues } from '../../shared/equal.ts';
 import { inheritedEvents } from '../institution/catalogue.ts';
 import { applyObservances, validateObservances } from './observances.ts';
@@ -15,7 +15,7 @@ import { kinds } from './offers.ts';
 type OfferState = CalendarContent & { year: number; campus?: string };
 
 /** V4 save boundary; the backend retains concurrency, authorization and final confirmation. */
-export function prepareOfferCalendarSave<E extends CalendarEvent & { active: boolean }>(
+export function prepareOfferCalendarSave<E extends DateFields & { active: boolean }>(
   previous: OfferState,
   proposed: OfferState,
   context: { storedContent: unknown; catalogue: { events: E[] }; recalculate: boolean },
@@ -28,22 +28,8 @@ export function prepareOfferCalendarSave<E extends CalendarEvent & { active: boo
     if (next.kind !== old.kind) invalidCalendar('O tipo de uma oferta existente não pode mudar.');
   }
   const previousIds = previous.offers.map((offer) => offer.id);
-  const added = proposed.offers.some((offer) => !previousIds.includes(offer.id));
-  let state = normalizeOfferCalendar(
-    {
-      ...proposed,
-      campus: previous.campus ?? '',
-      events: added
-        ? proposed.events.map((event) =>
-            !event.offers?.length &&
-            previous.events.some((old) => old.id === event.id && !old.offers?.length)
-              ? { ...event, offers: previousIds }
-              : event,
-          )
-        : proposed.events,
-    },
-    previous,
-  );
+  // Adding an offer neither extends nor confirms the scope of existing dates (plan, section 5.3).
+  let state = normalizeOfferCalendar({ ...proposed, campus: previous.campus ?? '' }, previous);
   for (const offer of state.offers) {
     const old = previous.offers.find((item) => item.id === offer.id);
     if (offer.legacyStageCount !== undefined && offer.legacyStageCount !== old?.legacyStageCount)

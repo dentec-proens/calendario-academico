@@ -119,7 +119,7 @@ describe('identidade e tipo da oferta v4', () => {
           start: civilDate('2027-01-01'),
           end: civilDate('2027-01-01'),
           effect: 'note',
-          offers: ['graduacao-3'],
+          scope: { offers: ['graduacao-3'], confirmed: true },
         },
         {
           id: 's',
@@ -127,6 +127,7 @@ describe('identidade e tipo da oferta v4', () => {
           start: civilDate('2027-01-01'),
           end: civilDate('2027-01-01'),
           effect: 'note',
+          scope: { offers: ['graduacao'], confirmed: true },
           requirementId: 'stage-1:graduacao-4',
         },
       ],

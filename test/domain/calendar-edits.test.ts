@@ -25,7 +25,7 @@ function calendar(): ActivityState {
       end: civilDate(`2027-03-${String(index * 7 + 4).padStart(2, '0')}`),
       effect: 'note',
       category: 'limite',
-      offers: ['integrado'],
+      scope: { offers: ['integrado'], confirmed: true },
     })),
     offers: [
       {

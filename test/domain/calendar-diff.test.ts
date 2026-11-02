@@ -70,6 +70,7 @@ test('items are added, removed and changed by id in offers, periods and events',
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-01'),
       effect: 'note' as const,
+      scope: { offers: value.state.offers.map((offer) => offer.id), confirmed: true },
     });
   });
   const diff = compareContents(side(), after);
@@ -111,6 +112,7 @@ test('observances by key, week and vacations field by field, derived vacation ev
       start: civilDate('2027-01-04'),
       end: civilDate(end),
       effect: 'exclude' as const,
+      scope: { offers: value.state.offers.map((offer) => offer.id), confirmed: false },
     });
   };
   const before = side((value) => vacations(value, '2027-01-29'));
@@ -140,9 +142,9 @@ test('observances by key, week and vacations field by field, derived vacation ev
   expect(diff.base.events, 'the observance belongs to the campus, not to the base').toEqual([]);
 });
 
-test('implicit offers equal every offer, and an offer inclusion alone is no difference', () => {
+test('confirming the scope alone is a change; offer order and an offer inclusion are none', () => {
   const ids = calendarOffersV4Fixture().offers.map((offer) => offer.id);
-  const before = side((value) => {
+  const note = (offers: string[], confirmed: boolean) => (value: DiffSide) => {
     value.state.offers = value.state.offers.slice(0, 3);
     value.state.events.push({
       id: 'note',
@@ -150,20 +152,32 @@ test('implicit offers equal every offer, and an offer inclusion alone is no diff
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-01'),
       effect: 'note' as const,
+      scope: { offers, confirmed },
     });
-  });
-  const after = side((value) => {
-    value.state.offers = value.state.offers.slice(0, 3);
-    value.state.events.push({
+  };
+  const unconfirmed = side(note(ids.slice(0, 3), false));
+  const confirmed = side(note(ids.slice(0, 3), true));
+  // Offers are always listed (plan, section 5.3): only their set is compared, not their order.
+  expect(
+    compareContents(confirmed, side(note([...ids.slice(0, 3)].reverse(), true))).unchanged,
+  ).toBe(true);
+  // Saving the form confirms the scope: a fact of its own, shown even as the only change.
+  const confirmation = compareContents(unconfirmed, confirmed);
+  expect(confirmation.unchanged).toBe(false);
+  expect(confirmation.events).toEqual([
+    {
+      kind: 'changed',
       id: 'note',
       name: 'Nota',
-      start: civilDate('2027-03-01'),
-      end: civilDate('2027-03-01'),
-      effect: 'note' as const,
-      offers: ids.slice(0, 3),
-    });
-  });
-  expect(compareContents(before, after).unchanged).toBe(true);
+      fields: [
+        { field: 'scope.confirmed', label: 'Abrangência confirmada', before: false, after: true },
+      ],
+    },
+  ]);
+  expect(describeValue('scope.confirmed', false)).toBe('Não');
+  expect(describeValue('scope.confirmed', true)).toBe('Sim');
+  const narrowed = compareContents(confirmed, side(note(ids.slice(0, 2), true)));
+  expect(narrowed.events[0].fields.map((field) => field.label)).toEqual(['Ofertas']);
   const included = side((value) => {
     value.institutionalSnapshot[1] = { ...value.institutionalSnapshot[1], offers: ids };
   });
@@ -238,6 +252,7 @@ test('the effect aggregates teaching days by offer and term, and a side without 
       start: civilDate('2027-03-02'),
       end: civilDate('2027-03-03'),
       effect: 'exclude' as const,
+      scope: { offers: value.state.offers.map((offer) => offer.id), confirmed: true },
     });
     value.state.rulesetVersion = 'outra';
   });
@@ -318,7 +333,7 @@ test('a notice change shows its publication and its admission with destinations 
       start: civilDate('2027-05-03'),
       end: civilDate('2027-05-03'),
       effect: 'note' as const,
-      offers: ['integrado', 'graduacao'],
+      scope: { offers: ['integrado', 'graduacao'], confirmed: true },
       notice: {
         publication,
         admission: {

@@ -1,7 +1,11 @@
 import { expect, expectTypeOf, test } from 'vitest';
 import { readdir, readFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
-import type { CalendarEvent, InstitutionalEventSnapshot } from '../../src/domain/calendar/model.ts';
+import type {
+  CalendarEvent,
+  DateFields,
+  InstitutionalEventSnapshot,
+} from '../../src/domain/calendar/model.ts';
 
 /**
  * Phase 2, step 2 of docs/plans/2026-11-02-atividades-e-datas.md: the vocabulary Atividade + Data
@@ -72,5 +76,8 @@ test('the institutional projection is not part of a local date', () => {
   expectTypeOf<InstitutionalEventSnapshot>().toHaveProperty('originalStart');
   expectTypeOf<InstitutionalEventSnapshot>().toHaveProperty('originalEnd');
   expectTypeOf<InstitutionalEventSnapshot>().toHaveProperty('institutional');
-  expectTypeOf<InstitutionalEventSnapshot>().toExtend<CalendarEvent>();
+  // Snapshots keep their scope by offer type; only local dates have `scope` (plan, 5.3).
+  expectTypeOf<InstitutionalEventSnapshot>().toExtend<DateFields>();
+  expectTypeOf<InstitutionalEventSnapshot>().not.toHaveProperty('scope');
+  expectTypeOf<CalendarEvent>().toHaveProperty('scope');
 });

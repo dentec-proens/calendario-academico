@@ -11,6 +11,8 @@ import type {
   InstitutionalEventSnapshot,
   CalendarOffer,
   CalendarPeriod,
+  DateFields,
+  EventScope,
 } from './model.ts';
 import { evaluateCalendar } from './counting/evaluation.ts';
 import { projectDates } from './model.ts';
@@ -77,7 +79,8 @@ export const fieldLabels = {
     effect: 'Efeito na contagem',
     category: 'Categoria',
     requirementId: 'Atividade vinculada',
-    offers: 'Ofertas',
+    'scope.offers': 'Ofertas',
+    'scope.confirmed': 'Abrangência confirmada',
     hours: 'Carga horária',
     assessmentAutoStart: 'Início automático da etapa',
     'notice.publication': 'Situação de publicação',
@@ -161,17 +164,18 @@ const derivedVacation = (event: { id: string }) => event.id.startsWith('teacher-
 const sortedIds = (ids: readonly string[]) => [...ids].sort();
 
 /**
- * An event without offers reaches every offer of its side. Destinations by offer are compared
- * in offer order, so only a change of period shows up.
+ * Offers and destinations by offer are compared in identifier order, so only a change of the set
+ * or of a period shows up. Local dates always list their offers (`scope`); a snapshot entry keeps
+ * the offers it was copied with.
  */
-function withOffers<T extends Pick<CalendarEvent, 'offers' | 'notice'>>(
-  item: T,
-  offers: string[],
-): T {
+function comparable<
+  T extends Pick<DateFields, 'notice'> & { scope?: EventScope; offers?: string[] },
+>(item: T): T {
   const admission = item.notice?.admission;
   return {
     ...item,
-    offers: sortedIds(item.offers?.length ? item.offers : offers),
+    ...(item.scope && { scope: { ...item.scope, offers: sortedIds(item.scope.offers) } }),
+    ...(item.offers && { offers: sortedIds(item.offers) }),
     ...(admission && {
       notice: {
         ...item.notice,
@@ -382,18 +386,11 @@ export function compareContents(before: DiffSide, after: DiffSide) {
       : change;
   });
 
-  const eventSide = (side: DiffSide, ids: string[]) =>
-    side.state.events
-      .filter((event) => !derivedVacation(event))
-      .map((event) => withOffers(event, ids));
+  const eventSide = (side: DiffSide) =>
+    side.state.events.filter((event) => !derivedVacation(event)).map(comparable);
   const eventKey = (event: CalendarEvent) =>
-    event.requirementId ? `${event.requirementId}|${(event.offers ?? []).join(',')}` : undefined;
-  const events = compareItems(
-    eventSide(before, beforeOffers),
-    eventSide(after, afterOffers),
-    fieldLabels.event,
-    eventKey,
-  );
+    event.requirementId ? `${event.requirementId}|${event.scope.offers.join(',')}` : undefined;
+  const events = compareItems(eventSide(before), eventSide(after), fieldLabels.event, eventKey);
 
   const year = after.state.year;
   const observanceLabel = (key: string) =>
@@ -422,8 +419,8 @@ export function compareContents(before: DiffSide, after: DiffSide) {
   // them, and to the base otherwise.
   const changedObservances = new Set(observances.map((change) => change.field));
   const institutional = compareItems(
-    before.institutionalSnapshot.map((event) => withOffers(event, beforeOffers)),
-    after.institutionalSnapshot.map((event) => withOffers(event, afterOffers)),
+    before.institutionalSnapshot.map(comparable),
+    after.institutionalSnapshot.map(comparable),
     fieldLabels.institutionalEvent,
   ).flatMap((change) => {
     if (change.kind !== 'changed') return [change];
@@ -521,12 +518,13 @@ export function describeValue(field: string, value: unknown, state?: ActivitySta
   if (value === undefined || value === null || value === '') return '—';
   if (field === 'notice.publication' && (value === 'planned' || value === 'published'))
     return value === 'planned' ? 'Publicação programada' : 'Publicação realizada';
+  if (field === 'scope.confirmed' && typeof value === 'boolean') return value ? 'Sim' : 'Não';
   if (typeof value === 'boolean') return value ? 'sim' : 'não';
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))
     return value.split('-').reverse().join('/');
   if (field === 'weekdays' && Array.isArray(value))
     return value.map((day) => weekdayNames[Number(day)] ?? String(day)).join(', ');
-  if (field === 'offers' && Array.isArray(value))
+  if ((field === 'offers' || field === 'scope.offers') && Array.isArray(value))
     return value.map((id) => (state ? labelFor(state, String(id)) : String(id))).join(', ');
   if (Array.isArray(value)) return value.map((item) => describeValue('', item, state)).join(', ');
   if (typeof value === 'object') {

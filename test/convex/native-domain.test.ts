@@ -29,6 +29,10 @@ const changedState = (state: Record<string, unknown>, name = 'Atividade') => ({
       start: civilDate('2027-02-01'),
       end: civilDate('2027-02-01'),
       effect: 'note',
+      scope: {
+        offers: (state.offers as { id: string }[]).map((offer) => offer.id),
+        confirmed: true,
+      },
     },
   ],
 });
@@ -273,7 +277,7 @@ test('native calendar saves validate per-offer stages and preserve the selected 
         id: 'stage',
         name: 'Graduação',
         requirementId: 'stage-1:graduacao',
-        offers: ['graduacao'],
+        scope: { offers: ['graduacao'], confirmed: true },
         start: civilDate('2027-03-01'),
         end: civilDate('2027-03-12'),
         effect: 'note',

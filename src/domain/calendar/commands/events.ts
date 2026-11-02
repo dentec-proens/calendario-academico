@@ -41,7 +41,7 @@ function sameOccurrence(a: CalendarEvent, b: CalendarEvent) {
     a.start === b.start &&
     a.end === b.end &&
     equalValues(a.notice?.admission, b.notice?.admission) &&
-    equalValues([...(a.offers ?? [])].sort(), [...(b.offers ?? [])].sort())
+    equalValues([...a.scope.offers].sort(), [...b.scope.offers].sort())
   );
 }
 
@@ -67,9 +67,9 @@ export function applyEvent<S extends ActivityState>(
   if (!event.name.trim()) throw new DomainError('Informe a descrição.');
   if (!['include', 'exclude', 'note'].includes(event.effect))
     throw new DomainError('Tipo de evento inválido.');
-  const modalities = event.offers;
+  const modalities = event.scope.offers;
   if (
-    !modalities?.length ||
+    !modalities.length ||
     new Set(modalities).size !== modalities.length ||
     modalities.some((item) => !offerIds(state).includes(item))
   )
@@ -126,7 +126,7 @@ export function applyEvent<S extends ActivityState>(
     events = events.map((item) => {
       if (
         !stageRequirement(item.requirementId) ||
-        (item.offers?.length && !item.offers?.some((modality) => modalities.includes(modality)))
+        !item.scope.offers.some((modality) => modalities.includes(modality))
       )
         return item;
       const { assessmentAutoStart: _auto, ...rest } = item;

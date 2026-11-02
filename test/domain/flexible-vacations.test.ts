@@ -1,5 +1,4 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
@@ -37,7 +36,7 @@ test('three campus intervals total 45 days and retain stable legacy IDs', () => 
   assert.equal(v.total, 45);
   assert.equal(v.events.length, 3);
   assert.deepEqual(
-    v.events.map((e: CalendarEvent) => e.id),
+    v.events.map((e) => e.id),
     ['teacher-vacation-january', 'teacher-vacation-july', 'teacher-vacation-third'],
   );
   assert.throws(

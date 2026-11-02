@@ -44,7 +44,8 @@ test('a new activity record keeps the prepared link, offer, effect and category'
     requirementId: 'family-meeting',
     effect: 'note',
     category: 'prazo',
-    offers: ['integrado'],
+    // Saving the form confirms the contextual offers (plan, section 5.3).
+    scope: { offers: ['integrado'], confirmed: true },
     start: '2027-05-08',
     end: '2027-05-08',
   });
@@ -66,7 +67,7 @@ test('editing a linked record that changes the count keeps its effect, category 
       end: '2027-05-10',
       effect: 'exclude',
       category: 'recesso',
-      offers: ['integrado'],
+      scope: { offers: ['integrado'], confirmed: true },
     });
     record.version++;
     return window.publishReviewerCalendar();
@@ -318,7 +319,7 @@ test('a record with a freely combined effect and category shows both fields when
       end: '2027-04-12',
       effect: 'exclude',
       category: 'formacao',
-      offers: ['integrado'],
+      scope: { offers: ['integrado'], confirmed: true },
     });
     record.version++;
     return window.publishReviewerCalendar();
@@ -647,7 +648,7 @@ test('a notice edits one common destination and shows the diagnosis of each offe
       end: '2027-01-10',
       effect: 'note',
       category: 'prazo',
-      offers: ['integrado', 'subsequente'],
+      scope: { offers: ['integrado', 'subsequente'], confirmed: true },
       notice: {
         publication: 'planned',
         admission: {

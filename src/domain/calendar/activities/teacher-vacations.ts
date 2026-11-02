@@ -1,5 +1,5 @@
 import { type CivilDate } from '../../civil-date.ts';
-import type { VacationPeriods } from '../model.ts';
+import type { CalendarEvent, VacationPeriods } from '../model.ts';
 import { datesBetween } from '../counting/core.ts';
 import { DomainError } from '../../errors.ts';
 
@@ -42,4 +42,32 @@ export function teacherVacations(year: number, periodsInput: Partial<VacationPer
     events,
     total: seen.size,
   };
+}
+
+/**
+ * Vacation dates regenerated from the periods (`teacherVacations`). They reach every current offer,
+ * since vacations hold for all of them, and keep the link and the confirmation recorded for the
+ * same date ID (`confirmed: false` for a new one); this is the documented exception to “adding an
+ * offer never extends a scope” (plan, section 5.3). Later entries of `recorded` win; a link is
+ * never lost because a later entry lacks it.
+ */
+export function regeneratedVacations(
+  generated: ReturnType<typeof teacherVacations>['events'],
+  offers: readonly string[],
+  recorded: readonly Pick<CalendarEvent, 'id' | 'requirementId' | 'scope'>[],
+): CalendarEvent[] {
+  const links = new Map<string, string>();
+  const confirmed = new Map<string, boolean>();
+  for (const event of recorded) {
+    if (event.requirementId) links.set(event.id, event.requirementId);
+    if (event.scope) confirmed.set(event.id, event.scope.confirmed);
+  }
+  return generated.map((event) => {
+    const requirementId = links.get(event.id);
+    return {
+      ...event,
+      ...(requirementId ? { requirementId } : {}),
+      scope: { offers: [...offers], confirmed: confirmed.get(event.id) ?? false },
+    };
+  });
 }

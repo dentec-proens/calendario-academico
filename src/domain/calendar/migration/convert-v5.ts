@@ -17,7 +17,12 @@
  * current format. Slice 1 (step 5): `kind` → `effect` on local dates, snapshots and catalogue rows,
  * `recordType` removed, `schemaVersion: 5`. Slice 2 (step 6): `publicationStatus` and `admission`
  * grouped in `notice`, the old `admission.periodId` copied as the destination of each offer of the
- * date, even when the period is orphan or incompatible (plan, section 5.4).
+ * date, even when the period is orphan or incompatible (plan, section 5.4). Slice 3 (step 7):
+ * `offers` becomes `scope: { offers, confirmed }` on local dates (plan, section 5.3): a non-empty
+ * list keeps its IDs and order and is confirmed; an absent or empty one lists the offers of its
+ * own state, unconfirmed. Materialized lists (candidates or proven, step 1) convert as any
+ * explicit list and are flagged in the manifest; a state without offers or an orphan offer stops
+ * the conversion (blocking shapes of the inventory). Snapshots keep their scope by offer type.
  */
 import {
   inventoryCatalogueRow,
@@ -27,6 +32,7 @@ import {
   type ContentContext,
   type Inventory,
   type LinkShape,
+  type MaterializedScope,
   type V4Form,
 } from './inventory.ts';
 
@@ -80,6 +86,22 @@ export interface ManifestEntry {
   forms: V4Form[];
   link?: LinkShape;
   changes: FieldChange[];
+  /** Scope that needs the owner's attention (plan, section 5.3); absent for a chosen list. */
+  scope?: ScopeReview;
+}
+
+/**
+ * A converted scope recorded for review: an absent or empty list completed with the offers of its
+ * own state (`unconfirmed`), or an explicit list an offer addition may have materialized
+ * (`materialized-candidate`; `materialized-proven` with the submissions that prove it). Candidates
+ * and proven lists already counted toward 2027 coverage, so they convert confirmed; reverting any
+ * of them is the owner's decision, outside the conversion.
+ */
+export interface ScopeReview {
+  status: 'unconfirmed' | 'materialized-candidate' | 'materialized-proven';
+  offers: string[];
+  /** Submission sequences whose copy of the date proves the materialization. */
+  proofs: number[];
 }
 
 export interface Conversion<T> {
@@ -174,6 +196,42 @@ function convertDate(item: DateV4, offers: readonly string[]) {
   return { converted: notice.converted, changes: [...effect.changes, ...notice.changes] };
 }
 
+/**
+ * `offers` → `scope` in place of the old key (at the end when it was absent). A non-empty list is
+ * kept as stored and confirmed; an absent or empty one becomes the offers of the date's own state,
+ * unconfirmed, which keeps the day count (absent meant every offer present) and the 2027
+ * coverage (absent never counted under explicit offers).
+ */
+function convertScope(item: JsonObject, stateOffers: readonly string[]) {
+  const stored = item.offers as string[] | undefined;
+  const scope = stored?.length
+    ? { offers: [...stored], confirmed: true }
+    : { offers: [...stateOffers], confirmed: false };
+  const converted: JsonObject = {};
+  for (const [key, value] of Object.entries(item))
+    if (key === 'offers') converted.scope = scope;
+    else converted[key] = value;
+  if (!('scope' in converted)) converted.scope = scope;
+  const changes: FieldChange[] = [
+    ...(stored === undefined ? [] : [{ field: 'offers', before: stored }]),
+    { field: 'scope', after: scope },
+  ];
+  return { converted, changes, scope };
+}
+
+function scopeReview(
+  scope: { offers: string[]; confirmed: boolean },
+  materialized: MaterializedScope | undefined,
+): ScopeReview | undefined {
+  if (!scope.confirmed) return { status: 'unconfirmed', offers: scope.offers, proofs: [] };
+  if (!materialized) return undefined;
+  return {
+    status: `materialized-${materialized.status}`,
+    offers: scope.offers,
+    proofs: materialized.proofs,
+  };
+}
+
 function convertEvents(
   events: readonly DateV4[],
   stateOffers: readonly string[],
@@ -185,16 +243,23 @@ function convertEvents(
     const at = `${path}[${index}]`;
     // A date without offers reaches every offer of its own state (plan, section 5.3).
     const offers = event.offers?.length ? event.offers : stateOffers;
-    const { converted, changes } = convertDate(event, offers);
+    const date = convertDate(event, offers);
+    const scope = convertScope(date.converted, stateOffers);
     const link = inventory.links.find((item) => item.path === `${at}.requirementId`)?.link;
+    const forms = formsAt(inventory, at);
+    const materialized = forms.some((form) => form.startsWith('event.offers:materialized-'))
+      ? inventory.materialized.find((item) => item.eventId === event.id)
+      : undefined;
+    const review = scopeReview(scope.scope, materialized);
     manifest.push({
       path: at,
       id: event.id,
-      forms: formsAt(inventory, at),
+      forms,
       ...(link ? { link } : {}),
-      changes,
+      changes: [...date.changes, ...scope.changes],
+      ...(review ? { scope: review } : {}),
     });
-    return converted;
+    return scope.converted;
   });
 }
 

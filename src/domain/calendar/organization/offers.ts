@@ -94,13 +94,8 @@ function withOffer<S extends ActivityState>(
 ): S {
   if (offerIds(state).includes(modality)) return state;
   if (!newOffer || newOffer.id !== modality) throw new DomainError('Oferta inválida.');
-  return {
-    ...state,
-    offers: [...state.offers, newOffer],
-    events: state.events.map((event) =>
-      event.offers?.length ? event : { ...event, offers: offerIds(state) },
-    ),
-  };
+  // Adding an offer neither extends nor confirms the scope of existing dates (plan, section 5.3).
+  return { ...state, offers: [...state.offers, newOffer] };
 }
 
 /** New offers must arrive with their complete independent periods and stages. */
@@ -420,7 +415,8 @@ function organize<S extends ActivityState>(
         end: civilDate(value.end),
         effect: 'note',
         category: 'limite',
-        offers: [modality],
+        // A stage the campus fills in the organization form belongs to its offer, by its choice.
+        scope: { offers: [modality], confirmed: true },
       });
   }
   // Links are never removed here: retired, duplicate or incompatible dates keep their link and
@@ -436,7 +432,14 @@ function organize<S extends ActivityState>(
           end: civilDate(stage.end),
           effect: 'note' as const,
           category: event.category ?? 'limite',
-          offers: [modality],
+          // The stage keeps its confirmation when it already had exactly its offer.
+          scope: {
+            offers: [modality],
+            confirmed:
+              event.scope.offers.length === 1 && event.scope.offers[0] === modality
+                ? event.scope.confirmed
+                : true,
+          },
         },
       ];
     }

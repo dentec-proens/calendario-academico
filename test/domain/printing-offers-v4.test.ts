@@ -49,7 +49,7 @@ test('semester distributions group stages by cycle and restart displayed numberi
   expect(state).toEqual(before);
   expect(
     state.events
-      .filter((event) => event.offers?.includes('graduacao-2'))
+      .filter((event) => event.scope.offers.includes('graduacao-2'))
       .map((event) => event.requirementId),
   ).toEqual([
     'stage-1:graduacao-2',

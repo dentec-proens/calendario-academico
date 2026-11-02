@@ -52,8 +52,21 @@ const unchanged = ({
   publicationStatus: _publication,
   admission: _admission,
   notice: _notice,
+  offers: _offers,
+  scope: _scope,
   ...rest
 }: Json) => withoutEffect(rest);
+
+/**
+ * Scope expected for a stored v4 local date (plan, section 5.3): a non-empty list kept and
+ * confirmed; an absent or empty one completed with the offers of its own state, unconfirmed.
+ */
+function expectedScope(stored: Json, stateOffers: readonly string[]) {
+  const offers = stored.offers as string[] | undefined;
+  return offers?.length
+    ? { offers, confirmed: true }
+    : { offers: [...stateOffers], confirmed: false };
+}
 
 /**
  * Notice expected for a stored v4 date (plan, section 5.4): publication and admission grouped,
@@ -112,7 +125,8 @@ function expectDatesConverted(
   before: Json[],
   after: Json[],
   manifest: ManifestEntry[],
-  stateOffers: readonly string[] = [],
+  /** Offers of the local state; snapshot entries (without it) keep their own `offers`. */
+  stateOffers?: readonly string[],
 ) {
   // One to one: nothing created, removed, merged or moved.
   expect(after.map((event) => event.id)).toEqual(before.map((event) => event.id));
@@ -123,9 +137,16 @@ function expectDatesConverted(
     expect(converted).not.toHaveProperty('recordType');
     expect(converted).not.toHaveProperty('publicationStatus');
     expect(converted).not.toHaveProperty('admission');
-    const notice = expectedNotice(stored, stateOffers);
+    const notice = expectedNotice(stored, stateOffers ?? []);
     if (notice === undefined) expect(converted).not.toHaveProperty('notice');
     else expect(converted.notice).toEqual(notice);
+    if (stateOffers) {
+      expect(converted.scope).toEqual(expectedScope(stored, stateOffers));
+      expect(converted).not.toHaveProperty('offers');
+    } else {
+      expect(converted).not.toHaveProperty('scope');
+      expect(converted.offers).toEqual(stored.offers);
+    }
     expect(unchanged(converted)).toEqual(unchanged(stored));
   });
   expect(manifest.map((entry) => entry.id)).toEqual(before.map((event) => event.id));

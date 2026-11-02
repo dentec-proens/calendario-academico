@@ -42,13 +42,15 @@ export function saturdayEvents(
       (date) =>
         !state.events.some((e) => e.effect === 'include' && e.start <= date && date <= e.end),
     )
-    .map((date) => ({
+    .map((date): CalendarEvent => ({
       id: id(),
       name: name.trim(),
-      effect: 'include' as const,
+      effect: 'include',
       category: 'sabado',
       start: date,
       end: date,
+      // Created by the Saturdays step for every current offer, which the campus confirmed there.
+      scope: { offers: offerIds(state), confirmed: true },
     }));
 }
 

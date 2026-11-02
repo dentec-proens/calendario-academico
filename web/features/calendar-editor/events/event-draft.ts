@@ -132,9 +132,9 @@ export const emptyEvent = (offers: OfferId[]): EventValues => ({
   hours: '',
   eventType: '',
 });
-export function eventValues(event: CalendarEvent, offers: OfferId[]): EventValues {
+export function eventValues(event: CalendarEvent): EventValues {
   const admission = event.notice?.admission;
-  const dateOffers = event.offers?.length ? event.offers : offers;
+  const dateOffers = event.scope.offers;
   return {
     name: event.name,
     start: event.start,
@@ -210,7 +210,8 @@ export function eventFromValues(
       target.base && !target.base.category && value.category === eventCategory(target.base)
         ? undefined
         : value.category,
-    offers: value.offers,
+    // Saving the date form confirms the offers chosen in it (plan, section 5.3).
+    scope: { offers: value.offers, confirmed: true },
     requirementId: value.requirementId || undefined,
     hours: value.hours ? Number(value.hours) : undefined,
     deadlineExtensionCause: value.deadlineExtensionCause || undefined,

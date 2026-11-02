@@ -48,13 +48,13 @@ export function readyContent(): CalendarContent {
     end: civilDate('2027-02-01'),
     effect: 'note',
     category: 'institucional',
-    offers: ['integrado'],
+    scope: { offers: ['integrado'], confirmed: true },
   }));
   for (const requirement of activityPlan(state)) {
     const event: CalendarEvent = {
       id: requirement.id.replace(/:/g, '-'),
       requirementId: requirement.id,
-      offers: [requirement.offerId ?? 'integrado'],
+      scope: { offers: [requirement.offerId ?? 'integrado'], confirmed: true },
       name: requirement.name,
       start: civilDate('2027-02-01'),
       end: civilDate('2027-02-01'),
@@ -72,9 +72,7 @@ export function readyContent(): CalendarContent {
           term: requirement.term ?? 'annual',
           destinations:
             requirement.admissionType === 'transfer'
-              ? (event.offers?.length ? event.offers : state.offers.map((offer) => offer.id)).map(
-                  (offerId) => ({ offerId, periodId: 'year' }),
-                )
+              ? event.scope.offers.map((offerId) => ({ offerId, periodId: 'year' }))
               : [],
         },
       };

@@ -32,7 +32,7 @@ function calendar(): ActivityState {
         id: `${modality}-${index}`,
         name: `${index + 1}ª etapa`,
         requirementId: `stage-${index + 1}:${modality}`,
-        offers: [modality],
+        scope: { offers: [modality], confirmed: true },
         start: civilDate(index ? '2027-03-15' : '2027-03-01'),
         end: civilDate(index ? '2027-03-26' : '2027-03-12'),
         effect: 'note',
@@ -79,12 +79,12 @@ test('one application splits a shared period and keeps the other offer and all s
   )!;
   expect(integrated.id).not.toBe('shared');
   expect(integrated.targetDays).toBeUndefined();
-  expect(next.events.filter((e) => e.offers?.includes('graduacao'))).toEqual(
-    before.events.filter((e) => e.offers?.includes('graduacao')),
+  expect(next.events.filter((e) => e.scope.offers.includes('graduacao'))).toEqual(
+    before.events.filter((e) => e.scope.offers.includes('graduacao')),
   );
   expect(
     next.events
-      .filter((e) => e.offers?.includes('integrado'))
+      .filter((e) => e.scope.offers.includes('integrado'))
       .map((e) => [e.id, e.start, e.end, e.assessmentAutoStart]),
   ).toEqual([
     ['integrado-0', '2027-03-01', '2027-03-12', undefined],
@@ -152,7 +152,7 @@ test('existing inclusions are checked before changing periods; records are never
     id: 'sat',
     name: 'Reposição de sábado',
     effect: 'include',
-    offers: ['integrado'],
+    scope: { offers: ['integrado'], confirmed: true },
     start: civilDate('2027-03-06'),
     end: civilDate('2027-03-06'),
   });
@@ -174,7 +174,7 @@ const sharedNotice = (state: ActivityState) =>
     id: 'notice',
     name: 'Edital',
     effect: 'note',
-    offers: ['integrado', 'graduacao'],
+    scope: { offers: ['integrado', 'graduacao'], confirmed: true },
     start: civilDate('2027-02-01'),
     end: civilDate('2027-02-01'),
     notice: {
@@ -243,6 +243,7 @@ test('calendar records no longer require or retain manual references', () => {
     start: civilDate('2027-03-01'),
     end: civilDate('2027-03-01'),
     effect: 'note',
+    scope: { offers: ['integrado'], confirmed: true },
   });
   const draft = offerOrganizationDraft(state, 'integrado');
   expect(draft).not.toHaveProperty('evidence');

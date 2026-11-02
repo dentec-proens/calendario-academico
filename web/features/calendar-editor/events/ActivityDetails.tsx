@@ -41,12 +41,10 @@ export default function ActivityDetails({
     .map((offerId) => ({
       offerId,
       hours: registered
-        .filter((event) => (event.offers ?? offerIds(state)).includes(offerId))
+        .filter((event) => event.scope.offers.includes(offerId))
         .reduce((sum, event) => sum + (event.hours ?? 0), 0),
     }))
-    .filter((total) =>
-      registered.some((event) => (event.offers ?? offerIds(state)).includes(total.offerId)),
-    );
+    .filter((total) => registered.some((event) => event.scope.offers.includes(total.offerId)));
   const sameTotal = new Set(hourTotals.map((total) => total.hours)).size === 1;
   // The form replaces the activity view; Voltar à atividade brings it back.
   if (editor.open && editor.context?.kind === 'activity') return null;
@@ -129,9 +127,7 @@ export default function ActivityDetails({
                 <strong>{event.name}</strong>
                 <small>
                   {civilDate(event.start)} a {civilDate(event.end)} ·{' '}
-                  {(event.offers ?? offerIds(state))
-                    .map((modality) => labelFor(state, modality))
-                    .join(', ')}
+                  {event.scope.offers.map((modality) => labelFor(state, modality)).join(', ')}
                   {showHours ? ` · ${formatHours(event.hours ?? 0)}` : ''}
                   {event.notice?.publication
                     ? ` · ${publicationLabels[event.notice.publication]}`

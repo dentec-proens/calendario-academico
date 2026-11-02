@@ -73,7 +73,7 @@ function notice(extra: Partial<CalendarEvent> = {}): CalendarEvent {
     effect: 'note' as const,
     start: civilDate('2026-12-10'),
     end: civilDate('2026-12-10'),
-    offers: ['integrado'],
+    scope: { offers: ['integrado'], confirmed: true },
     notice: {
       publication: 'published',
       admission: {
@@ -145,7 +145,7 @@ test('one event covers only the explicitly declared offers and does not waive ve
         start: civilDate('2027-01-15'),
         end: civilDate('2027-01-15'),
         requirementId: 'enrolment-0',
-        offers: ['subsequente'],
+        scope: { offers: ['subsequente'], confirmed: true },
       }),
       notice: undefined,
     },
@@ -326,7 +326,7 @@ test('article 3 extends only explicitly classified municipal causes to the first
     start: civilDate('2027-08-31'),
     end: civilDate('2027-09-02'),
     effect: 'exclude' as const,
-    offers: ['integrado'],
+    scope: { offers: ['integrado'], confirmed: true },
     deadlineExtensionCause: 'municipal-holiday',
   };
   const otherHoliday: CalendarEvent = {
@@ -370,7 +370,7 @@ test('article 3 extends only explicitly classified municipal causes to the first
       start: civilDate('2027-09-03'),
       end: civilDate('2027-09-03'),
       effect: 'note' as const,
-      offers: ['integrado'],
+      scope: { offers: ['integrado'], confirmed: true },
       requirementId: 'robotics',
     },
   ];
@@ -393,7 +393,7 @@ test('repeating the same command is idempotent and another ID cannot duplicate t
   expect(() => applyEvent(once, other, [])).toThrow('mesmas datas');
 });
 
-test('a legacy event without declared offers remains visible but never covers all offers implicitly', () => {
+test('an unconfirmed scope remains visible but never covers its offers in 2027', () => {
   const state = calendar();
   state.events = [
     {
@@ -401,7 +401,7 @@ test('a legacy event without declared offers remains visible but never covers al
         start: civilDate('2027-02-01'),
         end: civilDate('2027-02-01'),
         requirementId: 'campus-events',
-        offers: undefined,
+        scope: { offers: state.offers.map((offer) => offer.id), confirmed: false },
       }),
       notice: undefined,
     },
@@ -419,13 +419,13 @@ test('commands and direct import reject teaching inclusion outside the selected 
     start: civilDate('2027-07-20'),
     end: civilDate('2027-07-20'),
     effect: 'include' as const,
-    offers: ['graduacao'],
+    scope: { offers: ['graduacao'], confirmed: true },
   };
   expect(() => applyEvent(state, event, [])).toThrow('períodos');
   expect(() => normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [event] })).toThrow(
     'períodos',
   );
-  const integrated = { ...event, offers: ['integrado'] };
+  const integrated = { ...event, scope: { offers: ['integrado'], confirmed: true } };
   expect(
     normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [integrated] }).events,
   ).toHaveLength(1);

@@ -158,7 +158,7 @@ test('coverage stays partial per offer while the second record is edited and rem
       start: '2027-02-01',
       end: '2027-02-02',
       effect: 'note',
-      offers: [modality as 'subsequente' | 'graduacao'],
+      scope: { offers: [modality as 'subsequente' | 'graduacao'], confirmed: true },
       requirementId: 'enrolment-0',
     }));
     record.version++;

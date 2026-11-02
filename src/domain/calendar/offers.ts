@@ -96,7 +96,7 @@ export function nextOfferId(
     if (period.association.status === 'defined')
       for (const id of period.association.offers) used.add(id);
   for (const event of state.events) {
-    for (const id of event.offers ?? []) used.add(id);
+    for (const id of event.scope.offers) used.add(id);
     const suffix = event.requirementId?.split(':').at(1);
     if (suffix) used.add(suffix);
   }

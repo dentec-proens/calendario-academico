@@ -279,7 +279,7 @@ test('review coverage follows the criterion identity when its citation text chan
           end: civilDate('2027-03-05'),
           effect: 'note' as const,
           evidence: 'Ata sintética',
-          offers: ['integrado'],
+          scope: { offers: ['integrado'], confirmed: true },
           requirementId: 'family-meeting',
         },
       ],

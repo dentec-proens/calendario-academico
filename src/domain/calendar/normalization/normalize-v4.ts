@@ -13,7 +13,7 @@ import { activityPlan } from '../activities/plan.ts';
 import { linkKept, validateLinks } from '../activities/links.ts';
 import { validCategory, eventCategory } from '../activities/categories.ts';
 import { normalizeObservanceDates } from '../observances.ts';
-import { teacherVacations } from '../activities/teacher-vacations.ts';
+import { regeneratedVacations, teacherVacations } from '../activities/teacher-vacations.ts';
 import { rulesetVersion } from '../../policies/registry.ts';
 import { associationOffers, offerFor } from '../offers.ts';
 import { isStageRequirementId } from '../activities/metadata.ts';
@@ -104,9 +104,8 @@ export function normalizeOfferCalendar(
   if (s.weekConfirmed && !s.weekdays.length) fail('Semana letiva vazia.');
   if (s.teacherVacations) {
     const vacation = teacherVacations(s.year, s.teacherVacations);
-    const recorded = new Map(previous?.events.map((event) => [event.id, event.requirementId]));
-    for (const event of s.events)
-      if (event.requirementId) recorded.set(event.id, event.requirementId);
+    // The proposed date of the same ID wins over the previous one, as for any other field.
+    const recorded = [...(previous?.events ?? []), ...s.events];
     s.events = s.events
       .filter(
         (e) =>
@@ -115,11 +114,11 @@ export function normalizeOfferCalendar(
           ),
       )
       .concat(
-        vacation.events.map((event) => {
-          // Regenerated vacations keep the link recorded for the same date ID.
-          const requirementId = recorded.get(event.id);
-          return requirementId ? { ...event, requirementId } : event;
-        }),
+        regeneratedVacations(
+          vacation.events,
+          s.offers.map((offer) => offer.id),
+          recorded,
+        ),
       );
   }
   const ids = new Set<string>();
@@ -179,7 +178,8 @@ export function normalizeOfferCalendar(
     text(event.name, 160);
     if (ids.has(event.id) || event.id.startsWith('inst:')) fail('Identificador inválido.');
     ids.add(event.id);
-    if (event.offers !== undefined) scope(event.offers);
+    scope(event.scope.offers);
+    if (typeof event.scope.confirmed !== 'boolean') fail('Abrangência da data inválida.');
     const old = before.get(event.id);
     validateActivityRecord(s, event, {
       // Edited stage intervals are checked against their cycle by `validateLinks`.

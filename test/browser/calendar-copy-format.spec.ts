@@ -45,7 +45,7 @@ test('a format 5 copy round-trips and a format 4 copy is refused with its own me
         start: '2027-03-10',
         end: '2027-03-10',
         effect: 'note',
-        offers: exported.offers.map((offer) => offer.id),
+        scope: { offers: exported.offers.map((offer) => offer.id), confirmed: true },
       },
     ],
   };

@@ -33,7 +33,7 @@ const stages = (
     id: `${offer}-stage-${index + 1}`,
     name: `${perSemester ? (index % perSemester) + 1 : index + 1}ª etapa de avaliação${perSemester ? ` — ${Math.floor(index / perSemester) + 1}º semestre` : ''} — ${label}`,
     requirementId: `stage-${index + 1}:${offer}`,
-    offers: [offer],
+    scope: { offers: [offer], confirmed: true },
     start: civilDate(start),
     end: civilDate(end),
     effect: 'note',

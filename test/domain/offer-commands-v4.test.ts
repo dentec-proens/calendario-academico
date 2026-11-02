@@ -42,7 +42,7 @@ test('applying one semester offer keeps four annual stage bindings and preserves
   expect(next.offers).toEqual(before.offers);
   expect(
     next.events
-      .filter((event) => event.offers?.includes('graduacao-2'))
+      .filter((event) => event.scope.offers.includes('graduacao-2'))
       .map((event) => event.requirementId),
   ).toEqual([
     'stage-1:graduacao-2',
@@ -50,8 +50,8 @@ test('applying one semester offer keeps four annual stage bindings and preserves
     'stage-3:graduacao-2',
     'stage-4:graduacao-2',
   ]);
-  expect(next.events.filter((event) => !event.offers?.includes('graduacao-2'))).toEqual(
-    before.events.filter((event) => !event.offers?.includes('graduacao-2')),
+  expect(next.events.filter((event) => !event.scope.offers.includes('graduacao-2'))).toEqual(
+    before.events.filter((event) => !event.scope.offers.includes('graduacao-2')),
   );
   expect(
     next.periods.filter(
@@ -144,7 +144,9 @@ test('event edits enforce the owning cycle and the explicit offer id', () => {
       true,
     ),
   ).toThrow('2º semestre');
-  expect(() => applyEvent(state, { ...stage, offers: ['graduacao'] }, [], true)).toThrow('oferta');
+  expect(() =>
+    applyEvent(state, { ...stage, scope: { offers: ['graduacao'], confirmed: true } }, [], true),
+  ).toThrow('oferta');
   const next = applyEvent(
     state,
     { ...stage, name: 'Primeira etapa do segundo semestre' },
@@ -159,12 +161,13 @@ test('event edits enforce the owning cycle and the explicit offer id', () => {
   );
 });
 
-test('adding an opaque offer identity freezes earlier implicit events and creates its own periods', () => {
+test('adding an opaque offer identity keeps earlier scopes and creates its own periods', () => {
   const state = calendarOffersV4Fixture();
   state.events.push({
     id: 'earlier-global',
     name: 'Evento geral anterior',
     effect: 'note',
+    scope: { offers: offerIds(state), confirmed: false },
     start: civilDate('2027-04-01'),
     end: civilDate('2027-04-01'),
   });
@@ -193,14 +196,21 @@ test('adding an opaque offer identity freezes earlier implicit events and create
   const previousIds = offerIds(state);
   const next = applyOfferOrganization(state, newOffer.id, draft, ids(), newOffer);
   expect(next.offers.at(-1)).toEqual({ ...newOffer, stages: { perTerm: 1 } });
-  expect(next.events.find((event) => event.id === 'earlier-global')?.offers).toEqual(previousIds);
+  // Neither extended nor confirmed (plan, section 5.3).
+  expect(next.events.find((event) => event.id === 'earlier-global')?.scope).toEqual({
+    offers: previousIds,
+    confirmed: false,
+  });
   expect(
     next.events
-      .filter((event) => event.offers?.includes(newOffer.id))
+      .filter((event) => event.scope.offers.includes(newOffer.id))
       .map((event) => event.requirementId),
   ).toEqual(['stage-1:graduacao-4', 'stage-2:graduacao-4']);
   expect(() => validateAddedOffers(previousIds, next)).not.toThrow();
-  expect(state.events.find((event) => event.id === 'earlier-global')).not.toHaveProperty('offers');
+  expect(state.events.find((event) => event.id === 'earlier-global')?.scope).toEqual({
+    offers: previousIds,
+    confirmed: false,
+  });
 });
 
 test('splitting a shared period remaps only the destination of the reorganized offer', () => {
@@ -243,7 +253,7 @@ test('splitting a shared period remaps only the destination of the reorganized o
         effect: 'note',
         start: civilDate(index ? '2027-07-26' : '2027-02-01'),
         end: civilDate(index ? '2027-12-17' : '2027-07-09'),
-        offers: [offer],
+        scope: { offers: [offer], confirmed: true },
         requirementId: `stage-${index + 1}:${offer}`,
       })),
     ),
@@ -254,7 +264,7 @@ test('splitting a shared period remaps only the destination of the reorganized o
     effect: 'note',
     start: civilDate('2027-01-01'),
     end: civilDate('2027-01-01'),
-    offers: ['graduacao', 'graduacao-2'],
+    scope: { offers: ['graduacao', 'graduacao-2'], confirmed: true },
     notice: {
       publication: 'published',
       admission: {
@@ -277,7 +287,7 @@ test('splitting a shared period remaps only the destination of the reorganized o
   const notices = next.events.filter((event) => event.notice);
   expect(notices.map((event) => event.id)).toEqual(['notice']);
   const [notice] = notices;
-  expect(notice.offers).toEqual(['graduacao', 'graduacao-2']);
+  expect(notice.scope.offers).toEqual(['graduacao', 'graduacao-2']);
   const destinations = notice.notice!.admission!.destinations;
   expect(destinations[0]).toEqual({ offerId: 'graduacao', periodId: 'shared' });
   expect(destinations[1].offerId).toBe('graduacao-2');

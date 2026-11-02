@@ -103,6 +103,7 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
       start: civilDate('2027-02-20'),
       end: civilDate('2027-02-20'),
       effect: 'exclude',
+      scope: { offers: ['integrado'], confirmed: true },
     },
   ]);
   assert.equal(result.byWeekday[6], 1);
@@ -247,6 +248,7 @@ const yearState: ActivityState = {
       id: 's1',
       name: 'Feira de ciências',
       effect: 'include',
+      scope: { offers: ['integrado'], confirmed: true },
       category: 'sabado',
       start: civilDate('2027-03-06'),
       end: civilDate('2027-03-06'),
@@ -255,6 +257,7 @@ const yearState: ActivityState = {
       id: 'semana',
       name: 'Semana acadêmica',
       effect: 'include',
+      scope: { offers: ['integrado'], confirmed: true },
       category: 'institucional',
       start: civilDate('2027-03-22'),
       end: civilDate('2027-03-27'),
@@ -263,6 +266,7 @@ const yearState: ActivityState = {
       id: 's2',
       name: 'Reposição',
       effect: 'include',
+      scope: { offers: ['integrado'], confirmed: true },
       category: 'sabado',
       start: civilDate('2027-06-05'),
       end: civilDate('2027-06-05'),
@@ -281,6 +285,7 @@ const holiday: CalendarEvent = {
   id: 'holiday',
   name: 'Feriado municipal',
   effect: 'exclude',
+  scope: { offers: ['integrado'], confirmed: true },
   start: civilDate('2027-03-20'),
   end: civilDate('2027-03-20'),
 };
@@ -338,6 +343,7 @@ test('a Saturday covered by a wider inclusion stays editable through its own rec
     id: 's3',
     name: 'Gincana',
     effect: 'include',
+    scope: { offers: ['integrado'], confirmed: true },
     category: 'sabado',
     start: civilDate('2027-03-27'),
     end: civilDate('2027-03-27'),

@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
-import type { ActivityState, ActivityPlanItem } from '../../src/domain/calendar/model.ts';
+import type {
+  ActivityState,
+  ActivityPlanItem,
+  ProjectedDate,
+} from '../../src/domain/calendar/model.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { diagnoseCalendar, diagnoseTeachingDays } from '../../src/domain/calendar/diagnostics.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
@@ -31,7 +35,7 @@ function semanticProjection(
   const policy = policyFor(state.year);
   const requirements = activityPlan(state);
   const institutional = inheritedEvents(catalogue, state.year, state.offers);
-  const events = [...institutional, ...state.events];
+  const events = [...institutional, ...state.events] as ProjectedDate[];
   const diagnostic = diagnoseCalendar(state, events);
   const baseSnapshot = {
     revision: catalogue.revision,

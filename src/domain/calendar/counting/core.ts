@@ -25,7 +25,11 @@ type Evidence = Pick<CountingInterval, 'id' | 'evidenceId'>;
  * Manual calendar fields never become institutional source metadata. The origin is the
  * container, carried by the editor projection (`projectDates`), never the `inst:` ID prefix.
  */
-export function automaticEventSource(event: { institutional?: boolean; evidence?: string }) {
+export function automaticEventSource(event: {
+  id?: string;
+  institutional?: boolean;
+  evidence?: string;
+}) {
   return event.institutional === true ? event.evidence : undefined;
 }
 

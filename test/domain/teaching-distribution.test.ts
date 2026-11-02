@@ -57,7 +57,7 @@ const stage = (number: number, modality: string, start: string, end: string) => 
   id: `${modality}${number}`,
   name: 'Etapa',
   requirementId: `stage-${number}:${modality}`,
-  offers: [modality],
+  scope: { offers: [modality], confirmed: true },
   start: civilDate(start),
   end: civilDate(end),
   effect: 'note' as const,
@@ -75,7 +75,7 @@ const events: CalendarEvent[] = [
     start: civilDate('2027-06-22'),
     end: civilDate('2027-06-22'),
     effect: 'exclude' as const,
-    offers: ['integrado'],
+    scope: { offers: ['integrado'], confirmed: true },
   },
   {
     id: 'saturday',
@@ -83,7 +83,7 @@ const events: CalendarEvent[] = [
     start: civilDate('2027-06-26'),
     end: civilDate('2027-06-26'),
     effect: 'include' as const,
-    offers: ['integrado'],
+    scope: { offers: ['integrado'], confirmed: true },
   },
 ];
 
@@ -178,6 +178,7 @@ test('annual periods preserve assessment totals without inventing semester bound
       start: civilDate('2027-07-03'),
       end: civilDate('2027-08-01'),
       effect: 'exclude' as const,
+      scope: { offers: ['integrado'], confirmed: true },
     },
   ];
   const result = evaluateCalendar(input, withRecess),

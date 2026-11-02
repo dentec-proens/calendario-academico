@@ -344,7 +344,7 @@ describe('findings of the independent review of phase 1', () => {
       start: civilDate('2027-06-30'),
       end: civilDate('2027-06-30'),
       effect: 'note',
-      offers: ['integrado'],
+      scope: { offers: ['integrado'], confirmed: true },
     };
     expect(() => applyEvent(semester, event, [])).toThrow(/oferta/);
     expect(() => normalizeOfferCalendar({ ...semester, events: [event] }, semester)).toThrow(

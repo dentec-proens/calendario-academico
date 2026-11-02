@@ -1,5 +1,4 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
@@ -16,8 +15,8 @@ test('teacher vacations count explicit inclusive ranges without sources and reje
       secondEnd: civilDate(`${year}-07-31`),
     });
     assert.equal(v.total, 45);
-    assert(v.events.every((e: CalendarEvent) => e.effect === 'exclude'));
-    assert(v.events.every((e: CalendarEvent) => !Object.hasOwn(e, 'evidence')));
+    assert(v.events.every((e) => e.effect === 'exclude'));
+    assert(v.events.every((e) => !Object.hasOwn(e, 'evidence')));
   }
   assert.throws(() =>
     teacherVacations(2027, {

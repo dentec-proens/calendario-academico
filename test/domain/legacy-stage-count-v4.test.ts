@@ -139,7 +139,7 @@ test('new and changed assessment dates remain blocked until the organization def
         end: civilDate('2027-03-12'),
         effect: 'note',
         requirementId: 'stage-1:integrado',
-        offers: ['integrado'],
+        scope: { offers: ['integrado'], confirmed: true },
       },
     ],
   };
@@ -169,7 +169,7 @@ test('complete explicit configuration clears the marker and keeps surplus stage 
       end: civilDate(`2027-0${n + 1}-12`),
       effect: 'note',
       requirementId: `stage-${n}:integrado`,
-      offers: ['integrado'],
+      scope: { offers: ['integrado'], confirmed: true },
     })),
   };
   const draft = offerOrganizationDraft(state, 'integrado');
@@ -209,7 +209,7 @@ test('unclassified historical stage evidence retains its original interval findi
         end: civilDate('2027-03-12'),
         effect: 'note',
         requirementId: 'stage-1:integrado',
-        offers: ['integrado'],
+        scope: { offers: ['integrado'], confirmed: true },
       },
     ],
   };
@@ -241,7 +241,7 @@ test('complete classification keeps every linked result, council and meeting, su
         end: civilDate('2027-05-28'),
         effect: 'note',
         requirementId: `${family}-${n}:integrado`,
-        offers: ['integrado'],
+        scope: { offers: ['integrado'], confirmed: true },
       })),
     ),
   };

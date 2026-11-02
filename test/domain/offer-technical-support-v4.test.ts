@@ -70,7 +70,7 @@ test('pending semester stages retain every assessment-dependent binding while ot
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-02'),
       effect: 'note' as const,
-      offers: ['graduacao'],
+      scope: { offers: ['graduacao'], confirmed: true },
       requirementId: `${prefix}-1:graduacao`,
     })),
   };
@@ -117,7 +117,7 @@ test('coverage-linked candidates carry only the fields of the review contract', 
     end: civilDate('2027-05-17'),
     effect: 'note' as const,
     category: 'limite',
-    offers: [offer],
+    scope: { offers: [offer], confirmed: true },
     requirementId: `stage-1:${offer}`,
     assessmentAutoStart: civilDate('2027-02-15'),
   });

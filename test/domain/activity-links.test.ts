@@ -44,7 +44,12 @@ test('edited date: every interval and association check applies, against unchang
   expect(dateEdited(first, first)).toBe(false);
   expect(dateEdited(first, { ...first, name: 'Nova descrição' })).toBe(false);
   expect(dateEdited(first, { ...first, end: civilDate('2027-03-30') })).toBe(true);
-  expect(dateEdited(first, { ...first, offers: ['integrado', 'subsequente'] })).toBe(true);
+  expect(
+    dateEdited(first, {
+      ...first,
+      scope: { offers: ['integrado', 'subsequente'], confirmed: true },
+    }),
+  ).toBe(true);
   expect(() =>
     validateLinks(state, moved(state, 'stage-first', { end: civilDate('2027-04-10') })),
   ).toThrow('sequência');
@@ -52,7 +57,12 @@ test('edited date: every interval and association check applies, against unchang
     validateLinks(state, moved(state, 'stage-first', { start: civilDate('2027-01-25') })),
   ).toThrow('período');
   expect(() =>
-    validateLinks(state, moved(state, 'stage-first', { offers: ['integrado', 'subsequente'] })),
+    validateLinks(
+      state,
+      moved(state, 'stage-first', {
+        scope: { offers: ['integrado', 'subsequente'], confirmed: true },
+      }),
+    ),
   ).toThrow('oferta');
   // Still a duplicate: an edit of one of the two dates does not create a valid stage.
   expect(() =>
@@ -105,7 +115,7 @@ test('a generated activity of another offer does not cover the date: classificat
     start: civilDate('2027-12-17'),
     end: civilDate('2027-12-17'),
     effect: 'note',
-    offers: ['subsequente'],
+    scope: { offers: ['subsequente'], confirmed: true },
   };
   const annual = { ...state, events: [result] };
   expect(linksToReview(annual).size).toBe(0);

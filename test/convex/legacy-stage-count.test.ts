@@ -45,7 +45,7 @@ async function setup(count?: Count) {
         end: `2027-0${index + 2}-20`,
         effect: 'note' as const,
         category: 'limite',
-        offers: ['integrado'],
+        scope: { offers: ['integrado'], confirmed: true },
       }));
       await ctx.db.patch(content._id, { state });
     });

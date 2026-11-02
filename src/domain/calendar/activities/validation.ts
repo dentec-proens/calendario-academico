@@ -1,7 +1,7 @@
 import { calendarLimits } from '../config.ts';
 import type { ActivityState, AssessmentSettings, CalendarEvent, CalendarPeriod } from '../model.ts';
 import { parseDate } from '../../civil-date.ts';
-import { offerFor, offerIds } from '../offers.ts';
+import { offerFor } from '../offers.ts';
 import { isStageRequirementId } from './metadata.ts';
 import { assessmentIntervalIssue } from './assessment-intervals.ts';
 import { policyFor } from '../../policies/registry.ts';
@@ -125,8 +125,7 @@ export function validateActivityRecord(
     if (issue) throw new DomainError(issue);
   }
   if (event.effect === 'include' && state.periods) {
-    const declared = event.offers;
-    const scope = declared?.length ? declared : offerIds(state);
+    const scope = event.scope.offers;
     for (let time = parseDate(event.start); time <= parseDate(event.end); time += 86400000) {
       const date = new Date(time).toISOString().slice(0, 10);
       if (
@@ -184,12 +183,11 @@ const termNames = { annual: 'ciclo anual', first: '1º semestre', second: '2º s
  */
 export function noticeDestinationIssues(
   state: AssessmentSettings & { periods: CalendarPeriod[] },
-  event: Pick<CalendarEvent, 'notice' | 'offers'>,
+  event: Pick<CalendarEvent, 'notice' | 'scope'>,
 ): NoticeDestinationIssue[] {
   const admission = event.notice?.admission;
   if (!admission?.destinations.length) return [];
-  const offers = event.offers?.length ? event.offers : offerIds(state);
-  return offers.flatMap((offerId): NoticeDestinationIssue[] => {
+  return event.scope.offers.flatMap((offerId): NoticeDestinationIssue[] => {
     const periodId = admissionDestination(event, offerId);
     if (periodId === undefined)
       return [

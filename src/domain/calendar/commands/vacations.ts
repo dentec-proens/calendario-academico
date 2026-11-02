@@ -1,5 +1,6 @@
 import type { ActivityState, InstitutionalEventSnapshot, VacationPeriods } from '../model.ts';
-import { teacherVacations } from '../activities/teacher-vacations.ts';
+import { regeneratedVacations, teacherVacations } from '../activities/teacher-vacations.ts';
+import { offerIds } from '../offers.ts';
 import { recalculateCalendar } from './recalculate.ts';
 
 /** Teacher vacations are replaced as one group. */
@@ -15,18 +16,13 @@ export function applyVacations<S extends ActivityState>(
   institutional: InstitutionalEventSnapshot[],
 ): S {
   const vacation = teacherVacations(state.year, values);
-  const recorded = new Map(state.events.map((event) => [event.id, event.requirementId]));
   return recalculateCalendar(
     {
       ...state,
       teacherVacations: values,
       events: [
         ...state.events.filter((event) => !vacationIds.has(event.id)),
-        // Regenerated vacations keep the link recorded for the same date ID.
-        ...vacation.events.map((event) => {
-          const requirementId = recorded.get(event.id);
-          return requirementId ? { ...event, requirementId } : event;
-        }),
+        ...regeneratedVacations(vacation.events, offerIds(state), state.events),
       ],
     },
     institutional,

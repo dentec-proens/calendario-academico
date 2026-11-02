@@ -1,6 +1,5 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import type { countCalendar } from '../../src/domain/calendar/counting/core.ts';
-import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
@@ -54,10 +53,10 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
     thirdStart: civilDate('2027-10-06'),
     thirdEnd: civilDate('2027-10-08'),
   });
-  assert(vacation.events.every((e: CalendarEvent) => e.effect === 'exclude'));
+  assert(vacation.events.every((e) => e.effect === 'exclude'));
   assert.equal(evaluateCalendar(state, holidays).total, 16);
   for (const effect of ['exclude' as const]) {
-    const events = [...holidays, ...vacation.events.map((e: CalendarEvent) => ({ ...e, effect }))],
+    const events = [...holidays, ...vacation.events.map((e) => ({ ...e, effect }))],
       original = structuredClone(events);
     const result = evaluateCalendar(state, events);
     assert.equal(result.total, 13);
@@ -82,6 +81,7 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
             {
               id: 'stage',
               effect: 'note' as const,
+              scope: { offers: ['integrado'], confirmed: true },
               requirementId: 'stage-1:integrado',
               start: civilDate('2027-10-01'),
               end: civilDate('2027-10-31'),

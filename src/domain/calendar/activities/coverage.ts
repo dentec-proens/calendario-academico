@@ -1,4 +1,10 @@
-import type { AssessmentSettings, CalendarEvent, CalendarPeriod } from '../model.ts';
+import {
+  isLocalDate,
+  type AssessmentSettings,
+  type CalendarEvent,
+  type CalendarPeriod,
+  type ProjectedDate,
+} from '../model.ts';
 import { appliesTo } from '../modalities.ts';
 import { calendarOffers } from '../offers.ts';
 import { policyFor } from '../../policies/registry.ts';
@@ -14,18 +20,20 @@ export function activityCoverage(
     weekdays?: number[];
     weekConfirmed?: boolean;
   },
-  events: CalendarEvent[] = state.events,
+  events: readonly ProjectedDate[] = state.events,
   humanReview?: { current: boolean; reviewedCriterionIds: readonly string[] },
 ) {
   const policy = policyFor(state.year);
-  const review = linksToReview({ ...state, events });
+  // Only local dates carry activity links; institutional dates still prorogate deadlines.
+  const local = events.filter(isLocalDate);
+  const review = linksToReview({ ...state, events: local });
   return policy.requirements(state).flatMap((requirement) =>
     calendarOffers(state)
       .filter((offer) => !requirement.offerId || requirement.offerId === offer.id)
       .map((offer) => {
         const modality = offer.id;
         const applicability = policy.applicability(state, requirement, offer);
-        const linked = events.filter(
+        const linked = local.filter(
           (event) => event.requirementId === requirement.id && appliesTo(event, offer),
         );
         const issues: string[] = [],
@@ -37,7 +45,9 @@ export function activityCoverage(
             warnings.push(`${linkIssueLabels[reason]}: ${linkIssueActions[reason]}`);
             return false;
           }
-          if (policy.explicitRecordOffers && !event.offers?.includes(modality)) {
+          // Under explicit offers (2027), only a scope the campus confirmed counts (plan, 5.3).
+          if (policy.explicitRecordOffers && !event.scope.confirmed) {
+            // Same text as format 4, so the frozen oracle of coverage stays equal.
             issues.push('Confirme explicitamente as ofertas abrangidas pelo registro legado.');
             return false;
           }

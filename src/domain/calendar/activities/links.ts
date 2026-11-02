@@ -1,7 +1,7 @@
 import type { ActivityPlanItem, ActivityState, CalendarEvent, CalendarPeriod } from '../model.ts';
 import { equalValues } from '../../../shared/equal.ts';
 import { DomainError } from '../../errors.ts';
-import { offerFor, offerIds, stageTerm } from '../offers.ts';
+import { offerFor, stageTerm } from '../offers.ts';
 import { activityPlan } from './plan.ts';
 import { assessmentCycleIssue, assessmentIntervalIssue } from './assessment-intervals.ts';
 import { isStageRequirementId } from './metadata.ts';
@@ -9,7 +9,7 @@ import { periodsForOffer } from '../organization/periods.ts';
 
 type LinkState = Pick<ActivityState, 'year' | 'offers' | 'periods' | 'events'> &
   Partial<Pick<ActivityState, 'schemaVersion' | 'rulesetVersion'>>;
-type LinkedDate = Pick<CalendarEvent, 'id' | 'requirementId' | 'start' | 'end' | 'offers'>;
+type LinkedDate = Pick<CalendarEvent, 'id' | 'requirementId' | 'start' | 'end' | 'scope'>;
 
 /**
  * Why a dated link cannot be accepted as fulfilment. The link is kept as recorded; the date is
@@ -81,16 +81,15 @@ export function linksToReview(
 }
 
 /**
- * The generated row is scoped to at least one offer of the date (all offers when absent): a stage
- * row to its offer, a cycle row to the offers organised in that cycle.
+ * The generated row is scoped to at least one offer of the date: a stage row to its offer, a cycle
+ * row to the offers organised in that cycle.
  */
 export function coversDate(
   state: Pick<LinkState, 'offers'>,
   activity: ActivityPlanItem,
-  event: Pick<CalendarEvent, 'offers'>,
+  event: Pick<CalendarEvent, 'scope'>,
 ) {
-  const offers = event.offers?.length ? event.offers : offerIds(state);
-  return offers.some((id) =>
+  return event.scope.offers.some((id) =>
     activity.offerId
       ? activity.offerId === id
       : activity.offerIds
@@ -124,7 +123,7 @@ export function dateEdited(previous: CalendarEvent | undefined, next: CalendarEv
     previous.start !== next.start ||
     previous.end !== next.end ||
     previous.requirementId !== next.requirementId ||
-    !equalValues(previous.offers, next.offers)
+    !equalValues(previous.scope.offers, next.scope.offers)
   );
 }
 
@@ -174,7 +173,8 @@ export function validateLinks(
     const activity = requirements.get(event.requirementId);
     // A kept link without generated activity has no cycle or scope to check its dates against.
     if (!activity) continue;
-    if (activity.offerId && (event.offers?.length !== 1 || event.offers[0] !== activity.offerId))
+    const offers = event.scope.offers;
+    if (activity.offerId && (offers.length !== 1 || offers[0] !== activity.offerId))
       throw new DomainError('A etapa deve estar vinculada à sua oferta.');
     if (!coversDate(next, activity, event))
       throw new DomainError(

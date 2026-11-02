@@ -87,7 +87,7 @@ test('a pending date is edited and saved with its link', async () => {
       name: 'Reconhecimento revisado',
       start: civilDate('2027-07-21'),
       end: civilDate('2027-07-30'),
-      offers: ['subsequente'],
+      scope: { offers: ['subsequente'], confirmed: true },
     },
     [],
     true,
@@ -97,7 +97,7 @@ test('a pending date is edited and saved with its link', async () => {
     requirementId: 'recognition-2',
     name: 'Reconhecimento revisado',
     start: '2027-07-21',
-    offers: ['subsequente'],
+    scope: { offers: ['subsequente'], confirmed: true },
   });
 });
 

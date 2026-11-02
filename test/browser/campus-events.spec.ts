@@ -114,7 +114,7 @@ test('a local date whose ID imitates the base prefix stays a campus date', async
       end: '2027-03-11',
       effect: 'note',
       category: 'evento',
-      offers: ['integrado'],
+      scope: { offers: ['integrado'], confirmed: true },
       evidence: 'Fonte que não é da base',
     } as (typeof record.state.events)[number]);
     record.version++;
