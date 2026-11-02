@@ -14,6 +14,7 @@ interface CollectionPanelProps {
   children: ReactNode;
   form: ReactNode;
   feedback?: ReactNode;
+  toolbar?: ReactNode;
 }
 
 export default function CollectionPanel({
@@ -27,6 +28,7 @@ export default function CollectionPanel({
   children,
   form,
   feedback,
+  toolbar,
 }: CollectionPanelProps) {
   const id = useId();
   const listHeading = useRef<HTMLHeadingElement>(null);
@@ -61,6 +63,7 @@ export default function CollectionPanel({
                 {title}
               </h2>
             ) : null}
+            {toolbar}
             {canCreate ? (
               <Button
                 variant="secondary"

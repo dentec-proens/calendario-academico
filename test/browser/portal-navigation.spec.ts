@@ -37,19 +37,33 @@ test('calendar creation asks for year and offers and previews the draft name', a
   page,
   fixtureServer,
 }) => {
-  await page.goto(await fixtureServer('portal'));
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/calendarios?role=CAMPUS');
+  await expect(page.locator('.calendar-list')).toHaveAttribute('data-view', 'gallery');
   await expect(page.locator('#calendar-list')).toContainText('Criado por: Pessoa autora');
   await expect(page.locator('#calendar-list')).toContainText(
     'Última alteração por: Pessoa editora',
   );
-  const firstCalendar = page.locator('#calendar-list > li[data-calendar-campus]').first();
-  await expect(firstCalendar.locator('.calendar-list-offering')).toContainText('Técnico integrado');
-  await expect(firstCalendar.locator('.calendar-list-courses')).not.toBeEmpty();
-  const coursePosition = await firstCalendar.locator('.calendar-list-courses').boundingBox();
-  const authorshipPosition = await firstCalendar.locator('.calendar-list-authorship').boundingBox();
+  const card = page.locator('#calendar-list > li[data-calendar-campus]').first();
+  await expect(card.locator('.calendar-list-offering')).toContainText('Técnico integrado');
+  await expect(card.locator('.calendar-list-courses')).not.toBeEmpty();
+  const coursePosition = await card.locator('.calendar-list-courses').boundingBox();
+  const authorshipPosition = await card.locator('.calendar-list-authorship').boundingBox();
   expect(coursePosition).not.toBeNull();
   expect(authorshipPosition).not.toBeNull();
   expect(authorshipPosition!.y).toBeGreaterThan(coursePosition!.y + coursePosition!.height);
+
+  // Profiles that oversee every campus scan the same calendars as aligned table rows.
+  await page.goto(origin + '/calendarios');
+  await expect(page.locator('.calendar-list')).toHaveAttribute('data-view', 'table');
+  await expect(page.locator('.calendar-list-heading')).toBeVisible();
+  const row = page.locator('#calendar-list > li[data-calendar-campus]').first();
+  await expect(row.locator('.calendar-list-campus')).toContainText('Campus de teste');
+  await expect(row.locator('.calendar-list-authorship')).toContainText('por Pessoa editora');
+  const statusPosition = await row.locator('.calendar-list-status').boundingBox();
+  const namePosition = await row.locator('.calendar-list-name').boundingBox();
+  expect(statusPosition!.x).toBeGreaterThan(namePosition!.x + namePosition!.width);
+  await expect(row.getByRole('button', { name: 'Excluir calendário' })).toBeVisible();
   await expect(page.getByText('Horários de Brasília', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Novo calendário' }).click();
   const name = page.getByLabel('Nome do calendário', { exact: true });

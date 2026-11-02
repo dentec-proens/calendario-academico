@@ -15,6 +15,9 @@ import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
 import { useRouteForm } from '../../app/navigation.ts';
 import { Link } from '@tanstack/react-router';
 import { updatedLabel } from '../../shared/dates.ts';
+import './calendars.css';
+
+type Calendar = Bootstrap['calendars'][number];
 
 export default function CalendarsPanel({
   info,
@@ -35,7 +38,7 @@ export default function CalendarsPanel({
   const navigate = useNavigate();
   const calendars = info.calendars.filter((calendar) => !filter || calendar.campusId === filter);
 
-  function remove(calendar: Bootstrap['calendars'][number]) {
+  function remove(calendar: Calendar) {
     void confirmAction({
       title: 'Mover calendário para a lixeira?',
       description: `O calendário “${calendar.name}” sairá das listas de trabalho e pareceres.`,
@@ -50,7 +53,7 @@ export default function CalendarsPanel({
     });
   }
 
-  function newVersion(calendar: Bootstrap['calendars'][number]) {
+  function newVersion(calendar: Calendar) {
     void confirmAction({
       title: 'Criar nova versão?',
       description: `Um novo rascunho será criado com o conteúdo de “${calendar.name}”.`,
@@ -69,6 +72,79 @@ export default function CalendarsPanel({
     });
   }
 
+  const view = canSelectCampus ? 'table' : 'gallery';
+  const campusName = (calendar: Calendar) =>
+    info.campuses.find((campus) => campus.id === calendar.campusId)?.name;
+  const actions = (calendar: Calendar) => (
+    <div className="calendar-list-actions">
+      <Link
+        to="/calendarios/$calendarId/editar"
+        params={{ calendarId: calendar.id }}
+        className="ui-button ui-button--primary"
+      >
+        {isEditable(calendar.status) ? (
+          <>
+            <Pencil aria-hidden="true" size={18} />
+            Editar
+          </>
+        ) : (
+          <>
+            <Eye aria-hidden="true" size={18} />
+            Abrir
+          </>
+        )}
+      </Link>
+      {canCreateVersion(calendar.status, info.user.role) ? (
+        <Button
+          type="button"
+          variant="secondary"
+          data-new-version={calendar.id}
+          aria-label={view === 'table' ? 'Nova versão' : undefined}
+          title={view === 'table' ? 'Nova versão' : undefined}
+          onClick={() => newVersion(calendar)}
+        >
+          <CopyPlus aria-hidden="true" size={18} />
+          {view === 'table' ? null : 'Nova versão'}
+        </Button>
+      ) : null}
+      {isDeletable(calendar.status) ? (
+        <Button
+          type="button"
+          variant="danger"
+          data-delete-calendar={calendar.id}
+          aria-label="Excluir calendário"
+          title="Excluir calendário"
+          onClick={() => remove(calendar)}
+        >
+          <Trash2 aria-hidden="true" size={18} />
+        </Button>
+      ) : null}
+    </div>
+  );
+  const courses = (calendar: Calendar) =>
+    calendar.courses || calendar.classes || calendar.shifts ? (
+      <p className="calendar-list-courses">
+        {calendar.courses}
+        {calendar.classes || calendar.shifts ? (
+          <span>{[calendar.classes, calendar.shifts].filter(Boolean).join(' · ')}</span>
+        ) : null}
+      </p>
+    ) : null;
+  const offering = (calendar: Calendar) =>
+    calendar.offerKinds.map((kind) => modalityLabels[kind] || kind).join(' + ');
+  const references = (calendar: Calendar) => (
+    <>
+      {calendar.seiProcess ? (
+        <small className="calendar-list-sei">Processo SEI nº {calendar.seiProcess}</small>
+      ) : null}
+      {calendar.supersededByName ? (
+        <small className="calendar-list-superseded">
+          Substituído por {calendar.supersededByName}
+        </small>
+      ) : null}
+    </>
+  );
+
   return (
     <section id="calendars" className="page">
       <CollectionPanel
@@ -77,116 +153,109 @@ export default function CalendarsPanel({
         formOpen={creating}
         onFormOpen={setCreating}
         form={<CreateCalendarForm info={info} canSelectCampus={canSelectCampus} />}
+        toolbar={
+          <div className="calendar-list-tools">
+            {canSelectCampus ? (
+              <label id="filter-label">
+                Filtrar por campus
+                <select
+                  id="campus-filter"
+                  value={filter}
+                  onChange={(e) => onFilter(e.target.value)}
+                >
+                  <option value="">Todos os campi</option>
+                  {info.campuses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <Link
+              to="/calendarios/lixeira"
+              search={{ campus: filter || undefined }}
+              className="calendar-trash-link"
+            >
+              Lixeira
+            </Link>
+          </div>
+        }
       >
-        <div className="calendar-list-tools">
-          {canSelectCampus ? (
-            <label id="filter-label">
-              Filtrar por campus
-              <select id="campus-filter" value={filter} onChange={(e) => onFilter(e.target.value)}>
-                <option value="">Todos os campi</option>
-                {info.campuses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <div className="calendar-list" data-view={view}>
+          {view === 'table' && calendars.length ? (
+            <div className="calendar-list-heading" aria-hidden="true">
+              <span>Calendário</span>
+              <span>Campus</span>
+              <span>Situação</span>
+              <span>Última alteração</span>
+              <span>Ações</span>
+            </div>
           ) : null}
-          <Link
-            to="/calendarios/lixeira"
-            search={{ campus: filter || undefined }}
-            className="calendar-trash-link"
-          >
-            Lixeira
-          </Link>
-        </div>
-        <ul id="calendar-list" className="records">
-          {calendars.length ? (
-            calendars.map((c) => (
-              <li key={c.id} data-calendar-campus={c.campusId}>
-                <div className="calendar-list-details">
-                  <strong>
-                    <StatusBadge status={c.status} /> {c.name}
-                  </strong>
-                  {c.seiProcess ? (
-                    <small className="calendar-list-sei">Processo SEI nº {c.seiProcess}</small>
-                  ) : null}
-                  {c.supersededByName ? <small>Substituído por {c.supersededByName}</small> : null}
-                  <p className="calendar-list-offering">
-                    {c.name ===
-                    calendarName(
-                      c.year,
-                      info.campuses.find((campus) => campus.id === c.campusId)?.name,
-                      c.label,
-                    ) ? null : (
-                      <>
-                        {info.campuses.find((campus) => campus.id === c.campusId)?.name} · {c.year}{' '}
-                        ·{' '}
-                      </>
-                    )}
-                    {c.offerKinds.map((m) => modalityLabels[m] || m).join(' + ')}
-                  </p>
-                  {(c.courses || c.classes || c.shifts) && (
-                    <p className="calendar-list-courses">
-                      {c.courses}
-                      {(c.classes || c.shifts) && (
-                        <span>{[c.classes, c.shifts].filter(Boolean).join(' · ')}</span>
-                      )}
+          <ul id="calendar-list">
+            {calendars.length ? (
+              calendars.map((c) =>
+                view === 'table' ? (
+                  <li key={c.id} data-calendar-campus={c.campusId}>
+                    <div className="calendar-list-details">
+                      <strong className="calendar-list-name">{c.name}</strong>
+                      <p className="calendar-list-offering">{offering(c)}</p>
+                      {courses(c)}
+                      {references(c)}
+                    </div>
+                    <p className="calendar-list-campus">
+                      <span className="calendar-list-cell-label">Campus: </span>
+                      {campusName(c)}
                     </p>
-                  )}
-                  <div className="calendar-list-authorship">
-                    <small>Criado por: {c.createdByName || 'Autoria não registrada'}</small>
-                    <small>
-                      Última alteração por: {c.updatedByName || 'Autoria não registrada'} ·{' '}
-                      {updatedLabel(c.updatedAt)}
-                    </small>
-                  </div>
-                </div>
-                <Link to="/calendarios/$calendarId/editar" params={{ calendarId: c.id }}>
-                  {isEditable(c.status) ? (
-                    <>
-                      <Pencil aria-hidden="true" size={18} />
-                      Editar
-                    </>
-                  ) : (
-                    <>
-                      <Eye aria-hidden="true" size={18} />
-                      Abrir
-                    </>
-                  )}
-                </Link>
-                {canCreateVersion(c.status, info.user.role) ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    data-new-version={c.id}
-                    onClick={() => newVersion(c)}
-                  >
-                    <CopyPlus aria-hidden="true" size={18} />
-                    Nova versão
-                  </Button>
-                ) : null}
-                {isDeletable(c.status) ? (
-                  <Button
-                    type="button"
-                    variant="danger"
-                    data-delete-calendar={c.id}
-                    onClick={() => remove(c)}
-                  >
-                    <Trash2 aria-hidden="true" size={18} />
-                    Excluir calendário
-                  </Button>
-                ) : null}
+                    <div className="calendar-list-status">
+                      <StatusBadge status={c.status} />
+                    </div>
+                    <div className="calendar-list-authorship">
+                      <span className="calendar-list-updated">
+                        <span className="calendar-list-cell-label">Última alteração em </span>
+                        {updatedLabel(c.updatedAt)}
+                      </span>
+                      <small>por {c.updatedByName || 'autoria não registrada'}</small>
+                      <small>Criado por: {c.createdByName || 'Autoria não registrada'}</small>
+                    </div>
+                    {actions(c)}
+                  </li>
+                ) : (
+                  <li key={c.id} data-calendar-campus={c.campusId}>
+                    <div className="calendar-list-details">
+                      <StatusBadge status={c.status} />
+                      <strong className="calendar-list-name">{c.name}</strong>
+                      <p className="calendar-list-offering">
+                        {c.name === calendarName(c.year, campusName(c), c.label) ? null : (
+                          <>
+                            {campusName(c)} · {c.year} ·{' '}
+                          </>
+                        )}
+                        {offering(c)}
+                      </p>
+                      {courses(c)}
+                      {references(c)}
+                    </div>
+                    <div className="calendar-list-authorship">
+                      <small>Criado por: {c.createdByName || 'Autoria não registrada'}</small>
+                      <small>
+                        Última alteração por: {c.updatedByName || 'Autoria não registrada'} ·{' '}
+                        {updatedLabel(c.updatedAt)}
+                      </small>
+                    </div>
+                    {actions(c)}
+                  </li>
+                ),
+              )
+            ) : pagination.status === 'LoadingFirstPage' ? null : (
+              <li className="calendar-list-empty">
+                {filter
+                  ? 'Nenhum calendário registrado para este campus.'
+                  : 'Nenhum calendário registrado nesta conta.'}
               </li>
-            ))
-          ) : pagination.status === 'LoadingFirstPage' ? null : (
-            <li>
-              {filter
-                ? 'Nenhum calendário registrado para este campus.'
-                : 'Nenhum calendário registrado nesta conta.'}
-            </li>
-          )}
-        </ul>
+            )}
+          </ul>
+        </div>
         <Pagination
           pagination={pagination}
           label="Carregar mais calendários"
