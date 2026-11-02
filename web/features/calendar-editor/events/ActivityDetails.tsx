@@ -11,6 +11,7 @@ import { useActivityCoverage } from './useActivityCoverage.ts';
 import { civilDate } from './activity-query.ts';
 import { Button } from '../../../components/ui/Button.tsx';
 import IntakeRequirementForm from '../forms/IntakeRequirementForm.tsx';
+import { destinationIssueLines, destinationText, publicationLabels } from './notice-details.ts';
 
 const formatHours = (hours: number) => `${hours.toLocaleString('pt-BR')} h`;
 
@@ -132,11 +133,9 @@ export default function ActivityDetails({
                     .map((modality) => labelFor(state, modality))
                     .join(', ')}
                   {showHours ? ` · ${formatHours(event.hours ?? 0)}` : ''}
-                  {event.publicationStatus === 'planned'
-                    ? ' · Publicação programada'
-                    : event.publicationStatus === 'published'
-                      ? ' · Publicação realizada'
-                      : ''}
+                  {event.notice?.publication
+                    ? ` · ${publicationLabels[event.notice.publication]}`
+                    : ''}
                   {counts[event.id]
                     ? ' · ' +
                       counts[event.id]
@@ -147,6 +146,14 @@ export default function ActivityDetails({
                         .join(' / ')
                     : ''}
                 </small>
+                {event.notice?.admission?.destinations.length ? (
+                  <small>{destinationText(state, event.notice.admission.destinations)}</small>
+                ) : null}
+                {destinationIssueLines(state, event).map((issue) => (
+                  <small key={issue.offerId} className="notice-destination-issue">
+                    {issue.text}
+                  </small>
+                ))}
               </p>
               <div className="actions">
                 <Button

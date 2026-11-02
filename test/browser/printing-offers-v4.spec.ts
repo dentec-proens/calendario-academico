@@ -19,8 +19,10 @@ for (const width of [1440, 390]) {
         start: civilDate('2026-12-01'),
         end: civilDate('2026-12-01'),
         effect: 'note',
-        publicationStatus: 'published',
-        admission: { type: 'transfer', year: 2027, term: 'annual' },
+        notice: {
+          publication: 'published',
+          admission: { type: 'transfer', year: 2027, term: 'annual', destinations: [] },
+        },
         offers: ['integrado'],
       },
       {
@@ -29,7 +31,7 @@ for (const width of [1440, 390]) {
         start: civilDate('2026-11-01'),
         end: civilDate('2026-11-01'),
         effect: 'note',
-        publicationStatus: 'planned',
+        notice: { publication: 'planned' },
         offers: ['integrado'],
       },
       {

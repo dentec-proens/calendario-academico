@@ -2,7 +2,7 @@ import type { AssessmentSettings, CalendarEvent, CalendarPeriod } from '../model
 import { appliesTo } from '../modalities.ts';
 import { calendarOffers } from '../offers.ts';
 import { policyFor } from '../../policies/registry.ts';
-import { temporalPosition, validateActivityRecord } from './validation.ts';
+import { admissionDestination, temporalPosition, validateActivityRecord } from './validation.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 import { prorogatedDeadline } from './deadlines.ts';
 import { linkIssueActions, linkIssueLabels, linksToReview } from './links.ts';
@@ -48,11 +48,11 @@ export function activityCoverage(
             return false;
           }
           if (requirement.admissionType) {
-            const admission = event.admission;
+            const admission = event.notice?.admission;
             if (
               !admission ||
               admission.type !== requirement.admissionType ||
-              !event.publicationStatus
+              !event.notice?.publication
             ) {
               issues.push('Classificação de ingresso a conferir.');
               return false;
@@ -67,8 +67,10 @@ export function activityCoverage(
               return false;
             }
             if (admission.type === 'transfer') {
-              const period = admission.periodId
-                ? periodsForOffer(state, modality).find((p) => p.id === admission.periodId)
+              // Each offer is checked against its own destination (plan, section 5.4).
+              const periodId = admissionDestination(event, modality);
+              const period = periodId
+                ? periodsForOffer(state, modality).find((p) => p.id === periodId)
                 : undefined;
               if (
                 !period ||
@@ -160,9 +162,9 @@ export function activityCoverage(
           issues,
           warnings,
           execution:
-            linked.length && linked.every((e) => e.publicationStatus === 'published')
+            linked.length && linked.every((e) => e.notice?.publication === 'published')
               ? ('published' as const)
-              : linked.some((e) => e.publicationStatus === 'planned')
+              : linked.some((e) => e.notice?.publication === 'planned')
                 ? ('planned' as const)
                 : ('unclassified' as const),
         };

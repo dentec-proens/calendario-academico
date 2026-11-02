@@ -335,8 +335,10 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
     start: civilDate('2027-12-01'),
     end: civilDate('2027-12-01'),
     evidence: 'Publicação manual',
-    admission: { type: 'regular', year: 2028, term: 'annual' },
-    publicationStatus: 'planned',
+    notice: {
+      publication: 'planned',
+      admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
+    },
     deadlineAdjustment: {
       date: civilDate('2027-12-03'),
       evidence: 'Cronograma manual',
@@ -377,8 +379,15 @@ test('PDF omits manual source text but keeps automatic institutional references 
       end: civilDate('2026-12-02'),
       effect: 'note' as const,
       evidence: 'SEGREDO MANUAL DO EVENTO',
-      publicationStatus: 'published' as const,
-      admission: { type: 'regular' as const, year: 2027, term: 'annual' as const },
+      notice: {
+        publication: 'published' as const,
+        admission: {
+          type: 'regular' as const,
+          year: 2027,
+          term: 'annual' as const,
+          destinations: [],
+        },
+      },
       deadlineAdjustment: {
         date: civilDate('2027-09-03'),
         evidence: 'SEGREDO MANUAL DO AJUSTE',

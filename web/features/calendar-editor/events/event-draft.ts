@@ -1,6 +1,7 @@
 import { civilDate } from '../../../../src/domain/civil-date.ts';
 import type {
   ActivityPlanItem,
+  AdmissionDestination,
   AssessmentSettings,
   CalendarPeriod,
   CalendarOffer,
@@ -39,10 +40,9 @@ export type EventType = (typeof eventTypes)[number]['id'];
 export function eventTypeOf(event: {
   effect: string;
   category?: string;
-  admission?: unknown;
-  admissionType?: string;
+  notice?: { admission?: unknown };
 }): '' | EventType {
-  const notice = Boolean(event.admission || event.admissionType);
+  const notice = Boolean(event.notice?.admission);
   return (
     eventTypes.find(
       (type) =>
@@ -62,6 +62,10 @@ export interface EventValues {
   admissionType: '' | 'regular' | 'transfer';
   admissionYear: string;
   admissionTerm: 'annual' | 'first' | 'second';
+  /**
+   * Common destination of every offer of the date: a period ID, '' for not informed, or
+   * `keptDestinations` to keep the distinct destinations already saved by offer.
+   */
   admissionPeriodId: string;
   adjustedDeadline: string;
   deadlineExtensionCause: '' | 'municipal-holiday' | 'municipal-recess';
@@ -72,6 +76,44 @@ export interface EventValues {
   /** Interface answer to "O que é este evento?"; `effect` and `category` hold the record. */
   eventType: '' | EventType;
 }
+/** Destination answer that keeps the saved destinations by offer (plan, section 5.4). */
+export const keptDestinations = 'por-oferta';
+
+/**
+ * The single destination shared by every offer of a saved date, '' when none is informed, or
+ * `keptDestinations` when offers have distinct destinations or some offer has none.
+ */
+export function commonDestination(
+  destinations: readonly AdmissionDestination[],
+  offers: OfferId[],
+) {
+  if (!destinations.length) return '';
+  const periods = new Set(destinations.map((destination) => destination.periodId));
+  const [periodId] = periods;
+  return periods.size === 1 &&
+    destinations.length === offers.length &&
+    offers.every((offerId) => destinations.some((destination) => destination.offerId === offerId))
+    ? periodId
+    : keptDestinations;
+}
+
+/**
+ * Destinations written by the form: the common destination for each chosen offer, or the saved
+ * destinations of the offers still chosen.
+ */
+export function draftDestinations(
+  value: Pick<EventValues, 'admissionPeriodId' | 'offers'>,
+  base?: CalendarEvent,
+): AdmissionDestination[] {
+  if (value.admissionPeriodId === keptDestinations)
+    return (base?.notice?.admission?.destinations ?? []).filter((destination) =>
+      value.offers.includes(destination.offerId),
+    );
+  return value.admissionPeriodId
+    ? value.offers.map((offerId) => ({ offerId, periodId: value.admissionPeriodId }))
+    : [];
+}
+
 export const emptyEvent = (offers: OfferId[]): EventValues => ({
   name: '',
   start: '',
@@ -91,21 +133,23 @@ export const emptyEvent = (offers: OfferId[]): EventValues => ({
   eventType: '',
 });
 export function eventValues(event: CalendarEvent, offers: OfferId[]): EventValues {
+  const admission = event.notice?.admission;
+  const dateOffers = event.offers?.length ? event.offers : offers;
   return {
     name: event.name,
     start: event.start,
     end: event.end,
     effect: event.effect,
-    publicationStatus: event.publicationStatus ?? '',
-    admissionType: event.admission?.type ?? '',
-    admissionYear: event.admission ? String(event.admission.year) : '',
-    admissionTerm: event.admission?.term ?? 'annual',
-    admissionPeriodId: event.admission?.periodId ?? '',
+    publicationStatus: event.notice?.publication ?? '',
+    admissionType: admission?.type ?? '',
+    admissionYear: admission ? String(admission.year) : '',
+    admissionTerm: admission?.term ?? 'annual',
+    admissionPeriodId: commonDestination(admission?.destinations ?? [], dateOffers),
     adjustedDeadline: event.deadlineAdjustment?.date ?? '',
     deadlineExtensionCause: event.deadlineExtensionCause ?? '',
     category: eventCategory(event),
     requirementId: event.requirementId || '',
-    offers: event.offers?.length ? event.offers : offers,
+    offers: dateOffers,
     hours: event.hours === undefined ? '' : String(event.hours),
     eventType: event.requirementId ? '' : eventTypeOf(event),
   };
@@ -135,6 +179,16 @@ export function eventFromValues(
   const adjustment = target.base?.deadlineAdjustment;
   const { assessmentAutoStart: _automatic, ...kept } =
     target.base ?? ({} as Partial<CalendarEvent>);
+  const publication = (notice && value.publicationStatus) || undefined;
+  const admission =
+    notice && value.admissionType
+      ? {
+          type: value.admissionType,
+          year: Number(value.admissionYear),
+          term: value.admissionTerm,
+          destinations: draftDestinations(value, target.base),
+        }
+      : undefined;
   return {
     ...kept,
     id: target.id,
@@ -142,15 +196,9 @@ export function eventFromValues(
     start: civilDate(value.start),
     end: civilDate(value.end),
     effect: value.effect,
-    publicationStatus: (notice && value.publicationStatus) || undefined,
-    admission:
-      notice && value.admissionType
-        ? {
-            type: value.admissionType,
-            year: Number(value.admissionYear),
-            term: value.admissionTerm,
-            periodId: value.admissionPeriodId || undefined,
-          }
+    notice:
+      publication || admission
+        ? { ...(publication && { publication }), ...(admission && { admission }) }
         : undefined,
     deadlineAdjustment:
       notice && value.adjustedDeadline

@@ -169,8 +169,7 @@ test('existing inclusions are checked before changing periods; records are never
   expect(state.events.at(-1)?.id).toBe('sat');
 });
 
-test('splitting shared admission references preserves each offer link and dates', () => {
-  const state = calendar();
+const sharedNotice = (state: ActivityState) =>
   state.events.push({
     id: 'notice',
     name: 'Edital',
@@ -178,28 +177,62 @@ test('splitting shared admission references preserves each offer link and dates'
     offers: ['integrado', 'graduacao'],
     start: civilDate('2027-02-01'),
     end: civilDate('2027-02-01'),
-    publicationStatus: 'published',
-    admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'shared' },
+    notice: {
+      publication: 'published',
+      admission: {
+        type: 'transfer',
+        year: 2027,
+        term: 'annual',
+        destinations: [
+          { offerId: 'integrado', periodId: 'shared' },
+          { offerId: 'graduacao', periodId: 'shared' },
+        ],
+      },
+    },
   });
+
+test('changing periods remaps only the destination of the reorganized offer, without splitting the notice', () => {
+  const state = calendar();
+  sharedNotice(state);
+  const before = state.events.find((e) => e.id === 'notice')!;
   const next = applyOfferOrganization(
     state,
     'integrado',
     offerOrganizationDraft(state, 'integrado'),
     id,
   );
-  const notices = next.events.filter((e) => e.admission);
-  expect(notices).toHaveLength(2);
-  expect(notices.find((e) => e.offers?.includes('graduacao'))).toMatchObject({
-    id: 'notice',
-    admission: { periodId: 'shared' },
-  });
-  const moved = notices.find((e) => e.offers?.includes('integrado'))!;
-  expect(moved.admission?.periodId).not.toBe('shared');
-  expect(next.periods.find((p) => p.id === moved.admission?.periodId)?.association).toEqual({
+  const notices = next.events.filter((e) => e.notice);
+  expect(notices).toHaveLength(1);
+  const [notice] = notices;
+  const { notice: _notice, ...rest } = before;
+  expect(notice).toMatchObject(rest);
+  const destinations = notice.notice!.admission!.destinations;
+  expect(destinations.find((d) => d.offerId === 'graduacao')?.periodId).toBe('shared');
+  const moved = destinations.find((d) => d.offerId === 'integrado')!.periodId;
+  expect(moved).not.toBe('shared');
+  expect(next.periods.find((p) => p.id === moved)?.association).toEqual({
     status: 'defined',
     offers: ['integrado'],
     term: 'annual',
   });
+});
+
+test('changing the organization of an offer with a notice linked to its periods stays refused', () => {
+  const state = calendar();
+  sharedNotice(state);
+  const draft = { ...offerOrganizationDraft(state, 'integrado'), organization: 'semestral' };
+  expect(offerOrganizationIssues(state, 'integrado', draft).map((i) => i.message)).toContain(
+    'Revise os editais vinculados aos períodos antes de alterar a organização da oferta.',
+  );
+  expect(() => applyOfferOrganization(state, 'integrado', draft, id)).toThrow(
+    'Revise os editais vinculados aos períodos',
+  );
+  // Only the offers with a destination are blocked: the other offer of the date keeps going.
+  const notice = state.events.find((e) => e.id === 'notice')!;
+  notice.notice!.admission!.destinations = [{ offerId: 'graduacao', periodId: 'shared' }];
+  expect(offerOrganizationIssues(state, 'integrado', draft).map((i) => i.message)).not.toContain(
+    'Revise os editais vinculados aos períodos antes de alterar a organização da oferta.',
+  );
 });
 
 test('calendar records no longer require or retain manual references', () => {

@@ -74,8 +74,15 @@ function notice(extra: Partial<CalendarEvent> = {}): CalendarEvent {
     start: civilDate('2026-12-10'),
     end: civilDate('2026-12-10'),
     offers: ['integrado'],
-    publicationStatus: 'published',
-    admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'annual' },
+    notice: {
+      publication: 'published',
+      admission: {
+        type: 'transfer',
+        year: 2027,
+        term: 'annual',
+        destinations: [{ offerId: 'integrado', periodId: 'annual' }],
+      },
+    },
     requirementId: 'admission-notice-0',
     ...extra,
   };
@@ -140,8 +147,7 @@ test('one event covers only the explicitly declared offers and does not waive ve
         requirementId: 'enrolment-0',
         offers: ['subsequente'],
       }),
-      admission: undefined,
-      publicationStatus: undefined,
+      notice: undefined,
     },
   ];
   const rows = activityCoverage(state).filter((row) => row.requirement.id === 'enrolment-0');
@@ -199,13 +205,15 @@ test('prior publication keeps dates and destination after manual sources are rem
       (r) => r.offerId === 'integrado' && r.requirement.id === 'admission-notice-0',
     )?.coverage,
   ).toBe('complete');
-  saved.events[0].admission!.periodId = 'deleted-period';
+  saved.events[0].notice!.admission!.destinations[0].periodId = 'deleted-period';
   expect(
     activityCoverage(saved).find(
       (r) => r.offerId === 'integrado' && r.requirement.id === 'admission-notice-0',
     ),
   ).toMatchObject({ coverage: 'partial' });
-  expect(saved.events[0].admission?.periodId).toBe('deleted-period');
+  expect(saved.events[0].notice?.admission?.destinations).toEqual([
+    { offerId: 'integrado', periodId: 'deleted-period' },
+  ]);
 });
 test('planned regular publication remains planned and December requires an explicit adjusted deadline', () => {
   const state = calendar();
@@ -213,8 +221,10 @@ test('planned regular publication remains planned and December requires an expli
     notice({
       start: civilDate('2027-12-01'),
       end: civilDate('2027-12-01'),
-      publicationStatus: 'planned',
-      admission: { type: 'regular', year: 2028, term: 'annual' },
+      notice: {
+        publication: 'planned',
+        admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
+      },
       requirementId: 'regular-admission-notice',
     }),
   ];
@@ -230,7 +240,7 @@ test('planned regular publication remains planned and December requires an expli
     ),
   ).toMatchObject({ coverage: 'complete', execution: 'planned' });
   expect(state.events[0].start).toBe('2027-12-01');
-  expect(state.events[0].publicationStatus).toBe('planned');
+  expect(state.events[0].notice?.publication).toBe('planned');
 });
 test('prior/cross-year references are informative even if the received discriminator claims event', () => {
   const state = calendar();
@@ -251,8 +261,7 @@ test('prior/cross-year references are informative even if the received discrimin
     start: civilDate('1900-01-01'),
     end: civilDate('2027-01-02'),
     requirementId: undefined,
-    admission: undefined,
-    publicationStatus: undefined,
+    notice: undefined,
   });
   expect(
     normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [old] }).events[0].start,
@@ -394,8 +403,7 @@ test('a legacy event without declared offers remains visible but never covers al
         requirementId: 'campus-events',
         offers: undefined,
       }),
-      admission: undefined,
-      publicationStatus: undefined,
+      notice: undefined,
     },
   ];
   const rows = activityCoverage(state).filter((row) => row.requirement.id === 'campus-events');

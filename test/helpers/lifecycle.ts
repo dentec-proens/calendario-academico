@@ -64,12 +64,19 @@ export function readyContent(): CalendarContent {
     if (requirement.month)
       event.start = event.end = civilDate(`2027-${String(requirement.month).padStart(2, '0')}-10`);
     if (requirement.admissionType) {
-      event.publicationStatus = 'planned';
-      event.admission = {
-        type: requirement.admissionType,
-        year: requirement.admissionType === 'regular' ? 2028 : 2027,
-        term: requirement.term ?? 'annual',
-        ...(requirement.admissionType === 'transfer' ? { periodId: 'year' } : {}),
+      event.notice = {
+        publication: 'planned',
+        admission: {
+          type: requirement.admissionType,
+          year: requirement.admissionType === 'regular' ? 2028 : 2027,
+          term: requirement.term ?? 'annual',
+          destinations:
+            requirement.admissionType === 'transfer'
+              ? (event.offers?.length ? event.offers : state.offers.map((offer) => offer.id)).map(
+                  (offerId) => ({ offerId, periodId: 'year' }),
+                )
+              : [],
+        },
       };
     }
     if (requirement.id.startsWith('admission-notice-'))

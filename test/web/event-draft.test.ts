@@ -3,6 +3,7 @@ import { expect, test } from 'vitest';
 import {
   eventFromValues,
   eventValues,
+  keptDestinations,
   type EventValues,
 } from '../../web/features/calendar-editor/events/event-draft.ts';
 import type { CalendarEvent } from '../../web/features/calendar-editor/types.ts';
@@ -31,8 +32,10 @@ test('a record without category keeps it absent when only its link changes', () 
 test('an unchanged reviewed deadline adjustment keeps its review', () => {
   const base = saved({
     requirementId: 'regular-admission-notice',
-    publicationStatus: 'planned',
-    admission: { type: 'regular', year: 2028, term: 'annual' },
+    notice: {
+      publication: 'planned',
+      admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
+    },
     deadlineAdjustment: { date: civilDate('2027-07-01'), reviewed: true },
   });
   expect(edit(base, { category: 'evento' }).deadlineAdjustment).toEqual({
@@ -55,13 +58,61 @@ test('notice metadata is written only while the free event is answered as a noti
     publicationStatus: 'planned',
   };
   expect(eventFromValues(values, { id: 'new' })).toMatchObject({
-    publicationStatus: 'planned',
-    admission: { type: 'transfer', year: 2027 },
+    notice: { publication: 'planned', admission: { type: 'transfer', year: 2027 } },
   });
   const recess = eventFromValues(
     { ...values, eventType: 'recess', effect: 'exclude', category: 'recesso' },
     { id: 'new' },
   );
-  expect(recess.admission).toBeUndefined();
-  expect(recess.publicationStatus).toBeUndefined();
+  expect(recess.notice).toBeUndefined();
+});
+
+const transfer = (destinations: { offerId: string; periodId: string }[]) =>
+  saved({
+    offers: ['integrado', 'graduacao'],
+    notice: {
+      publication: 'planned',
+      admission: { type: 'transfer', year: 2027, term: 'annual', destinations },
+    },
+  });
+
+test('the form edits one destination common to every offer of the date', () => {
+  const base = transfer([
+    { offerId: 'integrado', periodId: 'year' },
+    { offerId: 'graduacao', periodId: 'year' },
+  ]);
+  expect(eventValues(base, ['integrado']).admissionPeriodId).toBe('year');
+  expect(edit(base).notice).toEqual(base.notice);
+  expect(edit(base, { admissionPeriodId: 'other' }).notice?.admission?.destinations).toEqual([
+    { offerId: 'integrado', periodId: 'other' },
+    { offerId: 'graduacao', periodId: 'other' },
+  ]);
+  expect(edit(base, { admissionPeriodId: '' }).notice?.admission?.destinations).toEqual([]);
+  // A new offer of the date receives the common destination too.
+  expect(
+    edit(base, { offers: ['integrado', 'graduacao', 'subsequente'] }).notice?.admission
+      ?.destinations,
+  ).toHaveLength(3);
+});
+
+test('distinct destinations by offer are kept until a common destination is chosen', () => {
+  const base = transfer([
+    { offerId: 'integrado', periodId: 'year' },
+    { offerId: 'graduacao', periodId: 'removed' },
+  ]);
+  expect(eventValues(base, ['integrado']).admissionPeriodId).toBe(keptDestinations);
+  expect(edit(base).notice).toEqual(base.notice);
+  // Removing an offer from the date drops only its destination.
+  expect(edit(base, { offers: ['graduacao'] }).notice?.admission?.destinations).toEqual([
+    { offerId: 'graduacao', periodId: 'removed' },
+  ]);
+  expect(edit(base, { admissionPeriodId: 'year' }).notice?.admission?.destinations).toEqual([
+    { offerId: 'integrado', periodId: 'year' },
+    { offerId: 'graduacao', periodId: 'year' },
+  ]);
+  // An offer left without destination is not a common destination either.
+  expect(
+    eventValues(transfer([{ offerId: 'integrado', periodId: 'year' }]), ['integrado'])
+      .admissionPeriodId,
+  ).toBe(keptDestinations);
 });

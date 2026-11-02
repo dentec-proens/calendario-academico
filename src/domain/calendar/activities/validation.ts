@@ -47,10 +47,8 @@ export function validateActivityRecord(
     throw new DomainError(
       'A prorrogação municipal exige feriado ou recesso decorrente e exclusão no ano.',
     );
-  if (
-    event.publicationStatus !== undefined &&
-    !['planned', 'published'].includes(event.publicationStatus)
-  )
+  const notice = event.notice;
+  if (notice?.publication !== undefined && !['planned', 'published'].includes(notice.publication))
     throw new DomainError('Situação de publicação inválida.');
   if (position === 'future' || position === 'future-crossing')
     throw new DomainError(
@@ -78,8 +76,8 @@ export function validateActivityRecord(
     if (event.requirementId && !options.keptWithoutActivity && !requirement?.acceptsPriorReference)
       throw new DomainError('Esta atividade não aceita referência anterior ou datas fora do ano.');
   }
-  if (event.admission) {
-    const a = event.admission;
+  if (notice?.admission) {
+    const a = notice.admission;
     if (
       !['regular', 'transfer'].includes(a.type) ||
       !['annual', 'first', 'second'].includes(a.term) ||
@@ -90,11 +88,23 @@ export function validateActivityRecord(
       throw new DomainError('Finalidade de ingresso inválida.');
     if (event.effect !== 'note')
       throw new DomainError('Publicação de edital é um registro informativo.');
-    if (!event.publicationStatus)
+    if (!notice.publication)
       throw new DomainError('Informe se a publicação é programada ou realizada.');
-    if (a.periodId && (typeof a.periodId !== 'string' || a.periodId.length > 100))
+    if (
+      !Array.isArray(a.destinations) ||
+      a.destinations.some(
+        (destination) =>
+          typeof destination.offerId !== 'string' ||
+          typeof destination.periodId !== 'string' ||
+          !destination.periodId ||
+          destination.periodId.length > 100,
+      ) ||
+      new Set(a.destinations.map((destination) => destination.offerId)).size !==
+        a.destinations.length
+    )
       throw new DomainError('Período de ingresso inválido.');
-    // Deleted periods remain visible as unresolved evidence instead of being reassigned.
+    // Removed or incompatible periods remain as unresolved evidence (`noticeDestinationIssues`)
+    // instead of being dropped or reassigned.
   }
   if (
     isStageRequirementId(event.requirementId) &&
@@ -135,8 +145,7 @@ export function validateActivityRecord(
   if (event.deadlineAdjustment) {
     parseDate(event.deadlineAdjustment.date);
     if (
-      !event.admission ||
-      event.admission.type !== 'regular' ||
+      notice?.admission?.type !== 'regular' ||
       typeof event.deadlineAdjustment.reviewed !== 'boolean'
     )
       throw new DomainError(
@@ -144,9 +153,76 @@ export function validateActivityRecord(
       );
   }
   if (
-    event.publicationStatus &&
-    !event.admission &&
+    notice?.publication &&
+    !notice.admission &&
     event.requirementId?.startsWith('admission-notice')
   )
     throw new DomainError('Identifique a finalidade de ingresso do edital.');
+}
+
+/** Destination period of one offer in the notice of a date, when informed. */
+export const admissionDestination = (event: Pick<CalendarEvent, 'notice'>, offerId: string) =>
+  event.notice?.admission?.destinations.find((destination) => destination.offerId === offerId)
+    ?.periodId;
+
+export type NoticeDestinationProblem = 'missing' | 'orphan' | 'unassociated' | 'other-term';
+
+export interface NoticeDestinationIssue {
+  offerId: string;
+  periodId?: string;
+  problem: NoticeDestinationProblem;
+  message: string;
+}
+
+const termNames = { annual: 'ciclo anual', first: '1º semestre', second: '2º semestre' } as const;
+
+/**
+ * Diagnosis of the admission destination by offer of the date (plan, section 5.4). Nothing is
+ * corrected here: a removed period, a period of another offer or cycle, or an offer left without
+ * destination while others have one is reported for the campus to review. A notice without
+ * destinations (not informed) has no issue.
+ */
+export function noticeDestinationIssues(
+  state: AssessmentSettings & { periods: CalendarPeriod[] },
+  event: Pick<CalendarEvent, 'notice' | 'offers'>,
+): NoticeDestinationIssue[] {
+  const admission = event.notice?.admission;
+  if (!admission?.destinations.length) return [];
+  const offers = event.offers?.length ? event.offers : offerIds(state);
+  return offers.flatMap((offerId): NoticeDestinationIssue[] => {
+    const periodId = admissionDestination(event, offerId);
+    if (periodId === undefined)
+      return [
+        { offerId, problem: 'missing', message: 'destino de ingresso não informado para a oferta' },
+      ];
+    const period = state.periods.find((item) => item.id === periodId);
+    if (!period)
+      return [
+        {
+          offerId,
+          periodId,
+          problem: 'orphan',
+          message: `período de destino removido do calendário (${periodId})`,
+        },
+      ];
+    if (!periodsForOffer(state, offerId).some((item) => item.id === periodId))
+      return [
+        {
+          offerId,
+          periodId,
+          problem: 'unassociated',
+          message: `período de destino “${period.name ?? periodId}” não está associado à oferta`,
+        },
+      ];
+    if (period.association.status === 'defined' && period.association.term !== admission.term)
+      return [
+        {
+          offerId,
+          periodId,
+          problem: 'other-term',
+          message: `período de destino “${period.name ?? periodId}” é do ${termNames[period.association.term]}, não do ${termNames[admission.term]} do ingresso`,
+        },
+      ];
+    return [];
+  });
 }

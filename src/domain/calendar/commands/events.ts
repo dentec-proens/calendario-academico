@@ -40,7 +40,7 @@ function sameOccurrence(a: CalendarEvent, b: CalendarEvent) {
     a.name.toLocaleLowerCase() === b.name.trim().toLocaleLowerCase() &&
     a.start === b.start &&
     a.end === b.end &&
-    equalValues(a.admission, b.admission) &&
+    equalValues(a.notice?.admission, b.notice?.admission) &&
     equalValues([...(a.offers ?? [])].sort(), [...(b.offers ?? [])].sort())
   );
 }

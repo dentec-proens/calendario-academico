@@ -26,8 +26,10 @@ const events: CalendarEvent[] = [
     end: civilDate('2026-12-01'),
     effect: 'note',
     offers: ['integrado'],
-    publicationStatus: 'published',
-    admission: { type: 'transfer', year: 2027, term: 'annual' },
+    notice: {
+      publication: 'published',
+      admission: { type: 'transfer', year: 2027, term: 'annual', destinations: [] },
+    },
   },
   {
     id: 'planned',
@@ -36,8 +38,10 @@ const events: CalendarEvent[] = [
     end: civilDate('2026-11-01'),
     effect: 'note',
     offers: ['integrado'],
-    publicationStatus: 'planned',
-    admission: { type: 'regular', year: 2028, term: 'first' },
+    notice: {
+      publication: 'planned',
+      admission: { type: 'regular', year: 2028, term: 'first', destinations: [] },
+    },
   },
   {
     id: 'cross',
@@ -54,8 +58,10 @@ const events: CalendarEvent[] = [
     end: civilDate('2027-12-01'),
     effect: 'note',
     offers: ['integrado'],
-    publicationStatus: 'planned',
-    admission: { type: 'regular', year: 2028, term: 'annual' },
+    notice: {
+      publication: 'planned',
+      admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
+    },
   },
 ];
 

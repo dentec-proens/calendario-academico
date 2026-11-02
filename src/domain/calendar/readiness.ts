@@ -12,6 +12,7 @@ import { calendarOffers, labelFor, stageInTerm } from './offers.ts';
 import { assessmentCount, scopedRequirement } from './activities/assessment.ts';
 import { assessmentCycleIssue } from './activities/assessment-intervals.ts';
 import { linkIssueActions, linkIssueLabels, linksToReview } from './activities/links.ts';
+import { noticeDestinationIssues } from './activities/validation.ts';
 import { evaluateCalendar as calendarResult } from './counting/evaluation.ts';
 import { periodsForOffer } from './organization/periods.ts';
 import { policyFor } from '../policies/registry.ts';
@@ -132,6 +133,12 @@ export function contentAssessment(record: ContentRecord) {
         `Vínculo a conferir — “${event.name}” (${event.start.split('-').reverse().join('/')}): ${linkIssueLabels[reason]}. ${linkIssueActions[reason]}`,
       );
   }
+  // A notice destination is diagnosed per offer and never corrected automatically (plan, 5.4).
+  for (const event of record.state.events)
+    for (const item of noticeDestinationIssues(record.state, event))
+      warnings.push(
+        `${labelFor(record.state, item.offerId)} — “${event.name}” (${event.start.split('-').reverse().join('/')}): ${item.message}. Revise o destino do edital.`,
+      );
   const window = policy.window(record.state);
   if (window && policy.windowInReadiness)
     for (const offer of offers.filter(

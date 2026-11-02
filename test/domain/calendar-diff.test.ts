@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import {
   compareContents,
+  describeValue,
   fieldLabels,
   ignoredFields,
   type DiffSide,
@@ -280,8 +281,14 @@ test('content issues have stable codes and the effect lists the new and resolved
 });
 
 test('every field of the stored validators is labeled or explicitly ignored', () => {
+  // A grouped field (`notice`) is covered by labels of its parts (`notice.publication`).
   const covered = (fields: object, labels: object, ignored: readonly string[]) =>
-    Object.keys(fields).filter((key) => !(key in labels) && !ignored.includes(key));
+    Object.keys(fields).filter(
+      (key) =>
+        !(key in labels) &&
+        !Object.keys(labels).some((label) => label.startsWith(`${key}.`)) &&
+        !ignored.includes(key),
+    );
   expect(covered(validators.calendarOffer.fields, fieldLabels.offer, ignoredFields.offer)).toEqual(
     [],
   );
@@ -301,4 +308,46 @@ test('every field of the stored validators is labeled or explicitly ignored', ()
   expect(
     covered(validators.documentSnapshot.fields, fieldLabels.document, ignoredFields.document),
   ).toEqual([]);
+});
+
+test('a notice change shows its publication and its admission with destinations by offer', () => {
+  const notice = (publication: 'planned' | 'published', periodId: string) => (value: DiffSide) =>
+    void value.state.events.push({
+      id: 'notice',
+      name: 'Edital de transferência',
+      start: civilDate('2027-05-03'),
+      end: civilDate('2027-05-03'),
+      effect: 'note' as const,
+      offers: ['integrado', 'graduacao'],
+      notice: {
+        publication,
+        admission: {
+          type: 'transfer',
+          year: 2027,
+          term: 'annual',
+          destinations: [
+            { offerId: 'integrado', periodId: 'integrado-annual' },
+            { offerId: 'graduacao', periodId },
+          ],
+        },
+      },
+    });
+  const before = side(notice('planned', 'graduacao-annual'));
+  const after = side(notice('published', 'removed-period'));
+  const [change] = compareContents(before, after).events;
+  expect(change).toMatchObject({ kind: 'changed', id: 'notice' });
+  expect(change.fields.map((field) => [field.field, field.label])).toEqual([
+    ['notice.publication', 'Situação de publicação'],
+    ['notice.admission', 'Ingresso e destinos por oferta'],
+  ]);
+  const [publication, admission] = change.fields;
+  expect(describeValue(publication.field, publication.before)).toBe('Publicação programada');
+  expect(describeValue(publication.field, publication.after)).toBe('Publicação realizada');
+  expect(describeValue(admission.field, admission.after, after.state)).toBe(
+    'Transferência, reingresso e portador de diploma · 2027 — ano letivo · destinos: Licenciatura em Química → removed-period, Técnico integrado → Ano letivo',
+  );
+  // Destinations in another order are the same notice.
+  const reordered = side(notice('planned', 'graduacao-annual'));
+  reordered.state.events.at(-1)!.notice!.admission!.destinations.reverse();
+  expect(compareContents(before, reordered).events).toEqual([]);
 });

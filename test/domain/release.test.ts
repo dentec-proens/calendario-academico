@@ -103,12 +103,20 @@ test('definitive release requires every reviewed criterion, current versions and
     if (r.month)
       event!.start = event!.end = civilDate(`2027-${String(r.month).padStart(2, '0')}-10`);
     if (r.admissionType) {
-      event.publicationStatus = 'planned';
-      event.admission = {
-        type: r.admissionType,
-        year: r.admissionType === 'regular' ? 2028 : 2027,
-        term: r.term ?? 'annual',
-        ...(r.admissionType === 'transfer' ? { periodId: 'year' } : {}),
+      event.notice = {
+        publication: 'planned',
+        admission: {
+          type: r.admissionType,
+          year: r.admissionType === 'regular' ? 2028 : 2027,
+          term: r.term ?? 'annual',
+          destinations:
+            r.admissionType === 'transfer'
+              ? (event.offers?.length
+                  ? event.offers
+                  : record.state.offers.map((offer) => offer.id)
+                ).map((offerId) => ({ offerId, periodId: 'year' }))
+              : [],
+        },
       };
     }
     if (r.id.startsWith('admission-notice-')) event!.start = event!.end = civilDate('2027-01-01');

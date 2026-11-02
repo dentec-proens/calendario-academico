@@ -47,7 +47,10 @@ export interface ItemChange {
 type VacationField =
   'firstStart' | 'firstEnd' | 'secondStart' | 'secondEnd' | 'thirdStart' | 'thirdEnd';
 
-/** Every field of the stored validators has a label here or is listed as ignored. */
+/**
+ * Every field of the stored validators has a label here or is listed as ignored. A dotted key
+ * (`notice.publication`) labels one part of a grouped field, compared on its own.
+ */
 export const fieldLabels = {
   offer: {
     kind: 'Tipo de oferta',
@@ -77,8 +80,8 @@ export const fieldLabels = {
     offers: 'Ofertas',
     hours: 'Carga horária',
     assessmentAutoStart: 'Início automático da etapa',
-    publicationStatus: 'Situação de publicação',
-    admission: 'Ingresso',
+    'notice.publication': 'Situação de publicação',
+    'notice.admission': 'Ingresso e destinos por oferta',
     deadlineAdjustment: 'Ajuste de prazo',
     deadlineExtensionCause: 'Causa da prorrogação',
   },
@@ -103,8 +106,8 @@ export const fieldLabels = {
     offers: 'Ofertas',
     hours: 'Carga horária',
     assessmentAutoStart: 'Início automático da etapa',
-    publicationStatus: 'Situação de publicação',
-    admission: 'Ingresso',
+    'notice.publication': 'Situação de publicação',
+    'notice.admission': 'Ingresso e destinos por oferta',
     deadlineAdjustment: 'Ajuste de prazo',
     deadlineExtensionCause: 'Causa da prorrogação',
     active: 'Ativo',
@@ -157,9 +160,41 @@ export const ignoredFields = {
 const derivedVacation = (event: { id: string }) => event.id.startsWith('teacher-vacation-');
 const sortedIds = (ids: readonly string[]) => [...ids].sort();
 
-/** An event without offers reaches every offer of its side. */
-function withOffers<T extends { offers?: string[] }>(item: T, offers: string[]): T {
-  return { ...item, offers: sortedIds(item.offers?.length ? item.offers : offers) };
+/**
+ * An event without offers reaches every offer of its side. Destinations by offer are compared
+ * in offer order, so only a change of period shows up.
+ */
+function withOffers<T extends Pick<CalendarEvent, 'offers' | 'notice'>>(
+  item: T,
+  offers: string[],
+): T {
+  const admission = item.notice?.admission;
+  return {
+    ...item,
+    offers: sortedIds(item.offers?.length ? item.offers : offers),
+    ...(admission && {
+      notice: {
+        ...item.notice,
+        admission: {
+          ...admission,
+          destinations: [...admission.destinations].sort((a, b) =>
+            a.offerId.localeCompare(b.offerId),
+          ),
+        },
+      },
+    }),
+  };
+}
+
+/** Value of a field, or of one part of a grouped field (`notice.admission`). */
+function fieldValue(item: Record<string, unknown>, field: string) {
+  return field
+    .split('.')
+    .reduce<unknown>(
+      (value, key) =>
+        value && typeof value === 'object' ? (value as Record<string, unknown>)[key] : undefined,
+      item,
+    );
 }
 
 function fieldChanges(
@@ -169,8 +204,8 @@ function fieldChanges(
 ) {
   const changes: FieldChange[] = [];
   for (const [field, label] of Object.entries(labels)) {
-    const old = before[field],
-      next = after[field];
+    const old = fieldValue(before, field),
+      next = fieldValue(after, field);
     if (!equalValues(old ?? null, next ?? null))
       changes.push({ field, label, before: old, after: next });
   }
@@ -460,8 +495,32 @@ function sortedNumbers(values: readonly number[]) {
 const weekdayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 
 /** Human reading of a compared value; offer identifiers resolve to their labels. */
+const admissionTypes: Record<string, string> = {
+  regular: 'Processo seletivo regular',
+  transfer: 'Transferência, reingresso e portador de diploma',
+};
+
+function admissionDescription(admission: Record<string, unknown>, state?: ActivityState) {
+  const destinations = (admission.destinations ?? []) as { offerId: string; periodId: string }[];
+  const period = (id: string) => state?.periods.find((item) => item.id === id)?.name ?? id;
+  return [
+    admissionTypes[String(admission.type)] ?? String(admission.type),
+    `${String(admission.year)} — ${termLabels[admission.term as AcademicTerm] ?? String(admission.term)}`,
+    destinations.length
+      ? `destinos: ${destinations
+          .map(
+            (item) =>
+              `${state ? labelFor(state, item.offerId) : item.offerId} → ${period(item.periodId)}`,
+          )
+          .join(', ')}`
+      : 'destino não informado',
+  ].join(' · ');
+}
+
 export function describeValue(field: string, value: unknown, state?: ActivityState): string {
   if (value === undefined || value === null || value === '') return '—';
+  if (field === 'notice.publication' && (value === 'planned' || value === 'published'))
+    return value === 'planned' ? 'Publicação programada' : 'Publicação realizada';
   if (typeof value === 'boolean') return value ? 'sim' : 'não';
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))
     return value.split('-').reverse().join('/');
@@ -472,6 +531,7 @@ export function describeValue(field: string, value: unknown, state?: ActivitySta
   if (Array.isArray(value)) return value.map((item) => describeValue('', item, state)).join(', ');
   if (typeof value === 'object') {
     const record = value as Record<string, unknown>;
+    if (field === 'notice.admission') return admissionDescription(record, state);
     if (field === 'association')
       return record.status === 'defined'
         ? `${describeValue('offers', record.offers, state)} · ${termLabels[record.term as AcademicTerm] ?? String(record.term)}`

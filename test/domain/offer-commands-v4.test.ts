@@ -203,7 +203,7 @@ test('adding an opaque offer identity freezes earlier implicit events and create
   expect(state.events.find((event) => event.id === 'earlier-global')).not.toHaveProperty('offers');
 });
 
-test('splitting a shared v4 period preserves both admission references by offer identity', () => {
+test('splitting a shared period remaps only the destination of the reorganized offer', () => {
   const state: ActivityState = {
     schemaVersion: 5,
     year: 2027,
@@ -255,8 +255,18 @@ test('splitting a shared v4 period preserves both admission references by offer 
     start: civilDate('2027-01-01'),
     end: civilDate('2027-01-01'),
     offers: ['graduacao', 'graduacao-2'],
-    publicationStatus: 'published',
-    admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'shared' },
+    notice: {
+      publication: 'published',
+      admission: {
+        type: 'transfer',
+        year: 2027,
+        term: 'annual',
+        destinations: [
+          { offerId: 'graduacao', periodId: 'shared' },
+          { offerId: 'graduacao-2', periodId: 'shared' },
+        ],
+      },
+    },
   });
   const next = applyOfferOrganization(
     state,
@@ -264,13 +274,15 @@ test('splitting a shared v4 period preserves both admission references by offer 
     offerOrganizationDraft(state, 'graduacao-2'),
     ids(),
   );
-  const kept = next.events.find((event) => event.id === 'notice')!;
-  const moved = next.events.find((event) => event.id !== 'notice' && event.admission)!;
-  expect(kept.offers).toEqual(['graduacao']);
-  expect(kept.admission?.periodId).toBe('shared');
-  expect(moved.offers).toEqual(['graduacao-2']);
-  expect(moved.admission?.periodId).not.toBe('shared');
+  const notices = next.events.filter((event) => event.notice);
+  expect(notices.map((event) => event.id)).toEqual(['notice']);
+  const [notice] = notices;
+  expect(notice.offers).toEqual(['graduacao', 'graduacao-2']);
+  const destinations = notice.notice!.admission!.destinations;
+  expect(destinations[0]).toEqual({ offerId: 'graduacao', periodId: 'shared' });
+  expect(destinations[1].offerId).toBe('graduacao-2');
+  expect(destinations[1].periodId).not.toBe('shared');
   expect(
-    next.periods.find((period) => period.id === moved.admission?.periodId)?.association,
+    next.periods.find((period) => period.id === destinations[1].periodId)?.association,
   ).toEqual({ status: 'defined', offers: ['graduacao-2'], term: 'annual' });
 });

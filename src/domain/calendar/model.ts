@@ -36,11 +36,28 @@ export interface CalendarContent {
   observanceDates?: Record<string, CivilDate>;
   teacherVacations?: VacationPeriods;
 }
+/** Period where the students admitted by a notice start, for one offer of the date. */
+export interface AdmissionDestination {
+  offerId: string;
+  periodId: string;
+}
+/** Purpose of an admission notice (plan, section 5.4). */
 export interface Admission {
   type: 'regular' | 'transfer';
   year: number;
   term: AcademicTerm;
-  periodId?: string;
+  /**
+   * Destination by offer; empty means not informed. A period removed from the calendar or no
+   * longer associated with the offer is kept and diagnosed (`noticeDestinationIssues`), never
+   * dropped or reassigned.
+   */
+  destinations: AdmissionDestination[];
+}
+export type PublicationStatus = 'planned' | 'published';
+/** Notice data of a date: publication status and admission purpose, each optional. */
+export interface AdmissionNotice {
+  publication?: PublicationStatus;
+  admission?: Admission;
 }
 export interface IntakeConfiguration {
   status: 'unknown' | 'yes' | 'no';
@@ -61,8 +78,7 @@ export interface CalendarEvent {
   hours?: number;
   assessmentAutoStart?: CivilDate;
   deadlineExtensionCause?: 'municipal-holiday' | 'municipal-recess';
-  publicationStatus?: 'planned' | 'published';
-  admission?: Admission;
+  notice?: AdmissionNotice;
   deadlineAdjustment?: { date: CivilDate; reviewed: boolean };
 }
 /**

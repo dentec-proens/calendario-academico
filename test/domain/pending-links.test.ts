@@ -73,8 +73,7 @@ test.each([
     for (const event of saved.state.events.filter((item) =>
       item.requirementId?.startsWith('admission-notice'),
     )) {
-      expect(event.admission).toBeUndefined();
-      expect(event.publicationStatus).toBeUndefined();
+      expect(event.notice).toBeUndefined();
     }
   },
 );
@@ -242,15 +241,24 @@ test('stages to review have no days of their own and are not distributed when pr
   expect(report.stages.slice(1).every((row) => row.start === undefined)).toBe(true);
 });
 
-test('a notice whose link has no generated activity is not split by admission destination', () => {
+test('a notice whose link has no generated activity is not split; only the reorganized offer destination follows its period', () => {
   const state = conflictingLinks();
   const draft = offerOrganizationDraft(state, 'integrado');
   draft.periods[0].sourceId = 'year';
   let sequence = 0;
   const configured = applyOfferOrganization(state, 'integrado', draft, () => `new-${++sequence}`);
-  expect(configured.events.filter((event) => event.name.startsWith('Edital'))).toEqual([
-    state.events.find((event) => event.id === 'transfer-notice'),
-  ]);
+  const before = state.events.find((event) => event.id === 'transfer-notice')!;
+  const notices = configured.events.filter((event) => event.name.startsWith('Edital'));
+  expect(notices).toHaveLength(1);
+  const { notice: _notice, ...rest } = before;
+  expect(notices[0]).toMatchObject(rest);
+  const destinations = notices[0].notice!.admission!.destinations;
+  expect(destinations.find((item) => item.offerId === 'subsequente')?.periodId).toBe('year');
+  const moved = destinations.find((item) => item.offerId === 'integrado')!.periodId;
+  expect(moved).not.toBe('year');
+  expect(configured.periods.find((period) => period.id === moved)?.association).toMatchObject({
+    offers: ['integrado'],
+  });
 });
 
 test('readings of a kept link without activity do not fail; review warns without blocking', () => {

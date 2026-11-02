@@ -210,6 +210,8 @@ export const v4Forms = {
   'snapshot.offers:explicit': 'Escopo do snapshot mantido.',
   'snapshot.notice:absent': 'Sem `notice`.',
   'snapshot.notice:present': '`notice` com os mesmos valores.',
+  'snapshot.admission:period':
+    'Bloqueia: destino de ingresso em snapshot (nenhum caminho grava edital em snapshot, e o destino por oferta exige as ofertas da data).',
   'catalogue.kind:include': '`effect: "include"`.',
   'catalogue.kind:exclude': '`effect: "exclude"`.',
   'catalogue.kind:note': '`effect: "note"`.',
@@ -226,6 +228,7 @@ export const blockingForms: ReadonlySet<V4Form> = new Set<V4Form>([
   'event.stagePosition:orphan-offer',
   'event.offers:orphan',
   'snapshot.requirementId:present',
+  'snapshot.admission:period',
 ]);
 
 export class UnknownShapeError extends Error {
@@ -848,7 +851,11 @@ function readSnapshot(value: unknown, path: string, out: Collector) {
     );
     if (event.publicationStatus !== undefined)
       literal(event.publicationStatus, `${at}.publicationStatus`, ['planned', 'published']);
-    if (event.admission !== undefined) readAdmission(event.admission, `${at}.admission`);
+    if (
+      event.admission !== undefined &&
+      readAdmission(event.admission, `${at}.admission`) !== undefined
+    )
+      out.form('snapshot.admission:period', at);
     out.form(
       event.publicationStatus === undefined && event.admission === undefined
         ? 'snapshot.notice:absent'

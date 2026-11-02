@@ -448,10 +448,21 @@ describe('a shape outside the inventory stops it', () => {
       evidence: '',
       requirementId: 'final-0',
     });
+    content.institutionalSnapshot.push({
+      id: 'inst:notice',
+      name: 'Snapshot com destino de ingresso',
+      start: '2027-03-01',
+      end: '2027-03-01',
+      kind: 'note',
+      evidence: '',
+      publicationStatus: 'planned',
+      admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'year' },
+    });
     const inventory = inventoryContent(content, { year: base.year });
     expect(inventory.blocking.map(({ form }) => form).sort()).toEqual([
       'event.offers:orphan',
       'event.stagePosition:orphan-offer',
+      'snapshot.admission:period',
       'snapshot.requirementId:present',
     ]);
     const empty = copy(base.content);

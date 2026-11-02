@@ -111,8 +111,15 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
         start: civilDate('2026-12-10'),
         end: civilDate('2026-12-10'),
         effect: 'note',
-        publicationStatus: 'published',
-        admission: { type: 'transfer', year: 2027, term: 'first', periodId: 'undergraduate-first' },
+        notice: {
+          publication: 'published',
+          admission: {
+            type: 'transfer',
+            year: 2027,
+            term: 'first',
+            destinations: [{ offerId: 'graduacao', periodId: 'undergraduate-first' }],
+          },
+        },
         offers: ['graduacao'],
       },
       {
@@ -121,8 +128,10 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
         start: civilDate('2027-12-01'),
         end: civilDate('2027-12-01'),
         effect: 'note',
-        publicationStatus: 'planned',
-        admission: { type: 'regular', year: 2028, term: 'annual' },
+        notice: {
+          publication: 'planned',
+          admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
+        },
         deadlineAdjustment: { date: civilDate('2027-12-15'), reviewed: false },
         offers: ['integrado'],
       },
@@ -141,12 +150,16 @@ test('v4 round-trip preserves independent organization, intake, actual dates and
   expect(loaded.state.events).toEqual(saved.state.events);
   expect(loaded.state.events[0]).toMatchObject({
     start: civilDate('2026-12-10'),
-    publicationStatus: 'published',
-    admission: { year: 2027, periodId: 'undergraduate-first' },
+    notice: {
+      publication: 'published',
+      admission: {
+        year: 2027,
+        destinations: [{ offerId: 'graduacao', periodId: 'undergraduate-first' }],
+      },
+    },
   });
   expect(loaded.state.events[1]).toMatchObject({
-    publicationStatus: 'planned',
-    admission: { year: 2028 },
+    notice: { publication: 'planned', admission: { year: 2028 } },
   });
   expect(loaded.state.offers).toEqual(state.offers);
   expect(loaded.state.periods).toEqual(state.periods);
@@ -191,8 +204,14 @@ test('direct backend writes retain temporal and offer-scope validation', async (
     { ...event, hours: 40, requirementId: 'pedagogical-training' },
     {
       ...event,
-      admission: { type: 'transfer' as const, year: 2027, term: 'annual' as const },
-      publicationStatus: undefined,
+      notice: {
+        admission: {
+          type: 'transfer' as const,
+          year: 2027,
+          term: 'annual' as const,
+          destinations: [],
+        },
+      },
     },
   ])
     await expect(

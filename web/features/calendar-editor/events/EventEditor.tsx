@@ -6,7 +6,15 @@ import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { applicabilityFor, policyFor } from '#src/domain/policies/registry.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
-import { eventTypes, noticeActive, recordOffers } from './event-draft.ts';
+import {
+  commonDestination,
+  draftDestinations,
+  eventTypes,
+  keptDestinations,
+  noticeActive,
+  recordOffers,
+} from './event-draft.ts';
+import { destinationIssueLines, destinationText } from './notice-details.ts';
 import { Input, Select } from '../forms/fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { scrollIntoView } from '../../../scroll.ts';
@@ -45,6 +53,28 @@ export default function EventEditor() {
     (Boolean(values.admissionType) && noticeActive(values)) ||
     requirement?.variant === 'admission-notice';
   const realDate = values.publicationStatus === 'published';
+  // The form edits one destination common to every offer; distinct destinations saved by offer
+  // can only be kept, and each offer is diagnosed on its own (plan, section 5.4).
+  const saved = editor.eventId
+    ? state.events.find((event) => event.id === editor.eventId)
+    : undefined;
+  const distinctSaved =
+    commonDestination(
+      saved?.notice?.admission?.destinations ?? [],
+      saved?.offers?.length ? saved.offers : offerIds(state),
+    ) === keptDestinations;
+  const destinations = publication ? draftDestinations(values, saved) : [];
+  const destinationIssues = destinationIssueLines(state, {
+    offers: values.offers,
+    notice: {
+      admission: {
+        type: values.admissionType || 'regular',
+        year: Number(values.admissionYear),
+        term: values.admissionTerm,
+        destinations,
+      },
+    },
+  });
   // Hours prove the annual minimum of training and planning; other activities do not ask.
   const showHours = !requirement || requirement.variant === 'hours' || Boolean(values.hours);
   // Inside an activity the link is fixed: the panel was opened from that activity.
@@ -357,6 +387,11 @@ export default function EventEditor() {
                       label="Vínculo ao período cadastrado"
                     >
                       <option value="">Ingresso futuro / período ainda não cadastrado</option>
+                      {(field.state.value === keptDestinations || distinctSaved) && (
+                        <option value={keptDestinations}>
+                          Manter os destinos distintos por oferta
+                        </option>
+                      )}
                       {state.periods.map((period) => (
                         <option key={period.id} value={period.id}>
                           {period.name} — {period.start.split('-').reverse().join('/')}
@@ -366,6 +401,24 @@ export default function EventEditor() {
                   )}
                 </form.Field>
               </div>
+              {values.admissionPeriodId === keptDestinations && (
+                <p className="help" id="event-admission-destinations">
+                  {destinationText(state, destinations)}
+                </p>
+              )}
+              {destinationIssues.length > 0 && (
+                <Notice
+                  tone="warning"
+                  id="event-destination-issues"
+                  title="Destino de ingresso a revisar"
+                >
+                  <ul>
+                    {destinationIssues.map((issue) => (
+                      <li key={issue.offerId}>{issue.text}</li>
+                    ))}
+                  </ul>
+                </Notice>
+              )}
               {values.admissionType === 'regular' && regularAdmissionNotice && (
                 <Notice tone="info">{regularAdmissionNotice}</Notice>
               )}

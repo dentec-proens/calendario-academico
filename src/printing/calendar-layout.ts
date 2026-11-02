@@ -21,28 +21,25 @@ const eventOffers = (state: PrintState, event: PrintEvent) =>
 
 function publicationDetails(event: PrintEvent, year: number, includeSource = true) {
   const labels = [];
-  if (event.publicationStatus)
-    labels.push(
-      event.publicationStatus === 'planned' ? 'Publicação programada' : 'Publicação realizada',
-    );
-  if (event.admission) {
+  const publication = event.notice?.publication;
+  const admission = event.notice?.admission;
+  if (publication)
+    labels.push(publication === 'planned' ? 'Publicação programada' : 'Publicação realizada');
+  if (admission) {
     const term = {
       annual: 'ciclo anual',
       first: '1º semestre',
       second: '2º semestre',
-    }[event.admission.term];
+    }[admission.term];
+    labels.push(`Ingresso${admission.year === year ? '' : ` ${admission.year}`} — ${term}`);
     labels.push(
-      `Ingresso${event.admission.year === year ? '' : ` ${event.admission.year}`} — ${term}`,
-    );
-    labels.push(
-      event.admission.type === 'regular'
+      admission.type === 'regular'
         ? 'Processo seletivo regular'
         : 'Transferência, reingresso e portador de diploma',
     );
   }
   const source = automaticEventSource(event);
-  if (includeSource && (event.admission || event.publicationStatus) && source)
-    labels.push(`Fonte: ${source}`);
+  if (includeSource && (admission || publication) && source) labels.push(`Fonte: ${source}`);
   if (event.deadlineAdjustment)
     labels.push(
       `Prazo ajustado declarado: ${dateLabel(event.deadlineAdjustment.date, year)}; consulte a conferência institucional no parecer`,
@@ -59,15 +56,13 @@ function externalReferences(state: PrintState, events: PrintEvent[]) {
       : '';
   return `<section class="proens-external-references"><h3>Atividades e referências de outros anos</h3><p>As datas integrais são preservadas. Estes registros informativos não alteram a contagem de dias letivos.</p>${table(
     'Publicações programadas',
-    rows.filter((event) => event.publicationStatus === 'planned'),
+    rows.filter((event) => event.notice?.publication === 'planned'),
   )}${table(
     'Fatos anteriores registrados',
-    rows.filter((event) => event.publicationStatus === 'published'),
+    rows.filter((event) => event.notice?.publication === 'published'),
   )}${table(
     'Registros informativos com data anterior — conferir natureza e execução',
-    rows.filter(
-      (event) => event.publicationStatus !== 'planned' && event.publicationStatus !== 'published',
-    ),
+    rows.filter((event) => !event.notice?.publication),
   )}</section>`;
 }
 

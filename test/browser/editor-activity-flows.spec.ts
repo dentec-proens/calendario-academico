@@ -6,6 +6,7 @@ import {
   selectCampusEvents,
   selectEditorSection,
   editCampusEvent,
+  openCampusEvent,
 } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -125,8 +126,10 @@ test('a free admission notice is registered without an activity link', async ({
   expect(event).toMatchObject({
     effect: 'note',
     category: 'prazo',
-    publicationStatus: 'planned',
-    admission: { type: 'transfer', year: 2027, term: 'second' },
+    notice: {
+      publication: 'planned',
+      admission: { type: 'transfer', year: 2027, term: 'second', destinations: [] },
+    },
   });
   expect(event?.requirementId).toBeUndefined();
 });
@@ -361,8 +364,7 @@ test('answering another type after a notice keeps its draft but writes no notice
     .toBe(true);
   const event = await savedEvent(page, (name) => name === 'Recesso após edital');
   expect(event).toMatchObject({ effect: 'exclude', category: 'recesso' });
-  expect(event?.admission).toBeUndefined();
-  expect(event?.publicationStatus).toBeUndefined();
+  expect(event?.notice).toBeUndefined();
 });
 
 for (const width of [1440, 390])
@@ -608,4 +610,90 @@ test('an hours activity lists the hours of each period and their registered tota
   await expect(page.locator('[data-activity-hours="pedagogical-training"]')).toHaveText(
     'Carga horária registrada: 20,5 h (mínimo de 40 h)',
   );
+});
+
+test('a notice edits one common destination and shows the diagnosis of each offer', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await expect(page.locator('#record-title')).toBeVisible();
+  await page.evaluate(() => {
+    const { record } = window.editorTest;
+    record.state.offers = [
+      { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
+      { id: 'subsequente', kind: 'subsequente', delivery: 'a-conferir', organization: 'anual' },
+    ];
+    record.state.periods = [
+      {
+        id: 'integrado-year',
+        name: 'Ano letivo integrado',
+        start: '2027-02-01',
+        end: '2027-12-17',
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
+      },
+      {
+        id: 'subsequente-year',
+        name: 'Ano letivo subsequente',
+        start: '2027-02-01',
+        end: '2027-12-17',
+        association: { status: 'defined', offers: ['subsequente'], term: 'annual' },
+      },
+    ];
+    record.state.events.push({
+      id: 'transfer-notice',
+      name: 'Edital de transferência por oferta',
+      start: '2027-01-10',
+      end: '2027-01-10',
+      effect: 'note',
+      category: 'prazo',
+      offers: ['integrado', 'subsequente'],
+      notice: {
+        publication: 'planned',
+        admission: {
+          type: 'transfer',
+          year: 2027,
+          term: 'annual',
+          destinations: [
+            { offerId: 'integrado', periodId: 'integrado-year' },
+            { offerId: 'subsequente', periodId: 'removed-period' },
+          ],
+        },
+      },
+    });
+    record.version++;
+    return window.publishReviewerCalendar();
+  });
+  await selectCampusEvents(page);
+  await openCampusEvent(page, 'transfer-notice');
+  const record = page.locator('.campus-event-record');
+  await expect(record).toContainText('Destinos por oferta');
+  await expect(record).toContainText('período de destino removido do calendário (removed-period)');
+  await page.locator('[data-edit-event="transfer-notice"]').click();
+  const period = page.locator('#event-admission-period');
+  const issues = page.locator('#event-destination-issues');
+  // Distinct destinations are kept as they are, and the orphan one is diagnosed for its offer.
+  await expect(period).toHaveValue('por-oferta');
+  await expect(page.locator('#event-admission-destinations')).toContainText('Ano letivo integrado');
+  await expect(issues).toContainText('período de destino removido do calendário (removed-period)');
+  await expect(issues.locator('li')).toHaveCount(1);
+  // One common destination for every offer: the other offer now has a period of another offer.
+  await period.selectOption('integrado-year');
+  await expect(issues).toContainText('não está associado à oferta');
+  await expect(issues.locator('li')).toHaveCount(1);
+  await applyEvent(page);
+  await expect
+    .poll(async () => (await savedEvent(page, (_, id) => id === 'transfer-notice'))?.notice)
+    .toEqual({
+      publication: 'planned',
+      admission: {
+        type: 'transfer',
+        year: 2027,
+        term: 'annual',
+        destinations: [
+          { offerId: 'integrado', periodId: 'integrado-year' },
+          { offerId: 'subsequente', periodId: 'integrado-year' },
+        ],
+      },
+    });
 });

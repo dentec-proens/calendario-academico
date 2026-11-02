@@ -42,6 +42,18 @@ export const period = v.object({
   targetDays: v.optional(v.number()),
   association: periodAssociation,
 });
+/** Publication status and admission purpose of a notice; destinations by offer (plan, 5.4). */
+export const notice = v.object({
+  publication: v.optional(v.union(v.literal('planned'), v.literal('published'))),
+  admission: v.optional(
+    v.object({
+      type: v.union(v.literal('regular'), v.literal('transfer')),
+      year: v.number(),
+      term: academicTerm,
+      destinations: v.array(v.object({ offerId: v.string(), periodId: v.string() })),
+    }),
+  ),
+});
 export const event = v.object({
   id: v.string(),
   name: v.string(),
@@ -53,15 +65,7 @@ export const event = v.object({
   offers: v.optional(v.array(v.string())),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
-  publicationStatus: v.optional(v.union(v.literal('planned'), v.literal('published'))),
-  admission: v.optional(
-    v.object({
-      type: v.union(v.literal('regular'), v.literal('transfer')),
-      year: v.number(),
-      term: academicTerm,
-      periodId: v.optional(v.string()),
-    }),
-  ),
+  notice: v.optional(notice),
   deadlineAdjustment: v.optional(v.object({ date: v.string(), reviewed: v.boolean() })),
   deadlineExtensionCause: v.optional(
     v.union(v.literal('municipal-holiday'), v.literal('municipal-recess')),
@@ -90,15 +94,7 @@ export const institutionalEventSnapshot = v.object({
   offers: v.optional(v.array(v.string())),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
-  publicationStatus: v.optional(v.union(v.literal('planned'), v.literal('published'))),
-  admission: v.optional(
-    v.object({
-      type: v.union(v.literal('regular'), v.literal('transfer')),
-      year: v.number(),
-      term: academicTerm,
-      periodId: v.optional(v.string()),
-    }),
-  ),
+  notice: v.optional(notice),
   deadlineAdjustment: v.optional(
     v.object({ date: v.string(), evidence: v.string(), reviewed: v.boolean() }),
   ),

@@ -204,8 +204,18 @@ export function conflictingLinks(): PendingLinksFixture {
         category: 'prazo',
         requirementId: 'admission-notice-2',
         offers: ['integrado', 'subsequente'],
-        publicationStatus: 'planned',
-        admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'year' },
+        notice: {
+          publication: 'planned',
+          admission: {
+            type: 'transfer',
+            year: 2027,
+            term: 'annual',
+            destinations: [
+              { offerId: 'integrado', periodId: 'year' },
+              { offerId: 'subsequente', periodId: 'year' },
+            ],
+          },
+        },
       },
     ],
   };

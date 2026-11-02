@@ -21,11 +21,11 @@ import { appliesTo } from '../modalities.ts';
 import { associationOffers, offerFor, offerIds, labelFor } from '../offers.ts';
 import { organizationForOffer, periodsForOffer } from './periods.ts';
 import { rulesetVersion } from '../../policies/registry.ts';
-import { activityPlan } from '../activities/plan.ts';
 import { stageRequirement } from '../activities/assessment.ts';
 import { linksToReview, linkIssueLabels } from '../activities/links.ts';
 import { normalizeOfferCalendar } from '../normalization/normalize-v4.ts';
 import { DomainError } from '../../errors.ts';
+import { admissionDestination } from '../activities/validation.ts';
 
 export interface OrganizationPeriodDraft {
   sourceId: string;
@@ -176,7 +176,14 @@ export function offerOrganizationIssues(
         'organization',
         'Revise a exigência local de matrícula nas atividades antes de alterar a organização da oferta.',
       );
-    if (state.events.some((event) => event.admission?.periodId && appliesTo(event, modality)))
+    // Moving between annual and semester changes the set of periods, and no destination can be
+    // remapped mechanically, so linked notices are reviewed first (plan, phase 2, step 6).
+    if (
+      state.events.some(
+        (event) =>
+          admissionDestination(event, modality) !== undefined && appliesTo(event, modality),
+      )
+    )
       issue(
         'organization',
         'Revise os editais vinculados aos períodos antes de alterar a organização da oferta.',
@@ -394,7 +401,6 @@ function organize<S extends ActivityState>(
     }),
     periods: [...retained, ...periods],
   };
-  const valid = new Set(activityPlan(next).map((requirement) => requirement.id));
   // Each draft stage updates the date already recorded for it, never a second one.
   const stageDates = new Map<string, OrganizationStageDraft>();
   const added: CalendarEvent[] = [];
@@ -434,20 +440,16 @@ function organize<S extends ActivityState>(
         },
       ];
     }
-    const mapped = event.admission?.periodId && remapped.get(event.admission.periodId);
-    if (!mapped || mapped === event.admission?.periodId || !appliesTo(event, modality))
-      return [event];
-    // A date whose link has no generated activity stays whole, with its previous destination.
-    if (event.requirementId && !valid.has(event.requirementId)) return [event];
-    const explicit = event.offers;
-    const scope = explicit?.length ? explicit : offerIds(state);
-    const others = scope.filter((m) => m !== modality);
-    const moved = {
-      ...eventScope(event, [modality]),
-      id: others.length ? id() : event.id,
-      admission: { ...event.admission!, periodId: mapped },
-    };
-    return others.length ? [eventScope(event, others), moved] : [moved];
+    // Only the destination of the reorganized offer follows its period; the date is never split
+    // and the destinations of the other offers are kept (plan, section 5.4).
+    const admission = event.notice?.admission;
+    const periodId = admissionDestination(event, modality);
+    const mapped = periodId === undefined ? undefined : remapped.get(periodId);
+    if (!admission || mapped === undefined || mapped === periodId) return [event];
+    const destinations = admission.destinations.map((destination) =>
+      destination.offerId === modality ? { ...destination, periodId: mapped } : destination,
+    );
+    return [{ ...event, notice: { ...event.notice, admission: { ...admission, destinations } } }];
   });
   events.push(...added);
   const candidate = {
@@ -460,7 +462,4 @@ function organize<S extends ActivityState>(
 
 function association(ids: string[], term: AcademicTerm): PeriodAssociation {
   return { status: 'defined', offers: ids, term };
-}
-function eventScope(event: CalendarEvent, ids: string[]): CalendarEvent {
-  return { ...event, offers: ids };
 }

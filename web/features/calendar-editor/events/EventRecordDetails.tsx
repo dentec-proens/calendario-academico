@@ -1,7 +1,9 @@
 import { automaticEventSource } from '#src/domain/calendar/counting/core.ts';
 import { categoryLabel } from '#src/domain/calendar/activities/categories.ts';
 import type { EditorEvent } from '../types.ts';
+import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { civilDate } from './activity-query.ts';
+import { destinationIssueLines, destinationText, publicationLabels } from './notice-details.ts';
 
 /** Read-only summary of one calendar record, shared by the campus events and the record list. */
 export default function EventRecordDetails({
@@ -11,7 +13,11 @@ export default function EventRecordDetails({
   event: EditorEvent;
   activity?: string;
 }) {
+  const { state } = useCalendarEditor();
   const source = automaticEventSource(event);
+  const publication = event.notice?.publication;
+  const admission = event.notice?.admission;
+  const destination = admission && destinationText(state, admission.destinations);
   return (
     <>
       <strong>{event.name}</strong>
@@ -29,21 +35,24 @@ export default function EventRecordDetails({
         </small>
       )}
       {source && <small>Fonte: {source}</small>}
-      {event.publicationStatus && (
+      {publication && <small>{publicationLabels[publication]}</small>}
+      {admission && (
         <small>
-          {event.publicationStatus === 'planned' ? 'Publicação programada' : 'Publicação realizada'}
-        </small>
-      )}
-      {event.admission && (
-        <small>
-          Ingresso: {event.admission.year} ·{' '}
-          {event.admission.term === 'annual'
+          Ingresso: {admission.year} ·{' '}
+          {admission.term === 'annual'
             ? 'ciclo anual'
-            : event.admission.term === 'first'
+            : admission.term === 'first'
               ? 'primeiro semestre'
               : 'segundo semestre'}
         </small>
       )}
+      {destination && <small>{destination}</small>}
+      {!event.institutional &&
+        destinationIssueLines(state, event).map((issue) => (
+          <small key={issue.offerId} className="notice-destination-issue">
+            {issue.text}
+          </small>
+        ))}
       <small>{categoryLabel(event)}</small>
     </>
   );

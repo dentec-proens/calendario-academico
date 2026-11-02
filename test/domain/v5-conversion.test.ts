@@ -14,6 +14,9 @@ import {
   readCalendarOfferInput,
 } from '../../src/domain/calendar/normalization/input-v4.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { noticeDestinationIssues } from '../../src/domain/calendar/activities/validation.ts';
+import type { ActivityState } from '../../src/domain/calendar/model.ts';
+import { contentAssessment } from '../../src/domain/calendar/readiness.ts';
 import {
   readOracle,
   v4CatalogueRows,
@@ -42,6 +45,42 @@ const byName = (name: string) => cases.find((item) => item.name === name)!;
 
 /** Fields other than the converted ones stay identical. */
 const withoutEffect = ({ kind: _kind, recordType: _type, effect: _effect, ...rest }: Json) => rest;
+const unchanged = ({
+  publicationStatus: _publication,
+  admission: _admission,
+  notice: _notice,
+  ...rest
+}: Json) => withoutEffect(rest);
+
+/**
+ * Notice expected for a stored v4 date (plan, section 5.4): publication and admission grouped,
+ * the old period copied as the destination of each offer of the date (its own offers, or every
+ * offer of the state when it has none), never confirmed nor dropped.
+ */
+function expectedNotice(stored: Json, stateOffers: readonly string[]) {
+  const publication = stored.publicationStatus as string | undefined;
+  const admission = stored.admission as (Json & { periodId?: string }) | undefined;
+  if (publication === undefined && admission === undefined) return undefined;
+  const offers = (stored.offers as string[] | undefined)?.length
+    ? (stored.offers as string[])
+    : stateOffers;
+  return {
+    ...(publication === undefined ? {} : { publication }),
+    ...(admission === undefined
+      ? {}
+      : {
+          admission: {
+            type: admission.type,
+            year: admission.year,
+            term: admission.term,
+            destinations:
+              admission.periodId === undefined
+                ? []
+                : offers.map((offerId) => ({ offerId, periodId: admission.periodId })),
+          },
+        }),
+  };
+}
 
 /** Applies the manifest backwards: each change restores the field as stored in v4. */
 function revert<T>(conversion: Conversion<T>, root: string): unknown {
@@ -67,7 +106,12 @@ function revert<T>(conversion: Conversion<T>, root: string): unknown {
   return document;
 }
 
-function expectDatesConverted(before: Json[], after: Json[], manifest: ManifestEntry[]) {
+function expectDatesConverted(
+  before: Json[],
+  after: Json[],
+  manifest: ManifestEntry[],
+  stateOffers: readonly string[] = [],
+) {
   // One to one: nothing created, removed, merged or moved.
   expect(after.map((event) => event.id)).toEqual(before.map((event) => event.id));
   before.forEach((stored, index) => {
@@ -75,7 +119,12 @@ function expectDatesConverted(before: Json[], after: Json[], manifest: ManifestE
     expect(converted.effect).toBe(stored.kind);
     expect(converted).not.toHaveProperty('kind');
     expect(converted).not.toHaveProperty('recordType');
-    expect(withoutEffect(converted)).toEqual(withoutEffect(stored));
+    expect(converted).not.toHaveProperty('publicationStatus');
+    expect(converted).not.toHaveProperty('admission');
+    const notice = expectedNotice(stored, stateOffers);
+    if (notice === undefined) expect(converted).not.toHaveProperty('notice');
+    else expect(converted.notice).toEqual(notice);
+    expect(unchanged(converted)).toEqual(unchanged(stored));
   });
   expect(manifest.map((entry) => entry.id)).toEqual(before.map((event) => event.id));
 }
@@ -105,7 +154,12 @@ describe('conversion of every frozen v4 document', () => {
       entry.path.startsWith('content.institutionalSnapshot'),
     );
     expect(events.length + snapshot.length).toBe(entries.length);
-    expectDatesConverted(stored.state.events, converted.state.events, events);
+    expectDatesConverted(
+      stored.state.events,
+      converted.state.events,
+      events,
+      stored.state.offers.map((offer) => String(offer.id)),
+    );
     expectDatesConverted(stored.institutionalSnapshot, converted.institutionalSnapshot, snapshot);
     stored.state.events.forEach((event, index) => {
       expect(events[index].forms).toContain(`event.kind:${String(event.kind)}`);
@@ -132,6 +186,7 @@ describe('conversion of every frozen v4 document', () => {
       stored.state.events,
       converted.state.events,
       conversion.manifest.filter((entry) => entry.path.startsWith('submission.state.events')),
+      stored.state.offers.map((offer) => String(offer.id)),
     );
     // The stored hash is kept here; the migration recalculates it in the same write (step 17b).
     expect(converted.contentHash).toBe(stored.contentHash);
@@ -231,6 +286,15 @@ describe('the conversion refuses what the inventory does not know', () => {
       'stage of an offer outside the calendar',
       (c) => void (event(c, 'forms-stage').requirementId = 'stage-3:removida'),
     ],
+    [
+      'snapshot with an admission destination',
+      (c) =>
+        void c.institutionalSnapshot.push({
+          ...snapshotEvent,
+          publicationStatus: 'planned',
+          admission: { type: 'transfer', year: 2027, term: 'annual', periodId: 'year' },
+        }),
+    ],
   ])('blocking shape: %s', (_name, inject) => {
     const content = copy(base.content);
     inject(content);
@@ -305,3 +369,106 @@ describe('dates without category keep their effective category', () => {
     );
   });
 });
+
+describe('notice and destination by offer (plan, section 5.4; phase 2, step 6)', () => {
+  const converted = (item: V4Case) =>
+    convertContentV5(item.content, context(item))!.document as unknown as V4Case['content'];
+  const dates = (item: V4Case) =>
+    [item.content, ...item.submissions].flatMap((content, index) =>
+      (
+        (index
+          ? convertContentV5(content, { year: item.year, source: 'submission' })!.document
+          : converted(item)) as unknown as V4Case['content']
+      ).state.events.map((event) => event as Json),
+    );
+  const forms = byName('Formas adicionais do inventário');
+  const state = (item: V4Case) =>
+    ({ ...converted(item).state, year: item.year }) as unknown as ActivityState;
+
+  test('the four notices of section 11 keep the absence of admission and publication', () => {
+    const audited = cases.filter((item) => item.name.endsWith('(seção 11)'));
+    const notices = audited
+      .flatMap(dates)
+      .filter((event) => String(event.requirementId).startsWith('admission-notice'));
+    expect(new Set(notices.map((event) => event.id))).toEqual(
+      new Set([
+        'ivaipora-admission-notice-1',
+        'ivaipora-admission-notice-2',
+        'cascavel-admission-notice-1',
+        'cascavel-admission-notice-2',
+      ]),
+    );
+    for (const event of notices) {
+      expect(event).not.toHaveProperty('notice');
+      expect(event).not.toHaveProperty('publicationStatus');
+      expect(event).not.toHaveProperty('admission');
+    }
+    // Without destination there is nothing to diagnose; the pending purpose stays under
+    // “Vínculo a conferir” and in the coverage, as the oracle records.
+    for (const item of audited) expect(noticeDestinationIssuesOf(state(item))).toEqual([]);
+  });
+
+  test('an orphan destination is copied, kept and diagnosed for its offer, never dropped', () => {
+    const event = converted(forms).state.events.find((item) => item.id === 'forms-notice-orphan')!;
+    expect(event.notice).toEqual({
+      publication: 'planned',
+      admission: {
+        type: 'transfer',
+        year: 2027,
+        term: 'second',
+        destinations: [{ offerId: 'graduacao', periodId: 'removed-period' }],
+      },
+    });
+    expect(noticeDestinationIssuesOf(state(forms))).toEqual([
+      {
+        eventId: 'forms-notice-orphan',
+        offerId: 'graduacao',
+        periodId: 'removed-period',
+        problem: 'orphan',
+      },
+    ]);
+    const { warnings } = contentAssessment({ state: state(forms), institutionalSnapshot: [] });
+    expect(warnings.filter((warning) => warning.includes('período de destino'))).toHaveLength(1);
+  });
+
+  test('a notice without period keeps its destinations empty, not informed', () => {
+    const event = converted(forms).state.events.find(
+      (item) => item.id === 'forms-notice-published',
+    )!;
+    expect(event.notice).toEqual({
+      publication: 'published',
+      admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
+    });
+  });
+
+  test('the period of a date is copied for each of its offers, or every offer of a date without offers', () => {
+    const conflicting = byName('Vínculos em conflito (fase 1)');
+    const notice = converted(conflicting).state.events.find(
+      (item) => item.id === 'transfer-notice',
+    )!;
+    expect((notice.notice as { admission: Json }).admission.destinations).toEqual([
+      { offerId: 'integrado', periodId: 'year' },
+      { offerId: 'subsequente', periodId: 'year' },
+    ]);
+    const content = copy(conflicting.content);
+    delete content.state.events.find((item) => item.id === 'transfer-notice')!.offers;
+    const all = (
+      convertContentV5(content, { year: conflicting.year })!
+        .document as unknown as V4Case['content']
+    ).state.events.find((item) => item.id === 'transfer-notice')!;
+    expect((all.notice as { admission: Json }).admission.destinations).toEqual(
+      content.state.offers.map((offer) => ({ offerId: offer.id, periodId: 'year' })),
+    );
+  });
+});
+
+function noticeDestinationIssuesOf(state: ActivityState) {
+  return state.events.flatMap((event) =>
+    noticeDestinationIssues(state, event).map(({ offerId, periodId, problem }) => ({
+      eventId: event.id,
+      offerId,
+      periodId,
+      problem,
+    })),
+  );
+}

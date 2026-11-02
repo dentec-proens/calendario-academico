@@ -49,8 +49,7 @@ export function reviewSupport<
         CalendarEvent,
         | 'effect'
         | 'requirementId'
-        | 'publicationStatus'
-        | 'admission'
+        | 'notice'
         | 'deadlineAdjustment'
         | 'hours'
       >

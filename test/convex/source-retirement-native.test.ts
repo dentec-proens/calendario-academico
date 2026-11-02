@@ -102,8 +102,10 @@ test('canonical records and historical restoration have no manual or generated s
         effect: 'note',
         offers: ['integrado'],
         requirementId: 'regular-admission-notice',
-        publicationStatus: 'planned',
-        admission: { type: 'regular', year: 2028, term: 'annual' },
+        notice: {
+          publication: 'planned',
+          admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
+        },
         deadlineAdjustment: { date: civilDate('2027-07-20'), reviewed: false },
       },
       {

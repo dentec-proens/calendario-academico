@@ -102,7 +102,7 @@ export default function ActivityChecklist() {
   const renderDate = (line: DateLine) => {
     const { event, origin, activity, issue } = line;
     const observance = observanceForEvent(state.year, event.id);
-    const planned = event.publicationStatus === 'planned';
+    const planned = event.notice?.publication === 'planned';
     const activityStatus = activity ? statusFor(activity.id).status : undefined;
     const statusLabel = issue
       ? linkIssueLabels[issue]

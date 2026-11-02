@@ -15,7 +15,9 @@
  *
  * The format changes in slices; this module grows with each one and always converts to the
  * current format. Slice 1 (step 5): `kind` → `effect` on local dates, snapshots and catalogue rows,
- * `recordType` removed, `schemaVersion: 5`.
+ * `recordType` removed, `schemaVersion: 5`. Slice 2 (step 6): `publicationStatus` and `admission`
+ * grouped in `notice`, the old `admission.periodId` copied as the destination of each offer of the
+ * date, even when the period is orphan or incompatible (plan, section 5.4).
  */
 import {
   inventoryCatalogueRow,
@@ -34,11 +36,20 @@ import {
  */
 type JsonObject = Record<string, unknown>;
 type KindV4 = 'include' | 'exclude' | 'note';
+interface AdmissionV4 {
+  type: 'regular' | 'transfer';
+  year: number;
+  term: 'annual' | 'first' | 'second';
+  periodId?: string;
+}
 /** A local date (`state.events`) or an institutional snapshot entry. */
 interface DateV4 extends JsonObject {
   id: string;
   kind: KindV4;
   recordType?: 'event';
+  offers?: string[];
+  publicationStatus?: 'planned' | 'published';
+  admission?: AdmissionV4;
 }
 interface CatalogueRowV4 extends JsonObject {
   code: string;
@@ -46,6 +57,7 @@ interface CatalogueRowV4 extends JsonObject {
 }
 interface StateV4 extends JsonObject {
   schemaVersion: 4;
+  offers: { id: string }[];
   events: DateV4[];
 }
 
@@ -112,15 +124,67 @@ function convertEffect<T extends JsonObject & { kind: KindV4; recordType?: 'even
   return { converted, changes };
 }
 
+/**
+ * `publicationStatus` and `admission` grouped in `notice`, in place of the first of them. The old
+ * `periodId` becomes the destination of each offer of the date (`offers`), unconfirmed: an orphan
+ * or incompatible period is copied and diagnosed later, never dropped. Without either field the
+ * date has no `notice`.
+ */
+function convertNotice(item: JsonObject, offers: readonly string[]) {
+  const { publicationStatus, admission } = item as Pick<DateV4, 'publicationStatus' | 'admission'>;
+  if (publicationStatus === undefined && admission === undefined)
+    return { converted: item, changes: [] as FieldChange[] };
+  const notice = {
+    ...(publicationStatus === undefined ? {} : { publication: publicationStatus }),
+    ...(admission === undefined
+      ? {}
+      : {
+          admission: {
+            type: admission.type,
+            year: admission.year,
+            term: admission.term,
+            destinations:
+              admission.periodId === undefined
+                ? []
+                : offers.map((offerId) => ({ offerId, periodId: admission.periodId! })),
+          },
+        }),
+  };
+  const converted: JsonObject = {};
+  for (const [key, value] of Object.entries(item)) {
+    if (key === 'publicationStatus' || key === 'admission') {
+      if (!('notice' in converted)) converted.notice = notice;
+    } else converted[key] = value;
+  }
+  const changes: FieldChange[] = [
+    ...(publicationStatus === undefined
+      ? []
+      : [{ field: 'publicationStatus', before: publicationStatus }]),
+    ...(admission === undefined ? [] : [{ field: 'admission', before: admission }]),
+    { field: 'notice', after: notice },
+  ];
+  return { converted, changes };
+}
+
+/** One date converted by every slice; `offers` are the offers of the date, for the destination. */
+function convertDate(item: DateV4, offers: readonly string[]) {
+  const effect = convertEffect(item);
+  const notice = convertNotice(effect.converted, offers);
+  return { converted: notice.converted, changes: [...effect.changes, ...notice.changes] };
+}
+
 function convertEvents(
   events: readonly DateV4[],
+  stateOffers: readonly string[],
   path: string,
   inventory: Inventory,
   manifest: ManifestEntry[],
 ) {
   return events.map((event, index) => {
     const at = `${path}[${index}]`;
-    const { converted, changes } = convertEffect(event);
+    // A date without offers reaches every offer of its own state (plan, section 5.3).
+    const offers = event.offers?.length ? event.offers : stateOffers;
+    const { converted, changes } = convertDate(event, offers);
     const link = inventory.links.find((item) => item.path === `${at}.requirementId`)?.link;
     manifest.push({
       path: at,
@@ -141,7 +205,8 @@ function convertSnapshotEvents(
 ) {
   return events.map((event, index) => {
     const at = `${path}[${index}]`;
-    const { converted, changes } = convertEffect(event);
+    // A snapshot destination is a blocking shape, so a snapshot notice has no destination here.
+    const { converted, changes } = convertDate(event, []);
     manifest.push({ path: at, id: event.id, forms: formsAt(inventory, at), changes });
     return converted;
   });
@@ -186,7 +251,13 @@ export function convertContentV5(
       changes: [{ field: 'schemaVersion', before: 4, after: 5 }],
     },
   ];
-  const events = convertEvents(stored.state.events, `${source}.state.events`, inventory, manifest);
+  const events = convertEvents(
+    stored.state.events,
+    stored.state.offers.map((offer) => offer.id),
+    `${source}.state.events`,
+    inventory,
+    manifest,
+  );
   const institutionalSnapshot = convertSnapshotEvents(
     stored.institutionalSnapshot,
     `${source}.institutionalSnapshot`,

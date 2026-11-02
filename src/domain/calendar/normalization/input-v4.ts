@@ -119,7 +119,8 @@ const period = (value: unknown): CalendarPeriod => {
 const activity = (value: unknown): CalendarEvent => {
   const row = calendarObject(value);
   if ('modalities' in row) return fail('Formato de atividade incompatível.');
-  const admission = row.admission === undefined ? undefined : calendarObject(row.admission);
+  const notice = row.notice === undefined ? undefined : calendarObject(row.notice);
+  const admission = notice?.admission === undefined ? undefined : calendarObject(notice.admission);
   const adjustment =
     row.deadlineAdjustment === undefined ? undefined : calendarObject(row.deadlineAdjustment);
   return {
@@ -133,23 +134,41 @@ const activity = (value: unknown): CalendarEvent => {
     offers: optional(row.offers, (value) => array(value, text)),
     hours: optional(row.hours, number),
     assessmentAutoStart: optional(row.assessmentAutoStart, date),
-    publicationStatus: optional(row.publicationStatus, (value) =>
-      choice(value, ['planned', 'published'], 'Situação de publicação inválida.'),
-    ),
     deadlineExtensionCause: optional(row.deadlineExtensionCause, (value) =>
       choice(value, ['municipal-holiday', 'municipal-recess'], 'Causa de prorrogação inválida.'),
     ),
-    ...(admission
+    ...(notice
       ? {
-          admission: {
-            type: choice(
-              admission.type,
-              ['regular', 'transfer'],
-              'Finalidade de ingresso inválida.',
-            ),
-            year: number(admission.year),
-            term: term(admission.term),
-            periodId: optional(admission.periodId, text),
+          notice: {
+            ...(notice.publication === undefined
+              ? {}
+              : {
+                  publication: choice(
+                    notice.publication,
+                    ['planned', 'published'],
+                    'Situação de publicação inválida.',
+                  ),
+                }),
+            ...(admission
+              ? {
+                  admission: {
+                    type: choice(
+                      admission.type,
+                      ['regular', 'transfer'],
+                      'Finalidade de ingresso inválida.',
+                    ),
+                    year: number(admission.year),
+                    term: term(admission.term),
+                    destinations: array(admission.destinations, (item) => {
+                      const destination = calendarObject(item);
+                      return {
+                        offerId: text(destination.offerId),
+                        periodId: text(destination.periodId),
+                      };
+                    }),
+                  },
+                }
+              : {}),
           },
         }
       : {}),
