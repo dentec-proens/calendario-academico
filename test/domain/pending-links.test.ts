@@ -101,6 +101,10 @@ test('new, swapped and removed links are still refused by command and save', () 
   const state = cascavelDraft();
   const event = state.events[0];
   expect(() => applyEvent(state, { ...event, id: 'copy' }, [])).toThrow('Atividade inválida');
+  for (const requirementId of ['diary-1', undefined])
+    expect(() => applyEvent(state, { ...event, requirementId }, [], true)).toThrow(
+      'não perde nem troca',
+    );
   const swapped = state.events.map((item) =>
     item.id === event.id ? { ...item, requirementId: 'diary-1' } : item,
   );

@@ -51,6 +51,8 @@ export function applyEvent<S extends ActivityState>(
   // Link rule (`links.ts`): an edit keeps the date's own link, even without a generated activity;
   // interval and association checks apply only when start, end, offers or link change.
   const previous = editing ? existing : undefined;
+  if (previous && previous.requirementId !== event.requirementId)
+    throw new DomainError('Uma data salva não perde nem troca a atividade vinculada.');
   const edited = dateEdited(previous, event);
   const activity = activityChecklist(state).find((item) => item.id === event.requirementId);
   const kept = linkKept(previous, event);

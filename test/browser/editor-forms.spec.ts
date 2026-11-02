@@ -499,7 +499,7 @@ test('Teacher Day is applied and restored explicitly with exactly the policy opt
   expect(await savedState(page)).toEqual(before);
 });
 
-test('changing category and activity link in the event form keeps identity, dates and other fields', async ({
+test('changing the category of a campus date keeps identity, dates, other fields and no link', async ({
   page,
   fixtureServer,
 }) => {
@@ -512,9 +512,9 @@ test('changing category and activity link in the event form keeps identity, date
   await editCampusEvent(page, 'local-event');
   await page.locator('#event-more-options > summary').click();
   await page.locator('#event-category').selectOption('feriado');
-  await page.locator('#event-requirement').selectOption('family-meeting');
+  // The form has no activity selector: a campus date never gains a link here.
+  await expect(page.locator('#event-requirement')).toHaveCount(0);
   await expect(page.locator('#event-panel #event-form')).toBeVisible();
-  await expect(page.locator('#event-panel-title')).toContainText('familiares');
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
   await page.locator('#event-form button[type="submit"]').click();
   await expect
@@ -527,9 +527,9 @@ test('changing category and activity link in the event form keeps identity, date
     )
     .toBe('feriado');
   const preserved = original!;
-  expect(
-    (await savedState(page)).state.events.find((event) => event.id === 'local-event'),
-  ).toMatchObject({ ...preserved, category: 'feriado', requirementId: 'family-meeting' });
+  expect((await savedState(page)).state.events.find((event) => event.id === 'local-event')).toEqual(
+    { ...preserved, category: 'feriado' },
+  );
 });
 
 test('clean week fields receive remote defaults while an incomplete choice survives a later remote update', async ({

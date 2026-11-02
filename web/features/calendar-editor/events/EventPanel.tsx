@@ -77,7 +77,11 @@ export default function EventPanel() {
         title={
           activity?.name ??
           campusEvent?.name ??
-          (observanceKey ? (observance?.label ?? 'Ajuste de observância') : 'Nova data do campus')
+          (observanceKey
+            ? (observance?.label ?? 'Ajuste de observância')
+            : editor.eventId
+              ? 'Data do campus'
+              : 'Nova data do campus')
         }
         titleId="event-panel-title"
         closeId="close-event-panel"

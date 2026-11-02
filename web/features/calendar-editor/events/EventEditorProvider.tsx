@@ -292,24 +292,6 @@ function useController() {
       )?.focus(),
     );
   }
-  function changeRequirement(requirementId: string) {
-    result.form.setFieldValue('requirementId', requirementId);
-    const next: EventContext =
-      context?.kind === 'new'
-        ? context
-        : requirementId
-          ? { kind: 'activity', requirementId, ...(eventId ? { eventId } : {}) }
-          : eventId
-            ? { kind: 'event', eventId }
-            : { kind: 'new' };
-    setContext(next);
-    void navigate({
-      ...destinationFor(next, requirementId),
-      params: { calendarId: record.id },
-      search: (previous) => previous,
-      hashScrollIntoView: false,
-    });
-  }
   return {
     ...result,
     context,
@@ -320,7 +302,6 @@ function useController() {
     prepare,
     discard,
     resume,
-    changeRequirement,
     panel,
     /** Consult an activity in the side panel without opening a form. */
     view,

@@ -150,10 +150,7 @@ test('editor separates creation from editing and preserves closed activity draft
   await expect(page.locator('#new-event')).toBeVisible();
   await page.locator('#new-event').click();
   await expect(page.locator('#event-form-title')).toHaveText('Nova data do campus');
-  await page.locator('#event-name').fill('Texto antes de escolher a atividade');
-  await page.selectOption('#event-requirement', 'family-meeting');
-  await expect(page.locator('input#event-name')).toHaveValue('Texto antes de escolher a atividade');
-  await page.selectOption('#event-requirement', '');
+  await expect(page.locator('#event-requirement')).toHaveCount(0);
   await expect(page.locator('#event-form')).toBeVisible();
   await expect(page.locator('#close-event-panel')).toBeVisible();
   await page.locator('#event-name').fill('Evento novo independente');

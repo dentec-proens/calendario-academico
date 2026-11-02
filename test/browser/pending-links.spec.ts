@@ -44,6 +44,9 @@ for (const width of [1440, 390]) {
     await page.locator(`[data-open-event="${pending}"]`).click();
     await page.locator(`[data-edit-event="${pending}"]`).click();
     await expect(page.locator('#event-panel #event-form')).toBeVisible();
+    // No activity selector: the kept link is shown read-only.
+    await expect(page.locator('#event-requirement')).toHaveCount(0);
+    await expect(page.locator('#event-kept-link')).toContainText('recognition-2');
     await page.locator('#event-name').fill('Reconhecimento revisado');
     await page.locator('#event-end').fill('2027-07-30');
     await page.locator('#event-form button[type="submit"]').click();

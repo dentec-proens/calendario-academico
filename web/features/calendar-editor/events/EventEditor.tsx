@@ -50,7 +50,6 @@ export default function EventEditor() {
   // Inside an activity the link is fixed: the panel was opened from that activity.
   const activityRecord = editor.context?.kind === 'activity';
   const offers = recordOffers(state, requirement);
-  const linkOptions = checklist.filter((item) => item.variant !== 'stage');
   const freeEvent = !values.requirementId;
   const answered = eventTypes.find(
     (type) =>
@@ -146,27 +145,13 @@ export default function EventEditor() {
       </h3>
       <fieldset disabled={readOnly || editor.pending}>
         <fieldset className="event-fields">
-          {!activityRecord && (
-            <form.Field name="requirementId">
-              {(field) => (
-                <label>
-                  Atividade vinculada
-                  <select
-                    name={field.name}
-                    value={field.state.value}
-                    onChange={(event) => editor.changeRequirement(event.target.value)}
-                    id="event-requirement"
-                  >
-                    <option value="">Sem vínculo (evento do campus)</option>
-                    {linkOptions.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-            </form.Field>
+          {/* The link comes from the context and is never edited here: a campus date has none,
+              and a date kept with a link without generated activity shows it read-only. */}
+          {!activityRecord && values.requirementId && (
+            <p className="help" id="event-kept-link">
+              Atividade vinculada: <code>{values.requirementId}</code> (preservada; somente
+              leitura).
+            </p>
           )}
           <div className="row-form">
             <form.Field name="start">

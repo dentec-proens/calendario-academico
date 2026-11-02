@@ -180,8 +180,8 @@ test('metadata rejects an activity for another modality before applying or savin
   });
   await page.locator('[data-view="events"]').click();
   await editCampusEvent(page, 'local-event');
-  // Stages belong to step 3; a campus event cannot be bound to another offer's stage here.
-  await expect(page.locator('#event-requirement option[value="stage-1:graduacao"]')).toHaveCount(0);
+  // A campus date has no activity selector, so it cannot be bound to a stage here.
+  await expect(page.locator('#event-requirement')).toHaveCount(0);
   expect(
     await page.evaluate(
       () =>
@@ -335,9 +335,8 @@ test('stage editing and activity changes always reveal the same draft in its des
   await selectEditorSection(page, 'events');
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Novo preenchimento');
-  // Assessment stages are linked in step 3; step 6 does not offer them to a new event.
-  await expect(page.locator('#event-requirement option[value^="stage-"]')).toHaveCount(0);
-  await page.locator('#event-requirement').selectOption('family-meeting');
+  // A new campus date has no activity selector.
+  await expect(page.locator('#event-requirement')).toHaveCount(0);
   // The new form stays in the step it was opened from.
   await expect(page).toHaveURL(/\/atividades(\?[^#]*)?$/);
   await expect(page.locator('#event-form')).toBeVisible();
