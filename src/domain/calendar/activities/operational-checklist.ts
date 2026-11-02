@@ -46,7 +46,9 @@ const cyclesByRegime = (state: AssessmentSettings): CycleSlot[] => {
 
 // Undated PROENS operational checklist for unconfigured years and legacy IDs kept by later
 // policies. Historical dates come only from the selected policy.
-function sections(options: OperationalChecklistOptions): RequirementSection[] {
+export function operationalSections(
+  options: OperationalChecklistOptions = {},
+): RequirementSection[] {
   const withoutSecondIntake = ({ n, state }: Slot) => {
     return n === 2 && secondSemesterIntake(state.offers) === false;
   };
@@ -273,7 +275,7 @@ export function operationalRequirements(
   state: AssessmentSettings,
   options: OperationalChecklistOptions = {},
 ): ExpandedRequirement[] {
-  return expandRequirements(sections(options), state);
+  return expandRequirements(operationalSections(options), state);
 }
 
 export const operationalChecklist = (
