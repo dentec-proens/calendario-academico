@@ -1,5 +1,5 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
+import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { describe, expect, test } from 'vitest';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
@@ -327,9 +327,9 @@ describe('findings of the independent review of phase 1', () => {
           : offer,
       ),
       periods: [],
-      events: [] as CalendarActivity[],
+      events: [] as CalendarEvent[],
     };
-    const event: CalendarActivity = {
+    const event: CalendarEvent = {
       id: 'new-final',
       name: 'Resultado do semestre',
       requirementId: 'final-1',

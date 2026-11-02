@@ -4,13 +4,13 @@ import { readFileSync } from 'node:fs';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import type {
-  ActivityRequirement,
+  ActivityPlanItem,
   AssessmentSettings,
   CalendarOffer,
 } from '../../src/domain/calendar/model.ts';
 import { calendarOffers } from '../../src/domain/calendar/offers.ts';
 import { modalityIds } from '../../src/domain/calendar/config.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import type { CalendarPolicy, RulesetChange } from '../../src/domain/policies/contract.ts';
 import {
   equivalentRulesets,
@@ -57,9 +57,9 @@ const hidden = new Set<string>([
   'required',
   'applicability',
   'optionalFor',
-] satisfies (keyof ActivityRequirement)[]);
+] satisfies (keyof ActivityPlanItem)[]);
 
-const note = (policy: CalendarPolicy, requirement: ActivityRequirement, offer: CalendarOffer) =>
+const note = (policy: CalendarPolicy, requirement: ActivityPlanItem, offer: CalendarOffer) =>
   policy.applicabilityNote?.(requirement, offer) ?? null;
 
 function catalogue(policy: CalendarPolicy, year: number) {
@@ -79,7 +79,7 @@ function catalogue(policy: CalendarPolicy, year: number) {
       const state = { ...settings, year };
       return {
         window: policy.window(state),
-        requirements: activityChecklist(state).map((requirement) => ({
+        requirements: activityPlan(state).map((requirement) => ({
           ...Object.fromEntries(Object.entries(requirement).filter(([key]) => !hidden.has(key))),
           byModality: Object.fromEntries(
             calendarOffers(state).map((offer) => [

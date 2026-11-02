@@ -1,10 +1,5 @@
 import { calendarLimits } from '../config.ts';
-import type {
-  ActivityState,
-  AssessmentSettings,
-  CalendarActivity,
-  CalendarPeriod,
-} from '../model.ts';
+import type { ActivityState, AssessmentSettings, CalendarEvent, CalendarPeriod } from '../model.ts';
 import { parseDate } from '../../civil-date.ts';
 import { offerFor, offerIds } from '../offers.ts';
 import { isStageRequirementId } from './metadata.ts';
@@ -14,7 +9,7 @@ import { periodsForOffer } from '../organization/periods.ts';
 import { DomainError } from '../../errors.ts';
 export function temporalPosition(
   state: Pick<ActivityState, 'year'>,
-  event: Pick<CalendarActivity, 'start' | 'end'>,
+  event: Pick<CalendarEvent, 'start' | 'end'>,
 ) {
   const start = parseDate(event.start),
     end = parseDate(event.end);
@@ -37,7 +32,7 @@ export function temporalPosition(
  */
 export function validateActivityRecord(
   state: AssessmentSettings & { year: number; periods?: CalendarPeriod[] },
-  event: CalendarActivity,
+  event: CalendarEvent,
   options: { stageInterval?: boolean; keptWithoutActivity?: boolean } = {},
 ) {
   const position = temporalPosition(state, event);
@@ -71,7 +66,6 @@ export function validateActivityRecord(
       );
     if (
       event.hours !== undefined ||
-      event.days !== undefined ||
       event.assessmentAutoStart ||
       /^teacher-vacation|^saturday/.test(event.id)
     )

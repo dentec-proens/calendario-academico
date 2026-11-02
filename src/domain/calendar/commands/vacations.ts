@@ -1,4 +1,4 @@
-import type { ActivityState, CalendarActivity, VacationPeriods } from '../model.ts';
+import type { ActivityState, InstitutionalEventSnapshot, VacationPeriods } from '../model.ts';
 import { teacherVacations } from '../activities/teacher-vacations.ts';
 import { recalculateCalendar } from './recalculate.ts';
 
@@ -12,7 +12,7 @@ export const vacationIds = new Set([
 export function applyVacations<S extends ActivityState>(
   state: S,
   values: VacationPeriods,
-  institutional: CalendarActivity[],
+  institutional: InstitutionalEventSnapshot[],
 ): S {
   const vacation = teacherVacations(state.year, values);
   const recorded = new Map(state.events.map((event) => [event.id, event.requirementId]));

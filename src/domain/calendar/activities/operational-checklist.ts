@@ -1,5 +1,5 @@
 import { type CivilDate } from '../../civil-date.ts';
-import type { AssessmentSettings, ActivityRequirement } from '../model.ts';
+import type { AssessmentSettings, ActivityPlanItem } from '../model.ts';
 import {
   calendarOffers,
   offerLabel,
@@ -281,4 +281,4 @@ export function operationalRequirements(
 export const operationalChecklist = (
   state: AssessmentSettings,
   options: OperationalChecklistOptions = {},
-): ActivityRequirement[] => operationalRequirements(state, options).map(({ row }) => row);
+): ActivityPlanItem[] => operationalRequirements(state, options).map(({ row }) => row);

@@ -1,7 +1,7 @@
 import { civilDate, optionalCivilDate } from '../../civil-date.ts';
 import { academicTerms, modalityIds, organizations } from '../config.ts';
 import type {
-  CalendarActivityV4,
+  CalendarEventV4,
   CalendarContentV4,
   CalendarOffer,
   CalendarPeriodV4,
@@ -114,7 +114,7 @@ const period = (value: unknown): CalendarPeriodV4 => {
           : fail('Associação do período inválida.'),
   };
 };
-const activity = (value: unknown): CalendarActivityV4 => {
+const activity = (value: unknown): CalendarEventV4 => {
   const row = calendarObject(value);
   if ('modalities' in row) return fail('Formato de atividade incompatível.');
   const admission = row.admission === undefined ? undefined : calendarObject(row.admission);

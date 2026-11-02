@@ -1,9 +1,9 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
+import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { auditLog } from '../../src/app/audit-log.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 
@@ -16,8 +16,8 @@ test('teacher vacations count explicit inclusive ranges without sources and reje
       secondEnd: civilDate(`${year}-07-31`),
     });
     assert.equal(v.total, 45);
-    assert(v.events.every((e: CalendarActivity) => e.kind === 'exclude'));
-    assert(v.events.every((e: CalendarActivity) => !Object.hasOwn(e, 'evidence')));
+    assert(v.events.every((e: CalendarEvent) => e.kind === 'exclude'));
+    assert(v.events.every((e: CalendarEvent) => !Object.hasOwn(e, 'evidence')));
   }
   assert.throws(() =>
     teacherVacations(2027, {
@@ -33,7 +33,7 @@ test('teacher vacations count explicit inclusive ranges without sources and reje
   );
 });
 test('mixed calendar includes annual and semester obligations plus extraordinary council', () => {
-  const rows = activityChecklist({
+  const rows = activityPlan({
     offers: [
       {
         id: 'integrado',

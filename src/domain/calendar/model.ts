@@ -1,7 +1,7 @@
 import { type CivilDate } from '../civil-date.ts';
 import type { ActivityGroup, ActivityVariant } from './activities/metadata.ts';
 
-/** Shared contracts for calendar activities and the operational checklist. */
+/** Shared contracts for calendar dates, generated activities and the operational catalogue. */
 import type { AcademicTerm, Organization } from './config.ts';
 export type { AcademicTerm, Organization } from './config.ts';
 export type OfferKind = 'integrado' | 'subsequente' | 'graduacao' | 'posgraduacao';
@@ -23,7 +23,7 @@ export interface CalendarOffer {
 export type PeriodAssociationV4 =
   { status: 'defined'; offers: string[]; term: AcademicTerm } | { status: 'a-classificar' };
 export type CalendarPeriodV4 = CalendarPeriod;
-export type CalendarActivityV4 = CalendarActivity;
+export type CalendarEventV4 = CalendarEvent;
 /** Version four persists offer configuration, never its derived summaries. */
 export interface CalendarContentV4 {
   schemaVersion: 4;
@@ -32,7 +32,7 @@ export interface CalendarContentV4 {
   weekdays: number[];
   weekConfirmed: boolean;
   periods: CalendarPeriodV4[];
-  events: CalendarActivityV4[];
+  events: CalendarEventV4[];
   observanceDates?: Record<string, CivilDate>;
   teacherVacations?: VacationPeriods;
 }
@@ -47,7 +47,7 @@ export interface IntakeConfiguration {
   status: 'unknown' | 'yes' | 'no';
   required?: boolean;
 }
-export interface CalendarActivity {
+export interface CalendarEvent {
   id: string;
   name: string;
   start: CivilDate;
@@ -57,9 +57,6 @@ export interface CalendarActivity {
   requirementId?: string;
   offers?: string[];
   hours?: number;
-  days?: number;
-  originalStart?: CivilDate;
-  originalEnd?: CivilDate;
   assessmentAutoStart?: CivilDate;
   deadlineExtensionCause?: 'municipal-holiday' | 'municipal-recess';
   recordType?: 'event';
@@ -67,8 +64,21 @@ export interface CalendarActivity {
   admission?: Admission;
   deadlineAdjustment?: { date: CivilDate; reviewed: boolean };
 }
+/**
+ * Institutional date copied into a calendar (`institutionalSnapshot`) or projected in the editor.
+ * `originalStart`/`originalEnd` keep the base date when an observance moved it; local dates
+ * (`state.events`) never carry these fields.
+ */
+export interface InstitutionalEventSnapshot extends CalendarEvent {
+  evidence?: string;
+  source?: string;
+  modalities?: string[];
+  originalStart?: CivilDate;
+  originalEnd?: CivilDate;
+  institutional?: boolean;
+}
 
-export interface ActivityRequirement {
+export interface ActivityPlanItem {
   id: string;
   name: string;
   required?: boolean;
@@ -94,7 +104,7 @@ export interface ActivityRequirement {
   optionalFor?: Readonly<Record<string, string>>;
   /** New-student registration, required per offer and cycle by the intake configuration. */
   intake?: boolean;
-  /** Checklist subject, filled by the catalogue. */
+  /** Subject that groups the activity in the plan, filled by the catalogue. */
   group?: ActivityGroup;
   /** Category prepared for a new record of this activity. */
   defaultCategory?: string;
@@ -125,7 +135,7 @@ export interface TeachingState extends AssessmentSettings {
 }
 export interface ActivityState extends TeachingState {
   observanceDates?: Record<string, CivilDate>;
-  events: CalendarActivity[];
+  events: CalendarEvent[];
   campus?: string;
 }
 export interface ReviewEntry {
@@ -154,9 +164,10 @@ export type VacationPeriods = {
   thirdEnd?: CivilDate;
 };
 
-export type CountingEvent = Pick<CalendarActivity, 'id' | 'kind' | 'start' | 'end' | 'offers'> & {
-  evidence?: string;
-  institutional?: boolean;
-};
+/** A local or institutional date as the day count reads it. */
+export type CountingEvent = Pick<
+  InstitutionalEventSnapshot,
+  'id' | 'kind' | 'start' | 'end' | 'offers' | 'evidence' | 'institutional'
+>;
 export type StageEvent = CountingEvent &
-  Pick<CalendarActivity, 'requirementId' | 'assessmentAutoStart'>;
+  Pick<CalendarEvent, 'requirementId' | 'assessmentAutoStart'>;

@@ -1,10 +1,10 @@
 import { calendarLimits, academicTerms } from '../config.ts';
-import type { CalendarActivity, CalendarOffer, CalendarContentV4 } from '../model.ts';
+import type { CalendarEvent, CalendarOffer, CalendarContentV4 } from '../model.ts';
 import { readCalendarOfferInput } from './input-v4.ts';
 import { invalidCalendar as fail } from './input.ts';
 import { datesBetween } from '../counting/core.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
-import { activityChecklist } from '../activities/checklist.ts';
+import { activityPlan } from '../activities/plan.ts';
 import { linkKept, validateLinks } from '../activities/links.ts';
 import { validCategory, eventCategory } from '../activities/categories.ts';
 import { normalizeObservanceDates } from '../observances.ts';
@@ -79,7 +79,7 @@ export function validateOffers(offers: CalendarOffer[]): CalendarOffer[] {
  */
 export function normalizeOfferCalendar(
   input: unknown,
-  previous?: { events: readonly CalendarActivity[] },
+  previous?: { events: readonly CalendarEvent[] },
 ): CalendarContentV4 & { year: number; campus: string } {
   const s = readCalendarOfferInput(input);
   if (
@@ -167,7 +167,7 @@ export function normalizeOfferCalendar(
         fail('Há mais de um período para o mesmo ciclo da oferta.');
       if (a.start <= b.end && a.end >= b.start) fail('Períodos sobrepostos.');
     }
-  const generated = new Set(activityChecklist(s).map((row) => row.id));
+  const generated = new Set(activityPlan(s).map((row) => row.id));
   const before = new Map(previous?.events.map((event) => [event.id, event]));
   for (const event of s.events) {
     text(event.id, 100);

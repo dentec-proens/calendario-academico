@@ -1,20 +1,15 @@
-import type {
-  ActivityRequirement,
-  ActivityState,
-  CalendarActivity,
-  CalendarPeriod,
-} from '../model.ts';
+import type { ActivityPlanItem, ActivityState, CalendarEvent, CalendarPeriod } from '../model.ts';
 import { equalValues } from '../../../shared/equal.ts';
 import { DomainError } from '../../errors.ts';
 import { offerFor, offerIds, stageTerm } from '../offers.ts';
-import { activityChecklist } from './checklist.ts';
+import { activityPlan } from './plan.ts';
 import { assessmentCycleIssue, assessmentIntervalIssue } from './assessment-intervals.ts';
 import { isStageRequirementId } from './metadata.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 
 type LinkState = Pick<ActivityState, 'year' | 'offers' | 'periods' | 'events'> &
   Partial<Pick<ActivityState, 'schemaVersion' | 'rulesetVersion'>>;
-type LinkedDate = Pick<CalendarActivity, 'id' | 'requirementId' | 'start' | 'end' | 'offers'>;
+type LinkedDate = Pick<CalendarEvent, 'id' | 'requirementId' | 'start' | 'end' | 'offers'>;
 
 /**
  * Why a dated link cannot be accepted as fulfilment. The link is kept as recorded; the date is
@@ -42,7 +37,7 @@ export const linkIssueActions: Record<LinkIssue, string> = {
 export function linksToReview(
   state: Omit<LinkState, 'events'> & { events: readonly LinkedDate[] },
 ): Map<string, LinkIssue> {
-  const generated = new Map(activityChecklist(state).map((row) => [row.id, row]));
+  const generated = new Map(activityPlan(state).map((row) => [row.id, row]));
   const issues = new Map<string, LinkIssue>();
   for (const event of state.events) {
     if (!event.requirementId) continue;
@@ -91,8 +86,8 @@ export function linksToReview(
  */
 export function coversDate(
   state: Pick<LinkState, 'offers'>,
-  activity: ActivityRequirement,
-  event: Pick<CalendarActivity, 'offers'>,
+  activity: ActivityPlanItem,
+  event: Pick<CalendarEvent, 'offers'>,
 ) {
   const offers = event.offers?.length ? event.offers : offerIds(state);
   return offers.some((id) =>
@@ -123,7 +118,7 @@ function cyclePeriods(
 }
 
 /** Dates whose start, end, offers and link match the previous state are left as they are. */
-export function dateEdited(previous: CalendarActivity | undefined, next: CalendarActivity) {
+export function dateEdited(previous: CalendarEvent | undefined, next: CalendarEvent) {
   return (
     !previous ||
     previous.start !== next.start ||
@@ -134,11 +129,11 @@ export function dateEdited(previous: CalendarActivity | undefined, next: Calenda
 }
 
 /** The date keeps exactly the link it already had: no generated activity is required for it. */
-export function linkKept(previous: CalendarActivity | undefined, next: CalendarActivity) {
+export function linkKept(previous: CalendarEvent | undefined, next: CalendarEvent) {
   return !!next.requirementId && previous?.requirementId === next.requirementId;
 }
 
-const describe = (event: CalendarActivity) =>
+const describe = (event: CalendarEvent) =>
   `“${event.name}” (${event.start.split('-').reverse().join('/')})`;
 
 /**
@@ -151,11 +146,11 @@ const describe = (event: CalendarActivity) =>
  * A recorded date never loses or swaps its link by these paths; only removing the date does.
  */
 export function validateLinks(
-  previous: { events: readonly CalendarActivity[] } | undefined,
+  previous: { events: readonly CalendarEvent[] } | undefined,
   next: LinkState,
 ) {
   const before = new Map(previous?.events.map((event) => [event.id, event]));
-  const requirements = new Map(activityChecklist(next).map((row) => [row.id, row]));
+  const requirements = new Map(activityPlan(next).map((row) => [row.id, row]));
   const changed = next.events.filter((event) => {
     const old = before.get(event.id);
     return old?.requirementId !== undefined && old.requirementId !== event.requirementId;

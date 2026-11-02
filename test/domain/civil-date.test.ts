@@ -5,7 +5,7 @@ import { readActivityDates, readCalendarDates } from '../../src/domain/calendar/
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import type {
-  CalendarActivity,
+  CalendarEvent,
   CalendarContentV4,
   VacationPeriods,
 } from '../../src/domain/calendar/model.ts';
@@ -15,7 +15,7 @@ test('CivilDate is a validated primitive string, distinct from arbitrary input a
   expectTypeOf<string>().not.toExtend<CivilDate>();
   expectTypeOf<CivilDate>().toExtend<string>();
   expectTypeOf<ObservanceRule['allowedDates'][number]>().toEqualTypeOf<CivilDate>();
-  expectTypeOf<CalendarActivity['start']>().toEqualTypeOf<CivilDate>();
+  expectTypeOf<CalendarEvent['start']>().toEqualTypeOf<CivilDate>();
   expectTypeOf<CalendarContentV4['observanceDates']>().toEqualTypeOf<
     Record<string, CivilDate> | undefined
   >();

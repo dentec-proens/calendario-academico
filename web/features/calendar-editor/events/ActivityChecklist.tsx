@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
 import { linkIssueLabels, linksToReview } from '#src/domain/calendar/activities/links.ts';
 import { activityStatusLabels } from '#src/domain/calendar/activities/status.ts';
@@ -35,7 +35,7 @@ export default function ActivityChecklist() {
   const { selected, view: mode } = list;
   const { view, viewEvent } = editor;
   // Assessment intervals answer their links in the assessment area, not here.
-  const linked = activityChecklist(state).find(
+  const linked = activityPlan(state).find(
     (item) => item.id === search.atividade && item.variant !== 'stage',
   )?.id;
   // A review link may also name the recorded link of a date under “Vínculo a conferir”.

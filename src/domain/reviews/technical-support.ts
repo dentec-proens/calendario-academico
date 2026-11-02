@@ -1,4 +1,8 @@
-import type { CalendarActivity, TeachingState } from '../calendar/model.ts';
+import type {
+  CalendarEvent,
+  InstitutionalEventSnapshot,
+  TeachingState,
+} from '../calendar/model.ts';
 import {
   calendarOffers,
   labelFor,
@@ -21,7 +25,7 @@ const normalize = (s: string) =>
 // Candidates cross the review contract, so they carry only what the reviewer sees, never the
 // whole event (offers, requirement links and assessment anchors stay in the calendar).
 const reviewCandidate = (
-  e: Pick<CalendarActivity, 'id' | 'name' | 'start' | 'end'> &
+  e: Pick<CalendarEvent, 'id' | 'name' | 'start' | 'end'> &
     Parameters<typeof automaticEventSource>[0],
 ) => ({
   id: e.id,
@@ -39,10 +43,10 @@ export function reviewSupport<
   },
 >(
   record: T,
-  events: (Pick<CalendarActivity, 'id' | 'name' | 'start' | 'end' | 'category' | 'offers'> &
+  events: (Pick<CalendarEvent, 'id' | 'name' | 'start' | 'end' | 'category' | 'offers'> &
     Partial<
       Pick<
-        CalendarActivity,
+        CalendarEvent,
         | 'kind'
         | 'requirementId'
         | 'publicationStatus'
@@ -50,7 +54,8 @@ export function reviewSupport<
         | 'deadlineAdjustment'
         | 'hours'
       >
-    > & { evidence?: string; institutional?: boolean })[],
+    > &
+    Pick<InstitutionalEventSnapshot, 'evidence' | 'institutional'>)[],
 ) {
   let result: ReturnType<typeof calendarResult> | null = null,
     error: string | null = null,
@@ -136,7 +141,7 @@ export function reviewSupport<
     criteria: policy.review.criteria.map((c) => {
       const dayMinimums = policy.review.dayMinimums;
       let signal: string = 'Conferência documental necessária.';
-      let candidates: (Pick<CalendarActivity, 'id' | 'name' | 'start' | 'end'> & {
+      let candidates: (Pick<CalendarEvent, 'id' | 'name' | 'start' | 'end'> & {
         evidence: string;
       })[] = [];
       if (c.pattern) {

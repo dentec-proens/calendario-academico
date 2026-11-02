@@ -2,7 +2,7 @@ import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import type { FunctionReturnType } from 'convex/server';
-import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
+import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { api } from '../../convex/_generated/api.js';
@@ -321,7 +321,7 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
   let loaded = await campus.read(path);
   assert.equal(loaded.state.observanceDates?.['teacher-day'], '2027-10-13');
   assert.equal(
-    loaded.institutionalSnapshot.find((e: CalendarActivity) => e.id === teacherDayId)!.start,
+    loaded.institutionalSnapshot.find((e: CalendarEvent) => e.id === teacherDayId)!.start,
     '2027-10-13',
   );
   for (const teacherDayDate of ['2028-10-13', '2027-10-10', '2027-10-18']) {
@@ -368,7 +368,7 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
   );
   loaded = await campus.read(path);
   assert.equal(
-    loaded.institutionalEvents.find((e: CalendarActivity) => e.id === teacherDayId)!.start,
+    loaded.institutionalEvents.find((e: CalendarEvent) => e.id === teacherDayId)!.start,
     '2027-10-15',
   );
   const full = await inspect();

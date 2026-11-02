@@ -1,5 +1,5 @@
 import { type CivilDate } from '../../civil-date.ts';
-import type { ActivityState, CalendarActivity, AssessmentSettings } from '../model.ts';
+import type { ActivityState, CalendarEvent, AssessmentSettings } from '../model.ts';
 import { datesBetween } from '../counting/core.ts';
 import { parseDate } from '../../civil-date.ts';
 import { periodsForOffer } from '../organization/periods.ts';
@@ -78,7 +78,7 @@ export type SaturdayStatus = 'available' | 'registered' | 'outside';
 
 export interface YearSaturday extends YearDay {
   status: SaturdayStatus;
-  registration?: CalendarActivity;
+  registration?: CalendarEvent;
   editable: boolean;
 }
 
@@ -91,7 +91,7 @@ export interface YearMonth {
 }
 
 /** A single-day Saturday activity, the only kind of inclusion the Saturdays step edits. */
-export function isSaturdayRecord(event: Pick<CalendarActivity, 'category' | 'start' | 'end'>) {
+export function isSaturdayRecord(event: Pick<CalendarEvent, 'category' | 'start' | 'end'>) {
   return event.category === 'sabado' && event.start === event.end;
 }
 
@@ -103,7 +103,7 @@ export function isYearSaturday(day: YearDay | YearSaturday): day is YearSaturday
 // so it can still be removed: registered takes precedence over outside.
 export function saturdayYear(
   state: Pick<ActivityState, 'year' | 'periods' | 'events'> & AssessmentSettings,
-  events: Pick<CalendarActivity, 'kind' | 'start' | 'end' | 'name'>[],
+  events: Pick<CalendarEvent, 'kind' | 'start' | 'end' | 'name'>[],
 ): YearMonth[] {
   return monthNames.map((name, index) => {
     const month = index + 1;

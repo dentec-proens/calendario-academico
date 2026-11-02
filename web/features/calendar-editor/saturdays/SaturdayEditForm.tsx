@@ -1,4 +1,4 @@
-import type { CalendarActivity } from '#src/domain/calendar/model.ts';
+import type { CalendarEvent } from '#src/domain/calendar/model.ts';
 import { removeEvent } from '#src/domain/calendar/commands/events.ts';
 import { updateSaturdayActivity } from '#src/domain/calendar/commands/saturdays.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
@@ -15,7 +15,7 @@ export default function SaturdayEditForm({
   event,
   onClose,
 }: {
-  event: CalendarActivity;
+  event: CalendarEvent;
   onClose: (focusDate: string) => void;
 }) {
   const { session, institutional, readOnly, applyCommand } = useCalendarEditor();

@@ -2,7 +2,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { removeEvent } from '#src/domain/calendar/commands/events.ts';
 import { activityStatusLabels } from '#src/domain/calendar/activities/status.ts';
-import type { ActivityRequirement } from '#src/domain/calendar/model.ts';
+import type { ActivityPlanItem } from '#src/domain/calendar/model.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
 import { offerFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -19,7 +19,7 @@ export default function ActivityDetails({
   item,
   detailOpen,
 }: {
-  item: ActivityRequirement;
+  item: ActivityPlanItem;
   detailOpen: boolean;
 }) {
   const { state, institutional, applyCommand, readOnly } = useCalendarEditor();

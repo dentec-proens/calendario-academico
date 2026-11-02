@@ -1,5 +1,5 @@
 import { civilDate, type CivilDate } from '../../civil-date.ts';
-import type { AssessmentSettings, CalendarPeriod, CalendarActivity } from '../model.ts';
+import type { AssessmentSettings, CalendarPeriod, CalendarEvent } from '../model.ts';
 import { automaticEventSource } from '../counting/core.ts';
 import { parseDate } from '../../civil-date.ts';
 import { appliesTo } from '../modalities.ts';
@@ -14,7 +14,7 @@ export function prorogatedDeadline(
     weekConfirmed?: boolean;
   },
   original: CivilDate,
-  events: CalendarActivity[],
+  events: CalendarEvent[],
   modality: string,
 ) {
   parseDate(original);

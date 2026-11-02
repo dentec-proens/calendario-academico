@@ -1,6 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import type { CalendarActivity, CalendarContentV4 } from '../../src/domain/calendar/model.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import type { CalendarEvent, CalendarContentV4 } from '../../src/domain/calendar/model.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import type { CalendarStatus, LifecycleAction } from '../../src/domain/calendar/lifecycle.ts';
@@ -29,7 +29,7 @@ export function readyContent(): CalendarContentV4 {
         association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
     ],
-    events: [] as CalendarActivity[],
+    events: [] as CalendarEvent[],
     offers: [
       {
         id: 'integrado',
@@ -50,8 +50,8 @@ export function readyContent(): CalendarContentV4 {
     category: 'institucional',
     offers: ['integrado'],
   }));
-  for (const requirement of activityChecklist(state)) {
-    const event: CalendarActivity = {
+  for (const requirement of activityPlan(state)) {
+    const event: CalendarEvent = {
       id: requirement.id.replace(/:/g, '-'),
       requirementId: requirement.id,
       offers: [requirement.offerId ?? 'integrado'],

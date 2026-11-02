@@ -1,7 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import { assessmentCount } from '../../src/domain/calendar/activities/assessment.ts';
 import { assessmentCycleIssue } from '../../src/domain/calendar/activities/assessment-intervals.ts';
@@ -11,7 +11,7 @@ import { offerFor } from '../../src/domain/calendar/offers.ts';
 
 test('etapas de ofertas do mesmo tipo preservam identidades e reiniciam os nomes por ciclo', () => {
   const state = calendarOffersV4Fixture();
-  const stages = activityChecklist(state).filter((row) => row.id.startsWith('stage-'));
+  const stages = activityPlan(state).filter((row) => row.id.startsWith('stage-'));
   expect(stages).toHaveLength(13);
   expect(assessmentCount(state, 'graduacao')).toBe(3);
   expect(assessmentCount(state, 'graduacao-2')).toBe(4);

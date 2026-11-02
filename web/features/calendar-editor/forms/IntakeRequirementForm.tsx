@@ -1,8 +1,4 @@
-import type {
-  AcademicTerm,
-  ActivityRequirement,
-  CalendarOffer,
-} from '#src/domain/calendar/model.ts';
+import type { AcademicTerm, ActivityPlanItem, CalendarOffer } from '#src/domain/calendar/model.ts';
 import { configureIntakeRequirement } from '#src/domain/calendar/commands/organization.ts';
 import { offerLabel } from '#src/domain/calendar/offers.ts';
 import { termsFor } from '#src/domain/calendar/organization/periods.ts';
@@ -51,7 +47,7 @@ function OfferRequirement({ offer, term }: { offer: CalendarOffer; term: Academi
   );
 }
 
-export default function IntakeRequirementForm({ item }: { item: ActivityRequirement }) {
+export default function IntakeRequirementForm({ item }: { item: ActivityPlanItem }) {
   const { state } = useCalendarEditor();
   const policy = policyFor(state.year);
   if (!policy.intakeRequirements || !item.intake || !item.term) return null;

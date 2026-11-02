@@ -1,4 +1,4 @@
-import type { AssessmentSettings, CalendarActivity, CalendarPeriod } from '../model.ts';
+import type { AssessmentSettings, CalendarEvent, CalendarPeriod } from '../model.ts';
 import { offerFor, stageTerm } from '../offers.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 import { isStageRequirementId } from './metadata.ts';
@@ -18,8 +18,8 @@ export function assessmentIntervalIssue(
 
 /** New edits must fit their own cycle. Existing migrated records remain saveable as evidence. */
 export function assessmentCycleIssue(
-  state: AssessmentSettings & { periods: CalendarPeriod[]; events?: CalendarActivity[] },
-  event: CalendarActivity,
+  state: AssessmentSettings & { periods: CalendarPeriod[]; events?: CalendarEvent[] },
+  event: CalendarEvent,
 ): string | undefined {
   if (!isStageRequirementId(event.requirementId)) return undefined;
   const [stage, id] = event.requirementId!.split(':');

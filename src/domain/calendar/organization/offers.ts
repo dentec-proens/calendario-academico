@@ -10,7 +10,7 @@ import {
 import type {
   AcademicTerm,
   ActivityState,
-  CalendarActivity,
+  CalendarEvent,
   CalendarOffer,
   CalendarPeriod,
   PeriodAssociation,
@@ -21,7 +21,7 @@ import { appliesTo } from '../modalities.ts';
 import { associationOffers, offerFor, offerIds, labelFor } from '../offers.ts';
 import { organizationForOffer, periodsForOffer } from './periods.ts';
 import { rulesetVersion } from '../../policies/registry.ts';
-import { activityChecklist } from '../activities/checklist.ts';
+import { activityPlan } from '../activities/plan.ts';
 import { stageRequirement } from '../activities/assessment.ts';
 import { linksToReview, linkIssueLabels } from '../activities/links.ts';
 import { normalizeOfferCalendar } from '../normalization/normalize-v4.ts';
@@ -394,10 +394,10 @@ function organize<S extends ActivityState>(
     }),
     periods: [...retained, ...periods],
   };
-  const valid = new Set(activityChecklist(next).map((requirement) => requirement.id));
+  const valid = new Set(activityPlan(next).map((requirement) => requirement.id));
   // Each draft stage updates the date already recorded for it, never a second one.
   const stageDates = new Map<string, OrganizationStageDraft>();
-  const added: CalendarActivity[] = [];
+  const added: CalendarEvent[] = [];
   for (const [index, value] of draft.stages.slice(0, stageCount).entries()) {
     const requirementId = `stage-${index + 1}:${modality}`;
     const existing =
@@ -419,7 +419,7 @@ function organize<S extends ActivityState>(
   }
   // Links are never removed here: retired, duplicate or incompatible dates keep their link and
   // appear under “Vínculo a conferir” (`linksToReview`).
-  const events: CalendarActivity[] = state.events.flatMap((event) => {
+  const events: CalendarEvent[] = state.events.flatMap((event) => {
     const stage = stageDates.get(event.id);
     if (stage) {
       const { assessmentAutoStart: _auto, ...previous } = event;
@@ -461,6 +461,6 @@ function organize<S extends ActivityState>(
 function association(ids: string[], term: AcademicTerm): PeriodAssociation {
   return { status: 'defined', offers: ids, term };
 }
-function eventScope(event: CalendarActivity, ids: string[]): CalendarActivity {
+function eventScope(event: CalendarEvent, ids: string[]): CalendarEvent {
   return { ...event, offers: ids };
 }

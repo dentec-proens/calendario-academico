@@ -1,6 +1,6 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import { removeEvent } from '#src/domain/calendar/commands/events.ts';
-import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import {
   linkIssueActions,
   linkIssueLabels,
@@ -23,7 +23,7 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
   const editor = useEventEditor();
   const issue = event.institutional ? undefined : linksToReview(state).get(event.id);
   const activity = event.requirementId
-    ? (activityChecklist(state).find((item) => item.id === event.requirementId)?.name ??
+    ? (activityPlan(state).find((item) => item.id === event.requirementId)?.name ??
       event.requirementId)
     : undefined;
   return (

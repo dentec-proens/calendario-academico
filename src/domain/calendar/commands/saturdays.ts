@@ -1,5 +1,5 @@
 import { civilDate } from '../../civil-date.ts';
-import type { ActivityState, CalendarActivity } from '../model.ts';
+import type { ActivityState, CalendarEvent, InstitutionalEventSnapshot } from '../model.ts';
 import { isSaturdayRecord, saturdayEvents } from '../activities/saturdays.ts';
 import { recalculateCalendar } from './recalculate.ts';
 import { DomainError } from '../../errors.ts';
@@ -7,7 +7,7 @@ import { DomainError } from '../../errors.ts';
 export function applySaturdays<S extends ActivityState>(
   state: S,
   values: { dates: string[]; name: string; confirmed: boolean },
-  institutional: CalendarActivity[],
+  institutional: InstitutionalEventSnapshot[],
   id: () => string,
 ): S {
   if (!values.confirmed)
@@ -19,12 +19,12 @@ export function applySaturdays<S extends ActivityState>(
 export function applySaturdayActivities<S extends ActivityState>(
   state: S,
   activities: { date: string; name: string }[],
-  institutional: CalendarActivity[],
+  institutional: InstitutionalEventSnapshot[],
   id: () => string,
 ): S {
   if (!activities.length) throw new DomainError('Selecione pelo menos um sábado.');
   // Build the entire batch before applying it, so an invalid date cannot partially change state.
-  const events: CalendarActivity[] = [];
+  const events: CalendarEvent[] = [];
   for (const activity of activities) {
     try {
       events.push(
@@ -47,7 +47,7 @@ export function applySaturdayActivities<S extends ActivityState>(
 export function updateSaturdayActivity<S extends ActivityState>(
   state: S,
   values: { id: string; name: string },
-  institutional: CalendarActivity[],
+  institutional: InstitutionalEventSnapshot[],
 ): S {
   const current = state.events.find((event) => event.id === values.id);
   if (!current) throw new DomainError('O sábado não existe mais. Reabra o calendário.');

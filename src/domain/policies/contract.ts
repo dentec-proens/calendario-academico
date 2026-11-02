@@ -1,5 +1,5 @@
 import { type CivilDate } from '../civil-date.ts';
-import type { ActivityRequirement, AssessmentSettings, CalendarOffer } from '../calendar/model.ts';
+import type { ActivityPlanItem, AssessmentSettings, CalendarOffer } from '../calendar/model.ts';
 import type { RequirementSection } from '../calendar/activities/requirement-table.ts';
 import type { ReviewCriterion, ReviewSource } from '../reviews/parecer-items.ts';
 
@@ -71,15 +71,15 @@ export interface CalendarPolicy {
    * the portal's rules page (`/regras`) shows it for review against the norm.
    */
   catalogue?: readonly RequirementSection[];
-  /** Requirements linked to coverage; `activityChecklist` adds the fallback's applicability. */
-  requirements(state: AssessmentSettings): ActivityRequirement[];
+  /** Requirements linked to coverage; `activityPlan` adds the fallback's applicability. */
+  requirements(state: AssessmentSettings): ActivityPlanItem[];
   applicability(
     state: AssessmentSettings,
-    requirement: ActivityRequirement,
+    requirement: ActivityPlanItem,
     offer: CalendarOffer,
   ): Applicability;
   /** Short explanation shown next to an activity the norm leaves optional for an offer. */
-  applicabilityNote?(requirement: ActivityRequirement, offer: CalendarOffer): string | undefined;
+  applicabilityNote?(requirement: ActivityPlanItem, offer: CalendarOffer): string | undefined;
   window(state: AssessmentSettings): CalendarWindow | null;
   /** Minimum teaching days actually enforced by counting; `null` means not configured. */
   countingMinimums(

@@ -1,8 +1,9 @@
 import type { CalendarStatus } from '../domain/calendar/lifecycle.ts';
 import type {
-  CalendarActivity,
+  CalendarEvent,
   CalendarPeriod,
   AssessmentSettings,
+  InstitutionalEventSnapshot,
 } from '../domain/calendar/model.ts';
 import type { countCalendar } from '../domain/calendar/counting/core.ts';
 import type { evaluateCalendar } from '../domain/calendar/counting/evaluation.ts';
@@ -36,7 +37,7 @@ export interface PrintRecord {
   currentCatalogueRevision?: number;
 }
 export type PrintEvent = Pick<
-  CalendarActivity,
+  CalendarEvent,
   | 'start'
   | 'end'
   | 'category'
@@ -46,7 +47,5 @@ export type PrintEvent = Pick<
   | 'admission'
   | 'deadlineAdjustment'
 > &
-  Partial<Pick<CalendarActivity, 'kind' | 'id' | 'name'>> & {
-    institutional?: boolean;
-    evidence?: string;
-  };
+  Partial<Pick<CalendarEvent, 'kind' | 'id' | 'name'>> &
+  Pick<InstitutionalEventSnapshot, 'institutional' | 'evidence'>;

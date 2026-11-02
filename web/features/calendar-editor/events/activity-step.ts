@@ -1,11 +1,11 @@
-import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import type { activityCoverage } from '#src/domain/calendar/activities/coverage.ts';
 import { linksToReview, type LinkIssue } from '#src/domain/calendar/activities/links.ts';
 import { activityStatus, type ActivityStatus } from '#src/domain/calendar/activities/status.ts';
 import { appliesTo } from '#src/domain/calendar/modalities.ts';
 import { calendarObservances, observanceIssues } from '#src/domain/calendar/observances.ts';
 import { offerFor } from '#src/domain/calendar/offers.ts';
-import type { ActivityRequirement } from '#src/domain/calendar/model.ts';
+import type { ActivityPlanItem } from '#src/domain/calendar/model.ts';
 import type { applicationSearch } from '../../../app/search.ts';
 import type { CalendarState, EditorEvent } from '../types.ts';
 
@@ -36,7 +36,7 @@ const originOf = { vinculadas: 'linked', campus: 'campus', base: 'base' } as con
 const toFill: ActivityStatus[] = ['pending', 'partial', 'unconfigured'];
 
 export interface ActivityLine {
-  item: ActivityRequirement;
+  item: ActivityPlanItem;
   status: ReturnType<typeof activityStatus>;
   pending: boolean;
   dates: EditorEvent[];
@@ -45,7 +45,7 @@ export interface DateLine {
   event: EditorEvent;
   origin: DateOrigin;
   /** Generated activity the date fulfils, unless its link is under review. */
-  activity?: ActivityRequirement;
+  activity?: ActivityPlanItem;
   issue?: LinkIssue;
   pending: boolean;
 }
@@ -85,8 +85,8 @@ export function activityStep(input: {
   const offer = search.atividadeOferta ? offerFor(state, search.atividadeOferta) : undefined;
   const query = searchText(search.atividadeBusca ?? '');
   const review = linksToReview(state);
-  const checklist = activityChecklist(state).filter((item) => item.variant !== 'stage');
-  const generated = new Map(activityChecklist(state).map((item) => [item.id, item]));
+  const checklist = activityPlan(state).filter((item) => item.variant !== 'stage');
+  const generated = new Map(activityPlan(state).map((item) => [item.id, item]));
   // Only the offers being consulted decide an activity's status.
   const consulted = (id: string) =>
     coverage.filter((row) => row.requirement.id === id && (!offer || row.offerId === offer.id));

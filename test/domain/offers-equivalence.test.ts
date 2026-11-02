@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
-import type { ActivityState, ActivityRequirement } from '../../src/domain/calendar/model.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import type { ActivityState, ActivityPlanItem } from '../../src/domain/calendar/model.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { diagnoseCalendar, diagnoseTeachingDays } from '../../src/domain/calendar/diagnostics.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
@@ -28,7 +28,7 @@ function semanticProjection(
   catalogue: { revision: number; events: CatalogueEvent[] },
 ) {
   const policy = policyFor(state.year);
-  const requirements = activityChecklist(state);
+  const requirements = activityPlan(state);
   const institutional = inheritedEvents(catalogue, state.year, state.offers);
   const events = [...institutional, ...state.events];
   const diagnostic = diagnoseCalendar(state, events);
@@ -43,7 +43,7 @@ function semanticProjection(
     [...requirements]
       .sort((a, b) => b.name.length - a.name.length)
       .reduce((text, row) => text.replaceAll(row.name, `[${row.id}]`), message);
-  const normativeFields = (requirement: ActivityRequirement) => {
+  const normativeFields = (requirement: ActivityPlanItem) => {
     const { name: _editorial, offerId, offerIds: _cycleIdentities, term, ...fields } = requirement;
     // A v4 stage has an explicit cycle and offer identity. The old stage already
     // encoded its identity in modality and its annual ordinal in the stable ID.

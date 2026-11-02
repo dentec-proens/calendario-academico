@@ -1,6 +1,6 @@
 import type { AssessmentSettings, CalendarOffer } from '#src/domain/calendar/model.ts';
 import { selectableModalities } from '#src/domain/calendar/modalities.ts';
-import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { expandRequirements } from '#src/domain/calendar/activities/requirement-table.ts';
 import type { RulesetChange } from '#src/domain/policies/contract.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
@@ -66,7 +66,7 @@ export function rulesView(year: number) {
     schemaVersion: 4,
     offers,
   };
-  const rows = new Map(activityChecklist(state).map((row) => [row.id, row]));
+  const rows = new Map(activityPlan(state).map((row) => [row.id, row]));
   const minimums = offers.map((offer) => {
     const values = policy.countingMinimums(state, offer);
     return {

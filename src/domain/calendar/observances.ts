@@ -74,7 +74,7 @@ export function observanceIssues(events: ObservanceEvent[], state: ObservanceSta
 export function applyObservances<T extends ObservanceEvent>(
   events: T[],
   state: ObservanceState,
-): T[] {
+): (T & Pick<ObservanceEvent, 'originalStart' | 'originalEnd'>)[] {
   const invalid = new Set(observanceIssues(events, state).map((issue) => issue.key));
   return events.map((event) => {
     const rule = observanceForEvent(state.year, event.id);

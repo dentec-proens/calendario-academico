@@ -1,6 +1,6 @@
 import { civilDate } from '../../../../src/domain/civil-date.ts';
 import type {
-  ActivityRequirement,
+  ActivityPlanItem,
   AssessmentSettings,
   CalendarPeriod,
   CalendarOffer,
@@ -160,10 +160,7 @@ export function eventFromValues(
 }
 
 /** Offers a record of this activity may cover: a stage belongs to exactly one offer. */
-export function recordOffers(
-  state: { offers: CalendarOffer[] },
-  requirement?: ActivityRequirement,
-) {
+export function recordOffers(state: { offers: CalendarOffer[] }, requirement?: ActivityPlanItem) {
   const ids = offerIds(state);
   const requiredOffer = requirement?.offerId;
   return requiredOffer
@@ -174,7 +171,7 @@ export function recordOffers(
 /** Values prepared for a new record of an activity, before any input. */
 export function activityDraft(
   state: AssessmentSettings & { year: number; offers: CalendarOffer[]; periods: CalendarPeriod[] },
-  requirement: ActivityRequirement,
+  requirement: ActivityPlanItem,
 ): EventValues {
   const valid = recordOffers(state, requirement);
   const pertinent = valid.filter(

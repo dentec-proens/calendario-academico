@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { termsFor } from '#src/domain/calendar/organization/periods.ts';
 import { expandRequirements } from '#src/domain/calendar/activities/requirement-table.ts';
 import { applicabilityFor, documentedYears, policyFor } from '#src/domain/policies/registry.ts';
@@ -22,7 +22,7 @@ test('the rules page shows the applicability the editor computes for each offer'
         scope: { status: 'covered' },
       })),
     };
-    const rows = activityChecklist(state);
+    const rows = activityPlan(state);
     const declared = view.sections.flatMap((section) => section.activities);
     expect(declared.length).toBe(policyFor(year).catalogue!.flatMap((s) => s.rows).length);
     for (const activity of declared)
@@ -110,7 +110,7 @@ test('applicability per offer does not depend on organisation or stage count', (
             expandRequirements(policy.catalogue!, state).map((item) => item.row.id),
           );
           // Legacy rows keep old IDs optional on purpose; only declared rows carry the table's rules.
-          for (const row of activityChecklist(state).filter((item) => declared.has(item.id))) {
+          for (const row of activityPlan(state).filter((item) => declared.has(item.id))) {
             const id = row.id.replace(/-\d(:[a-z]+)?$/, '');
             for (const offer of state.offers) {
               if (row.offerId && row.offerId !== offer.id) continue;
@@ -149,7 +149,7 @@ test('activity names carry the month and hours the page does not repeat', () => 
         { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
       ],
     };
-    for (const row of activityChecklist(state)) {
+    for (const row of activityPlan(state)) {
       if (row.month)
         expect(row.name.toLocaleLowerCase('pt-BR'), row.id).toContain(months[row.month - 1]);
       if (row.minHours) expect(row.name, row.id).toContain(`${row.minHours} horas`);

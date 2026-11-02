@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { categories } from '#src/domain/calendar/activities/categories.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
-import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { applicabilityFor, policyFor } from '#src/domain/policies/registry.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
@@ -39,7 +39,7 @@ export default function EventEditor() {
     });
     return () => cancelAnimationFrame(frame);
   }, [editor.open, editor.context]);
-  const checklist = activityChecklist(state);
+  const checklist = activityPlan(state);
   const requirement = checklist.find((item) => item.id === values.requirementId);
   const publication =
     (Boolean(values.admissionType) && noticeActive(values)) ||

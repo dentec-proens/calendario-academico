@@ -1,6 +1,6 @@
 import type {
   AcademicTerm,
-  ActivityRequirement,
+  ActivityPlanItem,
   AssessmentSettings,
   CalendarOffer,
 } from '../model.ts';
@@ -25,7 +25,7 @@ export interface Slot {
 
 type PerSlot<T> = T | ((slot: Slot) => T);
 type Fields = Omit<
-  ActivityRequirement,
+  ActivityPlanItem,
   'id' | 'group' | 'defaultCategory' | 'variant' | 'reviewCriterionId'
 >;
 
@@ -70,7 +70,7 @@ export type RequirementSection = {
 );
 
 export interface ExpandedRequirement {
-  row: ActivityRequirement;
+  row: ActivityPlanItem;
   slot: Slot;
   spec: RequirementSpec;
 }
@@ -143,7 +143,7 @@ export function expandRequirements(
             variant ??
             (row.admissionType ? 'admission-notice' : row.minHours ? 'hours' : 'activity'),
         });
-        return { row: row as unknown as ActivityRequirement, slot, spec };
+        return { row: row as unknown as ActivityPlanItem, slot, spec };
       }),
     ),
   );

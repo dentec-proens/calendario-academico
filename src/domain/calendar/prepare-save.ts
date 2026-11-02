@@ -1,4 +1,4 @@
-import type { CalendarActivity, CalendarContentV4 } from './model.ts';
+import type { CalendarEvent, CalendarContentV4 } from './model.ts';
 import { equalValues } from '../../shared/equal.ts';
 import { inheritedEvents } from '../institution/catalogue.ts';
 import { applyObservances, validateObservances } from './observances.ts';
@@ -15,7 +15,7 @@ import { kinds } from './offers.ts';
 type OfferState = CalendarContentV4 & { year: number; campus?: string };
 
 /** V4 save boundary; the backend retains concurrency, authorization and final confirmation. */
-export function prepareOfferCalendarSave<E extends CalendarActivity & { active: boolean }>(
+export function prepareOfferCalendarSave<E extends CalendarEvent & { active: boolean }>(
   previous: OfferState,
   proposed: OfferState,
   context: { storedContent: unknown; catalogue: { events: E[] }; recalculate: boolean },

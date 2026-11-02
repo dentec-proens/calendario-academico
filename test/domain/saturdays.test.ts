@@ -1,5 +1,5 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import type { ActivityState, CalendarActivity } from '../../src/domain/calendar/model.ts';
+import type { ActivityState, CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
@@ -68,7 +68,7 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
         association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
     ],
-    events: [] as CalendarActivity[],
+    events: [] as CalendarEvent[],
     offers: [
       {
         id: 'integrado',
@@ -277,14 +277,14 @@ const yearState: ActivityState = {
     },
   ],
 };
-const holiday: CalendarActivity = {
+const holiday: CalendarEvent = {
   id: 'holiday',
   name: 'Feriado municipal',
   kind: 'exclude',
   start: civilDate('2027-03-20'),
   end: civilDate('2027-03-20'),
 };
-const pick = (event?: CalendarActivity) => ({ name: event?.name });
+const pick = (event?: CalendarEvent) => ({ name: event?.name });
 
 test('saturday year classifies each Saturday and keeps registered dates reachable', () => {
   const months = saturdayYear(yearState, [...yearState.events, holiday]);
@@ -334,7 +334,7 @@ test('updating a Saturday activity trims values and rejects other records', () =
 });
 
 test('a Saturday covered by a wider inclusion stays editable through its own record', () => {
-  const own: CalendarActivity = {
+  const own: CalendarEvent = {
     id: 's3',
     name: 'Gincana',
     kind: 'include',

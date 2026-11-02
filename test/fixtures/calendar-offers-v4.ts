@@ -1,7 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import type {
   AcademicTerm,
-  CalendarActivityV4,
+  CalendarEventV4,
   CalendarContentV4,
   CalendarPeriodV4,
 } from '../../src/domain/calendar/model.ts';
@@ -28,7 +28,7 @@ const stages = (
   label: string,
   dates: readonly (readonly [string, string])[],
   perSemester?: number,
-): CalendarActivityV4[] =>
+): CalendarEventV4[] =>
   dates.map(([start, end], index) => ({
     id: `${offer}-stage-${index + 1}`,
     name: `${perSemester ? (index % perSemester) + 1 : index + 1}ª etapa de avaliação${perSemester ? ` — ${Math.floor(index / perSemester) + 1}º semestre` : ''} — ${label}`,

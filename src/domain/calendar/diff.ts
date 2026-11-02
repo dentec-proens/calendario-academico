@@ -5,7 +5,13 @@
  */
 import { equalValues } from '../../shared/equal.ts';
 import type { CivilDate } from '../civil-date.ts';
-import type { ActivityState, CalendarActivity, CalendarOffer, CalendarPeriod } from './model.ts';
+import type {
+  ActivityState,
+  CalendarEvent,
+  InstitutionalEventSnapshot,
+  CalendarOffer,
+  CalendarPeriod,
+} from './model.ts';
 import { evaluateCalendar } from './counting/evaluation.ts';
 import { observanceForEvent, observanceRules } from './observances.ts';
 import { labelFor } from './offers.ts';
@@ -17,7 +23,7 @@ export interface DiffSide {
     rulesetVersion?: string;
     teacherVacations?: Partial<Record<VacationField, CivilDate>>;
   };
-  institutionalSnapshot: (CalendarActivity & Record<string, unknown>)[];
+  institutionalSnapshot: (InstitutionalEventSnapshot & Record<string, unknown>)[];
   documentSnapshot: ({ id: string } & Record<string, unknown>)[];
   catalogueRevision: number;
 }
@@ -347,7 +353,7 @@ export function compareContents(before: DiffSide, after: DiffSide) {
     side.state.events
       .filter((event) => !derivedVacation(event))
       .map((event) => withOffers(event, ids));
-  const eventKey = (event: CalendarActivity) =>
+  const eventKey = (event: CalendarEvent) =>
     event.requirementId ? `${event.requirementId}|${(event.offers ?? []).join(',')}` : undefined;
   const events = compareItems(
     eventSide(before, beforeOffers),

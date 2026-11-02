@@ -2,7 +2,7 @@ import { useWorkRisk } from '../../../shared/forms/useWorkRisk.ts';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { PanelDialog, PanelHeader } from '../../../components/ui/Panel.tsx';
-import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { observanceRules } from '#src/domain/calendar/observances.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useAppSession } from '../../../app/session.tsx';
@@ -35,7 +35,7 @@ export default function EventPanel() {
     : editor.panel?.kind === 'activity'
       ? editor.panel.requirementId
       : '';
-  const activity = activityChecklist(state).find((item) => item.id === activityId);
+  const activity = activityPlan(state).find((item) => item.id === activityId);
   const observanceKey =
     !editor.open && editor.panel?.kind === 'observance' ? editor.panel.key : undefined;
   const observance = observanceRules(state.year).find((rule) => rule.key === observanceKey);

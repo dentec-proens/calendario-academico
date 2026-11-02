@@ -3,7 +3,7 @@ import { applyObservances, type ObservanceState } from './observances.ts';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { equalValues } from '../../shared/equal.ts';
-import type { CalendarActivity, CalendarOffer } from './model.ts';
+import type { CalendarOffer, InstitutionalEventSnapshot } from './model.ts';
 import { kinds } from './offers.ts';
 import { DomainError } from '../errors.ts';
 import {
@@ -14,11 +14,6 @@ import {
   rulesetVersion,
 } from '../policies/registry.ts';
 
-export type BaseEvent = CalendarActivity & {
-  evidence?: string;
-  source?: string;
-  modalities?: string[];
-};
 export interface BaseDocument {
   id: string;
   year: number;
@@ -29,7 +24,7 @@ export interface BaseDocument {
   filename: string;
 }
 export interface BaseSnapshot<
-  E extends BaseEvent = BaseEvent,
+  E extends InstitutionalEventSnapshot = InstitutionalEventSnapshot,
   D extends BaseDocument = BaseDocument,
 > {
   revision: number;
@@ -45,7 +40,7 @@ export interface BaseScope {
 
 const scopeKinds = (scope: BaseScope): string[] => kinds({ offers: scope.offers });
 
-function eventKinds(event: BaseEvent, scope: BaseScope): string[] {
+function eventKinds(event: InstitutionalEventSnapshot, scope: BaseScope): string[] {
   if (event.offers)
     return scope.offers
       .filter((offer) => event.offers!.includes(offer.id))
@@ -53,7 +48,7 @@ function eventKinds(event: BaseEvent, scope: BaseScope): string[] {
   return event.modalities ?? scopeKinds(scope);
 }
 
-function eventContent(event: BaseEvent, scope: BaseScope) {
+function eventContent(event: InstitutionalEventSnapshot, scope: BaseScope) {
   return {
     id: event.id,
     name: event.name,
@@ -113,7 +108,7 @@ function identity(snapshot: BaseSnapshot, scope: BaseScope) {
 }
 
 /** The only policy for institutional-base equivalence and confirmation. Revision is a concurrency marker, not content. */
-export function inspect<E extends BaseEvent, D extends BaseDocument>(
+export function inspect<E extends InstitutionalEventSnapshot, D extends BaseDocument>(
   previous: BaseSnapshot<E, D>,
   current: BaseSnapshot<E, D>,
   scope: BaseScope,
@@ -190,7 +185,7 @@ export function reviewIsCurrent(
 }
 
 /** Read the same assessment from persisted calendar records in either adapter. */
-export function inspectCalendar<E extends BaseEvent, D extends BaseDocument>(
+export function inspectCalendar<E extends InstitutionalEventSnapshot, D extends BaseDocument>(
   record: {
     state: BaseScope;
     catalogueRevision: number;
@@ -232,7 +227,7 @@ export function referenceIsCurrent(
 
 /** Inspect removals even when a campus adjustment refers to an event no longer published.
  * Applying the calendar still validates that adjustment through the normal commands. */
-export function applicableEvents<T extends BaseEvent & { active: boolean }>(
+export function applicableEvents<T extends InstitutionalEventSnapshot & { active: boolean }>(
   catalogue: { events: T[] },
   scope: BaseScope & ObservanceState,
 ) {

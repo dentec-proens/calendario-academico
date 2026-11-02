@@ -1,9 +1,14 @@
-import type { ActivityState, CalendarActivity, VacationPeriods } from '../model.ts';
+import type {
+  ActivityState,
+  CalendarEvent,
+  InstitutionalEventSnapshot,
+  VacationPeriods,
+} from '../model.ts';
 import { equalValues } from '../../../shared/equal.ts';
 import { datesBetween } from '../counting/core.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
-import { activityChecklist } from '../activities/checklist.ts';
+import { activityPlan } from '../activities/plan.ts';
 import { stageRequirement } from '../activities/assessment.ts';
 import { assessmentCycleIssue } from '../activities/assessment-intervals.ts';
 import { coversDate, dateEdited, linkKept } from '../activities/links.ts';
@@ -15,7 +20,7 @@ import { DomainError } from '../../errors.ts';
 export function removeEvent<S extends ActivityState & { teacherVacations?: VacationPeriods }>(
   state: S,
   id: string,
-  institutional: CalendarActivity[],
+  institutional: InstitutionalEventSnapshot[],
 ): S {
   if (!state.events.some((event) => event.id === id))
     throw new DomainError('O evento não existe mais.');
@@ -30,7 +35,7 @@ export function removeEvent<S extends ActivityState & { teacherVacations?: Vacat
 }
 
 /** Occurrence identity is independent of source documents and descriptive metadata. */
-function sameOccurrence(a: CalendarActivity, b: CalendarActivity) {
+function sameOccurrence(a: CalendarEvent, b: CalendarEvent) {
   return (
     a.name.toLocaleLowerCase() === b.name.trim().toLocaleLowerCase() &&
     a.start === b.start &&
@@ -44,7 +49,7 @@ function sameOccurrence(a: CalendarActivity, b: CalendarActivity) {
 export function applyEvent<S extends ActivityState>(
   state: S,
   event: S['events'][number],
-  institutional: CalendarActivity[],
+  institutional: InstitutionalEventSnapshot[],
   editing = false,
 ): S {
   const existing = state.events.find((item) => item.id === event.id);
@@ -54,7 +59,7 @@ export function applyEvent<S extends ActivityState>(
   if (previous && previous.requirementId !== event.requirementId)
     throw new DomainError('Uma data salva não perde nem troca a atividade vinculada.');
   const edited = dateEdited(previous, event);
-  const activity = activityChecklist(state).find((item) => item.id === event.requirementId);
+  const activity = activityPlan(state).find((item) => item.id === event.requirementId);
   const kept = linkKept(previous, event);
   validateActivityRecord(state, event, {
     stageInterval: edited && !(kept && !activity),

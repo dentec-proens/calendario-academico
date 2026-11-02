@@ -1,5 +1,5 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
+import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
@@ -62,7 +62,7 @@ const stage = (number: number, modality: string, start: string, end: string) => 
   end: civilDate(end),
   kind: 'note',
 });
-const events: CalendarActivity[] = [
+const events: CalendarEvent[] = [
   stage(1, 'integrado', '2027-06-21', '2027-06-25'),
   stage(2, 'integrado', '2027-06-26', '2027-07-02'),
   stage(3, 'integrado', '2027-08-02', '2027-08-06'),
@@ -170,7 +170,7 @@ test('annual periods preserve assessment totals without inventing semester bound
       },
     ],
   };
-  const withRecess: CalendarActivity[] = [
+  const withRecess: CalendarEvent[] = [
     ...events,
     {
       name: 'Recesso',

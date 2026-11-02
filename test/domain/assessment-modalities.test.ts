@@ -1,7 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { assessmentCount } from '../../src/domain/calendar/activities/assessment.ts';
 import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessment-days.ts';
 import { recalculateCalendar } from '../../src/domain/calendar/commands/recalculate.ts';
@@ -69,11 +69,11 @@ test('cleared offer does not inherit the old shared count or affect another offe
   };
   assert.equal(assessmentCount(cleared, 'integrado'), 0);
   assert.equal(assessmentCount(cleared, 'graduacao'), 2);
-  const stages = activityChecklist(cleared).filter((r) => r.id.startsWith('stage-'));
+  const stages = activityPlan(cleared).filter((r) => r.id.startsWith('stage-'));
   assert.equal(stages.length, 2);
   assert(stages.every((r) => r.offerId === 'graduacao'));
   assert.equal(
-    activityChecklist({
+    activityPlan({
       ...cleared,
       offers: cleared.offers.map((offer) => ({
         ...offer,
@@ -134,8 +134,6 @@ test('different quantities of manual assessment stages coexist by offer', () => 
             },
     })),
   };
-  expect(activityChecklist(configuration).filter((r) => r.id.startsWith('stage-'))).toHaveLength(5);
-  expect(
-    activityChecklist(configuration).find((r) => r.id === 'stage-3:graduacao'),
-  ).toBeUndefined();
+  expect(activityPlan(configuration).filter((r) => r.id.startsWith('stage-'))).toHaveLength(5);
+  expect(activityPlan(configuration).find((r) => r.id === 'stage-3:graduacao')).toBeUndefined();
 });

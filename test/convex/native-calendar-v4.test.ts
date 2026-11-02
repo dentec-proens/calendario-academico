@@ -8,7 +8,7 @@ import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, preserveSubmission, seedCourses } from '../helpers/lifecycle.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { reviewCriteria } from '../../src/domain/reviews/criteria.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { initialCatalogue } from '../../src/domain/institution/catalogue.ts';
 import { teacherDayId } from '../fixtures/observances.ts';
 
@@ -442,9 +442,7 @@ test.each(['annual', 'semester', 'trimester', 'three'] as const)(
     expect(institutional?.offers).toEqual(reference.offers.map((offer) => offer.id));
     expect(loaded.offerKinds).toEqual(['graduacao']);
     if (mode === 'three')
-      expect(activityChecklist(loaded.state).some((row) => row.id === 'stage-4:graduacao-2')).toBe(
-        true,
-      );
+      expect(activityPlan(loaded.state).some((row) => row.id === 'stage-4:graduacao-2')).toBe(true);
   },
 );
 

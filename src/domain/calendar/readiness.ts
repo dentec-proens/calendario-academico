@@ -1,7 +1,7 @@
 import { diagnoseCalendar, diagnoseTeachingDays } from './diagnostics.ts';
 import { assessmentStageCounts } from './config.ts';
 import { referenceIsCurrent, reviewIsCurrent } from './base.ts';
-import type { CalendarActivity, ActivityState, CalendarReview } from './model.ts';
+import type { InstitutionalEventSnapshot, ActivityState, CalendarReview } from './model.ts';
 import { appliesTo } from './modalities.ts';
 import { calendarOffers, labelFor, stageInTerm } from './offers.ts';
 import { assessmentCount, scopedRequirement } from './activities/assessment.ts';
@@ -23,7 +23,7 @@ export interface ContentIssue {
   code: string;
   message: string;
 }
-type ContentRecord = { institutionalSnapshot: CalendarActivity[]; state: ActivityState };
+type ContentRecord = { institutionalSnapshot: InstitutionalEventSnapshot[]; state: ActivityState };
 
 /** Content checks only: no institutional-base or human-review issues. */
 export function contentAssessment(record: ContentRecord) {
@@ -194,7 +194,7 @@ export function contentAssessment(record: ContentRecord) {
 
 export function contentIssues(
   state: ActivityState,
-  institutionalSnapshot: CalendarActivity[],
+  institutionalSnapshot: InstitutionalEventSnapshot[],
 ): ContentIssue[] {
   return contentAssessment({ state, institutionalSnapshot }).issues;
 }

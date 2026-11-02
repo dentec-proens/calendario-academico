@@ -2,7 +2,7 @@ import { civilDate } from '../../civil-date.ts';
 import { modalityIds, termLabels } from '../../calendar/config.ts';
 import type {
   AssessmentSettings,
-  ActivityRequirement,
+  ActivityPlanItem,
   AcademicTerm,
   CalendarOffer,
 } from '../../calendar/model.ts';
@@ -344,7 +344,7 @@ const declared = new Map<string, RequirementSpec>(
   sections.flatMap((section) => section.rows.map((row) => [row.id, row] as const)),
 );
 
-export function requirements(state: AssessmentSettings): ActivityRequirement[] {
+export function requirements(state: AssessmentSettings): ActivityPlanItem[] {
   const rows = expandRequirements(sections, state).map(({ row }) => ({
     modalities: supportedKinds(state),
     ...row,
@@ -368,7 +368,7 @@ export function requirements(state: AssessmentSettings): ActivityRequirement[] {
 }
 export function applicability(
   _state: AssessmentSettings,
-  requirement: ActivityRequirement,
+  requirement: ActivityPlanItem,
   offer: CalendarOffer,
 ): Applicability {
   const kind = offer.kind;

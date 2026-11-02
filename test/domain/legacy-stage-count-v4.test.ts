@@ -2,7 +2,7 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
 import type { CalendarContentV4, CalendarOffer } from '../../src/domain/calendar/model.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import { policyFor } from '../../src/domain/policies/registry.ts';
@@ -53,7 +53,7 @@ test.each(archive.cases)(
   ({ count, requirements, readiness }) => {
     const state = fixture(count),
       offer = state.offers[0];
-    const rows = activityChecklist(state).map(({ offerId, offerIds: _ids, ...row }) => ({
+    const rows = activityPlan(state).map(({ offerId, offerIds: _ids, ...row }) => ({
       ...row,
       ...(offerId ? { modality: offerId } : {}),
       applicability: policyFor(state.year).applicability(state, { ...row, offerId }, offer),

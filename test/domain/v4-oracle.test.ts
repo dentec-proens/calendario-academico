@@ -3,13 +3,13 @@ import { bytesToHex } from '@noble/hashes/utils.js';
 import { expect, test } from 'vitest';
 import type { Doc } from '../../convex/_generated/dataModel';
 import { contentHash } from '../../convex/calendars/lifecycle.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { activityStatus } from '../../src/domain/calendar/activities/status.ts';
-import { inspect, type BaseDocument, type BaseEvent } from '../../src/domain/calendar/base.ts';
+import { inspect, type BaseDocument } from '../../src/domain/calendar/base.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
-import type { ActivityState } from '../../src/domain/calendar/model.ts';
+import type { ActivityState, InstitutionalEventSnapshot } from '../../src/domain/calendar/model.ts';
 import { applyObservances } from '../../src/domain/calendar/observances.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
@@ -29,7 +29,7 @@ function before(item: V4Case) {
     year: item.year,
     campus: item.campus,
   } as unknown as ActivityState & { rulesetVersion?: string };
-  const snapshot = item.content.institutionalSnapshot as unknown as BaseEvent[];
+  const snapshot = item.content.institutionalSnapshot as unknown as InstitutionalEventSnapshot[];
   const events = [...applyObservances(snapshot, state), ...state.events];
   let evaluation: ReturnType<typeof evaluateCalendar> | null = null;
   let countingError: string | undefined;
@@ -59,7 +59,7 @@ function before(item: V4Case) {
     })),
     baseIdentity: inspect(base, base, state).identity,
     linksToReview: Object.fromEntries(linksToReview(state)),
-    activities: activityChecklist(state),
+    activities: activityPlan(state),
     coverage: coverage.map((row) => ({
       activity: row.requirement.id,
       offerId: row.offerId,

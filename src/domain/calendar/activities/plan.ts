@@ -1,6 +1,6 @@
-import type { AssessmentSettings, ActivityRequirement } from '../model.ts';
+import type { AssessmentSettings, ActivityPlanItem } from '../model.ts';
 import { policyFor } from '../../policies/registry.ts';
-export function activityChecklist(state: AssessmentSettings): ActivityRequirement[] {
+export function activityPlan(state: AssessmentSettings): ActivityPlanItem[] {
   const policy = policyFor(state.year);
   const requirements = policy.requirements(state);
   return policy.configured

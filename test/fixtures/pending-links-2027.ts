@@ -1,6 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import type {
-  CalendarActivity,
+  CalendarEvent,
   CalendarContentV4,
   CalendarOffer,
   OfferKind,
@@ -30,7 +30,7 @@ function draft(
   prefix: string,
   offers: [OfferKind, OfferKind],
   rows: readonly Row[],
-  extra: (event: CalendarActivity) => CalendarActivity = (event) => event,
+  extra: (event: CalendarEvent) => CalendarEvent = (event) => event,
 ): PendingLinksFixture {
   return {
     schemaVersion: 4,
@@ -109,7 +109,7 @@ export function ivaiporaDraft(): PendingLinksFixture {
         ['recognition', '11/02', '19/02'],
         ['final-appeal', '13/12', '20/12'],
       ] as const
-    ).map(([name, start, end]): CalendarActivity => ({
+    ).map(([name, start, end]): CalendarEvent => ({
       id: `ivaipora-annual-${name}`,
       name: `Registro anual sintético ${name}`,
       start: day(start),
@@ -156,7 +156,7 @@ const vacations = { firstStart: day('04/01'), firstEnd: day('31/01') };
  * admission destination whose link has no generated activity.
  */
 export function conflictingLinks(): PendingLinksFixture {
-  const stage = (id: string, n: number, start: string, end: string): CalendarActivity => ({
+  const stage = (id: string, n: number, start: string, end: string): CalendarEvent => ({
     id,
     name: `${n}ª etapa sintética`,
     requirementId: `stage-${n}:integrado`,

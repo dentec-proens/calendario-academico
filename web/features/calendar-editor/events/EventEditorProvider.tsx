@@ -20,7 +20,7 @@ import {
   type EventValues,
 } from './event-draft.ts';
 import { applyEvent } from '#src/domain/calendar/commands/events.ts';
-import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
 import { linksToReview } from '#src/domain/calendar/activities/links.ts';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
@@ -238,7 +238,7 @@ function useController() {
     const next: EventContext =
       event.requirementId &&
       !review &&
-      activityChecklist(state).some((item) => item.id === event.requirementId)
+      activityPlan(state).some((item) => item.id === event.requirementId)
         ? { kind: 'activity', requirementId: event.requirementId, eventId: id }
         : { kind: 'event', eventId: id };
     begin(next, eventValues(event, calendarOfferIds), id);
@@ -248,7 +248,7 @@ function useController() {
       openOrganization(requirementId);
       return;
     }
-    const requirement = activityChecklist(state).find((item) => item.id === requirementId);
+    const requirement = activityPlan(state).find((item) => item.id === requirementId);
     if (!requirement) return;
     begin({ kind: 'activity', requirementId }, activityDraft(state, requirement));
   }

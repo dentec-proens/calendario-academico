@@ -1,7 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import type { CalendarActivity } from '../../src/domain/calendar/model.ts';
+import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
@@ -35,7 +35,7 @@ test('definitive release requires every reviewed criterion, current versions and
           },
         },
       ],
-      events: [] as CalendarActivity[],
+      events: [] as CalendarEvent[],
       offers: [
         {
           id: 'integrado',
@@ -61,7 +61,7 @@ test('definitive release requires every reviewed criterion, current versions and
       category: 'institucional',
     }));
   record.state.events.push(
-    ...activityChecklist(record.state).map((r) => ({
+    ...activityPlan(record.state).map((r) => ({
       id: r.id,
       requirementId: r.id,
       offers: r.offerId ? [r.offerId] : ['integrado'],
@@ -97,7 +97,7 @@ test('definitive release requires every reviewed criterion, current versions and
   };
   db.reviews = [review];
   assert(releaseReadiness(record, db).issues.some((i) => i.includes('40 horas')));
-  for (const r of activityChecklist(record.state)) {
+  for (const r of activityPlan(record.state)) {
     const event = record.state.events.find((e) => e.requirementId === r.id)!;
     if (r.minHours) event!.hours = r.minHours;
     if (r.month)
@@ -222,7 +222,7 @@ test('combined calendars scope exclusions by modality and do not presume a postg
         },
       },
     ],
-    events: [] as CalendarActivity[],
+    events: [] as CalendarEvent[],
     offers: [
       {
         id: 'subsequente',
@@ -282,7 +282,7 @@ test('a single linked deadline cannot satisfy every assessment stage or semester
       },
     ],
   };
-  const activities = activityChecklist(state);
+  const activities = activityPlan(state);
   assert.equal(activities.filter((a) => a.id.startsWith('results-')).length, 4);
   assert.equal(activities.filter((a) => a.id.startsWith('diary-')).length, 2);
   assert.equal(activities.filter((a) => a.id.startsWith('teaching-plan-')).length, 2);

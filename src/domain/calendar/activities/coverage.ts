@@ -1,4 +1,4 @@
-import type { AssessmentSettings, CalendarActivity, CalendarPeriod } from '../model.ts';
+import type { AssessmentSettings, CalendarEvent, CalendarPeriod } from '../model.ts';
 import { appliesTo } from '../modalities.ts';
 import { calendarOffers } from '../offers.ts';
 import { policyFor } from '../../policies/registry.ts';
@@ -10,11 +10,11 @@ export function activityCoverage(
   state: AssessmentSettings & {
     year: number;
     periods: CalendarPeriod[];
-    events: CalendarActivity[];
+    events: CalendarEvent[];
     weekdays?: number[];
     weekConfirmed?: boolean;
   },
-  events: CalendarActivity[] = state.events,
+  events: CalendarEvent[] = state.events,
   humanReview?: { current: boolean; reviewedCriterionIds: readonly string[] },
 ) {
   const policy = policyFor(state.year);

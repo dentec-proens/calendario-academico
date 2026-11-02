@@ -6,18 +6,18 @@ import { activityCoverage } from '../../src/domain/calendar/activities/coverage.
 import { applicabilityFor } from '../../src/domain/policies/registry.ts';
 import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlines.ts';
 import { validateActivityRecord } from '../../src/domain/calendar/activities/validation.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import type {
   ActivityState,
-  CalendarActivity,
+  CalendarEvent,
   CalendarOffer,
   IntakeConfiguration,
 } from '../../src/domain/calendar/model.ts';
 
 // External metadata is test input, never a storage/API contract.
-type AnnotatedEvent = CalendarActivity & {
+type AnnotatedEvent = CalendarEvent & {
   evidence?: string;
-  deadlineAdjustment?: CalendarActivity['deadlineAdjustment'] & { evidence?: string };
+  deadlineAdjustment?: CalendarEvent['deadlineAdjustment'] & { evidence?: string };
 };
 type AnnotatedState = Omit<ActivityState, 'events' | 'offers'> & {
   events: AnnotatedEvent[];
@@ -294,7 +294,7 @@ test('local registration keeps its explicit required and optional choices withou
     second: { status: 'no', required: false, source: 'Ata manual' },
   };
   const stripped = removeManualSources(original);
-  const rows = activityChecklist(original).filter(
+  const rows = activityPlan(original).filter(
     (row) => row.id.startsWith('registration-') && row.modalities?.includes('graduacao'),
   );
   expect(rows).toHaveLength(2);
@@ -320,7 +320,7 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
       },
     ],
   };
-  const row = activityChecklist(original).find((item) => item.admissionType === 'regular')!;
+  const row = activityPlan(original).find((item) => item.admissionType === 'regular')!;
   expect(row.deadline).toBeTruthy();
   const event: AnnotatedEvent = {
     id: 'notice',

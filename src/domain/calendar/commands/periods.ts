@@ -1,11 +1,11 @@
-import type { ActivityState, CalendarActivity } from '../model.ts';
+import type { ActivityState, InstitutionalEventSnapshot } from '../model.ts';
 import { recalculateCalendar } from './recalculate.ts';
 import { DomainError } from '../../errors.ts';
 
 export function applyWeek<S extends ActivityState>(
   state: S,
   values: { weekdays: number[]; weekConfirmed: boolean },
-  institutional: CalendarActivity[],
+  institutional: InstitutionalEventSnapshot[],
 ): S {
   if (
     !values.weekdays.length ||

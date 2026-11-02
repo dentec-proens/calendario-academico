@@ -13,7 +13,7 @@ import {
   reviewEntry,
   reviewFields,
 } from '../../convex/validators.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { operationalSections } from '../../src/domain/calendar/activities/operational-checklist.ts';
 import type { RepeatBase as DomainRepeat } from '../../src/domain/calendar/migration/inventory.ts';
 import {
@@ -166,7 +166,7 @@ describe('frozen declarations', () => {
         year: item.year,
         campus: item.campus,
       } as unknown as ActivityState;
-      const generated = new Map(activityChecklist(state).map((row) => [row.id, row]));
+      const generated = new Map(activityPlan(state).map((row) => [row.id, row]));
       for (const { link } of contentInventory(item).links) {
         const row = generated.get(link.requirementId);
         if (!row) continue;
@@ -265,7 +265,7 @@ describe('inventory of the frozen v4 documents', () => {
   test('a semester link kept by v4 as legacy in a 2027 annual calendar stays a semester to review', () => {
     const item = byName('Vínculo semestral legado em 2027 só anual, com documentos');
     const state = { ...item.content.state, year: item.year, campus: item.campus };
-    const row = activityChecklist(state as unknown as ActivityState).find(
+    const row = activityPlan(state as unknown as ActivityState).find(
       (entry) => entry.id === 'enrolment-1',
     );
     expect(row?.basis).toBe('Classificação legada');

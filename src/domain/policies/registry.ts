@@ -1,4 +1,4 @@
-import type { AssessmentSettings, ActivityRequirement, CalendarOffer } from '../calendar/model.ts';
+import type { AssessmentSettings, ActivityPlanItem, CalendarOffer } from '../calendar/model.ts';
 import { offerFor } from '../calendar/offers.ts';
 import { DomainError } from '../errors.ts';
 import { consup2922027Policy } from './consup-292-2027/index.ts';
@@ -69,7 +69,7 @@ export const rulesetVersion = (state: AssessmentSettings) =>
 
 export const applicabilityFor = (
   state: AssessmentSettings,
-  requirement: ActivityRequirement,
+  requirement: ActivityPlanItem,
   offer: CalendarOffer | string,
 ) => policyFor(state.year).applicability(state, requirement, resolveOffer(state, offer));
 

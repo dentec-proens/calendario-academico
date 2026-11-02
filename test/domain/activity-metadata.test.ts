@@ -1,7 +1,7 @@
 import { calendarOffers } from '../../src/domain/calendar/offers.ts';
 import { expect, test } from 'vitest';
-import type { ActivityRequirement, AssessmentSettings } from '../../src/domain/calendar/model.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import type { ActivityPlanItem, AssessmentSettings } from '../../src/domain/calendar/model.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { activityGroups } from '../../src/domain/calendar/activities/metadata.ts';
 import { applicabilityFor } from '../../src/domain/policies/registry.ts';
 import { activityDraft } from '../../web/features/calendar-editor/events/event-draft.ts';
@@ -59,7 +59,7 @@ const settings: (AssessmentSettings & { year: number })[] = [2027, 2028].flatMap
 );
 
 test('catalogue metadata reproduces the previous grouping, category and form rules', () => {
-  const rows: ActivityRequirement[] = settings.flatMap((state) => activityChecklist(state));
+  const rows: ActivityPlanItem[] = settings.flatMap((state) => activityPlan(state));
   expect(new Set(rows.map((row) => row.variant))).toEqual(
     new Set(['activity', 'hours', 'admission-notice', 'stage']),
   );
@@ -77,14 +77,12 @@ test('catalogue metadata reproduces the previous grouping, category and form rul
 });
 
 test('every catalogue subject is offered by the checklist filter', () => {
-  const groups = new Set(
-    settings.flatMap((state) => activityChecklist(state)).map((row) => row.group),
-  );
+  const groups = new Set(settings.flatMap((state) => activityPlan(state)).map((row) => row.group));
   expect([...groups].every((group) => activityGroups.some(([id]) => id === group))).toBe(true);
 });
 
 // The values `prepare()` produced before it moved to `activityDraft`.
-function previousDraft(state: (typeof settings)[number], row: ActivityRequirement) {
+function previousDraft(state: (typeof settings)[number], row: ActivityPlanItem) {
   const modalities = state.offers.map((offer) => offer.id);
   const pertinent = modalities.filter(
     (modality) => applicabilityFor(state, row, modality) === 'required',
@@ -118,11 +116,11 @@ test('every year keeps a catalogue and prepares the same draft as before', () =>
     expect(
       settings
         .filter((state) => state.year === year)
-        .every((state) => activityChecklist(state).length > 0),
+        .every((state) => activityPlan(state).length > 0),
     ).toBe(true);
   for (const state of settings) {
     const draftState = { ...state, offers: calendarOffers(state), periods: [] };
-    for (const row of activityChecklist(state)) {
+    for (const row of activityPlan(state)) {
       const expected = previousDraft(state, row);
       // A stage record may only cover its own offer.
       if (row.offerId) expected.offers = expected.offers.filter((m) => m === row.offerId);

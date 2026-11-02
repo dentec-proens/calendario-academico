@@ -1,7 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
-import type { ActivityState, CalendarActivity } from '../../src/domain/calendar/model.ts';
-import { activityChecklist } from '../../src/domain/calendar/activities/checklist.ts';
+import type { ActivityState, CalendarEvent } from '../../src/domain/calendar/model.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import { applicabilityFor } from '../../src/domain/policies/registry.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
@@ -66,7 +66,7 @@ function calendar(): ActivityState {
     ],
   };
 }
-function notice(extra: Partial<CalendarActivity> = {}): CalendarActivity {
+function notice(extra: Partial<CalendarEvent> = {}): CalendarEvent {
   return {
     id: 'notice',
     name: 'Edital sintético',
@@ -82,7 +82,7 @@ function notice(extra: Partial<CalendarActivity> = {}): CalendarActivity {
 }
 test('2027 requirements use offer and academic cycle while PE/PIT/RIT remain semester requirements', () => {
   const state = calendar(),
-    requirements = activityChecklist(state);
+    requirements = activityPlan(state);
   const enrolment = requirements.filter((r) => /^enrolment-/.test(r.id));
   expect(enrolment.find((r) => r.id === 'enrolment-0')?.modalities).toEqual([
     'integrado',
@@ -313,7 +313,7 @@ test('postgraduate and other years are not implicitly certified by 2027', () => 
 
 test('article 3 extends only explicitly classified municipal causes to the first teaching day of the offer', () => {
   const state = calendar();
-  const holiday: CalendarActivity = {
+  const holiday: CalendarEvent = {
     id: 'municipal',
     name: 'Feriado municipal sintético',
     start: civilDate('2027-08-31'),
@@ -322,7 +322,7 @@ test('article 3 extends only explicitly classified municipal causes to the first
     offers: ['integrado'],
     deadlineExtensionCause: 'municipal-holiday',
   };
-  const otherHoliday: CalendarActivity = {
+  const otherHoliday: CalendarEvent = {
     ...holiday,
     id: 'following',
     start: civilDate('2027-09-03'),
@@ -408,7 +408,7 @@ test('a legacy event without declared offers remains visible but never covers al
 
 test('commands and direct import reject teaching inclusion outside the selected offer periods', () => {
   const state = calendar();
-  const event: CalendarActivity = {
+  const event: CalendarEvent = {
     id: 'outside-undergraduate',
     name: 'Inclusão sintética',
     start: civilDate('2027-07-20'),

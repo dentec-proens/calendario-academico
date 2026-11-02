@@ -4,7 +4,7 @@ export interface CalendarEvidence {
   confirmed: boolean;
   evidenceId?: string;
 }
-export interface CalendarEvent extends CalendarEvidence {
+export interface CountingInterval extends CalendarEvidence {
   id: string;
   start: CivilDate;
   end: CivilDate;
@@ -15,11 +15,11 @@ export interface CalendarInput {
   offerId: string;
   periods: { id: string; start: CivilDate; end: CivilDate }[];
   weekPattern: CalendarEvidence & { weekdays: number[] };
-  inclusions: CalendarEvent[];
-  exclusions: CalendarEvent[];
+  inclusions: CountingInterval[];
+  exclusions: CountingInterval[];
   thresholds: { annual: number | null; byPeriod: Record<string, number | null> };
 }
-type Evidence = Pick<CalendarEvent, 'id' | 'evidenceId'>;
+type Evidence = Pick<CountingInterval, 'id' | 'evidenceId'>;
 
 /** Manual calendar fields never become institutional source metadata. */
 export function automaticEventSource(event: {
