@@ -12,7 +12,6 @@ for (const width of [1440, 390]) {
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
-    await page.locator('#activity-status').selectOption('all');
     await expect
       .poll(() =>
         page

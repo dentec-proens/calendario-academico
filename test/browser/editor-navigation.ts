@@ -69,7 +69,7 @@ export async function openActivity(page: Page, id: string) {
   if ((await tab.count()) && (await tab.getAttribute('aria-selected')) !== 'true')
     await tab.click();
   const row = page.locator(`[data-activity-open="${id}"]`);
-  if (!(await row.isVisible())) await page.locator('#activity-status').selectOption('all');
+  if (!(await row.isVisible())) await page.locator('#activity-view-todas').check();
   await row.click();
   await expect(page.locator('#event-panel')).toBeVisible();
 }

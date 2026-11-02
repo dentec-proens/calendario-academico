@@ -10,7 +10,6 @@ for (const width of [1440, 390]) {
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toBeVisible();
     await selectEditorSection(page, 'events');
-    await page.locator('#activity-status').selectOption('all');
     const search = page.getByRole('searchbox', { name: 'Buscar atividade' });
     const enrolment = page.locator('[data-activity-row="enrolment-0"]');
     for (const query of ['matrícula', 'matri\u0301cula', 'MATRICULA']) {

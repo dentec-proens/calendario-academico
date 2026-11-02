@@ -54,7 +54,11 @@ export function applicationSearch(input: Record<string, unknown>) {
     /^[a-z][a-z0-9-]{0,99}$/.test(input.atividadeOferta)
       ? { atividadeOferta: String(input.atividadeOferta) }
       : {}),
-    ...(['all', 'pending', 'partial', 'complete', 'optional', 'unconfigured'].includes(
+    ...(['preencher', 'sem-pendencias'].includes(String(input.atividadeVisao))
+      ? { atividadeVisao: String(input.atividadeVisao) as 'preencher' | 'sem-pendencias' }
+      : {}),
+    // The former "all" situation is the default view now and is dropped like an unknown value.
+    ...(['pending', 'partial', 'complete', 'optional', 'unconfigured'].includes(
       String(input.atividadeSituacao),
     )
       ? { atividadeSituacao: String(input.atividadeSituacao) }

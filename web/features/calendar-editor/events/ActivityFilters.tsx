@@ -2,13 +2,19 @@ import { useNavigate } from '@tanstack/react-router';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { activityGroups, useActivitySearch } from './activity-query.ts';
+import { activityViews, useActivityList } from './activity-list.ts';
 
 export default function ActivityFilters() {
   const { state, record } = useCalendarEditor();
   const search = useActivitySearch();
   const navigate = useNavigate();
   function update(
-    key: 'atividadeBusca' | 'atividadeOferta' | 'atividadeSituacao' | 'atividadeAssunto',
+    key:
+      | 'atividadeBusca'
+      | 'atividadeVisao'
+      | 'atividadeOferta'
+      | 'atividadeSituacao'
+      | 'atividadeAssunto',
     value: string,
   ) {
     void navigate({
@@ -19,7 +25,10 @@ export default function ActivityFilters() {
       hashScrollIntoView: false,
     });
   }
-  const extra = [search.atividadeOferta, search.atividadeAssunto].filter(Boolean).length;
+  const { counts } = useActivityList();
+  const extra = [search.atividadeSituacao, search.atividadeOferta, search.atividadeAssunto].filter(
+    Boolean,
+  ).length;
   return (
     <section className="activity-filters" aria-label="Consultar atividades">
       <label>
@@ -32,25 +41,42 @@ export default function ActivityFilters() {
           onChange={(event) => update('atividadeBusca', event.target.value)}
         />
       </label>
-      <label>
-        Situação
-        <select
-          id="activity-status"
-          value={search.atividadeSituacao ?? ''}
-          onChange={(event) => update('atividadeSituacao', event.target.value)}
-        >
-          <option value="">A preencher</option>
-          <option value="all">Todas</option>
-          <option value="pending">Pendente</option>
-          <option value="partial">Parcial</option>
-          <option value="complete">Completo</option>
-          <option value="optional">Opcional</option>
-          <option value="unconfigured">Aplicação a confirmar</option>
-        </select>
-      </label>
+      <fieldset id="activity-view" className="activity-view">
+        <legend>Visão</legend>
+        <div className="activity-view-options">
+          {activityViews.map(([id, label]) => (
+            <label key={id || 'todas'}>
+              <input
+                type="radio"
+                name="activity-view"
+                id={`activity-view-${id || 'todas'}`}
+                value={id}
+                checked={(search.atividadeVisao ?? '') === id}
+                onChange={() => update('atividadeVisao', id)}
+              />
+              {label} <span className="activity-view-count">({counts[id]})</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <details className="activity-more-filters" open={extra > 0 || undefined}>
         <summary>Mais filtros{extra ? ` (${extra})` : ''}</summary>
         <div>
+          <label>
+            Situação
+            <select
+              id="activity-status"
+              value={search.atividadeSituacao ?? ''}
+              onChange={(event) => update('atividadeSituacao', event.target.value)}
+            >
+              <option value="">Todas as situações</option>
+              <option value="pending">Pendente</option>
+              <option value="partial">Parcial</option>
+              <option value="complete">Completo</option>
+              <option value="optional">Opcional</option>
+              <option value="unconfigured">Aplicação a confirmar</option>
+            </select>
+          </label>
           <label>
             Oferta
             <select

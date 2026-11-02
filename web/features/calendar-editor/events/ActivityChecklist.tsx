@@ -1,36 +1,22 @@
 import { useEffect } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
 import { stageRequirement } from '#src/domain/calendar/activities/assessment.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
-import { activityStatus, type ActivityStatus } from '#src/domain/calendar/activities/status.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { useActivityCoverage } from './useActivityCoverage.ts';
+import { useActivityList } from './activity-list.ts';
 import { activityGroups, civilDate, useActivitySearch } from './activity-query.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { Notice } from '../../../components/ui/Notice.tsx';
 import ActivityRow from './ActivityRow.tsx';
 
-// Shown when no status filter is chosen: what still needs dates or a decision.
-const toFill: ActivityStatus[] = ['pending', 'partial', 'unconfigured'];
-
-function searchText(value: string) {
-  return value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR');
-}
-
 export default function ActivityChecklist({ stages = false }: { stages?: boolean }) {
-  const { state, readOnly, record } = useCalendarEditor();
+  const { state, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const search = useActivitySearch();
-  const navigate = useNavigate();
   const { coverage, statusFor } = useActivityCoverage();
-  const selected =
-    editor.context?.kind === 'activity'
-      ? editor.context.requirementId
-      : editor.panel?.kind === 'activity'
-        ? editor.panel.requirementId
-        : '';
+  const { rows, selected } = useActivityList(stages);
   const { view } = editor;
   const linked = activityChecklist(state).find(
     (item) => item.id === search.atividade && (item.variant === 'stage') === stages,
@@ -47,40 +33,6 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
   const mandatory = coverage.filter(
     (row) => row.applicability === 'required' && !stageRequirement(row.requirement.id),
   );
-  const situation = search.atividadeSituacao ?? '';
-  const query = searchText(search.atividadeBusca ?? '');
-  const candidates = activityChecklist(state).filter((item) => {
-    if ((item.variant === 'stage') !== stages) return false;
-    if (stages || selected === item.id || search.atividade === item.id) return true;
-    const matches = coverage.filter(
-      (row) =>
-        row.requirement.id === item.id &&
-        (!search.atividadeOferta || row.offerId === search.atividadeOferta),
-    );
-    if (!matches.length) return false;
-    if (query && !searchText(`${item.name} ${item.basis ?? ''}`).includes(query)) return false;
-    if (search.atividadeAssunto && item.group !== search.atividadeAssunto) return false;
-    if (
-      situation &&
-      situation !== 'all' &&
-      !matches.some((row) => situation === row.coverage || situation === row.applicability)
-    )
-      return false;
-    return true;
-  });
-  const rows = candidates.filter((item) => {
-    if (stages || situation || selected === item.id || search.atividade === item.id) return true;
-    // Only the offers being consulted decide whether something is left to fill.
-    const summary = activityStatus(
-      coverage.filter(
-        (row) =>
-          row.requirement.id === item.id &&
-          (!search.atividadeOferta || row.offerId === search.atividadeOferta),
-      ),
-    );
-    return toFill.includes(summary.status) || summary.problems;
-  });
-  const hidden = candidates.length - rows.length;
   const renderRow = (item: ReturnType<typeof activityChecklist>[number]) => {
     const registered = state.events
       .filter((event) => event.requirementId === item.id)
@@ -140,10 +92,7 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
       )}
       {!rows.length && (
         <Notice tone="info" id="activity-empty">
-          {hidden
-            ? 'Nenhuma atividade a preencher com estes filtros.'
-            : 'Nenhuma atividade corresponde aos filtros.'}{' '}
-          O preenchimento em andamento foi preservado.
+          Nenhuma atividade corresponde aos filtros. O preenchimento em andamento foi preservado.
         </Notice>
       )}
       {stages ? (
@@ -175,28 +124,6 @@ export default function ActivityChecklist({ stages = false }: { stages?: boolean
               </section>
             ) : null;
           })}
-          {hidden > 0 && (
-            <p id="activity-hidden" className="help">
-              {hidden === 1
-                ? '1 atividade completa ou opcional não exibida.'
-                : `${hidden} atividades completas ou opcionais não exibidas.`}{' '}
-              <button
-                type="button"
-                id="show-all-activities"
-                className="link-button"
-                onClick={() => {
-                  void navigate({
-                    to: '/calendarios/$calendarId/eventos',
-                    params: { calendarId: record.id },
-                    search: (previous) => ({ ...previous, atividadeSituacao: 'all' }),
-                    hashScrollIntoView: false,
-                  });
-                }}
-              >
-                Mostrar todas
-              </button>
-            </p>
-          )}
         </div>
       )}
     </>

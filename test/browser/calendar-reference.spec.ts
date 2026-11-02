@@ -40,7 +40,9 @@ for (const fixture of ['editor', 'editor-reviewer'] as const) {
     await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 5 de 6');
     await expect(page.locator('#history-file')).toHaveCount(0);
     await page.reload();
-    await expect(page.locator('#activity-status')).toHaveValue('all');
+    // The former "all" situation is the default view now.
+    await expect(page.locator('#activity-view-todas')).toBeChecked();
+    await expect(page.locator('#activity-status')).toHaveValue('');
   });
 }
 

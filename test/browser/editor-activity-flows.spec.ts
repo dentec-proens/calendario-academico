@@ -426,23 +426,50 @@ for (const width of [1440, 390])
       .toBe(true);
   });
 
-test('the list starts with what is left to fill and shows the rest on request', async ({
+test('the list shows every activity and the views split what is left to fill', async ({
   page,
   fixtureServer,
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await selectEditorSection(page, 'events');
+  const rows = (id: string) => page.locator(`[data-activity-row="${id}"]`);
+  const count = async (view: string) =>
+    Number(
+      (await page
+        .locator(`label:has(#activity-view-${view}) .activity-view-count`)
+        .textContent())!.replace(/\D/g, ''),
+    );
   // The cultural week is complete in the fixture and the integrated enrolment is optional.
-  await expect(page.locator('#activity-status')).toHaveValue('');
-  await expect(page.locator('[data-activity-row="cultural-week"]')).toHaveCount(0);
-  await expect(page.locator('[data-activity-row="enrolment-0"]')).toHaveCount(0);
-  await expect(page.locator('[data-activity-row="family-meeting"]')).toBeVisible();
-  await expect(page.locator('#activity-hidden')).toContainText('não exibidas');
-  await page.locator('#show-all-activities').click();
-  await expect(page).toHaveURL(/atividadeSituacao=all/);
-  await expect(page.locator('[data-activity-row="cultural-week"]')).toBeVisible();
-  await expect(page.locator('[data-activity-row="enrolment-0"]')).toBeVisible();
+  await expect(page.locator('#activity-view-todas')).toBeChecked();
+  await expect(rows('cultural-week')).toBeVisible();
+  await expect(rows('enrolment-0')).toBeVisible();
+  await expect(rows('family-meeting')).toBeVisible();
   await expect(page.locator('#activity-hidden')).toHaveCount(0);
+  expect(await count('todas')).toBe((await count('preencher')) + (await count('sem-pendencias')));
+
+  await page.locator('#activity-view-preencher').check();
+  await expect(page).toHaveURL(/atividadeVisao=preencher/);
+  await expect(rows('cultural-week')).toHaveCount(0);
+  await expect(rows('enrolment-0')).toHaveCount(0);
+  await expect(rows('family-meeting')).toBeVisible();
+  await expect(page.locator('[data-activity-row]')).toHaveCount(await count('preencher'));
+
+  await page.locator('#activity-view-sem-pendencias').check();
+  await expect(rows('cultural-week')).toBeVisible();
+  await expect(rows('enrolment-0')).toBeVisible();
+  await expect(rows('family-meeting')).toHaveCount(0);
+
+  // The situation filter uses the status shown on each row.
+  await page.locator('#activity-view-todas').check();
+  await page.locator('.activity-more-filters > summary').click();
+  await page.locator('#activity-status').selectOption('complete');
+  await expect(page.locator('.activity-more-filters > summary')).toHaveText('Mais filtros (1)');
+  await expect(rows('cultural-week')).toBeVisible();
+  await expect(rows('enrolment-0')).toHaveCount(0);
+  for (const status of await page
+    .locator('[data-activity-row]')
+    .evaluateAll((items) => items.map((item) => item.getAttribute('data-status'))))
+    expect(status).toBe('complete');
 });
 
 test('step 6 tabs follow the keyboard and keep their place in the URL', async ({
@@ -566,6 +593,7 @@ test('the offer filter decides what is left to fill for that offer only', async 
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'events');
+  await page.locator('#activity-view-preencher').check();
   // Women's week is required for the integrated course and optional for undergraduates.
   await expect(page.locator('[data-activity-row="women-week"]')).toBeVisible();
   await page.locator('.activity-more-filters > summary').click();
