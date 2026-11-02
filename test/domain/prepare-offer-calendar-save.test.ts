@@ -15,7 +15,7 @@ const context = (state: ReturnType<typeof calendarOffersV4Fixture>) => ({
 
 test('prepares and recovers independent undergraduate offers without legacy fields', () => {
   const source = calendarOffersV4Fixture();
-  const previous = normalizeOfferCalendar(source);
+  const previous = normalizeOfferCalendar(source, source);
   const before = structuredClone(source);
   const prepared = prepareOfferCalendarSave(previous, source, context(previous));
   expect(prepared.unchanged).toBe(true);
@@ -68,7 +68,7 @@ test('saving another field keeps migrated stages in the wrong semester for readi
   const event = source.events.find((item) => item.requirementId === 'stage-3:graduacao-2')!;
   event.start = civilDate('2027-05-03');
   event.end = civilDate('2027-06-01');
-  const previous = normalizeOfferCalendar(source);
+  const previous = normalizeOfferCalendar(source, source);
   const prepared = prepareOfferCalendarSave(
     previous,
     { ...previous, campus: 'nome ignorado' },
@@ -80,7 +80,7 @@ test('saving another field keeps migrated stages in the wrong semester for readi
 test('saving migrated semester stages without a classified count retains their links', () => {
   const source = calendarOffersV4Fixture();
   delete source.offers[2].stages;
-  const previous = normalizeOfferCalendar(source);
+  const previous = normalizeOfferCalendar(source, source);
   expect(
     previous.events.filter((event) => event.requirementId?.endsWith(':graduacao-2')),
   ).toHaveLength(4);

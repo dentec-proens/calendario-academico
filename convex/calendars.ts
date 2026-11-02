@@ -4,13 +4,9 @@ import {
   offerCalendarContent,
   normalizeOfferCalendar,
 } from '../src/domain/calendar/normalization/normalize-v4';
-import { kinds, nextOfferId, offerFor, stageTerm } from '../src/domain/calendar/offers';
-import type { CalendarOffer, ActivityState, CalendarActivity } from '../src/domain/calendar/model';
-import { assessmentCycleIssue } from '../src/domain/calendar/activities/assessment-intervals';
-import { isStageRequirementId } from '../src/domain/calendar/activities/metadata';
-import { periodsForOffer } from '../src/domain/calendar/organization/periods';
+import { kinds, nextOfferId } from '../src/domain/calendar/offers';
+import type { CalendarOffer } from '../src/domain/calendar/model';
 import { equalValues } from '../src/shared/equal';
-import { DomainError } from '../src/domain/errors';
 import { inspectBase, reconcileBase } from './calendars/base';
 import { assertWritesOpen } from './lib/maintenance';
 import { equivalentRulesets, rulesetVersion } from '../src/domain/policies/registry';
@@ -59,38 +55,6 @@ function assertEditableStatus(status: Doc<'calendars'>['status']) {
       `O calendário está ${statusLabels[status].toLowerCase()} e não pode ser alterado. ${status === 'enviado' ? 'Recolha o envio para editar.' : status === 'vigente' ? 'Crie uma nova versão para alterá-lo.' : status === 'arquivado' ? 'Um calendário arquivado fica apenas para consulta.' : 'Aguarde a devolução para editar.'}`,
       409,
     );
-}
-
-/** Preserve inconsistent migrated evidence, but validate every new interval or changed cycle. */
-function validateEditedAssessmentCycles(previous: ActivityState, next: ActivityState) {
-  const cycle = (state: ActivityState, event: CalendarActivity) => {
-    const [stage, id] = event.requirementId!.split(':');
-    const offer = offerFor(state, id);
-    const term = offer && stageTerm(offer, Number(stage.slice('stage-'.length)));
-    return {
-      organization: offer?.organization,
-      perTerm: offer?.stages?.perTerm,
-      periods: periodsForOffer(state, id)
-        .filter(
-          (period) => period.association?.status === 'defined' && period.association.term === term,
-        )
-        .map(({ id, start, end }) => ({ id, start, end })),
-    };
-  };
-  for (const event of next.events) {
-    if (!isStageRequirementId(event.requirementId)) continue;
-    const old = previous.events.find((item) => item.id === event.id);
-    const unchanged =
-      old &&
-      old.requirementId === event.requirementId &&
-      old.start === event.start &&
-      old.end === event.end &&
-      equalValues(old.offers, event.offers) &&
-      equalValues(cycle(previous, old), cycle(next, event));
-    if (unchanged) continue;
-    const issue = assessmentCycleIssue(next, event);
-    if (issue) throw new DomainError(issue);
-  }
 }
 
 export const calendarPage = query({
@@ -242,15 +206,13 @@ export const saveCalendar = mutation({
     const reconciliation = reconcileBase(compatibility, body.baseAcceptance);
     const savedContent = clean(content.state);
     const proposedState = domainRule(() => readCalendarOfferInput(body.state));
-    const prepared = domainRule(() => {
-      const prepared = prepareOfferCalendarSave(record.state, proposedState, {
+    const prepared = domainRule(() =>
+      prepareOfferCalendarSave(record.state, proposedState, {
         storedContent: savedContent,
         catalogue: base,
         recalculate: reconciliation.recalculate,
-      });
-      validateEditedAssessmentCycles(record.state, prepared.state);
-      return prepared;
-    });
+      }),
+    );
     // Convex validators constrain the transport; domain normalization preserves those literals.
     const state = prepared.state as validators.DomainState;
     const next = prepared.content as validators.ContentState;

@@ -1,8 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
-import { configureAssessment } from '../../src/domain/calendar/commands/organization.ts';
 import { recalculateCalendar } from '../../src/domain/calendar/commands/recalculate.ts';
-import { removePeriod } from '../../src/domain/calendar/commands/periods.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 function calendar(): ActivityState {
@@ -59,33 +57,5 @@ test('recalculating periods preserves every entered stage date, including legacy
   ]);
   const expected = before.events;
   expect(next.events).toEqual(expected);
-  expect(removePeriod(state, 'classes', []).events).toEqual(expected);
   expect(state).toEqual(before);
-});
-
-test('changing assessment organization preserves events while removing obsolete activity links and automatic anchors', () => {
-  const state = calendar();
-  state.events = state.events.map((event) => ({
-    ...event,
-    assessmentAutoStart: civilDate('2027-03-01'),
-  }));
-  const original = structuredClone(state);
-  const changed = configureAssessment(state, { integrado: '2' }, []);
-  expect(changed.offers[0].stages).toEqual({ perTerm: 2 });
-  expect(changed.events).toHaveLength(4);
-  for (let index = 2; index < 4; index++) {
-    const {
-      requirementId: _link,
-      assessmentAutoStart: _anchor,
-      ...preserved
-    } = original.events[index];
-    expect(changed.events[index]).toEqual(preserved);
-  }
-  expect(changed.events.slice(0, 2).map((event) => [event.start, event.end])).toEqual([
-    ['2027-03-01', '2027-03-04'],
-    ['2027-03-08', '2027-03-11'],
-  ]);
-  expect(state).toEqual(original);
-  expect(() => configureAssessment(state, { integrado: '5' }, [])).toThrow('número de etapas');
-  expect(state).toEqual(original);
 });

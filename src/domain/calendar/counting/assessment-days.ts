@@ -3,15 +3,18 @@ import { stageRequirement } from '../activities/assessment.ts';
 import { evaluateCalendar } from './evaluation.ts';
 import { appliesTo } from '../modalities.ts';
 import { calendarOffers } from '../offers.ts';
+import { linksToReview } from '../activities/links.ts';
 
 export function assessmentDayCounts(
   state: TeachingState & { events: StageEvent[] },
   events: StageEvent[],
 ) {
   const result = evaluateCalendar(state, events);
+  // Stage dates under “Vínculo a conferir” have no days of their own.
+  const review = linksToReview(state);
   return Object.fromEntries(
     state.events
-      .filter((e) => stageRequirement(e.requirementId))
+      .filter((e) => stageRequirement(e.requirementId) && !review.has(e.id))
       .map((e) => [
         e.id,
         calendarOffers(state)

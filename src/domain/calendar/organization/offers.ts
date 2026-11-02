@@ -23,6 +23,7 @@ import { organizationForOffer, periodsForOffer } from './periods.ts';
 import { rulesetVersion } from '../../policies/registry.ts';
 import { activityChecklist } from '../activities/checklist.ts';
 import { stageRequirement } from '../activities/assessment.ts';
+import { linksToReview, linkIssueLabels } from '../activities/links.ts';
 import { normalizeOfferCalendar } from '../normalization/normalize-v4.ts';
 import { DomainError } from '../../errors.ts';
 
@@ -174,51 +175,6 @@ export function offerOrganizationIssues(
         'organization',
         'Revise a exigência local de matrícula nas atividades antes de alterar a organização da oferta.',
       );
-    const organization =
-      draft.organization === 'semestral' ? ('semestral' as const) : ('anual' as const);
-    const changed = {
-      ...state,
-      offers: state.offers.map((offer) =>
-        offer.id === modality
-          ? (() => {
-              if (offer.legacyStageCount === undefined) return { ...offer, organization };
-              const { legacyStageCount: _legacy, ...configured } = offer;
-              return { ...configured, organization, stages: { perTerm: count } };
-            })()
-          : offer,
-      ),
-    };
-    const requirements = new Map(activityChecklist(changed).map((row) => [row.id, row]));
-    for (const event of state.events.filter(
-      (event) =>
-        appliesTo(event, modality) && event.requirementId && !stageRequirement(event.requirementId),
-    )) {
-      const requirement = requirements.get(event.requirementId!);
-      const historical = offerFor(state, modality)?.legacyStageCount;
-      const ordinal = event.requirementId?.match(
-        /^(?:results|council|pedagogical-meeting)-([1-4]):([a-z][a-z0-9-]*)$/,
-      );
-      // Complete classification applies the same existing detach rule to excess
-      // annual ordinals, while keeping every date and occurrence identity.
-      if (
-        historical !== undefined &&
-        !requirement &&
-        ordinal?.[2] === modality &&
-        Number(ordinal[1]) > count * (organization === 'semestral' ? 2 : 1)
-      )
-        continue;
-
-      if (
-        !requirement ||
-        (requirement.offerId && requirement.offerId !== modality) ||
-        (requirement.modalities &&
-          !requirement.modalities.includes(offerFor(state, modality)!.kind))
-      )
-        issue(
-          'organization',
-          `Revise a atividade “${event.name}” antes de alterar a organização da oferta.`,
-        );
-    }
     if (state.events.some((event) => event.admission?.periodId && appliesTo(event, modality)))
       issue(
         'organization',
@@ -260,8 +216,21 @@ export function offerOrganizationIssues(
     .every(Boolean);
   if (periods.length === 2 && periodsValid && periods[0].end >= periods[1].start)
     issue('periods[1]', 'O segundo semestre deve começar depois do término do primeiro.');
+  const review = linksToReview(state);
   for (const [index, stage] of draft.stages.slice(0, stageCount).entries()) {
     const path = `stages[${index}]`;
+    // A recorded stage kept with its dates is never refused for a conflict it already had: it
+    // stays under “Vínculo a conferir” (`links.ts`). Conflicts created by the draft are shown.
+    const recorded = state.events.find(
+      (event) => event.id === stage.id && event.requirementId === `stage-${index + 1}:${modality}`,
+    );
+    if (
+      recorded &&
+      recorded.start === stage.start &&
+      recorded.end === stage.end &&
+      review.has(recorded.id)
+    )
+      continue;
     const valid = interval(stage.start, stage.end, path);
     if (valid && periodsValid) {
       const cyclePeriods =
@@ -299,6 +268,37 @@ export function offerOrganizationIssues(
         );
     }
   return issues;
+}
+
+/**
+ * Dates of the offer that will be under “Vínculo a conferir” once the draft is applied. They are
+ * shown in the preview and never block the organization: links are kept as recorded.
+ */
+export function offerOrganizationWarnings(
+  state: ActivityState,
+  modality: string,
+  draft: OfferOrganizationDraft,
+  newOffer?: CalendarOffer,
+): OrganizationIssue[] {
+  if (offerOrganizationIssues(state, modality, draft, newOffer).length) return [];
+  let sequence = 0;
+  let next: ActivityState;
+  try {
+    next = applyOfferOrganization(state, modality, draft, () => `preview-${++sequence}`, newOffer);
+  } catch {
+    return [];
+  }
+  const review = linksToReview(next);
+  return next.events
+    .filter(
+      (event) =>
+        review.has(event.id) &&
+        (appliesTo(event, modality) || event.requirementId?.endsWith(`:${modality}`)),
+    )
+    .map((event) => ({
+      path: 'organization',
+      message: `“${event.name}” ficará em Vínculo a conferir (${linkIssueLabels[review.get(event.id)!]}).`,
+    }));
 }
 
 /** Change one offer's periods and stages together; never recalculate another offer's dates. */
@@ -363,67 +363,68 @@ export function applyOfferOrganization<S extends ActivityState>(
     periods: [...retained, ...periods],
   };
   const valid = new Set(activityChecklist(next).map((requirement) => requirement.id));
+  // Each draft stage updates the date already recorded for it, never a second one.
+  const stageDates = new Map<string, OrganizationStageDraft>();
+  const added: CalendarActivity[] = [];
+  for (const [index, value] of draft.stages.slice(0, stageCount).entries()) {
+    const requirementId = `stage-${index + 1}:${modality}`;
+    const existing =
+      state.events.find(
+        (event) => event.id === value.id && event.requirementId === requirementId,
+      ) ?? state.events.find((event) => event.requirementId === requirementId);
+    if (existing) stageDates.set(existing.id, value);
+    else
+      added.push({
+        id: id(),
+        name: `${organization === 'semestral' ? `${(index % count) + 1}ª etapa — ${Math.floor(index / count) + 1}º semestre` : `${index + 1}ª etapa de avaliação`} — ${labelFor(state, modality)}`,
+        requirementId,
+        start: civilDate(value.start),
+        end: civilDate(value.end),
+        kind: 'note',
+        category: 'limite',
+        offers: [modality],
+      });
+  }
+  // Links are never removed here: retired, duplicate or incompatible dates keep their link and
+  // appear under “Vínculo a conferir” (`linksToReview`).
   const events: CalendarActivity[] = state.events.flatMap((event) => {
-    if (stageRequirement(event.requirementId) && event.requirementId?.endsWith(`:${modality}`))
-      return [];
-    let kept = event;
-    if (appliesTo(event, modality) && event.requirementId && !valid.has(event.requirementId)) {
-      const { requirementId: _link, assessmentAutoStart: _auto, ...rest } = event;
-      kept = rest;
+    const stage = stageDates.get(event.id);
+    if (stage) {
+      const { assessmentAutoStart: _auto, ...previous } = event;
+      return [
+        {
+          ...previous,
+          start: civilDate(stage.start),
+          end: civilDate(stage.end),
+          kind: 'note' as const,
+          category: event.category ?? 'limite',
+          offers: [modality],
+        },
+      ];
     }
     const mapped = event.admission?.periodId && remapped.get(event.admission.periodId);
     if (!mapped || mapped === event.admission?.periodId || !appliesTo(event, modality))
-      return [kept];
+      return [event];
+    // A date whose link has no generated activity stays whole, with its previous destination.
+    if (event.requirementId && !valid.has(event.requirementId)) return [event];
     const explicit = event.offers;
     const scope = explicit?.length ? explicit : offerIds(state);
     const others = scope.filter((m) => m !== modality);
     const moved = {
-      ...eventScope(kept, [modality]),
-      id: others.length ? id() : kept.id,
+      ...eventScope(event, [modality]),
+      id: others.length ? id() : event.id,
       admission: { ...event.admission!, periodId: mapped },
     };
-    return others.length ? [eventScope(kept, others), moved] : [moved];
+    return others.length ? [eventScope(event, others), moved] : [moved];
   });
-  for (const [index, value] of draft.stages.slice(0, stageCount).entries()) {
-    const requirementId = `stage-${index + 1}:${modality}`;
-    const existing = state.events.find(
-      (event) => event.id === value.id && event.requirementId === requirementId,
-    );
-    const { assessmentAutoStart: _auto, ...previous } = existing ?? {};
-    events.push({
-      ...previous,
-      id: existing?.id ?? id(),
-      name:
-        existing?.name ??
-        `${organization === 'semestral' ? `${(index % count) + 1}ª etapa — ${Math.floor(index / count) + 1}º semestre` : `${index + 1}ª etapa de avaliação`} — ${labelFor(state, modality)}`,
-      requirementId,
-      start: civilDate(value.start),
-      end: civilDate(value.end),
-      kind: 'note',
-      category: existing?.category ?? 'limite',
-      offers: [modality],
-    });
-  }
-  // Keep retired or duplicate records as notes instead of losing dates.
-  const keptStageIds = new Set(
-    events.filter((event) => stageRequirement(event.requirementId)).map((event) => event.id),
-  );
-  for (const event of state.events.filter(
-    (event) =>
-      stageRequirement(event.requirementId) &&
-      event.requirementId?.endsWith(`:${modality}`) &&
-      !keptStageIds.has(event.id),
-  )) {
-    const { requirementId: _link, assessmentAutoStart: _auto, ...kept } = event;
-    events.push({ ...kept, kind: 'note' });
-  }
+  events.push(...added);
   const candidate = {
     ...next,
     rulesetVersion: rulesetVersion(next),
     events,
   };
   // Same normalization called by calendars:saveCalendar. No invalid intermediate state is emitted.
-  normalizeOfferCalendar(candidate);
+  normalizeOfferCalendar(candidate, state);
   return candidate;
 }
 

@@ -5,6 +5,7 @@ import { policyFor } from '../../policies/registry.ts';
 import { temporalPosition, validateActivityRecord } from './validation.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 import { prorogatedDeadline } from './deadlines.ts';
+import { linkIssueActions, linkIssueLabels, linksToReview } from './links.ts';
 export function activityCoverage(
   state: AssessmentSettings & {
     year: number;
@@ -17,6 +18,7 @@ export function activityCoverage(
   humanReview?: { current: boolean; reviewedCriterionIds: readonly string[] },
 ) {
   const policy = policyFor(state.year);
+  const review = linksToReview({ ...state, events });
   return policy.requirements(state).flatMap((requirement) =>
     calendarOffers(state)
       .filter((offer) => !requirement.offerId || requirement.offerId === offer.id)
@@ -29,6 +31,11 @@ export function activityCoverage(
         const issues: string[] = [],
           warnings: string[] = [];
         const valid = linked.filter((event) => {
+          const reason = review.get(event.id);
+          if (reason) {
+            issues.push(`${linkIssueLabels[reason]}: ${linkIssueActions[reason]}`);
+            return false;
+          }
           if (policy.explicitRecordOffers && !event.offers?.includes(modality)) {
             issues.push('Confirme explicitamente as ofertas abrangidas pelo registro legado.');
             return false;

@@ -5,12 +5,8 @@ import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { createEditorSession } from '../../web/features/calendar-editor/session/editor-session.ts';
-import {
-  applyPeriod,
-  applyWeek,
-  removePeriod,
-} from '../../src/domain/calendar/commands/periods.ts';
-import { configureOrganization } from '../../src/domain/calendar/commands/organization.ts';
+import { applyWeek } from '../../src/domain/calendar/commands/periods.ts';
+import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import type {
   CalendarSave,
   CalendarEvent,
@@ -162,7 +158,7 @@ async function opened(withPeriod = true): Promise<CalendarRecord> {
   };
 }
 
-test('the server rejects removal of the last period while registered stages still need it', async () => {
+test('removing the last period is saved and leaves the unchanged stages to review, out of their cycle', async () => {
   const fixture = await createNativeFixture();
   const client = fixture.asClient('admin');
   const created = await client
@@ -212,24 +208,41 @@ test('the server rejects removal of the last period while registered stages stil
       },
     })
     .then(calendarSaveDates);
-  const state = removePeriod(saved.state, 'first', created.institutionalEvents);
+  const state = { ...saved.state, periods: [] };
+  const removed = await client
+    .mutation(api.calendars.saveCalendar, {
+      id: created.id,
+      body: {
+        version: saved.version,
+        catalogueRevision: created.currentCatalogueRevision,
+        state,
+      },
+    })
+    .then(calendarSaveDates);
+  expect(removed.state.periods).toEqual([]);
+  expect(removed.state.events.map(({ id, requirementId }) => ({ id, requirementId }))).toEqual(
+    saved.state.events.map(({ id, requirementId }) => ({ id, requirementId })),
+  );
+  expect([...linksToReview({ ...removed.state, year: 2027 })]).toEqual([
+    ['stage-1', 'out-of-cycle'],
+    ['stage-2', 'out-of-cycle'],
+  ]);
+  // Moving a stage is an edit: it must fit the cycle that no longer has a period.
   await expect(
-    client
-      .mutation(api.calendars.saveCalendar, {
-        id: created.id,
-        body: {
-          version: saved.version,
-          catalogueRevision: created.currentCatalogueRevision,
-          state,
+    client.mutation(api.calendars.saveCalendar, {
+      id: created.id,
+      body: {
+        version: removed.version,
+        catalogueRevision: created.currentCatalogueRevision,
+        state: {
+          ...removed.state,
+          events: removed.state.events.map((event) =>
+            event.id === 'stage-2' ? { ...event, end: civilDate('2027-03-25') } : event,
+          ),
         },
-      })
-      .then(calendarSaveDates),
+      },
+    }),
   ).rejects.toThrow(/etapa.*período/);
-  const intact = await client
-    .query(api.calendars.calendar, { id: created.id })
-    .then(calendarRecordDates);
-  expect(intact.state.periods).toEqual(saved.state.periods);
-  expect(intact.state.events).toEqual(saved.state.events);
 });
 
 test('flush drains edits applied during a write and advances the expected version', async () => {
@@ -377,44 +390,14 @@ test('read-only sessions reject domain commands and never persist', async () => 
   session.dispose();
 });
 
-test('domain commands reject invalid changes atomically and recalculate teaching-day targets', async () => {
+test('the week command rejects invalid changes atomically', async () => {
   const record = await opened(false);
   const original = structuredClone(record.state);
   expect(() => applyWeek(record.state, { weekdays: [], weekConfirmed: true }, [])).toThrow();
   expect(record.state).toEqual(original);
-  const week = applyWeek(
-    configureOrganization(record.state, { integrado: 'anual' }, []),
-    { weekdays: [1, 2, 3, 4, 5], weekConfirmed: true },
-    [],
-  );
-  const first = applyPeriod(
-    week,
-    {
-      name: 'Período',
-      start: civilDate('2027-02-01'),
-      end: '',
-      days: '5',
-      association: { status: 'defined', offers: ['integrado'], term: 'annual' },
-    },
-    [],
-    () => 'period-a',
-  );
-  expect(first.periods[0].end).toBe('2027-02-05');
-  expect(() =>
-    applyPeriod(
-      first,
-      {
-        name: 'Sobreposto',
-        start: civilDate('2027-02-03'),
-        end: civilDate('2027-02-06'),
-        days: '',
-        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
-      },
-      [],
-      () => 'period-b',
-    ),
-  ).toThrow('Já existe um período para este ciclo');
-  expect(first.periods).toHaveLength(1);
+  const week = applyWeek(record.state, { weekdays: [1, 2, 3, 4, 5], weekConfirmed: true }, []);
+  expect(week.weekdays).toEqual([1, 2, 3, 4, 5]);
+  expect(record.state).toEqual(original);
 });
 
 test('a new institutional revision is saved only after explicit confirmation, preserving applied edits', async () => {

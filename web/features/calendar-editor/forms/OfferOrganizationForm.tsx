@@ -1,3 +1,4 @@
+import { Notice } from '../../../components/ui/Notice.tsx';
 import {
   assessmentStageCounts,
   calendarLimits,
@@ -15,6 +16,7 @@ import {
   applyOfferOrganization,
   offerOrganizationDraft,
   offerOrganizationIssues,
+  offerOrganizationWarnings,
 } from '#src/domain/calendar/organization/offers.ts';
 import { configureOfferMetadata } from '#src/domain/calendar/commands/organization.ts';
 import { validateOffers } from '#src/domain/calendar/normalization/normalize-v4.ts';
@@ -262,6 +264,11 @@ export default function OfferOrganizationForm({
       ? offerOrganizationIssues(prepared, modality, values, savedOffer ? undefined : candidate)
       : [{ path: 'kind', message: 'Selecione o tipo de oferta.' }]),
   ];
+  // Recorded links never block the organization: the preview lists the dates left to review.
+  const linkWarnings =
+    candidate && dirty && issues.length === 0
+      ? offerOrganizationWarnings(prepared, modality, values, savedOffer ? undefined : candidate)
+      : [];
   const visibleIssues =
     dirty || attempted ? issues : issues.filter((issue) => issue.message.includes('inteiramente'));
   const messageFor = (path: string) =>
@@ -711,6 +718,23 @@ export default function OfferOrganizationForm({
               })}
               {fieldError('periods')}
             </section>
+            {linkWarnings.length > 0 && (
+              <Notice
+                tone="warning"
+                id={`${prefix}-link-warnings`}
+                title="Datas que ficarão em Vínculo a conferir"
+              >
+                <p>
+                  O vínculo gravado em cada data é preservado. Confira-as na etapa Atividades depois
+                  de aplicar.
+                </p>
+                <ul>
+                  {linkWarnings.map((warning) => (
+                    <li key={warning.message}>{warning.message}</li>
+                  ))}
+                </ul>
+              </Notice>
+            )}
             <FormFeedback error={error} />
             <FormActions>
               <Button type="submit" id={`${prefix}-apply`} disabled={issues.length > 0}>

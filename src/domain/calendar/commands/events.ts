@@ -6,6 +6,7 @@ import { validateActivityRecord } from '../activities/validation.ts';
 import { activityChecklist } from '../activities/checklist.ts';
 import { stageRequirement } from '../activities/assessment.ts';
 import { assessmentCycleIssue } from '../activities/assessment-intervals.ts';
+import { dateEdited, linkKept } from '../activities/links.ts';
 import { offerIds } from '../offers.ts';
 import { recalculateCalendar } from './recalculate.ts';
 import { vacationIds } from './vacations.ts';
@@ -46,7 +47,17 @@ export function applyEvent<S extends ActivityState>(
   institutional: CalendarActivity[],
   editing = false,
 ): S {
-  validateActivityRecord(state, event);
+  const existing = state.events.find((item) => item.id === event.id);
+  // Link rule (`links.ts`): an edit keeps the date's own link, even without a generated activity;
+  // interval and association checks apply only when start, end, offers or link change.
+  const previous = editing ? existing : undefined;
+  const edited = dateEdited(previous, event);
+  const activity = activityChecklist(state).find((item) => item.id === event.requirementId);
+  const kept = linkKept(previous, event);
+  validateActivityRecord(state, event, {
+    stageInterval: edited,
+    keptWithoutActivity: kept && !activity,
+  });
   if (!event.name.trim()) throw new DomainError('Informe a descrição.');
   if (!['include', 'exclude', 'note'].includes(event.kind))
     throw new DomainError('Tipo de evento inválido.');
@@ -57,13 +68,12 @@ export function applyEvent<S extends ActivityState>(
     modalities.some((item) => !offerIds(state).includes(item))
   )
     throw new DomainError('Selecione ao menos uma forma de oferta/nível válida para o evento.');
-  const activity = activityChecklist(state).find((item) => item.id === event.requirementId);
-  if (event.requirementId && !activity)
+  if (event.requirementId && !activity && !kept)
     throw new DomainError('Atividade inválida para este calendário.');
   const activityOfferId = activity?.offerId;
-  if (activityOfferId && (modalities.length !== 1 || modalities[0] !== activityOfferId))
+  if (edited && activityOfferId && (modalities.length !== 1 || modalities[0] !== activityOfferId))
     throw new DomainError('Selecione somente a oferta da atividade.');
-  const cycleIssue = assessmentCycleIssue(state, event);
+  const cycleIssue = edited ? assessmentCycleIssue(state, event) : undefined;
   if (cycleIssue) throw new DomainError(cycleIssue);
   if (
     event.hours !== undefined &&
@@ -85,7 +95,6 @@ export function applyEvent<S extends ActivityState>(
   )
     throw new DomainError('Inclusões letivas devem estar dentro dos períodos cadastrados.');
   const updated = { ...event, name: event.name.trim() };
-  const existing = state.events.find((item) => item.id === event.id);
   if (!editing && existing) {
     if (equalValues(existing, updated)) return state;
     throw new DomainError(

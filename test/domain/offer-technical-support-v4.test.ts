@@ -75,7 +75,7 @@ test('pending semester stages retain every assessment-dependent binding while ot
     })),
   };
   const before = structuredClone(state);
-  const saved = normalizeOfferCalendar(state);
+  const saved = normalizeOfferCalendar(state, before);
   expect(saved.offers[0].stages).toBeUndefined();
   expect(saved.events.map((event) => event.requirementId)).toEqual(
     before.events.map((event) => event.requirementId),

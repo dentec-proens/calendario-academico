@@ -29,18 +29,21 @@ export function prepareOfferCalendarSave<E extends CalendarActivity & { active: 
   }
   const previousIds = previous.offers.map((offer) => offer.id);
   const added = proposed.offers.some((offer) => !previousIds.includes(offer.id));
-  let state = normalizeOfferCalendar({
-    ...proposed,
-    campus: previous.campus ?? '',
-    events: added
-      ? proposed.events.map((event) =>
-          !event.offers?.length &&
-          previous.events.some((old) => old.id === event.id && !old.offers?.length)
-            ? { ...event, offers: previousIds }
-            : event,
-        )
-      : proposed.events,
-  });
+  let state = normalizeOfferCalendar(
+    {
+      ...proposed,
+      campus: previous.campus ?? '',
+      events: added
+        ? proposed.events.map((event) =>
+            !event.offers?.length &&
+            previous.events.some((old) => old.id === event.id && !old.offers?.length)
+              ? { ...event, offers: previousIds }
+              : event,
+          )
+        : proposed.events,
+    },
+    previous,
+  );
   for (const offer of state.offers) {
     const old = previous.offers.find((item) => item.id === offer.id);
     if (offer.legacyStageCount !== undefined && offer.legacyStageCount !== old?.legacyStageCount)
@@ -63,7 +66,10 @@ export function prepareOfferCalendarSave<E extends CalendarActivity & { active: 
   const inherited = inheritedEvents(context.catalogue, previous.year, state.offers);
   validateObservances(inherited, state);
   if (context.recalculate || !equalValues(context.storedContent, offerCalendarContent(state)))
-    state = normalizeOfferCalendar(recalculateCalendar(state, applyObservances(inherited, state)));
+    state = normalizeOfferCalendar(
+      recalculateCalendar(state, applyObservances(inherited, state)),
+      previous,
+    );
   const content = offerCalendarContent(state);
   return {
     state,

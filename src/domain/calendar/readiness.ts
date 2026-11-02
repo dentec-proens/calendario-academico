@@ -6,6 +6,7 @@ import { appliesTo } from './modalities.ts';
 import { calendarOffers, labelFor, stageInTerm } from './offers.ts';
 import { assessmentCount, scopedRequirement } from './activities/assessment.ts';
 import { assessmentCycleIssue } from './activities/assessment-intervals.ts';
+import { linkIssueActions, linkIssueLabels, linksToReview } from './activities/links.ts';
 import { evaluateCalendar as calendarResult } from './counting/evaluation.ts';
 import { periodsForOffer } from './organization/periods.ts';
 import { policyFor } from '../policies/registry.ts';
@@ -117,6 +118,15 @@ export function contentAssessment(record: ContentRecord) {
     }
   }
 
+  // Until the link can be corrected in the editor, dates to review warn without blocking.
+  const review = linksToReview(record.state);
+  for (const event of record.state.events) {
+    const reason = review.get(event.id);
+    if (reason)
+      warnings.push(
+        `Vínculo a conferir — “${event.name}” (${event.start.split('-').reverse().join('/')}): ${linkIssueLabels[reason]}. ${linkIssueActions[reason]}`,
+      );
+  }
   const window = policy.window(record.state);
   if (window && policy.windowInReadiness)
     for (const offer of offers.filter(

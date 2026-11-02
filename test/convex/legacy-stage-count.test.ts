@@ -8,6 +8,7 @@ import {
   normalizeOfferCalendar,
   offerCalendarContent,
 } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import {
   applyOfferOrganization,
   offerOrganizationDraft,
@@ -85,7 +86,8 @@ test.each([2, 3, 4] as const)(
       label: 'Identificação conferida',
     });
     expect(saved.state.events).toEqual(record.state.events);
-    const copy = normalizeOfferCalendar(JSON.parse(JSON.stringify(saved.state)));
+    // Importing a copy is saving: links recorded on the same dates are kept.
+    const copy = normalizeOfferCalendar(JSON.parse(JSON.stringify(saved.state)), saved.state);
     expect(offerCalendarContent(copy)).toEqual(offerCalendarContent(saved.state));
     const unchanged = await save(copy as typeof record.state, saved.version);
     expect(unchanged.state.offers[0]).toMatchObject({ legacyStageCount: count });
@@ -198,7 +200,7 @@ test('direct complete classification cannot erase a previous required second-sem
   expect(intact.state).toEqual(previous);
 });
 
-test('complete explicit configuration retires surplus bindings and retains the marker in the submitted copy', async () => {
+test('complete explicit configuration keeps surplus bindings to review and retains the marker in the submitted copy', async () => {
   const { actor: _actor, record, save, ...fixture } = await setup(3);
   const submitted = await preserveSubmission(fixture, record.id);
   const draft = offerOrganizationDraft(record.state, 'integrado');
@@ -225,13 +227,7 @@ test('complete explicit configuration retires surplus bindings and retains the m
   const saved = await save(configured);
   expect(saved.state.offers[0]).not.toHaveProperty('legacyStageCount');
   expect(saved.state.offers[0]).toMatchObject({ organization: 'anual', stages: { perTerm: 2 } });
-  expect(saved.state.events.find((event) => event.id === oldExcess.id)).toMatchObject({
-    start: oldExcess.start,
-    end: oldExcess.end,
-    kind: 'note',
-  });
-  expect(
-    saved.state.events.find((event) => event.id === oldExcess.id)?.requirementId,
-  ).toBeUndefined();
+  expect(saved.state.events.find((event) => event.id === oldExcess.id)).toEqual(oldExcess);
+  expect(linksToReview({ ...saved.state, year: 2027 }).get(oldExcess.id)).toBe('unclassified');
   expect((await submitted()).state).toMatchObject({ offers: [{ legacyStageCount: 3 }] });
 });

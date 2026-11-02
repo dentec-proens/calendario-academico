@@ -9,7 +9,6 @@ import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlin
 
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
-import { applyPeriod } from '../../src/domain/calendar/commands/periods.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 
 function calendar(): ActivityState {
@@ -172,18 +171,19 @@ test('mixed organizations count disjoint periods separately and keep simultaneou
   expect(count.byOffer.integrado.byPeriod).not.toHaveProperty('semester-one');
   expect(count.byOffer.graduacao.byPeriod).not.toHaveProperty('annual');
   expect(() =>
-    applyPeriod(
-      state,
-      {
-        name: 'Sobreposição graduação',
-        start: civilDate('2027-03-01'),
-        end: civilDate('2027-04-01'),
-        days: '',
-        association: { status: 'defined', offers: ['graduacao'], term: 'first' },
-      },
-      [],
-      () => 'bad',
-    ),
+    normalizeOfferCalendar({
+      ...state,
+      periods: [
+        ...state.periods,
+        {
+          id: 'bad',
+          name: 'Sobreposição graduação',
+          start: civilDate('2027-03-01'),
+          end: civilDate('2027-04-01'),
+          association: { status: 'defined', offers: ['graduacao'], term: 'first' },
+        },
+      ],
+    }),
   ).toThrow();
 });
 

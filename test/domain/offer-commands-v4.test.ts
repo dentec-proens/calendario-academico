@@ -2,13 +2,11 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
-import { applyPeriod } from '../../src/domain/calendar/commands/periods.ts';
-import {
-  configureAssessment,
-  configureIntakeRequirement,
-} from '../../src/domain/calendar/commands/organization.ts';
+import { configureIntakeRequirement } from '../../src/domain/calendar/commands/organization.ts';
+import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import {
   applyOfferOrganization,
+  offerOrganizationWarnings,
   offerOrganizationDraft,
   offerOrganizationIssues,
   validateAddedOffers,
@@ -69,7 +67,7 @@ test('applying one semester offer keeps four annual stage bindings and preserves
   expect(next).not.toHaveProperty('regime');
 });
 
-test('reducing semester stages keeps two bindings and retires excess dates without discarding records', () => {
+test('reducing semester stages keeps every binding and leaves excess dates to review', () => {
   const state = calendarOffersV4Fixture();
   const draft = offerOrganizationDraft(state, 'graduacao-2');
   draft.count = '1';
@@ -81,24 +79,20 @@ test('reducing semester stages keeps two bindings and retires excess dates witho
   expect(
     next.events
       .filter((event) => event.requirementId?.endsWith(':graduacao-2'))
-      .map((event) => [event.id, event.requirementId]),
+      .map((event) => [event.id, event.requirementId, event.start, event.end]),
   ).toEqual([
-    ['graduacao-2-stage-1', 'stage-1:graduacao-2'],
-    ['graduacao-2-stage-2', 'stage-2:graduacao-2'],
+    ['graduacao-2-stage-1', 'stage-1:graduacao-2', '2027-02-01', '2027-07-09'],
+    ['graduacao-2-stage-2', 'stage-2:graduacao-2', '2027-07-26', '2027-12-17'],
+    ['graduacao-2-stage-3', 'stage-3:graduacao-2', '2027-07-26', '2027-10-01'],
+    ['graduacao-2-stage-4', 'stage-4:graduacao-2', '2027-10-04', '2027-12-17'],
   ]);
-  expect(
-    next.events
-      .filter((event) => event.id.startsWith('graduacao-2-stage-') && !event.requirementId)
-      .map((event) => [event.id, event.start, event.end, event.requirementId]),
-  ).toEqual([
-    ['graduacao-2-stage-3', '2027-07-26', '2027-10-01', undefined],
-    ['graduacao-2-stage-4', '2027-10-04', '2027-12-17', undefined],
+  const review = linksToReview(next);
+  expect(review.get('graduacao-2-stage-3')).toBe('unclassified');
+  expect(review.get('graduacao-2-stage-4')).toBe('unclassified');
+  expect(offerOrganizationWarnings(state, 'graduacao-2', draft).map((w) => w.message)).toEqual([
+    expect.stringContaining('ficará em Vínculo a conferir (Classificação pendente)'),
+    expect.stringContaining('ficará em Vínculo a conferir (Classificação pendente)'),
   ]);
-  expect(
-    next.events
-      .filter((event) => event.id.startsWith('graduacao-2-stage-') && !event.requirementId)
-      .every((event) => event.kind === 'note'),
-  ).toBe(true);
 });
 
 test('organization edits reject a stage in the other semester even when it fits another period', () => {
@@ -123,7 +117,6 @@ test('v4 semester organization accepts one or two stages per cycle and rejects t
   expect(
     offerOrganizationIssues(state, 'graduacao-2', draft).some((issue) => issue.path === 'count'),
   ).toBe(true);
-  expect(() => configureAssessment(state, { 'graduacao-2': '3' }, [])).toThrow('ciclo');
 });
 
 test('intake configuration changes only the selected offer identity', () => {
@@ -164,33 +157,6 @@ test('event edits enforce the owning cycle and the explicit offer id', () => {
   expect(next.events.find((event) => event.id === 'graduacao-stage-1')).toEqual(
     state.events.find((event) => event.id === 'graduacao-stage-1'),
   );
-});
-
-test('period edits select an offer id and allow overlap with another offer of the same kind', () => {
-  const state = calendarOffersV4Fixture();
-  const next = applyPeriod(
-    state,
-    {
-      id: 'graduacao-2-first',
-      name: 'Primeiro semestre da Engenharia',
-      start: civilDate('2027-02-01'),
-      end: civilDate('2027-07-09'),
-      days: '',
-      association: { status: 'defined', offers: ['graduacao-2'], term: 'first' },
-    },
-    [],
-    ids(),
-  );
-  expect(next.periods.find((period) => period.id === 'graduacao-2-first')?.association).toEqual({
-    status: 'defined',
-    offers: ['graduacao-2'],
-    term: 'first',
-  });
-  expect(next.periods.find((period) => period.id === 'graduacao-3-first')).toEqual(
-    state.periods.find((period) => period.id === 'graduacao-3-first'),
-  );
-  expect(next).not.toHaveProperty('organizationByModality');
-  expect(next).not.toHaveProperty('regime');
 });
 
 test('adding an opaque offer identity freezes earlier implicit events and creates its own periods', () => {

@@ -28,8 +28,9 @@ export default function ImportCalendarForm() {
         throw new Error(
           'Esta cópia foi gerada por uma versão anterior do sistema e não pode mais ser importada.',
         );
-      // Normalization validates the same closed literals used by the v4 transport.
-      const imported = normalizeOfferCalendar(parsed) as CalendarState;
+      // Importing is saving: normalization validates the v4 literals and keeps only the links
+      // already recorded on the same dates; any other link needs a generated activity.
+      const imported = normalizeOfferCalendar(parsed, record.state) as CalendarState;
       if (imported.year !== state.year || imported.campus !== state.campus)
         throw new Error('A cópia pertence a outro ano ou campus.');
       if (

@@ -112,6 +112,9 @@ test('definitive release requires every reviewed criterion, current versions and
       };
     }
     if (r.id.startsWith('admission-notice-')) event!.start = event!.end = civilDate('2027-01-01');
+    // Stages follow one another; overlapping stages would be under “Vínculo a conferir”.
+    const stage = /^(?:stage|results|council|pedagogical-meeting)-(\d):/.exec(r.id);
+    if (stage) event.start = event.end = civilDate(`2027-0${Number(stage[1]) + 1}-01`);
   }
   assert.deepEqual(releaseReadiness(record, db).issues, []);
   assert(

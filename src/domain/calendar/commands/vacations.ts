@@ -15,11 +15,19 @@ export function applyVacations<S extends ActivityState>(
   institutional: CalendarActivity[],
 ): S {
   const vacation = teacherVacations(state.year, values);
+  const recorded = new Map(state.events.map((event) => [event.id, event.requirementId]));
   return recalculateCalendar(
     {
       ...state,
       teacherVacations: values,
-      events: [...state.events.filter((event) => !vacationIds.has(event.id)), ...vacation.events],
+      events: [
+        ...state.events.filter((event) => !vacationIds.has(event.id)),
+        // Regenerated vacations keep the link recorded for the same date ID.
+        ...vacation.events.map((event) => {
+          const requirementId = recorded.get(event.id);
+          return requirementId ? { ...event, requirementId } : event;
+        }),
+      ],
     },
     institutional,
   );

@@ -1,3 +1,4 @@
+import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import { expect, test } from 'vitest';
@@ -228,7 +229,7 @@ test('calendar records no longer require or retain manual references', () => {
   });
 });
 
-test('reducing date-only stages keeps retired dates without reintroducing a source requirement', () => {
+test('reducing date-only stages keeps the retired dates and their links to review', () => {
   const state = calendar();
   const draft = offerOrganizationDraft(state, 'integrado');
   draft.count = '4';
@@ -243,13 +244,14 @@ test('reducing date-only stages keeps retired dates without reintroducing a sour
   const twoDraft = offerOrganizationDraft(four, 'integrado');
   twoDraft.count = '2';
   const two = applyOfferOrganization(four, 'integrado', twoDraft, id);
-  const retired = two.events.filter((event) => !event.requirementId && event.category === 'limite');
-  expect(retired.map((event) => [event.start, event.end])).toEqual([
-    ['2027-03-15', '2027-03-19'],
-    ['2027-03-22', '2027-03-26'],
+  const review = linksToReview(two);
+  const retired = two.events.filter((event) => review.has(event.id));
+  expect(retired.map((event) => [event.requirementId, event.start, event.end])).toEqual([
+    ['stage-3:integrado', '2027-03-15', '2027-03-19'],
+    ['stage-4:integrado', '2027-03-22', '2027-03-26'],
   ]);
   expect(retired.every((event) => event.kind === 'note')).toBe(true);
-  expect(normalizeOfferCalendar({ ...two, ignoredHistory: [] }).events).toHaveLength(
+  expect(normalizeOfferCalendar({ ...two, ignoredHistory: [] }, four).events).toHaveLength(
     two.events.length,
   );
 });

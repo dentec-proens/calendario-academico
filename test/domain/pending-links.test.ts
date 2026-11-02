@@ -1,0 +1,266 @@
+import { civilDate } from '../../src/domain/civil-date.ts';
+import { expect, test } from 'vitest';
+import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
+import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
+import { applyVacations } from '../../src/domain/calendar/commands/vacations.ts';
+import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessment-days.ts';
+import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
+import {
+  normalizeOfferCalendar,
+  offerCalendarContent,
+} from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import {
+  applyOfferOrganization,
+  offerOrganizationDraft,
+  offerOrganizationIssues,
+  offerOrganizationWarnings,
+} from '../../src/domain/calendar/organization/offers.ts';
+import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
+import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
+import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
+import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
+import { compareContents } from '../../src/domain/calendar/diff.ts';
+import {
+  cascavelDraft,
+  conflictingLinks,
+  ivaiporaDraft,
+  type PendingLinksFixture,
+} from '../fixtures/pending-links-2027.ts';
+
+const save = (previous: PendingLinksFixture, proposed: PendingLinksFixture) =>
+  prepareOfferCalendarSave(previous, proposed, {
+    storedContent: offerCalendarContent(previous),
+    catalogue: { events: [] },
+    recalculate: false,
+  });
+const links = (state: { events: { id: string; requirementId?: string }[] }) =>
+  state.events.map(({ id, requirementId }) => [id, requirementId]);
+const linksById = (state: { events: { id: string; requirementId?: string }[] }) =>
+  Object.fromEntries(links(state));
+
+/** Annual organization of one offer, with its two stages, from the draft's own form. */
+function annualDraft(state: PendingLinksFixture, offer: string) {
+  const draft = offerOrganizationDraft(state, offer);
+  draft.organization = 'anual';
+  draft.count = '2';
+  draft.periods[0] = { sourceId: '', name: 'Ano', start: '2027-02-01', end: '2027-12-17' };
+  draft.stages[0] = { id: '', start: '2027-02-01', end: '2027-06-30' };
+  draft.stages[1] = { id: '', start: '2027-07-26', end: '2027-12-17' };
+  return draft;
+}
+
+test.each([
+  ['Ivaiporã', ivaiporaDraft, 11],
+  ['Cascavel', cascavelDraft, 10],
+] as const)(
+  'the %s draft saves unrelated changes and keeps its links to review',
+  (_campus, fixture, count) => {
+    const state = fixture();
+    const proposed = {
+      ...state,
+      offers: state.offers.map((offer) => ({ ...offer, label: `Oferta ${offer.id}` })),
+    };
+    const saved = save(state, proposed);
+    expect(links(saved.state)).toEqual(links(state));
+    expect(saved.state.events).toHaveLength(state.events.length);
+    const review = linksToReview(saved.state);
+    expect([...review.values()]).toEqual(Array(count).fill('unclassified'));
+    expect(
+      saved.state.events.find((event) => event.requirementId === 'final-appeal-2')?.hours,
+    ).toBe(fixture === ivaiporaDraft ? 28 : undefined);
+    for (const event of saved.state.events.filter((item) =>
+      item.requirementId?.startsWith('admission-notice'),
+    )) {
+      expect(event.admission).toBeUndefined();
+      expect(event.publicationStatus).toBeUndefined();
+    }
+  },
+);
+
+test('editing description, dates and offers of a date without generated activity keeps its link', () => {
+  const state = ivaiporaDraft();
+  const original = state.events.find((event) => event.requirementId === 'final-1')!;
+  const edited = {
+    ...original,
+    name: 'Resultado final — revisado',
+    start: civilDate('2027-06-23'),
+    end: civilDate('2027-06-24'),
+    offers: ['integrado'],
+  };
+  const applied = applyEvent(state, edited, [], true);
+  expect(applied.events.find((event) => event.id === original.id)).toEqual(edited);
+  const saved = save(state, applied);
+  expect(saved.state.events.find((event) => event.id === original.id)).toMatchObject({
+    requirementId: 'final-1',
+    start: '2027-06-23',
+  });
+});
+
+test('new, swapped and removed links are still refused by command and save', () => {
+  const state = cascavelDraft();
+  const event = state.events[0];
+  expect(() => applyEvent(state, { ...event, id: 'copy' }, [])).toThrow('Atividade inválida');
+  const swapped = state.events.map((item) =>
+    item.id === event.id ? { ...item, requirementId: 'diary-1' } : item,
+  );
+  expect(() => save(state, { ...state, events: swapped })).toThrow('não perde nem troca');
+  const removed = state.events.map(({ requirementId: _link, ...item }) => item);
+  expect(() => save(state, { ...state, events: removed })).toThrow('não perde nem troca');
+  const added = [...state.events, { ...event, id: 'copy' }];
+  expect(() => save(state, { ...state, events: added })).toThrow('Vínculo de atividade inválido');
+  expect(() => normalizeOfferCalendar(state)).toThrow(/Vínculo.*21\/07\/2027.*21\/12\/2027/);
+  expect(() => normalizeOfferCalendar(state, state)).not.toThrow();
+});
+
+test('confirming an offer organization warns about links instead of refusing, and keeps them', () => {
+  const state = ivaiporaDraft();
+  const draft = annualDraft(state, 'integrado');
+  expect(offerOrganizationIssues(state, 'integrado', draft)).toEqual([]);
+  expect(offerOrganizationWarnings(state, 'integrado', draft)).toHaveLength(11);
+  let sequence = 0;
+  const configured = applyOfferOrganization(state, 'integrado', draft, () => `new-${++sequence}`);
+  expect(links(configured).slice(0, state.events.length)).toEqual(links(state));
+  expect(configured.events.slice(state.events.length).map((event) => event.requirementId)).toEqual([
+    'stage-1:integrado',
+    'stage-2:integrado',
+  ]);
+  const saved = save(state, configured);
+  expect([...linksToReview(saved.state).values()]).toEqual(Array(11).fill('unclassified'));
+  // A second confirmation updates the recorded stages instead of creating new ones.
+  const again = offerOrganizationDraft(saved.state, 'integrado');
+  again.stages[1].end = '2027-12-16';
+  const reconfirmed = applyOfferOrganization(saved.state, 'integrado', again, () => 'unused');
+  expect(reconfirmed.events).toHaveLength(saved.state.events.length);
+});
+
+test('reducing stages of an unchanged calendar is saved; surplus and moved cycles are reviewed', () => {
+  const state = conflictingLinks();
+  const semester: PendingLinksFixture = {
+    ...state,
+    offers: state.offers.map((offer) =>
+      offer.id === 'integrado'
+        ? { ...offer, organization: 'semestral', stages: { perTerm: 2 } }
+        : offer,
+    ),
+    periods: [
+      {
+        id: 'first',
+        name: '1º semestre',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-07-09'),
+        association: { status: 'defined', offers: ['integrado'], term: 'first' },
+      },
+      {
+        id: 'second',
+        name: '2º semestre',
+        start: civilDate('2027-07-26'),
+        end: civilDate('2027-12-17'),
+        association: { status: 'defined', offers: ['integrado'], term: 'second' },
+      },
+      {
+        id: 'year',
+        name: 'Ano letivo',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
+        association: { status: 'defined', offers: ['subsequente'], term: 'annual' },
+      },
+    ],
+    events: state.events.filter((event) => event.id !== 'stage-twice-b'),
+  };
+  const before = { ...state, events: semester.events };
+  const reduced = {
+    ...semester,
+    offers: semester.offers.map((offer) =>
+      offer.id === 'integrado' ? { ...offer, stages: { perTerm: 1 } } : offer,
+    ),
+  };
+  const saved = save(semester, reduced);
+  expect(linksById(saved.state)).toEqual(linksById(before));
+  expect(linksToReview(semester).get('stage-twice-a')).toBeUndefined();
+  expect(Object.fromEntries(linksToReview(saved.state))).toMatchObject({
+    'stage-twice-a': 'out-of-cycle',
+    'stage-late': 'unclassified',
+    'stage-early': 'unclassified',
+  });
+  expect(linksToReview(saved.state).has('stage-first')).toBe(false);
+});
+
+test('regenerated teacher vacations keep the link recorded for the same date ID', () => {
+  const state = conflictingLinks();
+  const changed = applyVacations(
+    state,
+    { firstStart: civilDate('2027-01-05'), firstEnd: civilDate('2027-01-30') },
+    [],
+  );
+  expect(changed.events.find((event) => event.id === 'teacher-vacation-january')).toMatchObject({
+    requirementId: 'diary-1',
+    start: '2027-01-05',
+  });
+  const stripped = {
+    ...state,
+    events: state.events.map(({ requirementId, ...event }) =>
+      event.id === 'teacher-vacation-january' ? event : { ...event, requirementId },
+    ),
+  };
+  expect(
+    normalizeOfferCalendar(stripped, state).events.find(
+      (event) => event.id === 'teacher-vacation-january',
+    )?.requirementId,
+  ).toBe('diary-1');
+});
+
+test('a preexisting duplicated stage saves, is reviewed and never counts as fulfilment', () => {
+  const state = conflictingLinks();
+  expect(() => save(state, { ...state, weekdays: [1, 2, 3, 4] })).not.toThrow();
+  const coverage = activityCoverage(state).find(
+    (row) => row.requirement.id === 'stage-2:integrado',
+  )!;
+  expect(coverage.events.map((event) => event.id)).toEqual(['stage-twice-a', 'stage-twice-b']);
+  expect(coverage.coverage).toBe('partial');
+  expect(coverage.issues[0]).toMatch(/^Etapa duplicada/);
+  const first = activityCoverage(state).find((row) => row.requirement.id === 'stage-1:integrado')!;
+  expect(first.coverage).toBe('complete');
+  // Creating another duplicate is refused.
+  const extra = { ...state.events[0], id: 'stage-again', name: 'Outra 1ª etapa' };
+  expect(() => applyEvent(state, extra, [])).toThrow('duplicadas');
+  expect(() => save(state, { ...state, events: [...state.events, extra] })).toThrow('duplicadas');
+});
+
+test('stages to review have no days of their own and are not distributed when printing', () => {
+  const state = conflictingLinks();
+  const days = assessmentDayCounts(state, state.events);
+  expect(Object.keys(days)).toEqual(['stage-first']);
+  const result = evaluateCalendar(state, state.events);
+  const report = teachingDayBreakdown(state, state.events, result, 'integrado');
+  expect(report.stages.map((row) => row.available)).toEqual([true, false, false, false]);
+  expect(report.stages.slice(1).every((row) => row.start === undefined)).toBe(true);
+});
+
+test('a notice whose link has no generated activity is not split by admission destination', () => {
+  const state = conflictingLinks();
+  const draft = offerOrganizationDraft(state, 'integrado');
+  draft.periods[0].sourceId = 'year';
+  let sequence = 0;
+  const configured = applyOfferOrganization(state, 'integrado', draft, () => `new-${++sequence}`);
+  expect(configured.events.filter((event) => event.name.startsWith('Edital'))).toEqual([
+    state.events.find((event) => event.id === 'transfer-notice'),
+  ]);
+});
+
+test('readings of a kept link without activity do not fail; review warns without blocking', () => {
+  const state = ivaiporaDraft();
+  const record = { id: 'c', name: 'Ivaiporã', version: 1, catalogueRevision: 1, state };
+  const readiness = releaseReadiness(
+    { ...record, institutionalSnapshot: [] },
+    { catalogue: { revision: 1 } },
+  );
+  const warned = readiness.warnings.filter((warning) => warning.startsWith('Vínculo a conferir'));
+  expect(warned).toHaveLength(11);
+  expect(readiness.issues.some((issue) => issue.includes('Vínculo a conferir'))).toBe(false);
+  expect(() => reviewSupport(record, state.events)).not.toThrow();
+  const side = { state, institutionalSnapshot: [], documentSnapshot: [], catalogueRevision: 1 };
+  const edited = structuredClone(side);
+  edited.state.events[0].name = 'Outra descrição';
+  expect(compareContents(side, edited).campusChanges).toBe(1);
+});

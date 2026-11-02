@@ -69,7 +69,7 @@ test('an existing local intake declaration survives explicit organization of its
   });
 });
 
-test('changing an offer cycle immediately identifies activities that need review', async ({
+test('changing an offer cycle previews linked dates to review and keeps their links', async ({
   page,
   fixtureServer,
 }) => {
@@ -111,9 +111,32 @@ test('changing an offer cycle immediately identifies activities that need review
   await selectEditorSection(page, 'periods');
   await page.locator('[data-edit-organization="graduacao"]').click();
   await page.locator(`#offer-graduacao-organization [data-choice="semestral"]`).click();
-  await expect(page.locator('[data-offer="graduacao"]')).toContainText(
-    'Resultado final da graduação',
+  const warnings = page.locator('#offer-graduacao-link-warnings');
+  await expect(warnings).toHaveCount(0);
+  for (const [index, [start, end]] of [
+    ['2027-02-01', '2027-06-30'],
+    ['2027-08-02', '2027-12-17'],
+  ].entries()) {
+    await page.locator(`#offer-graduacao-period-${index}-start`).fill(start);
+    await page.locator(`#offer-graduacao-period-${index}-end`).fill(end);
+  }
+  await page.locator(`#offer-graduacao-count [data-choice="1"]`).click();
+  for (const [index, [start, end]] of [
+    ['2027-02-01', '2027-06-30'],
+    ['2027-08-02', '2027-12-17'],
+  ].entries()) {
+    await page.locator(`#offer-graduacao-stage-${index}-start`).fill(start);
+    await page.locator(`#offer-graduacao-stage-${index}-end`).fill(end);
+  }
+  // The annual result is not generated for a semester offer: it is kept, to review.
+  await expect(warnings).toContainText(
+    '“Resultado final da graduação” ficará em Vínculo a conferir (Classificação pendente)',
   );
-  await expect(page.locator('#offer-graduacao-apply')).toBeDisabled();
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
+  await page.locator('#offer-graduacao-apply').click();
+  const saved = await savedState(page);
+  expect(saved.state.events.find((event) => event.id === 'final-result')).toMatchObject({
+    requirementId: 'final-0',
+    start: '2027-12-17',
+  });
 });

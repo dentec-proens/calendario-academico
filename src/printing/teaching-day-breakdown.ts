@@ -8,6 +8,7 @@ import type { DateRange } from '../domain/calendar/model.ts';
 import type { PrintState, PrintResult, PrintEvent, DistributionRow } from './types.ts';
 import { appliesTo } from '../domain/calendar/modalities.ts';
 import { periodsForOffer } from '../domain/calendar/organization/periods.ts';
+import { linksToReview } from '../domain/calendar/activities/links.ts';
 import {
   offerFor,
   stageCount,
@@ -58,7 +59,16 @@ export function teachingDayBreakdown(
   });
   const offer = offerFor(state, modality);
   const count = offer ? stageCount(offer) : 0;
-  const candidates = (events || []).filter((e) => appliesTo(e, offer ?? modality));
+  const local = (events || []).flatMap((e) =>
+    e.id !== undefined && !e.institutional ? [{ ...e, id: e.id }] : [],
+  );
+  // Stage dates under “Vínculo a conferir” are not distributed. A stage out of its cycle keeps
+  // its row, with its dates and a note, but no total (below).
+  const review = linksToReview({ ...state, events: local });
+  const candidates = (events || []).filter((e) => {
+    const issue = e.id === undefined ? undefined : review.get(e.id);
+    return appliesTo(e, offer ?? modality) && (!issue || issue === 'out-of-cycle');
+  });
   const stages = Array.from(
     { length: assessmentStageCounts.includes(count) ? count : 0 },
     (_, i) => {

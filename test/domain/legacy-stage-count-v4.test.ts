@@ -11,11 +11,8 @@ import {
   normalizeOfferCalendar,
   offerCalendarContent,
 } from '../../src/domain/calendar/normalization/normalize-v4.ts';
-import {
-  configureOfferMetadata,
-  configureOrganization,
-} from '../../src/domain/calendar/commands/organization.ts';
-import { applyPeriod } from '../../src/domain/calendar/commands/periods.ts';
+import { configureOfferMetadata } from '../../src/domain/calendar/commands/organization.ts';
+import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
 import {
   applyOfferOrganization,
@@ -131,27 +128,6 @@ test('metadata and unrelated saves preserve the marker while direct edits cannot
   );
 });
 
-test('period and organization shortcuts refuse classification before the complete stage configuration', () => {
-  const state = fixture();
-  expect(() => configureOrganization(state, { integrado: 'anual' }, [])).toThrow(
-    /etapas|quantidade/i,
-  );
-  expect(() =>
-    applyPeriod(
-      state,
-      {
-        name: 'Ano',
-        start: civilDate('2027-02-01'),
-        end: civilDate('2027-12-17'),
-        days: '',
-        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
-      },
-      [],
-      () => 'period',
-    ),
-  ).toThrow(/etapas|quantidade/i);
-});
-
 test('new and changed assessment dates remain blocked until the organization defines their cycle', () => {
   const state: StageState = {
     ...fixture(),
@@ -183,7 +159,7 @@ test('new and changed assessment dates remain blocked until the organization def
   ).toMatchObject({ legacyStageCount: 3 });
 });
 
-test('complete explicit configuration clears the marker and retains surplus stage dates as notes', () => {
+test('complete explicit configuration clears the marker and keeps surplus stage dates with their link', () => {
   const state: StageState = {
     ...fixture(),
     events: [1, 2, 3].map((n) => ({
@@ -212,11 +188,8 @@ test('complete explicit configuration clears the marker and retains surplus stag
   const configured = applyOfferOrganization(state, 'integrado', draft, () => `generated-${++seq}`);
   expect(configured.offers[0]).not.toHaveProperty('legacyStageCount');
   expect(configured.offers[0]).toMatchObject({ organization: 'anual', stages: { perTerm: 2 } });
-  expect(configured.events.find((e) => e.id === 'old-3')).toMatchObject({
-    start: civilDate('2027-04-01'),
-    end: civilDate('2027-04-12'),
-    kind: 'note',
-  });
+  expect(configured.events.find((e) => e.id === 'old-3')).toEqual(state.events[2]);
+  expect(linksToReview(configured).get('old-3')).toBe('unclassified');
   const saved = prepareOfferCalendarSave(state, configured, {
     storedContent: offerCalendarContent(state),
     catalogue: { events: [] },
@@ -247,7 +220,7 @@ test('unclassified historical stage evidence retains its original interval findi
     'A etapa de avaliação deve estar inteiramente dentro de um período letivo da oferta.',
   ]);
   expect(coverage.coverage).toBe('partial');
-  expect(() => normalizeOfferCalendar(state)).not.toThrow();
+  expect(() => normalizeOfferCalendar(state, state)).not.toThrow();
   expect(
     prepareOfferCalendarSave(state, state, {
       storedContent: offerCalendarContent(state),
@@ -257,7 +230,7 @@ test('unclassified historical stage evidence retains its original interval findi
   ).toMatchObject({ start: civilDate('2027-03-01'), end: civilDate('2027-03-12') });
 });
 
-test('complete classification keeps linked results, councils and meetings and detaches only surplus ordinals', () => {
+test('complete classification keeps every linked result, council and meeting, surplus ordinals to review', () => {
   const state: StageState = {
     ...fixture(),
     events: ['results', 'council', 'pedagogical-meeting'].flatMap((family) =>
@@ -290,7 +263,7 @@ test('complete classification keeps linked results, councils and meetings and de
       `${family}-1:integrado`,
     );
     const excess = configured.events.find((event) => event.id === `${family}-3`)!;
-    expect(excess.requirementId).toBeUndefined();
-    expect(excess).toMatchObject({ start: civilDate('2027-05-28'), end: civilDate('2027-05-28') });
+    expect(excess).toEqual(state.events.find((event) => event.id === `${family}-3`));
+    expect(linksToReview(configured).get(excess.id)).toBe('unclassified');
   }
 });

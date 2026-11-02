@@ -30,11 +30,15 @@ export function temporalPosition(
         : 'crossing'
       : 'current';
 }
-/** Structural validation is shared by command/import/backend. It does not certify normative coverage. */
+/**
+ * Structural validation is shared by command/import/backend. It does not certify normative
+ * coverage. Saving paths follow the link rule (`links.ts`): the stage interval is checked only on
+ * edited dates, and a link kept without a generated activity is not re-evaluated.
+ */
 export function validateActivityRecord(
   state: AssessmentSettings & { year: number; periods?: CalendarPeriod[] },
   event: CalendarActivity,
-  options: { preserveLegacyStageEvidence?: boolean } = {},
+  options: { stageInterval?: boolean; keptWithoutActivity?: boolean } = {},
 ) {
   const position = temporalPosition(state, event);
   if (!['include', 'exclude', 'note'].includes(event.kind))
@@ -79,7 +83,7 @@ export function validateActivityRecord(
           .requirements(state)
           .find((r) => r.id === event.requirementId)
       : undefined;
-    if (event.requirementId && !requirement?.acceptsPriorReference)
+    if (event.requirementId && !options.keptWithoutActivity && !requirement?.acceptsPriorReference)
       throw new DomainError('Esta atividade não aceita referência anterior ou datas fora do ano.');
   }
   if (event.admission) {
@@ -100,18 +104,16 @@ export function validateActivityRecord(
       throw new DomainError('Período de ingresso inválido.');
     // Deleted periods remain visible as unresolved evidence instead of being reassigned.
   }
-  if (isStageRequirementId(event.requirementId) && state.periods) {
+  if (
+    isStageRequirementId(event.requirementId) &&
+    state.periods &&
+    options.stageInterval !== false
+  ) {
     const modality = event.requirementId!.split(':')[1];
     const offer = offerFor(state, modality);
     if (!offer) throw new DomainError('A oferta da etapa de avaliação não pertence ao calendário.');
-    const preserveLegacyStage =
-      options.preserveLegacyStageEvidence === true &&
-      offer?.organization === 'a-classificar' &&
-      offer.stages === undefined &&
-      [2, 3, 4].includes(offer.legacyStageCount ?? 0);
     const issue =
-      offer?.organization === 'a-classificar' &&
-      (offer.legacyStageCount === undefined || preserveLegacyStage)
+      offer.organization === 'a-classificar' && offer.legacyStageCount === undefined
         ? ''
         : assessmentIntervalIssue(
             periodsForOffer({ ...state, periods: state.periods }, modality),

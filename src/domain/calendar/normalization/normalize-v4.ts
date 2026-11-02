@@ -1,15 +1,16 @@
-import { calendarLimits, academicTerms, assessmentStageRequirementPattern } from '../config.ts';
-import type { CalendarOffer, CalendarContentV4 } from '../model.ts';
+import { calendarLimits, academicTerms } from '../config.ts';
+import type { CalendarActivity, CalendarOffer, CalendarContentV4 } from '../model.ts';
 import { readCalendarOfferInput } from './input-v4.ts';
 import { invalidCalendar as fail } from './input.ts';
 import { datesBetween } from '../counting/core.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
 import { activityChecklist } from '../activities/checklist.ts';
+import { linkKept, validateLinks } from '../activities/links.ts';
 import { validCategory, eventCategory } from '../activities/categories.ts';
 import { normalizeObservanceDates } from '../observances.ts';
 import { teacherVacations } from '../activities/teacher-vacations.ts';
 import { rulesetVersion } from '../../policies/registry.ts';
-import { associationOffers, offerFor, stageTerm } from '../offers.ts';
+import { associationOffers, offerFor } from '../offers.ts';
 import { isStageRequirementId } from '../activities/metadata.ts';
 
 function text(value: string, maximum = calendarLimits.maximumTextLength): string {
@@ -71,9 +72,14 @@ export function validateOffers(offers: CalendarOffer[]): CalendarOffer[] {
   });
 }
 
-/** Structural validation permits pending migrated stages; cycle consistency is checked on editing and readiness. */
+/**
+ * Save boundary of format 4. `previous` is the persisted state of the same calendar: links are
+ * validated against it by date ID (`validateLinks`), so recorded links are never refused or
+ * dropped for lacking a generated activity. Without it every link must be generated.
+ */
 export function normalizeOfferCalendar(
   input: unknown,
+  previous?: { events: readonly CalendarActivity[] },
 ): CalendarContentV4 & { year: number; campus: string } {
   const s = readCalendarOfferInput(input);
   if (
@@ -93,6 +99,9 @@ export function normalizeOfferCalendar(
   if (s.weekConfirmed && !s.weekdays.length) fail('Semana letiva vazia.');
   if (s.teacherVacations) {
     const vacation = teacherVacations(s.year, s.teacherVacations);
+    const recorded = new Map(previous?.events.map((event) => [event.id, event.requirementId]));
+    for (const event of s.events)
+      if (event.requirementId) recorded.set(event.id, event.requirementId);
     s.events = s.events
       .filter(
         (e) =>
@@ -100,7 +109,13 @@ export function normalizeOfferCalendar(
             e.id,
           ),
       )
-      .concat(vacation.events);
+      .concat(
+        vacation.events.map((event) => {
+          // Regenerated vacations keep the link recorded for the same date ID.
+          const requirementId = recorded.get(event.id);
+          return requirementId ? { ...event, requirementId } : event;
+        }),
+      );
   }
   const ids = new Set<string>();
   const scope = (values: string[]) => {
@@ -152,16 +167,20 @@ export function normalizeOfferCalendar(
         fail('Há mais de um período para o mesmo ciclo da oferta.');
       if (a.start <= b.end && a.end >= b.start) fail('Períodos sobrepostos.');
     }
-  const requirements = new Map(activityChecklist(s).map((row) => [row.id, row]));
+  const generated = new Set(activityChecklist(s).map((row) => row.id));
+  const before = new Map(previous?.events.map((event) => [event.id, event]));
   for (const event of s.events) {
     text(event.id, 100);
     text(event.name, 160);
     if (ids.has(event.id) || event.id.startsWith('inst:')) fail('Identificador inválido.');
     ids.add(event.id);
     if (event.offers !== undefined) scope(event.offers);
-    // Preserve migration evidence on save; coverage still reports its original interval finding.
-    // The backend separately validates every new/changed stage interval and cycle.
-    validateActivityRecord(s, event, { preserveLegacyStageEvidence: true });
+    const old = before.get(event.id);
+    validateActivityRecord(s, event, {
+      // Edited stage intervals are checked against their cycle by `validateLinks`.
+      stageInterval: false,
+      keptWithoutActivity: linkKept(old, event) && !generated.has(event.requirementId!),
+    });
     if (
       event.hours !== undefined &&
       (!Number.isFinite(event.hours) || event.hours <= 0 || event.hours > 8784)
@@ -175,41 +194,11 @@ export function normalizeOfferCalendar(
       )
         fail('Distribuição automática de etapas inválida.');
     }
-    const requirement = event.requirementId ? requirements.get(event.requirementId) : undefined;
-    const pendingStage = event.requirementId?.match(
-      /^(?:stage|results|council|pedagogical-meeting)-[1-4]:([a-z][a-z0-9-]*)$/,
-    );
-    const stageOffer = pendingStage ? offerFor(s, pendingStage[1]) : undefined;
-    if (event.requirementId && !requirement && !(stageOffer && !stageOffer.stages))
-      fail('Vínculo de atividade inválido para esta organização.');
-    const requiredOffer = requirement?.offerId ?? stageOffer?.id;
-    if (requiredOffer && (event.offers?.length !== 1 || event.offers[0] !== requiredOffer))
-      fail('A etapa deve estar vinculada à sua oferta.');
     if (event.category !== undefined && !validCategory(event.category))
       fail('Categoria PROENS inválida.');
     event.category = eventCategory(event);
   }
-  for (const offer of s.offers) {
-    const stages = s.events
-      .filter(
-        (event) =>
-          isStageRequirementId(event.requirementId) &&
-          event.requirementId?.endsWith(`:${offer.id}`),
-      )
-      .sort((a, b) => a.requirementId!.localeCompare(b.requirementId!));
-    for (let i = 1; i < stages.length; i++) {
-      if (stages[i].requirementId === stages[i - 1].requirementId)
-        fail('Há etapas de avaliação duplicadas para a mesma oferta.');
-      const ordinal = (value: string) =>
-        Number(value.match(assessmentStageRequirementPattern)?.[1]);
-      if (
-        stageTerm(offer, ordinal(stages[i].requirementId!)) ===
-          stageTerm(offer, ordinal(stages[i - 1].requirementId!)) &&
-        stages[i].start <= stages[i - 1].end
-      )
-        fail('As etapas de avaliação da oferta devem ocorrer em sequência, sem sobreposição.');
-    }
-  }
+  validateLinks(previous, s);
   return {
     ...s,
     schemaVersion: 4,

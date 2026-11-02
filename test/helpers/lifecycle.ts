@@ -74,6 +74,9 @@ export function readyContent(): CalendarContentV4 {
     }
     if (requirement.id.startsWith('admission-notice-'))
       event.start = event.end = civilDate('2027-01-01');
+    // Stages follow one another; overlapping stages would be under “Vínculo a conferir”.
+    const stage = /^(?:stage|results|council|pedagogical-meeting)-(\d):/.exec(requirement.id);
+    if (stage) event.start = event.end = civilDate(`2027-0${Number(stage[1]) + 1}-01`);
     state.events.push(event);
   }
   const { year: _year, ...content } = state;
