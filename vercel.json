@@ -110,6 +110,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/calendarios/:calendarId/atividades-campus",
+      "destination": "/index.html"
+    },
+    {
       "source": "/calendarios/:calendarId/historico",
       "destination": "/index.html"
     },
