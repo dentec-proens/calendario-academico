@@ -60,7 +60,7 @@ A execução normal não grava traces. Casos marcados com `.only` são recusados
 
 Para executar validações simultâneas no mesmo checkout, separe os artefatos: configure `DENTEC_TEST_OUTPUT_DIR` e `PLAYWRIGHT_HTML_OUTPUT_DIR` com diretórios distintos por execução. Isso evita que uma suíte apague os traces ou screenshots de outra.
 
-Durante o desenvolvimento, rode primeiro os arquivos afetados, por exemplo `pnpm test:browser test/browser/editor-forms.spec.ts`. Antes de concluir ou publicar, execute `pnpm check` completo e registre comando, resultado e duração. Uma execução parcial não substitui a validação de release.
+Durante o desenvolvimento, rode primeiro os arquivos afetados, por exemplo `pnpm test:browser test/browser/editor-forms.spec.ts`. Antes de concluir ou publicar, execute `pnpm check` completo e registre comando, resultado e duração. Uma execução parcial não substitui a validação de release. Em trabalho dividido em fases com vários commits (roteiros de `docs/plans/`), os commits intermediários usam typecheck, lint e os testes afetados, e `pnpm check` roda uma vez antes de concluir a fase, conforme o `AGENTS.md`.
 
 ## Organização e contratos do domínio
 
