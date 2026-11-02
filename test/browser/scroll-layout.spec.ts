@@ -17,7 +17,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
     const heading = page.locator('#editor-section-title');
-    await expect(heading).toHaveText('Atividades e datas');
+    await expect(heading).toHaveText('Atividades da Resolução');
     const headingVisibility = await heading.evaluate((element) => {
       const bounds = element.getBoundingClientRect();
       const top = Math.max(0, bounds.top);
@@ -57,7 +57,6 @@ for (const width of [1440, 390]) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-    await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
     await editCampusEvent(page, 'local-event');
     const title = page.locator('#event-form-title');
@@ -88,7 +87,6 @@ for (const width of [1440, 390]) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-    await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
     await editCampusEvent(page, 'local-event');
     const originalHeight = await page
@@ -158,7 +156,6 @@ for (const width of [1440, 390]) {
         }),
       )
       .toBe(true);
-    await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
     const opener = page.locator('[data-open-event="local-event"]');
     await opener.click();

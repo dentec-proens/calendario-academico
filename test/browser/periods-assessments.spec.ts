@@ -12,7 +12,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     await addPeriod(page, '2027-03-01', '2027-03-26');
     await expect(page.locator('#editor-section-title')).toHaveText('Organização por oferta');
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 6');
+    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 7');
     await page.locator('[data-edit-organization="integrado"]').click();
     await page.locator(`#offer-integrado-count [data-choice="4"]`).click();
     const before = await savedState(page);

@@ -14,6 +14,7 @@ import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-route
 import { CalendarEditorProvider, useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import { EventEditorProvider, useEventEditor } from './events/EventEditorProvider.tsx';
 import EventPanel from './events/EventPanel.tsx';
+import NewEventButton from './events/NewEventButton.tsx';
 import { CalendarExportProvider, useCalendarExport } from './export/CalendarExportProvider.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
 import { editorSections } from '#src/app/routes.ts';
@@ -441,14 +442,17 @@ function EditorFrame() {
         <EditorSteps calendarId={record.id} current={currentSection} />
         <div className="editor-section-content">
           <div className="editor-section-heading">
-            <p className="editor-eyebrow">
-              {activeStep
-                ? `Etapa ${stepIndex + 1} de ${editorSteps.length}`
-                : 'Visualização do calendário'}
-            </p>
-            <h2 id="editor-section-title" ref={heading} tabIndex={-1}>
-              {current.title}
-            </h2>
+            <div>
+              <p className="editor-eyebrow">
+                {activeStep
+                  ? `Etapa ${stepIndex + 1} de ${editorSteps.length}`
+                  : 'Visualização do calendário'}
+              </p>
+              <h2 id="editor-section-title" ref={heading} tabIndex={-1}>
+                {current.title}
+              </h2>
+            </div>
+            {currentSection === 'campus' && <NewEventButton />}
           </div>
           <Suspense fallback={<LoadingIndicator layout="overlay" label="Carregando seção…" />}>
             <Outlet key={formEpoch} />

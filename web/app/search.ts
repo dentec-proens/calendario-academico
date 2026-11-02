@@ -66,6 +66,7 @@ export function applicationSearch(input: Record<string, unknown>) {
     ...(['admission', 'teaching', 'campus', 'other'].includes(String(input.atividadeAssunto))
       ? { atividadeAssunto: String(input.atividadeAssunto) }
       : {}),
+    // Only read to redirect links from when campus activities were a tab of the resolution step.
     ...(input.aba === 'eventos' ? { aba: 'eventos' as const } : {}),
     ...(typeof input.atividade === 'string' && /^[a-z0-9:-]{1,100}$/.test(input.atividade)
       ? { atividade: input.atividade }

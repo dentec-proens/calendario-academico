@@ -57,17 +57,16 @@ export async function savedState(page: Page) {
   }));
 }
 
-/** Show the step 6 tab with the campus events and the Teacher Day. */
+/** Show the campus activities step with the campus events and the Teacher Day. */
 export async function selectCampusEvents(page: Page) {
-  await page.locator('[data-tab="eventos"]').click();
-  await expect(page.locator('#tabpanel-eventos')).toBeVisible();
+  await selectEditorSection(page, 'campus');
+  await expect(page.locator('#campus-activities')).toBeVisible();
 }
 
 /** Open an activity in the side panel, listing every activity when the filter hides it. */
 export async function openActivity(page: Page, id: string) {
-  const tab = page.locator('[data-tab="atividades"]');
-  if ((await tab.count()) && (await tab.getAttribute('aria-selected')) !== 'true')
-    await tab.click();
+  if (await page.locator('#campus-activities').isVisible())
+    await selectEditorSection(page, 'events');
   const row = page.locator(`[data-activity-open="${id}"]`);
   if (!(await row.isVisible())) await page.locator('#activity-view-todas').check();
   await row.click();

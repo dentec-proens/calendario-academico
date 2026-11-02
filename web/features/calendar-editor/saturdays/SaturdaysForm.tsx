@@ -16,6 +16,8 @@ import SaturdayPrerequisites from './SaturdayPrerequisites.tsx';
 import { useDeferredFocus } from './useDeferredFocus.ts';
 import { useNarrowContainer } from './useNarrowContainer.ts';
 import { useAppSession } from '../../../app/session.tsx';
+import { resolutionActivities } from '../events/campus-events.ts';
+import { editorPages } from '../editor-steps.ts';
 import './saturdays.css';
 
 /** Below this step width the panel no longer fits beside the grid and opens as a dialog. */
@@ -161,7 +163,13 @@ export default function SaturdaysForm() {
             <dt>Atividade</dt>
             <dd>{editing.registration!.name}</dd>
           </dl>
-          <p className="help">Edite este registro em Atividades e datas.</p>
+          <p className="help">
+            Edite este registro em{' '}
+            {resolutionActivities(state).has(editing.registration!.requirementId ?? '')
+              ? editorPages.events.title
+              : editorPages.campus.title}
+            .
+          </p>
         </>
       )}
     </section>

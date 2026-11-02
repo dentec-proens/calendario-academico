@@ -14,7 +14,7 @@ for (const width of [1440, 390]) {
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     const origin = new URL(await fixtureServer('editor')).origin;
-    await page.goto(origin + '/calendarios/synthetic-calendar/eventos?aba=eventos');
+    await page.goto(origin + '/calendarios/synthetic-calendar/atividades-campus');
     const row = page.locator('[data-open-event="local-event"]');
     await expect(row).toContainText('Evento local salvo');
     await expect(row).toContainText('Registrado');
@@ -84,7 +84,7 @@ for (const width of [1440, 390]) {
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     const origin = new URL(await fixtureServer('editor-reviewer')).origin;
-    await page.goto(origin + '/calendarios/synthetic-calendar/eventos?aba=eventos');
+    await page.goto(origin + '/calendarios/synthetic-calendar/atividades-campus');
     const row = page.locator('[data-open-event="local-event"]');
     await row.focus();
     await page.keyboard.press('Enter');

@@ -13,8 +13,7 @@ test('an open event form adopts a newer confirmed value only while it has no loc
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('editor'));
-  await page.locator('[data-view="events"]').click();
-  await page.locator('[data-tab="eventos"]').click();
+  await page.locator('[data-view="campus"]').click();
   await editCampusEvent(page, 'local-event');
   await page.locator('#event-more-options > summary').click();
   const category = page.locator('#event-category');
@@ -179,8 +178,7 @@ test('metadata rejects an activity for another modality before applying or savin
     record.version++;
     return window.publishReviewerCalendar();
   });
-  await page.locator('[data-view="events"]').click();
-  await page.locator('[data-tab="eventos"]').click();
+  await page.locator('[data-view="campus"]').click();
   await editCampusEvent(page, 'local-event');
   // Stages belong to step 3; a campus event cannot be bound to another offer's stage here.
   await expect(page.locator('#event-requirement option[value="stage-1:graduacao"]')).toHaveCount(0);
@@ -218,8 +216,7 @@ test('removing a campus exclusion recalculates the teaching-day target', async (
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0]?.end))
     .toBe('2027-03-05');
-  await selectEditorSection(page, 'events');
-  await page.locator('[data-tab="eventos"]').click();
+  await selectEditorSection(page, 'campus');
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Feriado municipal');
   await page.locator('#event-type-holiday').check();
@@ -252,8 +249,7 @@ test('event removal clears its open draft and grouped teacher vacations', async 
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('editor'));
-  await page.locator('[data-view="events"]').click();
-  await page.locator('[data-tab="eventos"]').click();
+  await page.locator('[data-view="campus"]').click();
   await editCampusEvent(page, 'local-event');
   await page.locator('#event-more-options > summary').click();
   await page.locator('#event-category').selectOption('feriado');
@@ -279,7 +275,7 @@ test('event removal clears its open draft and grouped teacher vacations', async 
       ),
     )
     .toBe(2);
-  await page.locator('[data-view="events"]').click();
+  await page.locator('[data-view="campus"]').click();
   await openCampusEvent(page, 'teacher-vacation-january');
   await page.locator('[data-remove-event="teacher-vacation-january"]').click();
   await expect
@@ -334,14 +330,14 @@ test('stage editing and activity changes always reveal the same draft in its des
   await selectEditorSection(page, 'periods');
   await expect(page.locator('#offer-integrado-stage-0-end')).toHaveValue('2027-03-11');
   await page.locator('#offer-integrado-cancel').click();
-  await selectEditorSection(page, 'events');
-  await page.locator('[data-tab="eventos"]').click();
+  await selectEditorSection(page, 'campus');
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Novo preenchimento');
   // Assessment stages are linked in step 3; step 6 does not offer them to a new event.
   await expect(page.locator('#event-requirement option[value^="stage-"]')).toHaveCount(0);
   await page.locator('#event-requirement').selectOption('family-meeting');
-  await expect(page).toHaveURL(/\/eventos(\?[^#]*)?$/);
+  // The new form stays in the step it was opened from.
+  await expect(page).toHaveURL(/\/atividades-campus(\?[^#]*)?$/);
   await expect(page.locator('#event-form')).toBeVisible();
   await expect(page.locator('#event-name')).toHaveValue('Novo preenchimento');
 });

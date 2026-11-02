@@ -32,6 +32,7 @@ export const editorSections = {
   days: 'dias',
   vacations: 'ferias',
   events: 'eventos',
+  campus: 'atividades-campus',
   history: 'historico',
   issues: 'pendencias',
   calendar: 'visualizar',

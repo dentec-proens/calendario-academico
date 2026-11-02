@@ -296,7 +296,6 @@ test('a selected holiday warns that it will not count as a teaching day', async 
   await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-04-01', '2027-05-31');
   // The fixture has no Saturday holiday; register one through Activities and dates.
-  await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Dia do Trabalho');
@@ -388,13 +387,12 @@ test('a registered Saturday is edited and removed from the panel', async ({
   await expect(page.locator('#saturday-dates input[value="2027-03-06"]')).toBeFocused();
 });
 
-test('multi-day inclusions over a Saturday are registered but edited in Activities and dates', async ({
+test('multi-day inclusions over a Saturday are registered but edited in Campus activities', async ({
   page,
   fixtureServer,
 }) => {
   await openEditor(page, fixtureServer);
   await addPeriod(page, '2027-03-01', '2027-04-30');
-  await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Semana acadêmica');
@@ -421,7 +419,7 @@ test('multi-day inclusions over a Saturday are registered but edited in Activiti
   await expect(saturday.locator('[data-edit-saturday]')).toHaveCount(0);
   await saturday.locator('button').click();
   await expect(page.locator('#saturday-panel')).toContainText(
-    'Edite este registro em Atividades e datas.',
+    'Edite este registro em Atividades do Campus.',
   );
   await expect(page.locator('#saturday-edit-form')).toHaveCount(0);
 });

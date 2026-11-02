@@ -101,7 +101,6 @@ test('a free admission notice is registered without an activity link', async ({
   fixtureServer,
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
-  await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Edital local de transferência');
@@ -257,7 +256,6 @@ test('the free event form opens in the side panel with a labelled offer group', 
   await page.locator('[data-edit-organization="integrado"]').click();
   await expect(page.locator('[data-offer="integrado"] form')).toBeVisible();
   await expect(page.locator('[data-offer="integrado"] input[type="checkbox"]')).toHaveCount(0);
-  await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await expect(page.locator('#event-panel #event-form')).toBeVisible();
@@ -274,7 +272,6 @@ test('a free event asks what it is and the answer sets its effect and category',
   fixtureServer,
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
-  await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await expect(page.locator('#event-type > legend')).toHaveText('O que é este evento?');
@@ -326,7 +323,6 @@ test('a record with a freely combined effect and category shows both fields when
     record.version++;
     return window.publishReviewerCalendar();
   });
-  await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await editCampusEvent(page, 'free-combination');
   await expect(page.locator('#event-type')).toHaveCount(0);
@@ -343,7 +339,6 @@ test('answering another type after a notice keeps its draft but writes no notice
   fixtureServer,
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
-  await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Recesso após edital');
@@ -381,7 +376,6 @@ for (const width of [1440, 390])
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toBeVisible();
-    await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
     await page.locator('#new-event').click();
     for (const option of await page.locator('#event-type label').all()) {
@@ -466,33 +460,6 @@ test('the list shows every activity and the views split what is left to fill', a
     .locator('[data-activity-row]')
     .evaluateAll((items) => items.map((item) => item.getAttribute('data-status'))))
     expect(status).toBe('complete');
-});
-
-test('step 6 tabs follow the keyboard and keep their place in the URL', async ({
-  page,
-  fixtureServer,
-}) => {
-  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
-  await selectEditorSection(page, 'events');
-  const activities = page.locator('[data-tab="atividades"]');
-  await expect(activities).toHaveAttribute('aria-selected', 'true');
-  await activities.focus();
-  await page.keyboard.press('ArrowRight');
-  await expect(page.locator('[data-tab="eventos"]')).toBeFocused();
-  await expect(page.locator('#tabpanel-eventos')).toBeVisible();
-  await expect(page).toHaveURL(/aba=eventos/);
-  await page.keyboard.press('End');
-  await expect(page.locator('[data-tab="eventos"]')).toBeFocused();
-  // At the last tab, End keeps the page where it is.
-  const scroll = await page.evaluate(() => scrollY);
-  await page.keyboard.press('End');
-  expect(await page.evaluate(() => scrollY)).toBe(scroll);
-  await expect(page.locator('#tabpanel-eventos')).toBeVisible();
-  await page.keyboard.press('ArrowRight');
-  await expect(activities).toBeFocused();
-  await expect(page.locator('#tabpanel-atividades')).toBeVisible();
-  await page.reload();
-  await expect(activities).toHaveAttribute('aria-selected', 'true');
 });
 
 test('a reviewer consults activities and records without editing or saving', async ({

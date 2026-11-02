@@ -32,7 +32,7 @@ for (const width of [1440, 390]) {
     await page.locator('#event-end').fill('2026-12-02');
 
     await page.locator('#close-event-panel').click();
-    await page.locator('[data-tab="atividades"]').click();
+    await selectEditorSection(page, 'events');
     await page.locator('#activity-search').fill('sem resultado sintético');
     await expect(page.locator('#activity-empty')).toBeVisible();
     await expect(page).toHaveURL(/atividadeBusca=sem/);
@@ -211,7 +211,7 @@ test('URL filters validate invalid input and follow browser history without losi
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Rascunho com filtros');
   await page.locator('#close-event-panel').click();
-  await page.locator('[data-tab="atividades"]').click();
+  await selectEditorSection(page, 'events');
   await page.locator('.activity-more-filters > summary').click();
   await page.locator('#activity-subject').selectOption('campus');
   await page.locator('#activity-status').selectOption('optional');

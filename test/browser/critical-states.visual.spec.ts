@@ -67,8 +67,7 @@ test('calendar editor and its event form', async ({ page, fixtureServer }) => {
   await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
   await assertNoOverflow(page);
   await expect(page).toHaveScreenshot('calendar-editor.png', { fullPage: true });
-  await selectEditorSection(page, 'events');
-  await page.locator('[data-tab="eventos"]').click();
+  await selectEditorSection(page, 'campus');
   await editCampusEvent(page, 'local-event');
   await expect(page.locator('#event-form')).toBeVisible();
   await assertNoOverflow(page);
@@ -129,8 +128,7 @@ test('event creation explains the pending draft beside the visible action', asyn
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await expect(page.locator('#record-title')).toBeVisible();
-  await selectEditorSection(page, 'events');
-  await page.locator('[data-tab="eventos"]').click();
+  await selectEditorSection(page, 'campus');
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Encontro com as famílias');
   await page.locator('#close-event-panel').click();

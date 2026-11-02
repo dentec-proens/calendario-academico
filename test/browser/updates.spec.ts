@@ -34,8 +34,7 @@ for (const viewport of [
       window.updateOwners = { editor: window.updateEditor, drafts: window.updateDrafts };
       document.documentElement.dataset.originalDocument = 'yes';
     });
-    await selectEditorSection(page, 'events');
-    await page.locator('[data-tab="eventos"]').click();
+    await selectEditorSection(page, 'campus');
     await page.locator('#new-event').click();
     await page.locator('#event-name').fill('Evento não aplicado antes da publicação');
     await page.locator('#close-event-panel').click();
@@ -93,8 +92,7 @@ test('a failed production section chunk preserves the editor and unapplied event
   await page.evaluate(() => {
     window.updateOwners = { editor: window.updateEditor, drafts: window.updateDrafts };
   });
-  await page.locator('[data-view="events"]').click();
-  await page.locator('[data-tab="eventos"]').click();
+  await page.locator('[data-view="campus"]').click();
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Trabalho conservado após chunk');
   await page.locator('#close-event-panel').click();
@@ -640,7 +638,7 @@ test('explicitly discarded editor fields cannot reappear as a detached draft', a
   cleanup,
 }) => {
   const server = await startUpdateServer(cleanup);
-  await page.goto(server.origin + '/calendarios/synthetic-calendar/eventos?aba=eventos');
+  await page.goto(server.origin + '/calendarios/synthetic-calendar/atividades-campus');
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Preenchimento a descartar');
   await page.locator('#close-event-panel').click();
@@ -670,7 +668,7 @@ test('a rendering failure in the event panel keeps its owners and fields alive',
   cleanup,
 }) => {
   const { origin } = await startUpdateServer(cleanup);
-  await page.goto(origin + '/calendarios/synthetic-calendar/eventos?aba=eventos');
+  await page.goto(origin + '/calendarios/synthetic-calendar/atividades-campus');
   await page.locator('#new-event').click();
   await page.locator('#event-name').fill('Preenchimento conservado no painel');
   await page.evaluate(() => {

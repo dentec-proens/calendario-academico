@@ -1,5 +1,5 @@
 import { test, expect } from './test.ts';
-import { savedState, selectCampusEvents, selectEditorSection } from './editor-navigation.ts';
+import { savedState, selectCampusEvents } from './editor-navigation.ts';
 import { inheritedEvents, initialCatalogue } from '../../src/domain/institution/catalogue.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -33,7 +33,6 @@ for (const width of [1440, 390]) {
       window.editorTest.record.institutionalSnapshot = structuredClone(base);
       await window.publishReviewerCalendar();
     }, events);
-    await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
     const opener = page.locator('#open-observance-public-servant-day');
     await opener.click();
@@ -76,7 +75,6 @@ for (const width of [1440, 390]) {
       record.version++;
       await window.publishReviewerCalendar();
     });
-    await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
     await page.locator('#open-orphan-observance-retired-observance').click();
     await expect(page.locator('#event-panel')).toContainText('não está disponível');

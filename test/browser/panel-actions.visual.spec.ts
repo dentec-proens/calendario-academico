@@ -16,7 +16,6 @@ test('Teacher Day groups the field and actions in the shared panel', async ({
 }) => {
   await page.goto(await fixtureServer('editor'));
   await expect(page.locator('#record-title')).toBeVisible();
-  await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await page.locator('#open-observance-teacher-day').click();
   await expect(page.locator('#event-panel')).toHaveScreenshot('teacher-day.png');
@@ -30,7 +29,6 @@ test('event footer has apply and discard while the shared header closes the pane
 }) => {
   await page.goto(await fixtureServer('editor'));
   await expect(page.locator('#record-title')).toBeVisible();
-  await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await editCampusEvent(page, 'local-event');
   await expect(page.locator('#event-form-title')).toBeFocused();

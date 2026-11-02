@@ -47,6 +47,7 @@ test('native server serves portal and invitation routes without a Node API or en
       'dias',
       'ferias',
       'eventos',
+      'atividades-campus',
       'historico',
       'pendencias',
       'visualizar',

@@ -1,10 +1,5 @@
 import { test, expect } from './test.ts';
-import {
-  openActivity,
-  selectCampusEvents,
-  selectEditorSection,
-  editCampusEvent,
-} from './editor-navigation.ts';
+import { openActivity, selectCampusEvents, editCampusEvent } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
@@ -15,7 +10,6 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-    await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
     const add = page.locator('#new-event');
     const notice = page.locator('#pending-event');
@@ -131,7 +125,6 @@ test('editor separates creation from editing and preserves closed activity draft
   };
   const submit = () => page.locator('#event-form button[type="submit"]').click();
 
-  await selectEditorSection(page, 'events');
   await selectCampusEvents(page);
   await expect(page.locator('#event-form')).toBeHidden();
   await editCampusEvent(page, 'local-event');

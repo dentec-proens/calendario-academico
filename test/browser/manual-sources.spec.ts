@@ -53,7 +53,6 @@ for (const width of [1440, 390]) {
     await page.locator('#vacation-first-end').fill('2027-01-29');
     await page.locator('#vacation-form button[type="submit"]').click();
     expect((await savedState(page)).state.teacherVacations).not.toHaveProperty('evidence');
-    await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
     await page.locator('#new-event').click();
     await page.locator('#event-name').fill('Feriado do campus');

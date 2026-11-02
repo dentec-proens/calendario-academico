@@ -16,7 +16,6 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#record-title')).toBeVisible();
-    await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
     const opener = page.locator('#open-observance-teacher-day');
     await opener.click();
@@ -127,7 +126,6 @@ for (const width of [1440, 390]) {
     // Removing the applied record from another panel also retires its closed draft.
     await page.locator('#saturday-edit-name').fill('Preenchimento de um registro a remover');
     await page.locator('#saturday-edit-close').click();
-    await selectEditorSection(page, 'events');
     await selectCampusEvents(page);
     await openCampusEvent(page, saved.id);
     await page.locator(`[data-remove-event="${saved.id}"]`).click();
