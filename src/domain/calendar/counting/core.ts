@@ -21,13 +21,12 @@ export interface CalendarInput {
 }
 type Evidence = Pick<CountingInterval, 'id' | 'evidenceId'>;
 
-/** Manual calendar fields never become institutional source metadata. */
-export function automaticEventSource(event: {
-  id?: string;
-  institutional?: boolean;
-  evidence?: string;
-}) {
-  return event.institutional === true || event.id?.startsWith('inst:') ? event.evidence : undefined;
+/**
+ * Manual calendar fields never become institutional source metadata. The origin is the
+ * container, carried by the editor projection (`projectDates`), never the `inst:` ID prefix.
+ */
+export function automaticEventSource(event: { institutional?: boolean; evidence?: string }) {
+  return event.institutional === true ? event.evidence : undefined;
 }
 
 /** Pure civil-date counting core. Not a complete institutional validator. */

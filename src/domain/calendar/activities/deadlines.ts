@@ -1,5 +1,10 @@
 import { civilDate, type CivilDate } from '../../civil-date.ts';
-import type { AssessmentSettings, CalendarPeriod, CalendarEvent } from '../model.ts';
+import type {
+  AssessmentSettings,
+  CalendarPeriod,
+  CalendarEvent,
+  InstitutionalEventSnapshot,
+} from '../model.ts';
 import { automaticEventSource } from '../counting/core.ts';
 import { parseDate } from '../../civil-date.ts';
 import { appliesTo } from '../modalities.ts';
@@ -14,7 +19,9 @@ export function prorogatedDeadline(
     weekConfirmed?: boolean;
   },
   original: CivilDate,
-  events: CalendarEvent[],
+  /** Local dates, or the editor projection (`projectDates`) when the base is included. */
+  events: (CalendarEvent &
+    Partial<Pick<InstitutionalEventSnapshot, 'institutional' | 'evidence'>>)[],
   modality: string,
 ) {
   parseDate(original);

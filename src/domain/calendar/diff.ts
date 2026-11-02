@@ -13,6 +13,7 @@ import type {
   CalendarPeriod,
 } from './model.ts';
 import { evaluateCalendar } from './counting/evaluation.ts';
+import { projectDates } from './model.ts';
 import { observanceForEvent, observanceRules } from './observances.ts';
 import { labelFor } from './offers.ts';
 import { contentIssues, type ContentIssue } from './readiness.ts';
@@ -235,7 +236,7 @@ function teachingDays(side: DiffSide) {
   const { state } = side;
   if (!state.weekConfirmed || !state.periods.length) return null;
   try {
-    const result = evaluateCalendar(state, [...side.institutionalSnapshot, ...state.events]);
+    const result = evaluateCalendar(state, projectDates(side.institutionalSnapshot, state.events));
     const days = new Map<string, number>();
     for (const [offerId, count] of Object.entries(result.byOffer))
       for (const [periodId, total] of Object.entries(count.byPeriod)) {

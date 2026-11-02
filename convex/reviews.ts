@@ -2,6 +2,7 @@ import { reviewIsCurrent } from '../src/domain/calendar/base';
 import { equivalentRulesets, rulesetVersion } from '../src/domain/policies/registry';
 import { assertWritesOpen } from './lib/maintenance';
 import { reviewSupport } from '../src/domain/reviews/technical-support';
+import { projectDates } from '../src/domain/calendar/model';
 import { reviewCriteriaFor, reviewSourceFor } from '../src/domain/reviews/criteria';
 import { initialConclusion } from '../src/domain/reviews/conclusion';
 import { updateConclusion } from '../src/domain/reviews/conclusion';
@@ -124,10 +125,10 @@ export const review = query({
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
     const { row, status, record, compatibility, review: prior } = await baseRecord(ctx, user, id);
-    const support = reviewSupport(record, [
-      ...compatibility.snapshot.events,
-      ...record.state.events,
-    ]);
+    const support = reviewSupport(
+      record,
+      projectDates(compatibility.snapshot.events, record.state.events),
+    );
     return clean({
       ...support,
       officialApproval: officialApproval(status),
@@ -216,10 +217,10 @@ export const saveReview = mutation({
       if (e.status === 'PENDENTE' && e.reviewed)
         fail('Selecione Atendido, Não atendido ou Não aplicável antes de confirmar o critério.');
     }
-    const support = reviewSupport(record, [
-      ...compatibility.snapshot.events,
-      ...record.state.events,
-    ]);
+    const support = reviewSupport(
+      record,
+      projectDates(compatibility.snapshot.events, record.state.events),
+    );
     const conclusion = updateConclusion(
       body.conclusion,
       criteria,

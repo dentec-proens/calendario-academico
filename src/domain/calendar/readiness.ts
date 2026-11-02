@@ -1,7 +1,12 @@
 import { diagnoseCalendar, diagnoseTeachingDays } from './diagnostics.ts';
 import { assessmentStageCounts } from './config.ts';
 import { referenceIsCurrent, reviewIsCurrent } from './base.ts';
-import type { InstitutionalEventSnapshot, ActivityState, CalendarReview } from './model.ts';
+import {
+  projectDates,
+  type InstitutionalEventSnapshot,
+  type ActivityState,
+  type CalendarReview,
+} from './model.ts';
 import { appliesTo } from './modalities.ts';
 import { calendarOffers, labelFor, stageInTerm } from './offers.ts';
 import { assessmentCount, scopedRequirement } from './activities/assessment.ts';
@@ -48,7 +53,7 @@ export function contentAssessment(record: ContentRecord) {
   }
   for (const item of observanceIssues(record.institutionalSnapshot, record.state))
     issue(`observance:${item.key}:${item.message}`, item.message);
-  const events = [...record.institutionalSnapshot, ...record.state.events];
+  const events = projectDates(record.institutionalSnapshot, record.state.events);
   if (
     offers.some(
       (offer) =>
@@ -148,10 +153,10 @@ export function contentAssessment(record: ContentRecord) {
   // The release check places the base issue here, before the counting issues.
   const baseIssueAt = issues.length;
   try {
-    const result = calendarResult(record.state, [
-      ...record.institutionalSnapshot,
-      ...record.state.events,
-    ]);
+    const result = calendarResult(
+      record.state,
+      projectDates(record.institutionalSnapshot, record.state.events),
+    );
     for (const item of diagnostics.structure) {
       if (item.code === 'periods-missing')
         issue('periods-missing', 'Cadastre os períodos letivos.');

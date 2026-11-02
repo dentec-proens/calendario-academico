@@ -7,11 +7,13 @@ import { applicabilityFor } from '../../src/domain/policies/registry.ts';
 import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlines.ts';
 import { validateActivityRecord } from '../../src/domain/calendar/activities/validation.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
-import type {
-  ActivityState,
-  CalendarEvent,
-  CalendarOffer,
-  IntakeConfiguration,
+import {
+  projectDates,
+  type ActivityState,
+  type CalendarEvent,
+  type CalendarOffer,
+  type InstitutionalEventSnapshot,
+  type IntakeConfiguration,
 } from '../../src/domain/calendar/model.ts';
 
 // External metadata is test input, never a storage/API contract.
@@ -87,14 +89,6 @@ function state(): AnnotatedState {
         offers: ['integrado'],
         evidence: 'Fonte manual do feriado',
       },
-      {
-        id: 'inst:holiday',
-        name: 'Feriado institucional',
-        start: civilDate('2027-03-10'),
-        end: civilDate('2027-03-10'),
-        kind: 'exclude',
-        evidence: 'Resolução institucional automática',
-      },
     ],
     offers: [
       {
@@ -117,6 +111,16 @@ function state(): AnnotatedState {
   };
 }
 
+/** Institutional base date: automatic because of its container, not its ID. */
+const baseHoliday: InstitutionalEventSnapshot = {
+  id: 'inst:holiday',
+  name: 'Feriado institucional',
+  start: civilDate('2027-03-10'),
+  end: civilDate('2027-03-10'),
+  kind: 'exclude',
+  evidence: 'Resolução institucional automática',
+};
+
 function removeManualSources(input: AnnotatedState): AnnotatedState {
   const result = structuredClone(input);
   delete result.weekEvidence;
@@ -125,7 +129,7 @@ function removeManualSources(input: AnnotatedState): AnnotatedState {
     for (const entry of Object.values(offer.intake ?? {})) delete entry.source;
   }
   for (const event of result.events) {
-    if (!event.id.startsWith('inst:')) delete event.evidence;
+    delete event.evidence;
     if (event.deadlineAdjustment)
       delete (event.deadlineAdjustment as { evidence?: string }).evidence;
   }
@@ -150,12 +154,12 @@ function numericResult(result: ReturnType<typeof evaluateCalendar>) {
 
 test('removing every manual source preserves annual, semester and per-offer day counts and conflicts', () => {
   const original = state();
-  const before = evaluateCalendar(original, original.events);
+  const before = evaluateCalendar(original, projectDates([baseHoliday], original.events));
   expect(before.byOffer.integrado.total).toBe(19);
   expect(before.byOffer.graduacao.total).toBe(20);
   expect(before.byOffer.graduacao.byPeriod).toEqual({ first: 10, second: 10 });
   const stripped = removeManualSources(original);
-  const after = evaluateCalendar(stripped, stripped.events);
+  const after = evaluateCalendar(stripped, projectDates([baseHoliday], stripped.events));
   expect(numericResult(after)).toEqual(numericResult(before));
   expect(
     after.byOffer.integrado.ledger.find((day) => day.date === '2027-03-10')?.evidenceIds,
@@ -405,8 +409,8 @@ test('own-regulation status preserves unconfigured minimums after removing its m
     offer.scope = { status: 'own-regulation', source: 'Norma local manual' };
   });
   const stripped = removeManualSources(original);
-  const before = evaluateCalendar(original, original.events);
-  const after = evaluateCalendar(stripped, stripped.events);
+  const before = evaluateCalendar(original, projectDates([baseHoliday], original.events));
+  const after = evaluateCalendar(stripped, projectDates([baseHoliday], stripped.events));
   expect(numericResult(after)).toEqual(numericResult(before));
   expect(after.byOffer.integrado.checks.every((check) => check.status === 'NOT_VERIFIABLE')).toBe(
     true,
@@ -415,13 +419,11 @@ test('own-regulation status preserves unconfigured minimums after removing its m
 
 test('municipal deadline preserves automatic institutional references while absent next teaching dates stay unresolved', () => {
   const input = deadlineState();
-  const automatic = holiday({
-    id: 'inst:municipal',
-    evidence: 'Registro institucional automático',
-  });
-  expect(
-    prorogatedDeadline(input, civilDate('2027-08-31'), [automatic], 'integrado'),
-  ).toMatchObject({
+  const automatic = projectDates(
+    [{ ...holiday({ id: 'inst:municipal' }), evidence: 'Registro institucional automático' }],
+    [],
+  );
+  expect(prorogatedDeadline(input, civilDate('2027-08-31'), automatic, 'integrado')).toMatchObject({
     date: civilDate('2027-09-01'),
     evidence: ['Registro institucional automático'],
   });

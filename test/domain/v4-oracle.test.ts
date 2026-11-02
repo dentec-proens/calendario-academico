@@ -9,7 +9,11 @@ import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { activityStatus } from '../../src/domain/calendar/activities/status.ts';
 import { inspect, type BaseDocument } from '../../src/domain/calendar/base.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
-import type { ActivityState, InstitutionalEventSnapshot } from '../../src/domain/calendar/model.ts';
+import {
+  projectDates,
+  type ActivityState,
+  type InstitutionalEventSnapshot,
+} from '../../src/domain/calendar/model.ts';
 import { applyObservances } from '../../src/domain/calendar/observances.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
@@ -30,7 +34,8 @@ function before(item: V4Case) {
     campus: item.campus,
   } as unknown as ActivityState & { rulesetVersion?: string };
   const snapshot = item.content.institutionalSnapshot as unknown as InstitutionalEventSnapshot[];
-  const events = [...applyObservances(snapshot, state), ...state.events];
+  // Step 4 (origin by container): the editor projection must keep every oracle value.
+  const events = projectDates(applyObservances(snapshot, state), state.events);
   let evaluation: ReturnType<typeof evaluateCalendar> | null = null;
   let countingError: string | undefined;
   try {

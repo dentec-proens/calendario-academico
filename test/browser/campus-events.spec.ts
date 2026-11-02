@@ -95,3 +95,37 @@ for (const width of [1440, 390]) {
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
   });
 }
+
+test('a local date whose ID imitates the base prefix stays a campus date', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('editor')).origin;
+  await page.goto(origin + '/calendarios/synthetic-calendar/atividades');
+  await expect(page.locator('[data-open-event="local-event"]')).toBeVisible();
+  // The origin comes from the container (`state.events`), never from the `inst:` prefix; the
+  // stray `evidence` must not be shown as an automatic source.
+  await page.evaluate(() => {
+    const record = window.editorTest.record;
+    record.state.events.push({
+      id: 'inst:campus-lookalike',
+      name: 'Data local com prefixo da base',
+      start: '2027-03-11',
+      end: '2027-03-11',
+      kind: 'note',
+      category: 'evento',
+      offers: ['integrado'],
+      evidence: 'Fonte que não é da base',
+    } as (typeof record.state.events)[number]);
+    record.version++;
+    return window.publishReviewerCalendar();
+  });
+  const row = page.locator('[data-open-event="inst:campus-lookalike"]');
+  await expect(row).toContainText('Data do campus');
+  await openCampusEvent(page, 'inst:campus-lookalike');
+  const details = page.locator('.campus-event-details');
+  await expect(details).toContainText('Data local com prefixo da base');
+  await expect(details).not.toContainText('Fonte:');
+  await expect(details).not.toContainText('Data da base institucional');
+  await expect(page.locator('[data-edit-event="inst:campus-lookalike"]')).toBeEnabled();
+});

@@ -23,6 +23,7 @@ import { confirmAction } from '../../../components/confirmation.ts';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
 import { applyObservances, observanceIssues } from '#src/domain/calendar/observances.ts';
 import { evaluateCalendar } from '#src/domain/calendar/counting/evaluation.ts';
+import { projectDates } from '#src/domain/calendar/model.ts';
 import { createEditorSession } from './editor-session.ts';
 import type { CalendarRecord, CalendarState, EditorEvent } from '../types.ts';
 import EditorAccessNotice from './EditorAccessNotice.tsx';
@@ -178,7 +179,7 @@ function useSession(record: CalendarRecord) {
     ],
   );
   const events = useMemo<EditorEvent[]>(
-    () => [...institutional, ...snapshot.state.events],
+    () => projectDates(institutional, snapshot.state.events),
     [institutional, snapshot.state.events],
   );
   const evaluation = useMemo(() => {

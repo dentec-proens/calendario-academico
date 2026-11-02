@@ -171,3 +171,22 @@ export type CountingEvent = Pick<
 >;
 export type StageEvent = CountingEvent &
   Pick<CalendarEvent, 'requirementId' | 'assessmentAutoStart'>;
+
+/**
+ * Editor projection of a calendar's dates. The origin comes only from the container: every date
+ * of the institutional base (snapshot or catalogue projection) is `institutional`, and no local
+ * date (`state.events`) is, whatever its ID. The `inst:` prefix stays a key and observance target.
+ */
+export function projectDates<
+  I extends Omit<InstitutionalEventSnapshot, 'institutional'>,
+  L extends CalendarEvent,
+>(institutional: readonly I[], local: readonly L[]) {
+  return [
+    ...institutional.map((event) => ({ ...event, institutional: true as const })),
+    ...local.map((event) => {
+      if (!('institutional' in event)) return event;
+      const { institutional: _origin, ...rest } = event as L & { institutional?: unknown };
+      return rest as L;
+    }),
+  ];
+}
