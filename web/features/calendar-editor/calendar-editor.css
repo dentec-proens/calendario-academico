@@ -805,8 +805,6 @@
 }
 #event-panel #event-form {
   margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--line);
 }
 .activity-details > .activity-detail {
   margin-bottom: 0.75rem;
@@ -816,7 +814,10 @@
   margin: 0 0 1rem;
   padding: 0;
 }
-.activity-records > .activity-record {
+.activity-records > .activity-hours-total {
+  margin-block: 0 1rem;
+}
+.activity-record {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -836,19 +837,6 @@
   width: 100%;
   height: 8px;
   accent-color: var(--green);
-}
-.event-activity-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-}
-.event-activity-header > button {
-  flex: none;
-}
-.event-activity-header {
-  margin-block: 0 1rem;
 }
 .activity-summary {
   display: grid;
@@ -896,13 +884,6 @@
   font-size: 0.875rem;
   padding-block: 0.25rem;
 }
-.event-activity-header p {
-  margin: 0;
-  min-width: 0;
-}
-.event-activity-header small {
-  display: block;
-}
 .event-scope {
   margin-block: 0 1rem;
 }
@@ -938,6 +919,19 @@ fieldset.event-fields {
   cursor: pointer;
   font-weight: 700;
   padding-block: 0.5rem;
+}
+.event-more-summary {
+  display: block;
+  padding-left: 1.1rem;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+.event-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-block: 0 0.5rem;
 }
 .activity-coverage {
   display: grid;

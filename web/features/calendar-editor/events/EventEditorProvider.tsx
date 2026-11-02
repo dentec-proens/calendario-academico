@@ -42,7 +42,6 @@ function useController() {
   const [context, setContext] = useState<EventContext | null>(null);
   const [open, setOpen] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
-  const [linkUnlocked, setLinkUnlocked] = useState(false);
   // What the side panel shows besides the form: an activity to consult or an observance.
   const [panel, setPanel] = useState<
     | { kind: 'activity'; requirementId: string }
@@ -84,10 +83,19 @@ function useController() {
           Boolean(eventId),
         ),
       );
+      if (context?.kind === 'activity') {
+        // A saved period returns to the activity, where it now appears in the list.
+        setContext(null);
+        setOpen(false);
+        setEventId(null);
+        setPanel({ kind: 'activity', requirementId: context.requirementId });
+        requestAnimationFrame(() =>
+          document.querySelector<HTMLElement>('#event-panel [data-prepare-activity]')?.focus(),
+        );
+        return;
+      }
       setEventId(id);
-      setContext(
-        context?.kind === 'activity' ? { ...context, eventId: id } : { kind: 'event', eventId: id },
-      );
+      setContext({ kind: 'event', eventId: id });
     },
     {
       successMessage: (value) =>
@@ -103,7 +111,6 @@ function useController() {
     setContext(null);
     setOpen(false);
     setEventId(null);
-    setLinkUnlocked(false);
     setPanel(null);
     eventForm.reset(emptyEvent(calendarOfferIds));
     clearDraft();
@@ -183,7 +190,6 @@ function useController() {
     result.form.reset(values);
     setContext(next);
     setEventId(id);
-    setLinkUnlocked(false);
     setPanel(
       next.kind === 'activity' ? { kind: 'activity', requirementId: next.requirementId } : null,
     );
@@ -233,7 +239,6 @@ function useController() {
     setContext(null);
     setOpen(false);
     setEventId(null);
-    setLinkUnlocked(false);
     setPanel(null);
     setReturnFocus('new-event');
   }
@@ -255,6 +260,25 @@ function useController() {
       heading?.focus({ preventScroll: true });
       scrollIntoView(heading, { block: 'start' });
     });
+  }
+  /** Leave the form for the activity view; an unapplied draft stays pending, as on closing. */
+  function backToActivity() {
+    if (result.pending || context?.kind !== 'activity') return;
+    if (dirty) setOpen(false);
+    else {
+      result.form.reset(emptyEvent(calendarOfferIds));
+      result.clearDraft();
+      setContext(null);
+      setOpen(false);
+      setEventId(null);
+    }
+    setPanel({ kind: 'activity', requirementId: context.requirementId });
+    requestAnimationFrame(() =>
+      (
+        document.getElementById('panel-resume-event') ??
+        document.querySelector<HTMLElement>('#event-panel [data-prepare-activity]')
+      )?.focus(),
+    );
   }
   function changeRequirement(requirementId: string) {
     result.form.setFieldValue('requirementId', requirementId);
@@ -279,8 +303,7 @@ function useController() {
     context,
     open,
     eventId,
-    linkUnlocked,
-    unlockLink: () => setLinkUnlocked(true),
+    backToActivity,
     edit,
     prepare,
     discard,

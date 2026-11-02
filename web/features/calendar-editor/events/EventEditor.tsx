@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { categories } from '#src/domain/calendar/activities/categories.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { activityChecklist } from '#src/domain/calendar/activities/checklist.ts';
@@ -12,6 +13,12 @@ import { scrollIntoView } from '../../../scroll.ts';
 import { Button } from '../../../components/ui/Button.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
+
+const kindLabels = {
+  exclude: 'Exclui dias letivos',
+  include: 'Inclui dias letivos',
+  note: 'Sem efeito na contagem',
+};
 
 export default function EventEditor() {
   const { state, readOnly } = useCalendarEditor();
@@ -40,9 +47,8 @@ export default function EventEditor() {
   const realDate = values.publicationStatus === 'published';
   // Hours prove the annual minimum of training and planning; other activities do not ask.
   const showHours = !requirement || requirement.variant === 'hours' || Boolean(values.hours);
-  // Creating from an activity card: the link, label and effect are already known.
-  const activityCreation = editor.context?.kind === 'activity' && !editor.eventId;
-  const showLink = !activityCreation || editor.linkUnlocked;
+  // Inside an activity the link is fixed: the panel was opened from that activity.
+  const activityRecord = editor.context?.kind === 'activity';
   const offers = recordOffers(state, requirement);
   const linkOptions = checklist.filter((item) => item.variant !== 'stage');
   const freeEvent = !values.requirementId;
@@ -124,42 +130,29 @@ export default function EventEditor() {
         if (group && !group.open) group.open = true;
       }}
     >
+      {activityRecord && (
+        <button
+          type="button"
+          id="back-to-activity"
+          className="link-button event-back"
+          disabled={editor.pending}
+          onClick={editor.backToActivity}
+        >
+          <ArrowLeft size={16} aria-hidden="true" /> Voltar à atividade
+        </button>
+      )}
       <h3 id="event-form-title" ref={heading} tabIndex={-1}>
-        {editor.context?.kind === 'activity'
+        {activityRecord
           ? editor.eventId
-            ? 'Editar registro da atividade'
-            : 'Novo registro da atividade'
+            ? 'Editar período'
+            : 'Novo período'
           : editor.eventId
             ? 'Editar evento local'
             : 'Novo evento local'}
       </h3>
       <fieldset disabled={readOnly || editor.pending}>
         <fieldset className="event-fields">
-          {activityCreation && (
-            <div id="event-activity-header" className="event-activity-header">
-              {/* The activity title is the card heading right above this form. */}
-              <p>
-                <strong>Vinculado a esta atividade</strong>
-              </p>
-              {!showLink && (
-                <button
-                  type="button"
-                  id="change-event-link"
-                  className="secondary"
-                  onClick={() => {
-                    editor.unlockLink();
-                    // The button disappears; keep keyboard focus on the field it revealed.
-                    requestAnimationFrame(() =>
-                      document.getElementById('event-requirement')?.focus(),
-                    );
-                  }}
-                >
-                  Alterar vínculo
-                </button>
-              )}
-            </div>
-          )}
-          {showLink && (
+          {!activityRecord && (
             <form.Field name="requirementId">
               {(field) => (
                 <label>
@@ -181,6 +174,58 @@ export default function EventEditor() {
               )}
             </form.Field>
           )}
+          <div className="row-form">
+            <form.Field name="start">
+              {(field) => (
+                <Input
+                  field={field}
+                  label={
+                    publication
+                      ? realDate
+                        ? 'Data real de início da publicação'
+                        : 'Data prevista de início da publicação'
+                      : 'Início'
+                  }
+                  id="event-start"
+                  type="date"
+                  required
+                />
+              )}
+            </form.Field>
+            <form.Field name="end">
+              {(field) => (
+                <Input
+                  field={field}
+                  label={
+                    publication
+                      ? realDate
+                        ? 'Data real de término da publicação'
+                        : 'Data prevista de término da publicação'
+                      : 'Término'
+                  }
+                  id="event-end"
+                  type="date"
+                  required
+                />
+              )}
+            </form.Field>
+            {showHours && (
+              <form.Field name="hours">
+                {(field) => (
+                  <Input
+                    field={field}
+                    label="Carga horária do evento (horas, quando aplicável)"
+                    id="event-hours"
+                    type="number"
+                    min="0.01"
+                    max="8784"
+                    step="0.01"
+                  />
+                )}
+              </form.Field>
+            )}
+          </div>
+          <div className="row-form">{nameField}</div>
           <form.Field name="offers">
             {(field) => {
               // Offers already chosen stay visible so a legacy scope can be corrected.
@@ -221,34 +266,20 @@ export default function EventEditor() {
               );
             }}
           </form.Field>
-          {activityCreation ? (
-            <details id="event-more-options" className="event-more-options">
-              <summary>Mais opções: descrição, categoria e efeito</summary>
-              <div className="row-form">
-                {nameField}
-                {categoryField}
-                {kindField}
-              </div>
-            </details>
-          ) : askType ? (
-            <>
-              <div className="row-form">{nameField}</div>
-              {typeQuestion}
-              <details id="event-more-options" className="event-more-options">
-                <summary>Mais opções: categoria e efeito</summary>
-                <div className="row-form">
-                  {categoryField}
-                  {kindField}
-                </div>
-              </details>
-            </>
-          ) : (
+          {askType && typeQuestion}
+          <details id="event-more-options" className="event-more-options">
+            <summary>
+              Categoria e efeito
+              <span className="event-more-summary">
+                {categories.find(([id]) => id === values.category)?.[1] ?? 'Sem categoria'} ·{' '}
+                {kindLabels[values.kind as keyof typeof kindLabels] ?? 'Efeito a definir'}
+              </span>
+            </summary>
             <div className="row-form">
-              {nameField}
               {categoryField}
               {kindField}
             </div>
-          )}
+          </details>
           {(values.kind === 'exclude' || values.deadlineExtensionCause) && (
             <form.Field name="deadlineExtensionCause">
               {(field) => (
@@ -384,62 +415,15 @@ export default function EventEditor() {
               </details>
             </section>
           )}
-          <div className="row-form">
-            <form.Field name="start">
-              {(field) => (
-                <Input
-                  field={field}
-                  label={
-                    publication
-                      ? realDate
-                        ? 'Data real de início da publicação'
-                        : 'Data prevista de início da publicação'
-                      : 'Início'
-                  }
-                  id="event-start"
-                  type="date"
-                  required
-                />
-              )}
-            </form.Field>
-            <form.Field name="end">
-              {(field) => (
-                <Input
-                  field={field}
-                  label={
-                    publication
-                      ? realDate
-                        ? 'Data real de término da publicação'
-                        : 'Data prevista de término da publicação'
-                      : 'Término'
-                  }
-                  id="event-end"
-                  type="date"
-                  required
-                />
-              )}
-            </form.Field>
-            {showHours && (
-              <form.Field name="hours">
-                {(field) => (
-                  <Input
-                    field={field}
-                    label="Carga horária do evento (horas, quando aplicável)"
-                    id="event-hours"
-                    type="number"
-                    min="0.01"
-                    max="8784"
-                    step="0.01"
-                  />
-                )}
-              </form.Field>
-            )}
-          </div>
         </fieldset>
         <FormFeedback error={editor.error} />
         <FormActions preserveOnClose={editor.dirty}>
           <Button type="submit">
-            {editor.eventId ? 'Aplicar alterações' : 'Adicionar evento'}
+            {editor.eventId
+              ? 'Aplicar alterações'
+              : activityRecord
+                ? 'Adicionar período'
+                : 'Adicionar evento'}
           </Button>
           {editor.dirty && (
             <Button id="discard-event-form" variant="secondary" onClick={editor.discard}>

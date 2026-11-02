@@ -426,7 +426,7 @@ test('multi-day inclusions over a Saturday are registered but edited in Activiti
   await expect(saturday.locator('[data-edit-saturday]')).toHaveCount(0);
   await saturday.locator('button').click();
   await expect(page.locator('#saturday-panel')).toContainText(
-    'Edite este registro em Atividades e datas do campus.',
+    'Edite este registro em Atividades e datas.',
   );
   await expect(page.locator('#saturday-edit-form')).toHaveCount(0);
 });

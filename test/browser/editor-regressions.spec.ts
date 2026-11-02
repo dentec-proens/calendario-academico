@@ -16,6 +16,7 @@ test('an open event form adopts a newer confirmed value only while it has no loc
   await page.locator('[data-view="events"]').click();
   await page.locator('[data-tab="eventos"]').click();
   await editCampusEvent(page, 'local-event');
+  await page.locator('#event-more-options > summary').click();
   const category = page.locator('#event-category');
   await expect(category).toHaveValue('evento');
   const publishCategory = (value: string) =>

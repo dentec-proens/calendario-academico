@@ -40,12 +40,12 @@ export const editorPages = {
     description: 'Informe até três períodos de férias docentes do campus.',
   }),
   events: defineEditorPage('events', {
-    title: 'Atividades e datas do campus',
+    title: 'Atividades e datas',
     detail: 'Resolução e atividades do campus',
     description: 'Registre as atividades e eventos da Resolução e do campus.',
   }),
   history: defineEditorPage('history', {
-    title: 'Atividades e datas do campus',
+    title: 'Atividades e datas',
     detail: 'Resolução e atividades do campus',
     description: 'Registre as atividades e eventos da Resolução e do campus.',
   }),

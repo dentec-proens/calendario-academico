@@ -161,7 +161,7 @@ export default function SaturdaysForm() {
             <dt>Atividade</dt>
             <dd>{editing.registration!.name}</dd>
           </dl>
-          <p className="help">Edite este registro em Atividades e datas do campus.</p>
+          <p className="help">Edite este registro em Atividades e datas.</p>
         </>
       )}
     </section>

@@ -328,7 +328,7 @@ test('updating a Saturday activity trims values and rejects other records', () =
   );
   assert.throws(
     () => updateSaturdayActivity(yearState, { id: 'semana', name: 'a' }, []),
-    /Atividades e datas do campus/,
+    /Atividades e datas/,
   );
   assert.throws(() => updateSaturdayActivity(yearState, { id: 's1', name: ' ' }, []), /atividade/);
 });

@@ -84,7 +84,7 @@ for (const width of [1440, 390]) {
     );
     await expect(page.locator('#vacations > .panel > .help')).toHaveCount(0);
     await expect(page.locator('#editor-continue')).toHaveText(
-      'Continuar para atividades e datas do campus',
+      'Continuar para atividades e datas',
     );
     await expect(page.locator('#saturday-form')).toHaveCount(0);
     await page.locator('#editor-continue').click();

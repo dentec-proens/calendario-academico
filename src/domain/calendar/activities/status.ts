@@ -2,9 +2,9 @@
 export type ActivityStatus = 'pending' | 'partial' | 'complete' | 'optional' | 'unconfigured';
 
 export const activityStatusLabels: Record<ActivityStatus, string> = {
-  pending: 'Planejamento pendente',
-  partial: 'Planejamento parcial',
-  complete: 'Planejamento completo',
+  pending: 'Pendente',
+  partial: 'Parcial',
+  complete: 'Completo',
   optional: 'Opcional',
   unconfigured: 'Aplicação a confirmar',
 };

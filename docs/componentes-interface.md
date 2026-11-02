@@ -36,7 +36,7 @@ TanStack Router controla caminhos e filtros efetivos da URL. Usar links tipados 
 
 O painel Devtools só existe em desenvolvimento nas rotas permitidas com `?devtools=1`. Credenciais, links privados, arquivos e tokens ficam fora dos eventos de instrumentação. O teste do painel verifica teclado e ausência de obstrução dos controles em desktop e mobile.
 
-## Atividades e datas do campus
+## Atividades e datas
 
 A etapa 5 usa linhas compactas agrupadas, resumo e filtros de consulta na URL. `ActivityFilters` valida enums no Router e preserva os demais parâmetros ao navegar. Descrições, fontes e valores do formulário não entram na URL. `ActivityChecklist` consome a cobertura compartilhada por atividade/oferta/período: aplicabilidade, cobertura, revisão humana e execução são dimensões diferentes.
 

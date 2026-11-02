@@ -12,6 +12,8 @@ import { civilDate } from './activity-query.ts';
 import { Button } from '../../../components/ui/Button.tsx';
 import IntakeRequirementForm from '../forms/IntakeRequirementForm.tsx';
 
+const formatHours = (hours: number) => `${hours.toLocaleString('pt-BR')} h`;
+
 /** What the side panel shows about one activity: its status, offers and registered records. */
 export default function ActivityDetails({
   item,
@@ -32,7 +34,21 @@ export default function ActivityDetails({
   };
   const registered = state.events.filter((event) => event.requirementId === item.id);
   const stage = item.variant === 'stage';
-  const preparing = editor.open && editor.context?.kind === 'activity' && !editor.eventId;
+  // Hours are summed per offer, since each period may cover a different set of offers.
+  const showHours = Boolean(item.minHours) || registered.some((event) => event.hours);
+  const hourTotals = offerIds(state)
+    .map((offerId) => ({
+      offerId,
+      hours: registered
+        .filter((event) => (event.offers ?? offerIds(state)).includes(offerId))
+        .reduce((sum, event) => sum + (event.hours ?? 0), 0),
+    }))
+    .filter((total) =>
+      registered.some((event) => (event.offers ?? offerIds(state)).includes(total.offerId)),
+    );
+  const sameTotal = new Set(hourTotals.map((total) => total.hours)).size === 1;
+  // The form replaces the activity view; Voltar à atividade brings it back.
+  if (editor.open && editor.context?.kind === 'activity') return null;
   return (
     <div className="activity-details" data-activity-details={item.id}>
       <p className="activity-meta">
@@ -115,6 +131,7 @@ export default function ActivityDetails({
                   {(event.offers ?? offerIds(state))
                     .map((modality) => labelFor(state, modality))
                     .join(', ')}
+                  {showHours ? ` · ${formatHours(event.hours ?? 0)}` : ''}
                   {event.publicationStatus === 'planned'
                     ? ' · Publicação prevista'
                     : event.publicationStatus === 'published'
@@ -136,7 +153,7 @@ export default function ActivityDetails({
                   type="button"
                   variant="secondary"
                   data-edit-activity-event={event.id}
-                  disabled={readOnly || (editor.open && editor.eventId === event.id)}
+                  disabled={readOnly}
                   aria-label={`Editar ${event.name}`}
                   onClick={() => editor.edit(event.id)}
                 >
@@ -167,16 +184,25 @@ export default function ActivityDetails({
           ))}
         </ul>
       )}
-      {!preparing && (
-        <Button
-          type="button"
-          data-prepare-activity={item.id}
-          disabled={readOnly}
-          onClick={() => editor.prepare(item.id)}
-        >
-          {registered.length ? 'Adicionar outro período' : 'Preencher atividade'}
-        </Button>
+      {showHours && registered.length > 0 && (
+        <p className="activity-hours-total" data-activity-hours={item.id}>
+          <strong>Carga horária registrada: </strong>
+          {sameTotal
+            ? formatHours(hourTotals[0].hours)
+            : hourTotals
+                .map((total) => `${labelFor(state, total.offerId)} ${formatHours(total.hours)}`)
+                .join(' · ')}
+          {item.minHours ? ` (mínimo de ${formatHours(item.minHours)})` : ''}
+        </p>
       )}
+      <Button
+        type="button"
+        data-prepare-activity={item.id}
+        disabled={readOnly}
+        onClick={() => editor.prepare(item.id)}
+      >
+        {registered.length ? 'Adicionar período' : 'Preencher atividade'}
+      </Button>
     </div>
   );
 }

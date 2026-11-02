@@ -17,7 +17,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
     const heading = page.locator('#editor-section-title');
-    await expect(heading).toHaveText('Atividades e datas do campus');
+    await expect(heading).toHaveText('Atividades e datas');
     const headingVisibility = await heading.evaluate((element) => {
       const bounds = element.getBoundingClientRect();
       const top = Math.max(0, bounds.top);

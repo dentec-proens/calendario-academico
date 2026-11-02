@@ -98,9 +98,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
       ),
     )
     .toBe('2026-12-01');
-  await expect(page.locator('[data-activity-row="admission-notice-0"]')).toContainText(
-    'Planejamento completo',
-  );
+  await expect(page.locator('[data-activity-row="admission-notice-0"]')).toContainText('Completo');
   await page.locator('#close-event-panel').click();
   await openActivity(page, 'regular-admission-notice');
   await expect(page.locator('#event-admission-year')).toHaveValue('2028');
@@ -320,6 +318,8 @@ test('annual integrated and semester undergraduate offers keep independent overl
     .toBe(3);
   await selectEditorSection(page, 'events');
   await openActivity(page, 'registration-2');
+  // Without records the form opens first; the local rule belongs to the activity view.
+  await page.locator('#back-to-activity').click();
   await page.getByText('Exigência por regra local', { exact: true }).click();
   await page.locator('#intake-graduacao-second-required').check();
 
@@ -346,6 +346,8 @@ test('annual integrated and semester undergraduate offers keep independent overl
     ['enrolment-0', 'Técnico integrado: Opcional'],
   ]) {
     await openActivity(page, activity);
+    const back = page.locator('#back-to-activity');
+    if (await back.isVisible()) await back.click();
     await expect(details).toContainText(text);
     await page.locator('#close-event-panel').click();
   }

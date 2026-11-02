@@ -137,7 +137,7 @@ async function chooseNoticeType(page: Page) {
   await page.locator('#event-type-notice').check();
 }
 
-test('activity creation shows the known link as context and keeps it changeable', async ({
+test('a new activity period asks for dates first and keeps category and effect collapsed', async ({
   page,
   fixtureServer,
 }) => {
@@ -147,92 +147,77 @@ test('activity creation shows the known link as context and keeps it changeable'
     .locator('[data-activity-row="family-meeting"] .activity-row-name')
     .textContent())!.trim();
   await openActivity(page, 'family-meeting');
-  await expect(page.locator('#event-activity-header')).toContainText('Vinculado a esta atividade');
-  await expect(page.locator('#event-activity-header')).not.toContainText(title);
-  await expect(page.locator('#event-hours')).toHaveCount(0);
+  await expect(page.locator('#event-form-title')).toHaveText('Novo período');
+  await expect(page.locator('#back-to-activity')).toBeVisible();
+  // The panel was opened from this activity, so the link is not offered for change.
   await expect(page.locator('#event-requirement')).toHaveCount(0);
+  await expect(page.locator('#change-event-link')).toHaveCount(0);
+  await expect(page.locator('#event-hours')).toHaveCount(0);
   await expect(page.locator('#event-record-type')).toHaveCount(0);
   await expect(page.locator('#event-modalities')).toHaveText(/Técnico integrado/);
   await expect(page.locator('#event-modalities input')).toHaveCount(0);
+  await expect(page.locator('#event-name')).toHaveValue(title);
   await expect(page.locator('#event-more-options')).not.toHaveAttribute('open');
-  await expect(page.locator('#event-name')).toBeHidden();
+  await expect(page.locator('#event-kind')).toBeHidden();
 
   // A field hidden in the collapsed group is revealed when the browser rejects it.
   await page.locator('#event-more-options > summary').click();
-  await page.locator('#event-name').fill('');
+  await page.locator('#event-kind').selectOption('');
   await page.locator('#event-more-options > summary').click();
   await page.locator('#event-start').fill('2027-05-08');
   await page.locator('#event-end').fill('2027-05-08');
 
   await applyEvent(page);
   await expect(page.locator('#event-more-options')).toHaveAttribute('open', '');
-  await expect(page.locator('#event-name')).toBeFocused();
+  await expect(page.locator('#event-kind')).toBeFocused();
   expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(2);
 });
 
-test('changing the activity link keeps the filled values until it is applied or removed', async ({
+test('going back to the activity keeps an unapplied period pending and a saved one listed', async ({
   page,
   fixtureServer,
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await selectEditorSection(page, 'events');
-  const title = (await page
-    .locator('[data-activity-row="family-meeting"] .activity-row-name')
-    .textContent())!.trim();
   await openActivity(page, 'family-meeting');
   await page.locator('#event-start').fill('2027-06-12');
   await page.locator('#event-end').fill('2027-06-12');
 
-  await page.locator('#change-event-link').focus();
-  await page.keyboard.press('Enter');
-  await expect(page.locator('#event-requirement')).toBeFocused();
-  await page.locator('#event-requirement').selectOption('alumni-meeting');
-  await expect(page.locator('#event-panel #event-form')).toBeVisible();
-  await expect(page.locator('#event-panel-title')).toContainText('egressos');
-  await expect(page.locator('#event-form')).toHaveCount(1);
+  await page.locator('#back-to-activity').click();
+  await expect(page.locator('#event-form')).toBeHidden();
+  await expect(page.locator('#panel-pending-event')).toBeVisible();
+  await expect(page.locator('#panel-resume-event')).toBeFocused();
+  await page.locator('#panel-resume-event').click();
   await expect(page.locator('#event-start')).toHaveValue('2027-06-12');
-  await expect(page.locator('#event-evidence')).toHaveCount(0);
 
-  await page.locator('#close-event-panel').click();
-  await expect(page.locator('#event-panel')).toBeHidden();
-  await selectCampusEvents(page);
-  await page.locator('#new-event').click();
-  await expect(page.locator('#pending-event')).toBeVisible();
-  await page.locator('#resume-pending-event').click();
-  await expect(page.locator('#event-requirement')).toHaveValue('alumni-meeting');
-  await expect(page.locator('#event-end')).toHaveValue('2027-06-12');
   await applyEvent(page);
   await expect
     .poll(() =>
       page.evaluate(
         () =>
           window.editorTest.record.state.events.find(
-            (event) => event.requirementId === 'alumni-meeting',
+            (event) => event.requirementId === 'family-meeting',
           )?.start,
       ),
     )
     .toBe('2027-06-12');
-  const linked = await savedEvent(page, (_, id) => !['local-event', 'activity-event'].includes(id));
-  // The description chosen at creation is not replaced by the new activity's name.
-  expect(linked).toMatchObject({ name: title, start: '2027-06-12', end: '2027-06-12' });
+  // Saving returns to the activity, where the new period is listed.
+  await expect(page.locator('#event-form')).toBeHidden();
+  await expect(page.locator('#event-panel .activity-records')).toContainText('12/06/2027');
+  await expect(page.locator('#event-panel [data-prepare-activity]')).toHaveText(
+    'Adicionar período',
+  );
+  await expect(page.locator('#event-panel [data-prepare-activity]')).toBeFocused();
 
-  await page.locator('#close-event-panel').click();
-  await openActivity(page, 'alumni-meeting');
-  await page.locator(`[data-edit-activity-event="${linked!.id}"]`).click();
-  await page.locator('#event-requirement').selectOption('');
-  await applyEvent(page);
-  await expect
-    .poll(() =>
-      page.evaluate(
-        (id) =>
-          window.editorTest.record.state.events.find((event) => event.id === id)?.requirementId,
-        linked!.id,
-      ),
-    )
-    .toBeUndefined();
-  await expect(page.locator('#event-list')).toContainText(title);
-  const unlinked = await savedEvent(page, (_, id) => id === linked!.id);
-  expect(unlinked).toMatchObject({ ...linked, requirementId: undefined });
+  const saved = await savedEvent(page, (_, id) => !['local-event', 'activity-event'].includes(id));
+  await page.locator(`[data-edit-activity-event="${saved!.id}"]`).click();
+  await expect(page.locator('#event-form-title')).toHaveText('Editar período');
+  await expect(page.locator('#event-panel .activity-records')).toHaveCount(0);
+  await expect(page.locator('#event-requirement')).toHaveCount(0);
+  await page.locator('#back-to-activity').click();
+  await expect(page.locator('#event-form')).toBeHidden();
+  await expect(page.locator('#panel-pending-event')).toHaveCount(0);
+  await expect(page.locator('#event-panel .activity-records')).toContainText('12/06/2027');
 });
 
 test('the free event form opens in the side panel with a labelled offer group', async ({
@@ -348,6 +333,8 @@ test('a record with a freely combined effect and category shows both fields when
   await selectCampusEvents(page);
   await editCampusEvent(page, 'free-combination');
   await expect(page.locator('#event-type')).toHaveCount(0);
+  await expect(page.locator('#event-more-options > summary')).toContainText('Exclui dias letivos');
+  await page.locator('#event-more-options > summary').click();
   await expect(page.locator('#event-kind')).toBeVisible();
   await expect(page.locator('#event-kind')).toHaveValue('exclude');
   await expect(page.locator('#event-category')).toHaveValue('formacao');
@@ -598,4 +585,31 @@ test('the complete record list stays out of the printed calendar', async ({
   await page.emulateMedia({ media: 'print' });
   await expect(page.locator('#calendar-records')).toBeHidden();
   await expect(page.locator('#months .proens-document')).toBeVisible();
+});
+
+test('an hours activity lists the hours of each period and their registered total', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await selectEditorSection(page, 'events');
+  await openActivity(page, 'pedagogical-training');
+  for (const [date, hours] of [
+    ['2027-05-04', '12'],
+    ['2027-05-10', '8.5'],
+  ]) {
+    const prepare = page.locator('#event-panel [data-prepare-activity]');
+    if (await prepare.isVisible()) await prepare.click();
+    await page.locator('#event-start').fill(date);
+    await page.locator('#event-end').fill(date);
+    await page.locator('#event-hours').fill(hours);
+    await applyEvent(page);
+    await expect(page.locator('#event-form')).toBeHidden();
+  }
+  const records = page.locator('#event-panel .activity-record');
+  await expect(records.nth(0)).toContainText('· 12 h');
+  await expect(records.nth(1)).toContainText('· 8,5 h');
+  await expect(page.locator('[data-activity-hours="pedagogical-training"]')).toHaveText(
+    'Carga horária registrada: 20,5 h (mínimo de 40 h)',
+  );
 });
