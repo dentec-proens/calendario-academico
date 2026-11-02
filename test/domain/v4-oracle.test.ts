@@ -123,11 +123,11 @@ test.each(cases.map((item, index) => [item.name, index] as const))(
   },
 );
 
-test('submissions keep their stored hash; one equals the current content and one differs', () => {
+test('submissions keep their stored hash; some equal the current content and one differs', () => {
   const submissions = oracle.cases.flatMap((item) => item.submissions);
   for (const submission of submissions)
     expect(submission.contentHash).toBe(submission.storedContentHash);
-  expect(submissions.map((submission) => submission.equalToContent)).toEqual([true, false]);
+  expect(submissions.map((submission) => submission.equalToContent)).toEqual([true, false, true]);
 });
 
 test('the oracle records the 21 audited links of section 11 under review', () => {

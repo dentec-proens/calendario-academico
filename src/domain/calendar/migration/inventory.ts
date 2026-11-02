@@ -406,6 +406,29 @@ export const v4StorageFields = {
     ],
     optional: ['previousSubmissionId'],
   },
+  document: {
+    required: [
+      'id',
+      'year',
+      'type',
+      'title',
+      'source',
+      'hash',
+      'filename',
+      'status',
+      'version',
+      'createdAt',
+    ],
+    optional: [
+      'storageId',
+      'unavailableFile',
+      'size',
+      'createdBy',
+      'publishedAt',
+      'publishedBy',
+      'archivedAt',
+    ],
+  },
   institutionalEvent: {
     required: [
       'code',
@@ -447,7 +470,7 @@ class Collector {
 export function classifyRequirementId(
   requirementId: string,
   year: number,
-  offers: readonly { id: string; organization: string; stageCount?: number }[] = [],
+  offers: readonly OfferShape[] = [],
 ): LinkShape {
   const policy = v4PolicyYears[year];
   const attempts: [DeclarationCatalogue, LinkOrigin][] = policy
@@ -459,6 +482,8 @@ export function classifyRequirementId(
   for (const [catalogue, origin] of attempts) {
     const match = matchDeclaration(v4Declarations[catalogue], requirementId);
     if (!match) continue;
+    if (catalogue !== 'operational' && conflictsWithLegacyRow(match, requirementId, offers))
+      continue;
     const link: LinkShape = { requirementId, origin, ...match };
     if (match.base !== 'stage') return link;
     const offer = offers.find((item) => item.id === match.offerId);
@@ -499,7 +524,37 @@ function matchDeclaration(
 interface OfferShape {
   id: string;
   organization: string;
+  kind?: string;
   stageCount?: number;
+}
+
+/** Modalities the 2027 policy leaves out of its rows (frozen from the v4 policy). */
+const v4PolicyExcludedKinds: readonly string[] = ['posgraduacao'];
+
+/**
+ * In a policy year, an ID such as `enrolment-1` is declared by the policy as a cycle and by the
+ * operational catalogue as a semester. The v4 policy generated a cycle row only for the terms of
+ * its supported offers (annual for `anual`, first and second for `semestral`, none for
+ * `a-classificar`); otherwise v4 kept the operational row (“Classificação legada”) under the same
+ * ID. Reading the policy cycle then would silently turn a reference semester into a cycle, so the
+ * link is read by the row v4 actually generated for the organisation of the state.
+ */
+function conflictsWithLegacyRow(
+  match: Omit<LinkShape, 'requirementId' | 'origin'>,
+  requirementId: string,
+  offers: readonly OfferShape[],
+): boolean {
+  if (match.base !== 'cycle') return false;
+  const operational = matchDeclaration(v4Declarations.operational, requirementId);
+  if (!operational || operational.base === match.base) return false;
+  const generated = offers.some(
+    (offer) =>
+      !v4PolicyExcludedKinds.includes(offer.kind ?? '') &&
+      (match.term === 'annual'
+        ? offer.organization === 'anual'
+        : offer.organization === 'semestral'),
+  );
+  return !generated;
 }
 
 function readOffers(value: unknown, path: string, out: Collector): OfferShape[] {
@@ -544,6 +599,7 @@ function readOffers(value: unknown, path: string, out: Collector): OfferShape[] 
     return {
       id,
       organization,
+      kind: offer.kind as string,
       stageCount:
         perTerm === undefined
           ? undefined
@@ -814,19 +870,25 @@ function readSnapshot(value: unknown, path: string, out: Collector) {
 function readDocuments(value: unknown, path: string) {
   for (const [index, item] of list(value, path).entries()) {
     const at = `${path}[${index}]`;
-    const document = record(item, at, [
-      'id',
-      'year',
-      'type',
-      'title',
-      'source',
-      'hash',
-      'filename',
-    ]);
+    const document = stored('document', item, at);
     text(document.id, `${at}.id`);
     number(document.year, `${at}.year`);
     literal(document.type, `${at}.type`, ['norma', 'referencia', 'parecer']);
     for (const key of ['title', 'source', 'hash', 'filename']) text(document[key], `${at}.${key}`);
+    literal(document.status, `${at}.status`, ['rascunho', 'vigente', 'arquivado']);
+    for (const key of ['version', 'createdAt']) number(document[key], `${at}.${key}`);
+    for (const key of ['size', 'publishedAt', 'archivedAt'])
+      if (document[key] !== undefined) number(document[key], `${at}.${key}`);
+    for (const key of ['storageId', 'createdBy', 'publishedBy'])
+      optionalText(document[key], `${at}.${key}`);
+    if (document.unavailableFile !== undefined) {
+      const file = record(document.unavailableFile, `${at}.unavailableFile`, [
+        'sourceReference',
+        'reason',
+      ]);
+      text(file.sourceReference, `${at}.unavailableFile.sourceReference`);
+      literal(file.reason, `${at}.unavailableFile.reason`, ['not_migrated']);
+    }
   }
 }
 

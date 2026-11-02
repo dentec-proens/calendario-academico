@@ -5,6 +5,7 @@ import schema from '../../convex/schema.ts';
 import {
   calendarOffer,
   contentState,
+  documentSnapshot,
   event as localEvent,
   institutionalEvent,
   period as storedPeriod,
@@ -87,10 +88,29 @@ describe('frozen declarations', () => {
       base: 'cycle',
       term: 'annual',
     });
-    expect(classifyRequirementId('enrolment-1', 2027)).toMatchObject({
+    // `enrolment-1` is a policy cycle only when the policy generated that cycle (a supported
+    // semester offer); otherwise v4 kept the operational semester row under the same ID.
+    const semesterOffer = [{ id: 'graduacao', kind: 'graduacao', organization: 'semestral' }];
+    expect(classifyRequirementId('enrolment-1', 2027, semesterOffer)).toMatchObject({
+      origin: 'consup-292-2027',
       base: 'cycle',
       term: 'first',
     });
+    for (const offers of [
+      [{ id: 'integrado', kind: 'integrado', organization: 'anual' }],
+      [{ id: 'integrado', kind: 'integrado', organization: 'a-classificar' }],
+      [{ id: 'pos', kind: 'posgraduacao', organization: 'semestral' }],
+    ])
+      expect(classifyRequirementId('adjustment-2', 2027, offers), offers[0].id).toMatchObject({
+        origin: 'legacy-operational',
+        base: 'semester',
+        semester: 'second',
+      });
+    expect(
+      classifyRequirementId('withdrawal-0', 2027, [
+        { id: 'integrado', kind: 'integrado', organization: 'anual' },
+      ]),
+    ).toMatchObject({ origin: 'consup-292-2027', base: 'cycle', term: 'annual' });
     expect(classifyRequirementId('enrolment-1', 2026)).toMatchObject({
       base: 'semester',
       semester: 'first',
@@ -196,6 +216,7 @@ test('accepted fields are exactly those of the v4 storage validators', () => {
   expect(accepted('state')).toEqual(fields(contentState.fields));
   expect(accepted('content')).toEqual(table('calendarContents'));
   expect(accepted('submission')).toEqual(table('calendarSubmissions'));
+  expect(accepted('document')).toEqual(fields(documentSnapshot.fields));
   expect(accepted('institutionalEvent')).toEqual(table('institutionalEvents'));
 });
 
@@ -213,7 +234,6 @@ describe('inventory of the frozen v4 documents', () => {
         'catalogue.active:false',
         'catalogue.kind:include',
         'event.requirementId:legacy-operational:once',
-        'event.requirementId:legacy-operational:semester',
         'snapshot.kind:include',
         'snapshot.notice:present',
         'snapshot.offers:absent',
@@ -240,6 +260,26 @@ describe('inventory of the frozen v4 documents', () => {
     expect(inventory.forms['event.admission:absent']).toBe(
       audited.reduce((total, item) => total + item.content.state.events.length, 0),
     );
+  });
+
+  test('a semester link kept by v4 as legacy in a 2027 annual calendar stays a semester to review', () => {
+    const item = byName('Vínculo semestral legado em 2027 só anual, com documentos');
+    const state = { ...item.content.state, year: item.year, campus: item.campus };
+    const row = activityChecklist(state as unknown as ActivityState).find(
+      (entry) => entry.id === 'enrolment-1',
+    );
+    expect(row?.basis).toBe('Classificação legada');
+    const inventory = contentInventory(item);
+    expect(inventory.links.find(({ link }) => link.requirementId === 'enrolment-1')?.link).toEqual({
+      requirementId: 'enrolment-1',
+      origin: 'legacy-operational',
+      declaration: 'enrolment',
+      base: 'semester',
+      semester: 'first',
+    });
+    expect(inventory.forms['event.requirementId:legacy-operational:semester']).toBe(1);
+    expect(item.content.documentSnapshot).toHaveLength(2);
+    expect(inventorySubmission(item.submissions[0], { year: item.year }).blocking).toEqual([]);
   });
 
   test('a materialized offer list is a candidate without a submission and proven with one', () => {
@@ -295,6 +335,8 @@ describe('inventory of the frozen v4 documents', () => {
 
 describe('a shape outside the inventory stops it', () => {
   const base = byName('Formas adicionais do inventário');
+  const documentItem = byName('Vínculo semestral legado em 2027 só anual, com documentos').content
+    .documentSnapshot[0];
   const event = (content: V4Case['content'], id: string) =>
     content.state.events.find((item) => item.id === id)!;
   const injected: [string, (content: V4Case['content']) => void][] = [
@@ -343,7 +385,29 @@ describe('a shape outside the inventory stops it', () => {
         }),
     ],
     ['date without zero padding', (c) => void (event(c, 'forms-pit').start = '2027-8-2')],
+    ...(
+      [
+        ['unknown document field', { activity: 'pit' }],
+        ['document status', { status: 'publicado' }],
+        ['document without version', { version: undefined }],
+        ['unavailable file reason', { unavailableFile: { sourceReference: 'x', reason: 'lost' } }],
+      ] as const
+    ).map(([name, change]): [string, (content: V4Case['content']) => void] => [
+      name,
+      (c) => {
+        const document: Record<string, unknown> = { ...documentItem, ...change };
+        for (const key of Object.keys(document))
+          if (document[key] === undefined) delete document[key];
+        c.documentSnapshot.push(document);
+      },
+    ]),
   ];
+  test('a valid document is accepted', () => {
+    const content = copy(base.content);
+    content.documentSnapshot.push({ ...documentItem });
+    expect(() => inventoryContent(content, { year: base.year })).not.toThrow();
+  });
+
   test.each(injected)('%s', (_name, inject) => {
     const content = copy(base.content);
     expect(() => inventoryContent(content, { year: base.year })).not.toThrow();

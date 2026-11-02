@@ -5852,6 +5852,368 @@
         "documentSnapshot": []
       },
       "submissions": []
+    },
+    {
+      "name": "Vínculo semestral legado em 2027 só anual, com documentos",
+      "source": "src/domain/policies/consup-292-2027/requirements.ts#requirements (linha legada) e convex/documents/model.ts#documentValue",
+      "year": 2027,
+      "campus": "Campus sintético",
+      "content": {
+        "calendarId": "calendar-29",
+        "state": {
+          "schemaVersion": 4,
+          "rulesetVersion": "consup-292-2027-v2",
+          "offers": [
+            {
+              "id": "integrado",
+              "kind": "integrado",
+              "delivery": "a-conferir",
+              "organization": "anual",
+              "stages": {
+                "perTerm": 4
+              },
+              "scope": {
+                "status": "covered"
+              },
+              "intake": {
+                "annual": {
+                  "status": "yes",
+                  "required": true
+                },
+                "first": {
+                  "status": "no",
+                  "required": false
+                },
+                "second": {
+                  "status": "yes",
+                  "required": true
+                }
+              }
+            }
+          ],
+          "weekdays": [1, 2, 3, 4, 5],
+          "weekConfirmed": true,
+          "periods": [
+            {
+              "id": "integrado-annual",
+              "name": "Ano letivo — integrado",
+              "start": "2027-02-01",
+              "end": "2027-12-17",
+              "association": {
+                "status": "defined",
+                "offers": ["integrado"],
+                "term": "annual"
+              }
+            }
+          ],
+          "events": [
+            {
+              "id": "integrado-stage-1",
+              "name": "1ª etapa sintética",
+              "start": "2027-02-01",
+              "end": "2027-04-16",
+              "kind": "note",
+              "category": "limite",
+              "requirementId": "stage-1:integrado",
+              "offers": ["integrado"]
+            },
+            {
+              "id": "integrado-stage-2",
+              "name": "2ª etapa sintética",
+              "start": "2027-04-19",
+              "end": "2027-06-30",
+              "kind": "note",
+              "category": "limite",
+              "requirementId": "stage-2:integrado",
+              "offers": ["integrado"]
+            },
+            {
+              "id": "integrado-stage-3",
+              "name": "3ª etapa sintética",
+              "start": "2027-08-02",
+              "end": "2027-10-01",
+              "kind": "note",
+              "category": "limite",
+              "requirementId": "stage-3:integrado",
+              "offers": ["integrado"]
+            },
+            {
+              "id": "integrado-stage-4",
+              "name": "4ª etapa sintética",
+              "start": "2027-10-04",
+              "end": "2027-12-17",
+              "kind": "note",
+              "category": "limite",
+              "requirementId": "stage-4:integrado",
+              "offers": ["integrado"]
+            },
+            {
+              "id": "saturday",
+              "name": "Inclusão de sábado sintética",
+              "start": "2027-02-06",
+              "end": "2027-02-06",
+              "kind": "include",
+              "offers": ["integrado"]
+            },
+            {
+              "id": "saturday-blocker",
+              "name": "Impedimento sintético",
+              "start": "2027-02-06",
+              "end": "2027-02-06",
+              "kind": "exclude",
+              "offers": ["integrado"]
+            },
+            {
+              "id": "community",
+              "name": "Reunião com a comunidade sintética",
+              "start": "2027-04-20",
+              "end": "2027-04-20",
+              "kind": "note",
+              "requirementId": "family-meeting",
+              "offers": ["integrado"]
+            },
+            {
+              "id": "implicit-note",
+              "name": "Registro sem escopo explícito sintético",
+              "start": "2027-05-03",
+              "end": "2027-05-03",
+              "kind": "note"
+            },
+            {
+              "id": "legacy-enrolment",
+              "name": "Rematrícula sintética — 1º semestre",
+              "start": "2027-07-12",
+              "end": "2027-07-16",
+              "kind": "note",
+              "requirementId": "enrolment-1",
+              "offers": ["integrado"]
+            }
+          ]
+        },
+        "catalogueRevision": 0,
+        "institutionalSnapshot": [],
+        "documentSnapshot": [
+          {
+            "id": "document-norma-2027",
+            "year": 2027,
+            "type": "norma",
+            "title": "Norma sintética do calendário",
+            "source": "Resolução sintética",
+            "storageId": "storage-synthetic-1",
+            "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "filename": "norma-sintetica.pdf",
+            "size": 1024,
+            "status": "vigente",
+            "version": 2,
+            "createdAt": 1790000000000,
+            "createdBy": "user-synthetic",
+            "publishedAt": 1790100000000,
+            "publishedBy": "user-synthetic"
+          },
+          {
+            "id": "document-parecer-2027",
+            "year": 2027,
+            "type": "parecer",
+            "title": "Parecer sintético sem arquivo migrado",
+            "source": "Parecer sintético",
+            "unavailableFile": {
+              "sourceReference": "arquivo-legado/parecer.pdf",
+              "reason": "not_migrated"
+            },
+            "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "filename": "parecer-sintetico.pdf",
+            "status": "arquivado",
+            "version": 1,
+            "createdAt": 1789000000000,
+            "archivedAt": 1790200000000
+          }
+        ]
+      },
+      "submissions": [
+        {
+          "calendarId": "calendar-29",
+          "sequence": 1,
+          "submittedAt": 1793491200000,
+          "submittedBy": {
+            "id": "user-synthetic",
+            "name": "Pessoa sintética"
+          },
+          "submittedFrom": "rascunho",
+          "contentVersion": 1,
+          "contentHash": "4cc323fca3455257200db562905d434cf945bd90cdcf74280937933479e9ab12",
+          "state": {
+            "schemaVersion": 4,
+            "rulesetVersion": "consup-292-2027-v2",
+            "offers": [
+              {
+                "id": "integrado",
+                "kind": "integrado",
+                "delivery": "a-conferir",
+                "organization": "anual",
+                "stages": {
+                  "perTerm": 4
+                },
+                "scope": {
+                  "status": "covered"
+                },
+                "intake": {
+                  "annual": {
+                    "status": "yes",
+                    "required": true
+                  },
+                  "first": {
+                    "status": "no",
+                    "required": false
+                  },
+                  "second": {
+                    "status": "yes",
+                    "required": true
+                  }
+                }
+              }
+            ],
+            "weekdays": [1, 2, 3, 4, 5],
+            "weekConfirmed": true,
+            "periods": [
+              {
+                "id": "integrado-annual",
+                "name": "Ano letivo — integrado",
+                "start": "2027-02-01",
+                "end": "2027-12-17",
+                "association": {
+                  "status": "defined",
+                  "offers": ["integrado"],
+                  "term": "annual"
+                }
+              }
+            ],
+            "events": [
+              {
+                "id": "integrado-stage-1",
+                "name": "1ª etapa sintética",
+                "start": "2027-02-01",
+                "end": "2027-04-16",
+                "kind": "note",
+                "category": "limite",
+                "requirementId": "stage-1:integrado",
+                "offers": ["integrado"]
+              },
+              {
+                "id": "integrado-stage-2",
+                "name": "2ª etapa sintética",
+                "start": "2027-04-19",
+                "end": "2027-06-30",
+                "kind": "note",
+                "category": "limite",
+                "requirementId": "stage-2:integrado",
+                "offers": ["integrado"]
+              },
+              {
+                "id": "integrado-stage-3",
+                "name": "3ª etapa sintética",
+                "start": "2027-08-02",
+                "end": "2027-10-01",
+                "kind": "note",
+                "category": "limite",
+                "requirementId": "stage-3:integrado",
+                "offers": ["integrado"]
+              },
+              {
+                "id": "integrado-stage-4",
+                "name": "4ª etapa sintética",
+                "start": "2027-10-04",
+                "end": "2027-12-17",
+                "kind": "note",
+                "category": "limite",
+                "requirementId": "stage-4:integrado",
+                "offers": ["integrado"]
+              },
+              {
+                "id": "saturday",
+                "name": "Inclusão de sábado sintética",
+                "start": "2027-02-06",
+                "end": "2027-02-06",
+                "kind": "include",
+                "offers": ["integrado"]
+              },
+              {
+                "id": "saturday-blocker",
+                "name": "Impedimento sintético",
+                "start": "2027-02-06",
+                "end": "2027-02-06",
+                "kind": "exclude",
+                "offers": ["integrado"]
+              },
+              {
+                "id": "community",
+                "name": "Reunião com a comunidade sintética",
+                "start": "2027-04-20",
+                "end": "2027-04-20",
+                "kind": "note",
+                "requirementId": "family-meeting",
+                "offers": ["integrado"]
+              },
+              {
+                "id": "implicit-note",
+                "name": "Registro sem escopo explícito sintético",
+                "start": "2027-05-03",
+                "end": "2027-05-03",
+                "kind": "note"
+              },
+              {
+                "id": "legacy-enrolment",
+                "name": "Rematrícula sintética — 1º semestre",
+                "start": "2027-07-12",
+                "end": "2027-07-16",
+                "kind": "note",
+                "requirementId": "enrolment-1",
+                "offers": ["integrado"]
+              }
+            ]
+          },
+          "catalogueRevision": 0,
+          "institutionalSnapshot": [],
+          "documentSnapshot": [
+            {
+              "id": "document-norma-2027",
+              "year": 2027,
+              "type": "norma",
+              "title": "Norma sintética do calendário",
+              "source": "Resolução sintética",
+              "storageId": "storage-synthetic-1",
+              "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "filename": "norma-sintetica.pdf",
+              "size": 1024,
+              "status": "vigente",
+              "version": 2,
+              "createdAt": 1790000000000,
+              "createdBy": "user-synthetic",
+              "publishedAt": 1790100000000,
+              "publishedBy": "user-synthetic"
+            },
+            {
+              "id": "document-parecer-2027",
+              "year": 2027,
+              "type": "parecer",
+              "title": "Parecer sintético sem arquivo migrado",
+              "source": "Parecer sintético",
+              "unavailableFile": {
+                "sourceReference": "arquivo-legado/parecer.pdf",
+                "reason": "not_migrated"
+              },
+              "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "filename": "parecer-sintetico.pdf",
+              "status": "arquivado",
+              "version": 1,
+              "createdAt": 1789000000000,
+              "archivedAt": 1790200000000
+            }
+          ],
+          "offerKinds": ["integrado"],
+          "campusName": "Campus de referência sintético",
+          "decisions": []
+        }
+      ]
     }
   ]
 }
