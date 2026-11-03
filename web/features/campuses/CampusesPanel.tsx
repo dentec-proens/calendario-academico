@@ -1,6 +1,6 @@
 import { Button } from '../../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
-import { Building2, CalendarDays } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { institution } from '../../shared/convex/institution.ts';
 import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
 import { useRouteForm } from '../../app/navigation.ts';
@@ -69,10 +69,7 @@ export default function CampusesPanel({
                   </label>
                 )}
               </form.Field>
-              <Button type="submit">
-                <Building2 aria-hidden="true" size={18} />
-                Cadastrar
-              </Button>
+              <Button type="submit">Cadastrar</Button>
             </fieldset>
             <FormFeedback error={error} />
           </form>
@@ -89,7 +86,12 @@ export default function CampusesPanel({
                   {info.users.filter((user) => user.campusId === campus.id).length} conta(s)
                 </small>
               </div>
-              <Button type="button" data-campus={campus.id} onClick={() => onCampus(campus.id)}>
+              <Button
+                type="button"
+                variant="secondary"
+                data-campus={campus.id}
+                onClick={() => onCampus(campus.id)}
+              >
                 <CalendarDays aria-hidden="true" size={18} />
                 Ver calendários
               </Button>

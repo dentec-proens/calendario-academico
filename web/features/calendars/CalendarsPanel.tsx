@@ -80,7 +80,7 @@ export default function CalendarsPanel({
       <Link
         to="/calendarios/$calendarId/editar"
         params={{ calendarId: calendar.id }}
-        className="ui-button ui-button--primary"
+        className={`ui-button ui-button--${view === 'table' ? 'secondary' : 'primary'}`}
       >
         {isEditable(calendar.status) ? (
           <>

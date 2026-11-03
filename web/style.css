@@ -9,8 +9,8 @@
     -apple-system,
     Segoe UI,
     sans-serif;
-  color: #172b25;
-  background: #f3f6f5;
+  color: var(--ui-text);
+  background: var(--ui-surface-muted);
   font-size: 16px;
   --green: var(--ui-action);
   --line: var(--ui-border-soft);
@@ -20,6 +20,9 @@
 }
 body {
   margin: 0;
+}
+a {
+  color: var(--ui-link);
 }
 header {
   display: flex;
@@ -69,13 +72,13 @@ header {
   outline-offset: 6px;
 }
 .muted {
-  color: #5b6d65;
+  color: var(--ui-muted);
   font-size: 0.875rem;
   margin-top: 4px;
 }
 .badge {
   margin-left: auto;
-  background: #e8f2ed;
+  background: var(--ui-action-soft);
   padding: 8px 14px;
   border-radius: 30px;
   font-size: 0.875rem;
@@ -108,7 +111,7 @@ p {
   line-height: 1.6;
 }
 .intro p:last-child {
-  color: #5b6d65;
+  color: var(--ui-muted);
   margin-top: 8px;
 }
 .actions {
@@ -184,10 +187,10 @@ textarea {
   min-width: 0;
   width: 100%;
   padding: 11px 10px;
-  border: 1px solid #b8c9bf;
+  border: 1px solid var(--ui-border);
   border-radius: 6px;
   background: white;
-  color: #172b25;
+  color: var(--ui-text);
 }
 input:is([type='checkbox'], [type='radio']) {
   width: 18px;
@@ -207,7 +210,7 @@ label:has(> input:is([type='checkbox'], [type='radio'])) {
 .help {
   font-size: 0.875rem;
   line-height: 1.6;
-  color: #52665c;
+  color: var(--ui-muted);
   margin: 0 0 20px;
 }
 .visually-hidden {
@@ -260,7 +263,7 @@ label small {
 }
 .metrics span {
   font-size: 0.875rem;
-  color: #52665c;
+  color: var(--ui-muted);
 }
 .metrics strong {
   display: block;
@@ -275,7 +278,7 @@ label small {
 }
 .metrics small {
   font-size: 0.875rem;
-  color: #52665c;
+  color: var(--ui-muted);
   line-height: 1.5;
   display: block;
 }
@@ -289,7 +292,7 @@ nav {
   background: none;
   border: 0;
   border-radius: 0;
-  color: #52665c;
+  color: var(--ui-muted);
   padding: 14px 12px;
   border-bottom: 3px solid transparent;
 }
@@ -299,7 +302,7 @@ nav {
 }
 .tab span {
   font-size: 0.8rem;
-  background: #e3eae6;
+  background: var(--ui-border-soft);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -342,7 +345,7 @@ nav {
 }
 .records small {
   display: block;
-  color: #52665c;
+  color: var(--ui-muted);
   font-size: 0.875rem;
   line-height: 1.6;
 }
@@ -404,7 +407,7 @@ nav {
 }
 .days .day-name {
   font-size: 0.75rem;
-  color: #52665c;
+  color: var(--ui-muted);
 }
 .days .date {
   border-radius: 4px;
@@ -438,7 +441,7 @@ footer {
   display: flex;
   justify-content: space-between;
   gap: 20px;
-  color: #52665c;
+  color: var(--ui-muted);
   font-size: 0.875rem;
   line-height: 1.6;
 }

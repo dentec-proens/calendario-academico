@@ -1,11 +1,11 @@
 :root {
-  --ui-text: #172b25;
-  --ui-muted: #52665c;
+  --ui-text: #1d2328;
+  --ui-muted: #55606b;
   --ui-surface: #fff;
-  --ui-surface-muted: #f3f6f5;
-  --ui-surface-subtle: #f9fbfa;
-  --ui-border: #b8c9bf;
-  --ui-border-soft: #d9e3de;
+  --ui-surface-muted: #f3f5f7;
+  --ui-surface-subtle: #f9fafb;
+  --ui-border: #c2c9d1;
+  --ui-border-soft: #e0e4e9;
   --ui-action: #0c503a;
   --ui-action-hover: #083c2b;
   --ui-action-soft: #e8f2ed;
@@ -19,6 +19,7 @@
   --ui-info: #174a7e;
   --ui-info-soft: #eaf3ff;
   --ui-info-border: #9bbde5;
+  --ui-link: var(--ui-info);
   --ui-warning: #795214;
   --ui-warning-soft: #fff5df;
   --ui-warning-border: #e3c48a;

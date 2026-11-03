@@ -1,6 +1,6 @@
 import { defaultCalendarYear, policyFor } from '#src/domain/policies/registry.ts';
 import { useNavigate } from '@tanstack/react-router';
-import { CalendarPlus, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import { ChoiceGroup } from '../../components/ui/ChoiceGroup.tsx';
 import type { Bootstrap } from '../../shared/convex/types.ts';
@@ -218,7 +218,6 @@ export default function CreateCalendarForm({
             </small>
           </div>
           <Button type="submit" pending={pending} loadingLabel="Criando…">
-            <CalendarPlus aria-hidden="true" size={18} />
             Criar rascunho
           </Button>
         </div>

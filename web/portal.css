@@ -6,10 +6,10 @@
   margin-top: 12px;
 }
 .auth p {
-  color: #52665c;
+  color: var(--ui-muted);
 }
 .records a {
-  background: #0c503a;
+  background: var(--ui-action);
   color: white;
   padding: 10px 14px;
   border-radius: 5px;
@@ -21,7 +21,7 @@
 }
 .institution-label {
   display: inline-block;
-  background: #dceaf6;
+  background: var(--ui-info-soft);
   color: #154666;
   padding: 3px 6px;
   font-size: 0.8rem;
@@ -275,8 +275,8 @@
 .review-item fieldset:disabled select,
 #review-conclusion:disabled {
   opacity: 1;
-  color: #243d32;
-  background: #f3f6f4;
+  color: var(--ui-text);
+  background: var(--ui-surface-muted);
 }
 .review-export-actions {
   margin: 24px 0;
@@ -284,7 +284,7 @@
 }
 #review-preview {
   padding: 25px;
-  border: 1px solid #aebbb2;
+  border: 1px solid var(--ui-border);
   margin-top: 24px;
   background: white;
   color: #111;
@@ -319,9 +319,9 @@
   gap: 16px;
 }
 :is(#activity-checklist, #assessment-checklist) button:disabled {
-  background: #e3eee8;
-  color: #285641;
-  border-color: #cadbd1;
+  background: var(--ui-surface-muted);
+  color: var(--ui-muted);
+  border-color: var(--ui-border);
   opacity: 1;
 }
 @media (max-width: 600px) {
@@ -353,7 +353,7 @@
     position: static;
   }
   .calendar-editor .editor-feedback {
-    background: #f3f6f5;
+    background: var(--ui-surface-muted);
   }
 }
 
@@ -390,8 +390,8 @@
   outline-offset: 3px;
 }
 .editor-sidebar .tab.active {
-  border-color: #b5d3c2;
-  background: #e8f2ed;
+  border-color: var(--ui-success-border);
+  background: var(--ui-action-soft);
 }
 .editor-section-content {
   min-width: 0;

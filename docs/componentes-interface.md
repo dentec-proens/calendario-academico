@@ -1,6 +1,6 @@
 # Componentes da interface
 
-Os componentes compartilhados ficam em `web/components/ui/` e usam Base UI com CSS próprio. A identidade visual permanece a do calendário: verde institucional, superfícies claras e cores de estado com texto explicativo.
+Os componentes compartilhados ficam em `web/components/ui/` e usam Base UI com CSS próprio. A identidade visual usa o verde institucional sobre neutros cinza, superfícies claras e cores de estado com texto explicativo.
 
 - `Button`: variantes `primary`, `secondary` e `danger`. O padrão é `type="button"`; ações de envio de formulário devem declarar `type="submit"`. Use a variante para indicar a intenção, sem depender da lista ou painel em que o botão aparece. Links de navegação continuam sendo elementos `a`. Ícones seguem a seção **Ícones e rótulos de botões**.
 - `TextField` e `TextAreaField`: associam rótulo, descrição e mensagem de erro ao controle por meio de `Field` da Base UI. `TextAreaField` usa `onValueChange` com o texto atualizado. Passe `disabled` ao componente quando uma operação bloquear o formulário.
@@ -31,11 +31,13 @@ O ícone acompanha o verbo da ação, não a tela. Um verbo tem sempre o mesmo �
 
 Ações de ciclo de vida usam os ícones definidos em `LifecycleActions.tsx`. Um verbo novo entra nesta tabela antes de ganhar ícone.
 
-Botões que concluem ou abandonam um formulário ou diálogo (**Aplicar**, **Salvar**, **Confirmar**, **Cancelar**, **Descartar alterações**, **Fechar**) ficam sem ícone: a posição e a variante já indicam a ação. Botão só com ícone fica restrito a fechar (`X`), menu (`Ellipsis`) e remover numa linha de tabela, sempre com `aria-label`.
+Botões que concluem ou abandonam um formulário ou diálogo (**Aplicar**, **Salvar**, **Criar**, **Cadastrar**, **Confirmar**, **Cancelar**, **Descartar alterações**, **Fechar**) ficam sem ícone: a posição e a variante já indicam a ação. A exceção é o envio de arquivo, que mantém `Upload`. Botão só com ícone fica restrito a fechar (`X`), menu (`Ellipsis`) e ações de linha de tabela, sempre com `aria-label`.
+
+Cada área tem no máximo um botão `primary`: a ação que conclui a etapa ou o formulário. As ações de topo das páginas (`.page-action`, como **Novo calendário**), as ações repetidas em linhas de tabela e a criação de itens dentro de uma etapa do editor são `secondary`, para não competir com a conclusão. Em `FormActions`, a ação `danger` fica na ponta oposta às demais; em largura estreita, os botões empilham na ordem do código.
 
 O rótulo não repete o objeto quando o contexto já o identifica: dentro do cartão de uma oferta, **Editar** e **Aplicar organização**, não “Editar organização” ou “Aplicar organização de Técnico integrado”; no detalhe de uma data, **Editar**. Dentro do calendário, criar é **Adicionar…**; **Novo…** fica para entidades de primeiro nível, como o calendário. No editor, **Aplicar** grava no rascunho e **Salvar** fica para o que é gravado diretamente. Abandonar um preenchimento é sempre **Descartar alterações**; **Remover** retira um item do calendário e **Excluir** apaga um registro.
 
-`tokens.css` centraliza cores semânticas, espaçamentos, raios e duração das transições. `ui.css` define os componentes e os estados de interação, sendo importado pelo CSS compartilhado do site. As regras de interação ficam restritas à tela; o modelo de impressão em `assets/printing/calendar.css` permanece separado.
+`tokens.css` centraliza cores semânticas, espaçamentos, raios e duração das transições. Texto, bordas e superfícies são neutros (cinza levemente frio); o verde (`--ui-action`) fica para ações, foco, seleção da etapa e conclusão. O azul de informação (`--ui-info`) marca links (`--ui-link`), filtros e visões selecionadas e avisos informativos; âmbar e vermelho ficam para pendência e perigo. Cor nova da tela entra como token em `tokens.css`, não como hexadecimal na folha da funcionalidade; as cores de categoria do calendário (dias letivos, sábados, feriados) seguem a legenda da impressão em `assets/printing/calendar.css`. `ui.css` define os componentes e os estados de interação, sendo importado pelo CSS compartilhado do site. As regras de interação ficam restritas à tela; o modelo de impressão em `assets/printing/calendar.css` permanece separado.
 
 Mantenha rótulos visíveis, foco por teclado, alvos de toque de pelo menos 44px e suporte a `prefers-reduced-motion`. Botões bloqueados não devem aparentar estar carregando, salvo quando a operação estiver efetivamente em andamento.
 

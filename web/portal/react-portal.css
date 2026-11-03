@@ -136,7 +136,7 @@
 }
 #root .private-link {
   margin-top: 24px;
-  background: #f5faf7;
+  background: var(--ui-surface-subtle);
 }
 #root textarea:focus-visible,
 #root a:focus-visible,
@@ -279,8 +279,8 @@
   flex-wrap: wrap;
   gap: 16px 32px;
   padding: 16px;
-  background: #edf7f1;
-  border: 1px solid #7c9c88;
+  background: var(--ui-action-soft);
+  border: 1px solid var(--ui-border);
   border-radius: 8px;
   margin: 20px 0;
 }
@@ -304,7 +304,7 @@
 #root .online-users td {
   text-align: left;
   padding: 12px;
-  border-bottom: 1px solid #acbab1;
+  border-bottom: 1px solid var(--ui-border);
 }
 #root .online-users caption {
   text-align: left;
@@ -333,12 +333,12 @@
   grid-template-columns: 248px minmax(0, 1fr);
   align-items: start;
   gap: 32px;
-  --area-color: #0c503a;
-  --area-tint: #e8f2ed;
+  --area-color: var(--ui-action);
+  --area-tint: var(--ui-action-soft);
 }
 .portal-workspace[data-area='admin'] {
-  --area-color: #214f78;
-  --area-tint: #eaf1f8;
+  --area-color: var(--ui-info);
+  --area-tint: var(--ui-info-soft);
 }
 .portal-sidebar {
   position: sticky;
@@ -356,8 +356,8 @@
   margin: 0 0 12px;
   padding: 10px 12px;
   border-radius: 3px;
-  background: #dcece4;
-  color: #0c503a;
+  background: var(--ui-action-soft);
+  color: var(--ui-action);
   font-size: 0.72rem;
   font-weight: 750;
   line-height: 1.6;
@@ -366,15 +366,15 @@
 }
 .navigation-group p {
   margin: 0 10px 14px;
-  color: #52665c;
+  color: var(--ui-muted);
   font-size: 0.78rem;
 }
 .admin-navigation {
   margin-top: 24px;
 }
 .admin-navigation h2 {
-  background: #dce7f3;
-  color: #214f78;
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
 }
 #root .sidebar-link {
   text-decoration: none;
@@ -386,27 +386,27 @@
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
-  color: #41554b;
+  color: var(--ui-muted);
   text-align: left;
   font-size: 0.875rem;
 }
 #root .sidebar-link.active {
   color: var(--area-color);
   background: var(--area-tint);
-  border-color: #b5cce0;
+  border-color: var(--ui-info-border);
 }
 #root .shared-navigation .sidebar-link.active {
-  color: #0c503a;
-  background: #e8f2ed;
-  border-color: #b5d3c2;
+  color: var(--ui-action);
+  background: var(--ui-action-soft);
+  border-color: var(--ui-success-border);
 }
 #root .admin-navigation .sidebar-link.active {
-  color: #214f78;
-  background: #eaf1f8;
-  border-color: #b5cce0;
+  color: var(--ui-info);
+  background: var(--ui-info-soft);
+  border-color: var(--ui-info-border);
 }
 #root .sidebar-link:hover {
-  background: #f3f6f5;
+  background: var(--ui-surface-muted);
 }
 .portal-content {
   min-width: 0;
@@ -421,7 +421,7 @@
   scroll-margin-top: 24px;
 }
 .workspace-heading > p {
-  color: #52665c;
+  color: var(--ui-muted);
   font-size: 0.875rem;
   margin: 6px 0 0;
 }
@@ -464,7 +464,7 @@
   left: 8px;
   z-index: 100;
   background: white;
-  color: #0c503a;
+  color: var(--ui-action);
   padding: 12px;
 }
 @media (max-width: 1000px) {
@@ -502,6 +502,6 @@
 }
 
 #root #account[data-profile='ADMIN'] {
-  color: #214f78;
-  background: #eaf1f8;
+  color: var(--ui-info);
+  background: var(--ui-info-soft);
 }

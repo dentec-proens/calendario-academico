@@ -78,6 +78,7 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
           {correctable && !changing && (
             <Button
               type="button"
+              variant="secondary"
               ref={changeButton}
               data-change-activity={event.id}
               disabled={readOnly || editor.pending}

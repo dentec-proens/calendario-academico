@@ -5,7 +5,7 @@ import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 type Invitation = Awaited<ReturnType<ReturnType<typeof useAccounts>['issueInvitation']>>;
 import { confirmAction } from '../../components/confirmation.ts';
 import { useRef, useState } from 'react';
-import { KeyRound, MailPlus, Trash2, UserPlus, UnlockKeyhole } from 'lucide-react';
+import { KeyRound, MailPlus, Trash2, UnlockKeyhole } from 'lucide-react';
 import { useAccounts } from '../../shared/convex/accounts.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
@@ -295,7 +295,6 @@ export default function AccountsPanel({
                 </label>
               ) : null}
               <Button type="submit" id="create-user-button">
-                <UserPlus aria-hidden="true" size={18} />
                 Criar conta {roleLabels[role]}
               </Button>
             </fieldset>

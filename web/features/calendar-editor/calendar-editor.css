@@ -602,9 +602,9 @@
 
 .base-update-card {
   margin-bottom: 20px;
-  border: 1px solid #cadbd1;
+  border: 1px solid var(--ui-border);
   border-radius: 8px;
-  background: #e8f2ed;
+  background: var(--ui-action-soft);
   overflow-wrap: anywhere;
 }
 .base-update-card > summary {
@@ -711,11 +711,12 @@
   opacity: 0;
   cursor: pointer;
 }
+/* Filters and views use the information blue; green stays for actions and completion. */
 .activity-view-options > label:has(input:checked) {
   z-index: 1;
-  border-color: var(--ui-success-border);
-  background: var(--ui-action-soft);
-  color: var(--ui-action);
+  border-color: var(--ui-info-border);
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
   font-weight: 700;
 }
 .activity-view-options > label:has(input:focus-visible) {
@@ -1081,7 +1082,7 @@ fieldset.event-fields {
 .activity-record {
   margin-block: 0.75rem;
   padding: 0.75rem;
-  background: var(--surface-soft, #f5f7f9);
+  background: var(--ui-surface-muted);
   border-radius: 0.35rem;
 }
 .activity-record p {
