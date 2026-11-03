@@ -50,16 +50,12 @@ for (const width of [1440, 390]) {
       saved.state.events.filter((event) => original.events.some((old) => old.id === event.id)),
     ).toEqual(original.events);
     await expect(page.locator('[data-offer="graduacao"]')).not.toContainText('Não incluída');
-    await expect(page.locator('[data-edit-organization="graduacao"]')).toHaveText(
-      'Editar organização',
-    );
+    await expect(page.locator('[data-edit-organization="graduacao"]')).toHaveText('Editar');
     // Native tests verify persisted storage; this fixture resets its module state on reload.
     await selectEditorSection(page, 'events');
     await selectEditorSection(page, 'periods');
     await expect(page.locator('[data-offer="graduacao"]')).toContainText('2 etapas no ano');
-    await expect(page.locator('[data-edit-organization="graduacao"]')).toHaveText(
-      'Editar organização',
-    );
+    await expect(page.locator('[data-edit-organization="graduacao"]')).toHaveText('Editar');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );

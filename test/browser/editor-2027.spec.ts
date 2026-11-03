@@ -329,7 +329,7 @@ test('annual integrated and semester undergraduate offers keep independent overl
   await page.getByText('Exigência por regra local', { exact: true }).click();
   await page.locator('#intake-graduacao-second-required').check();
 
-  await page.getByRole('button', { name: 'Salvar exigência', exact: true }).click();
+  await page.getByRole('button', { name: 'Aplicar exigência', exact: true }).click();
   await expect
     .poll(() =>
       page.evaluate(

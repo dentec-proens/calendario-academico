@@ -78,7 +78,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
       'Etapa 5 de 6: Atividades',
     );
-    await expect(page.locator('#new-event')).toHaveText('Nova data do campus');
+    await expect(page.locator('#new-event')).toHaveText('Adicionar data do campus');
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para revisão e conclusão');
     await selectEditorSection(page, 'issues');
     await expect(page.locator('#total')).toBeVisible();
