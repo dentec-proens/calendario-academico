@@ -176,7 +176,7 @@ As etapas de preenchimento não solicitam fontes manuais. As referências autom�
 
 **Excluir calendário** (botão com ícone de lixeira) move o registro para a lixeira após confirmação. Ele sai das listas de trabalho e revisão; dados, envios e documentos são preservados. A exclusão e a restauração exigem a versão atual. Acesse o link **Lixeira**, ao lado de **Novo calendário**, para consultar os excluídos em uma visualização própria. **Voltar aos calendários** retorna à lista de trabalho. **Restaurar calendário** devolve o registro ao trabalho, dentro do mesmo escopo de acesso. Não há descarte físico automático.
 
-**Histórico de alterações** consulta operações salvas com autoria e contexto autorizado. Campos em edição que ainda não foram gravados não aparecem no histórico.
+**Histórico do calendário**, no menu **Mais ações** do editor, abre em `/calendarios/<id>/operacoes` as operações salvas daquele calendário, com data, responsável e versão. Fica disponível a quem pode consultar o calendário, inclusive quando ele está travado para edição. Uma nova versão do calendário começa um histórico próprio. Campos em edição que ainda não foram gravados não aparecem no histórico. O **Registro de operações**, na navegação do portal, reúne as operações de todos os calendários e da administração dentro do escopo de acesso.
 
 ## Usuários online
 

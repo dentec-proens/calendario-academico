@@ -33,6 +33,7 @@ export const editorSections = {
   vacations: 'ferias',
   events: 'atividades',
   history: 'historico',
+  operations: 'operacoes',
   issues: 'pendencias',
   calendar: 'visualizar',
 } as const;

@@ -74,6 +74,27 @@ function result(name: string) {
   switch (name) {
     case 'calendars:calendar':
       return structuredClone(record);
+    case 'calendars:history':
+      return {
+        page: [
+          {
+            at: '2026-10-23T15:24:00Z',
+            action: 'Calendário salvo',
+            actor: 'Pessoa editora',
+            calendar: record.name,
+            version: 2,
+          },
+          {
+            at: '2026-10-22T13:10:00Z',
+            action: 'Calendário criado',
+            actor: 'Pessoa editora',
+            calendar: record.name,
+            version: 1,
+          },
+        ],
+        isDone: true,
+        continueCursor: '',
+      };
     case 'calendars:calendarPage':
       return { page: [record], isDone: true, continueCursor: '' };
     case 'operations:availability':

@@ -232,21 +232,22 @@ function EditorFrame() {
                 }
               }}
             >
-              {!readOnly && (
-                <Link
-                  to="/logs"
-                  className="editor-history"
-                  aria-label="Histórico de alterações"
-                  aria-describedby="calendar-history-description"
-                  title="Consulte as operações registradas e a autoria das alterações."
-                >
-                  <History aria-hidden="true" />
-                  <span className="editor-menu-copy">
-                    <span>Histórico de alterações</span>
-                    <small id="calendar-history-description">Consultar operações registradas</small>
-                  </span>
-                </Link>
-              )}
+              {/* Reading the history needs only access to the calendar, even when it is locked. */}
+              <Link
+                to={editorPages.operations.path}
+                params={{ calendarId: record.id }}
+                search={(previous) => previous}
+                className="editor-history"
+                aria-label="Histórico do calendário"
+                aria-describedby="calendar-history-description"
+                title="Consulte as operações registradas neste calendário e quem as fez."
+              >
+                <History aria-hidden="true" />
+                <span className="editor-menu-copy">
+                  <span>Histórico do calendário</span>
+                  <small id="calendar-history-description">Operações deste calendário</small>
+                </span>
+              </Link>
               {!readOnly && <ImportCalendarForm />}
               <button
                 id="save"

@@ -79,9 +79,10 @@ for (const width of [1440, 390]) {
     await expect
       .poll(() => page.evaluate(() => window.auditTest.cursors))
       .toEqual(['older-audit-page']);
-    await page.getByRole('button', { name: 'Atualizar registros' }).click();
+    await page.getByRole('button', { name: 'Voltar às mais recentes' }).click();
     await expect(rows).toHaveCount(3);
     await expect(page.getByRole('button', { name: 'Carregar anteriores' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Voltar às mais recentes' })).toHaveCount(0);
   });
 }
 
@@ -106,7 +107,7 @@ test('audit explains the initial loading and empty states', async ({ page, fixtu
   await page.goto(origin + '/logs?audit-loading');
   await expect(page.locator('.loading-indicator-bar')).toBeVisible();
   await expect(page.locator('.loading-indicator').getByRole('status')).toHaveText(
-    'Carregando histórico…',
+    'Carregando operações…',
   );
   await expect(page.locator('#log-message')).toBeEmpty();
   await expect(page.locator('#log-list')).toHaveCount(0);

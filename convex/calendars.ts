@@ -36,13 +36,14 @@ import {
 import { catalogue } from './catalogue/model';
 import * as contracts from './contracts';
 import { currentDocuments, documentDto } from './documents/model';
+import { logEntry, readCalendarHistory } from './audit';
 import { appendAudit } from './lib/audit';
 import { calendarEditor, assertCampus, reviewer } from './lib/authorization';
 import { pageBound } from './lib/pagination';
 import { domainRule, fail, iso, clean } from './lib/shared';
 import type { Doc } from './_generated/dataModel';
 import * as validators from './validators';
-import { paginationOptsValidator } from 'convex/server';
+import { paginationOptsValidator, paginationResultValidator } from 'convex/server';
 import { v, type Infer } from 'convex/values';
 
 const idArgs = { id: v.id('calendars') };
@@ -89,6 +90,17 @@ export const calendar = query({
   args: idArgs,
   returns: contracts.calendarDto,
   handler: async (ctx, { id }) => fullRecord(ctx, (await requireNativeUser(ctx)).user, id),
+});
+
+export const history = query({
+  args: { id: v.id('calendars'), paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(logEntry),
+  handler: async (ctx, { id, paginationOpts }) => {
+    pageBound(paginationOpts.numItems);
+    const { user } = await requireNativeUser(ctx);
+    await calendarRow(ctx, user, id);
+    return readCalendarHistory(ctx, id, paginationOpts);
+  },
 });
 
 export const resolveCalendarId = query({

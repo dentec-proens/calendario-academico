@@ -310,6 +310,12 @@ const history = createRoute({
   },
   staticData: { title: editorPages.events.title },
 });
+const operations = createRoute({
+  getParentRoute: () => editor,
+  path: '/operacoes',
+  component: lazy(() => import('../features/calendar-editor/sections/HistorySection.tsx')),
+  staticData: { title: editorPages.operations.title },
+});
 const issues = createRoute({
   getParentRoute: () => editor,
   path: '/pendencias',
@@ -356,6 +362,7 @@ export const routeTree = root.addChildren([
       vacations,
       events,
       history,
+      operations,
       issues,
       preview,
     ]),

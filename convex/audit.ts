@@ -1,4 +1,4 @@
-import { v } from 'convex/values';
+import { v, type Infer } from 'convex/values';
 import type { PaginationOptions } from 'convex/server';
 import type { QueryCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
@@ -66,7 +66,38 @@ export async function readAuditPage(
   )
     .order('desc')
     .paginate(paginationOpts);
+  const entries = await auditEntries(
+    ctx,
+    result.page,
+    user.role === 'CAMPUS'
+      ? (row, record) =>
+          !!row.calendarId &&
+          (row.target.type === 'calendar' || row.target.type === 'archived') &&
+          record?.campusId === user.campusId
+      : undefined,
+  );
+  return { entries, isDone: result.isDone, continueCursor: result.continueCursor };
+}
 
+/** Operations of one calendar record; the caller has already authorized reading that calendar. */
+export async function readCalendarHistory(
+  ctx: QueryCtx,
+  calendarId: Id<'calendars'>,
+  paginationOpts: PaginationOptions,
+) {
+  const result = await ctx.db
+    .query('audit')
+    .withIndex('by_calendarId_and_at', (q) => q.eq('calendarId', calendarId))
+    .order('desc')
+    .paginate(paginationOpts);
+  return { ...result, page: await auditEntries(ctx, result.page) };
+}
+
+async function auditEntries(
+  ctx: QueryCtx,
+  rows: Doc<'audit'>[],
+  include?: (row: Doc<'audit'>, record: Doc<'calendars'> | null) => boolean,
+) {
   const actors = new Map<Id<'users'>, Promise<Doc<'users'> | null>>();
   const calendars = new Map<Id<'calendars'>, Promise<Doc<'calendars'> | null>>();
   const campuses = new Map<Id<'campuses'>, Promise<Doc<'campuses'> | null>>();
@@ -83,17 +114,12 @@ export async function readAuditPage(
     return campuses.get(id)!;
   };
 
-  const entries = [];
-  for (const row of result.page) {
-    if (
-      user.role === 'CAMPUS' &&
-      (!row.calendarId || (row.target.type !== 'calendar' && row.target.type !== 'archived'))
-    )
-      continue;
+  const entries: Infer<typeof logEntry>[] = [];
+  for (const row of rows) {
     let calendarId = row.calendarId;
     if (!calendarId && row.target.type === 'calendar') calendarId = row.target.id;
     const record = calendarId ? await calendar(calendarId) : null;
-    if (user.role === 'CAMPUS' && (!record || record.campusId !== user.campusId)) continue;
+    if (include && !include(row, record)) continue;
     const unit = record ? await campus(record.campusId) : null;
     const author = row.actorId && row.actorLabel === undefined ? await actor(row.actorId) : null;
     entries.push({
@@ -104,5 +130,5 @@ export async function readAuditPage(
       version: row.version ?? null,
     });
   }
-  return { entries, isDone: result.isDone, continueCursor: result.continueCursor };
+  return entries;
 }

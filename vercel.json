@@ -114,6 +114,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/calendarios/:calendarId/operacoes",
+      "destination": "/index.html"
+    },
+    {
       "source": "/calendarios/:calendarId/pendencias",
       "destination": "/index.html"
     },

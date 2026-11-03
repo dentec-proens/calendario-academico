@@ -8,12 +8,8 @@
   flex-wrap: wrap;
   gap: 16px;
 }
-.audit-heading h2 {
-  margin: 0;
-  font-size: 1.125rem;
-}
 .audit-heading p {
-  margin: 6px 0 0;
+  margin: 0;
 }
 .audit-table {
   width: 100%;
@@ -35,18 +31,24 @@
   color: var(--ui-muted);
   font-size: 0.75rem;
 }
-.audit-table th:nth-child(1) {
+.audit-table .audit-col-at {
   width: 19%;
 }
-.audit-table th:nth-child(2),
-.audit-table th:nth-child(3) {
+.audit-table .audit-col-action,
+.audit-table .audit-col-calendar {
   width: 27%;
 }
-.audit-table th:nth-child(4) {
+.audit-table .audit-col-actor {
   width: 20%;
 }
-.audit-table th:nth-child(5) {
+.audit-table .audit-col-version {
   width: 7%;
+}
+.audit-table-single .audit-col-action {
+  width: 44%;
+}
+.audit-table-single .audit-col-actor {
+  width: 30%;
 }
 .audit-table tbody tr:hover {
   background: var(--ui-surface-muted);
