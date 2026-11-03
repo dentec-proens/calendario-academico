@@ -132,10 +132,27 @@ test('a link is pending for an offer its generated activity does not reach', () 
     organization: 'semestral',
     stages: { status: 'defined', perTerm: 1 },
   };
-  const { links } = evaluatePlan(state);
+  const { links, rows } = evaluatePlan(state);
   expect(links.issues.has('cascavel-final-1')).toBe(false);
   expect(links.forOffer('cascavel-final-1', 'integrado')).toBe('compatible');
   expect(links.forOffer('cascavel-final-1', 'graduacao')).toBe('pending');
+  // A date pending for one offer never counts as fulfilment in that offer's row (section 5.6).
+  const forGraduacao = rows.filter(
+    (row) => row.offerId === 'graduacao' && row.events.some((e) => e.id === 'cascavel-final-1'),
+  );
+  expect(forGraduacao.length).toBeGreaterThan(0);
+  for (const row of forGraduacao) {
+    expect(row.coverage).not.toBe('complete');
+    expect(row.classification).toBe('pending');
+    expect(row.evidence.map((e) => e.id)).not.toContain('cascavel-final-1');
+    expect(row.warnings.join(' ')).toContain('Classificação pendente');
+  }
+  // The integrated offer, which the generated activity reaches, still counts the same date.
+  const forIntegrado = rows.find(
+    (row) => row.offerId === 'integrado' && row.events.some((e) => e.id === 'cascavel-final-1'),
+  )!;
+  expect(forIntegrado.classification).toBe('compatible');
+  expect(forIntegrado.evidence.map((e) => e.id)).toContain('cascavel-final-1');
   // The undergraduate-only date has no generated activity for its offer.
   expect(links.forOffer('cascavel-recognition-2', 'graduacao')).toBe('pending');
 });

@@ -155,6 +155,12 @@ export function evaluatePlan(
             warnings.push(`${linkIssueLabels[reason]}: ${linkIssueActions[reason]}`);
             return false;
           }
+          // A date whose generated activity does not reach this offer is pending for it: it never
+          // counts as fulfilment here, even when it fits another offer of its scope (section 5.6).
+          if (links.forOffer(event.id, offer.id) !== 'compatible') {
+            warnings.push(`${linkIssueLabels.unclassified}: ${linkIssueActions.unclassified}`);
+            return false;
+          }
           // Under explicit offers (2027), only a scope the campus confirmed counts (plan, 5.3).
           if (policy.explicitRecordOffers && !event.scope.confirmed) {
             // Same text as format 4, so the frozen oracle of coverage stays equal.
@@ -269,12 +275,14 @@ export function evaluatePlan(
               humanReview.reviewedCriterionIds.includes(requirement.reviewCriterionId)
             ? 'reviewed'
             : 'pending';
-        // A row exists only for a generated activity, so its dates are never pending here.
-        const classification: Classification = linked.some(
-          (event) => links.forOffer(event.id, offer.id) === 'divergent',
-        )
+        // Rows follow the requirements, not the offers each date's generated activity reaches: a
+        // linked date may be pending for this offer. A conflict prevails over a pending date.
+        const classifications = linked.map((event) => links.forOffer(event.id, offer.id));
+        const classification: Classification = classifications.includes('divergent')
           ? 'divergent'
-          : 'compatible';
+          : classifications.includes('pending')
+            ? 'pending'
+            : 'compatible';
         return {
           requirement,
           offerId: offer.id,

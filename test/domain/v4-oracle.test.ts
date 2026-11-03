@@ -220,6 +220,8 @@ test.each(cases.map((item) => [item.name, item] as const))(
         (event) => links.forOffer(event.id, row.offerId) === 'divergent',
       );
       expect(row.classification).toBe(divergent ? 'divergent' : 'compatible');
+      // The audited fixtures have no date pending for one offer only; that case is covered in
+      // plan-evaluation.test.ts, where such a row is pending and never complete.
       expect(row.events.some((event) => links.forOffer(event.id, row.offerId) === 'pending')).toBe(
         false,
       );
