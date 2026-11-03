@@ -268,3 +268,96 @@ test('a stage under review opens its details, can have its dates edited and be r
   // The remaining stage is no longer a duplicate.
   await expect(page.locator('#link-review [data-date-row="stage-twice-a"]')).toHaveCount(0);
 });
+
+const internalDates = ['ivaipora-annual-final', 'ivaipora-annual-diary'];
+
+for (const width of [1440, 390])
+  test(`the visibility filter hides date lines only, with coherent counters in both views at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const state = ivaiporaDraft();
+    state.events = state.events.map((event) =>
+      internalDates.includes(event.id) ? { ...event, internal: true as const } : event,
+    );
+    await open(page, fixtureServer, state);
+    const rows = page.locator(
+      '#activity-checklist [data-activity-row], #activity-checklist [data-date-row]',
+    );
+    const activities = page.locator('#activity-checklist [data-activity-row]');
+    const toFillWithoutDates = page.locator(
+      '#activity-checklist [data-activity-row]:has-text("Sem datas"):not([data-status="complete"]):not([data-status="optional"])',
+    );
+    const allRows = await rows.count();
+    const allActivities = await activities.count();
+    const withoutDates = await toFillWithoutDates.count();
+    expect(withoutDates).toBeGreaterThan(0);
+    const allToFill = await count(page, 'preencher');
+    const baseDates = await page.locator('#base-dates [data-date-row]').count();
+    for (const id of internalDates)
+      await expect(
+        page.locator(`#campus-dates [data-date-row="${id}"] [data-internal-badge]`),
+      ).toHaveText('Interna');
+
+    // Official: internal dates disappear; every activity stays, including the ones to fill.
+    const summary = page.locator('.activity-more-filters > summary');
+    await summary.click();
+    const visibility = page.locator('#activity-visibility');
+    await expect(visibility).toBeVisible();
+    await visibility.selectOption('oficiais');
+    await expect(page).toHaveURL(/atividadeVisibilidade=oficiais/);
+    await expect(summary).toHaveText('Mais filtros (1)');
+    await expect(page.locator('#campus-dates [data-date-row]')).toHaveCount(3);
+    for (const id of internalDates)
+      await expect(page.locator(`[data-date-row="${id}"]`)).toHaveCount(0);
+    await expect(activities).toHaveCount(allActivities);
+    await expect(toFillWithoutDates).toHaveCount(withoutDates);
+    await expect(page.locator('#activities-hidden-by-visibility')).toHaveCount(0);
+    expect(await count(page, 'todas')).toBe(allRows - internalDates.length);
+    expect(await rows.count()).toBe(await count(page, 'todas'));
+    expect(await count(page, 'preencher')).toBe(allToFill);
+    await page.locator('#activity-pendency-preencher').check();
+    await expect(toFillWithoutDates).toHaveCount(withoutDates);
+    expect(await rows.count()).toBe(await count(page, 'preencher'));
+    await page.locator('#activity-pendency-todas').check();
+    // By date: the same filter, counted in dates.
+    await page.locator('#activity-mode-data').check();
+    const dateRows = page.locator('#date-list [data-date-row]');
+    await expect(dateRows).toHaveCount(state.events.length + baseDates - internalDates.length);
+    expect(await count(page, 'todas')).toBe(await dateRows.count());
+    await expect(page.locator('#activities-without-dates')).toBeVisible();
+
+    // Internal: only the internal dates of the campus, and the notice that activities are hidden.
+    await visibility.selectOption('internas');
+    await expect(page).toHaveURL(/atividadeVisibilidade=internas/);
+    await expect(dateRows).toHaveCount(internalDates.length);
+    expect(await count(page, 'todas')).toBe(internalDates.length);
+    expect(await count(page, 'preencher')).toBe(0);
+    expect(await count(page, 'sem-pendencias')).toBe(internalDates.length);
+    await expect(page.locator('#activities-hidden-by-visibility')).toContainText(
+      'atividades estão ocultas',
+    );
+    await expect(page.locator('#activities-without-dates')).toHaveCount(0);
+    await page.locator('#activity-mode-atividade').check();
+    await expect(page.locator('#activity-checklist [data-date-row]')).toHaveCount(
+      internalDates.length,
+    );
+    for (const id of internalDates)
+      await expect(page.locator(`#campus-dates [data-date-row="${id}"]`)).toHaveCount(1);
+    await expect(activities).toHaveCount(0);
+    await expect(page.locator('#link-review')).toHaveCount(0);
+    expect(await count(page, 'todas')).toBe(internalDates.length);
+    // The summary by offer is not recomputed by the filter.
+    await expect(page.locator('#activity-summary')).toBeVisible();
+    await expect(page.locator('#activities-hidden-by-visibility')).toBeVisible();
+
+    // The notice clears the filter.
+    await page.locator('#activities-hidden-by-visibility button').click();
+    await expect(page).not.toHaveURL(/atividadeVisibilidade/);
+    await expect(rows).toHaveCount(allRows);
+    expect(await count(page, 'todas')).toBe(allRows);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  });

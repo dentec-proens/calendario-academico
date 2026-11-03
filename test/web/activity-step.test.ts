@@ -73,3 +73,56 @@ test('activities are addressed by the key of their link, which pins them past th
   // A format 4 identifier pins nothing.
   expect(step(ivaiporaDraft, filters, 'pit-1').activities).toHaveLength(0);
 });
+
+const internalDates = ['ivaipora-annual-final', 'ivaipora-annual-diary'];
+const withInternalDates = () => {
+  const state = ivaiporaDraft();
+  state.events = state.events.map((event) =>
+    internalDates.includes(event.id) ? { ...event, internal: true as const } : event,
+  );
+  return state;
+};
+
+test('visibility hides date lines only, never recomputing coverage, situation or pendency', () => {
+  const all = step(withInternalDates);
+  const official = step(withInternalDates, { atividadeVisibilidade: 'oficiais' });
+  // Every activity stays, with the same situation and pendency, including the ones to fill.
+  expect(official.activities).toEqual(all.activities);
+  expect(official.activities.some((line) => line.pending && !line.dates.length)).toBe(true);
+  expect(official.withoutDates).toBe(all.withoutDates);
+  expect(official.review).toEqual(all.review);
+  expect(official.campus.map((line) => line.event.id)).toEqual(
+    all.campus.map((line) => line.event.id).filter((id) => !internalDates.includes(id)),
+  );
+  expect(official.counts['']).toBe(all.counts[''] - internalDates.length);
+  expect(official.counts.preencher).toBe(all.counts.preencher);
+  expect(official.activitiesHidden).toBe(false);
+
+  const internal = step(withInternalDates, { atividadeVisibilidade: 'internas' });
+  expect(internal.activities).toHaveLength(0);
+  expect(internal.activitiesHidden).toBe(true);
+  expect(internal.withoutDates).toBe(0);
+  expect(internal.review).toHaveLength(0);
+  expect(internal.base).toHaveLength(0);
+  expect(internal.campus.map((line) => line.event.id).sort()).toEqual([...internalDates].sort());
+  expect(internal.counts).toEqual({ '': 2, preencher: 0, 'sem-pendencias': 2 });
+  // By date: the same lines, counted in dates.
+  const internalByDate = step(withInternalDates, {
+    atividadeVisibilidade: 'internas',
+    atividadeVisao: 'data',
+  });
+  expect(internalByDate.dates.map((line) => line.event.id).sort()).toEqual(
+    [...internalDates].sort(),
+  );
+  expect(internalByDate.counts['']).toBe(2);
+  const officialByDate = step(withInternalDates, {
+    atividadeVisibilidade: 'oficiais',
+    atividadeVisao: 'data',
+  });
+  expect(officialByDate.counts['']).toBe(withInternalDates().events.length - 2);
+  // An activity pinned by the panel or a review link stays past the filter.
+  expect(
+    step(withInternalDates, { atividadeVisibilidade: 'internas' }, 'pit:semester:first').activities
+      .length,
+  ).toBe(1);
+});

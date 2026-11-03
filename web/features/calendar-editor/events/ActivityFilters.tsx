@@ -3,7 +3,12 @@ import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { activityGroups, useActivitySearch } from './activity-query.ts';
 import { useActivityList } from './activity-list.ts';
-import { activityViews, originFilters, pendencyFilters } from './activity-step.ts';
+import {
+  activityViews,
+  originFilters,
+  pendencyFilters,
+  visibilityFilters,
+} from './activity-step.ts';
 
 type FilterKey =
   | 'atividadeBusca'
@@ -12,6 +17,7 @@ type FilterKey =
   | 'atividadeOferta'
   | 'atividadeSituacao'
   | 'atividadeOrigem'
+  | 'atividadeVisibilidade'
   | 'atividadeAssunto';
 
 export default function ActivityFilters() {
@@ -31,6 +37,7 @@ export default function ActivityFilters() {
   const extra = [
     search.atividadeSituacao,
     search.atividadeOrigem,
+    search.atividadeVisibilidade,
     search.atividadeOferta,
     search.atividadeAssunto,
   ].filter(Boolean).length;
@@ -108,6 +115,20 @@ export default function ActivityFilters() {
               onChange={(event) => update('atividadeOrigem', event.target.value)}
             >
               {originFilters.map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Visibilidade
+            <select
+              id="activity-visibility"
+              value={search.atividadeVisibilidade ?? ''}
+              onChange={(event) => update('atividadeVisibilidade', event.target.value)}
+            >
+              {visibilityFilters.map(([id, label]) => (
                 <option key={id} value={id}>
                   {label}
                 </option>

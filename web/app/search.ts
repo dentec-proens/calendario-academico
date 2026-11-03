@@ -66,6 +66,12 @@ export function applicationSearch(input: Record<string, unknown>) {
     ...(['vinculadas', 'campus', 'base'].includes(String(input.atividadeOrigem))
       ? { atividadeOrigem: String(input.atividadeOrigem) as 'vinculadas' | 'campus' | 'base' }
       : {}),
+    // Visibility only filters date lines (plan, section 4.2); absent means every date.
+    ...(['oficiais', 'internas'].includes(String(input.atividadeVisibilidade))
+      ? {
+          atividadeVisibilidade: String(input.atividadeVisibilidade) as 'oficiais' | 'internas',
+        }
+      : {}),
     // The former "all" situation is the default view now and is dropped like an unknown value.
     ...(['pending', 'partial', 'complete', 'optional', 'unconfigured'].includes(
       String(input.atividadeSituacao),

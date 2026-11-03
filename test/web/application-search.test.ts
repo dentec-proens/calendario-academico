@@ -78,3 +78,14 @@ test('the printed version is official by default and complete only by `impressao
     expect(applicationSearch(parseApplicationSearch(`?impressao=${value}`))).toEqual({});
   expect(applicationSearch({ impressao: ['completa'] })).toEqual({});
 });
+
+test('the visibility of dates is every date by default, official or internal', () => {
+  for (const value of ['oficiais', 'internas'] as const)
+    expect(applicationSearch(parseApplicationSearch(`?atividadeVisibilidade=${value}`))).toEqual({
+      atividadeVisibilidade: value,
+    });
+  for (const value of ['todas', 'interna', 'Internas', ''])
+    expect(applicationSearch(parseApplicationSearch(`?atividadeVisibilidade=${value}`))).toEqual(
+      {},
+    );
+});

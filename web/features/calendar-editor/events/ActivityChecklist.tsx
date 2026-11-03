@@ -185,6 +185,30 @@ export default function ActivityChecklist() {
 
   return (
     <>
+      {list.activitiesHidden && (
+        <Notice
+          tone="info"
+          id="activities-hidden-by-visibility"
+          actions={
+            <button
+              type="button"
+              className="link-button"
+              onClick={() =>
+                void navigate({
+                  to: '.',
+                  search: (previous) => ({ ...previous, atividadeVisibilidade: undefined }),
+                  hashScrollIntoView: false,
+                })
+              }
+            >
+              Mostrar todas as datas
+            </button>
+          }
+        >
+          As atividades estão ocultas pelo filtro Visibilidade: Internas. A lista mostra só as datas
+          internas do campus.
+        </Notice>
+      )}
       {list.adjustable.length > 0 && (
         <section
           id="adjustable-dates"

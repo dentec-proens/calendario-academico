@@ -11,6 +11,7 @@ import {
   type PlanEvaluation,
 } from '#src/domain/calendar/activities/plan-evaluation.ts';
 import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
+import { isInternalDate } from '#src/domain/calendar/internal-dates.ts';
 import { appliesTo } from '#src/domain/calendar/modalities.ts';
 import { calendarObservances, observanceIssues } from '#src/domain/calendar/observances.ts';
 import { offerFor } from '#src/domain/calendar/offers.ts';
@@ -38,6 +39,11 @@ export const originFilters = [
   ['vinculadas', 'Vinculadas a atividades'],
   ['campus', 'Do campus'],
   ['base', 'Base institucional'],
+] as const;
+export const visibilityFilters = [
+  ['', 'Todas as datas'],
+  ['oficiais', 'Oficiais'],
+  ['internas', 'Internas'],
 ] as const;
 const originOf = { vinculadas: 'linked', campus: 'campus', base: 'base' } as const;
 
@@ -94,6 +100,9 @@ export function activityStep(input: {
   const origin = search.atividadeOrigem ? originOf[search.atividadeOrigem] : undefined;
   const offer = search.atividadeOferta ? offerFor(state, search.atividadeOferta) : undefined;
   const query = searchText(search.atividadeBusca ?? '');
+  // Visibility hides date lines only; coverage, situation and pendency stay as evaluated. Activities
+  // never hold internal dates, so “Oficiais” keeps all of them and “Internas” hides all of them.
+  const visibility = search.atividadeVisibilidade;
   const review = evaluation.links.issues;
   const checklist = activityPlan(state).filter((item) => item.variant !== 'stage');
   const generated = generatedActivities(state);
@@ -117,6 +126,7 @@ export function activityStep(input: {
       if (key === input.pinned) return true;
       if (!consulted(key).length) return false;
       if (origin && origin !== 'linked') return false;
+      if (visibility === 'internas') return false;
       if (query && !searchText(`${item.name} ${item.basis ?? ''}`).includes(query)) return false;
       if (search.atividadeAssunto && item.group !== search.atividadeAssunto) return false;
       if (search.atividadeSituacao && statusOf(key).status !== search.atividadeSituacao)
@@ -150,12 +160,13 @@ export function activityStep(input: {
     .filter(
       (line) =>
         (!origin || line.origin === origin) &&
+        (!visibility || (visibility === 'internas') === isInternalDate(line.event)) &&
         (!offer || appliesTo(line.event, offer)) &&
         (!query || searchText(line.event.name).includes(query)),
     );
 
   const adjustable: AdjustableLine[] =
-    origin && origin !== 'base'
+    (origin && origin !== 'base') || visibility === 'internas'
       ? []
       : calendarObservances(input.institutional, state).flatMap((entry) => {
           const messages = observanceIssues(input.institutional, state)
@@ -192,6 +203,8 @@ export function activityStep(input: {
     campus: groups.campus.filter(keep),
     base: groups.base.filter(keep),
     dates: dates.filter(keep),
+    /** Whether the visibility filter hides every activity (“Internas”). */
+    activitiesHidden: visibility === 'internas',
     /** Activities to fill that have no date, hence no line in the by-date view. */
     withoutDates: activities.filter((line) => line.pending && !line.dates.length).length,
   };
