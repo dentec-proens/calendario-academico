@@ -1,7 +1,7 @@
 {
   "capture": {
     "sourceCommit": "bd9826b",
-    "description": "Linhas de institutionalEvents semeadas por convex/devSetup.ts a partir de initialCatalogue() (test/fixtures/v4, 43aff30), convertidas para o formato 5 pela migração antes da remoção do conversor na contração."
+    "description": "Linhas de institutionalEvents semeadas por convex/devSetup.ts a partir de initialCatalogue() (test/fixtures/v4, 43aff30), convertidas para o formato 5 pela migração antes da remoção do conversor na contração. test/fixtures/v4 foi removido na contração; o caminho existe no commit bd9826b."
   },
   "revision": 1,
   "rows": [

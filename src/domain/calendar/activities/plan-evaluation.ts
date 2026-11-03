@@ -164,7 +164,9 @@ export function evaluatePlan(
           }
           // Under explicit offers (2027), only a scope the campus confirmed counts (plan, 5.3).
           if (policy.explicitRecordOffers && !event.scope.confirmed) {
-            // Same text as format 4, so the frozen oracle of coverage stays equal.
+            // Same text as format 4. The stored oracle (`test/fixtures/stored/oracle.json`)
+            // records it in the coverage issues and `test/domain/event-scope.test.ts` checks it:
+            // rewording it means updating both.
             issues.push('Confirme explicitamente as ofertas abrangidas pelo registro legado.');
             return false;
           }

@@ -1,9 +1,15 @@
 import { expect, test } from 'vitest';
 import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
+import type { MutationCtx } from '../../convex/_generated/server.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, saveReview, seedCourses } from '../helpers/lifecycle.ts';
-import { storedCases, storedCatalogueRows } from '../helpers/stored-fixtures.ts';
+import {
+  storedCases,
+  storedCatalogueRows,
+  type StoredCase,
+  type StoredSubmission,
+} from '../helpers/stored-fixtures.ts';
 import { retiredDateFields } from '../helpers/retired-fields.ts';
 
 /**
@@ -32,21 +38,82 @@ async function calendar() {
   return { fixture, campus, record, contentId };
 }
 
+/**
+ * The stored documents use synthetic names where the schema holds native IDs (users, documents,
+ * files, the calendar). Those references become rows of the test database; everything else is the
+ * stored value, unchanged.
+ */
+async function nativeReferences(
+  ctx: MutationCtx,
+  calendarId: Id<'calendars'>,
+  userId: Id<'users'>,
+  item: StoredCase,
+) {
+  const documentSnapshot = async (rows: Record<string, unknown>[]) => {
+    const result = [];
+    for (const { id: _id, storageId, createdBy, publishedBy, ...row } of rows) {
+      const id = await ctx.db.insert('documents', {
+        year: row.year,
+        type: row.type,
+        title: row.title,
+        source: row.source,
+        hash: row.hash,
+        filename: row.filename,
+        status: row.status,
+        version: row.version,
+        createdAt: row.createdAt,
+      } as never);
+      result.push({
+        ...row,
+        id,
+        ...(storageId ? { storageId: await ctx.storage.store(new Blob(['pdf'])) } : {}),
+        ...(createdBy ? { createdBy: userId } : {}),
+        ...(publishedBy ? { publishedBy: userId } : {}),
+      });
+    }
+    return result;
+  };
+  const submission = async ({ calendarId: _calendar, ...stored }: StoredSubmission) => ({
+    ...stored,
+    calendarId,
+    submittedBy: { ...(stored.submittedBy as object), id: userId },
+    documentSnapshot: await documentSnapshot(stored.documentSnapshot),
+  });
+  return {
+    documentSnapshot: await documentSnapshot(item.content.documentSnapshot),
+    submissions: await Promise.all(item.submissions.map(submission)),
+  };
+}
+
 test('the stored format 5 fixtures are accepted by the schema', async () => {
-  const { fixture, contentId } = await calendar();
-  await fixture.client.run(async (ctx) => {
-    for (const item of storedCases())
+  const { fixture, record, contentId } = await calendar();
+  const calendarId = record.id as Id<'calendars'>;
+  const userId = fixture.ids.users.admin!;
+  const submissions = await fixture.client.run(async (ctx) => {
+    let count = 0;
+    for (const item of storedCases()) {
+      const native = await nativeReferences(ctx, calendarId, userId, item);
       await ctx.db.patch(contentId, {
         state: item.content.state as never,
+        catalogueRevision: item.content.catalogueRevision,
         institutionalSnapshot: item.content.institutionalSnapshot as never,
+        documentSnapshot: native.documentSnapshot as never,
       });
+      for (const submission of native.submissions) {
+        await ctx.db.insert('calendarSubmissions', submission as never);
+        count += 1;
+      }
+    }
     for (const row of storedCatalogueRows())
       await ctx.db.insert('institutionalEvents', row as never);
+    return count;
   });
+  expect(submissions).toBe(storedCases().flatMap((item) => item.submissions).length);
+  expect(submissions).toBeGreaterThan(0);
 });
 
 test('the schema refuses documents of format 4', async () => {
-  const { fixture, contentId } = await calendar();
+  const { fixture, record, contentId } = await calendar();
   const before = await fixture.client.run((ctx) => ctx.db.get(contentId));
   const [event] = before!.state.events;
   const v4States = [
@@ -67,8 +134,30 @@ test('the schema refuses documents of format 4', async () => {
       ctx.db.insert('institutionalEvents', { ...v4Row, kind: effect } as never),
     ),
   ).rejects.toThrow(/does not match|Validator|validator/);
+  // A submission keeps a copy of the content: the same format 4 markers are refused there.
+  const item = storedCases().find((stored) => stored.submissions.length > 0)!;
+  const [submission] = await fixture.client.run(
+    async (ctx) =>
+      (await nativeReferences(ctx, record.id as Id<'calendars'>, fixture.ids.users.admin!, item))
+        .submissions,
+  );
+  const [storedEvent] = submission!.state.events;
+  const v4Submissions = [
+    { ...submission, state: { ...submission!.state, schemaVersion: 4 } },
+    ...retiredDateFields.map((field) => ({
+      ...submission,
+      state: { ...submission!.state, events: [{ ...storedEvent, [field]: 'include' }] },
+    })),
+  ];
+  for (const document of v4Submissions)
+    await expect(
+      fixture.client.run((ctx) => ctx.db.insert('calendarSubmissions', document as never)),
+    ).rejects.toThrow(/does not match|Validator|validator/);
   expect(await fixture.client.run((ctx) => ctx.db.get(contentId))).toEqual(before);
   expect(await fixture.client.run((ctx) => ctx.db.query('institutionalEvents').take(10))).toEqual(
+    [],
+  );
+  expect(await fixture.client.run((ctx) => ctx.db.query('calendarSubmissions').take(10))).toEqual(
     [],
   );
 });
