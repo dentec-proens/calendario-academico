@@ -603,11 +603,22 @@ function conflictsWithLegacyRow(
   return !generated;
 }
 
+/** Stages per cycle each organization accepted in v4 (`validateOffers`), frozen. */
+const v4StagesPerTerm: Readonly<Record<string, readonly number[]>> = {
+  anual: [2, 3, 4],
+  semestral: [1, 2],
+  'a-classificar': [],
+};
+
 function readOffers(value: unknown, path: string, out: Collector): OfferShape[] {
+  const ids = new Set<string>();
   const offers = list(value, path).map((item, index): OfferShape => {
     const at = `${path}[${index}]`;
     const offer = stored('offer', item, at);
     const id = text(offer.id, `${at}.id`);
+    // Offers, links and scopes are matched by ID: a repeated one has no single reading.
+    if (ids.has(id)) fail(`${at}.id`, `oferta repetida “${id}”`);
+    ids.add(id);
     literal(offer.kind, `${at}.kind`, modalities);
     optionalText(offer.label, `${at}.label`);
     literal(offer.delivery, `${at}.delivery`, ['presencial', 'ead', 'a-conferir']);
@@ -626,6 +637,14 @@ function readOffers(value: unknown, path: string, out: Collector): OfferShape[] 
     // v4 never saved both (`normalize-v4.ts`); converting one would drop the other (section 5.5).
     if (offer.legacyStageCount !== undefined && perTerm !== undefined)
       fail(`${at}.legacyStageCount`, 'quantidade anterior junto de etapas por ciclo');
+    // The conversion rules of the stages hold only for the pairs v4 saved (`validateOffers`): a
+    // reported total without a confirmed cycle, and stages per cycle that the organization allows.
+    // Any other pair is accepted by the storage validator but has no rule (section 5.5): reading
+    // it as reported or defined would be a guess, so it stops the conversion.
+    if (offer.legacyStageCount !== undefined && organization !== 'a-classificar')
+      fail(`${at}.legacyStageCount`, `quantidade anterior com organização ${organization}`);
+    if (perTerm !== undefined && !v4StagesPerTerm[organization].includes(perTerm))
+      fail(`${at}.stages.perTerm`, `${perTerm} etapa(s) por ciclo com organização ${organization}`);
     if (offer.legacyStageCount !== undefined)
       out.form(
         `offer.legacyStageCount:${literal(offer.legacyStageCount, `${at}.legacyStageCount`, [2, 3, 4])}`,
@@ -764,10 +783,15 @@ function readEvents(
   out: Collector,
 ) {
   const offerIds = state.offers.map((offer) => offer.id);
+  const ids = new Set<string>();
   for (const [index, item] of list(value, path).entries()) {
     const at = `${path}[${index}]`;
     const event = stored('event', item, at);
     const id = text(event.id, `${at}.id`);
+    // The manifest, the proof of materialized scopes and the save boundary identify a date by its
+    // ID (plan, section 6): a repeated one would merge two dates, so it has no reading.
+    if (ids.has(id)) fail(`${at}.id`, `data repetida “${id}”`);
+    ids.add(id);
     text(event.name, `${at}.name`);
     date(event.start, `${at}.start`);
     date(event.end, `${at}.end`);

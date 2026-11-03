@@ -398,6 +398,26 @@ describe('the conversion refuses what the inventory does not know', () => {
     expect(() => convertContentV5(content, { year: base.year })).toThrow(BlockedConversionError);
   });
 
+  test('a format 5 state beside a format 4 base is refused, never kept as converted', () => {
+    const item = cases.find((entry) => entry.content.institutionalSnapshot.length)!;
+    const converted = convertContentV5(item.content, context(item))!.document as Json & {
+      institutionalSnapshot: Json[];
+    };
+    expect(convertContentV5(converted, context(item))).toBeNull();
+    const mixed = { ...converted, institutionalSnapshot: item.content.institutionalSnapshot };
+    expect(() => convertContentV5(mixed, context(item))).toThrow(UnknownShapeError);
+    const partly = {
+      ...converted,
+      institutionalSnapshot: [
+        ...converted.institutionalSnapshot.slice(1),
+        item.content.institutionalSnapshot[0],
+      ],
+    };
+    expect(() => convertContentV5(partly, context(item))).toThrow(UnknownShapeError);
+    const empty = { ...converted, institutionalSnapshot: [] };
+    expect(convertContentV5(empty, context(item))).toBeNull();
+  });
+
   test('a standalone snapshot and a catalogue row are refused the same way', () => {
     expect(() => convertSnapshotV5([{ ...snapshotEvent, requirementId: 'final-0' }])).toThrow(
       BlockedConversionError,

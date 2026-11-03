@@ -383,6 +383,30 @@ describe('a shape outside the inventory stops it', () => {
     ['offers as text', (c) => void (event(c, 'forms-pit').offers = 'integrado')],
     ['legacy stage count 5', (c) => void (c.state.offers[0].legacyStageCount = 5)],
     ['stages as number', (c) => void (c.state.offers[0].stages = 4)],
+    // Revisão independente 1 (passo 10): pairs the storage accepts and v4 never saved have no rule.
+    [
+      'legacy stage count under an annual organization',
+      (c) => void Object.assign(c.state.offers[0], { organization: 'anual', legacyStageCount: 3 }),
+    ],
+    [
+      'stages per cycle under an unclassified organization',
+      (c) => void (c.state.offers[0].stages = { perTerm: 2 }),
+    ],
+    [
+      'one stage per cycle under an annual organization',
+      (c) =>
+        void Object.assign(c.state.offers[0], { organization: 'anual', stages: { perTerm: 1 } }),
+    ],
+    [
+      'three stages per cycle under a semester organization',
+      (c) =>
+        void Object.assign(c.state.offers[0], {
+          organization: 'semestral',
+          stages: { perTerm: 3 },
+        }),
+    ],
+    ['repeated offer ID', (c) => void c.state.offers.push({ ...c.state.offers[0] })],
+    ['repeated date ID', (c) => void c.state.events.push({ ...event(c, 'forms-pit') })],
     ['offer organization misto', (c) => void (c.state.offers[0].organization = 'misto')],
     ['schema version 5', (c) => void (c.state.schemaVersion = 5)],
     ['scope inside the state', (c) => void (c.state.scope = { offers: [] })],

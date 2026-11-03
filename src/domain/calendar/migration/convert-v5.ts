@@ -449,8 +449,17 @@ export function convertContentV5(
     provenScopes?: readonly string[];
   },
 ): Conversion<JsonObject> | null {
-  if (isObject(document) && isObject(document.state) && document.state.schemaVersion === 5)
+  if (isObject(document) && isObject(document.state) && document.state.schemaVersion === 5) {
+    // State and snapshot convert in the same write, so a format 5 state beside format 4 base
+    // entries is no document either format wrote: it stops instead of being kept as converted.
+    const snapshot = document.institutionalSnapshot;
+    if (!Array.isArray(snapshot) || (snapshot.length && !snapshotIsV5(snapshot)))
+      throw new UnknownShapeError(
+        `${context.source ?? 'content'}.institutionalSnapshot`,
+        'estado no formato 5 com base institucional fora dele',
+      );
     return null;
+  }
   const source = context.source ?? 'content';
   const inventory =
     source === 'submission'
