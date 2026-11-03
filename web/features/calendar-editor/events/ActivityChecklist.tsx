@@ -25,6 +25,9 @@ import ActivityRow from './ActivityRow.tsx';
 
 const range = (event: { start: string; end: string }) =>
   `${civilDate(event.start)} a ${civilDate(event.end)}`;
+/** Moves the focus once the step has rendered the URL a notice action navigated to. */
+const focusAfterRender = (target: () => HTMLElement | null) =>
+  requestAnimationFrame(() => target()?.focus());
 const monthLabel = (date: string) =>
   new Date(`${date.slice(0, 7)}-01T00:00:00Z`).toLocaleDateString('pt-BR', {
     month: 'long',
@@ -198,7 +201,16 @@ export default function ActivityChecklist() {
                   to: '.',
                   search: (previous) => ({ ...previous, atividadeVisibilidade: undefined }),
                   hashScrollIntoView: false,
-                })
+                }).then(() =>
+                  // The notice leaves with its button: focus returns to the filter it cleared, or
+                  // to “Mais filtros” when no other filter keeps that group open.
+                  focusAfterRender(() => {
+                    const select = document.getElementById('activity-visibility');
+                    return select?.checkVisibility()
+                      ? select
+                      : document.querySelector<HTMLElement>('.activity-more-filters > summary');
+                  }),
+                )
               }
             >
               Mostrar todas as datas
@@ -324,7 +336,10 @@ export default function ActivityChecklist() {
                       to: '.',
                       search: (previous) => ({ ...previous, atividadeVisao: undefined }),
                       hashScrollIntoView: false,
-                    })
+                    }).then(() =>
+                      // The notice leaves with its button: focus goes to the view now chosen.
+                      focusAfterRender(() => document.getElementById('activity-mode-atividade')),
+                    )
                   }
                 >
                   Ver por atividade

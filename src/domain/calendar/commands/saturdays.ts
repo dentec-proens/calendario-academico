@@ -51,10 +51,7 @@ export function updateSaturdayActivity<S extends ActivityState>(
 ): S {
   const current = state.events.find((event) => event.id === values.id);
   if (!current) throw new DomainError('O sábado não existe mais. Reabra o calendário.');
-  if (!isSaturdayRecord(current))
-    throw new DomainError(
-      'Este registro é editado em Atividades da Resolução ou Atividades do Campus.',
-    );
+  if (!isSaturdayRecord(current)) throw new DomainError('Edite esta data na etapa Atividades.');
   const name = values.name.trim();
   if (!name) throw new DomainError('Informe a atividade.');
   return recalculateCalendar(

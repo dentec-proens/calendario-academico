@@ -4,7 +4,8 @@ import { onceLink } from '../helpers/activity-links.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { test, expect } from './test.ts';
 import type { FixtureServer } from './fixture-server.ts';
-import { savedState, selectEditorSection } from './editor-navigation.ts';
+import { openActivity, savedState, selectEditorSection } from './editor-navigation.ts';
+import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import {
   cascavelDraft,
   conflictingLinks,
@@ -357,6 +358,100 @@ for (const width of [1440, 390])
     await expect(page).not.toHaveURL(/atividadeVisibilidade/);
     await expect(rows).toHaveCount(allRows);
     expect(await count(page, 'todas')).toBe(allRows);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  });
+
+for (const width of [1440, 390])
+  test(`notice actions return the focus to the control they changed at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const state = ivaiporaDraft();
+    state.events = state.events.map((event) =>
+      event.id === internalDates[0] ? { ...event, internal: true as const } : event,
+    );
+    await open(page, fixtureServer, state);
+    // “Ver por atividade” leaves with its notice: the focus goes to the view now chosen.
+    await page.locator('#activity-mode-data').check();
+    await page.locator('#activities-without-dates button').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#activity-mode-atividade')).toBeChecked();
+    await expect(page.locator('#activity-mode-atividade')).toBeFocused();
+    // “Mostrar todas as datas” clears the only extra filter, which closes “Mais filtros”.
+    const more = page.locator('.activity-more-filters > summary');
+    await more.click();
+    await page.locator('#activity-visibility').selectOption('internas');
+    await page.locator('#activities-hidden-by-visibility button').focus();
+    await page.keyboard.press('Enter');
+    await expect(page).not.toHaveURL(/atividadeVisibilidade/);
+    await expect(more).toBeFocused();
+    // With another extra filter the group stays open, and the focus returns to the select.
+    await more.click();
+    await page.locator('#activity-origin').selectOption('campus');
+    await page.locator('#activity-visibility').selectOption('internas');
+    await page.locator('#activities-hidden-by-visibility button').focus();
+    await page.keyboard.press('Enter');
+    await expect(page).not.toHaveURL(/atividadeVisibilidade/);
+    await expect(page.locator('#activity-visibility')).toBeFocused();
+  });
+
+for (const width of [1440, 390])
+  test(`filling an activity in a mixed calendar keeps its contextual offers at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    // Annual integrated and undergraduate offers beside two semester undergraduate offers.
+    await open(page, fixtureServer, calendarOffersV4Fixture());
+    const offers = page.locator('#event-modalities input[name="event-modality"]');
+    const chosen = () =>
+      offers.evaluateAll((items) =>
+        (items as HTMLInputElement[]).map((item) => `${item.value}:${item.checked}`),
+      );
+    for (const [key, expected] of [
+      // A semester cycle belongs to the semester offers only; the annual cycle, to the annual ones.
+      ['final:cycle:first', ['graduacao-2:true', 'graduacao-3:true']],
+      ['final:cycle:annual', ['integrado:true', 'graduacao:true']],
+      // The reference semester (art. 11, XII) applies to every offer, annual or semester.
+      [
+        'pit:semester:first',
+        ['integrado:true', 'graduacao:true', 'graduacao-2:true', 'graduacao-3:true'],
+      ],
+    ] as const) {
+      await openActivity(page, key);
+      await expect(page.locator('#event-form')).toBeVisible();
+      expect(await chosen()).toEqual(expected);
+      await page.locator('#close-event-panel').click();
+      await expect(page.locator('#event-panel')).toBeHidden();
+    }
+    // Filling the semester cycle saves and confirms exactly the contextual offers.
+    await openActivity(page, 'final:cycle:first');
+    await page.locator('#event-start').fill('2027-07-05');
+    await page.locator('#event-end').fill('2027-07-05');
+    await page.locator('#event-form button[type="submit"]').click();
+    await expect
+      .poll(async () =>
+        (await savedState(page)).state.events.find(
+          (event) => event.activity?.activityId === 'final',
+        ),
+      )
+      .toMatchObject({
+        activity: { activityId: 'final', term: 'first' },
+        scope: { offers: ['graduacao-2', 'graduacao-3'], confirmed: true },
+      });
+    await page.locator('#close-event-panel').click();
+    // A new date of the campus starts with every offer of the calendar.
+    await page.locator('#new-event').click();
+    await expect(page.locator('#event-form-title')).toHaveText('Nova data do campus');
+    expect(await chosen()).toEqual([
+      'integrado:true',
+      'graduacao:true',
+      'graduacao-2:true',
+      'graduacao-3:true',
+    ]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );

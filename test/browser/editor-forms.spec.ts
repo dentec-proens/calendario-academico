@@ -395,7 +395,7 @@ test('a registered Saturday is edited and removed from the panel', async ({
   await expect(page.locator('#saturday-dates input[value="2027-03-06"]')).toBeFocused();
 });
 
-test('multi-day inclusions over a Saturday are registered but edited in Campus activities', async ({
+test('multi-day inclusions over a Saturday are registered but edited in the Activities step', async ({
   page,
   fixtureServer,
 }) => {
