@@ -456,6 +456,24 @@ describe('a shape outside the inventory stops it', () => {
         }),
     ],
     ['date without zero padding', (c) => void (event(c, 'forms-pit').start = '2027-8-2')],
+    [
+      'blank first vacation period',
+      (c) =>
+        void (c.state.teacherVacations = {
+          firstStart: '',
+          firstEnd: '',
+        }),
+    ],
+    [
+      'malformed optional vacation date',
+      (c) =>
+        void (c.state.teacherVacations = {
+          firstStart: '2027-01-04',
+          firstEnd: '2027-01-29',
+          thirdStart: '2027-7-5',
+          thirdEnd: '',
+        }),
+    ],
     ...(
       [
         ['unknown document field', { activity: 'pit' }],
@@ -473,6 +491,19 @@ describe('a shape outside the inventory stops it', () => {
       },
     ]),
   ];
+  test('optional vacation periods left blank, as the v4 editor stores them, are accepted', () => {
+    const content = copy(base.content);
+    content.state.teacherVacations = {
+      firstStart: '2027-01-04',
+      firstEnd: '2027-01-29',
+      secondStart: '',
+      secondEnd: '',
+      thirdStart: '',
+      thirdEnd: '',
+    };
+    expect(() => inventoryContent(content, { year: base.year })).not.toThrow();
+  });
+
   test('a valid document is accepted', () => {
     const content = copy(base.content);
     content.documentSnapshot.push({ ...documentItem });

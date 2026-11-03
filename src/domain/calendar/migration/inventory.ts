@@ -1007,8 +1007,10 @@ function readState(
       ['firstStart', 'firstEnd'],
       ['secondStart', 'secondEnd', 'thirdStart', 'thirdEnd'],
     );
+    // The v4 editor stores an optional period left blank as "" (`optionalCivilDate` reads it as
+    // absent), so only the first period has to hold dates.
     for (const [key, day] of Object.entries(vacations))
-      date(day, `${path}.teacherVacations.${key}`);
+      if (day !== '' || key.startsWith('first')) date(day, `${path}.teacherVacations.${key}`);
   }
 }
 
