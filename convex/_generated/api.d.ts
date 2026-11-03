@@ -41,7 +41,6 @@ import type * as devSetup from "../devSetup.js";
 import type * as documents from "../documents.js";
 import type * as documents_model from "../documents/model.js";
 import type * as http from "../http.js";
-import type * as legacyValidators from "../legacyValidators.js";
 import type * as lib_audit from "../lib/audit.js";
 import type * as lib_authorization from "../lib/authorization.js";
 import type * as lib_maintenance from "../lib/maintenance.js";
@@ -97,7 +96,6 @@ declare const fullApi: ApiFromModules<{
   documents: typeof documents;
   "documents/model": typeof documents_model;
   http: typeof http;
-  legacyValidators: typeof legacyValidators;
   "lib/audit": typeof lib_audit;
   "lib/authorization": typeof lib_authorization;
   "lib/maintenance": typeof lib_maintenance;

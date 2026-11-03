@@ -23,34 +23,25 @@ import {
   legacyOperationalLinks,
   stageLinksToReview,
 } from '../fixtures/pending-links-2027.ts';
-import {
-  datesLinkedToLegacyRows,
-  legacyBasis,
-  legacyIds,
-} from '../helpers/legacy-classification.ts';
-import { readOracle, v4Cases, type V4Case } from '../helpers/v4-fixtures.ts';
-import { convertedContent } from '../helpers/v5-conversion.ts';
+import { legacyBasis } from '../helpers/legacy-classification.ts';
+import { storedCases, type StoredCase } from '../helpers/stored-fixtures.ts';
 
 /**
  * Phase 2, step 9d of `docs/plans/2026-11-02-atividades-e-datas.md`: the 2027 policy generates
- * only its own declarations. v4 kept every operational ID resolvable in 2027 as an optional row of
+ * only its own declarations. Format 4 kept every operational ID resolvable in 2027 as an optional row of
  * “Classificação legada”; those links are now dates under “Vínculo a conferir”, never rebound.
  * Years without a policy keep the operational catalogue as their explicit behaviour.
  */
-const oracle = readOracle<{
-  cases: { name: string; activities: { id: string; basis?: string }[] }[];
-}>();
-
-const converted = (item: V4Case) =>
+const stored = (item: StoredCase) =>
   ({
-    ...convertedContent(item).state,
+    ...item.content.state,
     year: item.year,
     campus: item.campus,
   }) as unknown as ActivityState;
 
-const frozen2027 = v4Cases().filter((item) => item.year === 2027);
+const frozen2027 = storedCases().filter((item) => item.year === 2027);
 const states2027: [string, ActivityState][] = [
-  ...frozen2027.map((item) => [item.name, converted(item)] as [string, ActivityState]),
+  ...frozen2027.map((item) => [item.name, stored(item)] as [string, ActivityState]),
   ...[
     ivaiporaDraft,
     cascavelDraft,
@@ -78,13 +69,6 @@ describe('2027 generates only the declarations of its policy', () => {
       ).toBe(true);
   });
 
-  test('the frozen oracle had such rows in most 2027 documents, now retired', () => {
-    const recorded = frozen2027.map(
-      (item) => legacyIds(oracle.cases.find((entry) => entry.name === item.name)!.activities).size,
-    );
-    expect(recorded.filter((size) => size > 0).length).toBeGreaterThan(10);
-  });
-
   test('the 2027 policy does not read the operational catalogue', async () => {
     const folder = resolve(import.meta.dirname, '../../src/domain/policies/consup-292-2027');
     for (const file of await readdir(folder))
@@ -94,7 +78,7 @@ describe('2027 generates only the declarations of its policy', () => {
   });
 });
 
-describe('links v4 resolved through the operational catalogue stay to review', () => {
+describe('links of the operational catalogue stay to review in 2027', () => {
   test('a cycle teaching plan and a semester enrolment are reviewed, without fallback', () => {
     const state = legacyOperationalLinks() as ActivityState;
     const generated = generatedActivities(state);
@@ -111,22 +95,19 @@ describe('links v4 resolved through the operational catalogue stay to review', (
   });
 
   test('every frozen 2027 date linked to a retired row is reviewed with its link kept', () => {
+    // The stored dates once linked to a row of “Classificação legada”.
+    const retired = ['forms-notice-published', 'forms-teaching-plan-annual', 'legacy-enrolment'];
     const reviewed: string[] = [];
     for (const item of frozen2027) {
-      const ids = legacyIds(oracle.cases.find((entry) => entry.name === item.name)!.activities);
-      const state = converted(item);
+      const state = stored(item);
       const review = linksToReview(state);
-      for (const id of datesLinkedToLegacyRows(item.content.state.events, ids)) {
-        expect(state.events.find((event) => event.id === id)?.activity, id).toBeDefined();
-        expect(review.get(id), id).toBe('unclassified');
-        reviewed.push(id);
+      for (const event of state.events.filter((event) => retired.includes(event.id))) {
+        expect(event.activity, event.id).toBeDefined();
+        expect(review.get(event.id), event.id).toBe('unclassified');
+        reviewed.push(event.id);
       }
     }
-    expect(reviewed.sort()).toEqual([
-      'forms-notice-published',
-      'forms-teaching-plan-annual',
-      'legacy-enrolment',
-    ]);
+    expect(reviewed.sort()).toEqual(retired);
   });
 });
 

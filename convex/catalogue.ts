@@ -9,7 +9,6 @@ import * as contracts from './contracts';
 import { appendAudit } from './lib/audit';
 import { admin } from './lib/authorization';
 import { fail, text } from './lib/shared';
-import { currentCatalogueRow } from './lib/storageFormat';
 import { v } from 'convex/values';
 import { validateObservanceCatalogueEvent } from '../src/domain/calendar/observances';
 import { domainRule } from './lib/shared';
@@ -32,14 +31,12 @@ export const saveCatalogue = mutation({
       !body.modalities.length
     )
       fail('Datas, efeito ou ofertas inválidos.');
-    const stored = body.id
+    const prior = body.id
       ? await ctx.db
           .query('institutionalEvents')
           .withIndex('by_code', (q) => q.eq('code', body.id!))
           .unique()
       : null;
-    // A v4 row is converted only by the migration, never replaced by the form.
-    const prior = stored && currentCatalogueRow(stored);
     const year = Number(body.start.slice(0, 4)),
       code = body.id ?? crypto.randomUUID();
     text(code, 100);

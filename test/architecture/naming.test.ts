@@ -80,12 +80,11 @@ test('old names of dates, activity rows and the activity plan are gone from the 
 });
 
 /**
- * Step 20 (closing of phase 2): normal execution uses only format 5. The names of format 4 (the
- * link `requirementId`, the effect `kind` of a date, `recordType`, `legacyStageCount` and the
- * `*V4` aliases) survive only where the plan keeps them: the converter and the classifier, the
- * `v5-*` verifiers, the frozen storage validators (and the expanded schema that reads them until
- * the contraction), the constant historical keys of the base identity and, in tests, the frozen
- * oracles and the tests of the conversion that read them.
+ * Step 20 (closing of phase 2) and the contraction (section 6, “Release”, step 7): the code uses
+ * only format 5. The names of format 4 (the link `requirementId`, the effect `kind` of a date,
+ * `recordType`, `legacyStageCount` and the `*V4` aliases) survive only in the constant historical
+ * keys of the base identity and, in tests, in the lists of retired fields that the refusal tests
+ * use and in the older oracles that recorded them.
  */
 const formatFourNames: readonly RegExp[] = [
   /\brequirementIds?\b/,
@@ -99,41 +98,18 @@ const formatFourNames: readonly RegExp[] = [
   /\bV4[A-Z]\w*/,
 ];
 
-const formatFourAllowed: readonly (string | RegExp)[] = [
-  // Converter and classifier of the migration.
-  'src/domain/calendar/migration/convert-v5.ts',
-  'src/domain/calendar/migration/inventory.ts',
-  // Verifiers of the operation (`v5-inventory`, `v5-manifest`, `v5-verify`, `v5-export`).
-  /^scripts\/administration\/v5-[\w-]+\.ts$/,
-  // Frozen storage validators and the expansion that accepts whole v4 documents until the
-  // contraction (plan, section 6 “Release”, step 7).
-  'convex/legacyValidators.ts',
-  'convex/schema.ts',
+const formatFourAllowed: readonly string[] = [
   // Constant historical keys of `eventContent` (base identity).
   'src/domain/calendar/base.ts',
-  // Frozen oracles and the tests of the conversion, inventory and migration that read them.
-  /^test\/(domain|convex)\/v[45]-[\w-]+\.test\.ts$/,
-  /^test\/helpers\/v[45]-[\w-]+\.ts$/,
-  // Reads the dropped fields from the frozen validators for the refusal tests.
+  // The fields format 5 dropped, for the refusal tests.
   'test/helpers/retired-fields.ts',
-  // Step 9b: the conversion of each frozen link, checked against its consumers.
-  'test/domain/activity-link-consumers.test.ts',
   // The frozen v3 oracle names each linked date by the row its link resolves to.
   'test/domain/offers-equivalence.test.ts',
-  // Step 9d: the frozen dates linked to the retired “Classificação legada” rows of 2027.
-  'test/helpers/legacy-classification.ts',
-  'test/domain/legacy-classification-2027.test.ts',
-  // Step 7: v4 documents (dates without offers) fed to the conversion of scopes.
-  'test/helpers/event-scope.ts',
-  'test/convex/event-scope.test.ts',
 ];
 
-const allowed = (path: string) =>
-  formatFourAllowed.some((entry) =>
-    typeof entry === 'string' ? entry === path : entry.test(path),
-  );
+const allowed = (path: string) => formatFourAllowed.includes(path);
 
-test('format 4 names remain only in the converter, verifiers, frozen validators and oracles', async () => {
+test('format 4 names remain only in the base identity, the retired fields and older oracles', async () => {
   const files = (
     await Promise.all(
       ['src', 'web', 'convex', 'scripts', 'test'].map((folder) =>
@@ -166,11 +142,7 @@ test('modules and tests of format 5 carry no -v4 suffix', async () => {
     )
   ).flat();
   expect(
-    files
-      .map((file) => relative(repository, file))
-      // The frozen v4 documents keep their own folder.
-      .filter((path) => !path.startsWith('test/fixtures/v4/'))
-      .filter((path) => /-v4\./.test(path)),
+    files.map((file) => relative(repository, file)).filter((path) => /-v4\./.test(path)),
   ).toEqual([]);
 });
 

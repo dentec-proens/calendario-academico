@@ -13,8 +13,7 @@ import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { cascavelDraft, conflictingLinks, ivaiporaDraft } from '../fixtures/pending-links-2027.ts';
-import { v4Cases } from '../helpers/v4-fixtures.ts';
-import { convertedContent } from '../helpers/v5-conversion.ts';
+import { storedCases } from '../helpers/stored-fixtures.ts';
 
 /**
  * Plan, phase 2, step 11: the evaluation is calculated by activity × offer, in separate dimensions,
@@ -23,10 +22,10 @@ import { convertedContent } from '../helpers/v5-conversion.ts';
  */
 
 const audited = (): [string, ActivityState][] =>
-  v4Cases()
+  storedCases()
     .filter((item) => item.name.endsWith('(seção 11)'))
     .map((item) => {
-      const content = convertedContent(item);
+      const content = item.content;
       return [
         item.name,
         { ...content.state, year: item.year, campus: item.campus } as unknown as ActivityState,

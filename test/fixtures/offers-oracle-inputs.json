@@ -1,7 +1,7 @@
 {
   "oracleSourceCommit": "34e35b9eaed1162d676299920e4d9b27680cc549",
   "oracleSha256": "eff78c9cb6b7e88f6061bb4a2b40c99a2cce22c2e054cc2490b569dd9e77e75c",
-  "capture": "Inputs converted by the validated release A converter before its removal in release B; expected projections remain in offers-v3-oracle.json.",
+  "capture": "Inputs converted by the validated release A converter before its removal in release B; expected projections remain in offers-v3-oracle.json. Converted to format 5 (cases and the catalogue of offers-v3-oracle.json) by the phase 2 migration converter at bd9826b, before its removal in the contraction.",
   "releaseAConverters": {
     "src/domain/calendar/normalization/conversion.ts": "6753eaa8469e799c3fa5c3d778119641570a9a7fc2e926e2e52bcfd28b40048a",
     "src/domain/calendar/normalization/conversion-v4.ts": "e124b04ef6d5a938ee31858f6b852e8dd1eb7432d585bb29add020f63e71ffa9"
@@ -10,7 +10,7 @@
     {
       "name": "v3 anual integrado, quatro etapas",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -19,6 +19,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 4
             },
             "scope": {
@@ -61,72 +62,131 @@
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-04-16",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-04-19",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-3",
             "name": "3ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-10-01",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-3:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 3
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-4",
             "name": "4ª etapa sintética",
             "start": "2027-10-04",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-4:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 4
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["integrado"]
+            "effect": "include",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["integrado"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["integrado"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -136,7 +196,7 @@
     {
       "name": "v3 graduação anual, 2 etapas",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -145,6 +205,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 2
             },
             "scope": {
@@ -187,52 +248,89 @@
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["graduacao"]
+            "effect": "include",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["graduacao"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["graduacao"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -242,7 +340,7 @@
     {
       "name": "v3 graduação anual, 3 etapas",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -251,6 +349,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 3
             },
             "scope": {
@@ -293,62 +392,110 @@
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-05-28",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-05-31",
             "end": "2027-09-10",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-3",
             "name": "3ª etapa sintética",
             "start": "2027-09-13",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-3:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 3
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["graduacao"]
+            "effect": "include",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["graduacao"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["graduacao"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -358,7 +505,7 @@
     {
       "name": "v3 graduação anual, 4 etapas",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -367,6 +514,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 4
             },
             "scope": {
@@ -409,72 +557,131 @@
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-04-16",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-04-19",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-3",
             "name": "3ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-10-01",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-3:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 3
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-4",
             "name": "4ª etapa sintética",
             "start": "2027-10-04",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-4:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 4
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["graduacao"]
+            "effect": "include",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["graduacao"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["graduacao"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -484,7 +691,7 @@
     {
       "name": "v3 graduação semestral, 2 etapas anuais",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -493,6 +700,7 @@
             "delivery": "a-conferir",
             "organization": "semestral",
             "stages": {
+              "status": "defined",
               "perTerm": 1
             },
             "scope": {
@@ -546,52 +754,89 @@
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "first",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "second",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["graduacao"]
+            "effect": "include",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["graduacao"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["graduacao"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -601,7 +846,7 @@
     {
       "name": "v3 graduação semestral, 4 etapas anuais",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -610,6 +855,7 @@
             "delivery": "a-conferir",
             "organization": "semestral",
             "stages": {
+              "status": "defined",
               "perTerm": 2
             },
             "scope": {
@@ -663,72 +909,131 @@
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-04-16",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "first",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-04-19",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "first",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-3",
             "name": "3ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-10-01",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-3:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "second",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-4",
             "name": "4ª etapa sintética",
             "start": "2027-10-04",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-4:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "second",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["graduacao"]
+            "effect": "include",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["graduacao"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["graduacao"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -738,7 +1043,7 @@
     {
       "name": "v3 misto com técnico, graduação e pós-graduação",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -747,6 +1052,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 4
             },
             "scope": {
@@ -773,6 +1079,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 2
             },
             "scope": {
@@ -799,6 +1106,7 @@
             "delivery": "a-conferir",
             "organization": "semestral",
             "stages": {
+              "status": "defined",
               "perTerm": 2
             },
             "scope": {
@@ -825,6 +1133,7 @@
             "delivery": "a-conferir",
             "organization": "semestral",
             "stages": {
+              "status": "defined",
               "perTerm": 1
             },
             "intake": {
@@ -919,152 +1228,299 @@
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-04-16",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-04-19",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-3",
             "name": "3ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-10-01",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-3:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 3
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-4",
             "name": "4ª etapa sintética",
             "start": "2027-10-04",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-4:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 4
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "subsequente-stage-1",
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:subsequente",
-            "offers": ["subsequente"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "subsequente",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["subsequente"],
+              "confirmed": true
+            }
           },
           {
             "id": "subsequente-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:subsequente",
-            "offers": ["subsequente"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "subsequente",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["subsequente"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-1",
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-04-16",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "first",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-04-19",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "first",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-3",
             "name": "3ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-10-01",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-3:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "second",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-4",
             "name": "4ª etapa sintética",
             "start": "2027-10-04",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-4:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "second",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "posgraduacao-stage-1",
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:posgraduacao",
-            "offers": ["posgraduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "posgraduacao",
+              "position": {
+                "status": "defined",
+                "term": "first",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["posgraduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "posgraduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:posgraduacao",
-            "offers": ["posgraduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "posgraduacao",
+              "position": {
+                "status": "defined",
+                "term": "second",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["posgraduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["integrado"]
+            "effect": "include",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["integrado"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["integrado"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["integrado", "subsequente", "graduacao", "posgraduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -1074,7 +1530,7 @@
     {
       "name": "v3 pós-graduação excluída da norma",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1083,6 +1539,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 2
             },
             "intake": {
@@ -1122,52 +1579,89 @@
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:posgraduacao",
-            "offers": ["posgraduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "posgraduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["posgraduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "posgraduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:posgraduacao",
-            "offers": ["posgraduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "posgraduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["posgraduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["posgraduacao"]
+            "effect": "include",
+            "scope": {
+              "offers": ["posgraduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["posgraduacao"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["posgraduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["posgraduacao"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["posgraduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["posgraduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -1177,7 +1671,7 @@
     {
       "name": "v3 norma própria uniforme",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1186,6 +1680,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 4
             },
             "scope": {
@@ -1212,6 +1707,7 @@
             "delivery": "a-conferir",
             "organization": "semestral",
             "stages": {
+              "status": "defined",
               "perTerm": 1
             },
             "scope": {
@@ -1276,92 +1772,173 @@
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-04-16",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-04-19",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-3",
             "name": "3ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-10-01",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-3:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 3
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-4",
             "name": "4ª etapa sintética",
             "start": "2027-10-04",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-4:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 4
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-1",
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "first",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "second",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["integrado"]
+            "effect": "include",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["integrado"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["integrado"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["integrado", "graduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -1371,7 +1948,7 @@
     {
       "name": "v3 escopo sem confirmação",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1380,6 +1957,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 2
             },
             "intake": {
@@ -1419,52 +1997,89 @@
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["graduacao"]
+            "effect": "include",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["graduacao"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["graduacao"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -1474,7 +2089,7 @@
     {
       "name": "v3 sem etapas definidas",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1567,32 +2182,47 @@
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["integrado"]
+            "effect": "include",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["integrado"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["integrado"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["integrado", "graduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -1602,7 +2232,7 @@
     {
       "name": "v3 organização a classificar",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1648,32 +2278,47 @@
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["integrado"]
+            "effect": "include",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["integrado"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["integrado"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -1683,7 +2328,7 @@
     {
       "name": "v3 mapa de organização ausente não herda regime",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1721,7 +2366,7 @@
     {
       "name": "v2 organização ambígua pendente",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1792,7 +2437,7 @@
     {
       "name": "v2 combinado, ingresso legado do segundo semestre",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1801,6 +2446,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 4
             },
             "scope": {
@@ -1818,6 +2464,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 2
             },
             "scope": {
@@ -1851,92 +2498,173 @@
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-04-16",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-04-19",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-3",
             "name": "3ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-10-01",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-3:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 3
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-4",
             "name": "4ª etapa sintética",
             "start": "2027-10-04",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-4:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 4
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-1",
             "name": "1ª etapa sintética",
             "start": "2027-02-01",
             "end": "2027-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2027-08-02",
             "end": "2027-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "include",
-            "offers": ["integrado"]
+            "effect": "include",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2027-02-06",
             "end": "2027-02-06",
-            "kind": "exclude",
-            "offers": ["integrado"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2027-04-20",
             "end": "2027-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["integrado"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2027-05-03",
             "end": "2027-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["integrado", "graduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2027,
@@ -1946,7 +2674,7 @@
     {
       "name": "v3 política de 2026, organização anual",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "legacy-2026-v1",
         "offers": [
           {
@@ -1955,6 +2683,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 4
             },
             "scope": {
@@ -1981,6 +2710,7 @@
             "delivery": "a-conferir",
             "organization": "anual",
             "stages": {
+              "status": "defined",
               "perTerm": 3
             },
             "scope": {
@@ -2034,102 +2764,194 @@
             "name": "1ª etapa sintética",
             "start": "2026-02-01",
             "end": "2026-04-16",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-2",
             "name": "2ª etapa sintética",
             "start": "2026-04-19",
             "end": "2026-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-3",
             "name": "3ª etapa sintética",
             "start": "2026-08-02",
             "end": "2026-10-01",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-3:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 3
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "integrado-stage-4",
             "name": "4ª etapa sintética",
             "start": "2026-10-04",
             "end": "2026-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-4:integrado",
-            "offers": ["integrado"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "integrado",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 4
+              }
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-1",
             "name": "1ª etapa sintética",
             "start": "2026-02-01",
             "end": "2026-05-28",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2026-05-31",
             "end": "2026-09-10",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-3",
             "name": "3ª etapa sintética",
             "start": "2026-09-13",
             "end": "2026-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-3:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "annual",
+                "number": 3
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2026-02-06",
             "end": "2026-02-06",
-            "kind": "include",
-            "offers": ["integrado"]
+            "effect": "include",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2026-02-06",
             "end": "2026-02-06",
-            "kind": "exclude",
-            "offers": ["integrado"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2026-04-20",
             "end": "2026-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["integrado"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["integrado"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2026-05-03",
             "end": "2026-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["integrado", "graduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2026,
@@ -2139,7 +2961,7 @@
     {
       "name": "v3 política de 2026, organização semestral sem segundo ingresso",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "legacy-2026-v1",
         "offers": [
           {
@@ -2148,6 +2970,7 @@
             "delivery": "a-conferir",
             "organization": "semestral",
             "stages": {
+              "status": "defined",
               "perTerm": 1
             },
             "scope": {
@@ -2192,52 +3015,89 @@
             "name": "1ª etapa sintética",
             "start": "2026-02-01",
             "end": "2026-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:subsequente",
-            "offers": ["subsequente"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "subsequente",
+              "position": {
+                "status": "defined",
+                "term": "first",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["subsequente"],
+              "confirmed": true
+            }
           },
           {
             "id": "subsequente-stage-2",
             "name": "2ª etapa sintética",
             "start": "2026-08-02",
             "end": "2026-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:subsequente",
-            "offers": ["subsequente"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "subsequente",
+              "position": {
+                "status": "defined",
+                "term": "second",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["subsequente"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2026-02-06",
             "end": "2026-02-06",
-            "kind": "include",
-            "offers": ["subsequente"]
+            "effect": "include",
+            "scope": {
+              "offers": ["subsequente"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2026-02-06",
             "end": "2026-02-06",
-            "kind": "exclude",
-            "offers": ["subsequente"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["subsequente"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2026-04-20",
             "end": "2026-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["subsequente"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["subsequente"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2026-05-03",
             "end": "2026-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["subsequente"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2026,
@@ -2247,7 +3107,7 @@
     {
       "name": "v3 ano sem política configurada",
       "input": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "rulesetVersion": "unconfigured:2028",
         "offers": [
           {
@@ -2256,6 +3116,7 @@
             "delivery": "a-conferir",
             "organization": "semestral",
             "stages": {
+              "status": "defined",
               "perTerm": 2
             },
             "scope": {
@@ -2309,77 +3170,512 @@
             "name": "1ª etapa sintética",
             "start": "2028-02-01",
             "end": "2028-04-16",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-1:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "first",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-2",
             "name": "2ª etapa sintética",
             "start": "2028-04-19",
             "end": "2028-06-30",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-2:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "first",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-3",
             "name": "3ª etapa sintética",
             "start": "2028-08-02",
             "end": "2028-10-01",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-3:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "second",
+                "number": 1
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "graduacao-stage-4",
             "name": "4ª etapa sintética",
             "start": "2028-10-04",
             "end": "2028-12-17",
-            "kind": "note",
+            "effect": "note",
             "category": "limite",
-            "requirementId": "stage-4:graduacao",
-            "offers": ["graduacao"]
+            "activity": {
+              "activityId": "stage",
+              "offerId": "graduacao",
+              "position": {
+                "status": "defined",
+                "term": "second",
+                "number": 2
+              }
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday",
             "name": "Inclusão de sábado sintética",
             "start": "2028-02-06",
             "end": "2028-02-06",
-            "kind": "include",
-            "offers": ["graduacao"]
+            "effect": "include",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "saturday-blocker",
             "name": "Impedimento sintético",
             "start": "2028-02-06",
             "end": "2028-02-06",
-            "kind": "exclude",
-            "offers": ["graduacao"]
+            "effect": "exclude",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "community",
             "name": "Reunião com a comunidade sintética",
             "start": "2028-04-20",
             "end": "2028-04-20",
-            "kind": "note",
-            "requirementId": "family-meeting",
-            "offers": ["graduacao"]
+            "effect": "note",
+            "activity": {
+              "activityId": "family-meeting"
+            },
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": true
+            }
           },
           {
             "id": "implicit-note",
             "name": "Registro sem escopo explícito sintético",
             "start": "2028-05-03",
             "end": "2028-05-03",
-            "kind": "note"
+            "effect": "note",
+            "scope": {
+              "offers": ["graduacao"],
+              "confirmed": false
+            }
           }
         ],
         "year": 2028,
         "campus": "Campus sintético"
       }
+    }
+  ],
+  "catalogueEvents": [
+    {
+      "id": "national-0",
+      "name": "Confraternização Universal",
+      "start": "2027-01-01",
+      "end": "2027-01-01",
+      "effect": "exclude",
+      "category": "feriado",
+      "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "national-1",
+      "name": "Tiradentes",
+      "start": "2027-04-21",
+      "end": "2027-04-21",
+      "effect": "exclude",
+      "category": "feriado",
+      "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "national-2",
+      "name": "Dia do Trabalho",
+      "start": "2027-05-01",
+      "end": "2027-05-01",
+      "effect": "exclude",
+      "category": "feriado",
+      "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "national-3",
+      "name": "Independência do Brasil",
+      "start": "2027-09-07",
+      "end": "2027-09-07",
+      "effect": "exclude",
+      "category": "feriado",
+      "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "national-4",
+      "name": "Nossa Senhora Aparecida",
+      "start": "2027-10-12",
+      "end": "2027-10-12",
+      "effect": "exclude",
+      "category": "feriado",
+      "evidence": "Lei 6.802/1980: https://www.planalto.gov.br/ccivil_03/leis/l6802.htm",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "national-5",
+      "name": "Finados",
+      "start": "2027-11-02",
+      "end": "2027-11-02",
+      "effect": "exclude",
+      "category": "feriado",
+      "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "national-6",
+      "name": "Proclamação da República",
+      "start": "2027-11-15",
+      "end": "2027-11-15",
+      "effect": "exclude",
+      "category": "feriado",
+      "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "national-7",
+      "name": "Dia Nacional de Zumbi e da Consciência Negra",
+      "start": "2027-11-20",
+      "end": "2027-11-20",
+      "effect": "exclude",
+      "category": "feriado",
+      "evidence": "Lei 14.759/2023: https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14759.htm",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "national-8",
+      "name": "Natal",
+      "start": "2027-12-25",
+      "end": "2027-12-25",
+      "effect": "exclude",
+      "category": "feriado",
+      "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-0",
+      "name": "Recesso acadêmico e administrativo",
+      "start": "2027-02-08",
+      "end": "2027-02-08",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-1",
+      "name": "Carnaval — recesso acadêmico e administrativo",
+      "start": "2027-02-09",
+      "end": "2027-02-09",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-2",
+      "name": "Quarta-feira de Cinzas — recesso acadêmico e administrativo",
+      "start": "2027-02-10",
+      "end": "2027-02-10",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-3",
+      "name": "Paixão de Cristo — impedimento previsto no calendário IFPR",
+      "start": "2027-03-26",
+      "end": "2027-03-26",
+      "effect": "exclude",
+      "category": "feriado",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-4",
+      "name": "Dia Nacional da Luta pela Educação Inclusiva",
+      "start": "2027-04-14",
+      "end": "2027-04-14",
+      "effect": "note",
+      "category": "comemorativo",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-5",
+      "name": "Corpus Christi — recesso acadêmico e administrativo",
+      "start": "2027-05-27",
+      "end": "2027-05-27",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-6",
+      "name": "Recesso acadêmico e administrativo",
+      "start": "2027-05-28",
+      "end": "2027-05-28",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-7",
+      "name": "Prazo para informar cursos e vagas à PROENS",
+      "start": "2027-05-31",
+      "end": "2027-05-31",
+      "effect": "note",
+      "category": "prazo",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-8",
+      "name": "Dia Mundial do Meio Ambiente",
+      "start": "2027-06-05",
+      "end": "2027-06-05",
+      "effect": "note",
+      "category": "comemorativo",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-9",
+      "name": "Dia Nacional de Imunização",
+      "start": "2027-06-09",
+      "end": "2027-06-09",
+      "effect": "note",
+      "category": "comemorativo",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-10",
+      "name": "Prazo de referência dos editais do Processo Seletivo 2028",
+      "start": "2027-06-15",
+      "end": "2027-06-15",
+      "effect": "note",
+      "category": "prazo",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-11",
+      "name": "Lei Brasileira de Inclusão da Pessoa com Deficiência",
+      "start": "2027-07-06",
+      "end": "2027-07-06",
+      "effect": "note",
+      "category": "comemorativo",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-12",
+      "name": "Dia Nacional dos Profissionais da Educação",
+      "start": "2027-08-06",
+      "end": "2027-08-06",
+      "effect": "note",
+      "category": "comemorativo",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-13",
+      "name": "Dia do Estudante",
+      "start": "2027-08-11",
+      "end": "2027-08-11",
+      "effect": "note",
+      "category": "comemorativo",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-14",
+      "name": "Recesso acadêmico e administrativo",
+      "start": "2027-09-06",
+      "end": "2027-09-06",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-15",
+      "name": "Recesso acadêmico e administrativo",
+      "start": "2027-10-11",
+      "end": "2027-10-11",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-16",
+      "name": "Dia do Professor — feriado escolar",
+      "start": "2027-10-15",
+      "end": "2027-10-15",
+      "effect": "exclude",
+      "category": "feriado",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-17",
+      "name": "Dia do Servidor Público — recesso acadêmico e administrativo",
+      "start": "2027-10-28",
+      "end": "2027-10-28",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-18",
+      "name": "Recesso acadêmico e administrativo",
+      "start": "2027-10-29",
+      "end": "2027-10-29",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-19",
+      "name": "Recesso acadêmico e administrativo",
+      "start": "2027-11-01",
+      "end": "2027-11-01",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-20",
+      "name": "Recesso acadêmico e administrativo",
+      "start": "2027-12-24",
+      "end": "2027-12-24",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-21",
+      "name": "Criação do IFPR e da Rede Federal de EPT",
+      "start": "2027-12-29",
+      "end": "2027-12-29",
+      "effect": "note",
+      "category": "criacao",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-22",
+      "name": "Recesso acadêmico e administrativo",
+      "start": "2027-12-31",
+      "end": "2027-12-31",
+      "effect": "exclude",
+      "category": "recesso",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-science",
+      "name": "Mês Nacional da Ciência, Tecnologia e Inovações",
+      "start": "2027-10-01",
+      "end": "2027-10-31",
+      "effect": "note",
+      "category": "comemorativo",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, art. 2º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
+    },
+    {
+      "id": "ifpr2027-library",
+      "name": "Semana Nacional do Livro e da Biblioteca",
+      "start": "2027-10-23",
+      "end": "2027-10-29",
+      "effect": "note",
+      "category": "comemorativo",
+      "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, art. 2º",
+      "modalities": ["integrado", "subsequente", "graduacao"],
+      "active": true
     }
   ]
 }

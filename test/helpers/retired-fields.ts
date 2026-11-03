@@ -1,20 +1,19 @@
-import { contentStateV4, eventV4 } from '../../convex/legacyValidators.ts';
-import { calendarOffer, event } from '../../convex/validators.ts';
-
 /**
- * Fields of format 4 that format 5 no longer has, read from the frozen storage validators
- * (`convex/legacyValidators.ts`) against the current ones. Tests that prove the current contracts
- * refuse them use these lists, so the old names stay only in the converter, the classifier, the
- * frozen validators and the oracles (plan `docs/plans/2026-11-02-atividades-e-datas.md`, step 20).
+ * Fields of format 4 that format 5 no longer has (plan `docs/plans/2026-11-02-atividades-e-datas.md`,
+ * section 5), as the v4 storage validators had them before the contraction removed them. Tests
+ * that prove the current contracts refuse them use these lists, so the old names stay out of the
+ * code of format 5.
  */
-const retired = (before: object, after: object) =>
-  Object.keys(before).filter((field) => !(field in after));
 
 /** Of a local date: the effect, the link, the offers, the record type and the notice fields. */
-export const retiredDateFields = retired(eventV4.fields, event.fields);
+export const retiredDateFields: readonly string[] = [
+  'kind',
+  'requirementId',
+  'offers',
+  'recordType',
+  'publicationStatus',
+  'admission',
+];
 
 /** Of an offer: the reported stage count of format 4. */
-export const retiredOfferFields = retired(
-  contentStateV4.fields.offers.element.fields,
-  calendarOffer.fields,
-);
+export const retiredOfferFields: readonly string[] = ['legacyStageCount'];

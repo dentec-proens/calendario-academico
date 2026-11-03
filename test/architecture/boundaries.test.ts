@@ -175,38 +175,3 @@ test('printing stays a pure model and browser code never reaches the Node runtim
     }
   }
 });
-
-test('only the migration, its verifiers and tests reach the v5 converter and the v4 storage', async () => {
-  // Plan `docs/plans/2026-11-02-atividades-e-datas.md`, phase 2, step 5: conversion belongs only to
-  // the migration (decision 1), so no reader, command, form or DTO can call it or type v4 data.
-  const migration = resolve(root, 'calendar/migration');
-  const legacy = resolve(repository, 'convex/legacyValidators.ts');
-  const allowed = (file: string) =>
-    file === resolve(repository, 'convex/migrations.ts') ||
-    file === resolve(repository, 'convex/schema.ts') ||
-    /^scripts\/administration\/v5-[^/]+\.ts$/.test(relative(repository, file)) ||
-    inside(migration, file);
-  let reached = 0;
-  for (const directory of ['src', 'web', 'convex', 'scripts', 'server.ts']) {
-    const path = resolve(repository, directory);
-    const files = directory.endsWith('.ts') ? [path] : await sources(path);
-    for (const file of files) {
-      const text = await readFile(file, 'utf8');
-      for (const target of relativeTargets(file, text)) {
-        if (!inside(migration, target) && target !== legacy) continue;
-        reached++;
-        expect(
-          allowed(file) && (target !== legacy || !inside(migration, file)),
-          `${relative(repository, file)} imports ${relative(repository, target)}`,
-        ).toBe(true);
-      }
-    }
-  }
-  // The converter's own import of the inventory proves the scan sees these modules.
-  expect(reached).toBeGreaterThan(0);
-  expect(
-    importsIn(await readFile(resolve(migration, 'convert-v5.ts'), 'utf8')).map(
-      ({ specifier }) => specifier,
-    ),
-  ).toEqual(['./inventory.ts']);
-});

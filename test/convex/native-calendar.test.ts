@@ -4,7 +4,6 @@ import { expect, test } from 'vitest';
 import { onceLink } from '../helpers/activity-links.ts';
 import { retiredDateFields } from '../helpers/retired-fields.ts';
 import { api } from '../../convex/_generated/api.js';
-import { currentFormat } from '../../convex/lib/storageFormat.ts';
 import type { DomainState } from '../../convex/validators.ts';
 import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
@@ -690,7 +689,7 @@ test('a calendar saved with empty optional vacation fields still opens, reviews 
       .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
       .unique();
     if (!content) throw new Error('Conteúdo esperado.');
-    const { state } = currentFormat(content);
+    const { state } = content;
     await ctx.db.patch(content._id, { state: { ...state, teacherVacations: vacations } });
   });
   const loaded = await actor.query(api.calendars.calendar, { id: record.id });

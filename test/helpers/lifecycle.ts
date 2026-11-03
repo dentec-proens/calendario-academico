@@ -6,7 +6,6 @@ import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import type { CalendarStatus, LifecycleAction } from '../../src/domain/calendar/lifecycle.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { api } from '../../convex/_generated/api.js';
-import { currentFormat } from '../../convex/lib/storageFormat.ts';
 import type { createNativeFixture } from './native-database.ts';
 
 type Client = Pick<
@@ -174,7 +173,7 @@ export async function preserveSubmission(
         .collect(),
     );
     const calendar = await fixture.client.run((ctx) => ctx.db.get(id));
-    const submission = currentFormat(rows.at(-1)!);
+    const submission = rows.at(-1)!;
     return {
       ...submission,
       state: { ...submission.state, year: calendar!.year, campus: submission.campusName },

@@ -3,12 +3,11 @@ import { readFileSync } from 'node:fs';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import { policyFor } from '../../src/domain/policies/registry.ts';
-import { convertedState } from '../helpers/v5-conversion.ts';
 
 const fixture = JSON.parse(
-  readFileSync(new URL('../fixtures/offers-v4-oracle-inputs.json', import.meta.url), 'utf8'),
+  readFileSync(new URL('../fixtures/offers-oracle-inputs.json', import.meta.url), 'utf8'),
 ) as { cases: { name: string; input: ActivityState }[] };
-const source = convertedState(
+const source = structuredClone(
   fixture.cases.find(
     (row) =>
       row.input.year === 2027 &&

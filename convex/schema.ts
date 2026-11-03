@@ -15,49 +15,6 @@ import {
   institutionalEvent,
   auditTarget,
 } from './validators';
-import {
-  contentStateV4,
-  institutionalEventSnapshotV4,
-  institutionalEventV4,
-} from './legacyValidators';
-
-/**
- * Expansion of the v5 migration (plan `docs/plans/2026-11-02-atividades-e-datas.md`, phase 2,
- * step 17a): these tables accept a whole document in the frozen v4 format or in format 5, never
- * a mix, only so the migration can convert them (section 6, “Release”, step 4). Readers answer
- * maintenance (503) for a v4 document; contracts, arguments and DTOs stay v5.
- * Contraction pending (release step 7): drop the v4 variants and `legacyValidators.ts`.
- */
-const contentFields = {
-  calendarId: v.id('calendars'),
-  catalogueRevision: v.number(),
-  documentSnapshot: v.array(documentSnapshot),
-};
-const calendarContent = v.union(
-  v.object({
-    ...contentFields,
-    state: contentState,
-    institutionalSnapshot: v.array(institutionalEventSnapshot),
-  }),
-  v.object({
-    ...contentFields,
-    state: contentStateV4,
-    institutionalSnapshot: v.array(institutionalEventSnapshotV4),
-  }),
-);
-const calendarSubmission = v.union(
-  v.object(submissionFields),
-  v.object({
-    ...submissionFields,
-    state: contentStateV4,
-    institutionalSnapshot: v.array(institutionalEventSnapshotV4),
-  }),
-);
-const catalogueRowFields = { code: v.string(), year: v.number() };
-const catalogueRow = v.union(
-  v.object({ ...catalogueRowFields, ...institutionalEvent.fields }),
-  v.object({ ...catalogueRowFields, ...institutionalEventV4.fields }),
-);
 
 export default defineSchema({
   ...authTables,
@@ -124,8 +81,14 @@ export default defineSchema({
     .index('by_campusId_and_deletedAt', ['campusId', 'deletedAt'])
     .index('by_year', ['year'])
     .index('by_deletedAt', ['deletedAt']),
-  calendarContents: defineTable(calendarContent).index('by_calendarId', ['calendarId']),
-  calendarSubmissions: defineTable(calendarSubmission).index('by_calendarId_and_sequence', [
+  calendarContents: defineTable({
+    calendarId: v.id('calendars'),
+    state: contentState,
+    catalogueRevision: v.number(),
+    institutionalSnapshot: v.array(institutionalEventSnapshot),
+    documentSnapshot: v.array(documentSnapshot),
+  }).index('by_calendarId', ['calendarId']),
+  calendarSubmissions: defineTable(submissionFields).index('by_calendarId_and_sequence', [
     'calendarId',
     'sequence',
   ]),
@@ -155,7 +118,11 @@ export default defineSchema({
     reviewId: v.id('reviews'),
     ...reviewFields,
   }).index('by_reviewId_and_revision', ['reviewId', 'revision']),
-  institutionalEvents: defineTable(catalogueRow)
+  institutionalEvents: defineTable({
+    code: v.string(),
+    year: v.number(),
+    ...institutionalEvent.fields,
+  })
     .index('by_year', ['year'])
     .index('by_code', ['code']),
   catalogueRevisions: defineTable({

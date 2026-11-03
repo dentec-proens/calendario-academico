@@ -2,7 +2,6 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import type { MutationCtx } from '../_generated/server';
 import type { Context } from '../lib/shared';
 import { fail } from '../lib/shared';
-import { currentCatalogueRow } from '../lib/storageFormat';
 
 export async function yearRevision(ctx: Context, year: number) {
   return (
@@ -54,10 +53,8 @@ export async function catalogue(ctx: Context, year?: number) {
   if (rows.length === 1000) fail('Consulte a base institucional por ano.');
   return {
     revision: year === undefined ? await globalRevision(ctx) : await yearRevision(ctx, year),
-    // A v4 row answers unavailability (503) until the migration converts it.
-    events: rows
-      .map(currentCatalogueRow)
-      .map(({ code, name, start, end, effect, category, evidence, modalities, active }) => ({
+    events: rows.map(
+      ({ code, name, start, end, effect, category, evidence, modalities, active }) => ({
         id: code,
         name,
         start: civilDate(start),
@@ -67,6 +64,7 @@ export async function catalogue(ctx: Context, year?: number) {
         evidence,
         modalities,
         active,
-      })),
+      }),
+    ),
   };
 }

@@ -19,10 +19,7 @@ import type {
   CalendarPeriod,
 } from '../../src/domain/calendar/model.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
-import { convertedContent } from '../helpers/v5-conversion.ts';
-import { readOracle, v4Cases } from '../helpers/v4-fixtures.ts';
 import { cycleLink, semesterLink } from '../helpers/activity-links.ts';
-import { legacyIds } from '../helpers/legacy-classification.ts';
 import {
   cascavelDraft,
   ivaiporaDraft,
@@ -34,53 +31,6 @@ import {
  * `activity` (`ActivityRef`) and every domain consumer reads it. A link is matched to the row the
  * configuration generates by its key, never by a composed identifier.
  */
-type Json = Record<string, unknown>;
-
-describe('links of the frozen v4 documents, converted', () => {
-  const oracle = readOracle<{
-    cases: {
-      name: string;
-      linksToReview: Record<string, string>;
-      activities: { id: string; basis?: string }[];
-    }[];
-  }>();
-  test.each(v4Cases().map((item) => [item.name, item] as const))(
-    '%s: each link resolves to the row v4 matched by its identifier',
-    (name, item) => {
-      const content = convertedContent(item);
-      const state = {
-        ...content.state,
-        year: item.year,
-        campus: item.campus,
-      } as unknown as ActivityState;
-      const generated = generatedActivities(state);
-      const recorded = oracle.cases.find((entry) => entry.name === name)!;
-      const review = recorded.linksToReview;
-      // Step 9d: rows v4 kept in 2027 as “Classificação legada” are no longer generated.
-      const retired = legacyIds(recorded.activities);
-      const pending = linksToReview(state);
-      const stored = item.content.state.events as Json[];
-      stored.forEach((event, index) => {
-        const converted = state.events[index];
-        expect(converted.id).toBe(event.id);
-        expect(converted).not.toHaveProperty('requirementId');
-        if (event.requirementId === undefined) {
-          expect(converted.activity).toBeUndefined();
-          return;
-        }
-        const row = generatedActivity(generated, converted.activity);
-        // The row v4 generated with the same identifier, or none (a link to review).
-        if (row) expect(row.id).toBe(event.requirementId);
-        if (typeof event.requirementId === 'string' && retired.has(event.requirementId)) {
-          // No fallback to the operational catalogue: the kept link is a date to review.
-          expect(row).toBeUndefined();
-          expect(pending.get(String(event.id))).toBe('unclassified');
-        } else if (review[String(event.id)] !== 'unclassified')
-          expect(row?.id).toBe(event.requirementId);
-      });
-    },
-  );
-});
 
 describe('PIT, RIT and teaching plan per reference semester (art. 11, XII)', () => {
   const annual = (id: string): CalendarOffer => ({

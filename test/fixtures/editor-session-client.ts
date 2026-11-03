@@ -29,7 +29,7 @@ let loadingBootstrap = false;
 /** A new tab can open while the expansion is already under way (set by an init script). */
 const initial = window.editorSessionInitial ?? {};
 let maintenance = initial.maintenance ?? false;
-/** The bootstrap reads a catalogue row still in v4: it answers the expansion 503. */
+/** The bootstrap answers the maintenance unavailability (503), as during an expansion. */
 let bootstrapUnavailable = initial.bootstrapUnavailable ?? false;
 let holdSaves = false;
 const pendingSaves: Array<() => void> = [];

@@ -2,7 +2,6 @@ import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
 import { expect, test } from 'vitest';
 import { makeFunctionReference } from 'convex/server';
 import { api } from '../../convex/_generated/api.js';
-import { currentFormat } from '../../convex/lib/storageFormat.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, calendarStatus, readyContent, saveReview } from '../helpers/lifecycle.ts';
@@ -377,22 +376,18 @@ test('publication checks the SEI, the review and the content, and archives what 
   await expect(act(f.campus, next.id, 'publish', { sei })).rejects.toThrow(/não permitida/);
   // Same version, different content: publication compares the submitted fingerprint.
   await f.client.run(async (ctx) => {
-    const content = currentFormat(
-      (await ctx.db
-        .query('calendarContents')
-        .withIndex('by_calendarId', (q) => q.eq('calendarId', next.id))
-        .unique())!,
-    );
+    const content = (await ctx.db
+      .query('calendarContents')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', next.id))
+      .unique())!;
     await ctx.db.patch(content._id, { state: { ...content.state, weekdays: [1, 2, 3, 4] } });
   });
   await expect(act(f.admin, next.id, 'publish', { sei })).rejects.toThrow(/difere do envio/);
   await f.client.run(async (ctx) => {
-    const content = currentFormat(
-      (await ctx.db
-        .query('calendarContents')
-        .withIndex('by_calendarId', (q) => q.eq('calendarId', next.id))
-        .unique())!,
-    );
+    const content = (await ctx.db
+      .query('calendarContents')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', next.id))
+      .unique())!;
     await ctx.db.patch(content._id, { state: { ...content.state, weekdays: [1, 2, 3, 4, 5] } });
   });
   await act(f.admin, next.id, 'publish', { sei: '23411.000002/2027-22' });
@@ -546,12 +541,10 @@ test('a submission above 900 KiB is refused with its own message and writes noth
   const f = await fixture();
   const id = await f.create();
   await f.client.run(async (ctx) => {
-    const content = currentFormat(
-      (await ctx.db
-        .query('calendarContents')
-        .withIndex('by_calendarId', (q) => q.eq('calendarId', id))
-        .unique())!,
-    );
+    const content = (await ctx.db
+      .query('calendarContents')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', id))
+      .unique())!;
     const events = Array.from({ length: 860 }, (_, index) => ({
       id: `large-${index}`,
       name: 'x'.repeat(1100),

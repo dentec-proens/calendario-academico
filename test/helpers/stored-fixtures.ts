@@ -1,0 +1,45 @@
+import { readFileSync } from 'node:fs';
+
+/**
+ * Stored calendar documents in format 5, frozen as JSON (`test/fixtures/stored/`): the documents
+ * of the phase 2 fixtures (`docs/plans/2026-11-02-atividades-e-datas.md`, section 11) as the
+ * migration left them. The data is typed only as JSON; tests that call domain code cast it.
+ */
+export interface StoredCase {
+  name: string;
+  source: string;
+  year: number;
+  campus: string;
+  content: StoredContent;
+  submissions: StoredSubmission[];
+}
+export interface StoredContent {
+  calendarId: string;
+  state: StoredState;
+  catalogueRevision: number;
+  institutionalSnapshot: Record<string, unknown>[];
+  documentSnapshot: Record<string, unknown>[];
+}
+export type StoredState = Record<string, unknown> & {
+  offers: Record<string, unknown>[];
+  events: Record<string, unknown>[];
+};
+export type StoredSubmission = Omit<StoredContent, 'calendarId'> & {
+  calendarId: string;
+  sequence: number;
+  contentVersion: number;
+  contentHash: string;
+  [key: string]: unknown;
+};
+export interface StoredCatalogueRow extends Record<string, unknown> {
+  code: string;
+  year: number;
+}
+
+const read = <T>(name: string): T =>
+  JSON.parse(readFileSync(new URL(`../fixtures/stored/${name}`, import.meta.url), 'utf8')) as T;
+
+export const storedCases = (): StoredCase[] => read<{ cases: StoredCase[] }>('contents.json').cases;
+
+export const storedCatalogueRows = (): StoredCatalogueRow[] =>
+  read<{ rows: StoredCatalogueRow[] }>('institutional-events.json').rows;

@@ -46,10 +46,10 @@ export interface SessionState {
 const SessionContext = createContext<SessionState | null>(null);
 
 /**
- * The session bootstrap. While the v5 expansion keeps a catalogue row in v4, the bootstrap answers
- * the maintenance unavailability (503; plan `docs/plans/2026-11-02-atividades-e-datas.md`, section
- * 6, "Concorrência e corte"). useQueries reports it as a value, so the portal shows maintenance
- * instead of the access error and the subscription resumes by itself after the migration. Any
+ * The session bootstrap. When it answers the maintenance unavailability (503), as it did during
+ * the expansion of the format 5 migration (plan `docs/plans/2026-11-02-atividades-e-datas.md`,
+ * section 6, "Concorrência e corte"), useQueries reports it as a value, so the portal shows
+ * maintenance instead of the access error and the subscription resumes by itself afterwards. Any
  * other error still reaches the application error boundary.
  */
 function useBootstrap(enabled: boolean) {

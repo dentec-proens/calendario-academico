@@ -24,7 +24,6 @@ import {
   offerLabel,
   offerFor,
 } from '../../src/domain/calendar/offers.ts';
-import { convertedCatalogueEvents, convertedState } from '../helpers/v5-conversion.ts';
 import { legacyIds, namesLegacyRow } from '../helpers/legacy-classification.ts';
 
 /**
@@ -211,9 +210,15 @@ const oracle = JSON.parse(
 // Converted once by the validated release A converter before its deletion. All
 // 18 cases passed against this oracle before and after the release B cleanup.
 // The input fixture records the converter hashes; expected values stay frozen.
+// The inputs and the catalogue were converted again to format 5 by the phase 2
+// migration converter before its removal in the contraction.
 const inputs = JSON.parse(
-  readFileSync(new URL('../fixtures/offers-v4-oracle-inputs.json', import.meta.url), 'utf8'),
-) as { oracleSha256: string; cases: { name: string; input: ActivityState }[] };
+  readFileSync(new URL('../fixtures/offers-oracle-inputs.json', import.meta.url), 'utf8'),
+) as {
+  oracleSha256: string;
+  cases: { name: string; input: ActivityState }[];
+  catalogueEvents: typeof oracle.catalogue.events;
+};
 
 test('retains the immutable pre-v4 oracle and all independently captured v4 inputs', () => {
   expect(
@@ -236,7 +241,7 @@ interface Projection {
 /**
  * Step 9d: 2027 no longer generates the rows of “Classificação legada”. The capture is compared
  * without them, their coverage and the readiness messages that name them; no date of these inputs
- * is linked to one of them (the frozen v4 documents of `v4-oracle.test.ts` cover that case).
+ * is linked to one of them.
  */
 function withoutLegacyRows(expected: unknown): unknown {
   const value = structuredClone(expected) as Projection;
@@ -250,17 +255,14 @@ function withoutLegacyRows(expected: unknown): unknown {
   return value;
 }
 
-// The frozen inputs and catalogue are stored v4; the current code reads them converted (phase 2).
-const catalogue = {
-  ...oracle.catalogue,
-  events: convertedCatalogueEvents(oracle.catalogue.events),
-};
+// The oracle's catalogue was captured before format 5; the inputs file keeps it in format 5.
+const catalogue = { ...oracle.catalogue, events: inputs.catalogueEvents };
 
 test.each(inputs.cases.filter(({ input }) => input.year > 2026))(
-  'preserves the captured semantics after the v5 conversion: $name',
+  'preserves the captured semantics in format 5: $name',
   ({ name, input: stored }) => {
     const expected = withoutLegacyRows(oracle.cases.find((item) => item.name === name)!.expected);
-    const input = convertedState(stored);
+    const input = structuredClone(stored);
     const before = structuredClone(input);
     expect(readinessTokens(semanticProjection(input, catalogue), input)).toEqual(
       readinessTokens(expected, input),
