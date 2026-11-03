@@ -1,6 +1,6 @@
 import type { AcademicTerm, ActivityPlanItem, CalendarOffer } from '#src/domain/calendar/model.ts';
 import { configureIntakeRequirement } from '#src/domain/calendar/commands/organization.ts';
-import { offerLabel } from '#src/domain/calendar/offers.ts';
+import { offerLabel, scopeStatus } from '#src/domain/calendar/offers.ts';
 import { termsFor } from '#src/domain/calendar/organization/periods.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -63,7 +63,7 @@ export default function IntakeRequirementForm({ item }: { item: ActivityPlanItem
         .filter(
           (offer) =>
             !policy.excludes(offer) &&
-            offer.scope?.status !== 'own-regulation' &&
+            scopeStatus(offer) !== 'own-regulation' &&
             (!item.modalities || item.modalities.includes(offer.kind)) &&
             (!item.offerIds || item.offerIds.includes(offer.id)) &&
             (!item.offerId || item.offerId === offer.id) &&

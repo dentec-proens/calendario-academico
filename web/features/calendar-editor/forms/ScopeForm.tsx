@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { policyFor } from '#src/domain/policies/registry.ts';
 import type { CalendarOffer } from '#src/domain/calendar/model.ts';
-import { offerLabel } from '#src/domain/calendar/offers.ts';
+import { offerLabel, scopeStatus } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
@@ -21,7 +21,7 @@ function OfferScopeForm({
   onDone?: () => void;
 }) {
   const { session, readOnly } = useCalendarEditor();
-  const defaults: { status: '' | ScopeStatus } = { status: offer.scope?.status ?? '' };
+  const defaults: { status: '' | ScopeStatus } = { status: scopeStatus(offer) ?? '' };
   const { form, submit, error } = useCalendarForm(`scope:${offer.id}`, defaults, (value) => {
     if (!value.status) throw new Error('Confirme a norma aplicável a esta oferta.');
     const status = value.status;
@@ -78,7 +78,9 @@ function ConfirmedScope({ offer, norm }: { offer: CalendarOffer; norm: string })
     <p className="scope-summary" data-offer-scope={offer.id}>
       <span id={`scope-${offer.id}-summary`} tabIndex={-1}>
         <strong>{offerLabel(offer)}:</strong>{' '}
-        {offer.scope?.status === 'covered' ? `abrangida pela ${norm}` : 'norma própria'}
+        {scopeStatus(offer) === 'covered' ? `abrangida pela ${norm}` : 'norma própria'}
+        {/* Without an answer of the campus, the delivery mode decides. */}
+        {!offer.scope && (offer.delivery === 'ead' ? ' (oferta EaD)' : ' (oferta presencial)')}
       </span>
       {!readOnly && (
         <button type="button" className="link-button" onClick={() => setChanging(true)}>
@@ -89,19 +91,23 @@ function ConfirmedScope({ offer, norm }: { offer: CalendarOffer; norm: string })
   );
 }
 
-/** Each offer has its own human confirmation, independently of teaching dates and delivery mode. */
+/**
+ * The norm of each offer comes from its delivery mode (`scopeStatus`); the campus only answers
+ * while the mode is `a-conferir`, or changes it for a presencial offer with its own regulation.
+ */
 export default function ScopeForm() {
   const { state, formEpoch } = useCalendarEditor();
   const policy = policyFor(state.year);
   const scope = policy.scope;
   if (!scope) return null;
   const offers = state.offers.filter((offer) => !policy.excludes(offer));
-  const pending = offers.filter((offer) => !offer.scope);
+  const pending = offers.filter((offer) => !scopeStatus(offer));
   const excluded = state.offers.filter((offer) => policy.excludes(offer));
   const explanation = (
     <p>
-      A referência de {state.year} é a {scope.norm}. O tipo e o modo de oferta, sozinhos, não
-      confirmam essa aplicação; ofertas com norma própria ficam sem conclusão automática.
+      A referência de {state.year} é a {scope.norm}, que vale para as ofertas presenciais; ofertas
+      EaD seguem norma própria. Informe o modo de oferta em Organização por oferta ou indique a
+      norma aqui.
     </p>
   );
   return (
@@ -124,7 +130,7 @@ export default function ScopeForm() {
         </h3>
       )}
       {offers
-        .filter((offer) => offer.scope)
+        .filter((offer) => scopeStatus(offer))
         .map((offer) => (
           <ConfirmedScope key={`${offer.id}:${formEpoch}`} offer={offer} norm={scope.norm} />
         ))}

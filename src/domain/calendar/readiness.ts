@@ -8,7 +8,7 @@ import {
   type CalendarReview,
 } from './model.ts';
 import { appliesTo } from './modalities.ts';
-import { calendarOffers, labelFor, stageInTerm } from './offers.ts';
+import { calendarOffers, labelFor, scopeStatus, stageInTerm } from './offers.ts';
 import { assessmentCount, stageActivity } from './activities/assessment.ts';
 import { sameActivity, type ActivityRef } from './activities/activity-ref.ts';
 import { assessmentCycleIssue } from './activities/assessment-intervals.ts';
@@ -67,7 +67,7 @@ export function contentAssessment(record: ContentRecord) {
   const offers = calendarOffers(record.state);
   if (policy.scope) {
     const included = offers.filter((offer) => !policy.excludes(offer));
-    const pending = included.filter((offer) => offer.scope?.status !== 'covered');
+    const pending = included.filter((offer) => scopeStatus(offer) !== 'covered');
     if (pending.length) {
       const scope = {
         group: 'structure',
@@ -75,7 +75,7 @@ export function contentAssessment(record: ContentRecord) {
         detail: policy.scope.readinessIssue,
         target: { area: 'scope' },
       } as const;
-      if (new Set(included.map((offer) => offer.scope?.status)).size === 1)
+      if (new Set(included.map((offer) => scopeStatus(offer))).size === 1)
         issue('scope', policy.scope.readinessIssue, scope);
       else
         for (const offer of pending)
@@ -249,7 +249,7 @@ export function contentAssessment(record: ContentRecord) {
   const window = policy.window(record.state);
   if (window && policy.windowInReadiness)
     for (const offer of offers.filter(
-      (offer) => !policy.excludes(offer) && offer.scope?.status !== 'own-regulation',
+      (offer) => !policy.excludes(offer) && scopeStatus(offer) !== 'own-regulation',
     )) {
       const periods = periodsForOffer(record.state, offer.id);
       const start = periods.map((p) => p.start).sort()[0],

@@ -1,5 +1,5 @@
 import type { AssessmentSettings, CalendarEvent } from '../model.ts';
-import { offerFor } from '../offers.ts';
+import { offerFor, scopeStatus } from '../offers.ts';
 import { datesBetween } from '../counting/core.ts';
 import { parseDate } from '../../civil-date.ts';
 import { policyFor } from '../../policies/registry.ts';
@@ -47,7 +47,7 @@ export function underNorm(
   const policy = policyFor(state.year);
   return offerIds.some((id) => {
     const offer = offerFor(state, id);
-    return !offer || (!policy.excludes(offer) && offer.scope?.status !== 'own-regulation');
+    return !offer || (!policy.excludes(offer) && scopeStatus(offer) !== 'own-regulation');
   });
 }
 

@@ -8,7 +8,10 @@ test('persistent teaching days and expanded period details', async ({ page, fixt
   await configureOffer(page, 'graduacao', '2027-03-08', '2027-05-14');
   await savedState(page);
   await selectEditorSection(page, 'issues');
+  // Only an offer whose delivery mode is still to check asks for its norm.
+  await expect(page.locator('#review-scope')).toBeVisible();
   for (const id of ['integrado', 'graduacao']) {
+    if (!(await page.locator(`#scope-form-${id}`).count())) continue;
     await page.locator(`#calendar-scope-${id} [data-choice="covered"]`).click();
     await page.locator(`#scope-form-${id} button[type="submit"]`).click();
     await savedState(page);

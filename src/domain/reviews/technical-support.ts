@@ -14,6 +14,7 @@ import {
   kinds,
   offerFor,
   associationOffers,
+  scopeStatus,
 } from '../calendar/offers.ts';
 import { automaticEventSource } from '../calendar/counting/core.ts';
 import type { ActivityRef } from '../calendar/activities/activity-ref.ts';
@@ -96,21 +97,21 @@ export function reviewSupport<
   const normativeScopeConfirmed =
     !policy.scope ||
     (calendarOffers(record.state).filter(
-      (offer) => !policy.excludes(offer) && offer.scope?.status !== 'own-regulation',
+      (offer) => !policy.excludes(offer) && scopeStatus(offer) !== 'own-regulation',
     ).length > 0 &&
       calendarOffers(record.state)
-        .filter((offer) => !policy.excludes(offer) && offer.scope?.status !== 'own-regulation')
-        .every((offer) => offer.scope?.status === 'covered'));
+        .filter((offer) => !policy.excludes(offer) && scopeStatus(offer) !== 'own-regulation')
+        .every((offer) => scopeStatus(offer) === 'covered'));
   const window = policy.window(record.state);
   const normativeOffers = calendarOffers(record.state).filter(
-    (offer) => !policy.excludes(offer) && (!policy.scope || offer.scope?.status === 'covered'),
+    (offer) => !policy.excludes(offer) && (!policy.scope || scopeStatus(offer) === 'covered'),
   );
   const normativeCounts = counts.filter(([id]) => normativeOffers.some((offer) => offer.id === id));
   const normativeRegime = organizationSummary(normativeOffers);
   const windowPeriods = record.state.periods.filter((period) =>
     associationOffers(period.association).some((id) => {
       const offer = offerFor(record.state, id);
-      return offer && !policy.excludes(offer) && offer.scope?.status !== 'own-regulation';
+      return offer && !policy.excludes(offer) && scopeStatus(offer) !== 'own-regulation';
     }),
   );
   const windowStart = window?.start ?? '',

@@ -171,6 +171,11 @@ for (const width of [1440, 390]) {
     expect((await savedState(page)).state).toEqual(saved.state);
 
     await selectEditorSection(page, 'issues');
+    // A presencial offer is covered by its delivery mode; the campus changes it for its own norm.
+    await expect(page.locator('[data-offer-scope="graduacao-2"]')).toContainText(
+      'abrangida pela Resolução 292 (oferta presencial)',
+    );
+    await page.locator('[data-offer-scope="graduacao-2"] button').click();
     await page.locator('#calendar-scope-graduacao-2 [data-choice="own-regulation"]').click();
     await page.locator('#scope-form-graduacao-2 button[type="submit"]').click();
     const scoped = await savedState(page);

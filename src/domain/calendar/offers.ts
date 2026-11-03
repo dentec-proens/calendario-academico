@@ -31,6 +31,21 @@ export const levelOf = (offer: CalendarOffer): 'tecnico' | 'graduacao' | 'posgra
 export const offerLabel = (offer: CalendarOffer): string =>
   offer.label?.trim() || modalityLabels[offer.kind];
 
+/**
+ * Norm an offer follows under a policy with scope (`CalendarPolicy.scope`): the campus answer when
+ * given, otherwise the delivery mode, which already tells it apart: a presencial offer is covered,
+ * an EaD one has its own regulation. Undefined while the delivery mode is `a-conferir`.
+ */
+export const scopeStatus = (
+  offer: Pick<CalendarOffer, 'scope' | 'delivery'>,
+): 'covered' | 'own-regulation' | undefined =>
+  offer.scope?.status ??
+  (offer.delivery === 'presencial'
+    ? 'covered'
+    : offer.delivery === 'ead'
+      ? 'own-regulation'
+      : undefined);
+
 /** Stable order preserves the institutional base identity regardless of offer order. */
 export function kinds(state: { offers: readonly CalendarOffer[] }): OfferKind[] {
   return modalityIds.filter((kind) => state.offers.some((offer) => offer.kind === kind));

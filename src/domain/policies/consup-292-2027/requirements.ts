@@ -6,7 +6,12 @@ import type {
   AcademicTerm,
   CalendarOffer,
 } from '../../calendar/model.ts';
-import { calendarOffers, offerFor, stageCycle as offerStageCycle } from '../../calendar/offers.ts';
+import {
+  calendarOffers,
+  offerFor,
+  scopeStatus,
+  stageCycle as offerStageCycle,
+} from '../../calendar/offers.ts';
 import {
   declareRules,
   expandRules,
@@ -370,7 +375,7 @@ export function applicability(
   offer: CalendarOffer,
 ): Applicability {
   const kind = offer.kind;
-  if (excluded(kind) || offer.scope?.status === 'own-regulation') return 'unconfigured';
+  if (excluded(kind) || scopeStatus(offer) === 'own-regulation') return 'unconfigured';
   if (requirement.modalities && !requirement.modalities.includes(kind)) return 'optional';
   if (requirement.offerId && requirement.offerId !== offer.id) return 'optional';
   if (requirement.offerIds && !requirement.offerIds.includes(offer.id)) return 'optional';

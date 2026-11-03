@@ -1,5 +1,5 @@
 import { civilDate } from '../../civil-date.ts';
-import { calendarOffers } from '../../calendar/offers.ts';
+import { calendarOffers, scopeStatus } from '../../calendar/offers.ts';
 import type { CalendarPolicy } from '../contract.ts';
 import { citation, rulesetChanges, rulesetVersion } from './history.ts';
 import { rules, requirements, applicability, excluded } from './requirements.ts';
@@ -25,7 +25,7 @@ export const consup2922027Policy: CalendarPolicy = {
   applicabilityNote: (requirement, offer) => requirement.optionalFor?.[offer.kind] || undefined,
   window: (state) =>
     calendarOffers(state).some(
-      (offer) => !excluded(offer.kind) && offer.scope?.status !== 'own-regulation',
+      (offer) => !excluded(offer.kind) && scopeStatus(offer) !== 'own-regulation',
     )
       ? {
           start: civilDate('2027-02-01'),
@@ -35,7 +35,7 @@ export const consup2922027Policy: CalendarPolicy = {
         }
       : null,
   countingMinimums: (_state, offer) => {
-    const configured = !excluded(offer.kind) && offer.scope?.status === 'covered';
+    const configured = !excluded(offer.kind) && scopeStatus(offer) === 'covered';
     return {
       annual: configured ? { days: dayMinimums.annual, basis: `Art. 4º da ${citation}` } : null,
       semester: configured
