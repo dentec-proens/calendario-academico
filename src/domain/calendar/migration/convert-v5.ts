@@ -36,6 +36,8 @@ import {
   inventoryContent,
   inventorySnapshot,
   inventorySubmission,
+  materialization,
+  submissionStates,
   type ContentContext,
   type Inventory,
   type LinkShape,
@@ -519,6 +521,33 @@ export function provenScopeIds(contentManifest: readonly ManifestEntry[], sequen
         entry.scope.proofs.includes(sequence),
     )
     .map((entry) => entry.id);
+}
+
+/**
+ * The same IDs as `provenScopeIds`, read from the current content already converted to format 5,
+ * as the migration finds it: contents convert before their submissions, so the manifest of the
+ * content conversion is gone when a submission converts. A converted list is confirmed exactly
+ * when it was a non-empty list in format 4 (an absent or empty one converts unconfirmed), with the
+ * same IDs and order, and the state keeps its offers; so the materialization reads the confirmed
+ * lists as the explicit ones and proves them against the stored v4 `submission` alone. A content
+ * outside format 5 is no document the migration order leaves, and stops the conversion.
+ */
+export function provenScopesOfConverted(content: unknown, submission: unknown): string[] {
+  const state = isObject(content) && isObject(content.state) ? content.state : undefined;
+  if (!state || state.schemaVersion !== 5 || !Array.isArray(state.offers))
+    throw new UnknownShapeError('content.state', 'conteúdo atual fora do formato 5');
+  const offerIds = state.offers.map((offer) => String((offer as JsonObject).id));
+  const [proof] = submissionStates([submission]);
+  const events = Array.isArray(state.events) ? (state.events as JsonObject[]) : [];
+  return events.flatMap((event) => {
+    const scope = event.scope as { offers: string[]; confirmed: boolean } | undefined;
+    if (!scope?.confirmed) return [];
+    const materialized = materialization(String(event.id), scope.offers, offerIds, {
+      materialize: true,
+      submissions: [proof],
+    });
+    return materialized?.status === 'proven' ? [String(event.id)] : [];
+  });
 }
 
 /**

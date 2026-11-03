@@ -47,6 +47,7 @@ test('equivalence sync is idempotent, scoped and preserves version, timestamp, s
   await account.mutation(api.reviews.saveReview, {
     id: record.id,
     body: {
+      schemaVersion: 5 as const,
       submissionId: review.submission!.id,
       revision: 0,
       calendarVersion: record.version,
@@ -205,6 +206,7 @@ test('document incorporation preserves dates, invalidates the evidenced review a
   await account.mutation(api.reviews.saveReview, {
     id: record.id,
     body: {
+      schemaVersion: 5 as const,
       submissionId: support.submission!.id,
       revision: 0,
       calendarVersion: 1,

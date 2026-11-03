@@ -166,6 +166,7 @@ test('reviews are bound to the submission and the first save starts the review',
     f.reviewer.mutation(api.reviews.saveReview, {
       id,
       body: {
+        schemaVersion: 5 as const,
         rulesetVersion: opened.rulesetVersion,
         baseIdentity: opened.baseIdentity,
         revision: 0,

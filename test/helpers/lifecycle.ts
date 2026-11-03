@@ -122,6 +122,7 @@ export async function saveReview(
   return reviewer.mutation(api.reviews.saveReview, {
     id,
     body: {
+      schemaVersion: 5 as const,
       rulesetVersion: support.rulesetVersion,
       baseIdentity: support.baseIdentity,
       revision: support.review?.revision ?? 0,

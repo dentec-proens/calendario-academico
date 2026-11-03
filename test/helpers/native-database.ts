@@ -211,6 +211,7 @@ export async function createNativeFixture(overrides: Seed = {}) {
                 // Reviews bind to the open submission, as the review page does.
                 body: {
                   ...body,
+                  schemaVersion: 5,
                   submissionId:
                     body.submissionId ??
                     (await query(api.reviews.review, { id: calendarId(review[1]) })).submission?.id,

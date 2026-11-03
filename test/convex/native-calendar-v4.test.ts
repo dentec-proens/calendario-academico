@@ -327,6 +327,7 @@ test('a legacy review without submission cannot certify current rules or export 
   ).rejects.toThrow('O parecer está desatualizado. Reabra, confira e salve antes de exportar.');
   expect(support.review).not.toHaveProperty('submissionId');
   const body = {
+    schemaVersion: 5 as const,
     revision: 1,
     calendarVersion: record.version,
     catalogueRevision: record.catalogueRevision,

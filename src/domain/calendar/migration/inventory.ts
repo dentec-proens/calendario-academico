@@ -726,7 +726,7 @@ function readAdmission(value: unknown, path: string) {
   return (admission.periodId as string | undefined) || undefined;
 }
 
-interface ScopeContext {
+export interface ScopeContext {
   /** Only the current content has offer lists an offer addition may have materialized. */
   materialize: boolean;
   /** Submission states of the same calendar, to prove materialized scopes. */
@@ -753,7 +753,7 @@ const sameList = (a: readonly string[], b: readonly string[]) =>
  * proper prefix of the current offers (new offers are appended). It is proven when a submission
  * of the same calendar had the same date without offers and exactly those offers.
  */
-function materialization(
+export function materialization(
   eventId: string,
   offers: string[],
   offerIds: string[],
@@ -1012,7 +1012,7 @@ function readState(
   }
 }
 
-function submissionStates(submissions: readonly unknown[]) {
+export function submissionStates(submissions: readonly unknown[]) {
   return submissions.map((item, index) => {
     const at = `submissions[${index}]`;
     const submission = loose(item, at);

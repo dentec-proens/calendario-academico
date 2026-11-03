@@ -85,6 +85,7 @@ test('review saves preserve earlier authorship and rejected edits append no revi
   await act(campus, created.id, 'submit');
   const support = await admin.query(api.reviews.review, { id: created.id });
   const body = {
+    schemaVersion: 5 as const,
     rulesetVersion: support.rulesetVersion,
     baseIdentity: support.baseIdentity,
     submissionId: support.submission!.id,

@@ -1,4 +1,5 @@
 import { reviewIsCurrent } from '#src/domain/calendar/base.ts';
+import { calendarSchemaVersion } from '#src/domain/calendar/model.ts';
 import { useEffect, useRef, useState, type SetStateAction } from 'react';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { reviews } from '../../shared/convex/reviews.ts';
@@ -46,6 +47,7 @@ export default function ReviewEditor({
     onSubmit: async ({ draft }, { isCurrent }) => {
       const base = draft.opened;
       await reviews.save(base.calendar.id, {
+        schemaVersion: calendarSchemaVersion,
         entries: draft.entries,
         conclusion: draft.conclusion,
         processNumber: draft.processNumber,

@@ -75,6 +75,8 @@ const requirementIdAllowed = new Set([
   'src/domain/calendar/base.ts',
   'test/domain/v5-inventory.test.ts',
   'test/domain/v5-conversion.test.ts',
+  // Step 17b: a snapshot with a link stops the migration (blocking shape injected by the test).
+  'test/convex/v5-migrations.test.ts',
   'test/domain/v5-activity-links.test.ts',
   'test/domain/activity-link-consumers.test.ts',
   // The frozen v3 oracle names each linked date by the row its link resolves to.
