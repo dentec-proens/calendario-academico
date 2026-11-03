@@ -93,6 +93,8 @@ for (const width of [1440, 390])
     await page.locator('#activity-pendency-preencher').check();
     await expect(page).toHaveURL(/atividadePendencia=preencher/);
     await expect(page.locator('#link-review [data-date-row]')).toHaveCount(11);
+    // Dates to review block publication, so their group cannot be collapsed.
+    await expect(page.locator('#group-review button')).toHaveCount(0);
     await expect(page.locator('#campus-dates')).toHaveCount(0);
     expect(await rows.count()).toBe(await count(page, 'preencher'));
     // Origin narrows to the campus' own dates; activities are hidden by it.
@@ -110,9 +112,7 @@ for (const width of [1440, 390])
     expect(await count(page, 'todas')).toBe(
       await page.locator('#date-list [data-date-row]').count(),
     );
-    await expect(page.locator('#activities-without-dates')).toContainText('atividades sem datas');
-    await page.locator('#activities-without-dates button').click();
-    await expect(page.locator('#activity-mode-atividade')).toBeChecked();
+    await page.locator('#activity-mode-atividade').check();
     // Step filters and document filters live in separate URL keys.
     await page.locator('#activity-search').fill('recognition');
     await expect(page).toHaveURL(/atividadeBusca=recognition/);
@@ -228,13 +228,38 @@ for (const width of [1440, 390])
     );
   });
 
+test('activity groups collapse from their heading and a search opens them again', async ({
+  page,
+  fixtureServer,
+}) => {
+  await open(page, fixtureServer, ivaiporaDraft());
+  const toggle = page.locator('#activity-checklist .activity-group-toggle').first();
+  const rows = page.locator(`#${await toggle.getAttribute('aria-controls')}`);
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(toggle).toContainText(/a preencher/);
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(rows).toBeHidden();
+  // The choice survives a trip to another step.
+  await selectEditorSection(page, 'days');
+  await selectEditorSection(page, 'events');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  // A search shows its matches in every group, and clearing it restores the choice.
+  await page.locator('#activity-search').fill('a');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(rows).toBeVisible();
+  await page.locator('#activity-search').fill('');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+});
+
 test('the institutional base group opens when an action shows one of its dates', async ({
   page,
   fixtureServer,
 }) => {
   await open(page, fixtureServer, ivaiporaDraft());
   const base = page.locator('#base-dates');
-  await expect(base).not.toHaveAttribute('open', '');
+  const toggle = base.getByRole('button', { name: /Datas da base institucional/ });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await page.locator('#activity-mode-data').check();
   const teacherDay = page.locator('#date-list [data-origin="base"] button').first();
   await teacherDay.focus();
@@ -246,7 +271,7 @@ test('the institutional base group opens when an action shows one of its dates',
   await page.locator('#activity-mode-atividade').check();
   await page.locator('.activity-more-filters > summary').click();
   await page.locator('#activity-origin').selectOption('base');
-  await expect(base).toHaveAttribute('open', '');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(base.locator('[data-date-row]')).toHaveCount(1);
 });
 
@@ -327,7 +352,6 @@ for (const width of [1440, 390])
     const dateRows = page.locator('#date-list [data-date-row]');
     await expect(dateRows).toHaveCount(state.events.length + baseDates - internalDates.length);
     expect(await count(page, 'todas')).toBe(await dateRows.count());
-    await expect(page.locator('#activities-without-dates')).toBeVisible();
 
     // Internal: only the internal dates of the campus, and the notice that activities are hidden.
     await visibility.selectOption('internas');
@@ -339,7 +363,6 @@ for (const width of [1440, 390])
     await expect(page.locator('#activities-hidden-by-visibility')).toContainText(
       'atividades estão ocultas',
     );
-    await expect(page.locator('#activities-without-dates')).toHaveCount(0);
     await page.locator('#activity-mode-atividade').check();
     await expect(page.locator('#activity-checklist [data-date-row]')).toHaveCount(
       internalDates.length,
@@ -349,8 +372,11 @@ for (const width of [1440, 390])
     await expect(activities).toHaveCount(0);
     await expect(page.locator('#link-review')).toHaveCount(0);
     expect(await count(page, 'todas')).toBe(internalDates.length);
-    // The summary by offer is not recomputed by the filter.
+    // The summary by offer is not recomputed by the filter, and stays in the by-date view.
     await expect(page.locator('#activity-summary')).toBeVisible();
+    await page.locator('#activity-mode-data').check();
+    await expect(page.locator('#activity-summary')).toBeVisible();
+    await page.locator('#activity-mode-atividade').check();
     await expect(page.locator('#activities-hidden-by-visibility')).toBeVisible();
 
     // The notice clears the filter.
@@ -374,12 +400,6 @@ for (const width of [1440, 390])
       event.id === internalDates[0] ? { ...event, internal: true as const } : event,
     );
     await open(page, fixtureServer, state);
-    // “Ver por atividade” leaves with its notice: the focus goes to the view now chosen.
-    await page.locator('#activity-mode-data').check();
-    await page.locator('#activities-without-dates button').focus();
-    await page.keyboard.press('Enter');
-    await expect(page.locator('#activity-mode-atividade')).toBeChecked();
-    await expect(page.locator('#activity-mode-atividade')).toBeFocused();
     // “Mostrar todas as datas” clears the only extra filter, which closes “Mais filtros”.
     const more = page.locator('.activity-more-filters > summary');
     await more.click();

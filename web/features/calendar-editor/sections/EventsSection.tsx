@@ -12,10 +12,6 @@ export default function EventsSection() {
   return (
     <section id="events" className="view">
       <div className="panel">
-        <p className="help">
-          Atividades da Resolução e datas próprias do campus: feriados municipais, recessos,
-          reposições e eventos locais.
-        </p>
         {hasPendingEvent && (
           <Notice
             as="section"

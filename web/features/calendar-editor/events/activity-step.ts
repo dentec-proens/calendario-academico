@@ -206,6 +206,5 @@ export function activityStep(input: {
     /** Whether the visibility filter hides every activity (“Internas”). */
     activitiesHidden: visibility === 'internas',
     /** Activities to fill that have no date, hence no line in the by-date view. */
-    withoutDates: activities.filter((line) => line.pending && !line.dates.length).length,
   };
 }

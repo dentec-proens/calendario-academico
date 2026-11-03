@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { activityKey, isAssessmentStage } from '#src/domain/calendar/activities/activity-ref.ts';
 import {
@@ -22,6 +22,7 @@ import { activityGroups, civilDate, useActivitySearch } from './activity-query.t
 import { scrollIntoView } from '../../../scroll.ts';
 import { Notice } from '../../../components/ui/Notice.tsx';
 import ActivityRow from './ActivityRow.tsx';
+import ActivityGroup from './ActivityGroup.tsx';
 
 const range = (event: { start: string; end: string }) =>
   `${civilDate(event.start)} a ${civilDate(event.end)}`;
@@ -170,16 +171,30 @@ export default function ActivityChecklist() {
       </li>
     );
   };
-  // Collapsed by default; an action that shows one of its dates opens it, and it stays open.
-  const [baseExpanded, setBaseExpanded] = useState(false);
-  const baseOpen =
-    baseExpanded ||
-    search.atividadeOrigem === 'base' ||
-    list.base.some(
-      (line) =>
-        line.event.id === panelEvent ||
-        observanceForEvent(state.year, line.event.id)?.key === panelObservance,
+  // A search or filter opens every group; collapsing under it lasts until the next one.
+  const filters = [
+    search.atividadeBusca,
+    search.atividadePendencia,
+    search.atividadeSituacao,
+    search.atividadeOrigem,
+    search.atividadeVisibilidade,
+    search.atividadeOferta,
+    search.atividadeAssunto,
+  ];
+  const filtered = filters.some(Boolean) ? filters.join('|') : '';
+  // A group holding the row in the panel or named by the link opens to show it.
+  const holdsActivity = (lines: ActivityLine[]) =>
+    lines.some((line) => line.key === selected || line.key === linked);
+  const holdsDate = (lines: DateLine[]) =>
+    lines.some(
+      ({ event, activity }) =>
+        event.id === panelEvent ||
+        event.id === linkedDate ||
+        (panelObservance !== undefined &&
+          observanceForEvent(state.year, event.id)?.key === panelObservance) ||
+        (activity !== undefined && activityKey(activity.activity) === selected),
     );
+  const pendingIn = (lines: { pending: boolean }[]) => lines.filter((line) => line.pending).length;
   const empty =
     !list.adjustable.length &&
     (mode === 'data'
@@ -188,6 +203,33 @@ export default function ActivityChecklist() {
 
   return (
     <>
+      {/* The step's measure by offer, the same in both views and under any filter. */}
+      <ul id="activity-summary" className="activity-summary" role="status">
+        {offerIds(state).map((modality) => {
+          const required = mandatory.filter((row) => row.offerId === modality);
+          const fulfilled = required.filter((row) => row.coverage === 'complete').length;
+          const unconfigured = coverage.filter(
+            (row) =>
+              row.offerId === modality &&
+              row.applicability === 'unconfigured' &&
+              !isAssessmentStage(row.requirement.activity),
+          ).length;
+          return (
+            <li key={modality}>
+              <span>
+                <strong>{labelFor(state, modality)}:</strong> {fulfilled} de {required.length}{' '}
+                atividades obrigatórias com planejamento completo
+                {unconfigured ? ` · ${unconfigured} com aplicação a confirmar` : ''}.
+              </span>
+              <progress
+                value={fulfilled}
+                max={Math.max(required.length, 1)}
+                aria-label={`Progresso de ${labelFor(state, modality)}`}
+              />
+            </li>
+          );
+        })}
+      </ul>
       {list.activitiesHidden && (
         <Notice
           tone="info"
@@ -222,12 +264,13 @@ export default function ActivityChecklist() {
         </Notice>
       )}
       {list.adjustable.length > 0 && (
-        <section
+        <ActivityGroup
           id="adjustable-dates"
-          className="activity-group"
-          aria-labelledby="group-adjustable"
+          headingId="group-adjustable"
+          title="Datas ajustáveis a resolver"
+          count={list.adjustable.length}
+          fixed
         >
-          <h4 id="group-adjustable">Datas ajustáveis a resolver ({list.adjustable.length})</h4>
           <ul className="activity-rows">
             {list.adjustable.map((line) => (
               <li key={line.key} data-adjustable={line.key}>
@@ -244,122 +287,89 @@ export default function ActivityChecklist() {
               </li>
             ))}
           </ul>
-        </section>
+        </ActivityGroup>
       )}
       {mode === 'atividade' ? (
-        <>
-          <ul id="activity-summary" className="activity-summary" role="status">
-            {offerIds(state).map((modality) => {
-              const required = mandatory.filter((row) => row.offerId === modality);
-              const fulfilled = required.filter((row) => row.coverage === 'complete').length;
-              const unconfigured = coverage.filter(
-                (row) =>
-                  row.offerId === modality &&
-                  row.applicability === 'unconfigured' &&
-                  !isAssessmentStage(row.requirement.activity),
-              ).length;
-              return (
-                <li key={modality}>
-                  <span>
-                    <strong>{labelFor(state, modality)}:</strong> {fulfilled} de {required.length}{' '}
-                    atividades obrigatórias com planejamento completo
-                    {unconfigured ? ` · ${unconfigured} com aplicação a confirmar` : ''}.
-                  </span>
-                  <progress
-                    value={fulfilled}
-                    max={Math.max(required.length, 1)}
-                    aria-label={`Progresso de ${labelFor(state, modality)}`}
-                  />
-                </li>
-              );
-            })}
-          </ul>
-          <div id="activity-checklist">
-            {activityGroups.map(([group, label]) => {
-              const items = list.activities.filter((line) => line.item.group === group);
-              return items.length ? (
-                <section key={group} className="activity-group" aria-labelledby={`group-${group}`}>
-                  <h4 id={`group-${group}`}>
-                    {label} ({items.length})
-                  </h4>
-                  <ul className="activity-rows">{items.map(renderActivity)}</ul>
-                </section>
-              ) : null;
-            })}
-            {list.review.length > 0 && (
-              <section id="link-review" className="activity-group" aria-labelledby="group-review">
-                <h4 id="group-review">Vínculo a conferir ({list.review.length})</h4>
-                <p className="help">
-                  Datas cujo vínculo gravado não conta como atendimento na organização atual. O
-                  vínculo é preservado; corrija a atividade vinculada no detalhe da data, ajuste a
-                  organização ou as datas, ou exclua a data. Enquanto houver datas aqui, a
-                  conferência aponta pendência e o calendário não pode ser publicado.
-                </p>
-                <ul className="activity-rows">{list.review.map(renderDate)}</ul>
-              </section>
-            )}
-            {list.campus.length > 0 && (
-              <section id="campus-dates" className="activity-group" aria-labelledby="group-campus">
-                <h4 id="group-campus">Datas do campus ({list.campus.length})</h4>
-                <ul id="event-list" className="activity-rows">
-                  {list.campus.map(renderDate)}
-                </ul>
-              </section>
-            )}
-            {list.base.length > 0 && (
-              <details
-                id="base-dates"
-                className="activity-group activity-base"
-                open={baseOpen || undefined}
-                onToggle={(event) => setBaseExpanded(event.currentTarget.open)}
+        <div id="activity-checklist">
+          {activityGroups.map(([group, label]) => {
+            const items = list.activities.filter((line) => line.item.group === group);
+            return items.length ? (
+              <ActivityGroup
+                key={group}
+                headingId={`group-${group}`}
+                title={label}
+                count={items.length}
+                pending={pendingIn(items)}
+                filtering={filtered}
+                pinned={holdsActivity(items)}
               >
-                <summary>
-                  <h4>Datas da base institucional ({list.base.length})</h4>
-                </summary>
-                <ul className="activity-rows">{list.base.map(renderDate)}</ul>
-              </details>
-            )}
-          </div>
-        </>
+                <ul className="activity-rows">{items.map(renderActivity)}</ul>
+              </ActivityGroup>
+            ) : null;
+          })}
+          {list.review.length > 0 && (
+            <ActivityGroup
+              id="link-review"
+              headingId="group-review"
+              title="Vínculo a conferir"
+              count={list.review.length}
+              fixed
+            >
+              <p className="help">
+                Datas cujo vínculo gravado não conta como atendimento na organização atual. O
+                vínculo é preservado; corrija a atividade vinculada no detalhe da data, ajuste a
+                organização ou as datas, ou exclua a data. Enquanto houver datas aqui, a conferência
+                aponta pendência e o calendário não pode ser publicado.
+              </p>
+              <ul className="activity-rows">{list.review.map(renderDate)}</ul>
+            </ActivityGroup>
+          )}
+          {list.campus.length > 0 && (
+            <ActivityGroup
+              id="campus-dates"
+              headingId="group-campus"
+              title="Datas do campus"
+              count={list.campus.length}
+              pending={pendingIn(list.campus)}
+              filtering={filtered}
+              pinned={holdsDate(list.campus)}
+            >
+              <ul id="event-list" className="activity-rows">
+                {list.campus.map(renderDate)}
+              </ul>
+            </ActivityGroup>
+          )}
+          {list.base.length > 0 && (
+            <ActivityGroup
+              id="base-dates"
+              headingId="group-base"
+              title="Datas da base institucional"
+              count={list.base.length}
+              pending={pendingIn(list.base)}
+              collapsed
+              filtering={filtered}
+              pinned={holdsDate(list.base)}
+            >
+              <ul className="activity-rows">{list.base.map(renderDate)}</ul>
+            </ActivityGroup>
+          )}
+        </div>
       ) : (
         <div id="date-list">
-          {list.withoutDates > 0 && (
-            <Notice
-              tone="info"
-              id="activities-without-dates"
-              actions={
-                <button
-                  type="button"
-                  className="link-button"
-                  onClick={() =>
-                    void navigate({
-                      to: '.',
-                      search: (previous) => ({ ...previous, atividadeVisao: undefined }),
-                      hashScrollIntoView: false,
-                    }).then(() =>
-                      // The notice leaves with its button: focus goes to the view now chosen.
-                      focusAfterRender(() => document.getElementById('activity-mode-atividade')),
-                    )
-                  }
-                >
-                  Ver por atividade
-                </button>
-              }
-            >
-              {list.withoutDates === 1
-                ? '1 atividade sem datas a preencher não aparece nesta visão.'
-                : `${list.withoutDates} atividades sem datas a preencher não aparecem nesta visão.`}
-            </Notice>
-          )}
           {[...new Set(list.dates.map((line) => line.event.start.slice(0, 7)))].map((month) => {
             const lines = list.dates.filter((line) => line.event.start.startsWith(month));
             return (
-              <section key={month} className="activity-group" aria-labelledby={`month-${month}`}>
-                <h4 id={`month-${month}`}>
-                  {monthLabel(month)} ({lines.length})
-                </h4>
+              <ActivityGroup
+                key={month}
+                headingId={`month-${month}`}
+                title={monthLabel(month)}
+                count={lines.length}
+                pending={pendingIn(lines)}
+                filtering={filtered}
+                pinned={holdsDate(lines)}
+              >
                 <ul className="activity-rows">{lines.map(renderDate)}</ul>
-              </section>
+              </ActivityGroup>
             );
           })}
         </div>

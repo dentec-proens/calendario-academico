@@ -89,7 +89,6 @@ test('visibility hides date lines only, never recomputing coverage, situation or
   // Every activity stays, with the same situation and pendency, including the ones to fill.
   expect(official.activities).toEqual(all.activities);
   expect(official.activities.some((line) => line.pending && !line.dates.length)).toBe(true);
-  expect(official.withoutDates).toBe(all.withoutDates);
   expect(official.review).toEqual(all.review);
   expect(official.campus.map((line) => line.event.id)).toEqual(
     all.campus.map((line) => line.event.id).filter((id) => !internalDates.includes(id)),
@@ -101,7 +100,6 @@ test('visibility hides date lines only, never recomputing coverage, situation or
   const internal = step(withInternalDates, { atividadeVisibilidade: 'internas' });
   expect(internal.activities).toHaveLength(0);
   expect(internal.activitiesHidden).toBe(true);
-  expect(internal.withoutDates).toBe(0);
   expect(internal.review).toHaveLength(0);
   expect(internal.base).toHaveLength(0);
   expect(internal.campus.map((line) => line.event.id).sort()).toEqual([...internalDates].sort());

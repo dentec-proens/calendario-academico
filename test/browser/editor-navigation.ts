@@ -90,7 +90,7 @@ export async function editCampusEvent(page: Page, id: string) {
 
 /** Expand the institutional base group, collapsed by default, where adjustable dates live. */
 export async function openBaseDates(page: Page) {
-  const base = page.locator('#base-dates');
-  if ((await base.getAttribute('open')) === null) await base.locator(':scope > summary').click();
-  await expect(base).toHaveAttribute('open', '');
+  const toggle = page.locator('#group-base button');
+  if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 }
