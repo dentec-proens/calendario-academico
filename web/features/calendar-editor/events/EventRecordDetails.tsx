@@ -1,5 +1,5 @@
 import { automaticEventSource } from '#src/domain/calendar/counting/core.ts';
-import { categoryLabel } from '#src/domain/calendar/activities/categories.ts';
+import { CategoryMark } from '../../../components/ui/CategoryMark.tsx';
 import { isInternalDate } from '#src/domain/calendar/internal-dates.ts';
 import { StatusBadge } from '../../../components/ui/Feedback.tsx';
 import type { EditorEvent } from '../types.ts';
@@ -62,7 +62,9 @@ export default function EventRecordDetails({
             {issue.text}
           </small>
         ))}
-      <small>{categoryLabel(event)}</small>
+      <small>
+        <CategoryMark event={event} withLabel />
+      </small>
     </>
   );
 }

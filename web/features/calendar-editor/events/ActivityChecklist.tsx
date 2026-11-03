@@ -144,6 +144,7 @@ export default function ActivityChecklist() {
           }
           statusLabel={statusLabel}
           dates={range(event)}
+          category={event}
           pendingDraft={editor.pendingDates.has(event.id)}
           internal={isInternalDate(event)}
           note={

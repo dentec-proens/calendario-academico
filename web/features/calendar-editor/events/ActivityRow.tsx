@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { StatusBadge } from '../../../components/ui/Feedback.tsx';
+import { CategoryMark } from '../../../components/ui/CategoryMark.tsx';
 import {
   situationLabels,
   type ActivitySituation,
@@ -11,6 +12,8 @@ type Props = Omit<ComponentProps<'button'>, 'children' | 'type' | 'className' | 
   status: ActivitySituation;
   statusLabel?: string;
   dates: string;
+  /** A date row shows the legend color of its category before the dates. */
+  category?: { category?: string; effect?: string };
   /** Context shown after the dates, such as the activity or the recorded link of a date. */
   note?: string;
   /** The date has a draft not yet applied, kept under its ID. */
@@ -26,6 +29,7 @@ export default function ActivityRow({
   status,
   statusLabel = situationLabels[status],
   dates,
+  category,
   note,
   pendingDraft = false,
   internal = false,
@@ -48,6 +52,7 @@ export default function ActivityRow({
           <span className="activity-status" data-status={status}>
             {statusLabel}
           </span>
+          {category && <CategoryMark event={category} />}
           <span>{dates}</span>
           {note && <span className="activity-row-note">{note}</span>}
           {pendingDraft && (

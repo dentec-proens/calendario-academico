@@ -20,6 +20,13 @@ for (const width of [1440, 390]) {
     await expect(row).toContainText('Evento local salvo');
     await expect(row).toContainText('Data do campus');
     await expect(row).toContainText('10/03/2027');
+    // The row repeats the printed legend color of the category, with its name as text.
+    const category = row.locator('.category-mark[data-category="evento"]');
+    await expect(category).toContainText('Eventos artísticos');
+    await expect(category.locator('.category-mark__swatch')).toHaveCSS(
+      'background-color',
+      'rgb(192, 242, 255)',
+    );
     await expect(
       page.locator('#event-list [data-edit-event], #event-list [data-remove-event]'),
     ).toHaveCount(0);

@@ -3,7 +3,8 @@ import { Button } from '../../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 import { useEffect, useRef } from 'react';
 import { Pencil } from 'lucide-react';
-import { categories, categoryLabel } from '#src/domain/calendar/activities/categories.ts';
+import { categories } from '#src/domain/calendar/activities/categories.ts';
+import { CategoryMark } from '../../components/ui/CategoryMark.tsx';
 import { modalityLabels, selectableModalities } from '#src/domain/calendar/modalities.ts';
 import { institution } from '../../shared/convex/institution.ts';
 import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
@@ -276,9 +277,7 @@ export default function CataloguePanel({
               </small>
             </label>
             <div className="actions">
-              <Button type="submit">
-                Salvar
-              </Button>
+              <Button type="submit">Salvar</Button>
               <Button
                 type="button"
                 variant="secondary"
@@ -318,7 +317,8 @@ export default function CataloguePanel({
                 </strong>
                 <span className="catalogue-date">{dateRangeLabel(item.start, item.end)}</span>
                 <small>
-                  {categoryLabel(item)} · {item.modalities.map((m) => modalityLabels[m]).join(', ')}
+                  <CategoryMark event={item} withLabel /> ·{' '}
+                  {item.modalities.map((m) => modalityLabels[m]).join(', ')}
                 </small>
                 <small>Fonte: {item.evidence}</small>
               </div>

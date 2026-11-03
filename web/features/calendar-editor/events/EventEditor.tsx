@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { categories } from '#src/domain/calendar/activities/categories.ts';
+import { CategoryMark } from '../../../components/ui/CategoryMark.tsx';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { generatedActivities, generatedActivity } from '#src/domain/calendar/activities/links.ts';
 import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
@@ -314,8 +315,12 @@ export default function EventEditor() {
             <summary>
               Categoria e efeito
               <span className="event-more-summary">
-                {categories.find(([id]) => id === values.category)?.[1] ?? 'Sem categoria'} ·{' '}
-                {effectLabels[values.effect as keyof typeof effectLabels] ?? 'Efeito a definir'}
+                {values.category ? (
+                  <CategoryMark event={{ category: values.category }} withLabel />
+                ) : (
+                  'Sem categoria'
+                )}{' '}
+                · {effectLabels[values.effect as keyof typeof effectLabels] ?? 'Efeito a definir'}
               </span>
             </summary>
             <div className="row-form">
