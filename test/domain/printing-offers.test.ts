@@ -1,14 +1,14 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { rowLink } from '../helpers/activity-links.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
 import { reviewDocument } from '../../src/printing/review-export.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 
 test('calendar print identifies each offer in the header, periods, event scopes and teaching totals', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const result = evaluateCalendar(state, state.events);
   const html = proensLayout(state, state.events, result, null, '');
   for (const label of [
@@ -28,7 +28,7 @@ test('calendar print identifies each offer in the header, periods, event scopes 
 });
 
 test('semester distributions group stages by cycle and restart displayed numbering without changing bindings', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const before = structuredClone(state);
   const result = evaluateCalendar(state, state.events);
   const report = teachingDayBreakdown(state, state.events, result, 'graduacao-2');
@@ -56,7 +56,7 @@ test('semester distributions group stages by cycle and restart displayed numberi
 });
 
 test('annual distributions retain the stage cycle and all displayed totals come from their own ledgers', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const result = evaluateCalendar(state, state.events);
   const annual = teachingDayBreakdown(state, state.events, result, 'graduacao');
   expect(annual.showSemesters).toBe(false);
@@ -78,7 +78,7 @@ test('annual distributions retain the stage cycle and all displayed totals come 
 });
 
 test('a migrated stage outside its own cycle prints its dates and warns without changing actual teaching-day counts', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const expected = evaluateCalendar(state, state.events).byOffer['graduacao-2'].total;
   const stage = state.events.find((event) => event.id === 'graduacao-2-stage-3')!;
   stage.start = civilDate('2027-02-01');
@@ -104,7 +104,7 @@ test('a migrated stage outside its own cycle prints its dates and warns without 
 });
 
 test('calendar print keeps only the concise status and the title year, leaving policy details to review', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const html = proensLayout(state, state.events, evaluateCalendar(state, state.events), {
     status: 'rascunho',
     version: 15,
@@ -132,7 +132,7 @@ test('calendar print keeps only the concise status and the title year, leaving p
 });
 
 test('print and review exports escape offer labels in HTML and preserve human text in the text export', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   state.offers[2].label = 'Engenharia <Elétrica> & Sistemas';
   const html = proensLayout(state, state.events, null, null, '');
   expect(html).toContain('Engenharia &lt;Elétrica&gt; &amp; Sistemas');

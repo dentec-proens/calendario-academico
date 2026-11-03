@@ -1,7 +1,7 @@
 import { readCalendarDates } from '../../src/domain/calendar/civil-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
-import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import { calendarContent } from '../../src/domain/calendar/normalization/content.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
 import {

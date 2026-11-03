@@ -6,7 +6,7 @@ import type { ActivityRef } from '../../src/domain/calendar/activities/activity-
 import { api } from '../../convex/_generated/api.js';
 import type { ContentState } from '../../convex/validators.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
-import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { applyDate } from '../helpers/date-commands.ts';
 import {

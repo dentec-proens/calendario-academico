@@ -20,7 +20,7 @@ import {
   organizationDraftStages,
 } from '#src/domain/calendar/organization/offers.ts';
 import { configureOfferMetadata } from '#src/domain/calendar/commands/organization.ts';
-import { validateOffers } from '#src/domain/calendar/normalization/normalize-v4.ts';
+import { validateOffers } from '#src/domain/calendar/normalization/normalize.ts';
 import {
   nextOfferId,
   offerLabel,

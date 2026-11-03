@@ -5,7 +5,7 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { test, expect } from './test.ts';
 import type { FixtureServer } from './fixture-server.ts';
 import { openActivity, savedState, selectEditorSection } from './editor-navigation.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import {
   cascavelDraft,
   conflictingLinks,
@@ -405,7 +405,7 @@ for (const width of [1440, 390])
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     // Annual integrated and undergraduate offers beside two semester undergraduate offers.
-    await open(page, fixtureServer, calendarOffersV4Fixture());
+    await open(page, fixtureServer, calendarOffersFixture());
     const offers = page.locator('#event-modalities input[name="event-modality"]');
     const chosen = () =>
       offers.evaluateAll((items) =>

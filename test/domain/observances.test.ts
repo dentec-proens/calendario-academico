@@ -1,6 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { expect, test } from 'vitest';
 import { inheritedEvents, initialCatalogue } from '../../src/domain/institution/catalogue.ts';
 import {
@@ -146,6 +146,6 @@ test('catalogue references cannot leave their policy even by changing year', () 
 
 test('an old exported choice is rejected explicitly instead of silently disappearing on import', () => {
   expect(() =>
-    normalizeOfferCalendar({ ...calendarOffersV4Fixture(), teacherDayDate: '2027-10-13' }),
+    normalizeOfferCalendar({ ...calendarOffersFixture(), teacherDayDate: '2027-10-13' }),
   ).toThrow('campo antigo');
 });

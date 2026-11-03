@@ -9,7 +9,7 @@ import {
 import { activityKey } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { linksToReview, validateLinks } from '../../src/domain/calendar/activities/links.ts';
 import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
-import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize.ts';
 import {
   applyOfferOrganization,
   offerOrganizationDraft,

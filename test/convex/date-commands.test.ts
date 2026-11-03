@@ -5,7 +5,7 @@ import { api } from '../../convex/_generated/api.js';
 import type { ContentState } from '../../convex/validators.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { rowLink } from '../helpers/activity-links.ts';
-import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize.ts';
 import {
   createCampusDate,
   planActivityDate,

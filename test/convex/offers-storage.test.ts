@@ -69,7 +69,7 @@ test('calendar storage requires offerKinds and refuses the retired modalities fi
   expect(await client.run((ctx) => ctx.db.query('calendars').take(10))).toHaveLength(1);
 });
 
-test('strict v4 storage never reruns the old backfill during maintenance', async () => {
+test('the offers storage never reruns the old backfill during maintenance', async () => {
   const { client } = await createNativeFixture();
   expect(await client.mutation(internal.migrations.start, {})).toBeNull();
   // Only the format 5 conversion is pending (phase 2, step 17b; `v5-migrations.test.ts`).

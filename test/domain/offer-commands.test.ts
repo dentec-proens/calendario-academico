@@ -2,7 +2,7 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { definedStage, rowLink } from '../helpers/activity-links.ts';
 import { isStageActivity } from '../../src/domain/calendar/activities/activity-ref.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { applyDate } from '../helpers/date-commands.ts';
 import { configureIntakeRequirement } from '../../src/domain/calendar/commands/organization.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
@@ -21,8 +21,8 @@ function ids() {
   return () => `new-${++sequence}`;
 }
 
-test('v4 organization drafts express stages per cycle independently for repeated kinds', () => {
-  const state = calendarOffersV4Fixture();
+test('organization drafts express stages per cycle independently for repeated kinds', () => {
+  const state = calendarOffersFixture();
   expect(offerOrganizationDraft(state, 'graduacao').count).toBe('3');
   expect(offerOrganizationDraft(state, 'graduacao-2').count).toBe('2');
   expect(offerOrganizationDraft(state, 'graduacao-3').count).toBe('1');
@@ -35,7 +35,7 @@ test('v4 organization drafts express stages per cycle independently for repeated
 });
 
 test('applying one semester offer keeps four annual stage bindings and preserves sibling offers', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const before = structuredClone(state);
   const draft = offerOrganizationDraft(state, 'graduacao-2');
   draft.periods[0].name = 'Primeiro ciclo da Engenharia';
@@ -65,7 +65,7 @@ test('applying one semester offer keeps four annual stage bindings and preserves
 });
 
 test('reducing semester stages keeps every binding and leaves excess dates to review', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const draft = offerOrganizationDraft(state, 'graduacao-2');
   draft.count = '1';
   draft.stages[0].end = civilDate('2027-07-09');
@@ -121,7 +121,7 @@ test('reducing semester stages keeps every binding and leaves excess dates to re
 });
 
 test('organization edits reject a stage in the other semester even when it fits another period', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const before = structuredClone(state);
   const draft = offerOrganizationDraft(state, 'graduacao-2');
   draft.stages[2].start = civilDate('2027-05-01');
@@ -135,8 +135,8 @@ test('organization edits reject a stage in the other semester even when it fits 
   expect(state).toEqual(before);
 });
 
-test('v4 semester organization accepts one or two stages per cycle and rejects three', () => {
-  const state = calendarOffersV4Fixture();
+test('semester organization accepts one or two stages per cycle and rejects three', () => {
+  const state = calendarOffersFixture();
   const draft = offerOrganizationDraft(state, 'graduacao-2');
   draft.count = '3';
   expect(
@@ -145,7 +145,7 @@ test('v4 semester organization accepts one or two stages per cycle and rejects t
 });
 
 test('intake configuration changes only the selected offer identity', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const next = configureIntakeRequirement(state, 'graduacao-2', 'second', true);
   expect(next.offers.find((offer) => offer.id === 'graduacao-2')?.intake?.second).toEqual({
     status: 'yes',
@@ -159,7 +159,7 @@ test('intake configuration changes only the selected offer identity', () => {
 });
 
 test('event edits enforce the owning cycle and the explicit offer id', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const stage = state.events.find((event) => event.id === 'graduacao-2-stage-3')!;
   expect(() =>
     applyDate(
@@ -182,7 +182,7 @@ test('event edits enforce the owning cycle and the explicit offer id', () => {
 });
 
 test('adding an opaque offer identity keeps earlier scopes and creates its own periods', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   state.events.push({
     id: 'earlier-global',
     name: 'Evento geral anterior',

@@ -2,21 +2,21 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { linkedToRow } from '../helpers/activity-links.ts';
 import { isStageActivity } from '../../src/domain/calendar/activities/activity-ref.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import {
   normalizeOfferCalendar,
   offerCalendarContent,
-} from '../../src/domain/calendar/normalization/normalize-v4.ts';
+} from '../../src/domain/calendar/normalization/normalize.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
 
-const context = (state: ReturnType<typeof calendarOffersV4Fixture>) => ({
+const context = (state: ReturnType<typeof calendarOffersFixture>) => ({
   storedContent: offerCalendarContent(state),
   catalogue: { events: [] },
   recalculate: false,
 });
 
 test('prepares and recovers independent undergraduate offers without legacy fields', () => {
-  const source = calendarOffersV4Fixture();
+  const source = calendarOffersFixture();
   const previous = normalizeOfferCalendar(source, source);
   const before = structuredClone(source);
   const prepared = prepareOfferCalendarSave(previous, source, context(previous));
@@ -33,7 +33,7 @@ test('prepares and recovers independent undergraduate offers without legacy fiel
 });
 
 test('save preserves campus and protects immutable offer identities and kinds', () => {
-  const previous = calendarOffersV4Fixture();
+  const previous = calendarOffersFixture();
   const prepared = prepareOfferCalendarSave(
     previous,
     { ...previous, campus: 'Outro campus' },
@@ -55,7 +55,7 @@ test('save preserves campus and protects immutable offer identities and kinds', 
 });
 
 test('requires distinct labels for repeated kinds and validates stages per cycle', () => {
-  const source = calendarOffersV4Fixture();
+  const source = calendarOffersFixture();
   delete source.offers[1].label;
   expect(() => normalizeOfferCalendar(source)).toThrow('nome a cada oferta');
   source.offers[1].label = source.offers[2].label;
@@ -66,7 +66,7 @@ test('requires distinct labels for repeated kinds and validates stages per cycle
 });
 
 test('saving another field keeps migrated stages in the wrong semester for readiness to flag', () => {
-  const source = calendarOffersV4Fixture();
+  const source = calendarOffersFixture();
   const event = source.events.find(linkedToRow(source, 'stage-3:graduacao-2'))!;
   event.start = civilDate('2027-05-03');
   event.end = civilDate('2027-06-01');
@@ -80,7 +80,7 @@ test('saving another field keeps migrated stages in the wrong semester for readi
 });
 
 test('saving migrated semester stages without a classified count retains their links', () => {
-  const source = calendarOffersV4Fixture();
+  const source = calendarOffersFixture();
   delete source.offers[2].stages;
   const previous = normalizeOfferCalendar(source, source);
   expect(

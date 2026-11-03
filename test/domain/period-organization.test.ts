@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 import { semesterLink } from '../helpers/activity-links.ts';
 import { configureIntakeRequirement } from '../../src/domain/calendar/commands/organization.ts';
 import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
-import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import type { ActivityState, AcademicTerm } from '../../src/domain/calendar/model.ts';
 

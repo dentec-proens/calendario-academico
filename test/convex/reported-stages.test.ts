@@ -2,13 +2,14 @@ import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { unclassifiedStage } from '../helpers/activity-links.ts';
+import { retiredOfferFields } from '../helpers/retired-fields.ts';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { preserveSubmission } from '../helpers/lifecycle.ts';
 import {
   normalizeOfferCalendar,
   offerCalendarContent,
-} from '../../src/domain/calendar/normalization/normalize-v4.ts';
+} from '../../src/domain/calendar/normalization/normalize.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import {
   applyOfferOrganization,
@@ -122,8 +123,10 @@ test('direct payloads cannot introduce, change, omit or partially resolve the re
         stages: { status: 'defined', perTerm: 3 },
       }),
     // The format before step 8 is not accepted by the transport.
-    (state: typeof migrated.record.state) =>
-      Object.assign(state.offers[0], { stages: undefined, legacyStageCount: 3 }),
+    ...retiredOfferFields.map(
+      (field) => (state: typeof migrated.record.state) =>
+        Object.assign(state.offers[0], { stages: undefined, [field]: 3 }),
+    ),
   ]) {
     const proposed = structuredClone(migrated.record.state);
     mutate(proposed);

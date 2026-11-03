@@ -2,8 +2,8 @@ import { expect, expectTypeOf, test } from 'vitest';
 import { civilDate, parseDate, type CivilDate } from '../../src/domain/civil-date.ts';
 import { datesBetween, daysBefore } from '../../src/domain/calendar/counting/core.ts';
 import { readActivityDates, readCalendarDates } from '../../src/domain/calendar/civil-dates.ts';
-import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import type {
   CalendarEvent,
   CalendarContent,
@@ -71,7 +71,7 @@ test('date arithmetic returns CivilDate across leap days and year boundaries', (
 
 test('reading persisted dates preserves historical choices, metadata and the exact JSON representation', () => {
   const input = {
-    ...calendarOffersV4Fixture(),
+    ...calendarOffersFixture(),
     observanceDates: { 'retired-policy': '2027-11-01' },
     teacherVacations: { firstStart: '2027-01-02', firstEnd: '2027-01-31' },
     events: [
@@ -107,7 +107,7 @@ test.each(['start', 'end', 'originalStart', 'originalEnd', 'assessmentAutoStart'
 );
 
 test('JSON import validates auxiliary dates, observances and vacations as well as event intervals', () => {
-  const base = calendarOffersV4Fixture();
+  const base = calendarOffersFixture();
   for (const invalid of [
     { ...base, observanceDates: { 'teacher-day': '2027-02-30' } },
     { ...base, teacherVacations: { firstStart: '2027-02-30', firstEnd: '2027-03-01' } },
@@ -122,7 +122,7 @@ test('JSON import validates auxiliary dates, observances and vacations as well a
 
 test('empty optional vacation fields from saved forms mean absence, including on JSON import', () => {
   const input = {
-    ...calendarOffersV4Fixture(),
+    ...calendarOffersFixture(),
     teacherVacations: {
       firstStart: '2027-01-02',
       firstEnd: '2027-01-31',

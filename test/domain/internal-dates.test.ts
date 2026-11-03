@@ -14,11 +14,11 @@ import {
 } from '../../src/domain/calendar/internal-dates.ts';
 import { projectDates } from '../../src/domain/calendar/model.ts';
 import { compareContents, describeValue, type DiffSide } from '../../src/domain/calendar/diff.ts';
-import { readCalendarOfferInput } from '../../src/domain/calendar/normalization/input-v4.ts';
+import { readCalendarOfferInput } from '../../src/domain/calendar/normalization/input.ts';
 import {
   normalizeOfferCalendar,
   offerCalendarContent,
-} from '../../src/domain/calendar/normalization/normalize-v4.ts';
+} from '../../src/domain/calendar/normalization/normalize.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';

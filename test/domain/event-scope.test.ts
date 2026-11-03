@@ -16,7 +16,7 @@ import { appliesTo } from '../../src/domain/calendar/modalities.ts';
 import {
   normalizeOfferCalendar,
   offerCalendarContent,
-} from '../../src/domain/calendar/normalization/normalize-v4.ts';
+} from '../../src/domain/calendar/normalization/normalize.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import {

@@ -2,7 +2,7 @@ import type { ActivityState, CalendarOffer, AcademicTerm } from '../model.ts';
 import { organizationForOffer } from '../organization/periods.ts';
 import { offerFor, offerIds } from '../offers.ts';
 import { DomainError } from '../../errors.ts';
-import { validateOffers } from '../normalization/normalize-v4.ts';
+import { validateOffers } from '../normalization/normalize.ts';
 
 /** Editable metadata never changes an offer's identity, type, periods or assessment records. */
 export function configureOfferMetadata<S extends ActivityState & { offers: CalendarOffer[] }>(

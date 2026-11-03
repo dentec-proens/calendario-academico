@@ -6,7 +6,7 @@ import {
   type CalendarPeriod,
   type CalendarContent,
 } from '../model.ts';
-import { readCalendarOfferInput } from './input-v4.ts';
+import { readCalendarOfferInput } from './input.ts';
 import { invalidCalendar as fail } from './input.ts';
 import { datesBetween } from '../counting/core.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
@@ -82,7 +82,7 @@ export function validateOffers(offers: CalendarOffer[]): CalendarOffer[] {
 }
 
 /**
- * Save boundary of format 4. `previous` is the persisted state of the same calendar: links are
+ * Save boundary of format 5. `previous` is the persisted state of the same calendar: links are
  * validated against it by date ID (`validateLinks`), so recorded links are never refused or
  * dropped for lacking a generated activity. Without it every link must be generated.
  */

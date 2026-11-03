@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { linksToReview, sameLink } from '../../src/domain/calendar/activities/links.ts';
 import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
-import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize.ts';
 import {
   applyOfferOrganization,
   organizationAwaitingSave,

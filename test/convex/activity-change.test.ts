@@ -8,7 +8,7 @@ import type { CalendarContent } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, calendarStatus, readyContent, saveReview } from '../helpers/lifecycle.ts';
 import { cycleLink, definedStage } from '../helpers/activity-links.ts';
-import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import {
   activityChangeOptions,

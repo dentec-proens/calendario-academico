@@ -2,7 +2,7 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { linkedToRow } from '../helpers/activity-links.ts';
 import { linkedTo } from '../../src/domain/calendar/activities/links.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { assessmentCount } from '../../src/domain/calendar/activities/assessment.ts';
@@ -12,7 +12,7 @@ import { policyFor } from '../../src/domain/policies/registry.ts';
 import { offerFor } from '../../src/domain/calendar/offers.ts';
 
 test('etapas de ofertas do mesmo tipo preservam identidades e reiniciam os nomes por ciclo', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const stages = activityPlan(state).filter((row) => row.id.startsWith('stage-'));
   expect(stages).toHaveLength(13);
   expect(assessmentCount(state, 'graduacao')).toBe(3);
@@ -34,7 +34,7 @@ test('etapas de ofertas do mesmo tipo preservam identidades e reiniciam os nomes
 });
 
 test('aplicabilidade depende do tipo, mas o escopo das linhas de ciclo depende da identidade', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const policy = policyFor(state.year);
   const rows = policy.requirements(state);
   const family = rows.find((row) => row.id === 'family-meeting')!;
@@ -52,7 +52,7 @@ test('aplicabilidade depende do tipo, mas o escopo das linhas de ciclo depende d
 });
 
 test('cobertura de uma etapa não atende a outra oferta de graduação', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const stage = state.events.find(linkedToRow(state, 'stage-1:graduacao-2'))!;
   const coverage = evaluatePlan(state, [stage]).rows;
   expect(coverage.find((row) => linkedTo(stage, row.requirement))).toMatchObject({
@@ -67,7 +67,7 @@ test('cobertura de uma etapa não atende a outra oferta de graduação', () => {
 });
 
 test('escopo e configuração de ingresso são independentes em ofertas do mesmo tipo', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const policy = policyFor(state.year);
   state.offers[2].scope = { status: 'own-regulation' };
   state.offers[3].intake = { first: { status: 'yes', required: true } };
@@ -94,7 +94,7 @@ test('escopo e configuração de ingresso são independentes em ofertas do mesmo
 });
 
 test('nova edição exige o próprio semestre sem impedir salvar outros dados migrados', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const original = state.events.find(linkedToRow(state, 'stage-3:graduacao-2'))!;
   const migrated = { ...original, start: civilDate('2027-02-01'), end: civilDate('2027-03-01') };
   expect(assessmentCycleIssue(state, migrated)).toContain('2º semestre');
@@ -114,7 +114,7 @@ test('nova edição exige o próprio semestre sem impedir salvar outros dados mi
 });
 
 test('sequência de novas etapas é conferida dentro do ciclo da mesma oferta', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const second = state.events.find(linkedToRow(state, 'stage-2:graduacao-2'))!;
   expect(assessmentCycleIssue(state, { ...second, start: civilDate('2027-04-16') })).toContain(
     'sequência',

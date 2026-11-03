@@ -1,6 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import type { ActivityState, CalendarEvent } from '../../src/domain/calendar/model.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
@@ -18,7 +18,7 @@ import {
 } from '../../src/domain/calendar/commands/saturdays.ts';
 
 test('v4 Saturdays require the teaching period of every offer identity', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const day = (date: string) =>
     saturdayYear(state, [])
       .flatMap((month) => month.days)

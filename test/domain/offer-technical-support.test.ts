@@ -1,15 +1,15 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
-import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 
-const support = (state: ReturnType<typeof calendarOffersV4Fixture>) =>
+const support = (state: ReturnType<typeof calendarOffersFixture>) =>
   reviewSupport({ id: 'synthetic', name: 'Calendário sintético', version: 1, state }, state.events);
 
 test('the parecer compares minima and window only for covered offers', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   state.offers[3].scope = { status: 'own-regulation' };
   for (const period of state.periods.filter(
     (item) =>
@@ -85,7 +85,7 @@ test('pending semester stages retain every assessment-dependent binding while ot
 });
 
 test('an offer with its own regulation does not change the semester criterion of a covered annual offer', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   state.offers = state.offers.filter((offer) => ['graduacao', 'graduacao-3'].includes(offer.id));
   state.offers[1].scope = { status: 'own-regulation' };
   state.periods = state.periods.filter(
@@ -109,7 +109,7 @@ test('an offer with its own regulation does not change the semester criterion of
 });
 
 test('coverage-linked candidates carry only the fields of the review contract', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const candidates = support(state).criteria.flatMap((item) => item.candidates);
   expect(candidates.some((item) => item.id === 'integrado-stage-1')).toBe(true);
   for (const item of candidates)
@@ -117,7 +117,7 @@ test('coverage-linked candidates carry only the fields of the review contract', 
 });
 
 test('dates under “Vínculo a conferir” are never coverage-linked candidates (plan, 5.6)', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const offer = state.offers[0].id;
   // A second date for the same stage: both become “Etapa duplicada”.
   state.events.push({

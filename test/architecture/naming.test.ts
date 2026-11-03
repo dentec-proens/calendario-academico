@@ -3,9 +3,11 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 import type {
   CalendarEvent,
+  CalendarOffer,
   DateFields,
   InstitutionalEventSnapshot,
 } from '../../src/domain/calendar/model.ts';
+import { retiredDateFields, retiredOfferFields } from '../helpers/retired-fields.ts';
 
 /**
  * Phase 2, step 2 of docs/plans/2026-11-02-atividades-e-datas.md: the vocabulary Atividade + Data
@@ -15,6 +17,21 @@ import type {
  */
 const repository = resolve(import.meta.dirname, '../..');
 const self = relative(repository, import.meta.filename);
+
+async function sourcesWithAnyExtension(directory: string): Promise<string[]> {
+  const entries = await readdir(directory, { withFileTypes: true });
+  return (
+    await Promise.all(
+      entries.map(async (entry) =>
+        entry.isDirectory()
+          ? sourcesWithAnyExtension(join(directory, entry.name))
+          : [join(directory, entry.name)],
+      ),
+    )
+  )
+    .flat()
+    .filter((file) => !file.includes('/_generated/') && !file.includes('/__screenshots__/'));
+}
 
 async function sources(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -63,29 +80,60 @@ test('old names of dates, activity rows and the activity plan are gone from the 
 });
 
 /**
- * Step 9b: a date carries its link as `activity` (`ActivityRef`). The format 4 field survives only
- * where the plan keeps it: the converter and classifier, the frozen storage validators, the
- * constant historical key of the base identity and, in tests, the frozen oracles and the tests of
- * the conversion that read them.
+ * Step 20 (closing of phase 2): normal execution uses only format 5. The names of format 4 (the
+ * link `requirementId`, the effect `kind` of a date, `recordType`, `legacyStageCount` and the
+ * `*V4` aliases) survive only where the plan keeps them: the converter and the classifier, the
+ * `v5-*` verifiers, the frozen storage validators (and the expanded schema that reads them until
+ * the contraction), the constant historical keys of the base identity and, in tests, the frozen
+ * oracles and the tests of the conversion that read them.
  */
-const requirementIdAllowed = new Set([
+const formatFourNames: readonly RegExp[] = [
+  /\brequirementIds?\b/,
+  /\brecordType\b/,
+  /\blegacyStageCount\b/,
+  // The effect of a date written as format 4.
+  /\bkind: ['"](include|exclude|note)['"]/,
+  /\.kind === ['"](include|exclude|note)['"]/,
+  // Aliases of format 4 (`eventV4`, `CalendarActivityV4`, `V4Case`).
+  /\b[A-Za-z]\w*V4\b/,
+  /\bV4[A-Z]\w*/,
+];
+
+const formatFourAllowed: readonly (string | RegExp)[] = [
+  // Converter and classifier of the migration.
   'src/domain/calendar/migration/convert-v5.ts',
   'src/domain/calendar/migration/inventory.ts',
+  // Verifiers of the operation (`v5-inventory`, `v5-manifest`, `v5-verify`, `v5-export`).
+  /^scripts\/administration\/v5-[\w-]+\.ts$/,
+  // Frozen storage validators and the expansion that accepts whole v4 documents until the
+  // contraction (plan, section 6 “Release”, step 7).
   'convex/legacyValidators.ts',
+  'convex/schema.ts',
+  // Constant historical keys of `eventContent` (base identity).
   'src/domain/calendar/base.ts',
-  'test/domain/v5-inventory.test.ts',
-  'test/domain/v5-conversion.test.ts',
-  // Step 17b: a snapshot with a link stops the migration (blocking shape injected by the test).
-  'test/convex/v5-migrations.test.ts',
-  'test/domain/v5-activity-links.test.ts',
+  // Frozen oracles and the tests of the conversion, inventory and migration that read them.
+  /^test\/(domain|convex)\/v[45]-[\w-]+\.test\.ts$/,
+  /^test\/helpers\/v[45]-[\w-]+\.ts$/,
+  // Reads the dropped fields from the frozen validators for the refusal tests.
+  'test/helpers/retired-fields.ts',
+  // Step 9b: the conversion of each frozen link, checked against its consumers.
   'test/domain/activity-link-consumers.test.ts',
   // The frozen v3 oracle names each linked date by the row its link resolves to.
   'test/domain/offers-equivalence.test.ts',
   // Step 9d: the frozen dates linked to the retired “Classificação legada” rows of 2027.
   'test/helpers/legacy-classification.ts',
-]);
+  'test/domain/legacy-classification-2027.test.ts',
+  // Step 7: v4 documents (dates without offers) fed to the conversion of scopes.
+  'test/helpers/event-scope.ts',
+  'test/convex/event-scope.test.ts',
+];
 
-test('requirementId remains only in the converter, frozen validators, oracles and base identity', async () => {
+const allowed = (path: string) =>
+  formatFourAllowed.some((entry) =>
+    typeof entry === 'string' ? entry === path : entry.test(path),
+  );
+
+test('format 4 names remain only in the converter, verifiers, frozen validators and oracles', async () => {
   const files = (
     await Promise.all(
       ['src', 'web', 'convex', 'scripts', 'test'].map((folder) =>
@@ -96,12 +144,51 @@ test('requirementId remains only in the converter, frozen validators, oracles an
   const found: string[] = [];
   for (const file of files) {
     const path = relative(repository, file);
-    if (path === self || requirementIdAllowed.has(path)) continue;
-    if ((await readFile(file, 'utf8')).includes('requirementId')) found.push(path);
+    if (path === self || allowed(path)) continue;
+    const text = await readFile(file, 'utf8');
+    for (const pattern of formatFourNames) {
+      const match = text.match(pattern);
+      if (match) found.push(`${path}: ${match[0]}`);
+    }
   }
   expect(found).toEqual([]);
   const base = await readFile(resolve(repository, 'src/domain/calendar/base.ts'), 'utf8');
   expect(base.match(/requirementId.*/g)).toEqual(["requirementId: '',"]);
+  expect(base.match(/\bkind: .*/g)).toEqual(['kind: event.effect,']);
+});
+
+test('modules and tests of format 5 carry no -v4 suffix', async () => {
+  const files = (
+    await Promise.all(
+      ['src', 'web', 'convex', 'scripts', 'test'].map((folder) =>
+        sourcesWithAnyExtension(resolve(repository, folder)),
+      ),
+    )
+  ).flat();
+  expect(
+    files
+      .map((file) => relative(repository, file))
+      // The frozen v4 documents keep their own folder.
+      .filter((path) => !path.startsWith('test/fixtures/v4/'))
+      .filter((path) => /-v4\./.test(path)),
+  ).toEqual([]);
+});
+
+test('dates and offers of format 5 have no field of format 4', () => {
+  expectTypeOf<CalendarEvent>().not.toHaveProperty('requirementId');
+  expectTypeOf<CalendarEvent>().not.toHaveProperty('kind');
+  expectTypeOf<CalendarEvent>().not.toHaveProperty('recordType');
+  expectTypeOf<CalendarEvent>().not.toHaveProperty('offers');
+  expectTypeOf<CalendarEvent>().not.toHaveProperty('publicationStatus');
+  expectTypeOf<CalendarEvent>().not.toHaveProperty('admission');
+  expectTypeOf<InstitutionalEventSnapshot>().not.toHaveProperty('requirementId');
+  expectTypeOf<InstitutionalEventSnapshot>().not.toHaveProperty('kind');
+  expectTypeOf<InstitutionalEventSnapshot>().not.toHaveProperty('recordType');
+  expectTypeOf<CalendarOffer>().not.toHaveProperty('legacyStageCount');
+  expect(retiredDateFields).toEqual(
+    expect.arrayContaining(['requirementId', 'kind', 'recordType', 'offers']),
+  );
+  expect(retiredOfferFields).toEqual(['legacyStageCount']);
 });
 
 test('the counting core names its input intervals, not calendar events', async () => {

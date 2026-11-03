@@ -13,7 +13,7 @@ import {
   offerOrganizationIssues,
   offerOrganizationWarnings,
 } from '../../src/domain/calendar/organization/offers.ts';
-import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { associationOffers } from '../../src/domain/calendar/offers.ts';
 

@@ -11,7 +11,7 @@ import { stageCount, stageCycle, stageTerm } from '../../src/domain/calendar/off
 import {
   normalizeOfferCalendar,
   offerCalendarContent,
-} from '../../src/domain/calendar/normalization/normalize-v4.ts';
+} from '../../src/domain/calendar/normalization/normalize.ts';
 import { configureOfferMetadata } from '../../src/domain/calendar/commands/organization.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { applyDate } from '../helpers/date-commands.ts';
@@ -20,8 +20,9 @@ import {
   offerOrganizationDraft,
 } from '../../src/domain/calendar/organization/offers.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
-import { readCalendarOfferInput } from '../../src/domain/calendar/normalization/input-v4.ts';
+import { readCalendarOfferInput } from '../../src/domain/calendar/normalization/input.ts';
 import { legacyIds } from '../helpers/legacy-classification.ts';
+import { retiredOfferFields } from '../helpers/retired-fields.ts';
 
 type Count = 2 | 3 | 4;
 type StageState = CalendarContent & { year: number; campus: string };
@@ -93,7 +94,7 @@ test('normalization and the JSON copy keep the reported total, without inventing
     stages: { status: 'reported', count: 3 },
     organization: 'a-classificar',
   });
-  expect(content.offers[0]).not.toHaveProperty('legacyStageCount');
+  for (const field of retiredOfferFields) expect(content.offers[0]).not.toHaveProperty(field);
   // Exporting and importing the copy keeps the reported total.
   expect(
     readCalendarOfferInput(JSON.parse(JSON.stringify({ ...content, year: 2027 }))).offers[0],
@@ -297,7 +298,7 @@ test('complete classification keeps every linked result, council and meeting, su
   let seq = 0;
   const configured = applyOfferOrganization(state, 'integrado', draft, () => `configured-${++seq}`);
   for (const family of ['results', 'council', 'pedagogical-meeting']) {
-    // The confirmed ordinal takes its position in the annual cycle, as the v4 `results-1` did.
+    // The confirmed ordinal takes its position in the annual cycle, as the format 4 `results-1` did.
     expect(configured.events.find((event) => event.id === `${family}-1`)?.activity).toEqual(
       definedStage(family, 'integrado', 'annual', 1),
     );

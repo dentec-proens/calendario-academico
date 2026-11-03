@@ -1,10 +1,10 @@
 import { expect, test } from 'vitest';
 import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { policyFor, equivalentRulesets } from '../../src/domain/policies/registry.ts';
 
 test('policy receives an opaque identity and applies kind, scope and source independently', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const offer = state.offers[2];
   offer.id = 'curso-opaco-7';
   const policy = policyFor(state.year);
@@ -42,7 +42,7 @@ test('the offer editorial version preserves the review boundary and historical m
     date: '2026-10-29',
   });
   expect(equivalentRulesets('consup-292-2027-v2', 'consup-292-2027-v3')).toBe(true);
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   expect(policy.countingMinimums(state, state.offers[1]).annual?.days).toBe(200);
   expect(policy.countingMinimums(state, state.offers[2]).annual?.days).toBe(200);
   expect(policy.countingMinimums(state, state.offers[2]).semester?.days).toBe(100);

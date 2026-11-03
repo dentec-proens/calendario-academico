@@ -9,12 +9,12 @@ import {
   offerOrganizationDraft,
   offerOrganizationIssues,
 } from './organization/offers.ts';
-import { normalizeOfferCalendar, offerCalendarContent } from './normalization/normalize-v4.ts';
+import { normalizeOfferCalendar, offerCalendarContent } from './normalization/normalize.ts';
 import { kinds, reportedStageCount, stagesPerTerm } from './offers.ts';
 
 type OfferState = CalendarContent & { year: number; campus?: string };
 
-/** V4 save boundary; the backend retains concurrency, authorization and final confirmation. */
+/** Save boundary of the editor; the backend retains concurrency, authorization and final confirmation. */
 export function prepareOfferCalendarSave<E extends DateFields & { active: boolean }>(
   previous: OfferState,
   proposed: OfferState,

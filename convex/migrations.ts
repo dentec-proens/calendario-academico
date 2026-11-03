@@ -81,7 +81,7 @@ async function submissionsOf(ctx: MutationCtx, calendarId: Id<'calendars'>) {
   return rows;
 }
 
-/** One catalogue row: `kind` → `effect`, `recordType` removed. */
+/** One catalogue row, converted to format 5 by `convertCatalogueEventV5`. */
 export async function migrateCatalogueRow(ctx: MutationCtx, row: Doc<'institutionalEvents'>) {
   const conversion = convertCatalogueEventV5(row);
   if (!conversion) return;

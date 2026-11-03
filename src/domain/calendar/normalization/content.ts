@@ -1,3 +1,3 @@
-import { normalizeOfferCalendar, offerCalendarContent } from './normalize-v4.ts';
+import { normalizeOfferCalendar, offerCalendarContent } from './normalize.ts';
 export const calendarContent = (input: unknown) =>
   offerCalendarContent(normalizeOfferCalendar(input));

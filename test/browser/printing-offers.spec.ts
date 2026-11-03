@@ -1,7 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { readFile, writeFile } from 'node:fs/promises';
 import { test, expect } from './test.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { inheritedEvents, initialCatalogue } from '../../src/domain/institution/catalogue.ts';
 import { applyObservances } from '../../src/domain/calendar/observances.ts';
@@ -11,7 +11,7 @@ for (const width of [1440, 390]) {
   test(`prints offer labels and assessment cycles through Chromium at ${width}px`, async ({
     page,
   }, testInfo) => {
-    const state = calendarOffersV4Fixture();
+    const state = calendarOffersFixture();
     state.events.push(
       {
         id: 'previous-publication',
@@ -108,8 +108,8 @@ for (const width of [1440, 390]) {
     ).toHaveCount(1);
     const pdf = await page.pdf({ printBackground: true, preferCSSPageSize: true });
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
-    await writeFile(testInfo.outputPath('calendar-offers-v4.pdf'), pdf);
-    await testInfo.attach('calendar-offers-v4.pdf', { body: pdf, contentType: 'application/pdf' });
+    await writeFile(testInfo.outputPath('calendar-offers.pdf'), pdf);
+    await testInfo.attach('calendar-offers.pdf', { body: pdf, contentType: 'application/pdf' });
     const [{ getDocument }, { WorkerMessageHandler }] = await Promise.all([
       import('pdfjs-dist/legacy/build/pdf.mjs'),
       import('pdfjs-dist/legacy/build/pdf.worker.mjs'),

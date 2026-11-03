@@ -1,10 +1,10 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { configureOfferMetadata } from '../../src/domain/calendar/commands/organization.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 
 test('altera apenas metadados da oferta selecionada, preservando identidade, configuração e registros', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const before = structuredClone(state);
   const next = configureOfferMetadata(state, 'graduacao-2', {
     label: '  Engenharia Eletrônica  ',
@@ -26,7 +26,7 @@ test('altera apenas metadados da oferta selecionada, preservando identidade, con
 });
 
 test('nomes são obrigatórios para tipos repetidos e únicos no calendário', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   expect(() =>
     configureOfferMetadata(state, 'graduacao-2', { label: '', delivery: 'presencial' }),
   ).toThrow('Dê um nome');
@@ -45,7 +45,7 @@ test('nomes são obrigatórios para tipos repetidos e únicos no calendário', (
 });
 
 test('remove metadados opcionais vazios sem exigir reclassificação de datas migradas', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   state.offers[0].label = 'Técnico em Informática';
   state.offers[0].organizationBasis = 'Fonte antiga';
   state.events[0].start = civilDate('2027-01-01');

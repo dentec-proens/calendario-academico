@@ -1,7 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { applyDate } from '../helpers/date-commands.ts';
-import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 

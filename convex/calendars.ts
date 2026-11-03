@@ -1,9 +1,9 @@
-import { readCalendarOfferInput } from '../src/domain/calendar/normalization/input-v4.ts';
+import { readCalendarOfferInput } from '../src/domain/calendar/normalization/input.ts';
 import { prepareOfferCalendarSave } from '../src/domain/calendar/prepare-save';
 import {
   offerCalendarContent,
   normalizeOfferCalendar,
-} from '../src/domain/calendar/normalization/normalize-v4';
+} from '../src/domain/calendar/normalization/normalize';
 import { kinds, nextOfferId } from '../src/domain/calendar/offers';
 import { calendarSchemaVersion, type CalendarOffer } from '../src/domain/calendar/model';
 import { equalValues } from '../src/shared/equal';

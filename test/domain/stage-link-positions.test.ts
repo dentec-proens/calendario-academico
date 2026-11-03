@@ -6,7 +6,7 @@ import type { ActivityState, CalendarEvent } from '../../src/domain/calendar/mod
 import {
   normalizeOfferCalendar,
   offerCalendarContent,
-} from '../../src/domain/calendar/normalization/normalize-v4.ts';
+} from '../../src/domain/calendar/normalization/normalize.ts';
 import {
   applyOfferOrganization,
   offerOrganizationDraft,

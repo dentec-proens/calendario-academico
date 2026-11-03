@@ -634,7 +634,7 @@ function readOffers(value: unknown, path: string, out: Collector): OfferShape[] 
       perTerm = literal(stages.perTerm, `${at}.stages.perTerm`, [1, 2, 3, 4]);
       out.form('offer.stages:defined', at);
     } else out.form('offer.stages:absent', at);
-    // v4 never saved both (`normalize-v4.ts`); converting one would drop the other (section 5.5).
+    // v4 never saved both (`normalize.ts`); converting one would drop the other (section 5.5).
     if (offer.legacyStageCount !== undefined && perTerm !== undefined)
       fail(`${at}.legacyStageCount`, 'quantidade anterior junto de etapas por ciclo');
     // The conversion rules of the stages hold only for the pairs v4 saved (`validateOffers`): a

@@ -35,7 +35,7 @@ import {
   type StageActivityRef,
 } from '../activities/activity-ref.ts';
 import { linksToReview, linkIssueLabels, stageLocation } from '../activities/links.ts';
-import { normalizeOfferCalendar } from '../normalization/normalize-v4.ts';
+import { normalizeOfferCalendar } from '../normalization/normalize.ts';
 import { DomainError } from '../../errors.ts';
 import { equalValues } from '../../../shared/equal.ts';
 import { admissionDestination } from '../activities/validation.ts';

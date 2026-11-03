@@ -2,7 +2,7 @@ import { test, expect } from './test.ts';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { formatFourCopyMessage } from '../../src/domain/calendar/normalization/input-v4.ts';
+import { formatFourCopyMessage } from '../../src/domain/calendar/normalization/input.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 /**

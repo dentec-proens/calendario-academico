@@ -8,7 +8,7 @@ import { applicabilityFor } from '../../src/domain/policies/registry.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlines.ts';
 
-import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import { applyDate } from '../helpers/date-commands.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 

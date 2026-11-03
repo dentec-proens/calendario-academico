@@ -8,7 +8,7 @@ import {
 } from '../../src/domain/calendar/activities/validation.ts';
 import type { AdmissionDestination, CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { contentAssessment } from '../../src/domain/calendar/readiness.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 
 /**
  * Notice and admission destination by offer (plan `docs/plans/2026-11-02-atividades-e-datas.md`,
@@ -35,7 +35,7 @@ const notice = (
 });
 
 const withNotice = (event: CalendarEvent) => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   state.events.push(event);
   return state;
 };
@@ -96,7 +96,7 @@ test('a notice without destination is not informed and has nothing to diagnose',
 });
 
 test('a notice is validated as a whole: purpose, publication and one destination per offer', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const valid = notice([{ offerId: 'integrado', periodId: 'integrado-annual' }]);
   expect(() => validateActivityRecord(state, valid)).not.toThrow();
   expect(() =>

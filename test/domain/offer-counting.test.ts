@@ -7,10 +7,10 @@ import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessme
 import { durationEnd, recalculatePeriods } from '../../src/domain/calendar/counting/duration.ts';
 import { diagnoseCalendar, diagnoseTeachingDays } from '../../src/domain/calendar/diagnostics.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 
 test('annual and semester undergraduate offers retain independent counting and minimums', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   const before = structuredClone(state);
   const result = evaluateCalendar(state, state.events);
   expect(Object.keys(result.byOffer)).toEqual([
@@ -46,7 +46,7 @@ test('annual and semester undergraduate offers retain independent counting and m
 });
 
 test('an exclusion uses the offer identity while minimums use that offer scope', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   state.offers = state.offers.map((offer) =>
     offer.id === 'graduacao-3' ? { ...offer, scope: { status: 'own-regulation' } } : offer,
   );
@@ -67,7 +67,7 @@ test('an exclusion uses the offer identity while minimums use that offer scope',
 });
 
 test('assessment day counts select the suffixed offer and retain the annual ordinal', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   expect(assessmentDayCounts(state, state.events)['graduacao-2-stage-1']).toEqual([
     { offerId: 'graduacao-2', days: 55, saturdays: 0, excluded: 0 },
   ]);
@@ -77,7 +77,7 @@ test('assessment day counts select the suffixed offer and retain the annual ordi
 });
 
 test('duration and period recalculation select only the period associated offers', () => {
-  const fixture = calendarOffersV4Fixture();
+  const fixture = calendarOffersFixture();
   const period: CalendarPeriod = {
     id: 'engineering-duration',
     name: 'Período da engenharia',
@@ -110,7 +110,7 @@ test('duration and period recalculation select only the period associated offers
 });
 
 test('structure and readiness name the incomplete offer instead of its shared kind', () => {
-  const fixture = calendarOffersV4Fixture();
+  const fixture = calendarOffersFixture();
   const state = {
     ...fixture,
     periods: fixture.periods.filter((period) => period.id !== 'graduacao-2-second'),
@@ -130,7 +130,7 @@ test('structure and readiness name the incomplete offer instead of its shared ki
 });
 
 test('scope confirmation and window warnings follow each offer', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   state.offers = state.offers.map((offer) =>
     offer.id === 'graduacao-2'
       ? { ...offer, scope: undefined }
@@ -161,7 +161,7 @@ test('scope confirmation and window warnings follow each offer', () => {
 });
 
 test('an existing assessment stage outside its own semester remains a readiness warning', () => {
-  const state = calendarOffersV4Fixture();
+  const state = calendarOffersFixture();
   state.events = state.events.map((event) =>
     linkedToRow(state, 'stage-1:graduacao-2')(event)
       ? { ...event, start: civilDate('2027-08-02'), end: civilDate('2027-08-06') }

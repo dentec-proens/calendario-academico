@@ -9,10 +9,10 @@ import {
 } from '../../src/domain/calendar/commands/events.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { noticeDestinationIssues } from '../../src/domain/calendar/activities/validation.ts';
-import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
 import { cycleLink, onceLink, rowLink } from '../helpers/activity-links.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import {
   cascavelDraft,
   ivaiporaDraft,
@@ -144,7 +144,7 @@ describe('updateDate', () => {
       { offerId: 'integrado', periodId: 'graduacao-annual' },
       { offerId: 'graduacao', periodId: 'removed' },
     ];
-    const state = calendarOffersV4Fixture() as unknown as State;
+    const state = calendarOffersFixture() as unknown as State;
     state.events.push({
       id: 'transfer-notice',
       name: 'Edital de transferência',

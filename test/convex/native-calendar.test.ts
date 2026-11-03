@@ -2,13 +2,14 @@ import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { onceLink } from '../helpers/activity-links.ts';
+import { retiredDateFields } from '../helpers/retired-fields.ts';
 import { api } from '../../convex/_generated/api.js';
 import { currentFormat } from '../../convex/lib/storageFormat.ts';
 import type { DomainState } from '../../convex/validators.ts';
 import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, preserveSubmission, seedCourses } from '../helpers/lifecycle.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { reviewCriteria } from '../../src/domain/reviews/criteria.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { initialCatalogue } from '../../src/domain/institution/catalogue.ts';
@@ -71,7 +72,7 @@ test.each(['anual', 'semestral', 'a-classificar'] as const)(
   },
 );
 
-test('v4 round-trip preserves independent organization, intake, actual dates and intended admission', async () => {
+test('the round-trip preserves independent organization, intake, actual dates and intended admission', async () => {
   const { actor, record, ...fixture } = await setup();
   const state: DomainState = {
     ...record.state,
@@ -202,7 +203,8 @@ test('direct backend writes retain temporal and offer-scope validation', async (
   for (const forged of [
     { ...event, effect: 'include' as const },
     { ...event, effect: 'exclude' as const },
-    { ...event, recordType: 'event' as const, effect: 'include' as const },
+    // A note that is valid by itself is refused with any field format 5 dropped.
+    ...retiredDateFields.map((field) => ({ ...event, [field]: 'event' }) as typeof event),
     { ...event, hours: 40, activity: onceLink('pedagogical-training') },
     {
       ...event,
@@ -361,7 +363,7 @@ function oneOffer(
   organization: 'anual' | 'semestral',
   perTerm: number,
 ): CalendarContent & { year: number; campus: string } {
-  const fixture = calendarOffersV4Fixture();
+  const fixture = calendarOffersFixture();
   const old = fixture.offers.find((offer) => offer.id === source)!;
   const offers: CalendarOffer[] = [
     {
@@ -428,7 +430,7 @@ test.each(['annual', 'semester', 'trimester', 'three'] as const)(
           ? oneOffer('graduacao-2', 'semestral', 2)
           : mode === 'trimester'
             ? oneOffer('graduacao', 'anual', 3)
-            : calendarOffersV4Fixture();
+            : calendarOffersFixture();
     if (mode === 'three') {
       reference.offers = reference.offers.filter((offer) => offer.kind === 'graduacao');
       reference.periods = reference.periods.filter(

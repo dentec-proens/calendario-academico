@@ -1,7 +1,7 @@
 import { test, expect } from './test.ts';
 import { selectEditorSection } from './editor-navigation.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
-import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
+import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import type { CalendarState } from '../../web/features/calendar-editor/types.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -13,7 +13,7 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#record-title')).toBeVisible();
-    const state = normalizeOfferCalendar(calendarOffersV4Fixture()) as CalendarState;
+    const state = normalizeOfferCalendar(calendarOffersFixture()) as CalendarState;
     await page.evaluate(async (state) => {
       const { record } = window.editorTest;
       record.state = { ...state, campus: record.state.campus };

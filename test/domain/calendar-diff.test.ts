@@ -9,7 +9,8 @@ import {
 } from '../../src/domain/calendar/diff.ts';
 import { contentIssues } from '../../src/domain/calendar/readiness.ts';
 import * as validators from '../../convex/validators.ts';
-import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
+import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
+import { retiredOfferFields } from '../helpers/retired-fields.ts';
 
 const institutional = (id: string, start: string, offers?: string[]) => ({
   id,
@@ -24,7 +25,7 @@ const institutional = (id: string, start: string, offers?: string[]) => ({
 
 function side(change: (value: DiffSide) => void = () => {}): DiffSide {
   const value: DiffSide = {
-    state: calendarOffersV4Fixture(),
+    state: calendarOffersFixture(),
     institutionalSnapshot: [
       {
         ...institutional('inst:ifpr2027-16', '2027-10-15'),
@@ -143,7 +144,7 @@ test('observances by key, week and vacations field by field, derived vacation ev
 });
 
 test('confirming the scope alone is a change; offer order and an offer inclusion are none', () => {
-  const ids = calendarOffersV4Fixture().offers.map((offer) => offer.id);
+  const ids = calendarOffersFixture().offers.map((offer) => offer.id);
   const note = (offers: string[], confirmed: boolean) => (value: DiffSide) => {
     value.state.offers = value.state.offers.slice(0, 3);
     value.state.events.push({
@@ -383,5 +384,6 @@ test('resolving a reported total shows the assessment stages before and after (p
   expect(describeValue('stages', stages.after)).toBe(
     `${(side().state.offers[0].stages as { perTerm: number }).perTerm} por ciclo`,
   );
-  expect(Object.keys(fieldLabels.offer)).not.toContain('legacyStageCount');
+  for (const field of retiredOfferFields)
+    expect(Object.keys(fieldLabels.offer)).not.toContain(field);
 });

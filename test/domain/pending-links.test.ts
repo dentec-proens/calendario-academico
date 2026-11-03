@@ -10,7 +10,7 @@ import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.
 import {
   normalizeOfferCalendar,
   offerCalendarContent,
-} from '../../src/domain/calendar/normalization/normalize-v4.ts';
+} from '../../src/domain/calendar/normalization/normalize.ts';
 import {
   applyOfferOrganization,
   offerOrganizationDraft,

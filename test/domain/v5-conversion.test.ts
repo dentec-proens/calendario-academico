@@ -16,7 +16,7 @@ import {
 import {
   formatFourCopyMessage,
   readCalendarOfferInput,
-} from '../../src/domain/calendar/normalization/input-v4.ts';
+} from '../../src/domain/calendar/normalization/input.ts';
 import { noticeDestinationIssues } from '../../src/domain/calendar/activities/validation.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { contentAssessment } from '../../src/domain/calendar/readiness.ts';
@@ -30,7 +30,7 @@ import {
 import {
   normalizeOfferCalendar,
   offerCalendarContent,
-} from '../../src/domain/calendar/normalization/normalize-v4.ts';
+} from '../../src/domain/calendar/normalization/normalize.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
 import { updateDate } from '../../src/domain/calendar/commands/events.ts';
 import { convertedState } from '../helpers/v5-conversion.ts';

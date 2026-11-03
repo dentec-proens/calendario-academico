@@ -8,7 +8,7 @@ import type {
 
 import { definedStage } from '../helpers/activity-links.ts';
 
-export type CalendarOffersV4Fixture = CalendarContent & { year: number; campus: string };
+export type CalendarOffersFixture = CalendarContent & { year: number; campus: string };
 
 const period = (
   id: string,
@@ -50,7 +50,7 @@ const stages = (
   }));
 
 /** Independent annual and semester undergraduate offers share one institutional calendar. */
-export function calendarOffersV4Fixture(): CalendarOffersV4Fixture {
+export function calendarOffersFixture(): CalendarOffersFixture {
   return {
     schemaVersion: 5,
     rulesetVersion: 'consup-292-2027-v3',
