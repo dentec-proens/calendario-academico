@@ -19,6 +19,7 @@ Exportações podem conter credenciais e dados pessoais. Não publicar seus cont
 - `canonical.ts` serializa e calcula fingerprints estáveis para comparar estados.
 - `presence-lifecycle.ts` e `presence-runtime.ts` reconciliam o ciclo normal do componente de presença, que muda entre duas exportações sem relação com a operação.
 - `cli-environment.ts` executa a CLI do Convex contra um destino isolado.
+- `v5-inventory.ts`, `v5-manifest.ts` e `v5-verify.ts` (com `v5-export.ts`) são os verificadores da migração para o formato 5 do calendário (plano [Atividades e datas](plans/2026-11-02-atividades-e-datas.md), seção 6): inventário das formas de uma exportação (falha com forma desconhecida e sai com código 2 diante de forma bloqueante), manifesto privado da conversão, gravado só fora do repositório, e comparação das exportações antes e depois. Uso: `pnpm exec tsx scripts/administration/v5-inventory.ts EXPORT.zip`, `pnpm exec tsx scripts/administration/v5-manifest.ts EXPORT.zip DIRETORIO_PRIVADO` e `pnpm exec tsx scripts/administration/v5-verify.ts ANTES.zip DEPOIS.zip [--allow-changed NAMESPACE]...`. Saem do código na contração.
 
 Uma conferência específica de uma operação (projeções, inventários, executores temporários) é escrita para ela e retirada do código ao final. O que foi usado permanece no histórico do Git.
 

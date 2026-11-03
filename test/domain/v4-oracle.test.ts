@@ -1,27 +1,11 @@
-import { sha256 } from '@noble/hashes/sha2.js';
-import { bytesToHex } from '@noble/hashes/utils.js';
 import { expect, test } from 'vitest';
 import type { Doc } from '../../convex/_generated/dataModel';
 import { contentHash } from '../../convex/calendars/lifecycle.ts';
-import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
-import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
-import {
-  activitySituation,
-  evaluatePlan,
-} from '../../src/domain/calendar/activities/plan-evaluation.ts';
-import { inspect, type BaseDocument } from '../../src/domain/calendar/base.ts';
-import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
-import {
-  projectDates,
-  type ActivityState,
-  type InstitutionalEventSnapshot,
-} from '../../src/domain/calendar/model.ts';
-import { applyObservances } from '../../src/domain/calendar/observances.ts';
-import { proensLayout } from '../../src/printing/calendar-layout.ts';
-import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
-import { readOracle, v4Cases, writeOracle, type V4Case } from '../helpers/v4-fixtures.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
+import type { ActivityState } from '../../src/domain/calendar/model.ts';
+import { v4Cases, writeOracle, type V4Case } from '../helpers/v4-fixtures.ts';
+import { expectedOracle, oracleValues, recordedOracle } from '../helpers/v4-oracle.ts';
 import { convertedContent, convertedSubmission } from '../helpers/v5-conversion.ts';
-import { datesLinkedToLegacyRows, legacyIds } from '../helpers/legacy-classification.ts';
 
 /**
  * Oracle “before” of phase 2 (step 1): what the v4 code computes for every frozen document.
@@ -31,89 +15,11 @@ import { datesLinkedToLegacyRows, legacyIds } from '../helpers/legacy-classifica
  * From step 5 the stored documents are v4 and the code reads v5: every value is computed over the
  * converted document (`convertContentV5`), except the stored content hashes, which belong to the
  * v4 documents; the hash relation between contents and submissions is checked after conversion.
+ * Step 18 computes the same values over the documents the migration stores
+ * (`test/convex/v5-migration-proofs.test.ts`).
  */
-const hash = (value: string) => bytesToHex(sha256(new TextEncoder().encode(value)));
-const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
-function before(item: V4Case) {
-  const content = convertedContent(item);
-  const state = {
-    ...content.state,
-    year: item.year,
-    campus: item.campus,
-  } as unknown as ActivityState & { rulesetVersion?: string };
-  const snapshot = content.institutionalSnapshot as unknown as InstitutionalEventSnapshot[];
-  // Step 4 (origin by container): the editor projection must keep every oracle value.
-  const events = projectDates(applyObservances(snapshot, state), state.events);
-  let evaluation: ReturnType<typeof evaluateCalendar> | null = null;
-  let countingError: string | undefined;
-  try {
-    evaluation = evaluateCalendar(state, events);
-  } catch (error) {
-    countingError = error instanceof Error ? error.message : String(error);
-  }
-  const coverage = evaluatePlan(state).rows;
-  const base = {
-    revision: content.catalogueRevision,
-    events: snapshot,
-    documents: content.documentSnapshot as unknown as BaseDocument[],
-    rulesetVersion: state.rulesetVersion,
-  };
-  const html = proensLayout(state, events, evaluation, null, '');
-  const stored = (content: V4Case['content'] | V4Case['submissions'][number]) =>
-    contentHash(content as unknown as Doc<'calendarContents'>);
-  return plain({
-    name: item.name,
-    contentHash: stored(item.content),
-    submissions: item.submissions.map((submission) => ({
-      sequence: submission.sequence,
-      contentHash: stored(submission),
-      storedContentHash: submission.contentHash,
-      equalToContent: stored(submission) === stored(item.content),
-    })),
-    baseIdentity: inspect(base, base, state).identity,
-    linksToReview: Object.fromEntries(linksToReview(state)),
-    // Step 9b: each row also carries its link (`activity`), checked against the rows below.
-    activities: activityPlan(state).map(({ activity: _link, ...row }) => row),
-    coverage: coverage.map((row) => ({
-      activity: row.requirement.id,
-      offerId: row.offerId,
-      applicability: row.applicability,
-      coverage: row.coverage,
-      humanReview: row.humanReview,
-      execution: row.execution,
-      events: row.events.map((event) => event.id),
-      issues: row.issues,
-      warnings: row.warnings,
-    })),
-    status: Object.fromEntries(
-      [...new Set(coverage.map((row) => row.requirement.id))].map((id) => [
-        id,
-        activitySituation(coverage.filter((row) => row.requirement.id === id)),
-      ]),
-    ),
-    counting: evaluation
-      ? Object.fromEntries(
-          Object.entries(evaluation.byOffer).map(([offerId, { ledger, ...count }]) => [
-            offerId,
-            { ...count, ledgerSha256: hash(JSON.stringify(ledger)) },
-          ]),
-        )
-      : { error: countingError },
-    teachingDayBreakdown: evaluation
-      ? Object.fromEntries(
-          state.offers.map((offer) => [
-            offer.id,
-            teachingDayBreakdown(state, events, evaluation, offer.id),
-          ]),
-        )
-      : null,
-    proensLayout: { length: html.length, sha256: hash(html) },
-  });
-}
-
 const cases = v4Cases();
-const current = cases.map(before);
+const current = cases.map((item) => oracleValues(item));
 
 if (process.env.UPDATE_V4_ORACLE === '1')
   writeOracle({
@@ -125,27 +31,7 @@ if (process.env.UPDATE_V4_ORACLE === '1')
     cases: current,
   });
 
-const oracle = readOracle<{ cases: ReturnType<typeof before>[] }>();
-
-/**
- * The oracle as the code computes it from step 9d: without the 2027 rows of “Classificação
- * legada”, their coverage and their situation, and with each date linked to one of them under
- * review as `unclassified`. Every other value is the recorded one.
- */
-function withoutLegacyRows(expected: ReturnType<typeof before>, item: V4Case) {
-  const ids = legacyIds(expected.activities);
-  const linked = datesLinkedToLegacyRows(item.content.state.events, ids);
-  return {
-    ...expected,
-    linksToReview: {
-      ...Object.fromEntries(linked.map((id) => [id, 'unclassified'])),
-      ...expected.linksToReview,
-    },
-    activities: expected.activities.filter((row) => !ids.has(row.id)),
-    coverage: expected.coverage.filter((row) => !ids.has(row.activity)),
-    status: Object.fromEntries(Object.entries(expected.status).filter(([id]) => !ids.has(id))),
-  };
-}
+const oracle = recordedOracle();
 
 test('the oracle covers every frozen document, in order', () => {
   expect(oracle.cases.map((item) => item.name)).toEqual(cases.map((item) => item.name));
@@ -154,7 +40,7 @@ test('the oracle covers every frozen document, in order', () => {
 test.each(cases.map((item, index) => [item.name, index] as const))(
   'the current code computes the oracle for %s',
   (_name, index) => {
-    expect(current[index]).toEqual(withoutLegacyRows(oracle.cases[index]!, cases[index]!));
+    expect(current[index]).toEqual(expectedOracle(oracle.cases[index]!, cases[index]!));
   },
 );
 
@@ -203,7 +89,7 @@ test.each(cases.map((item) => [item.name, item] as const))(
       year: item.year,
       campus: item.campus,
     } as unknown as ActivityState;
-    const expected = withoutLegacyRows(oracle.cases[cases.indexOf(item)]!, item);
+    const expected = expectedOracle(oracle.cases[cases.indexOf(item)]!, item);
     const { rows, links } = evaluatePlan(state);
     for (const entry of links.byOffer) {
       const issue = (expected.linksToReview as Record<string, string>)[entry.eventId];

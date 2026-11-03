@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { api, internal } from '../../convex/_generated/api.js';
-import type { Doc, Id } from '../../convex/_generated/dataModel.js';
+import type { Id } from '../../convex/_generated/dataModel.js';
 import type { MutationCtx } from '../../convex/_generated/server';
 import { contentHash } from '../../convex/calendars/lifecycle.ts';
 import { migrateCatalogueRow, migrateContent, migrateSubmission } from '../../convex/migrations.ts';
 import { currentCatalogueRow, currentFormat } from '../../convex/lib/storageFormat.ts';
 import {
-  convertCatalogueEventV5,
   convertContentV5,
   provenScopeIds,
   provenScopesOfConverted,
@@ -14,7 +13,14 @@ import {
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, saveReview, seedCourses } from '../helpers/lifecycle.ts';
 import { bindIds } from '../helpers/v4-storage.ts';
-import { readOracle, v4CatalogueRows, v4Cases, type V4Case } from '../helpers/v4-fixtures.ts';
+import { readOracle, v4Cases } from '../helpers/v4-fixtures.ts';
+import {
+  migrationNames,
+  readAll,
+  runMigrations,
+  storeV4,
+  withoutSystem,
+} from '../helpers/v5-migration.ts';
 import { waitForMigrations, type MigrationProgress } from '../../scripts/release-coordination.ts';
 
 /**
@@ -23,87 +29,10 @@ import { waitForMigrations, type MigrationProgress } from '../../scripts/release
  * submission converts state, snapshot and `contentHash` in one write. Clients built for format 4
  * are refused by `saveCalendar` and `saveReview`.
  */
-type Fixture = Awaited<ReturnType<typeof createNativeFixture>>;
 type Json = Record<string, unknown>;
-type Table = 'institutionalEvents' | 'calendarContents' | 'calendarSubmissions';
-
-const migrationNames = [
-  'migrations:catalogueToV5',
-  'migrations:contentsToV5',
-  'migrations:submissionsToV5',
-];
 
 beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout'] }));
 afterEach(() => vi.useRealTimers());
-
-async function runMigrations(fixture: Fixture) {
-  await fixture.client.mutation(internal.migrations.start, {});
-  await fixture.client.finishAllScheduledFunctions(vi.runAllTimers);
-  return fixture.client.query(internal.migrations.status, {});
-}
-
-const withoutSystem = ({ _id, _creationTime, ...fields }: Json) => fields;
-const offerKinds = (item: V4Case) =>
-  [
-    ...new Set(item.content.state.offers.map((offer) => offer.kind)),
-  ] as Doc<'calendars'>['offerKinds'];
-
-/**
- * Stores every frozen v4 document as a deployment before the migration has it, each calendar in
- * its own year, with the fingerprint each submission had when it was sent (computed over the
- * bound IDs). Returns what each document must become: the converter's result over the stored
- * document, with the submission's proven lists read from the content manifest.
- */
-async function storeV4(fixture: Fixture, cases = v4Cases()) {
-  return fixture.client.run(async (ctx) => {
-    const bind = await bindIds(ctx, fixture.ids.campuses.a, fixture.ids.users.admin);
-    const expected: { table: Table; id: string; value: Json }[] = [];
-    for (const item of cases) {
-      const calendar = { year: item.year, offerKinds: offerKinds(item), version: 7, updatedAt: 9 };
-      const content = await bind(item.content, calendar);
-      const submissions = [];
-      for (const submission of item.submissions) {
-        const copy = await bind(submission, calendar);
-        submissions.push({ ...copy, contentHash: contentHash(copy as never) });
-      }
-      const conversion = convertContentV5(content, { year: item.year, submissions })!;
-      expected.push({
-        table: 'calendarContents',
-        id: await ctx.db.insert('calendarContents', content as never),
-        value: conversion.document,
-      });
-      for (const copy of submissions) {
-        const converted = convertContentV5(copy, {
-          year: item.year,
-          source: 'submission',
-          provenScopes: provenScopeIds(conversion.manifest, copy.sequence),
-        })!.document;
-        expected.push({
-          table: 'calendarSubmissions',
-          id: await ctx.db.insert('calendarSubmissions', copy as never),
-          value: { ...converted, contentHash: contentHash(converted as never) },
-        });
-      }
-    }
-    for (const row of v4CatalogueRows())
-      expected.push({
-        table: 'institutionalEvents',
-        id: await ctx.db.insert('institutionalEvents', row as never),
-        value: convertCatalogueEventV5(row)!.document,
-      });
-    return expected;
-  });
-}
-
-const readAll = (fixture: Fixture) =>
-  fixture.client.run(async (ctx) => ({
-    calendars: await ctx.db.query('calendars').take(200),
-    contents: await ctx.db.query('calendarContents').take(200),
-    submissions: await ctx.db.query('calendarSubmissions').take(200),
-    catalogue: await ctx.db.query('institutionalEvents').take(200),
-    reviews: await ctx.db.query('reviews').take(200),
-    audit: await ctx.db.query('audit').take(200),
-  }));
 
 test('migrations:start converts catalogue, contents and submissions, and migrations:status concludes', async () => {
   const fixture = await createNativeFixture();
