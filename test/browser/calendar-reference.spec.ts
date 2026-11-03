@@ -10,8 +10,10 @@ for (const width of [1440, 390]) {
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#record-title')).toBeVisible();
     await selectEditorSection(page, 'events');
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 5 de 6');
-    await expect(page.locator('#editor-section-title')).toHaveText('Atividades');
+    await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
+      'Etapa 5 de 6: Atividades',
+    );
+    await expect(page.locator('#editor-section-title')).toContainText('Atividades');
     await expect(page.locator('#activity-checklist')).toBeVisible();
     await expect(page.locator('#event-list')).toBeVisible();
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para revisão e conclusão');
@@ -35,7 +37,9 @@ for (const fixture of ['editor', 'editor-reviewer'] as const) {
       /\/atividades\?busca=referencia&aba=anterior&atividadeSituacao=all$/,
     );
     await expect(page.locator('#activity-checklist')).toBeVisible();
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 5 de 6');
+    await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
+      'Etapa 5 de 6: Atividades',
+    );
     await page.reload();
     // The former "all" situation is the default view now.
     await expect(page.locator('#activity-pendency-todas')).toBeChecked();

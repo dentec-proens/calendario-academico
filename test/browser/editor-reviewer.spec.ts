@@ -72,7 +72,7 @@ test('reviewer direct section URLs and reload keep the requested read-only secti
     if (reload) await page.reload();
     await expect(page).toHaveURL(requested);
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
-    await expect(page.locator('#editor-section-title')).toHaveText('Semana letiva');
+    await expect(page.locator('#editor-section-title')).toContainText('Semana letiva');
     await expect(page.locator('#edit')).toBeVisible();
     await expect(page.locator('[data-view="edit"]')).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('#weekdays input').first()).toBeDisabled();

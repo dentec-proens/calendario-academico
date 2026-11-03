@@ -13,13 +13,15 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.editor-step-number')).toHaveCount(6);
     await expect(page.locator('.autosave-panel')).toBeHidden();
     await expect(page.locator('#total')).toHaveCount(0);
-    await expect(page.locator('#editor-section-title')).toHaveText('Semana letiva');
+    await expect(page.locator('#editor-section-title')).toContainText('Semana letiva');
     await expect(page.locator('[aria-current="page"] .editor-step-title')).toHaveText(
       'Semana letiva',
     );
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await expect(page.getByRole('list', { name: 'Formas de oferta e níveis' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Semana letiva', exact: true })).toHaveCount(1);
+    await expect(
+      page.getByRole('heading', { name: 'Etapa 1 de 6: Semana letiva', exact: true }),
+    ).toHaveCount(1);
 
     const weekdays = page.locator('#weekdays input');
     await expect(weekdays).toHaveCount(5);
@@ -41,8 +43,10 @@ for (const width of [1440, 390]) {
       .click();
     await expect(page).toHaveURL(/\/periodos$/);
     await expect(page.locator('#editor-section-title')).toBeFocused();
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 2 de 6');
-    await expect(page.locator('#editor-section-title')).toHaveText('Organização por oferta');
+    await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
+      'Etapa 2 de 6: Organização por oferta',
+    );
+    await expect(page.locator('#editor-section-title')).toContainText('Organização por oferta');
     await expect(page.locator('#assessment-area')).toBeVisible();
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para sábados letivos');
     await expect(page.locator('#autosave-status')).toHaveAttribute('data-state', 'saved');
@@ -55,19 +59,25 @@ for (const width of [1440, 390]) {
     await configureOffer(page, 'integrado', '2027-03-01', '2027-03-26');
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/dias$/);
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 3 de 6');
+    await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
+      'Etapa 3 de 6: Sábados letivos',
+    );
     await expect(page.getByRole('heading', { name: /Sábados letivos/ })).toHaveCount(1);
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para férias docentes');
     await expect(page.locator('#vacation-form')).toHaveCount(0);
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/ferias$/);
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 4 de 6');
+    await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
+      'Etapa 4 de 6: Férias docentes',
+    );
     await expect(page.getByRole('heading', { name: /férias docentes/i })).toHaveCount(1);
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para atividades');
     await expect(page.locator('#saturday-form')).toHaveCount(0);
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/atividades$/);
-    await expect(page.locator('.editor-eyebrow')).toHaveText('Etapa 5 de 6');
+    await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
+      'Etapa 5 de 6: Atividades',
+    );
     await expect(page.locator('#new-event')).toHaveText('Nova data do campus');
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para revisão e conclusão');
     await selectEditorSection(page, 'issues');

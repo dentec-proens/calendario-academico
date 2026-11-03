@@ -17,7 +17,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectEditorSection(page, 'events');
     const heading = page.locator('#editor-section-title');
-    await expect(heading).toHaveText('Atividades');
+    await expect(heading).toContainText('Atividades');
     const headingVisibility = await heading.evaluate((element) => {
       const bounds = element.getBoundingClientRect();
       const top = Math.max(0, bounds.top);
@@ -106,7 +106,7 @@ for (const width of [1440, 390]) {
       .toBeGreaterThan(originalHeight);
     await page.locator('#close-event-panel').click();
     await selectEditorSection(page, 'periods');
-    await expect(page.locator('#editor-section-title')).toHaveText('Organização por oferta');
+    await expect(page.locator('#editor-section-title')).toContainText('Organização por oferta');
     await expect
       .poll(() =>
         page.locator('#editor-section-title').evaluate((element) => {

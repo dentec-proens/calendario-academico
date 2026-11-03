@@ -442,16 +442,16 @@ function EditorFrame() {
         <EditorSteps calendarId={record.id} current={currentSection} />
         <div className="editor-section-content">
           <div className="editor-section-heading">
-            <div>
-              <p className="editor-eyebrow">
-                {activeStep
-                  ? `Etapa ${stepIndex + 1} de ${editorSteps.length}`
-                  : 'Visualização do calendário'}
-              </p>
-              <h2 id="editor-section-title" ref={heading} tabIndex={-1}>
-                {current.title}
-              </h2>
-            </div>
+            <h2 id="editor-section-title" ref={heading} tabIndex={-1}>
+              {activeStep && (
+                <>
+                  <span className="visually-hidden">Etapa </span>
+                  <span className="editor-title-step">{stepIndex + 1}</span>
+                  <span className="visually-hidden"> de {editorSteps.length}: </span>
+                </>
+              )}
+              {current.title}
+            </h2>
             {currentSection === 'events' && <NewEventButton />}
           </div>
           <Suspense fallback={<LoadingIndicator layout="overlay" label="Carregando seção…" />}>
