@@ -1,13 +1,15 @@
 import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
-import type { activityCoverage } from '#src/domain/calendar/activities/coverage.ts';
 import {
   generatedActivities,
   generatedActivity,
   linkedTo,
-  linksToReview,
   type LinkIssue,
 } from '#src/domain/calendar/activities/links.ts';
-import { activityStatus, type ActivityStatus } from '#src/domain/calendar/activities/status.ts';
+import {
+  activitySituation,
+  type ActivitySituation,
+  type PlanEvaluation,
+} from '#src/domain/calendar/activities/plan-evaluation.ts';
 import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
 import { appliesTo } from '#src/domain/calendar/modalities.ts';
 import { calendarObservances, observanceIssues } from '#src/domain/calendar/observances.ts';
@@ -40,13 +42,13 @@ export const originFilters = [
 const originOf = { vinculadas: 'linked', campus: 'campus', base: 'base' } as const;
 
 // What still needs dates or a decision; everything else has no pending item.
-const toFill: ActivityStatus[] = ['pending', 'partial', 'unconfigured'];
+const toFill: ActivitySituation[] = ['pending', 'partial', 'unconfigured'];
 
 export interface ActivityLine {
   /** Key of the activity's link (`activityKey`): its address in the list, the panel and the URL. */
   key: string;
   item: ActivityPlanItem;
-  status: ReturnType<typeof activityStatus>;
+  status: ReturnType<typeof activitySituation>;
   pending: boolean;
   dates: EditorEvent[];
 }
@@ -81,28 +83,29 @@ export function activityStep(input: {
   state: CalendarState;
   events: readonly EditorEvent[];
   institutional: EditorEvent[];
-  coverage: ReturnType<typeof activityCoverage>;
+  /** Evaluation of the plan (`evaluatePlan`) over the same state. */
+  evaluation: PlanEvaluation;
   search: Search;
   /** Key of the activity kept visible whatever the filters: selected or opened by a review link. */
   pinned?: string;
 }) {
-  const { state, events, coverage, search } = input;
+  const { state, events, evaluation, search } = input;
   const view: ActivityView = search.atividadeVisao === 'data' ? 'data' : 'atividade';
   const origin = search.atividadeOrigem ? originOf[search.atividadeOrigem] : undefined;
   const offer = search.atividadeOferta ? offerFor(state, search.atividadeOferta) : undefined;
   const query = searchText(search.atividadeBusca ?? '');
-  const review = linksToReview(state);
+  const review = evaluation.links.issues;
   const checklist = activityPlan(state).filter((item) => item.variant !== 'stage');
   const generated = generatedActivities(state);
   // Coverage rows by the key of their activity; only the offers being consulted decide its status.
-  const rowsByKey = new Map<string, typeof coverage>();
-  for (const row of coverage) {
+  const rowsByKey = new Map<string, PlanEvaluation['rows']>();
+  for (const row of evaluation.rows) {
     if (offer && row.offerId !== offer.id) continue;
     const key = activityKey(row.requirement.activity);
     rowsByKey.set(key, [...(rowsByKey.get(key) ?? []), row]);
   }
   const consulted = (key: string) => rowsByKey.get(key) ?? [];
-  const statusOf = (key: string) => activityStatus(consulted(key));
+  const statusOf = (key: string) => activitySituation(consulted(key));
   const pendingStatus = (key: string) => {
     const summary = statusOf(key);
     return toFill.includes(summary.status) || summary.problems;

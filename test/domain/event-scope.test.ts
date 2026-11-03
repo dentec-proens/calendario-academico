@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { linkedToRow, rowLink } from '../helpers/activity-links.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { applySaturdays } from '../../src/domain/calendar/commands/saturdays.ts';
 import { applyVacations } from '../../src/domain/calendar/commands/vacations.ts';
 import { compareContents, type DiffSide } from '../../src/domain/calendar/diff.ts';
@@ -116,7 +116,7 @@ describe('coverage under explicit offers (2027)', () => {
   test('a scope the campus has not confirmed never counts; the same date confirmed does', () => {
     const content = { ...readyContent(), year: 2027 };
     const row = (state: typeof content) =>
-      activityCoverage(state).find((item) => item.requirement.id === 'family-meeting')!;
+      evaluatePlan(state).rows.find((item) => item.requirement.id === 'family-meeting')!;
     expect(row(content).coverage).toBe('complete');
     const unconfirmed = {
       ...content,
@@ -149,7 +149,7 @@ describe('coverage under explicit offers (2027)', () => {
       ),
     };
     const issue = 'Confirme explicitamente as ofertas abrangidas pelo registro legado.';
-    const issues = (state: typeof content) => activityCoverage(state).flatMap((row) => row.issues);
+    const issues = (state: typeof content) => evaluatePlan(state).rows.flatMap((row) => row.issues);
     expect(issues(unconfirmed)).toContain(issue);
     const organized = applyOfferOrganization(
       unconfirmed,

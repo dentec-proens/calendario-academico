@@ -9,7 +9,7 @@ export function useActivityList() {
   const { state, events, institutional } = useCalendarEditor();
   const editor = useEventEditor();
   const search = useActivitySearch();
-  const { coverage } = useActivityCoverage();
+  const { evaluation } = useActivityCoverage();
   const selected =
     editor.context?.kind === 'activity'
       ? editor.context.key
@@ -20,7 +20,7 @@ export function useActivityList() {
     state,
     events,
     institutional,
-    coverage,
+    evaluation,
     search,
     pinned: selected || search.atividade,
   });

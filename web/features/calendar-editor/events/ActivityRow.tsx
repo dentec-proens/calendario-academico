@@ -1,13 +1,13 @@
 import type { ComponentProps } from 'react';
 import { ChevronRight } from 'lucide-react';
 import {
-  activityStatusLabels,
-  type ActivityStatus,
-} from '#src/domain/calendar/activities/status.ts';
+  situationLabels,
+  type ActivitySituation,
+} from '#src/domain/calendar/activities/plan-evaluation.ts';
 
 type Props = Omit<ComponentProps<'button'>, 'children' | 'type' | 'className' | 'aria-current'> & {
   label: string;
-  status: ActivityStatus;
+  status: ActivitySituation;
   statusLabel?: string;
   dates: string;
   /** Context shown after the dates, such as the activity or the recorded link of a date. */
@@ -19,7 +19,7 @@ type Props = Omit<ComponentProps<'button'>, 'children' | 'type' | 'className' | 
 export default function ActivityRow({
   label,
   status,
-  statusLabel = activityStatusLabels[status],
+  statusLabel = situationLabels[status],
   dates,
   note,
   selected = false,

@@ -2,7 +2,7 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { describe, expect, test } from 'vitest';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
 import { applyVacations } from '../../src/domain/calendar/commands/vacations.ts';
 import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessment-days.ts';
@@ -246,13 +246,13 @@ test('regenerated teacher vacations keep the link recorded for the same date ID'
 test('a preexisting duplicated stage saves, is reviewed and never counts as fulfilment', () => {
   const state = conflictingLinks();
   expect(() => save(state, { ...state, weekdays: [1, 2, 3, 4] })).not.toThrow();
-  const coverage = activityCoverage(state).find(
+  const coverage = evaluatePlan(state).rows.find(
     (row) => row.requirement.id === 'stage-2:integrado',
   )!;
   expect(coverage.events.map((event) => event.id)).toEqual(['stage-twice-a', 'stage-twice-b']);
   expect(coverage.coverage).toBe('partial');
   expect(coverage.warnings[0]).toMatch(/^Etapa duplicada/);
-  const first = activityCoverage(state).find((row) => row.requirement.id === 'stage-1:integrado')!;
+  const first = evaluatePlan(state).rows.find((row) => row.requirement.id === 'stage-1:integrado')!;
   expect(first.coverage).toBe('complete');
   // Creating another duplicate is refused.
   const extra = { ...state.events[0], id: 'stage-again', name: 'Outra 1ª etapa' };

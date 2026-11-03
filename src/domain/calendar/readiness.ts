@@ -12,7 +12,7 @@ import { calendarOffers, labelFor, stageInTerm } from './offers.ts';
 import { assessmentCount, stageActivity } from './activities/assessment.ts';
 import { sameActivity } from './activities/activity-ref.ts';
 import { assessmentCycleIssue } from './activities/assessment-intervals.ts';
-import { linkIssueActions, linkIssueLabels, linksToReview } from './activities/links.ts';
+import { linkIssueActions, linkIssueLabels } from './activities/links.ts';
 import { noticeDestinationIssues } from './activities/validation.ts';
 import { evaluateCalendar as calendarResult } from './counting/evaluation.ts';
 import { periodsForOffer } from './organization/periods.ts';
@@ -68,7 +68,7 @@ export function contentAssessment(record: ContentRecord) {
   )
     issue('stages', 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).');
   const diagnostics = diagnoseCalendar(record.state, events);
-  const coverage = diagnostics.coverage;
+  const coverage = diagnostics.plan.rows;
   for (const row of coverage) {
     const prefix = `${labelFor(record.state, row.offerId)} — ${row.requirement.name}`;
     const code = `coverage:${row.offerId}:${row.requirement.id}`;
@@ -126,7 +126,7 @@ export function contentAssessment(record: ContentRecord) {
   }
 
   // Until the link can be corrected in the editor, dates to review warn without blocking.
-  const review = linksToReview(record.state);
+  const review = diagnostics.plan.links.issues;
   for (const event of record.state.events) {
     const reason = review.get(event.id);
     if (reason)

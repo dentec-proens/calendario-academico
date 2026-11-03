@@ -4,7 +4,7 @@ import { expect, test } from 'vitest';
 import { definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
 import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import { policyFor } from '../../src/domain/policies/registry.ts';
 import { stageCount, stageCycle, stageTerm } from '../../src/domain/calendar/offers.ts';
@@ -251,7 +251,7 @@ test('unclassified historical stage evidence retains its original interval findi
       },
     ],
   };
-  const coverage = activityCoverage(state).find(
+  const coverage = evaluatePlan(state).rows.find(
     (row) => row.requirement.id === 'stage-1:integrado',
   )!;
   expect(coverage.issues).toEqual([

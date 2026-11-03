@@ -6,7 +6,10 @@ import {
   linkIssueLabels,
   linksToReview,
 } from '#src/domain/calendar/activities/links.ts';
-import { activityStatusLabels } from '#src/domain/calendar/activities/status.ts';
+import {
+  executionLabels,
+  situationLabels,
+} from '#src/domain/calendar/activities/plan-evaluation.ts';
 import { observanceForEvent } from '#src/domain/calendar/observances.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -110,17 +113,17 @@ export default function ActivityChecklist() {
     const observance = observanceForEvent(state.year, event.id);
     const planned = event.notice?.publication === 'planned';
     const key = activity && activityKey(activity.activity);
-    const activityStatus = key ? statusFor(key).status : undefined;
+    const situation = key ? statusFor(key).status : undefined;
     const statusLabel = issue
       ? linkIssueLabels[issue]
       : origin === 'base'
         ? observance
           ? 'Data ajustável'
           : 'Base institucional'
-        : activityStatus
-          ? activityStatusLabels[activityStatus]
+        : situation
+          ? situationLabels[situation]
           : planned
-            ? 'Publicação programada'
+            ? executionLabels.planned
             : 'Data do campus';
     return (
       <li key={event.id} data-date-row={event.id} data-origin={origin}>
@@ -132,7 +135,7 @@ export default function ActivityChecklist() {
           status={
             issue || planned
               ? 'pending'
-              : (activityStatus ?? (origin === 'base' ? 'optional' : 'complete'))
+              : (situation ?? (origin === 'base' ? 'optional' : 'complete'))
           }
           statusLabel={statusLabel}
           dates={range(event)}

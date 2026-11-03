@@ -110,7 +110,16 @@ test('an offer with its own regulation does not change the semester criterion of
 
 test('coverage-linked candidates carry only the fields of the review contract', () => {
   const state = calendarOffersV4Fixture();
+  const candidates = support(state).criteria.flatMap((item) => item.candidates);
+  expect(candidates.some((item) => item.id === 'integrado-stage-1')).toBe(true);
+  for (const item of candidates)
+    expect(Object.keys(item).sort()).toEqual(['end', 'evidence', 'id', 'name', 'start']);
+});
+
+test('dates under “Vínculo a conferir” are never coverage-linked candidates (plan, 5.6)', () => {
+  const state = calendarOffersV4Fixture();
   const offer = state.offers[0].id;
+  // A second date for the same stage: both become “Etapa duplicada”.
   state.events.push({
     id: 'linked-stage',
     name: '1ª etapa de avaliação — início e término',
@@ -122,8 +131,11 @@ test('coverage-linked candidates carry only the fields of the review contract', 
     activity: definedStage('stage', offer, 'annual', 1),
     assessmentAutoStart: civilDate('2027-02-15'),
   });
-  const candidates = support(state).criteria.flatMap((item) => item.candidates);
-  expect(candidates.some((item) => item.id === 'linked-stage')).toBe(true);
-  for (const item of candidates)
-    expect(Object.keys(item).sort()).toEqual(['end', 'evidence', 'id', 'name', 'start']);
+  const criterion = support(state).criteria.find((item) => item.id === 'I')!;
+  expect(criterion.signal).toContain('Etapa duplicada');
+  const ids = support(state)
+    .criteria.flatMap((item) => item.candidates)
+    .map((item) => item.id);
+  expect(ids).not.toContain('linked-stage');
+  expect(ids).not.toContain('integrado-stage-1');
 });

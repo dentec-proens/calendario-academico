@@ -4,9 +4,11 @@ import { expect, test } from 'vitest';
 import type { Doc } from '../../convex/_generated/dataModel';
 import { contentHash } from '../../convex/calendars/lifecycle.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
-import { activityStatus } from '../../src/domain/calendar/activities/status.ts';
+import {
+  activitySituation,
+  evaluatePlan,
+} from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { inspect, type BaseDocument } from '../../src/domain/calendar/base.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import {
@@ -50,7 +52,7 @@ function before(item: V4Case) {
   } catch (error) {
     countingError = error instanceof Error ? error.message : String(error);
   }
-  const coverage = activityCoverage(state);
+  const coverage = evaluatePlan(state).rows;
   const base = {
     revision: content.catalogueRevision,
     events: snapshot,
@@ -87,7 +89,7 @@ function before(item: V4Case) {
     status: Object.fromEntries(
       [...new Set(coverage.map((row) => row.requirement.id))].map((id) => [
         id,
-        activityStatus(coverage.filter((row) => row.requirement.id === id)),
+        activitySituation(coverage.filter((row) => row.requirement.id === id)),
       ]),
     ),
     counting: evaluation
@@ -185,3 +187,42 @@ test('the oracle records the 21 audited links of section 11 under review', () =>
       .filter((issue) => issue === 'unclassified'),
   ).toHaveLength(21);
 });
+
+/**
+ * Step 11 (calculated evaluation): coverage and situation above come from `evaluatePlan`; the
+ * classification is its new dimension. A date the oracle reviews as `unclassified` is pending for
+ * every offer of its scope, a date reviewed for a conflict diverges, and a row diverges only when
+ * one of its dates does. No oracle value changes because of it.
+ */
+test.each(cases.map((item) => [item.name, item] as const))(
+  'the classification of %s follows the reviewed links of the oracle',
+  (_name, item) => {
+    const content = convertedContent(item);
+    const state = {
+      ...content.state,
+      year: item.year,
+      campus: item.campus,
+    } as unknown as ActivityState;
+    const expected = withoutLegacyRows(oracle.cases[cases.indexOf(item)]!, item);
+    const { rows, links } = evaluatePlan(state);
+    for (const entry of links.byOffer) {
+      const issue = (expected.linksToReview as Record<string, string>)[entry.eventId];
+      if (issue === 'unclassified') expect(entry.classification).toBe('pending');
+      else if (issue) expect(entry.classification).not.toBe('compatible');
+      else expect(entry.classification).not.toBe('divergent');
+    }
+    const linked = state.events.filter((event) => event.activity);
+    expect(links.byOffer).toHaveLength(
+      linked.reduce((sum, event) => sum + event.scope.offers.length, 0),
+    );
+    for (const row of rows) {
+      const divergent = row.events.some(
+        (event) => links.forOffer(event.id, row.offerId) === 'divergent',
+      );
+      expect(row.classification).toBe(divergent ? 'divergent' : 'compatible');
+      expect(row.events.some((event) => links.forOffer(event.id, row.offerId) === 'pending')).toBe(
+        false,
+      );
+    }
+  },
+);

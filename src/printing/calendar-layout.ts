@@ -7,6 +7,7 @@ import { categories, eventCategory } from '../domain/calendar/activities/categor
 import { periodsForOffer } from '../domain/calendar/organization/periods.ts';
 import { associationOffers, labelFor, offerIds } from '../domain/calendar/offers.ts';
 import { listedOffers } from '../domain/calendar/modalities.ts';
+import { executionLabels } from '../domain/calendar/activities/plan-evaluation.ts';
 
 const esc = (s: unknown) =>
   String(s).replace(
@@ -42,8 +43,7 @@ function publicationDetails(event: PrintEvent, year: number, includeSource = tru
   const labels = [];
   const publication = event.notice?.publication;
   const admission = event.notice?.admission;
-  if (publication)
-    labels.push(publication === 'planned' ? 'Publicação programada' : 'Publicação realizada');
+  if (publication) labels.push(executionLabels[publication]);
   if (admission) {
     const term = {
       annual: 'ciclo anual',

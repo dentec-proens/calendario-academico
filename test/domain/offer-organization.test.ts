@@ -1,6 +1,6 @@
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { expect, test } from 'vitest';
 import { definedStage } from '../helpers/activity-links.ts';
 import {
@@ -271,7 +271,7 @@ test('calendar records no longer require or retain manual references', () => {
   ).toBe(true);
   expect(next.events.find((event) => event.id === 'other')).not.toHaveProperty('evidence');
   expect(
-    activityCoverage(next).find((row) => row.requirement.id === 'stage-1:integrado')?.coverage,
+    evaluatePlan(next).rows.find((row) => row.requirement.id === 'stage-1:integrado')?.coverage,
   ).toBe('complete');
   expect(next.events.find((event) => event.id === 'other')).toMatchObject({
     id: 'other',

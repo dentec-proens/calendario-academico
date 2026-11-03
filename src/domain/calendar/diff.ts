@@ -22,6 +22,7 @@ import { contentIssues, type ContentIssue } from './readiness.ts';
 import { termLabels, type AcademicTerm } from './config.ts';
 import { activityKey, type ActivityRef } from './activities/activity-ref.ts';
 import { generatedActivities, generatedActivity, sameLink } from './activities/links.ts';
+import { executionLabels } from './activities/plan-evaluation.ts';
 
 export interface DiffSide {
   state: ActivityState & {
@@ -541,7 +542,7 @@ function admissionDescription(admission: Record<string, unknown>, state?: Activi
 export function describeValue(field: string, value: unknown, state?: ActivityState): string {
   if (value === undefined || value === null || value === '') return '—';
   if (field === 'notice.publication' && (value === 'planned' || value === 'published'))
-    return value === 'planned' ? 'Publicação programada' : 'Publicação realizada';
+    return executionLabels[value];
   if (field === 'scope.confirmed' && typeof value === 'boolean') return value ? 'Sim' : 'Não';
   if (typeof value === 'boolean') return value ? 'sim' : 'não';
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))

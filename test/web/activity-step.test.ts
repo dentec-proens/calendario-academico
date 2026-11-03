@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { cycleLink, onceLink } from '../helpers/activity-links.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import {
   activityStep,
   dateOrigin,
@@ -20,7 +20,7 @@ const step = (
     state,
     events: state.events,
     institutional: [],
-    coverage: activityCoverage(state),
+    evaluation: evaluatePlan(state),
     search: applicationSearch(search),
     pinned,
   });

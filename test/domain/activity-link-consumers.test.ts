@@ -5,7 +5,7 @@ import {
   activityRef,
   type ActivityRef,
 } from '../../src/domain/calendar/activities/activity-ref.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import {
   generatedActivities,
   generatedActivity,
@@ -71,7 +71,7 @@ describe('links of the frozen v4 documents, converted', () => {
         const row = generatedActivity(generated, converted.activity);
         // The row v4 generated with the same identifier, or none (a link to review).
         if (row) expect(row.id).toBe(event.requirementId);
-        if (retired.has(String(event.requirementId))) {
+        if (typeof event.requirementId === 'string' && retired.has(event.requirementId)) {
           // No fallback to the operational catalogue: the kept link is a date to review.
           expect(row).toBeUndefined();
           expect(pending.get(String(event.id))).toBe('unclassified');
@@ -177,7 +177,7 @@ describe('PIT, RIT and teaching plan per reference semester (art. 11, XII)', () 
         ),
       );
       expect(linksToReview(state).size).toBe(0);
-      const coverage = activityCoverage(state);
+      const coverage = evaluatePlan(state).rows;
       for (const event of events) {
         const row = generatedActivity(generatedActivities(state), event.activity)!;
         expect(row.id).toBe(`${event.activity!.activityId}-${event.id.endsWith('first') ? 1 : 2}`);
@@ -214,7 +214,7 @@ describe('dates under “Vínculo a conferir”', () => {
       expect(generatedActivity(generatedActivities(state), event.activity)).toBeUndefined();
       // No coverage row lists it: its activity is not generated for the configuration.
       expect(
-        activityCoverage(state).some((row) => row.events.some((item) => item.id === event.id)),
+        evaluatePlan(state).rows.some((row) => row.events.some((item) => item.id === event.id)),
       ).toBe(false);
     }
     for (const state of drafts) {
@@ -236,7 +236,7 @@ describe('dates under “Vínculo a conferir”', () => {
       'results-beyond': 'unclassified',
       'council-beyond': 'unclassified',
     });
-    const coverage = activityCoverage(state);
+    const coverage = evaluatePlan(state).rows;
     const linkedRows = (id: string) =>
       coverage.filter((row) => row.events.some((event) => event.id === id));
     for (const id of [

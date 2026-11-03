@@ -1,5 +1,5 @@
 import type { ActivityState, ProjectedDate } from './model.ts';
-import { activityCoverage } from './activities/coverage.ts';
+import { evaluatePlan } from './activities/plan-evaluation.ts';
 import { calendarOffers, offerFor } from './offers.ts';
 import { periodsForOffer } from './organization/periods.ts';
 import { periodCountByOrganization } from './config.ts';
@@ -29,7 +29,7 @@ export function diagnoseCalendar(
     const actual = periodsForOffer(state, offer.id).length;
     if (actual !== expected) structure.push({ code: 'period-count', ...scope, expected, actual });
   }
-  return { structure, coverage: activityCoverage(state, events) };
+  return { structure, plan: evaluatePlan(state, events) };
 }
 
 /** Annual offers have one annual minimum; their individual periods do not add another minimum. */

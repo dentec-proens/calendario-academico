@@ -18,7 +18,7 @@ import {
 import { automaticEventSource } from '../calendar/counting/core.ts';
 import type { ActivityRef } from '../calendar/activities/activity-ref.ts';
 import { evaluateCalendar as calendarResult } from '../calendar/counting/evaluation.ts';
-import { activityCoverage } from '../calendar/activities/coverage.ts';
+import { evaluatePlan } from '../calendar/activities/plan-evaluation.ts';
 import { organizationForOffer, periodsForOffer } from '../calendar/organization/periods.ts';
 import { policyFor } from '../policies/registry.ts';
 
@@ -114,7 +114,7 @@ export function reviewSupport<
     windowEnd = window?.end ?? '';
   const coverage =
     policy.review.evidence === 'coverage'
-      ? activityCoverage({ ...record.state, events: projected.filter(isLocalDate) }, projected)
+      ? evaluatePlan({ ...record.state, events: projected.filter(isLocalDate) }, projected).rows
       : [];
   return {
     source,
@@ -227,7 +227,8 @@ export function reviewSupport<
             ' A presença não comprova atendimento. A conferência humana permanece necessária.';
           candidates = [
             ...new Map(
-              [...candidates, ...linked.flatMap((row) => row.events.map(reviewCandidate))].map(
+              // Dates under “Vínculo a conferir” are never presented as evidence (plan, 5.6).
+              [...candidates, ...linked.flatMap((row) => row.evidence.map(reviewCandidate))].map(
                 (e) => [e.id, e],
               ),
             ).values(),

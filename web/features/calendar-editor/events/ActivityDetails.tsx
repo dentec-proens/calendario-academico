@@ -1,7 +1,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { removeEvent } from '#src/domain/calendar/commands/events.ts';
-import { activityStatusLabels } from '#src/domain/calendar/activities/status.ts';
+import { situationLabels } from '#src/domain/calendar/activities/plan-evaluation.ts';
 import { linkedTo } from '#src/domain/calendar/activities/links.ts';
 import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
 import type { ActivityPlanItem } from '#src/domain/calendar/model.ts';
@@ -56,7 +56,7 @@ export default function ActivityDetails({
     <div className="activity-details" data-activity-details={key}>
       <p className="activity-meta">
         <span className="activity-status" data-status={summary.status}>
-          {activityStatusLabels[summary.status]}
+          {situationLabels[summary.status]}
         </span>
         {summary.toConfirm > 0 && (
           <span className="activity-status" data-status="unconfigured">

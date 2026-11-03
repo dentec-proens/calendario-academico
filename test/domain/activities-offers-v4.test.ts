@@ -4,7 +4,7 @@ import { linkedToRow } from '../helpers/activity-links.ts';
 import { linkedTo } from '../../src/domain/calendar/activities/links.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { assessmentCount } from '../../src/domain/calendar/activities/assessment.ts';
 import { assessmentCycleIssue } from '../../src/domain/calendar/activities/assessment-intervals.ts';
 import { validateActivityRecord } from '../../src/domain/calendar/activities/validation.ts';
@@ -54,7 +54,7 @@ test('aplicabilidade depende do tipo, mas o escopo das linhas de ciclo depende d
 test('cobertura de uma etapa não atende a outra oferta de graduação', () => {
   const state = calendarOffersV4Fixture();
   const stage = state.events.find(linkedToRow(state, 'stage-1:graduacao-2'))!;
-  const coverage = activityCoverage(state, [stage]);
+  const coverage = evaluatePlan(state, [stage]).rows;
   expect(coverage.find((row) => linkedTo(stage, row.requirement))).toMatchObject({
     offerId: 'graduacao-2',
     coverage: 'complete',

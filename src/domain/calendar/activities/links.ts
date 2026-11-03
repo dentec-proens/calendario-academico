@@ -184,7 +184,7 @@ export function linksToReview(
 export function coversDate(
   state: Pick<LinkState, 'offers'>,
   activity: ActivityPlanItem,
-  event: Pick<CalendarEvent, 'scope'>,
+  event: { scope: { offers: readonly string[] } },
 ) {
   return event.scope.offers.some((id) =>
     activity.offerId

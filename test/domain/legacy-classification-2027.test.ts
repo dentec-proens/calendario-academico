@@ -6,7 +6,7 @@ import {
   type ActivityBase,
   type ActivityRef,
 } from '../../src/domain/calendar/activities/activity-ref.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import {
   generatedActivities,
   generatedActivity,
@@ -107,7 +107,7 @@ describe('links v4 resolved through the operational catalogue stay to review', (
     // The policy declares the same activities with its own bases; none of them is fulfilled.
     expect(generated.has('teaching-plan:semester:first')).toBe(true);
     expect(generated.has('enrolment:cycle:annual')).toBe(true);
-    for (const row of activityCoverage(state)) expect(row.events).toEqual([]);
+    for (const row of evaluatePlan(state).rows) expect(row.events).toEqual([]);
   });
 
   test('every frozen 2027 date linked to a retired row is reviewed with its link kept', () => {

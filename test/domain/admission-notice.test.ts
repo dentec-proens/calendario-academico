@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { cycleLink } from '../helpers/activity-links.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import {
   noticeDestinationIssues,
   validateActivityRecord,
@@ -52,7 +52,7 @@ test('each offer is diagnosed against its own destination', () => {
     noticeDestinationIssues(state, event).map(({ offerId, problem }) => [offerId, problem]),
   ).toEqual([['graduacao', 'orphan']]);
   const coverage = (offerId: string) =>
-    activityCoverage(state).find(
+    evaluatePlan(state).rows.find(
       (row) => row.offerId === offerId && row.requirement.id === 'admission-notice-0',
     )!;
   expect(coverage('integrado').coverage).toBe('complete');

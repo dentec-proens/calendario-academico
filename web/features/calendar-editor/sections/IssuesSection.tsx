@@ -52,7 +52,7 @@ export default function IssuesSection() {
             : `Cadastre ${issue.expected === 1 ? 'um período anual' : 'dois semestres identificados'} para esta oferta.`,
       });
   }
-  for (const row of diagnostics.coverage) {
+  for (const row of diagnostics.plan.rows) {
     if (row.applicability !== 'required' && row.applicability !== 'unconfigured') continue;
     if (row.coverage !== 'complete' || row.warnings.length)
       issues.push({

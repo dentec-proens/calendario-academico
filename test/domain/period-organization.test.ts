@@ -2,7 +2,7 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { semesterLink } from '../helpers/activity-links.ts';
 import { configureIntakeRequirement } from '../../src/domain/calendar/commands/organization.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import type { ActivityState, AcademicTerm } from '../../src/domain/calendar/model.ts';
@@ -79,7 +79,7 @@ test('unknown intake creates no configuration chore and an existing local requir
     })),
   };
   const registration = () =>
-    activityCoverage(state).find(
+    evaluatePlan(state).rows.find(
       (row) => row.offerId === 'integrado' && row.requirement.id === 'registration-0',
     );
   expect(registration()?.applicability).toBe('optional');

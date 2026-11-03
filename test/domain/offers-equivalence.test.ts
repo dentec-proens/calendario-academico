@@ -144,8 +144,17 @@ function semanticProjection(
             : row,
         ),
         teaching: teachingDiagnostics,
-        coverage: diagnostic.coverage.map(
-          ({ requirement, events: linked, offerId, offer: _offer, ...row }) => ({
+        // Classification and evidence are dimensions of the plan evaluation after the oracle.
+        coverage: diagnostic.plan.rows.map(
+          ({
+            requirement,
+            events: linked,
+            offerId,
+            offer: _offer,
+            classification: _classification,
+            evidence: _evidence,
+            ...row
+          }) => ({
             ...row,
             modality: offerId,
             requirementId: requirement.id,

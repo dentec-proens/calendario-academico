@@ -2,7 +2,7 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { countCalendar } from '../../src/domain/calendar/counting/core.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { applicabilityFor } from '../../src/domain/policies/registry.ts';
 import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlines.ts';
 import { validateActivityRecord } from '../../src/domain/calendar/activities/validation.ts';
@@ -350,10 +350,10 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
   original.events = [event];
   const stripped = removeManualSources(original);
   expect(() => validateActivityRecord(stripped, stripped.events[0])).not.toThrow();
-  const before = activityCoverage(original).find(
+  const before = evaluatePlan(original).rows.find(
     (item) => item.requirement.id === row.id && item.offerId === 'integrado',
   )!;
-  const after = activityCoverage(stripped).find(
+  const after = evaluatePlan(stripped).rows.find(
     (item) => item.requirement.id === row.id && item.offerId === 'integrado',
   )!;
   expect(before.coverage).toBe('complete');
@@ -362,7 +362,7 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
   expect(stripped.events[0].deadlineAdjustment?.reviewed).toBe(false);
   stripped.events[0].end = civilDate('2027-12-04');
   expect(
-    activityCoverage(stripped).find(
+    evaluatePlan(stripped).rows.find(
       (item) => item.requirement.id === row.id && item.offerId === 'integrado',
     )?.coverage,
   ).toBe('partial');

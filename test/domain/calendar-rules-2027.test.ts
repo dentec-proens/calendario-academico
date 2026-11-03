@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 import { cycleLink, definedStage, onceLink } from '../helpers/activity-links.ts';
 import type { ActivityState, CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
-import { activityCoverage } from '../../src/domain/calendar/activities/coverage.ts';
+import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { applicabilityFor } from '../../src/domain/policies/registry.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlines.ts';
@@ -151,19 +151,19 @@ test('one event covers only the explicitly declared offers and does not waive ve
       notice: undefined,
     },
   ];
-  const rows = activityCoverage(state).filter((row) => row.requirement.id === 'enrolment-0');
+  const rows = evaluatePlan(state).rows.filter((row) => row.requirement.id === 'enrolment-0');
   expect(rows.find((r) => r.offerId === 'subsequente')).toMatchObject({
     applicability: 'required',
     coverage: 'complete',
   });
   expect(rows.find((r) => r.offerId === 'integrado')?.applicability).toBe('optional');
   expect(
-    activityCoverage(state).find(
+    evaluatePlan(state).rows.find(
       (r) => r.offerId === 'graduacao' && r.requirement.id === 'enrolment-1',
     ),
   ).toMatchObject({ applicability: 'required', coverage: 'pending' });
   expect(
-    activityCoverage(state).find(
+    evaluatePlan(state).rows.find(
       (r) => r.offerId === 'subsequente' && r.requirement.id === 'registration-0',
     )?.applicability,
   ).toBe('optional');
@@ -202,13 +202,13 @@ test('prior publication keeps dates and destination after manual sources are rem
   expect(saved.events[0]).toMatchObject(expected);
   expect(saved.events[0]).not.toHaveProperty('evidence');
   expect(
-    activityCoverage(saved).find(
+    evaluatePlan(saved).rows.find(
       (r) => r.offerId === 'integrado' && r.requirement.id === 'admission-notice-0',
     )?.coverage,
   ).toBe('complete');
   saved.events[0].notice!.admission!.destinations[0].periodId = 'deleted-period';
   expect(
-    activityCoverage(saved).find(
+    evaluatePlan(saved).rows.find(
       (r) => r.offerId === 'integrado' && r.requirement.id === 'admission-notice-0',
     ),
   ).toMatchObject({ coverage: 'partial' });
@@ -230,13 +230,13 @@ test('planned regular publication remains planned and December requires an expli
     }),
   ];
   expect(
-    activityCoverage(state).find(
+    evaluatePlan(state).rows.find(
       (r) => r.offerId === 'integrado' && r.requirement.id === 'regular-admission-notice',
     ),
   ).toMatchObject({ coverage: 'partial', execution: 'planned' });
   state.events[0].deadlineAdjustment = { date: civilDate('2027-12-02'), reviewed: true };
   expect(
-    activityCoverage(state).find(
+    evaluatePlan(state).rows.find(
       (r) => r.offerId === 'integrado' && r.requirement.id === 'regular-admission-notice',
     ),
   ).toMatchObject({ coverage: 'complete', execution: 'planned' });
@@ -316,7 +316,7 @@ test('postgraduate and other years are not implicitly certified by 2027', () => 
       },
     ],
   };
-  expect(activityCoverage(state).every((r) => r.applicability === 'unconfigured')).toBe(true);
+  expect(evaluatePlan(state).rows.every((r) => r.applicability === 'unconfigured')).toBe(true);
 });
 
 test('article 3 extends only explicitly classified municipal causes to the first teaching day of the offer', () => {
@@ -376,7 +376,7 @@ test('article 3 extends only explicitly classified municipal causes to the first
     },
   ];
   expect(
-    activityCoverage(state).find(
+    evaluatePlan(state).rows.find(
       (r) => r.offerId === 'integrado' && r.requirement.id === 'robotics',
     )?.coverage,
   ).toBe('partial');
@@ -407,7 +407,7 @@ test('an unconfirmed scope remains visible but never covers its offers in 2027',
       notice: undefined,
     },
   ];
-  const rows = activityCoverage(state).filter((row) => row.requirement.id === 'campus-events');
+  const rows = evaluatePlan(state).rows.filter((row) => row.requirement.id === 'campus-events');
   expect(rows.every((row) => row.coverage === 'partial' && row.events.length === 1)).toBe(true);
   expect(rows.every((row) => row.issues.some((issue) => issue.includes('ofertas')))).toBe(true);
 });
