@@ -93,6 +93,10 @@ for (const width of [1440, 390]) {
     await expect(submit).toBeFocused();
     expect(await page.evaluate(() => window.editorTest.calls.transitions)).toBe(0);
     await selectEditorSection(page, 'edit');
+    // Autosave from the earlier steps may still be scheduled or in flight; count from rest.
+    await expect(page.locator('.editor-save-indicator')).not.toHaveText(
+      /Salvando|ainda não salvas/,
+    );
     const saves = await page.evaluate(() => window.editorTest.calls.saves);
     await page.locator('#weekdays input[value="1"]').uncheck();
 
