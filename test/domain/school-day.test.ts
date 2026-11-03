@@ -110,6 +110,11 @@ describe('schoolDayIssue', () => {
         effect: 'include',
       }),
     ).toBeUndefined();
+    // The advice follows the day: classes to keep or suspend on a weekday, none on a Saturday.
+    expect(schoolDayIssue(state, { ...meeting, effect: 'include' })).toContain('“Aulas suspensas”');
+    expect(
+      schoolDayIssue(state, { ...meeting, start: saturday, end: saturday, effect: 'include' }),
+    ).toContain('Em dia sem aula');
     const ownRegulation = {
       ...state,
       offers: state.offers.map((offer) => ({

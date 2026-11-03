@@ -52,6 +52,6 @@ test('legacy 2027 rules require explicit adoption without changing recorded date
     ),
   ).toEqual(before);
   expect(await page.evaluate(() => window.editorTest.record.state.rulesetVersion)).toBe(
-    'consup-292-2027-v5',
+    'consup-292-2027-v6',
   );
 });

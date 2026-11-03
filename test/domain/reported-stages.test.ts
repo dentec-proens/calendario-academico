@@ -21,6 +21,7 @@ import {
 } from '../../src/domain/calendar/organization/offers.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
 import { readCalendarOfferInput } from '../../src/domain/calendar/normalization/input.ts';
+import { withDeclaredCategories } from '../helpers/declared-categories.ts';
 import { legacyIds } from '../helpers/legacy-classification.ts';
 import { retiredOfferFields } from '../helpers/retired-fields.ts';
 
@@ -70,8 +71,9 @@ test.each(archive.cases)(
     // Step 9d: 2027 no longer generates the rows the capture kept as “Classificação legada”.
     const retired = legacyIds(requirements);
     expect(retired.size).toBeGreaterThan(0);
+    // consup-292-2027-v6 declares default categories the capture did not have.
     expect(JSON.parse(JSON.stringify(rows))).toEqual(
-      requirements.filter((row) => !retired.has(row.id)),
+      withDeclaredCategories(requirements.filter((row) => !retired.has(row.id))),
     );
     expect(
       releaseReadiness(

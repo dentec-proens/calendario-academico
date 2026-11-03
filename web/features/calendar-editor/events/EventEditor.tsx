@@ -31,6 +31,7 @@ import {
   underNorm,
 } from '#src/domain/calendar/activities/school-day.ts';
 import type { EventEffect } from '#src/domain/calendar/model.ts';
+import type { CivilDate } from '#src/domain/civil-date.ts';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { scrollIntoView } from '../../../scroll.ts';
 import { Button } from '../../../components/ui/Button.tsx';
@@ -189,6 +190,8 @@ export default function EventEditor() {
       category: values.category,
       effect: values.effect as EventEffect,
       scope: { offers: values.offers, confirmed: true },
+      start: values.start as CivilDate,
+      end: values.end as CivilDate,
     });
   const effectField = (
     <form.Field
@@ -599,7 +602,14 @@ export default function EventEditor() {
             </section>
           )}
         </fieldset>
-        <FormFeedback error={editor.error} />
+        {/* The refusal repeats “Efeito a corrigir”, already shown above the fields. */}
+        <FormFeedback
+          error={
+            effectIssue && editor.error === effectIssue
+              ? 'Corrija o efeito indicado em “Efeito a corrigir”.'
+              : editor.error
+          }
+        />
         <FormActions preserveOnClose={editor.dirty}>
           <Button type="submit">{editor.eventId ? 'Aplicar alterações' : 'Adicionar data'}</Button>
           {editor.dirty && (

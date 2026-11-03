@@ -45,5 +45,13 @@ export const rulesetChanges: readonly RulesetChange[] = [
     summary:
       'Conselhos, reuniões, formação pedagógica, planejamento coletivo, encontro de egressos, prazos e marcos não constituem dia letivo e não acrescentam dias à contagem; a fase local da OBR pode constituir.',
   },
+  {
+    version: 'consup-292-2027-v6',
+    date: civilDate('2026-11-03'),
+    effect: 'editorial',
+    source: 'Decisão da gestão do sistema em 03/11/2026',
+    summary:
+      'Novas datas de formação pedagógica, planejamento, eventos, semanas e reuniões começam na categoria da legenda PROENS, não em prazo. Sem mudança de obrigações.',
+  },
 ];
 export const rulesetVersion = rulesetChanges.at(-1)!.version;

@@ -1,3 +1,4 @@
+import { declaredCategory } from '../helpers/declared-categories.ts';
 import { calendarOffers } from '../../src/domain/calendar/offers.ts';
 import { expect, test } from 'vitest';
 import type { ActivityPlanItem, AssessmentSettings } from '../../src/domain/calendar/model.ts';
@@ -34,6 +35,10 @@ const previous = {
   notice: (id: string) => id.startsWith('admission-notice-') || id === 'regular-admission-notice',
 };
 
+/** consup-292-2027-v6 declares the legend category of activities that used `prazo`. */
+const categoryOf = (year: number, id: string) =>
+  (year === 2027 && declaredCategory(id)) || previous.category(id);
+
 const settings: (AssessmentSettings & { year: number })[] = [2027, 2028].flatMap((year) =>
   (['anual', 'semestral', 'misto'] as const).flatMap((regime) =>
     [['integrado'], ['graduacao'], ['integrado', 'subsequente', 'graduacao', 'posgraduacao']].map(
@@ -68,9 +73,11 @@ test('catalogue metadata reproduces the previous grouping, category and form rul
   expect(new Set(rows.map((row) => row.variant))).toEqual(
     new Set(['activity', 'hours', 'admission-notice', 'stage']),
   );
+  for (const state of settings)
+    for (const row of activityPlan(state))
+      expect(row.defaultCategory, `${state.year} ${row.id}`).toBe(categoryOf(state.year, row.id));
   for (const row of rows) {
     expect(row.group, row.id).toBe(previous.group(row.id));
-    expect(row.defaultCategory, row.id).toBe(previous.category(row.id));
     expect(row.variant === 'stage', row.id).toBe(previous.stage(row.id));
     expect(row.variant === 'admission-notice', row.id).toBe(
       previous.notice(row.id) || Boolean(row.admissionType),
@@ -109,7 +116,7 @@ function previousDraft(state: (typeof settings)[number], row: ActivityPlanItem) 
         : '',
     admissionTerm: row.term ?? 'annual',
     publicationStatus: notice ? 'planned' : '',
-    category: previous.category(row.id),
+    category: categoryOf(state.year, row.id),
     effect: 'note',
     // The link is no longer a form value: `planActivityDate` takes it from the context.
     name: row.name,

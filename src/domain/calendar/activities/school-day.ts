@@ -1,5 +1,7 @@
 import type { AssessmentSettings, CalendarEvent } from '../model.ts';
 import { offerFor } from '../offers.ts';
+import { datesBetween } from '../counting/core.ts';
+import { parseDate } from '../../civil-date.ts';
 import { policyFor } from '../../policies/registry.ts';
 import { eventCategory } from './categories.ts';
 import { dateEdited, type LinkStates } from './links.ts';
@@ -55,17 +57,38 @@ export function underNorm(
  * under the norm (neither excluded nor under its own regulation).
  */
 export function schoolDayIssue(
-  state: AssessmentSettings & { year: number },
-  event: Classified & Pick<CalendarEvent, 'name' | 'scope'>,
+  state: AssessmentSettings & { year: number; weekdays?: readonly number[] },
+  event: Classified & Pick<CalendarEvent, 'name' | 'scope' | 'start' | 'end'>,
 ): string | undefined {
   if (event.effect !== 'include') return undefined;
   const nature = schoolDayNature(state.year, event);
   if (nature === undefined || nature === 'school-day') return undefined;
   if (!underNorm(state, event.scope.offers)) return undefined;
   const basis = policyFor(state.year).schoolDay!.basis;
-  return nature === 'meeting'
-    ? `“${event.name}” não constitui dia letivo (${basis}): sem a efetiva participação de estudantes, não acrescenta dias à contagem. Se as aulas forem suspensas para a atividade, use “Aulas suspensas”.`
-    : `“${event.name}” é prazo ou marco e não constitui dia letivo (${basis}): não acrescenta dias à contagem.`;
+  if (nature === 'deadline')
+    return `“${event.name}” é prazo ou marco e não constitui dia letivo (${basis}): não acrescenta dias à contagem.`;
+  const issue = `“${event.name}” não constitui dia letivo (${basis}): sem a efetiva participação de estudantes, não acrescenta dias à contagem.`;
+  return teachingDay(state, event)
+    ? `${issue} Use “Aulas mantidas” ou, se as aulas forem suspensas para a atividade, “Aulas suspensas”.`
+    : `${issue} Em dia sem aula, como um sábado, use “Aulas mantidas”: a data fica registrada sem alterar a contagem.`;
+}
+
+/**
+ * Whether the date reaches a day of the ordinary teaching week. Unreadable dates count as a
+ * teaching day, which keeps the advice that covers both answers.
+ */
+function teachingDay(
+  state: { weekdays?: readonly number[] },
+  event: Pick<CalendarEvent, 'start' | 'end'>,
+) {
+  const weekdays = state.weekdays?.length ? state.weekdays : [1, 2, 3, 4, 5];
+  try {
+    return datesBetween(event.start, event.end).some((date) =>
+      weekdays.includes(new Date(parseDate(date)).getUTCDay()),
+    );
+  } catch {
+    return true;
+  }
 }
 
 /**

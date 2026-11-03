@@ -118,7 +118,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -128,7 +128,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -138,7 +138,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -148,7 +148,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -173,7 +173,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -184,7 +184,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -195,7 +195,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -206,7 +206,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -221,7 +221,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -236,7 +236,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -906,7 +906,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -916,7 +916,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -926,7 +926,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -936,7 +936,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -961,7 +961,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -972,7 +972,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -983,7 +983,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -994,7 +994,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -1009,7 +1009,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -1024,7 +1024,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -1646,7 +1646,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -1694,7 +1694,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -1742,7 +1742,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -1790,7 +1790,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -1838,7 +1838,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -1886,7 +1886,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -2101,7 +2101,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -2111,7 +2111,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -2121,7 +2121,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -2131,7 +2131,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -2156,7 +2156,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -2167,7 +2167,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -2178,7 +2178,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -2189,7 +2189,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -2204,7 +2204,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -2219,7 +2219,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -3921,7 +3921,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -3969,7 +3969,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4017,7 +4017,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4065,7 +4065,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4113,7 +4113,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4161,7 +4161,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4209,7 +4209,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4257,7 +4257,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4305,7 +4305,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4353,7 +4353,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4401,7 +4401,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4449,7 +4449,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4497,7 +4497,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4958,7 +4958,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -4968,7 +4968,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -4978,7 +4978,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -4988,7 +4988,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -5013,7 +5013,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -5024,7 +5024,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -5035,7 +5035,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -5046,7 +5046,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -5061,7 +5061,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -5076,7 +5076,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -9265,7 +9265,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -9313,7 +9313,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -9361,7 +9361,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -9409,7 +9409,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -9624,7 +9624,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -9634,7 +9634,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -9644,7 +9644,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -9654,7 +9654,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -9679,7 +9679,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -9690,7 +9690,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -9701,7 +9701,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -9712,7 +9712,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -9727,7 +9727,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -9742,7 +9742,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -10814,7 +10814,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -10862,7 +10862,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -11077,7 +11077,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -11087,7 +11087,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -11097,7 +11097,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -11107,7 +11107,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -11132,7 +11132,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -11143,7 +11143,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -11154,7 +11154,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -11165,7 +11165,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -11180,7 +11180,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -11195,7 +11195,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -12099,7 +12099,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -12147,7 +12147,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -12195,7 +12195,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -12410,7 +12410,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -12420,7 +12420,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -12430,7 +12430,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -12440,7 +12440,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -12465,7 +12465,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -12476,7 +12476,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -12487,7 +12487,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -12498,7 +12498,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -12513,7 +12513,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -12528,7 +12528,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -13516,7 +13516,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -13564,7 +13564,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -13612,7 +13612,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -13660,7 +13660,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -13875,7 +13875,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -13885,7 +13885,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -13895,7 +13895,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -13905,7 +13905,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -13930,7 +13930,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -13941,7 +13941,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -13952,7 +13952,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -13963,7 +13963,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -13978,7 +13978,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -13993,7 +13993,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -15065,7 +15065,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -15113,7 +15113,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -15451,7 +15451,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -15461,7 +15461,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -15471,7 +15471,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -15481,7 +15481,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -15506,7 +15506,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -15517,7 +15517,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -15528,7 +15528,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -15539,7 +15539,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -15554,7 +15554,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -15569,7 +15569,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -16643,7 +16643,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -16691,7 +16691,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -16739,7 +16739,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -16787,7 +16787,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -17125,7 +17125,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -17135,7 +17135,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -17145,7 +17145,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -17155,7 +17155,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -17180,7 +17180,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -17191,7 +17191,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -17202,7 +17202,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -17213,7 +17213,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -17228,7 +17228,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -17243,7 +17243,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -18485,7 +18485,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -18533,7 +18533,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -18581,7 +18581,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -18629,7 +18629,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -18677,7 +18677,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -18725,7 +18725,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -18773,7 +18773,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -18821,7 +18821,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -18869,7 +18869,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -18917,7 +18917,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -18969,7 +18969,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -19021,7 +19021,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -19482,7 +19482,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -19492,7 +19492,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -19502,7 +19502,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -19512,7 +19512,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -19537,7 +19537,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -19548,7 +19548,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -19559,7 +19559,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -19570,7 +19570,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -19585,7 +19585,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -19600,7 +19600,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -23716,7 +23716,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -23768,7 +23768,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -23860,7 +23860,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -23870,7 +23870,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -23880,7 +23880,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -23890,7 +23890,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -23915,7 +23915,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -23926,7 +23926,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -23937,7 +23937,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -23948,7 +23948,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -23963,7 +23963,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -23978,7 +23978,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -24729,7 +24729,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -24777,7 +24777,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -24825,7 +24825,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -24873,7 +24873,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -24921,7 +24921,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -24969,7 +24969,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -25430,7 +25430,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -25440,7 +25440,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -25450,7 +25450,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -25460,7 +25460,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -25485,7 +25485,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -25496,7 +25496,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -25507,7 +25507,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -25518,7 +25518,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -25533,7 +25533,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -25548,7 +25548,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -27787,7 +27787,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -27835,7 +27835,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -28050,7 +28050,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -28060,7 +28060,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -28070,7 +28070,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -28080,7 +28080,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -28105,7 +28105,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -28116,7 +28116,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -28127,7 +28127,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -28138,7 +28138,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -28153,7 +28153,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -28168,7 +28168,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -29485,7 +29485,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -29495,7 +29495,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -29505,7 +29505,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -29515,7 +29515,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -29540,7 +29540,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -29551,7 +29551,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -29562,7 +29562,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -29573,7 +29573,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -29588,7 +29588,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -29603,7 +29603,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -31360,7 +31360,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -31370,7 +31370,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -31380,7 +31380,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -31390,7 +31390,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -31415,7 +31415,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -31426,7 +31426,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -31437,7 +31437,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -31448,7 +31448,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -31463,7 +31463,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -31478,7 +31478,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -31928,7 +31928,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -31938,7 +31938,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -31948,7 +31948,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -31958,7 +31958,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -31983,7 +31983,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -31994,7 +31994,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -32005,7 +32005,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -32016,7 +32016,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -32031,7 +32031,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -32046,7 +32046,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -32496,7 +32496,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -32506,7 +32506,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -32516,7 +32516,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -32526,7 +32526,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -32551,7 +32551,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -32562,7 +32562,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -32573,7 +32573,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -32584,7 +32584,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -32599,7 +32599,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -32614,7 +32614,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -33229,7 +33229,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -33277,7 +33277,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -33325,7 +33325,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -33373,7 +33373,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -33421,7 +33421,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -33469,7 +33469,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -33684,7 +33684,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -33694,7 +33694,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -33704,7 +33704,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -33714,7 +33714,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -33739,7 +33739,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -33750,7 +33750,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -33761,7 +33761,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -33772,7 +33772,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -33787,7 +33787,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -33802,7 +33802,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -40817,7 +40817,7 @@
           "offerId": "integrado",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -40861,7 +40861,7 @@
           "offerId": "integrado",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -40953,7 +40953,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -40963,7 +40963,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -40973,7 +40973,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -40983,7 +40983,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -41008,7 +41008,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -41019,7 +41019,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -41030,7 +41030,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -41041,7 +41041,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -41056,7 +41056,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -41071,7 +41071,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -41609,7 +41609,7 @@
           "offerId": "integrado",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -41653,7 +41653,7 @@
           "offerId": "integrado",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -41697,7 +41697,7 @@
           "offerId": "integrado",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -41789,7 +41789,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -41799,7 +41799,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -41809,7 +41809,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -41819,7 +41819,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -41844,7 +41844,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -41855,7 +41855,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -41866,7 +41866,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -41877,7 +41877,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -41892,7 +41892,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -41907,7 +41907,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -42513,7 +42513,7 @@
           "offerId": "integrado",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -42557,7 +42557,7 @@
           "offerId": "integrado",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -42601,7 +42601,7 @@
           "offerId": "integrado",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -42645,7 +42645,7 @@
           "offerId": "integrado",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -42737,7 +42737,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -42747,7 +42747,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -42757,7 +42757,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -42767,7 +42767,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -42792,7 +42792,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -42803,7 +42803,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -42814,7 +42814,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -42825,7 +42825,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -42840,7 +42840,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -42855,7 +42855,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -43540,7 +43540,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -43588,7 +43588,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -43636,7 +43636,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -43684,7 +43684,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -43732,7 +43732,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -43780,7 +43780,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -43828,7 +43828,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -43876,7 +43876,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -43924,7 +43924,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -43972,7 +43972,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -44020,7 +44020,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -44068,7 +44068,7 @@
           "term": "first",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -44116,7 +44116,7 @@
           "term": "second",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -44577,7 +44577,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -44587,7 +44587,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -44597,7 +44597,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -44607,7 +44607,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -44632,7 +44632,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -44643,7 +44643,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -44654,7 +44654,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -44665,7 +44665,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -44680,7 +44680,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -44695,7 +44695,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -48936,7 +48936,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -48946,7 +48946,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -48956,7 +48956,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -48966,7 +48966,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -48991,7 +48991,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -49002,7 +49002,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -49013,7 +49013,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -49024,7 +49024,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -49039,7 +49039,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -49054,7 +49054,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -52119,7 +52119,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -52167,7 +52167,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -52215,7 +52215,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -52263,7 +52263,7 @@
           "term": "annual",
           "reviewCriterionId": "XIII",
           "group": "teaching",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -52478,7 +52478,7 @@
           },
           "reviewCriterionId": "XVI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "institucional",
           "variant": "activity"
         },
         {
@@ -52488,7 +52488,7 @@
           "basis": "Art. 11, XVII",
           "reviewCriterionId": "XVII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -52498,7 +52498,7 @@
           "basis": "Art. 11, XVIII",
           "reviewCriterionId": "XVIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -52508,7 +52508,7 @@
           "basis": "Art. 11, XIX",
           "reviewCriterionId": "XIX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -52533,7 +52533,7 @@
           "deadline": "2027-08-31",
           "reviewCriterionId": "XX",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -52544,7 +52544,7 @@
           "deadline": "2027-09-30",
           "reviewCriterionId": "XXI",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "evento",
           "variant": "activity"
         },
         {
@@ -52555,7 +52555,7 @@
           "minHours": 40,
           "reviewCriterionId": "XXII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -52566,7 +52566,7 @@
           "minHours": 20,
           "reviewCriterionId": "XXIII",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "formacao",
           "variant": "hours"
         },
         {
@@ -52581,7 +52581,7 @@
           },
           "reviewCriterionId": "XXIV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {
@@ -52596,7 +52596,7 @@
           },
           "reviewCriterionId": "XXV",
           "group": "campus",
-          "defaultCategory": "prazo",
+          "defaultCategory": "comemorativo",
           "variant": "activity"
         },
         {

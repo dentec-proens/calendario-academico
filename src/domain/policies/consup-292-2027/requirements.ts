@@ -96,6 +96,7 @@ export const rules: ActivityRule[] = [
         basis: 'Art. 11, XIII',
         group: 'teaching',
         criterion: 'XIII',
+        category: 'institucional',
       },
     ],
   ),
@@ -243,6 +244,7 @@ export const rules: ActivityRule[] = [
       ),
       group: 'campus',
       criterion: 'XVI',
+      category: 'institucional',
     },
     {
       id: 'campus-events',
@@ -250,6 +252,7 @@ export const rules: ActivityRule[] = [
       basis: 'Art. 11, XVII',
       group: 'campus',
       criterion: 'XVII',
+      category: 'evento',
     },
     {
       id: 'alumni-meeting',
@@ -257,6 +260,7 @@ export const rules: ActivityRule[] = [
       basis: 'Art. 11, XVIII',
       group: 'campus',
       criterion: 'XVIII',
+      category: 'evento',
     },
     {
       id: 'internship-event',
@@ -264,6 +268,7 @@ export const rules: ActivityRule[] = [
       basis: 'Art. 11, XIX',
       group: 'campus',
       criterion: 'XIX',
+      category: 'evento',
     },
     {
       id: 'regular-admission-notice',
@@ -283,6 +288,7 @@ export const rules: ActivityRule[] = [
       deadline: civilDate('2027-08-31'),
       group: 'campus',
       criterion: 'XX',
+      category: 'evento',
     },
     {
       id: 'course-showcase',
@@ -291,6 +297,7 @@ export const rules: ActivityRule[] = [
       deadline: civilDate('2027-09-30'),
       group: 'campus',
       criterion: 'XXI',
+      category: 'evento',
     },
     {
       id: 'pedagogical-training',
@@ -299,6 +306,7 @@ export const rules: ActivityRule[] = [
       minHours: 40,
       group: 'campus',
       criterion: 'XXII',
+      category: 'formacao',
     },
     {
       id: 'collective-planning',
@@ -307,6 +315,7 @@ export const rules: ActivityRule[] = [
       minHours: 20,
       group: 'campus',
       criterion: 'XXIII',
+      category: 'formacao',
     },
     {
       id: 'women-week',
@@ -318,6 +327,7 @@ export const rules: ActivityRule[] = [
       optionalFor: optionalOnUndergraduate,
       group: 'campus',
       criterion: 'XXIV',
+      category: 'comemorativo',
     },
     {
       id: 'ethics-week',
@@ -329,6 +339,7 @@ export const rules: ActivityRule[] = [
       optionalFor: optionalOnUndergraduate,
       group: 'campus',
       criterion: 'XXV',
+      category: 'comemorativo',
     },
     {
       id: 'cultural-week',

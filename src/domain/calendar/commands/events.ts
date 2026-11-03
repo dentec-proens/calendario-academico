@@ -286,14 +286,15 @@ function applyDate<S extends ActivityState>(
   const edited = dateEdited(previous, event);
   const activity = generatedActivity(generatedActivities(state), event.activity);
   const kept = linkKept(previous, event);
-  validateActivityRecord(state, event, {
-    stageInterval: edited && !(kept && !activity),
-    keptWithoutActivity: kept && !activity,
-  });
+  // Art. 5º first: a meeting that adds days is refused for that reason, not for its periods.
   if (schoolDayEdited(previous, event)) {
     const issue = schoolDayIssue(state, event) ?? activityExtensionIssue(event);
     if (issue) throw new DomainError(issue);
   }
+  validateActivityRecord(state, event, {
+    stageInterval: edited && !(kept && !activity),
+    keptWithoutActivity: kept && !activity,
+  });
   if (!event.name.trim()) throw new DomainError('Informe a descrição.');
   if (!['include', 'exclude', 'note'].includes(event.effect))
     throw new DomainError('Tipo de evento inválido.');

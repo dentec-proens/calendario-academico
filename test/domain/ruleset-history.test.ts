@@ -19,6 +19,7 @@ import {
   rulesetChangesBetween,
 } from '../../src/domain/policies/registry.ts';
 import { legacyIds } from '../helpers/legacy-classification.ts';
+import { withDeclaredCategories } from '../helpers/declared-categories.ts';
 
 /**
  * Catalogue fingerprint of each policy version. When this test fails on a bound policy, append a
@@ -231,9 +232,22 @@ test('published historical fingerprints remain intact and v4 catalogues match th
   }
   for (const year of years)
     expect(canonical(catalogue(policyFor(year), year)), String(year)).toEqual(
-      canonical(withoutLegacyRows(archive.v4Catalogues[year])),
+      canonical(withCapturedCategories(withoutLegacyRows(archive.v4Catalogues[year]), year)),
     );
 });
+
+/** consup-292-2027-v6 declares default categories; only `defaultCategory` of those rows differs. */
+function withCapturedCategories(captured: unknown, year: number) {
+  if (year !== 2027) return captured;
+  const value = captured as { states: { requirements: { id: string }[] }[] };
+  return {
+    ...value,
+    states: value.states.map((state) => ({
+      ...state,
+      requirements: withDeclaredCategories(state.requirements),
+    })),
+  };
+}
 
 /**
  * 2027 no longer generates the optional rows the capture kept from the operational catalogue as
@@ -316,6 +330,7 @@ test('only establishing or tightening versions bind reviews and base identities'
 const observanceFingerprints: Record<string, string> = {
   'consup-292-2027-v4': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
   'consup-292-2027-v5': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
+  'consup-292-2027-v6': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
 };
 test('observance permissions are bound to the current ruleset history', () => {
   for (const policy of boundPolicies) {
@@ -330,6 +345,7 @@ test('observance permissions are bound to the current ruleset history', () => {
 /** The art. 5º classification has its own baseline: changing it needs a new ruleset version. */
 const schoolDayFingerprints: Record<string, string> = {
   'consup-292-2027-v5': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
+  'consup-292-2027-v6': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
 };
 test('school-day classification is bound to the current ruleset history', () => {
   for (const policy of boundPolicies) {
@@ -340,4 +356,6 @@ test('school-day classification is bound to the current ruleset history', () => 
   }
   expect(reviewBoundary('consup-292-2027-v5')).toBe('consup-292-2027-v5');
   expect(equivalentRulesets('consup-292-2027-v4', 'consup-292-2027-v5')).toBe(false);
+  // Default categories only colour new dates: v6 keeps the v5 reviews and bases.
+  expect(equivalentRulesets('consup-292-2027-v5', 'consup-292-2027-v6')).toBe(true);
 });

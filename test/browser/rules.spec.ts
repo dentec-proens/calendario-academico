@@ -14,7 +14,7 @@ for (const role of ['ADMIN', 'CAMPUS', 'PARECERISTA'] as const)
     await expect(link).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('#panel-title')).toHaveText('Regras do calendário');
     await expect(page.locator('#rules-title')).toHaveText('Regras do calendário de 2027');
-    await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v5');
+    await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v6');
     await expect(page.locator('[data-observance-rule="public-servant-day"]')).toContainText(
       '28/10/2027, 29/10/2027',
     );

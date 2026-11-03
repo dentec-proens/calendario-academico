@@ -43,7 +43,8 @@ test('a new activity record keeps the prepared link, offer, effect and category'
     name: title,
     activity: { activityId: 'family-meeting' },
     effect: 'note',
-    category: 'prazo',
+    // The policy declares the legend category of the meeting (consup-292-2027-v6).
+    category: 'institucional',
     // Saving the form confirms the contextual offers.
     scope: { offers: ['integrado'], confirmed: true },
     start: '2027-05-08',
@@ -195,8 +196,17 @@ test('a saved meeting that adds days shows why its effect must change', async ({
   await selectEditorSection(page, 'events');
   await openActivity(page, 'family-meeting');
   await page.locator('[data-edit-activity-event="legacy-inclusion"]').click();
+  // On a Saturday there are no classes to suspend: the advice is to keep the date as a note.
   await expect(page.locator('#event-school-day-issue')).toContainText(
     '“Reunião em sábado” não constitui dia letivo',
+  );
+  await expect(page.locator('#event-school-day-issue')).toContainText('Em dia sem aula');
+  // Editing its dates rechecks it: applying is refused once, pointing back to the notice instead
+  // of repeating it.
+  await page.locator('#event-end').fill('2027-05-09');
+  await applyEvent(page);
+  await expect(page.locator('#event-form .form-feedback')).toHaveText(
+    'Corrija o efeito indicado em “Efeito a corrigir”.',
   );
   await page.locator('#event-more-options > summary').click();
   await page.locator('#event-effect [data-choice="note"]').click();
