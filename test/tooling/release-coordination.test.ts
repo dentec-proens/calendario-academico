@@ -62,6 +62,48 @@ test('serial migrations wait for unstarted steps while their report remains in p
   assert.equal(sleeps, 3);
 });
 
+test('a series hands off between steps: unknown right after a success is the next step starting', async () => {
+  // Between the last batch of one step (success) and the first batch of the next, the component
+  // has only scheduled the next step, which has no record yet and reads as unknown.
+  const step = (name: string, state: MigrationProgress['state']) => ({
+    ...migration(state),
+    name: `migrations:${name}`,
+  });
+  const series = (...states: MigrationProgress['state'][]) =>
+    states.map((state, index) => step(['catalogue', 'contents', 'submissions'][index]!, state));
+  const statuses = [
+    series('success', 'unknown', 'unknown'),
+    series('success', 'inProgress', 'unknown'),
+    series('success', 'success', 'unknown'),
+    series('success', 'success', 'inProgress'),
+    series('success', 'success', 'success'),
+  ];
+  let reads = 0;
+  const result = await waitForMigrations(() => statuses[reads++]!, { sleep: async () => {} });
+  assert.deepEqual(result, series('success', 'success', 'success'));
+  assert.equal(reads, 5);
+});
+
+test('a hand-off that never starts stops the release after its grace period', async () => {
+  let time = 0;
+  let sleeps = 0;
+  await assert.rejects(
+    waitForMigrations(
+      () => [migration('success'), { ...migration('unknown'), name: 'migrations:nextStep' }],
+      {
+        now: () => time,
+        sleep: async (milliseconds) => {
+          sleeps++;
+          time += milliseconds;
+        },
+      },
+    ),
+    /nextStep terminou como unknown/,
+  );
+  // It waits for the hand-off (one minute), not for the whole migration timeout.
+  assert.equal(sleeps, 30);
+});
+
 test('a failed, canceled or unstarted migration stops the release with its error', async () => {
   await assert.rejects(
     waitForMigrations(() => [migration('failed', 'Invalid document')]),

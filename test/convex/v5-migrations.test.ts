@@ -15,6 +15,7 @@ import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, saveReview, seedCourses } from '../helpers/lifecycle.ts';
 import { bindIds } from '../helpers/v4-storage.ts';
 import { readOracle, v4CatalogueRows, v4Cases, type V4Case } from '../helpers/v4-fixtures.ts';
+import { waitForMigrations, type MigrationProgress } from '../../scripts/release-coordination.ts';
 
 /**
  * Phase 2, step 17b of `docs/plans/2026-11-02-atividades-e-datas.md`: the migrations convert the
@@ -178,6 +179,29 @@ test('migrations:start converts catalogue, contents and submissions, and migrati
   );
   expect(after.reviews).toEqual(before.reviews);
   expect(after.audit).toEqual(before.audit);
+});
+
+test('the release waits through the hand-off between serial steps until the series concludes', async () => {
+  const fixture = await createNativeFixture();
+  await storeV4(fixture);
+  await fixture.client.mutation(internal.migrations.start, {});
+  // What the release reads every two seconds, one scheduled batch at a time.
+  const observed: MigrationProgress[][] = [];
+  for (let step = 0; step < 50; step++) {
+    const statuses = await fixture.client.query(internal.migrations.status, {});
+    observed.push(statuses);
+    if (statuses.every(({ state }) => state === 'success')) break;
+    vi.runOnlyPendingTimers();
+    await fixture.client.finishInProgressScheduledFunctions();
+  }
+  // The catalogue fits in the batch run by `start`; the next step is only scheduled, with no
+  // record yet, so the status shows a success followed by unknowns before it starts.
+  expect(observed[0]!.map(({ state }) => state)).toEqual(['success', 'unknown', 'unknown']);
+  expect(observed.at(-1)!.map(({ state }) => state)).toEqual(['success', 'success', 'success']);
+  let reads = 0;
+  const result = await waitForMigrations(() => observed[reads++]!, { sleep: async () => {} });
+  expect(result).toEqual(observed.at(-1));
+  expect(reads).toBe(observed.length);
 });
 
 test('the submission migration reads the proven lists from the converted content', () => {

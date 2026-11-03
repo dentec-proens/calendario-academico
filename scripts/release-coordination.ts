@@ -50,18 +50,33 @@ export interface MigrationProgress {
 }
 
 // Migrations run in Convex batches; the release only waits and never rolls back.
+// In a series, the component marks a step done and only schedules the next one, whose record
+// appears with its first batch: until then the status reads success followed by unknown. That
+// hand-off is waited on for `handoffMs`; a next step that never starts stops the release.
 export async function waitForMigrations(
   readStatus: () => MigrationProgress[],
-  { timeoutMs = 20 * 60_000, sleep = delay, now = Date.now }: Polling = {},
+  {
+    timeoutMs = 20 * 60_000,
+    handoffMs = 60_000,
+    sleep = delay,
+    now = Date.now,
+  }: Polling & { handoffMs?: number } = {},
 ) {
   const started = now();
+  let handoff: { name: string; since: number } | undefined;
   for (;;) {
     const statuses = readStatus();
     if (!Array.isArray(statuses)) throw Error('O status das migrações é inválido.');
     const inProgress = statuses.some(({ state }) => state === 'inProgress');
+    const next = statuses.find(
+      ({ state }, index) => state === 'unknown' && statuses[index - 1]?.state === 'success',
+    );
+    if (inProgress || !next) handoff = undefined;
+    else if (handoff?.name !== next.name) handoff = { name: next.name, since: now() };
+    const advancing = inProgress || (handoff !== undefined && now() - handoff.since < handoffMs);
     const stopped = statuses.find(
       ({ state }) =>
-        state === 'failed' || state === 'canceled' || (state === 'unknown' && !inProgress),
+        state === 'failed' || state === 'canceled' || (state === 'unknown' && !advancing),
     );
     if (stopped)
       throw Error(
