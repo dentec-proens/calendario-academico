@@ -427,7 +427,7 @@ Oráculo “antes” (`test/fixtures/v4/oracle-before.json`, conferido por `test
 - Correspondência um a um: nenhuma data criada, removida, fundida ou movida. Não deduplicar os seis pares anual/semestral coincidentes nem os dois registros de revisão de resultados de Cascavel na mesma data.
 - Contagem letiva, abrangência, horas e impressão iguais antes/depois.
 - Cobertura e aplicabilidade por atividade/oferta iguais antes/depois, exceto pela nova classificação pendente dos vínculos sem atividade gerada; nenhuma atividade passa a completa por causa da conversão.
-- Preservar `calendars.version`, `updatedAt`, `submission.contentVersion`, autoria e pareceres; migração registrada como operação técnica, sem versão acadêmica nova (`convex/calendars/authorship.ts`).
+- Preservar `calendars.version`, `updatedAt`, `submission.contentVersion`, autoria e pareceres; migração sem versão acadêmica nova (`convex/calendars/authorship.ts`) e sem entrada em `audit`; o registro da operação técnica é o manifesto privado e a janela de manutenção (`operations:pause` com o SHA).
 - Recalcular o hash dos envios de forma coordenada, guardando o original no manifesto; testar envio igual ao conteúdo atual e envio diferente. Mapear `baseIdentity` só com prova de equivalência.
 - Representação equivalente não é reavaliação: parecer desatualizado nunca é promovido; calendários `revisado`/`vigente` mantêm publicação e status.
 

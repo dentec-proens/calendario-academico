@@ -9,6 +9,7 @@ import { associationOffers, labelFor, offerIds } from '../domain/calendar/offers
 import { listedOffers } from '../domain/calendar/modalities.ts';
 import { executionLabels } from '../domain/calendar/activities/plan-evaluation.ts';
 import { canBeInternal, isInternalDate } from '../domain/calendar/internal-dates.ts';
+import { isSaturdayRecord } from '../domain/calendar/activities/saturdays.ts';
 
 /**
  * Printed version of the calendar (plan, section 4.5). The official version, sent to Proens and
@@ -44,13 +45,15 @@ const fullInterval = (event: PrintEvent) =>
 /**
  * Offers printed beside a date. An unconfirmed scope over every offer of the calendar is the
  * format 4 date without its own list (plan, section 5.3) and prints without a list, as before.
+ * So does a Saturday over every offer: the Saturdays step creates it confirmed for all of them,
+ * where format 4 stored no list.
  */
 function eventOffers(state: PrintState, event: PrintEvent) {
   const scope = event.scope;
   const all = state.offers ? offerIds(state) : [];
   if (
     scope &&
-    !scope.confirmed &&
+    (!scope.confirmed || isSaturdayRecord(event)) &&
     scope.offers.length === all.length &&
     all.every((id) => scope.offers.includes(id))
   )

@@ -15,6 +15,9 @@ import schema from './schema';
 
 export const migrations = new Migrations(components.migrations, { schema, internalMutation });
 
+/** CLI entry for one migration, including `dryRun` (docs/implantacao-convex-vercel.md, Comandos). */
+export const run = migrations.runner();
+
 /**
  * Format 5 of the calendar (plan `docs/plans/2026-11-02-atividades-e-datas.md`, section 6 and
  * phase 2, step 17b). Level 2: run only during maintenance, after the expansion deploy, on a

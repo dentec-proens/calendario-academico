@@ -154,3 +154,36 @@ test('print and review exports escape offer labels in HTML and preserve human te
   expect(doc.text).toContain('Tecnologia em Análise de Sistemas');
   expect(doc.text).toContain('Conclusão humana preservada.');
 });
+
+test('a Saturday from the Saturdays step prints without the list of every offer, as in format 4', () => {
+  const state = calendarOffersFixture();
+  const all = state.offers.map((offer) => offer.id);
+  const saturday = civilDate(`${state.year}-03-13`);
+  const events = [
+    ...state.events,
+    {
+      id: 'saturday-step',
+      name: 'Sábado letivo do teste',
+      effect: 'include' as const,
+      category: 'sabado',
+      start: saturday,
+      end: saturday,
+      scope: { offers: all, confirmed: true },
+    },
+    {
+      id: 'campus-all-offers',
+      name: 'Reunião escolhida para todas',
+      effect: 'note' as const,
+      start: saturday,
+      end: saturday,
+      scope: { offers: all, confirmed: true },
+    },
+  ];
+  const html = proensLayout(state, events, evaluateCalendar(state, events), null, '');
+  const line = (name: string) => {
+    const start = html.indexOf(`<td>${name}`);
+    return start < 0 ? '' : html.slice(start, html.indexOf('</td>', start));
+  };
+  expect(line('Sábado letivo do teste')).not.toContain('[');
+  expect(line('Reunião escolhida para todas')).toContain('[Técnico integrado');
+});
