@@ -2,6 +2,7 @@ import { lazy, useState, type ComponentType } from 'react';
 import { CatchBoundary } from '@tanstack/react-router';
 import { Button } from '../components/ui/Button.tsx';
 import { Notice } from '../components/ui/Notice.tsx';
+import { UnavailablePage, unavailableRecord } from './errors.tsx';
 
 export class ChunkLoadError extends Error {
   constructor(cause: unknown) {
@@ -36,27 +37,31 @@ export function controlledLazy<T extends object>(
     return (
       <CatchBoundary
         getResetKey={() => attempt.number}
-        errorComponent={({ error }) => (
-          <section className="panel">
-            <h2>Não foi possível abrir esta página</h2>
-            <Notice tone="warning" announce="assertive">
-              {error instanceof ChunkLoadError
-                ? 'Falha ao carregar os arquivos. Seu trabalho permanece nesta aba. Verifique a conexão e tente novamente; se a falha persistir, resolva os preenchimentos antes de atualizar o portal.'
-                : 'Ocorreu um erro nesta tela. Use os controles de recuperação para continuar.'}
-            </Notice>
-            <Button
-              type="button"
-              onClick={() => {
-                if (error instanceof ChunkLoadError)
-                  window.dispatchEvent(new Event('portal:chunk-error'));
-                initial = resource();
-                setAttempt((current) => ({ Component: initial, number: current.number + 1 }));
-              }}
-            >
-              Tentar novamente
-            </Button>
-          </section>
-        )}
+        errorComponent={({ error }) =>
+          unavailableRecord(error) ? (
+            <UnavailablePage />
+          ) : (
+            <section className="panel">
+              <h2>Não foi possível abrir esta página</h2>
+              <Notice tone="warning" announce="assertive">
+                {error instanceof ChunkLoadError
+                  ? 'Falha ao carregar os arquivos. Seu trabalho permanece nesta aba. Verifique a conexão e tente novamente; se a falha persistir, resolva os preenchimentos antes de atualizar o portal.'
+                  : 'Ocorreu um erro nesta tela. Use os controles de recuperação para continuar.'}
+              </Notice>
+              <Button
+                type="button"
+                onClick={() => {
+                  if (error instanceof ChunkLoadError)
+                    window.dispatchEvent(new Event('portal:chunk-error'));
+                  initial = resource();
+                  setAttempt((current) => ({ Component: initial, number: current.number + 1 }));
+                }}
+              >
+                Tentar novamente
+              </Button>
+            </section>
+          )
+        }
         onCatch={(error) => {
           if (error instanceof ChunkLoadError)
             window.dispatchEvent(new Event('portal:chunk-error'));

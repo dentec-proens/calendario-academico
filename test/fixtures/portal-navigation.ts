@@ -1,3 +1,4 @@
+import { ConvexError } from 'convex/values';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import './audit-data.ts';
 import { mountApplication } from './mount-application.ts';
@@ -244,6 +245,9 @@ const client = {
         if (!deferredDone) return undefined;
         if (name === 'reviews:review' && args.id && removedCalendars.has(args.id))
           throw new Error('Calendário removido.');
+        // As the server for a calendar of another campus (`assertCampus`).
+        if (name === 'calendars:calendar')
+          throw new ConvexError({ status: 404, error: 'Registro não encontrado.' });
         if (result instanceof Error) throw result;
         return result;
       },

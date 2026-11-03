@@ -341,6 +341,10 @@ test('direct restricted URLs respect the current role and unknown URLs show a re
   await expect(page.locator('#create-calendar')).toHaveCount(0);
   await page.goto(origin + '/calendarios/calendar-a/secao-inexistente');
   await expect(page.getByRole('heading', { name: 'Página não encontrada' })).toBeVisible();
+  // A calendar the profile cannot open (removed or of another campus) is not a failure.
+  await page.goto(origin + '/calendarios/calendario-de-outro-campus/pendencias');
+  await expect(page.getByRole('heading', { name: 'Registro indisponível' })).toBeVisible();
+  await expect(page.getByText('Ocorreu um erro nesta tela')).toHaveCount(0);
   await page.getByRole('link', { name: 'Ir para a página inicial' }).click();
   await expect(page.locator('#calendar-list')).toBeVisible();
 });

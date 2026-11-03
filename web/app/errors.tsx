@@ -15,8 +15,28 @@ export function NotFoundPage() {
   );
 }
 
+/** A record the user cannot open: removed, or of another campus. Not a failure of the system. */
+export const unavailableRecord = (error: unknown) => {
+  const status = nativeError(error).status;
+  return status === 403 || status === 404;
+};
+
+export function UnavailablePage() {
+  return (
+    <section className="panel">
+      <h1 tabIndex={-1}>Registro indisponível</h1>
+      <p>
+        Este registro não existe mais ou não está disponível para o seu perfil, por exemplo um
+        calendário de outro campus. Confira o endereço ou volte à página inicial.
+      </p>
+      <Link to="/">Ir para a página inicial</Link>
+    </section>
+  );
+}
+
 export function ApplicationError({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
+  if (unavailableRecord(error)) return <UnavailablePage />;
   return (
     <section className="panel">
       <h1>Não foi possível abrir esta página</h1>
