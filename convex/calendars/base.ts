@@ -3,16 +3,17 @@ import { applicableEvents, inspectCalendar, reconcile } from '../../src/domain/c
 import { rulesetVersion } from '../../src/domain/policies/registry';
 import type { DomainState, documentSnapshot, institutionalEventSnapshot } from '../validators';
 import type { Infer } from 'convex/values';
-import type { Doc } from '../_generated/dataModel';
 import type { catalogue } from '../catalogue/model';
 import type { currentDocuments } from '../documents/model';
 import { documentDto } from '../documents/model';
 import { domainRule, clean } from '../lib/shared';
 
-type Content = Pick<
-  Doc<'calendarContents'>,
-  'catalogueRevision' | 'institutionalSnapshot' | 'documentSnapshot'
->;
+/** A v5 content (`currentFormat`); the widened storage type never reaches the domain. */
+type Content = {
+  catalogueRevision: number;
+  institutionalSnapshot: Infer<typeof institutionalEventSnapshot>[];
+  documentSnapshot: Infer<typeof documentSnapshot>[];
+};
 type Snapshot = {
   rulesetVersion?: string;
   revision: number;

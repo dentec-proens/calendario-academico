@@ -39,6 +39,7 @@ import { currentDocuments, documentDto } from './documents/model';
 import { appendAudit } from './lib/audit';
 import { calendarEditor, assertCampus, reviewer } from './lib/authorization';
 import { pageBound } from './lib/pagination';
+import { currentFormat } from './lib/storageFormat';
 import { domainRule, fail, iso, clean } from './lib/shared';
 import type { Doc } from './_generated/dataModel';
 import * as validators from './validators';
@@ -552,10 +553,12 @@ export const submissionContent = query({
   handler: async (ctx, { id, submissionId }) => {
     const { user } = await requireNativeUser(ctx);
     const row = await calendarRow(ctx, user, id);
-    const submission = await ctx.db.get(submissionId);
+    const stored = await ctx.db.get(submissionId);
     // Identifiers alone never reach another calendar's or campus's submissions.
     const chain = new Set((await lineage(ctx, row)).map((item) => item._id));
-    if (!submission || !chain.has(submission.calendarId)) fail('Envio não encontrado.', 404);
+    if (!stored || !chain.has(stored.calendarId)) fail('Envio não encontrado.', 404);
+    // A submission still in v4 answers unavailability (503) until the migration converts it.
+    const submission = currentFormat(stored);
     const owner = await ctx.db.get(submission.calendarId);
     if (!owner) fail('Envio não encontrado.', 404);
     return clean({

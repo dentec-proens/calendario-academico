@@ -4,6 +4,7 @@ import { expect, test } from 'vitest';
 import { onceLink } from '../helpers/activity-links.ts';
 import { makeFunctionReference } from 'convex/server';
 import { api } from '../../convex/_generated/api.js';
+import { currentFormat } from '../../convex/lib/storageFormat.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { calendarOffer } from '../../convex/validators.ts';
 import { saveInput } from '../../convex/contracts.ts';
@@ -160,8 +161,8 @@ test('canonical records and historical restoration have no manual or generated s
     })
     .then(calendarSaveDates);
   const raw = await fixture.client.run(async (ctx) => ({
-    contents: await ctx.db.query('calendarContents').take(10),
-    submissions: await ctx.db.query('calendarSubmissions').take(10),
+    contents: (await ctx.db.query('calendarContents').take(10)).map(currentFormat),
+    submissions: (await ctx.db.query('calendarSubmissions').take(10)).map(currentFormat),
   }));
   for (const row of raw.submissions) assertSourceFree({ ...row.state, year: 2027, campus: 'A' });
   expect(JSON.stringify(raw)).not.toContain('registro:');
@@ -258,7 +259,7 @@ test('current contents and submission copies refuse retired manual fields', asyn
         .query('calendarContents')
         .withIndex('by_calendarId', (q) => q.eq('calendarId', created.id))
         .unique())!;
-      const invalid = { ...row.state, weekEvidence: secret };
+      const invalid = { ...currentFormat(row).state, weekEvidence: secret };
       await ctx.db.patch(row._id, { state: invalid });
     }),
   ).rejects.toThrow(/Unexpected field|Expected/);

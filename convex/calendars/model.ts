@@ -5,6 +5,7 @@ import type { Member } from '../access/contracts';
 import { assertCampus } from '../lib/authorization';
 import type { Context } from '../lib/shared';
 import { fail, iso } from '../lib/shared';
+import { currentFormat } from '../lib/storageFormat';
 import type { DomainState, ContentState } from '../validators';
 import { calendarAuthorship } from './authorship';
 
@@ -15,13 +16,14 @@ export async function calendarRow(ctx: Context, user: Member, id: Id<'calendars'
   return row;
 }
 
+/** The calendar's v5 content; a content still in v4 answers unavailability (503). */
 export async function contents(ctx: Context, id: Id<'calendars'>) {
   const row = await ctx.db
     .query('calendarContents')
     .withIndex('by_calendarId', (q) => q.eq('calendarId', id))
     .unique();
   if (!row) fail('Conteúdo do calendário não encontrado.', 404);
-  return row;
+  return currentFormat(row);
 }
 
 export async function summary(ctx: Context, row: Doc<'calendars'>, campus: Doc<'campuses'>) {

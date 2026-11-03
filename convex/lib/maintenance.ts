@@ -11,9 +11,11 @@ export async function maintenancePaused(ctx: QueryCtx | MutationCtx) {
   return control?.paused === true || process.env.DENTEC_MAINTENANCE === '1';
 }
 
+export const maintenanceMessage =
+  'Aplicação em manutenção. Aguarde a conclusão e recarregue a página.';
+
 export async function assertWritesOpen(ctx: QueryCtx | MutationCtx) {
-  if (await maintenancePaused(ctx))
-    fail('Aplicação em manutenção. Aguarde a conclusão e recarregue a página.', 503);
+  if (await maintenancePaused(ctx)) fail(maintenanceMessage, 503);
 }
 
 export async function withActionLease<T>(

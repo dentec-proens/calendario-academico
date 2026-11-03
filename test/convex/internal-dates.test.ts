@@ -5,6 +5,7 @@ import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { contentHash } from '../../convex/calendars/lifecycle.ts';
+import { currentFormat } from '../../convex/lib/storageFormat.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, readyContent } from '../helpers/lifecycle.ts';
 
@@ -80,7 +81,8 @@ async function fixture() {
       ctx.db
         .query('calendarSubmissions')
         .withIndex('by_calendarId_and_sequence', (q) => q.eq('calendarId', id))
-        .collect(),
+        .collect()
+        .then((rows) => rows.map(currentFormat)),
     );
   return {
     ...f,
@@ -117,7 +119,7 @@ test('saveCalendar keeps an eligible internal date and refuses an ineligible one
   // A date of the institutional base never carries the mark: its stored validator has no field.
   await expect(
     f.client.run(async (ctx) => {
-      const content = (await ctx.db.get(f.contentId))!;
+      const content = currentFormat((await ctx.db.get(f.contentId))!);
       await ctx.db.patch(f.contentId, {
         institutionalSnapshot: [
           ...content.institutionalSnapshot,

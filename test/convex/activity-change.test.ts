@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { api } from '../../convex/_generated/api.js';
+import type { ContentState } from '../../convex/validators.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import type { CalendarContent } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
@@ -49,7 +50,7 @@ async function stored(content: CalendarContent & { year: number }, kinds: string
       .unique();
     if (!row) throw Error('Conteúdo esperado.');
     const state = offerCalendarContent({ ...content, rulesetVersion: rulesetVersion(content) });
-    await ctx.db.patch(row._id, { state: state as typeof row.state });
+    await ctx.db.patch(row._id, { state: state as ContentState });
   });
   const current = () =>
     actor.query(api.calendars.calendar, { id: created.id }).then(calendarRecordDates);

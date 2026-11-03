@@ -4,6 +4,7 @@ import { expect, test } from 'vitest';
 import { cycleLink, definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
 import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { api } from '../../convex/_generated/api.js';
+import type { ContentState } from '../../convex/validators.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
@@ -47,7 +48,7 @@ async function stored(fixture: PendingLinksFixture) {
       .unique();
     if (!content) throw Error('Conteúdo esperado.');
     const state = offerCalendarContent({ ...fixture, rulesetVersion: rulesetVersion(fixture) });
-    await ctx.db.patch(content._id, { state: state as typeof content.state });
+    await ctx.db.patch(content._id, { state: state as ContentState });
   });
   const record = await actor
     .query(api.calendars.calendar, { id: created.id })

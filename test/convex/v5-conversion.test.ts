@@ -11,8 +11,9 @@ import {
 } from '../helpers/v5-conversion.ts';
 
 /**
- * Phase 2, step 5: the schema already requires format 5. Every frozen v4 document, once
- * converted, is accepted by the storage validators; the stored v4 documents are refused.
+ * Phase 2, step 5: every frozen v4 document, once converted, is accepted by the v5 storage
+ * validators. Step 17a widens the schema: the stored v4 documents are accepted again, unchanged,
+ * so the migration can convert them, but never a document mixing both formats.
  * Synthetic IDs of the fixtures are bound to real rows, as the stored documents had.
  */
 type Json = Record<string, unknown>;
@@ -124,23 +125,93 @@ test('every converted document is accepted by the v5 schema', async () => {
   expect(hashes).toEqual([true, false, true]);
 });
 
-test('the stored v4 documents are refused by the v5 schema', async () => {
+test('the widened schema stores every frozen v4 document unchanged (step 17a)', async () => {
   const { client, ids } = await createNativeFixture();
-  const [item] = v4Cases().filter((entry) => entry.submissions.length);
-  await expect(
-    client.run(async (ctx) => {
-      const bind = await bindIds(ctx, ids.campuses.a, ids.users.admin);
-      await ctx.db.insert('calendarContents', (await bind(item.content)) as never);
-    }),
-  ).rejects.toThrow('Expected `5`, got `4`');
-  await expect(
-    client.run(async (ctx) => {
-      const bind = await bindIds(ctx, ids.campuses.a, ids.users.admin);
-      await insertAll(ctx, bind, { ...item, content: convertedContent(item) }, false);
-    }),
-  ).rejects.toThrow('Expected `5`, got `4`');
+  const cases = v4Cases();
+  const stored = await client.run(async (ctx) => {
+    const bind = await bindIds(ctx, ids.campuses.a, ids.users.admin);
+    const expected: { table: string; id: string; value: Json }[] = [];
+    for (const item of cases) {
+      const content = await bind(item.content);
+      expected.push({
+        table: 'calendarContents',
+        id: await ctx.db.insert('calendarContents', content as never),
+        value: { ...content },
+      });
+      for (const submission of item.submissions) {
+        const copy = await bind(submission);
+        expected.push({
+          table: 'calendarSubmissions',
+          id: await ctx.db.insert('calendarSubmissions', copy as never),
+          value: copy,
+        });
+      }
+    }
+    for (const row of v4CatalogueRows())
+      expected.push({
+        table: 'institutionalEvents',
+        id: await ctx.db.insert('institutionalEvents', row as never),
+        value: row,
+      });
+    return Promise.all(
+      expected.map(async ({ table, id, value }) => {
+        const {
+          _id,
+          _creationTime: _created,
+          ...fields
+        } = (await ctx.db.get(id as Id<'calendarContents'>))!;
+        return { table, stored: fields, value };
+      }),
+    );
+  });
+  expect(stored).toHaveLength(
+    cases.length + cases.flatMap((item) => item.submissions).length + v4CatalogueRows().length,
+  );
+  // Nothing is converted on the way in: the migration (step 17b) is the only converter.
+  for (const { stored: fields, value } of stored) expect(fields).toEqual(value);
+  expect(stored.filter(({ table }) => table === 'calendarContents')).toHaveLength(cases.length);
+});
+
+test('the widened schema refuses a document mixing the v4 and v5 formats', async () => {
+  const { client, ids } = await createNativeFixture();
+  const [item] = v4Cases().filter(
+    (entry) => entry.submissions.length && entry.content.institutionalSnapshot.length,
+  );
+  const converted = convertedContent(item);
+  const mixes = [
+    { ...item.content, state: converted.state },
+    { ...item.content, institutionalSnapshot: converted.institutionalSnapshot },
+  ];
+  for (const content of mixes)
+    await expect(
+      client.run(async (ctx) => {
+        const bind = await bindIds(ctx, ids.campuses.a, ids.users.admin);
+        await ctx.db.insert('calendarContents', (await bind(content)) as never);
+      }),
+    ).rejects.toThrow(/does not match|Validator|validator/);
+  const [submission] = item.submissions;
+  const convertedCopy = convertedSubmission(item, submission);
+  for (const copy of [
+    { ...submission, state: convertedCopy.state },
+    { ...submission, institutionalSnapshot: convertedCopy.institutionalSnapshot },
+  ])
+    await expect(
+      client.run(async (ctx) => {
+        const bind = await bindIds(ctx, ids.campuses.a, ids.users.admin);
+        await ctx.db.insert('calendarSubmissions', (await bind(copy)) as never);
+      }),
+    ).rejects.toThrow(/does not match|Validator|validator/);
   const [row] = v4CatalogueRows();
   await expect(
-    client.run((ctx) => ctx.db.insert('institutionalEvents', row as never)),
-  ).rejects.toThrow(/Missing required field `effect`/);
+    client.run((ctx) =>
+      ctx.db.insert('institutionalEvents', { ...row, effect: row.kind } as never),
+    ),
+  ).rejects.toThrow(/does not match|Validator|validator/);
+  expect(
+    await client.run(async (ctx) => [
+      ...(await ctx.db.query('calendarContents').take(10)),
+      ...(await ctx.db.query('calendarSubmissions').take(10)),
+      ...(await ctx.db.query('institutionalEvents').take(10)),
+    ]),
+  ).toEqual([]);
 });

@@ -219,8 +219,9 @@ test('accepted fields are exactly those of the frozen v4 storage validators', ()
     required: [...v4StorageFields[kind].required].sort((a, b) => a.localeCompare(b)),
     optional: [...v4StorageFields[kind].optional].sort((a, b) => a.localeCompare(b)),
   });
-  const table = (name: 'calendarContents' | 'calendarSubmissions') =>
-    fields(schema.tables[name].validator.fields);
+  // The widened schema (step 17a) keeps one envelope per table: the v5 and the v4 variants.
+  const tables = (name: 'calendarContents' | 'calendarSubmissions' | 'institutionalEvents') =>
+    schema.tables[name].validator.members.map((variant) => fields(variant.fields));
   // The v4 offer and period are reached through the frozen state, which keeps them private.
   const element = (validator: GenericValidator) =>
     (validator as unknown as { element: { fields: Record<string, { isOptional: string }> } })
@@ -231,12 +232,13 @@ test('accepted fields are exactly those of the frozen v4 storage validators', ()
   expect(accepted('snapshot')).toEqual(fields(institutionalEventSnapshot.fields));
   expect(accepted('state')).toEqual(fields(contentStateV4.fields));
   // Document envelopes keep their fields in v5; only the nested state and snapshot change.
-  expect(accepted('content')).toEqual(table('calendarContents'));
-  expect(accepted('submission')).toEqual(table('calendarSubmissions'));
+  expect(tables('calendarContents')).toEqual([accepted('content'), accepted('content')]);
+  expect(tables('calendarSubmissions')).toEqual([accepted('submission'), accepted('submission')]);
   expect(accepted('document')).toEqual(fields(documentSnapshot.fields));
   expect(accepted('institutionalEvent')).toEqual(
     fields({ code: v.string(), year: v.number(), ...institutionalEventV4.fields }),
   );
+  expect(tables('institutionalEvents')[1]).toEqual(accepted('institutionalEvent'));
 });
 
 describe('inventory of the frozen v4 documents', () => {

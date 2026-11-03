@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import { api } from '../../convex/_generated/api.js';
 import type { Doc, Id } from '../../convex/_generated/dataModel';
 import { contentHash } from '../../convex/calendars/lifecycle.ts';
+import type { currentFormat } from '../../convex/lib/storageFormat.ts';
 import { compareContents, type DiffSide } from '../../src/domain/calendar/diff.ts';
 import { convertContentV5 } from '../../src/domain/calendar/migration/convert-v5.ts';
 import {
@@ -57,7 +58,10 @@ async function stored(item: V4Case) {
   const converted = convertContentV5(item.content, {
     year: item.year,
     submissions: item.submissions,
-  })!.document as Pick<Doc<'calendarContents'>, 'state' | 'institutionalSnapshot'>;
+  })!.document as Pick<
+    ReturnType<typeof currentFormat<Doc<'calendarContents'>>>,
+    'state' | 'institutionalSnapshot'
+  >;
   const content = await fixture.client.run(async (ctx) => {
     const row = (await ctx.db
       .query('calendarContents')
