@@ -46,6 +46,9 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#message')).toContainText(
       'Mudanças da base institucional incorporadas',
     );
+    // Feedback on a finished action can be closed.
+    await page.locator('#message').getByRole('button', { name: 'Fechar aviso' }).click();
+    await expect(page.locator('#message')).toBeEmpty();
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(1);
     expect(
       await page.evaluate(() =>

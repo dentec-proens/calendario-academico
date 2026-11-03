@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import { AlertCircle, AlertTriangle, CheckCircle2, Info, type LucideIcon } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, X, type LucideIcon } from 'lucide-react';
 
 export type NoticeTone = 'info' | 'success' | 'warning' | 'danger';
 
@@ -35,6 +35,11 @@ type NoticeProps = Omit<
   elevated?: boolean;
   /** `section` with `aria-labelledby` makes the notice a named region. */
   as?: 'div' | 'section';
+  /**
+   * Shows a close button. Only for feedback on an action already done: a notice that asks for
+   * something, or explains why something is blocked, stays until its cause is resolved.
+   */
+  onDismiss?: () => void;
 };
 
 export function Notice({
@@ -47,6 +52,7 @@ export function Notice({
   announce,
   elevated = false,
   as: Root = 'div',
+  onDismiss,
   className,
   children,
   ...props
@@ -71,6 +77,16 @@ export function Notice({
         {children ? <div className="ui-notice__content">{children}</div> : null}
         {actions ? <div className="ui-notice__actions">{actions}</div> : null}
       </div>
+      {onDismiss ? (
+        <button
+          type="button"
+          className="ui-notice__dismiss"
+          aria-label="Fechar aviso"
+          onClick={onDismiss}
+        >
+          <X size={18} aria-hidden="true" />
+        </button>
+      ) : null}
     </Root>
   );
 }

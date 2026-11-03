@@ -86,7 +86,11 @@ export default function RootLayout() {
           {!editorPath && (
             <div id="message" role="status" aria-live="polite">
               {session.message?.text ? (
-                <Notice tone={session.message.error ? 'danger' : 'success'} elevated>
+                <Notice
+                  tone={session.message.error ? 'danger' : 'success'}
+                  elevated
+                  onDismiss={session.dismissMessage}
+                >
                   {session.message.text}
                 </Notice>
               ) : null}

@@ -44,6 +44,7 @@ export function mountApplication({
       arrivalPending,
       setArrivalPending,
       notify: (text, error = false) => setMessage({ text, error }),
+      dismissMessage: () => setMessage(null),
       logout: () => Promise.resolve(),
       maintenance: false,
     };

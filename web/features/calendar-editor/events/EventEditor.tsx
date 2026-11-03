@@ -437,7 +437,12 @@ export default function EventEditor() {
             </form.Field>
           )}
           {unmarkedReason && !values.internal && (
-            <Notice tone="warning" id="event-internal-unmarked" title="Data interna desmarcada">
+            <Notice
+              tone="warning"
+              id="event-internal-unmarked"
+              title="Data interna desmarcada"
+              onDismiss={() => setUnmarked(null)}
+            >
               {unmarkedReason} A data passa a constar do calendário oficial.
             </Notice>
           )}

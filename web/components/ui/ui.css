@@ -313,6 +313,27 @@ dialog.ui-panel-dialog--side {
   flex: 1;
   min-width: 0;
 }
+.ui-notice__dismiss {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin: -6px -8px -6px 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: var(--ui-notice-icon);
+  cursor: pointer;
+}
+.ui-notice__dismiss:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.ui-notice__dismiss:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 1px;
+}
 .ui-notice__title {
   display: block;
   margin: 0 0 var(--ui-space-1);

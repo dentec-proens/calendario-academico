@@ -44,7 +44,11 @@ export default function DocumentsPanel({
       canCreate={canManage}
       feedback={
         <div id="document-message" role="status" aria-live="polite">
-          {message ? <Notice tone="success">{message}</Notice> : null}
+          {message ? (
+            <Notice tone="success" onDismiss={() => setMessage('')}>
+              {message}
+            </Notice>
+          ) : null}
         </div>
       }
       form={<UploadDocumentForm onUploaded={onUploaded} onMessage={setMessage} />}

@@ -55,7 +55,7 @@ function EditorFrame() {
     formEpoch,
   } = useCalendarEditor();
   const { context, resume, open: eventEditorOpen } = useEventEditor();
-  const { message } = useSessionState();
+  const { message, dismissMessage } = useSessionState();
   const { permissions } = useAppSession();
   const exporting = useCalendarExport();
   const currentContent = useMemo<DiffSide>(
@@ -311,7 +311,7 @@ function EditorFrame() {
       <div className="editor-feedback" ref={feedback}>
         <div id="message" role="status" aria-live="polite">
           {message?.text ? (
-            <Notice tone={message.error ? 'danger' : 'success'} elevated>
+            <Notice tone={message.error ? 'danger' : 'success'} elevated onDismiss={dismissMessage}>
               {message.text}
             </Notice>
           ) : null}

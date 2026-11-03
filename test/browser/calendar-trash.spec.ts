@@ -46,6 +46,8 @@ for (const width of [1440, 390, 320]) {
     await restore.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#message')).toContainText('Calendário restaurado.');
+    await page.locator('#message').getByRole('button', { name: 'Fechar aviso' }).click();
+    await expect(page.locator('#message')).toBeEmpty();
     await expect(page.locator('#calendar-trash-list')).toHaveText('A lixeira está vazia.');
     await page.goBack();
     await expect(page.locator('#calendar-list')).toContainText('Calendário de teste');

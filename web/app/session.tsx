@@ -33,6 +33,8 @@ export interface SessionState {
   isAuthenticated: boolean;
   notify: Notify;
   message: { text: string; error: boolean } | null;
+  /** Clears the feedback of the last action, as its close button does. */
+  dismissMessage: () => void;
   /** A completed sign-in whose destination title has not taken focus yet. */
   arrivalPending: boolean;
   setArrivalPending: (pending: boolean) => void;
@@ -124,6 +126,7 @@ export function AppSessionProvider({ children }: PropsWithChildren) {
   const effectiveInfo = info ?? (recovering ? owner.info : consistentInfo);
   const effectiveStatus = status ?? (recovering ? owner.status : undefined);
   const notify = useCallback<Notify>((text, error = false) => setMessage({ text, error }), []);
+  const dismissMessage = useCallback(() => setMessage(null), []);
   async function logout() {
     if (loggingOut) return;
     setLoggingOut(true);
@@ -152,6 +155,7 @@ export function AppSessionProvider({ children }: PropsWithChildren) {
         isAuthenticated: auth.isAuthenticated,
         notify,
         message,
+        dismissMessage,
         arrivalPending,
         setArrivalPending,
         loggingOut,
