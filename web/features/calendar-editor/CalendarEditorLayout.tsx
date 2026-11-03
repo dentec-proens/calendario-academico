@@ -146,6 +146,20 @@ function EditorFrame() {
           : !record.courses
             ? missingCoursesIssue
             : undefined;
+  // Shared by the header and by the review step's footer, which repeats only the submission.
+  const lifecycle = {
+    calendar: record,
+    role,
+    notify,
+    submitSummary: returned ? diffSummary(sinceReturn) : undefined,
+    unavailable: submitUnavailable ? { submit: submitUnavailable } : undefined,
+    submitIssues: openIssues,
+    prepare: async () => {
+      if (session.getSnapshot().unapplied)
+        throw new Error('Aplique ou descarte os campos em edição antes de enviar.');
+      return (await session.flush()).version;
+    },
+  };
   const saveLabel = readOnly
     ? 'Somente leitura'
     : !connected
@@ -270,20 +284,7 @@ function EditorFrame() {
           </details>
         </div>
         {permissions.editCalendars ? (
-          <LifecycleActions
-            className="editor-lifecycle"
-            calendar={record}
-            role={role}
-            notify={notify}
-            submitSummary={returned ? diffSummary(sinceReturn) : undefined}
-            unavailable={submitUnavailable ? { submit: submitUnavailable } : undefined}
-            submitIssues={openIssues}
-            prepare={async () => {
-              if (session.getSnapshot().unapplied)
-                throw new Error('Aplique ou descarte os campos em edição antes de enviar.');
-              return (await session.flush()).version;
-            }}
-          />
+          <LifecycleActions className="editor-lifecycle" {...lifecycle} />
         ) : null}
       </div>
       {locked && permissions.editCalendars ? (
@@ -434,7 +435,8 @@ function EditorFrame() {
         <EditorSteps
           calendarId={record.id}
           current={currentSection}
-          issueCount={openIssues.length}
+          // Courses are a content issue too: the backend refuses the submission without them.
+          issueCount={openIssues.length + (record.courses ? 0 : 1)}
         />
         <div className="editor-section-content">
           <div className="editor-section-heading">
@@ -498,6 +500,24 @@ function EditorFrame() {
                 {continueLabel(next)}
                 <ArrowRight aria-hidden="true" />
               </Link>
+            ) : currentSection === 'issues' ? (
+              <div className="editor-footer-conclusion">
+                <Link
+                  className="editor-action secondary"
+                  to={editorPages.calendar.path}
+                  params={{ calendarId: record.id }}
+                  search={(previous) => previous}
+                >
+                  <Eye aria-hidden="true" /> Visualizar calendário
+                </Link>
+                {permissions.editCalendars ? (
+                  <LifecycleActions
+                    className="editor-footer-lifecycle"
+                    placement="footer"
+                    {...lifecycle}
+                  />
+                ) : null}
+              </div>
             ) : currentSection === 'calendar' ? (
               <Link
                 className="editor-action secondary"

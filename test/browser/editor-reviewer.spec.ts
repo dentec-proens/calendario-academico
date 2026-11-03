@@ -35,7 +35,7 @@ test('reviewer consults the complete calendar and live changes without editing o
   await page.locator('[data-view="issues"]').click();
   await expect(page.locator('#issue-list')).toBeVisible();
   await page
-    .locator('#issues')
+    .locator('.editor-footer-conclusion')
     .getByRole('link', { name: 'Visualizar calendário', exact: true })
     .click();
   await expect(page.locator('#months .proens-document')).toBeVisible();

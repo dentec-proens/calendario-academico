@@ -1,203 +1,327 @@
-import { diagnoseCalendar, diagnoseTeachingDays } from '#src/domain/calendar/diagnostics.ts';
+import { useMemo, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
-import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
-import { labelFor } from '#src/domain/calendar/offers.ts';
-import { Eye } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { diagnoseCalendar, diagnoseTeachingDays } from '#src/domain/calendar/diagnostics.ts';
+import {
+  contentAssessment,
+  type ContentIssue,
+  type ContentIssueGroup,
+} from '#src/domain/calendar/readiness.ts';
+import { labelFor, offerIds } from '#src/domain/calendar/offers.ts';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
 import { activityKey, isAssessmentStage } from '#src/domain/calendar/activities/activity-ref.ts';
-import ScopeForm from '../forms/ScopeForm.tsx';
 import { missingCoursesIssue } from '#src/domain/calendar/identity.ts';
+import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useIdentityPanel } from '../identity/CalendarIdentity.tsx';
+import ScopeForm from '../forms/ScopeForm.tsx';
+import { Notice } from '../../../components/ui/Notice.tsx';
+
+const groupTitles: Record<ContentIssueGroup, string> = {
+  structure: 'Estrutura do calendário',
+  activities: 'Atividades',
+  dates: 'Datas a conferir',
+  'teaching-days': 'Dias letivos',
+};
+const groupOrder: ContentIssueGroup[] = ['structure', 'activities', 'dates', 'teaching-days'];
+
+/** Checks the campus confirms by itself: they never become content issues. */
+const reminders = [
+  {
+    title: 'Feriados municipais e decisões locais',
+    detail: 'Confira se estão registrados, com as evidências e a legislação aplicável.',
+  },
+  {
+    title: 'Carga horária e apreciação institucional',
+    detail: 'A contagem de dias letivos não representa aprovação institucional.',
+  },
+];
+
+const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+
+type Row = ContentIssue & { identity?: true };
+
+/** One issue, as a compact row that leads to where it is resolved. */
+function IssueRow({
+  issue,
+  tone,
+  showOffer,
+}: {
+  issue: Row;
+  tone: 'pending' | 'info';
+  showOffer: boolean;
+}) {
+  const { state, record, readOnly } = useCalendarEditor();
+  const openIdentity = useIdentityPanel();
+  const body = (
+    <>
+      <span
+        className="activity-dot"
+        data-status="pending"
+        data-tone={tone === 'info' ? 'info' : undefined}
+        aria-hidden="true"
+      />
+      <span className="review-row-text">
+        <strong>{issue.title}</strong>
+        <span className="review-row-detail">
+          {showOffer && issue.offerId && (
+            <span className="review-row-offer">{labelFor(state, issue.offerId)}</span>
+          )}
+          {issue.detail}
+        </span>
+      </span>
+    </>
+  );
+  const chevron = <ChevronRight className="activity-row-chevron" aria-hidden="true" />;
+  const target = issue.target;
+  if (issue.identity)
+    return readOnly ? (
+      <div className="review-row">{body}</div>
+    ) : (
+      <button type="button" className="review-row" onClick={openIdentity}>
+        {body}
+        <span className="review-row-action">Informar cursos</span>
+        {chevron}
+      </button>
+    );
+  if (target?.area === 'scope')
+    return (
+      <button
+        type="button"
+        className="review-row"
+        onClick={() => {
+          const scope = document.getElementById('review-scope');
+          scope?.scrollIntoView({ block: 'start' });
+          scope
+            ?.querySelector<HTMLElement>('[role="radio"], button')
+            ?.focus({ preventScroll: true });
+        }}
+      >
+        {body}
+        {chevron}
+      </button>
+    );
+  const link = (to: string, search: Record<string, string | undefined> = {}, label?: string) => (
+    <Link
+      className="review-row"
+      to={to}
+      params={{ calendarId: record.id }}
+      search={(previous: Record<string, unknown>) => ({ ...previous, ...search })}
+      hashScrollIntoView={false}
+    >
+      {body}
+      {label && <span className="review-row-action">{label}</span>}
+      {chevron}
+    </Link>
+  );
+  if (target?.area === 'organization') return link('/calendarios/$calendarId/periodos');
+  if (target?.area === 'activity') {
+    const stage = isAssessmentStage(target.activity);
+    // A link to an activity opens the by-activity view, whatever the URL had.
+    return link(
+      stage ? '/calendarios/$calendarId/periodos' : '/calendarios/$calendarId/atividades',
+      { atividade: activityKey(target.activity), atividadeVisao: undefined },
+    );
+  }
+  if (target?.area === 'date')
+    return link('/calendarios/$calendarId/atividades', {
+      atividadeVisao: 'data',
+      atividadeBusca: target.name,
+    });
+  if (target?.area === 'observance')
+    return link('/calendarios/$calendarId/atividades', { atividadeOrigem: 'base' });
+  return <div className="review-row">{body}</div>;
+}
+
+function ReviewGroup({
+  id,
+  title,
+  count,
+  children,
+}: {
+  id: string;
+  title: string;
+  count: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <details className="review-group" id={id} open>
+      <summary>
+        <span className="review-group-title">{title}</span>
+        <span className="review-group-count">{count}</span>
+        <ChevronDown className="review-group-chevron" aria-hidden="true" />
+      </summary>
+      {children}
+    </details>
+  );
+}
 
 export default function IssuesSection() {
-  const { state, record, dirty, evaluation, readOnly } = useCalendarEditor();
-  const openIdentity = useIdentityPanel();
-  const issues: {
-    mark: string;
-    title: string;
-    detail: string;
-    /** Review link: the key of the activity's link and whether it is an assessment interval. */
-    activity?: { key: string; stage: boolean };
-    identity?: true;
-  }[] = [];
-  // The backend refuses the submission without courses.
-  if (!record.courses)
-    issues.push({
-      mark: 'Pendente',
-      title: 'Identificação',
-      detail: missingCoursesIssue,
-      identity: true,
-    });
-  const diagnostics = diagnoseCalendar(state);
-  for (const issue of diagnostics.structure) {
-    if (issue.code === 'week-unconfirmed')
-      issues.push({
-        mark: 'Pendente',
-        title: 'Semana letiva',
-        detail: 'Registre e confirme os dias regulares.',
-      });
-    else if (issue.code === 'periods-missing')
-      issues.push({
-        mark: 'Pendente',
-        title: 'Períodos letivos',
-        detail: 'Cadastre pelo menos um período com início e término.',
-      });
-    else if (issue.code === 'organization-unclassified' || issue.code === 'period-count')
-      issues.push({
-        mark: 'Pendente',
-        title: `Organização — ${labelFor(state, issue.offerId)}`,
-        detail:
-          issue.code === 'organization-unclassified'
-            ? 'Classifique a organização e a associação dos períodos na etapa 2.'
-            : `Cadastre ${issue.expected === 1 ? 'um período anual' : 'dois semestres identificados'} para esta oferta.`,
-      });
-  }
-  for (const row of diagnostics.plan.rows) {
-    if (row.applicability !== 'required' && row.applicability !== 'unconfigured') continue;
-    if (row.coverage !== 'complete' || row.warnings.length)
-      issues.push({
-        mark:
-          row.applicability === 'unconfigured'
-            ? 'Escopo a conferir'
-            : row.coverage === 'complete'
-              ? 'Conferir'
-              : 'Pendente',
-        title: `${labelFor(state, row.offerId)} — ${row.requirement.name}`,
-        detail:
-          [...row.issues, ...row.warnings].join(' ') ||
-          'Planejamento pendente de registro e datas.',
-        activity: {
-          key: activityKey(row.requirement.activity),
-          stage: isAssessmentStage(row.requirement.activity),
-        },
-      });
-  }
-  if (evaluation) {
-    for (const check of diagnoseTeachingDays(state, evaluation))
-      issues.push({
-        mark:
-          check.status === 'MET'
-            ? 'Atendido'
-            : check.status === 'NOT_MET'
-              ? 'Corrigir'
-              : 'Pendente',
-        title: `${labelFor(state, check.offerId)} — ${check.scope === 'annual' ? 'Total anual' : state.periods.find((period) => period.id === check.scope)?.name || check.scope}`,
-        detail:
-          check.expected === null
-            ? 'Não há mínimo normativo configurado para este escopo.'
-            : `${check.observed} de ${check.expected} dias mínimos.`,
-      });
-    for (const conflict of evaluation.conflicts)
-      issues.push({
-        mark: 'Conflito',
-        title: conflict.date,
-        detail:
-          'Há inclusão e exclusão na mesma data. O dia foi excluído da contagem até a resolução do conflito.',
-      });
-  }
-  for (const title of [
-    'Feriados municipais e decisões locais',
-    'Carga horária e apreciação institucional',
-  ])
-    issues.push({
-      mark: 'Pendente',
-      title,
-      detail:
-        'Confira as evidências e a legislação aplicável. A contagem não representa aprovação institucional.',
-    });
-  if (!dirty)
-    for (const issue of record.readiness.issues)
-      issues.push({ mark: 'Pendente', title: 'Pendência para validação', detail: issue });
-  if (!dirty)
-    for (const warning of record.readiness.warnings)
-      issues.push({
-        mark: 'Aviso',
-        title: 'Organização dos prazos — sem bloqueio',
-        detail: warning,
-      });
+  const { state, record, dirty, evaluation } = useCalendarEditor();
+  const assessment = useMemo(
+    () => contentAssessment({ state, institutionalSnapshot: record.institutionalSnapshot }),
+    [state, record.institutionalSnapshot],
+  );
+  const issues: Row[] = [
+    // The backend refuses the submission without courses.
+    ...(record.courses
+      ? []
+      : [
+          {
+            code: 'identity',
+            message: missingCoursesIssue,
+            group: 'structure',
+            title: 'Identificação',
+            detail: missingCoursesIssue,
+            identity: true,
+          } as const,
+        ]),
+    ...assessment.issues,
+  ];
+  const showOffer = state.offers.length > 1;
+  // What only the institutional review resolves, after the submission (saved state only).
+  const contentMessages = new Set(assessment.issues.map((issue) => issue.message));
+  const validation = dirty
+    ? []
+    : record.readiness.issues.filter((issue) => !contentMessages.has(issue));
+  const plan = useMemo(() => diagnoseCalendar(state).plan.rows, [state]);
+  const groups = groupOrder
+    .map((group) => ({ group, items: issues.filter((issue) => issue.group === group) }))
+    .filter(({ items }) => items.length);
   return (
-    <section id="issues" className="view">
-      <ScopeForm />
-      <div className="metrics editor-review-metrics">
-        <article>
-          <span>Dias letivos calculados</span>
-          <strong id="total">{evaluation?.total ?? '—'}</strong>
-          <small id="goal">
-            {evaluation
-              ? Object.entries(evaluation.byOffer)
-                  .map(([modality, detail]) => {
-                    const target = detail.checks.find(
-                      (check) => check.scope === 'annual',
-                    )?.expected;
-                    return `${labelFor(state, modality)}: ${target == null ? 'sem mínimo normativo confirmado para este escopo' : `mínimo anual de ${target} dias`}`;
-                  })
-                  .join(' · ')
-              : 'A contagem depende da organização e dos períodos por oferta.'}
-          </small>
-        </article>
-        <article>
-          <span>Períodos cadastrados</span>
-          <strong id="period-count">{state.periods.length}</strong>
-          <small id="period-summary">
-            {state.periods.length
-              ? state.periods.map((period) => period.name).join(' · ')
-              : 'Nenhum período definido'}
-          </small>
-        </article>
-      </div>
-      <div className="panel">
-        <h3>Conferência do calendário</h3>
-        <p>A saída definitiva depende das verificações e da revisão humana atualizada.</p>
+    <section id="issues" className="view review-step">
+      <Notice
+        id="review-summary"
+        tone={issues.length ? 'warning' : 'success'}
+        title={
+          issues.length
+            ? `${plural(issues.length, 'pendência', 'pendências')} de conteúdo`
+            : 'Nenhuma pendência de conteúdo'
+        }
+        titleAs="h3"
+      >
         <p>
-          Conjunto de regras: {rulesetVersion(state)}. Planejamento completo e execução comprovada
-          são conferências distintas. A passagem do tempo não transforma publicação programada em
-          realizada.
+          {issues.length
+            ? `${groups.map(({ group, items }) => `${items.length} em ${groupTitles[group].toLowerCase()}`).join(' · ')}. Você pode enviar para análise mesmo com pendências: elas são listadas na confirmação do envio.`
+            : 'O calendário pode ser enviado para análise. A revisão da DENTEC/PROENS acontece depois do envio.'}
         </p>
-        <ul id="issue-list" className="records">
-          {issues.map((issue, index) => (
-            <li key={`${issue.title}:${index}`} className="issue-item">
-              <span className="issue-mark">{issue.mark}</span>
-              <div>
-                <strong>{issue.title}</strong>
-                <small>{issue.detail}</small>
-                {issue.activity && (
-                  <Link
-                    to={
-                      issue.activity.stage
-                        ? '/calendarios/$calendarId/periodos'
-                        : '/calendarios/$calendarId/atividades'
-                    }
-                    params={{ calendarId: record.id }}
-                    // A link to an activity opens the by-activity view, whatever the URL had.
-                    search={(previous) => ({
-                      ...previous,
-                      atividade: issue.activity?.key,
-                      atividadeVisao: undefined,
-                    })}
-                    hashScrollIntoView={false}
-                  >
-                    Conferir esta atividade
-                  </Link>
-                )}
-                {issue.identity && !readOnly && (
-                  <button type="button" className="link-button" onClick={openIdentity}>
-                    Informar cursos
-                  </button>
-                )}
-              </div>
+      </Notice>
+      <ScopeForm />
+      <section className="review-section" aria-labelledby="review-progress-title">
+        <h3 id="review-progress-title" className="review-heading">
+          Progresso por oferta
+        </h3>
+        <ul id="review-progress" className="activity-summary review-progress">
+          {offerIds(state).map((offerId) => {
+            const required = plan.filter(
+              (row) =>
+                row.offerId === offerId &&
+                row.applicability === 'required' &&
+                !isAssessmentStage(row.requirement.activity),
+            );
+            const fulfilled = required.filter((row) => row.coverage === 'complete').length;
+            const annual = evaluation
+              ? diagnoseTeachingDays(state, evaluation).find(
+                  (check) => check.offerId === offerId && check.scope === 'annual',
+                )
+              : undefined;
+            return (
+              <li key={offerId} data-review-offer={offerId}>
+                <strong>{labelFor(state, offerId)}</strong>
+                <span>
+                  Atividades obrigatórias: {fulfilled} de {required.length} com planejamento
+                  completo.
+                </span>
+                <progress
+                  value={fulfilled}
+                  max={Math.max(required.length, 1)}
+                  aria-label={`Atividades de ${labelFor(state, offerId)}`}
+                />
+                <span>
+                  Dias letivos:{' '}
+                  {!annual
+                    ? 'a contagem depende da organização e dos períodos.'
+                    : annual.expected === null
+                      ? `${annual.observed}, sem mínimo normativo configurado.`
+                      : `${annual.observed} de ${annual.expected} mínimos no ano.`}
+                </span>
+                {annual?.expected ? (
+                  <progress
+                    value={Math.min(annual.observed, annual.expected)}
+                    max={annual.expected}
+                    aria-label={`Dias letivos de ${labelFor(state, offerId)}`}
+                  />
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+      <div id="issue-list" className="review-section">
+        {groups.map(({ group, items }) => (
+          <ReviewGroup
+            key={group}
+            id={`review-group-${group}`}
+            title={groupTitles[group]}
+            count={items.length}
+          >
+            <ul className="review-rows">
+              {items.map((issue) => (
+                <li key={issue.code} className="issue-item" data-issue={issue.code}>
+                  <IssueRow issue={issue} tone="pending" showOffer={showOffer} />
+                </li>
+              ))}
+            </ul>
+          </ReviewGroup>
+        ))}
+      </div>
+      {assessment.notes.length > 0 && (
+        <ReviewGroup
+          id="review-warnings"
+          title="Avisos sem bloqueio"
+          count={assessment.notes.length}
+        >
+          <ul className="review-rows">
+            {assessment.notes.map((note) => (
+              <li key={note.code} className="issue-item" data-warning={note.code}>
+                <IssueRow issue={note} tone="info" showOffer={showOffer} />
+              </li>
+            ))}
+          </ul>
+        </ReviewGroup>
+      )}
+      {validation.length > 0 && (
+        <details className="review-group" id="review-validation">
+          <summary>
+            <span className="review-group-title">Validação da DENTEC/PROENS</span>
+            <span className="review-group-count">{validation.length}</span>
+            <ChevronDown className="review-group-chevron" aria-hidden="true" />
+          </summary>
+          <p className="help">
+            Itens resolvidos pela revisão institucional depois do envio; não dependem do campus.
+          </p>
+          <ul className="review-validation">
+            {validation.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+      <section className="review-section" aria-labelledby="review-reminders-title">
+        <h3 id="review-reminders-title" className="review-heading">
+          Antes de enviar, confira
+        </h3>
+        <ul id="review-reminders" className="review-reminders">
+          {reminders.map((item) => (
+            <li key={item.title}>
+              <strong>{item.title}</strong>
+              <span>{item.detail}</span>
             </li>
           ))}
         </ul>
-        <div className="actions">
-          <Link
-            to="/calendarios/$calendarId/visualizar"
-            params={{ calendarId: record.id }}
-            className="editor-action secondary"
-          >
-            <Eye aria-hidden="true" /> Visualizar calendário
-          </Link>
-        </div>
-      </div>
+      </section>
+      <p className="help review-ruleset">
+        Regras: {rulesetVersion(state)} · <Link to="/regras">Ver regras do calendário</Link>
+      </p>
     </section>
   );
 }

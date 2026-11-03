@@ -12,7 +12,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     await expect(page.locator('.editor-step-number')).toHaveCount(6);
     await expect(page.locator('.autosave-panel')).toBeHidden();
-    await expect(page.locator('#total')).toHaveCount(0);
+    await expect(page.locator('#review-progress')).toHaveCount(0);
     await expect(page.locator('#editor-section-title')).toContainText('Semana letiva');
     await expect(page.locator('[aria-current="page"] .editor-step-title')).toHaveText(
       'Semana letiva',
@@ -81,10 +81,16 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#new-event')).toHaveText('Adicionar data do campus');
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para revisão e conclusão');
     await selectEditorSection(page, 'issues');
-    await expect(page.locator('#total')).toBeVisible();
+    await expect(page.locator('#review-progress')).toBeVisible();
     await expect(
-      page.locator('#issues').getByRole('link', { name: 'Visualizar calendário' }),
+      page
+        .locator('.editor-footer-conclusion')
+        .getByRole('link', { name: 'Visualizar calendário' }),
     ).toBeVisible();
+    // The review step ends in the submission, repeated in its footer.
+    await expect(page.locator('[data-lifecycle-footer-action="submit"]')).toHaveText(
+      'Enviar para análise',
+    );
     const submit = page.locator('[data-lifecycle-action="submit"]');
     await expect(submit).toHaveText('Enviar para análise');
     await submit.click();

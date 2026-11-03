@@ -98,6 +98,7 @@ export default function LifecycleActions({
   unavailable,
   submitIssues = [],
   className = '',
+  placement = 'header',
 }: {
   calendar: LifecycleCalendar;
   role: LifecycleRole;
@@ -113,10 +114,18 @@ export default function LifecycleActions({
   /** Content issues still open: submitting stays possible, after confirming them one by one. */
   submitIssues?: readonly string[];
   className?: string;
+  /** The footer of the review step repeats only the submission, as the step's conclusion. */
+  placement?: 'header' | 'footer';
 }) {
   const [form, setForm] = useState<'return' | 'publish' | null>(null);
   const [pending, setPending] = useState(false);
-  const actions = offered.filter((action) => canTransition(calendar.status, action, role));
+  const actions = offered.filter(
+    (action) =>
+      canTransition(calendar.status, action, role) &&
+      (placement === 'header' || action === 'submit'),
+  );
+  // The footer copy has its own ids, so the header keeps the attributes tests and links use.
+  const idPrefix = placement === 'footer' ? 'footer-' : '';
   // The administration may submit a partial replacement, confirmed explicitly as at publication.
   const preview = useQuery(
     functions.calendars.replacementPreview,
@@ -227,10 +236,11 @@ export default function LifecycleActions({
             <Button
               key={action}
               type="button"
-              data-lifecycle-action={action}
+              data-lifecycle-action={placement === 'header' ? action : undefined}
+              data-lifecycle-footer-action={placement === 'footer' ? action : undefined}
               variant={action === 'return' || action === 'withdraw' ? 'secondary' : 'primary'}
               disabled={pending || !!reason}
-              aria-describedby={reason ? `lifecycle-${action}-unavailable` : undefined}
+              aria-describedby={reason ? `${idPrefix}lifecycle-${action}-unavailable` : undefined}
               aria-expanded={
                 action === 'return' || action === 'publish' ? form === action : undefined
               }
@@ -243,7 +253,11 @@ export default function LifecycleActions({
       </div>
       {actions.map((action) =>
         unavailable?.[action] ? (
-          <p key={action} id={`lifecycle-${action}-unavailable`} className="lifecycle-unavailable">
+          <p
+            key={action}
+            id={`${idPrefix}lifecycle-${action}-unavailable`}
+            className="lifecycle-unavailable"
+          >
             {unavailable[action]}
           </p>
         ) : null,

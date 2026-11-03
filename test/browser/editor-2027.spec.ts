@@ -129,11 +129,8 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   await page.locator('#close-event-panel').click();
   await selectEditorSection(page, 'issues');
   await expect(page.locator('#issue-list')).toContainText(/prazo|Proens/);
-  await page
-    .getByRole('link', { name: 'Conferir esta atividade', exact: true })
-    .filter({ hasText: 'Conferir' })
-    .first()
-    .click();
+  // Each activity issue is a row that leads to the activity.
+  await page.locator('#review-group-activities a.review-row').first().click();
   await expect(page).toHaveURL(/atividade=/);
   const activity = new URL(page.url()).searchParams.get('atividade')!;
   await expect(page.locator(`[data-activity-detail="${activity}"]`)).toHaveAttribute('open', '');

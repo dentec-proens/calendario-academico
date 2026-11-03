@@ -51,7 +51,7 @@ test('missing courses block the submission and are filled from the review issues
   );
 
   await selectEditorSection(page, 'issues');
-  const issue = page.locator('#issue-list > li', { hasText: 'Identificação' });
+  const issue = page.locator('#issue-list [data-issue="identity"]');
   await expect(issue).toContainText('Informe os cursos do calendário na identificação.');
   await issue.getByRole('button', { name: 'Informar cursos' }).click();
   const panel = page.getByRole('dialog', { name: 'Identificação' });

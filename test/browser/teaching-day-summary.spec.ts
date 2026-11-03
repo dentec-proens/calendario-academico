@@ -61,7 +61,7 @@ for (const width of [1440, 390]) {
     await page.locator('#saturday-submit').click();
     await expect(summary.locator('.teaching-day-current strong')).toHaveText('46 dias');
     await selectEditorSection(page, 'issues');
-    await page.locator('#calendar-scope-integrado').selectOption('covered');
+    await page.locator('#calendar-scope-integrado [data-choice="covered"]').click();
 
     await page.locator('#scope-form-integrado button[type="submit"]').click();
     await expect(summary.locator('.teaching-day-current strong')).toHaveText('46 / 200');

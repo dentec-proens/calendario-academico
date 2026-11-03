@@ -171,7 +171,7 @@ for (const width of [1440, 390]) {
     expect((await savedState(page)).state).toEqual(saved.state);
 
     await selectEditorSection(page, 'issues');
-    await page.locator('#calendar-scope-graduacao-2').selectOption('own-regulation');
+    await page.locator('#calendar-scope-graduacao-2 [data-choice="own-regulation"]').click();
     await page.locator('#scope-form-graduacao-2 button[type="submit"]').click();
     const scoped = await savedState(page);
     expect(scoped.state.offers.find((offer) => offer.id === 'graduacao-2')?.scope).toEqual({

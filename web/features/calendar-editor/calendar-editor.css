@@ -1605,3 +1605,186 @@ fieldset.event-fields {
     display: none;
   }
 }
+/* Review step: a summary, the pending decisions, progress and the issues grouped by area. */
+.review-step {
+  display: grid;
+  gap: var(--ui-space-5);
+}
+.review-heading {
+  margin: 0 0 var(--ui-space-3);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.review-scope {
+  display: grid;
+  gap: var(--ui-space-3);
+}
+.scope-form {
+  margin-block-start: var(--ui-space-4);
+}
+.scope-form fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.scope-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-3);
+  margin-block-start: var(--ui-space-4);
+}
+.scope-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ui-space-1) var(--ui-space-3);
+  margin: 0;
+}
+.review-progress {
+  margin: 0;
+}
+.review-progress li {
+  gap: var(--ui-space-2);
+}
+.review-group {
+  margin: 0;
+}
+.review-group > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  padding-block: var(--ui-space-2);
+  border-bottom: 2px solid var(--line);
+  cursor: pointer;
+  list-style: none;
+}
+.review-group > summary::-webkit-details-marker {
+  display: none;
+}
+.review-group-title {
+  font-weight: 600;
+}
+.review-group > summary:hover .review-group-title {
+  color: var(--ui-action);
+}
+.review-group-count {
+  color: var(--ui-muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.review-group-chevron {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  color: var(--ui-muted);
+  transition: transform var(--ui-motion);
+}
+.review-group[open] .review-group-chevron {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .review-group-chevron {
+    transition: none;
+  }
+}
+#issue-list {
+  display: grid;
+  gap: var(--ui-space-5);
+}
+.review-rows,
+.review-reminders,
+.review-validation {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.review-rows > li {
+  border-bottom: 1px solid var(--line);
+}
+.review-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0.6rem 0.5rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-weight: 400;
+  text-align: left;
+  text-decoration: none;
+}
+@media (hover: hover) {
+  :is(a, button).review-row:hover {
+    background: var(--ui-surface-muted);
+  }
+}
+button.review-row:enabled:hover {
+  box-shadow: none;
+}
+.review-row-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.review-row-text strong {
+  font-weight: 600;
+}
+.review-row-detail {
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+.review-row-offer {
+  margin-inline-end: var(--ui-space-2);
+  color: var(--ui-text);
+  font-weight: 600;
+}
+.review-row-action {
+  flex: none;
+  color: var(--ui-action);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.review-validation {
+  display: grid;
+  gap: var(--ui-space-2);
+  padding-block: var(--ui-space-3) 0;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+.review-reminders {
+  display: grid;
+  gap: var(--ui-space-3);
+}
+.review-reminders li {
+  display: grid;
+  gap: 2px;
+  padding-inline-start: var(--ui-space-4);
+  border-inline-start: 3px solid var(--ui-border-soft);
+}
+.review-reminders span {
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+.review-ruleset {
+  margin: 0;
+}
+/* The review step ends in the submission, like the other steps end in “Continuar”. */
+.editor-footer-conclusion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: var(--ui-space-3);
+}
+.editor-footer-lifecycle .actions {
+  margin: 0;
+}

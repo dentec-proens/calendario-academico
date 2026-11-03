@@ -27,12 +27,10 @@ for (const width of [1440, 390]) {
       'Engenharia Elétrica',
       'Tecnologia em Análise de Sistemas',
     ]) {
-      await expect(page.locator('#goal')).toContainText(label);
+      await expect(page.locator('#review-progress')).toContainText(label);
+      // With several offers, each issue names its offer beside the detail.
       await expect(
-        page
-          .locator('#issue-list .issue-item strong')
-          .filter({ hasText: new RegExp(`^${label} —`) })
-          .first(),
+        page.locator('#issue-list .review-row-offer').filter({ hasText: label }).first(),
       ).toBeVisible();
     }
     await expect(page.locator('#issue-list')).not.toContainText('undefined');
@@ -51,7 +49,10 @@ for (const width of [1440, 390]) {
       record.version++;
       await window.publishReviewerCalendar();
     });
-    await expect(page.locator('#issue-list')).toContainText('Organização — Engenharia Elétrica');
+    // Without a classified organization the count stops, and its issue names what to fix.
+    await expect(page.locator('#issue-list [data-issue="count-unavailable"]')).toContainText(
+      'classifique a organização de Engenharia Elétrica',
+    );
     await expect(page.locator('#issue-list')).not.toContainText('undefined');
   });
 }

@@ -10,7 +10,7 @@ import {
 import { appliesTo } from './modalities.ts';
 import { calendarOffers, labelFor, stageInTerm } from './offers.ts';
 import { assessmentCount, stageActivity } from './activities/assessment.ts';
-import { sameActivity } from './activities/activity-ref.ts';
+import { sameActivity, type ActivityRef } from './activities/activity-ref.ts';
 import { assessmentCycleIssue } from './activities/assessment-intervals.ts';
 import { linkIssueActions, linkIssueLabels } from './activities/links.ts';
 import { noticeDestinationIssues } from './activities/validation.ts';
@@ -26,36 +26,72 @@ const plain = (value: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
-/** A content issue with a code that does not depend on its wording, for comparisons. */
+/** Where an issue is resolved; the editor turns it into a link. */
+export type ContentIssueTarget =
+  | { area: 'scope' | 'organization' | 'teaching-days' }
+  | { area: 'activity'; activity: ActivityRef }
+  | { area: 'date'; eventId: string; name: string }
+  | { area: 'observance'; key: string };
+
+/** The part of the calendar an issue belongs to, in the order the review step lists them. */
+export type ContentIssueGroup = 'structure' | 'activities' | 'dates' | 'teaching-days';
+
+/**
+ * A content issue with a code that does not depend on its wording, for comparisons. `message`
+ * is the full sentence kept in readiness and submissions; `title` and `detail` split it for the
+ * review step, which also uses `group`, `offerId` and `target`.
+ */
 export interface ContentIssue {
   code: string;
   message: string;
+  group: ContentIssueGroup;
+  title: string;
+  detail: string;
+  offerId?: string;
+  target?: ContentIssueTarget;
 }
+type IssueInfo = Omit<ContentIssue, 'code' | 'message'>;
 type ContentRecord = { institutionalSnapshot: InstitutionalEventSnapshot[]; state: ActivityState };
 
 /** Content checks only: no institutional-base or human-review issues. */
 export function contentAssessment(record: ContentRecord) {
   const issues: ContentIssue[] = [],
-    warnings: string[] = [];
-  const issue = (code: string, message: string) => issues.push({ code, message });
+    notes: ContentIssue[] = [];
+  const issue = (code: string, message: string, info: IssueInfo) =>
+    issues.push({ code, message, ...info });
+  // Warnings never block; they keep the same shape so the review step lists them alike.
+  const warn = (code: string, message: string, info: IssueInfo) =>
+    notes.push({ code, message, ...info });
   const policy = policyFor(record.state.year);
   const offers = calendarOffers(record.state);
   if (policy.scope) {
     const included = offers.filter((offer) => !policy.excludes(offer));
     const pending = included.filter((offer) => offer.scope?.status !== 'covered');
     if (pending.length) {
+      const scope = {
+        group: 'structure',
+        title: 'Norma aplicável',
+        detail: policy.scope.readinessIssue,
+        target: { area: 'scope' },
+      } as const;
       if (new Set(included.map((offer) => offer.scope?.status)).size === 1)
-        issue('scope', policy.scope.readinessIssue);
+        issue('scope', policy.scope.readinessIssue, scope);
       else
         for (const offer of pending)
           issue(
             `scope:${offer.id}`,
             `${labelFor(record.state, offer.id)} — ${policy.scope.readinessIssue}`,
+            { ...scope, offerId: offer.id },
           );
     }
   }
   for (const item of observanceIssues(record.institutionalSnapshot, record.state))
-    issue(`observance:${item.key}:${item.message}`, item.message);
+    issue(`observance:${item.key}:${item.message}`, item.message, {
+      group: 'dates',
+      title: 'Data da base institucional',
+      detail: item.message,
+      target: { area: 'observance', key: item.key },
+    });
   const events = projectDates(record.institutionalSnapshot, record.state.events);
   if (
     offers.some(
@@ -67,17 +103,35 @@ export function contentAssessment(record: ContentRecord) {
             : offer.organization === 'semestral' && [1, 2].includes(offer.stages.perTerm))),
     )
   )
-    issue('stages', 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).');
+    issue('stages', 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).', {
+      group: 'structure',
+      title: 'Etapas de avaliação',
+      detail: 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).',
+      target: { area: 'organization' },
+    });
   const diagnostics = diagnoseCalendar(record.state, events);
   const coverage = diagnostics.plan.rows;
   for (const row of coverage) {
     const prefix = `${labelFor(record.state, row.offerId)} — ${row.requirement.name}`;
     const code = `coverage:${row.offerId}:${row.requirement.id}`;
+    const activity = (detail: string) =>
+      ({
+        group: 'activities',
+        title: row.requirement.name,
+        detail,
+        offerId: row.offerId,
+        target: { area: 'activity', activity: row.requirement.activity },
+      }) as const;
     if (row.applicability === 'required' && row.coverage === 'pending')
-      issue(`${code}:pending`, `${prefix}: vincule um evento com datas no roteiro de atividades.`);
+      issue(
+        `${code}:pending`,
+        `${prefix}: vincule um evento com datas no roteiro de atividades.`,
+        activity('Sem datas registradas.'),
+      );
     if (row.applicability === 'required' || row.events.length)
-      for (const item of row.issues) issue(`${code}:${item}`, `${prefix}: ${item}`);
-    for (const warning of row.warnings) warnings.push(`${prefix}: ${warning}`);
+      for (const item of row.issues) issue(`${code}:${item}`, `${prefix}: ${item}`, activity(item));
+    for (const warning of row.warnings)
+      warn(`${code}:${warning}`, `${prefix}: ${warning}`, activity(warning));
   }
   for (const offer of offers) {
     for (let n = 1; n <= (assessmentCount(record.state, offer.id) || 0); n++) {
@@ -97,16 +151,34 @@ export function contentAssessment(record: ContentRecord) {
       const stage = position
         ? `${position.number}ª etapa — ${position.term}º semestre`
         : `${n}ª etapa`;
+      const stageInfo = (detail: string) =>
+        ({
+          group: 'structure',
+          title: `Etapas de avaliação — ${stage}`,
+          detail,
+          offerId: offer.id,
+          target: { area: 'organization' },
+        }) as const;
+      const stageWarning = (code: string, detail: string) =>
+        warn(
+          `${code}:${offer.id}:${n}`,
+          `${labelFor(record.state, offer.id)} — ${stage}: ${detail}`,
+          stageInfo(detail.charAt(0).toUpperCase() + detail.slice(1)),
+        );
       if (start && end && start.start > end.end)
-        issue(`stage-order:${offer.id}:${n}`, `${stage}: término anterior ao início.`);
+        issue(
+          `stage-order:${offer.id}:${n}`,
+          `${stage}: término anterior ao início.`,
+          stageInfo('Término anterior ao início.'),
+        );
       if (start && offer.stages?.status !== 'reported') {
         const cycleIssue = assessmentCycleIssue(record.state, start);
-        if (cycleIssue)
-          warnings.push(`${labelFor(record.state, offer.id)} — ${stage}: ${cycleIssue}`);
+        if (cycleIssue) stageWarning('stage-cycle', cycleIssue);
       }
       if (end && results && results.end < end.end)
-        warnings.push(
-          `${labelFor(record.state, offer.id)} — ${stage}: o prazo de lançamento de resultados antecede o término da etapa. Confira a organização definida pelo campus.`,
+        stageWarning(
+          'stage-results',
+          'o prazo de lançamento de resultados antecede o término da etapa. Confira a organização definida pelo campus.',
         );
       const councilRequired = coverage.some(
         (row) =>
@@ -115,13 +187,15 @@ export function contentAssessment(record: ContentRecord) {
           row.applicability === 'required',
       );
       if (councilRequired && results && council && council.start < results.end)
-        warnings.push(
-          `${labelFor(record.state, offer.id)} — ${stage}: o conselho antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.`,
+        stageWarning(
+          'stage-council',
+          'o conselho antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.',
         );
       const meeting = eventFor('pedagogical-meeting');
       if (results && meeting && meeting.start < results.end)
-        warnings.push(
-          `${labelFor(record.state, offer.id)} — ${stage}: a reunião pedagógica antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.`,
+        stageWarning(
+          'stage-meeting',
+          'a reunião pedagógica antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.',
         );
     }
   }
@@ -135,13 +209,27 @@ export function contentAssessment(record: ContentRecord) {
       issue(
         `link-review:${event.id}:${reason}`,
         `Vínculo a conferir — “${event.name}” (${event.start.split('-').reverse().join('/')}): ${linkIssueLabels[reason]}. ${linkIssueActions[reason]}`,
+        {
+          group: 'dates',
+          title: `Vínculo a conferir — ${event.name} (${event.start.split('-').reverse().join('/')})`,
+          detail: `${linkIssueLabels[reason]}. ${linkIssueActions[reason]}`,
+          target: { area: 'date', eventId: event.id, name: event.name },
+        },
       );
   }
   // A notice destination is diagnosed per offer and never corrected automatically.
   for (const event of record.state.events)
     for (const item of noticeDestinationIssues(record.state, event))
-      warnings.push(
+      warn(
+        `notice-destination:${event.id}:${item.offerId}`,
         `${labelFor(record.state, item.offerId)} — “${event.name}” (${event.start.split('-').reverse().join('/')}): ${item.message}. Revise o destino do edital.`,
+        {
+          group: 'dates',
+          title: `${event.name} (${event.start.split('-').reverse().join('/')})`,
+          detail: `${item.message.charAt(0).toUpperCase() + item.message.slice(1)}. Revise o destino do edital.`,
+          offerId: item.offerId,
+          target: { area: 'date', eventId: event.id, name: event.name },
+        },
       );
   const window = policy.window(record.state);
   if (window && policy.windowInReadiness)
@@ -154,10 +242,20 @@ export function contentAssessment(record: ContentRecord) {
           .map((p) => p.end)
           .sort()
           .at(-1);
-      if (start && end && (start < window.start || start > window.latestStart || end > window.end))
-        warnings.push(
-          `${labelFor(record.state, offer.id)} — Datas fora da referência ${window.start} a ${window.end}, início até ${window.latestStart}. Confira a justificativa e a deliberação institucional antes de concluir a revisão.`,
-        );
+      if (
+        start &&
+        end &&
+        (start < window.start || start > window.latestStart || end > window.end)
+      ) {
+        const detail = `Datas fora da referência ${window.start} a ${window.end}, início até ${window.latestStart}. Confira a justificativa e a deliberação institucional antes de concluir a revisão.`;
+        warn(`window:${offer.id}`, `${labelFor(record.state, offer.id)} — ${detail}`, {
+          group: 'structure',
+          title: 'Ano letivo',
+          detail,
+          offerId: offer.id,
+          target: { area: 'organization' },
+        });
+      }
     }
   // Campus event requirements come from the same checklist displayed in the editor.
   // Do not add hidden, duplicate keyword requirements when generating the calendar.
@@ -169,18 +267,37 @@ export function contentAssessment(record: ContentRecord) {
       projectDates(record.institutionalSnapshot, record.state.events),
     );
     for (const item of diagnostics.structure) {
+      const organization = { group: 'structure', target: { area: 'organization' } } as const;
       if (item.code === 'periods-missing')
-        issue('periods-missing', 'Cadastre os períodos letivos.');
+        issue('periods-missing', 'Cadastre os períodos letivos.', {
+          ...organization,
+          title: 'Períodos letivos',
+          detail: 'Cadastre os períodos letivos.',
+        });
       else if (item.code === 'organization-unclassified')
         issue(
           `organization-unclassified:${item.offerId}`,
           `${labelFor(record.state, item.offerId)} — Organização a conferir antes de confirmar contagem e conclusão.`,
+          {
+            ...organization,
+            title: 'Organização',
+            detail: 'Organização a conferir antes de confirmar contagem e conclusão.',
+            offerId: item.offerId,
+          },
         );
-      else if (item.code === 'period-count')
+      else if (item.code === 'period-count') {
+        const detail = `Cadastre ${item.expected === 1 ? 'o ciclo anual' : 'os dois semestres letivos'}.`;
         issue(
           `period-count:${item.offerId}`,
-          `${labelFor(record.state, item.offerId)} — Cadastre ${item.expected === 1 ? 'o ciclo anual' : 'os dois semestres letivos'}.`,
+          `${labelFor(record.state, item.offerId)} — ${detail}`,
+          {
+            ...organization,
+            title: 'Períodos letivos',
+            detail,
+            offerId: item.offerId,
+          },
         );
+      }
     }
     for (const check of diagnoseTeachingDays(record.state, result))
       if (check.status !== 'MET') {
@@ -195,17 +312,57 @@ export function contentAssessment(record: ContentRecord) {
         issue(
           `teaching-days:${check.offerId}:${scope}`,
           `${labelFor(record.state, check.offerId)} — ${check.scope === 'annual' ? 'Total anual' : period?.name}: mínimo de dias não atendido ou não configurado.`,
+          {
+            group: 'teaching-days',
+            title: check.scope === 'annual' ? 'Total anual' : (period?.name ?? 'Período'),
+            detail:
+              check.expected === null
+                ? 'Não há mínimo de dias configurado para este escopo.'
+                : `${check.observed} de ${check.expected} dias letivos mínimos.`,
+            offerId: check.offerId,
+            target: { area: 'teaching-days' },
+          },
         );
       }
-    if (Object.values(result.byOffer).some((r) => r.conflicts.length))
-      issue('conflicts', 'Resolva os conflitos entre dias letivos e exclusões.');
+    const conflicts = [
+      ...new Set(Object.values(result.byOffer).flatMap((r) => r.conflicts.map((c) => c.date))),
+    ].sort();
+    if (conflicts.length)
+      issue('conflicts', 'Resolva os conflitos entre dias letivos e exclusões.', {
+        group: 'teaching-days',
+        title: 'Conflitos na contagem',
+        detail: `Há inclusão e exclusão em ${conflicts.map((date) => date.split('-').reverse().join('/')).join(', ')}. Esses dias ficam fora da contagem até a resolução.`,
+        target: { area: 'teaching-days' },
+      });
   } catch {
     issue(
       'count-unavailable',
       'Complete e confira a semana letiva, os períodos e os dados da contagem.',
+      {
+        group: 'structure',
+        title: 'Contagem de dias',
+        // The structure issues are not reported when the count fails; the detail names them.
+        detail: diagnostics.structure.length
+          ? `Contagem indisponível: ${diagnostics.structure
+              .map((item) =>
+                item.code === 'week-unconfirmed'
+                  ? 'confirme a semana letiva'
+                  : item.code === 'periods-missing'
+                    ? 'cadastre os períodos letivos'
+                    : item.code === 'organization-unclassified'
+                      ? `classifique a organização de ${labelFor(record.state, item.offerId)}`
+                      : item.code === 'period-count'
+                        ? `cadastre os períodos de ${labelFor(record.state, item.offerId)}`
+                        : '',
+              )
+              .join('; ')}.`
+          : 'Complete e confira a semana letiva, os períodos e os dados da contagem.',
+        target: { area: 'organization' },
+      },
     );
   }
-  return { issues, warnings, events, baseIssueAt };
+  const warnings = notes.map((note) => note.message);
+  return { issues, warnings, notes, events, baseIssueAt };
 }
 
 export function contentIssues(
