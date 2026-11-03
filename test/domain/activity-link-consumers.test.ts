@@ -223,7 +223,7 @@ describe('dates under “Vínculo a conferir”', () => {
         { catalogue: { revision: 1 }, reviews: [] },
       );
       expect(
-        readiness.warnings.filter((warning) => warning.startsWith('Vínculo a conferir')),
+        readiness.issues.filter((issue) => issue.startsWith('Vínculo a conferir')),
       ).toHaveLength(state.events.filter((event) => event.activity).length);
     }
   });

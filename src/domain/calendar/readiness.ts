@@ -125,12 +125,14 @@ export function contentAssessment(record: ContentRecord) {
     }
   }
 
-  // Until the link can be corrected in the editor, dates to review warn without blocking.
+  // A date under “Vínculo a conferir” blocks the conclusion until its link is corrected
+  // (**Corrigir atividade vinculada**), the organization generates its activity or it is removed.
   const review = diagnostics.plan.links.issues;
   for (const event of record.state.events) {
     const reason = review.get(event.id);
     if (reason)
-      warnings.push(
+      issue(
+        `link-review:${event.id}:${reason}`,
         `Vínculo a conferir — “${event.name}” (${event.start.split('-').reverse().join('/')}): ${linkIssueLabels[reason]}. ${linkIssueActions[reason]}`,
       );
   }

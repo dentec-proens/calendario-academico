@@ -3,6 +3,7 @@ import {
   calendarSchemaVersion,
   type CalendarEvent,
   type CalendarOffer,
+  type CalendarPeriod,
   type CalendarContent,
 } from '../model.ts';
 import { readCalendarOfferInput } from './input-v4.ts';
@@ -86,7 +87,12 @@ export function validateOffers(offers: CalendarOffer[]): CalendarOffer[] {
  */
 export function normalizeOfferCalendar(
   input: unknown,
-  previous?: { offers: readonly CalendarOffer[]; events: readonly CalendarEvent[] },
+  previous?: {
+    year: number;
+    offers: readonly CalendarOffer[];
+    periods: readonly CalendarPeriod[];
+    events: readonly CalendarEvent[];
+  },
 ): CalendarContent & { year: number; campus: string } {
   const s = readCalendarOfferInput(input);
   if (
@@ -207,7 +213,15 @@ export function normalizeOfferCalendar(
       fail('Categoria PROENS inválida.');
     event.category = eventCategory(event);
   }
-  validateLinks(previous && { offers: [...previous.offers], events: previous.events }, s);
+  validateLinks(
+    previous && {
+      year: previous.year,
+      offers: [...previous.offers],
+      periods: [...previous.periods],
+      events: previous.events,
+    },
+    s,
+  );
   return {
     ...s,
     schemaVersion: calendarSchemaVersion,

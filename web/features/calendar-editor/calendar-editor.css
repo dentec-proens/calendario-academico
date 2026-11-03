@@ -1014,6 +1014,33 @@ fieldset.event-fields {
   line-height: 1.6;
 }
 
+.activity-change {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1.25rem;
+  min-width: 0;
+}
+
+.activity-change h3,
+.activity-change h4 {
+  margin: 0;
+}
+
+.activity-change-preview dl {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0;
+}
+
+.activity-change-preview dt {
+  font-weight: 600;
+}
+
+.activity-change-preview dd {
+  margin: 0 0 0.5rem;
+  overflow-wrap: anywhere;
+}
+
 .offer-organization {
   min-width: 0;
   margin-block: 16px;

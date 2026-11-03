@@ -1136,3 +1136,32 @@ export function mergeInventories(inventories: readonly Inventory[]): Inventory {
   }
   return total;
 }
+
+/** A calendar with the status of `calendars` and the inventory of its current content. */
+export interface CalendarInventory {
+  calendarId: string;
+  status: string;
+  inventory: Inventory;
+}
+
+/**
+ * Calendars `revisado` or `vigente` whose current content has dates under “Vínculo a conferir”
+ * (forms `event.linkReview:*` of the content, not of its submissions), with how many. Since phase
+ * 2, step 13, such a date blocks the conclusion: a reviewed calendar keeps its status, but its
+ * publication is refused until a return and the correction of the link; a published one is not
+ * changed. Counted in the production inventory for the decision of the person responsible.
+ */
+export function reviewedCalendarsWithLinksToReview(calendars: readonly CalendarInventory[]) {
+  const counted: Record<'revisado' | 'vigente', { calendarId: string; dates: number }[]> = {
+    revisado: [],
+    vigente: [],
+  };
+  for (const { calendarId, status, inventory } of calendars) {
+    if (status !== 'revisado' && status !== 'vigente') continue;
+    const dates = inventory.occurrences.filter(
+      (item) => item.path.startsWith('content.') && item.form.startsWith('event.linkReview:'),
+    ).length;
+    if (dates) counted[status].push({ calendarId, dates });
+  }
+  return counted;
+}

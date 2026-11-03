@@ -122,7 +122,7 @@ export const linkIssueLabels: Record<LinkIssue, string> = {
 
 export const linkIssueActions: Record<LinkIssue, string> = {
   unclassified:
-    'A atividade gravada não existe na organização atual da oferta. Ajuste a organização ou exclua a data.',
+    'A atividade gravada não existe na organização atual da oferta. Corrija a atividade vinculada, ajuste a organização ou exclua a data.',
   'duplicate-stage': 'Há outra data para a mesma etapa. Exclua uma delas.',
   'stage-sequence':
     'A etapa se sobrepõe a outra etapa do mesmo ciclo ou ocorre antes dela. Ajuste início e término.',
@@ -195,6 +195,56 @@ export function coversDate(
   );
 }
 
+/**
+ * The generated row reaches every offer of the date: a stage row only its own offer, a cycle row
+ * each offer organised in that cycle. Correcting the linked activity keeps the date's scope, so
+ * the new activity must cover all of it (plan, section 4.6; the split by offer is phase 3).
+ */
+export function coversAllOffers(
+  state: Pick<LinkState, 'offers'>,
+  activity: ActivityPlanItem,
+  event: { scope: { offers: readonly string[] } },
+) {
+  const offers = event.scope.offers;
+  if (activity.offerId) return offers.length === 1 && offers[0] === activity.offerId;
+  return (
+    offers.length > 0 &&
+    offers.every((id) =>
+      activity.offerIds ? activity.offerIds.includes(id) : Boolean(offerFor(state, id)),
+    )
+  );
+}
+
+/**
+ * The date only had its linked activity corrected (`changeActivity`): it was under “Vínculo a
+ * conferir” (`toReview`, by date ID, in the previous state), it keeps every other field, and the
+ * new link names a generated activity that covers all the offers of the date. Removing a link is
+ * never a correction, and a link that counts is never swapped: a defined stage position is not
+ * reinterpreted (section 5.1).
+ */
+export function linkCorrected(
+  state: Pick<LinkState, 'offers'>,
+  generated: ReadonlyMap<string, ActivityPlanItem>,
+  toReview: ReadonlyMap<string, LinkIssue>,
+  previous: CalendarEvent | undefined,
+  next: CalendarEvent,
+) {
+  if (
+    !previous?.activity ||
+    !toReview.has(previous.id) ||
+    !next.activity ||
+    sameActivity(previous.activity, next.activity)
+  )
+    return false;
+  const activity = generatedActivity(generated, next.activity);
+  if (!activity || !coversAllOffers(state, activity, next)) return false;
+  const { activity: _previous, ...before } = previous;
+  const { activity: _next, ...after } = next;
+  // Compared as persisted: a field read as undefined at the save boundary is an absent field.
+  const stored = (value: object) => JSON.parse(JSON.stringify(value)) as unknown;
+  return equalValues(stored(before), stored(after));
+}
+
 function cyclePeriods(
   state: Pick<LinkState, 'offers' | 'periods'>,
   offerId: string,
@@ -248,24 +298,30 @@ const describe = (event: CalendarEvent) =>
  * 2. an edited date (start, end, offers or link) passes every interval and association check, and
  *    any conflict with another date, even an unchanged one, refuses the change;
  * 3. an unchanged date is never refused for a conflict: it is reported by `linksToReview`.
- * A recorded date never loses, swaps or gains a link by these paths; only removing the date does.
+ * A recorded date never loses or gains a link by these paths, and swaps it only by a correction of
+ * the linked activity (`linkCorrected`): the new activity is generated, covers every offer of the
+ * date and nothing else changed; the corrected date then passes the checks of an edited date.
  * These are the contracts of the date commands (`planActivityDate`, `createCampusDate`,
- * `updateDate`) at the save boundary, which receives the whole state and not the command.
+ * `updateDate`, `changeActivity`) at the save boundary, which receives the whole state and not the
+ * command.
  */
 export function validateLinks(
-  previous: (OfferState & { events: readonly CalendarEvent[] }) | undefined,
+  previous: (Omit<LinkState, 'events'> & { events: readonly CalendarEvent[] }) | undefined,
   next: LinkState,
 ) {
   const before = new Map(previous?.events.map((event) => [event.id, event]));
   const states = previous && { before: previous, after: next };
   const requirements = generatedActivities(next);
+  const toReview = previous ? linksToReview(previous) : new Map<string, LinkIssue>();
+  const corrected = (event: CalendarEvent) =>
+    linkCorrected(next, requirements, toReview, before.get(event.id), event);
   const changed = next.events.filter((event) => {
     const old = before.get(event.id);
-    return old?.activity !== undefined && !linkKept(old, event, states);
+    return old?.activity !== undefined && !linkKept(old, event, states) && !corrected(event);
   });
   if (changed.length)
     throw new DomainError(
-      `Uma data salva não perde nem troca a atividade vinculada: ${changed.map(describe).join('; ')}.`,
+      `Uma data salva não perde nem troca a atividade vinculada, exceto pela correção do vínculo, sem outra alteração da data e para atividade gerada que abranja todas as suas ofertas: ${changed.map(describe).join('; ')}.`,
     );
   // `updateDate` keeps the link of a saved date: a date of the campus never gains one.
   const gained = next.events.filter((event) => {
@@ -282,6 +338,8 @@ export function validateLinks(
     return (
       old !== undefined &&
       !sameActivity(old, event.activity) &&
+      // Two dates of one activity are normal; a stage position is held by one date only.
+      (!corrected(event) || isStageActivity(event.activity)) &&
       next.events.some(
         (other) => other.id !== event.id && sameActivity(other.activity, event.activity),
       )
@@ -289,7 +347,7 @@ export function validateLinks(
   });
   if (ambiguous.length)
     throw new DomainError(
-      `Uma etapa só passa à posição da nova organização quando nenhuma outra data a ocupa: ${ambiguous.map(describe).join('; ')}.`,
+      `Uma etapa só passa a uma posição, na nova organização ou pela correção do vínculo, quando nenhuma outra data a ocupa: ${ambiguous.map(describe).join('; ')}.`,
     );
   const unknown = next.events.filter(
     (event) =>

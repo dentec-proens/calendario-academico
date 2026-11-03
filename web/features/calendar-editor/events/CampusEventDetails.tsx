@@ -1,4 +1,5 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Link2, Pencil, Trash2 } from 'lucide-react';
 import { removeEvent } from '#src/domain/calendar/commands/events.ts';
 import {
   generatedActivities,
@@ -15,10 +16,12 @@ import { useEventEditor } from './EventEditorProvider.tsx';
 import EventRecordDetails from './EventRecordDetails.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { Button } from '../../../components/ui/Button.tsx';
+import ActivityChangeForm from './ActivityChangeForm.tsx';
 
 /**
- * Details of one date, with its editing actions; the linked activity is read-only. Dates of the
- * institutional base are only consulted here.
+ * Details of one date, with its editing actions; the linked activity is read-only and changes only
+ * by **Corrigir atividade vinculada**, offered while the date is under “Vínculo a conferir”. Dates
+ * of the institutional base are only consulted here.
  */
 export default function CampusEventDetails({ event }: { event: EditorEvent }) {
   const { state, institutional, applyCommand, readOnly } = useCalendarEditor();
@@ -28,6 +31,9 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
     ? (generatedActivity(generatedActivities(state), event.activity)?.name ??
       activityKey(event.activity))
     : undefined;
+  const [changing, setChanging] = useState(false);
+  const changeButton = useRef<HTMLButtonElement>(null);
+  const editButton = useRef<HTMLButtonElement>(null);
   return (
     <section className="campus-event-details" aria-label="Detalhes da data">
       <div className="campus-event-record">
@@ -45,12 +51,36 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
           </p>
         </Notice>
       )}
+      {issue && changing && (
+        <ActivityChangeForm
+          eventId={event.id}
+          onClose={(applied) => {
+            setChanging(false);
+            // The corrected date leaves the review group and its button: focus the next action.
+            requestAnimationFrame(() =>
+              (applied ? editButton : changeButton).current?.focus({ preventScroll: false }),
+            );
+          }}
+        />
+      )}
       {event.institutional ? (
         <p className="help">Data da base institucional, somente para consulta.</p>
       ) : (
         <FormActions>
+          {issue && !changing && (
+            <Button
+              type="button"
+              ref={changeButton}
+              data-change-activity={event.id}
+              disabled={readOnly || editor.pending}
+              onClick={() => setChanging(true)}
+            >
+              <Link2 size={18} aria-hidden="true" /> Corrigir atividade vinculada
+            </Button>
+          )}
           <Button
             type="button"
+            ref={editButton}
             data-edit-event={event.id}
             disabled={readOnly || editor.pending}
             onClick={() => editor.edit(event.id)}

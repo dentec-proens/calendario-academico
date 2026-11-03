@@ -150,7 +150,8 @@ export function evaluatePlan(
           warnings: string[] = [];
         const valid = linked.filter((event) => {
           const reason = links.issues.get(event.id);
-          // Until the link can be corrected in the editor, review reasons warn without blocking.
+          // The date blocks the conclusion once, by its own readiness issue (`readiness.ts`); the
+          // row only warns, so the same date is not counted again for each of its offers.
           if (reason) {
             warnings.push(`${linkIssueLabels[reason]}: ${linkIssueActions[reason]}`);
             return false;

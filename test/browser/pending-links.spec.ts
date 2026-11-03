@@ -4,7 +4,11 @@ import {
   type ActivityRef,
 } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { savedState, selectEditorSection } from './editor-navigation.ts';
-import { ivaiporaDraft, stagePositionsToConfirm } from '../fixtures/pending-links-2027.ts';
+import {
+  ivaiporaAnnual,
+  ivaiporaDraft,
+  stagePositionsToConfirm,
+} from '../fixtures/pending-links-2027.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 const linked = (events: { id: string; activity?: unknown }[]) =>
@@ -143,5 +147,88 @@ for (const width of [1440, 390]) {
       'stage-two-b': linked(fixture.events)['stage-two-b'],
       'stage-four': linked(fixture.events)['stage-four'],
     });
+  });
+}
+
+for (const width of [1440, 390]) {
+  test(`one of the 21 audited dates has its linked activity corrected by keyboard at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(await fixtureServer('editor'));
+    await expect(page.locator('#record-title')).toBeVisible();
+    const fixture = ivaiporaAnnual();
+    await page.evaluate(async (state) => {
+      const { record } = window.editorTest;
+      record.offerKinds = ['integrado', 'subsequente'];
+      Object.assign(record.state, state);
+      record.version++;
+      await window.publishReviewerCalendar();
+    }, fixture);
+    await selectEditorSection(page, 'events');
+    const review = page.locator('#link-review');
+    await expect(review.locator('h4')).toHaveText('Vínculo a conferir (11)');
+    const id = 'ivaipora-final-1';
+    const original = fixture.events.find((event) => event.id === id)!;
+    await review.locator(`[data-open-event="${id}"]`).click();
+    await expect(page.locator('#link-review-reason')).toContainText('Classificação pendente');
+
+    // Opening and cancelling by keyboard returns the focus to the action.
+    const action = page.locator(`[data-change-activity="${id}"]`);
+    await action.focus();
+    await page.keyboard.press('Enter');
+    const select = page.locator('#activity-change-select');
+    await expect(select).toBeFocused();
+    await expect(page.locator('#activity-change-confirm')).toBeDisabled();
+    await page.locator('#activity-change-cancel').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#activity-change-form')).toHaveCount(0);
+    await expect(action).toBeFocused();
+
+    // The preview keeps the date and shows both links before anything is applied.
+    await page.keyboard.press('Enter');
+    await expect(select).toBeFocused();
+    // The activity of the same declaration comes first.
+    await expect(select.locator('option').nth(1)).toHaveText(/resultado final.*ano letivo/i);
+    await select.selectOption({ index: 1 });
+    const preview = page.locator('#activity-change-preview');
+    await expect(preview).toContainText('Data sintética final-1 · 22/06/2027 a 22/06/2027');
+    await expect(preview).toContainText('(sem alteração)');
+    await expect(preview).toContainText('final:cycle:first — Classificação pendente');
+    await expect(preview).toContainText('A data deixa Vínculo a conferir');
+    // Nothing is applied before the confirmation.
+    const before = await page.evaluate(() => ({
+      state: window.editorTest.record.state,
+      saves: window.editorTest.calls.saves,
+    }));
+    expect(before.state.events.find((event) => event.id === id)?.activity).toEqual(
+      original.activity,
+    );
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#activity-change-confirm')).toBeFocused();
+    await page.keyboard.press('Enter');
+
+    const saved = await savedState(page);
+    expect(saved.saves).toBeGreaterThan(before.saves);
+    expect(saved.state.events.find((event) => event.id === id)).toEqual({
+      ...original,
+      activity: { activityId: 'final', term: 'annual' },
+    });
+    expect(linked(saved.state.events)).toEqual({
+      ...linked(fixture.events),
+      [id]: 'final:cycle:annual',
+    });
+    await expect(page.locator('#link-review-reason')).toHaveCount(0);
+    await expect(page.locator(`[data-edit-event="${id}"]`)).toBeFocused();
+    await expect(page.locator('#event-panel')).toContainText(
+      'Atividade vinculada: Prazo de lançamento do resultado final',
+    );
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.locator('#close-event-panel').click();
+    await expect(review.locator('h4')).toHaveText('Vínculo a conferir (10)');
+    await expect(review.locator(`[data-date-row="${id}"]`)).toHaveCount(0);
   });
 }

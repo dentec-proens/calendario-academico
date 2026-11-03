@@ -8,6 +8,10 @@ import type {
 import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
 import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
 import {
+  applyOfferOrganization,
+  offerOrganizationDraft,
+} from '../../src/domain/calendar/organization/offers.ts';
+import {
   cycleLink,
   definedStage,
   semesterLink,
@@ -439,4 +443,25 @@ export function stagePositionsToConfirm(): PendingLinksFixture {
       ),
     ],
   };
+}
+
+/**
+ * Ivaiporã draft after the campus confirmed both offers as annual, with two stages: the 11 semester
+ * links stay under “Vínculo a conferir” (`Classificação pendente`), and the annual cycle of their
+ * activities is now generated for both offers, so each date can have its link corrected
+ * (`changeActivity`, plan section 4.6).
+ */
+export function ivaiporaAnnual(): PendingLinksFixture {
+  let state = ivaiporaDraft();
+  let sequence = 0;
+  for (const offerId of ['integrado', 'subsequente']) {
+    const draft = offerOrganizationDraft(state, offerId);
+    draft.organization = 'anual';
+    draft.count = '2';
+    draft.periods[0] = { sourceId: '', name: 'Ano letivo', start: day('01/02'), end: day('17/12') };
+    draft.stages[0] = { id: '', start: day('01/02'), end: day('30/06') };
+    draft.stages[1] = { id: '', start: day('26/07'), end: day('17/12') };
+    state = applyOfferOrganization(state, offerId, draft, () => `ivaipora-annual-${++sequence}`);
+  }
+  return state;
 }

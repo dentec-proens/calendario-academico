@@ -129,7 +129,7 @@ export default function EventPanel() {
           </p>
         </Notice>
       )}
-      {campusEvent && <CampusEventDetails event={campusEvent} />}
+      {campusEvent && <CampusEventDetails key={campusEvent.id} event={campusEvent} />}
       {observanceKey && (
         <ObservanceForm key={observanceKey} observanceKey={observanceKey} onClose={editor.close} />
       )}

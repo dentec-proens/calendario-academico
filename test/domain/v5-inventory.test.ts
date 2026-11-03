@@ -25,6 +25,7 @@ import {
   inventoryContent,
   inventorySubmission,
   mergeInventories,
+  reviewedCalendarsWithLinksToReview,
   UnknownShapeError,
   v4Declarations,
   v4StorageFields,
@@ -346,6 +347,35 @@ describe('inventory of the frozen v4 documents', () => {
     expect(inventory.materialized).toEqual([]);
     expect(inventory.forms['event.offers:absent']).toBe(1);
   });
+});
+
+test('reviewed and published calendars with dates under “Vínculo a conferir” are counted (step 13)', () => {
+  const ivaipora = byName('Rascunho Ivaiporã (seção 11)');
+  const cascavel = byName('Rascunho Cascavel (seção 11)');
+  const conflicts = byName('Vínculos em conflito (fase 1)');
+  const counted = reviewedCalendarsWithLinksToReview([
+    { calendarId: 'ivaipora', status: 'revisado', inventory: contentInventory(ivaipora) },
+    { calendarId: 'cascavel', status: 'vigente', inventory: contentInventory(cascavel) },
+    { calendarId: 'conflicts', status: 'rascunho', inventory: contentInventory(conflicts) },
+  ]);
+  expect(counted).toEqual({
+    revisado: [{ calendarId: 'ivaipora', dates: 11 }],
+    vigente: [{ calendarId: 'cascavel', dates: 10 }],
+  });
+  // Dates of a submission copy are not the current content.
+  const ivaiporaSubmissions = ivaipora.submissions.map((submission) =>
+    inventorySubmission(submission, { year: ivaipora.year, linksToReview: reviewed(ivaipora) }),
+  );
+  expect(ivaiporaSubmissions[0].forms['event.linkReview:unclassified']).toBe(11);
+  expect(
+    reviewedCalendarsWithLinksToReview(
+      ivaiporaSubmissions.map((inventory) => ({
+        calendarId: 'copy',
+        status: 'revisado',
+        inventory,
+      })),
+    ),
+  ).toEqual({ revisado: [], vigente: [] });
 });
 
 describe('a shape outside the inventory stops it', () => {

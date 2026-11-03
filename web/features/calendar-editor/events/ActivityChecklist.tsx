@@ -253,7 +253,9 @@ export default function ActivityChecklist() {
                 <h4 id="group-review">Vínculo a conferir ({list.review.length})</h4>
                 <p className="help">
                   Datas cujo vínculo gravado não conta como atendimento na organização atual. O
-                  vínculo é preservado; ajuste a organização, as datas ou exclua a data.
+                  vínculo é preservado; corrija a atividade vinculada no detalhe da data, ajuste a
+                  organização ou as datas, ou exclua a data. Enquanto houver datas aqui, a
+                  conferência aponta pendência e o calendário não pode ser publicado.
                 </p>
                 <ul className="activity-rows">{list.review.map(renderDate)}</ul>
               </section>

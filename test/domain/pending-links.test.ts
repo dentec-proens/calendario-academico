@@ -294,16 +294,19 @@ test('a notice whose link has no generated activity is not split; only the reorg
   });
 });
 
-test('readings of a kept link without activity do not fail; review warns without blocking', () => {
+test('readings of a kept link without activity do not fail; review blocks the conclusion', () => {
   const state = ivaiporaDraft();
   const record = { id: 'c', name: 'Ivaiporã', version: 1, catalogueRevision: 1, state };
   const readiness = releaseReadiness(
     { ...record, institutionalSnapshot: [] },
     { catalogue: { revision: 1 } },
   );
-  const warned = readiness.warnings.filter((warning) => warning.startsWith('Vínculo a conferir'));
-  expect(warned).toHaveLength(11);
-  expect(readiness.issues.some((issue) => issue.includes('Vínculo a conferir'))).toBe(false);
+  // Since phase 2, step 13, the link can be corrected, so a date to review blocks the conclusion.
+  const blocking = readiness.issues.filter((issue) => issue.startsWith('Vínculo a conferir'));
+  expect(blocking).toHaveLength(11);
+  expect(readiness.warnings.some((warning) => warning.startsWith('Vínculo a conferir'))).toBe(
+    false,
+  );
   expect(() => reviewSupport(record, state.events)).not.toThrow();
   const side = { state, institutionalSnapshot: [], documentSnapshot: [], catalogueRevision: 1 };
   const edited = structuredClone(side);
@@ -332,14 +335,16 @@ describe('findings of the independent review of phase 1', () => {
     expect(() => normalizeOfferCalendar(edited, reduced)).not.toThrow();
   });
 
-  test('dates to review warn in the review without blocking its conclusion', () => {
+  test('dates to review block the conclusion once each, with their reason (phase 2, step 13)', () => {
     const state = conflictingLinks();
     const readiness = releaseReadiness(
       { id: 'c', version: 1, catalogueRevision: 1, state, institutionalSnapshot: [] },
       { catalogue: { revision: 1 } },
     );
-    expect(readiness.issues.filter((issue) => /duplicada|sequência/i.test(issue))).toEqual([]);
-    expect(readiness.warnings.some((warning) => warning.includes('Etapa duplicada'))).toBe(true);
+    const blocking = readiness.issues.filter((issue) => issue.startsWith('Vínculo a conferir'));
+    expect(blocking).toHaveLength(linksToReview(state).size);
+    expect(blocking.some((issue) => issue.includes('Etapa duplicada'))).toBe(true);
+    expect(blocking.some((issue) => issue.includes('Etapas fora de sequência'))).toBe(true);
   });
 
   test('the organization form reports the refusal its command would raise', () => {
