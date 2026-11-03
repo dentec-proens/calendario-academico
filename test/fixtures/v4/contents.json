@@ -213,6 +213,15 @@
               "category": "prazo",
               "offers": ["integrado", "subsequente"],
               "hours": 40
+            },
+            {
+              "id": "ivaipora-annual-admission-notice",
+              "name": "Registro anual sintético admission-notice",
+              "start": "2027-11-20",
+              "end": "2027-11-20",
+              "kind": "note",
+              "category": "prazo",
+              "offers": ["integrado", "subsequente"]
             }
           ]
         },
@@ -230,7 +239,7 @@
           },
           "submittedFrom": "rascunho",
           "contentVersion": 1,
-          "contentHash": "da4a9be0a683a811f22a7b8b54a59e7a5222313da61707c915314f1bbd46e657",
+          "contentHash": "062d96d90abd68d851298dfdca469baeebd3591b4d3e0aeebcc0bc3c18688476",
           "state": {
             "schemaVersion": 4,
             "rulesetVersion": "consup-292-2027-v3",
@@ -433,6 +442,15 @@
                 "category": "prazo",
                 "offers": ["integrado", "subsequente"],
                 "hours": 40
+              },
+              {
+                "id": "ivaipora-annual-admission-notice",
+                "name": "Registro anual sintético admission-notice",
+                "start": "2027-11-20",
+                "end": "2027-11-20",
+                "kind": "note",
+                "category": "prazo",
+                "offers": ["integrado", "subsequente"]
               }
             ]
           },
@@ -598,6 +616,15 @@
               "category": "prazo",
               "requirementId": "recognition-2",
               "offers": ["graduacao"]
+            },
+            {
+              "id": "cascavel-annual-diary",
+              "name": "Registro anual sintético diary",
+              "start": "2027-12-23",
+              "end": "2027-12-23",
+              "kind": "note",
+              "category": "prazo",
+              "offers": ["integrado", "graduacao"]
             }
           ]
         },

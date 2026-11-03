@@ -387,14 +387,16 @@ test('dates convert one to one and the stored documents give the oracle values',
     if (table === 'calendarContents') pairs.push(...coincidingPairs(row.state.events));
     expect(coincidingPairs(row.state.events)).toEqual(coincidingPairs(source.state.events));
   }
-  // The annual and semester pairs of Ivaiporã and the two reviews of results of Cascavel on the
-  // same day (section 11) are among them, never deduplicated.
+  // The six annual and semester pairs (five in Ivaiporã, one in Cascavel) and the two reviews of
+  // results of Cascavel on the same day (section 11) are among them, never deduplicated.
   expect(pairs).toEqual(
     expect.arrayContaining([
       ['ivaipora-final-2', 'ivaipora-annual-final'],
       ['ivaipora-diary-2', 'ivaipora-annual-diary'],
       ['ivaipora-registration-1', 'ivaipora-annual-registration'],
+      ['ivaipora-admission-notice-1', 'ivaipora-annual-admission-notice'],
       ['ivaipora-recognition-1', 'ivaipora-annual-recognition'],
+      ['cascavel-diary-2', 'cascavel-annual-diary'],
       ['cascavel-final-appeal-1', 'cascavel-final-appeal-2'],
     ]),
   );

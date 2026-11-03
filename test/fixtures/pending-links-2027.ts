@@ -131,6 +131,7 @@ export function ivaiporaDraft(): PendingLinksFixture {
         ['registration', '25/01', '29/01'],
         ['recognition', '11/02', '19/02'],
         ['final-appeal', '13/12', '20/12'],
+        ['admission-notice', '20/11', '20/11'],
       ] as const
     ).map(([name, start, end]): CalendarEvent => ({
       id: `ivaipora-annual-${name}`,
@@ -146,9 +147,12 @@ export function ivaiporaDraft(): PendingLinksFixture {
   return state;
 }
 
-/** Cascavel draft: 10 semester links, two of them only for the undergraduate offer. */
+/**
+ * Cascavel draft: 10 semester links, two of them only for the undergraduate offer, and an annual
+ * record without a link on the same day as `diary-2`, which must stay distinct.
+ */
 export function cascavelDraft(): PendingLinksFixture {
-  return draft(
+  const state = draft(
     'Campus sintético Cascavel',
     'cascavel',
     ['integrado', 'graduacao'],
@@ -169,6 +173,16 @@ export function cascavelDraft(): PendingLinksFixture {
         ? { ...event, name: 'Edital de ingresso — Cursos semestrais' }
         : event,
   );
+  state.events.push({
+    id: 'cascavel-annual-diary',
+    name: 'Registro anual sintético diary',
+    start: day('23/12'),
+    end: day('23/12'),
+    effect: 'note',
+    category: 'prazo',
+    scope: { offers: ['integrado', 'graduacao'], confirmed: true },
+  });
+  return state;
 }
 
 const vacations = { firstStart: day('04/01'), firstEnd: day('31/01') };

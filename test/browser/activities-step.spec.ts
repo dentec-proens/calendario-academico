@@ -98,13 +98,13 @@ for (const width of [1440, 390])
     await page.locator('.activity-more-filters > summary').click();
     await page.locator('#activity-origin').selectOption('campus');
     await page.locator('#activity-pendency-todas').check();
-    await expect(page.locator('#campus-dates [data-date-row]')).toHaveCount(5);
+    await expect(page.locator('#campus-dates [data-date-row]')).toHaveCount(6);
     await expect(page.locator('[data-activity-row]')).toHaveCount(0);
-    expect(await count(page, 'todas')).toBe(5);
+    expect(await count(page, 'todas')).toBe(6);
     // By date counts dates, with the same filters.
     await page.locator('#activity-mode-data').check();
-    await expect(page.locator('#date-list [data-date-row]')).toHaveCount(5);
-    expect(await count(page, 'todas')).toBe(5);
+    await expect(page.locator('#date-list [data-date-row]')).toHaveCount(6);
+    expect(await count(page, 'todas')).toBe(6);
     await page.locator('#activity-origin').selectOption('');
     expect(await count(page, 'todas')).toBe(
       await page.locator('#date-list [data-date-row]').count(),
@@ -308,7 +308,7 @@ for (const width of [1440, 390])
     await visibility.selectOption('oficiais');
     await expect(page).toHaveURL(/atividadeVisibilidade=oficiais/);
     await expect(summary).toHaveText('Mais filtros (1)');
-    await expect(page.locator('#campus-dates [data-date-row]')).toHaveCount(3);
+    await expect(page.locator('#campus-dates [data-date-row]')).toHaveCount(4);
     for (const id of internalDates)
       await expect(page.locator(`[data-date-row="${id}"]`)).toHaveCount(0);
     await expect(activities).toHaveCount(allActivities);

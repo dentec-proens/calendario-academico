@@ -51,7 +51,7 @@ test('counters follow the unit of each view and every filter but pendency', () =
     byActivity.counts[''],
   );
   const byDate = step(ivaiporaDraft, { atividadeVisao: 'data', atividadeOrigem: 'campus' });
-  expect(byDate.counts['']).toBe(5);
+  expect(byDate.counts['']).toBe(6);
   expect(byDate.dates.every((line) => line.origin === 'campus')).toBe(true);
   const toFill = step(ivaiporaDraft, { atividadePendencia: 'preencher' });
   expect(toFill.campus).toHaveLength(0);

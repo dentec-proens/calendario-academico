@@ -153,6 +153,8 @@ for (const width of [1440, 390]) {
         'Registro anual sintético diary',
         'Data sintética registration-1',
         'Registro anual sintético registration',
+        'Edital de ingresso do 1º semestre',
+        'Registro anual sintético admission-notice',
         'Data sintética recognition-1',
         'Registro anual sintético recognition',
       ])
