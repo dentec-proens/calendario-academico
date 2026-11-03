@@ -111,8 +111,8 @@ function previousDraft(state: (typeof settings)[number], row: ActivityPlanItem) 
     publicationStatus: notice ? 'planned' : '',
     category: previous.category(row.id),
     effect: 'note',
+    // The link is no longer a form value: `planActivityDate` takes it from the context.
     name: row.name,
-    activity: row.activity,
   };
 }
 

@@ -40,7 +40,8 @@ export function useCalendarForm<T extends object>(
   const previousVersion = useRef(record.version);
   const confirmedDefaults = useRef(defaultValues);
   useEffect(() => {
-    if (id === 'event') return;
+    // Date forms adopt remote values themselves (`EventEditorProvider`).
+    if (id === 'event' || id.startsWith('event:')) return;
     if (previousVersion.current !== record.version) {
       previousVersion.current = record.version;
       if (!equalValues(confirmedDefaults.current, defaultValues))

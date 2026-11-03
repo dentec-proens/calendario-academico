@@ -1,6 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
-import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
+import { applyDate } from '../helpers/date-commands.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
@@ -77,7 +77,7 @@ test('a documented 2026 occurrence retains its actual dates through the event co
     publicationStatus: 'published' as const,
     scope: { offers: ['integrado'], confirmed: true },
   };
-  const applied = applyEvent(state, event, []);
+  const applied = applyDate(state, event, []);
   const normalized = normalizeOfferCalendar(applied);
   expect(normalized.events[0]).toMatchObject({
     start: civilDate('2026-12-01'),

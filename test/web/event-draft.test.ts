@@ -22,13 +22,19 @@ const saved = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
 const edit = (base: CalendarEvent, change: Partial<EventValues> = {}) =>
   eventFromValues({ ...eventValues(base), ...change }, { id: base.id, base });
 
-test('a record without category keeps it absent when only its link changes', () => {
+test('a record without category keeps it absent when its category is left as it was', () => {
   const base = saved({ effect: 'exclude' });
   expect(eventValues(base).category).toBe('recesso');
-  const result = edit(base, { activity: onceLink('family-meeting') });
+  const result = edit(base, { name: 'Recesso renomeado' });
   expect(result.category).toBeUndefined();
-  expect(result).toMatchObject({ effect: 'exclude', activity: onceLink('family-meeting') });
+  expect(result).toMatchObject({ effect: 'exclude', name: 'Recesso renomeado' });
   expect(edit(base, { category: 'feriado' }).category).toBe('feriado');
+});
+
+test('the link is not a form value: the date command decides it from the context', () => {
+  const base = saved({ activity: onceLink('family-meeting') });
+  expect(eventValues(base)).not.toHaveProperty('activity');
+  expect(edit(base, { name: 'Encontro revisado' })).not.toHaveProperty('activity');
 });
 
 test('an unchanged reviewed deadline adjustment keeps its review', () => {

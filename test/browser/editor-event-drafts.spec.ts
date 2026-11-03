@@ -213,3 +213,85 @@ test('editor separates creation from editing and preserves closed activity draft
 
   expect(errors).toEqual([]);
 });
+
+for (const width of [1440, 390]) {
+  test(`two dates of the same activity keep independent drafts by date ID at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+    await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
+    const name = page.locator('#event-name');
+    const submit = () => page.locator('#event-form button[type="submit"]').click();
+    const savedName = (id: string) =>
+      page.evaluate(
+        (id) => window.editorTest.record.state.events.find((event) => event.id === id)?.name,
+        id,
+      );
+
+    // A second date of the activity, planned from it, so that the activity has two dates.
+    await openActivity(page, 'cultural-week');
+    await page.locator('[data-prepare-activity="cultural-week"]').click();
+    await name.fill('Mostra cultural');
+    await page.locator('#event-start').fill('2027-11-08');
+    await page.locator('#event-end').fill('2027-11-09');
+    await submit();
+    await expect(page.locator('#event-panel .activity-records li')).toHaveCount(2);
+    await expect
+      .poll(() => page.evaluate(() => window.editorTest.record.state.events.length))
+      .toBe(3);
+    const second = await page.evaluate(() =>
+      window.editorTest.record.state.events.find((event) => event.name === 'Mostra cultural')!,
+    );
+    expect(second.activity).toEqual(
+      await page.evaluate(
+        () =>
+          window.editorTest.record.state.events.find((event) => event.id === 'activity-event')!
+            .activity,
+      ),
+    );
+
+    // A draft of the first date stays pending while the second date opens with its own values.
+    await page.locator('[data-edit-activity-event="activity-event"]').click();
+    await name.fill('Semana cultural — rascunho A');
+    await page.locator('#close-event-panel').click();
+    await openActivity(page, 'cultural-week');
+    await expect(page.locator('[data-pending-draft="activity-event"]')).toBeVisible();
+    await page.locator(`[data-edit-activity-event="${second.id}"]`).click();
+    await expect(page.locator('#event-form')).toBeVisible();
+    await expect(name).toHaveValue('Mostra cultural');
+    await name.fill('Mostra cultural — rascunho B');
+    await page.locator('#close-event-panel').click();
+
+    // Each date restores its own draft; neither was applied.
+    await openActivity(page, 'cultural-week');
+    await expect(page.locator('[data-pending-draft="activity-event"]')).toBeVisible();
+    await expect(page.locator(`[data-pending-draft="${second.id}"]`)).toBeVisible();
+    await page.locator('[data-edit-activity-event="activity-event"]').click();
+    await expect(name).toHaveValue('Semana cultural — rascunho A');
+    await page.locator('#close-event-panel').click();
+    await openActivity(page, 'cultural-week');
+    await page.locator(`[data-edit-activity-event="${second.id}"]`).click();
+    await expect(name).toHaveValue('Mostra cultural — rascunho B');
+    expect(await savedName('activity-event')).not.toBe('Semana cultural — rascunho A');
+
+    // Applying the second date leaves the first draft pending, and only the second changes.
+    await submit();
+    await expect.poll(() => savedName(second.id)).toBe('Mostra cultural — rascunho B');
+    expect(await savedName('activity-event')).not.toBe('Semana cultural — rascunho A');
+    await expect(page.locator('[data-pending-draft="activity-event"]')).toBeVisible();
+    await expect(page.locator(`[data-pending-draft="${second.id}"]`)).toHaveCount(0);
+    await page.locator('[data-edit-activity-event="activity-event"]').click();
+    await expect(name).toHaveValue('Semana cultural — rascunho A');
+    await page.locator('#discard-event-form').click();
+    await expect(page.locator('[data-pending-draft]')).toHaveCount(0);
+    await expect(page.locator('#unapplied-status')).toBeHidden();
+    await openActivity(page, 'cultural-week');
+    await page.locator('[data-edit-activity-event="activity-event"]').click();
+    await expect(name).toHaveValue((await savedName('activity-event'))!);
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+      .toBe(true);
+  });
+}

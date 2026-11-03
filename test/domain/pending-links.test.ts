@@ -3,7 +3,7 @@ import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { describe, expect, test } from 'vitest';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
-import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
+import { applyDate } from '../helpers/date-commands.ts';
 import { applyVacations } from '../../src/domain/calendar/commands/vacations.ts';
 import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessment-days.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
@@ -93,7 +93,7 @@ test('editing description, dates and offers of a date without generated activity
     end: civilDate('2027-06-24'),
     offers: ['integrado'],
   };
-  const applied = applyEvent(state, edited, [], true);
+  const applied = applyDate(state, edited, [], true);
   expect(applied.events.find((event) => event.id === original.id)).toEqual(edited);
   const saved = save(state, applied);
   expect(saved.state.events.find((event) => event.id === original.id)).toMatchObject({
@@ -105,11 +105,15 @@ test('editing description, dates and offers of a date without generated activity
 test('new, swapped and removed links are still refused by command and save', () => {
   const state = cascavelDraft();
   const event = state.events[0];
-  expect(() => applyEvent(state, { ...event, id: 'copy' }, [])).toThrow('Atividade inválida');
-  for (const activity of [cycleLink('diary', 'first'), undefined])
-    expect(() => applyEvent(state, { ...event, activity }, [], true)).toThrow(
-      'não perde nem troca',
-    );
+  expect(() => applyDate(state, { ...event, id: 'copy' }, [])).toThrow('Atividade inválida');
+  expect(() =>
+    applyDate(state, { ...event, activity: cycleLink('diary', 'first') }, [], true),
+  ).toThrow('não perde nem troca');
+  // An edit without link keeps the saved one: `updateDate` never removes it.
+  const { activity: _kept, ...unlinked } = event;
+  expect(
+    applyDate(state, unlinked, [], true).events.find((item) => item.id === event.id)?.activity,
+  ).toEqual(event.activity);
   const swapped = state.events.map((item) =>
     item.id === event.id ? { ...item, activity: cycleLink('diary', 'first') } : item,
   );
@@ -256,7 +260,7 @@ test('a preexisting duplicated stage saves, is reviewed and never counts as fulf
   expect(first.coverage).toBe('complete');
   // Creating another duplicate is refused.
   const extra = { ...state.events[0], id: 'stage-again', name: 'Outra 1ª etapa' };
-  expect(() => applyEvent(state, extra, [])).toThrow('duplicadas');
+  expect(() => applyDate(state, extra, [])).toThrow('duplicadas');
   expect(() => save(state, { ...state, events: [...state.events, extra] })).toThrow('duplicadas');
 });
 
@@ -320,7 +324,7 @@ describe('findings of the independent review of phase 1', () => {
     };
     const early = reduced.events.find((event) => event.id === 'stage-early')!;
     const moved = { ...early, end: civilDate('2027-09-29') };
-    expect(() => applyEvent(reduced, moved, [], true)).not.toThrow();
+    expect(() => applyDate(reduced, moved, [], true)).not.toThrow();
     const edited = {
       ...reduced,
       events: reduced.events.map((e) => (e.id === early.id ? moved : e)),
@@ -381,7 +385,7 @@ describe('findings of the independent review of phase 1', () => {
       effect: 'note',
       scope: { offers: ['integrado'], confirmed: true },
     };
-    expect(() => applyEvent(semester, event, [])).toThrow(/oferta/);
+    expect(() => applyDate(semester, event, [])).toThrow(/oferta/);
     expect(() => normalizeOfferCalendar({ ...semester, events: [event] }, semester)).toThrow(
       /oferta/,
     );

@@ -12,6 +12,8 @@ type Props = Omit<ComponentProps<'button'>, 'children' | 'type' | 'className' | 
   dates: string;
   /** Context shown after the dates, such as the activity or the recorded link of a date. */
   note?: string;
+  /** The date has a draft not yet applied, kept under its ID. */
+  pendingDraft?: boolean;
   selected?: boolean;
 };
 
@@ -22,6 +24,7 @@ export default function ActivityRow({
   statusLabel = situationLabels[status],
   dates,
   note,
+  pendingDraft = false,
   selected = false,
   ...props
 }: Props) {
@@ -36,6 +39,11 @@ export default function ActivityRow({
           </span>
           <span>{dates}</span>
           {note && <span className="activity-row-note">{note}</span>}
+          {pendingDraft && (
+            <span className="activity-row-note" data-pending-draft>
+              Alterações não aplicadas
+            </span>
+          )}
         </span>
       </span>
       <ChevronRight className="activity-row-chevron" aria-hidden="true" />

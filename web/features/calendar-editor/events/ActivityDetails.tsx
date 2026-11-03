@@ -149,6 +149,9 @@ export default function ActivityDetails({
                 {event.notice?.admission?.destinations.length ? (
                   <small>{destinationText(state, event.notice.admission.destinations)}</small>
                 ) : null}
+                {editor.pendingDates.has(event.id) && (
+                  <small data-pending-draft={event.id}>Alterações não aplicadas</small>
+                )}
                 {destinationIssueLines(state, event).map((issue) => (
                   <small key={issue.offerId} className="notice-destination-issue">
                     {issue.text}

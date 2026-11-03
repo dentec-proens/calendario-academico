@@ -9,7 +9,6 @@ import type {
 import { applicabilityFor } from '#src/domain/policies/registry.ts';
 import { eventCategory } from '#src/domain/calendar/activities/categories.ts';
 import { associationOffers, offerIds, offerFor } from '#src/domain/calendar/offers.ts';
-import type { ActivityRef } from '#src/domain/calendar/activities/activity-ref.ts';
 import type { CalendarEvent, OfferId } from '../types.ts';
 
 export type EventContext =
@@ -72,8 +71,6 @@ export interface EventValues {
   adjustedDeadline: string;
   deadlineExtensionCause: '' | 'municipal-holiday' | 'municipal-recess';
   category: string;
-  /** Link kept from the saved date or taken from the activity being filled; never edited here. */
-  activity?: ActivityRef;
   offers: OfferId[];
   hours: string;
   /** Interface answer to "O que é este evento?"; `effect` and `category` hold the record. */
@@ -130,7 +127,6 @@ export const emptyEvent = (offers: OfferId[]): EventValues => ({
   adjustedDeadline: '',
   deadlineExtensionCause: '',
   category: 'recesso',
-  activity: undefined,
   offers,
   hours: '',
   eventType: '',
@@ -151,7 +147,6 @@ export function eventValues(event: CalendarEvent): EventValues {
     adjustedDeadline: event.deadlineAdjustment?.date ?? '',
     deadlineExtensionCause: event.deadlineExtensionCause ?? '',
     category: eventCategory(event),
-    activity: event.activity,
     offers: dateOffers,
     hours: event.hours === undefined ? '' : String(event.hours),
     eventType: event.activity ? '' : eventTypeOf(event),
@@ -166,8 +161,9 @@ export const noticeActive = (value: Pick<EventValues, 'eventType'>) =>
   !value.eventType || value.eventType === 'notice';
 
 /**
- * Builds the record written by the form. Editing starts from the saved record, so fields the
- * form does not show survive. A manual edit ends the automatic stage distribution.
+ * Builds the date written by the form, without link: the date command decides it from the context
+ * (plan, section 4.6). Editing starts from the saved record, so fields the form does not show
+ * survive. A manual edit ends the automatic stage distribution.
  */
 export function eventFromValues(
   value: EventValues,
@@ -175,13 +171,16 @@ export function eventFromValues(
     id: string;
     base?: CalendarEvent;
   },
-): CalendarEvent {
+): Omit<CalendarEvent, 'activity'> {
   if (!value.effect) throw new Error('Escolha o efeito na contagem.');
   const notice = noticeActive(value);
   // An unchanged adjustment keeps its institutional review; a new date needs another.
   const adjustment = target.base?.deadlineAdjustment;
-  const { assessmentAutoStart: _automatic, ...kept } =
-    target.base ?? ({} as Partial<CalendarEvent>);
+  const {
+    assessmentAutoStart: _automatic,
+    activity: _link,
+    ...kept
+  } = target.base ?? ({} as Partial<CalendarEvent>);
   const publication = (notice && value.publicationStatus) || undefined;
   const admission =
     notice && value.admissionType
@@ -215,7 +214,6 @@ export function eventFromValues(
         : value.category,
     // Saving the date form confirms the offers chosen in it (plan, section 5.3).
     scope: { offers: value.offers, confirmed: true },
-    activity: value.activity,
     hours: value.hours ? Number(value.hours) : undefined,
     deadlineExtensionCause: value.deadlineExtensionCause || undefined,
   };
@@ -260,7 +258,6 @@ export function activityDraft(
   return {
     ...emptyEvent(modalities),
     name: requirement.name,
-    activity: requirement.activity,
     effect: 'note',
     admissionType: requirement.admissionType ?? '',
     admissionYear: notice

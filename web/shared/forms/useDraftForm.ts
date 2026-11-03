@@ -51,8 +51,11 @@ export function useDraftForm<T extends object>(options: DraftFormOptions<T>) {
       baseline: { ...options.defaultValues, ...saved.baseline },
     };
   }
-  const [initial, setInitial] = useState(readInitial);
-  if (initial.identity !== identity || initial.drafts !== drafts) setInitial(readInitial());
+  const [stored, setInitial] = useState(readInitial);
+  // A new identity (another draft key) reads its draft in this same render, so the form created
+  // for it starts from that draft, not from the values and field state of the previous key.
+  const initial = stored.identity !== identity || stored.drafts !== drafts ? readInitial() : stored;
+  if (initial !== stored) setInitial(initial);
   const baselineForEvents = useRef(initial.baseline);
   useLayoutEffect(() => {
     baselineForEvents.current = initial.baseline;

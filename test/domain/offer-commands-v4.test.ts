@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 import { definedStage, rowLink } from '../helpers/activity-links.ts';
 import { isStageActivity } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { calendarOffersV4Fixture } from '../fixtures/calendar-offers-v4.ts';
-import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
+import { applyDate } from '../helpers/date-commands.ts';
 import { configureIntakeRequirement } from '../../src/domain/calendar/commands/organization.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import {
@@ -162,7 +162,7 @@ test('event edits enforce the owning cycle and the explicit offer id', () => {
   const state = calendarOffersV4Fixture();
   const stage = state.events.find((event) => event.id === 'graduacao-2-stage-3')!;
   expect(() =>
-    applyEvent(
+    applyDate(
       state,
       { ...stage, start: civilDate('2027-02-01'), end: civilDate('2027-04-16') },
       [],
@@ -170,14 +170,9 @@ test('event edits enforce the owning cycle and the explicit offer id', () => {
     ),
   ).toThrow('2º semestre');
   expect(() =>
-    applyEvent(state, { ...stage, scope: { offers: ['graduacao'], confirmed: true } }, [], true),
+    applyDate(state, { ...stage, scope: { offers: ['graduacao'], confirmed: true } }, [], true),
   ).toThrow('oferta');
-  const next = applyEvent(
-    state,
-    { ...stage, name: 'Primeira etapa do segundo semestre' },
-    [],
-    true,
-  );
+  const next = applyDate(state, { ...stage, name: 'Primeira etapa do segundo semestre' }, [], true);
   expect(next.events.find((event) => event.id === stage.id)?.name).toBe(
     'Primeira etapa do segundo semestre',
   );

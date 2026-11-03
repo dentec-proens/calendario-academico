@@ -139,6 +139,7 @@ export default function ActivityChecklist() {
           }
           statusLabel={statusLabel}
           dates={range(event)}
+          pendingDraft={editor.pendingDates.has(event.id)}
           note={
             issue
               ? `Vínculo gravado: ${event.activity && activityKey(event.activity)}`

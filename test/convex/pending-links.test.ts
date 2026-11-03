@@ -7,7 +7,7 @@ import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
-import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
+import { applyDate } from '../helpers/date-commands.ts';
 import {
   applyOfferOrganization,
   offerOrganizationDraft,
@@ -144,7 +144,7 @@ test('links v4 resolved as “Classificação legada” are saved under review, 
 test('a pending date is edited and saved with its link', async () => {
   const { record, save } = await stored(ivaiporaDraft());
   const pending = record.state.events.find((event) => event.id === 'ivaipora-recognition-2')!;
-  const edited = applyEvent(
+  const edited = applyDate(
     record.state,
     {
       ...pending,

@@ -248,7 +248,9 @@ const describe = (event: CalendarEvent) =>
  * 2. an edited date (start, end, offers or link) passes every interval and association check, and
  *    any conflict with another date, even an unchanged one, refuses the change;
  * 3. an unchanged date is never refused for a conflict: it is reported by `linksToReview`.
- * A recorded date never loses or swaps its link by these paths; only removing the date does.
+ * A recorded date never loses, swaps or gains a link by these paths; only removing the date does.
+ * These are the contracts of the date commands (`planActivityDate`, `createCampusDate`,
+ * `updateDate`) at the save boundary, which receives the whole state and not the command.
  */
 export function validateLinks(
   previous: (OfferState & { events: readonly CalendarEvent[] }) | undefined,
@@ -264,6 +266,15 @@ export function validateLinks(
   if (changed.length)
     throw new DomainError(
       `Uma data salva não perde nem troca a atividade vinculada: ${changed.map(describe).join('; ')}.`,
+    );
+  // `updateDate` keeps the link of a saved date: a date of the campus never gains one.
+  const gained = next.events.filter((event) => {
+    const old = before.get(event.id);
+    return old !== undefined && old.activity === undefined && event.activity !== undefined;
+  });
+  if (gained.length)
+    throw new DomainError(
+      `Uma data do campus não passa a ter atividade vinculada: ${gained.map(describe).join('; ')}.`,
     );
   // A re-expressed stage position must be unambiguous: no other date holds it (step 9e).
   const ambiguous = next.events.filter((event) => {

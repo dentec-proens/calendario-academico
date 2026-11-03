@@ -9,7 +9,7 @@ import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlines.ts';
 
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize-v4.ts';
-import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
+import { applyDate } from '../helpers/date-commands.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 
 function calendar(): ActivityState {
@@ -196,7 +196,7 @@ test('mixed organizations count disjoint periods separately and keep simultaneou
 test('prior publication keeps dates and destination after manual sources are removed from commands and copies', () => {
   const state = calendar(),
     event = notice();
-  const applied = applyEvent(state, event, []),
+  const applied = applyDate(state, event, []),
     saved = normalizeOfferCalendar({ ...applied, ignoredHistory: [] });
   const expected = event;
   expect(saved.events[0]).toMatchObject(expected);
@@ -253,7 +253,7 @@ test('prior/cross-year references are informative even if the received discrimin
     { activity: definedStage('stage', 'integrado', 'annual', 1) },
   ]) {
     const event = notice(changes);
-    expect(() => applyEvent(state, event, [])).toThrow();
+    expect(() => applyDate(state, event, [])).toThrow();
     expect(() =>
       normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [event] }),
     ).toThrow();
@@ -276,7 +276,7 @@ test('prior/cross-year references are informative even if the received discrimin
     { start: civilDate('2026-12-01'), end: civilDate('2028-01-01') },
     { effect: 'include' as const },
   ])
-    expect(() => applyEvent(state, notice(changes), [])).toThrow();
+    expect(() => applyDate(state, notice(changes), [])).toThrow();
 });
 test('postgraduate and other years are not implicitly certified by 2027', () => {
   expect(
@@ -385,13 +385,13 @@ test('article 3 extends only explicitly classified municipal causes to the first
 test('repeating the same command is idempotent and another ID cannot duplicate the same occurrence', () => {
   const state = calendar(),
     event = notice(),
-    once = applyEvent(state, event, []);
-  expect(applyEvent(once, event, []).events).toHaveLength(1);
-  expect(() => applyEvent(once, { ...event, name: 'Mudança silenciosa' }, [])).toThrow(
+    once = applyDate(state, event, []);
+  expect(applyDate(once, event, []).events).toHaveLength(1);
+  expect(() => applyDate(once, { ...event, name: 'Mudança silenciosa' }, [])).toThrow(
     'identificador',
   );
   const other = notice({ id: 'different-source' });
-  expect(() => applyEvent(once, other, [])).toThrow('mesmas datas');
+  expect(() => applyDate(once, other, [])).toThrow('mesmas datas');
 });
 
 test('an unconfirmed scope remains visible but never covers its offers in 2027', () => {
@@ -422,7 +422,7 @@ test('commands and direct import reject teaching inclusion outside the selected 
     effect: 'include' as const,
     scope: { offers: ['graduacao'], confirmed: true },
   };
-  expect(() => applyEvent(state, event, [])).toThrow('períodos');
+  expect(() => applyDate(state, event, [])).toThrow('períodos');
   expect(() => normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [event] })).toThrow(
     'períodos',
   );
@@ -437,16 +437,16 @@ test('preserved duplicate occurrences remain editable after PDF provenance is re
   const second = notice({ id: 'preserved-second' });
   const third = notice({ id: 'third', name: 'Outra ocorrência' });
   const state = { ...calendar(), events: [first, second, third] };
-  const edited = applyEvent(state, { ...first, name: 'Publicação corrigida' }, [], true);
+  const edited = applyDate(state, { ...first, name: 'Publicação corrigida' }, [], true);
   expect(edited.events.map((item) => item.id)).toEqual(state.events.map((item) => item.id));
   expect(edited.events[0].name).toBe('Publicação corrigida');
   expect(edited.events[0]).not.toHaveProperty('evidence');
   const expectedSecond = second;
   expect(edited.events[1]).toEqual(expectedSecond);
-  const cleaned = applyEvent(state, first, []);
+  const cleaned = applyDate(state, first, []);
   expect(cleaned.events.map((item) => item.id)).toEqual(state.events.map((item) => item.id));
   expect(cleaned.events.every((item) => !Object.hasOwn(item, 'evidence'))).toBe(true);
-  expect(applyEvent(cleaned, cleaned.events[0], [])).toBe(cleaned);
-  expect(() => applyEvent(state, { ...first, id: 'new-duplicate' }, [])).toThrow('mesmas datas');
-  expect(() => applyEvent(state, { ...third, name: first.name }, [], true)).toThrow('mesmas datas');
+  expect(applyDate(cleaned, cleaned.events[0], [])).toBe(cleaned);
+  expect(() => applyDate(state, { ...first, id: 'new-duplicate' }, [])).toThrow('mesmas datas');
+  expect(() => applyDate(state, { ...third, name: first.name }, [], true)).toThrow('mesmas datas');
 });

@@ -14,7 +14,7 @@ import {
 } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { configureOfferMetadata } from '../../src/domain/calendar/commands/organization.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
-import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
+import { applyDate } from '../helpers/date-commands.ts';
 import {
   applyOfferOrganization,
   offerOrganizationDraft,
@@ -179,11 +179,11 @@ test('new and changed assessment dates remain blocked until the organization def
       },
     ],
   };
-  expect(() => applyEvent(state, { ...state.events[0], id: 'new' }, [])).toThrow(
+  expect(() => applyDate(state, { ...state.events[0], id: 'new' }, [])).toThrow(
     /organização|etapa/i,
   );
   expect(() =>
-    applyEvent(state, { ...state.events[0], end: civilDate('2027-03-15') }, [], true),
+    applyDate(state, { ...state.events[0], end: civilDate('2027-03-15') }, [], true),
   ).toThrow(/organização|etapa/i);
   // The global save boundary preserves the existing evidence while other sections change.
   expect(
