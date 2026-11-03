@@ -7,9 +7,12 @@ import { editorNavigation, editorSteps } from './editor-steps.ts';
 export default function EditorSteps({
   calendarId,
   current,
+  issueCount,
 }: {
   calendarId: string;
   current: EditorSection;
+  /** Open content issues, shown under the review step that lists them. */
+  issueCount: number;
 }) {
   const { active, stepIndex } = editorNavigation(current);
   const menu = useRef<HTMLDetailsElement>(null);
@@ -62,7 +65,14 @@ export default function EditorSteps({
                 aria-current={active?.section === step.section ? 'page' : undefined}
               >
                 <span className="editor-step-number">{index + 1}</span>
-                <span className="editor-step-title">{step.title}</span>
+                <span className="editor-step-text">
+                  <span className="editor-step-title">{step.title}</span>
+                  {step.section === 'issues' && issueCount > 0 && (
+                    <span className="editor-step-note" data-issue-count={issueCount}>
+                      {issueCount} {issueCount === 1 ? 'pendência' : 'pendências'}
+                    </span>
+                  )}
+                </span>
               </Link>
             </div>
           ))}

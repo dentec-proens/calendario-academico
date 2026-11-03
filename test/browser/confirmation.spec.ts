@@ -229,8 +229,9 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
   const submit = page.locator('[data-lifecycle-action="submit"]');
   // Open content issues never block the submission; they are listed for an explicit decision.
   await expect(submit).toBeEnabled();
-  await expect(page.locator('#lifecycle-submit-issues')).toContainText(
-    /\d+ pendências de conteúdo/,
+  // The count sits under the review step of the menu, not beside the submit button.
+  await expect(page.locator('[data-view="issues"] .editor-step-note')).toHaveText(
+    /^\d+ pendências$/,
   );
   await submit.click();
   await expect(page.locator('dialog.confirmation-dialog--warning[open] h2')).toHaveText(

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { categories } from '#src/domain/calendar/activities/categories.ts';
 import { CategoryMark } from '../../../components/ui/CategoryMark.tsx';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
@@ -126,15 +126,35 @@ export default function EventEditor() {
           keepInternalEligible({ effect: form.getFieldValue('effect'), category: value }),
       }}
     >
-      {(field) => (
-        <Select field={field} label="Categoria e cor PROENS" id="event-category">
-          {categories.map(([id, label]) => (
-            <option key={id} value={id}>
-              {label}
-            </option>
-          ))}
-        </Select>
-      )}
+      {(field) => {
+        const color = categories.find(([id]) => id === field.state.value)?.[2];
+        return (
+          <div className="event-category-field">
+            <Select
+              field={field}
+              label="Categoria"
+              id="event-category"
+              aria-describedby="event-category-color"
+            >
+              {categories.map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+            <p id="event-category-color" className="help event-category-color">
+              {color && (
+                <span
+                  className="category-mark__swatch"
+                  style={{ '--category-color': color } as CSSProperties}
+                  aria-hidden="true"
+                />
+              )}
+              {color ? 'Cor na legenda PROENS' : 'Sem cor na legenda PROENS'}
+            </p>
+          </div>
+        );
+      }}
     </form.Field>
   );
   const effectField = (
@@ -158,7 +178,7 @@ export default function EventEditor() {
   const typeQuestion = (
     <form.Field name="eventType">
       {(field) => (
-        <fieldset id="event-type" className="event-type">
+        <fieldset id="event-type" className="event-type event-section">
           <legend>O que é este evento?</legend>
           {eventTypes.map((type, index) => (
             <label className="check" key={type.id}>
@@ -313,17 +333,26 @@ export default function EventEditor() {
           {askType && typeQuestion}
           <details id="event-more-options" className="event-more-options">
             <summary>
-              Categoria e efeito
-              <span className="event-more-summary">
-                {values.category ? (
-                  <CategoryMark event={{ category: values.category }} withLabel />
-                ) : (
-                  'Sem categoria'
-                )}{' '}
-                · {effectLabels[values.effect as keyof typeof effectLabels] ?? 'Efeito a definir'}
+              <span className="event-more-heading">
+                <span className="event-more-title">Categoria e efeito</span>
+                {/* Only while closed: open, the fields themselves show both values. */}
+                <span className="event-more-summary">
+                  {values.category ? (
+                    <CategoryMark event={{ category: values.category }} withLabel />
+                  ) : (
+                    'Sem categoria'
+                  )}{' '}
+                  ·{' '}
+                  {values.effect ? (
+                    effectLabels[values.effect as keyof typeof effectLabels]
+                  ) : (
+                    <span className="event-more-pending">Efeito a definir</span>
+                  )}
+                </span>
               </span>
+              <ChevronDown className="event-more-chevron" aria-hidden="true" />
             </summary>
-            <div className="row-form">
+            <div className="event-more-fields">
               {categoryField}
               {effectField}
             </div>

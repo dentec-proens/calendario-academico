@@ -97,7 +97,6 @@ export default function LifecycleActions({
   guard,
   unavailable,
   submitIssues = [],
-  issuesLink,
   className = '',
 }: {
   calendar: LifecycleCalendar;
@@ -113,8 +112,6 @@ export default function LifecycleActions({
   unavailable?: Partial<Record<LifecycleAction, string>>;
   /** Content issues still open: submitting stays possible, after confirming them one by one. */
   submitIssues?: readonly string[];
-  /** Where the open issues are reviewed, shown beside their count. */
-  issuesLink?: ReactNode;
   className?: string;
 }) {
   const [form, setForm] = useState<'return' | 'publish' | null>(null);
@@ -137,7 +134,6 @@ export default function LifecycleActions({
           `E mais ${pendencies(submitIssues.length - shownIssues)} na etapa Revisão e conclusão.`,
         ]
       : submitIssues;
-  const submitNote = actions.includes('submit') && !unavailable?.submit && submitIssues.length > 0;
   const uncovered = [...new Set(preview?.replaced.flatMap((item) => item.uncovered) ?? [])].map(
     (kind) => modalityLabels[kind],
   );
@@ -234,13 +230,7 @@ export default function LifecycleActions({
               data-lifecycle-action={action}
               variant={action === 'return' || action === 'withdraw' ? 'secondary' : 'primary'}
               disabled={pending || !!reason}
-              aria-describedby={
-                reason
-                  ? `lifecycle-${action}-unavailable`
-                  : action === 'submit' && submitNote
-                    ? 'lifecycle-submit-issues'
-                    : undefined
-              }
+              aria-describedby={reason ? `lifecycle-${action}-unavailable` : undefined}
               aria-expanded={
                 action === 'return' || action === 'publish' ? form === action : undefined
               }
@@ -258,11 +248,6 @@ export default function LifecycleActions({
           </p>
         ) : null,
       )}
-      {submitNote ? (
-        <p id="lifecycle-submit-issues" className="lifecycle-unavailable">
-          {issueCount} de conteúdo. {issuesLink}
-        </p>
-      ) : null}
       {form === 'return' ? (
         <ReturnForm
           pending={pending}

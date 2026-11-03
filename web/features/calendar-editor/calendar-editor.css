@@ -317,10 +317,20 @@
   color: var(--ui-action-text);
   border-color: var(--green);
 }
+.editor-step-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
 .editor-step-title {
   display: block;
   font-size: 0.8125rem;
   font-weight: 650;
+}
+.editor-step-note {
+  color: var(--ui-warning);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 .editor-events-link {
   display: block;
@@ -1048,6 +1058,20 @@ fieldset.event-type {
   gap: 0 1rem;
   margin-block: 0 1rem;
 }
+/* Sections of the date form open with a rule and a title, like “Categoria e efeito”.
+   The legend floats so the rule stays above it instead of passing through it. */
+fieldset.event-section {
+  border-top: 1px solid var(--ui-border-soft);
+  padding-top: var(--ui-space-3);
+}
+fieldset.event-section > legend {
+  float: left;
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-bottom: var(--ui-space-2);
+  font-size: 1rem;
+  font-weight: 600;
+}
 fieldset.event-scope > label,
 fieldset.event-type > label {
   margin: 0;
@@ -1057,6 +1081,7 @@ fieldset.event-fields {
 }
 .event-more-options {
   margin-block: 0 1rem;
+  border-top: 1px solid var(--ui-border-soft);
 }
 /* The help of “Data interna (art. 18)” stays next to its checkbox. */
 .event-internal {
@@ -1069,16 +1094,66 @@ fieldset.event-fields {
   margin: 0;
 }
 .event-more-options > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding-block: var(--ui-space-3);
   cursor: pointer;
-  font-weight: 700;
-  padding-block: 0.5rem;
+  list-style: none;
+}
+.event-more-options > summary::-webkit-details-marker {
+  display: none;
+}
+.event-more-heading {
+  display: grid;
+  gap: var(--ui-space-1);
+  min-width: 0;
+}
+.event-more-title {
+  font-weight: 600;
+}
+.event-more-options > summary:hover .event-more-title {
+  color: var(--ui-action);
 }
 .event-more-summary {
-  display: block;
-  padding-left: 1.1rem;
   color: var(--ui-muted);
   font-size: 0.875rem;
   font-weight: 400;
+}
+.event-more-options[open] .event-more-summary {
+  display: none;
+}
+.event-more-pending {
+  color: var(--ui-warning);
+  font-weight: 600;
+}
+.event-more-chevron {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  color: var(--ui-muted);
+  transition: transform var(--ui-motion);
+}
+.event-more-options[open] .event-more-chevron {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .event-more-chevron {
+    transition: none;
+  }
+}
+/* One column: category names are long and the side panel is narrow. */
+.event-more-fields {
+  display: grid;
+  gap: var(--ui-space-4);
+  padding-block: var(--ui-space-1) var(--ui-space-2);
+}
+.event-category-color {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  margin: var(--ui-space-2) 0 0;
 }
 .event-back {
   display: inline-flex;

@@ -277,17 +277,6 @@ function EditorFrame() {
             submitSummary={returned ? diffSummary(sinceReturn) : undefined}
             unavailable={submitUnavailable ? { submit: submitUnavailable } : undefined}
             submitIssues={openIssues}
-            issuesLink={
-              currentSection === 'issues' ? null : (
-                <Link
-                  to={editorPages.issues.path}
-                  params={{ calendarId: record.id }}
-                  search={(previous) => previous}
-                >
-                  Conferir
-                </Link>
-              )
-            }
             prepare={async () => {
               if (session.getSnapshot().unapplied)
                 throw new Error('Aplique ou descarte os campos em edição antes de enviar.');
@@ -441,7 +430,11 @@ function EditorFrame() {
       <div
         className={`editor-sections-layout ${currentSection === 'calendar' ? 'editor-preview-layout' : ''}`}
       >
-        <EditorSteps calendarId={record.id} current={currentSection} />
+        <EditorSteps
+          calendarId={record.id}
+          current={currentSection}
+          issueCount={openIssues.length}
+        />
         <div className="editor-section-content">
           <div className="editor-section-heading">
             <h2 id="editor-section-title" ref={heading} tabIndex={-1}>

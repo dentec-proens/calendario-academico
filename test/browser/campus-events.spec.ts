@@ -177,6 +177,12 @@ for (const width of [1440, 390]) {
     const more = page.locator('#event-more-options');
     if ((await more.getAttribute('open')) === null) await more.locator('summary').click();
     await page.locator('#event-category').selectOption('conselho');
+    // Open, the group shows the legend color under the field instead of repeating its summary.
+    await expect(more.locator('.event-more-summary')).toBeHidden();
+    await expect(page.locator('#event-category-color .category-mark__swatch')).toHaveCSS(
+      'background-color',
+      'rgb(255, 0, 255)',
+    );
     await expect(option).toHaveCount(0);
     const notice = page.locator('#event-internal-unmarked');
     await expect(notice).toContainText('Data interna desmarcada');
