@@ -78,7 +78,10 @@ test('editing a linked record that changes the count keeps its effect, category 
   );
   await openActivity(page, 'family-meeting');
   await page.locator('[data-edit-activity-event="linked-exclusion"]').click();
-  await expect(page.locator('#event-effect')).toHaveValue('exclude');
+  await expect(page.locator('#event-effect [data-choice="exclude"]')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await page.locator('#event-name').fill('Encontro com recesso retificado');
 
   await applyEvent(page);
@@ -160,17 +163,12 @@ test('a new activity period asks for dates first and keeps category and effect c
   await expect(page.locator('#event-more-options')).not.toHaveAttribute('open');
   await expect(page.locator('#event-effect')).toBeHidden();
 
-  // A field hidden in the collapsed group is revealed when the browser rejects it.
+  // A date added to an activity starts without effect on the count.
   await page.locator('#event-more-options > summary').click();
-  await page.locator('#event-effect').selectOption('');
-  await page.locator('#event-more-options > summary').click();
-  await page.locator('#event-start').fill('2027-05-08');
-  await page.locator('#event-end').fill('2027-05-08');
-
-  await applyEvent(page);
-  await expect(page.locator('#event-more-options')).toHaveAttribute('open', '');
-  await expect(page.locator('#event-effect')).toBeFocused();
-  expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(2);
+  await expect(page.locator('#event-effect [data-choice="note"]')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
 });
 
 test('going back to the activity keeps an unapplied period pending and a saved one listed', async ({
@@ -290,7 +288,10 @@ test('a free event asks what it is and the answer sets its effect and category',
   expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(2);
   await page.locator('#event-type-holiday').check();
   await page.locator('#event-more-options > summary').click();
-  await expect(page.locator('#event-effect')).toHaveValue('exclude');
+  await expect(page.locator('#event-effect [data-choice="exclude"]')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await expect(page.locator('#event-category')).toHaveValue('feriado');
   await page.locator('#event-type-notice').check();
   await expect(page.locator('#event-admission-type')).toHaveAttribute('required', '');
@@ -333,7 +334,10 @@ test('a record with a freely combined effect and category shows both fields when
   await expect(page.locator('#event-more-options > summary')).toContainText('Exclui dias letivos');
   await page.locator('#event-more-options > summary').click();
   await expect(page.locator('#event-effect')).toBeVisible();
-  await expect(page.locator('#event-effect')).toHaveValue('exclude');
+  await expect(page.locator('#event-effect [data-choice="exclude"]')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await expect(page.locator('#event-category')).toHaveValue('formacao');
   await expect(page.locator('#event-panel #event-form')).toBeVisible();
 });

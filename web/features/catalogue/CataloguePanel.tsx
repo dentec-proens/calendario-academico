@@ -16,28 +16,10 @@ import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { dateRangeLabel } from '../../shared/dates.ts';
 import { ChoiceGroup } from '../../components/ui/ChoiceGroup.tsx';
+import { countEffects } from '../../shared/count-effects.ts';
 import './catalogue.css';
 
 type CatalogueEvent = Bootstrap['catalogue']['events'][number];
-// Mirrors counting/core.ts: exclusions block period dates, inclusions add dates inside periods.
-const effects: { value: CatalogueEvent['effect']; title: string; description: string }[] = [
-  {
-    value: 'exclude',
-    title: 'Retira da contagem',
-    description: 'Feriados e recessos. Dias que seriam de aula deixam de contar.',
-  },
-  {
-    value: 'include',
-    title: 'Acrescenta à contagem',
-    description:
-      'Sábados letivos e reposições. Dias sem aula passam a contar, se estiverem em um período letivo.',
-  },
-  {
-    value: 'note',
-    title: 'Não altera a contagem',
-    description: 'Datas comemorativas e avisos. Cada dia segue a semana normal de aulas.',
-  },
-];
 const emptyEvent = (
   revision: number,
 ): Omit<CatalogueEvent, 'start' | 'end'> & { start: string; end: string; revision: number } => ({
@@ -224,11 +206,11 @@ export default function CataloguePanel({
             </div>
             <ChoiceGroup<CatalogueEvent['effect']>
               id="catalogue-effect"
-              className="catalogue-effect"
+              className="ui-choice-described"
               label="Efeito na contagem de dias letivos"
               value={event.effect}
               disabled={pending}
-              options={effects.map(({ value, title, description }) => ({
+              options={countEffects.map(({ value, title, description }) => ({
                 value,
                 label: (
                   <>

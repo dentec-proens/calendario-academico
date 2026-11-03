@@ -225,6 +225,23 @@ dialog.ui-panel-dialog--side {
   outline: 3px solid var(--ui-focus);
   outline-offset: 3px;
 }
+/* Choices with a title and a short explanation below it. */
+.ui-choice-described .ui-choice-group .ui-choice {
+  align-items: flex-start;
+}
+.ui-choice-described .ui-choice__radio {
+  margin-top: 2px;
+}
+.ui-choice-described .ui-choice > span {
+  display: grid;
+  gap: 4px;
+}
+.ui-choice-described .ui-choice small {
+  color: var(--ui-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
 .ui-status {
   display: inline-flex;
   align-items: center;

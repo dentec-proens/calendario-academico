@@ -408,7 +408,10 @@ test('multi-day inclusions over a Saturday are registered but edited in the Acti
   await page.locator('#event-type-extra-day').check();
   await page.locator('#event-more-options > summary').click();
   await page.selectOption('#event-category', 'evento');
-  await expect(page.locator('#event-effect')).toHaveValue('include');
+  await expect(page.locator('#event-effect [data-choice="include"]')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await page.locator('#event-start').fill('2027-03-22');
   await page.locator('#event-end').fill('2027-03-27');
 

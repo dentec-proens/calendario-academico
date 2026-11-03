@@ -1083,6 +1083,10 @@ fieldset.event-fields {
   margin-block: 0 1rem;
   border-top: 1px solid var(--ui-border-soft);
 }
+/* The panel is narrow: each effect and its explanation take a full row. */
+.event-effect .ui-choice-group {
+  grid-template-columns: minmax(0, 1fr);
+}
 /* The help of “Data interna (art. 18)” stays next to its checkbox. */
 .event-internal {
   margin-block: 0 1rem;

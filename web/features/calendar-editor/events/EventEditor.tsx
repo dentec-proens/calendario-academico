@@ -23,6 +23,9 @@ import {
   internalDateOption,
 } from '#src/domain/calendar/internal-dates.ts';
 import { Check, Input, Select } from '../forms/fields.tsx';
+import { ChoiceGroup } from '../../../components/ui/ChoiceGroup.tsx';
+import { countEffects } from '../../../shared/count-effects.ts';
+import type { EventEffect } from '#src/domain/calendar/model.ts';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { scrollIntoView } from '../../../scroll.ts';
 import { Button } from '../../../components/ui/Button.tsx';
@@ -166,12 +169,23 @@ export default function EventEditor() {
       }}
     >
       {(field) => (
-        <Select field={field} label="Efeito na contagem" id="event-effect" required={!askType}>
-          <option value="">Escolha o efeito</option>
-          <option value="exclude">Excluir dias · feriado ou recesso</option>
-          <option value="include">Incluir dias · sábado ou reposição</option>
-          <option value="note">Somente registrar · sem efeito</option>
-        </Select>
+        <ChoiceGroup<EventEffect>
+          id="event-effect"
+          className="ui-choice-described event-effect"
+          label="Efeito na contagem"
+          value={field.state.value || null}
+          disabled={readOnly || editor.pending}
+          options={countEffects.map(({ value, title, description }) => ({
+            value,
+            label: (
+              <>
+                <strong>{title}</strong>
+                <small>{description}</small>
+              </>
+            ),
+          }))}
+          onValueChange={field.handleChange}
+        />
       )}
     </form.Field>
   );
@@ -204,16 +218,7 @@ export default function EventEditor() {
     </form.Field>
   );
   return (
-    <form
-      id="event-form"
-      hidden={!editor.open}
-      onSubmit={editor.submit}
-      onInvalidCapture={(event) => {
-        // Reveal a collapsed group so the browser can point at the invalid field.
-        const group = (event.target as HTMLElement).closest('details');
-        if (group && !group.open) group.open = true;
-      }}
-    >
+    <form id="event-form" hidden={!editor.open} onSubmit={editor.submit}>
       {activityRecord && (
         <button
           type="button"
