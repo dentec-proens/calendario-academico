@@ -232,3 +232,51 @@ for (const width of [1440, 390]) {
     await expect(review.locator(`[data-date-row="${id}"]`)).toHaveCount(0);
   });
 }
+
+test('a date put under review by an unsaved organization is corrected after the save', async ({
+  page,
+  fixtureServer,
+}) => {
+  // Frozen timers keep the organization in the autosave debounce.
+  await page.clock.install();
+  await page.goto(await fixtureServer('editor'));
+  await expect(page.locator('#record-title')).toBeVisible();
+  await page.evaluate(async (state) => {
+    const { record } = window.editorTest;
+    record.offerKinds = ['integrado', 'subsequente'];
+    Object.assign(record.state, state);
+    record.version++;
+    await window.publishReviewerCalendar();
+  }, ivaiporaAnnual());
+  await selectEditorSection(page, 'periods');
+  if (!(await page.locator('#offer-subsequente-form').isVisible()))
+    await page.locator('[data-edit-organization="subsequente"]').click();
+  await page.locator('#offer-subsequente-organization [data-choice="semestral"]').click();
+  await page.locator('#offer-subsequente-count [data-choice="1"]').click();
+  for (const [field, value] of [
+    ['period-0-start', '2027-02-01'],
+    ['period-0-end', '2027-06-30'],
+    ['period-1-start', '2027-07-26'],
+    ['period-1-end', '2027-12-17'],
+    ['stage-0-start', '2027-02-01'],
+    ['stage-0-end', '2027-06-30'],
+    ['stage-1-start', '2027-07-26'],
+    ['stage-1-end', '2027-12-17'],
+  ])
+    await page.locator(`#offer-subsequente-${field}`).fill(value);
+  await page.locator('#offer-subsequente-apply').click();
+  await expect(page.locator('#offer-subsequente-form')).toBeHidden();
+
+  await selectEditorSection(page, 'events');
+  const id = 'ivaipora-annual-5';
+  await page.locator(`#link-review [data-open-event="${id}"]`).click();
+  const reason = page.locator('#link-review-reason');
+  await expect(reason).toContainText('Classificação pendente');
+  await expect(reason).toContainText('fica disponível depois que as alterações forem salvas');
+  await expect(page.locator(`[data-change-activity="${id}"]`)).toHaveCount(0);
+
+  await page.clock.runFor(2000);
+  await savedState(page);
+  await expect(page.locator(`[data-change-activity="${id}"]`)).toBeVisible();
+  await expect(reason).not.toContainText('fica disponível');
+});

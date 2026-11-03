@@ -6,12 +6,16 @@ import type { Id } from '../../convex/_generated/dataModel.js';
 import type { CalendarContent } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, calendarStatus, readyContent, saveReview } from '../helpers/lifecycle.ts';
-import { cycleLink } from '../helpers/activity-links.ts';
+import { cycleLink, definedStage } from '../helpers/activity-links.ts';
 import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
-import { changeActivity } from '../../src/domain/calendar/commands/events.ts';
+import {
+  activityChangeOptions,
+  changeActivity,
+  updateDate,
+} from '../../src/domain/calendar/commands/events.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
-import { ivaiporaAnnual } from '../fixtures/pending-links-2027.ts';
+import { conflictingLinks, ivaiporaAnnual } from '../fixtures/pending-links-2027.ts';
 
 /**
  * `changeActivity` at the Convex save boundary (plan, section 4.6; phase 2, step 13): `saveCalendar`
@@ -93,15 +97,11 @@ test('swaps that are not a correction are refused and the stored calendar stays 
     events: state.events.map((event) => (event.id === id ? { ...event, ...change } : event)),
   });
   for (const [state, message] of [
-    // Another field changed with the link.
-    [swapped({ activity: annualFinal, name: 'Outra descrição' }), 'não perde nem troca'],
-    [swapped({ activity: annualFinal, start: civilDate('2027-06-21') }), 'não perde nem troca'],
     // The new activity is not generated, or does not cover every offer of the date.
     [swapped({ activity: cycleLink('diary', 'second') }), 'não perde nem troca'],
-    [
-      swapped({ activity: annualFinal, scope: { offers: ['integrado'], confirmed: true } }),
-      'não perde nem troca',
-    ],
+    [swapped({ activity: definedStage('stage', 'integrado', 'annual', 1) }), 'não perde nem troca'],
+    // The other change of the corrected date must still be valid for an edited date.
+    [swapped({ activity: annualFinal, end: civilDate('2027-06-20') }), 'Intervalo invertido'],
     // Removing the link is never a correction.
     [swapped({ activity: undefined }), 'não perde nem troca'],
   ] as const)
@@ -120,6 +120,37 @@ test('swaps that are not a correction are refused and the stored calendar stays 
     ),
   ).rejects.toThrow('não perde nem troca');
   expect((await current()).state).toEqual(corrected.state);
+});
+
+test('a correction and an edit of the same date are saved together (review of step 13)', async () => {
+  const { record, save } = await stored(ivaiporaAnnual(), ['integrado', 'subsequente']);
+  const corrected = changeActivity(record.state, 'ivaipora-final-1', annualFinal, []);
+  const { activity: _activity, ...edit } = corrected.events.find(
+    (event) => event.id === 'ivaipora-final-1',
+  )!;
+  const edited = updateDate(corrected, { ...edit, name: 'Resultado final corrigido' }, []);
+  const saved = await save(edited, record.version);
+  expect(saved.state.events.find((event) => event.id === 'ivaipora-final-1')).toMatchObject({
+    activity: annualFinal,
+    name: 'Resultado final corrigido',
+  });
+});
+
+test('a stage with automatic distribution corrected to another activity is saved without it', async () => {
+  const content = conflictingLinks();
+  const stage = content.events.find((event) => event.id === 'stage-twice-b')!;
+  stage.assessmentAutoStart = civilDate('2027-04-05');
+  const { record, save } = await stored(content, ['integrado', 'subsequente']);
+  const other = activityChangeOptions(record.state, 'stage-twice-b').find(
+    (row) => row.activity.activityId !== 'stage',
+  )!;
+  const saved = await save(
+    changeActivity(record.state, 'stage-twice-b', other.activity, []),
+    record.version,
+  );
+  const corrected = saved.state.events.find((event) => event.id === 'stage-twice-b')!;
+  expect(corrected.activity).toEqual(other.activity);
+  expect(corrected.assessmentAutoStart).toBeUndefined();
 });
 
 /** Ready content of the lifecycle tests plus one date whose cycle the offer does not generate. */

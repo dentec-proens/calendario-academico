@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link2, Pencil, Trash2 } from 'lucide-react';
-import { removeEvent } from '#src/domain/calendar/commands/events.ts';
+import { correctableLinkIssue, removeEvent } from '#src/domain/calendar/commands/events.ts';
 import {
   generatedActivities,
   generatedActivity,
@@ -24,9 +24,11 @@ import ActivityChangeForm from './ActivityChangeForm.tsx';
  * of the institutional base are only consulted here.
  */
 export default function CampusEventDetails({ event }: { event: EditorEvent }) {
-  const { state, institutional, applyCommand, readOnly } = useCalendarEditor();
+  const { state, record, institutional, applyCommand, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const issue = event.institutional ? undefined : linksToReview(state).get(event.id);
+  // The save boundary corrects only a date under review in the saved calendar.
+  const correctable = issue && correctableLinkIssue(record.state, state, event.id) !== undefined;
   const activity = event.activity
     ? (generatedActivity(generatedActivities(state), event.activity)?.name ??
       activityKey(event.activity))
@@ -49,9 +51,15 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
             Vínculo gravado: <code>{event.activity && activityKey(event.activity)}</code>.{' '}
             {linkIssueActions[issue]}
           </p>
+          {!correctable && (
+            <p>
+              A correção da atividade vinculada fica disponível depois que as alterações forem
+              salvas.
+            </p>
+          )}
         </Notice>
       )}
-      {issue && changing && (
+      {correctable && changing && (
         <ActivityChangeForm
           eventId={event.id}
           onClose={(applied) => {
@@ -67,7 +75,7 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
         <p className="help">Data da base institucional, somente para consulta.</p>
       ) : (
         <FormActions>
-          {issue && !changing && (
+          {correctable && !changing && (
             <Button
               type="button"
               ref={changeButton}

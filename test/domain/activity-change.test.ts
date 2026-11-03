@@ -2,7 +2,9 @@ import { describe, expect, test } from 'vitest';
 import {
   activityChangeOptions,
   changeActivity,
+  correctableLinkIssue,
   previewActivityChange,
+  updateDate,
 } from '../../src/domain/calendar/commands/events.ts';
 import { activityKey } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { linksToReview, validateLinks } from '../../src/domain/calendar/activities/links.ts';
@@ -177,26 +179,34 @@ describe('save boundary', () => {
     });
   });
 
-  test('a swap with any other change, outside the generated plan or removing the link is refused', () => {
+  test('a swap outside the generated plan, of a date that counts or removing the link is refused', () => {
     const state = ivaiporaAnnual();
-    const swap = (change: Partial<PendingLinksFixture['events'][number]>) => ({
+    const swap = (
+      change: Partial<PendingLinksFixture['events'][number]>,
+      id = 'ivaipora-final-1',
+    ) => ({
       ...state,
-      events: state.events.map((event) =>
-        event.id === 'ivaipora-final-1' ? { ...event, ...change } : event,
-      ),
+      events: state.events.map((event) => (event.id === id ? { ...event, ...change } : event)),
     });
     expect(() => validateLinks(state, swap({ activity: annualFinal }))).not.toThrow();
+    // Other changes of the corrected date in the same save are those of an edited date.
     for (const change of [
       { activity: annualFinal, name: 'Outra descrição' },
       { activity: annualFinal, end: civilDate('2027-06-23') },
       { activity: annualFinal, scope: { offers: ['integrado'], confirmed: true } },
-      { activity: cycleLink('diary', 'second') },
-      { activity: undefined },
     ])
+      expect(() => validateLinks(state, swap(change))).not.toThrow();
+    expect(() => save(state, swap({ activity: annualFinal, hours: 4 }))).not.toThrow();
+    for (const change of [{ activity: cycleLink('diary', 'second') }, { activity: undefined }])
       expect(() => validateLinks(state, swap(change))).toThrow('não perde nem troca');
-    expect(() => save(state, swap({ activity: annualFinal, hours: 4 }))).toThrow(
-      'não perde nem troca',
-    );
+    // A date that counts for its activity is not swapped, with or without other changes.
+    for (const change of [
+      { activity: definedStage('stage', 'integrado', 'annual', 2) },
+      { activity: definedStage('stage', 'integrado', 'annual', 2), name: 'Outra descrição' },
+    ])
+      expect(() => validateLinks(state, swap(change, 'ivaipora-annual-2'))).toThrow(
+        'não perde nem troca',
+      );
   });
 
   test('a corrected stage passes the cycle checks at the boundary', () => {
@@ -221,6 +231,87 @@ describe('save boundary', () => {
       [],
     );
     expect(() => validateLinks(state, corrected)).not.toThrow();
+  });
+});
+
+describe('correction saved with other changes (review of step 13)', () => {
+  test('a correction followed by an edit of the same date is saved together', () => {
+    const state = ivaiporaAnnual();
+    const corrected = changeActivity(state, 'ivaipora-final-1', annualFinal, []);
+    const { activity: _activity, ...edit } = date(corrected, 'ivaipora-final-1');
+    const edited = updateDate(corrected, { ...edit, name: 'Resultado final corrigido' }, []);
+    const saved = save(state, edited);
+    expect(date(saved.state, 'ivaipora-final-1')).toMatchObject({
+      activity: annualFinal,
+      name: 'Resultado final corrigido',
+    });
+  });
+
+  test('a date put under review by an unsaved organization is corrected once it is saved', () => {
+    const state = ivaiporaAnnual();
+    const draft = offerOrganizationDraft(state, 'subsequente');
+    draft.organization = 'semestral';
+    draft.count = '1';
+    draft.periods[0] = {
+      sourceId: '',
+      name: '1º semestre',
+      start: civilDate('2027-02-01'),
+      end: civilDate('2027-06-30'),
+    };
+    draft.periods[1] = {
+      sourceId: '',
+      name: '2º semestre',
+      start: civilDate('2027-07-26'),
+      end: civilDate('2027-12-17'),
+    };
+    draft.stages[0] = { id: '', start: civilDate('2027-02-01'), end: civilDate('2027-06-30') };
+    draft.stages[1] = { id: '', start: civilDate('2027-07-26'), end: civilDate('2027-12-17') };
+    let sequence = 0;
+    const organized = applyOfferOrganization(state, 'subsequente', draft, () => `x-${++sequence}`);
+    // The annual stage of the offer counted when saved and is under review only locally.
+    expect(linksToReview(state).has('ivaipora-annual-5')).toBe(false);
+    expect(linksToReview(organized).get('ivaipora-annual-5')).toBe('unclassified');
+    // The correction is offered only after the organization is saved: in the same save, the
+    // swap would re-express a link that counted (step 9e).
+    expect(correctableLinkIssue(state, organized, 'ivaipora-annual-5')).toBeUndefined();
+    const family = onceLink('family-meeting');
+    expect(() => save(state, changeActivity(organized, 'ivaipora-annual-5', family, []))).toThrow(
+      'não perde nem troca',
+    );
+    const stored = save(state, organized).state;
+    expect(correctableLinkIssue(stored, stored, 'ivaipora-annual-5')).toBe('unclassified');
+    const saved = save(stored, changeActivity(stored, 'ivaipora-annual-5', family, []));
+    expect(date(saved.state, 'ivaipora-annual-5').activity).toEqual(family);
+  });
+
+  test('a stage with automatic distribution loses it when corrected to another activity', () => {
+    const base = conflictingLinks();
+    const state = {
+      ...base,
+      events: base.events.map((event) =>
+        event.id === 'stage-twice-b'
+          ? { ...event, assessmentAutoStart: civilDate('2027-04-05') }
+          : event,
+      ),
+    };
+    expect(() => save(base, state)).not.toThrow();
+    const options = activityChangeOptions(state, 'stage-twice-b');
+    const other = options.find((row) => row.activity.activityId !== 'stage')!;
+    expect(other).toBeDefined();
+    const corrected = changeActivity(state, 'stage-twice-b', other.activity, []);
+    expect(date(corrected, 'stage-twice-b').assessmentAutoStart).toBeUndefined();
+    expect(() => save(state, corrected)).not.toThrow();
+    // Any other field the correction did not need still counts as an edit of the date.
+    expect(() =>
+      save(state, {
+        ...corrected,
+        events: corrected.events.map((event) =>
+          event.id === 'stage-twice-b'
+            ? { ...event, assessmentAutoStart: civilDate('2027-04-05') }
+            : event,
+        ),
+      }),
+    ).toThrow('Distribuição automática de etapas inválida');
   });
 });
 

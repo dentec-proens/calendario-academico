@@ -216,16 +216,20 @@ export function coversAllOffers(
 }
 
 /**
- * The date only had its linked activity corrected (`changeActivity`): it was under “Vínculo a
- * conferir” (`toReview`, by date ID, in the previous state), it keeps every other field, and the
- * new link names a generated activity that covers all the offers of the date. Removing a link is
- * never a correction, and a link that counts is never swapped: a defined stage position is not
+ * The date had its linked activity corrected (`changeActivity`): it was under “Vínculo a conferir”
+ * in the previous state (`toReview`, by date ID), and the new link names a generated activity that
+ * covers all the offers of the date. Other fields may change in the same save, as `updateDate`
+ * after the correction would change them: the corrected date passes every check of an edited
+ * date. A date put under review only by other changes of the same save is not corrected with
+ * them, since the swap would re-express a link that counted (step 9e); the interface offers the
+ * correction once those changes are saved (`correctableLinkIssue`). Removing a link is never a
+ * correction, and a link that counts is never swapped: a defined stage position is not
  * reinterpreted (section 5.1).
  */
 export function linkCorrected(
   state: Pick<LinkState, 'offers'>,
   generated: ReadonlyMap<string, ActivityPlanItem>,
-  toReview: ReadonlyMap<string, LinkIssue>,
+  toReview: ReadonlySet<string>,
   previous: CalendarEvent | undefined,
   next: CalendarEvent,
 ) {
@@ -237,12 +241,7 @@ export function linkCorrected(
   )
     return false;
   const activity = generatedActivity(generated, next.activity);
-  if (!activity || !coversAllOffers(state, activity, next)) return false;
-  const { activity: _previous, ...before } = previous;
-  const { activity: _next, ...after } = next;
-  // Compared as persisted: a field read as undefined at the save boundary is an absent field.
-  const stored = (value: object) => JSON.parse(JSON.stringify(value)) as unknown;
-  return equalValues(stored(before), stored(after));
+  return !!activity && coversAllOffers(state, activity, next);
 }
 
 function cyclePeriods(
@@ -299,8 +298,9 @@ const describe = (event: CalendarEvent) =>
  *    any conflict with another date, even an unchanged one, refuses the change;
  * 3. an unchanged date is never refused for a conflict: it is reported by `linksToReview`.
  * A recorded date never loses or gains a link by these paths, and swaps it only by a correction of
- * the linked activity (`linkCorrected`): the new activity is generated, covers every offer of the
- * date and nothing else changed; the corrected date then passes the checks of an edited date.
+ * the linked activity (`linkCorrected`): the date was under review, the new activity is generated
+ * and covers every offer of the date; the corrected date then passes the checks of an edited date,
+ * with any other change made to it in the same save.
  * These are the contracts of the date commands (`planActivityDate`, `createCampusDate`,
  * `updateDate`, `changeActivity`) at the save boundary, which receives the whole state and not the
  * command.
@@ -312,7 +312,7 @@ export function validateLinks(
   const before = new Map(previous?.events.map((event) => [event.id, event]));
   const states = previous && { before: previous, after: next };
   const requirements = generatedActivities(next);
-  const toReview = previous ? linksToReview(previous) : new Map<string, LinkIssue>();
+  const toReview = new Set(previous ? linksToReview(previous).keys() : []);
   const corrected = (event: CalendarEvent) =>
     linkCorrected(next, requirements, toReview, before.get(event.id), event);
   const changed = next.events.filter((event) => {
@@ -321,7 +321,7 @@ export function validateLinks(
   });
   if (changed.length)
     throw new DomainError(
-      `Uma data salva não perde nem troca a atividade vinculada, exceto pela correção do vínculo, sem outra alteração da data e para atividade gerada que abranja todas as suas ofertas: ${changed.map(describe).join('; ')}.`,
+      `Uma data salva não perde nem troca a atividade vinculada, exceto pela correção do vínculo de data em Vínculo a conferir para atividade gerada que abranja todas as suas ofertas: ${changed.map(describe).join('; ')}.`,
     );
   // `updateDate` keeps the link of a saved date: a date of the campus never gains one.
   const gained = next.events.filter((event) => {
