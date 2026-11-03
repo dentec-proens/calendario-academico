@@ -25,6 +25,7 @@ import {
   offerFor,
 } from '../../src/domain/calendar/offers.ts';
 import { convertedCatalogueEvents, convertedState } from '../helpers/v5-conversion.ts';
+import { legacyIds, namesLegacyRow } from '../helpers/legacy-classification.ts';
 
 /**
  * Static v3 oracle captured before the M2/M3 implementation, from commit 34e35b9.
@@ -217,6 +218,29 @@ test('retains the immutable pre-v4 oracle and all independently captured v4 inpu
   expect(inputs.cases.map(({ name }) => name)).toEqual(oracle.cases.map(({ name }) => name));
 });
 
+interface Projection {
+  requirements: { id: string; basis?: string }[];
+  diagnostics: { coverage: { requirementId: string }[] };
+  readiness: { issues: string[]; warnings: string[] };
+}
+
+/**
+ * Step 9d: 2027 no longer generates the rows of “Classificação legada”. The capture is compared
+ * without them, their coverage and the readiness messages that name them; no date of these inputs
+ * is linked to one of them (the frozen v4 documents of `v4-oracle.test.ts` cover that case).
+ */
+function withoutLegacyRows(expected: unknown): unknown {
+  const value = structuredClone(expected) as Projection;
+  const ids = legacyIds(value.requirements);
+  value.requirements = value.requirements.filter((row) => !ids.has(row.id));
+  value.diagnostics.coverage = value.diagnostics.coverage.filter(
+    (row) => !ids.has(row.requirementId),
+  );
+  value.readiness.issues = value.readiness.issues.filter((text) => !namesLegacyRow(text, ids));
+  value.readiness.warnings = value.readiness.warnings.filter((text) => !namesLegacyRow(text, ids));
+  return value;
+}
+
 // The frozen inputs and catalogue are stored v4; the current code reads them converted (phase 2).
 const catalogue = {
   ...oracle.catalogue,
@@ -226,7 +250,7 @@ const catalogue = {
 test.each(inputs.cases.filter(({ input }) => input.year > 2026))(
   'preserves the captured semantics after the v5 conversion: $name',
   ({ name, input: stored }) => {
-    const expected = oracle.cases.find((item) => item.name === name)!.expected;
+    const expected = withoutLegacyRows(oracle.cases.find((item) => item.name === name)!.expected);
     const input = convertedState(stored);
     const before = structuredClone(input);
     expect(readinessTokens(semanticProjection(input, catalogue), input)).toEqual(

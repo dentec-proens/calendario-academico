@@ -7,7 +7,6 @@ import type {
   CalendarOffer,
 } from '../../calendar/model.ts';
 import { calendarOffers, offerFor, stageCycle as offerStageCycle } from '../../calendar/offers.ts';
-import { operationalRequirements } from '../../calendar/activities/operational-checklist.ts';
 import {
   declareRules,
   expandRules,
@@ -343,29 +342,16 @@ export const rules: ActivityRule[] = [
     },
   ]),
 ];
-const declared = new Map<string, ActivityRule>(rules.map((rule) => [rule.id, rule]));
-
+/**
+ * Rows of the 2027 policy, only from its own declarations. A link to an ID the policy does not
+ * generate (as the operational `teaching-plan-0`) has no row here: it is not rebound to the
+ * operational catalogue and stays under “Vínculo a conferir” until corrected.
+ */
 export function requirements(state: AssessmentSettings): ActivityPlanItem[] {
-  const rows = expandRules(rules, state).map(({ row }) => ({
+  return expandRules(rules, state).map(({ row }) => ({
     modalities: supportedKinds(state),
     ...row,
   }));
-  // Keep every legacy ID resolvable. It is evidence awaiting classification, never silently rebound.
-  const legacy = operationalRequirements(state, { criteria: { 'cultural-week': 'XXVI' } })
-    .filter(({ row }) => !rows.some((r) => r.id === row.id))
-    .map(({ row, slot, rule }) => ({
-      ...row,
-      required: false,
-      applicability: 'optional' as const,
-      reason: 'Vínculo legado conservado; confira o requisito e a organização aplicáveis em 2027.',
-      basis: 'Classificação legada',
-      modalities: calendarOffers(state).map((offer) => offer.kind),
-      term: slot.term,
-      ...(declared.get(rule.id)?.optionalFor && {
-        optionalFor: declared.get(rule.id)!.optionalFor,
-      }),
-    }));
-  return [...rows, ...legacy];
 }
 export function applicability(
   _state: AssessmentSettings,

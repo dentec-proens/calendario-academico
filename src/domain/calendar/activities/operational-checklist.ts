@@ -1,4 +1,3 @@
-import { type CivilDate } from '../../civil-date.ts';
 import type { AssessmentSettings, ActivityPlanItem } from '../model.ts';
 import {
   calendarOffers,
@@ -12,19 +11,9 @@ import {
   expandRules,
   type ActivityRule,
   type CycleSlot,
-  type ExpandedRule,
   type Slot,
 } from './rules.ts';
 
-/** Year-specific details a policy may add to the undated operational checklist. */
-export interface OperationalChecklistOptions {
-  /** Civil deadlines by activity ID; the label shows them in dd/mm/yyyy. */
-  deadlines?: Readonly<Record<string, CivilDate>>;
-  /** Review criteria are linked only when given; entries renumber criteria by activity ID. */
-  criteria?: Readonly<Record<string, string>>;
-}
-
-const civilDate = (date: string) => date.split('-').reverse().join('/');
 const optionalLabel = ' (opcional para esta oferta)';
 const nonIntegrated = ['graduacao', 'subsequente', 'posgraduacao'];
 const stageSuffix = ({ offer, term }: Slot) =>
@@ -44,27 +33,23 @@ const cyclesByRegime = (state: AssessmentSettings): CycleSlot[] => {
   }));
 };
 
-// Undated PROENS operational checklist for unconfigured years and legacy IDs kept by later
-// policies. Historical dates come only from the selected policy.
-export function operationalRules(options: OperationalChecklistOptions = {}): ActivityRule[] {
+/**
+ * Undated PROENS operational checklist, the explicit catalogue of years without a configured
+ * policy (`unconfiguredPolicy`). It links no review criterion and asserts no compliance. A policy
+ * year never falls back to it: a link the policy does not generate stays under “Vínculo a
+ * conferir” (plan, phase 2, step 9d). Its IDs stay declared (`declaredActivityRules`), so links
+ * of years without a policy remain valid.
+ */
+export function operationalRules(): ActivityRule[] {
   const withoutSecondIntake = ({ n, state }: Slot) => {
     return n === 2 && secondSemesterIntake(state.offers) === false;
   };
-  const linked = (rule: ActivityRule): ActivityRule => ({
-    ...rule,
-    criterion: options.criteria ? (options.criteria[rule.id] ?? rule.criterion) : undefined,
-  });
-  const dated = (id: string, name: string) => ({
-    name: name + (options.deadlines?.[id] ? ` — até ${civilDate(options.deadlines[id])}` : ''),
-    deadline: options.deadlines?.[id],
-  });
-  const table: ActivityRule[] = [
+  return [
     ...declareRules({ repeat: 'stage' }, [
       {
         id: 'stage',
         name: (s) => `${stageNumber(s)}ª etapa de avaliação — início e término${stageSuffix(s)}`,
         group: 'teaching',
-        criterion: 'I',
         category: 'limite',
         variant: 'stage',
       },
@@ -73,7 +58,6 @@ export function operationalRules(options: OperationalChecklistOptions = {}): Act
         name: (s) =>
           `Prazo de lançamento dos resultados (rendimento e frequência) da ${stageNumber(s)}ª etapa${stageSuffix(s)}`,
         group: 'teaching',
-        criterion: 'IX',
       },
       {
         id: 'council',
@@ -81,7 +65,6 @@ export function operationalRules(options: OperationalChecklistOptions = {}): Act
           `Conselho de classe/coletivo pedagógico da ${stageNumber(s)}ª etapa${optionalCouncil(s) ? optionalLabel : ''}${stageSuffix(s)}`,
         required: (s) => (optionalCouncil(s) ? false : undefined),
         group: 'teaching',
-        criterion: 'XIII',
         category: 'conselho',
       },
       {
@@ -89,7 +72,6 @@ export function operationalRules(options: OperationalChecklistOptions = {}): Act
         name: (s) =>
           `Reunião pedagógica após os resultados parciais da ${stageNumber(s)}ª etapa${stageSuffix(s)}`,
         group: 'teaching',
-        criterion: 'XIII',
       },
     ]),
     ...declareRules({ repeat: 'cycle', cycles: cyclesByRegime }, [
@@ -98,26 +80,22 @@ export function operationalRules(options: OperationalChecklistOptions = {}): Act
         name: (s) =>
           `Prazo de lançamento do resultado final (rendimento e frequência) do ${termLabel(s)}`,
         group: 'teaching',
-        criterion: 'X',
       },
       {
         id: 'diary',
         name: (s) => `Prazo de fechamento e entrega dos diários de classe do ${termLabel(s)}`,
         group: 'teaching',
-        criterion: 'XI',
       },
       {
         id: 'teaching-plan',
         name: (s) => `Prazo de entrega do Plano de Ensino do ${termLabel(s)}`,
         group: 'teaching',
-        criterion: 'XII',
       },
       {
         id: 'recognition',
         name: (s) =>
           `Aproveitamento de estudos, certificação de conhecimentos e equivalência de estágio — ${termLabel(s)}`,
         group: 'admission',
-        criterion: 'VI',
       },
       {
         id: 'registration',
@@ -133,7 +111,6 @@ export function operationalRules(options: OperationalChecklistOptions = {}): Act
         name: (s) =>
           `Publicação dos editais de transferência interna e externa, reingresso e portadores de diploma — antes do início do ${termLabel(s)}`,
         group: 'admission',
-        criterion: 'VIII',
         variant: 'admission-notice',
       },
       {
@@ -141,7 +118,6 @@ export function operationalRules(options: OperationalChecklistOptions = {}): Act
         name: (s) =>
           `Prazo para estudantes solicitarem revisão de resultados finais — ${termLabel(s)}`,
         group: 'admission',
-        criterion: 'XIV',
       },
     ]),
     ...declareRules({ repeat: 'semester' }, [
@@ -149,26 +125,22 @@ export function operationalRules(options: OperationalChecklistOptions = {}): Act
         id: 'pit',
         name: (s) => `Prazo de entrega do PIT — ${s.n}º semestre`,
         group: 'teaching',
-        criterion: 'XII',
       },
       {
         id: 'enrolment',
         name: (s) => `Rematrícula dos estudantes — ${s.n}º semestre`,
         group: 'admission',
-        criterion: 'V',
       },
       {
         id: 'adjustment',
         name: (s) => `Ajuste de matrículas dos veteranos — ${s.n}º semestre`,
         group: 'admission',
-        criterion: 'V',
       },
       {
         id: 'withdrawal',
         name: (s) =>
           `Prazo de trancamento de curso e cancelamento de matrícula em componente — ${s.n}º semestre`,
         group: 'admission',
-        criterion: 'VII',
       },
     ]),
     ...declareRules({ repeat: 'once' }, [
@@ -179,7 +151,6 @@ export function operationalRules(options: OperationalChecklistOptions = {}): Act
           (optionalMeeting(s) ? optionalLabel : ''),
         required: (s) => (optionalMeeting(s) ? false : undefined),
         group: 'campus',
-        criterion: 'XV',
         category: 'conselho',
       },
       {
@@ -189,58 +160,49 @@ export function operationalRules(options: OperationalChecklistOptions = {}): Act
           (optionalMeeting(s) ? optionalLabel : ''),
         required: (s) => (optionalMeeting(s) ? false : undefined),
         group: 'campus',
-        criterion: 'XVI',
       },
       {
         id: 'campus-events',
         name: 'Eventos de ensino, pesquisa, extensão e inovação do campus',
         group: 'campus',
-        criterion: 'XVII',
       },
       {
         id: 'alumni-meeting',
         name: 'Encontro dos egressos',
         group: 'campus',
-        criterion: 'XVIII',
       },
       {
         id: 'internship-event',
         name: 'Evento sobre a temática de estágios',
         group: 'campus',
-        criterion: 'XIX',
       },
       {
         id: 'robotics',
-        ...dated('robotics', 'Fase local da Olimpíada Brasileira de Robótica'),
+        name: 'Fase local da Olimpíada Brasileira de Robótica',
         group: 'campus',
-        criterion: 'XX',
       },
       {
         id: 'course-showcase',
-        ...dated('course-showcase', 'Mostra de Cursos do campus'),
+        name: 'Mostra de Cursos do campus',
         group: 'campus',
-        criterion: 'XXI',
       },
       {
         id: 'pedagogical-training',
         name: 'Formação pedagógica — mínimo de 40 horas anuais',
         minHours: 40,
         group: 'campus',
-        criterion: 'XXII',
       },
       {
         id: 'collective-planning',
         name: 'Planejamento/replanejamento coletivo — mínimo de 20 horas anuais',
         minHours: 20,
         group: 'campus',
-        criterion: 'XXIII',
       },
       {
         id: 'women-week',
         name: 'Semana de Valorização de Mulheres que Fizeram História — março',
         month: 3,
         group: 'campus',
-        criterion: 'XXIV',
       },
       {
         id: 'cultural-week',
@@ -251,18 +213,7 @@ export function operationalRules(options: OperationalChecklistOptions = {}): Act
       },
     ]),
   ];
-  return table.map(linked);
 }
 
-/** Operational rows with their slot and declaration, for policies that keep legacy IDs. */
-export function operationalRequirements(
-  state: AssessmentSettings,
-  options: OperationalChecklistOptions = {},
-): ExpandedRule[] {
-  return expandRules(operationalRules(options), state);
-}
-
-export const operationalChecklist = (
-  state: AssessmentSettings,
-  options: OperationalChecklistOptions = {},
-): ActivityPlanItem[] => operationalRequirements(state, options).map(({ row }) => row);
+export const operationalChecklist = (state: AssessmentSettings): ActivityPlanItem[] =>
+  expandRules(operationalRules(), state).map(({ row }) => row);

@@ -16,7 +16,6 @@ import {
   reviewEntry,
   reviewFields,
 } from '../../convex/validators.ts';
-import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { operationalRules } from '../../src/domain/calendar/activities/operational-checklist.ts';
 import type { RepeatBase as DomainRepeat } from '../../src/domain/calendar/migration/inventory.ts';
 import {
@@ -33,16 +32,23 @@ import {
   type Inventory,
   type V4Form,
 } from '../../src/domain/calendar/migration/inventory.ts';
-import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { rules as policyRules } from '../../src/domain/policies/consup-292-2027/requirements.ts';
 import { readOracle, v4CatalogueRows, v4Cases, type V4Case } from '../helpers/v4-fixtures.ts';
-import { convertedContent } from '../helpers/v5-conversion.ts';
 
 const repository = resolve(import.meta.dirname, '../..');
 const cases = v4Cases();
-const oracle = readOracle<{ cases: { name: string; linksToReview: Record<string, string> }[] }>();
-const reviewed = (item: V4Case) =>
-  oracle.cases.find((entry) => entry.name === item.name)!.linksToReview;
+/** Rows v4 generated for each frozen document, as the oracle recorded them (without the link). */
+interface RecordedRow {
+  id: string;
+  basis?: string;
+  offerId?: string;
+  term?: string;
+}
+const oracle = readOracle<{
+  cases: { name: string; linksToReview: Record<string, string>; activities: RecordedRow[] }[];
+}>();
+const recorded = (item: V4Case) => oracle.cases.find((entry) => entry.name === item.name)!;
+const reviewed = (item: V4Case) => recorded(item).linksToReview;
 const contentInventory = (item: V4Case, submissions: unknown[] = item.submissions) =>
   inventoryContent(item.content, {
     year: item.year,
@@ -164,13 +170,9 @@ describe('frozen declarations', () => {
   test('agree with the v4 checklist on every link it generates', () => {
     let checked = 0;
     for (const item of cases) {
-      // The code reads the current format: the offers' stages are converted (step 8).
-      const state = {
-        ...convertedContent(item).state,
-        year: item.year,
-        campus: item.campus,
-      } as unknown as ActivityState;
-      const generated = new Map(activityPlan(state).map((row) => [row.id, row]));
+      // The rows v4 generated, recorded by the oracle: from step 9d the code no longer generates
+      // the 2027 rows of “Classificação legada”, and the inventory still classifies those links.
+      const generated = new Map(recorded(item).activities.map((row) => [row.id, row]));
       for (const { link } of contentInventory(item).links) {
         const row = generated.get(link.requirementId);
         if (!row) continue;
@@ -280,10 +282,7 @@ describe('inventory of the frozen v4 documents', () => {
 
   test('a semester link kept by v4 as legacy in a 2027 annual calendar stays a semester to review', () => {
     const item = byName('Vínculo semestral legado em 2027 só anual, com documentos');
-    const state = { ...item.content.state, year: item.year, campus: item.campus };
-    const row = activityPlan(state as unknown as ActivityState).find(
-      (entry) => entry.id === 'enrolment-1',
-    );
+    const row = recorded(item).activities.find((entry) => entry.id === 'enrolment-1');
     expect(row?.basis).toBe('Classificação legada');
     const inventory = contentInventory(item);
     expect(inventory.links.find(({ link }) => link.requirementId === 'enrolment-1')?.link).toEqual({

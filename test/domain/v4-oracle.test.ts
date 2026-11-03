@@ -19,6 +19,7 @@ import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
 import { readOracle, v4Cases, writeOracle, type V4Case } from '../helpers/v4-fixtures.ts';
 import { convertedContent, convertedSubmission } from '../helpers/v5-conversion.ts';
+import { datesLinkedToLegacyRows, legacyIds } from '../helpers/legacy-classification.ts';
 
 /**
  * Oracle “before” of phase 2 (step 1): what the v4 code computes for every frozen document.
@@ -124,14 +125,34 @@ if (process.env.UPDATE_V4_ORACLE === '1')
 
 const oracle = readOracle<{ cases: ReturnType<typeof before>[] }>();
 
+/**
+ * The oracle as the code computes it from step 9d: without the 2027 rows of “Classificação
+ * legada”, their coverage and their situation, and with each date linked to one of them under
+ * review as `unclassified`. Every other value is the recorded one.
+ */
+function withoutLegacyRows(expected: ReturnType<typeof before>, item: V4Case) {
+  const ids = legacyIds(expected.activities);
+  const linked = datesLinkedToLegacyRows(item.content.state.events, ids);
+  return {
+    ...expected,
+    linksToReview: {
+      ...Object.fromEntries(linked.map((id) => [id, 'unclassified'])),
+      ...expected.linksToReview,
+    },
+    activities: expected.activities.filter((row) => !ids.has(row.id)),
+    coverage: expected.coverage.filter((row) => !ids.has(row.activity)),
+    status: Object.fromEntries(Object.entries(expected.status).filter(([id]) => !ids.has(id))),
+  };
+}
+
 test('the oracle covers every frozen document, in order', () => {
   expect(oracle.cases.map((item) => item.name)).toEqual(cases.map((item) => item.name));
 });
 
 test.each(cases.map((item, index) => [item.name, index] as const))(
-  'v4 code still computes the oracle for %s',
+  'the current code computes the oracle for %s',
   (_name, index) => {
-    expect(current[index]).toEqual(oracle.cases[index]);
+    expect(current[index]).toEqual(withoutLegacyRows(oracle.cases[index]!, cases[index]!));
   },
 );
 

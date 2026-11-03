@@ -63,13 +63,13 @@ test('counters follow the unit of each view and every filter but pendency', () =
 test('activities are addressed by the key of their link, which pins them past the filters', () => {
   const all = step(ivaiporaDraft);
   for (const line of all.activities) expect(line.key).toBe(activityKey(line.item.activity));
-  expect(all.activities.map((line) => line.key)).toContain('final:cycle:annual');
+  expect(all.activities.map((line) => line.key)).toContain('pit:semester:first');
   // The campus origin hides activities, except the one a review link or the panel pins.
   const filters = { atividadeOrigem: 'campus', atividadePendencia: 'sem-pendencias' };
   expect(step(ivaiporaDraft, filters).activities).toHaveLength(0);
   expect(
-    step(ivaiporaDraft, filters, 'final:cycle:annual').activities.map((line) => line.key),
-  ).toEqual(['final:cycle:annual']);
+    step(ivaiporaDraft, filters, 'pit:semester:first').activities.map((line) => line.key),
+  ).toEqual(['pit:semester:first']);
   // A format 4 identifier pins nothing.
-  expect(step(ivaiporaDraft, filters, 'final-0').activities).toHaveLength(0);
+  expect(step(ivaiporaDraft, filters, 'pit-1').activities).toHaveLength(0);
 });

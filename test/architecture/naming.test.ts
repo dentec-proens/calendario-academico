@@ -79,6 +79,8 @@ const requirementIdAllowed = new Set([
   'test/domain/activity-link-consumers.test.ts',
   // The frozen v3 oracle names each linked date by the row its link resolves to.
   'test/domain/offers-equivalence.test.ts',
+  // Step 9d: the frozen dates linked to the retired “Classificação legada” rows of 2027.
+  'test/helpers/legacy-classification.ts',
 ]);
 
 test('requirementId remains only in the converter, frozen validators, oracles and base identity', async () => {

@@ -7,7 +7,12 @@ import type {
 } from '../../src/domain/calendar/model.ts';
 import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
 import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
-import { cycleLink, definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
+import {
+  cycleLink,
+  definedStage,
+  semesterLink,
+  unclassifiedStage,
+} from '../helpers/activity-links.ts';
 
 export type PendingLinksFixture = CalendarContent & { year: number; campus: string };
 
@@ -282,6 +287,49 @@ export function stageLinksToReview(): PendingLinksFixture {
       date('council-beyond', definedStage('council', 'subsequente', 'annual', 3), 'subsequente'),
       date('results-generated', definedStage('results', 'subsequente', 'annual', 1), 'subsequente'),
       date('council-generated', definedStage('council', 'subsequente', 'annual', 1), 'subsequente'),
+    ],
+  };
+}
+
+/**
+ * Annual 2027 calendar with links that v4 resolved only through the operational catalogue
+ * (“Classificação legada”, retired in phase 2, step 9d): the teaching plan by offer cycle
+ * (`teaching-plan-0`) and enrolment by reference semester (`enrolment-1`), which the 2027 policy
+ * declares with other bases (reference semester and offer cycle). Both stay under review.
+ */
+export function legacyOperationalLinks(): PendingLinksFixture {
+  const date = (id: string, activity: ActivityRef, start: string): CalendarEvent => ({
+    id,
+    name: `Data sintética ${id}`,
+    start: day(start),
+    end: day(start),
+    effect: 'note',
+    category: 'prazo',
+    activity,
+    scope: { offers: ['integrado'], confirmed: true },
+  });
+  return {
+    schemaVersion: 5,
+    rulesetVersion: 'consup-292-2027-v3',
+    year: 2027,
+    campus: 'Campus sintético de vínculos legados',
+    offers: [
+      { ...offer('integrado'), organization: 'anual', stages: { status: 'defined', perTerm: 4 } },
+    ],
+    weekdays: [1, 2, 3, 4, 5],
+    weekConfirmed: true,
+    periods: [
+      {
+        id: 'year',
+        name: 'Ano letivo',
+        start: day('01/02'),
+        end: day('17/12'),
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
+      },
+    ],
+    events: [
+      date('legacy-teaching-plan', cycleLink('teaching-plan', 'annual'), '19/02'),
+      date('legacy-enrolment', semesterLink('enrolment', 'first'), '25/01'),
     ],
   };
 }

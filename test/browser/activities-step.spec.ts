@@ -9,6 +9,7 @@ import {
   cascavelDraft,
   conflictingLinks,
   ivaiporaDraft,
+  legacyOperationalLinks,
   type PendingLinksFixture,
 } from '../fixtures/pending-links-2027.ts';
 import type {} from '../fixtures/editor-client.ts';
@@ -31,6 +32,7 @@ for (const width of [1440, 390])
   for (const [campus, fixture] of [
     ['Ivaiporã', ivaiporaDraft],
     ['Cascavel', cascavelDraft],
+    ['legacy operational', legacyOperationalLinks],
   ] as const)
     test(`the ${campus} links stay visible to review in both views at ${width}px`, async ({
       page,
@@ -165,17 +167,17 @@ for (const width of [1440, 390])
 
     // An activity without dates, from the by-date view: the by-activity view and its panel open.
     await page.locator('#activity-mode-data').check();
-    await followLink(page, 'final:cycle:annual');
+    await followLink(page, 'pit:semester:first');
     await expect(page.locator('#activity-mode-atividade')).toBeChecked();
-    await expect(panel.locator('[data-activity-detail="final:cycle:annual"]')).toHaveAttribute(
+    await expect(panel.locator('[data-activity-detail="pit:semester:first"]')).toHaveAttribute(
       'open',
       '',
     );
-    await expect(panel.locator('[data-prepare-activity="final:cycle:annual"]')).toHaveText(
+    await expect(panel.locator('[data-prepare-activity="pit:semester:first"]')).toHaveText(
       'Preencher atividade',
     );
     await expect(
-      page.locator('#activity-checklist [data-activity-row="final:cycle:annual"]'),
+      page.locator('#activity-checklist [data-activity-row="pit:semester:first"]'),
     ).toHaveCount(1);
     await page.locator('#close-event-panel').click();
     await expect(page).not.toHaveURL(/atividade=/);
@@ -199,10 +201,14 @@ for (const width of [1440, 390])
     await expect(page.locator('#link-review-reason')).toContainText('final:cycle:first');
     await page.locator('#close-event-panel').click();
 
-    // A complete key that names neither a generated activity nor a date to review warns.
-    await followLink(page, 'council:stage:unclassified:3:integrado');
-    await expect(page.locator('#activity-link-missing')).toBeVisible();
-    await expect(page.locator('#activity-link-invalid')).toHaveCount(0);
+    // A complete key that names neither a generated activity nor a date to review warns, also
+    // for an operational row v4 kept in 2027 as “Classificação legada” (step 9d: no fallback).
+    for (const key of ['council:stage:unclassified:3:integrado', 'final:cycle:annual']) {
+      await followLink(page, key);
+      await expect(page.locator('#activity-link-missing')).toBeVisible();
+      await expect(page.locator('#activity-link-invalid')).toHaveCount(0);
+      await expect(panel).toBeHidden();
+    }
 
     // A format 4 identifier or a partial key is not a key: the Router drops it and the step warns.
     for (const value of [

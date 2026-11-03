@@ -48,5 +48,5 @@ O código exige o formato 5 de calendário, inclusive nos envios e no catálogo:
 - Os calendários que eram de teste antes do ciclo de vida guardam a marca em `label: 'Teste'`. A migração `calendarPurposeToStatus` converteu todos para rascunho sem alterar `version`; `calendars.purpose` e as tabelas de histórico por salvamento (`calendarVersions` e `calendarSnapshots`) saíram do schema.
 - Pareceres anteriores aos envios não têm `submissionId` e precisam ser salvos de novo no primeiro envio.
 - Os envios seguem as migrações futuras de formato de `calendarContents`: a evidência preserva o significado, não os bytes.
-- A política de 2027 conserva como vínculos legados opcionais os IDs de requisitos da lista operacional anterior.
+- Em 2027 valem só as atividades declaradas pela política; ela não gera mais as linhas opcionais da lista operacional (a antiga “Classificação legada”). Uma data vinculada a uma delas conserva o vínculo e fica em **Vínculo a conferir**. Anos sem política seguem a lista operacional.
 - Os snapshots institucionais conservam tipos normativos em `modalities`. O escopo é resolvido por `offer.kind`, sem reintroduzir esse campo nos eventos locais.

@@ -18,6 +18,7 @@ import {
   reviewBoundary,
   rulesetChangesBetween,
 } from '../../src/domain/policies/registry.ts';
+import { legacyIds } from '../helpers/legacy-classification.ts';
 
 /**
  * Catalogue fingerprint of each policy version. When this test fails on a bound policy, append a
@@ -230,8 +231,46 @@ test('published historical fingerprints remain intact and v4 catalogues match th
   }
   for (const year of years)
     expect(canonical(catalogue(policyFor(year), year)), String(year)).toEqual(
-      canonical(archive.v4Catalogues[year]),
+      canonical(withoutLegacyRows(archive.v4Catalogues[year])),
     );
+});
+
+/**
+ * Phase 2, step 9d: 2027 no longer generates the optional rows the capture kept from the
+ * operational catalogue as “Classificação legada”. They never carried an obligation (`optional`,
+ * or `unconfigured` for excluded offers; outside the policy's declarations and `/regras`), so the ruleset version is kept and
+ * the capture is compared without them; every other row is compared in full.
+ */
+function withoutLegacyRows(captured: unknown) {
+  const value = captured as { states: { requirements: { id: string; basis?: string }[] }[] };
+  return {
+    ...value,
+    states: value.states.map((state) => {
+      const ids = legacyIds(state.requirements);
+      return { ...state, requirements: state.requirements.filter((row) => !ids.has(row.id)) };
+    }),
+  };
+}
+
+test('the capture of 2027 had the retired legacy rows, never required, and the code no longer generates them', () => {
+  const states = (
+    archive.v4Catalogues[2027] as {
+      states: { requirements: { id: string; basis?: string; byModality: object }[] }[];
+    }
+  ).states;
+  const retired = states.flatMap((state) =>
+    state.requirements.filter((row) => legacyIds([row]).size),
+  );
+  expect(retired.length).toBeGreaterThan(0);
+  for (const row of retired)
+    for (const offer of Object.values(row.byModality) as { applicability: string }[])
+      expect(['optional', 'unconfigured']).toContain(offer.applicability);
+  for (const settings of referenceSettings)
+    expect(
+      activityPlan({ ...settings, year: 2027 }).filter(
+        (row) => row.basis === 'Classificação legada',
+      ),
+    ).toEqual([]);
 });
 
 test('only establishing or tightening versions bind reviews and base identities', () => {

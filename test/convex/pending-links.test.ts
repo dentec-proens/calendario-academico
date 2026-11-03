@@ -17,6 +17,7 @@ import {
   cascavelDraft,
   conflictingLinks,
   ivaiporaDraft,
+  legacyOperationalLinks,
   stageLinksToReview,
   type PendingLinksFixture,
 } from '../fixtures/pending-links-2027.ts';
@@ -116,6 +117,26 @@ test('results and councils by stage without generated stage are saved under revi
       saved.version,
     ),
   ).rejects.toThrow(/Vínculo de atividade inválido/);
+});
+
+test('links v4 resolved as “Classificação legada” are saved under review, without fallback', async () => {
+  const { record, save } = await stored(legacyOperationalLinks());
+  const saved = await save({ ...record.state, weekdays: [1, 2, 3, 4] });
+  expect(linkOf(saved.state)).toEqual(linkOf(record.state));
+  expect(Object.fromEntries(linksToReview({ ...saved.state, year: 2027 }))).toEqual({
+    'legacy-teaching-plan': 'unclassified',
+    'legacy-enrolment': 'unclassified',
+  });
+  // 2027 no longer generates the operational rows: a new date with such a link is refused.
+  for (const id of ['legacy-teaching-plan', 'legacy-enrolment']) {
+    const kept = saved.state.events.find((event) => event.id === id)!;
+    await expect(
+      save(
+        { ...saved.state, events: [...saved.state.events, { ...kept, id: `${id}-new` }] },
+        saved.version,
+      ),
+    ).rejects.toThrow(/Vínculo de atividade inválido/);
+  }
 });
 
 test('a pending date is edited and saved with its link', async () => {
