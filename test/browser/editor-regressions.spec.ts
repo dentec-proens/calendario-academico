@@ -16,8 +16,8 @@ test('an open event form adopts a newer confirmed value only while it has no loc
   await page.locator('[data-view="events"]').click();
   await editCampusEvent(page, 'local-event');
   await page.locator('#event-more-options > summary').click();
-  const category = page.locator('#event-category');
-  await expect(category).toHaveValue('evento');
+  const category = (value: string) => page.locator(`#event-category [data-choice="${value}"]`);
+  await expect(category('evento')).toHaveAttribute('aria-checked', 'true');
   const publishCategory = (value: string) =>
     page.evaluate((next) => {
       const { record } = window.editorTest;
@@ -26,11 +26,11 @@ test('an open event form adopts a newer confirmed value only while it has no loc
       return window.publishReviewerCalendar();
     }, value);
   await publishCategory('conselho');
-  await expect(category).toHaveValue('conselho');
-  await category.selectOption('feriado');
+  await expect(category('conselho')).toHaveAttribute('aria-checked', 'true');
+  await category('feriado').click();
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await publishCategory('evento');
-  await expect(category).toHaveValue('feriado');
+  await expect(category('feriado')).toHaveAttribute('aria-checked', 'true');
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });
 
@@ -254,7 +254,7 @@ test('event removal clears its open draft and grouped teacher vacations', async 
   await page.locator('[data-view="events"]').click();
   await editCampusEvent(page, 'local-event');
   await page.locator('#event-more-options > summary').click();
-  await page.locator('#event-category').selectOption('feriado');
+  await page.locator('#event-category [data-choice="feriado"]').click();
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await page.locator('#close-event-panel').click();
   await openCampusEvent(page, 'local-event');

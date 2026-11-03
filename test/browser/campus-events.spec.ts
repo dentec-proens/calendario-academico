@@ -176,18 +176,20 @@ for (const width of [1440, 390]) {
     // A category that must stay in the official calendar unmarks the option before saving.
     const more = page.locator('#event-more-options');
     if ((await more.getAttribute('open')) === null) await more.locator('summary').click();
-    await page.locator('#event-category').selectOption('conselho');
-    // Open, the group shows the legend color under the field instead of repeating its summary.
+    await page.locator('#event-category [data-choice="conselho"]').click();
+    // Open, each category shows its legend color instead of the group repeating its summary.
     await expect(more.locator('.event-more-summary')).toBeHidden();
-    await expect(page.locator('#event-category-color .category-mark__swatch')).toHaveCSS(
-      'background-color',
-      'rgb(255, 0, 255)',
-    );
+    await expect(
+      page
+        .locator('#event-category .ui-choice')
+        .filter({ has: page.locator('[data-choice="conselho"]') })
+        .locator('.category-mark__swatch'),
+    ).toHaveCSS('background-color', 'rgb(255, 0, 255)');
     await expect(option).toHaveCount(0);
     const notice = page.locator('#event-internal-unmarked');
     await expect(notice).toContainText('Data interna desmarcada');
     await expect(notice).toContainText('passa a constar do calendário oficial');
-    await page.locator('#event-category').selectOption('evento');
+    await page.locator('#event-category [data-choice="evento"]').click();
     await expect(option).not.toBeChecked();
     await option.check();
     await expect(notice).toHaveCount(0);

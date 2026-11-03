@@ -407,7 +407,7 @@ test('multi-day inclusions over a Saturday are registered but edited in the Acti
   // An inclusion recorded as an event combines the two fields freely.
   await page.locator('#event-type-extra-day').check();
   await page.locator('#event-more-options > summary').click();
-  await page.selectOption('#event-category', 'evento');
+  await page.locator('#event-category [data-choice="evento"]').click();
   await expect(page.locator('#event-effect [data-choice="include"]')).toHaveAttribute(
     'aria-checked',
     'true',
@@ -522,7 +522,7 @@ test('changing the category of a campus date keeps identity, dates, other fields
   );
   await editCampusEvent(page, 'local-event');
   await page.locator('#event-more-options > summary').click();
-  await page.locator('#event-category').selectOption('feriado');
+  await page.locator('#event-category [data-choice="feriado"]').click();
   // The form has no activity selector: a campus date never gains a link here.
   await expect(page.locator('#event-requirement')).toHaveCount(0);
   await expect(page.locator('#event-panel #event-form')).toBeVisible();

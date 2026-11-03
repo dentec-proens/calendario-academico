@@ -292,7 +292,10 @@ test('a free event asks what it is and the answer sets its effect and category',
     'aria-checked',
     'true',
   );
-  await expect(page.locator('#event-category')).toHaveValue('feriado');
+  await expect(page.locator('#event-category [data-choice="feriado"]')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await page.locator('#event-type-notice').check();
   await expect(page.locator('#event-admission-type')).toHaveAttribute('required', '');
   await page.locator('#event-type-recess').check();
@@ -338,7 +341,10 @@ test('a record with a freely combined effect and category shows both fields when
     'aria-checked',
     'true',
   );
-  await expect(page.locator('#event-category')).toHaveValue('formacao');
+  await expect(page.locator('#event-category [data-choice="formacao"]')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await expect(page.locator('#event-panel #event-form')).toBeVisible();
 });
 

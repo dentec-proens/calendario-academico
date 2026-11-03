@@ -129,35 +129,33 @@ export default function EventEditor() {
           keepInternalEligible({ effect: form.getFieldValue('effect'), category: value }),
       }}
     >
-      {(field) => {
-        const color = categories.find(([id]) => id === field.state.value)?.[2];
-        return (
-          <div className="event-category-field">
-            <Select
-              field={field}
-              label="Categoria"
-              id="event-category"
-              aria-describedby="event-category-color"
-            >
-              {categories.map(([id, label]) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-            <p id="event-category-color" className="help event-category-color">
-              {color && (
+      {(field) => (
+        <ChoiceGroup
+          id="event-category"
+          className="event-category"
+          label="Categoria na legenda PROENS"
+          value={field.state.value || null}
+          disabled={readOnly || editor.pending}
+          options={categories.map(([id, label, color]) => ({
+            value: id,
+            label: (
+              <span className="category-mark">
                 <span
-                  className="category-mark__swatch"
-                  style={{ '--category-color': color } as CSSProperties}
+                  className={
+                    color
+                      ? 'category-mark__swatch'
+                      : 'category-mark__swatch category-mark__swatch--none'
+                  }
+                  style={color ? ({ '--category-color': color } as CSSProperties) : undefined}
                   aria-hidden="true"
                 />
-              )}
-              {color ? 'Cor na legenda PROENS' : 'Sem cor na legenda PROENS'}
-            </p>
-          </div>
-        );
-      }}
+                {label}
+              </span>
+            ),
+          }))}
+          onValueChange={field.handleChange}
+        />
+      )}
     </form.Field>
   );
   const effectField = (
