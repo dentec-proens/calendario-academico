@@ -75,6 +75,8 @@ export interface EventValues {
   hours: string;
   /** Interface answer to "O que é este evento?"; `effect` and `category` hold the record. */
   eventType: '' | EventType;
+  /** **Data interna (art. 18)**: only offered while effect and category allow it. */
+  internal: boolean;
 }
 /** Destination answer that keeps the saved destinations by offer (plan, section 5.4). */
 export const keptDestinations = 'por-oferta';
@@ -130,6 +132,7 @@ export const emptyEvent = (offers: OfferId[]): EventValues => ({
   offers,
   hours: '',
   eventType: '',
+  internal: false,
 });
 export function eventValues(event: CalendarEvent): EventValues {
   const admission = event.notice?.admission;
@@ -150,6 +153,7 @@ export function eventValues(event: CalendarEvent): EventValues {
     offers: dateOffers,
     hours: event.hours === undefined ? '' : String(event.hours),
     eventType: event.activity ? '' : eventTypeOf(event),
+    internal: event.internal === true,
   };
 }
 /**
@@ -216,6 +220,8 @@ export function eventFromValues(
     scope: { offers: value.offers, confirmed: true },
     hours: value.hours ? Number(value.hours) : undefined,
     deadlineExtensionCause: value.deadlineExtensionCause || undefined,
+    // Marking or unmarking keeps ID, dates and scope; the command checks eligibility.
+    internal: value.internal ? true : undefined,
   };
 }
 

@@ -11,6 +11,7 @@ import {
   situationLabels,
 } from '#src/domain/calendar/activities/plan-evaluation.ts';
 import { observanceForEvent } from '#src/domain/calendar/observances.ts';
+import { isInternalDate } from '#src/domain/calendar/internal-dates.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
@@ -140,6 +141,7 @@ export default function ActivityChecklist() {
           statusLabel={statusLabel}
           dates={range(event)}
           pendingDraft={editor.pendingDates.has(event.id)}
+          internal={isInternalDate(event)}
           note={
             issue
               ? `Vínculo gravado: ${event.activity && activityKey(event.activity)}`

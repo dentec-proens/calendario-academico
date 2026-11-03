@@ -21,6 +21,7 @@ import { evaluateCalendar as calendarResult } from '../calendar/counting/evaluat
 import { evaluatePlan } from '../calendar/activities/plan-evaluation.ts';
 import { organizationForOffer, periodsForOffer } from '../calendar/organization/periods.ts';
 import { policyFor } from '../policies/registry.ts';
+import { isInternalDate } from '../calendar/internal-dates.ts';
 
 const normalize = (s: string) =>
   String(s)
@@ -39,6 +40,8 @@ const reviewCandidate = (
   end: e.end,
   evidence: automaticEventSource(e) ?? '',
 });
+/** A candidate of a criterion; an internal date carries its mark and is never evidence. */
+type ReviewCandidate = ReturnType<typeof reviewCandidate> & { internal?: true };
 export function reviewSupport<
   T extends {
     id: string;
@@ -52,6 +55,7 @@ export function reviewSupport<
     Partial<Pick<DateFields, 'effect' | 'notice' | 'deadlineAdjustment' | 'hours'>> & {
       scope?: EventScope;
       activity?: ActivityRef;
+      internal?: true;
     } & Pick<InstitutionalEventSnapshot, 'evidence' | 'institutional' | 'offers'>)[],
 ) {
   // Local dates always list their scope; institutional ones keep their own offers.
@@ -134,22 +138,24 @@ export function reviewSupport<
     criteria: policy.review.criteria.map((c) => {
       const dayMinimums = policy.review.dayMinimums;
       let signal: string = 'Conferência documental necessária.';
-      let candidates: (Pick<CalendarEvent, 'id' | 'name' | 'start' | 'end'> & {
-        evidence: string;
-      })[] = [];
+      let candidates: ReviewCandidate[] = [];
+      // Internal dates (art. 18) are never evidence: listed apart, for consultation only.
+      let internalDates: ReviewCandidate[] = [];
       if (c.pattern) {
         const pattern = new RegExp(c.pattern);
-        candidates = events
-          .filter(
-            (e) =>
-              pattern.test(normalize(e.name + ' ' + (e.category || ''))) &&
-              (c.id !== 'III' ||
-                !(
-                  /docent|professor/.test(normalize(e.name)) ||
-                  String(e.id).startsWith('teacher-vacation')
-                )),
-          )
-          .map(reviewCandidate);
+        const matches = events.filter(
+          (e) =>
+            pattern.test(normalize(e.name + ' ' + (e.category || ''))) &&
+            (c.id !== 'III' ||
+              !(
+                /docent|professor/.test(normalize(e.name)) ||
+                String(e.id).startsWith('teacher-vacation')
+              )),
+        );
+        candidates = matches.filter((e) => !isInternalDate(e)).map(reviewCandidate);
+        internalDates = matches
+          .filter(isInternalDate)
+          .map((e) => ({ ...reviewCandidate(e), internal: true as const }));
         signal = candidates.length
           ? `${candidates.length} registro(s) possivelmente relacionado(s). A presença não comprova atendimento.`
           : 'Nenhum registro localizado por nome/categoria. Isso não comprova ausência no processo.';
@@ -285,7 +291,8 @@ export function reviewSupport<
       return {
         ...c,
         signal,
-        candidates,
+        // Official candidates first; internal dates carry their mark (`reviewSupportDto`).
+        candidates: [...candidates, ...internalDates],
         initial: { id: c.id, status, notes: '', reviewed: false, finding },
       };
     }),

@@ -5,28 +5,33 @@ import { api } from '../../convex/_generated/api.js';
 import { getFunctionName, type FunctionReference } from 'convex/server';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
 import { initialConclusion } from '../../src/domain/reviews/conclusion.ts';
+import { civilDate } from '../../src/domain/civil-date.ts';
 
 type Support = Awaited<ReturnType<typeof reviewOperations.get>>;
-const support = reviewSupport(
-  {
-    id: 'synthetic-review',
-    name: '2027 — Campus de teste',
-    version: 1,
-    state: {
-      year: 2027,
-      campus: 'Campus de teste',
-      schemaVersion: 5,
-      offers: [
-        { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
-      ],
-      weekdays: [],
-      weekConfirmed: false,
-      periods: [],
-      events: [],
-    },
+/** The synthetic calendar under review; `publishInternalDates` adds dates to its criteria. */
+const reviewRecord = () => ({
+  id: 'synthetic-review',
+  name: '2027 — Campus de teste',
+  version: 1,
+  state: {
+    year: 2027,
+    campus: 'Campus de teste',
+    schemaVersion: 5 as const,
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'a-conferir' as const,
+        organization: 'anual' as const,
+      },
+    ],
+    weekdays: [],
+    weekConfirmed: false,
+    periods: [],
+    events: [],
   },
-  [],
-);
+});
+const support = reviewSupport(reviewRecord(), []);
 const initial = {
   ...support,
   calendar: {
@@ -252,6 +257,25 @@ window.reviewUiTest = {
     listeners.forEach((listener) => listener.refresh());
     listeners.forEach((listener) => listener.notify());
   },
+  /** Criteria of a calendar with an official and an internal date (art. 18) of the campus. */
+  publishInternalDates() {
+    const date = (id: string, name: string) => ({
+      id,
+      name,
+      start: civilDate('2027-10-05'),
+      end: civilDate('2027-10-05'),
+      effect: 'note' as const,
+      category: 'evento',
+      scope: { offers: ['integrado'], confirmed: true },
+      evidence: '',
+    });
+    snapshot.criteria = reviewSupport(reviewRecord(), [
+      date('cultural-week', 'Semana Cultural Interescolar'),
+      { ...date('cultural-rehearsal', 'Ensaio da Semana Cultural'), internal: true },
+    ]).criteria as Support['criteria'];
+    listeners.forEach((listener) => listener.refresh());
+    listeners.forEach((listener) => listener.notify());
+  },
   resolvePendingSave() {
     if (!finishPendingSave) throw new Error('Nenhuma gravação pendente.');
     finishPendingSave();
@@ -264,6 +288,7 @@ declare global {
       calls: typeof calls;
       publishReview: (processNumber: string) => void;
       publishLegacy2027Review: () => void;
+      publishInternalDates: () => void;
       resolvePendingSave: () => void;
     };
   }

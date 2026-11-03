@@ -49,6 +49,9 @@ export default function ReviewCriterion({
     .replace(' A presença não comprova atendimento.', '')
     .replace(' Isso não comprova ausência no processo.', '');
   const unavailableCount = signal.startsWith('Contagem indisponível:');
+  // Internal dates (art. 18) are listed apart, for consultation only, never as evidence.
+  const official = criterion.candidates.filter((candidate) => !candidate.internal);
+  const internal = criterion.candidates.filter((candidate) => candidate.internal);
   const hint = entry.reviewed
     ? changed
       ? 'Salve o parecer para registrar esta conferência.'
@@ -89,15 +92,30 @@ export default function ReviewCriterion({
             )}
           </span>
         </p>
-        {criterion.candidates.length > 0 ? (
+        {official.length > 0 ? (
           <details className="review-item__records">
-            <summary>
-              Ver registros possivelmente relacionados ({criterion.candidates.length})
-            </summary>
+            <summary>Ver registros possivelmente relacionados ({official.length})</summary>
             <ul>
-              {criterion.candidates.map((candidate, index) => (
+              {official.map((candidate, index) => (
                 <li key={candidate.id || index}>
                   {candidate.start} a {candidate.end} · {candidate.name}
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+        {internal.length > 0 ? (
+          <details className="review-item__records" data-internal-dates={criterion.id}>
+            <summary>Datas internas do campus, só para consulta ({internal.length})</summary>
+            <p>
+              Datas de organização interna (art. 18) ficam fora do calendário oficial e não
+              comprovam o critério.
+            </p>
+            <ul>
+              {internal.map((candidate, index) => (
+                <li key={candidate.id || index}>
+                  <StatusBadge data-internal-badge>Interna</StatusBadge> {candidate.start} a{' '}
+                  {candidate.end} · {candidate.name}
                 </li>
               ))}
             </ul>

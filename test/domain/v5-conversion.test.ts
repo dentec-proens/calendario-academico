@@ -32,6 +32,7 @@ import {
   offerCalendarContent,
 } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
+import { updateDate } from '../../src/domain/calendar/commands/events.ts';
 import { convertedState } from '../helpers/v5-conversion.ts';
 import { activityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
@@ -474,6 +475,42 @@ describe('dates without category keep their effective category', () => {
     expect(imported.events.find((event) => event.id === 'implicit-note')!.category).toBe(
       'institucional',
     );
+  });
+
+  test('a converted note without category may be marked internal (art. 18), also after a JSON copy', () => {
+    const item = byName('v3 anual integrado, quatro etapas');
+    const converted = convertContentV5(item.content, context(item))!
+      .document as unknown as V4Case['content'];
+    const state = {
+      ...converted.state,
+      year: item.year,
+      campus: item.campus,
+    } as unknown as Parameters<typeof updateDate>[0];
+    const implicit = state.events.find((event) => event.id === 'implicit-note')!;
+    expect(implicit.category).toBeUndefined();
+    const marked = updateDate(
+      state,
+      { ...implicit, internal: true } as Parameters<typeof updateDate>[1],
+      [],
+    );
+    const exported = JSON.parse(JSON.stringify(marked, null, 2)) as unknown;
+    const imported = normalizeOfferCalendar(exported, readCalendarOfferInput(exported));
+    expect(imported.events.find((event) => event.id === 'implicit-note')).toMatchObject({
+      internal: true,
+      category: 'institucional',
+    });
+  });
+
+  test('the conversion never creates `internal`: every converted date is official', () => {
+    for (const item of cases)
+      for (const content of [item.content, ...item.submissions]) {
+        const document = convertContentV5(
+          content,
+          content === item.content ? context(item) : { year: item.year, source: 'submission' },
+        )!.document as unknown as V4Case['content'];
+        for (const event of [...document.state.events, ...document.institutionalSnapshot])
+          expect(event, `${item.name}: ${String(event.id)}`).not.toHaveProperty('internal');
+      }
   });
 
   test('a format 4 copy is refused with its own message, never converted', () => {

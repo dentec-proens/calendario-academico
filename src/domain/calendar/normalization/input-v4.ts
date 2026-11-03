@@ -142,6 +142,9 @@ const activity = (value: unknown): CalendarEvent => {
     effect: choice(row.effect, eventEffects, 'Efeito inválido.'),
     category: optional(row.category, text),
     activity: optional(row.activity, activityRef),
+    internal: optional(row.internal, (value) =>
+      value === true ? (true as const) : fail('Visibilidade da data inválida.'),
+    ),
     scope: eventScope(row.scope),
     hours: optional(row.hours, number),
     assessmentAutoStart: optional(row.assessmentAutoStart, date),

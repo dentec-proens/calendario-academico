@@ -1,5 +1,7 @@
 import { automaticEventSource } from '#src/domain/calendar/counting/core.ts';
 import { categoryLabel } from '#src/domain/calendar/activities/categories.ts';
+import { isInternalDate } from '#src/domain/calendar/internal-dates.ts';
+import { StatusBadge } from '../../../components/ui/Feedback.tsx';
 import type { EditorEvent } from '../types.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { civilDate } from './activity-query.ts';
@@ -21,6 +23,12 @@ export default function EventRecordDetails({
   return (
     <>
       <strong>{event.name}</strong>
+      {isInternalDate(event) && (
+        <small data-internal-date>
+          <StatusBadge data-internal-badge>Interna</StatusBadge> Data de organização interna (art.
+          18), fora do calendário oficial.
+        </small>
+      )}
       <small>
         {civilDate(event.start)} a {civilDate(event.end)} ·{' '}
         {event.effect === 'include'

@@ -30,6 +30,7 @@ import { offerIds } from '../offers.ts';
 import { recalculateCalendar } from './recalculate.ts';
 import { vacationIds } from './vacations.ts';
 import { DomainError } from '../../errors.ts';
+import { validateInternalDate } from '../internal-dates.ts';
 
 export function removeEvent<S extends ActivityState & { teacherVacations?: VacationPeriods }>(
   state: S,
@@ -285,6 +286,8 @@ function applyDate<S extends ActivityState>(
   if (!event.name.trim()) throw new DomainError('Informe a descrição.');
   if (!['include', 'exclude', 'note'].includes(event.effect))
     throw new DomainError('Tipo de evento inválido.');
+  // Only a date of the campus, without effect on the count, in an allowed category (art. 18).
+  validateInternalDate(event);
   const modalities = event.scope.offers;
   if (
     !modalities.length ||

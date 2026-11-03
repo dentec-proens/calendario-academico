@@ -83,6 +83,8 @@ export const fieldLabels = {
     effect: 'Efeito na contagem',
     category: 'Categoria',
     activity: 'Atividade vinculada',
+    // Marking or unmarking an internal date changes the official document (plan, 4.5).
+    internal: 'Visibilidade',
     'scope.offers': 'Ofertas',
     'scope.confirmed': 'Abrangência confirmada',
     hours: 'Carga horária',
@@ -540,6 +542,8 @@ function admissionDescription(admission: Record<string, unknown>, state?: Activi
 }
 
 export function describeValue(field: string, value: unknown, state?: ActivityState): string {
+  // An absent mark means an official date (plan, section 5).
+  if (field === 'internal') return value === true ? 'Interna' : 'Oficial';
   if (value === undefined || value === null || value === '') return '—';
   if (field === 'notice.publication' && (value === 'planned' || value === 'published'))
     return executionLabels[value];

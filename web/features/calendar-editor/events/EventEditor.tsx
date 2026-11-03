@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { categories } from '#src/domain/calendar/activities/categories.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
@@ -16,7 +16,12 @@ import {
   recordOffers,
 } from './event-draft.ts';
 import { destinationIssueLines, destinationText } from './notice-details.ts';
-import { Input, Select } from '../forms/fields.tsx';
+import {
+  canBeInternal,
+  internalDateIssue,
+  internalDateOption,
+} from '#src/domain/calendar/internal-dates.ts';
+import { Check, Input, Select } from '../forms/fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { scrollIntoView } from '../../../scroll.ts';
 import { Button } from '../../../components/ui/Button.tsx';
@@ -89,6 +94,22 @@ export default function EventEditor() {
   );
   // Effect and category chosen freely in an earlier edit are shown as they are.
   const askType = freeEvent && (!values.effect || Boolean(answered));
+  // An internal date (art. 18) is offered only while effect and category allow it; changing to an
+  // incompatible one unmarks it, with a notice, before the date is applied (plan, section 4.6).
+  const internalAllowed = canBeInternal({
+    effect: values.effect,
+    category: values.category,
+    activity: editor.activity,
+  });
+  const [unmarked, setUnmarked] = useState<{ context: unknown; reason: string } | null>(null);
+  const unmarkedReason = unmarked?.context === editor.context ? unmarked.reason : undefined;
+  function keepInternalEligible(next: { effect: string; category: string }) {
+    if (!form.getFieldValue('internal')) return;
+    const reason = internalDateIssue({ ...next, activity: editor.activity });
+    if (!reason) return;
+    form.setFieldValue('internal', false);
+    setUnmarked({ context: editor.context, reason });
+  }
   const nameField = (
     <form.Field name="name">
       {(field) => (
@@ -97,7 +118,13 @@ export default function EventEditor() {
     </form.Field>
   );
   const categoryField = (
-    <form.Field name="category">
+    <form.Field
+      name="category"
+      listeners={{
+        onChange: ({ value }) =>
+          keepInternalEligible({ effect: form.getFieldValue('effect'), category: value }),
+      }}
+    >
       {(field) => (
         <Select field={field} label="Categoria e cor PROENS" id="event-category">
           {categories.map(([id, label]) => (
@@ -110,7 +137,13 @@ export default function EventEditor() {
     </form.Field>
   );
   const effectField = (
-    <form.Field name="effect">
+    <form.Field
+      name="effect"
+      listeners={{
+        onChange: ({ value }) =>
+          keepInternalEligible({ effect: value, category: form.getFieldValue('category') }),
+      }}
+    >
       {(field) => (
         <Select field={field} label="Efeito na contagem" id="event-effect" required={!askType}>
           <option value="">Escolha o efeito</option>
@@ -139,6 +172,7 @@ export default function EventEditor() {
                   field.handleChange(type.id);
                   form.setFieldValue('effect', type.effect);
                   form.setFieldValue('category', type.category);
+                  keepInternalEligible(type);
                 }}
               />
               {type.label}
@@ -289,6 +323,32 @@ export default function EventEditor() {
               {effectField}
             </div>
           </details>
+          {freeEvent && internalAllowed && (
+            <form.Field
+              name="internal"
+              listeners={{ onChange: ({ value }) => value && setUnmarked(null) }}
+            >
+              {(field) => (
+                <div className="event-internal">
+                  <Check
+                    field={field}
+                    id="event-internal"
+                    label={internalDateOption}
+                    aria-describedby="event-internal-help"
+                  />
+                  <p className="help" id="event-internal-help">
+                    Data de organização interna do campus: aparece no editor com o selo Interna, mas
+                    fica fora do calendário oficial e das evidências do parecer.
+                  </p>
+                </div>
+              )}
+            </form.Field>
+          )}
+          {unmarkedReason && !values.internal && (
+            <Notice tone="warning" id="event-internal-unmarked" title="Data interna desmarcada">
+              {unmarkedReason} A data passa a constar do calendário oficial.
+            </Notice>
+          )}
           {(values.effect === 'exclude' || values.deadlineExtensionCause) && (
             <form.Field name="deadlineExtensionCause">
               {(field) => (

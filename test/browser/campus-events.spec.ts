@@ -1,5 +1,6 @@
 import { test, expect } from './test.ts';
 import {
+  editCampusEvent,
   openActivity,
   openCampusEvent,
   savedState,
@@ -129,3 +130,66 @@ test('a local date whose ID imitates the base prefix stays a campus date', async
   await expect(details).not.toContainText('Data da base institucional');
   await expect(page.locator('[data-edit-event="inst:campus-lookalike"]')).toBeEnabled();
 });
+
+for (const width of [1440, 390]) {
+  test(`a campus date is marked internal (art. 18) and unmarked with a notice on an incompatible change at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const origin = new URL(await fixtureServer('editor')).origin;
+    await page.goto(origin + '/calendarios/synthetic-calendar/atividades');
+    const row = page.locator('[data-open-event="local-event"]');
+    await expect(row.locator('[data-internal-badge]')).toHaveCount(0);
+    const before = await page.evaluate(() =>
+      window.editorTest.record.state.events.find((event) => event.id === 'local-event')!,
+    );
+    await editCampusEvent(page, 'local-event');
+    const option = page.locator('#event-internal');
+    await expect(option).not.toBeChecked();
+    await expect(option).toHaveAccessibleName('Data interna (art. 18)');
+    await option.focus();
+    await page.keyboard.press('Space');
+    await expect(option).toBeChecked();
+    await page.locator('#event-form button[type="submit"]').click();
+    const marked = (await savedState(page)).state.events.find(
+      (event) => event.id === 'local-event',
+    );
+    expect(marked).toEqual({ ...before, internal: true });
+    await page.locator('#close-event-panel').click();
+    await expect(row).toBeFocused();
+    await expect(row.locator('[data-internal-badge]')).toHaveText('Interna');
+    await openCampusEvent(page, 'local-event');
+    await expect(page.locator('.campus-event-record [data-internal-badge]')).toHaveText('Interna');
+
+    await page.locator('[data-edit-event="local-event"]').click();
+    await expect(option).toBeChecked();
+    // A category that must stay in the official calendar unmarks the option before saving.
+    const more = page.locator('#event-more-options');
+    if ((await more.getAttribute('open')) === null) await more.locator('summary').click();
+    await page.locator('#event-category').selectOption('conselho');
+    await expect(option).toHaveCount(0);
+    const notice = page.locator('#event-internal-unmarked');
+    await expect(notice).toContainText('Data interna desmarcada');
+    await expect(notice).toContainText('passa a constar do calendário oficial');
+    await page.locator('#event-category').selectOption('evento');
+    await expect(option).not.toBeChecked();
+    await option.check();
+    await expect(notice).toHaveCount(0);
+    // So does an answer that changes the count of school days.
+    await page.locator('#event-type-holiday').check();
+    await expect(option).toHaveCount(0);
+    await expect(notice).toContainText('sem efeito na contagem');
+    await page.locator('#event-type-campus-event').check();
+    await expect(option).not.toBeChecked();
+    await page.locator('#event-form button[type="submit"]').click();
+    const unmarked = (await savedState(page)).state.events.find(
+      (event) => event.id === 'local-event',
+    );
+    expect(unmarked).toEqual(before);
+    await expect(row.locator('[data-internal-badge]')).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  });
+}

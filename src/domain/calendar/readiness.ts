@@ -18,6 +18,7 @@ import { evaluateCalendar as calendarResult } from './counting/evaluation.ts';
 import { periodsForOffer } from './organization/periods.ts';
 import { policyFor } from '../policies/registry.ts';
 import { observanceIssues } from './observances.ts';
+import { isInternalDate } from './internal-dates.ts';
 
 const plain = (value: string) =>
   String(value)
@@ -267,7 +268,12 @@ export function releaseReadiness(
       policy.review.evidence === 'pattern' &&
       c.pattern &&
       entry?.status === 'ATENDIDO' &&
-      !events.some((e) => new RegExp(c.pattern!).test(plain(e.name + ' ' + (e.category || ''))))
+      // An internal date (art. 18) never evidences a criterion (plan, section 4.5).
+      !events.some(
+        (e) =>
+          !isInternalDate(e) &&
+          new RegExp(c.pattern!).test(plain(e.name + ' ' + (e.category || ''))),
+      )
     )
       issues.push(
         `${c.item}: ${c.title} — nenhum evento com data localizado no calendário; confira o cadastro.`,

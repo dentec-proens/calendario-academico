@@ -310,3 +310,37 @@ test('the review list states each parecer and names the next step', async ({
   await expect(row).toContainText('Rev. 1');
   await expect(action).toHaveText('Continuar parecer');
 });
+
+for (const width of [1360, 390]) {
+  test(`an internal date is listed apart, with the Interna badge, never as a related record at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(await fixtureServer('review'));
+    await page.evaluate(() => window.reviewUiTest.publishInternalDates());
+    await page.locator('[data-open-review]').first().click();
+    const item = page.locator('#criterion-title-XXVI').locator('xpath=ancestor::li');
+    const related = item.locator('.review-item__records:not([data-internal-dates])');
+    await expect(related.locator('summary')).toHaveText(
+      'Ver registros possivelmente relacionados (1)',
+    );
+    await related.locator('summary').click();
+    await expect(related.locator('li')).toHaveText([
+      '2027-10-05 a 2027-10-05 · Semana Cultural Interescolar',
+    ]);
+    const internal = item.locator('[data-internal-dates="XXVI"]');
+    await expect(internal.locator('summary')).toHaveText(
+      'Datas internas do campus, só para consulta (1)',
+    );
+    await internal.locator('summary').focus();
+    await page.keyboard.press('Enter');
+    await expect(internal.locator('li')).toHaveCount(1);
+    await expect(internal.locator('li')).toContainText('Ensaio da Semana Cultural');
+    await expect(internal.locator('li [data-internal-badge]')).toHaveText('Interna');
+    await expect(internal).toContainText('não comprovam o critério');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  });
+}

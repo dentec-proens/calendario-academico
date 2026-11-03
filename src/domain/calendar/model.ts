@@ -101,6 +101,12 @@ export interface CalendarEvent extends DateFields {
   scope: EventScope;
   /** Activity the date serves (plan, section 5.1); absent for a campus date. */
   activity?: ActivityRef;
+  /**
+   * Date of internal organization of the campus (art. 18; plan, section 4.5): only a date of the
+   * campus with effect `note` and an allowed effective category (`internalDateIssue`). Absent
+   * means official; the v5 conversion never creates it.
+   */
+  internal?: true;
 }
 /**
  * Institutional date copied into a calendar (`institutionalSnapshot`) or projected in the editor.

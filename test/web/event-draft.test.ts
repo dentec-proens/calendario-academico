@@ -152,3 +152,22 @@ test('saving the date form confirms the offers chosen in it, as listed (plan, se
     confirmed: true,
   });
 });
+
+test('the internal option (art. 18) is a form value: marking and unmarking keep ID, dates and scope', () => {
+  const base = saved({ category: 'evento' });
+  expect(eventValues(base).internal).toBe(false);
+  const marked = edit(base, { internal: true });
+  expect(marked).toMatchObject({
+    id: base.id,
+    start: base.start,
+    end: base.end,
+    scope: base.scope,
+    internal: true,
+  });
+  const internal = { ...base, internal: true as const };
+  expect(eventValues(internal).internal).toBe(true);
+  const unmarked = edit(internal, { internal: false });
+  expect(unmarked.internal).toBeUndefined();
+  expect(unmarked).toMatchObject({ id: base.id, start: base.start, end: base.end });
+  expect(emptyEvent(['integrado']).internal).toBe(false);
+});

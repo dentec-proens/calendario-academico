@@ -17,6 +17,7 @@ import {
   validateLinks,
 } from '../activities/links.ts';
 import { validCategory, eventCategory } from '../activities/categories.ts';
+import { validateInternalDate } from '../internal-dates.ts';
 import { normalizeObservanceDates } from '../observances.ts';
 import { regeneratedVacations, teacherVacations } from '../activities/teacher-vacations.ts';
 import { rulesetVersion } from '../../policies/registry.ts';
@@ -211,6 +212,8 @@ export function normalizeOfferCalendar(
     }
     if (event.category !== undefined && !validCategory(event.category))
       fail('Categoria PROENS inválida.');
+    // Same rule as the date commands, on the effective category (plan, section 4.5).
+    validateInternalDate(event);
     event.category = eventCategory(event);
   }
   validateLinks(

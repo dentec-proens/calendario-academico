@@ -230,6 +230,8 @@ const candidate = v.object({
   start: v.string(),
   end: v.string(),
   evidence: v.string(),
+  /** Internal date (art. 18): listed apart, never evidence of the criterion. */
+  internal: v.optional(v.literal(true)),
 });
 const criterion = v.object({
   id: v.string(),

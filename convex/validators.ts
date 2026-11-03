@@ -78,6 +78,8 @@ export const event = v.object({
   effect,
   category: v.optional(v.string()),
   activity: v.optional(activityRef),
+  /** Internal date of the campus (art. 18); eligibility is checked by the domain. */
+  internal: v.optional(v.literal(true)),
   scope: eventScope,
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
