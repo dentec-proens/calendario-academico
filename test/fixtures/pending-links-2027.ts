@@ -333,3 +333,110 @@ export function legacyOperationalLinks(): PendingLinksFixture {
     ],
   };
 }
+
+/**
+ * Stage positions to confirm (plan, phase 2, step 9e). The integrated offer is still unclassified,
+ * with a reported total of three stages: its first stage and the first results are unambiguous,
+ * two dates report the second stage and one reports a fourth, beyond the count. The subsequent
+ * offer is annual with three confirmed stages and a fourth reported beyond its count, as the
+ * conversion leaves it (`beyond-count`).
+ */
+export function stagePositionsToConfirm(): PendingLinksFixture {
+  const date = (
+    id: string,
+    activity: ActivityRef,
+    start: string,
+    end: string,
+    offerId: string,
+  ): CalendarEvent => ({
+    id,
+    name: `Data sintética ${id}`,
+    start: day(start),
+    end: day(end),
+    effect: 'note',
+    category: activity.activityId === 'stage' ? 'limite' : 'prazo',
+    activity,
+    scope: { offers: [offerId], confirmed: true },
+  });
+  return {
+    schemaVersion: 5,
+    rulesetVersion: 'consup-292-2027-v3',
+    year: 2027,
+    campus: 'Campus sintético de posições de etapa',
+    offers: [
+      { ...offer('integrado'), stages: { status: 'reported', count: 3 } },
+      { ...offer('subsequente'), organization: 'anual', stages: { status: 'defined', perTerm: 3 } },
+    ],
+    weekdays: [1, 2, 3, 4, 5],
+    weekConfirmed: true,
+    periods: [
+      {
+        id: 'integrado-period',
+        name: 'Período a classificar',
+        start: day('01/02'),
+        end: day('17/12'),
+        association: { status: 'a-classificar' },
+      },
+      {
+        id: 'subsequente-year',
+        name: 'Ano letivo',
+        start: day('01/02'),
+        end: day('17/12'),
+        association: { status: 'defined', offers: ['subsequente'], term: 'annual' },
+      },
+    ],
+    events: [
+      date('stage-one', unclassifiedStage('stage', 'integrado', 1), '01/02', '30/04', 'integrado'),
+      date(
+        'stage-two-a',
+        unclassifiedStage('stage', 'integrado', 2),
+        '03/05',
+        '30/07',
+        'integrado',
+      ),
+      date(
+        'stage-two-b',
+        unclassifiedStage('stage', 'integrado', 2),
+        '10/05',
+        '31/07',
+        'integrado',
+      ),
+      date('stage-four', unclassifiedStage('stage', 'integrado', 4), '01/11', '17/12', 'integrado'),
+      date(
+        'results-one',
+        unclassifiedStage('results', 'integrado', 1),
+        '07/05',
+        '07/05',
+        'integrado',
+      ),
+      date(
+        'sub-stage-1',
+        definedStage('stage', 'subsequente', 'annual', 1),
+        '01/02',
+        '30/04',
+        'subsequente',
+      ),
+      date(
+        'sub-stage-2',
+        definedStage('stage', 'subsequente', 'annual', 2),
+        '03/05',
+        '31/07',
+        'subsequente',
+      ),
+      date(
+        'sub-stage-3',
+        definedStage('stage', 'subsequente', 'annual', 3),
+        '02/08',
+        '31/10',
+        'subsequente',
+      ),
+      date(
+        'sub-stage-4',
+        unclassifiedStage('stage', 'subsequente', 4),
+        '01/11',
+        '17/12',
+        'subsequente',
+      ),
+    ],
+  };
+}

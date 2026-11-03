@@ -1,7 +1,7 @@
 import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
-import { cycleLink, unclassifiedStage } from '../helpers/activity-links.ts';
+import { cycleLink, definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
 import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
@@ -11,6 +11,7 @@ import { applyEvent } from '../../src/domain/calendar/commands/events.ts';
 import {
   applyOfferOrganization,
   offerOrganizationDraft,
+  organizationDraftStages,
 } from '../../src/domain/calendar/organization/offers.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import {
@@ -19,6 +20,7 @@ import {
   ivaiporaDraft,
   legacyOperationalLinks,
   stageLinksToReview,
+  stagePositionsToConfirm,
   type PendingLinksFixture,
 } from '../fixtures/pending-links-2027.ts';
 
@@ -316,4 +318,80 @@ test('preexisting conflicts save; edits that create one are refused', async () =
     vacations.version,
   );
   expect(linksToReview({ ...reduced.state, year: 2027 }).get('stage-early')).toBe('unclassified');
+});
+
+test('confirming the organization saves only unambiguous stage positions as defined', async () => {
+  const { record, save, current } = await stored(stagePositionsToConfirm());
+  const draft = offerOrganizationDraft(record.state, 'integrado');
+  draft.organization = 'anual';
+  draft.count = '3';
+  draft.stages = organizationDraftStages(record.state, 'integrado', draft);
+  draft.periods[0] = {
+    sourceId: 'integrado-period',
+    name: 'Ano',
+    start: '2027-02-01',
+    end: '2027-12-17',
+  };
+  draft.stages[1] = { id: '', start: '2027-05-03', end: '2027-07-30' };
+  draft.stages[2] = { id: '', start: '2027-08-02', end: '2027-12-17' };
+  let sequence = 0;
+  const configured = applyOfferOrganization(
+    record.state,
+    'integrado',
+    draft,
+    () => `new-${++sequence}`,
+  );
+  // Two dates on the same re-expressed position are refused: the duplicate stays unclassified.
+  await expect(
+    save({
+      ...configured,
+      events: configured.events
+        .filter((event) => !event.id.startsWith('new-'))
+        .map((event) =>
+          event.id.startsWith('stage-two')
+            ? { ...event, activity: definedStage('stage', 'integrado', 'annual', 2) }
+            : event,
+        ),
+    }),
+  ).rejects.toThrow('nenhuma outra data a ocupa');
+  expect((await current()).state).toEqual(record.state);
+  const saved = await save(configured);
+  expect(linkOf(saved.state)).toEqual({
+    ...linkOf(record.state),
+    'stage-one': definedStage('stage', 'integrado', 'annual', 1),
+    'results-one': definedStage('results', 'integrado', 'annual', 1),
+    'new-1': definedStage('stage', 'integrado', 'annual', 2),
+    'new-2': definedStage('stage', 'integrado', 'annual', 3),
+  });
+  expect(Object.fromEntries(linksToReview({ ...saved.state, year: 2027 }))).toEqual({
+    'stage-two-a': 'unclassified',
+    'stage-two-b': 'unclassified',
+    'stage-four': 'unclassified',
+    'sub-stage-4': 'unclassified',
+  });
+});
+
+test('changing the count keeps defined positions; a save cannot reinterpret them', async () => {
+  const { record, save, current } = await stored(stagePositionsToConfirm());
+  const draft = offerOrganizationDraft(record.state, 'subsequente');
+  draft.count = '2';
+  draft.stages = organizationDraftStages(record.state, 'subsequente', draft);
+  const configured = applyOfferOrganization(record.state, 'subsequente', draft, () => 'unused');
+  await expect(
+    save({
+      ...configured,
+      events: configured.events.map((event) =>
+        event.id === 'sub-stage-3'
+          ? { ...event, activity: definedStage('stage', 'subsequente', 'annual', 2) }
+          : event,
+      ),
+    }),
+  ).rejects.toThrow('não perde nem troca');
+  expect((await current()).state).toEqual(record.state);
+  const saved = await save(configured);
+  expect(saved.state.offers.find((offer) => offer.id === 'subsequente')).toMatchObject({
+    stages: { status: 'defined', perTerm: 2 },
+  });
+  expect(linkOf(saved.state)).toEqual(linkOf(record.state));
+  expect(linksToReview({ ...saved.state, year: 2027 }).get('sub-stage-3')).toBe('unclassified');
 });

@@ -4,7 +4,7 @@ import {
   type ActivityRef,
 } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { savedState, selectEditorSection } from './editor-navigation.ts';
-import { ivaiporaDraft } from '../fixtures/pending-links-2027.ts';
+import { ivaiporaDraft, stagePositionsToConfirm } from '../fixtures/pending-links-2027.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 const linked = (events: { id: string; activity?: unknown }[]) =>
@@ -90,5 +90,58 @@ for (const width of [1440, 390]) {
       stages: { status: 'defined', perTerm: 2 },
     });
     expect(linked(organized.state.events)).toMatchObject(links);
+  });
+}
+
+for (const width of [1440, 390]) {
+  test(`the organization preview lists the stage positions left to review at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(await fixtureServer('editor'));
+    await expect(page.locator('#record-title')).toBeVisible();
+    const fixture = stagePositionsToConfirm();
+    await page.evaluate(async (state) => {
+      const { record } = window.editorTest;
+      record.offerKinds = ['integrado', 'subsequente'];
+      Object.assign(record.state, state);
+      record.version++;
+      await window.publishReviewerCalendar();
+    }, fixture);
+    await selectEditorSection(page, 'periods');
+    await page.locator('[data-edit-organization="integrado"]').click();
+    await page.locator('#offer-integrado-organization [data-choice="anual"]').click();
+    await page.locator('#offer-integrado-count [data-choice="3"]').click();
+    // Only the position a single date reports is filled; the duplicated one is left empty.
+    await expect(page.locator('#offer-integrado-stage-0-start')).toHaveValue('2027-02-01');
+    await expect(page.locator('#offer-integrado-stage-1-start')).toHaveValue('');
+    await expect(page.locator('#offer-integrado-stage-2-start')).toHaveValue('');
+    await page.locator('#offer-integrado-period-0-start').fill('2027-02-01');
+    await page.locator('#offer-integrado-period-0-end').fill('2027-12-17');
+    for (const [index, [start, end]] of [
+      ['2027-05-03', '2027-07-30'],
+      ['2027-08-02', '2027-12-17'],
+    ].entries()) {
+      await page.locator(`#offer-integrado-stage-${index + 1}-start`).fill(start);
+      await page.locator(`#offer-integrado-stage-${index + 1}-end`).fill(end);
+    }
+    const warnings = page.locator('#offer-integrado-link-warnings li');
+    await expect(warnings).toHaveText([
+      '“Data sintética stage-two-a” ficará em Vínculo a conferir (Classificação pendente).',
+      '“Data sintética stage-two-b” ficará em Vínculo a conferir (Classificação pendente).',
+      '“Data sintética stage-four” ficará em Vínculo a conferir (Classificação pendente).',
+    ]);
+    await page.locator('#offer-integrado-apply').click();
+    const organized = await savedState(page);
+    expect(organized.saves).toBeGreaterThan(0);
+    const saved = linked(organized.state.events);
+    expect(saved).toMatchObject({
+      'stage-one': 'stage:stage:annual:1:integrado',
+      'results-one': 'results:stage:annual:1:integrado',
+      'stage-two-a': linked(fixture.events)['stage-two-a'],
+      'stage-two-b': linked(fixture.events)['stage-two-b'],
+      'stage-four': linked(fixture.events)['stage-four'],
+    });
   });
 }

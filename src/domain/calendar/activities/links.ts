@@ -54,12 +54,13 @@ export function stageLocation(state: OfferState, activity: StageActivityRef) {
 }
 
 /**
- * The same link in two states of one calendar: the same key, or, for a link by offer stage whose
- * offer had its organization or stages changed, the same activity, offer and ordinal in the year,
- * with the exact position the new organization gives that ordinal. Confirming an offer's
+ * The same link in two states of one calendar: the same key, or, for an unclassified link by offer
+ * stage whose offer had its organization or stages changed, the same activity and offer with the
+ * exact position the new organization gives its reported ordinal. Confirming an offer's
  * organization re-expresses an unconfirmed position in the new cycles, as the format 4 identifier
- * (`stage-N:offer`) did by its ordinal; a confirmed position is kept (plan, section 5.1). With the
- * organization unchanged, a different position is a swap, never the same link.
+ * (`stage-N:offer`) did by its ordinal (plan, phase 2, step 9e). A defined position is never
+ * reinterpreted (section 5.1): another position is a swap, and so is any other position while the
+ * organization is unchanged.
  */
 export function sameLink(
   before: OfferState | undefined,
@@ -72,6 +73,7 @@ export function sameLink(
     !before ||
     !isStageActivity(previous) ||
     !isStageActivity(next) ||
+    previous.position.status !== 'unclassified' ||
     previous.activityId !== next.activityId ||
     previous.offerId !== next.offerId
   )
@@ -85,11 +87,8 @@ export function sameLink(
       equalValues(beforeOffer.stages, afterOffer.stages))
   )
     return false;
-  const ordinal = stageLocation(before, previous)?.ordinal;
-  return (
-    ordinal !== undefined &&
-    sameActivity(next, { ...next, position: stagePosition(afterOffer, ordinal) })
-  );
+  const position = stagePosition(afterOffer, previous.position.reportedOrdinal);
+  return position.status === 'defined' && sameActivity(next, { ...next, position });
 }
 
 /** States of one calendar compared by date ID; without them, links compare by key only. */
@@ -255,6 +254,21 @@ export function validateLinks(
   if (changed.length)
     throw new DomainError(
       `Uma data salva não perde nem troca a atividade vinculada: ${changed.map(describe).join('; ')}.`,
+    );
+  // A re-expressed stage position must be unambiguous: no other date holds it (step 9e).
+  const ambiguous = next.events.filter((event) => {
+    const old = before.get(event.id)?.activity;
+    return (
+      old !== undefined &&
+      !sameActivity(old, event.activity) &&
+      next.events.some(
+        (other) => other.id !== event.id && sameActivity(other.activity, event.activity),
+      )
+    );
+  });
+  if (ambiguous.length)
+    throw new DomainError(
+      `Uma etapa só passa à posição da nova organização quando nenhuma outra data a ocupa: ${ambiguous.map(describe).join('; ')}.`,
     );
   const unknown = next.events.filter(
     (event) =>

@@ -16,6 +16,7 @@ import {
   offerOrganizationDraft,
   offerOrganizationIssues,
   offerOrganizationWarnings,
+  organizationDraftStages,
 } from '#src/domain/calendar/organization/offers.ts';
 import { configureOfferMetadata } from '#src/domain/calendar/commands/organization.ts';
 import { validateOffers } from '#src/domain/calendar/normalization/normalize-v4.ts';
@@ -310,6 +311,12 @@ export default function OfferOrganizationForm({
   const currentBlock = blockIssues.indexOf(true);
   const blockState = (index: number) =>
     !blockIssues[index] ? 'done' : index === currentBlock ? 'current' : 'pending';
+  // The stage fields follow the positions of the chosen organization and count (step 9e).
+  function restage(change: Partial<Pick<OfferOrganizationDraft, 'organization' | 'count'>>) {
+    const current = form.state.values;
+    const stages = organizationDraftStages(state, modality, { ...current, ...change });
+    if (stages !== current.stages) form.setFieldValue('stages', stages);
+  }
   const cycles = Array.from(
     { length: periodCountByOrganization[semestral ? 'semestral' : 'anual'] },
     (_, cycle) => cycle,
@@ -572,7 +579,10 @@ export default function OfferOrganizationForm({
                         options={organizationOptions}
                         disabled={readOnly}
                         aria-invalid={Boolean(messageFor('organization'))}
-                        onValueChange={(value) => field.handleChange(value)}
+                        onValueChange={(value) => {
+                          field.handleChange(value);
+                          restage({ organization: value });
+                        }}
                       />
                     )}
                   </form.Field>
@@ -595,7 +605,10 @@ export default function OfferOrganizationForm({
                           values.organization === 'anual' ? undefined : `${prefix}-count-help`
                         }
                         aria-invalid={Boolean(messageFor('count'))}
-                        onValueChange={(value) => field.handleChange(value)}
+                        onValueChange={(value) => {
+                          field.handleChange(value);
+                          restage({ count: value });
+                        }}
                       />
                     )}
                   </form.Field>
