@@ -315,6 +315,7 @@ test('only establishing or tightening versions bind reviews and base identities'
 /** Observances have their own baseline; published requirement archives stay untouched. */
 const observanceFingerprints: Record<string, string> = {
   'consup-292-2027-v4': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
+  'consup-292-2027-v5': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
 };
 test('observance permissions are bound to the current ruleset history', () => {
   for (const policy of boundPolicies) {
@@ -324,4 +325,19 @@ test('observance permissions are bound to the current ruleset history', () => {
     );
   }
   expect(equivalentRulesets('consup-292-2027-v3', 'consup-292-2027-v4')).toBe(true);
+});
+
+/** The art. 5º classification has its own baseline: changing it needs a new ruleset version. */
+const schoolDayFingerprints: Record<string, string> = {
+  'consup-292-2027-v5': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
+};
+test('school-day classification is bound to the current ruleset history', () => {
+  for (const policy of boundPolicies) {
+    const version = versionOf(policy, policy.year!);
+    expect(bytesToHex(sha256(new TextEncoder().encode(JSON.stringify(policy.schoolDay))))).toBe(
+      schoolDayFingerprints[version],
+    );
+  }
+  expect(reviewBoundary('consup-292-2027-v5')).toBe('consup-292-2027-v5');
+  expect(equivalentRulesets('consup-292-2027-v4', 'consup-292-2027-v5')).toBe(false);
 });

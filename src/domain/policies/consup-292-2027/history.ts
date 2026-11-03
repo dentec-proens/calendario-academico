@@ -36,5 +36,14 @@ export const rulesetChanges: readonly RulesetChange[] = [
     summary:
       'Dia do Servidor Público pode ser observado em 28 ou 29/10; preservadas as opções do Dia do Professor.',
   },
+  {
+    version: 'consup-292-2027-v5',
+    date: civilDate('2026-11-03'),
+    effect: 'tightens',
+    source:
+      'Art. 5º, parágrafo único, da Resolução 292 e decisão da gestão do sistema em 03/11/2026',
+    summary:
+      'Conselhos, reuniões, formação pedagógica, planejamento coletivo, encontro de egressos, prazos e marcos não constituem dia letivo e não acrescentam dias à contagem; a fase local da OBR pode constituir.',
+  },
 ];
 export const rulesetVersion = rulesetChanges.at(-1)!.version;

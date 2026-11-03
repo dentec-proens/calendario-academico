@@ -11,6 +11,11 @@ import { invalidCalendar as fail } from './input.ts';
 import { datesBetween } from '../counting/core.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
 import {
+  activityExtensionIssue,
+  schoolDayEdited,
+  schoolDayIssue,
+} from '../activities/school-day.ts';
+import {
   generatedActivities,
   generatedActivity,
   linkKept,
@@ -197,6 +202,12 @@ export function normalizeOfferCalendar(
       keptWithoutActivity:
         linkKept(old, event, states) && !generatedActivity(generated, event.activity),
     });
+    // Art. 5º and the municipal cause bind a new or edited date; an unchanged one stays a
+    // readiness issue, so it never blocks saving other changes.
+    if (schoolDayEdited(old, event, states)) {
+      const issue = schoolDayIssue(s, event) ?? activityExtensionIssue(event);
+      if (issue) fail(issue);
+    }
     if (
       event.hours !== undefined &&
       (!Number.isFinite(event.hours) || event.hours <= 0 || event.hours > 8784)

@@ -163,6 +163,28 @@ export default function RulesPage() {
           </dl>
         </section>
       )}
+      {view.schoolDay && (
+        <section className="rules-section" aria-labelledby="rules-school-day-title">
+          <h3 id="rules-school-day-title">O que conta como dia letivo</h3>
+          <ul className="rules-school-day">
+            <li>
+              Cada dia da semana normal de aulas dentro de um período letivo da oferta, mais as
+              inclusões (sábados letivos e reposições) e menos as exclusões (feriados, recessos e
+              suspensões de aula).
+            </li>
+            <li>
+              Dia letivo exige atividades com a efetiva participação de professores e estudantes (
+              {view.schoolDay.basis}). Conselhos de classe, reuniões, formação pedagógica,
+              planejamento coletivo e encontro de egressos, assim como prazos e marcos, não
+              constituem dia letivo: não acrescentam dias à contagem.
+            </li>
+            <li>
+              Uma dessas atividades em dia de aula não muda a contagem: as aulas são mantidas, salvo
+              se o campus as suspender para a atividade, e então o dia deixa de contar.
+            </li>
+          </ul>
+        </section>
+      )}
       <h3>Mínimos de dias letivos</h3>
       <p className="help">Aplicados na contagem depois que o escopo da norma é confirmado.</p>
       <table className="rules-table rules-compact">

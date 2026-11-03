@@ -10,6 +10,11 @@ import { datesBetween } from '../counting/core.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
 import {
+  activityExtensionIssue,
+  schoolDayEdited,
+  schoolDayIssue,
+} from '../activities/school-day.ts';
+import {
   isAssessmentStage,
   isStageActivity,
   sameActivity,
@@ -168,6 +173,8 @@ function correctedDate<S extends ActivityState>(
   // Automatic distribution belongs to an assessment interval only (`normalizeOfferCalendar`).
   if (!isAssessmentStage(activity)) delete corrected.assessmentAutoStart;
   validateActivityRecord(state, corrected, { stageInterval: true });
+  const schoolDay = schoolDayIssue(state, corrected) ?? activityExtensionIssue(corrected);
+  if (schoolDay) throw new DomainError(schoolDay);
   const cycleIssue = assessmentCycleIssue(state, corrected);
   if (cycleIssue) throw new DomainError(cycleIssue);
   return corrected;
@@ -283,6 +290,10 @@ function applyDate<S extends ActivityState>(
     stageInterval: edited && !(kept && !activity),
     keptWithoutActivity: kept && !activity,
   });
+  if (schoolDayEdited(previous, event)) {
+    const issue = schoolDayIssue(state, event) ?? activityExtensionIssue(event);
+    if (issue) throw new DomainError(issue);
+  }
   if (!event.name.trim()) throw new DomainError('Informe a descrição.');
   if (!['include', 'exclude', 'note'].includes(event.effect))
     throw new DomainError('Tipo de evento inválido.');

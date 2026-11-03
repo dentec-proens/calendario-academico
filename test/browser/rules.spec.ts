@@ -14,7 +14,7 @@ for (const role of ['ADMIN', 'CAMPUS', 'PARECERISTA'] as const)
     await expect(link).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('#panel-title')).toHaveText('Regras do calendário');
     await expect(page.locator('#rules-title')).toHaveText('Regras do calendário de 2027');
-    await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v4');
+    await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v5');
     await expect(page.locator('[data-observance-rule="public-servant-day"]')).toContainText(
       '28/10/2027, 29/10/2027',
     );
@@ -31,4 +31,13 @@ for (const role of ['ADMIN', 'CAMPUS', 'PARECERISTA'] as const)
       'Conforme ingresso',
     );
     await expect(page.locator('.rules-history')).toContainText('Flexibiliza as regras');
+    // Art. 5º: activities without students never add a day; the rule is what tells rows apart.
+    await expect(page.locator('#rules-school-day-title')).toHaveText('O que conta como dia letivo');
+    await expect(page.locator('.rules-school-day')).toContainText('Art. 5º, parágrafo único');
+    await expect(page.locator('[data-rule="council"] th')).toContainText(
+      'Não constitui dia letivo.',
+    );
+    await expect(page.locator('[data-rule="campus-events"] th')).not.toContainText(
+      'Não constitui dia letivo.',
+    );
   });

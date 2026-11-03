@@ -171,6 +171,81 @@ test('a new activity period asks for dates first and keeps category and effect c
   );
 });
 
+test('a saved meeting that adds days shows why its effect must change', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await expect(page.locator('#record-title')).toBeVisible();
+  await page.evaluate(() => {
+    const { record } = window.editorTest;
+    record.state.events.push({
+      id: 'legacy-inclusion',
+      name: 'Reunião em sábado',
+      activity: { activityId: 'family-meeting' },
+      start: '2027-05-08',
+      end: '2027-05-08',
+      effect: 'include',
+      category: 'evento',
+      scope: { offers: ['integrado'], confirmed: true },
+    });
+    record.version++;
+    return window.publishReviewerCalendar();
+  });
+  await selectEditorSection(page, 'events');
+  await openActivity(page, 'family-meeting');
+  await page.locator('[data-edit-activity-event="legacy-inclusion"]').click();
+  await expect(page.locator('#event-school-day-issue')).toContainText(
+    '“Reunião em sábado” não constitui dia letivo',
+  );
+  await page.locator('#event-more-options > summary').click();
+  await page.locator('#event-effect [data-choice="note"]').click();
+  await expect(page.locator('#event-school-day-issue')).toHaveCount(0);
+});
+
+test('a meeting keeps the classes of a teaching day unless the campus suspends them', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await selectEditorSection(page, 'events');
+  await openActivity(page, 'family-meeting');
+  // Art. 5º: a meeting is not a school day; on a teaching day classes are kept by default.
+  await expect(page.locator('#event-more-options .event-more-summary')).toContainText(
+    'Aulas mantidas',
+  );
+  await page.locator('#event-more-options > summary').click();
+  await expect(page.getByRole('radiogroup', { name: 'Aulas nesse dia' })).toBeVisible();
+  await expect(page.locator('#event-effect [data-choice="note"]')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  // Justified absence: the rule hides the effect that would make the meeting a school day.
+  await expect(page.locator('#event-effect [data-choice="include"]')).toHaveCount(0);
+  await expect(page.locator('#event-school-day-help')).toContainText('Art. 5º, parágrafo único');
+
+  await page.locator('#event-effect [data-choice="exclude"]').click();
+  await expect(page.locator('#event-more-options .event-more-summary')).toContainText(
+    'Aulas suspensas',
+  );
+  // A suspension for a meeting is not a municipal holiday or recess.
+  await expect(page.locator('#event-deadline-extension-cause')).toHaveCount(0);
+  await page.locator('#event-start').fill('2027-05-11');
+  await page.locator('#event-end').fill('2027-05-11');
+  await applyEvent(page);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          window.editorTest.record.state.events.find(
+            (event) =>
+              event.activity?.activityId === 'family-meeting' && event.start === '2027-05-11',
+          )?.effect,
+      ),
+    )
+    .toBe('exclude');
+});
+
 test('going back to the activity keeps an unapplied period pending and a saved one listed', async ({
   page,
   fixtureServer,
@@ -334,7 +409,8 @@ test('a record with a freely combined effect and category shows both fields when
   await selectCampusEvents(page);
   await editCampusEvent(page, 'free-combination');
   await expect(page.locator('#event-type')).toHaveCount(0);
-  await expect(page.locator('#event-more-options > summary')).toContainText('Exclui dias letivos');
+  // Training is a meeting (art. 5º): its exclusion reads as suspended classes.
+  await expect(page.locator('#event-more-options > summary')).toContainText('Aulas suspensas');
   await page.locator('#event-more-options > summary').click();
   await expect(page.locator('#event-effect')).toBeVisible();
   await expect(page.locator('#event-effect [data-choice="exclude"]')).toHaveAttribute(

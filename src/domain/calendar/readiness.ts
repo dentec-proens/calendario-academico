@@ -14,6 +14,7 @@ import { sameActivity, type ActivityRef } from './activities/activity-ref.ts';
 import { assessmentCycleIssue } from './activities/assessment-intervals.ts';
 import { linkIssueActions, linkIssueLabels } from './activities/links.ts';
 import { noticeDestinationIssues } from './activities/validation.ts';
+import { schoolDayIssue } from './activities/school-day.ts';
 import { evaluateCalendar as calendarResult } from './counting/evaluation.ts';
 import { periodsForOffer } from './organization/periods.ts';
 import { policyFor } from '../policies/registry.ts';
@@ -216,6 +217,20 @@ export function contentAssessment(record: ContentRecord) {
           target: { area: 'date', eventId: event.id, name: event.name },
         },
       );
+  }
+  // Art. 5º: a saved date that adds days without being a school day is kept as it was and blocks
+  // the conclusion until corrected, also under “Vínculo a conferir”, whose correction it refuses.
+  for (const event of record.state.events) {
+    const message = schoolDayIssue(record.state, event);
+    if (message) {
+      const date = event.start.split('-').reverse().join('/');
+      issue(`school-day:${event.id}`, message, {
+        group: 'dates',
+        title: `Não constitui dia letivo — ${event.name} (${date})`,
+        detail: message,
+        target: { area: 'date', eventId: event.id, name: event.name },
+      });
+    }
   }
   // A notice destination is diagnosed per offer and never corrected automatically.
   for (const event of record.state.events)

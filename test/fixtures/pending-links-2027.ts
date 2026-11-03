@@ -57,7 +57,7 @@ function draft(
 ): PendingLinksFixture {
   return {
     schemaVersion: 5,
-    rulesetVersion: 'consup-292-2027-v3',
+    rulesetVersion: 'consup-292-2027-v5',
     year: 2027,
     campus,
     offers: offers.map(offer),
@@ -206,7 +206,7 @@ export function conflictingLinks(): PendingLinksFixture {
   const vacation = teacherVacations(2027, vacations).events[0];
   return {
     schemaVersion: 5,
-    rulesetVersion: 'consup-292-2027-v3',
+    rulesetVersion: 'consup-292-2027-v5',
     year: 2027,
     campus: 'Campus sintético de conflitos',
     offers: [
@@ -280,7 +280,7 @@ export function stageLinksToReview(): PendingLinksFixture {
   });
   return {
     schemaVersion: 5,
-    rulesetVersion: 'consup-292-2027-v3',
+    rulesetVersion: 'consup-292-2027-v5',
     year: 2027,
     campus: 'Campus sintético de etapas',
     offers: [
@@ -328,7 +328,7 @@ export function legacyOperationalLinks(): PendingLinksFixture {
   });
   return {
     schemaVersion: 5,
-    rulesetVersion: 'consup-292-2027-v3',
+    rulesetVersion: 'consup-292-2027-v5',
     year: 2027,
     campus: 'Campus sintético de vínculos legados',
     offers: [
@@ -378,7 +378,7 @@ export function stagePositionsToConfirm(): PendingLinksFixture {
   });
   return {
     schemaVersion: 5,
-    rulesetVersion: 'consup-292-2027-v3',
+    rulesetVersion: 'consup-292-2027-v5',
     year: 2027,
     campus: 'Campus sintético de posições de etapa',
     offers: [

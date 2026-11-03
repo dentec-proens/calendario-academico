@@ -10,6 +10,7 @@ import { expandRules, type ActivityRule } from '#src/domain/calendar/activities/
 import type { RulesetChange } from '#src/domain/policies/contract.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
 import { offerLabel } from '#src/domain/calendar/offers.ts';
+import { schoolDayNature } from '#src/domain/calendar/activities/school-day.ts';
 
 export type OfferStatus = 'required' | 'optional' | 'unconfigured' | 'intake' | 'absent';
 
@@ -97,6 +98,7 @@ export function rulesView(year: number) {
     excluded: offers.filter((offer) => policy.excludes(offer)).map(offerLabel),
     offers: offers.map((offer) => ({ id: offer.id, label: offerLabel(offer) })),
     observances: policy.observances,
+    schoolDay: policy.schoolDay && { basis: policy.schoolDay.basis },
     minimums,
     minimumSources: [
       ...new Set(
@@ -144,6 +146,10 @@ export function rulesView(year: number) {
               sample.deadline &&
                 !sample.name.includes(civilDate(sample.deadline)) &&
                 `Prazo${sample.deadlinePolicy === 'reference' ? ' de referência' : ''}: ${civilDate(sample.deadline)}.`,
+              policy.schoolDay &&
+                schoolDayNature(year, { activity: sample.activity, effect: 'note' }) !==
+                  'school-day' &&
+                'Não constitui dia letivo.',
             ].filter((item): item is string => Boolean(item)),
           };
         }),

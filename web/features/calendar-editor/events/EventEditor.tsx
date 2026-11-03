@@ -24,7 +24,12 @@ import {
 } from '#src/domain/calendar/internal-dates.ts';
 import { Check, Input, Select } from '../forms/fields.tsx';
 import { ChoiceGroup } from '../../../components/ui/ChoiceGroup.tsx';
-import { countEffects } from '../../../shared/count-effects.ts';
+import { countEffects, meetingEffects } from '../../../shared/count-effects.ts';
+import {
+  schoolDayIssue,
+  schoolDayNature,
+  underNorm,
+} from '#src/domain/calendar/activities/school-day.ts';
 import type { EventEffect } from '#src/domain/calendar/model.ts';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { scrollIntoView } from '../../../scroll.ts';
@@ -37,6 +42,7 @@ const effectLabels = {
   include: 'Inclui dias letivos',
   note: 'Sem efeito na contagem',
 };
+const meetingLabels = { ...effectLabels, exclude: 'Aulas suspensas', note: 'Aulas mantidas' };
 
 export default function EventEditor() {
   const { state, readOnly } = useCalendarEditor();
@@ -158,6 +164,32 @@ export default function EventEditor() {
       )}
     </form.Field>
   );
+  // Art. 5º: a meeting keeps or suspends the day's classes; a deadline never adds days.
+  // Offers outside the norm (excluded or under their own regulation) keep every effect.
+  const nature = underNorm(state, values.offers)
+    ? schoolDayNature(state.year, {
+        activity: editor.activity,
+        category: values.category,
+        effect: values.effect as EventEffect,
+      })
+    : undefined;
+  const effectOptions =
+    nature === 'meeting'
+      ? meetingEffects
+      : nature === 'deadline'
+        ? countEffects.filter(({ value }) => value !== 'include')
+        : countEffects;
+  const basis = policyFor(state.year).schoolDay?.basis;
+  // A saved or switched `include` the rule no longer offers: shown, not changed silently.
+  const effectIssue =
+    nature &&
+    schoolDayIssue(state, {
+      name: values.name.trim() || 'A data',
+      activity: editor.activity,
+      category: values.category,
+      effect: values.effect as EventEffect,
+      scope: { offers: values.offers, confirmed: true },
+    });
   const effectField = (
     <form.Field
       name="effect"
@@ -170,10 +202,10 @@ export default function EventEditor() {
         <ChoiceGroup<EventEffect>
           id="event-effect"
           className="ui-choice-described event-effect"
-          label="Efeito na contagem"
+          label={nature === 'meeting' ? 'Aulas nesse dia' : 'Efeito na contagem'}
           value={field.state.value || null}
           disabled={readOnly || editor.pending}
-          options={countEffects.map(({ value, title, description }) => ({
+          options={effectOptions.map(({ value, title, description }) => ({
             value,
             label: (
               <>
@@ -187,6 +219,18 @@ export default function EventEditor() {
       )}
     </form.Field>
   );
+  const schoolDayHelp =
+    nature === 'meeting' || nature === 'deadline' ? (
+      <p className="help" id="event-school-day-help">
+        {nature === 'meeting'
+          ? 'Sem a efetiva participação de estudantes, a atividade não constitui dia letivo'
+          : 'Prazos e marcos não constituem dia letivo'}{' '}
+        ({basis}).{' '}
+        {nature === 'meeting'
+          ? 'Em dia de aula, as aulas são mantidas, salvo se o campus as suspender para a atividade. Se a suspensão valer para todo o campus, cadastre outra data.'
+          : 'A data não acrescenta dias à contagem.'}
+      </p>
+    ) : null;
   const typeQuestion = (
     <form.Field name="eventType">
       {(field) => (
@@ -347,7 +391,9 @@ export default function EventEditor() {
                   )}{' '}
                   ·{' '}
                   {values.effect ? (
-                    effectLabels[values.effect as keyof typeof effectLabels]
+                    (nature === 'meeting' ? meetingLabels : effectLabels)[
+                      values.effect as keyof typeof effectLabels
+                    ]
                   ) : (
                     <span className="event-more-pending">Efeito a definir</span>
                   )}
@@ -358,8 +404,14 @@ export default function EventEditor() {
             <div className="event-more-fields">
               {categoryField}
               {effectField}
+              {schoolDayHelp}
             </div>
           </details>
+          {effectIssue && (
+            <Notice tone="warning" id="event-school-day-issue" title="Efeito a corrigir">
+              {effectIssue} Escolha outro efeito em Categoria e efeito.
+            </Notice>
+          )}
           {freeEvent && internalAllowed && (
             <form.Field
               name="internal"
@@ -386,7 +438,9 @@ export default function EventEditor() {
               {unmarkedReason} A data passa a constar do calendário oficial.
             </Notice>
           )}
-          {(values.effect === 'exclude' || values.deadlineExtensionCause) && (
+          {/* A municipal holiday or recess is a date of the campus, never an activity or meeting. */}
+          {((values.effect === 'exclude' && !editor.activity && nature !== 'meeting') ||
+            values.deadlineExtensionCause) && (
             <form.Field name="deadlineExtensionCause">
               {(field) => (
                 <Select

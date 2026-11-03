@@ -44,6 +44,27 @@ export const consup2922027Policy: CalendarPolicy = {
     };
   },
   excludes: (offer) => excluded(offer.kind),
+  schoolDay: {
+    basis: 'Art. 5º, parágrafo único, da Resolução CONSUP/IFPR nº 292/2026',
+    schoolDayActivities: [
+      'campus-events',
+      'internship-event',
+      'robotics',
+      'course-showcase',
+      'women-week',
+      'ethics-week',
+      'cultural-week',
+    ],
+    meetings: [
+      'council',
+      'extraordinary-council',
+      'pedagogical-meeting',
+      'family-meeting',
+      'alumni-meeting',
+      'pedagogical-training',
+      'collective-planning',
+    ],
+  },
   scope: {
     norm: 'Resolução 292',
     readinessIssue:

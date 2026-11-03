@@ -183,3 +183,12 @@
     font-size: 0.8125rem;
   }
 }
+
+.rules-school-day {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.5;
+}
+.rules-school-day li + li {
+  margin-top: 6px;
+}

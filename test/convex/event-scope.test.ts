@@ -22,6 +22,7 @@ import {
   type ScopeState,
 } from '../helpers/event-scope.ts';
 import { preserveSubmission } from '../helpers/lifecycle.ts';
+import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import type { StoredCase } from '../helpers/stored-fixtures.ts';
 
@@ -62,8 +63,13 @@ async function stored(item: StoredCase) {
       .query('calendarContents')
       .withIndex('by_calendarId', (q) => q.eq('calendarId', created.id))
       .unique())!;
+    // Stored under the current rules: a tightening version (`tightens`) would otherwise ask to
+    // incorporate the base first, which these scope checks do not cover.
     await ctx.db.patch(row._id, {
-      state: frozen.state,
+      state: {
+        ...frozen.state,
+        rulesetVersion: rulesetVersion({ ...frozen.state, year: item.year }),
+      },
       institutionalSnapshot: frozen.institutionalSnapshot,
     });
     return (await ctx.db.get(row._id))!;

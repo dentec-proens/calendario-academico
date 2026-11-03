@@ -88,6 +88,17 @@ export interface CalendarPolicy {
   ): { annual: Minimum | null; semester: Minimum | null };
   /** Offers the norm leaves to their own regulation. */
   excludes(offer: CalendarOffer): boolean;
+  /**
+   * Which declared activities may make a day a school day (`schoolDayNature`). Absent: dates keep
+   * any effect. Activities in neither list are deadlines or milestones.
+   */
+  schoolDay?: {
+    basis: string;
+    /** Activities with the effective participation of teachers and students. */
+    schoolDayActivities: readonly string[];
+    /** Activities that take a day without students: classes kept or suspended. */
+    meetings: readonly string[];
+  };
   /** Human confirmation of the norm's scope, required before asserting compliance. */
   scope?: {
     /** Short name of the norm shown in the editor. */
