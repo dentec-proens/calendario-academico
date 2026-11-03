@@ -138,6 +138,7 @@
   #message,
   #print,
   .calendar-heading,
+  .print-version,
   .panel > .help,
   .legend {
     display: none !important;
@@ -197,6 +198,33 @@
     max-width: none;
     padding: 0;
   }
+}
+/* Complete version (art. 18): internal dates keep their category color and gain their own mark. */
+.proens-heading small.proens-version-mark {
+  color: #5b2a86;
+}
+.internal-date td:last-child {
+  font-style: italic;
+}
+.internal-date-label {
+  font-style: normal;
+  font-weight: 650;
+  color: #5b2a86;
+}
+.internal-day-mark,
+.internal-swatch {
+  background: repeating-linear-gradient(135deg, #5b2a86 0 2px, transparent 2px 5px) !important;
+}
+.internal-day-mark {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #5b2a86;
+  margin-left: 1px;
+  vertical-align: bottom;
+}
+.internal-swatch {
+  border-color: #5b2a86;
 }
 /* PROENS reference palette and document structure */
 .proens-summary table.teaching-distribution {
@@ -457,6 +485,11 @@
   .color-mark {
     width: 4px;
     height: 3px;
+    border-width: 0.3px;
+  }
+  .internal-day-mark {
+    width: 4px;
+    height: 4px;
     border-width: 0.3px;
   }
   .proens-key {

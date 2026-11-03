@@ -76,6 +76,8 @@ export function applicationSearch(input: Record<string, unknown>) {
       ? { atividadeAssunto: String(input.atividadeAssunto) }
       : {}),
     ...activityLink(input.atividade),
+    // Calendar preview: the printed version; absent means the official one (plan, section 4.5).
+    ...(input.impressao === 'completa' ? { impressao: 'completa' as const } : {}),
   };
 }
 

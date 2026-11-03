@@ -10,6 +10,7 @@ import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
 import { saveBlob } from '../../../shared/convex/files.ts';
 import { fileNamePrefix } from '#src/domain/calendar/lifecycle.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
+import type { PrintVersion } from '#src/printing/calendar-layout.ts';
 
 function useExportController() {
   const { session, record, notify, baseUpdate, readOnly } = useCalendarEditor();
@@ -42,7 +43,8 @@ function useExportController() {
       if (active.current) setPending(false);
     }
   }
-  const print = () =>
+  /** Prints the preview; the complete version (with internal dates) suggests its own file name. */
+  const print = (version: PrintVersion = 'official') =>
     run(async () => {
       if (!readOnly && !baseUpdate.compatible)
         throw new Error('Incorpore a atualização da base institucional antes de imprimir.');
@@ -51,7 +53,7 @@ function useExportController() {
       if (!active.current) return;
       // The browser suggests the document title as the name of the saved PDF.
       const title = document.title;
-      document.title = `${fileNamePrefix(saved.status)}calendario-${saved.state.year}-v${saved.version}`;
+      document.title = `${fileNamePrefix(saved.status)}calendario-${saved.state.year}-v${saved.version}${version === 'complete' ? '-completo' : ''}`;
       window.addEventListener('afterprint', () => (document.title = title), { once: true });
       window.print();
     });

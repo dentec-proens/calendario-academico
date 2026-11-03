@@ -68,3 +68,13 @@ test('any other activity value is dropped and flagged, and the flag never reache
   expect(applicationSearch({ atividade: '' })).toEqual({});
   expect(applicationSearch({ atividade: ['final:cycle:first'] })).toEqual({});
 });
+
+test('the printed version is official by default and complete only by `impressao=completa`', () => {
+  expect(applicationSearch(parseApplicationSearch('?impressao=completa'))).toEqual({
+    impressao: 'completa',
+  });
+  expect(stringifyApplicationSearch({ impressao: 'completa' })).toBe('?impressao=completa');
+  for (const value of ['oficial', 'completo', 'COMPLETA', ''])
+    expect(applicationSearch(parseApplicationSearch(`?impressao=${value}`))).toEqual({});
+  expect(applicationSearch({ impressao: ['completa'] })).toEqual({});
+});

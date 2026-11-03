@@ -8,6 +8,29 @@ import { periodsForOffer } from '../domain/calendar/organization/periods.ts';
 import { associationOffers, labelFor, offerIds } from '../domain/calendar/offers.ts';
 import { listedOffers } from '../domain/calendar/modalities.ts';
 import { executionLabels } from '../domain/calendar/activities/plan-evaluation.ts';
+import { canBeInternal, isInternalDate } from '../domain/calendar/internal-dates.ts';
+
+/**
+ * Printed version of the calendar (plan, section 4.5). The official version, sent to Proens and
+ * published (arts. 15 and 16), leaves internal dates out; the complete one marks them.
+ */
+export type PrintVersion = 'official' | 'complete';
+
+/** Heading of the complete version, which never replaces the official calendar. */
+export const completeVersionNote =
+  'Versão completa: inclui datas de organização interna (art. 18); não substitui o calendário oficial';
+
+/**
+ * A date the campus marked internal and that may be internal under the single eligibility rule.
+ * A mark on an ineligible date, which saving refuses, keeps the date in the official version.
+ */
+export const printsAsInternal = (event: PrintEvent) =>
+  isInternalDate(event) && canBeInternal(event);
+
+export const hasInternalDates = (events: readonly PrintEvent[]) => events.some(printsAsInternal);
+
+const internalLabel = (event: PrintEvent) =>
+  printsAsInternal(event) ? '<small class="internal-date-label">Data interna</small>' : '';
 
 const esc = (s: unknown) =>
   String(s).replace(
@@ -71,7 +94,7 @@ function externalReferences(state: PrintState, events: PrintEvent[]) {
   if (!rows.length) return '';
   const table = (title: string, items: PrintEvent[]) =>
     items.length
-      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade e finalidade</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${publicationDetails(event, state.year, false)}<small>${esc(eventOffers(state, event))}</small>${automaticEventSource(event) ? `<small>Fonte: ${esc(automaticEventSource(event))}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
+      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade e finalidade</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${internalLabel(event)}${publicationDetails(event, state.year, false)}<small>${esc(eventOffers(state, event))}</small>${automaticEventSource(event) ? `<small>Fonte: ${esc(automaticEventSource(event))}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
       : '';
   return `<section class="proens-external-references"><h3>Atividades e referências de outros anos</h3><p>As datas integrais são preservadas. Estes registros informativos não alteram a contagem de dias letivos.</p>${table(
     'Publicações programadas',
@@ -116,7 +139,12 @@ export function proensLayout(
   result: PrintResult = null,
   record?: PrintRecord | null,
   logo = '',
+  version: PrintVersion = 'official',
 ) {
+  // Internal dates never change the count (effect `note`), so the count and the distribution read
+  // every date and both versions print the same school days; only the grid and lists differ.
+  const listed = version === 'complete' ? events : events.filter((e) => !printsAsInternal(e));
+  const showsInternal = hasInternalDates(listed);
   const status = record?.status ?? 'rascunho';
   const details = [record?.courses, record?.classes, record?.shifts].filter(Boolean).join(' · ');
   const byOffer = result?.byOffer;
@@ -131,7 +159,7 @@ export function proensLayout(
         month: 'long',
         timeZone: 'UTC',
       });
-    const monthEvents: PrintEvent[] = events
+    const monthEvents: PrintEvent[] = listed
       .filter((e) => e.start.slice(0, 7) <= prefix && e.end.slice(0, 7) >= prefix)
       .sort((a, b) => a.start.localeCompare(b.start));
     for (const p of state.periods) {
@@ -157,7 +185,7 @@ export function proensLayout(
     for (let day = 1; day <= length; day++) {
       const date = civilDate(prefix + '-' + String(day).padStart(2, '0')),
         d = ledger.get(date),
-        list = events.filter((e) => e.start <= date && e.end >= date);
+        list = listed.filter((e) => e.start <= date && e.end >= date);
       if (d?.counted) total++;
       const marks = [
         ...new Set([
@@ -188,7 +216,9 @@ export function proensLayout(
             (c) =>
               `<i class="color-mark cat-${c}" aria-label="${esc(categories.find((x) => x[0] === c)![1])}"></i>`,
           )
-          .join('')}</td>`,
+          .join(
+            '',
+          )}${list.some(printsAsInternal) ? '<i class="internal-day-mark" aria-label="Data interna"></i>' : ''}</td>`,
       );
     }
     while (cells.length % 7) cells.push('<td></td>');
@@ -203,7 +233,7 @@ export function proensLayout(
           b = e.end.startsWith(prefix) ? Number(e.end.slice(8)) : length;
         const crossesYear = e.start < `${state.year}-01-01`;
         const scope = eventOffers(state, e);
-        return `<tr><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(e.name)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e, state.year)}${(state.offers || !e.institutional) && scope ? ' [' + esc(scope) + ']' : ''}</td></tr>`;
+        return `<tr${printsAsInternal(e) ? ' class="internal-date"' : ''}><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(e.name)}${internalLabel(e)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e, state.year)}${(state.offers || !e.institutional) && scope ? ' [' + esc(scope) + ']' : ''}</td></tr>`;
       });
     const middle = Math.max(6, Math.ceil(entries.length / 2)),
       columns = [entries.slice(0, middle), entries.slice(middle)];
@@ -234,11 +264,11 @@ export function proensLayout(
     })
     .join('');
   const dayDistribution = distributionTables(state, events, result);
-  return `<div class="proens-document"><div class="proens-heading"><img class="ifpr-logo" src="${esc(logo)}" alt="Instituto Federal do Paraná"><strong>INSTITUTO FEDERAL DO PARANÁ</strong><h2>CALENDÁRIO ACADÊMICO E ADMINISTRATIVO ${state.year}</h2><h2>CAMPUS ${esc(state.campus)}</h2><small class="proens-status-mark" data-status="${status}">${esc(printMark(status, { seiProcess: record?.seiProcess, supersededByName: record?.supersededByName }))}</small><p>${esc(
+  return `<div class="proens-document"${version === 'complete' ? ' data-print-version="complete"' : ''}><div class="proens-heading"><img class="ifpr-logo" src="${esc(logo)}" alt="Instituto Federal do Paraná"><strong>INSTITUTO FEDERAL DO PARANÁ</strong><h2>CALENDÁRIO ACADÊMICO E ADMINISTRATIVO ${state.year}</h2><h2>CAMPUS ${esc(state.campus)}</h2><small class="proens-status-mark" data-status="${status}">${esc(printMark(status, { seiProcess: record?.seiProcess, supersededByName: record?.supersededByName }))}</small>${version === 'complete' ? `<small class="proens-version-mark">${esc(completeVersionNote)}</small>` : ''}<p>${esc(
     offerIds(state)
       .map((m) => labelFor(state, m))
       .join(' + '),
-  )}</p>${details ? `<p>${esc(details)}</p>` : ''}</div>${months}${externalReferences(state, events)}<section class="proens-summary"><h3>Legendas e contagem</h3><p>Marcação gráfica de dias: ${esc(labelFor(state, offerIds(state)[0] ?? ''))}.</p>${
+  )}</p>${details ? `<p>${esc(details)}</p>` : ''}</div>${months}${externalReferences(state, listed)}<section class="proens-summary"><h3>Legendas e contagem</h3><p>Marcação gráfica de dias: ${esc(labelFor(state, offerIds(state)[0] ?? ''))}.</p>${
     byOffer
       ? `<table><thead><tr><th>Oferta</th><th>Total anual</th><th>Períodos</th></tr></thead><tbody>${Object.entries(
           byOffer,
@@ -259,5 +289,5 @@ export function proensLayout(
     .map(([key, label]) => `<div><span class="swatch cat-${key}"></span>${esc(label)}</div>`)
     .join(
       '',
-    )}</div><p>· Dia letivo calculado. Faixas adicionais na data indicam categorias simultâneas. A cor não substitui a conferência de conflitos.</p><table><thead><tr><th>Período</th><th>Dias letivos</th></tr></thead><tbody>${countRows}<tr><th>Total anual</th><th>${result?.total ?? '—'}</th></tr></tbody></table>${dayDistribution}<p>Carga horária, checklist integral e deliberação institucional permanecem sujeitos à conferência.</p></section></div>`;
+    )}${showsInternal ? '<div><span class="swatch internal-swatch"></span>Data interna</div>' : ''}</div><p>· Dia letivo calculado. Faixas adicionais na data indicam categorias simultâneas. A cor não substitui a conferência de conflitos.</p><table><thead><tr><th>Período</th><th>Dias letivos</th></tr></thead><tbody>${countRows}<tr><th>Total anual</th><th>${result?.total ?? '—'}</th></tr></tbody></table>${dayDistribution}<p>Carga horária, checklist integral e deliberação institucional permanecem sujeitos à conferência.</p></section></div>`;
 }

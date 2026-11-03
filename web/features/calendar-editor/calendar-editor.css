@@ -1406,6 +1406,12 @@ fieldset.event-fields {
 .calendar-dates-link {
   margin-block: 1rem 0;
 }
+.print-version {
+  margin-block: 0 1rem;
+}
+.print-version .help {
+  margin-block: 0.5rem 0;
+}
 @media print {
   .calendar-dates-link {
     display: none;
