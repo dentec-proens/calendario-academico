@@ -38,6 +38,8 @@ export default function RootLayout() {
           ? `${user.name} · ${accountScope}`
           : user.name
         : null;
+  // A tab opened while the bootstrap is unavailable has no portal to show until maintenance ends.
+  const paused = session.maintenance && session.isAuthenticated && !session.info;
   const main = useRef<HTMLElement>(null);
   const { setArrivalPending } = session;
   useEffect(() => clearPrivateLinkWhenLeaving(pathname), [pathname]);
@@ -99,7 +101,7 @@ export default function RootLayout() {
               Seu perfil não permite acessar a área solicitada.
             </Notice>
           ) : null}
-          {session.maintenance && !editorPath ? (
+          {session.maintenance && (!editorPath || paused) ? (
             <Notice tone="warning" announce="assertive">
               O portal está em manutenção. Mantenha esta página aberta; novas alterações estarão
               disponíveis após a conclusão.
@@ -109,7 +111,7 @@ export default function RootLayout() {
             className="app-operation-scope"
             disabled={session.maintenance && session.isAuthenticated && !session.editorRecovery}
           >
-            {session.isLoading ? null : (
+            {session.isLoading || paused ? null : (
               <Suspense fallback={<LoadingIndicator layout="overlay" label="Carregando página…" />}>
                 <Outlet />
               </Suspense>

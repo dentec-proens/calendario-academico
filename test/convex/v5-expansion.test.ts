@@ -106,7 +106,8 @@ test('a calendar content still in v4 answers maintenance to the editor and the r
   }));
   expect(after.content).toMatchObject(v4);
   expect(after.calendar).toEqual(stored.calendar);
-  // The v5 submission of the same calendar is still readable, and so is the calendar list.
+  // The v5 submission of the same calendar is still readable, and so is the paginated calendar
+  // list; the session bootstrap includes the catalogue, not the calendar contents.
   const submission = await campus.query(api.calendars.submissionContent, {
     id: record.id,
     submissionId: stored.submissionId,

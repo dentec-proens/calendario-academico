@@ -3,11 +3,12 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type PropsWithChildren,
 } from 'react';
-import { useConvexAuth, useQuery } from 'convex/react';
+import { useConvexAuth, useQueries, useQuery, type RequestForQueries } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { functions } from '../shared/convex/client.ts';
 import { nativeError } from '../shared/convex/errors.ts';
@@ -44,17 +45,46 @@ export interface SessionState {
 
 const SessionContext = createContext<SessionState | null>(null);
 
+/**
+ * The session bootstrap. While the v5 expansion keeps a catalogue row in v4, the bootstrap answers
+ * the maintenance unavailability (503; plan `docs/plans/2026-11-02-atividades-e-datas.md`, section
+ * 6, "Concorrência e corte"). useQueries reports it as a value, so the portal shows maintenance
+ * instead of the access error and the subscription resumes by itself after the migration. Any
+ * other error still reaches the application error boundary.
+ */
+function useBootstrap(enabled: boolean) {
+  const requests = useMemo(() => {
+    const request: RequestForQueries = {};
+    if (enabled)
+      request.bootstrap = {
+        query: functions.workspace.bootstrap,
+        args: { includeCalendars: false },
+      };
+    return request;
+  }, [enabled]);
+  const result = useQueries(requests).bootstrap as Bootstrap | Error | undefined;
+  if (!(result instanceof Error)) return { info: result, unavailable: false };
+  if (nativeError(result).status !== 503) throw result;
+  return { info: undefined, unavailable: true };
+}
+
 export function AppSessionProvider({ children }: PropsWithChildren) {
   const auth = useConvexAuth();
   const { signOut } = useAuthActions();
   const status = useQuery(functions.access.session.status, {});
   const availability = useQuery(functions.operations.availability, {});
-  const info = useQuery(
-    functions.workspace.bootstrap,
-    auth.isAuthenticated ? { includeCalendars: false } : 'skip',
-  );
-  const [confirmedInfo, setConfirmedInfo] = useState(info);
-  if (info && info !== confirmedInfo) setConfirmedInfo(info);
+  const bootstrap = useBootstrap(auth.isAuthenticated);
+  const [confirmedInfo, setConfirmedInfo] = useState(bootstrap.info);
+  if (bootstrap.info && bootstrap.info !== confirmedInfo) setConfirmedInfo(bootstrap.info);
+  // An open tab keeps its last bootstrap of the same account while the bootstrap is unavailable.
+  const info =
+    bootstrap.info ??
+    (bootstrap.unavailable &&
+    confirmedInfo &&
+    status?.user &&
+    sessionIdentity(status.user) === sessionIdentity(confirmedInfo.user)
+      ? confirmedInfo
+      : undefined);
   const [message, setMessage] = useState<SessionState['message']>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [arrivalPending, setArrivalPending] = useState(false);
@@ -117,14 +147,16 @@ export function AppSessionProvider({ children }: PropsWithChildren) {
         status: effectiveStatus,
         isLoading: recovering
           ? false
-          : auth.isLoading || status === undefined || (auth.isAuthenticated && !info),
+          : auth.isLoading ||
+            status === undefined ||
+            (auth.isAuthenticated && !info && !bootstrap.unavailable),
         isAuthenticated: auth.isAuthenticated,
         notify,
         message,
         arrivalPending,
         setArrivalPending,
         loggingOut,
-        maintenance: availability?.maintenance ?? false,
+        maintenance: (availability?.maintenance ?? false) || bootstrap.unavailable,
         logout,
         registerEditor,
         editorRecovery: recovering

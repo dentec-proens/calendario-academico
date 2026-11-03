@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { getFunctionName, type FunctionReference } from 'convex/server';
+import { ConvexError } from 'convex/values';
 import { convex as editorClient } from './editor-event-drafts-client.ts';
 import { record } from './editor-client.ts';
 import type { Bootstrap, Status } from '../../web/shared/convex/types.ts';
@@ -25,7 +26,11 @@ export const info: Bootstrap = {
 const subscribers = new Set<() => void>();
 let authenticated = true;
 let loadingBootstrap = false;
-let maintenance = false;
+/** A new tab can open while the expansion is already under way (set by an init script). */
+const initial = window.editorSessionInitial ?? {};
+let maintenance = initial.maintenance ?? false;
+/** The bootstrap reads a catalogue row still in v4: it answers the expansion 503. */
+let bootstrapUnavailable = initial.bootstrapUnavailable ?? false;
 let holdSaves = false;
 const pendingSaves: Array<() => void> = [];
 export const counters = { signOuts: 0, saveStarted: 0 };
@@ -58,7 +63,14 @@ export const actions = {
 };
 function sessionResult(name: string) {
   if (name === 'operations:availability') return { maintenance };
-  if (name === 'workspace:bootstrap') return loadingBootstrap ? undefined : structuredClone(info);
+  if (name === 'workspace:bootstrap') {
+    if (bootstrapUnavailable)
+      return new ConvexError({
+        status: 503,
+        error: 'Aplicação em manutenção. Aguarde a conclusão e recarregue a página.',
+      });
+    return loadingBootstrap ? undefined : structuredClone(info);
+  }
   return {
     setupRequired: false,
     hosted: true,
@@ -82,7 +94,11 @@ export const convex = {
       return editorClient.watchQuery(reference);
     let cached = sessionResult(name);
     return {
-      localQueryResult: () => cached,
+      localQueryResult: () => {
+        // A query that failed on the server throws from the local result, as the real client.
+        if (cached instanceof Error) throw cached;
+        return cached;
+      },
       journal: () => undefined,
       onUpdate(callback: () => void) {
         return subscribe(() => {
@@ -133,6 +149,10 @@ window.editorSessionTest = {
     maintenance = value;
     publishSession();
   },
+  bootstrapUnavailable(value: boolean) {
+    bootstrapUnavailable = value;
+    publishSession();
+  },
 };
 declare global {
   interface Window {
@@ -144,6 +164,8 @@ declare global {
       switchUser: (id: string, role?: Bootstrap['user']['role']) => void;
       bootstrapLoading: (value: boolean) => void;
       maintenance: (value: boolean) => void;
+      bootstrapUnavailable: (value: boolean) => void;
     };
+    editorSessionInitial?: { maintenance?: boolean; bootstrapUnavailable?: boolean };
   }
 }
