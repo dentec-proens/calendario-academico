@@ -360,6 +360,15 @@
   padding: 20px 28px;
   border-bottom: 1px solid var(--line);
 }
+/* Creation actions of the step; steps fill it through SectionActions. */
+.editor-section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.editor-section-actions:empty {
+  display: none;
+}
 /* Same badge as the current step in the sidebar, scaled to the heading. */
 .editor-title-step {
   display: grid;
@@ -1002,6 +1011,15 @@ button.activity-group-toggle:enabled:hover {
   border-color: var(--ui-warning-border);
   background: var(--ui-warning-soft);
   color: var(--ui-warning);
+}
+/* A campus date without activity is a kind of date, not a completed obligation. */
+.activity-dot[data-tone='info'] {
+  background: var(--ui-info);
+}
+.activity-status[data-tone='info'] {
+  border-color: var(--ui-info-border);
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
 }
 .activity-detail > summary {
   cursor: pointer;

@@ -1,6 +1,6 @@
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { EditorErrorBoundary } from './EditorErrorBoundary.tsx';
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Download, Ellipsis, Eye, History } from 'lucide-react';
 import LifecycleActions, { ReturnNote, StatusBadge } from '../lifecycle/LifecycleActions.tsx';
 import {
@@ -15,6 +15,7 @@ import { CalendarEditorProvider, useCalendarEditor } from './session/CalendarEdi
 import { EventEditorProvider, useEventEditor } from './events/EventEditorProvider.tsx';
 import EventPanel from './events/EventPanel.tsx';
 import NewEventButton from './events/NewEventButton.tsx';
+import { SectionActionsProvider } from './section-actions.tsx';
 import { CalendarExportProvider, useCalendarExport } from './export/CalendarExportProvider.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
 import { editorSections } from '#src/app/routes.ts';
@@ -78,6 +79,7 @@ function EditorFrame() {
   const hash = useRouterState({ select: (router) => router.location.hash });
   const feedback = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const [sectionActions, setSectionActions] = useState<HTMLDivElement | null>(null);
   const previousPath = useRef(pathname);
   useCalendarSummaryTool(state, evaluation, !dirty);
   useEffect(() => {
@@ -452,11 +454,15 @@ function EditorFrame() {
               )}
               {current.title}
             </h2>
-            {currentSection === 'events' && <NewEventButton />}
+            <div className="editor-section-actions" ref={setSectionActions}>
+              {currentSection === 'events' && <NewEventButton />}
+            </div>
           </div>
-          <Suspense fallback={<LoadingIndicator layout="overlay" label="Carregando seção…" />}>
-            <Outlet key={formEpoch} />
-          </Suspense>
+          <SectionActionsProvider value={sectionActions}>
+            <Suspense fallback={<LoadingIndicator layout="overlay" label="Carregando seção…" />}>
+              <Outlet key={formEpoch} />
+            </Suspense>
+          </SectionActionsProvider>
           <EditorErrorBoundary>
             <EventPanel key={`panel-${formEpoch}`} />
           </EditorErrorBoundary>

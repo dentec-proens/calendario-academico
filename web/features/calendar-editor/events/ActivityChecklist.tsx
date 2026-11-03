@@ -143,6 +143,7 @@ export default function ActivityChecklist() {
               : (situation ?? (origin === 'base' ? 'optional' : 'complete'))
           }
           statusLabel={statusLabel}
+          tone={!issue && origin !== 'base' && !situation && !planned ? 'info' : undefined}
           dates={range(event)}
           category={event}
           pendingDraft={editor.pendingDates.has(event.id)}

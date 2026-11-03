@@ -18,6 +18,7 @@ import { scrollIntoView } from '../../../scroll.ts';
 import { Button } from '../../../components/ui/Button.tsx';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
+import { SectionActions } from '../section-actions.tsx';
 
 export default function PeriodsSection() {
   const { state, formEpoch, record, readOnly } = useCalendarEditor();
@@ -54,6 +55,19 @@ export default function PeriodsSection() {
   }, [hash, atividade]);
   return (
     <section id="periods" className="view">
+      {!readOnly && (
+        <SectionActions>
+          <Button
+            id="add-offer"
+            type="button"
+            variant="secondary"
+            disabled={showNew || state.offers.length >= calendarLimits.maximumOffers}
+            onClick={() => setShowNew(true)}
+          >
+            <Plus size={18} aria-hidden="true" /> Adicionar oferta
+          </Button>
+        </SectionActions>
+      )}
       <section
         className="offer-organization-section"
         id="assessment-area"
@@ -96,17 +110,6 @@ export default function PeriodsSection() {
               requestAnimationFrame(() => document.getElementById('add-offer')?.focus());
             }}
           />
-        )}
-        {!readOnly && (
-          <Button
-            id="add-offer"
-            type="button"
-            variant="secondary"
-            disabled={showNew || state.offers.length >= calendarLimits.maximumOffers}
-            onClick={() => setShowNew(true)}
-          >
-            <Plus size={18} aria-hidden="true" /> Adicionar oferta
-          </Button>
         )}
         {state.offers.length >= calendarLimits.maximumOffers && (
           <p className="help">

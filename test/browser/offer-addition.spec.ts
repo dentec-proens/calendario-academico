@@ -15,6 +15,8 @@ for (const width of [1440, 390]) {
     const original = await page.evaluate(() => structuredClone(window.editorTest.record.state));
     await selectEditorSection(page, 'periods');
     await expect(page.locator('.offer-organization')).toHaveCount(1);
+    // Creation sits beside the step heading, as in the Activities step.
+    await expect(page.locator('.editor-section-heading #add-offer')).toBeVisible();
     await page.locator('#add-offer').click();
     await page.locator('#offer-new-kind').selectOption('graduacao');
     await page.locator(`#offer-new-organization [data-choice="anual"]`).click();

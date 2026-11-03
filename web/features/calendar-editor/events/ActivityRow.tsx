@@ -11,6 +11,8 @@ type Props = Omit<ComponentProps<'button'>, 'children' | 'type' | 'className' | 
   label: string;
   status: ActivitySituation;
   statusLabel?: string;
+  /** Shows the status in the information blue when it names a kind of date, not a situation. */
+  tone?: 'info';
   dates: string;
   /** A date row shows the legend color of its category before the dates. */
   category?: { category?: string; effect?: string };
@@ -28,6 +30,7 @@ export default function ActivityRow({
   label,
   status,
   statusLabel = situationLabels[status],
+  tone,
   dates,
   category,
   note,
@@ -38,7 +41,7 @@ export default function ActivityRow({
 }: Props) {
   return (
     <button {...props} type="button" className="activity-row" aria-current={selected || undefined}>
-      <span className="activity-dot" data-status={status} aria-hidden="true" />
+      <span className="activity-dot" data-status={status} data-tone={tone} aria-hidden="true" />
       <span className="activity-row-text">
         <span className="activity-row-name">
           {label}
@@ -49,7 +52,7 @@ export default function ActivityRow({
           )}
         </span>
         <span className="activity-row-meta">
-          <span className="activity-status" data-status={status}>
+          <span className="activity-status" data-status={status} data-tone={tone}>
             {statusLabel}
           </span>
           {category && <CategoryMark event={category} />}
