@@ -2,7 +2,7 @@ import { eventCategory } from './activities/categories.ts';
 import { DomainError } from '../errors.ts';
 
 /**
- * Effective categories a date of the campus may have while internal (art. 18; plan, section 4.5).
+ * Effective categories a date of the campus may have while internal (art. 18).
  * Holidays and recesses, vacations, period limits, school Saturdays, training, councils and the
  * creation of the IFPR always belong to the official calendar.
  */
@@ -27,7 +27,7 @@ export interface InternalCandidate {
 
 /**
  * Why a date cannot be internal, or undefined when it can. The single eligibility rule of internal
- * dates (plan, section 4.5), used by the form, the date commands, the save boundary and printing:
+ * dates, used by the form, the date commands, the save boundary and printing:
  * only a date of the campus (no activity, never from the institutional base), without effect on
  * the count of school days (`note`), in an allowed effective category (`eventCategory()`, so a
  * note without category is `institucional`).
@@ -46,7 +46,7 @@ export function internalDateIssue(date: InternalCandidate): string | undefined {
 
 export const canBeInternal = (date: InternalCandidate) => internalDateIssue(date) === undefined;
 
-/** A date marked internal by the campus; absent means official (plan, section 5). */
+/** A date marked internal by the campus; absent means official. */
 export const isInternalDate = (date: object) => (date as { internal?: unknown }).internal === true;
 
 /** Refuses a date marked internal that is not eligible, or a mark other than `true`. */

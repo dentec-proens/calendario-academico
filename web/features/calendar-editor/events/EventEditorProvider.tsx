@@ -51,7 +51,7 @@ function destination(context: EventContext | null) {
 const noSubscription = () => () => {};
 
 /**
- * Form identity of a date: drafts are kept by calendar and date ID (plan, section 4.6), never by
+ * Form identity of a date: drafts are kept by calendar and date ID, never by
  * activity key, so two dates of one activity have independent drafts. A new date receives its ID
  * when its form opens; `event` alone is the idle form, with no date.
  */

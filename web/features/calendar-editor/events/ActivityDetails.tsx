@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { removeEvent } from '#src/domain/calendar/commands/events.ts';
 import { situationLabels } from '#src/domain/calendar/activities/plan-evaluation.ts';
@@ -211,6 +211,7 @@ export default function ActivityDetails({
         disabled={readOnly}
         onClick={() => editor.prepare(key)}
       >
+        <Plus size={18} aria-hidden="true" />{' '}
         {registered.length ? 'Adicionar data' : 'Preencher atividade'}
       </Button>
     </div>

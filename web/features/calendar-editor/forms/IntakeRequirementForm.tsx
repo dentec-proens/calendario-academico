@@ -40,7 +40,7 @@ function OfferRequirement({ offer, term }: { offer: CalendarOffer; term: Academi
             />
           )}
         </form.Field>
-        <button type="submit">Salvar exigência</button>
+        <button type="submit">Aplicar exigência</button>
         <FormFeedback error={error} />
       </fieldset>
     </form>

@@ -17,7 +17,7 @@ export function policyFor(year: number | string | undefined): CalendarPolicy {
 /**
  * Every activity a date can be linked to: the declared catalogues of the policies and the
  * operational catalogue of years without one. A link is valid by these declarations, never by
- * the rows a configuration generates (plan, section 5.1).
+ * the rows a configuration generates.
  */
 export const declaredActivityRules = (): readonly ActivityRule[] => [
   ...policies.flatMap((policy) => policy.catalogue ?? []),

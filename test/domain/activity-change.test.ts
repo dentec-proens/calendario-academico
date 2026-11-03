@@ -26,7 +26,7 @@ import {
 } from '../fixtures/pending-links-2027.ts';
 
 /**
- * `changeActivity` (**Corrigir atividade vinculada**, plan section 4.6; phase 2, step 13): the
+ * `changeActivity` (**Corrigir atividade vinculada**): the
  * link of the whole date is corrected after a preview; nothing else of the date changes, the new
  * activity is generated and covers every offer of the date, and a link is never removed.
  */

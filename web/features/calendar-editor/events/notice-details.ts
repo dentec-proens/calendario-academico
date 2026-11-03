@@ -33,7 +33,7 @@ export function destinationText(
     .join('; ')}`;
 }
 
-/** Destination problems of a date, one line per offer (plan, section 5.4). */
+/** Destination problems of a date, one line per offer. */
 export function destinationIssueLines(
   state: Parameters<typeof noticeDestinationIssues>[0],
   event: Pick<CalendarEvent, 'notice' | 'scope'>,

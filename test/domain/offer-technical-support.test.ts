@@ -116,7 +116,7 @@ test('coverage-linked candidates carry only the fields of the review contract', 
     expect(Object.keys(item).sort()).toEqual(['end', 'evidence', 'id', 'name', 'start']);
 });
 
-test('dates under “Vínculo a conferir” are never coverage-linked candidates (plan, 5.6)', () => {
+test('dates under “Vínculo a conferir” are never coverage-linked candidates', () => {
   const state = calendarOffersFixture();
   const offer = state.offers[0].id;
   // A second date for the same stage: both become “Etapa duplicada”.

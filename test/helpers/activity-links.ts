@@ -8,7 +8,7 @@ import {
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import type { AcademicTerm, AssessmentSettings } from '../../src/domain/calendar/model.ts';
 
-/** Links (`ActivityRef`, plan section 5.1) for test data, validated as the domain does. */
+/** Links (`ActivityRef`) for test data, validated as the domain does. */
 export const onceLink = (activityId: string): ActivityRef => activityRef({ activityId });
 export const cycleLink = (activityId: string, term: AcademicTerm): ActivityRef =>
   activityRef({ activityId, term });

@@ -26,7 +26,7 @@ import type { StoredCase, StoredContent, StoredSubmission } from './stored-fixtu
  * computes for each document of `test/fixtures/stored/contents.json` (counting with the ledger by
  * SHA-256, coverage, situation, activities, links under review, base identity, the PROENS print
  * by SHA-256 and the teaching-day breakdown), plus the content hash of each document and of each
- * submission. It replaces the phase 2 oracle of format 4, removed with the converter in the
+ * submission. It replaces the oracle of format 4, removed with the converter in the
  * contraction: when recorded, every value except the hashes was checked equal to what that oracle
  * expected of the converted documents.
  */

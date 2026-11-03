@@ -14,9 +14,8 @@ import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { calendarSchemaVersion, type AssessmentSettings } from '../../src/domain/calendar/model.ts';
 
 /**
- * `ActivityRef` (plan `docs/plans/2026-11-02-atividades-e-datas.md`, section 5.1; phase 2,
- * step 9a): the link names a declared activity in the shape of its repetition base, validated at
- * runtime against the declared rules, never by prefix; `activityKey()` groups and addresses it.
+ * `ActivityRef`: the link names a declared activity in the shape of its repetition base, validated
+ * at runtime against the declared rules, never by prefix; `activityKey()` groups and addresses it.
  */
 const stage = (
   activityId: string,

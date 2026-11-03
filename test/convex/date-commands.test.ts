@@ -17,7 +17,7 @@ import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import { ivaiporaDraft } from '../fixtures/pending-links-2027.ts';
 
 /**
- * Date commands at the Convex save boundary (plan, section 4.6; phase 2, step 12): `saveCalendar`
+ * Date commands at the Convex save boundary: `saveCalendar`
  * receives the whole state, so it keeps the contracts of `planActivityDate`, `createCampusDate` and
  * `updateDate` by date ID against the stored state.
  */

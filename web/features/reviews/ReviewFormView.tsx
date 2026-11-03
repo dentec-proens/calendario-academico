@@ -1,5 +1,5 @@
 import type { RefObject, FormEvent } from 'react';
-import { ClipboardCopy, Download, ExternalLink, Eye, Pencil, Save } from 'lucide-react';
+import { Copy, Download, ExternalLink, Eye, Pencil, Save } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import { TextField } from '../../components/ui/Field.tsx';
 import { calendarName } from '#src/domain/calendar/label.ts';
@@ -116,7 +116,7 @@ export default function ReviewFormView({
             void exportReview('html');
           }}
         >
-          <Download size={18} aria-hidden="true" /> Baixar parecer para SEI (HTML)
+          <Download size={18} aria-hidden="true" /> Baixar HTML
         </Button>
         <Button
           type="button"
@@ -127,7 +127,7 @@ export default function ReviewFormView({
             void exportReview('txt');
           }}
         >
-          <Download size={18} aria-hidden="true" /> Baixar texto
+          <Download size={18} aria-hidden="true" /> Baixar TXT
         </Button>
         <Button
           type="button"
@@ -138,7 +138,7 @@ export default function ReviewFormView({
             void exportReview('copy');
           }}
         >
-          <ClipboardCopy size={18} aria-hidden="true" /> Copiar parecer para SEI
+          <Copy size={18} aria-hidden="true" /> Copiar para o SEI
         </Button>
         <Button type="submit" form="review-form" disabled={busy || readOnly}>
           <Save size={18} aria-hidden="true" />{' '}
@@ -230,7 +230,6 @@ export default function ReviewFormView({
           necessário.
         </p>
         <Button type="submit" disabled={busy || readOnly}>
-          <Save size={18} aria-hidden="true" />{' '}
           {pending === 'save' ? 'Salvando parecer…' : 'Salvar parecer'}
         </Button>
       </form>

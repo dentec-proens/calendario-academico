@@ -37,7 +37,7 @@ const cyclesByRegime = (state: AssessmentSettings): CycleSlot[] => {
  * Undated PROENS operational checklist, the explicit catalogue of years without a configured
  * policy (`unconfiguredPolicy`). It links no review criterion and asserts no compliance. A policy
  * year never falls back to it: a link the policy does not generate stays under “Vínculo a
- * conferir” (plan, phase 2, step 9d). Its IDs stay declared (`declaredActivityRules`), so links
+ * conferir”. Its IDs stay declared (`declaredActivityRules`), so links
  * of years without a policy remain valid.
  */
 export function operationalRules(): ActivityRule[] {

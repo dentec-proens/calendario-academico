@@ -25,6 +25,10 @@ Before editing files for a substantial task:
 - Router define rotas em código e valida o estado da URL. TanStack Form possui os valores de preenchimento; comandos puros aplicam alterações ao calendário; somente confirmação Convex representa gravação concluída.
 - Formulários com senhas, códigos, tokens ou arquivos têm identidade privada na instrumentação. Esses valores permanecem efêmeros; formulários mistos podem conservar somente os demais campos com `excludeFromDraft`. Use o hook compartilhado de formulários para preservar esse contrato.
 
+## Planos
+
+- Planos de implementação ficam em `docs/plans/` só enquanto a implementação acontece. Ao concluí-la, leve as decisões que continuam valendo para a documentação permanente (`docs/arquitetura-convex.md`, `docs/uso.md`, `docs/componentes-interface.md`, `docs/migracao-schema.md`), registre o que ficou para depois em [Pendências](docs/pendencias.md) e apague o plano; o histórico fica no Git. Comentários de código e testes explicam a regra em vez de citar seções de plano.
+
 ## Testes e validação
 
 - Consulte [Verificação](docs/verificacao.md) para comandos, referências visuais e configuração dos ambientes de teste. Mantenha o README como apresentação e ponto de entrada; documente procedimentos nos guias de `docs/`.

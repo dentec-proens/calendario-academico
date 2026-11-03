@@ -3,8 +3,7 @@ import { test, expect } from './test.ts';
 import type {} from '../fixtures/editor-session-client.ts';
 
 /**
- * Bootstrap under maintenance (plan `docs/plans/2026-11-02-atividades-e-datas.md`, section 6,
- * "Concorrência e corte"): when the session bootstrap answers the maintenance unavailability
+ * Bootstrap under maintenance: when the session bootstrap answers the maintenance unavailability
  * (503), as it did during the expansion of the format 5 migration, already open tabs and new tabs
  * show the maintenance UI, never the access error, and resume by themselves once the bootstrap
  * answers again.

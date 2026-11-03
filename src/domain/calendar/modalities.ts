@@ -2,7 +2,7 @@ import type { CalendarOffer, EventScope } from './model.ts';
 export { modalityLabels, selectableModalities } from './config.ts';
 
 /**
- * Whether a date reaches an offer. A local date lists its offers in `scope` (plan, section 5.3);
+ * Whether a date reaches an offer. A local date lists its offers in `scope`;
  * persisted institutional snapshots keep their own `offers` or, without them, catalogue kinds.
  */
 export function appliesTo(

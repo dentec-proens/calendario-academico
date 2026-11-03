@@ -10,10 +10,10 @@ import type {
 import { retiredDateFields, retiredOfferFields } from '../helpers/retired-fields.ts';
 
 /**
- * Phase 2, step 2 of docs/plans/2026-11-02-atividades-e-datas.md: the vocabulary Atividade + Data
- * replaces the old code names without aliases or re-exports. A date is `CalendarEvent`, a
- * generated activity row is `ActivityPlanItem` from `activityPlan()`, and the counting core works
- * on `CountingInterval`. Step 3: an activity of a norm is an `ActivityRule` (`activities/rules.ts`).
+ * The vocabulary Atividade + Data (`docs/arquitetura-convex.md`) replaced the old code names
+ * without aliases or re-exports. A date is `CalendarEvent`, a generated activity row is
+ * `ActivityPlanItem` from `activityPlan()`, the counting core works on `CountingInterval`, and an
+ * activity of a norm is an `ActivityRule` (`activities/rules.ts`).
  */
 const repository = resolve(import.meta.dirname, '../..');
 const self = relative(repository, import.meta.filename);
@@ -80,7 +80,7 @@ test('old names of dates, activity rows and the activity plan are gone from the 
 });
 
 /**
- * Step 20 (closing of phase 2) and the contraction (section 6, “Release”, step 7): the code uses
+ * After the contraction of the format 5 migration, the code uses
  * only format 5. The names of format 4 (the link `requirementId`, the effect `kind` of a date,
  * `recordType`, `legacyStageCount` and the `*V4` aliases) survive only in the constant historical
  * keys of the base identity and, in tests, in the lists of retired fields that the refusal tests
@@ -177,7 +177,7 @@ test('the institutional projection is not part of a local date', () => {
   expectTypeOf<InstitutionalEventSnapshot>().toHaveProperty('originalStart');
   expectTypeOf<InstitutionalEventSnapshot>().toHaveProperty('originalEnd');
   expectTypeOf<InstitutionalEventSnapshot>().toHaveProperty('institutional');
-  // Snapshots keep their scope by offer type; only local dates have `scope` (plan, 5.3).
+  // Snapshots keep their scope by offer type; only local dates have `scope`.
   expectTypeOf<InstitutionalEventSnapshot>().toExtend<DateFields>();
   expectTypeOf<InstitutionalEventSnapshot>().not.toHaveProperty('scope');
   expectTypeOf<CalendarEvent>().toHaveProperty('scope');

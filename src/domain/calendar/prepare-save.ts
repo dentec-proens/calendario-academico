@@ -28,12 +28,12 @@ export function prepareOfferCalendarSave<E extends DateFields & { active: boolea
     if (next.kind !== old.kind) invalidCalendar('O tipo de uma oferta existente não pode mudar.');
   }
   const previousIds = previous.offers.map((offer) => offer.id);
-  // Adding an offer neither extends nor confirms the scope of existing dates (plan, section 5.3).
+  // Adding an offer neither extends nor confirms the scope of existing dates.
   let state = normalizeOfferCalendar({ ...proposed, campus: previous.campus ?? '' }, previous);
   for (const offer of state.offers) {
     const old = previous.offers.find((item) => item.id === offer.id);
     // A reported total is never created or changed here; only confirming the organization, with
-    // its cycles and stages, resolves it (plan, section 5.5).
+    // its cycles and stages, resolves it.
     const reported = reportedStageCount(offer);
     const previousReported = old && reportedStageCount(old);
     if (reported !== undefined && reported !== previousReported)

@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { calendarLimits } from '#src/domain/calendar/config.ts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
@@ -104,7 +105,7 @@ export default function PeriodsSection() {
             disabled={showNew || state.offers.length >= calendarLimits.maximumOffers}
             onClick={() => setShowNew(true)}
           >
-            Adicionar oferta
+            <Plus size={18} aria-hidden="true" /> Adicionar oferta
           </Button>
         )}
         {state.offers.length >= calendarLimits.maximumOffers && (

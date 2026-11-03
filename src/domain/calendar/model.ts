@@ -20,7 +20,7 @@ export interface CalendarOffer {
   organizationBasis?: string;
 }
 /**
- * Assessment stages of an offer (plan, section 5.5): a total reported while the organization has
+ * Assessment stages of an offer: a total reported while the organization has
  * no confirmed cycle (`reported`, only with `a-classificar`), or the stages of each cycle of a
  * defined organization (`defined`). Confirming the organization turns `reported` into `defined`.
  */
@@ -47,7 +47,7 @@ export interface AdmissionDestination {
   offerId: string;
   periodId: string;
 }
-/** Purpose of an admission notice (plan, section 5.4). */
+/** Purpose of an admission notice. */
 export interface Admission {
   type: 'regular' | 'transfer';
   year: number;
@@ -73,7 +73,7 @@ export interface IntakeConfiguration {
 export type EventEffect = 'include' | 'exclude' | 'note';
 export const eventEffects: readonly EventEffect[] = ['include', 'exclude', 'note'];
 /**
- * Offers a local date reaches (plan, section 5.3). `offers` is always listed and drives the day
+ * Offers a local date reaches. `offers` is always listed and drives the day
  * count; `confirmed` records that the campus chose them (saving the date form). Adding an offer to
  * the calendar neither extends nor confirms an existing scope. Coverage under a policy with
  * `explicitRecordOffers` counts only a confirmed scope.
@@ -99,10 +99,10 @@ export interface DateFields {
 /** A local date of the calendar (`state.events`). */
 export interface CalendarEvent extends DateFields {
   scope: EventScope;
-  /** Activity the date serves (plan, section 5.1); absent for a campus date. */
+  /** Activity the date serves; absent for a campus date. */
   activity?: ActivityRef;
   /**
-   * Date of internal organization of the campus (art. 18; plan, section 4.5): only a date of the
+   * Date of internal organization of the campus (art. 18): only a date of the
    * campus with effect `note` and an allowed effective category (`internalDateIssue`). Absent
    * means official; the v5 conversion never creates it.
    */
@@ -225,7 +225,7 @@ export type LocalStageEvent = StageEvent & Pick<CalendarEvent, 'scope'>;
 export type InstitutionalDate = InstitutionalEventSnapshot & { institutional: true };
 /** A date of the editor projection (`projectDates`): local or institutional. */
 export type ProjectedDate = CalendarEvent | InstitutionalDate;
-/** A local date of the projection: the origin comes only from the container (plan, 5.2). */
+/** A local date of the projection: the origin comes only from the container. */
 export const isLocalDate = <T extends ProjectedDate>(
   event: T,
 ): event is Extract<T, CalendarEvent> =>

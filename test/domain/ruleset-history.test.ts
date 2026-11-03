@@ -61,7 +61,7 @@ const referenceSettings = archive.v4Settings.map((settings) => ({
 
 /**
  * Requirement fields left out of the hash because they act only through `byModality`, and the
- * row's link (`activity`, phase 2, step 9b), which is derived from the ID and the slot already
+ * row's link (`activity`), which is derived from the ID and the slot already
  * in the fingerprint and carries no normative content. Every other field, including fields
  * added later, is part of the fingerprint.
  */
@@ -236,10 +236,10 @@ test('published historical fingerprints remain intact and v4 catalogues match th
 });
 
 /**
- * Phase 2, step 9d: 2027 no longer generates the optional rows the capture kept from the
- * operational catalogue as “Classificação legada”. They never carried an obligation (`optional`,
- * or `unconfigured` for excluded offers; outside the policy's declarations and `/regras`), so the ruleset version is kept and
- * the capture is compared without them; every other row is compared in full.
+ * 2027 no longer generates the optional rows the capture kept from the operational catalogue as
+ * “Classificação legada”. They never carried an obligation (`optional`, or `unconfigured` for
+ * excluded offers; outside the policy's declarations and `/regras`), so the ruleset version is kept
+ * and the capture is compared without them; every other row is compared in full.
  */
 function withoutLegacyRows(captured: unknown) {
   const value = captured as { states: { requirements: { id: string; basis?: string }[] }[] };

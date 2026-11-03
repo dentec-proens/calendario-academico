@@ -77,7 +77,7 @@ test('reducing semester stages keeps every binding and leaves excess dates to re
     perTerm: 1,
   });
   const recorded = (id: string) => state.events.find((event) => event.id === id)!;
-  // A confirmed stage keeps its position when the count changes (plan, section 5.1): each draft
+  // A confirmed stage keeps its position when the count changes: each draft
   // stage updates the date already at its position, and the others stay as recorded, to review.
   expect(
     next.events
@@ -216,7 +216,7 @@ test('adding an opaque offer identity keeps earlier scopes and creates its own p
   const previousIds = offerIds(state);
   const next = applyOfferOrganization(state, newOffer.id, draft, ids(), newOffer);
   expect(next.offers.at(-1)).toEqual({ ...newOffer, stages: { status: 'defined', perTerm: 1 } });
-  // Neither extended nor confirmed (plan, section 5.3).
+  // Neither extended nor confirmed.
   expect(next.events.find((event) => event.id === 'earlier-global')?.scope).toEqual({
     offers: previousIds,
     confirmed: false,

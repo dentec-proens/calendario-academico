@@ -1,3 +1,4 @@
+import { Printer } from 'lucide-react';
 import {
   hasInternalDates,
   proensLayout,
@@ -42,7 +43,7 @@ export default function CalendarPreviewSection() {
                 void exporting.print(version);
               }}
             >
-              Imprimir ou salvar PDF
+              <Printer aria-hidden="true" /> Imprimir ou salvar PDF
             </button>
           </div>
         </div>

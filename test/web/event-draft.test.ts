@@ -124,7 +124,7 @@ test('distinct destinations by offer are kept until a common destination is chos
   ).toBe(keptDestinations);
 });
 
-test('saving the date form confirms the offers chosen in it, as listed (plan, section 5.3)', () => {
+test('saving the date form confirms the offers chosen in it, as listed', () => {
   const base = saved({
     scope: { offers: ['integrado', 'graduacao'], confirmed: false },
   });

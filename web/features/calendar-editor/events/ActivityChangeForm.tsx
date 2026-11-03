@@ -19,7 +19,7 @@ import { Notice } from '../../../components/ui/Notice.tsx';
 import { civilDate } from './activity-query.ts';
 
 /**
- * **Corrigir atividade vinculada** (plan, section 4.6): the campus chooses another generated
+ * **Corrigir atividade vinculada**: the campus chooses another generated
  * activity for the whole date and confirms it after a preview. Description, dates, offers and ID
  * stay as they are; the link is never removed here.
  */

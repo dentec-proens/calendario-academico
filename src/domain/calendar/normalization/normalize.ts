@@ -212,7 +212,7 @@ export function normalizeOfferCalendar(
     }
     if (event.category !== undefined && !validCategory(event.category))
       fail('Categoria PROENS inválida.');
-    // Same rule as the date commands, on the effective category (plan, section 4.5).
+    // Same rule as the date commands, on the effective category.
     validateInternalDate(event);
     event.category = eventCategory(event);
   }

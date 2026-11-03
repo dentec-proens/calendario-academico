@@ -27,10 +27,10 @@ import { legacyBasis } from '../helpers/legacy-classification.ts';
 import { storedCases, type StoredCase } from '../helpers/stored-fixtures.ts';
 
 /**
- * Phase 2, step 9d of `docs/plans/2026-11-02-atividades-e-datas.md`: the 2027 policy generates
- * only its own declarations. Format 4 kept every operational ID resolvable in 2027 as an optional row of
- * “Classificação legada”; those links are now dates under “Vínculo a conferir”, never rebound.
- * Years without a policy keep the operational catalogue as their explicit behaviour.
+ * The 2027 policy generates only its own declarations. Format 4 kept every operational ID
+ * resolvable in 2027 as an optional row of “Classificação legada”; those links are now dates under
+ * “Vínculo a conferir”, never rebound. Years without a policy keep the operational catalogue as
+ * their explicit behaviour.
  */
 const stored = (item: StoredCase) =>
   ({

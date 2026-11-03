@@ -56,7 +56,7 @@ export function stageInTerm(n: number, perTerm: number): { term: number; number:
 export const stagesPerTerm = (offer: Pick<CalendarOffer, 'stages'>): number | undefined =>
   offer.stages?.status === 'defined' ? offer.stages.perTerm : undefined;
 
-/** Total reported without a confirmed cycle (plan, section 5.5). */
+/** Total reported without a confirmed cycle. */
 export const reportedStageCount = (offer: Pick<CalendarOffer, 'stages'>): number | undefined =>
   offer.stages?.status === 'reported' ? offer.stages.count : undefined;
 

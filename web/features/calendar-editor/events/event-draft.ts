@@ -78,7 +78,7 @@ export interface EventValues {
   /** **Data interna (art. 18)**: only offered while effect and category allow it. */
   internal: boolean;
 }
-/** Destination answer that keeps the saved destinations by offer (plan, section 5.4). */
+/** Destination answer that keeps the saved destinations by offer. */
 export const keptDestinations = 'por-oferta';
 
 /**
@@ -165,8 +165,8 @@ export const noticeActive = (value: Pick<EventValues, 'eventType'>) =>
   !value.eventType || value.eventType === 'notice';
 
 /**
- * Builds the date written by the form, without link: the date command decides it from the context
- * (plan, section 4.6). Editing starts from the saved record, so fields the form does not show
+ * Builds the date written by the form, without link: the date command decides it from the
+ * context. Editing starts from the saved record, so fields the form does not show
  * survive. A manual edit ends the automatic stage distribution.
  */
 export function eventFromValues(
@@ -216,7 +216,7 @@ export function eventFromValues(
       target.base && !target.base.category && value.category === eventCategory(target.base)
         ? undefined
         : value.category,
-    // Saving the date form confirms the offers chosen in it (plan, section 5.3).
+    // Saving the date form confirms the offers chosen in it.
     scope: { offers: value.offers, confirmed: true },
     hours: value.hours ? Number(value.hours) : undefined,
     deadlineExtensionCause: value.deadlineExtensionCause || undefined,

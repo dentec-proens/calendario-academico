@@ -13,7 +13,7 @@ import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 
 /**
- * Phase 2, step 4 (section 5.2): the origin of a date is its container. A local date whose ID
+ * The origin of a date is its container. A local date whose ID
  * imitates the `inst:` prefix stays a campus date; only the institutional base is automatic.
  */
 const base: InstitutionalEventSnapshot = {

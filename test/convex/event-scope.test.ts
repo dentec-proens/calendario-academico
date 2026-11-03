@@ -26,7 +26,7 @@ import { createNativeFixture } from '../helpers/native-database.ts';
 import type { StoredCase } from '../helpers/stored-fixtures.ts';
 
 /**
- * Scope with confirmation through the real mutations (phase 2, step 7; plan, section 5.3). The
+ * Scope with confirmation through the real mutations. The
  * stored content is a frozen format 5 document (`test/fixtures/stored/`); the catalogue is the
  * frozen one, so the base of the calendar is the fixture's.
  */

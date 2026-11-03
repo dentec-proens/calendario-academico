@@ -41,7 +41,7 @@ import type {
 import { periodsForOffer } from '#src/domain/calendar/organization/periods.ts';
 import { modalityLabels } from '#src/domain/calendar/modalities.ts';
 import { civilDate } from '../events/activity-query.ts';
-import { Check, ChevronUp } from 'lucide-react';
+import { Check, ChevronUp, Eye, Pencil, Plus } from 'lucide-react';
 import { Button } from '../../../components/ui/Button.tsx';
 import { ChoiceGroup, focusableField } from '../../../components/ui/ChoiceGroup.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
@@ -416,18 +416,24 @@ export default function OfferOrganizationForm({
             setCollapsedHref(expanded ? location : null);
           }}
         >
-          {expanded && <ChevronUp size={18} aria-hidden="true" />}
-          {expanded
-            ? 'Recolher'
-            : dirty
-              ? 'Retomar preenchimento'
-              : readOnly
-                ? 'Consultar organização'
-                : periods.length
-                  ? 'Editar organização'
-                  : included
-                    ? 'Configurar'
-                    : 'Incluir e configurar'}
+          {expanded ? (
+            <>
+              <ChevronUp size={18} aria-hidden="true" /> Recolher
+            </>
+          ) : readOnly ? (
+            <>
+              <Eye size={18} aria-hidden="true" /> Consultar
+            </>
+          ) : !dirty && !included ? (
+            <>
+              <Plus size={18} aria-hidden="true" /> Incluir e configurar
+            </>
+          ) : (
+            <>
+              <Pencil size={18} aria-hidden="true" />{' '}
+              {dirty ? 'Continuar preenchimento' : periods.length ? 'Editar' : 'Configurar'}
+            </>
+          )}
         </Button>
       </div>
       {!expanded && (
@@ -766,7 +772,7 @@ export default function OfferOrganizationForm({
             <FormFeedback error={error} />
             <FormActions>
               <Button type="submit" id={`${prefix}-apply`} disabled={issues.length > 0}>
-                Aplicar organização de {label}
+                Aplicar organização
               </Button>
               <Button
                 type="button"

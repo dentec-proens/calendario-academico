@@ -19,7 +19,7 @@ import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { conflictingLinks, ivaiporaAnnual } from '../fixtures/pending-links-2027.ts';
 
 /**
- * `changeActivity` at the Convex save boundary (plan, section 4.6; phase 2, step 13): `saveCalendar`
+ * `changeActivity` at the Convex save boundary: `saveCalendar`
  * accepts a swapped link only as a correction of a date under “Vínculo a conferir” to a generated
  * activity covering every offer of the date, with nothing else of the date changed. A date under
  * review blocks the conclusion, so a reviewed calendar keeps its status and cannot be published.

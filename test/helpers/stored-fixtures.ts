@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 
 /**
- * Stored calendar documents in format 5, frozen as JSON (`test/fixtures/stored/`): the documents
- * of the phase 2 fixtures (`docs/plans/2026-11-02-atividades-e-datas.md`, section 11) as the
- * migration left them. The data is typed only as JSON; tests that call domain code cast it.
+ * Stored calendar documents in format 5, frozen as JSON (`test/fixtures/stored/`): the documents of
+ * the format 4 fixtures (the Ivaiporã and Cascavel drafts with links to review, among others) as
+ * the format 5 migration left them. The data is typed only as JSON; tests that call domain code
+ * cast it.
  */
 export interface StoredCase {
   name: string;

@@ -94,8 +94,8 @@ function organizedOffer(
 }
 
 /**
- * The links of the offer's stage dates once the offer takes the confirmed organization, by date ID
- * (plan, sections 5.1 and 5.5). A defined position is kept as stored, even when the count or the
+ * The links of the offer's stage dates once the offer takes the confirmed organization, by date
+ * ID. A defined position is kept as stored, even when the count or the
  * cycles change: it is never reinterpreted, and a position the new organization lacks goes to
  * “Vínculo a conferir”. An unclassified position becomes defined only when unambiguous: the
  * organization or the stages of the offer change, the reported ordinal is within the confirmed
@@ -234,7 +234,7 @@ function withOffer<S extends ActivityState>(
 ): S {
   if (offerIds(state).includes(modality)) return state;
   if (!newOffer || newOffer.id !== modality) throw new DomainError('Oferta inválida.');
-  // Adding an offer neither extends nor confirms the scope of existing dates (plan, section 5.3).
+  // Adding an offer neither extends nor confirms the scope of existing dates.
   return { ...state, offers: [...state.offers, newOffer] };
 }
 
@@ -311,7 +311,7 @@ export function offerOrganizationIssues(
         'Revise a exigência local de matrícula nas atividades antes de alterar a organização da oferta.',
       );
     // Moving between annual and semester changes the set of periods, and no destination can be
-    // remapped mechanically, so linked notices are reviewed first (plan, phase 2, step 6).
+    // remapped mechanically, so linked notices are reviewed first.
     if (
       state.events.some(
         (event) =>
@@ -465,7 +465,7 @@ export function offerOrganizationWarnings(
  * the offer's organization or stages differ from the stored state (or the offer is not stored yet)
  * and the draft changes them once more. Both confirmations would reach the server in one save, and
  * the stage dates the first one created or converted could keep positions the second one lacks,
- * which a save refuses for a new date (plan, phase 2, review of step 9e). The editor waits for the
+ * which a save refuses for a new date. The editor waits for the
  * save instead; confirming without changing the organization or the count stays allowed.
  */
 export function organizationAwaitingSave(
@@ -553,7 +553,7 @@ function organize<S extends ActivityState>(
     ...state,
     offers: state.offers.map((offer) => {
       if (offer.id !== modality) return offer;
-      // Confirming resolves the reported total into the count and cycles (plan, section 5.5).
+      // Confirming resolves the reported total into the count and cycles.
       return { ...offer, organization, stages: { status: 'defined' as const, perTerm: count } };
     }),
     periods: [...retained, ...periods],
@@ -601,14 +601,14 @@ function organize<S extends ActivityState>(
           effect: 'note' as const,
           category: event.category ?? 'limite',
           // The editor opens a stage only in this form, so saving it is the campus's choice of
-          // offer: it confirms a scope converted unconfirmed (plan, section 5.3), as the date form
+          // offer: it confirms a scope converted unconfirmed, as the date form
           // does for other dates. Saving the calendar alone never confirms.
           scope: { offers: [modality], confirmed: true },
         },
       ];
     }
     // Only the destination of the reorganized offer follows its period; the date is never split
-    // and the destinations of the other offers are kept (plan, section 5.4).
+    // and the destinations of the other offers are kept.
     const admission = event.notice?.admission;
     const periodId = admissionDestination(event, modality);
     const mapped = periodId === undefined ? undefined : remapped.get(periodId);

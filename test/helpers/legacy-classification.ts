@@ -1,9 +1,9 @@
 /**
- * Phase 2, step 9d of `docs/plans/2026-11-02-atividades-e-datas.md`: the 2027 policy no longer
- * generates the rows format 4 kept from the operational catalogue as “Classificação legada”. The
- * frozen oracles were captured with them; these helpers derive what the oracles expect without them, so
- * every other value is still compared in full. A date that was linked to one of those rows is now
- * a link without generated activity, under “Vínculo a conferir” (`unclassified`), never dropped.
+ * The 2027 policy no longer generates the rows format 4 kept from the operational catalogue as
+ * “Classificação legada”. The frozen oracles were captured with them; these helpers derive what the
+ * oracles expect without them, so every other value is still compared in full. A date that was
+ * linked to one of those rows is now a link without generated activity, under “Vínculo a conferir”
+ * (`unclassified`), never dropped.
  */
 export const legacyBasis = 'Classificação legada';
 

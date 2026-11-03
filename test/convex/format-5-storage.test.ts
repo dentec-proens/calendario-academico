@@ -13,10 +13,9 @@ import {
 import { retiredDateFields } from '../helpers/retired-fields.ts';
 
 /**
- * Contraction of the format 5 migration (plan `docs/plans/2026-11-02-atividades-e-datas.md`,
- * section 6, “Release”, step 7): the schema accepts only format 5. A document of format 4 is
- * refused by the storage validators, and clients built for format 4 are refused by `saveCalendar`
- * and `saveReview`.
+ * Contraction of the format 5 migration: the schema accepts only format 5. A document of format 4
+ * is refused by the storage validators, and clients built for format 4 are refused by
+ * `saveCalendar` and `saveReview`.
  */
 async function calendar() {
   const fixture = await createNativeFixture();

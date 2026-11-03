@@ -70,7 +70,7 @@ export default function SaturdayEditForm({
           </Button>
           {dirty && (
             <Button id="saturday-edit-discard" variant="secondary" onClick={discard}>
-              Descartar
+              Descartar alterações
             </Button>
           )}
           <Button id="saturday-edit-remove" variant="danger" onClick={() => void remove()}>

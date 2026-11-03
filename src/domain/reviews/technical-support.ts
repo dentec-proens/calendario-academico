@@ -233,7 +233,7 @@ export function reviewSupport<
             ' A presença não comprova atendimento. A conferência humana permanece necessária.';
           candidates = [
             ...new Map(
-              // Dates under “Vínculo a conferir” are never presented as evidence (plan, 5.6).
+              // Dates under “Vínculo a conferir” are never presented as evidence.
               [...candidates, ...linked.flatMap((row) => row.evidence.map(reviewCandidate))].map(
                 (e) => [e.id, e],
               ),

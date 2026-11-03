@@ -12,7 +12,7 @@ import { canBeInternal, isInternalDate } from '../domain/calendar/internal-dates
 import { isSaturdayRecord } from '../domain/calendar/activities/saturdays.ts';
 
 /**
- * Printed version of the calendar (plan, section 4.5). The official version, sent to Proens and
+ * Printed version of the calendar. The official version, sent to Proens and
  * published (arts. 15 and 16), leaves internal dates out; the complete one marks them.
  */
 export type PrintVersion = 'official' | 'complete';
@@ -44,7 +44,7 @@ const fullInterval = (event: PrintEvent) =>
   dateLabel(event.start) + (event.end === event.start ? '' : ` a ${dateLabel(event.end)}`);
 /**
  * Offers printed beside a date. An unconfirmed scope over every offer of the calendar is the
- * format 4 date without its own list (plan, section 5.3) and prints without a list, as before.
+ * format 4 date without its own list and prints without a list, as before.
  * So does a Saturday over every offer: the Saturdays step creates it confirmed for all of them,
  * where format 4 stored no list.
  */

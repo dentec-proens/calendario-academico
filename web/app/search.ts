@@ -66,7 +66,7 @@ export function applicationSearch(input: Record<string, unknown>) {
     ...(['vinculadas', 'campus', 'base'].includes(String(input.atividadeOrigem))
       ? { atividadeOrigem: String(input.atividadeOrigem) as 'vinculadas' | 'campus' | 'base' }
       : {}),
-    // Visibility only filters date lines (plan, section 4.2); absent means every date.
+    // Visibility only filters date lines; absent means every date.
     ...(['oficiais', 'internas'].includes(String(input.atividadeVisibilidade))
       ? {
           atividadeVisibilidade: String(input.atividadeVisibilidade) as 'oficiais' | 'internas',
@@ -82,7 +82,7 @@ export function applicationSearch(input: Record<string, unknown>) {
       ? { atividadeAssunto: String(input.atividadeAssunto) }
       : {}),
     ...activityLink(input.atividade),
-    // Calendar preview: the printed version; absent means the official one (plan, section 4.5).
+    // Calendar preview: the printed version; absent means the official one.
     ...(input.impressao === 'completa' ? { impressao: 'completa' as const } : {}),
   };
 }

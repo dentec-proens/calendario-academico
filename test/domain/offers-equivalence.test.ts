@@ -116,7 +116,7 @@ function semanticProjection(
   return JSON.parse(
     JSON.stringify({
       periods: state.periods.map(({ id, start, end }) => ({ id, start, end })),
-      // Step 9b: a link is the generated row it resolves to, whose ID the oracle recorded.
+      // A link is the generated row it resolves to, whose ID the oracle recorded.
       events: state.events.map(({ id, start, end, activity }) => ({
         id,
         start,
@@ -210,7 +210,7 @@ const oracle = JSON.parse(
 // Converted once by the validated release A converter before its deletion. All
 // 18 cases passed against this oracle before and after the release B cleanup.
 // The input fixture records the converter hashes; expected values stay frozen.
-// The inputs and the catalogue were converted again to format 5 by the phase 2
+// The inputs and the catalogue were converted again to format 5 by the format 5
 // migration converter before its removal in the contraction.
 const inputs = JSON.parse(
   readFileSync(new URL('../fixtures/offers-oracle-inputs.json', import.meta.url), 'utf8'),

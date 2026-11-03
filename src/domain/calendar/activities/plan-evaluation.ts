@@ -24,7 +24,7 @@ import {
 } from './links.ts';
 
 /**
- * Calculated evaluation of the activity plan (plan, section 5.6), by activity × offer. Each
+ * Calculated evaluation of the activity plan, by activity × offer. Each
  * dimension is computed apart and none is stored as a flag:
  * - classification: whether a date's link fits the current organization and periods;
  * - applicability: required, optional or to confirm, from the policy and the configuration;
@@ -157,12 +157,12 @@ export function evaluatePlan(
             return false;
           }
           // A date whose generated activity does not reach this offer is pending for it: it never
-          // counts as fulfilment here, even when it fits another offer of its scope (section 5.6).
+          // counts as fulfilment here, even when it fits another offer of its scope.
           if (links.forOffer(event.id, offer.id) !== 'compatible') {
             warnings.push(`${linkIssueLabels.unclassified}: ${linkIssueActions.unclassified}`);
             return false;
           }
-          // Under explicit offers (2027), only a scope the campus confirmed counts (plan, 5.3).
+          // Under explicit offers (2027), only a scope the campus confirmed counts.
           if (policy.explicitRecordOffers && !event.scope.confirmed) {
             // Same text as format 4. The stored oracle (`test/fixtures/stored/oracle.json`)
             // records it in the coverage issues and `test/domain/event-scope.test.ts` checks it:
@@ -196,7 +196,7 @@ export function evaluatePlan(
               return false;
             }
             if (admission.type === 'transfer') {
-              // Each offer is checked against its own destination (plan, section 5.4).
+              // Each offer is checked against its own destination.
               const periodId = admissionDestination(event, modality);
               const period = periodId
                 ? periodsForOffer(state, modality).find((p) => p.id === periodId)

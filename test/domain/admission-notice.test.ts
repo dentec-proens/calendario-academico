@@ -11,9 +11,8 @@ import { contentAssessment } from '../../src/domain/calendar/readiness.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 
 /**
- * Notice and admission destination by offer (plan `docs/plans/2026-11-02-atividades-e-datas.md`,
- * section 5.4; phase 2, step 6): each offer of the date has its own destination, which is diagnosed
- * on its own and never corrected automatically.
+ * Notice and admission destination by offer: each offer of the date has its own destination, which
+ * is diagnosed on its own and never corrected automatically.
  */
 const notice = (
   destinations: AdmissionDestination[],

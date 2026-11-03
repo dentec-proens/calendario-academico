@@ -20,7 +20,7 @@ import {
 
 export type PendingLinksFixture = CalendarContent & { year: number; campus: string };
 
-/** Day and month as in the audited drafts (section 11 of the plan); every date is in 2027. */
+/** Day and month as in the audited drafts of Ivaiporã and Cascavel; every date is in 2027. */
 const day = (value: string) => {
   const [d, m] = value.split('/');
   return civilDate(`2027-${m}-${d}`);
@@ -311,7 +311,7 @@ export function stageLinksToReview(): PendingLinksFixture {
 
 /**
  * Annual 2027 calendar with links that v4 resolved only through the operational catalogue
- * (“Classificação legada”, retired in phase 2, step 9d): the teaching plan by offer cycle
+ * (“Classificação legada”, retired with format 4): the teaching plan by offer cycle
  * (`teaching-plan-0`) and enrolment by reference semester (`enrolment-1`), which the 2027 policy
  * declares with other bases (reference semester and offer cycle). Both stay under review.
  */
@@ -353,7 +353,7 @@ export function legacyOperationalLinks(): PendingLinksFixture {
 }
 
 /**
- * Stage positions to confirm (plan, phase 2, step 9e). The integrated offer is still unclassified,
+ * Stage positions to confirm. The integrated offer is still unclassified,
  * with a reported total of three stages: its first stage and the first results are unambiguous,
  * two dates report the second stage and one reports a fourth, beyond the count. The subsequent
  * offer is annual with three confirmed stages and a fourth reported beyond its count, as the
@@ -463,7 +463,7 @@ export function stagePositionsToConfirm(): PendingLinksFixture {
  * Ivaiporã draft after the campus confirmed both offers as annual, with two stages: the 11 semester
  * links stay under “Vínculo a conferir” (`Classificação pendente`), and the annual cycle of their
  * activities is now generated for both offers, so each date can have its link corrected
- * (`changeActivity`, plan section 4.6).
+ * (`changeActivity`).
  */
 export function ivaiporaAnnual(): PendingLinksFixture {
   let state = ivaiporaDraft();

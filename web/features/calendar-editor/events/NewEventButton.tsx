@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 
@@ -14,7 +15,7 @@ export default function NewEventButton() {
       aria-describedby={hasPendingEvent ? 'pending-event-description' : undefined}
       onClick={editor.newEvent}
     >
-      Nova data do campus
+      <Plus aria-hidden="true" /> Adicionar data do campus
     </button>
   );
 }

@@ -19,9 +19,9 @@ import {
 } from '../fixtures/pending-links-2027.ts';
 
 /**
- * Stage positions when the organization is confirmed (plan, phase 2, step 9e; sections 5.1 and
- * 5.5): an unclassified position becomes defined only when unambiguous, every other case stays
- * unclassified and is listed in the preview, and a defined position is never reinterpreted.
+ * Stage positions when the organization is confirmed: an unclassified position becomes defined only
+ * when unambiguous, every other case stays unclassified and is listed in the preview, and a defined
+ * position is never reinterpreted.
  */
 const save = (previous: PendingLinksFixture, proposed: PendingLinksFixture) =>
   prepareOfferCalendarSave(previous, proposed, {

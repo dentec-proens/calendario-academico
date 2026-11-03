@@ -28,9 +28,9 @@ import { rowLink } from '../helpers/activity-links.ts';
 import { ivaiporaDraft, type PendingLinksFixture } from '../fixtures/pending-links-2027.ts';
 
 /**
- * Internal dates (art. 18; plan `docs/plans/2026-11-02-atividades-e-datas.md`, section 4.5; phase
- * 2, step 14): one eligibility rule over the effective category, kept by the commands and the save
- * boundary; marking changes the official document and is never evidence of a review criterion.
+ * Internal dates (art. 18): one eligibility rule over the effective category, kept by the commands
+ * and the save boundary; marking changes the official document and is never evidence of a review
+ * criterion.
  */
 type State = PendingLinksFixture;
 type Input = DateInput<State>;

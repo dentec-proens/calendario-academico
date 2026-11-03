@@ -18,7 +18,7 @@ import type { CatalogueEvent } from '../../src/domain/institution/catalogue.ts';
 import { storedCases, storedCatalogueRows, type StoredCase } from './stored-fixtures.ts';
 
 /**
- * Scope with confirmation (phase 2, step 7; plan, section 5.3). The stored fixture “Acréscimo de
+ * Scope with confirmation. The stored fixture “Acréscimo de
  * oferta materializa a abrangência” has a list the campus chose, materialized lists stored
  * confirmed (one proven by its submission) and, added here, a date whose offers were never
  * confirmed, so that every form of scope is present. It is a note, so the count is unchanged.

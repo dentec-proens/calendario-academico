@@ -141,7 +141,7 @@ function slotsOf(basis: RepeatBasis, state: AssessmentSettings): [Slot, string][
 const basisOf = (rule: ActivityRule) => (rule.repeat === 'cycle' ? rule.cycles : rule.repeat);
 
 /**
- * Link of the row's slot (plan, section 5.1), by the rule's base: the declared ID never carries
+ * Link of the row's slot, by the rule's base: the declared ID never carries
  * the slot. The IDs come from declared rules, the set `activityRef()` validates against.
  */
 function rowActivity(rule: ActivityRule, slot: Slot): ActivityRef {

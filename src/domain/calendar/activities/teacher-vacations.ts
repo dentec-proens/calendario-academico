@@ -48,7 +48,7 @@ export function teacherVacations(year: number, periodsInput: Partial<VacationPer
  * Vacation dates regenerated from the periods (`teacherVacations`). They reach every current offer,
  * since vacations hold for all of them, and keep the link and the confirmation recorded for the
  * same date ID (`confirmed: false` for a new one); this is the documented exception to “adding an
- * offer never extends a scope” (plan, section 5.3). Later entries of `recorded` win; a link is
+ * offer never extends a scope”. Later entries of `recorded` win; a link is
  * never lost because a later entry lacks it.
  */
 export function regeneratedVacations(

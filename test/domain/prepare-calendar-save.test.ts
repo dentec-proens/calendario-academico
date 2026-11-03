@@ -24,7 +24,7 @@ function calendar() {
         start: civilDate('2027-03-01'),
         end: civilDate('2027-03-01'),
         effect: 'note' as const,
-        // Converted from a v4 date without offers (plan, section 5.3).
+        // Converted from a v4 date without offers.
         scope: { offers: ['integrado'], confirmed: false },
       },
       {
@@ -154,7 +154,7 @@ test('adding an offer neither extends nor confirms any scope and does not mutate
     catalogue: { events: [] },
     recalculate: false,
   });
-  // Every form of scope stays as recorded: same offers, same confirmation (plan, section 5.3).
+  // Every form of scope stays as recorded: same offers, same confirmation.
   for (const id of ['legacy', 'chosen'])
     expect(prepared.state.events.find((event) => event.id === id)?.scope).toEqual(
       previous.events.find((event) => event.id === id)?.scope,

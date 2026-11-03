@@ -12,8 +12,7 @@ import {
 import { ivaiporaAnnual, type PendingLinksFixture } from '../fixtures/pending-links-2027.ts';
 
 /**
- * Official and complete print (art. 18; plan `docs/plans/2026-11-02-atividades-e-datas.md`,
- * section 4.5; phase 2, step 15): the official version leaves every internal date out of the
+ * Official and complete print (art. 18): the official version leaves every internal date out of the
  * grid and the lists, the complete one marks them, and both print the same count of school days.
  */
 type State = PendingLinksFixture;
@@ -124,7 +123,7 @@ test('the official version prints byte for byte what a calendar without those da
   expect(print()).toBe(proensLayout(without, events, evaluateCalendar(without, events), null, ''));
 });
 
-test('the complete version marks internal dates, with the legend and the heading of section 4.5', () => {
+test('the complete version marks internal dates, with its legend and heading', () => {
   const html = print('complete');
   expect(html).toContain('data-print-version="complete"');
   expect(html).toContain(

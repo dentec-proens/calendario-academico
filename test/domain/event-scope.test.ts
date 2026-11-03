@@ -27,9 +27,8 @@ import {
 import { readyContent } from '../helpers/lifecycle.ts';
 
 /**
- * Scope with confirmation (phase 2, step 7 of `docs/plans/2026-11-02-atividades-e-datas.md`,
- * section 5.3): offers are always listed and drive the count; `confirmed` records that the campus
- * chose them, and only a confirmed scope counts toward 2027 coverage.
+ * Scope with confirmation: offers are always listed and drive the count; `confirmed` records that
+ * the campus chose them, and only a confirmed scope counts toward 2027 coverage.
  */
 describe('adding an offer (offer-addition)', () => {
   test('every form of scope is present in the stored fixture', () => {

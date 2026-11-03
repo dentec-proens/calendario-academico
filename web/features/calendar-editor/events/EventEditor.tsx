@@ -59,7 +59,7 @@ export default function EventEditor() {
     requirement?.variant === 'admission-notice';
   const realDate = values.publicationStatus === 'published';
   // The form edits one destination common to every offer; distinct destinations saved by offer
-  // can only be kept, and each offer is diagnosed on its own (plan, section 5.4).
+  // can only be kept, and each offer is diagnosed on its own.
   const saved = editor.eventId
     ? state.events.find((event) => event.id === editor.eventId)
     : undefined;
@@ -95,7 +95,7 @@ export default function EventEditor() {
   // Effect and category chosen freely in an earlier edit are shown as they are.
   const askType = freeEvent && (!values.effect || Boolean(answered));
   // An internal date (art. 18) is offered only while effect and category allow it; changing to an
-  // incompatible one unmarks it, with a notice, before the date is applied (plan, section 4.6).
+  // incompatible one unmarks it, with a notice, before the date is applied.
   const internalAllowed = canBeInternal({
     effect: values.effect,
     category: values.category,

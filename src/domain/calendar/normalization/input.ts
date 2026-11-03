@@ -54,7 +54,7 @@ function choice<const T extends string>(value: unknown, choices: readonly T[], m
   return choices.find((candidate) => candidate === value) ?? fail(message);
 }
 const term = (value: unknown) => choice(value, academicTerms, 'Ciclo letivo inválido.');
-/** Reported total without a confirmed cycle, or stages per cycle (plan, section 5.5). */
+/** Reported total without a confirmed cycle, or stages per cycle. */
 function offerStages(value: unknown): OfferStages {
   const row = calendarObject(value);
   const status = choice(row.status, ['reported', 'defined'], 'Etapas da oferta inválidas.');
@@ -215,7 +215,7 @@ function vacations(value: unknown): VacationPeriods {
 
 /**
  * Message for a copy exported before format 5. It is refused, never converted: the conversion
- * belongs only to the migration (plan `docs/plans/2026-11-02-atividades-e-datas.md`, decision 1).
+ * belonged only to the format 5 migration, now concluded.
  */
 export const formatFourCopyMessage =
   'Esta cópia está no formato 4, anterior à atualização de atividades e datas. Exporte uma nova cópia do calendário.';

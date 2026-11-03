@@ -137,7 +137,7 @@ export function contentAssessment(record: ContentRecord) {
         `Vínculo a conferir — “${event.name}” (${event.start.split('-').reverse().join('/')}): ${linkIssueLabels[reason]}. ${linkIssueActions[reason]}`,
       );
   }
-  // A notice destination is diagnosed per offer and never corrected automatically (plan, 5.4).
+  // A notice destination is diagnosed per offer and never corrected automatically.
   for (const event of record.state.events)
     for (const item of noticeDestinationIssues(record.state, event))
       warnings.push(
@@ -268,7 +268,7 @@ export function releaseReadiness(
       policy.review.evidence === 'pattern' &&
       c.pattern &&
       entry?.status === 'ATENDIDO' &&
-      // An internal date (art. 18) never evidences a criterion (plan, section 4.5).
+      // An internal date (art. 18) never evidences a criterion.
       !events.some(
         (e) =>
           !isInternalDate(e) &&

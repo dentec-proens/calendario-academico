@@ -44,7 +44,7 @@ test('a new activity record keeps the prepared link, offer, effect and category'
     activity: { activityId: 'family-meeting' },
     effect: 'note',
     category: 'prazo',
-    // Saving the form confirms the contextual offers (plan, section 5.3).
+    // Saving the form confirms the contextual offers.
     scope: { offers: ['integrado'], confirmed: true },
     start: '2027-05-08',
     end: '2027-05-08',

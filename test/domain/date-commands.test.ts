@@ -20,9 +20,9 @@ import {
 } from '../fixtures/pending-links-2027.ts';
 
 /**
- * Date commands (plan `docs/plans/2026-11-02-atividades-e-datas.md`, section 4.6; phase 2, step
- * 12): `planActivityDate` takes the link from the context, `createCampusDate` refuses one and
- * `updateDate` keeps the saved one. The save boundary keeps the same contracts on the whole state.
+ * Date commands: `planActivityDate` takes the link from the context, `createCampusDate` refuses one
+ * and `updateDate` keeps the saved one. The save boundary keeps the same contracts on the whole
+ * state.
  */
 type State = PendingLinksFixture;
 type Input = DateInput<State>;

@@ -10,8 +10,8 @@ import { test, expect } from './test.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 /**
- * Official and complete print (art. 18; plan `docs/plans/2026-11-02-atividades-e-datas.md`,
- * section 4.5; phase 2, step 15): the choice in the preview and both versions printed by Chromium.
+ * Official and complete print (art. 18): the choice in the preview and both versions printed by
+ * Chromium.
  */
 
 async function pdfText(pdf: Buffer) {

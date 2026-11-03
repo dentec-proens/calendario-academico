@@ -42,7 +42,7 @@ export const period = v.object({
   targetDays: v.optional(v.number()),
   association: periodAssociation,
 });
-/** Publication status and admission purpose of a notice; destinations by offer (plan, 5.4). */
+/** Publication status and admission purpose of a notice; destinations by offer. */
 export const notice = v.object({
   publication: v.optional(v.union(v.literal('planned'), v.literal('published'))),
   admission: v.optional(
@@ -54,10 +54,10 @@ export const notice = v.object({
     }),
   ),
 });
-/** Offers of a local date, always listed, and whether the campus chose them (plan, 5.3). */
+/** Offers of a local date, always listed, and whether the campus chose them. */
 export const eventScope = v.object({ offers: v.array(v.string()), confirmed: v.boolean() });
 /**
- * Link of a date with the activity it serves (plan, section 5.1): one shape per repetition base.
+ * Link of a date with the activity it serves: one shape per repetition base.
  * The declared IDs of each base are checked by the domain (`activityRef()`), not by prefix.
  */
 const stagePosition = v.union(
@@ -99,7 +99,7 @@ export const institutionalEvent = v.object({
   modalities: v.array(modality),
   active: v.boolean(),
 });
-/** Institutional dates never carry an activity link (plan, phase 2, step 1 inventory). */
+/** Institutional dates never carry an activity link. */
 export const institutionalEventSnapshot = v.object({
   id: v.string(),
   name: v.string(),
@@ -144,7 +144,7 @@ export const calendarOffer = v.object({
   label: v.optional(v.string()),
   delivery: v.union(v.literal('presencial'), v.literal('ead'), v.literal('a-conferir')),
   organization,
-  // Reported total without a confirmed cycle, or stages per cycle (plan, section 5.5).
+  // Reported total without a confirmed cycle, or stages per cycle.
   stages: v.optional(
     v.union(
       v.object({

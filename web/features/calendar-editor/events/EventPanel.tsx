@@ -117,7 +117,7 @@ export default function EventPanel() {
                 disabled={readOnly || editor.pending}
                 onClick={editor.discard}
               >
-                Descartar preenchimento
+                Descartar alterações
               </button>
             </>
           }

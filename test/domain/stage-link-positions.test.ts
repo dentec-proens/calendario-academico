@@ -16,7 +16,7 @@ import { definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
 import { storedCases } from '../helpers/stored-fixtures.ts';
 
 /**
- * Stage positions of phase 2, step 9b (plan, sections 5.1 and 10), as fixed after its review: a
+ * Stage positions of a link: a
  * save never swaps a stored stage position, an unclassified position counts as a stage of the offer
  * only while its organization is not confirmed, and confirming the organization keeps a defined
  * position as stored.

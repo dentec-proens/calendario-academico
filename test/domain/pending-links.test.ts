@@ -204,7 +204,7 @@ test('reducing stages of an unchanged calendar is saved; positions without a sta
   expect(offerOrganizationIssues(semester, 'integrado', draft)).toEqual([]);
   const reduced = applyOfferOrganization(semester, 'integrado', draft, () => 'unused');
   const saved = save(semester, reduced);
-  // A confirmed stage keeps its position when the count changes (plan, section 5.1); positions
+  // A confirmed stage keeps its position when the count changes; positions
   // the reduced organization does not have go to review.
   expect(linksById(saved.state)).toMatchObject({
     'stage-first': 'stage:stage:first:1:integrado',
@@ -301,7 +301,7 @@ test('readings of a kept link without activity do not fail; review blocks the co
     { ...record, institutionalSnapshot: [] },
     { catalogue: { revision: 1 } },
   );
-  // Since phase 2, step 13, the link can be corrected, so a date to review blocks the conclusion.
+  // The link can be corrected (`changeActivity`), so a date to review blocks the conclusion.
   const blocking = readiness.issues.filter((issue) => issue.startsWith('Vínculo a conferir'));
   expect(blocking).toHaveLength(11);
   expect(readiness.warnings.some((warning) => warning.startsWith('Vínculo a conferir'))).toBe(
@@ -314,7 +314,7 @@ test('readings of a kept link without activity do not fail; review blocks the co
   expect(compareContents(side, edited).campusChanges).toBe(1);
 });
 
-describe('findings of the independent review of phase 1', () => {
+describe('links kept without generated activity', () => {
   test('a stage kept without generated activity can still have its dates edited', () => {
     const state = conflictingLinks();
     const reduced = {
@@ -335,7 +335,7 @@ describe('findings of the independent review of phase 1', () => {
     expect(() => normalizeOfferCalendar(edited, reduced)).not.toThrow();
   });
 
-  test('dates to review block the conclusion once each, with their reason (phase 2, step 13)', () => {
+  test('dates to review block the conclusion once each, with their reason', () => {
     const state = conflictingLinks();
     const readiness = releaseReadiness(
       { id: 'c', version: 1, catalogueRevision: 1, state, institutionalSnapshot: [] },

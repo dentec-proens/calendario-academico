@@ -1,6 +1,6 @@
 import { useWorkRisk } from '../../shared/forms/useWorkRisk.ts';
 import { useRef, type ReactNode } from 'react';
-import { Copy, X } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import { useAction } from '../../shared/forms/useAction.ts';
 import type { Notify } from '../../shared/convex/types.ts';
@@ -63,7 +63,6 @@ export default function PrivateLink({
           id={id === 'invite-result' ? 'close-invite' : 'close-recovery'}
           onClick={onClose}
         >
-          <X aria-hidden="true" size={18} />
           Fechar
         </Button>
       </div>

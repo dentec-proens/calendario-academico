@@ -207,9 +207,9 @@ export const saveResult = v.object({
 });
 export const reviewInput = v.object({
   /**
-   * Format of the calendar the reviewer opened (plan `docs/plans/2026-11-02-atividades-e-datas.md`,
-   * phase 2, step 17b). Criteria entries name no date, so without it a client built for format 4
-   * could still save a review over a converted calendar; the literal refuses it.
+   * Format of the calendar the reviewer opened. Criteria entries name no date, so without it a
+   * client built for format 4 could still save a review over a converted calendar; the literal
+   * refuses it.
    */
   schemaVersion: v.literal(5),
   rulesetVersion: v.optional(v.string()),

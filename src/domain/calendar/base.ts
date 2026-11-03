@@ -51,7 +51,7 @@ function eventKinds(event: InstitutionalEventSnapshot, scope: BaseScope): string
 /**
  * Content compared by the base identity. The keys are historical (format 4): `kind` carries the
  * effect, so identities stored in reviews (`reviews.baseIdentity`) keep matching after the v5
- * conversion without a new identity version (plan, phase 2, step 5).
+ * conversion without a new identity version.
  */
 function eventContent(event: InstitutionalEventSnapshot, scope: BaseScope) {
   return {
@@ -63,7 +63,7 @@ function eventContent(event: InstitutionalEventSnapshot, scope: BaseScope) {
     category: event.category ?? '',
     evidence: event.evidence,
     source: event.source ?? '',
-    // Snapshots have no activity link (plan, phase 2, steps 1 and 5): the historical key is constant.
+    // Snapshots have no activity link: the historical key is constant.
     requirementId: '',
     hours: event.hours ?? null,
     modalities: [

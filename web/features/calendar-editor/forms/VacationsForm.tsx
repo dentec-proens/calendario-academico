@@ -122,7 +122,7 @@ export default function VacationsForm() {
           {preview}
         </p>
         <FormFeedback error={error} />
-        <button type="submit">Aplicar férias docentes ao rascunho</button>
+        <button type="submit">Aplicar férias</button>
       </fieldset>
     </form>
   );

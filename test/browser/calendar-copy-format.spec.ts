@@ -6,9 +6,9 @@ import { formatFourCopyMessage } from '../../src/domain/calendar/normalization/i
 import type {} from '../fixtures/editor-client.ts';
 
 /**
- * Phase 2, step 5 of `docs/plans/2026-11-02-atividades-e-datas.md`: the editable JSON copy is in
- * format 5. A copy exported by the editor is imported again, keeping the effective category of a
- * date without category; a format 4 copy is refused with its own message and never converted.
+ * The editable JSON copy is in format 5. A copy exported by the editor is imported again, keeping
+ * the effective category of a date without category; a format 4 copy is refused with its own
+ * message and never converted.
  */
 test('a format 5 copy round-trips and a format 4 copy is refused with its own message', async ({
   page,

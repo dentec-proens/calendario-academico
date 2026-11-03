@@ -168,7 +168,7 @@ export interface NoticeDestinationIssue {
 const termNames = { annual: 'ciclo anual', first: '1º semestre', second: '2º semestre' } as const;
 
 /**
- * Diagnosis of the admission destination by offer of the date (plan, section 5.4). Nothing is
+ * Diagnosis of the admission destination by offer of the date. Nothing is
  * corrected here: a removed period, a period of another offer or cycle, or an offer left without
  * destination while others have one is reported for the campus to review. A notice without
  * destinations (not informed) has no issue.

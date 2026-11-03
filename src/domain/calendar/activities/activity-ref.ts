@@ -4,12 +4,12 @@ import { academicTerms, type AcademicTerm } from '../config.ts';
 import type { RepeatBasis } from './rules.ts';
 
 /**
- * Link of a date with the activity it serves (plan `docs/plans/2026-11-02-atividades-e-datas.md`,
- * section 5.1). The activity is identified by its declaration and its repetition base, never by
- * a composed string: each base has its own shape, and the IDs each base accepts come from the
- * declared `ActivityRule`s of the policies (`declaredActivityRules()`), checked at runtime by
- * `activityRef()`. A link is valid by these declarations, not by the rows the current
- * configuration generates; whether it is generated is a classification, evaluated elsewhere.
+ * Link of a date with the activity it serves (`docs/arquitetura-convex.md`). The activity is
+ * identified by its declaration and its repetition base, never by a composed string: each base has
+ * its own shape, and the IDs each base accepts come from the declared `ActivityRule`s of the
+ * policies (`declaredActivityRules()`), checked at runtime by `activityRef()`. A link is valid by
+ * these declarations, not by the rows the current configuration generates; whether it is generated
+ * is a classification, evaluated elsewhere.
  */
 export type ActivityBase = RepeatBasis['repeat'];
 

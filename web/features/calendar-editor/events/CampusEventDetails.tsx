@@ -93,7 +93,7 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
             disabled={readOnly || editor.pending}
             onClick={() => editor.edit(event.id)}
           >
-            <Pencil size={18} aria-hidden="true" /> Editar data
+            <Pencil size={18} aria-hidden="true" /> Editar
           </Button>
           <Button
             type="button"

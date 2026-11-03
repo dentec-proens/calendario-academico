@@ -2,13 +2,38 @@
 
 Os componentes compartilhados ficam em `web/components/ui/` e usam Base UI com CSS próprio. A identidade visual permanece a do calendário: verde institucional, superfícies claras e cores de estado com texto explicativo.
 
-- `Button`: variantes `primary`, `secondary` e `danger`. O padrão é `type="button"`; ações de envio de formulário devem declarar `type="submit"`. Use a variante para indicar a intenção, sem depender da lista ou painel em que o botão aparece. Links de navegação continuam sendo elementos `a`. Nos controles de edição e remoção do calendário, use lápis (`Pencil`) e lixeira (`Trash2`) com `aria-hidden`, conservando o rótulo textual e o nome acessível da ação.
+- `Button`: variantes `primary`, `secondary` e `danger`. O padrão é `type="button"`; ações de envio de formulário devem declarar `type="submit"`. Use a variante para indicar a intenção, sem depender da lista ou painel em que o botão aparece. Links de navegação continuam sendo elementos `a`. Ícones seguem a seção **Ícones e rótulos de botões**.
 - `TextField` e `TextAreaField`: associam rótulo, descrição e mensagem de erro ao controle por meio de `Field` da Base UI. `TextAreaField` usa `onValueChange` com o texto atualizado. Passe `disabled` ao componente quando uma operação bloquear o formulário.
 - `ChoiceGroup`: apresenta opções exclusivas com Radio Group da Base UI, incluindo interação por teclado. `value={null}` representa uma decisão ainda pendente; um valor selecionado não significa que a decisão foi confirmada.
 - `PanelDialog` e `PanelHeader` (`web/components/ui/Panel.tsx`): ciclo do diálogo modal, fechamento pelo X/Esc, título acessível, rolagem e retorno de foco. Eventos e observâncias institucionais usam o painel lateral; sábados reutilizam o diálogo em telas estreitas e o cabeçalho no painel ao lado da grade. A decisão de preservar ou descartar pertence ao formulário: fechar conserva os valores em memória nesta sessão; somente a ação explícita descarta. O controlador pode complementar o retorno de foco quando a linha de origem deixa de existir.
 - `FormActions` (`web/shared/forms/FormActions.tsx`): área compartilhada para botões de formulário, com espaçamento, reorganização pela largura disponível e orientação opcional sobre o preenchimento conservado ao fechar. Use `Button` com ação principal, secundária e destrutiva explícitas. **Descartar alterações** só aparece quando existem campos alterados; não remove registros aplicados. Não repita **Fechar** no rodapé de um painel com X no cabeçalho.
 - `StatusBadge`: identifica estados e evidências com texto. Não use somente cor para transmitir significado.
 - `Notice` (`web/components/ui/Notice.tsx`): componente único para avisos, erros, pendências e confirmações. Tons `info` (padrão), `success`, `warning` e `danger`; os três últimos correspondem às intenções de mesmo nome de `ConfirmationDialog`. Cada tom tem um ícone decorativo, que pode ser trocado por `icon` ou removido com `icon={null}`. Aceita `title` (com `titleAs` para virar título da página e `titleProps` para `id` ou alvo de foco), conteúdo livre, com blocos espaçados automaticamente, e `actions` com os botões ou links que resolvem o aviso. `announce="polite"` torna o aviso um status e `announce="assertive"` um alerta; avisos que fazem parte da página ficam sem anúncio. Leitores de tela podem ignorar um status inserido junto com o texto: mensagens transitórias (`#message` e equivalentes) mantêm a região viva sempre montada e exibem dentro dela um `Notice` sem anúncio, com `elevated` quando ficam fixas sobre a página. `as="section"` com `aria-labelledby` cria uma região nomeada. Atributos como `id` e `hidden` são repassados. O texto precisa explicar o problema e a ação sem depender da cor. Erros de formulário usam `FormFeedback`, que apresenta um `Notice` de perigo com anúncio assertivo. Não crie classes próprias de aviso nem estilize as partes internas do `Notice`: use `className` apenas para posicionamento. A fixture `test/fixtures/notice.html` reúne as variações, verificadas por `test/browser/notice.spec.ts` e pela referência visual `notice-gallery.png`.
+
+## Ícones e rótulos de botões
+
+O ícone acompanha o verbo da ação, não a tela. Um verbo tem sempre o mesmo ícone (Lucide, com `aria-hidden`), e o rótulo textual continua visível:
+
+| Verbo                                       | Ícone                         |
+| ------------------------------------------- | ----------------------------- |
+| Adicionar, Novo, Preencher                  | `Plus`                        |
+| Editar, Configurar, Continuar preenchimento | `Pencil`                      |
+| Remover, Excluir                            | `Trash2`                      |
+| Visualizar, Consultar                       | `Eye`                         |
+| Baixar                                      | `Download`                    |
+| Enviar arquivo, Importar                    | `Upload`                      |
+| Imprimir                                    | `Printer`                     |
+| Copiar                                      | `Copy`                        |
+| Avançar etapa                               | `ArrowRight`, depois do texto |
+| Voltar                                      | `ArrowLeft`, antes do texto   |
+| Recolher, expandir                          | `ChevronUp`, `ChevronDown`    |
+| Entrar, Sair                                | `LogIn`, `LogOut`             |
+
+Ações de ciclo de vida usam os ícones definidos em `LifecycleActions.tsx`. Um verbo novo entra nesta tabela antes de ganhar ícone.
+
+Botões que concluem ou abandonam um formulário ou diálogo (**Aplicar**, **Salvar**, **Confirmar**, **Cancelar**, **Descartar alterações**, **Fechar**) ficam sem ícone: a posição e a variante já indicam a ação. Botão só com ícone fica restrito a fechar (`X`), menu (`Ellipsis`) e remover numa linha de tabela, sempre com `aria-label`.
+
+O rótulo não repete o objeto quando o contexto já o identifica: dentro do cartão de uma oferta, **Editar** e **Aplicar organização**, não “Editar organização” ou “Aplicar organização de Técnico integrado”; no detalhe de uma data, **Editar**. Dentro do calendário, criar é **Adicionar…**; **Novo…** fica para entidades de primeiro nível, como o calendário. No editor, **Aplicar** grava no rascunho e **Salvar** fica para o que é gravado diretamente. Abandonar um preenchimento é sempre **Descartar alterações**; **Remover** retira um item do calendário e **Excluir** apaga um registro.
 
 `tokens.css` centraliza cores semânticas, espaçamentos, raios e duração das transições. `ui.css` define os componentes e os estados de interação, sendo importado pelo CSS compartilhado do site. As regras de interação ficam restritas à tela; o modelo de impressão em `assets/printing/calendar.css` permanece separado.
 

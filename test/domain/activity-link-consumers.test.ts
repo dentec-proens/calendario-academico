@@ -27,7 +27,7 @@ import {
 } from '../fixtures/pending-links-2027.ts';
 
 /**
- * Phase 2, step 9b of `docs/plans/2026-11-02-atividades-e-datas.md`: dates carry their link as
+ * Dates carry their link as
  * `activity` (`ActivityRef`) and every domain consumer reads it. A link is matched to the row the
  * configuration generates by its key, never by a composed identifier.
  */

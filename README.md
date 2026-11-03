@@ -42,6 +42,7 @@ pnpm check
 - [Implantação e operação](docs/implantacao-convex-vercel.md)
 - [Operações administrativas de dados](docs/migracao-schema.md)
 - [Restauração dos originais](docs/restauracao-de-originais.md)
+- [Pendências](docs/pendencias.md)
 
 Produção: [calendario-academico-phi.vercel.app](https://calendario-academico-phi.vercel.app). Publicações seguem o procedimento de implantação e operação.
 

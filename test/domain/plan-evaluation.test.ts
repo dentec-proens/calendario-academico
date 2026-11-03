@@ -16,8 +16,8 @@ import { cascavelDraft, conflictingLinks, ivaiporaDraft } from '../fixtures/pend
 import { storedCases } from '../helpers/stored-fixtures.ts';
 
 /**
- * Plan, phase 2, step 11: the evaluation is calculated by activity × offer, in separate dimensions,
- * and none of them is stored. The 21 audited dates (section 11) are pending by offer and never
+ * The evaluation is calculated by activity × offer, in separate dimensions, and none of them is
+ * stored. The 21 audited dates of the Ivaiporã and Cascavel drafts are pending by offer and never
  * count as fulfilment.
  */
 
@@ -135,7 +135,7 @@ test('a link is pending for an offer its generated activity does not reach', () 
   expect(links.issues.has('cascavel-final-1')).toBe(false);
   expect(links.forOffer('cascavel-final-1', 'integrado')).toBe('compatible');
   expect(links.forOffer('cascavel-final-1', 'graduacao')).toBe('pending');
-  // A date pending for one offer never counts as fulfilment in that offer's row (section 5.6).
+  // A date pending for one offer never counts as fulfilment in that offer's row.
   const forGraduacao = rows.filter(
     (row) => row.offerId === 'graduacao' && row.events.some((e) => e.id === 'cascavel-final-1'),
   );

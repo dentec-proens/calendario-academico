@@ -9,9 +9,9 @@ import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, readyContent } from '../helpers/lifecycle.ts';
 
 /**
- * Internal dates (art. 18) at the Convex boundary (plan `docs/plans/2026-11-02-atividades-e-datas.md`,
- * section 4.5; phase 2, step 14): `saveCalendar` keeps the eligibility of the domain, submissions
- * keep the whole content with `internal`, and the review lists an internal date apart.
+ * Internal dates (art. 18) at the Convex boundary: `saveCalendar` keeps the eligibility of the
+ * domain, submissions keep the whole content with `internal`, and the review lists an internal date
+ * apart.
  */
 const rehearsal: CalendarEvent = {
   id: 'campus-rehearsal',

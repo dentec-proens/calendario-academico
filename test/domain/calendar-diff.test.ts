@@ -158,7 +158,7 @@ test('confirming the scope alone is a change; offer order and an offer inclusion
   };
   const unconfirmed = side(note(ids.slice(0, 3), false));
   const confirmed = side(note(ids.slice(0, 3), true));
-  // Offers are always listed (plan, section 5.3): only their set is compared, not their order.
+  // Offers are always listed: only their set is compared, not their order.
   expect(
     compareContents(confirmed, side(note([...ids.slice(0, 3)].reverse(), true))).unchanged,
   ).toBe(true);
@@ -368,7 +368,7 @@ test('a notice change shows its publication and its admission with destinations 
   expect(compareContents(before, reordered).events).toEqual([]);
 });
 
-test('resolving a reported total shows the assessment stages before and after (plan, section 5.5)', () => {
+test('resolving a reported total shows the assessment stages before and after', () => {
   const reported = side((value) => {
     value.state.offers[0] = {
       ...value.state.offers[0],

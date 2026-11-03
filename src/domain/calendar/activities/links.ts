@@ -70,10 +70,10 @@ function positionOfOrdinal(position: StagePosition, n: number) {
  * stage, the same activity and offer with a position that some organization gives its reported
  * ordinal, once the offer's organization is confirmed. Confirming the organization re-expresses an
  * unconfirmed position in the new cycles, as the format 4 identifier (`stage-N:offer`) did by its
- * ordinal (plan, phase 2, step 9e). A save may carry several confirmations, and a defined position
+ * ordinal. A save may carry several confirmations, and a defined position
  * is then kept as the first one gave it (`reorganizedLinks`), so the stored ordinal is checked
- * against every organization, not only the final one. A defined position is never reinterpreted
- * (section 5.1): another position is a swap, and so is any position while the offer's organization
+ * against every organization, not only the final one. A defined position is never reinterpreted:
+ * another position is a swap, and so is any position while the offer's organization
  * is not confirmed.
  */
 export function sameLink(
@@ -198,7 +198,7 @@ export function coversDate(
 /**
  * The generated row reaches every offer of the date: a stage row only its own offer, a cycle row
  * each offer organised in that cycle. Correcting the linked activity keeps the date's scope, so
- * the new activity must cover all of it (plan, section 4.6; the split by offer is phase 3).
+ * the new activity must cover all of it.
  */
 export function coversAllOffers(
   state: Pick<LinkState, 'offers'>,
@@ -221,10 +221,10 @@ export function coversAllOffers(
  * covers all the offers of the date. Other fields may change in the same save, as `updateDate`
  * after the correction would change them: the corrected date passes every check of an edited
  * date. A date put under review only by other changes of the same save is not corrected with
- * them, since the swap would re-express a link that counted (step 9e); the interface offers the
+ * them, since the swap would re-express a link that counted; the interface offers the
  * correction once those changes are saved (`correctableLinkIssue`). Removing a link is never a
  * correction, and a link that counts is never swapped: a defined stage position is not
- * reinterpreted (section 5.1).
+ * reinterpreted.
  */
 export function linkCorrected(
   state: Pick<LinkState, 'offers'>,

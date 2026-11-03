@@ -2,7 +2,7 @@ import { scrollIntoView } from '../../scroll.ts';
 import { Button } from '../../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 import { useEffect, useRef } from 'react';
-import { Pencil, Save, X } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { categories, categoryLabel } from '#src/domain/calendar/activities/categories.ts';
 import { modalityLabels, selectableModalities } from '#src/domain/calendar/modalities.ts';
 import { institution } from '../../shared/convex/institution.ts';
@@ -277,7 +277,6 @@ export default function CataloguePanel({
             </label>
             <div className="actions">
               <Button type="submit">
-                <Save aria-hidden="true" size={18} />
                 Salvar
               </Button>
               <Button
@@ -288,7 +287,6 @@ export default function CataloguePanel({
                   void closeForm();
                 }}
               >
-                <X aria-hidden="true" size={18} />
                 Cancelar
               </Button>
             </div>
