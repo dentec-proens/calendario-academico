@@ -395,3 +395,50 @@ test('changing the count keeps defined positions; a save cannot reinterpret them
   expect(linkOf(saved.state)).toEqual(linkOf(record.state));
   expect(linksToReview({ ...saved.state, year: 2027 }).get('sub-stage-3')).toBe('unclassified');
 });
+
+test.each([
+  ['annual 3', 'anual', '3'],
+  ['semester 2', 'semestral', '2'],
+] as const)(
+  'annual 4 and then %s saved together keep the stage the first confirmation converted',
+  async (_, organization, count) => {
+    const { record, save } = await stored(stagePositionsToConfirm());
+    const confirm = (
+      state: typeof record.state,
+      organization: 'anual' | 'semestral',
+      count: string,
+    ) => {
+      const draft = offerOrganizationDraft(state, 'subsequente');
+      draft.organization = organization;
+      draft.count = count;
+      if (organization === 'semestral') {
+        draft.periods[0] = { sourceId: '', name: '', start: '2027-02-01', end: '2027-07-09' };
+        draft.periods[1] = { sourceId: '', name: '', start: '2027-07-26', end: '2027-12-17' };
+      }
+      const dates = [
+        ['2027-02-01', '2027-04-30'],
+        ['2027-05-03', '2027-07-09'],
+        ['2027-07-26', '2027-10-29'],
+        ['2027-11-01', '2027-12-17'],
+      ];
+      draft.stages = organizationDraftStages(state, 'subsequente', draft).map((stage, index) =>
+        stage.id || !dates[index]
+          ? stage
+          : { id: '', start: dates[index][0], end: dates[index][1] },
+      );
+      let sequence = 0;
+      return applyOfferOrganization(state, 'subsequente', draft, () => `${count}-${++sequence}`);
+    };
+    const first = confirm(record.state, 'anual', '4');
+    const second = confirm(first, organization, count);
+    // Both confirmations reach the server in one save, the converted stage kept as the first gave it.
+    const saved = await save(second);
+    expect(linkOf(saved.state)['sub-stage-4']).toEqual(
+      definedStage('stage', 'subsequente', 'annual', 4),
+    );
+    expect(saved.state.offers.find((offer) => offer.id === 'subsequente')).toMatchObject({
+      organization,
+      stages: { status: 'defined', perTerm: Number(count) },
+    });
+  },
+);

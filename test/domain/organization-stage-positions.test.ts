@@ -4,6 +4,7 @@ import type { ActivityRef } from '../../src/domain/calendar/activities/activity-
 import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize-v4.ts';
 import {
   applyOfferOrganization,
+  organizationAwaitingSave,
   offerOrganizationDraft,
   offerOrganizationIssues,
   offerOrganizationWarnings,
@@ -243,5 +244,121 @@ describe('a defined position is never reinterpreted when the count changes', () 
         ),
     };
     expect(() => save(semester.state, reinterpreted)).toThrow('não perde nem troca');
+  });
+});
+
+describe('two confirmations of the organization reach the server in one save', () => {
+  /** The subsequent offer confirmed again, from `state`, with this organization and count. */
+  const confirm = (
+    state: PendingLinksFixture,
+    organization: 'anual' | 'semestral',
+    count: string,
+  ) => {
+    const draft = offerOrganizationDraft(state, 'subsequente');
+    draft.organization = organization;
+    draft.count = count;
+    if (organization === 'semestral') {
+      draft.periods[0] = { sourceId: '', name: '', start: '2027-02-01', end: '2027-07-09' };
+      draft.periods[1] = { sourceId: '', name: '', start: '2027-07-26', end: '2027-12-17' };
+    }
+    draft.stages = organizationDraftStages(state, 'subsequente', draft);
+    const dates = [
+      ['2027-02-01', '2027-04-30'],
+      ['2027-05-03', '2027-07-09'],
+      ['2027-07-26', '2027-10-29'],
+      ['2027-11-01', '2027-12-17'],
+    ];
+    draft.stages = draft.stages.map((stage, index) =>
+      stage.id || !dates[index] ? stage : { id: '', start: dates[index][0], end: dates[index][1] },
+    );
+    let sequence = 0;
+    return applyOfferOrganization(state, 'subsequente', draft, () => `new-${count}-${++sequence}`);
+  };
+
+  test.each([
+    ['annual 4, then annual 3', 'anual', '3'],
+    ['annual 4, then semester 2', 'semestral', '2'],
+  ] as const)(
+    '%s: the stage converted by the first is kept and saved',
+    (_, organization, count) => {
+      const state = stagePositionsToConfirm();
+      const first = confirm(state, 'anual', '4');
+      expect(links(first)['sub-stage-4']).toEqual(
+        definedStage('stage', 'subsequente', 'annual', 4),
+      );
+      const second = confirm(first, organization, count);
+      expect(links(second)['sub-stage-4']).toEqual(
+        definedStage('stage', 'subsequente', 'annual', 4),
+      );
+      expect(links(save(state, second).state)['sub-stage-4']).toEqual(
+        definedStage('stage', 'subsequente', 'annual', 4),
+      );
+    },
+  );
+
+  test('a position no organization gives the reported ordinal is still a swap', () => {
+    const state = stagePositionsToConfirm();
+    const configured = confirm(state, 'semestral', '2');
+    expect(
+      sameLink(
+        state,
+        unclassifiedStage('stage', 'subsequente', 4),
+        configured,
+        definedStage('stage', 'subsequente', 'annual', 3),
+      ),
+    ).toBe(false);
+    expect(
+      sameLink(
+        state,
+        unclassifiedStage('stage', 'subsequente', 4),
+        configured,
+        definedStage('stage', 'subsequente', 'second', 3),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('the editor waits for the save before confirming the organization again', () => {
+  test('stage dates created by an unsaved confirmation would be new links the second one lacks', () => {
+    const state = stagePositionsToConfirm();
+    const annual = integratedAnnual(state);
+    annual.stages[1] = { id: '', start: '2027-05-03', end: '2027-07-30' };
+    annual.stages[2] = { id: '', start: '2027-08-02', end: '2027-12-17' };
+    expect(organizationAwaitingSave(state, state, 'integrado', annual)).toBe(false);
+    let sequence = 0;
+    const first = applyOfferOrganization(state, 'integrado', annual, () => `a-${++sequence}`);
+    const semester = offerOrganizationDraft(first, 'integrado');
+    semester.organization = 'semestral';
+    semester.count = '2';
+    // Still unsaved: confirming another organization waits; the same one does not.
+    expect(organizationAwaitingSave(state, first, 'integrado', semester)).toBe(true);
+    expect(organizationAwaitingSave(state, first, 'integrado', annual)).toBe(false);
+    // Once saved, the second confirmation is free again.
+    const saved = save(state, first).state;
+    expect(organizationAwaitingSave(saved, first, 'integrado', semester)).toBe(false);
+    // Unrelated offers are not held back.
+    expect(
+      organizationAwaitingSave(state, first, 'subsequente', {
+        organization: 'anual',
+        count: '4',
+      }),
+    ).toBe(false);
+    // Saved together, the new dates for annual stages 2 and 3 would be refused.
+    semester.periods[0] = { sourceId: '', name: '', start: '2027-02-01', end: '2027-07-09' };
+    semester.periods[1] = { sourceId: '', name: '', start: '2027-07-26', end: '2027-12-17' };
+    semester.stages = organizationDraftStages(first, 'integrado', semester).map((stage, index) =>
+      stage.id
+        ? stage
+        : {
+            id: '',
+            start: ['2027-02-01', '2027-05-03', '2027-07-26', '2027-10-01'][index],
+            end: ['2027-04-30', '2027-07-09', '2027-09-30', '2027-12-17'][index],
+          },
+    );
+    const second = applyOfferOrganization(first, 'integrado', semester, () => `s-${++sequence}`);
+    expect(() => save(state, second)).toThrow('Vínculo de atividade inválido');
+    expect(links(save(saved, second).state)['stage-one']).toEqual(
+      definedStage('stage', 'integrado', 'annual', 1),
+    );
   });
 });

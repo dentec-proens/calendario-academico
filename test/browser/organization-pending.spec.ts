@@ -95,3 +95,55 @@ for (const width of [1440, 390]) {
     await expect(page).toHaveURL(/\/dias$/);
   });
 }
+
+test('a second organization change waits until the first one is saved', async ({
+  page,
+  fixtureServer,
+}) => {
+  // Frozen timers keep the first confirmation in the autosave debounce.
+  await page.clock.install();
+  await page.goto(await fixtureServer('editor'));
+  await expect(page.locator('#record-title')).toBeVisible();
+  await selectEditorSection(page, 'periods');
+  const stages = async (dates: [string, string][]) => {
+    for (const [index, [start, end]] of dates.entries()) {
+      await page.locator(`#offer-integrado-stage-${index}-start`).fill(start);
+      await page.locator(`#offer-integrado-stage-${index}-end`).fill(end);
+    }
+  };
+  if (!(await page.locator('#offer-integrado-form').isVisible()))
+    await page.locator('[data-edit-organization="integrado"]').click();
+  await page.locator('#offer-integrado-organization [data-choice="anual"]').click();
+  await page.locator('#offer-integrado-period-0-start').fill('2027-03-01');
+  await page.locator('#offer-integrado-period-0-end').fill('2027-03-26');
+  await page.locator('#offer-integrado-count [data-choice="2"]').click();
+  await stages([
+    ['2027-03-01', '2027-03-12'],
+    ['2027-03-15', '2027-03-26'],
+  ]);
+  await page.locator('#offer-integrado-apply').click();
+  await expect(page.locator('#offer-integrado-form')).toBeHidden();
+  await page.locator('[data-edit-organization="integrado"]').click();
+  await page.locator('#offer-integrado-count [data-choice="3"]').click();
+  await stages([
+    ['2027-03-01', '2027-03-08'],
+    ['2027-03-09', '2027-03-17'],
+    ['2027-03-18', '2027-03-26'],
+  ]);
+  await page.locator('#offer-integrado-apply').click();
+  await expect(page.locator('#offer-integrado-form')).toContainText(
+    'A organização confirmada antes ainda não foi salva',
+  );
+  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
+  await page.clock.runFor(2000);
+  await savedState(page);
+  await page.locator('#offer-integrado-apply').click();
+  await expect(page.locator('#offer-integrado-form')).toBeHidden();
+  await page.clock.runFor(2000);
+  await savedState(page);
+  expect(
+    await page.evaluate(
+      () => window.editorTest.record.state.offers.find((offer) => offer.id === 'integrado')?.stages,
+    ),
+  ).toEqual({ status: 'defined', perTerm: 3 });
+});

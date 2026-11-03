@@ -460,6 +460,29 @@ export function offerOrganizationWarnings(
     }));
 }
 
+/**
+ * The draft confirms the offer's organization again while the previous confirmation is not saved:
+ * the offer's organization or stages differ from the stored state (or the offer is not stored yet)
+ * and the draft changes them once more. Both confirmations would reach the server in one save, and
+ * the stage dates the first one created or converted could keep positions the second one lacks,
+ * which a save refuses for a new date (plan, phase 2, review of step 9e). The editor waits for the
+ * save instead; confirming without changing the organization or the count stays allowed.
+ */
+export function organizationAwaitingSave(
+  stored: Pick<ActivityState, 'offers'>,
+  state: Pick<ActivityState, 'offers'>,
+  modality: string,
+  draft: Pick<OfferOrganizationDraft, 'organization' | 'count'>,
+) {
+  const current = offerFor(state, modality);
+  const organized = organizedOffer(state, modality, draft);
+  if (!current || !organized) return false;
+  const saved = offerFor(stored, modality);
+  const changed = (a: CalendarOffer, b: CalendarOffer) =>
+    a.organization !== b.organization || !equalValues(a.stages, b.stages);
+  return (!saved || changed(saved, current)) && changed(current, organized);
+}
+
 /** Change one offer's periods and stages together; never recalculate another offer's dates. */
 export function applyOfferOrganization<S extends ActivityState>(
   state: S,

@@ -16,6 +16,7 @@ import {
   offerOrganizationDraft,
   offerOrganizationIssues,
   offerOrganizationWarnings,
+  organizationAwaitingSave,
   organizationDraftStages,
 } from '#src/domain/calendar/organization/offers.ts';
 import { configureOfferMetadata } from '#src/domain/calendar/commands/organization.ts';
@@ -172,6 +173,13 @@ export default function OfferOrganizationForm({
       let next = state;
       let appliedId = existingId ?? '';
       session.apply((current) => {
+        if (
+          existingId &&
+          organizationAwaitingSave(session.getSnapshot().record.state, current, existingId, value)
+        )
+          throw new Error(
+            'A organização confirmada antes ainda não foi salva. Aguarde o salvamento para confirmá-la de novo.',
+          );
         appliedId = existingId ?? nextOfferId(current, kind);
         const metadata = {
           label: value.label,

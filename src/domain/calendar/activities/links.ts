@@ -7,7 +7,7 @@ import type {
 } from '../model.ts';
 import { equalValues } from '../../../shared/equal.ts';
 import { DomainError } from '../../errors.ts';
-import { offerFor, stageOrdinal, stagePosition, stageTerm } from '../offers.ts';
+import { offerFor, stageOrdinal, stagesPerTerm, stageTerm } from '../offers.ts';
 import { activityPlan } from './plan.ts';
 import { assessmentCycleIssue, assessmentIntervalIssue } from './assessment-intervals.ts';
 import {
@@ -17,6 +17,7 @@ import {
   sameActivity,
   type ActivityRef,
   type StageActivityRef,
+  type StagePosition,
 } from './activity-ref.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 
@@ -54,13 +55,26 @@ export function stageLocation(state: OfferState, activity: StageActivityRef) {
 }
 
 /**
+ * The position the `n`-th stage of an offer has under some confirmed organization: annual `n`, or,
+ * semestral with `p` stages per cycle, the first cycle's `n` (p >= n) or the second cycle's `n - p`
+ * (n / 2 <= p < n). Confirming an organization re-expresses an unclassified position this way.
+ */
+function positionOfOrdinal(position: StagePosition, n: number) {
+  if (position.status !== 'defined') return false;
+  if (position.term === 'second') return position.number >= 1 && position.number <= n / 2;
+  return position.number === n;
+}
+
+/**
  * The same link in two states of one calendar: the same key, or, for an unclassified link by offer
- * stage whose offer had its organization or stages changed, the same activity and offer with the
- * exact position the new organization gives its reported ordinal. Confirming an offer's
- * organization re-expresses an unconfirmed position in the new cycles, as the format 4 identifier
- * (`stage-N:offer`) did by its ordinal (plan, phase 2, step 9e). A defined position is never
- * reinterpreted (section 5.1): another position is a swap, and so is any other position while the
- * organization is unchanged.
+ * stage, the same activity and offer with a position that some organization gives its reported
+ * ordinal, once the offer's organization is confirmed. Confirming the organization re-expresses an
+ * unconfirmed position in the new cycles, as the format 4 identifier (`stage-N:offer`) did by its
+ * ordinal (plan, phase 2, step 9e). A save may carry several confirmations, and a defined position
+ * is then kept as the first one gave it (`reorganizedLinks`), so the stored ordinal is checked
+ * against every organization, not only the final one. A defined position is never reinterpreted
+ * (section 5.1): another position is a swap, and so is any position while the offer's organization
+ * is not confirmed.
  */
 export function sameLink(
   before: OfferState | undefined,
@@ -78,17 +92,13 @@ export function sameLink(
     previous.offerId !== next.offerId
   )
     return false;
-  const beforeOffer = offerFor(before, previous.offerId);
   const afterOffer = offerFor(after, next.offerId);
-  if (
-    !beforeOffer ||
-    !afterOffer ||
-    (beforeOffer.organization === afterOffer.organization &&
-      equalValues(beforeOffer.stages, afterOffer.stages))
-  )
-    return false;
-  const position = stagePosition(afterOffer, previous.position.reportedOrdinal);
-  return position.status === 'defined' && sameActivity(next, { ...next, position });
+  return (
+    afterOffer !== undefined &&
+    afterOffer.organization !== 'a-classificar' &&
+    stagesPerTerm(afterOffer) !== undefined &&
+    positionOfOrdinal(next.position, previous.position.reportedOrdinal)
+  );
 }
 
 /** States of one calendar compared by date ID; without them, links compare by key only. */
