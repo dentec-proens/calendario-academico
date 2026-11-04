@@ -166,7 +166,7 @@ function EditorFrame() {
     : !connected
       ? 'Sem conexão'
       : unapplied
-        ? 'Campos ainda em preenchimento'
+        ? 'Alterações ainda não incluídas'
         : {
             idle: '',
             scheduled: 'Alterações ainda não salvas',
@@ -381,8 +381,8 @@ function EditorFrame() {
           )}
           <p id="unapplied-status" className="help" role="status" hidden={!unapplied}>
             {currentSection === 'edit'
-              ? 'Há campos em preenchimento. Corrija as pendências da semana letiva ou confirme os demais formulários.'
-              : 'Há campos em preenchimento. Confirme o formulário para incluir essas alterações no calendário.'}
+              ? 'Há alterações ainda não incluídas no calendário. Corrija as pendências da semana letiva ou conclua os formulários abertos.'
+              : 'Há alterações ainda não incluídas no calendário. Conclua o formulário ou descarte as alterações.'}
           </p>
           {remote && (
             <p id="editor-remote-change">

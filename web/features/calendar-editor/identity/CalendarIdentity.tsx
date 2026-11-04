@@ -156,7 +156,7 @@ function IdentityForm({ onSaved }: { onSaved: () => void }) {
           value={values.shifts}
           onValueChange={(value) => form.setFieldValue('shifts', value)}
         />
-        <FormActions preserveOnClose>
+        <FormActions>
           <Button type="submit" pending={pending} loadingLabel="Salvando…">
             Salvar identificação
           </Button>

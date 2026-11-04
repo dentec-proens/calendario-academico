@@ -98,12 +98,6 @@ dialog.ui-panel-dialog--side {
 .form-actions__buttons > .ui-button--danger {
   margin-inline-start: auto;
 }
-.form-actions__hint {
-  margin: var(--ui-space-3) 0 0;
-  color: var(--ui-muted);
-  font-size: 0.8rem;
-  line-height: 1.5;
-}
 @container form-actions (max-width: 400px) {
   .form-actions__buttons {
     flex-direction: column;

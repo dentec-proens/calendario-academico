@@ -615,7 +615,7 @@ export default function EventEditor() {
               : editor.error
           }
         />
-        <FormActions preserveOnClose={editor.dirty}>
+        <FormActions>
           <Button type="submit">{editor.eventId ? 'Aplicar alterações' : 'Adicionar data'}</Button>
           {editor.dirty && (
             <Button id="discard-event-form" variant="secondary" onClick={editor.discard}>

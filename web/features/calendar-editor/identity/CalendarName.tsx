@@ -104,7 +104,7 @@ function NameForm({ onSaved }: { onSaved: () => void }) {
           <span>O nome fica:</span>{' '}
           <strong>{calendarName(record.year, campus, values.label)}</strong>
         </p>
-        <FormActions preserveOnClose>
+        <FormActions>
           <Button type="submit" pending={pending} loadingLabel="Salvando…">
             Salvar nome
           </Button>

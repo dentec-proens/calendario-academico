@@ -107,7 +107,7 @@ for (const width of [1440, 390]) {
     await page.locator('#weekdays input[value="1"]').uncheck();
 
     await expect(page.locator('.editor-save-indicator')).toHaveText(
-      'Campos ainda em preenchimento',
+      'Alterações ainda não incluídas',
     );
     await expect(page.locator('#unapplied-status')).toBeVisible();
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(saves);

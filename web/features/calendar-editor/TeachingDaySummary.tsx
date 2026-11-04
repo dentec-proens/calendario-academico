@@ -131,7 +131,7 @@ export default function TeachingDaySummary() {
       >
         {unapplied || dirty ? (
           <p className="help teaching-day-unsaved">
-            {unapplied ? 'Campos em preenchimento ainda não entram na contagem.' : ''}
+            {unapplied ? 'Alterações ainda não incluídas não entram na contagem.' : ''}
             {dirty ? ' Há alterações aguardando confirmação de salvamento.' : ''}
           </p>
         ) : null}

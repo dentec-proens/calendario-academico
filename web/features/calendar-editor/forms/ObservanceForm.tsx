@@ -93,7 +93,7 @@ export default function ObservanceForm({
             ))}
           </Notice>
         )}
-        <FormActions preserveOnClose={dirty}>
+        <FormActions>
           {entry?.rule && entry.event && (
             <Button type="submit" id={`apply-observance-${observanceKey}`}>
               Aplicar data

@@ -109,7 +109,7 @@ test('an unsaved name left in the closed panel counts as unapplied work', async 
   await page.keyboard.press('Escape');
   await expect(panel).toBeHidden();
   await expect(page.locator('#unapplied-status')).toBeVisible();
-  await expect(page.locator('.editor-save-indicator')).toHaveText('Campos ainda em preenchimento');
+  await expect(page.locator('.editor-save-indicator')).toHaveText('Alterações ainda não incluídas');
   await rename.click();
   await expect(panel.getByLabel('Complemento do nome (opcional)')).toHaveValue(
     'Proposta em preenchimento',
@@ -131,7 +131,7 @@ test('an unsaved identity left in the closed panel counts as unapplied work', as
   await page.keyboard.press('Escape');
   await expect(panel).toBeHidden();
   await expect(page.locator('#unapplied-status')).toBeVisible();
-  await expect(page.locator('.editor-save-indicator')).toHaveText('Campos ainda em preenchimento');
+  await expect(page.locator('.editor-save-indicator')).toHaveText('Alterações ainda não incluídas');
   await edit.click();
   await expect(panel.getByLabel('Turmas (opcional)')).toHaveValue('1º ano A');
   await panel.getByRole('button', { name: 'Descartar alterações' }).click();
