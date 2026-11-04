@@ -135,7 +135,7 @@ export function nextOfferId(
   const used = new Set(state.offers.map((offer) => offer.id));
   for (const period of state.periods) for (const id of period.association.offers) used.add(id);
   for (const event of state.events) {
-    for (const id of event.scope.offers) used.add(id);
+    for (const id of event.offers) used.add(id);
     if (event.activity && 'offerId' in event.activity) used.add(event.activity.offerId);
   }
   if (!used.has(kind)) return kind;

@@ -44,6 +44,7 @@ test('school vacation suggestions exclude teacher vacations and leave notes blan
     start: civilDate('2027-01-02'),
     end: civilDate('2027-01-31'),
     evidence: 'Fonte',
+    offers: ['integrado'],
   }));
   const support = reviewSupport(record, events);
   assert.deepEqual(
@@ -84,6 +85,7 @@ test('review extracts 29 active criteria, flags other years and treats name matc
       start: civilDate('2027-02-01'),
       end: civilDate('2027-02-01'),
       evidence: 'Ata',
+      offers: ['graduacao'],
     },
   ]);
   assert.equal(reviewCriteria.length, 29);
@@ -280,7 +282,7 @@ test('review coverage follows the criterion identity when its citation text chan
           end: civilDate('2027-03-05'),
           effect: 'note' as const,
           evidence: 'Ata sintética',
-          scope: { offers: ['integrado'], confirmed: true },
+          offers: ['integrado'],
           activity: onceLink('family-meeting'),
         },
       ],

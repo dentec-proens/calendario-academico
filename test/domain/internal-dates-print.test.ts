@@ -25,7 +25,7 @@ const internalDates: DateInput<State>[] = [
     end: civilDate('2027-03-11'),
     effect: 'note',
     category: 'evento',
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
     internal: true,
   },
   // A note without category is `institucional`, an allowed effective category.
@@ -35,7 +35,7 @@ const internalDates: DateInput<State>[] = [
     start: civilDate('2027-08-02'),
     end: civilDate('2027-08-02'),
     effect: 'note',
-    scope: { offers: ['integrado', 'subsequente'], confirmed: true },
+    offers: ['integrado', 'subsequente'],
     internal: true,
   },
   // Before the year: printed among the references of other years only in the complete version.
@@ -46,7 +46,7 @@ const internalDates: DateInput<State>[] = [
     end: civilDate('2026-12-07'),
     effect: 'note',
     category: 'prazo',
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
     internal: true,
   },
 ];

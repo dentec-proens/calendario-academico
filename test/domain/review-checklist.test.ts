@@ -39,7 +39,7 @@ test('warnings keep their messages and gain the same structure', () => {
     end: civilDate('2027-01-10'),
     effect: 'note',
     category: 'prazo',
-    scope: { offers: ['integrado', 'graduacao'], confirmed: true },
+    offers: ['integrado', 'graduacao'],
     activity: cycleLink('admission-notice', 'annual'),
     notice: {
       publication: 'planned',

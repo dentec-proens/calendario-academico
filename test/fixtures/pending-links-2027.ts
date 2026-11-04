@@ -76,7 +76,7 @@ function draft(
         effect: 'note',
         category: 'prazo',
         activity,
-        scope: { offers: scope ?? [...offers], confirmed: true },
+        offers: scope ?? [...offers],
       }),
     ),
   };
@@ -128,7 +128,7 @@ export function ivaiporaDraft(): PendingLinksFixture {
       end: day(end),
       effect: 'note',
       category: 'prazo',
-      scope: { offers: ['integrado', 'subsequente'], confirmed: true },
+      offers: ['integrado', 'subsequente'],
       ...(name === 'final-appeal' ? { hours: 40 } : {}),
     })),
   );
@@ -168,7 +168,7 @@ export function cascavelDraft(): PendingLinksFixture {
     end: day('23/12'),
     effect: 'note',
     category: 'prazo',
-    scope: { offers: ['integrado', 'graduacao'], confirmed: true },
+    offers: ['integrado', 'graduacao'],
   });
   return state;
 }
@@ -189,7 +189,7 @@ export function conflictingLinks(): PendingLinksFixture {
     end: day(end),
     effect: 'note',
     category: 'limite',
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
   });
   const vacation = teacherVacations(2027, vacations).events[0];
   return {
@@ -222,7 +222,7 @@ export function conflictingLinks(): PendingLinksFixture {
       {
         ...vacation,
         activity: first('diary'),
-        scope: { offers: ['integrado', 'subsequente'], confirmed: false },
+        offers: ['integrado', 'subsequente'],
       },
       {
         id: 'transfer-notice',
@@ -232,7 +232,7 @@ export function conflictingLinks(): PendingLinksFixture {
         effect: 'note',
         category: 'prazo',
         activity: second('admission-notice'),
-        scope: { offers: ['integrado', 'subsequente'], confirmed: true },
+        offers: ['integrado', 'subsequente'],
         notice: {
           publication: 'planned',
           admission: {
@@ -264,7 +264,7 @@ export function stageLinksToReview(): PendingLinksFixture {
     effect: 'note',
     category: 'prazo',
     activity,
-    scope: { offers: [offerId], confirmed: true },
+    offers: [offerId],
   });
   return {
     schemaVersion: 5,
@@ -312,7 +312,7 @@ export function legacyOperationalLinks(): PendingLinksFixture {
     effect: 'note',
     category: 'prazo',
     activity,
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
   });
   return {
     schemaVersion: 5,
@@ -361,7 +361,7 @@ export function stagePositionsToConfirm(): PendingLinksFixture {
     effect: 'note',
     category: activity.activityId === 'stage' ? 'limite' : 'prazo',
     activity,
-    scope: { offers: [offerId], confirmed: true },
+    offers: [offerId],
   });
   return {
     schemaVersion: 5,

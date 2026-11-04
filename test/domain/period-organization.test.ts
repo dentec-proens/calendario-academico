@@ -129,7 +129,7 @@ test('semester teacher deadlines stay valid when their offer changes to annual o
     end: civilDate('2027-04-01'),
     effect: 'note',
     category: 'prazo',
-    scope: { offers: ['graduacao'], confirmed: true },
+    offers: ['graduacao'],
   }));
   const annual = add(
     { ...state, periods: [] },

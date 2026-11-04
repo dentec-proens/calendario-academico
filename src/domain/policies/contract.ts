@@ -106,8 +106,6 @@ export interface CalendarPolicy {
     norm: string;
     readinessIssue: string;
   };
-  /** Legacy records must declare the offers they cover before counting towards coverage. */
-  explicitRecordOffers: boolean;
   review: {
     source: ReviewSource;
     criteria: readonly ReviewCriterion[];

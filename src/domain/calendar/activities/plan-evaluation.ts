@@ -28,7 +28,7 @@ import {
  * dimension is computed apart and none is stored as a flag:
  * - classification: whether a date's link fits the current organization and periods;
  * - applicability: required, optional or to confirm, from the policy and the configuration;
- * - coverage: whether the dates plan the activity (dates, hours, confirmed scope);
+ * - coverage: whether the dates plan the activity (dates, hours, offers);
  * - execution: whether the linked notices were scheduled or published;
  * - human review: whether a current review checked the criterion of the activity.
  * UI, backend, comparison and printing read the evaluation from this module only.
@@ -57,7 +57,7 @@ export const executionLabels: Record<Exclude<Execution, 'unclassified'>, string>
 export const classificationOf = (issue: LinkIssue | undefined): Classification =>
   !issue ? 'compatible' : issue === 'not-generated' ? 'pending' : 'divergent';
 
-/** The classification of one linked date for one offer of its scope. */
+/** The classification of one linked date for one offer of the date. */
 export interface LinkEvaluation {
   eventId: string;
   offerId: string;
@@ -82,8 +82,8 @@ export function classifyLinks(state: LinkState) {
     if (!event.activity) continue;
     const issue = issues.get(event.id);
     const row = generatedActivity(generated, event.activity);
-    for (const offerId of event.scope.offers) {
-      const reaches = row !== undefined && coversDate(state, row, { scope: { offers: [offerId] } });
+    for (const offerId of event.offers) {
+      const reaches = row !== undefined && coversDate(state, row, { offers: [offerId] });
       byOffer.push({
         eventId: event.id,
         offerId,
@@ -97,7 +97,7 @@ export function classifyLinks(state: LinkState) {
   return {
     /** Dates under “Vínculo a conferir”, by date ID, with the reason. */
     issues: issues as ReadonlyMap<string, LinkIssue>,
-    /** Every linked date × offer of its scope. */
+    /** Every linked date × offer the date lists. */
     byOffer,
     /** Classification of the date for one offer; undefined for an unlinked date or offer. */
     forOffer: (eventId: string, offerId: string) =>
@@ -157,19 +157,11 @@ export function evaluatePlan(
             return false;
           }
           // A date whose generated activity does not reach this offer is pending for it: it never
-          // counts as fulfilment here, even when it fits another offer of its scope.
+          // counts as fulfilment here, even when it fits another offer of the date.
           if (links.forOffer(event.id, offer.id) !== 'compatible') {
             warnings.push(
               `${linkIssueLabels['not-generated']}: ${linkIssueActions['not-generated']}`,
             );
-            return false;
-          }
-          // Under explicit offers (2027), only a scope the campus confirmed counts.
-          if (policy.explicitRecordOffers && !event.scope.confirmed) {
-            // Same text as format 4. The stored oracle (`test/fixtures/stored/oracle.json`)
-            // records it in the coverage issues and `test/domain/event-scope.test.ts` checks it:
-            // rewording it means updating both.
-            issues.push('Confirme explicitamente as ofertas abrangidas pelo registro legado.');
             return false;
           }
           try {

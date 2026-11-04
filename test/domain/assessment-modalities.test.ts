@@ -30,7 +30,7 @@ const state: ActivityState = {
       id: `${modality}-${index}`,
       name: `${index + 1}ª etapa`,
       activity: definedStage('stage', modality, 'annual', index + 1),
-      scope: { offers: [modality], confirmed: true },
+      offers: [modality],
       effect: 'note' as const,
       start: civilDate(index ? '2027-03-15' : '2027-03-01'),
       end: civilDate(index ? '2027-03-26' : '2027-03-12'),
@@ -101,7 +101,7 @@ test('holidays and inclusions update per-offer counts without moving any assessm
       effect: 'exclude' as const,
       start: civilDate('2027-03-05'),
       end: civilDate('2027-03-05'),
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
     },
     {
       id: 'sat',
@@ -109,7 +109,7 @@ test('holidays and inclusions update per-offer counts without moving any assessm
       effect: 'include' as const,
       start: civilDate('2027-03-06'),
       end: civilDate('2027-03-06'),
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
     },
   ];
   const current = { ...state, events };

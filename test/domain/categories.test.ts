@@ -26,6 +26,7 @@ test('PROENS palette matches reference and simultaneous classifications remain v
       end: civilDate('2027-02-06'),
       effect: 'note' as const,
       category,
+      offers: ['integrado'],
     }));
   const html = proensLayout(
     { year: 2027, campus: 'Foz', periods: [], offers: [] },
@@ -84,6 +85,7 @@ test('the key lists only the categories the grid marks', () => {
       end: civilDate('2027-02-06'),
       effect: 'exclude' as const,
       category: 'feriado',
+      offers: ['integrado'],
     },
   ]);
   const key = html.slice(html.indexOf('class="proens-key"'), html.indexOf('</div><p>· Dia letivo'));
@@ -119,7 +121,7 @@ test('dates of different offers with the same description print once, with their
     end: civilDate('2027-03-03'),
     effect: 'note' as const,
     category: 'formacao',
-    scope: { offers, confirmed: true },
+    offers,
   });
   const html = proensLayout(state, [date('a', ['integrado']), date('b', ['subsequente'])]);
   assert.equal(html.match(/Início — Ano letivo/g)?.length, 1);

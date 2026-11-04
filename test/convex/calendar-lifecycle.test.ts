@@ -551,7 +551,7 @@ test('a submission above 900 KiB is refused with its own message and writes noth
       start: '2027-03-01',
       end: '2027-03-01',
       effect: 'note' as const,
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
     }));
     await ctx.db.patch(content._id, { state: { ...content.state, events } });
   });

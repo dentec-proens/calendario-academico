@@ -22,7 +22,7 @@ import { periodsForOffer } from '../organization/periods.ts';
 
 type LinkState = Pick<ActivityState, 'year' | 'offers' | 'periods' | 'events'> &
   Partial<Pick<ActivityState, 'schemaVersion' | 'rulesetVersion'>>;
-type LinkedDate = Pick<CalendarEvent, 'id' | 'activity' | 'start' | 'end' | 'scope'>;
+type LinkedDate = Pick<CalendarEvent, 'id' | 'activity' | 'start' | 'end' | 'offers'>;
 type OfferState = Pick<AssessmentSettings, 'offers'>;
 
 /** Rows the current configuration generates, by the key of their link (`activityKey`). */
@@ -124,15 +124,15 @@ export function linksToReview(
 }
 
 /**
- * The generated row is scoped to at least one offer of the date: a stage row to its offer, a cycle
+ * The generated row is for at least one offer of the date: a stage row to its offer, a cycle
  * row to the offers organised in that cycle.
  */
 export function coversDate(
   state: Pick<LinkState, 'offers'>,
   activity: ActivityPlanItem,
-  event: { scope: { offers: readonly string[] } },
+  event: { offers: readonly string[] },
 ) {
-  return event.scope.offers.some((id) =>
+  return event.offers.some((id) =>
     activity.offerId
       ? activity.offerId === id
       : activity.offerIds
@@ -143,15 +143,15 @@ export function coversDate(
 
 /**
  * The generated row reaches every offer of the date: a stage row only its own offer, a cycle row
- * each offer organised in that cycle. Correcting the linked activity keeps the date's scope, so
+ * each offer organised in that cycle. Correcting the linked activity keeps the date's offers, so
  * the new activity must cover all of it.
  */
 export function coversAllOffers(
   state: Pick<LinkState, 'offers'>,
   activity: ActivityPlanItem,
-  event: { scope: { offers: readonly string[] } },
+  event: { offers: readonly string[] },
 ) {
-  const offers = event.scope.offers;
+  const offers = event.offers;
   if (activity.offerId) return offers.length === 1 && offers[0] === activity.offerId;
   return (
     offers.length > 0 &&
@@ -204,7 +204,7 @@ export function dateEdited(previous: CalendarEvent | undefined, next: CalendarEv
     previous.start !== next.start ||
     previous.end !== next.end ||
     !sameActivity(previous.activity, next.activity) ||
-    !equalValues(previous.scope.offers, next.scope.offers)
+    !equalValues(previous.offers, next.offers)
   );
 }
 
@@ -283,9 +283,9 @@ export function validateLinks(
   for (const event of next.events) {
     if (!event.activity || !dateEdited(before.get(event.id), event)) continue;
     const activity = generatedActivity(requirements, event.activity);
-    // A kept link without generated activity has no cycle or scope to check its dates against.
+    // A kept link without generated activity has no cycle or offers to check its dates against.
     if (!activity) continue;
-    const offers = event.scope.offers;
+    const offers = event.offers;
     if (activity.offerId && (offers.length !== 1 || offers[0] !== activity.offerId))
       throw new DomainError('A etapa deve estar vinculada à sua oferta.');
     if (!coversDate(next, activity, event))

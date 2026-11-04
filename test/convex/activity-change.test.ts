@@ -165,7 +165,7 @@ function readyWithLinkToReview() {
     effect: 'note',
     category: 'prazo',
     activity: cycleLink('final', 'first'),
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
   });
   return { ...content, year: 2027 };
 }

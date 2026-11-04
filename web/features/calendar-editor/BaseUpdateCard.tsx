@@ -12,9 +12,7 @@ const effectLabels: Record<string, string> = {
 };
 function EventDescription({ event }: { event: Event }) {
   const { state } = useCalendarEditor();
-  const offers =
-    event.offers ??
-    state.offers.filter((offer) => event.modalities?.includes(offer.kind)).map((offer) => offer.id);
+  const { offers } = event;
   const date = (value: string) => value.split('-').reverse().join('/');
   return (
     <>

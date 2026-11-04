@@ -278,7 +278,7 @@ test('a draft removes an offer with its dates after confirmation and keeps the o
   expect(
     saved.state.events.every(
       (event) =>
-        !event.scope.offers.includes('graduacao') &&
+        !event.offers.includes('graduacao') &&
         !(event.activity && 'offerId' in event.activity && event.activity.offerId === 'graduacao'),
     ),
   ).toBe(true);

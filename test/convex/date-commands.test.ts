@@ -73,7 +73,7 @@ const campusDate = (changes: Partial<Input> = {}): Input => ({
   end: civilDate('2027-05-04'),
   effect: 'note',
   category: 'evento',
-  scope: { offers: ['integrado'], confirmed: true },
+  offers: ['integrado'],
   ...changes,
 });
 

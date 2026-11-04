@@ -19,7 +19,7 @@ test('calendar print identifies each offer in the header, periods, event scopes 
       start: day,
       end: day,
       effect: 'note' as const,
-      scope: { offers: [offer.id], confirmed: true },
+      offers: [offer.id],
     })),
   ];
   const result = evaluateCalendar(state, events);
@@ -65,7 +65,7 @@ test('semester distributions group stages by cycle and restart displayed numberi
   expect(state).toEqual(before);
   expect(
     state.events
-      .filter((event) => event.scope.offers.includes('graduacao-2'))
+      .filter((event) => event.offers.includes('graduacao-2'))
       .map((event) => event.activity),
   ).toEqual([1, 2, 3, 4].map((n) => rowLink(state, `stage-${n}:graduacao-2`)));
 });
@@ -183,7 +183,7 @@ test('a date over every offer prints without the list of offers', () => {
       category: 'sabado',
       start: saturday,
       end: saturday,
-      scope: { offers: all, confirmed: true },
+      offers: all,
     },
     {
       id: 'campus-all-offers',
@@ -191,7 +191,7 @@ test('a date over every offer prints without the list of offers', () => {
       effect: 'note' as const,
       start: saturday,
       end: saturday,
-      scope: { offers: all, confirmed: true },
+      offers: all,
     },
   ];
   const html = proensLayout(state, events, evaluateCalendar(state, events), null, '');

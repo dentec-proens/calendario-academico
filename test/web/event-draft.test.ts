@@ -16,7 +16,7 @@ const saved = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
   start: civilDate('2027-05-10'),
   end: civilDate('2027-05-10'),
   effect: 'note',
-  scope: { offers: ['integrado'], confirmed: true },
+  offers: ['integrado'],
   ...extra,
 });
 const edit = (base: CalendarEvent, change: Partial<EventValues> = {}) =>
@@ -75,7 +75,7 @@ test('notice metadata is written only while the free event is answered as a noti
 
 const transfer = (destinations: { offerId: string; periodId: string }[]) =>
   saved({
-    scope: { offers: ['integrado', 'graduacao'], confirmed: true },
+    offers: ['integrado', 'graduacao'],
     notice: {
       publication: 'planned',
       admission: { type: 'transfer', year: 2027, term: 'annual', destinations },
@@ -122,18 +122,15 @@ test('distinct destinations by offer are kept until a common destination is chos
   ).toBe(keptDestinations);
 });
 
-test('saving the date form confirms the offers chosen in it, as listed', () => {
+test('saving the date form saves the offers chosen in it, as listed', () => {
   const base = saved({
-    scope: { offers: ['integrado', 'graduacao'], confirmed: false },
+    offers: ['integrado', 'graduacao'],
   });
   // The form starts from the listed offers, never from the current ones.
   expect(eventValues(base).offers).toEqual(['integrado', 'graduacao']);
-  expect(edit(base).scope).toEqual({ offers: ['integrado', 'graduacao'], confirmed: true });
-  expect(edit(base, { offers: ['graduacao'] }).scope).toEqual({
-    offers: ['graduacao'],
-    confirmed: true,
-  });
-  // A new campus date starts with every offer of the calendar, confirmed when saved.
+  expect(edit(base).offers).toEqual(['integrado', 'graduacao']);
+  expect(edit(base, { offers: ['graduacao'] }).offers).toEqual(['graduacao']);
+  // A new campus date starts with every offer of the calendar.
   expect(
     eventFromValues(
       {
@@ -144,14 +141,11 @@ test('saving the date form confirms the offers chosen in it, as listed', () => {
         effect: 'note',
       },
       { id: 'new' },
-    ).scope,
-  ).toEqual({
-    offers: ['integrado', 'graduacao'],
-    confirmed: true,
-  });
+    ).offers,
+  ).toEqual(['integrado', 'graduacao']);
 });
 
-test('the internal option (art. 18) is a form value: marking and unmarking keep ID, dates and scope', () => {
+test('the internal option (art. 18) is a form value: marking and unmarking keep ID, dates and offers', () => {
   const base = saved({ category: 'evento' });
   expect(eventValues(base).internal).toBe(false);
   const marked = edit(base, { internal: true });
@@ -159,7 +153,7 @@ test('the internal option (art. 18) is a form value: marking and unmarking keep 
     id: base.id,
     start: base.start,
     end: base.end,
-    scope: base.scope,
+    offers: base.offers,
     internal: true,
   });
   const internal = { ...base, internal: true as const };

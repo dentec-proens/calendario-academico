@@ -2,7 +2,6 @@ import {
   isLocalDate,
   type CalendarEvent,
   type DateFields,
-  type EventScope,
   type InstitutionalEventSnapshot,
   type ProjectedDate,
   type TeachingState,
@@ -54,12 +53,11 @@ export function reviewSupport<
   record: T,
   events: (Pick<DateFields, 'id' | 'name' | 'start' | 'end' | 'category'> &
     Partial<Pick<DateFields, 'effect' | 'notice' | 'deadlineAdjustment' | 'hours'>> & {
-      scope?: EventScope;
       activity?: ActivityRef;
       internal?: true;
     } & Pick<InstitutionalEventSnapshot, 'evidence' | 'institutional' | 'offers'>)[],
 ) {
-  // Local dates always list their scope; institutional ones keep their own offers.
+  // Every date lists the offers it reaches.
   const projected = events.map((event) => ({
     ...event,
     effect: event.effect ?? 'note',

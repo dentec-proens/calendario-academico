@@ -20,7 +20,7 @@ const rehearsal: CalendarEvent = {
   end: civilDate('2027-10-05'),
   effect: 'note',
   category: 'evento',
-  scope: { offers: ['integrado'], confirmed: true },
+  offers: ['integrado'],
   internal: true,
 };
 
@@ -128,6 +128,7 @@ test('saveCalendar keeps an eligible internal date and refuses an ineligible one
             end: '2027-05-04',
             effect: 'note',
             evidence: 'Base',
+            offers: ['integrado'],
             internal: true,
           } as never,
         ],

@@ -388,7 +388,7 @@ describe('links kept without generated activity', () => {
       start: civilDate('2027-06-30'),
       end: civilDate('2027-06-30'),
       effect: 'note',
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
     };
     expect(() => applyDate(semester, event, [])).toThrow(/oferta/);
     expect(() => normalizeOfferCalendar({ ...semester, events: [event] }, semester)).toThrow(

@@ -206,7 +206,7 @@ describe('save boundary', () => {
     for (const change of [
       { activity: annualFinal, name: 'Outra descrição' },
       { activity: annualFinal, end: civilDate('2027-06-23') },
-      { activity: annualFinal, scope: { offers: ['integrado'], confirmed: true } },
+      { activity: annualFinal, offers: ['integrado'] },
     ])
       expect(() => validateLinks(state, swap(change))).not.toThrow();
     expect(() => save(state, swap({ activity: annualFinal, hours: 4 }))).not.toThrow();

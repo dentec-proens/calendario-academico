@@ -25,7 +25,7 @@ const events: CalendarEvent[] = [
     start: civilDate('2026-12-01'),
     end: civilDate('2026-12-01'),
     effect: 'note',
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
     notice: {
       publication: 'published',
       admission: { type: 'transfer', year: 2027, term: 'annual', destinations: [] },
@@ -37,7 +37,7 @@ const events: CalendarEvent[] = [
     start: civilDate('2026-11-01'),
     end: civilDate('2026-11-01'),
     effect: 'note',
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
     notice: {
       publication: 'planned',
       admission: { type: 'regular', year: 2028, term: 'first', destinations: [] },
@@ -49,7 +49,7 @@ const events: CalendarEvent[] = [
     start: civilDate('2026-12-15'),
     end: civilDate('2027-01-12'),
     effect: 'note',
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
   },
   {
     id: 'current',
@@ -57,7 +57,7 @@ const events: CalendarEvent[] = [
     start: civilDate('2027-12-01'),
     end: civilDate('2027-12-01'),
     effect: 'note',
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
     notice: {
       publication: 'planned',
       admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },

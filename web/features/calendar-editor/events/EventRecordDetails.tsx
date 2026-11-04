@@ -56,8 +56,7 @@ export default function EventRecordDetails({
       )}
       {destination && <small>{destination}</small>}
       {!event.institutional &&
-        event.scope &&
-        destinationIssueLines(state, { notice: event.notice, scope: event.scope }).map((issue) => (
+        destinationIssueLines(state, event).map((issue) => (
           <small key={issue.offerId} className="notice-destination-issue">
             {issue.text}
           </small>

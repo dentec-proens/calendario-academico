@@ -66,7 +66,7 @@ function state(): AnnotatedState {
         start: civilDate('2027-03-06'),
         end: civilDate('2027-03-06'),
         effect: 'include' as const,
-        scope: { offers: ['integrado', 'graduacao'], confirmed: true },
+        offers: ['integrado', 'graduacao'],
         evidence: 'Ata manual do sábado',
       },
       {
@@ -75,7 +75,7 @@ function state(): AnnotatedState {
         start: civilDate('2027-03-08'),
         end: civilDate('2027-03-08'),
         effect: 'include' as const,
-        scope: { offers: ['integrado', 'graduacao'], confirmed: true },
+        offers: ['integrado', 'graduacao'],
         evidence: 'Fonte manual da reposição',
       },
       {
@@ -84,7 +84,7 @@ function state(): AnnotatedState {
         start: civilDate('2027-03-08'),
         end: civilDate('2027-03-08'),
         effect: 'exclude' as const,
-        scope: { offers: ['integrado'], confirmed: true },
+        offers: ['integrado'],
         evidence: 'Fonte manual do feriado',
       },
     ],
@@ -117,6 +117,7 @@ const baseHoliday: InstitutionalEventSnapshot = {
   end: civilDate('2027-03-10'),
   effect: 'exclude' as const,
   evidence: 'Resolução institucional automática',
+  offers: ['integrado', 'graduacao'],
 };
 
 function removeManualSources(input: AnnotatedState): AnnotatedState {
@@ -212,7 +213,7 @@ const holiday = (overrides: Partial<AnnotatedEvent> = {}): AnnotatedEvent => ({
   start: civilDate('2027-08-31'),
   end: civilDate('2027-08-31'),
   effect: 'exclude' as const,
-  scope: { offers: ['integrado'], confirmed: true },
+  offers: ['integrado'],
   evidence: 'Lei manual',
   deadlineExtensionCause: 'municipal-holiday',
   ...overrides,
@@ -255,7 +256,7 @@ for (const scenario of [
   },
   {
     name: 'a municipal holiday belonging to another offer',
-    events: [holiday({ scope: { offers: ['graduacao'], confirmed: true } })],
+    events: [holiday({ offers: ['graduacao'] })],
     expected: '2027-08-31',
     source: 'norm',
   },
@@ -322,7 +323,7 @@ test('an exceptional regular notice deadline keeps its date even with no source'
     name: row.name,
     activity: row.activity,
     effect: 'note' as const,
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
     start: civilDate('2027-12-01'),
     end: civilDate('2027-12-01'),
     evidence: 'Publicação manual',
@@ -381,6 +382,7 @@ test('PDF omits manual source text but keeps automatic institutional references 
         date: civilDate('2027-09-03'),
         evidence: 'SEGREDO MANUAL DO AJUSTE',
       },
+      offers: ['integrado'],
     },
     {
       id: 'inst:previous',
@@ -389,6 +391,7 @@ test('PDF omits manual source text but keeps automatic institutional references 
       start: civilDate('2026-11-01'),
       end: civilDate('2026-11-02'),
       evidence: 'REFERÊNCIA INSTITUCIONAL AUTOMÁTICA',
+      offers: ['integrado'],
     },
   ];
   const html = proensLayout(original, events);

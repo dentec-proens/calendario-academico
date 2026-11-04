@@ -71,7 +71,7 @@ test('pending semester stages retain every assessment-dependent binding while ot
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-02'),
       effect: 'note' as const,
-      scope: { offers: ['graduacao'], confirmed: true },
+      offers: ['graduacao'],
       activity: definedStage(prefix, 'graduacao', 'annual', 1),
     })),
   };
@@ -127,7 +127,7 @@ test('dates under “Vínculo a conferir” are never coverage-linked candidates
     end: civilDate('2027-05-17'),
     effect: 'note' as const,
     category: 'limite',
-    scope: { offers: [offer], confirmed: true },
+    offers: [offer],
     activity: definedStage('stage', offer, 'annual', 1),
     assessmentAutoStart: civilDate('2027-02-15'),
   });

@@ -49,8 +49,8 @@ export function saturdayEvents(
       category: 'sabado',
       start: date,
       end: date,
-      // Created by the Saturdays step for every current offer, which the campus confirmed there.
-      scope: { offers: offerIds(state), confirmed: true },
+      // Created by the Saturdays step for every current offer.
+      offers: offerIds(state),
     }));
 }
 

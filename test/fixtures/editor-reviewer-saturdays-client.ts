@@ -14,7 +14,7 @@ record.state.events.push({
   id: 'reviewed-saturday',
   name: 'Reposição de aulas',
   effect: 'include',
-  scope: { offers: ['integrado'], confirmed: true },
+  offers: ['integrado'],
   category: 'sabado',
   start: civilDate('2027-03-06'),
   end: civilDate('2027-03-06'),

@@ -61,7 +61,7 @@ function sameOccurrence(a: CalendarEvent, b: CalendarEvent) {
     a.start === b.start &&
     a.end === b.end &&
     equalValues(a.notice?.admission, b.notice?.admission) &&
-    equalValues([...a.scope.offers].sort(), [...b.scope.offers].sort())
+    equalValues([...a.offers].sort(), [...b.offers].sort())
   );
 }
 
@@ -300,7 +300,7 @@ function applyDate<S extends ActivityState>(
     throw new DomainError('Tipo de evento inválido.');
   // Only a date of the campus, without effect on the count, in an allowed category (art. 18).
   validateInternalDate(event);
-  const modalities = event.scope.offers;
+  const modalities = event.offers;
   if (
     !modalities.length ||
     new Set(modalities).size !== modalities.length ||
@@ -357,7 +357,7 @@ function applyDate<S extends ActivityState>(
     events = events.map((item) => {
       if (
         !isAssessmentStage(item.activity) ||
-        !item.scope.offers.some((modality) => modalities.includes(modality))
+        !item.offers.some((modality) => modalities.includes(modality))
       )
         return item;
       const { assessmentAutoStart: _auto, ...rest } = item;

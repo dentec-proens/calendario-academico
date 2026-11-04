@@ -6,13 +6,6 @@ export type CalendarState = CalendarRecord['state'];
 export type CalendarSave = Awaited<ReturnType<typeof calendars.save>>;
 export type CalendarEvent = CalendarState['events'][number];
 export type OfferId = string;
-/**
- * Local date or institutional date projected in the editor. A local date always has its `scope`;
- * an institutional one keeps the offers it was copied with.
- */
-export type EditorEvent = Omit<CalendarEvent, 'scope'> &
-  Partial<Pick<CalendarEvent, 'scope'>> &
-  Pick<
-    InstitutionalEventSnapshot,
-    'institutional' | 'originalStart' | 'originalEnd' | 'offers' | 'evidence'
-  >;
+/** Local date or institutional date projected in the editor: both list their offers. */
+export type EditorEvent = CalendarEvent &
+  Pick<InstitutionalEventSnapshot, 'institutional' | 'originalStart' | 'originalEnd' | 'evidence'>;

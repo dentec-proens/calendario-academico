@@ -5,12 +5,12 @@
   "cases": [
     {
       "name": "Rascunho Ivaiporã (seção 11)",
-      "contentHash": "c582d56654973331e004292b8d4916eef25f16309bad70032f2f49b27714bd0c",
+      "contentHash": "7a1b9712d2812c00f0ea3fd6f5c9d7918ab549dcea398f01cd123328654728a6",
       "submissions": [
         {
           "sequence": 1,
-          "contentHash": "c582d56654973331e004292b8d4916eef25f16309bad70032f2f49b27714bd0c",
-          "storedContentHash": "c582d56654973331e004292b8d4916eef25f16309bad70032f2f49b27714bd0c",
+          "contentHash": "7a1b9712d2812c00f0ea3fd6f5c9d7918ab549dcea398f01cd123328654728a6",
+          "storedContentHash": "7a1b9712d2812c00f0ea3fd6f5c9d7918ab549dcea398f01cd123328654728a6",
           "equalToContent": true
         }
       ],
@@ -1987,7 +1987,7 @@
     },
     {
       "name": "Rascunho Cascavel (seção 11)",
-      "contentHash": "d0390004eb4abca54a80d6475d2e90dadbea4cba6f13e384f3bd12759710ad40",
+      "contentHash": "b16d4726b7ee6354c5f2f52c43d9f0aad7615f78f6fa559dac63f8b8d09c4341",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {},
@@ -3962,7 +3962,7 @@
     },
     {
       "name": "Vínculos em conflito (fase 1)",
-      "contentHash": "fcf02ab0763e511e927f6e5f8cf4eaf4d15e8db898c6bcf2fe630542b68bcbc4",
+      "contentHash": "7805ab2a19ab2bc7c7a8eea0277e322a438d0d283ba82e4e577088abcfc2bcf8",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:4d8df7f3d46d8d66c801bdd37673811d9d20963803f04eea3e948db7d9aff59a",
       "linksToReview": {
@@ -6295,7 +6295,7 @@
     },
     {
       "name": "Ofertas independentes com base institucional",
-      "contentHash": "87edd1383436428f3662626297bcc69b07da6086ba5184ed80df531cb1ceadf3",
+      "contentHash": "9206b8666a0b4ca5ca5512905d41e01c958fe1ebc8f9cf036f3d69ba02858f95",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:cdfeb9f4315f1082c06f479b00e684e48aa62f9890614e5fe51d49f83e2f1f4b",
       "linksToReview": {},
@@ -11858,7 +11858,7 @@
     },
     {
       "name": "v3 anual integrado, quatro etapas",
-      "contentHash": "8db6bd000d78f34e8a96c730a16f802ebba053ac5fd4c7809c3a0103af8bce7d",
+      "contentHash": "f3e1bde0303e2582fc9d08e7e9904c0b336afdf45e36c40cd7941a6260465579",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:871674fecc0ec857c1340436224f1fa9679ebb175233accbcad4c1326d30131e",
       "linksToReview": {},
@@ -13447,7 +13447,7 @@
     },
     {
       "name": "v3 graduação anual, 2 etapas",
-      "contentHash": "e5d8d868880474afaea03ff393de6646bd6c108f8cacb19320cf1d8bc6dc57f8",
+      "contentHash": "e020f5662fb6f326379cbdaa8f34fa032fa58da79e5748dd745497ebcfc02d66",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -14772,7 +14772,7 @@
     },
     {
       "name": "v3 graduação anual, 3 etapas",
-      "contentHash": "4f4e7c36c2131c88d52c91721d2308517c12252cefcf24a7180e749a600941a4",
+      "contentHash": "5ef0ed1323f45fb60530e40f56df3d3130d1003185c56f9698d802dc3ad2208d",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -16229,7 +16229,7 @@
     },
     {
       "name": "v3 graduação anual, 4 etapas",
-      "contentHash": "6c3c9d6cc9aacf7f75ff5b6ed21a248732fdccfff224b239020d6707858c343d",
+      "contentHash": "b5ffb59a3c2bdf6b212557964cf97269d04c19d46bd5eb5632a55aa5a00912ed",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -17818,7 +17818,7 @@
     },
     {
       "name": "v3 graduação semestral, 2 etapas anuais",
-      "contentHash": "f0190747d574e5a750bb75d0519164084e327e4b807c626fa64099ab374f6da3",
+      "contentHash": "eea1d2cd795a8f039c0dd92c391a4fbf1ef6e010d5132d679d130de261ddc929",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -19476,7 +19476,7 @@
     },
     {
       "name": "v3 graduação semestral, 4 etapas anuais",
-      "contentHash": "2828546101191b6afc51b0513b2cf0a4f3e39819c38d9b6c11e1f47533b9687e",
+      "contentHash": "f859cc739961e0b78e037a5b01bac29055f972416caf185a070a72649df51261",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -21398,7 +21398,7 @@
     },
     {
       "name": "v3 misto com técnico, graduação e pós-graduação",
-      "contentHash": "f44bd2e12364d2c5e52fb7f50924db9a350fbccc5a59409064c778d1b3f432ef",
+      "contentHash": "61332520c3474014dc9045f2a07ca23dce455f5ab13430856d49b460f1f9a70e",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:a78130eeef95b3fe074d955ebda99b12d6a486f9f1182677edc6967b1133e169",
       "linksToReview": {},
@@ -26844,7 +26844,7 @@
     },
     {
       "name": "v3 pós-graduação excluída da norma",
-      "contentHash": "99120a1caa858005b0f0a240314c853347e3d55674be028bcd81a297e2f30e30",
+      "contentHash": "30aad8587d1e5e1c7d19a585a0a3afb5584fe6915fa5873d7919b07831763dfe",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:cd7aeb638d9b144872c5d4a403e7fcfca9824e102065f346bf1fb91df99bfb8e",
       "linksToReview": {},
@@ -27861,7 +27861,7 @@
     },
     {
       "name": "v3 norma própria uniforme",
-      "contentHash": "3867b6c20e696aa2cd698f28f0d13fb8725e0e99316f9a1e9778e1c04c4bb187",
+      "contentHash": "bfb28b0f2e56a99b8d1a8e6da78c6429c7bbc550e7a535d1d75de5a652dbe6b3",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {},
@@ -31072,7 +31072,7 @@
     },
     {
       "name": "v3 escopo sem confirmação",
-      "contentHash": "687b08b6f14f4eba311c8da4207ec32fb7a7f3baac94d5d2fb2e0bcc58cd22fc",
+      "contentHash": "0a9baeda22d26e75d8daf71d2a1e028db2fede46c884e2a685a4954ba629073a",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -32397,7 +32397,7 @@
     },
     {
       "name": "v3 sem etapas definidas",
-      "contentHash": "6a5f7785645154ad6916fce7a922eb55dd1b144b6a8acab47caf272ab116de41",
+      "contentHash": "d78d0d5fecbdb956a913b52d21d346c67eca1b09ce0bd7d6fa36f715eb77e3e6",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {},
@@ -34794,7 +34794,7 @@
     },
     {
       "name": "v3 organização a classificar",
-      "contentHash": "ad909fa18f057bfd0e164a8e67dff114ba808d8f2093f14d87b861c7aff95a51",
+      "contentHash": "4ee048017ee291c4409a591e9a148e36d092f7091166abc7962dbd6897ef3a97",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:871674fecc0ec857c1340436224f1fa9679ebb175233accbcad4c1326d30131e",
       "linksToReview": {},
@@ -37934,7 +37934,7 @@
     },
     {
       "name": "v2 combinado, ingresso legado do segundo semestre",
-      "contentHash": "00e5929357284733ef7b6ad2a78b2f9b3008355e7355bbf3afe314e89389428c",
+      "contentHash": "325e050e5562f2e1bccb03a668a09e9c332bca6b69b53d5cbba664405dc14494",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {},
@@ -40276,7 +40276,7 @@
     },
     {
       "name": "v3 política de 2026, organização anual",
-      "contentHash": "6491d3fae496c9716cfb4274640815418e4f0ef5beff7dfafd510f0d15c2b170",
+      "contentHash": "856e987b7667978798ed3c355cbdbc2eb584d12478ef04b3c953420f258f2993",
       "submissions": [],
       "baseIdentity": "base-v1:fbd202aa5a8a7099ddc7331a0e2a2a5e7c8a8d80c8b1d3f085e3c9d9df460b73",
       "linksToReview": {},
@@ -42637,7 +42637,7 @@
     },
     {
       "name": "v3 política de 2026, organização semestral sem segundo ingresso",
-      "contentHash": "f57f21906925b0260bc0448b44a840a0ccc813651609ea456cca82e4df5be769",
+      "contentHash": "cf8fd7f4d6a580fc19488653c7a8ec9c84a16af86d1073dfb221952c331b2ac4",
       "submissions": [],
       "baseIdentity": "base-v1:c5329abfabc9be76d98020eee591fa36029452ce97da1a0ac1dd0c537d994e7f",
       "linksToReview": {},
@@ -44067,7 +44067,7 @@
     },
     {
       "name": "v3 ano sem política configurada",
-      "contentHash": "f2983bf18feb26bca443c906be42d4e93db51a568aa1cff50784ef689705b9c8",
+      "contentHash": "0d1d497fba9ea6b4abfb3e49f4c4244c50728b910f429d6ca656d258f5f2f067",
       "submissions": [],
       "baseIdentity": "base-v1:7525cad528ca995a7b6a74b2393fead2da69961d67bc4090cb539b8828cfefb6",
       "linksToReview": {},
@@ -49457,12 +49457,12 @@
     },
     {
       "name": "Acréscimo de oferta materializa a abrangência",
-      "contentHash": "c17ad845bac5cf0032024ab302b8061bd849f18c7f34c539377a763960ab6e23",
+      "contentHash": "148bf709b26b1eded044e36e2c5bef85f64971e05ec6ce7ccef5e602dd6aa703",
       "submissions": [
         {
           "sequence": 1,
-          "contentHash": "8a681fa8fb3bd06d07ae5af20152371f46ae361456e8459d61f7484ca56b24b6",
-          "storedContentHash": "8a681fa8fb3bd06d07ae5af20152371f46ae361456e8459d61f7484ca56b24b6",
+          "contentHash": "85d67c74cd2a0c5f3eb8edbff215e05d76058b8c194a30def767c4a47bfe73a9",
+          "storedContentHash": "85d67c74cd2a0c5f3eb8edbff215e05d76058b8c194a30def767c4a47bfe73a9",
           "equalToContent": false
         }
       ],
@@ -55027,7 +55027,7 @@
     },
     {
       "name": "Formas adicionais do inventário",
-      "contentHash": "b70e7c5db2d62d360701df83202c3d721146ebac4ff7f4ad484fd54124839cc5",
+      "contentHash": "4791756afed9134b8a21be2a55178be89d1cb10d0e2e3e7e86ce0271bcc85670",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {
@@ -56066,22 +56066,22 @@
           "activity": "pit-2",
           "offerId": "integrado",
           "applicability": "required",
-          "coverage": "partial",
+          "coverage": "complete",
           "humanReview": "pending",
           "execution": "unclassified",
           "events": ["forms-pit"],
-          "issues": ["Confirme explicitamente as ofertas abrangidas pelo registro legado."],
+          "issues": [],
           "warnings": []
         },
         {
           "activity": "pit-2",
           "offerId": "graduacao",
           "applicability": "required",
-          "coverage": "partial",
+          "coverage": "complete",
           "humanReview": "pending",
           "execution": "unclassified",
           "events": ["forms-pit"],
-          "issues": ["Confirme explicitamente as ofertas abrangidas pelo registro legado."],
+          "issues": [],
           "warnings": []
         },
         {
@@ -56555,10 +56555,10 @@
           "problems": false
         },
         "pit-2": {
-          "status": "partial",
+          "status": "complete",
           "toConfirm": 0,
           "diverges": false,
-          "problems": true
+          "problems": false
         },
         "rit-2": {
           "status": "pending",
@@ -57008,7 +57008,7 @@
     },
     {
       "name": "Formas adicionais sem política configurada",
-      "contentHash": "d42d3fb095ad4b888633e08c20b5b4e79a6a81a810db137a2032092f3ce71b08",
+      "contentHash": "d1a1f553fc0b1ed5a8c93ae89bcca34ce0d2ea6c9c00506be59974eaff3c7ec7",
       "submissions": [],
       "baseIdentity": "base-v1:7edbf254758e3e62cbf6a4d02e608ea868c07e6cee25f614ab8b9e3f33f7cfde",
       "linksToReview": {
@@ -59525,12 +59525,12 @@
     },
     {
       "name": "Vínculo semestral legado em 2027 só anual, com documentos",
-      "contentHash": "51b1f6c7796d7cf67de032adf8503aad5ca96a635d3242bdcff8608d3389bad1",
+      "contentHash": "85de21d83063adef6189a46a8d7475679985156b0bf14056f2d97188c66be33b",
       "submissions": [
         {
           "sequence": 1,
-          "contentHash": "51b1f6c7796d7cf67de032adf8503aad5ca96a635d3242bdcff8608d3389bad1",
-          "storedContentHash": "51b1f6c7796d7cf67de032adf8503aad5ca96a635d3242bdcff8608d3389bad1",
+          "contentHash": "85de21d83063adef6189a46a8d7475679985156b0bf14056f2d97188c66be33b",
+          "storedContentHash": "85de21d83063adef6189a46a8d7475679985156b0bf14056f2d97188c66be33b",
           "equalToContent": true
         }
       ],

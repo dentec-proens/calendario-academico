@@ -1,4 +1,4 @@
-import type { LocalStageEvent, StageEvent, TeachingState } from '../model.ts';
+import type { StageEvent, TeachingState } from '../model.ts';
 import { isAssessmentStage } from '../activities/activity-ref.ts';
 import { evaluateCalendar } from './evaluation.ts';
 import { appliesTo } from '../modalities.ts';
@@ -6,7 +6,7 @@ import { calendarOffers } from '../offers.ts';
 import { linksToReview } from '../activities/links.ts';
 
 export function assessmentDayCounts(
-  state: TeachingState & { events: LocalStageEvent[] },
+  state: TeachingState & { events: StageEvent[] },
   events: StageEvent[],
 ) {
   const result = evaluateCalendar(state, events);

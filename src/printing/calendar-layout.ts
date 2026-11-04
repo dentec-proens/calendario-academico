@@ -8,7 +8,6 @@ import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
 import { categories, eventCategory } from '../domain/calendar/activities/categories.ts';
 import { periodsForOffer } from '../domain/calendar/organization/periods.ts';
 import { associationOffers, labelFor, offerIds } from '../domain/calendar/offers.ts';
-import { listedOffers } from '../domain/calendar/modalities.ts';
 import { executionLabels } from '../domain/calendar/activities/plan-evaluation.ts';
 import { canBeInternal, isInternalDate } from '../domain/calendar/internal-dates.ts';
 
@@ -50,8 +49,8 @@ const fullInterval = (event: PrintEvent) =>
  */
 function eventOffers(state: PrintState, event: PrintEvent) {
   const all = state.offers ? offerIds(state) : [];
-  const listed = listedOffers(event);
-  if (all.length < 2 || !listed || all.every((id) => listed.includes(id))) return '';
+  const listed = event.offers;
+  if (all.length < 2 || all.every((id) => listed.includes(id))) return '';
   const labels = listed.map((id) => labelFor(state, id));
   // A date of one offer whose description already ends with that offer, as the stage dates the
   // organization creates, does not repeat it.
@@ -81,15 +80,12 @@ function mergedEntries(state: PrintState, events: PrintEvent[]): PrintEvent[] {
       publicationDetails(event, state.year),
     ].join('\0');
     const previous = merged.get(key);
-    const offers = listedOffers(event);
-    if (!previous) {
-      merged.set(key, event);
-      continue;
-    }
-    const known = listedOffers(previous);
-    if (!known || !offers) continue;
-    const { scope: _scope, ...rest } = previous;
-    merged.set(key, { ...rest, offers: [...new Set([...known, ...offers])] });
+    merged.set(
+      key,
+      previous
+        ? { ...previous, offers: [...new Set([...previous.offers, ...event.offers])] }
+        : event,
+    );
   }
   return [...merged.values()];
 }

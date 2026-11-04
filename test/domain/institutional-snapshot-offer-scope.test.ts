@@ -51,11 +51,11 @@ const snapshot = {
   start: civilDate('2027-03-02'),
   end: civilDate('2027-03-02'),
   institutional: true,
-  modalities: ['graduacao'],
+  offers: ['curso-a', 'curso-b'],
   evidence: 'Fonte institucional sintética',
 };
 
-test('a persisted institutional snapshot retains normative kind scope for every matching offer', () => {
+test('a persisted institutional snapshot reaches every offer it lists', () => {
   const before = structuredClone(snapshot);
   const counted = evaluateCalendar(state, [snapshot]);
   expect(
@@ -64,7 +64,7 @@ test('a persisted institutional snapshot retains normative kind scope for every 
   expect(snapshot).toEqual(before);
 });
 
-test('duration uses institutional kind scope without treating it as an offer identity', () => {
+test('duration follows the offers the snapshot lists', () => {
   expect(durationEnd('2027-03-01', 5, { ...state, offers: [offers[0]] }, [snapshot])).toBe(
     '2027-03-08',
   );
@@ -73,19 +73,18 @@ test('duration uses institutional kind scope without treating it as an offer ide
   );
 });
 
-test('explicit institutional offer scope takes priority over catalogue kinds', () => {
-  const scoped = { ...snapshot, offers: ['curso-a'] };
-  const counted = evaluateCalendar(state, [scoped]);
+test('the list decides, not the kind of the offer', () => {
+  const listed = { ...snapshot, offers: ['curso-a'] };
+  const counted = evaluateCalendar(state, [listed]);
   expect(counted.byOffer['curso-a'].total).toBe(4);
   expect(counted.byOffer['curso-b'].total).toBe(5);
   expect(counted.byOffer.especializacao.total).toBe(5);
 });
 
-test('catalogue kinds are not a local-record alias and never override explicit identities', () => {
+test('a date reaches an offer only by its identity', () => {
   expect(appliesTo(snapshot, offers[0])).toBe(true);
+  expect(appliesTo(snapshot, 'curso-b')).toBe(true);
   expect(appliesTo(snapshot, offers[2])).toBe(false);
-  expect(appliesTo({ ...snapshot, institutional: false }, offers[2])).toBe(true);
   expect(appliesTo({ ...snapshot, offers: ['especializacao'] }, offers[0])).toBe(false);
   expect(appliesTo({ ...snapshot, offers: ['especializacao'] }, offers[2])).toBe(true);
-  expect(appliesTo({ ...snapshot, offers: [] }, offers[2])).toBe(true);
 });

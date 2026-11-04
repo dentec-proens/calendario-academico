@@ -17,6 +17,12 @@ const state = {
     },
   ],
 };
+/** A date of the only offer of the calendar. */
+const day = (start: string, end = start) => ({
+  start: civilDate(start),
+  end: civilDate(end),
+  offers: ['integrado'],
+});
 test('inclusive vacation duration crosses months and leap day', () => {
   assert.equal(durationEnd('2027-01-02', 30), '2027-01-31');
   assert.equal(durationEnd('2028-02-20', 15), '2028-03-05');
@@ -26,8 +32,8 @@ test('inclusive vacation duration crosses months and leap day', () => {
 test('teaching duration excludes holidays and includes explicit Saturdays', () => {
   assert.equal(durationEnd('2027-03-01', 5, state), '2027-03-05');
   const events = [
-    { start: civilDate('2027-03-05'), end: civilDate('2027-03-05'), effect: 'exclude' as const },
-    { start: civilDate('2027-03-06'), end: civilDate('2027-03-06'), effect: 'include' as const },
+    { ...day('2027-03-05'), effect: 'exclude' as const },
+    { ...day('2027-03-06'), effect: 'include' as const },
   ];
   assert.equal(durationEnd('2027-03-01', 5, state, events), '2027-03-06');
   assert.throws(() => durationEnd('2027-03-01', 5, { ...state, weekConfirmed: false }));
@@ -61,7 +67,7 @@ test('preserves 100 days per semester as exclusions change and never overlaps pe
   const before = JSON.stringify(s),
     base = recalculatePeriods(s, []),
     changed = recalculatePeriods(s, [
-      { effect: 'exclude' as const, start: civilDate('2027-03-01'), end: civilDate('2027-03-05') },
+      { ...day('2027-03-01', '2027-03-05'), effect: 'exclude' as const },
     ]);
   assert(changed[0].end > base[0].end);
   assert.equal(changed[1].end, base[1].end);

@@ -12,7 +12,8 @@ import * as validators from '../../convex/validators.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { retiredOfferFields } from '../helpers/retired-fields.ts';
 
-const institutional = (id: string, start: string, offers?: string[]) => ({
+const allOffers = ['integrado', 'graduacao', 'graduacao-2', 'graduacao-3'];
+const institutional = (id: string, start: string, offers = allOffers) => ({
   id,
   name: `Evento ${id}`,
   start: civilDate(start),
@@ -20,7 +21,7 @@ const institutional = (id: string, start: string, offers?: string[]) => ({
   effect: 'exclude' as const,
   evidence: 'Base sintética',
   institutional: true,
-  ...(offers ? { offers } : {}),
+  offers,
 });
 
 function side(change: (value: DiffSide) => void = () => {}): DiffSide {
@@ -70,7 +71,7 @@ test('items are added, removed and changed by id in offers, periods and events',
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-01'),
       effect: 'note' as const,
-      scope: { offers: value.state.offers.map((offer) => offer.id), confirmed: true },
+      offers: value.state.offers.map((offer) => offer.id),
     });
   });
   const diff = compareContents(side(), after);
@@ -111,7 +112,7 @@ test('observances by key, week and vacations field by field, derived vacation ev
       start: civilDate('2027-01-04'),
       end: civilDate(end),
       effect: 'exclude' as const,
-      scope: { offers: value.state.offers.map((offer) => offer.id), confirmed: false },
+      offers: value.state.offers.map((offer) => offer.id),
     });
   };
   const before = side((value) => vacations(value, '2027-01-29'));
@@ -141,9 +142,9 @@ test('observances by key, week and vacations field by field, derived vacation ev
   expect(diff.base.events, 'the observance belongs to the campus, not to the base').toEqual([]);
 });
 
-test('confirming the scope alone is a change; offer order and an offer inclusion are none', () => {
+test('offer order is no change; a narrower list shows as Ofertas and an offer inclusion is none', () => {
   const ids = calendarOffersFixture().offers.map((offer) => offer.id);
-  const note = (offers: string[], confirmed: boolean) => (value: DiffSide) => {
+  const note = (offers: string[]) => (value: DiffSide) => {
     value.state.offers = value.state.offers.slice(0, 3);
     value.state.events.push({
       id: 'note',
@@ -151,31 +152,13 @@ test('confirming the scope alone is a change; offer order and an offer inclusion
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-01'),
       effect: 'note' as const,
-      scope: { offers, confirmed },
+      offers,
     });
   };
-  const unconfirmed = side(note(ids.slice(0, 3), false));
-  const confirmed = side(note(ids.slice(0, 3), true));
+  const listed = side(note(ids.slice(0, 3)));
   // Offers are always listed: only their set is compared, not their order.
-  expect(
-    compareContents(confirmed, side(note([...ids.slice(0, 3)].reverse(), true))).unchanged,
-  ).toBe(true);
-  // Saving the form confirms the scope: a fact of its own, shown even as the only change.
-  const confirmation = compareContents(unconfirmed, confirmed);
-  expect(confirmation.unchanged).toBe(false);
-  expect(confirmation.events).toEqual([
-    {
-      kind: 'changed',
-      id: 'note',
-      name: 'Nota',
-      fields: [
-        { field: 'scope.confirmed', label: 'Abrangência confirmada', before: false, after: true },
-      ],
-    },
-  ]);
-  expect(describeValue('scope.confirmed', false)).toBe('Não');
-  expect(describeValue('scope.confirmed', true)).toBe('Sim');
-  const narrowed = compareContents(confirmed, side(note(ids.slice(0, 2), true)));
+  expect(compareContents(listed, side(note([...ids.slice(0, 3)].reverse()))).unchanged).toBe(true);
+  const narrowed = compareContents(listed, side(note(ids.slice(0, 2))));
   expect(narrowed.events[0].fields.map((field) => field.label)).toEqual(['Ofertas']);
   const included = side((value) => {
     value.institutionalSnapshot[1] = { ...value.institutionalSnapshot[1], offers: ids };
@@ -251,7 +234,7 @@ test('the effect aggregates teaching days by offer and term, and a side without 
       start: civilDate('2027-03-02'),
       end: civilDate('2027-03-03'),
       effect: 'exclude' as const,
-      scope: { offers: value.state.offers.map((offer) => offer.id), confirmed: true },
+      offers: value.state.offers.map((offer) => offer.id),
     });
     value.state.rulesetVersion = 'outra';
   });
@@ -332,7 +315,7 @@ test('a notice change shows its publication and its admission with destinations 
       start: civilDate('2027-05-03'),
       end: civilDate('2027-05-03'),
       effect: 'note' as const,
-      scope: { offers: ['integrado', 'graduacao'], confirmed: true },
+      offers: ['integrado', 'graduacao'],
       notice: {
         publication,
         admission: {

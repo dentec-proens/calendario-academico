@@ -91,7 +91,7 @@ test('v4 JSON copies keep events and dates while discarding retired PDF links an
     end: '2027-03-10',
     effect: 'note',
     evidence: 'Ata do campus',
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
   };
   const input = {
     ...draft(),

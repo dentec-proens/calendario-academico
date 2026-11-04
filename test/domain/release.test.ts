@@ -58,14 +58,14 @@ test('definitive release requires every reviewed criterion, current versions and
       start: civilDate('2027-02-01'),
       end: civilDate('2027-02-01'),
       effect: 'note' as const,
-      scope: { offers: record.state.offers.map((offer) => offer.id), confirmed: true },
+      offers: record.state.offers.map((offer) => offer.id),
       category: 'institucional',
     }));
   record.state.events.push(
     ...activityPlan(record.state).map((r) => ({
       id: r.id,
       activity: r.activity,
-      scope: { offers: r.offerId ? [r.offerId] : ['integrado'], confirmed: true },
+      offers: r.offerId ? [r.offerId] : ['integrado'],
       name: r.name,
       start: civilDate('2027-02-01'),
       end: civilDate('2027-02-01'),
@@ -112,7 +112,7 @@ test('definitive release requires every reviewed criterion, current versions and
           term: r.term ?? 'annual',
           destinations:
             r.admissionType === 'transfer'
-              ? event.scope.offers.map((offerId) => ({ offerId, periodId: 'year' }))
+              ? event.offers.map((offerId) => ({ offerId, periodId: 'year' }))
               : [],
         },
       };

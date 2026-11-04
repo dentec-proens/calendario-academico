@@ -54,7 +54,7 @@ test('an exclusion uses the offer identity while minimums use that offer scope',
     id: 'only-engineering',
     name: 'Impedimento exclusivo da engenharia',
     effect: 'exclude' as const,
-    scope: { offers: ['graduacao-2'], confirmed: true },
+    offers: ['graduacao-2'],
     start: civilDate('2027-02-02'),
     end: civilDate('2027-02-02'),
   });

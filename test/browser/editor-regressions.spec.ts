@@ -335,7 +335,7 @@ test('stage editing and activity changes always reveal the same draft in its des
       end: '2027-03-12',
       effect: 'note',
       category: 'limite',
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
     });
     record.version++;
     return window.publishReviewerCalendar();

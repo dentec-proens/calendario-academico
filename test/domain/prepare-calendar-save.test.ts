@@ -25,7 +25,7 @@ function calendar() {
         end: civilDate('2027-03-01'),
         effect: 'note' as const,
         // Converted from a v4 date without offers.
-        scope: { offers: ['integrado'], confirmed: false },
+        offers: ['integrado'],
       },
       {
         id: 'chosen',
@@ -33,7 +33,7 @@ function calendar() {
         start: civilDate('2027-03-02'),
         end: civilDate('2027-03-02'),
         effect: 'note' as const,
-        scope: { offers: ['integrado'], confirmed: true },
+        offers: ['integrado'],
       },
     ],
     offers: [
@@ -111,8 +111,10 @@ test('accepting a changed institutional base recalculates unchanged input and pr
   });
   expect(changed.state.periods[0].end).toBe('2027-03-08');
   expect(changed.unchanged).toBe(false);
+  // The catalogue's kinds resolve to offers in the copy, which keeps none of them.
+  const { modalities: _kinds, ...copied } = holiday;
   expect(changed.institutionalSnapshot).toEqual([
-    { ...holiday, offers: ['integrado'], id: 'inst:holiday', institutional: true },
+    { ...copied, offers: ['integrado'], id: 'inst:holiday', institutional: true },
   ]);
   expect({ previous, holiday }).toEqual(before);
 });
@@ -129,7 +131,7 @@ test('malformed civil dates remain structural errors rather than being relabelle
   ).toThrow(TypeError);
 });
 
-test('adding an offer neither extends nor confirms any scope and does not mutate either input', () => {
+test('adding an offer does not extend any list of offers and does not mutate either input', () => {
   const previous = calendar();
   const draft = offerOrganizationDraft(previous, 'graduacao');
   draft.organization = 'anual';
@@ -154,21 +156,18 @@ test('adding an offer neither extends nor confirms any scope and does not mutate
     catalogue: { events: [] },
     recalculate: false,
   });
-  // Every form of scope stays as recorded: same offers, same confirmation.
+  // Every date keeps the offers it listed.
   for (const id of ['legacy', 'chosen'])
-    expect(prepared.state.events.find((event) => event.id === id)?.scope).toEqual(
-      previous.events.find((event) => event.id === id)?.scope,
+    expect(prepared.state.events.find((event) => event.id === id)?.offers).toEqual(
+      previous.events.find((event) => event.id === id)?.offers,
     );
-  // A date always lists its offers: an empty scope is refused, never read as every offer.
+  // A date always lists its offers: an empty list is refused, never read as every offer.
   expect(() =>
     prepareOfferCalendarSave(
       previous,
       {
         ...proposed,
-        events: [
-          ...proposed.events,
-          { ...previous.events[0], id: 'new-unscoped', scope: { offers: [], confirmed: true } },
-        ],
+        events: [...proposed.events, { ...previous.events[0], id: 'new-unscoped', offers: [] }],
       },
       { storedContent: calendarContent(previous), catalogue: { events: [] }, recalculate: false },
     ),

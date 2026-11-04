@@ -46,28 +46,19 @@ export function teacherVacations(year: number, periodsInput: Partial<VacationPer
 
 /**
  * Vacation dates regenerated from the periods (`teacherVacations`). They reach every current offer,
- * since vacations hold for all of them, and keep the link and the confirmation recorded for the
- * same date ID (`confirmed: false` for a new one); this is the documented exception to “adding an
- * offer never extends a scope”. Later entries of `recorded` win; a link is
- * never lost because a later entry lacks it.
+ * since vacations hold for all of them, and keep the link recorded for the same date ID; this is
+ * the documented exception to “adding an offer never extends a date”. Later entries of `recorded`
+ * win; a link is never lost because a later entry lacks it.
  */
 export function regeneratedVacations(
   generated: ReturnType<typeof teacherVacations>['events'],
   offers: readonly string[],
-  recorded: readonly Pick<CalendarEvent, 'id' | 'activity' | 'scope'>[],
+  recorded: readonly Pick<CalendarEvent, 'id' | 'activity'>[],
 ): CalendarEvent[] {
   const links = new Map<string, NonNullable<CalendarEvent['activity']>>();
-  const confirmed = new Map<string, boolean>();
-  for (const event of recorded) {
-    if (event.activity) links.set(event.id, event.activity);
-    if (event.scope) confirmed.set(event.id, event.scope.confirmed);
-  }
+  for (const event of recorded) if (event.activity) links.set(event.id, event.activity);
   return generated.map((event) => {
     const activity = links.get(event.id);
-    return {
-      ...event,
-      ...(activity ? { activity } : {}),
-      scope: { offers: [...offers], confirmed: confirmed.get(event.id) ?? false },
-    };
+    return { ...event, ...(activity ? { activity } : {}), offers: [...offers] };
   });
 }

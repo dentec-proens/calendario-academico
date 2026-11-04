@@ -23,6 +23,7 @@ const base: InstitutionalEventSnapshot = {
   end: civilDate('2027-03-10'),
   effect: 'exclude',
   evidence: 'Resolução institucional automática',
+  offers: ['integrado'],
 };
 // Local dates never persist `evidence` or `institutional`; the extra fields model a forged or
 // stray object to prove neither the ID nor a copied flag decides the origin.
@@ -32,7 +33,7 @@ const lookalike = {
   start: civilDate('2027-03-11'),
   end: civilDate('2027-03-11'),
   effect: 'exclude',
-  scope: { offers: ['integrado'], confirmed: true },
+  offers: ['integrado'],
   evidence: 'SEGREDO MANUAL',
   institutional: true,
   deadlineExtensionCause: 'municipal-holiday',

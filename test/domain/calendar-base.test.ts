@@ -20,7 +20,7 @@ const event = {
   end: civilDate('2027-04-01'),
   effect: 'exclude' as const,
   evidence: 'Portaria',
-  modalities: ['integrado', 'graduacao'],
+  offers: ['integrado', 'graduacao'],
 };
 const document = {
   id: 'd',
@@ -36,7 +36,7 @@ const snapshot = { revision: 1, events: [event], documents: [document] };
 test('equivalent revisions ignore ordering, operational metadata and offers outside the calendar', () => {
   const current = {
     revision: 3,
-    events: [{ ...event, modalities: ['integrado'], active: true }],
+    events: [{ ...event, offers: ['integrado'], active: true }],
     documents: [{ ...document, storageId: 'other', publishedAt: 'now' }],
   };
   const result = inspect(snapshot, current, scope);

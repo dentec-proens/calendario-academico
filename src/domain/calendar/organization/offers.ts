@@ -190,7 +190,7 @@ export function organizationDraftStages(
   });
 }
 
-/** Freeze formerly implicit event scope before the calendar gains another offer. */
+/** The calendar with one more offer: the dates it already has keep the offers they list. */
 function withOffer<S extends ActivityState>(
   state: S,
   modality: string,
@@ -199,7 +199,6 @@ function withOffer<S extends ActivityState>(
 ): S {
   if (offerIds(state).includes(modality)) return state;
   if (!newOffer || newOffer.id !== modality) throw new DomainError('Oferta inválida.');
-  // Adding an offer neither extends nor confirms the scope of existing dates.
   return { ...state, offers: [...state.offers, offerAsDrafted(newOffer, draft)] };
 }
 
@@ -533,7 +532,7 @@ function organize<S extends ActivityState>(
         effect: 'note',
         category: 'limite',
         // A stage the campus fills in the organization form belongs to its offer, by its choice.
-        scope: { offers: [modality], confirmed: true },
+        offers: [modality],
       });
   }
   // Links are never removed here: retired, duplicate or incompatible dates keep their link and
@@ -549,10 +548,8 @@ function organize<S extends ActivityState>(
           end: civilDate(stage.end),
           effect: 'note' as const,
           category: event.category ?? 'limite',
-          // The editor opens a stage only in this form, so saving it is the campus's choice of
-          // offer: it confirms a scope converted unconfirmed, as the date form
-          // does for other dates. Saving the calendar alone never confirms.
-          scope: { offers: [modality], confirmed: true },
+          // The editor opens a stage only in this form, so it belongs to the offer being organized.
+          offers: [modality],
         },
       ];
     }

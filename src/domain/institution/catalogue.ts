@@ -188,6 +188,10 @@ export function preview2027SourceUpdate(events: CatalogueEvent[]) {
   return { year: 2027, updates, conflicts };
 }
 
+/**
+ * The catalogue dates a calendar inherits: each lists the offers of its kinds (`modalities`; an
+ * empty list means every kind) and leaves the catalogue's own `modalities` behind.
+ */
 export function inheritedEvents<
   T extends {
     id: string;
@@ -199,17 +203,11 @@ export function inheritedEvents<
 >(catalogue: { events: T[] }, year: number, offers: CalendarOffer[]) {
   const applies = (event: T, kind: string) =>
     !event.modalities?.length || event.modalities.includes(kind);
-  return catalogue.events
-    .filter(
-      (e) =>
-        e.active &&
-        Number(e.start.slice(0, 4)) === year &&
-        offers.some((offer) => applies(e, offer.kind)),
-    )
-    .map((e) => ({
-      ...e,
-      id: `inst:${e.id}`,
-      institutional: true,
-      offers: offers.filter((offer) => applies(e, offer.kind)).map((offer) => offer.id),
-    }));
+  return catalogue.events.flatMap((event) => {
+    if (!event.active || Number(event.start.slice(0, 4)) !== year) return [];
+    const reached = offers.filter((offer) => applies(event, offer.kind)).map((offer) => offer.id);
+    if (!reached.length) return [];
+    const { modalities: _modalities, ...rest } = event;
+    return [{ ...rest, id: `inst:${event.id}`, institutional: true as const, offers: reached }];
+  });
 }

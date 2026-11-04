@@ -12,7 +12,6 @@ import type {
   CalendarOffer,
   CalendarPeriod,
   DateFields,
-  EventScope,
 } from './model.ts';
 import { evaluateCalendar } from './counting/evaluation.ts';
 import { projectDates } from './model.ts';
@@ -84,8 +83,7 @@ export const fieldLabels = {
     activity: 'Atividade vinculada',
     // Marking or unmarking an internal date changes the official document.
     internal: 'Visibilidade',
-    'scope.offers': 'Ofertas',
-    'scope.confirmed': 'Abrangência confirmada',
+    offers: 'Ofertas',
     hours: 'Carga horária',
     assessmentAutoStart: 'Início automático da etapa',
     'notice.publication': 'Situação de publicação',
@@ -170,16 +168,12 @@ const sortedIds = (ids: readonly string[]) => [...ids].sort();
 
 /**
  * Offers and destinations by offer are compared in identifier order, so only a change of the set
- * or of a period shows up. Local dates always list their offers (`scope`); a snapshot entry keeps
- * the offers it was copied with.
+ * or of a period shows up. Local dates and snapshot entries list their offers (`offers`).
  */
-function comparable<
-  T extends Pick<DateFields, 'notice'> & { scope?: EventScope; offers?: string[] },
->(item: T): T {
+function comparable<T extends Pick<DateFields, 'notice'> & { offers?: string[] }>(item: T): T {
   const admission = item.notice?.admission;
   return {
     ...item,
-    ...(item.scope && { scope: { ...item.scope, offers: sortedIds(item.scope.offers) } }),
     ...(item.offers && { offers: sortedIds(item.offers) }),
     ...(admission && {
       notice: {
@@ -387,7 +381,7 @@ export function compareContents(before: DiffSide, after: DiffSide) {
   const eventSide = (side: DiffSide) =>
     side.state.events.filter((event) => !derivedVacation(event)).map(comparable);
   const eventKey = (event: CalendarEvent) =>
-    event.activity ? `${activityKey(event.activity)}|${event.scope.offers.join(',')}` : undefined;
+    event.activity ? `${activityKey(event.activity)}|${event.offers.join(',')}` : undefined;
   // A different link is shown by the names of the rows each side generates, never by its key.
   const events = compareItems(eventSide(before), eventSide(after), fieldLabels.event, eventKey).map(
     (change) => ({
@@ -534,13 +528,12 @@ export function describeValue(field: string, value: unknown, state?: ActivitySta
   if (value === undefined || value === null || value === '') return '—';
   if (field === 'notice.publication' && (value === 'planned' || value === 'published'))
     return executionLabels[value];
-  if (field === 'scope.confirmed' && typeof value === 'boolean') return value ? 'Sim' : 'Não';
   if (typeof value === 'boolean') return value ? 'sim' : 'não';
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))
     return value.split('-').reverse().join('/');
   if (field === 'weekdays' && Array.isArray(value))
     return value.map((day) => weekdayNames[Number(day)] ?? String(day)).join(', ');
-  if ((field === 'offers' || field === 'scope.offers') && Array.isArray(value))
+  if (field === 'offers' && Array.isArray(value))
     return value.map((id) => (state ? labelFor(state, String(id)) : String(id))).join(', ');
   if (Array.isArray(value)) return value.map((item) => describeValue('', item, state)).join(', ');
   if (typeof value === 'object') {

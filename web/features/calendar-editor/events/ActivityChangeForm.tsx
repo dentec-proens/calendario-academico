@@ -107,7 +107,7 @@ export default function ActivityChangeForm({
                 <dd>
                   {preview.date.name} · {civilDate(preview.date.start)} a{' '}
                   {civilDate(preview.date.end)} ·{' '}
-                  {preview.date.scope.offers.map((offer) => labelFor(state, offer)).join(', ')} (sem
+                  {preview.date.offers.map((offer) => labelFor(state, offer)).join(', ')} (sem
                   alteração)
                 </dd>
                 <dt>Vínculo atual</dt>

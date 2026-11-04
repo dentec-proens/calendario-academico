@@ -161,7 +161,7 @@ for (const width of [1440, 390])
       effect: 'note',
       category: 'evento',
       activity: onceLink('family-meeting'),
-      scope: { offers: ['integrado', 'subsequente'], confirmed: true },
+      offers: ['integrado', 'subsequente'],
     });
     await open(page, fixtureServer, state);
     const panel = page.locator('#event-panel');
@@ -460,7 +460,7 @@ for (const width of [1440, 390])
       )
       .toMatchObject({
         activity: { activityId: 'final', term: 'first' },
-        scope: { offers: ['graduacao-2', 'graduacao-3'], confirmed: true },
+        offers: ['graduacao-2', 'graduacao-3'],
       });
     await page.locator('#close-event-panel').click();
     // A new date of the campus starts with every offer of the calendar.

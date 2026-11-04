@@ -122,7 +122,7 @@ export function normalizeOfferCalendar(
       );
   }
   const ids = new Set<string>();
-  const scope = (values: string[]) => {
+  const listedOffers = (values: string[]) => {
     if (
       !values.length ||
       values.length > calendarLimits.maximumOffers ||
@@ -146,7 +146,7 @@ export function normalizeOfferCalendar(
         period.targetDays > calendarLimits.maximumTargetDays)
     )
       fail('Meta de dias letivos inválida.');
-    scope(period.association.offers);
+    listedOffers(period.association.offers);
     const organization = period.association.term === 'annual' ? 'anual' : 'semestral';
     if (period.association.offers.some((id) => offerFor(s, id)?.organization !== organization))
       fail('Associação do período incompatível com a oferta e seu ciclo.');
@@ -172,8 +172,7 @@ export function normalizeOfferCalendar(
     text(event.name, 160);
     if (ids.has(event.id) || event.id.startsWith('inst:')) fail('Identificador inválido.');
     ids.add(event.id);
-    scope(event.scope.offers);
-    if (typeof event.scope.confirmed !== 'boolean') fail('Abrangência da data inválida.');
+    listedOffers(event.offers);
     const old = before.get(event.id);
     validateActivityRecord(s, event, {
       // Edited stage intervals are checked against their cycle by `validateLinks`.

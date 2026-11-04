@@ -62,7 +62,7 @@ export function teachingDayBreakdown(
   const offer = offerFor(state, modality);
   const count = offer ? stageCount(offer) : 0;
   const local = (events || []).flatMap((e) =>
-    e.id !== undefined && e.scope && !e.institutional ? [{ ...e, id: e.id, scope: e.scope }] : [],
+    e.id !== undefined && !e.institutional ? [{ ...e, id: e.id }] : [],
   );
   // Stage dates under “Vínculo a conferir” are not distributed. A stage out of its cycle keeps
   // its row, with its dates and a note, but no total (below).

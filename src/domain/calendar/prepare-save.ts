@@ -35,7 +35,7 @@ export function prepareOfferCalendarSave<E extends DateFields & { active: boolea
   const previousIds = previous.offers
     .map((offer) => offer.id)
     .filter((id) => proposed.offers.some((offer) => offer.id === id));
-  // Adding an offer neither extends nor confirms the scope of existing dates.
+  // Adding an offer does not extend the offers existing dates list.
   let state = normalizeOfferCalendar({ ...proposed, campus: previous.campus ?? '' }, previous);
   validateAddedOffers(previousIds, state);
   const inherited = inheritedEvents(context.catalogue, previous.year, state.offers);

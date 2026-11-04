@@ -40,5 +40,5 @@ export type PrintEvent = Pick<
   CalendarEvent,
   'start' | 'end' | 'category' | 'notice' | 'deadlineAdjustment'
 > &
-  Partial<Pick<CalendarEvent, 'effect' | 'id' | 'name' | 'scope' | 'activity' | 'internal'>> &
+  Partial<Pick<CalendarEvent, 'effect' | 'id' | 'name' | 'activity' | 'internal'>> &
   Pick<InstitutionalEventSnapshot, 'institutional' | 'evidence' | 'offers'>;

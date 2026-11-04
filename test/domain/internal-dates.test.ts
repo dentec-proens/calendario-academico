@@ -42,7 +42,7 @@ const campusDate = (changes: Partial<Input> = {}): Input => ({
   end: civilDate('2027-05-06'),
   effect: 'note',
   category: 'evento',
-  scope: { offers: ['integrado'], confirmed: true },
+  offers: ['integrado'],
   ...changes,
 });
 const internal = (changes: Partial<Input> = {}) => campusDate({ internal: true, ...changes });
@@ -90,6 +90,7 @@ describe('eligibility (single rule over the effective category)', () => {
           effect: 'note' as const,
           category: 'evento',
           evidence: 'Base',
+          offers: ['integrado'],
         },
       ],
       [],
@@ -138,7 +139,7 @@ describe('date commands', () => {
       id: before.id,
       start: before.start,
       end: before.end,
-      scope: before.scope,
+      offers: before.offers,
     });
     expect(dateOf(unmarked).internal).toBeUndefined();
     // Changing the effect of an internal date to one that counts is refused, never unmarked.
@@ -257,7 +258,7 @@ describe('review evidence', () => {
     end: civilDate('2027-10-05'),
     effect: 'note' as const,
     category: 'evento',
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
     evidence: '',
     ...extra,
   });

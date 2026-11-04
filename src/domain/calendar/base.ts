@@ -1,4 +1,4 @@
-import { inheritedEvents } from '../institution/catalogue.ts';
+import { inheritedEvents, type CatalogueEvent } from '../institution/catalogue.ts';
 import { applyObservances, type ObservanceState } from './observances.ts';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
@@ -41,11 +41,7 @@ export interface BaseScope {
 const scopeKinds = (scope: BaseScope): string[] => kinds({ offers: scope.offers });
 
 function eventKinds(event: InstitutionalEventSnapshot, scope: BaseScope): string[] {
-  if (event.offers)
-    return scope.offers
-      .filter((offer) => event.offers!.includes(offer.id))
-      .map((offer) => offer.kind);
-  return event.modalities ?? scopeKinds(scope);
+  return scope.offers.filter((offer) => event.offers.includes(offer.id)).map((offer) => offer.kind);
 }
 
 /**
@@ -233,7 +229,7 @@ export function referenceIsCurrent(
 
 /** Inspect removals even when a campus adjustment refers to an event no longer published.
  * Applying the calendar still validates that adjustment through the normal commands. */
-export function applicableEvents<T extends InstitutionalEventSnapshot & { active: boolean }>(
+export function applicableEvents<T extends CatalogueEvent>(
   catalogue: { events: T[] },
   scope: BaseScope & ObservanceState,
 ) {

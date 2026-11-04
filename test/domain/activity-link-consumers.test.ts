@@ -99,7 +99,7 @@ describe('PIT, RIT and teaching plan per reference semester (art. 11, XII)', () 
           effect: 'note' as const,
           category: 'prazo',
           activity: semesterLink(activityId, semester),
-          scope: { offers, confirmed: true },
+          offers,
         })),
       );
       const state: ActivityState = {

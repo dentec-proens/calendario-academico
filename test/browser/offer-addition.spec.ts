@@ -71,14 +71,14 @@ function teachingDays(state: Window['editorTest']['record']['state'], offerId: s
 }
 
 for (const width of [1440, 390]) {
-  test(`a new offer neither extends nor confirms earlier scopes and keeps their count at ${width}px`, async ({
+  test(`a new offer does not extend the offers of earlier dates and keeps their count at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(await fixtureServer('editor'));
     await expect(page.locator('#record-title')).toBeVisible();
-    // A date converted from format 4 without offers (unconfirmed) and one chosen by the campus.
+    // Two holidays of the only offer, which the new one does not join.
     await page.evaluate(async () => {
       const { record } = window.editorTest;
       record.state.periods = [
@@ -98,7 +98,7 @@ for (const width of [1440, 390]) {
           end: '2027-03-10',
           effect: 'exclude',
           category: 'feriado',
-          scope: { offers: ['integrado'], confirmed: false },
+          offers: ['integrado'],
         },
         {
           id: 'chosen-holiday',
@@ -107,7 +107,7 @@ for (const width of [1440, 390]) {
           end: '2027-03-11',
           effect: 'exclude',
           category: 'recesso',
-          scope: { offers: ['integrado'], confirmed: true },
+          offers: ['integrado'],
         },
       ];
       record.version++;

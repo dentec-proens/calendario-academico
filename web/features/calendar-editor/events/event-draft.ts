@@ -136,7 +136,7 @@ export const emptyEvent = (offers: OfferId[]): EventValues => ({
 });
 export function eventValues(event: CalendarEvent): EventValues {
   const admission = event.notice?.admission;
-  const dateOffers = event.scope.offers;
+  const dateOffers = event.offers;
   return {
     name: event.name,
     start: event.start,
@@ -210,11 +210,10 @@ export function eventFromValues(
       target.base && !target.base.category && value.category === eventCategory(target.base)
         ? undefined
         : value.category,
-    // Saving the date form confirms the offers chosen in it.
-    scope: { offers: value.offers, confirmed: true },
+    offers: value.offers,
     hours: value.hours ? Number(value.hours) : undefined,
     deadlineExtensionCause: value.deadlineExtensionCause || undefined,
-    // Marking or unmarking keeps ID, dates and scope; the command checks eligibility.
+    // Marking or unmarking keeps ID, dates and offers; the command checks eligibility.
     internal: value.internal ? true : undefined,
   };
 }

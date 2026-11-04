@@ -69,16 +69,6 @@ export interface AdmissionNotice {
 /** How a date affects the count of school days (arts. 4º and 5º). */
 export type EventEffect = 'include' | 'exclude' | 'note';
 export const eventEffects: readonly EventEffect[] = ['include', 'exclude', 'note'];
-/**
- * Offers a local date reaches. `offers` is always listed and drives the day
- * count; `confirmed` records that the campus chose them (saving the date form). Adding an offer to
- * the calendar neither extends nor confirms an existing scope. Coverage under a policy with
- * `explicitRecordOffers` counts only a confirmed scope.
- */
-export interface EventScope {
-  offers: string[];
-  confirmed: boolean;
-}
 /** Fields shared by local dates and institutional snapshot entries. */
 export interface DateFields {
   id: string;
@@ -95,7 +85,8 @@ export interface DateFields {
 }
 /** A local date of the calendar (`state.events`). */
 export interface CalendarEvent extends DateFields {
-  scope: EventScope;
+  /** Offers the date reaches: never empty. A linked date counts as fulfilment for every one. */
+  offers: string[];
   /** Activity the date serves; absent for a campus date. */
   activity?: ActivityRef;
   /**
@@ -107,15 +98,14 @@ export interface CalendarEvent extends DateFields {
 }
 /**
  * Institutional date copied into a calendar (`institutionalSnapshot`) or projected in the editor.
- * Its scope stays by offer type (`modalities`) or by the offers listed when it was copied
- * (`offers`); it has no confirmation. `originalStart`/`originalEnd` keep the base date when an
- * observance moved it; local dates (`state.events`) never carry these fields.
+ * It lists the offers it reached when it was copied (`offers`, never empty).
+ * `originalStart`/`originalEnd` keep the base date when an observance moved it; local dates
+ * (`state.events`) never carry these fields.
  */
 export interface InstitutionalEventSnapshot extends DateFields {
-  offers?: string[];
+  offers: string[];
   evidence?: string;
   source?: string;
-  modalities?: string[];
   originalStart?: CivilDate;
   originalEnd?: CivilDate;
   institutional?: boolean;
@@ -212,10 +202,8 @@ export type VacationPeriods = {
 export type CountingEvent = Pick<
   InstitutionalEventSnapshot,
   'id' | 'effect' | 'start' | 'end' | 'offers' | 'evidence' | 'institutional'
-> & { scope?: EventScope };
+>;
 export type StageEvent = CountingEvent & Pick<CalendarEvent, 'activity' | 'assessmentAutoStart'>;
-/** A local stage date, with its listed scope. */
-export type LocalStageEvent = StageEvent & Pick<CalendarEvent, 'scope'>;
 
 /** An institutional date in the editor projection, marked by its container. */
 export type InstitutionalDate = InstitutionalEventSnapshot & { institutional: true };
@@ -224,7 +212,7 @@ export type ProjectedDate = CalendarEvent | InstitutionalDate;
 /** A local date of the projection: the origin comes only from the container. */
 export const isLocalDate = <T extends ProjectedDate>(
   event: T,
-): event is Extract<T, CalendarEvent> =>
+): event is Exclude<T, { institutional: true }> =>
   (event as { institutional?: boolean }).institutional !== true;
 
 /**

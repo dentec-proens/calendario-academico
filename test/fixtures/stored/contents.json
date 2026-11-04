@@ -1,7 +1,7 @@
 {
   "capture": {
     "sourceCommit": "bd9826b",
-    "description": "Documentos de calendarContents e calendarSubmissions de test/fixtures/v4 (43aff30, com os acréscimos da fase 2) convertidos para o formato 5 pelo conversor da migração (src/domain/calendar/migration/convert-v5.ts), com o contentHash dos envios recalculado como a migração fez. As fixtures v4 e o conversor foram removidos na contração; os caminhos citados existem no commit bd9826b. Os casos com source em test/fixtures/offers-oracle-inputs.json vêm desse arquivo, que se chamava offers-v4-oracle-inputs.json até a contração. Tipados só como JSON. Reescritos depois pelas regras 1 a 5 e 7 de src/domain/calendar/normalization/convert-format-6.ts, conservando scope e schemaVersion 5, com o contentHash dos envios recalculado; a cópia anterior é contents-format-5.json."
+    "description": "Documentos de calendarContents e calendarSubmissions de test/fixtures/v4 (43aff30, com os acréscimos da fase 2) convertidos para o formato 5 pelo conversor da migração (src/domain/calendar/migration/convert-v5.ts), com o contentHash dos envios recalculado como a migração fez. As fixtures v4 e o conversor foram removidos na contração; os caminhos citados existem no commit bd9826b. Os casos com source em test/fixtures/offers-oracle-inputs.json vêm desse arquivo, que se chamava offers-v4-oracle-inputs.json até a contração. Tipados só como JSON. Reescritos depois pelas regras 1 a 7 de src/domain/calendar/normalization/convert-format-6.ts, conservando schemaVersion 5, com o contentHash dos envios recalculado; a cópia anterior é contents-format-5.json."
   },
   "cases": [
     {
@@ -72,10 +72,7 @@
                 "activityId": "final",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-final-2",
@@ -88,10 +85,7 @@
                 "activityId": "final",
                 "term": "second"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-diary-1",
@@ -104,10 +98,7 @@
                 "activityId": "diary",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-diary-2",
@@ -120,10 +111,7 @@
                 "activityId": "diary",
                 "term": "second"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-final-appeal-1",
@@ -136,10 +124,7 @@
                 "activityId": "final-appeal",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-final-appeal-2",
@@ -152,11 +137,8 @@
                 "activityId": "final-appeal",
                 "term": "second"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              },
-              "hours": 28
+              "hours": 28,
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-registration-1",
@@ -169,10 +151,7 @@
                 "activityId": "registration",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-admission-notice-1",
@@ -185,10 +164,7 @@
                 "activityId": "admission-notice",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-admission-notice-2",
@@ -201,10 +177,7 @@
                 "activityId": "admission-notice",
                 "term": "second"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-recognition-1",
@@ -217,10 +190,7 @@
                 "activityId": "recognition",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-recognition-2",
@@ -233,10 +203,7 @@
                 "activityId": "recognition",
                 "term": "second"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-annual-final",
@@ -245,10 +212,7 @@
               "end": "2027-12-17",
               "effect": "note",
               "category": "prazo",
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-annual-diary",
@@ -257,10 +221,7 @@
               "end": "2027-12-23",
               "effect": "note",
               "category": "prazo",
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-annual-registration",
@@ -269,10 +230,7 @@
               "end": "2027-01-29",
               "effect": "note",
               "category": "prazo",
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-annual-recognition",
@@ -281,10 +239,7 @@
               "end": "2027-02-19",
               "effect": "note",
               "category": "prazo",
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-annual-final-appeal",
@@ -293,11 +248,8 @@
               "end": "2027-12-20",
               "effect": "note",
               "category": "prazo",
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              },
-              "hours": 40
+              "hours": 40,
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "ivaipora-annual-admission-notice",
@@ -306,10 +258,7 @@
               "end": "2027-11-20",
               "effect": "note",
               "category": "prazo",
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "subsequente"]
             }
           ]
         },
@@ -327,7 +276,7 @@
           },
           "submittedFrom": "rascunho",
           "contentVersion": 1,
-          "contentHash": "c582d56654973331e004292b8d4916eef25f16309bad70032f2f49b27714bd0c",
+          "contentHash": "7a1b9712d2812c00f0ea3fd6f5c9d7918ab549dcea398f01cd123328654728a6",
           "state": {
             "schemaVersion": 5,
             "rulesetVersion": "consup-292-2027-v3",
@@ -389,10 +338,7 @@
                   "activityId": "final",
                   "term": "first"
                 },
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-final-2",
@@ -405,10 +351,7 @@
                   "activityId": "final",
                   "term": "second"
                 },
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-diary-1",
@@ -421,10 +364,7 @@
                   "activityId": "diary",
                   "term": "first"
                 },
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-diary-2",
@@ -437,10 +377,7 @@
                   "activityId": "diary",
                   "term": "second"
                 },
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-final-appeal-1",
@@ -453,10 +390,7 @@
                   "activityId": "final-appeal",
                   "term": "first"
                 },
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-final-appeal-2",
@@ -469,11 +403,8 @@
                   "activityId": "final-appeal",
                   "term": "second"
                 },
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                },
-                "hours": 28
+                "hours": 28,
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-registration-1",
@@ -486,10 +417,7 @@
                   "activityId": "registration",
                   "term": "first"
                 },
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-admission-notice-1",
@@ -502,10 +430,7 @@
                   "activityId": "admission-notice",
                   "term": "first"
                 },
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-admission-notice-2",
@@ -518,10 +443,7 @@
                   "activityId": "admission-notice",
                   "term": "second"
                 },
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-recognition-1",
@@ -534,10 +456,7 @@
                   "activityId": "recognition",
                   "term": "first"
                 },
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-recognition-2",
@@ -550,10 +469,7 @@
                   "activityId": "recognition",
                   "term": "second"
                 },
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-annual-final",
@@ -562,10 +478,7 @@
                 "end": "2027-12-17",
                 "effect": "note",
                 "category": "prazo",
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-annual-diary",
@@ -574,10 +487,7 @@
                 "end": "2027-12-23",
                 "effect": "note",
                 "category": "prazo",
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-annual-registration",
@@ -586,10 +496,7 @@
                 "end": "2027-01-29",
                 "effect": "note",
                 "category": "prazo",
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-annual-recognition",
@@ -598,10 +505,7 @@
                 "end": "2027-02-19",
                 "effect": "note",
                 "category": "prazo",
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-annual-final-appeal",
@@ -610,11 +514,8 @@
                 "end": "2027-12-20",
                 "effect": "note",
                 "category": "prazo",
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                },
-                "hours": 40
+                "hours": 40,
+                "offers": ["integrado", "subsequente"]
               },
               {
                 "id": "ivaipora-annual-admission-notice",
@@ -623,10 +524,7 @@
                 "end": "2027-11-20",
                 "effect": "note",
                 "category": "prazo",
-                "scope": {
-                  "offers": ["integrado", "subsequente"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "subsequente"]
               }
             ]
           },
@@ -708,10 +606,7 @@
                 "activityId": "final",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "cascavel-final-2",
@@ -724,10 +619,7 @@
                 "activityId": "final",
                 "term": "second"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "cascavel-diary-1",
@@ -740,10 +632,7 @@
                 "activityId": "diary",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "cascavel-diary-2",
@@ -756,10 +645,7 @@
                 "activityId": "diary",
                 "term": "second"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "cascavel-final-appeal-1",
@@ -772,10 +658,7 @@
                 "activityId": "final-appeal",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "cascavel-final-appeal-2",
@@ -788,10 +671,7 @@
                 "activityId": "final-appeal",
                 "term": "second"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "cascavel-admission-notice-1",
@@ -804,10 +684,7 @@
                 "activityId": "admission-notice",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "cascavel-admission-notice-2",
@@ -820,10 +697,7 @@
                 "activityId": "admission-notice",
                 "term": "second"
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "cascavel-recognition-1",
@@ -836,10 +710,7 @@
                 "activityId": "recognition",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "cascavel-recognition-2",
@@ -852,10 +723,7 @@
                 "activityId": "recognition",
                 "term": "second"
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "cascavel-annual-diary",
@@ -864,10 +732,7 @@
               "end": "2027-12-23",
               "effect": "note",
               "category": "prazo",
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             }
           ]
         },
@@ -951,10 +816,7 @@
               "end": "2027-03-31",
               "effect": "note",
               "category": "limite",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "stage-twice-a",
@@ -972,10 +834,7 @@
               "end": "2027-05-31",
               "effect": "note",
               "category": "limite",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "stage-twice-b",
@@ -993,10 +852,7 @@
               "end": "2027-05-20",
               "effect": "note",
               "category": "limite",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "stage-late",
@@ -1014,10 +870,7 @@
               "end": "2027-12-10",
               "effect": "note",
               "category": "limite",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "stage-early",
@@ -1035,10 +888,7 @@
               "end": "2027-09-30",
               "effect": "note",
               "category": "limite",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "teacher-vacation-january",
@@ -1051,10 +901,7 @@
                 "activityId": "diary",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": false
-              }
+              "offers": ["integrado", "subsequente"]
             },
             {
               "id": "transfer-notice",
@@ -1066,10 +913,6 @@
               "activity": {
                 "activityId": "admission-notice",
                 "term": "second"
-              },
-              "scope": {
-                "offers": ["integrado", "subsequente"],
-                "confirmed": true
               },
               "notice": {
                 "publication": "planned",
@@ -1088,7 +931,8 @@
                     }
                   ]
                 }
-              }
+              },
+              "offers": ["integrado", "subsequente"]
             }
           ]
         },
@@ -1248,14 +1092,11 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              },
               "start": "2027-02-01",
               "end": "2027-04-16",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-2",
@@ -1269,14 +1110,11 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              },
               "start": "2027-04-19",
               "end": "2027-07-09",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-3",
@@ -1290,14 +1128,11 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              },
               "start": "2027-07-26",
               "end": "2027-10-01",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-4",
@@ -1311,14 +1146,11 @@
                   "number": 4
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              },
               "start": "2027-10-04",
               "end": "2027-12-17",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["integrado"]
             },
             {
               "id": "graduacao-stage-1",
@@ -1332,14 +1164,11 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              },
               "start": "2027-02-01",
               "end": "2027-05-28",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -1353,14 +1182,11 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              },
               "start": "2027-05-31",
               "end": "2027-09-17",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-3",
@@ -1374,14 +1200,11 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              },
               "start": "2027-09-20",
               "end": "2027-12-17",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-2-stage-1",
@@ -1395,14 +1218,11 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao-2"],
-                "confirmed": true
-              },
               "start": "2027-02-01",
               "end": "2027-04-16",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["graduacao-2"]
             },
             {
               "id": "graduacao-2-stage-2",
@@ -1416,14 +1236,11 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao-2"],
-                "confirmed": true
-              },
               "start": "2027-04-19",
               "end": "2027-07-09",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["graduacao-2"]
             },
             {
               "id": "graduacao-2-stage-3",
@@ -1437,14 +1254,11 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao-2"],
-                "confirmed": true
-              },
               "start": "2027-07-26",
               "end": "2027-10-01",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["graduacao-2"]
             },
             {
               "id": "graduacao-2-stage-4",
@@ -1458,14 +1272,11 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao-2"],
-                "confirmed": true
-              },
               "start": "2027-10-04",
               "end": "2027-12-17",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["graduacao-2"]
             },
             {
               "id": "graduacao-3-stage-1",
@@ -1479,14 +1290,11 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao-3"],
-                "confirmed": true
-              },
               "start": "2027-02-01",
               "end": "2027-07-09",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["graduacao-3"]
             },
             {
               "id": "graduacao-3-stage-2",
@@ -1500,14 +1308,11 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao-3"],
-                "confirmed": true
-              },
               "start": "2027-07-26",
               "end": "2027-12-17",
               "effect": "note",
-              "category": "limite"
+              "category": "limite",
+              "offers": ["graduacao-3"]
             }
           ]
         },
@@ -1521,7 +1326,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1534,7 +1338,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1547,7 +1350,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1560,7 +1362,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1573,7 +1374,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 6.802/1980: https://www.planalto.gov.br/ccivil_03/leis/l6802.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1586,7 +1386,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1599,7 +1398,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1612,7 +1410,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 14.759/2023: https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14759.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1625,7 +1422,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1638,7 +1434,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1651,7 +1446,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1664,7 +1458,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1677,7 +1470,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1690,7 +1482,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1703,7 +1494,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1716,7 +1506,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1729,7 +1518,6 @@
             "effect": "note",
             "category": "prazo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1742,7 +1530,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1755,7 +1542,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1768,7 +1554,6 @@
             "effect": "note",
             "category": "prazo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1781,7 +1566,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1794,7 +1578,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1807,7 +1590,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1820,7 +1602,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1833,7 +1614,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1846,7 +1626,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"],
@@ -1861,7 +1640,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"],
@@ -1876,7 +1654,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1889,7 +1666,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1902,7 +1678,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1915,7 +1690,6 @@
             "effect": "note",
             "category": "criacao",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1928,7 +1702,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1941,7 +1714,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, art. 2º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -1954,7 +1726,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, art. 2º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -2024,10 +1795,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-2",
@@ -2045,10 +1813,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-3",
@@ -2066,10 +1831,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-4",
@@ -2087,10 +1849,7 @@
                   "number": 4
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "saturday",
@@ -2098,10 +1857,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "saturday-blocker",
@@ -2109,10 +1865,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "community",
@@ -2123,10 +1876,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "implicit-note",
@@ -2134,10 +1884,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": false
-              }
+              "offers": ["integrado"]
             }
           ]
         },
@@ -2207,10 +1954,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -2228,10 +1972,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday",
@@ -2239,10 +1980,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday-blocker",
@@ -2250,10 +1988,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "community",
@@ -2264,10 +1999,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "implicit-note",
@@ -2275,10 +2007,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": false
-              }
+              "offers": ["graduacao"]
             }
           ]
         },
@@ -2348,10 +2077,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -2369,10 +2095,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-3",
@@ -2390,10 +2113,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday",
@@ -2401,10 +2121,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday-blocker",
@@ -2412,10 +2129,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "community",
@@ -2426,10 +2140,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "implicit-note",
@@ -2437,10 +2148,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": false
-              }
+              "offers": ["graduacao"]
             }
           ]
         },
@@ -2510,10 +2218,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -2531,10 +2236,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-3",
@@ -2552,10 +2254,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-4",
@@ -2573,10 +2272,7 @@
                   "number": 4
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday",
@@ -2584,10 +2280,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday-blocker",
@@ -2595,10 +2288,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "community",
@@ -2609,10 +2299,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "implicit-note",
@@ -2620,10 +2307,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": false
-              }
+              "offers": ["graduacao"]
             }
           ]
         },
@@ -2704,10 +2388,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -2725,10 +2406,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday",
@@ -2736,10 +2414,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday-blocker",
@@ -2747,10 +2422,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "community",
@@ -2761,10 +2433,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "implicit-note",
@@ -2772,10 +2441,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": false
-              }
+              "offers": ["graduacao"]
             }
           ]
         },
@@ -2856,10 +2522,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -2877,10 +2540,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-3",
@@ -2898,10 +2558,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-4",
@@ -2919,10 +2576,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday",
@@ -2930,10 +2584,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday-blocker",
@@ -2941,10 +2592,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "community",
@@ -2955,10 +2603,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "implicit-note",
@@ -2966,10 +2611,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": false
-              }
+              "offers": ["graduacao"]
             }
           ]
         },
@@ -3139,10 +2781,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-2",
@@ -3160,10 +2799,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-3",
@@ -3181,10 +2817,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-4",
@@ -3202,10 +2835,7 @@
                   "number": 4
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "subsequente-stage-1",
@@ -3223,10 +2853,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["subsequente"],
-                "confirmed": true
-              }
+              "offers": ["subsequente"]
             },
             {
               "id": "subsequente-stage-2",
@@ -3244,10 +2871,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["subsequente"],
-                "confirmed": true
-              }
+              "offers": ["subsequente"]
             },
             {
               "id": "graduacao-stage-1",
@@ -3265,10 +2889,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -3286,10 +2907,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-3",
@@ -3307,10 +2925,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-4",
@@ -3328,10 +2943,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "posgraduacao-stage-1",
@@ -3349,10 +2961,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["posgraduacao"],
-                "confirmed": true
-              }
+              "offers": ["posgraduacao"]
             },
             {
               "id": "posgraduacao-stage-2",
@@ -3370,10 +2979,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["posgraduacao"],
-                "confirmed": true
-              }
+              "offers": ["posgraduacao"]
             },
             {
               "id": "saturday",
@@ -3381,10 +2987,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "saturday-blocker",
@@ -3392,10 +2995,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "community",
@@ -3406,10 +3006,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "implicit-note",
@@ -3417,10 +3014,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["integrado", "subsequente", "graduacao", "posgraduacao"],
-                "confirmed": false
-              }
+              "offers": ["integrado", "subsequente", "graduacao", "posgraduacao"]
             }
           ]
         },
@@ -3487,10 +3081,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["posgraduacao"],
-                "confirmed": true
-              }
+              "offers": ["posgraduacao"]
             },
             {
               "id": "posgraduacao-stage-2",
@@ -3508,10 +3099,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["posgraduacao"],
-                "confirmed": true
-              }
+              "offers": ["posgraduacao"]
             },
             {
               "id": "saturday",
@@ -3519,10 +3107,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["posgraduacao"],
-                "confirmed": true
-              }
+              "offers": ["posgraduacao"]
             },
             {
               "id": "saturday-blocker",
@@ -3530,10 +3115,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["posgraduacao"],
-                "confirmed": true
-              }
+              "offers": ["posgraduacao"]
             },
             {
               "id": "community",
@@ -3544,10 +3126,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["posgraduacao"],
-                "confirmed": true
-              }
+              "offers": ["posgraduacao"]
             },
             {
               "id": "implicit-note",
@@ -3555,10 +3134,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["posgraduacao"],
-                "confirmed": false
-              }
+              "offers": ["posgraduacao"]
             }
           ]
         },
@@ -3666,10 +3242,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-2",
@@ -3687,10 +3260,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-3",
@@ -3708,10 +3278,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-4",
@@ -3729,10 +3296,7 @@
                   "number": 4
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "graduacao-stage-1",
@@ -3750,10 +3314,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -3771,10 +3332,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday",
@@ -3782,10 +3340,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "saturday-blocker",
@@ -3793,10 +3348,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "community",
@@ -3807,10 +3359,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "implicit-note",
@@ -3818,10 +3367,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": false
-              }
+              "offers": ["integrado", "graduacao"]
             }
           ]
         },
@@ -3888,10 +3434,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -3909,10 +3452,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday",
@@ -3920,10 +3460,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday-blocker",
@@ -3931,10 +3468,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "community",
@@ -3945,10 +3479,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "implicit-note",
@@ -3956,10 +3487,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": false
-              }
+              "offers": ["graduacao"]
             }
           ]
         },
@@ -4049,10 +3577,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "saturday-blocker",
@@ -4060,10 +3585,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "community",
@@ -4074,10 +3596,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "implicit-note",
@@ -4085,10 +3604,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": false
-              }
+              "offers": ["integrado", "graduacao"]
             }
           ]
         },
@@ -4144,10 +3660,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "saturday-blocker",
@@ -4155,10 +3668,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "community",
@@ -4169,10 +3679,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "implicit-note",
@@ -4180,10 +3687,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": false
-              }
+              "offers": ["integrado"]
             }
           ]
         },
@@ -4339,10 +3843,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-2",
@@ -4360,10 +3861,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-3",
@@ -4381,10 +3879,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-4",
@@ -4402,10 +3897,7 @@
                   "number": 4
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "graduacao-stage-1",
@@ -4423,10 +3915,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -4444,10 +3933,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday",
@@ -4455,10 +3941,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "saturday-blocker",
@@ -4466,10 +3949,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "community",
@@ -4480,10 +3960,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "implicit-note",
@@ -4491,10 +3968,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": false
-              }
+              "offers": ["integrado", "graduacao"]
             }
           ]
         },
@@ -4591,10 +4065,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-2",
@@ -4612,10 +4083,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-3",
@@ -4633,10 +4101,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-4",
@@ -4654,10 +4119,7 @@
                   "number": 4
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "graduacao-stage-1",
@@ -4675,10 +4137,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -4696,10 +4155,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-3",
@@ -4717,10 +4173,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday",
@@ -4728,10 +4181,7 @@
               "start": "2026-02-06",
               "end": "2026-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "saturday-blocker",
@@ -4739,10 +4189,7 @@
               "start": "2026-02-06",
               "end": "2026-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "community",
@@ -4753,10 +4200,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "implicit-note",
@@ -4764,10 +4208,7 @@
               "start": "2026-05-03",
               "end": "2026-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": false
-              }
+              "offers": ["integrado", "graduacao"]
             }
           ]
         },
@@ -4845,10 +4286,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["subsequente"],
-                "confirmed": true
-              }
+              "offers": ["subsequente"]
             },
             {
               "id": "subsequente-stage-2",
@@ -4866,10 +4304,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["subsequente"],
-                "confirmed": true
-              }
+              "offers": ["subsequente"]
             },
             {
               "id": "saturday",
@@ -4877,10 +4312,7 @@
               "start": "2026-02-06",
               "end": "2026-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["subsequente"],
-                "confirmed": true
-              }
+              "offers": ["subsequente"]
             },
             {
               "id": "saturday-blocker",
@@ -4888,10 +4320,7 @@
               "start": "2026-02-06",
               "end": "2026-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["subsequente"],
-                "confirmed": true
-              }
+              "offers": ["subsequente"]
             },
             {
               "id": "community",
@@ -4902,10 +4331,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["subsequente"],
-                "confirmed": true
-              }
+              "offers": ["subsequente"]
             },
             {
               "id": "implicit-note",
@@ -4913,10 +4339,7 @@
               "start": "2026-05-03",
               "end": "2026-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["subsequente"],
-                "confirmed": false
-              }
+              "offers": ["subsequente"]
             }
           ]
         },
@@ -4997,10 +4420,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -5018,10 +4438,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-3",
@@ -5039,10 +4456,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-4",
@@ -5060,10 +4474,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday",
@@ -5071,10 +4482,7 @@
               "start": "2028-02-06",
               "end": "2028-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday-blocker",
@@ -5082,10 +4490,7 @@
               "start": "2028-02-06",
               "end": "2028-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "community",
@@ -5096,10 +4501,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "implicit-note",
@@ -5107,10 +4509,7 @@
               "start": "2028-05-03",
               "end": "2028-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": false
-              }
+              "offers": ["graduacao"]
             }
           ]
         },
@@ -5373,10 +4772,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-2",
@@ -5394,10 +4790,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-3",
@@ -5415,10 +4808,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-4",
@@ -5436,10 +4826,7 @@
                   "number": 4
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "graduacao-stage-1",
@@ -5457,10 +4844,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -5478,10 +4862,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-3",
@@ -5499,10 +4880,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-2-stage-1",
@@ -5520,10 +4898,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao-2"],
-                "confirmed": true
-              }
+              "offers": ["graduacao-2"]
             },
             {
               "id": "graduacao-2-stage-2",
@@ -5541,10 +4916,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao-2"],
-                "confirmed": true
-              }
+              "offers": ["graduacao-2"]
             },
             {
               "id": "graduacao-2-stage-3",
@@ -5562,10 +4934,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao-2"],
-                "confirmed": true
-              }
+              "offers": ["graduacao-2"]
             },
             {
               "id": "graduacao-2-stage-4",
@@ -5583,10 +4952,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao-2"],
-                "confirmed": true
-              }
+              "offers": ["graduacao-2"]
             },
             {
               "id": "graduacao-3-stage-1",
@@ -5604,10 +4970,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao-3"],
-                "confirmed": true
-              }
+              "offers": ["graduacao-3"]
             },
             {
               "id": "graduacao-3-stage-2",
@@ -5625,10 +4988,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao-3"],
-                "confirmed": true
-              }
+              "offers": ["graduacao-3"]
             },
             {
               "id": "campus-meeting",
@@ -5637,10 +4997,7 @@
               "end": "2027-03-10",
               "effect": "note",
               "category": "evento",
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             }
           ]
         },
@@ -5654,7 +5011,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5667,7 +5023,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5680,7 +5035,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5693,7 +5047,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5706,7 +5059,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 6.802/1980: https://www.planalto.gov.br/ccivil_03/leis/l6802.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5719,7 +5071,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5732,7 +5083,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5745,7 +5095,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 14.759/2023: https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14759.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5758,7 +5107,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5771,7 +5119,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5784,7 +5131,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5797,7 +5143,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5810,7 +5155,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5823,7 +5167,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5836,7 +5179,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5849,7 +5191,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5862,7 +5203,6 @@
             "effect": "note",
             "category": "prazo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5875,7 +5215,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5888,7 +5227,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5901,7 +5239,6 @@
             "effect": "note",
             "category": "prazo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5914,7 +5251,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5927,7 +5263,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5940,7 +5275,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5953,7 +5287,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5966,7 +5299,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -5979,7 +5311,6 @@
             "effect": "exclude",
             "category": "feriado",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"],
@@ -5994,7 +5325,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"],
@@ -6009,7 +5339,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -6022,7 +5351,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -6035,7 +5363,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -6048,7 +5375,6 @@
             "effect": "note",
             "category": "criacao",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -6061,7 +5387,6 @@
             "effect": "exclude",
             "category": "recesso",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -6074,7 +5399,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, art. 2º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -6087,7 +5411,6 @@
             "effect": "note",
             "category": "comemorativo",
             "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, art. 2º",
-            "modalities": ["integrado", "subsequente", "graduacao"],
             "active": true,
             "institutional": true,
             "offers": ["integrado", "graduacao", "graduacao-2", "graduacao-3"]
@@ -6105,7 +5428,7 @@
           },
           "submittedFrom": "rascunho",
           "contentVersion": 1,
-          "contentHash": "8a681fa8fb3bd06d07ae5af20152371f46ae361456e8459d61f7484ca56b24b6",
+          "contentHash": "85d67c74cd2a0c5f3eb8edbff215e05d76058b8c194a30def767c4a47bfe73a9",
           "state": {
             "schemaVersion": 5,
             "rulesetVersion": "consup-292-2027-v4",
@@ -6181,10 +5504,7 @@
                     "number": 1
                   }
                 },
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "integrado-stage-2",
@@ -6202,10 +5522,7 @@
                     "number": 2
                   }
                 },
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "integrado-stage-3",
@@ -6223,10 +5540,7 @@
                     "number": 3
                   }
                 },
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "integrado-stage-4",
@@ -6244,10 +5558,7 @@
                     "number": 4
                   }
                 },
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "graduacao-stage-1",
@@ -6265,10 +5576,7 @@
                     "number": 1
                   }
                 },
-                "scope": {
-                  "offers": ["graduacao"],
-                  "confirmed": true
-                }
+                "offers": ["graduacao"]
               },
               {
                 "id": "graduacao-stage-2",
@@ -6286,10 +5594,7 @@
                     "number": 2
                   }
                 },
-                "scope": {
-                  "offers": ["graduacao"],
-                  "confirmed": true
-                }
+                "offers": ["graduacao"]
               },
               {
                 "id": "graduacao-stage-3",
@@ -6307,10 +5612,7 @@
                     "number": 3
                   }
                 },
-                "scope": {
-                  "offers": ["graduacao"],
-                  "confirmed": true
-                }
+                "offers": ["graduacao"]
               },
               {
                 "id": "campus-meeting",
@@ -6319,10 +5621,7 @@
                 "end": "2027-03-10",
                 "effect": "note",
                 "category": "evento",
-                "scope": {
-                  "offers": ["integrado", "graduacao"],
-                  "confirmed": true
-                }
+                "offers": ["integrado", "graduacao"]
               }
             ]
           },
@@ -6336,7 +5635,6 @@
               "effect": "exclude",
               "category": "feriado",
               "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6349,7 +5647,6 @@
               "effect": "exclude",
               "category": "feriado",
               "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6362,7 +5659,6 @@
               "effect": "exclude",
               "category": "feriado",
               "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6375,7 +5671,6 @@
               "effect": "exclude",
               "category": "feriado",
               "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6388,7 +5683,6 @@
               "effect": "exclude",
               "category": "feriado",
               "evidence": "Lei 6.802/1980: https://www.planalto.gov.br/ccivil_03/leis/l6802.htm",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6401,7 +5695,6 @@
               "effect": "exclude",
               "category": "feriado",
               "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6414,7 +5707,6 @@
               "effect": "exclude",
               "category": "feriado",
               "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6427,7 +5719,6 @@
               "effect": "exclude",
               "category": "feriado",
               "evidence": "Lei 14.759/2023: https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14759.htm",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6440,7 +5731,6 @@
               "effect": "exclude",
               "category": "feriado",
               "evidence": "Lei 662/1949: https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6453,7 +5743,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6466,7 +5755,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6479,7 +5767,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6492,7 +5779,6 @@
               "effect": "exclude",
               "category": "feriado",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6505,7 +5791,6 @@
               "effect": "note",
               "category": "comemorativo",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6518,7 +5803,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6531,7 +5815,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6544,7 +5827,6 @@
               "effect": "note",
               "category": "prazo",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6557,7 +5839,6 @@
               "effect": "note",
               "category": "comemorativo",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6570,7 +5851,6 @@
               "effect": "note",
               "category": "comemorativo",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6583,7 +5863,6 @@
               "effect": "note",
               "category": "prazo",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6596,7 +5875,6 @@
               "effect": "note",
               "category": "comemorativo",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6609,7 +5887,6 @@
               "effect": "note",
               "category": "comemorativo",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6622,7 +5899,6 @@
               "effect": "note",
               "category": "comemorativo",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6635,7 +5911,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6648,7 +5923,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6661,7 +5935,6 @@
               "effect": "exclude",
               "category": "feriado",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"],
@@ -6676,7 +5949,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"],
@@ -6691,7 +5963,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6704,7 +5975,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6717,7 +5987,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6730,7 +5999,6 @@
               "effect": "note",
               "category": "criacao",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6743,7 +6011,6 @@
               "effect": "exclude",
               "category": "recesso",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, arts. 2º e 3º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6756,7 +6023,6 @@
               "effect": "note",
               "category": "comemorativo",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, art. 2º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6769,7 +6035,6 @@
               "effect": "note",
               "category": "comemorativo",
               "evidence": "Resolução CONSUP/IFPR nº 292, de 5 de outubro de 2026 — SEI 4422750, art. 2º",
-              "modalities": ["integrado", "subsequente", "graduacao"],
               "active": true,
               "institutional": true,
               "offers": ["integrado", "graduacao"]
@@ -6851,10 +6116,7 @@
                 "activityId": "final",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "cascavel-final-2",
@@ -6867,10 +6129,7 @@
                 "activityId": "final",
                 "term": "second"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "forms-stage",
@@ -6888,10 +6147,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "forms-results",
@@ -6909,10 +6165,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "forms-council",
@@ -6930,10 +6183,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "forms-teaching-plan",
@@ -6946,10 +6196,7 @@
                 "activityId": "teaching-plan",
                 "semester": "first"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "forms-teaching-plan-annual",
@@ -6962,10 +6209,7 @@
                 "activityId": "teaching-plan",
                 "term": "annual"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "forms-pit",
@@ -6978,10 +6222,7 @@
                 "activityId": "pit",
                 "semester": "second"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": false
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "forms-family",
@@ -6993,10 +6234,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "forms-empty-scope",
@@ -7005,10 +6243,7 @@
               "end": "2027-05-05",
               "effect": "note",
               "category": "evento",
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": false
-              }
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "forms-notice-published",
@@ -7021,10 +6256,6 @@
                 "activityId": "admission-notice",
                 "term": "annual"
               },
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": true
-              },
               "notice": {
                 "publication": "published",
                 "admission": {
@@ -7033,7 +6264,8 @@
                   "term": "annual",
                   "destinations": []
                 }
-              }
+              },
+              "offers": ["integrado", "graduacao"]
             },
             {
               "id": "forms-notice-orphan",
@@ -7042,10 +6274,6 @@
               "end": "2027-10-06",
               "effect": "note",
               "category": "prazo",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              },
               "notice": {
                 "publication": "planned",
                 "admission": {
@@ -7059,7 +6287,8 @@
                     }
                   ]
                 }
-              }
+              },
+              "offers": ["graduacao"]
             },
             {
               "id": "forms-include",
@@ -7069,10 +6298,7 @@
               "effect": "include",
               "category": "sabado",
               "hours": 4,
-              "scope": {
-                "offers": ["integrado", "graduacao"],
-                "confirmed": false
-              }
+              "offers": ["integrado", "graduacao"]
             }
           ]
         },
@@ -7173,10 +6399,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-2",
@@ -7194,10 +6417,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-3",
@@ -7215,10 +6435,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "graduacao-stage-4",
@@ -7236,10 +6453,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday",
@@ -7247,10 +6461,7 @@
               "start": "2028-02-06",
               "end": "2028-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "saturday-blocker",
@@ -7258,10 +6469,7 @@
               "start": "2028-02-06",
               "end": "2028-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "community",
@@ -7272,10 +6480,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "implicit-note",
@@ -7283,10 +6488,7 @@
               "start": "2028-05-03",
               "end": "2028-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["graduacao", "integrado"],
-                "confirmed": false
-              }
+              "offers": ["graduacao", "integrado"]
             },
             {
               "id": "unconfigured-teaching-plan",
@@ -7299,10 +6501,7 @@
                 "activityId": "teaching-plan",
                 "term": "first"
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "unconfigured-enrolment",
@@ -7315,10 +6514,7 @@
                 "activityId": "enrolment",
                 "semester": "second"
               },
-              "scope": {
-                "offers": ["graduacao", "integrado"],
-                "confirmed": true
-              }
+              "offers": ["graduacao", "integrado"]
             },
             {
               "id": "unconfigured-final",
@@ -7331,10 +6527,7 @@
                 "activityId": "final",
                 "term": "annual"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "unconfigured-stage-5",
@@ -7352,10 +6545,7 @@
                   "number": 5
                 }
               },
-              "scope": {
-                "offers": ["graduacao"],
-                "confirmed": true
-              }
+              "offers": ["graduacao"]
             },
             {
               "id": "unconfigured-results",
@@ -7373,10 +6563,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             }
           ]
         },
@@ -7446,10 +6633,7 @@
                   "number": 1
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-2",
@@ -7467,10 +6651,7 @@
                   "number": 2
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-3",
@@ -7488,10 +6669,7 @@
                   "number": 3
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "integrado-stage-4",
@@ -7509,10 +6687,7 @@
                   "number": 4
                 }
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "saturday",
@@ -7520,10 +6695,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "include",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "saturday-blocker",
@@ -7531,10 +6703,7 @@
               "start": "2027-02-06",
               "end": "2027-02-06",
               "effect": "exclude",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "community",
@@ -7545,10 +6714,7 @@
               "activity": {
                 "activityId": "family-meeting"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "implicit-note",
@@ -7556,10 +6722,7 @@
               "start": "2027-05-03",
               "end": "2027-05-03",
               "effect": "note",
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": false
-              }
+              "offers": ["integrado"]
             },
             {
               "id": "legacy-enrolment",
@@ -7571,10 +6734,7 @@
                 "activityId": "enrolment",
                 "semester": "first"
               },
-              "scope": {
-                "offers": ["integrado"],
-                "confirmed": true
-              }
+              "offers": ["integrado"]
             }
           ]
         },
@@ -7628,7 +6788,7 @@
           },
           "submittedFrom": "rascunho",
           "contentVersion": 1,
-          "contentHash": "51b1f6c7796d7cf67de032adf8503aad5ca96a635d3242bdcff8608d3389bad1",
+          "contentHash": "85de21d83063adef6189a46a8d7475679985156b0bf14056f2d97188c66be33b",
           "state": {
             "schemaVersion": 5,
             "rulesetVersion": "consup-292-2027-v2",
@@ -7682,10 +6842,7 @@
                     "number": 1
                   }
                 },
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "integrado-stage-2",
@@ -7703,10 +6860,7 @@
                     "number": 2
                   }
                 },
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "integrado-stage-3",
@@ -7724,10 +6878,7 @@
                     "number": 3
                   }
                 },
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "integrado-stage-4",
@@ -7745,10 +6896,7 @@
                     "number": 4
                   }
                 },
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "saturday",
@@ -7756,10 +6904,7 @@
                 "start": "2027-02-06",
                 "end": "2027-02-06",
                 "effect": "include",
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "saturday-blocker",
@@ -7767,10 +6912,7 @@
                 "start": "2027-02-06",
                 "end": "2027-02-06",
                 "effect": "exclude",
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "community",
@@ -7781,10 +6923,7 @@
                 "activity": {
                   "activityId": "family-meeting"
                 },
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "implicit-note",
@@ -7792,10 +6931,7 @@
                 "start": "2027-05-03",
                 "end": "2027-05-03",
                 "effect": "note",
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": false
-                }
+                "offers": ["integrado"]
               },
               {
                 "id": "legacy-enrolment",
@@ -7807,10 +6943,7 @@
                   "activityId": "enrolment",
                   "semester": "first"
                 },
-                "scope": {
-                  "offers": ["integrado"],
-                  "confirmed": true
-                }
+                "offers": ["integrado"]
               }
             ]
           },

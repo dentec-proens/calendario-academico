@@ -10,7 +10,7 @@ record.state.events = [
     end: civilDate('2027-03-10'),
     effect: 'note',
     category: 'evento',
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
   },
   {
     id: 'activity-event',
@@ -20,7 +20,7 @@ record.state.events = [
     end: civilDate('2027-10-08'),
     effect: 'note',
     category: 'evento',
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
   },
 ];
 export const convex = baseConvex;

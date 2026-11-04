@@ -48,7 +48,7 @@ test('edited date: every interval and association check applies, against unchang
   expect(
     dateEdited(first, {
       ...first,
-      scope: { offers: ['integrado', 'subsequente'], confirmed: true },
+      offers: ['integrado', 'subsequente'],
     }),
   ).toBe(true);
   expect(() =>
@@ -61,7 +61,7 @@ test('edited date: every interval and association check applies, against unchang
     validateLinks(
       state,
       moved(state, 'stage-first', {
-        scope: { offers: ['integrado', 'subsequente'], confirmed: true },
+        offers: ['integrado', 'subsequente'],
       }),
     ),
   ).toThrow('oferta');
@@ -118,7 +118,7 @@ test('a generated activity of another offer does not cover the date: classificat
     start: civilDate('2027-12-17'),
     end: civilDate('2027-12-17'),
     effect: 'note',
-    scope: { offers: ['subsequente'], confirmed: true },
+    offers: ['subsequente'],
   };
   const annual = { ...state, events: [result] };
   expect(linksToReview(annual).size).toBe(0);

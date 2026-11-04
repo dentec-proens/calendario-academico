@@ -34,17 +34,18 @@ const state = {
     },
   ],
 };
-const excluded = (date: string) => ({
+const excluded = (date: string, offers = ['integrado']) => ({
   id: date,
   start: civilDate(date),
   end: civilDate(date),
   effect: 'exclude' as const,
+  offers,
 });
 
 test('third vacation excludes only counted dates; PDF, stages and automatic duration agree', () => {
   // Synthetic dates reproduce 16 -> 13; they are not the campus dates.
   const holidays = ['2027-10-11', '2027-10-12', '2027-10-15', '2027-10-28', '2027-10-29'].map(
-    excluded,
+    (date) => excluded(date),
   );
   const vacation = teacherVacations(2027, {
     firstStart: civilDate('2027-01-02'),
@@ -57,8 +58,11 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
   assert(vacation.events.every((e) => e.effect === 'exclude'));
   assert.equal(evaluateCalendar(state, holidays).total, 16);
   for (const effect of ['exclude' as const]) {
-    const events = [...holidays, ...vacation.events.map((e) => ({ ...e, effect }))],
-      original = structuredClone(events);
+    const events = [
+      ...holidays,
+      ...vacation.events.map((e) => ({ ...e, effect, offers: ['integrado'] })),
+    ];
+    const original = structuredClone(events);
     const result = evaluateCalendar(state, events);
     assert.equal(result.total, 13);
     for (const date of ['2027-10-06', '2027-10-07', '2027-10-08'])
@@ -82,7 +86,7 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
             {
               id: 'stage',
               effect: 'note' as const,
-              scope: { offers: ['integrado'], confirmed: true },
+              offers: ['integrado'],
               activity: definedStage('stage', 'integrado', 'annual', 1),
               start: civilDate('2027-10-01'),
               end: civilDate('2027-10-31'),
@@ -111,6 +115,7 @@ test('vacation overlaps never double subtract holidays; Saturdays and offer scop
     start: civilDate('2027-10-16'),
     end: civilDate('2027-10-16'),
     effect: 'include' as const,
+    offers: ['integrado', 'graduacao'],
   };
   const mixed = {
     ...state,
@@ -133,7 +138,11 @@ test('vacation overlaps never double subtract holidays; Saturdays and offer scop
       },
     ],
   };
-  const result = evaluateCalendar(mixed, [vacation, saturday, excluded('2027-10-12')]);
+  const result = evaluateCalendar(mixed, [
+    vacation,
+    saturday,
+    excluded('2027-10-12', ['integrado', 'graduacao']),
+  ]);
   assert.equal(result.byOffer.integrado.total, 16);
   assert.equal(result.byOffer.graduacao.total, 21);
   assert.equal(

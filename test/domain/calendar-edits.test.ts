@@ -26,7 +26,7 @@ function calendar(): ActivityState {
       end: civilDate(`2027-03-${String(index * 7 + 4).padStart(2, '0')}`),
       effect: 'note',
       category: 'limite',
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
     })),
     offers: [
       {
@@ -54,6 +54,7 @@ test('recalculating periods preserves every entered stage date, including legacy
       start: civilDate('2027-03-01'),
       end: civilDate('2027-03-05'),
       effect: 'exclude',
+      offers: state.offers.map((offer) => offer.id),
     },
   ]);
   const expected = before.events;

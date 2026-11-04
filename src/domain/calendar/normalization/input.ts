@@ -105,10 +105,6 @@ const period = (value: unknown): CalendarPeriod => {
         : fail('Associação do período inválida.'),
   };
 };
-const eventScope = (value: unknown): CalendarEvent['scope'] => {
-  const scope = calendarObject(value);
-  return { offers: array(scope.offers, text), confirmed: boolean(scope.confirmed) };
-};
 const activity = (value: unknown): CalendarEvent => {
   const row = calendarObject(value);
   if ('modalities' in row) return fail('Formato de atividade incompatível.');
@@ -127,7 +123,7 @@ const activity = (value: unknown): CalendarEvent => {
     internal: optional(row.internal, (value) =>
       value === true ? (true as const) : fail('Visibilidade da data inválida.'),
     ),
-    scope: eventScope(row.scope),
+    offers: array(row.offers, text),
     hours: optional(row.hours, number),
     assessmentAutoStart: optional(row.assessmentAutoStart, date),
     deadlineExtensionCause: optional(row.deadlineExtensionCause, (value) =>

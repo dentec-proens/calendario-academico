@@ -18,30 +18,29 @@ import type { CatalogueEvent } from '../../src/domain/institution/catalogue.ts';
 import { storedCases, storedCatalogueRows, type StoredCase } from './stored-fixtures.ts';
 
 /**
- * Scope with confirmation. The stored fixture “Acréscimo de
- * oferta materializa a abrangência” has a list the campus chose, materialized lists stored
- * confirmed (one proven by its submission) and, added here, a date whose offers were never
- * confirmed, so that every form of scope is present. It is a note, so the count is unchanged.
+ * Offers a date lists. The stored fixture “Acréscimo de oferta materializa a abrangência” has
+ * stages of one offer, a date of two and, added here, a note that lists every offer of the
+ * calendar. It is a note, so the count is unchanged.
  */
 export const offerAdditionName = 'Acréscimo de oferta materializa a abrangência';
 
-export const scopeForms = {
-  'graduacao-stage-1': 'explicit',
-  'integrado-stage-1': 'materialized-candidate',
-  'campus-meeting': 'materialized-proven',
-  'unconfirmed-note': 'unconfirmed',
+export const listForms = {
+  'graduacao-stage-1': 'one offer',
+  'integrado-stage-1': 'one offer',
+  'campus-meeting': 'two offers',
+  'all-offers-note': 'every offer',
 } as const;
 
 export function offerAdditionCase(): StoredCase {
   const item = structuredClone(storedCases().find((entry) => entry.name === offerAdditionName)!);
   item.content.state.events.push({
-    id: 'unconfirmed-note',
-    name: 'Reunião sem ofertas declaradas',
+    id: 'all-offers-note',
+    name: 'Reunião de todas as ofertas',
     start: '2027-05-03',
     end: '2027-05-03',
     effect: 'note',
     category: 'evento',
-    scope: { offers: ['integrado', 'graduacao', 'graduacao-2', 'graduacao-3'], confirmed: false },
+    offers: ['integrado', 'graduacao', 'graduacao-2', 'graduacao-3'],
   });
   return item;
 }

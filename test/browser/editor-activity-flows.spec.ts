@@ -46,7 +46,7 @@ test('a new activity record keeps the prepared link, offer, effect and category'
     // The policy declares the legend category of the meeting (consup-292-2027-v6).
     category: 'institucional',
     // Saving the form confirms the contextual offers.
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
     start: '2027-05-08',
     end: '2027-05-08',
   });
@@ -68,7 +68,7 @@ test('editing a linked record that changes the count keeps its effect, category 
       end: '2027-05-10',
       effect: 'exclude',
       category: 'recesso',
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
     });
     record.version++;
     return window.publishReviewerCalendar();
@@ -188,7 +188,7 @@ test('a saved meeting that adds days shows why its effect must change', async ({
       end: '2027-05-08',
       effect: 'include',
       category: 'evento',
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
     });
     record.version++;
     return window.publishReviewerCalendar();
@@ -402,7 +402,7 @@ test('a record with a freely combined effect and category shows both fields when
       end: '2027-04-12',
       effect: 'exclude',
       category: 'formacao',
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
     });
     record.version++;
     return window.publishReviewerCalendar();
@@ -733,7 +733,7 @@ test('a notice edits one common destination and shows the diagnosis of each offe
       end: '2027-01-10',
       effect: 'note',
       category: 'prazo',
-      scope: { offers: ['integrado', 'subsequente'], confirmed: true },
+      offers: ['integrado', 'subsequente'],
       notice: {
         publication: 'planned',
         admission: {

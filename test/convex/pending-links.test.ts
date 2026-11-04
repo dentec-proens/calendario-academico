@@ -152,7 +152,7 @@ test('a pending date is edited and saved with its link', async () => {
       name: 'Reconhecimento revisado',
       start: civilDate('2027-07-21'),
       end: civilDate('2027-07-30'),
-      scope: { offers: ['subsequente'], confirmed: true },
+      offers: ['subsequente'],
     },
     [],
     true,
@@ -162,7 +162,7 @@ test('a pending date is edited and saved with its link', async () => {
     activity: cycleLink('recognition', 'second'),
     name: 'Reconhecimento revisado',
     start: '2027-07-21',
-    scope: { offers: ['subsequente'], confirmed: true },
+    offers: ['subsequente'],
   });
 });
 

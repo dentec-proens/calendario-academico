@@ -42,7 +42,7 @@ const stages = (
           (index % perSemester) + 1,
         )
       : definedStage('stage', offer, 'annual', index + 1),
-    scope: { offers: [offer], confirmed: true },
+    offers: [offer],
     start: civilDate(start),
     end: civilDate(end),
     effect: 'note',

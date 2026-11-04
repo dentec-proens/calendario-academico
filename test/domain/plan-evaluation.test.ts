@@ -54,11 +54,10 @@ describe('the 21 audited dates (section 11)', () => {
       for (const id of ids) {
         const event = state.events.find((item) => item.id === id)!;
         const entries = links.byOffer.filter((item) => item.eventId === id);
-        expect(entries.map((item) => item.offerId)).toEqual(event.scope.offers);
+        expect(entries.map((item) => item.offerId)).toEqual(event.offers);
         expect(entries.every((item) => item.classification === 'pending')).toBe(true);
         expect(entries.every((item) => item.issue === 'not-generated')).toBe(true);
-        for (const offerId of event.scope.offers)
-          expect(links.forOffer(id, offerId)).toBe('pending');
+        for (const offerId of event.offers) expect(links.forOffer(id, offerId)).toBe('pending');
       }
       // Only these dates are pending: every other linked date has a generated activity.
       expect([
@@ -104,7 +103,7 @@ describe('the 21 audited dates (section 11)', () => {
     expect(pending).toHaveLength(
       state.events
         .filter((event) => event.activity)
-        .reduce((sum, event) => sum + event.scope.offers.length, 0),
+        .reduce((sum, event) => sum + event.offers.length, 0),
     );
     // Cascavel has two dates only for the undergraduate offer: pending for that offer only.
     if (fixture === cascavelDraft)

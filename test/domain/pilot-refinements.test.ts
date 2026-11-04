@@ -157,12 +157,14 @@ test('assessment range colors only endpoints and preserves intervening holiday c
         end: civilDate('2027-04-30'),
         category: 'limite',
         name: 'Etapa',
+        offers: ['integrado'],
       },
       {
         start: civilDate('2027-03-26'),
         end: civilDate('2027-03-26'),
         category: 'feriado',
         name: 'Feriado',
+        offers: ['integrado'],
       },
     ],
   );

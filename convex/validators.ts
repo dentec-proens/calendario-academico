@@ -51,8 +51,6 @@ export const notice = v.object({
     }),
   ),
 });
-/** Offers of a local date, always listed, and whether the campus chose them. */
-export const eventScope = v.object({ offers: v.array(v.string()), confirmed: v.boolean() });
 /**
  * Link of a date with the activity it serves: one shape per repetition base.
  * The declared IDs of each base are checked by the domain (`activityRef()`), not by prefix.
@@ -78,7 +76,8 @@ export const event = v.object({
   activity: v.optional(activityRef),
   /** Internal date of the campus (art. 18); eligibility is checked by the domain. */
   internal: v.optional(v.literal(true)),
-  scope: eventScope,
+  /** Offers the date reaches; the domain checks that the list is not empty. */
+  offers: v.array(v.string()),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
   notice: v.optional(notice),
@@ -106,8 +105,7 @@ export const institutionalEventSnapshot = v.object({
   effect,
   evidence: v.string(),
   category: v.optional(v.string()),
-  modalities: v.optional(v.array(modality)),
-  offers: v.optional(v.array(v.string())),
+  offers: v.array(v.string()),
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
   notice: v.optional(notice),

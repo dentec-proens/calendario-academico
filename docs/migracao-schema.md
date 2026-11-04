@@ -53,4 +53,4 @@ Alguns valores antigos continuam válidos no formato atual:
 - Pareceres anteriores aos envios não têm `submissionId` e precisam ser salvos de novo no primeiro envio.
 - Os envios seguem as migrações futuras de formato de `calendarContents`: a evidência preserva o significado, não os bytes.
 - Em 2027 valem só as atividades declaradas pela política; ela não gera mais as linhas opcionais da lista operacional (a antiga “Classificação legada”). Uma data vinculada a uma delas conserva o vínculo e fica em **Vínculo a conferir**. Anos sem política seguem a lista operacional.
-- Os snapshots institucionais conservam tipos normativos em `modalities`. O escopo é resolvido por `offer.kind`, sem reintroduzir esse campo nos eventos locais.
+- As entradas do snapshot institucional listam as ofertas que alcançam em `offers`, resolvidas a partir de `modalities` do catálogo quando são copiadas; o snapshot não tem `modalities`.

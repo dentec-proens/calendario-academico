@@ -23,7 +23,7 @@ for (const width of [1440, 390]) {
           publication: 'published',
           admission: { type: 'transfer', year: 2027, term: 'annual', destinations: [] },
         },
-        scope: { offers: ['integrado'], confirmed: true },
+        offers: ['integrado'],
       },
       {
         id: 'previous-plan',
@@ -32,7 +32,7 @@ for (const width of [1440, 390]) {
         end: civilDate('2026-11-01'),
         effect: 'note',
         notice: { publication: 'planned' },
-        scope: { offers: ['integrado'], confirmed: true },
+        offers: ['integrado'],
       },
       {
         id: 'cross-year-note',
@@ -40,7 +40,7 @@ for (const width of [1440, 390]) {
         start: civilDate('2026-12-15'),
         end: civilDate('2027-01-12'),
         effect: 'note',
-        scope: { offers: ['integrado'], confirmed: true },
+        offers: ['integrado'],
       },
     );
     const paths = [

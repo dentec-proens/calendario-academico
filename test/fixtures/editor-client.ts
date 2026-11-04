@@ -43,6 +43,7 @@ export const record: WireCalendarRecord = {
       end: civilDate('2027-10-15'),
       effect: 'exclude',
       evidence: 'Base sintética',
+      offers: ['integrado'],
       institutional: true,
     },
   ],

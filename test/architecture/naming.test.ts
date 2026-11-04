@@ -153,7 +153,6 @@ test('dates and offers of format 5 have no field of format 4', () => {
   expectTypeOf<CalendarEvent>().not.toHaveProperty('requirementId');
   expectTypeOf<CalendarEvent>().not.toHaveProperty('kind');
   expectTypeOf<CalendarEvent>().not.toHaveProperty('recordType');
-  expectTypeOf<CalendarEvent>().not.toHaveProperty('offers');
   expectTypeOf<CalendarEvent>().not.toHaveProperty('publicationStatus');
   expectTypeOf<CalendarEvent>().not.toHaveProperty('admission');
   expectTypeOf<InstitutionalEventSnapshot>().not.toHaveProperty('requirementId');
@@ -161,7 +160,7 @@ test('dates and offers of format 5 have no field of format 4', () => {
   expectTypeOf<InstitutionalEventSnapshot>().not.toHaveProperty('recordType');
   expectTypeOf<CalendarOffer>().not.toHaveProperty('legacyStageCount');
   expect(retiredDateFields).toEqual(
-    expect.arrayContaining(['requirementId', 'kind', 'recordType', 'offers']),
+    expect.arrayContaining(['requirementId', 'kind', 'recordType']),
   );
   expect(retiredOfferFields).toEqual(['legacyStageCount']);
 });
@@ -180,8 +179,9 @@ test('the institutional projection is not part of a local date', () => {
   expectTypeOf<InstitutionalEventSnapshot>().toHaveProperty('originalStart');
   expectTypeOf<InstitutionalEventSnapshot>().toHaveProperty('originalEnd');
   expectTypeOf<InstitutionalEventSnapshot>().toHaveProperty('institutional');
-  // Snapshots keep their scope by offer type; only local dates have `scope`.
+  // Both list the offers they reach; the snapshot has no offer types of its own.
   expectTypeOf<InstitutionalEventSnapshot>().toExtend<DateFields>();
-  expectTypeOf<InstitutionalEventSnapshot>().not.toHaveProperty('scope');
-  expectTypeOf<CalendarEvent>().toHaveProperty('scope');
+  expectTypeOf<InstitutionalEventSnapshot>().not.toHaveProperty('modalities');
+  expectTypeOf<InstitutionalEventSnapshot>().toHaveProperty('offers');
+  expectTypeOf<CalendarEvent>().toHaveProperty('offers');
 });

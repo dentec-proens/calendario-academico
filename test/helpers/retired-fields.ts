@@ -4,11 +4,10 @@
  * the old names stay out of the code of format 5.
  */
 
-/** Of a local date: the effect, the link, the offers, the record type and the notice fields. */
+/** Of a local date: the effect, the link, the record type and the notice fields. */
 export const retiredDateFields: readonly string[] = [
   'kind',
   'requirementId',
-  'offers',
   'recordType',
   'publicationStatus',
   'admission',

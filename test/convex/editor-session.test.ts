@@ -198,7 +198,7 @@ test('removing the last period is saved and leaves the unchanged stages to revie
             id: `stage-${number}`,
             name: `${number}ª etapa`,
             activity: definedStage('stage', 'integrado', 'annual', number),
-            scope: { offers: ['integrado'], confirmed: true },
+            offers: ['integrado'],
             start: civilDate(number === 1 ? '2027-03-01' : '2027-03-15'),
             end: civilDate(number === 1 ? '2027-03-12' : '2027-03-26'),
             assessmentAutoStart: civilDate('2027-03-01'),
@@ -465,6 +465,7 @@ test('confirmation keeps the identity shown to the person instead of accepting a
         end: civilDate('2027-04-01'),
         effect: 'exclude',
         evidence: 'Portaria',
+        offers: record.state.offers.map((offer) => offer.id),
       },
     ],
   });
@@ -490,6 +491,7 @@ test.each(['before-failure', 'after-failure'])(
           end: civilDate('2027-04-01'),
           effect: 'note' as const,
           evidence: 'Portaria',
+          offers: original.state.offers.map((offer) => offer.id),
         },
       ],
     };
@@ -584,7 +586,7 @@ test('canonical state keeps manual sources absent on opening, save acknowledgeme
           effect: 'note',
           start: civilDate('2027-03-01'),
           end: civilDate('2027-03-01'),
-          scope: { offers: ['integrado'], confirmed: true },
+          offers: ['integrado'],
         },
       ],
     },

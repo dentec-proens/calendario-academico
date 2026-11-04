@@ -74,7 +74,7 @@ function notice(extra: Partial<CalendarEvent> = {}): CalendarEvent {
     effect: 'note' as const,
     start: civilDate('2026-12-10'),
     end: civilDate('2026-12-10'),
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
     notice: {
       publication: 'published',
       admission: {
@@ -142,7 +142,7 @@ test('one event covers only the explicitly declared offers and does not waive ve
         start: civilDate('2027-01-15'),
         end: civilDate('2027-01-15'),
         activity: cycleLink('enrolment', 'annual'),
-        scope: { offers: ['subsequente'], confirmed: true },
+        offers: ['subsequente'],
       }),
       notice: undefined,
     },
@@ -323,7 +323,7 @@ test('article 3 extends only explicitly classified municipal causes to the first
     start: civilDate('2027-08-31'),
     end: civilDate('2027-09-02'),
     effect: 'exclude' as const,
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
     deadlineExtensionCause: 'municipal-holiday',
   };
   const otherHoliday: CalendarEvent = {
@@ -367,7 +367,7 @@ test('article 3 extends only explicitly classified municipal causes to the first
       start: civilDate('2027-09-03'),
       end: civilDate('2027-09-03'),
       effect: 'note' as const,
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
       activity: onceLink('robotics'),
     },
   ];
@@ -390,7 +390,7 @@ test('repeating the same command is idempotent and another ID cannot duplicate t
   expect(() => applyDate(once, other, [])).toThrow('mesmas datas');
 });
 
-test('an unconfirmed scope remains visible but never covers its offers in 2027', () => {
+test('a linked date over several offers covers each of them in 2027', () => {
   const state = calendar();
   state.events = [
     {
@@ -398,14 +398,19 @@ test('an unconfirmed scope remains visible but never covers its offers in 2027',
         start: civilDate('2027-02-01'),
         end: civilDate('2027-02-01'),
         activity: onceLink('campus-events'),
-        scope: { offers: state.offers.map((offer) => offer.id), confirmed: false },
+        offers: state.offers.map((offer) => offer.id),
       }),
       notice: undefined,
     },
   ];
   const rows = evaluatePlan(state).rows.filter((row) => row.requirement.id === 'campus-events');
-  expect(rows.every((row) => row.coverage === 'partial' && row.events.length === 1)).toBe(true);
-  expect(rows.every((row) => row.issues.some((issue) => issue.includes('ofertas')))).toBe(true);
+  expect(rows.length).toBeGreaterThan(1);
+  expect(rows.map((row) => row.offerId)).toEqual(state.offers.map((offer) => offer.id));
+  for (const row of rows) {
+    expect(row.coverage, row.offerId).toBe('complete');
+    expect(row.events).toHaveLength(1);
+    expect(row.issues).toEqual([]);
+  }
 });
 
 test('commands and direct import reject teaching inclusion outside the selected offer periods', () => {
@@ -416,13 +421,13 @@ test('commands and direct import reject teaching inclusion outside the selected 
     start: civilDate('2027-07-20'),
     end: civilDate('2027-07-20'),
     effect: 'include' as const,
-    scope: { offers: ['graduacao'], confirmed: true },
+    offers: ['graduacao'],
   };
   expect(() => applyDate(state, event, [])).toThrow('períodos');
   expect(() => normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [event] })).toThrow(
     'períodos',
   );
-  const integrated = { ...event, scope: { offers: ['integrado'], confirmed: true } };
+  const integrated = { ...event, offers: ['integrado'] };
   expect(
     normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [integrated] }).events,
   ).toHaveLength(1);

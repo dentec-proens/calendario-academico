@@ -156,7 +156,7 @@ test('editing one shared offer preserves the other offer and existing inclusions
           offerId: modality,
           position: { status: 'defined' as const, term: 'annual' as const, number: index + 1 },
         },
-        scope: { offers: [modality as 'integrado' | 'graduacao'], confirmed: true },
+        offers: [modality as 'integrado' | 'graduacao'],
         start: index ? '2027-04-01' : '2027-03-01',
         end: index ? '2027-04-30' : '2027-03-31',
         effect: 'note',
@@ -169,7 +169,7 @@ test('editing one shared offer preserves the other offer and existing inclusions
       start: '2027-03-06',
       end: '2027-03-06',
       effect: 'include',
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
     });
     record.version++;
     await window.publishReviewerCalendar();
@@ -193,8 +193,8 @@ test('editing one shared offer preserves the other offer and existing inclusions
     offers: ['graduacao'],
     term: 'annual',
   });
-  expect(saved.events.filter((e) => e.scope.offers.includes('graduacao'))).toEqual(
-    original.events.filter((e) => e.scope.offers.includes('graduacao')),
+  expect(saved.events.filter((e) => e.offers.includes('graduacao'))).toEqual(
+    original.events.filter((e) => e.offers.includes('graduacao')),
   );
   expect(saved.events.find((e) => e.id === 'sat')).toEqual(
     original.events.find((e) => e.id === 'sat'),

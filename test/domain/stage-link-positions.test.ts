@@ -37,7 +37,7 @@ const stageEvent = (id: string, activity: CalendarEvent['activity'], month: numb
   effect: 'note' as const,
   category: 'limite',
   activity,
-  scope: { offers: ['integrado'], confirmed: true },
+  offers: ['integrado'],
 });
 
 /** A stored annual integrated calendar whose number of stages the campus has not informed. */

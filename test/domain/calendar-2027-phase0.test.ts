@@ -75,7 +75,7 @@ test('a documented 2026 occurrence retains its actual dates through the event co
     end: civilDate('2026-12-01'),
     effect: 'note' as const,
     publicationStatus: 'published' as const,
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
   };
   const applied = applyDate(state, event, []);
   const normalized = normalizeOfferCalendar(applied);

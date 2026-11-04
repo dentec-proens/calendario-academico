@@ -266,7 +266,7 @@ window.reviewUiTest = {
       end: civilDate('2027-10-05'),
       effect: 'note' as const,
       category: 'evento',
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
       evidence: '',
     });
     snapshot.criteria = reviewSupport(reviewRecord(), [

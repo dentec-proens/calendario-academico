@@ -118,7 +118,7 @@ export function validateActivityRecord(
     if (issue) throw new DomainError(issue);
   }
   if (event.effect === 'include' && state.periods) {
-    const scope = event.scope.offers;
+    const scope = event.offers;
     for (let time = parseDate(event.start); time <= parseDate(event.end); time += 86400000) {
       const date = new Date(time).toISOString().slice(0, 10);
       if (
@@ -167,11 +167,11 @@ const termNames = { annual: 'ciclo anual', first: '1º semestre', second: '2º s
  */
 export function noticeDestinationIssues(
   state: AssessmentSettings & { periods: CalendarPeriod[] },
-  event: Pick<CalendarEvent, 'notice' | 'scope'>,
+  event: Pick<CalendarEvent, 'notice' | 'offers'>,
 ): NoticeDestinationIssue[] {
   const admission = event.notice?.admission;
   if (!admission?.destinations.length) return [];
-  return event.scope.offers.flatMap((offerId): NoticeDestinationIssue[] => {
+  return event.offers.flatMap((offerId): NoticeDestinationIssue[] => {
     const periodId = admissionDestination(event, offerId);
     if (periodId === undefined)
       return [

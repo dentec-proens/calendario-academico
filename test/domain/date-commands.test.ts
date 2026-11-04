@@ -34,7 +34,7 @@ const campusDate = (changes: Partial<Input> = {}): Input => ({
   end: civilDate('2027-05-04'),
   effect: 'note',
   category: 'evento',
-  scope: { offers: ['integrado'], confirmed: true },
+  offers: ['integrado'],
   ...changes,
 });
 
@@ -152,7 +152,7 @@ describe('updateDate', () => {
       end: civilDate('2027-01-10'),
       effect: 'note',
       category: 'prazo',
-      scope: { offers: ['integrado', 'graduacao'], confirmed: true },
+      offers: ['integrado', 'graduacao'],
       activity: cycleLink('admission-notice', 'annual'),
       notice: {
         publication: 'planned',

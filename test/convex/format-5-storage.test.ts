@@ -167,11 +167,7 @@ test('a client built for format 4 is refused by saveCalendar and saveReview', as
   const v4State = {
     ...record.state,
     schemaVersion: 4,
-    events: record.state.events.map(({ effect, scope, ...event }) => ({
-      ...event,
-      kind: effect,
-      ...(scope.confirmed ? { offers: scope.offers } : {}),
-    })),
+    events: record.state.events.map(({ effect, ...event }) => ({ ...event, kind: effect })),
   };
   const body = (state: unknown) => ({
     version: record.version,

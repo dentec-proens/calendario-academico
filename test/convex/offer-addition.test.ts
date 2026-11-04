@@ -50,7 +50,7 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
       id: `stage-${index + 1}`,
       name: `${index + 1}ª etapa`,
       activity: definedStage('stage', 'integrado', 'annual', index + 1),
-      scope: { offers: ['integrado'], confirmed: true },
+      offers: ['integrado'],
       start: index ? '2027-03-15' : '2027-03-01',
       end: index ? '2027-03-26' : '2027-03-12',
       effect: 'note' as const,

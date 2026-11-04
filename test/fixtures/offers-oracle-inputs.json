@@ -1,7 +1,7 @@
 {
   "oracleSourceCommit": "34e35b9eaed1162d676299920e4d9b27680cc549",
   "oracleSha256": "eff78c9cb6b7e88f6061bb4a2b40c99a2cce22c2e054cc2490b569dd9e77e75c",
-  "capture": "Inputs converted by the validated release A converter before its removal in release B; expected projections remain in offers-v3-oracle.json. Converted to format 5 (cases and the catalogue of offers-v3-oracle.json) by the phase 2 migration converter at bd9826b, before its removal in the contraction. Rewritten afterwards by rules 1 to 5 and 7 of src/domain/calendar/normalization/convert-format-6.ts, keeping scope and schemaVersion 5. The three cases of an offer without organization were removed.",
+  "capture": "Inputs converted by the validated release A converter before its removal in release B; expected projections remain in offers-v3-oracle.json. Converted to format 5 (cases and the catalogue of offers-v3-oracle.json) by the phase 2 migration converter at bd9826b, before its removal in the contraction. Rewritten afterwards by rules 1 to 7 of src/domain/calendar/normalization/convert-format-6.ts (rule 6 only for the dates, since the inputs carry no snapshot), keeping schemaVersion 5. The three cases of an offer without organization were removed.",
   "releaseAConverters": {
     "src/domain/calendar/normalization/conversion.ts": "6753eaa8469e799c3fa5c3d778119641570a9a7fc2e926e2e52bcfd28b40048a",
     "src/domain/calendar/normalization/conversion-v4.ts": "e124b04ef6d5a938ee31858f6b852e8dd1eb7432d585bb29add020f63e71ffa9"
@@ -62,10 +62,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-2",
@@ -83,10 +80,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-3",
@@ -104,10 +98,7 @@
                 "number": 3
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-4",
@@ -125,10 +116,7 @@
                 "number": 4
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "saturday",
@@ -136,10 +124,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "saturday-blocker",
@@ -147,10 +132,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "community",
@@ -161,10 +143,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "implicit-note",
@@ -172,10 +151,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": false
-            }
+            "offers": ["integrado"]
           }
         ],
         "year": 2027,
@@ -237,10 +213,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-2",
@@ -258,10 +231,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday",
@@ -269,10 +239,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday-blocker",
@@ -280,10 +247,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "community",
@@ -294,10 +258,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "implicit-note",
@@ -305,10 +266,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": false
-            }
+            "offers": ["graduacao"]
           }
         ],
         "year": 2027,
@@ -370,10 +328,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-2",
@@ -391,10 +346,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-3",
@@ -412,10 +364,7 @@
                 "number": 3
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday",
@@ -423,10 +372,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday-blocker",
@@ -434,10 +380,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "community",
@@ -448,10 +391,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "implicit-note",
@@ -459,10 +399,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": false
-            }
+            "offers": ["graduacao"]
           }
         ],
         "year": 2027,
@@ -524,10 +461,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-2",
@@ -545,10 +479,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-3",
@@ -566,10 +497,7 @@
                 "number": 3
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-4",
@@ -587,10 +515,7 @@
                 "number": 4
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday",
@@ -598,10 +523,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday-blocker",
@@ -609,10 +531,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "community",
@@ -623,10 +542,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "implicit-note",
@@ -634,10 +550,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": false
-            }
+            "offers": ["graduacao"]
           }
         ],
         "year": 2027,
@@ -710,10 +623,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-2",
@@ -731,10 +641,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday",
@@ -742,10 +649,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday-blocker",
@@ -753,10 +657,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "community",
@@ -767,10 +668,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "implicit-note",
@@ -778,10 +676,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": false
-            }
+            "offers": ["graduacao"]
           }
         ],
         "year": 2027,
@@ -854,10 +749,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-2",
@@ -875,10 +767,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-3",
@@ -896,10 +785,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-4",
@@ -917,10 +803,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday",
@@ -928,10 +811,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday-blocker",
@@ -939,10 +819,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "community",
@@ -953,10 +830,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "implicit-note",
@@ -964,10 +838,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": false
-            }
+            "offers": ["graduacao"]
           }
         ],
         "year": 2027,
@@ -1129,10 +1000,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-2",
@@ -1150,10 +1018,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-3",
@@ -1171,10 +1036,7 @@
                 "number": 3
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-4",
@@ -1192,10 +1054,7 @@
                 "number": 4
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "subsequente-stage-1",
@@ -1213,10 +1072,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["subsequente"],
-              "confirmed": true
-            }
+            "offers": ["subsequente"]
           },
           {
             "id": "subsequente-stage-2",
@@ -1234,10 +1090,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["subsequente"],
-              "confirmed": true
-            }
+            "offers": ["subsequente"]
           },
           {
             "id": "graduacao-stage-1",
@@ -1255,10 +1108,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-2",
@@ -1276,10 +1126,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-3",
@@ -1297,10 +1144,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-4",
@@ -1318,10 +1162,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "posgraduacao-stage-1",
@@ -1339,10 +1180,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["posgraduacao"],
-              "confirmed": true
-            }
+            "offers": ["posgraduacao"]
           },
           {
             "id": "posgraduacao-stage-2",
@@ -1360,10 +1198,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["posgraduacao"],
-              "confirmed": true
-            }
+            "offers": ["posgraduacao"]
           },
           {
             "id": "saturday",
@@ -1371,10 +1206,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "saturday-blocker",
@@ -1382,10 +1214,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "community",
@@ -1396,10 +1225,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "implicit-note",
@@ -1407,10 +1233,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["integrado", "subsequente", "graduacao", "posgraduacao"],
-              "confirmed": false
-            }
+            "offers": ["integrado", "subsequente", "graduacao", "posgraduacao"]
           }
         ],
         "year": 2027,
@@ -1469,10 +1292,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["posgraduacao"],
-              "confirmed": true
-            }
+            "offers": ["posgraduacao"]
           },
           {
             "id": "posgraduacao-stage-2",
@@ -1490,10 +1310,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["posgraduacao"],
-              "confirmed": true
-            }
+            "offers": ["posgraduacao"]
           },
           {
             "id": "saturday",
@@ -1501,10 +1318,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["posgraduacao"],
-              "confirmed": true
-            }
+            "offers": ["posgraduacao"]
           },
           {
             "id": "saturday-blocker",
@@ -1512,10 +1326,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["posgraduacao"],
-              "confirmed": true
-            }
+            "offers": ["posgraduacao"]
           },
           {
             "id": "community",
@@ -1526,10 +1337,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["posgraduacao"],
-              "confirmed": true
-            }
+            "offers": ["posgraduacao"]
           },
           {
             "id": "implicit-note",
@@ -1537,10 +1345,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["posgraduacao"],
-              "confirmed": false
-            }
+            "offers": ["posgraduacao"]
           }
         ],
         "year": 2027,
@@ -1640,10 +1445,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-2",
@@ -1661,10 +1463,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-3",
@@ -1682,10 +1481,7 @@
                 "number": 3
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-4",
@@ -1703,10 +1499,7 @@
                 "number": 4
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "graduacao-stage-1",
@@ -1724,10 +1517,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-2",
@@ -1745,10 +1535,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday",
@@ -1756,10 +1543,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "saturday-blocker",
@@ -1767,10 +1551,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "community",
@@ -1781,10 +1562,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "implicit-note",
@@ -1792,10 +1570,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["integrado", "graduacao"],
-              "confirmed": false
-            }
+            "offers": ["integrado", "graduacao"]
           }
         ],
         "year": 2027,
@@ -1854,10 +1629,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-2",
@@ -1875,10 +1647,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday",
@@ -1886,10 +1655,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday-blocker",
@@ -1897,10 +1663,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "community",
@@ -1911,10 +1674,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "implicit-note",
@@ -1922,10 +1682,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": false
-            }
+            "offers": ["graduacao"]
           }
         ],
         "year": 2027,
@@ -2007,10 +1764,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "saturday-blocker",
@@ -2018,10 +1772,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "community",
@@ -2032,10 +1783,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "implicit-note",
@@ -2043,10 +1791,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["integrado", "graduacao"],
-              "confirmed": false
-            }
+            "offers": ["integrado", "graduacao"]
           }
         ],
         "year": 2027,
@@ -2118,10 +1863,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-2",
@@ -2139,10 +1881,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-3",
@@ -2160,10 +1899,7 @@
                 "number": 3
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-4",
@@ -2181,10 +1917,7 @@
                 "number": 4
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "graduacao-stage-1",
@@ -2202,10 +1935,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-2",
@@ -2223,10 +1953,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday",
@@ -2234,10 +1961,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "saturday-blocker",
@@ -2245,10 +1969,7 @@
             "start": "2027-02-06",
             "end": "2027-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "community",
@@ -2259,10 +1980,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "implicit-note",
@@ -2270,10 +1988,7 @@
             "start": "2027-05-03",
             "end": "2027-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["integrado", "graduacao"],
-              "confirmed": false
-            }
+            "offers": ["integrado", "graduacao"]
           }
         ],
         "year": 2027,
@@ -2362,10 +2077,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-2",
@@ -2383,10 +2095,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-3",
@@ -2404,10 +2113,7 @@
                 "number": 3
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "integrado-stage-4",
@@ -2425,10 +2131,7 @@
                 "number": 4
               }
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "graduacao-stage-1",
@@ -2446,10 +2149,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-2",
@@ -2467,10 +2167,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-3",
@@ -2488,10 +2185,7 @@
                 "number": 3
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday",
@@ -2499,10 +2193,7 @@
             "start": "2026-02-06",
             "end": "2026-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "saturday-blocker",
@@ -2510,10 +2201,7 @@
             "start": "2026-02-06",
             "end": "2026-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "community",
@@ -2524,10 +2212,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
+            "offers": ["integrado"]
           },
           {
             "id": "implicit-note",
@@ -2535,10 +2220,7 @@
             "start": "2026-05-03",
             "end": "2026-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["integrado", "graduacao"],
-              "confirmed": false
-            }
+            "offers": ["integrado", "graduacao"]
           }
         ],
         "year": 2026,
@@ -2608,10 +2290,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["subsequente"],
-              "confirmed": true
-            }
+            "offers": ["subsequente"]
           },
           {
             "id": "subsequente-stage-2",
@@ -2629,10 +2308,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["subsequente"],
-              "confirmed": true
-            }
+            "offers": ["subsequente"]
           },
           {
             "id": "saturday",
@@ -2640,10 +2316,7 @@
             "start": "2026-02-06",
             "end": "2026-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["subsequente"],
-              "confirmed": true
-            }
+            "offers": ["subsequente"]
           },
           {
             "id": "saturday-blocker",
@@ -2651,10 +2324,7 @@
             "start": "2026-02-06",
             "end": "2026-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["subsequente"],
-              "confirmed": true
-            }
+            "offers": ["subsequente"]
           },
           {
             "id": "community",
@@ -2665,10 +2335,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["subsequente"],
-              "confirmed": true
-            }
+            "offers": ["subsequente"]
           },
           {
             "id": "implicit-note",
@@ -2676,10 +2343,7 @@
             "start": "2026-05-03",
             "end": "2026-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["subsequente"],
-              "confirmed": false
-            }
+            "offers": ["subsequente"]
           }
         ],
         "year": 2026,
@@ -2752,10 +2416,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-2",
@@ -2773,10 +2434,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-3",
@@ -2794,10 +2452,7 @@
                 "number": 1
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "graduacao-stage-4",
@@ -2815,10 +2470,7 @@
                 "number": 2
               }
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday",
@@ -2826,10 +2478,7 @@
             "start": "2028-02-06",
             "end": "2028-02-06",
             "effect": "include",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "saturday-blocker",
@@ -2837,10 +2486,7 @@
             "start": "2028-02-06",
             "end": "2028-02-06",
             "effect": "exclude",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "community",
@@ -2851,10 +2497,7 @@
             "activity": {
               "activityId": "family-meeting"
             },
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": true
-            }
+            "offers": ["graduacao"]
           },
           {
             "id": "implicit-note",
@@ -2862,10 +2505,7 @@
             "start": "2028-05-03",
             "end": "2028-05-03",
             "effect": "note",
-            "scope": {
-              "offers": ["graduacao"],
-              "confirmed": false
-            }
+            "offers": ["graduacao"]
           }
         ],
         "year": 2028,

@@ -119,7 +119,7 @@ test('the round-trip preserves independent organization, intake, actual dates an
             destinations: [{ offerId: 'graduacao', periodId: 'undergraduate-first' }],
           },
         },
-        scope: { offers: ['graduacao'], confirmed: true },
+        offers: ['graduacao'],
       },
       {
         id: 'future-admission',
@@ -132,7 +132,7 @@ test('the round-trip preserves independent organization, intake, actual dates an
           admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
         },
         deadlineAdjustment: { date: civilDate('2027-12-15') },
-        scope: { offers: ['integrado'], confirmed: true },
+        offers: ['integrado'],
       },
     ],
   };
@@ -194,7 +194,7 @@ test('direct backend writes retain temporal and offer-scope validation', async (
     start: civilDate('2026-12-01'),
     end: civilDate('2026-12-01'),
     effect: 'note' as const,
-    scope: { offers: ['integrado'], confirmed: true },
+    offers: ['integrado'],
   };
   for (const forged of [
     { ...event, effect: 'include' as const },
@@ -272,7 +272,7 @@ test('a direct inclusion must fit every explicitly covered offer period', async 
           body: {
             version: record.version,
             catalogueRevision: record.catalogueRevision,
-            state: { ...state, events: [{ ...event, scope: { offers, confirmed: true } }] },
+            state: { ...state, events: [{ ...event, offers }] },
           },
         })
         .then(calendarSaveDates),
@@ -285,12 +285,12 @@ test('a direct inclusion must fit every explicitly covered offer period', async 
         catalogueRevision: record.catalogueRevision,
         state: {
           ...state,
-          events: [{ ...event, scope: { offers: ['integrado'], confirmed: true } }],
+          events: [{ ...event, offers: ['integrado'] }],
         },
       },
     })
     .then(calendarSaveDates);
-  expect(saved.state.events[0].scope.offers).toEqual(['integrado']);
+  expect(saved.state.events[0].offers).toEqual(['integrado']);
 });
 
 test('a legacy review without submission cannot certify current rules or export without reevaluating the criteria', async () => {
@@ -384,11 +384,11 @@ function oneOffer(
         association: { ...period.association, offers: ['graduacao'] },
       })),
     events: fixture.events
-      .filter((event) => event.scope.offers.includes(source))
+      .filter((event) => event.offers.includes(source))
       .map((event) => ({
         ...event,
         id: event.id.replace(source, 'graduacao'),
-        scope: { offers: ['graduacao'], confirmed: true },
+        offers: ['graduacao'],
         activity:
           event.activity && 'offerId' in event.activity
             ? { ...event.activity, offerId: 'graduacao' }
@@ -434,9 +434,7 @@ test.each(['annual', 'semester', 'trimester', 'three'] as const)(
           period.association.status !== 'defined' ||
           !period.association.offers.includes('integrado'),
       );
-      reference.events = reference.events.filter(
-        (event) => !event.scope.offers.includes('integrado'),
-      );
+      reference.events = reference.events.filter((event) => !event.offers.includes('integrado'));
     }
     const created = await actor
       .mutation(api.calendars.createCalendar, {
@@ -533,7 +531,7 @@ test('backend rejects a newly moved stage in the wrong semester but preserves un
     start: civilDate('2027-06-01'),
     end: civilDate('2027-06-01'),
     effect: 'note' as const,
-    scope: { offers: ['graduacao'], confirmed: true },
+    offers: ['graduacao'],
   };
   const kept = await actor
     .mutation(api.calendars.saveCalendar, {

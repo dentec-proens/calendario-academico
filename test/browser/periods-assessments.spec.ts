@@ -98,7 +98,7 @@ test('changing an offer cycle previews linked dates to review and keeps their li
         id: 'final-result',
         name: 'Resultado final da graduação',
         activity: { activityId: 'final', term: 'annual' },
-        scope: { offers: ['graduacao'], confirmed: true },
+        offers: ['graduacao'],
         start: '2027-12-17',
         end: '2027-12-17',
         effect: 'note',

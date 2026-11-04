@@ -72,7 +72,7 @@ export interface OfferRemovalPreview {
 
 const ownsDate = (event: CalendarEvent, id: string) =>
   (event.activity !== undefined && 'offerId' in event.activity && event.activity.offerId === id) ||
-  (event.scope.offers.includes(id) && event.scope.offers.length === 1);
+  (event.offers.includes(id) && event.offers.length === 1);
 
 export function offerRemovalPreview(state: ActivityState, id: string): OfferRemovalPreview {
   if (!offerFor(state, id)) throw new DomainError('A oferta não pertence ao calendário.');
@@ -81,7 +81,7 @@ export function offerRemovalPreview(state: ActivityState, id: string): OfferRemo
   return {
     removedDates: state.events.filter((event) => ownsDate(event, id)).map((event) => event.name),
     narrowedDates: state.events
-      .filter((event) => !ownsDate(event, id) && event.scope.offers.includes(id))
+      .filter((event) => !ownsDate(event, id) && event.offers.includes(id))
       .map((event) => event.name),
     removedPeriods: state.periods
       .filter(
@@ -94,7 +94,7 @@ export function offerRemovalPreview(state: ActivityState, id: string): OfferRemo
 /**
  * Removes an offer of a draft with everything that is only its own: its stages and the dates
  * that reach only it, its periods, its intake and its admission destinations. A date of several
- * offers keeps the others, with its confirmation. The calendar keeps at least one offer.
+ * offers keeps the others, The calendar keeps at least one offer.
  */
 export function removeOffer<S extends ActivityState>(
   state: S,
@@ -109,8 +109,8 @@ export function removeOffer<S extends ActivityState>(
   });
   const events = state.events.flatMap((event) => {
     if (ownsDate(event, id)) return [];
-    const next = event.scope.offers.includes(id)
-      ? { ...event, scope: { ...event.scope, offers: event.scope.offers.filter((o) => o !== id) } }
+    const next = event.offers.includes(id)
+      ? { ...event, offers: event.offers.filter((o) => o !== id) }
       : event;
     const admission = next.notice?.admission;
     if (!admission?.destinations.some((destination) => destination.offerId === id)) return [next];

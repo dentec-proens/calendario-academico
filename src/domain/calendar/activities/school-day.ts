@@ -58,12 +58,12 @@ export function underNorm(
  */
 export function schoolDayIssue(
   state: AssessmentSettings & { year: number; weekdays?: readonly number[] },
-  event: Classified & Pick<CalendarEvent, 'name' | 'scope' | 'start' | 'end'>,
+  event: Classified & Pick<CalendarEvent, 'name' | 'offers' | 'start' | 'end'>,
 ): string | undefined {
   if (event.effect !== 'include') return undefined;
   const nature = schoolDayNature(state.year, event);
   if (nature === undefined || nature === 'school-day') return undefined;
-  if (!underNorm(state, event.scope.offers)) return undefined;
+  if (!underNorm(state, event.offers)) return undefined;
   const basis = policyFor(state.year).schoolDay!.basis;
   if (nature === 'deadline')
     return `“${event.name}” é prazo ou marco e não constitui dia letivo (${basis}): não acrescenta dias à contagem.`;

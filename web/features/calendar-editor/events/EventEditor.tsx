@@ -77,11 +77,11 @@ export default function EventEditor() {
   const distinctSaved =
     commonDestination(
       saved?.notice?.admission?.destinations ?? [],
-      saved ? saved.scope.offers : offerIds(state),
+      saved ? saved.offers : offerIds(state),
     ) === keptDestinations;
   const destinations = publication ? draftDestinations(values, saved) : [];
   const destinationIssues = destinationIssueLines(state, {
-    scope: { offers: values.offers, confirmed: true },
+    offers: values.offers,
     notice: {
       admission: {
         type: values.admissionType || 'regular',
@@ -189,7 +189,7 @@ export default function EventEditor() {
       activity: editor.activity,
       category: values.category,
       effect: values.effect as EventEffect,
-      scope: { offers: values.offers, confirmed: true },
+      offers: values.offers,
       start: values.start as CivilDate,
       end: values.end as CivilDate,
     });
@@ -342,7 +342,7 @@ export default function EventEditor() {
           <div className="row-form">{nameField}</div>
           <form.Field name="offers">
             {(field) => {
-              // Offers already chosen stay visible so a legacy scope can be corrected.
+              // Offers already chosen stay visible so a legacy list can be corrected.
               const choices = offerIds(state).filter(
                 (modality) => offers.includes(modality) || field.state.value.includes(modality),
               );

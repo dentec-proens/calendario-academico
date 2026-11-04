@@ -44,7 +44,7 @@ const date = (changes: Partial<Input> = {}): Input => ({
   end: tuesday,
   effect: 'note',
   category: 'conselho',
-  scope: { offers: ['integrado'], confirmed: true },
+  offers: ['integrado'],
   ...changes,
 });
 
