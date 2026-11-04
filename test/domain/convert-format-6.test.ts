@@ -378,3 +378,16 @@ test('a document the normalization refuses stops the conversion', () => {
     }),
   ).toThrow('fora do calendário');
 });
+
+test('a cycle link the assigned organization does not generate is in the report', () => {
+  const link = (term: string) => ({ activity: { activityId: 'final', term } });
+  const { report } = convert({
+    offers: [offer('a')],
+    periods: [first, second],
+    events: [
+      date('annual', link('annual')),
+      date('first', { ...link('first'), start: '2027-07-01', end: '2027-07-01' }),
+    ] as Format5State['events'],
+  });
+  expect(report.linksToReview).toEqual([{ eventId: 'annual', issue: 'not-generated' }]);
+});

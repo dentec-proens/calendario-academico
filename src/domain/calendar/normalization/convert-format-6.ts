@@ -1,5 +1,6 @@
 import { DomainError } from '../../errors.ts';
 
+import { linksToReview } from '../activities/links.ts';
 import { normalizeOfferCalendar } from './normalize.ts';
 
 /**
@@ -71,6 +72,8 @@ export interface ConversionReport {
   downgradedInclusions: string[];
   /** Linked dates whose offers were not confirmed by the campus: they now count as fulfilment. */
   coverageWidened: string[];
+  /** Dates under “Vínculo a conferir” after the conversion, stage or cycle, with the reason. */
+  linksToReview: { eventId: string; issue: string }[];
   /** Snapshot entries whose offer kinds are not in the calendar. */
   removedSnapshotEntries: string[];
   /** Snapshot entries with an empty list, which now list every offer. */
@@ -84,6 +87,7 @@ const emptyReport = (): ConversionReport => ({
   positions: [],
   downgradedInclusions: [],
   coverageWidened: [],
+  linksToReview: [],
   removedSnapshotEntries: [],
   widenedSnapshotEntries: [],
 });
@@ -336,7 +340,11 @@ export function convertToFormat6<D extends Format5Document>(
   // Only validation: normalizing also stamps the current ruleset, fills categories and regenerates
   // vacations, and a migration writes none of that. A date or offer it refuses stops the operation.
   const input = { ...copy(converted), year, campus: '' };
-  normalizeOfferCalendar(input, copy(input) as never);
+  const validated = normalizeOfferCalendar(input, copy(input) as never);
+  report.linksToReview = [...linksToReview(validated)].map(([eventId, issue]) => ({
+    eventId,
+    issue,
+  }));
   return {
     document: {
       ...document,
