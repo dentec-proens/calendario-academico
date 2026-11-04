@@ -6,11 +6,10 @@ sistema: **corte limpo**. O aplicativo está em alfa, os dados em produção pod
 migração, e o código não sustenta formatos antigos nem estados de transição. O que a migração não
 resolve sozinha é resolvido com regra determinística e perda declarada, não com código legado.
 
-Uma decisão fica registrada como adotada por este plano e sujeita a confirmação da gestão antes
-do ensaio de B3: a organização padrão da migração para ofertas a classificar (regra 3 de B1), com
-as opções descritas ali. Pareceres não são uma restrição: em 04/11/2026 a tabela `reviews` de
-produção estava vazia, e a gestão decidiu que qualquer parecer existente na data da migração é
-apagado por ela.
+Decisões da gestão registradas (04/11/2026): a organização das ofertas a classificar é inferida
+pelos períodos do calendário (regra 3 de B1); pareceres não são uma restrição, porque a tabela
+`reviews` de produção estava vazia e qualquer parecer existente na data da migração é apagado por
+ela.
 
 ## Situação
 
@@ -226,26 +225,21 @@ por documento:
    reorganização futura (`organization/offers.ts`). Perda declarada: a nota “Ingresso informado” do
    formulário e o sufixo “(não exigido: sem ingresso…)” do catálogo operacional, que passa a não
    distinguir ausência de ingresso.
-3. **Organização** (decisão pendente da gestão). Toda oferta `a-classificar` recebe uma
-   organização. Os dados de produção em 04/11/2026: 25 ofertas em 12 rascunhos; em 8 deles o
-   calendário tem exatamente dois períodos sem associação, quase certamente os semestres do
-   formato 4; nos outros 4 não há período nem total informado. Opções:
-   - **Anual para todas**: com `stages: { defined, perTerm: count }` quando havia total informado,
-     sem `stages` quando não havia. Simples; nos 8 rascunhos com dois períodos, a regra 4 os
-     remove e uma graduação semestral terá de ser reorganizada pelo campus, etapa por etapa, porque
-     posições definidas nunca são reinterpretadas (**Corrigir atividade vinculada**).
-   - **Inferir pelos períodos** (recomendada): dois períodos sem associação e sem sobreposição no
-     calendário → `semestral`, com os dois períodos associados a essas ofertas como 1º e 2º
-     semestres e `perTerm = count / 2` quando o total é par; um período ou nenhum → `anual`. Total
-     ímpar com dois períodos → `anual`, com os períodos removidos pela regra 4. Acerta nos dados
-     atuais; erra se um campus anual registrou dois períodos por outro motivo.
-   - **Não decidir**: oferta sem períodos e sem etapas, datas desvinculadas, campus preenche de
-     novo. Não grava palpite, perde mais dados.
-     Perda declarada em qualquer opção: a organização atribuída pela migração aparece no relatório
-     por calendário, para o campus conferir.
-4. **Períodos sem associação.** Exatamente um período sem associação no documento → período anual
-   compartilhado entre as ofertas que a regra 3 definiu (a normalização aceita associação com
-   várias ofertas do mesmo ciclo). Zero → nada. Dois ou mais → removidos, listados no relatório
+3. **Organização inferida pelos períodos.** Toda oferta `a-classificar` recebe uma organização a
+   partir dos períodos sem associação do calendário, antes da regra 4:
+   - exatamente dois períodos sem associação, sem sobreposição → `semestral`; os dois períodos, em
+     ordem de data, passam a 1º e 2º semestres associados a essas ofertas; o total informado par
+     vira `perTerm = count / 2`; total ímpar → `anual`, e a regra 4 trata os períodos;
+   - um período ou nenhum → `anual`, com `stages: { defined, perTerm: count }` quando havia total
+     informado e sem `stages` quando não havia;
+   - três ou mais períodos sem associação → `anual`, e a regra 4 os remove.
+     Nos dados de 04/11/2026 (25 ofertas em 12 rascunhos), 8 rascunhos cairiam em semestral e 4,
+     sem período nem total, em anual. Perda declarada: um campus anual que tenha registrado dois
+     períodos por outro motivo recebe semestral e precisa reorganizar; a organização atribuída
+     aparece no relatório por calendário, para o campus conferir.
+4. **Períodos sem associação** que a regra 3 não consumiu. Exatamente um → período anual
+   compartilhado entre as ofertas anuais que a regra 3 definiu (a normalização aceita associação
+   com várias ofertas do mesmo ciclo). Zero → nada. Dois ou mais → removidos, listados no relatório
    com os destinos de edital que apontavam para eles (que ficam `orphan` e derrubam a cobertura do
    edital de transferência até o campus escolher outro período). `targetDays` de um período que
    passa a ter associação é apagado, para que o primeiro salvamento não recalcule o término sem
