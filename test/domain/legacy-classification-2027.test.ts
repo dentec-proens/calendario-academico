@@ -32,7 +32,6 @@ import {
   releasedGlobal,
   releasedOperational,
 } from '../helpers/released-activities.ts';
-import { legacyBasis } from '../helpers/legacy-classification.ts';
 import { storedCases, type StoredCase } from '../helpers/stored-fixtures.ts';
 
 /**
@@ -59,6 +58,9 @@ const states2027: [string, ActivityState][] = [
     legacyOperationalLinks,
   ].map((fixture) => [fixture.name, fixture() as ActivityState] as [string, ActivityState]),
 ];
+
+/** Basis of the optional rows format 4 lent 2027 from the operational catalogue. */
+const legacyBasis = 'Classificação legada';
 
 const baseOf = (ref: ActivityRef): ActivityBase =>
   'position' in ref ? 'stage' : 'term' in ref ? 'cycle' : 'semester' in ref ? 'semester' : 'once';

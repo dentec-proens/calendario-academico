@@ -232,3 +232,19 @@ export function formatExpected(catalogues: ExpectedCatalogues): string {
   });
   return `{\n${years.join(',\n')}\n}\n`;
 }
+
+/**
+ * A fixture of named cases, each with lists of items: one line per item, so a change in the rules
+ * shows in review as the lines that changed.
+ */
+export function formatCases(cases: Record<string, Record<string, readonly unknown[]>>): string {
+  const body = Object.entries(cases).map(([name, lists]) => {
+    const sections = Object.entries(lists).map(([key, items]) =>
+      items.length
+        ? `    ${JSON.stringify(key)}: [\n${items.map((item) => `      ${JSON.stringify(item)}`).join(',\n')}\n    ]`
+        : `    ${JSON.stringify(key)}: []`,
+    );
+    return `  ${JSON.stringify(name)}: {\n${sections.join(',\n')}\n  }`;
+  });
+  return `{\n${body.join(',\n')}\n}\n`;
+}

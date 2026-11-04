@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
 import type {
   ActivityState,
@@ -24,18 +24,7 @@ import {
   offerLabel,
   offerFor,
 } from '../../src/domain/calendar/offers.ts';
-import { withDeclaredCategories } from '../helpers/declared-categories.ts';
-import {
-  withSplitCoverage,
-  withSplitReadiness,
-  withSplitWithdrawal,
-} from '../helpers/split-withdrawal.ts';
-import {
-  withOptionalNotice,
-  withOptionalNoticeCoverage,
-  withOptionalNoticeReadiness,
-} from '../helpers/optional-notice.ts';
-import { legacyIds, namesLegacyRow } from '../helpers/legacy-classification.ts';
+import { canonical, formatCases } from '../helpers/catalogue-reference.ts';
 
 /**
  * Static v3 oracle captured before the M2/M3 implementation, from commit 34e35b9.
@@ -209,7 +198,8 @@ function readinessTokens(projection: unknown, state: ActivityState) {
   return value;
 }
 
-// Oracle test: no update mode. Changes to the expected JSON require the pre-v4 source.
+// The v3 oracle has no update mode: it is checked by hash, and changing it requires the pre-v4
+// source. Only the catalogue paths follow the rules, through their own fixture (see below).
 const oracle = JSON.parse(
   readFileSync(new URL('../fixtures/offers-v3-oracle.json', import.meta.url), 'utf8'),
 ) as {
@@ -254,60 +244,92 @@ test('retains the immutable pre-v4 oracle and all independently captured v4 inpu
 });
 
 interface Projection {
-  requirements: { id: string; basis?: string }[];
-  diagnostics: { coverage: { requirementId: string; applicability: string }[] };
+  requirements: object[];
+  diagnostics: { structure: unknown; teaching: unknown; coverage: object[] };
   readiness: { issues: string[]; warnings: string[] };
 }
 
+/** A readiness message that names an activity of the catalogue as `[id]`. */
+const namesActivity = (message: string) => /\[[a-z0-9][a-z0-9:-]*\]/.test(message);
+
 /**
- * Step 9d: 2027 no longer generates the rows of “Classificação legada”. The capture is compared
- * without them, their coverage and the readiness messages that name them; no date of these inputs
- * is linked to one of them.
+ * The paths that follow the catalogue: the expanded rows, the plan coverage and the readiness
+ * messages that cite an activity. They change when the rules do, so they are expected from
+ * `test/fixtures/offers-catalogue-expected.json`, which `UPDATE_CATALOGUE_EXPECTED=1` rewrites
+ * from the current code (see `catalogue-expected.test.ts` for the regime).
  */
-function withoutLegacyRows(expected: unknown): unknown {
-  const value = structuredClone(expected) as Projection;
-  const ids = legacyIds(value.requirements);
-  value.requirements = value.requirements.filter((row) => !ids.has(row.id));
-  value.diagnostics.coverage = value.diagnostics.coverage.filter(
-    (row) => !ids.has(row.requirementId),
-  );
-  value.readiness.issues = value.readiness.issues.filter((text) => !namesLegacyRow(text, ids));
-  value.readiness.warnings = value.readiness.warnings.filter((text) => !namesLegacyRow(text, ids));
-  return value;
-}
+const catalogueOf = (projection: Projection) => ({
+  requirements: projection.requirements,
+  coverage: projection.diagnostics.coverage,
+  issues: projection.readiness.issues.filter(namesActivity),
+  warnings: projection.readiness.warnings.filter(namesActivity),
+});
+
+/**
+ * The paths the v3 oracle keeps frozen: periods, dates, minimums, counting, base identity, window,
+ * the structural and teaching diagnostics, and the readiness that does not cite an activity.
+ */
+const frozenOf = (projection: Projection) => {
+  const { requirements: _requirements, diagnostics, readiness, ...rest } = projection;
+  return {
+    ...rest,
+    diagnostics: { structure: diagnostics.structure, teaching: diagnostics.teaching },
+    readiness: {
+      ...readiness,
+      issues: readiness.issues.filter((message) => !namesActivity(message)),
+      warnings: readiness.warnings.filter((message) => !namesActivity(message)),
+    },
+  };
+};
 
 // The oracle's catalogue was captured before format 5; the inputs file keeps it in format 5.
 const catalogue = { ...oracle.catalogue, events: inputs.catalogueEvents };
 
-test.each(inputs.cases.filter(({ input }) => input.year > 2026))(
-  'preserves the captured semantics in format 5: $name',
-  ({ name, input: stored }) => {
-    const expected = withoutLegacyRows(oracle.cases.find((item) => item.name === name)!.expected);
-    // consup-292-2027-v6 declares default categories the capture did not have; v7 splits the
-    // art. 11, VII, deadline, in 2027 and in the operational catalogue.
-    {
-      const projection = expected as Projection;
-      const of2027 = stored.year === 2027;
-      projection.requirements = withSplitWithdrawal(
-        of2027
-          ? withOptionalNotice(withDeclaredCategories(projection.requirements))
-          : projection.requirements,
-      );
-      projection.diagnostics.coverage = withSplitCoverage(
-        of2027
-          ? withOptionalNoticeCoverage(projection.diagnostics.coverage)
-          : projection.diagnostics.coverage,
-      );
-      const readiness = (messages: string[]) =>
-        withSplitReadiness(of2027 ? withOptionalNoticeReadiness(messages) : messages);
-      projection.readiness.issues = readiness(projection.readiness.issues);
-      projection.readiness.warnings = readiness(projection.readiness.warnings);
-    }
+const cases = inputs.cases.filter(({ input }) => input.year > 2026);
+const projections = new Map<string, Projection>();
+function projectionOf(name: string, stored: ActivityState) {
+  if (!projections.has(name)) {
     const input = structuredClone(stored);
-    const before = structuredClone(input);
-    expect(readinessTokens(semanticProjection(input, catalogue), input)).toEqual(
-      readinessTokens(expected, input),
+    projections.set(
+      name,
+      readinessTokens(semanticProjection(input, catalogue), input) as Projection,
     );
-    expect(input).toEqual(before);
-  },
-);
+  }
+  return projections.get(name)!;
+}
+
+const catalogueFile = new URL('../fixtures/offers-catalogue-expected.json', import.meta.url);
+if (process.env.UPDATE_CATALOGUE_EXPECTED === '1')
+  writeFileSync(
+    catalogueFile,
+    formatCases(
+      Object.fromEntries(
+        cases.map(({ name, input }) => [
+          name,
+          canonical(catalogueOf(projectionOf(name, input))) as Record<string, unknown[]>,
+        ]),
+      ),
+    ),
+  );
+const expectedCatalogue = JSON.parse(readFileSync(catalogueFile, 'utf8')) as Record<
+  string,
+  ReturnType<typeof catalogueOf>
+>;
+
+test('the catalogue fixture covers every case, in order', () => {
+  expect(Object.keys(expectedCatalogue)).toEqual(cases.map(({ name }) => name));
+});
+
+test.each(cases)('keeps the frozen semantics of the v3 oracle in format 5: $name', (item) => {
+  const input = structuredClone(item.input);
+  const before = structuredClone(input);
+  const frozen = oracle.cases.find((entry) => entry.name === item.name)!.expected as Projection;
+  expect(frozenOf(projectionOf(item.name, item.input))).toEqual(
+    frozenOf(readinessTokens(frozen, input) as Projection),
+  );
+  expect(input).toEqual(before);
+});
+
+test.each(cases)('the catalogue paths follow the expected fixture: $name', (item) => {
+  expect(catalogueOf(projectionOf(item.name, item.input))).toEqual(expectedCatalogue[item.name]);
+});
