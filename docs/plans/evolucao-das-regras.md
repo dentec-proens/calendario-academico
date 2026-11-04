@@ -1,13 +1,13 @@
 # Evolução das regras e simplificação do modelo
 
-Plano em elaboração. Passou por três revisões críticas independentes (duas do Codex CLI e uma de
-um subagente Opus 5.5, em 04/11/2026), cujos achados estão incorporados aqui. Decisão da gestão do
+Plano em elaboração. Passou por quatro revisões críticas independentes (duas do Codex CLI e duas do
+Opus 5.5, em 04/11/2026), cujos achados estão incorporados aqui. Decisão da gestão do
 sistema: **corte limpo**. O aplicativo está em alfa, os dados em produção podem ser alterados por
 migração, e o código não sustenta formatos antigos nem estados de transição. O que a migração não
 resolve sozinha é resolvido com regra determinística e perda declarada, não com código legado.
 
 Decisões da gestão registradas (04/11/2026): a organização das ofertas a classificar é inferida
-pelos períodos do calendário (regra 3 de B1); pareceres não são uma restrição, porque a tabela
+pelos períodos do calendário (regra 2 de B1); pareceres não são uma restrição, porque a tabela
 `reviews` de produção estava vazia e qualquer parecer existente na data da migração é apagado por
 ela.
 
@@ -72,7 +72,8 @@ existente na terceira, e a regravação do oráculo gravado: 276 a 1.330 linhas 
 
 Levantamento sobre os 44 conteúdos de calendário em produção (04/11/2026, leitura só; 42 rascunhos
 e 2 enviados; 23 sem versão de regras). O inventário completo, antes de migrar, cobre também os
-envios (`calendarSubmissions`, mesmos validadores) e a lixeira, e as combinações listadas em B3.
+envios (`calendarSubmissions`, mesmos validadores) e a lixeira, e as combinações listadas em Ordem e
+verificação.
 
 | Conceito                                                               | Em produção                                                       |
 | ---------------------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -104,9 +105,9 @@ isenção desse vínculo não gerado, não um estado de transição, e fica.
 
 ## Proposta
 
-Cada item é um commit próprio, com `pnpm check` antes. A parte A não muda comportamento. A parte B
-muda dados e comportamento, numa única release de formato, com o que muda e o que se perde
-declarado.
+Cada item é um commit próprio, com typecheck, lint e testes afetados; `pnpm check` roda uma vez antes
+de concluir cada fase da Ordem (`AGENTS.md`). A parte A não muda comportamento. A parte B muda dados e
+comportamento, numa única release de formato, com o que muda e o que se perde declarado.
 
 ### Parte A: custo de mudar uma regra
 
@@ -127,7 +128,7 @@ declarado.
    `optional`; ingresso `yes` sem exigência → `optional`; linha com `intake` e sem `term` lê a
    configuração anual; `applicability: 'required'` com `required: false` → `required`.
 
-#### A2. Vínculos protegidos por ID e base, por catálogo (depois de B3)
+#### A2. Vínculos protegidos por ID e base, por catálogo (depois do formato 6)
 
 `released activities stay declared` compara só IDs e só das políticas vinculadas; o catálogo
 operacional não tem lista publicada. Passar a registrar pares ID + base de repetição em dois
@@ -147,7 +148,7 @@ um ponto de reinicialização.
 3. Teste de integridade: todo `criterion` das regras existe nos critérios; os critérios sem regra
    são exatamente `minutes`, `II`, `III`, `IV`, `annual`, `semester` e `window`.
 
-#### A4. Transição controlada dos oráculos (depois de B3)
+#### A4. Transição controlada dos oráculos (depois do formato 6)
 
 1. **Configurações de referência completas.** Antes de qualquer impressão, ampliar
    `referenceSettings` em `ruleset-history.test.ts` com ofertas `presencial` e `ead` sem `scope`,
@@ -167,12 +168,11 @@ um ponto de reinicialização.
 3. **Regravação revisável.** A fixture só muda por `UPDATE_CATALOGUE_EXPECTED=1`; cada mudança
    normativa declara no commit quais linhas, aplicabilidades e coberturas podiam mudar. Manter os
    testes que afirmam o efeito de cada versão (v7 reabre revisão, v8 mantém a fronteira da v7).
-4. **Oráculo v3** (`offers-equivalence.test.ts`): após B3, os casos `a-classificar` saem; nos
-   demais, os caminhos de catálogo (`requirements`, `diagnostics.coverage`, mensagens de
+4. **Oráculo v3** (`offers-equivalence.test.ts`): depois do formato 6, sem os casos `a-classificar`
+   retirados em B2, os caminhos de catálogo (`requirements`, `diagnostics.coverage`, mensagens de
    `readiness` que citam `[id]`) passam ao mesmo regime da fixture; `events`, `periods`,
    `counting`, `baseIdentity`, `window`, `diagnostics.structure` e `diagnostics.teaching`
-   continuam congelados. `reported-stages.test.ts` e `legacy-stage-count-oracle.json` são apagados
-   em B3.
+   continuam congelados.
 5. **Oráculo gravado mais enxuto.** Retirar de `stored-oracle.ts` a lista `activities` e as linhas
    de cobertura sem datas vinculadas e sem pendências, deriváveis da aplicabilidade coberta pela
    fixture de catálogo. É aí que estão as centenas de linhas por commit.
@@ -202,107 +202,163 @@ porque os campi editam rascunhos em paralelo.
 - `review.annualReference`: no contrato e numa consulta defensiva em `technical-support.ts`, sem
   política que o forneça. Retirar.
 - `intakeRequirements` e `windowInReadiness` no contrato da política: coincidem com `configured`;
-  os consumidores (`IntakeRequirementForm.tsx`, `readiness.ts`) passam a ler `configured`.
-  `explicitRecordOffers` sai em B3, com `confirmed`.
-- `deadlineAdjustment.reviewed`: nunca lido pela cobertura; retirar do modelo, da validação e da
-  variante do snapshot institucional (`validators.ts`), que nunca é produzida. O mecanismo de prazo
-  ajustado (`plan-evaluation.ts`, critério `admission-regular`) **fica**: permite cobertura
-  completa com aviso ao edital regular publicado após o prazo de referência.
+  os consumidores (`IntakeRequirementForm.tsx`, `rules-view.ts`, `readiness.ts`) passam a ler
+  `configured`. `explicitRecordOffers` sai em B2, com `confirmed`.
+- Erro de validação de argumentos do Convex: nada o traduz hoje, e um validador não produz mensagem
+  própria. O tratamento de erro de gravação do cliente passa a mostrá-lo como “Atualize a aplicação”.
+
+O mecanismo de prazo ajustado (`plan-evaluation.ts`, critério `admission-regular`) **fica**: permite
+cobertura completa com aviso ao edital regular publicado após o prazo de referência. Só o campo
+`deadlineAdjustment.reviewed`, nunca lido pela cobertura, sai, em B2, porque muda o schema.
 
 #### B1. O conversor do formato 6
 
-Uma função pura e determinística `convertToFormat6(content, offers)` em
-`src/domain/calendar/normalization/`, sem `crypto.randomUUID` nem `Date.now`, aplicada com a mesma
-regra a `calendarContents`, `calendarSubmissions` e a cópia JSON importada. Regras, nesta ordem,
-por documento:
+Uma função pura e determinística `convertToFormat6(document, year)` em
+`src/domain/calendar/normalization/`, sem `crypto.randomUUID` nem `Date.now`. Recebe o conteúdo ou o
+envio inteiro (estado e snapshot institucional) e o ano lido de `calendars`, e devolve o documento
+convertido e o relatório da perda. Aplica a mesma regra a `calendarContents` e
+`calendarSubmissions`, tem os tipos do formato 5 congelados e existe só até a contração, como o
+conversor da v5. Regras, nesta ordem, por documento:
 
 1. **Campos sem uso.** Apagar `organizationBasis` e `deadlineAdjustment.reviewed`.
-2. **`intake` só com `required`.** Nenhum fluxo produz `status: 'no'`; em 2027, `no`,
-   `unknown` e `yes` sem exigência dão o mesmo resultado. `intake` passa a
-   `Partial<Record<term, true>>`: só os ciclos com `required: true` sobrevivem, e, depois da regra
-   3, só os ciclos que a organização da oferta tem (`termsFor`): uma exigência em `first` numa
-   oferta que vira anual é apagada e listada, porque uma exigência órfã bloquearia toda
-   reorganização futura (`organization/offers.ts`). Perda declarada: a nota “Ingresso informado” do
-   formulário e o sufixo “(não exigido: sem ingresso…)” do catálogo operacional, que passa a não
-   distinguir ausência de ingresso.
-3. **Organização inferida pelos períodos.** Toda oferta `a-classificar` recebe uma organização a
-   partir dos períodos sem associação do calendário, antes da regra 4:
+2. **Organização inferida pelos períodos.** Toda oferta `a-classificar` recebe uma organização a
+   partir dos períodos sem associação do calendário:
    - exatamente dois períodos sem associação, sem sobreposição → `semestral`; os dois períodos, em
-     ordem de data, passam a 1º e 2º semestres associados a essas ofertas; o total informado par
-     vira `perTerm = count / 2`; total ímpar → `anual`, e a regra 4 trata os períodos;
-   - um período ou nenhum → `anual`, com `stages: { defined, perTerm: count }` quando havia total
-     informado e sem `stages` quando não havia;
-   - três ou mais períodos sem associação → `anual`, e a regra 4 os remove.
-     Nos dados de 04/11/2026 (25 ofertas em 12 rascunhos), 8 rascunhos cairiam em semestral e 4,
-     sem período nem total, em anual. Perda declarada: um campus anual que tenha registrado dois
-     períodos por outro motivo recebe semestral e precisa reorganizar; a organização atribuída
-     aparece no relatório por calendário, para o campus conferir.
-4. **Períodos sem associação** que a regra 3 não consumiu. Exatamente um → período anual
-   compartilhado entre as ofertas anuais que a regra 3 definiu (a normalização aceita associação
-   com várias ofertas do mesmo ciclo). Zero → nada. Dois ou mais → removidos, listados no relatório
-   com os destinos de edital que apontavam para eles (que ficam `orphan` e derrubam a cobertura do
-   edital de transferência até o campus escolher outro período). `targetDays` de um período que
-   passa a ter associação é apagado, para que o primeiro salvamento não recalcule o término sem
-   aviso.
-5. **Posições de etapa.** Vínculo com posição `unclassified`, em oferta a classificar ou já
-   definida: se o ordinal cabe no total da oferta (`stageOrdinal`) e nenhuma outra data do mesmo
-   `activityId` e `offerId` ocupa a posição, vira posição definida; senão, a data perde o vínculo e
-   `assessmentAutoStart`, com desempate fixo por `start` e depois `id`, e fica como data do campus
-   com a descrição original, listada no relatório.
-6. **Abrangência.** `scope.confirmed` deixa de existir; `scope: { offers }` é achatado em
-   `offers`, nunca vazio, nas datas locais e nas entradas do snapshot institucional (resolvidas por
-   tipo de oferta a partir de `modalities` nos documentos não regravados desde a materialização;
-   `modalities: []` nunca produz `[]`). `appliesTo` fica com uma forma. Efeito declarado: datas
-   convertidas do formato 4 com todas as ofertas passam a contar como atendimento para todas; o
-   relatório lista, por calendário, as atividades cuja cobertura muda. O catálogo institucional
-   (`convex/catalogue.ts`) continua declarando `modalities`; a resolução fica na cópia.
-7. **Inclusões letivas** cujo escopo tinha oferta a classificar são conferidas contra os períodos
-   da regra 4; se ficarem fora, perdem o efeito `include` (viram `note`) com registro no relatório.
-8. **Saída normalizada.** O resultado passa por `normalizeOfferCalendar(m, m)` e é gravado como
-   `offerCalendarContent(...)`; se a normalização lançar erro, o documento é recusado e o ensaio
-   para. `schemaVersion: 6`.
-9. **Hashes.** `contentHash` de cada envio recalculado sobre o conteúdo convertido;
-   `contentVersion` inalterado.
+     ordem de data, passam a 1º e 2º semestres associados às ofertas semestrais; o total informado
+     par vira `perTerm = count / 2`, e sem total a oferta fica sem `stages`. O total ímpar decide
+     por oferta: ela vira `anual`, com `perTerm = count` e sem período, e as demais continuam
+     semestrais; se nenhuma ficar semestral, os períodos seguem para a regra 3;
+   - nos demais casos (um período, nenhum, dois com sobreposição, três ou mais) → `anual`, com
+     `stages: { defined, perTerm: count }` quando havia total informado e sem `stages` quando não
+     havia.
 
-Perda declarada e transferida ao campus, por calendário, no relatório do ensaio: organização
-decidida pela migração, períodos removidos, destinos de edital órfãos, vínculos retirados,
-inclusões rebaixadas, coberturas que mudam. O relatório é enviado a cada campus.
+   Nos dados de 04/11/2026 (25 ofertas em 12 rascunhos), 8 rascunhos têm dois períodos e cairiam em
+   semestral, salvo ofertas de total ímpar, e 4, sem período nem total, em anual. Perda declarada:
+   um campus anual que tenha registrado dois períodos por outro motivo recebe semestral e precisa
+   reorganizar; a organização atribuída aparece no relatório por calendário, para o campus conferir.
+
+3. **Períodos sem associação** que a regra 2 não consumiu. Exatamente um, havendo oferta anual
+   definida pela regra 2 → período anual compartilhado entre essas ofertas (a normalização aceita
+   associação com várias ofertas do mesmo ciclo). Zero → nada. Nos demais casos (dois ou mais, ou
+   calendário sem oferta definida pela regra 2) → removidos, listados no relatório com os destinos
+   de edital que apontavam para eles (que ficam `orphan` e derrubam a cobertura do edital de
+   transferência até o campus escolher outro período). Os números indicam um calendário sem oferta a
+   classificar nesse caso: 18 períodos em 9 calendários, dos quais 16 nos 8 rascunhos da regra 2.
+   `targetDays` de um período que passa a ter associação, por esta regra ou pela 2, é apagado, para
+   que o primeiro salvamento não recalcule o término sem aviso.
+4. **`intake` só com `required`.** Nenhum fluxo produz `status: 'no'`; em 2027, `no`, `unknown` e
+   `yes` sem exigência dão o mesmo resultado. `intake` passa a `Partial<Record<term, true>>`: só os
+   ciclos com `required: true` sobrevivem, e só os que a organização atribuída pela regra 2 tem
+   (`termsFor`): uma exigência em `first` numa oferta que vira anual, ou em `annual` numa que vira
+   semestral, é apagada e listada, porque uma exigência órfã bloquearia toda reorganização futura
+   (`organization/offers.ts`). Perda declarada: a nota “Ingresso informado” do formulário e o sufixo
+   “(não exigido: sem ingresso…)” do catálogo operacional, que passa a não distinguir ausência de
+   ingresso.
+5. **Posições de etapa.** Vínculo com posição `unclassified`, em oferta a classificar ou já
+   definida, vira sempre posição definida e conserva o vínculo e `assessmentAutoStart`: se o ordinal
+   existe na organização da oferta, a posição dele (`stagePosition`); senão (oferta sem total ou
+   ordinal além do total), `{ term: 'annual', number: ordinal }` em oferta anual e
+   `{ term: 'first', number: ordinal }` em oferta semestral. Essas posições só são geradas quando
+   correspondem de fato àquele ordinal, então nunca apontam para a etapa errada. Até lá a data fica
+   em **Vínculo a conferir** (`not-generated`), resolvida ao informar as etapas ou por **Corrigir
+   atividade vinculada**; duas datas no mesmo ordinal recebem a mesma posição e, quando gerada, ficam
+   em `duplicate-stage`. A data não vira data do campus, porque `validateLinks` não deixa uma data
+   sem vínculo ganhar um depois: o campus teria de apagá-la e recriá-la.
+6. **Abrangência.** `scope.confirmed` deixa de existir; `scope: { offers }` é achatado em `offers`,
+   nunca vazio, nas datas locais e nas entradas do snapshot institucional. Num snapshot não regravado
+   desde a materialização: `modalities` resolve para as ofertas desses tipos; `[]` em `offers` ou
+   `modalities`, ou nenhum dos dois, resolve para todas as ofertas, como `appliesTo` já faz; uma
+   entrada cujos tipos não têm oferta no calendário não alcança ninguém e sai do snapshot. Os casos
+   de `[]` e de entrada retirada mudam a identidade da base e vão para o relatório. `appliesTo` fica
+   com uma forma. Efeito declarado: datas convertidas do formato 4 com todas as ofertas passam a
+   contar como atendimento para todas; o relatório lista, por calendário, as atividades cuja
+   cobertura muda. O catálogo institucional (`convex/catalogue.ts`) continua declarando `modalities`;
+   a resolução fica na cópia.
+7. **Inclusões letivas** cujo escopo tinha oferta a classificar são conferidas contra os períodos
+   das regras 2 e 3; se ficarem fora, perdem o efeito `include` (viram `note`) com registro no
+   relatório.
+8. **Validação, não reescrita.** O resultado é validado por `normalizeOfferCalendar(m, m)`, com o
+   ano, mas o que se grava é a saída do conversor. A normalização carimba a versão de regras atual em
+   todo documento (nas fixtures, 25 dos 27 que passam por ela hoje), preenche `category` e regenera
+   as férias. `rulesetVersion` fica como estava, inclusive ausente, e o documento segue pela
+   conferência de regras normal. Se a validação lançar erro, o documento é recusado e o ensaio para.
+   `schemaVersion: 6`.
+9. **Hashes.** Antes de converter um envio, conferir que `contentHash` é o do próprio envio; um hash
+   divergente interrompe a migração sem escrita. Depois, `contentHash` recalculado sobre o conteúdo
+   convertido; `contentVersion` inalterado.
+
+**A migração** fica em `convex/migrations.ts`, em `pending`, nesta ordem: conteúdos, envios,
+`reviewVersions`, `reviews`. Converte um documento por lote, lê o ano em `calendars` e não reescreve
+um documento já no formato 6, de modo que reexecutar não muda nada.
+
+- **Status na janela.** `revisado`, `vigente` ou `arquivado` interrompem a migração sem escrita. O
+  primeiro perderia o parecer e é reaberto ou devolvido pelo fluxo normal antes da janela; os outros
+  dois teriam um documento publicado reescrito e exigem decisão própria. `enviado` e `em_revisao`
+  seguem, e a revisão recomeça sobre o conteúdo migrado.
+- **Conferência.** Comparando as exportações: só `calendarContents` e `calendarSubmissions` mudam, e
+  só como o conversor determina; `reviews` e `reviewVersions` ficam vazias; `calendars` (versão e
+  status inclusive), catálogo, documentos e auditoria ficam iguais. A identidade da base de cada
+  documento é igual antes e depois, salvo os casos listados pela regra 6. Envio igual ao conteúdo
+  antes continua igual depois. Divergência bloqueia a reabertura.
+
+Perda declarada e transferida ao campus, por calendário: organização decidida pela migração, períodos
+removidos, destinos de edital órfãos, vínculos que ficam a conferir (posições e vínculos `term` que a
+organização atribuída não gera), exigências de ingresso apagadas, inclusões rebaixadas, entradas
+retiradas do snapshot, coberturas que mudam. O relatório do ensaio é prévia, porque os campi continuam
+editando; o definitivo sai do backup feito já em manutenção e é enviado a cada campus. Um calendário
+enviado cuja cópia recebe organização atribuída ou outra perda fica apontado no inventário, e o
+relatório dele vai também a quem faz a revisão.
 
 #### B2. O que muda no código com o formato 6
 
-- Modelo: `Organization` sem `a-classificar`; `OfferStages` só `defined`; `PeriodAssociation` só
-  `defined`; `StagePosition` só `defined`; `CalendarEvent.offers` no lugar de `scope`;
-  `IntakeConfiguration` reduzida; `organizationSummary([])` devolve `null`.
-- Retirados: `keptWithoutActivity` **não** (fica, é a isenção do vínculo não gerado); `LinkStates`
-  e `sameLink` (`links.ts`, `normalize.ts`); `reportedStageCount` e a guarda de `prepare-save.ts`;
-  o ramo `unclassified` de `stageOrdinal` e `activityFromKey`; a conversão de ordinal em
-  `reorganizedLinks`; `explicitRecordOffers`; a confirmação de abrangência em
-  `plan-evaluation.ts`; `regeneratedVacations` preserva só o vínculo.
-- “Vínculo a conferir” fica com `duplicate-stage`, `stage-sequence`, `out-of-cycle` e
-  **`not-generated`** (a organização atual deixou de gerar a atividade), que hoje divide o nome
-  `unclassified` com a posição legada. A situação de edital `Execution 'unclassified'` é outra coisa
-  e não muda.
-- Contrato de criação (`contracts.ts`, `calendars.ts`): oferta nova nasce sem organização só no
-  cliente; o servidor exige organização definida. Placeholder do formulário ajustado.
-- Prontidão: some `organization-unclassified`; as conferências hoje silenciadas para `reported`
-  passam a valer.
-- Cópias JSON: `readCalendarOfferInput` aceita o formato 6; uma cópia do formato 5 é convertida na
-  importação pelo mesmo conversor, com o relatório mostrado ao campus; formato 4 continua recusado
-  com `formatFourCopyMessage`.
-- Clientes antigos: o validador de argumentos recusa `scope.confirmed` com mensagem própria
-  (“Atualize a aplicação”), não erro genérico; a expansão do schema aceita os dois formatos até a
-  contração.
-- Testes: as fixtures gravadas (`test/fixtures/stored/*`, `offers-oracle-inputs.json`) são
-  convertidas pelo conversor, e o teste “each stored submission keeps its hash” vira o teste
-  unitário dele; `reported-stages.test.ts` e `legacy-stage-count-oracle.json` são apagados; os
-  casos `a-classificar` do oráculo v3 saem.
+Roteiro em passos, com cada commit verde. Em cada passo, as fixtures gravadas
+(`test/fixtures/stored/*`, `offers-oracle-inputs.json`) recebem as regras correspondentes do
+conversor, com o que muda no oráculo declarado no commit. Do passo 1 até a expansão a `main` não é
+publicada e não entra mudança de regra.
+
+1. **Conversor e schema alargado.** Conversor puro e relatório, testados sobre as fixtures, sem mudar
+   o modelo. `convex/schema.ts` passa a aceitar os validadores congelados do formato 5 e os atuais.
+2. **Ofertas sempre organizadas** (regras 1 a 4). `Organization` sem `a-classificar`; `OfferStages`
+   e `PeriodAssociation` só `defined`; `IntakeConfiguration` reduzida, com os casos de `unknown` e
+   `no` saindo da tabela de A1; `deadlineAdjustment.reviewed` retirado, inclusive da variante do
+   snapshot; `organizationSummary([])` devolve `null`. Retirados `reportedStageCount`, a guarda de
+   `prepare-save.ts` e `secondSemesterIntake`. Contrato de criação (`contracts.ts`, `calendars.ts`):
+   oferta nova nasce sem organização só no cliente, o servidor exige organização definida, e o
+   placeholder do formulário é ajustado. Prontidão: some `organization-unclassified`, e as
+   conferências hoje silenciadas para `reported` passam a valer. Consumidores a ajustar também:
+   `diff.ts`, `counting/evaluation.ts`, `diagnostics.ts`, `activities/validation.ts`,
+   `printing/calendar-layout.ts`, `printing/teaching-day-breakdown.ts`, o `regime` de
+   `technical-support.ts` e `contracts.ts`.
+3. **Posições** (regra 5). `StagePosition` só `defined`; retirados `LinkStates` e `sameLink`
+   (`links.ts`, `normalize.ts`), o ramo `unclassified` de `stageOrdinal` e `activityFromKey` e a
+   conversão de ordinal em `reorganizedLinks`; `keptWithoutActivity` **fica**, é a isenção do vínculo
+   não gerado. “Vínculo a conferir” fica com `duplicate-stage`, `stage-sequence`, `out-of-cycle` e
+   **`not-generated`** (a organização atual não gera a atividade), que hoje divide o nome
+   `unclassified` com a posição legada. A situação de edital `Execution 'unclassified'` é outra coisa
+   e não muda.
+4. **Abrangência** (regras 6 e 7). `CalendarEvent.offers` no lugar de `scope`; retirados
+   `explicitRecordOffers`, a confirmação de abrangência em `plan-evaluation.ts` e o rótulo de
+   `diff.ts`; `regeneratedVacations` preserva só o vínculo.
+5. **Corte.** `calendarSchemaVersion = 6`, e os validadores de argumentos aceitam só o formato 6,
+   inclusive o marcador de `reviewInput` (`contracts.ts`), como na v5, em que saveReview sem o
+   marcador aceitava o corpo antigo. A validação da regra 8 é ligada no conversor; a migração e a
+   retirada de pareceres entram em `pending`. Provas em `convex-test`, como na v5: `migrations:start`
+   sobre as fixtures conclui, reexecutar não muda nada, hash alheio e status bloqueante param sem
+   escrita, e um cliente antigo é recusado em `saveCalendar` e `saveReview`. Cópias JSON:
+   `readCalendarOfferInput` aceita só o formato 6, e cópias dos formatos 4 e 5 são recusadas com
+   mensagem própria, sem conversão. `reported-stages.test.ts` e `legacy-stage-count-oracle.json` são
+   apagados; os casos `a-classificar` do oráculo v3 saem.
+6. **Contração** (release seguinte à expansão). O schema aceita só o formato 6; conversor, validadores
+   congelados e migrações saem. As fixtures continuam convertidas, e “each stored submission keeps
+   its hash” continua valendo sobre elas.
 
 #### B3. Efeitos de comportamento declarados
 
 - Calendários com oferta a classificar passam de contagem com erro a números, e o mínimo de 200
   dias passa a ser cobrado; surgem pendências `period-count`, `stages`, `out-of-cycle`.
 - Em 2027, `termsFor` deixa de devolver `[]` para essas ofertas: todas as atividades por ciclo
-  passam de opcional a obrigatória.
+  passam de opcional a obrigatória. Vínculos `term` que a organização atribuída não gera ficam em
+  “Vínculo a conferir”.
 - No catálogo operacional, `cyclesByRegime` muda quando uma oferta vira semestral: vínculos
   `term: 'annual'` viram “não gerados”.
 - Datas do formato 4 passam a contar como atendimento para todas as ofertas listadas; o
@@ -310,19 +366,24 @@ inclusões rebaixadas, coberturas que mudam. O relatório é enviado a cada camp
 - O histórico de envios mostra diferenças produzidas pela migração; a garantia de
   `docs/migracao-schema.md` (“a evidência preserva o significado”) é revogada para o formato 6, e
   o backup pré-migração fica como evidência de registro.
+- A versão de regras gravada não muda: rascunhos em versões anteriores continuam passando pela
+  conferência de regras, inclusive da v7.
 - Pareceres não ficam desatualizados pela migração (`reviewIsCurrent` compara versão do calendário,
-  versão de regras e identidade da base, que a migração não toca). Por isso a migração apaga
-  `reviews` e `reviewVersions` (vazias em 04/11/2026), e os calendários enviados continuam
-  enviados, com o hash do envio recalculado; a revisão começa do zero sobre o conteúdo migrado.
-- Abas abertas com o bundle anterior deixam de salvar após a expansão, com a mensagem própria.
+  versão de regras e identidade da base, que a migração preserva salvo os casos da regra 6). Por isso
+  a migração apaga `reviews` e `reviewVersions` (vazias em 04/11/2026), e os calendários enviados
+  continuam enviados, com o hash do envio recalculado; a revisão começa do zero sobre o conteúdo
+  migrado.
+- Abas abertas com o bundle anterior quebram ao ler dados do formato 6 e caem no `ErrorBoundary`
+  (`coversDate` lê `event.scope.offers`); ao salvar recebem o erro de validação traduzido em B0.
+  Recarregar resolve, e a janela é comunicada aos campi.
 
 #### B4. Período como parte da oferta (avaliar depois do formato 6)
 
 Com `a-classificar` fora, avaliar a lista plana com `offerId` e `term` no lugar de `association`
 (menor, preserva a identidade dos períodos que os destinos de edital referenciam) contra o
 aninhamento na oferta. Qualquer das duas exige IDs determinísticos para conteúdo e envio (senão a
-publicação falha por hash), separação dos períodos compartilhados que a regra 4 de B1 cria, e
-conservação de `targetDays` com o recálculo do término.
+publicação falha por hash), separação dos períodos compartilhados que as regras 2 e 3 de B1
+criam, e conservação de `targetDays` com o recálculo do término.
 
 #### B5. Férias com representação única (avaliar depois do formato 6)
 
@@ -338,17 +399,25 @@ projeção.
 
 ## Ordem e verificação
 
-1. A1 → A3 → B0 (só código, `pnpm check` em cada commit).
+1. A1 → A3 → B0 (só código). B0 é publicado, para a tradução do erro valer nas abas abertas no corte.
 2. Inventário de produção por script de leitura, cobrindo conteúdos, envios e lixeira e cada
-   combinação de B1: ofertas sem total, posições não classificadas em oferta definida,
-   `assessmentAutoStart` em data que perderia o vínculo, destinos de edital por período,
-   `targetDays`, inclusões letivas fora de período, `intake` fora dos ciclos da oferta, entradas
-   do snapshot só com `modalities` ou com `[]`.
-3. Decisão da gestão sobre as regras de B1 com a lista nominal da perda por calendário.
-4. Conversor puro, com as fixtures gravadas convertidas como teste. Ensaio sobre backup restaurado
-   em deployment descartável, com `normalizeOfferCalendar` passando em todos os documentos e
-   relatório por calendário.
-5. Release do formato 6: expansão do schema, manutenção, migração de conteúdos e envios, recálculo
-   de hashes, contração (`docs/implantacao-convex-vercel.md`).
-6. B2 (retirada do código), depois A2 e A4 sobre as fixtures já simplificadas.
-7. B4 e B5, como avaliações.
+   combinação de B1: status dos calendários, pareceres existentes, ofertas sem total, totais ímpares
+   com dois períodos, períodos sem associação em calendário sem oferta a classificar, posições não
+   classificadas em oferta definida, destinos de edital por período, `targetDays`, inclusões letivas
+   fora de período, `intake` fora dos ciclos da oferta, entradas do snapshot só com `modalities`, com
+   `[]` ou sem oferta correspondente, e calendários enviados com perda.
+3. Apresentar à gestão a lista nominal da perda por calendário. Uma regra de B1 só volta à decisão se
+   o inventário contradisser os números usados para decidi-la.
+4. B1 e B2 (passos 1 a 5), com `pnpm check` antes de concluir a fase.
+5. Ensaio sobre backup restaurado em deployment descartável, com a validação da regra 8 passando em
+   todos os documentos, a conferência de B1 sem divergência e relatório por calendário.
+6. Release de expansão (`docs/implantacao-convex-vercel.md`): `operations:pause`, conferência dos
+   status, backup, `pnpm deploy:production --maintenance`, migração de conteúdos e envios com
+   recálculo de hashes, retirada de pareceres, conferência das exportações, relatório definitivo,
+   `operations:resume`.
+7. Contração (passo 6 de B2), numa release seguinte: os validadores já recusam o formato antigo, então
+   ela não precisa da janela.
+8. A2 e A4 sobre as fixtures já simplificadas, com `pnpm check` antes de concluir a fase.
+9. B4 e B5, como avaliações.
+10. Fechamento: levar para `docs/migracao-schema.md`, `docs/arquitetura-convex.md` e `docs/uso.md` o que
+    continua valendo, registrar o que ficou em `docs/pendencias.md` e apagar este plano.
