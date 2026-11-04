@@ -178,16 +178,16 @@ importers:
         version: 1.9.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@convex-dev/auth':
         specifier: 0.0.96
-        version: 0.0.96(patch_hash=2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d)(@auth/core@0.41.3)(convex@1.48.0(react@19.3.1))(react@19.3.1)
+        version: 0.0.96(patch_hash=2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d)(@auth/core@0.41.3)(convex@1.49.0(react@19.3.1))(react@19.3.1)
       '@convex-dev/migrations':
         specifier: 0.3.7
-        version: 0.3.7(convex-helpers@0.1.129(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(convex@1.48.0(react@19.3.1))
+        version: 0.3.7(convex-helpers@0.1.129(convex@1.49.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(convex@1.49.0(react@19.3.1))
       '@convex-dev/presence':
         specifier: 0.4.0
-        version: 0.4.0(convex@1.48.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 0.4.0(convex@1.49.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@convex-dev/rate-limiter':
         specifier: 0.4.2
-        version: 0.4.2(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
+        version: 0.4.2(convex@1.49.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
       '@noble/hashes':
         specifier: 2.0.1
         version: 2.0.1
@@ -198,8 +198,8 @@ importers:
         specifier: 1.170.46
         version: 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       convex:
-        specifier: 1.48.0
-        version: 1.48.0(react@19.3.1)
+        specifier: 1.49.0
+        version: 1.49.0(react@19.3.1)
       lucide-react:
         specifier: 1.61.0
         version: 1.61.0(@types/react@19.3.0)(react@19.3.1)
@@ -236,7 +236,7 @@ importers:
         version: 19.3.0(@types/react@19.3.0)
       convex-test:
         specifier: 0.0.64
-        version: 0.0.64(patch_hash=a99353a5dcad3b25735caa48a8a48bf879f95fdca630d84993fe88df54e3f8f2)(convex@1.48.0(react@19.3.1))
+        version: 0.0.64(patch_hash=a99353a5dcad3b25735caa48a8a48bf879f95fdca630d84993fe88df54e3f8f2)(convex@1.49.0(react@19.3.1))
       fflate:
         specifier: 0.8.3
         version: 0.8.3
@@ -1259,9 +1259,6 @@ packages:
   '@types/react@19.3.0':
     resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
 
-  '@types/tar-stream@3.1.5':
-    resolution: {integrity: sha512-zCUA6CSDw0t2cpQiZixpyzfubpeuVZmBr5wztvuCG4bhy7reX/9wGXdZxEzz2CjMFLQ32UPR/01jzUUSRJeCeQ==}
-
   '@typescript/typescript-aix-ppc64@7.0.2':
     resolution: {integrity: sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==}
     engines: {node: '>=16.20.0'}
@@ -1400,51 +1397,6 @@ packages:
     resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
     engines: {node: '>=12'}
 
-  b4a@1.9.0:
-    resolution: {integrity: sha512-dpfcF9fDNR6++cthXR67iyhgqWy9CBouAvIWhIntzBG6cvK/cnIPiZQjBwi/ZqjjBEDGfoNDtmB0kTjroOJ3pQ==}
-    peerDependencies:
-      react-native-b4a: '*'
-    peerDependenciesMeta:
-      react-native-b4a:
-        optional: true
-
-  bare-events@2.9.2:
-    resolution: {integrity: sha512-AIPKioV7/Y/8KfZ3AAhjPJxLLbY49S64Ym5DakZlUg75qQiTgUq9hEJoEwa4eUezPUlXRy/i5NpsKvo9jgKmoA==}
-    peerDependencies:
-      bare-abort-controller: '*'
-    peerDependenciesMeta:
-      bare-abort-controller:
-        optional: true
-
-  bare-fs@4.8.1:
-    resolution: {integrity: sha512-N1nnXdHZAOSstz0XiHikGS4HGMH4CnSwhqWdGQQMqqdvp4Jybm9sE3R1WVnpWVd4SFkc8ryPDBLViNLwiEqECg==}
-    engines: {bare: '>=1.28.0'}
-    peerDependencies:
-      bare-buffer: '*'
-    peerDependenciesMeta:
-      bare-buffer:
-        optional: true
-
-  bare-path@3.1.2:
-    resolution: {integrity: sha512-ZyKbsuuqK6Ag0K8pX6V5Txq6XeJRvY+wXucnFGRjiyVYP9YWDpIQugk/b+enRYrEYBJaqLzghRQpXPMR7341Nw==}
-
-  bare-stream@2.13.4:
-    resolution: {integrity: sha512-PcrQ8lVLbiJscNm1Kez+Yp4Gy4AHGcN1lzwjvf5NybWen7VvEgUfyfnXYJ2zNqWnzOfCb1Abq6lH8ti0syQszA==}
-    peerDependencies:
-      bare-abort-controller: '*'
-      bare-buffer: '*'
-      bare-events: '*'
-    peerDependenciesMeta:
-      bare-abort-controller:
-        optional: true
-      bare-buffer:
-        optional: true
-      bare-events:
-        optional: true
-
-  bare-url@2.5.4:
-    resolution: {integrity: sha512-Gxa7UVWBr0/edU1b+TJhn/AZvMQUj9OGspvYsaTYQrAbZA4BOTZGL3LiZxvD+CeMlDH4juwD84+eTAp/bLYW5g==}
-
   chai@6.3.0:
     resolution: {integrity: sha512-XWAtwJ6OHO+tj0EKCs0Y2UamnyOxseZWltU4x2U2wh8g4AigdjwvtUjvLP2tqkA/avxHEtzxNaqGq/YGNwckKg==}
     engines: {node: '>=18'}
@@ -1480,9 +1432,9 @@ packages:
     peerDependencies:
       convex: ^1.43.0
 
-  convex@1.48.0:
-    resolution: {integrity: sha512-M9jEgTvCN8ziP/VgQQUH+j0ijM7g+NmQd8tFlvETK8/HMC/aaqHZwcu4hBO30X5DV2VIyYK4mOoLQGIb1766ew==}
-    engines: {node: '>=20.0.0', npm: '>=7.0.0'}
+  convex@1.49.0:
+    resolution: {integrity: sha512-mkr9oXF8/arkCI1kvYyGytWd62oVXNABh4uwLeI4UQVN6Zuudm4DlmSzNUJKF63djk6f/uUXC+6ffuVSkPLvzA==}
+    engines: {node: '>=22.0.0', npm: '>=7.0.0'}
     hasBin: true
     peerDependencies:
       '@auth0/auth0-react': ^2.0.1
@@ -1516,9 +1468,6 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
-  end-of-stream@1.4.5:
-    resolution: {integrity: sha512-ooEGc6HP26xXq/N+GCGOT0JKCLDGrq2bQUZrQ7gyrJiZANJ/8YDTxTpQBXGMn+WbIQXNVpyWymm7KYVICQnyOg==}
-
   es-module-lexer@2.3.2:
     resolution: {integrity: sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw==}
 
@@ -1535,15 +1484,9 @@ packages:
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
 
-  events-universal@1.0.1:
-    resolution: {integrity: sha512-LUd5euvbMLpwOF8m6ivPCbhQeSiYVNb8Vs0fQ8QjXo0JTkEHpz8pxdQf0gStltaPpw0Cca8b39KxvK9cfKRiAw==}
-
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
-
-  fast-fifo@1.3.2:
-    resolution: {integrity: sha512-/d9sfos4yxzpwkDkuN7k2SqFKtYNmCTzgfEpz82x34IM9/zc8KGxQoXg1liNC/izpRM/MBdt44Nmx41ZWqk+FQ==}
 
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
@@ -1687,9 +1630,6 @@ packages:
     resolution: {integrity: sha512-5vvB5+W7ePv+p3uqxi+RcW1XAzLW0/hxt3/4X4Lc4qHudzOhmBiBwOY6DRob4WnanAEGvNcLjF+KNOufrUoEQw==}
     engines: {node: '>=12.20.0'}
 
-  once@1.4.0:
-    resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
-
   oxlint-tsgolint@7.0.2005:
     resolution: {integrity: sha512-6ccPGu4u4J9bwYPHXBFPee3RZrX3BboRdU7k14zRDDB1lvN3O7J/vPRFdaEfa1+CWx4xnQQOp4ctoaF66oO0uw==}
     hasBin: true
@@ -1748,9 +1688,6 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  pump@3.0.4:
-    resolution: {integrity: sha512-VS7sjc6KR7e1ukRFhQSY5LM2uBWAUPiOPa/A3mkKmiMwSmRFUITt0xuj+/lesgnCv+dPIEYlkzrcyXgquIHMcA==}
-
   react-dom@19.3.1:
     resolution: {integrity: sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==}
     peerDependencies:
@@ -1803,18 +1740,6 @@ packages:
 
   std-env@4.3.0:
     resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
-
-  streamx@2.28.1:
-    resolution: {integrity: sha512-zEzXb0s5Cds7tqMH6rhZ05lcJydCWiQPEwiNngVqzsxCc962vLY4Uw+mW7od8kDH258k2Uz/JrOkdIAAhSh9VA==}
-
-  tar-stream@3.2.1:
-    resolution: {integrity: sha512-nqsEO8zLZJvrOMdEwkA0QdCLFbetHMn95Zqu4fKwX+hkaTWJPZZOrxx/PwtxoK0MMGQmBQNRW3CPs8IFYQz4cQ==}
-
-  teex@1.0.1:
-    resolution: {integrity: sha512-eYE6iEI62Ni1H8oIa7KlDU6uQBtqr4Eajni3wX7rpfXD8ysFx8z0+dri+KWEPWpBsxXfxu58x/0jvTVT1ekOSg==}
-
-  text-decoder@1.2.7:
-    resolution: {integrity: sha512-vlLytXkeP4xvEq2otHeJfSQIRyWxo/oZGEbXrtEEF9Hnmrdly59sUbzZ/QgyWuLYHctCHxFF4tRQZNQ9k60ExQ==}
 
   tinybench@6.2.2:
     resolution: {integrity: sha512-nIZ2N2dFpjBsg2hgitKu7mA+FvsIJuGJOwysRngmVRRmWgR/UyPjwJj8c/fT/dhm8EkHnF5EOogRf+0Z2qrimA==}
@@ -1935,9 +1860,6 @@ packages:
     engines: {node: '>=20.11'}
     hasBin: true
 
-  wrappy@1.0.2:
-    resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
-
   ws@8.21.0:
     resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
     engines: {node: '>=10.0.0'}
@@ -1985,12 +1907,12 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  '@convex-dev/auth@0.0.96(patch_hash=2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d)(@auth/core@0.41.3)(convex@1.48.0(react@19.3.1))(react@19.3.1)':
+  '@convex-dev/auth@0.0.96(patch_hash=2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d)(@auth/core@0.41.3)(convex@1.49.0(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@auth/core': 0.41.3
       '@oslojs/crypto': 1.0.1
       '@oslojs/encoding': 1.1.0
-      convex: 1.48.0(react@19.3.1)
+      convex: 1.49.0(react@19.3.1)
       cookie: 1.1.1
       is-network-error: 1.3.2
       jose: 5.10.0
@@ -2002,15 +1924,15 @@ snapshots:
     optionalDependencies:
       react: 19.3.1
 
-  '@convex-dev/batch-worker@0.2.2(convex@1.48.0(react@19.3.1))(react@19.3.1)':
+  '@convex-dev/batch-worker@0.2.2(convex@1.49.0(react@19.3.1))(react@19.3.1)':
     dependencies:
-      convex: 1.48.0(react@19.3.1)
+      convex: 1.49.0(react@19.3.1)
       react: 19.3.1
 
-  '@convex-dev/batch-worker@0.3.5(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)':
+  '@convex-dev/batch-worker@0.3.5(convex@1.49.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)':
     dependencies:
-      convex: 1.48.0(react@19.3.1)
-      convex-helpers: 0.1.129(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
+      convex: 1.49.0(react@19.3.1)
+      convex-helpers: 0.1.129(convex@1.49.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
     transitivePeerDependencies:
       - '@standard-schema/spec'
       - hono
@@ -2018,22 +1940,22 @@ snapshots:
       - typescript
       - zod
 
-  '@convex-dev/migrations@0.3.7(convex-helpers@0.1.129(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(convex@1.48.0(react@19.3.1))':
+  '@convex-dev/migrations@0.3.7(convex-helpers@0.1.129(convex@1.49.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(convex@1.49.0(react@19.3.1))':
     dependencies:
-      convex: 1.48.0(react@19.3.1)
-      convex-helpers: 0.1.129(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
+      convex: 1.49.0(react@19.3.1)
+      convex-helpers: 0.1.129(convex@1.49.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
 
-  '@convex-dev/presence@0.4.0(convex@1.48.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@convex-dev/presence@0.4.0(convex@1.49.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@convex-dev/batch-worker': 0.2.2(convex@1.48.0(react@19.3.1))(react@19.3.1)
-      convex: 1.48.0(react@19.3.1)
+      '@convex-dev/batch-worker': 0.2.2(convex@1.49.0(react@19.3.1))(react@19.3.1)
+      convex: 1.49.0(react@19.3.1)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
-  '@convex-dev/rate-limiter@0.4.2(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)':
+  '@convex-dev/rate-limiter@0.4.2(convex@1.49.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)':
     dependencies:
-      '@convex-dev/batch-worker': 0.3.5(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
-      convex: 1.48.0(react@19.3.1)
+      '@convex-dev/batch-worker': 0.3.5(convex@1.49.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
+      convex: 1.49.0(react@19.3.1)
     optionalDependencies:
       react: 19.3.1
     transitivePeerDependencies:
@@ -2642,10 +2564,6 @@ snapshots:
     dependencies:
       csstype: 3.2.3
 
-  '@types/tar-stream@3.1.5':
-    dependencies:
-      '@types/node': 26.6.5
-
   '@typescript/typescript-aix-ppc64@7.0.2':
     optional: true
 
@@ -2719,53 +2637,22 @@ snapshots:
 
   assertion-error@2.0.1: {}
 
-  b4a@1.9.0: {}
-
-  bare-events@2.9.2: {}
-
-  bare-fs@4.8.1:
-    dependencies:
-      bare-events: 2.9.2
-      bare-path: 3.1.2
-      bare-stream: 2.13.4(bare-events@2.9.2)
-      bare-url: 2.5.4
-      fast-fifo: 1.3.2
-    transitivePeerDependencies:
-      - bare-abort-controller
-      - react-native-b4a
-
-  bare-path@3.1.2: {}
-
-  bare-stream@2.13.4(bare-events@2.9.2):
-    dependencies:
-      b4a: 1.9.0
-      streamx: 2.28.1
-      teex: 1.0.1
-    optionalDependencies:
-      bare-events: 2.9.2
-    transitivePeerDependencies:
-      - react-native-b4a
-
-  bare-url@2.5.4:
-    dependencies:
-      bare-path: 3.1.2
-
   chai@6.3.0: {}
 
   clsx@2.1.1: {}
 
-  convex-helpers@0.1.129(convex@1.48.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2):
+  convex-helpers@0.1.129(convex@1.49.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2):
     dependencies:
-      convex: 1.48.0(react@19.3.1)
+      convex: 1.49.0(react@19.3.1)
     optionalDependencies:
       react: 19.3.1
       typescript: 7.0.2
 
-  convex-test@0.0.64(patch_hash=a99353a5dcad3b25735caa48a8a48bf879f95fdca630d84993fe88df54e3f8f2)(convex@1.48.0(react@19.3.1)):
+  convex-test@0.0.64(patch_hash=a99353a5dcad3b25735caa48a8a48bf879f95fdca630d84993fe88df54e3f8f2)(convex@1.49.0(react@19.3.1)):
     dependencies:
-      convex: 1.48.0(react@19.3.1)
+      convex: 1.49.0(react@19.3.1)
 
-  convex@1.48.0(react@19.3.1):
+  convex@1.49.0(react@19.3.1):
     dependencies:
       esbuild: 0.27.0
       prettier: 3.9.10
@@ -2785,10 +2672,6 @@ snapshots:
   dayjs@1.11.23: {}
 
   detect-libc@2.1.2: {}
-
-  end-of-stream@1.4.5:
-    dependencies:
-      once: 1.4.0
 
   es-module-lexer@2.3.2: {}
 
@@ -2854,15 +2737,7 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.9
 
-  events-universal@1.0.1:
-    dependencies:
-      bare-events: 2.9.2
-    transitivePeerDependencies:
-      - bare-abort-controller
-
   expect-type@1.4.0: {}
-
-  fast-fifo@1.3.2: {}
 
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
@@ -2957,10 +2832,6 @@ snapshots:
 
   obug@3.0.0: {}
 
-  once@1.4.0:
-    dependencies:
-      wrappy: 1.0.2
-
   oxlint-tsgolint@7.0.2005:
     optionalDependencies:
       '@oxlint-tsgolint/darwin-arm64': 7.0.2005
@@ -3023,11 +2894,6 @@ snapshots:
 
   prettier@3.9.10: {}
 
-  pump@3.0.4:
-    dependencies:
-      end-of-stream: 1.4.5
-      once: 1.4.0
-
   react-dom@19.3.1(react@19.3.1):
     dependencies:
       react: 19.3.1
@@ -3083,39 +2949,6 @@ snapshots:
   source-map-js@1.2.2: {}
 
   std-env@4.3.0: {}
-
-  streamx@2.28.1:
-    dependencies:
-      events-universal: 1.0.1
-      fast-fifo: 1.3.2
-      text-decoder: 1.2.7
-    transitivePeerDependencies:
-      - bare-abort-controller
-      - react-native-b4a
-
-  tar-stream@3.2.1:
-    dependencies:
-      b4a: 1.9.0
-      bare-fs: 4.8.1
-      fast-fifo: 1.3.2
-      streamx: 2.28.1
-    transitivePeerDependencies:
-      - bare-abort-controller
-      - bare-buffer
-      - react-native-b4a
-
-  teex@1.0.1:
-    dependencies:
-      streamx: 2.28.1
-    transitivePeerDependencies:
-      - bare-abort-controller
-      - react-native-b4a
-
-  text-decoder@1.2.7:
-    dependencies:
-      b4a: 1.9.0
-    transitivePeerDependencies:
-      - react-native-b4a
 
   tinybench@6.2.2: {}
 
@@ -3196,7 +3029,5 @@ snapshots:
       - msw
 
   why-is-node-running@3.2.1: {}
-
-  wrappy@1.0.2: {}
 
   ws@8.21.0: {}

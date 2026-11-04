@@ -59,7 +59,7 @@
     "@noble/hashes": "2.0.1",
     "@tanstack/react-form": "1.33.5",
     "@tanstack/react-router": "1.170.46",
-    "convex": "1.48.0",
+    "convex": "1.49.0",
     "lucide-react": "1.61.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"
