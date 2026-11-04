@@ -290,10 +290,13 @@ const projections = new Map<string, Projection>();
 function projectionOf(name: string, stored: ActivityState) {
   if (!projections.has(name)) {
     const input = structuredClone(stored);
+    const before = structuredClone(input);
     projections.set(
       name,
       readinessTokens(semanticProjection(input, catalogue), input) as Projection,
     );
+    // The domain functions read the state and never write to it.
+    expect(input).toEqual(before);
   }
   return projections.get(name)!;
 }
@@ -321,13 +324,10 @@ test('the catalogue fixture covers every case, in order', () => {
 });
 
 test.each(cases)('keeps the frozen semantics of the v3 oracle in format 5: $name', (item) => {
-  const input = structuredClone(item.input);
-  const before = structuredClone(input);
   const frozen = oracle.cases.find((entry) => entry.name === item.name)!.expected as Projection;
   expect(frozenOf(projectionOf(item.name, item.input))).toEqual(
-    frozenOf(readinessTokens(frozen, input) as Projection),
+    frozenOf(readinessTokens(frozen, item.input) as Projection),
   );
-  expect(input).toEqual(before);
 });
 
 test.each(cases)('the catalogue paths follow the expected fixture: $name', (item) => {
