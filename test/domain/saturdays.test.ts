@@ -55,7 +55,7 @@ test('v4 Saturdays require the teaching period of every offer identity', () => {
 
 test('month selection adds only chosen Saturdays, survives serialization, and respects conflicts', () => {
   const s = {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -115,7 +115,7 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
 
 test('a confirmed annual selection includes Saturdays from different months in one atomic command', () => {
   const state: ActivityState = {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -171,7 +171,7 @@ test('a confirmed annual selection includes Saturdays from different months in o
 
 test('each Saturday keeps its activity and date without a source and a failed batch changes nothing', () => {
   const state: ActivityState = {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -230,7 +230,7 @@ test('each Saturday keeps its activity and date without a source and a failed ba
 });
 
 const yearState: ActivityState = {
-  schemaVersion: 5 as const,
+  schemaVersion: 6 as const,
   year: 2027,
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,

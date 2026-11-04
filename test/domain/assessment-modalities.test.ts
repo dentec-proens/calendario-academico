@@ -9,7 +9,7 @@ import { recalculateCalendar } from '../../src/domain/calendar/commands/recalcul
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 const state: ActivityState = {
-  schemaVersion: 5 as const,
+  schemaVersion: 6 as const,
   year: 2027,
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,

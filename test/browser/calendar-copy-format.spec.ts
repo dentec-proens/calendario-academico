@@ -2,7 +2,7 @@ import { test, expect } from './test.ts';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { formatFourCopyMessage } from '../../src/domain/calendar/normalization/input.ts';
+import { earlierFormatCopyMessage } from '../../src/domain/calendar/normalization/input.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 /**
@@ -10,7 +10,7 @@ import type {} from '../fixtures/editor-client.ts';
  * the effective category of a date without category; a format 4 copy is refused with its own
  * message and never converted.
  */
-test('a format 5 copy round-trips and a format 4 copy is refused with its own message', async ({
+test('a current copy round-trips and earlier formats are refused with their own message', async ({
   page,
   fixtureServer,
   cleanup,
@@ -32,7 +32,7 @@ test('a format 5 copy round-trips and a format 4 copy is refused with its own me
     offers: { id: string }[];
     events: Record<string, unknown>[];
   };
-  expect(exported.schemaVersion).toBe(5);
+  expect(exported.schemaVersion).toBe(6);
 
   // A date without category, as the stored v4 notes without category were.
   const copy = {
@@ -61,15 +61,20 @@ test('a format 5 copy round-trips and a format 4 copy is refused with its own me
     }),
   );
   await picker.setInputFiles(formatFour);
-  await expect(page.locator('#message')).toContainText(formatFourCopyMessage);
+  await expect(page.locator('#message')).toContainText(earlierFormatCopyMessage(4));
   await expect(page.locator('#message .ui-notice')).toHaveAttribute('data-tone', 'danger');
   await expect(page.locator('dialog[open]')).toHaveCount(0);
   expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(0);
 
   const formatFive = join(directory, 'formato-5.json');
-  await writeFile(formatFive, JSON.stringify(copy));
+  await writeFile(formatFive, JSON.stringify({ ...copy, schemaVersion: 5 }));
   await picker.setInputFiles(formatFive);
-  await expect(page.locator('dialog[open]')).toContainText('Formato 5: 1 ofertas');
+  await expect(page.locator('#message')).toContainText(earlierFormatCopyMessage(5));
+
+  const current = join(directory, 'formato-6.json');
+  await writeFile(current, JSON.stringify(copy));
+  await picker.setInputFiles(current);
+  await expect(page.locator('dialog[open]')).toContainText('Formato 6: 1 ofertas');
   await page.locator('.confirmation-dialog__confirm').click();
   await expect(page.locator('#message')).toContainText('Cópia aplicada');
   await page.waitForFunction(() =>

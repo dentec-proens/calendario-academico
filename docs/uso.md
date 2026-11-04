@@ -108,7 +108,7 @@ Se o acesso expirar, o editor pausa o preenchimento e apresenta somente **Entrar
 
 **Baixar cópia** gera JSON do estado aplicado, não dos campos ainda em edição. **Importar cópia** abre um JSON compatível e substitui o rascunho da sessão após confirmação. A importação também precisa ter seu salvamento confirmado.
 
-As novas cópias usam o formato 5. Uma cópia no formato 4, baixada antes da atualização de atividades e datas, é recusada com a mensagem “Esta cópia está no formato 4, anterior à atualização de atividades e datas. Exporte uma nova cópia do calendário.”; ela não é convertida na importação. Abra o calendário atualizado e use **Baixar cópia** de novo. Cópias dos formatos 2 ou 3 também são recusadas, com uma mensagem explicativa. A cópia deve conservar o ano, campus e a identidade/tipo de todas as ofertas já salvas; não permite removê-las ou trocar seu tipo. Um cliente antigo não pode sobrescrever conteúdo do formato atual: atualize a aplicação e conserve o preenchimento antes de retomar.
+As novas cópias usam o formato 6. Uma cópia dos formatos 4 ou 5 é recusada com a mensagem “Esta cópia está no formato N, anterior à versão atual do calendário. Exporte uma nova cópia do calendário.”; ela não é convertida na importação.
 
 ## Base institucional e documentos
 

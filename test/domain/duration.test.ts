@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { durationEnd } from '../../src/domain/calendar/counting/duration.ts';
 
 const state = {
-  schemaVersion: 5 as const,
+  schemaVersion: 6 as const,
   year: 2027,
   weekConfirmed: true,
   weekdays: [1, 2, 3, 4, 5],

@@ -11,7 +11,7 @@ import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
 
 const state = {
-  schemaVersion: 5 as const,
+  schemaVersion: 6 as const,
   year: 2027,
   campus: 'Teste',
   weekdays: [1, 2, 3, 4, 5],

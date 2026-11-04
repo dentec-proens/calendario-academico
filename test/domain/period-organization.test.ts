@@ -9,7 +9,7 @@ import type { ActivityState, AcademicTerm } from '../../src/domain/calendar/mode
 
 function calendar(): ActivityState {
   return {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,

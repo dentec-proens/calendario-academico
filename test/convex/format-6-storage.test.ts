@@ -13,9 +13,8 @@ import {
 import { retiredDateFields } from '../helpers/retired-fields.ts';
 
 /**
- * Contraction of the format 5 migration: the schema accepts only format 5. A document of format 4
- * is refused by the storage validators, and clients built for format 4 are refused by
- * `saveCalendar` and `saveReview`.
+ * A document of format 4 is refused by the storage validators, and clients built for an earlier
+ * format are refused by `saveCalendar` and `saveReview`.
  */
 async function calendar() {
   const fixture = await createNativeFixture();
@@ -84,7 +83,7 @@ async function nativeReferences(
   };
 }
 
-test('the stored format 5 fixtures are accepted by the schema', async () => {
+test('the stored fixtures are accepted by the schema', async () => {
   const { fixture, record, contentId } = await calendar();
   const calendarId = record.id as Id<'calendars'>;
   const userId = fixture.ids.users.admin!;
@@ -161,13 +160,16 @@ test('the schema refuses documents of format 4', async () => {
   );
 });
 
-test('a client built for format 4 is refused by saveCalendar and saveReview', async () => {
+test('a client built for an earlier format is refused by saveCalendar and saveReview', async () => {
   const { fixture, campus, record } = await calendar();
   const reviewer = fixture.asClient('admin');
-  const v4State = {
+  const earlier = {
     ...record.state,
-    schemaVersion: 4,
-    events: record.state.events.map(({ effect, ...event }) => ({ ...event, kind: effect })),
+    schemaVersion: 5,
+    events: record.state.events.map(({ offers, ...event }) => ({
+      ...event,
+      scope: { offers, confirmed: true },
+    })),
   };
   const body = (state: unknown) => ({
     version: record.version,
@@ -175,18 +177,18 @@ test('a client built for format 4 is refused by saveCalendar and saveReview', as
     state: state as typeof record.state & { year: number; campus: string },
   });
   await expect(
-    campus.mutation(api.calendars.saveCalendar, { id: record.id, body: body(v4State) }),
+    campus.mutation(api.calendars.saveCalendar, { id: record.id, body: body(earlier) }),
   ).rejects.toThrow(/schemaVersion|Validator|validator/);
   const unchanged = await campus.query(api.calendars.calendar, { id: record.id });
   expect(unchanged.version).toBe(record.version);
-  // The same content in format 5 is accepted.
+  // The same content in the current format is accepted.
   await campus.mutation(api.calendars.saveCalendar, { id: record.id, body: body(record.state) });
 
   await seedCourses(fixture, record.id);
   await act(campus, record.id, 'submit');
   const support = await reviewer.query(api.reviews.review, { id: record.id });
   const { schemaVersion: _marker, ...oldBody } = {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     rulesetVersion: support.rulesetVersion,
     baseIdentity: support.baseIdentity,
     revision: support.review?.revision ?? 0,
@@ -203,10 +205,10 @@ test('a client built for format 4 is refused by saveCalendar and saveReview', as
   await expect(
     reviewer.mutation(api.reviews.saveReview, {
       id: record.id,
-      body: { ...oldBody, schemaVersion: 4 } as never,
+      body: { ...oldBody, schemaVersion: 5 } as never,
     }),
   ).rejects.toThrow(/schemaVersion|Validator|validator/);
   expect(await fixture.client.run((ctx) => ctx.db.query('reviews').take(10))).toEqual([]);
-  // The current client sends the marker (`schemaVersion: 5`) and saves.
+  // The current client sends the marker and saves.
   expect(await saveReview(reviewer, record.id)).toEqual({ revision: 1 });
 });

@@ -18,7 +18,7 @@ test('definitive release requires every reviewed criterion, current versions and
     catalogueRevision: 1,
     institutionalSnapshot: [],
     state: {
-      schemaVersion: 5 as const,
+      schemaVersion: 6 as const,
       year: 2027,
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
@@ -209,7 +209,7 @@ test('explicit technical modality inherits scoped events and the PDF mark depend
 
 test('combined calendars scope exclusions by modality and do not presume a postgraduate minimum', () => {
   const state = {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,

@@ -16,7 +16,7 @@ type Client = Pick<
 /** Content that passes every machine check for 2027, as in the release test. */
 export function readyContent(): CalendarContent {
   const state = {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -121,7 +121,7 @@ export async function saveReview(
   return reviewer.mutation(api.reviews.saveReview, {
     id,
     body: {
-      schemaVersion: 5 as const,
+      schemaVersion: 6 as const,
       rulesetVersion: support.rulesetVersion,
       baseIdentity: support.baseIdentity,
       revision: support.review?.revision ?? 0,

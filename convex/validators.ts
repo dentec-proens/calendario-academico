@@ -148,7 +148,7 @@ export const calendarOffer = v.object({
   intake: v.optional(v.record(v.string(), v.literal(true))),
 });
 export const contentState = v.object({
-  schemaVersion: v.literal(5),
+  schemaVersion: v.literal(6),
   rulesetVersion: v.optional(v.string()),
   offers: v.array(calendarOffer),
   weekdays: v.array(v.number()),
@@ -242,6 +242,13 @@ export const submissionDecision = v.object({
   reviewRevision: v.optional(v.number()),
   note: v.optional(v.string()),
 });
+export const contentFields = {
+  calendarId: v.id('calendars'),
+  state: contentState,
+  catalogueRevision: v.number(),
+  institutionalSnapshot: v.array(institutionalEventSnapshot),
+  documentSnapshot: v.array(documentSnapshot),
+};
 export const submissionFields = {
   calendarId: v.id('calendars'),
   sequence: v.number(),

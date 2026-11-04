@@ -85,7 +85,7 @@ test('review saves preserve earlier authorship and rejected edits append no revi
   await act(campus, created.id, 'submit');
   const support = await admin.query(api.reviews.review, { id: created.id });
   const body = {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     rulesetVersion: support.rulesetVersion,
     baseIdentity: support.baseIdentity,
     submissionId: support.submission!.id,
@@ -194,5 +194,5 @@ test('typed storage rejects legacy envelopes, invalid relationships and incomple
   );
   assert(content);
   for (const key of ['campus', 'year', 'offer']) assert(!(key in content.state));
-  assert.equal(content.state.schemaVersion, 5);
+  assert.equal(content.state.schemaVersion, 6);
 });

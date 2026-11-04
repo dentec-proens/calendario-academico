@@ -82,7 +82,7 @@ describe('identidade e tipo da oferta v4', () => {
 
   it('reserva ids citados em períodos, eventos e vínculos', () => {
     const state: CalendarContent = {
-      schemaVersion: 5,
+      schemaVersion: 6,
       offers: [offer()],
       weekdays: [],
       weekConfirmed: false,

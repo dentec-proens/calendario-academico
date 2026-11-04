@@ -16,7 +16,7 @@ const reviewRecord = () => ({
   state: {
     year: 2027,
     campus: 'Campus de teste',
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     offers: [
       {
         id: 'integrado',

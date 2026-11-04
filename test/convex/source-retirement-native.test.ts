@@ -141,7 +141,9 @@ test('canonical records and historical restoration have no manual or generated s
     .then(calendarSaveDates);
   expect(unchanged.unchanged).toBe(true);
   expect(unchanged.version).toBe(saved.version);
-  const initial = await submitted();
+  const initial = (await submitted()) as {
+    state: Parameters<typeof assertSourceFree>[0] & { year: number; campus: string };
+  };
   assertSourceFree(initial.state);
   await actor
     .mutation(api.calendars.saveCalendar, {
@@ -149,7 +151,7 @@ test('canonical records and historical restoration have no manual or generated s
       body: {
         version: saved.version,
         catalogueRevision: created.currentCatalogueRevision,
-        state: initial.state,
+        state: initial.state as never,
       },
     })
     .then(calendarSaveDates);
@@ -157,7 +159,8 @@ test('canonical records and historical restoration have no manual or generated s
     contents: await ctx.db.query('calendarContents').take(10),
     submissions: await ctx.db.query('calendarSubmissions').take(10),
   }));
-  for (const row of raw.submissions) assertSourceFree({ ...row.state, year: 2027, campus: 'A' });
+  for (const row of raw.submissions)
+    assertSourceFree({ ...row.state, year: 2027, campus: 'A' } as never);
   expect(JSON.stringify(raw)).not.toContain('registro:');
   expect(raw.contents[0].institutionalSnapshot).toEqual(created.institutionalSnapshot);
 });
@@ -244,7 +247,7 @@ test('current contents and submission copies refuse retired manual fields', asyn
         .withIndex('by_calendarId', (q) => q.eq('calendarId', created.id))
         .unique())!;
       const invalid = { ...row.state, weekEvidence: secret };
-      await ctx.db.patch(row._id, { state: invalid });
+      await ctx.db.patch(row._id, { state: invalid as never });
     }),
   ).rejects.toThrow(/Unexpected field|Expected/);
   await expect(

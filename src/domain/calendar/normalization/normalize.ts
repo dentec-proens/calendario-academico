@@ -73,7 +73,7 @@ export function validateOffers(offers: CalendarOffer[]): CalendarOffer[] {
 }
 
 /**
- * Save boundary of format 5. `previous` is the persisted state of the same calendar: links are
+ * Save boundary of the current format. `previous` is the persisted state of the same calendar: links are
  * validated against it by date ID (`validateLinks`), so recorded links are never refused or
  * dropped for lacking a generated activity. Without it every link must be generated.
  */

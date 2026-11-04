@@ -40,6 +40,7 @@ import type * as crons from "../crons.js";
 import type * as devSetup from "../devSetup.js";
 import type * as documents from "../documents.js";
 import type * as documents_model from "../documents/model.js";
+import type * as format5Validators from "../format5Validators.js";
 import type * as http from "../http.js";
 import type * as lib_audit from "../lib/audit.js";
 import type * as lib_authorization from "../lib/authorization.js";
@@ -95,6 +96,7 @@ declare const fullApi: ApiFromModules<{
   devSetup: typeof devSetup;
   documents: typeof documents;
   "documents/model": typeof documents_model;
+  format5Validators: typeof format5Validators;
   http: typeof http;
   "lib/audit": typeof lib_audit;
   "lib/authorization": typeof lib_authorization;

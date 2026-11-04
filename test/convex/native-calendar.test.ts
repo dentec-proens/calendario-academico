@@ -58,7 +58,7 @@ test.each(['anual', 'semestral'] as const)(
         (offer) => offer.delivery === 'presencial' && !offer.stages && !offer.scope,
       ),
     ).toBe(true);
-    expect(record.state.schemaVersion).toBe(5);
+    expect(record.state.schemaVersion).toBe(6);
     for (const field of ['offer', 'modalities', 'regime', 'organizationByModality', 'conversion'])
       expect(record.state).not.toHaveProperty(field);
     expect(
@@ -325,7 +325,7 @@ test('a legacy review without submission cannot certify current rules or export 
   ).rejects.toThrow('O parecer está desatualizado. Reabra, confira e salve antes de exportar.');
   expect(support.review).not.toHaveProperty('submissionId');
   const body = {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     revision: 1,
     calendarVersion: record.version,
     catalogueRevision: record.catalogueRevision,
@@ -685,7 +685,7 @@ test('a calendar saved with empty optional vacation fields still opens, reviews 
       .unique();
     if (!content) throw new Error('Conteúdo esperado.');
     const { state } = content;
-    await ctx.db.patch(content._id, { state: { ...state, teacherVacations: vacations } });
+    await ctx.db.patch(content._id, { state: { ...state, teacherVacations: vacations } as never });
   });
   const loaded = await actor.query(api.calendars.calendar, { id: record.id });
   expect(loaded.state.teacherVacations).toEqual({

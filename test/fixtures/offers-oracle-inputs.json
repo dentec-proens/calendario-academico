@@ -10,7 +10,7 @@
     {
       "name": "v3 anual integrado, quatro etapas",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -161,7 +161,7 @@
     {
       "name": "v3 graduação anual, 2 etapas",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -276,7 +276,7 @@
     {
       "name": "v3 graduação anual, 3 etapas",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -409,7 +409,7 @@
     {
       "name": "v3 graduação anual, 4 etapas",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -560,7 +560,7 @@
     {
       "name": "v3 graduação semestral, 2 etapas anuais",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -686,7 +686,7 @@
     {
       "name": "v3 graduação semestral, 4 etapas anuais",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -848,7 +848,7 @@
     {
       "name": "v3 misto com técnico, graduação e pós-graduação",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1243,7 +1243,7 @@
     {
       "name": "v3 pós-graduação excluída da norma",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1355,7 +1355,7 @@
     {
       "name": "v3 norma própria uniforme",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1580,7 +1580,7 @@
     {
       "name": "v3 escopo sem confirmação",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1692,7 +1692,7 @@
     {
       "name": "v3 sem etapas definidas",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1801,7 +1801,7 @@
     {
       "name": "v2 combinado, ingresso legado do segundo semestre",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "consup-292-2027-v2",
         "offers": [
           {
@@ -1998,7 +1998,7 @@
     {
       "name": "v3 política de 2026, organização anual",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "legacy-2026-v1",
         "offers": [
           {
@@ -2230,7 +2230,7 @@
     {
       "name": "v3 política de 2026, organização semestral sem segundo ingresso",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "legacy-2026-v1",
         "offers": [
           {
@@ -2353,7 +2353,7 @@
     {
       "name": "v3 ano sem política configurada",
       "input": {
-        "schemaVersion": 5,
+        "schemaVersion": 6,
         "rulesetVersion": "unconfigured:2028",
         "offers": [
           {

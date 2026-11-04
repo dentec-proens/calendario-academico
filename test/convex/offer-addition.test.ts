@@ -71,8 +71,8 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
   expect(loaded.state.periods).toEqual(saved.state.periods);
   expect(loaded.state.events).toEqual(saved.state.events);
   const previous = await submitted();
-  expect(previous.state.schemaVersion).toBe(5);
-  if (previous.state.schemaVersion !== 5) throw Error('Snapshot v4 esperado.');
+  expect(previous.state.schemaVersion).toBe(6);
+  if (previous.state.schemaVersion !== 6) throw Error('Snapshot esperado.');
   expect(previous.state.offers.map((offer) => offer.id)).toEqual(['posgraduacao']);
   expect(previous.state.periods).toEqual([]);
   for (const changed of [

@@ -10,7 +10,7 @@ import { documentDto } from '../documents/model';
 import { domainRule, clean } from '../lib/shared';
 
 type Content = Pick<
-  Doc<'calendarContents'>,
+  Extract<Doc<'calendarContents'>, { state: { schemaVersion: 6 } }>,
   'catalogueRevision' | 'institutionalSnapshot' | 'documentSnapshot'
 >;
 type Snapshot = {

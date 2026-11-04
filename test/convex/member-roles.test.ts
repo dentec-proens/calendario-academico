@@ -42,7 +42,7 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
   );
   const support = await reviewer.query(api.reviews.review, { id: record.id });
   const body = {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     rulesetVersion: support.rulesetVersion,
     baseIdentity: support.baseIdentity,
     submissionId: support.submission!.id,
@@ -357,7 +357,7 @@ test('the review queue reports each parecer state without exposing it to campus 
   await reviewer.mutation(api.reviews.saveReview, {
     id: record.id,
     body: {
-      schemaVersion: 5 as const,
+      schemaVersion: 6 as const,
       rulesetVersion: support.rulesetVersion,
       baseIdentity: support.baseIdentity,
       revision: 0,

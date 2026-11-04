@@ -19,7 +19,7 @@ import { associationOffers } from '../../src/domain/calendar/offers.ts';
 
 function calendar(): ActivityState {
   return {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,

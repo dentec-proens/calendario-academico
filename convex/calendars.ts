@@ -14,7 +14,7 @@ import { inheritedEvents } from '../src/domain/institution/catalogue';
 import { applyObservances } from '../src/domain/calendar/observances';
 import { query, mutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
-import { calendarRow, campusName, contents, summary } from './calendars/model';
+import { calendarRow, campusName, contents, currentFormat, summary } from './calendars/model';
 import { applyTransition } from './calendars/transitions';
 import { calendarName, normalizeLabel } from '../src/domain/calendar/label';
 import { normalizeIdentity } from '../src/domain/calendar/identity';
@@ -602,11 +602,12 @@ export const submissionContent = query({
     if (!submission || !chain.has(submission.calendarId)) fail('Envio não encontrado.', 404);
     const owner = await ctx.db.get(submission.calendarId);
     if (!owner) fail('Envio não encontrado.', 404);
+    const current = currentFormat(submission);
     return clean({
       ...submissionItem(user, submission),
-      state: { ...submission.state, year: owner.year, campus: submission.campusName },
+      state: { ...current.state, year: owner.year, campus: submission.campusName },
       catalogueRevision: submission.catalogueRevision,
-      institutionalSnapshot: submission.institutionalSnapshot,
+      institutionalSnapshot: current.institutionalSnapshot,
       documentSnapshot: submission.documentSnapshot.map(documentDto),
       offerKinds: submission.offerKinds,
     });

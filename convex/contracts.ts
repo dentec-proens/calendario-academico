@@ -207,10 +207,10 @@ export const saveResult = v.object({
 export const reviewInput = v.object({
   /**
    * Format of the calendar the reviewer opened. Criteria entries name no date, so without it a
-   * client built for format 4 could still save a review over a converted calendar; the literal
+   * client built for an earlier format could still save a review over a converted calendar; the literal
    * refuses it.
    */
-  schemaVersion: v.literal(5),
+  schemaVersion: v.literal(6),
   rulesetVersion: v.optional(v.string()),
   baseIdentity: v.optional(v.string()),
   revision: v.number(),

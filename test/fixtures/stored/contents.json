@@ -12,7 +12,7 @@
       "content": {
         "calendarId": "calendar-1",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v3",
           "offers": [
             {
@@ -276,9 +276,9 @@
           },
           "submittedFrom": "rascunho",
           "contentVersion": 1,
-          "contentHash": "7a1b9712d2812c00f0ea3fd6f5c9d7918ab549dcea398f01cd123328654728a6",
+          "contentHash": "ed300aacfc881ab3a398a974b8e5a51b0ccfd4c0fbf2d735e05b19f36e736b06",
           "state": {
-            "schemaVersion": 5,
+            "schemaVersion": 6,
             "rulesetVersion": "consup-292-2027-v3",
             "offers": [
               {
@@ -546,7 +546,7 @@
       "content": {
         "calendarId": "calendar-2",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v3",
           "offers": [
             {
@@ -750,7 +750,7 @@
       "content": {
         "calendarId": "calendar-3",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v3",
           "offers": [
             {
@@ -950,7 +950,7 @@
       "content": {
         "calendarId": "calendar-4",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v3",
           "offers": [
             {
@@ -1743,7 +1743,7 @@
       "content": {
         "calendarId": "calendar-5",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -1902,7 +1902,7 @@
       "content": {
         "calendarId": "calendar-6",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -2025,7 +2025,7 @@
       "content": {
         "calendarId": "calendar-7",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -2166,7 +2166,7 @@
       "content": {
         "calendarId": "calendar-8",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -2325,7 +2325,7 @@
       "content": {
         "calendarId": "calendar-9",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -2459,7 +2459,7 @@
       "content": {
         "calendarId": "calendar-10",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -2629,7 +2629,7 @@
       "content": {
         "calendarId": "calendar-11",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -3032,7 +3032,7 @@
       "content": {
         "calendarId": "calendar-12",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -3152,7 +3152,7 @@
       "content": {
         "calendarId": "calendar-13",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -3385,7 +3385,7 @@
       "content": {
         "calendarId": "calendar-14",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -3505,7 +3505,7 @@
       "content": {
         "calendarId": "calendar-15",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -3622,7 +3622,7 @@
       "content": {
         "calendarId": "calendar-16",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -3705,7 +3705,7 @@
       "content": {
         "calendarId": "calendar-17",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -3740,7 +3740,7 @@
       "content": {
         "calendarId": "calendar-18",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -3781,7 +3781,7 @@
       "content": {
         "calendarId": "calendar-19",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -3986,7 +3986,7 @@
       "content": {
         "calendarId": "calendar-20",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "legacy-2026-v1",
           "offers": [
             {
@@ -4226,7 +4226,7 @@
       "content": {
         "calendarId": "calendar-21",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "legacy-2026-v1",
           "offers": [
             {
@@ -4357,7 +4357,7 @@
       "content": {
         "calendarId": "calendar-22",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "unconfigured:2028",
           "offers": [
             {
@@ -4527,7 +4527,7 @@
       "content": {
         "calendarId": "calendar-23",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v3",
           "offers": [
             {
@@ -4560,7 +4560,7 @@
       "content": {
         "calendarId": "calendar-24",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v3",
           "offers": [
             {
@@ -4593,7 +4593,7 @@
       "content": {
         "calendarId": "calendar-25",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v3",
           "offers": [
             {
@@ -4626,7 +4626,7 @@
       "content": {
         "calendarId": "calendar-26",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v4",
           "offers": [
             {
@@ -5428,9 +5428,9 @@
           },
           "submittedFrom": "rascunho",
           "contentVersion": 1,
-          "contentHash": "85d67c74cd2a0c5f3eb8edbff215e05d76058b8c194a30def767c4a47bfe73a9",
+          "contentHash": "c2f4feaa2e00fa7e3c5aa5ec81af9dac796abb752681932f210872809fef0505",
           "state": {
-            "schemaVersion": 5,
+            "schemaVersion": 6,
             "rulesetVersion": "consup-292-2027-v4",
             "offers": [
               {
@@ -6056,7 +6056,7 @@
       "content": {
         "calendarId": "calendar-27",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v3",
           "offers": [
             {
@@ -6316,7 +6316,7 @@
       "content": {
         "calendarId": "calendar-28",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "unconfigured:2028",
           "offers": [
             {
@@ -6581,7 +6581,7 @@
       "content": {
         "calendarId": "calendar-29",
         "state": {
-          "schemaVersion": 5,
+          "schemaVersion": 6,
           "rulesetVersion": "consup-292-2027-v2",
           "offers": [
             {
@@ -6788,9 +6788,9 @@
           },
           "submittedFrom": "rascunho",
           "contentVersion": 1,
-          "contentHash": "85de21d83063adef6189a46a8d7475679985156b0bf14056f2d97188c66be33b",
+          "contentHash": "478997780f85c086a8a4742bf3334d69873c72a7a5a2b740a59126aa7dd88a37",
           "state": {
-            "schemaVersion": 5,
+            "schemaVersion": 6,
             "rulesetVersion": "consup-292-2027-v2",
             "offers": [
               {

@@ -241,7 +241,7 @@ describe('review evidence', () => {
     name: 'Teste',
     version: 1,
     state: {
-      schemaVersion: 5 as const,
+      schemaVersion: 6 as const,
       year,
       campus: 'Campus',
       weekdays: [],

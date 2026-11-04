@@ -57,7 +57,7 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
     assert(rows.some((r) => r.id === id));
   assert(!rows.some((r) => r.id.startsWith('stage-start') || r.id.startsWith('stage-end')));
   const state = {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -96,7 +96,7 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
   };
   const classified = {
     ...state,
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     periods: state.periods.map((p, i) => ({
       ...p,
       association: {

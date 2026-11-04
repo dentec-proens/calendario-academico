@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
+import { contentHash } from '../../convex/calendars/lifecycle.ts';
+import { storedCases } from '../helpers/stored-fixtures.ts';
 import {
   convertToFormat6,
   type Format5Document,
@@ -10,11 +12,19 @@ import {
 const format5Cases = (
   JSON.parse(
     readFileSync(new URL('../fixtures/stored/contents-format-5.json', import.meta.url), 'utf8'),
-  ) as { cases: { content: Record<string, unknown> }[] }
+  ) as {
+    cases: {
+      name: string;
+      year: number;
+      content: Record<string, unknown>;
+      submissions: Record<string, unknown>[];
+    }[];
+  }
 ).cases;
 
 const offer = (id: string, count?: number) => ({
   id,
+  label: id,
   kind: 'graduacao',
   delivery: 'presencial',
   organization: 'a-classificar' as const,
@@ -45,17 +55,22 @@ const stage = (ordinal: number) => ({
   position: { status: 'unclassified', reportedOrdinal: ordinal },
 });
 const convert = (state: Partial<Format5State>, institutionalSnapshot: unknown[] = []) =>
-  convertToFormat6({
-    state: {
-      schemaVersion: 5,
-      rulesetVersion: 'consup-292-2027-v3',
-      offers: [],
-      periods: [],
-      events: [],
-      ...state,
-    },
-    institutionalSnapshot,
-  } as unknown as Format5Document);
+  convertToFormat6(
+    {
+      state: {
+        schemaVersion: 5,
+        rulesetVersion: 'consup-292-2027-v3',
+        weekdays: [1, 2, 3, 4, 5],
+        weekConfirmed: false,
+        offers: [],
+        periods: [],
+        events: [],
+        ...state,
+      },
+      institutionalSnapshot,
+    } as unknown as Format5Document,
+    2027,
+  );
 const converted = (result: ReturnType<typeof convert>) =>
   result.document.state as unknown as {
     offers: Record<string, unknown>[];
@@ -98,7 +113,15 @@ test('an odd total decides by offer and the others keep the semesters', () => {
 });
 
 test('with only odd totals the two periods are removed and listed with their notices', () => {
-  const notice = { admission: { destinations: [{ offerId: 'a', periodId: 'p1' }] } };
+  const notice = {
+    publication: 'planned',
+    admission: {
+      type: 'transfer',
+      year: 2027,
+      term: 'annual',
+      destinations: [{ offerId: 'a', periodId: 'p1' }],
+    },
+  };
   const result = convert({
     offers: [offer('a', 3)],
     periods: [first, second],
@@ -287,7 +310,13 @@ test('fields with no use go and the adjusted deadline stays', () => {
     convert({
       offers: [{ ...offer('a'), organizationBasis: 'antigo' }],
       events: [
-        date('d', { deadlineAdjustment: { date: '2027-06-20', reviewed: true } }),
+        date('d', {
+          notice: {
+            publication: 'planned',
+            admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
+          },
+          deadlineAdjustment: { date: '2027-06-20', reviewed: true },
+        }),
       ] as Format5State['events'],
     }),
   );
@@ -299,9 +328,9 @@ test('the conversion keeps the ruleset version, is deterministic and leaves its 
   for (const item of format5Cases) {
     const input = { ...item.content } as unknown as Format5Document;
     const before = JSON.stringify(input);
-    const once = convertToFormat6(input);
+    const once = convertToFormat6(input, item.year);
     expect(JSON.stringify(input)).toBe(before);
-    expect(once).toEqual(convertToFormat6(input));
+    expect(once).toEqual(convertToFormat6(input, item.year));
     const state = once.document.state;
     expect(state.schemaVersion).toBe(6);
     expect(state.rulesetVersion).toBe(input.state.rulesetVersion);
@@ -313,9 +342,39 @@ test('the conversion keeps the ruleset version, is deterministic and leaves its 
 
 test('a document outside format 5 is refused', () => {
   expect(() =>
-    convertToFormat6({
-      state: { schemaVersion: 6 },
-      institutionalSnapshot: [],
-    } as unknown as Format5Document),
+    convertToFormat6(
+      {
+        state: { schemaVersion: 6 },
+        institutionalSnapshot: [],
+      } as unknown as Format5Document,
+      2027,
+    ),
   ).toThrow('só lê o formato 5');
+});
+
+test('the stored fixtures are what the conversion gives from format 5', () => {
+  const stored = storedCases();
+  format5Cases.forEach((item, index) => {
+    const convertedOf = (document: Record<string, unknown>) =>
+      convertToFormat6(document as unknown as Format5Document, item.year).document;
+    expect(stored[index].content, item.name).toEqual(convertedOf(item.content));
+    item.submissions.forEach((submission, at) => {
+      const value = convertedOf(submission);
+      expect(stored[index].submissions[at], item.name).toEqual({
+        ...value,
+        contentHash: contentHash(value as never),
+      });
+    });
+  });
+});
+
+test('a document the normalization refuses stops the conversion', () => {
+  expect(() =>
+    convert({
+      offers: [offer('a')],
+      events: [
+        date('d', { scope: { offers: ['outra'], confirmed: true } }),
+      ] as Format5State['events'],
+    }),
+  ).toThrow('fora do calendário');
 });

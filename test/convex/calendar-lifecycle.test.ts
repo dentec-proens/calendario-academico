@@ -165,7 +165,7 @@ test('reviews are bound to the submission and the first save starts the review',
     f.reviewer.mutation(api.reviews.saveReview, {
       id,
       body: {
-        schemaVersion: 5 as const,
+        schemaVersion: 6 as const,
         rulesetVersion: opened.rulesetVersion,
         baseIdentity: opened.baseIdentity,
         revision: 0,
@@ -380,7 +380,9 @@ test('publication checks the SEI, the review and the content, and archives what 
       .query('calendarContents')
       .withIndex('by_calendarId', (q) => q.eq('calendarId', next.id))
       .unique())!;
-    await ctx.db.patch(content._id, { state: { ...content.state, weekdays: [1, 2, 3, 4] } });
+    await ctx.db.patch(content._id, {
+      state: { ...content.state, weekdays: [1, 2, 3, 4] } as never,
+    });
   });
   await expect(act(f.admin, next.id, 'publish', { sei })).rejects.toThrow(/difere do envio/);
   await f.client.run(async (ctx) => {
@@ -388,7 +390,9 @@ test('publication checks the SEI, the review and the content, and archives what 
       .query('calendarContents')
       .withIndex('by_calendarId', (q) => q.eq('calendarId', next.id))
       .unique())!;
-    await ctx.db.patch(content._id, { state: { ...content.state, weekdays: [1, 2, 3, 4, 5] } });
+    await ctx.db.patch(content._id, {
+      state: { ...content.state, weekdays: [1, 2, 3, 4, 5] } as never,
+    });
   });
   await act(f.admin, next.id, 'publish', { sei: '23411.000002/2027-22' });
   const archived = await calendarStatus(f.campus, old);
@@ -553,7 +557,7 @@ test('a submission above 900 KiB is refused with its own message and writes noth
       effect: 'note' as const,
       offers: ['integrado'],
     }));
-    await ctx.db.patch(content._id, { state: { ...content.state, events } });
+    await ctx.db.patch(content._id, { state: { ...content.state, events } as never });
   });
   await expect(act(f.campus, id, 'submit')).rejects.toThrow(/grande demais para ser enviado/);
   expect(await f.submissions(id)).toEqual([]);

@@ -46,7 +46,7 @@ function eventKinds(event: InstitutionalEventSnapshot, scope: BaseScope): string
 
 /**
  * Content compared by the base identity. The keys are historical (format 4): `kind` carries the
- * effect, so identities stored in reviews (`reviews.baseIdentity`) keep matching after the v5
+ * effect, so identities stored in reviews (`reviews.baseIdentity`) keep matching after each
  * conversion without a new identity version.
  */
 function eventContent(event: InstitutionalEventSnapshot, scope: BaseScope) {

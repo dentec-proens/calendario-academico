@@ -246,7 +246,7 @@ test('adding an opaque offer identity keeps the offers of earlier dates and crea
 
 test('splitting a shared period remaps only the destination of the reorganized offer', () => {
   const state: ActivityState = {
-    schemaVersion: 5,
+    schemaVersion: 6,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,

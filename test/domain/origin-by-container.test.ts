@@ -42,7 +42,7 @@ const lookalike = {
 
 function state(): ActivityState {
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     year: 2027,
     campus: 'Campus de teste',
     weekdays: [1, 2, 3, 4, 5],

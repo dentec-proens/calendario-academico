@@ -11,7 +11,7 @@ import {
 
 function calendar() {
   return normalizeOfferCalendar({
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     year: 2027,
     campus: 'Campus confirmado',
     weekdays: [],

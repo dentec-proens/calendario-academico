@@ -30,8 +30,8 @@ export interface PeriodAssociation {
   term: AcademicTerm;
 }
 /** Stored format version of a calendar's content (`calendarContents.state`). */
-export const calendarSchemaVersion = 5;
-/** Version five persists offer configuration, never its derived summaries. */
+export const calendarSchemaVersion = 6;
+/** Version six persists offer configuration, never its derived summaries. */
 export interface CalendarContent {
   schemaVersion: typeof calendarSchemaVersion;
   rulesetVersion?: string;
@@ -92,7 +92,7 @@ export interface CalendarEvent extends DateFields {
   /**
    * Date of internal organization of the campus (art. 18): only a date of the
    * campus with effect `note` and an allowed effective category (`internalDateIssue`). Absent
-   * means official; the v5 conversion never creates it.
+   * means official.
    */
   internal?: true;
 }

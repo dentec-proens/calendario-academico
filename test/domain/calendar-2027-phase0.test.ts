@@ -6,7 +6,7 @@ import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 const state: ActivityState & { ignoredHistory: string[] } = {
-  schemaVersion: 5 as const,
+  schemaVersion: 6 as const,
   year: 2027,
   campus: 'Campus sintético',
   weekdays: [1, 2, 3, 4, 5],

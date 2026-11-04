@@ -184,18 +184,19 @@ function vacations(value: unknown): VacationPeriods {
 }
 
 /**
- * Message for a copy exported before format 5. It is refused, never converted: the conversion
- * belonged only to the format 5 migration, now concluded.
+ * Message for a copy exported before format 6. It is refused, never converted: a conversion
+ * belongs only to the migration of its format, already concluded.
  */
-export const formatFourCopyMessage =
-  'Esta cópia está no formato 4, anterior à atualização de atividades e datas. Exporte uma nova cópia do calendário.';
+export const earlierFormatCopyMessage = (format: number) =>
+  `Esta cópia está no formato ${format}, anterior à versão atual do calendário. Exporte uma nova cópia do calendário.`;
 
-/** The v5 boundary never infers offer identity or organization from a legacy summary. */
+/** The boundary never infers offer identity or organization from a legacy summary. */
 export function readCalendarOfferInput(
   value: unknown,
 ): CalendarContent & { year: number; campus: string } {
   const row = calendarObject(value);
-  if (row.schemaVersion === 4) return fail(formatFourCopyMessage);
+  if (row.schemaVersion === 4 || row.schemaVersion === 5)
+    return fail(earlierFormatCopyMessage(row.schemaVersion));
   if (row.schemaVersion !== calendarSchemaVersion)
     return fail(
       `Formato de calendário incompatível. Use uma cópia de formato ${calendarSchemaVersion}.`,

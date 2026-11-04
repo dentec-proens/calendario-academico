@@ -36,7 +36,7 @@ test('the parecer compares minima and window only for covered offers', () => {
 
 test('pending semester stages retain every assessment-dependent binding while other data is edited', () => {
   const state = {
-    schemaVersion: 5 as const,
+    schemaVersion: 6 as const,
     year: 2027,
     campus: 'Campus sintético',
     offers: [

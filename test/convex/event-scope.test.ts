@@ -58,9 +58,9 @@ async function stored(item: StoredCase) {
     await ctx.db.patch(row._id, {
       state: {
         ...frozen.state,
-        rulesetVersion: rulesetVersion({ ...frozen.state, year: item.year }),
-      },
-      institutionalSnapshot: frozen.institutionalSnapshot,
+        rulesetVersion: rulesetVersion({ ...frozen.state, year: item.year } as never),
+      } as never,
+      institutionalSnapshot: frozen.institutionalSnapshot as never,
     });
     return (await ctx.db.get(row._id))!;
   });

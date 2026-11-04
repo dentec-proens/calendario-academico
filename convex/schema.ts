@@ -2,12 +2,10 @@ import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 import { authTables } from '@convex-dev/auth/server';
 import {
-  contentState,
+  contentFields,
   modality,
   calendarStatus,
   submissionFields,
-  institutionalEventSnapshot,
-  documentSnapshot,
   reviewFields,
   fileFields,
   documentType,
@@ -15,6 +13,7 @@ import {
   institutionalEvent,
   auditTarget,
 } from './validators';
+import { format5ContentState, format5SnapshotEntry } from './format5Validators';
 
 export default defineSchema({
   ...authTables,
@@ -81,17 +80,27 @@ export default defineSchema({
     .index('by_campusId_and_deletedAt', ['campusId', 'deletedAt'])
     .index('by_year', ['year'])
     .index('by_deletedAt', ['deletedAt']),
-  calendarContents: defineTable({
-    calendarId: v.id('calendars'),
-    state: contentState,
-    catalogueRevision: v.number(),
-    institutionalSnapshot: v.array(institutionalEventSnapshot),
-    documentSnapshot: v.array(documentSnapshot),
-  }).index('by_calendarId', ['calendarId']),
-  calendarSubmissions: defineTable(submissionFields).index('by_calendarId_and_sequence', [
-    'calendarId',
-    'sequence',
-  ]),
+  // Both formats only until the contraction of the format 6 migration.
+  calendarContents: defineTable(
+    v.union(
+      v.object(contentFields),
+      v.object({
+        ...contentFields,
+        state: format5ContentState,
+        institutionalSnapshot: v.array(format5SnapshotEntry),
+      }),
+    ),
+  ).index('by_calendarId', ['calendarId']),
+  calendarSubmissions: defineTable(
+    v.union(
+      v.object(submissionFields),
+      v.object({
+        ...submissionFields,
+        state: format5ContentState,
+        institutionalSnapshot: v.array(format5SnapshotEntry),
+      }),
+    ),
+  ).index('by_calendarId_and_sequence', ['calendarId', 'sequence']),
   documents: defineTable({
     year: v.number(),
     type: documentType,

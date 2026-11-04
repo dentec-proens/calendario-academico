@@ -4,7 +4,7 @@ import { useDraftForm } from '../../../shared/forms/useDraftForm.ts';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { normalizeOfferCalendar } from '#src/domain/calendar/normalization/normalize.ts';
-import { formatFourCopyMessage } from '#src/domain/calendar/normalization/input.ts';
+import { earlierFormatCopyMessage } from '#src/domain/calendar/normalization/input.ts';
 import { calendarSchemaVersion } from '#src/domain/calendar/model.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -25,13 +25,14 @@ export default function ImportCalendarForm() {
         parsed && typeof parsed === 'object' && 'schemaVersion' in parsed
           ? parsed.schemaVersion
           : undefined;
-      // A format 4 copy is refused, never converted: conversion belongs only to the migration.
-      if (version === 4) throw new Error(formatFourCopyMessage);
+      // A copy of an earlier format is refused, never converted: conversion belongs only to the
+      // migration of that format.
+      if (version === 4 || version === 5) throw new Error(earlierFormatCopyMessage(version));
       if (version !== calendarSchemaVersion)
         throw new Error(
           'Esta cópia foi gerada por uma versão anterior do sistema e não pode mais ser importada.',
         );
-      // Importing is saving: normalization validates the v5 literals and keeps only the links
+      // Importing is saving: normalization validates the literals and keeps only the links
       // already recorded on the same dates; any other link needs a generated activity.
       const imported = normalizeOfferCalendar(parsed, record.state) as CalendarState;
       if (imported.year !== state.year || imported.campus !== state.campus)

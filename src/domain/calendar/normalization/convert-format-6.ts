@@ -1,5 +1,7 @@
 import { DomainError } from '../../errors.ts';
 
+import { normalizeOfferCalendar } from './normalize.ts';
+
 /**
  * One-way conversion of a stored calendar document from format 5 to format 6, run only by the
  * format 6 migration. Pure and deterministic, with the shapes of format 5 frozen here so the rest
@@ -303,6 +305,7 @@ export interface Format5Document {
 /** The rules of format 6, in order, over a whole content or submission. */
 export function convertToFormat6<D extends Format5Document>(
   document: D,
+  year: number,
 ): {
   document: Omit<D, 'state' | 'institutionalSnapshot'> & {
     state: Format6State;
@@ -329,10 +332,15 @@ export function convertToFormat6<D extends Format5Document>(
     state.offers,
     report,
   );
+  const converted = { ...state, schemaVersion: 6 };
+  // Only validation: normalizing also stamps the current ruleset, fills categories and regenerates
+  // vacations, and a migration writes none of that. A date or offer it refuses stops the operation.
+  const input = { ...copy(converted), year, campus: '' };
+  normalizeOfferCalendar(input, copy(input) as never);
   return {
     document: {
       ...document,
-      state: { ...state, schemaVersion: 6 } as unknown as Format6State,
+      state: converted as unknown as Format6State,
       institutionalSnapshot,
     },
     report,

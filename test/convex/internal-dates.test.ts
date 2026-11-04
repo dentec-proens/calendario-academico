@@ -120,7 +120,7 @@ test('saveCalendar keeps an eligible internal date and refuses an ineligible one
       const content = (await ctx.db.get(f.contentId))!;
       await ctx.db.patch(f.contentId, {
         institutionalSnapshot: [
-          ...content.institutionalSnapshot,
+          ...(content.institutionalSnapshot as never[]),
           {
             id: 'inst:semana',
             name: 'Semana institucional',
