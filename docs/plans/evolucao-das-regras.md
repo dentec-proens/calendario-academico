@@ -316,9 +316,9 @@ Roteiro em passos, com cada commit verde. Em cada passo, as fixtures gravadas
 conversor, com o que muda no oráculo declarado no commit. Do passo 1 até a expansão a `main` não é
 publicada e não entra mudança de regra.
 
-1. **Conversor e schema alargado.** Conversor puro e relatório, testados sobre as fixtures, sem mudar
-   o modelo. `convex/schema.ts` passa a aceitar os validadores congelados do formato 5 e os atuais.
-2. **Ofertas sempre organizadas** (regras 1 a 4). `Organization` sem `a-classificar`; `OfferStages`
+1. **Conversor.** Conversor puro e relatório, testados sobre uma cópia congelada das fixtures no
+   formato 5 (`contents-format-5.json`), sem mudar o modelo.
+2. **Ofertas sempre organizadas** (regras 1 a 4; nas fixtures, também a 5). `Organization` sem `a-classificar`; `OfferStages`
    e `PeriodAssociation` só `defined`; `IntakeConfiguration` reduzida, com os casos de `unknown` e
    `no` saindo da tabela de A1; `deadlineAdjustment.reviewed` retirado, inclusive da variante do
    snapshot; `organizationSummary([])` devolve `null`. Retirados `reportedStageCount`, a guarda de
@@ -339,7 +339,9 @@ publicada e não entra mudança de regra.
 4. **Abrangência** (regras 6 e 7). `CalendarEvent.offers` no lugar de `scope`; retirados
    `explicitRecordOffers`, a confirmação de abrangência em `plan-evaluation.ts` e o rótulo de
    `diff.ts`; `regeneratedVacations` preserva só o vínculo.
-5. **Corte.** `calendarSchemaVersion = 6`, e os validadores de argumentos aceitam só o formato 6,
+5. **Corte.** `convex/schema.ts` passa a aceitar os validadores congelados do formato 5 e os atuais
+   (como a `main` não é publicada, os passos anteriores não precisam do alargamento);
+   `calendarSchemaVersion = 6`, e os validadores de argumentos aceitam só o formato 6,
    inclusive o marcador de `reviewInput` (`contracts.ts`), como na v5, em que saveReview sem o
    marcador aceitava o corpo antigo. A validação da regra 8 é ligada no conversor; a migração e a
    retirada de pareceres entram em `pending`. Provas em `convex-test`, como na v5: `migrations:start`
