@@ -685,7 +685,7 @@ test('a calendar saved with empty optional vacation fields still opens, reviews 
       .unique();
     if (!content) throw new Error('Conteúdo esperado.');
     const { state } = content;
-    await ctx.db.patch(content._id, { state: { ...state, teacherVacations: vacations } as never });
+    await ctx.db.patch(content._id, { state: { ...state, teacherVacations: vacations } });
   });
   const loaded = await actor.query(api.calendars.calendar, { id: record.id });
   expect(loaded.state.teacherVacations).toEqual({

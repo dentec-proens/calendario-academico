@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 /**
  * Stored calendar documents, frozen as JSON (`test/fixtures/stored/`): the documents of the format 4
  * fixtures (the Ivaiporã and Cascavel drafts, among others) as the format 5 migration left them,
- * with every offer organized and every period associated by the rules of the format 6 converter.
+ * with every offer organized and every period associated as the format 6 migration left them.
  * The data is typed only as JSON; tests that call domain code cast it.
  */
 export interface StoredCase {
