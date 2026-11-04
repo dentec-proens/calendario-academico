@@ -30,6 +30,11 @@ import {
   withSplitReadiness,
   withSplitWithdrawal,
 } from '../helpers/split-withdrawal.ts';
+import {
+  withOptionalNotice,
+  withOptionalNoticeCoverage,
+  withOptionalNoticeReadiness,
+} from '../helpers/optional-notice.ts';
 import { legacyIds, namesLegacyRow } from '../helpers/legacy-classification.ts';
 
 /**
@@ -240,7 +245,7 @@ test('retains the immutable pre-v4 oracle and all independently captured v4 inpu
 
 interface Projection {
   requirements: { id: string; basis?: string }[];
-  diagnostics: { coverage: { requirementId: string }[] };
+  diagnostics: { coverage: { requirementId: string; applicability: string }[] };
   readiness: { issues: string[]; warnings: string[] };
 }
 
@@ -272,14 +277,21 @@ test.each(inputs.cases.filter(({ input }) => input.year > 2026))(
     // art. 11, VII, deadline, in 2027 and in the operational catalogue.
     {
       const projection = expected as Projection;
+      const of2027 = stored.year === 2027;
       projection.requirements = withSplitWithdrawal(
-        stored.year === 2027
-          ? withDeclaredCategories(projection.requirements)
+        of2027
+          ? withOptionalNotice(withDeclaredCategories(projection.requirements))
           : projection.requirements,
       );
-      projection.diagnostics.coverage = withSplitCoverage(projection.diagnostics.coverage);
-      projection.readiness.issues = withSplitReadiness(projection.readiness.issues);
-      projection.readiness.warnings = withSplitReadiness(projection.readiness.warnings);
+      projection.diagnostics.coverage = withSplitCoverage(
+        of2027
+          ? withOptionalNoticeCoverage(projection.diagnostics.coverage)
+          : projection.diagnostics.coverage,
+      );
+      const readiness = (messages: string[]) =>
+        withSplitReadiness(of2027 ? withOptionalNoticeReadiness(messages) : messages);
+      projection.readiness.issues = readiness(projection.readiness.issues);
+      projection.readiness.warnings = readiness(projection.readiness.warnings);
     }
     const input = structuredClone(stored);
     const before = structuredClone(input);

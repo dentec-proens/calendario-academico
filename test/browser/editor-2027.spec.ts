@@ -103,9 +103,10 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
       ),
     )
     .toBe('2026-12-01');
-  await expect(page.locator('[data-activity-row="admission-notice:cycle:annual"]')).toContainText(
-    'Completo',
-  );
+  // Optional since consup-292-2027-v8: the row shows the situation and the recorded date.
+  const noticeRow = page.locator('[data-activity-row="admission-notice:cycle:annual"]');
+  await expect(noticeRow).toContainText('Opcional');
+  await expect(noticeRow).toContainText('01/12/2026');
   await page.locator('#close-event-panel').click();
   await openActivity(page, 'regular-admission-notice');
   await expect(page.locator('#event-admission-year')).toHaveValue('2028');

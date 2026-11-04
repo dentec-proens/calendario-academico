@@ -110,6 +110,8 @@ export function operationalRules(): ActivityRule[] {
         id: 'admission-notice',
         name: (s) =>
           `Publicação dos editais de transferência interna e externa, reingresso e portadores de diploma — antes do início do ${termLabel(s)}`,
+        required: false,
+        reason: 'Edital opcional por decisão institucional; cadastro permitido.',
         group: 'admission',
         variant: 'admission-notice',
       },

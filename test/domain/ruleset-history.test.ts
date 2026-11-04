@@ -21,6 +21,7 @@ import {
 import { legacyIds } from '../helpers/legacy-classification.ts';
 import { withDeclaredCategories } from '../helpers/declared-categories.ts';
 import { withSplitWithdrawal } from '../helpers/split-withdrawal.ts';
+import { withOptionalNotice } from '../helpers/optional-notice.ts';
 
 /**
  * Catalogue fingerprint of each policy version. When this test fails on a bound policy, append a
@@ -240,7 +241,8 @@ test('published historical fingerprints remain intact and v4 catalogues match th
 
 /**
  * consup-292-2027-v6 declares default categories (only `defaultCategory` of those rows differs,
- * in 2027) and v7 splits the art. 11, VII, deadline, also in the operational catalogue.
+ * in 2027), v7 splits the art. 11, VII, deadline, also in the operational catalogue, and v8 makes
+ * the transfer notice optional (2027).
  */
 function withCapturedCategories(captured: unknown, year: number) {
   const value = captured as { states: { requirements: { id: string }[] }[] };
@@ -249,7 +251,9 @@ function withCapturedCategories(captured: unknown, year: number) {
     states: value.states.map((state) => ({
       ...state,
       requirements: withSplitWithdrawal(
-        year === 2027 ? withDeclaredCategories(state.requirements) : state.requirements,
+        year === 2027
+          ? withOptionalNotice(withDeclaredCategories(state.requirements), { optionalFor: false })
+          : state.requirements,
       ),
     })),
   };
@@ -338,6 +342,7 @@ const observanceFingerprints: Record<string, string> = {
   'consup-292-2027-v5': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
   'consup-292-2027-v6': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
   'consup-292-2027-v7': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
+  'consup-292-2027-v8': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
 };
 test('observance permissions are bound to the current ruleset history', () => {
   for (const policy of boundPolicies) {
@@ -354,6 +359,7 @@ const schoolDayFingerprints: Record<string, string> = {
   'consup-292-2027-v5': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
   'consup-292-2027-v6': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
   'consup-292-2027-v7': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
+  'consup-292-2027-v8': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
 };
 test('school-day classification is bound to the current ruleset history', () => {
   for (const policy of boundPolicies) {
@@ -369,4 +375,6 @@ test('school-day classification is bound to the current ruleset history', () => 
   // Splitting the art. 11, VII, deadline adds a required activity: v7 binds reviews again.
   expect(reviewBoundary('consup-292-2027-v7')).toBe('consup-292-2027-v7');
   expect(equivalentRulesets('consup-292-2027-v6', 'consup-292-2027-v7')).toBe(false);
+  // An optional notice only relaxes: v8 keeps the v7 reviews and bases.
+  expect(equivalentRulesets('consup-292-2027-v7', 'consup-292-2027-v8')).toBe(true);
 });

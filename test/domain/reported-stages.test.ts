@@ -23,6 +23,7 @@ import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save
 import { readCalendarOfferInput } from '../../src/domain/calendar/normalization/input.ts';
 import { withDeclaredCategories } from '../helpers/declared-categories.ts';
 import { withSplitWithdrawal } from '../helpers/split-withdrawal.ts';
+import { withOptionalNotice } from '../helpers/optional-notice.ts';
 import { legacyIds } from '../helpers/legacy-classification.ts';
 import { retiredOfferFields } from '../helpers/retired-fields.ts';
 
@@ -76,7 +77,9 @@ test.each(archive.cases)(
     // art. 11, VII, deadline.
     expect(JSON.parse(JSON.stringify(rows))).toEqual(
       withSplitWithdrawal(
-        withDeclaredCategories(requirements.filter((row) => !retired.has(row.id))),
+        withOptionalNotice(
+          withDeclaredCategories(requirements.filter((row) => !retired.has(row.id))),
+        ),
       ),
     );
     expect(

@@ -62,5 +62,14 @@ export const rulesetChanges: readonly RulesetChange[] = [
     summary:
       'Trancamento de curso e cancelamento de matrícula em componente passam a ser atividades distintas, cada uma com suas datas; datas já vinculadas ao prazo conjunto valem como trancamento de curso.',
   },
+  {
+    version: 'consup-292-2027-v8',
+    date: civilDate('2026-11-04'),
+    effect: 'relaxes',
+    criteria: ['VIII'],
+    source: 'Decisão da gestão do sistema em 04/11/2026',
+    summary:
+      'Publicação dos editais de transferência, reingresso e portadores de diploma passa a ser opcional para todas as ofertas; o cadastro continua disponível.',
+  },
 ];
 export const rulesetVersion = rulesetChanges.at(-1)!.version;

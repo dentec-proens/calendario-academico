@@ -45,6 +45,10 @@ const notOnIntegrated = {
   integrado: 'Não exigido por este inciso para o integrado; cadastro permitido.',
 };
 const optionalOnUndergraduate = { graduacao: '' };
+/** v8: the transfer notice is optional for every offer; the row stays for the dates it holds. */
+const optionalNotice = Object.fromEntries(
+  modalityIds.map((m) => [m, 'Edital opcional por decisão institucional; cadastro permitido.']),
+);
 const perCycle =
   'Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.';
 
@@ -167,8 +171,10 @@ export const rules: ActivityRule[] = [
           'Publicação dos editais de transferência interna e externa, reingresso e portadores de diploma',
         ),
         basis: 'Art. 11, VIII',
+        decision: 'opcional para todas as ofertas (consup-292-2027-v8)',
         acceptsPriorReference: true,
         admissionType: 'transfer',
+        optionalFor: optionalNotice,
         group: 'admission',
         criterion: 'VIII',
       },
