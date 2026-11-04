@@ -269,11 +269,13 @@ test.each(inputs.cases.filter(({ input }) => input.year > 2026))(
   ({ name, input: stored }) => {
     const expected = withoutLegacyRows(oracle.cases.find((item) => item.name === name)!.expected);
     // consup-292-2027-v6 declares default categories the capture did not have; v7 splits the
-    // art. 11, VII, deadline.
-    if (stored.year === 2027) {
+    // art. 11, VII, deadline, in 2027 and in the operational catalogue.
+    {
       const projection = expected as Projection;
       projection.requirements = withSplitWithdrawal(
-        withDeclaredCategories(projection.requirements),
+        stored.year === 2027
+          ? withDeclaredCategories(projection.requirements)
+          : projection.requirements,
       );
       projection.diagnostics.coverage = withSplitCoverage(projection.diagnostics.coverage);
       projection.readiness.issues = withSplitReadiness(projection.readiness.issues);

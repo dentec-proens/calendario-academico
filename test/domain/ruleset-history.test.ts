@@ -239,17 +239,18 @@ test('published historical fingerprints remain intact and v4 catalogues match th
 });
 
 /**
- * consup-292-2027-v6 declares default categories (only `defaultCategory` of those rows differs)
- * and v7 splits the art. 11, VII, deadline.
+ * consup-292-2027-v6 declares default categories (only `defaultCategory` of those rows differs,
+ * in 2027) and v7 splits the art. 11, VII, deadline, also in the operational catalogue.
  */
 function withCapturedCategories(captured: unknown, year: number) {
-  if (year !== 2027) return captured;
   const value = captured as { states: { requirements: { id: string }[] }[] };
   return {
     ...value,
     states: value.states.map((state) => ({
       ...state,
-      requirements: withSplitWithdrawal(withDeclaredCategories(state.requirements)),
+      requirements: withSplitWithdrawal(
+        year === 2027 ? withDeclaredCategories(state.requirements) : state.requirements,
+      ),
     })),
   };
 }

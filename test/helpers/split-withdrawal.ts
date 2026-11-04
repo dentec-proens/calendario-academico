@@ -1,7 +1,8 @@
 /**
  * consup-292-2027-v7 (tightens) splits the art. 11, VII, deadline into two activities:
  * `withdrawal` keeps the course withdrawal and `component-cancellation` takes the component
- * cancellation. Frozen captures predate it: tests compare them through `withSplitWithdrawal`,
+ * cancellation, as does the operational catalogue of the years without a norm. Frozen captures
+ * predate it: tests compare them through `withSplitWithdrawal`,
  * which renames the captured row and adds the new one right after it, as the rules expand.
  */
 const captured = 'Prazo de trancamento de curso e cancelamento de matrícula em componente';

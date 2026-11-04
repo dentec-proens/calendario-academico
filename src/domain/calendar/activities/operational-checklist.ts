@@ -138,8 +138,12 @@ export function operationalRules(): ActivityRule[] {
       },
       {
         id: 'withdrawal',
-        name: (s) =>
-          `Prazo de trancamento de curso e cancelamento de matrícula em componente — ${s.n}º semestre`,
+        name: (s) => `Prazo de trancamento de curso — ${s.n}º semestre`,
+        group: 'admission',
+      },
+      {
+        id: 'component-cancellation',
+        name: (s) => `Prazo de cancelamento de matrícula em componente — ${s.n}º semestre`,
         group: 'admission',
       },
     ]),

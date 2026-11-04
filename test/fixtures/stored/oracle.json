@@ -36959,7 +36959,17 @@
         },
         {
           "id": "withdrawal-1",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 1º semestre",
+          "name": "Prazo de trancamento de curso — 1º semestre",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity",
+          "required": false,
+          "applicability": "unconfigured",
+          "reason": "Ano ou escopo sem política normativa configurada."
+        },
+        {
+          "id": "component-cancellation-1",
+          "name": "Prazo de cancelamento de matrícula em componente — 1º semestre",
           "group": "admission",
           "defaultCategory": "prazo",
           "variant": "activity",
@@ -36999,7 +37009,17 @@
         },
         {
           "id": "withdrawal-2",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 2º semestre",
+          "name": "Prazo de trancamento de curso — 2º semestre",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity",
+          "required": false,
+          "applicability": "unconfigured",
+          "reason": "Ano ou escopo sem política normativa configurada."
+        },
+        {
+          "id": "component-cancellation-2",
+          "name": "Prazo de cancelamento de matrícula em componente — 2º semestre",
           "group": "admission",
           "defaultCategory": "prazo",
           "variant": "activity",
@@ -37674,6 +37694,28 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "component-cancellation-1",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "pit-2",
           "offerId": "integrado",
           "applicability": "unconfigured",
@@ -37752,6 +37794,28 @@
         },
         {
           "activity": "withdrawal-2",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-2",
           "offerId": "graduacao",
           "applicability": "unconfigured",
           "coverage": "pending",
@@ -38239,6 +38303,12 @@
           "diverges": false,
           "problems": true
         },
+        "component-cancellation-1": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
         "pit-2": {
           "status": "unconfigured",
           "toConfirm": 0,
@@ -38258,6 +38328,12 @@
           "problems": true
         },
         "withdrawal-2": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "component-cancellation-2": {
           "status": "unconfigured",
           "toConfirm": 0,
           "diverges": false,
@@ -39075,7 +39151,17 @@
         },
         {
           "id": "withdrawal-1",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 1º semestre",
+          "name": "Prazo de trancamento de curso — 1º semestre",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity",
+          "required": false,
+          "applicability": "unconfigured",
+          "reason": "Ano ou escopo sem política normativa configurada."
+        },
+        {
+          "id": "component-cancellation-1",
+          "name": "Prazo de cancelamento de matrícula em componente — 1º semestre",
           "group": "admission",
           "defaultCategory": "prazo",
           "variant": "activity",
@@ -39115,7 +39201,17 @@
         },
         {
           "id": "withdrawal-2",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 2º semestre",
+          "name": "Prazo de trancamento de curso — 2º semestre",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity",
+          "required": false,
+          "applicability": "unconfigured",
+          "reason": "Ano ou escopo sem política normativa configurada."
+        },
+        {
+          "id": "component-cancellation-2",
+          "name": "Prazo de cancelamento de matrícula em componente — 2º semestre",
           "group": "admission",
           "defaultCategory": "prazo",
           "variant": "activity",
@@ -39526,6 +39622,17 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "component-cancellation-1",
+          "offerId": "subsequente",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "pit-2",
           "offerId": "subsequente",
           "applicability": "unconfigured",
@@ -39560,6 +39667,17 @@
         },
         {
           "activity": "withdrawal-2",
+          "offerId": "subsequente",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-2",
           "offerId": "subsequente",
           "applicability": "unconfigured",
           "coverage": "pending",
@@ -39848,6 +39966,12 @@
           "diverges": false,
           "problems": true
         },
+        "component-cancellation-1": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
         "pit-2": {
           "status": "unconfigured",
           "toConfirm": 0,
@@ -39867,6 +39991,12 @@
           "problems": true
         },
         "withdrawal-2": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "component-cancellation-2": {
           "status": "unconfigured",
           "toConfirm": 0,
           "diverges": false,
@@ -40547,7 +40677,17 @@
         },
         {
           "id": "withdrawal-1",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 1º semestre",
+          "name": "Prazo de trancamento de curso — 1º semestre",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity",
+          "required": false,
+          "applicability": "unconfigured",
+          "reason": "Ano ou escopo sem política normativa configurada."
+        },
+        {
+          "id": "component-cancellation-1",
+          "name": "Prazo de cancelamento de matrícula em componente — 1º semestre",
           "group": "admission",
           "defaultCategory": "prazo",
           "variant": "activity",
@@ -40587,7 +40727,17 @@
         },
         {
           "id": "withdrawal-2",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 2º semestre",
+          "name": "Prazo de trancamento de curso — 2º semestre",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity",
+          "required": false,
+          "applicability": "unconfigured",
+          "reason": "Ano ou escopo sem política normativa configurada."
+        },
+        {
+          "id": "component-cancellation-2",
+          "name": "Prazo de cancelamento de matrícula em componente — 2º semestre",
           "group": "admission",
           "defaultCategory": "prazo",
           "variant": "activity",
@@ -41086,6 +41236,17 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "pit-2",
           "offerId": "graduacao",
           "applicability": "unconfigured",
@@ -41120,6 +41281,17 @@
         },
         {
           "activity": "withdrawal-2",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-2",
           "offerId": "graduacao",
           "applicability": "unconfigured",
           "coverage": "pending",
@@ -41456,6 +41628,12 @@
           "diverges": false,
           "problems": true
         },
+        "component-cancellation-1": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
         "pit-2": {
           "status": "unconfigured",
           "toConfirm": 0,
@@ -41475,6 +41653,12 @@
           "problems": true
         },
         "withdrawal-2": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "component-cancellation-2": {
           "status": "unconfigured",
           "toConfirm": 0,
           "diverges": false,
@@ -51308,7 +51492,17 @@
         },
         {
           "id": "withdrawal-1",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 1º semestre",
+          "name": "Prazo de trancamento de curso — 1º semestre",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity",
+          "required": false,
+          "applicability": "unconfigured",
+          "reason": "Ano ou escopo sem política normativa configurada."
+        },
+        {
+          "id": "component-cancellation-1",
+          "name": "Prazo de cancelamento de matrícula em componente — 1º semestre",
           "group": "admission",
           "defaultCategory": "prazo",
           "variant": "activity",
@@ -51348,7 +51542,17 @@
         },
         {
           "id": "withdrawal-2",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 2º semestre",
+          "name": "Prazo de trancamento de curso — 2º semestre",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity",
+          "required": false,
+          "applicability": "unconfigured",
+          "reason": "Ano ou escopo sem política normativa configurada."
+        },
+        {
+          "id": "component-cancellation-2",
+          "name": "Prazo de cancelamento de matrícula em componente — 2º semestre",
           "group": "admission",
           "defaultCategory": "prazo",
           "variant": "activity",
@@ -52202,6 +52406,28 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "pit-2",
           "offerId": "graduacao",
           "applicability": "unconfigured",
@@ -52280,6 +52506,28 @@
         },
         {
           "activity": "withdrawal-2",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-2",
           "offerId": "integrado",
           "applicability": "unconfigured",
           "coverage": "pending",
@@ -52779,6 +53027,12 @@
           "diverges": false,
           "problems": true
         },
+        "component-cancellation-1": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
         "pit-2": {
           "status": "unconfigured",
           "toConfirm": 0,
@@ -52798,6 +53052,12 @@
           "problems": true
         },
         "withdrawal-2": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "component-cancellation-2": {
           "status": "unconfigured",
           "toConfirm": 0,
           "diverges": false,
