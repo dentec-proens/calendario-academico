@@ -795,8 +795,8 @@
       },
       "teachingDayBreakdown": null,
       "proensLayout": {
-        "length": 34616,
-        "sha256": "e69f1c4b1c2bb5b64602761fe00097adbaceac2244de3009c8117afe7fd81d1d"
+        "length": 33250,
+        "sha256": "5c9bde8092720ef8d636a7b5aa18c0c526b9c6fa539dc10529d7fb47c491f84b"
       }
     },
     {
@@ -1583,8 +1583,8 @@
       },
       "teachingDayBreakdown": null,
       "proensLayout": {
-        "length": 31663,
-        "sha256": "620b5873e0b46f547683c15d91ca0476eb0704f3e0c4c66dbadeb63d43c74a3b"
+        "length": 30715,
+        "sha256": "47dc022f7d21b0890d1e465e7f4f9d80d63170605d70e1ea48155c2a0636487c"
       }
     },
     {
@@ -3865,8 +3865,8 @@
         }
       },
       "proensLayout": {
-        "length": 45827,
-        "sha256": "c63fde8acb0b4b3507f247c692416b84e0b26fb1dee7804cbec3b0eb4529c4e6"
+        "length": 45113,
+        "sha256": "2339dab2eba66531969879d64b802b5a5c7a19bcfd25218f8b8216e2717a2a44"
       }
     },
     {
@@ -9209,8 +9209,8 @@
         }
       },
       "proensLayout": {
-        "length": 131704,
-        "sha256": "3dee21a5331024507aec2b2276c4b77630fcd5277abad1569f1fcdb05a178b0b"
+        "length": 126345,
+        "sha256": "bdde709bfbe221241532bcbd00c6d9d5ae2a406f02ebafc44f89b51b2997b7d8"
       }
     },
     {
@@ -10758,8 +10758,8 @@
         }
       },
       "proensLayout": {
-        "length": 40945,
-        "sha256": "9f44afefc45914157572b8bc72d28718235fdec95ac6c1c07dd351a3aa5b39f3"
+        "length": 40062,
+        "sha256": "7534db87d5381e14c35d35348e97f18ad1fc95de676b2c58944f8ba7d3e6a290"
       }
     },
     {
@@ -12043,8 +12043,8 @@
         }
       },
       "proensLayout": {
-        "length": 40352,
-        "sha256": "dbca443dd18ba4f2ba31911696c157aa693b0f75369ba6106f2de86bd78c5274"
+        "length": 39629,
+        "sha256": "2a615cdf7dbd571639486b42810d358d932f65b10b19732df76bc28dfbdada69"
       }
     },
     {
@@ -13460,8 +13460,8 @@
         }
       },
       "proensLayout": {
-        "length": 41202,
-        "sha256": "63b3a7dd1fdba63141272ff24e858ab8c06ac4275496e054b933567fc4813afa"
+        "length": 40443,
+        "sha256": "e70e1cc22fe91fb2c407a6db22c350e473036a23c519e91f94dcd6a1eabc5112"
       }
     },
     {
@@ -15009,8 +15009,8 @@
         }
       },
       "proensLayout": {
-        "length": 40769,
-        "sha256": "28d3d0270ac4152ad5f2bb79ea383c6607b128ca16c559bfeda47fa23dd04c86"
+        "length": 40022,
+        "sha256": "5ff83457139d74dbf5be91588838849360cc1f915bc81b417b287014c01d77c0"
       }
     },
     {
@@ -16587,8 +16587,8 @@
         }
       },
       "proensLayout": {
-        "length": 41101,
-        "sha256": "18b0dea681aa909f4eb6e75c18bb2991f8cb0a905c10cc4ac28cc5a5d65abd28"
+        "length": 40330,
+        "sha256": "661c9815282fda3f8f621a18e6a2ac9b74c4d47a6357ff7d12c32c6f27288123"
       }
     },
     {
@@ -18429,8 +18429,8 @@
         }
       },
       "proensLayout": {
-        "length": 41522,
-        "sha256": "f74ff7c9accf70e816cd851c147cb2518af52cdadd5a544697e4234ad73c2f51"
+        "length": 40727,
+        "sha256": "de2492d4d276506d40ece667345ccc3f7dddece0602a61d4a84b42c8b8d12592"
       }
     },
     {
@@ -23656,8 +23656,8 @@
         }
       },
       "proensLayout": {
-        "length": 74658,
-        "sha256": "eaa23727b35b5cebe03979f22ac8441bf90b59b08c2bbb05876debb66e990f56"
+        "length": 72933,
+        "sha256": "ca7aba27380759eebd796fa0d763c82854f5d320477c513bc087e325473942f1"
       }
     },
     {
@@ -24673,8 +24673,8 @@
         }
       },
       "proensLayout": {
-        "length": 40444,
-        "sha256": "fdbee59cd84cf03d12d3b2eaea0ac0533d8fa91f6311c6cfcabd3257d863bc12"
+        "length": 39655,
+        "sha256": "7682fea39a4e2feabe70c5fad39b33224588593dbfa1622b46f69961e925f2a4"
       }
     },
     {
@@ -27731,8 +27731,8 @@
         }
       },
       "proensLayout": {
-        "length": 52397,
-        "sha256": "6b9189b2a7a3fa7dc6ff87a6817f1cf83ff35ef3a0ddb45b573fd5aa373ffa50"
+        "length": 51806,
+        "sha256": "39896729e96ab5467032aef287937fe0b85e111f93f5a45224f2c1aaf2754a41"
       }
     },
     {
@@ -29016,8 +29016,8 @@
         }
       },
       "proensLayout": {
-        "length": 40352,
-        "sha256": "dbca443dd18ba4f2ba31911696c157aa693b0f75369ba6106f2de86bd78c5274"
+        "length": 39629,
+        "sha256": "2a615cdf7dbd571639486b42810d358d932f65b10b19732df76bc28dfbdada69"
       }
     },
     {
@@ -31260,8 +31260,8 @@
         }
       },
       "proensLayout": {
-        "length": 38130,
-        "sha256": "ec1583845911106b9277f5b3be133e4d810adc88f8480783f2a0ea3c262de9d0"
+        "length": 37539,
+        "sha256": "e6b2f6dc97c99be910d8345897300187a1c6cd5e6442f512c9830448aed9566b"
       }
     },
     {
@@ -31828,8 +31828,8 @@
       },
       "teachingDayBreakdown": null,
       "proensLayout": {
-        "length": 27992,
-        "sha256": "cea0ce091d7c1c7f5896943b097584f91865396e762fa62ca9f3f81d9d99161e"
+        "length": 27413,
+        "sha256": "be7c6240a7041a9a432166e8061039f77446b204e7271668170aa516fc4ae3fb"
       }
     },
     {
@@ -32396,8 +32396,8 @@
       },
       "teachingDayBreakdown": null,
       "proensLayout": {
-        "length": 27354,
-        "sha256": "008bc5b27a6bb3c83ea5e700a3096e1e6ccf5c27e2455597d3902246242111d1"
+        "length": 26601,
+        "sha256": "ad12350168ea80505f56c5280fadc227f0ca0b41f834c03c3b59c3613a4857c4"
       }
     },
     {
@@ -33173,8 +33173,8 @@
       },
       "teachingDayBreakdown": null,
       "proensLayout": {
-        "length": 30797,
-        "sha256": "1f861f156d1fe6b06366c30bb8885a72618babf5b4c61ac7fbc206d3ae0bfcac"
+        "length": 30128,
+        "sha256": "21d869db540476f54bede66ddf7256d309082a5163e47f3777f794d8e40622e0"
       }
     },
     {
@@ -35464,8 +35464,8 @@
         }
       },
       "proensLayout": {
-        "length": 50947,
-        "sha256": "bd72b0a0bbcf24210ae2cad14d4f417fbabec6475a358c903d9a51fec707cbcd"
+        "length": 50346,
+        "sha256": "a2d05be018d5201598ebc5507a8a192718d87413e7cda26ae8459cc4f4a07a43"
       }
     },
     {
@@ -37749,8 +37749,8 @@
         }
       },
       "proensLayout": {
-        "length": 51764,
-        "sha256": "8966248257c05a788ff9fbdb115b72024db9237b2e75fac39bcbabe4f9ee8dd7"
+        "length": 51065,
+        "sha256": "d96cadf4e7a321d9b37f74643319b6d3f2dcbfc41351c12f01eeb0d2d9982637"
       }
     },
     {
@@ -39125,8 +39125,8 @@
         }
       },
       "proensLayout": {
-        "length": 41124,
-        "sha256": "c6b2b362c6cfeb54750e8b3ff05d34d511e13d3d1154487ed500dce6a95f7492"
+        "length": 40175,
+        "sha256": "a22f0fe5fefccb2719a0e7ef47b3191c7601a5541bbccd19bcbecb596d610b58"
       }
     },
     {
@@ -40765,8 +40765,8 @@
         }
       },
       "proensLayout": {
-        "length": 41604,
-        "sha256": "d8291a19f5bec7314e3d4c8f1cd9a4b85ccb14e0886a549c8d806793664e1d81"
+        "length": 40809,
+        "sha256": "52d9dab078c7ebd02af82d13ab7fb4888d4fd1a6087a7e3e5c1f0de32e84429f"
       }
     },
     {
@@ -41557,8 +41557,8 @@
       },
       "teachingDayBreakdown": null,
       "proensLayout": {
-        "length": 28088,
-        "sha256": "ce749292ef688ee3fa90c4bdc408f26a97a4a30b6dc264a5b20a0fab2d0d3d28"
+        "length": 27335,
+        "sha256": "bf371ce99ac5976ce53f5ebd43368695e7e4e7fcc8ff39d974e30dc59db38e1d"
       }
     },
     {
@@ -42461,8 +42461,8 @@
       },
       "teachingDayBreakdown": null,
       "proensLayout": {
-        "length": 28238,
-        "sha256": "4c67c42b229f6a447aadd346e834dd2005335a3e12693cd2fe7a1f38ab5a0734"
+        "length": 27485,
+        "sha256": "35ebe9f39387ef3c906c36763537185202d023303d488a08d0eb59a82ff8f873"
       }
     },
     {
@@ -43477,8 +43477,8 @@
       },
       "teachingDayBreakdown": null,
       "proensLayout": {
-        "length": 28382,
-        "sha256": "c2faeb02af5296d611c9f15024d24a64d1ac77255cef2e8b012a27d1ed75c65a"
+        "length": 27629,
+        "sha256": "27bc12518ee5c75118d6fdd02fbb03b7c880e2bc6bbf1a186ecddbce7cbd8957"
       }
     },
     {
@@ -48828,8 +48828,8 @@
         }
       },
       "proensLayout": {
-        "length": 131830,
-        "sha256": "b44a42699af8bac01d8d54e814bb4c9a13a8cfcdea524bfde8dbd9482eff02c4"
+        "length": 126590,
+        "sha256": "060d3976a2db3f7fc2a934db44baec0b00b5c046c8a97b5643d1a7a706f9bdb4"
       }
     },
     {
@@ -49613,8 +49613,8 @@
       },
       "teachingDayBreakdown": null,
       "proensLayout": {
-        "length": 32004,
-        "sha256": "0644eb952320c32910cf14a01649f6e92f6e7c159ccea431e77e000ef7d6fba7"
+        "length": 31395,
+        "sha256": "e2f54774de92233130afcb950170c45bc7f70fad44050496ecd4bc57205fc6fd"
       }
     },
     {
@@ -52054,8 +52054,8 @@
         }
       },
       "proensLayout": {
-        "length": 44432,
-        "sha256": "3c1cc26736f1d8d801214030306ba63eaad54bf0e9a2a22defcd3bf3b7cad1e4"
+        "length": 43810,
+        "sha256": "bf77b3093768f6f59d784b2ed200e271958069beb6bdbaa8f4d27cd5ae8fab78"
       }
     },
     {
@@ -53612,8 +53612,8 @@
         }
       },
       "proensLayout": {
-        "length": 41202,
-        "sha256": "a339b6722d77475f4607e72e9490551570032caa0ef0b0f069e14f99b81ab619"
+        "length": 40299,
+        "sha256": "9ef4c17678980c0db995c2c052a53572bb02e10a2a0fd339ef6e108c3eece9d8"
       }
     }
   ]

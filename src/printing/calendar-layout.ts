@@ -2,6 +2,8 @@ import { printMark } from '../domain/calendar/lifecycle.ts';
 import { civilDate } from '../domain/civil-date.ts';
 import { automaticEventSource } from '../domain/calendar/counting/core.ts';
 import type { PrintState, PrintResult, PrintRecord, PrintEvent, DistributionRow } from './types.ts';
+import type { CalendarPeriod } from '../domain/calendar/model.ts';
+import { termLabels } from '../domain/calendar/config.ts';
 import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
 import { categories, eventCategory } from '../domain/calendar/activities/categories.ts';
 import { periodsForOffer } from '../domain/calendar/organization/periods.ts';
@@ -9,7 +11,6 @@ import { associationOffers, labelFor, offerIds } from '../domain/calendar/offers
 import { listedOffers } from '../domain/calendar/modalities.ts';
 import { executionLabels } from '../domain/calendar/activities/plan-evaluation.ts';
 import { canBeInternal, isInternalDate } from '../domain/calendar/internal-dates.ts';
-import { isSaturdayRecord } from '../domain/calendar/activities/saturdays.ts';
 
 /**
  * Printed version of the calendar. The official version, sent to Proens and
@@ -43,26 +44,58 @@ const dateLabel = (date: string | undefined, year?: number) =>
 const fullInterval = (event: PrintEvent) =>
   dateLabel(event.start) + (event.end === event.start ? '' : ` a ${dateLabel(event.end)}`);
 /**
- * Offers printed beside a date. An unconfirmed scope over every offer of the calendar is the
- * format 4 date without its own list and prints without a list, as before.
- * So does a Saturday over every offer: the Saturdays step creates it confirmed for all of them,
- * where format 4 stored no list.
+ * Offers printed beside a date: only when the calendar has several offers and the date reaches
+ * part of them. A calendar with one offer, or a date over every offer, prints no list, nor does a
+ * date whose description already names its only offer.
  */
 function eventOffers(state: PrintState, event: PrintEvent) {
-  const scope = event.scope;
   const all = state.offers ? offerIds(state) : [];
-  if (
-    scope &&
-    (!scope.confirmed || isSaturdayRecord(event)) &&
-    scope.offers.length === all.length &&
-    all.every((id) => scope.offers.includes(id))
-  )
-    return '';
-  return (
-    listedOffers(event)
-      ?.map((id) => labelFor(state, id))
-      .join(', ') ?? ''
-  );
+  const listed = listedOffers(event);
+  if (all.length < 2 || !listed || all.every((id) => listed.includes(id))) return '';
+  const labels = listed.map((id) => labelFor(state, id));
+  // A date of one offer whose description already ends with that offer, as the stage dates the
+  // organization creates, does not repeat it.
+  if (labels.length === 1 && event.name?.endsWith(` — ${labels[0]}`)) return '';
+  return labels.join(', ');
+}
+
+/** Label of a period boundary: the cycle when classified, else the period's own name. */
+const boundaryName = (edge: 'Início' | 'Término', period: CalendarPeriod) =>
+  `${edge} — ${
+    period.association?.status === 'defined'
+      ? period.association.term === 'annual'
+        ? 'Ano letivo'
+        : termLabels[period.association.term]
+      : period.name
+  }`;
+
+/**
+ * Entries of a month, one row per date and description: dates of different offers with the same
+ * interval, description and details print once, with their offers together.
+ */
+function mergedEntries(state: PrintState, events: PrintEvent[]): PrintEvent[] {
+  const merged = new Map<string, PrintEvent>();
+  for (const event of events) {
+    const key = [
+      event.start,
+      event.end,
+      event.name ?? '',
+      eventCategory(event),
+      printsAsInternal(event),
+      publicationDetails(event, state.year),
+    ].join('\0');
+    const previous = merged.get(key);
+    const offers = listedOffers(event);
+    if (!previous) {
+      merged.set(key, event);
+      continue;
+    }
+    const known = listedOffers(previous);
+    if (!known || !offers) continue;
+    const { scope: _scope, ...rest } = previous;
+    merged.set(key, { ...rest, offers: [...new Set([...known, ...offers])] });
+  }
+  return [...merged.values()];
 }
 
 function publicationDetails(event: PrintEvent, year: number, includeSource = true) {
@@ -149,11 +182,12 @@ export function proensLayout(
   const listed = version === 'complete' ? events : events.filter((e) => !printsAsInternal(e));
   const showsInternal = hasInternalDates(listed);
   const status = record?.status ?? 'rascunho';
-  const details = [record?.courses, record?.classes, record?.shifts].filter(Boolean).join(' · ');
   const byOffer = result?.byOffer;
   const ledger = new Map(result?.ledger.map((d) => [d.date, d]) || []),
     boundary = new Set(state.periods.flatMap((p) => [p.start, p.end]));
   const colorKeys = categories.filter((c) => c[2]).map((c) => c[0]);
+  // The key lists only the categories the grid marks.
+  const usedCategories = new Set<string>();
   const months = Array.from({ length: 12 }, (_, m) => {
     const prefix = `${state.year}-${String(m + 1).padStart(2, '0')}`,
       first = new Date(prefix + '-01T00:00:00Z'),
@@ -171,7 +205,7 @@ export function proensLayout(
           start: p.start,
           end: p.start,
           category: 'limite',
-          name: 'Início — ' + p.name,
+          name: boundaryName('Início', p),
           offers: associationOffers(p.association),
         });
       if (p.end.startsWith(prefix))
@@ -179,7 +213,7 @@ export function proensLayout(
           start: p.end,
           end: p.end,
           category: 'limite',
-          name: 'Término — ' + p.name,
+          name: boundaryName('Término', p),
           offers: associationOffers(p.association),
         });
     }
@@ -198,6 +232,7 @@ export function proensLayout(
             .map(eventCategory),
         ]),
       ].filter((c) => colorKeys.includes(c));
+      for (const c of marks) usedCategories.add(c);
       const priority = [
         'feriado',
         'recesso',
@@ -229,7 +264,7 @@ export function proensLayout(
     for (let i = 0; i < cells.length; i += 7)
       rows += '<tr>' + cells.slice(i, i + 7).join('') + '</tr>';
 
-    const entries = monthEvents
+    const entries = mergedEntries(state, monthEvents)
       .sort((a, b) => a.start.localeCompare(b.start))
       .map((e) => {
         const a = e.start.startsWith(prefix) ? Number(e.start.slice(8)) : 1,
@@ -271,7 +306,7 @@ export function proensLayout(
     offerIds(state)
       .map((m) => labelFor(state, m))
       .join(' + '),
-  )}</p>${details ? `<p>${esc(details)}</p>` : ''}</div>${months}${externalReferences(state, listed)}<section class="proens-summary"><h3>Legendas e contagem</h3><p>Marcação gráfica de dias: ${esc(labelFor(state, offerIds(state)[0] ?? ''))}.</p>${
+  )}</p></div>${months}${externalReferences(state, listed)}<section class="proens-summary"><h3>Legendas e contagem</h3><p>Marcação gráfica de dias: ${esc(labelFor(state, offerIds(state)[0] ?? ''))}.</p>${
     byOffer
       ? `<table><thead><tr><th>Oferta</th><th>Total anual</th><th>Períodos</th></tr></thead><tbody>${Object.entries(
           byOffer,
@@ -288,9 +323,9 @@ export function proensLayout(
           .join('')}</tbody></table>`
       : ''
   }<div class="proens-key">${categories
-    .filter((c) => c[2])
+    .filter((c) => c[2] && usedCategories.has(c[0]))
     .map(([key, label]) => `<div><span class="swatch cat-${key}"></span>${esc(label)}</div>`)
     .join(
       '',
-    )}${showsInternal ? '<div><span class="swatch internal-swatch"></span>Data interna</div>' : ''}</div><p>· Dia letivo calculado. Faixas adicionais na data indicam categorias simultâneas. A cor não substitui a conferência de conflitos.</p><table><thead><tr><th>Período</th><th>Dias letivos</th></tr></thead><tbody>${countRows}<tr><th>Total anual</th><th>${result?.total ?? '—'}</th></tr></tbody></table>${dayDistribution}<p>Carga horária, checklist integral e deliberação institucional permanecem sujeitos à conferência.</p></section></div>`;
+    )}${showsInternal ? '<div><span class="swatch internal-swatch"></span>Data interna</div>' : ''}</div><p>· Dia letivo calculado; dia sem o ponto não conta como letivo. Faixas adicionais na data indicam categorias simultâneas. A cor não substitui a conferência de conflitos.</p><table><thead><tr><th>Período</th><th>Dias letivos</th></tr></thead><tbody>${countRows}<tr><th>Total anual</th><th>${result?.total ?? '—'}</th></tr></tbody></table>${dayDistribution}<p>Carga horária, checklist integral e deliberação institucional permanecem sujeitos à conferência.</p></section></div>`;
 }

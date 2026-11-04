@@ -9,17 +9,32 @@ import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.
 
 test('calendar print identifies each offer in the header, periods, event scopes and teaching totals', () => {
   const state = calendarOffersFixture();
-  const result = evaluateCalendar(state, state.events);
-  const html = proensLayout(state, state.events, result, null, '');
-  for (const label of [
+  const day = civilDate(`${state.year}-04-07`);
+  // A date of one offer lists it; a stage, whose description ends with the offer, does not repeat it.
+  const events = [
+    ...state.events,
+    ...state.offers.map((offer, index) => ({
+      id: `meeting-${offer.id}`,
+      name: `Reunião ${index + 1} da oferta`,
+      start: day,
+      end: day,
+      effect: 'note' as const,
+      scope: { offers: [offer.id], confirmed: true },
+    })),
+  ];
+  const result = evaluateCalendar(state, events);
+  const html = proensLayout(state, events, result, null, '');
+  for (const [index, label] of [
     'Técnico integrado',
     'Licenciatura em Química',
     'Engenharia Elétrica',
     'Tecnologia em Análise de Sistemas',
-  ]) {
+  ].entries()) {
     expect(html).toContain(label);
     expect(html).toContain(`Dias letivos — ${label}`);
-    expect(html).toContain(`[${label}]`);
+    expect(html).toContain(`Reunião ${index + 1} da oferta [${label}]`);
+    expect(html).toContain(`— ${label}</td>`);
+    expect(html).not.toContain(`— ${label} [${label}]`);
   }
   expect(html).toContain('<th>Oferta</th>');
   expect(html).not.toContain('undefined');
@@ -155,7 +170,7 @@ test('print and review exports escape offer labels in HTML and preserve human te
   expect(doc.text).toContain('Conclusão humana preservada.');
 });
 
-test('a Saturday from the Saturdays step prints without the list of every offer, as in format 4', () => {
+test('a date over every offer prints without the list of offers', () => {
   const state = calendarOffersFixture();
   const all = state.offers.map((offer) => offer.id);
   const saturday = civilDate(`${state.year}-03-13`);
@@ -185,5 +200,5 @@ test('a Saturday from the Saturdays step prints without the list of every offer,
     return start < 0 ? '' : html.slice(start, html.indexOf('</td>', start));
   };
   expect(line('Sábado letivo do teste')).not.toContain('[');
-  expect(line('Reunião escolhida para todas')).toContain('[Técnico integrado');
+  expect(line('Reunião escolhida para todas')).not.toContain('[');
 });

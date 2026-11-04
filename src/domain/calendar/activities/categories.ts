@@ -3,7 +3,7 @@ export const categories: [string, string, string | null][] = [
   ['limite', 'Início e término de período letivo', '#ffff00'],
   ['feriado', 'Feriado', '#ff0000'],
   ['recesso', 'Recesso acadêmico e administrativo', '#fabf8f'],
-  ['ferias', 'Férias escolares', '#bfbfbf'],
+  ['ferias', 'Férias docentes ou escolares', '#bfbfbf'],
   ['sabado', 'Sábados letivos', '#c3e184'],
   ['comemorativo', 'Datas comemorativas', '#ffd9ff'],
   ['evento', 'Eventos artísticos, científicos, culturais, esportivos e tecnológicos', '#c0f2ff'],

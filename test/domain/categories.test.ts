@@ -42,18 +42,17 @@ test('PROENS palette matches reference and simultaneous classifications remain v
 });
 
 test('institutional and local scopes identify their actual offer in v4 printing', () => {
+  const offer = (id: 'integrado' | 'subsequente') => ({
+    id,
+    kind: id,
+    delivery: 'a-conferir' as const,
+    organization: 'anual' as const,
+  });
   const state = {
     year: 2027,
     campus: 'Foz',
     periods: [],
-    offers: [
-      {
-        id: 'integrado',
-        kind: 'integrado' as const,
-        delivery: 'a-conferir' as const,
-        organization: 'anual' as const,
-      },
-    ],
+    offers: [offer('integrado'), offer('subsequente')],
   };
   const event = {
     id: 'fixture',
@@ -68,4 +67,66 @@ test('institutional and local scopes identify their actual offer in v4 printing'
   const local = proensLayout(state, [{ ...event, institutional: false }]);
   assert(institutional.includes('Feriado institucional [Técnico integrado]'));
   assert(local.includes('Feriado institucional [Técnico integrado]'));
+  // One offer, or a date over every offer, prints no list.
+  const single = { ...state, offers: [offer('integrado')] };
+  assert(proensLayout(single, [event]).includes('Feriado institucional</td>'));
+  const both = proensLayout(state, [{ ...event, offers: ['integrado', 'subsequente'] }]);
+  assert(both.includes('Feriado institucional</td>'));
+});
+
+test('the key lists only the categories the grid marks', () => {
+  const state = { year: 2027, campus: 'Foz', periods: [], offers: [] };
+  const html = proensLayout(state, [
+    {
+      id: 'holiday',
+      name: 'Feriado',
+      start: civilDate('2027-02-06'),
+      end: civilDate('2027-02-06'),
+      effect: 'exclude' as const,
+      category: 'feriado',
+    },
+  ]);
+  const key = html.slice(html.indexOf('class="proens-key"'), html.indexOf('</div><p>· Dia letivo'));
+  assert(key.includes('cat-feriado'));
+  assert(!key.includes('cat-ferias'));
+  assert(!key.includes('cat-sabado'));
+});
+
+test('dates of different offers with the same description print once, with their offers together', () => {
+  const offer = (id: 'integrado' | 'subsequente') => ({
+    id,
+    kind: id,
+    delivery: 'presencial' as const,
+    organization: 'anual' as const,
+  });
+  const period = (id: string, offers: string[]) => ({
+    id,
+    name: `Ano letivo — ${id}`,
+    start: civilDate('2027-02-08'),
+    end: civilDate('2027-12-17'),
+    association: { status: 'defined' as const, offers, term: 'annual' as const },
+  });
+  const state = {
+    year: 2027,
+    campus: 'Foz',
+    offers: [offer('integrado'), offer('subsequente')],
+    periods: [period('p1', ['integrado']), period('p2', ['subsequente'])],
+  };
+  const date = (id: string, offers: string[]) => ({
+    id,
+    name: 'Reunião de planejamento',
+    start: civilDate('2027-03-03'),
+    end: civilDate('2027-03-03'),
+    effect: 'note' as const,
+    category: 'formacao',
+    scope: { offers, confirmed: true },
+  });
+  const html = proensLayout(state, [date('a', ['integrado']), date('b', ['subsequente'])]);
+  assert.equal(html.match(/Início — Ano letivo/g)?.length, 1);
+  assert(html.includes('Início — Ano letivo</td>'));
+  // One row in the list; the grid title still names each date.
+  assert.equal(html.match(/<td>Reunião de planejamento/g)?.length, 1);
+  assert(html.includes('Reunião de planejamento</td>'));
+  const only = proensLayout(state, [date('a', ['integrado'])]);
+  assert(only.includes('Reunião de planejamento [Técnico integrado]'));
 });

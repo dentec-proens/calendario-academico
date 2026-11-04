@@ -92,13 +92,15 @@ test('both versions print the same count of school days, which internal dates ne
   expect(before.monthly.some((total) => total !== '0 dias letivos')).toBe(true);
   const complete = counts(print('complete'));
   expect(complete.monthly).toEqual(before.monthly);
-  // The summary differs only by the legend entry of internal dates.
-  expect(
-    complete.summary.replace(
-      '<div><span class="swatch internal-swatch"></span>Data interna</div>',
-      '',
-    ),
-  ).toBe(before.summary);
+  // The summary differs only by the key: the entry of internal dates and the categories the
+  // internal dates add to the grid.
+  const withoutKey = (summary: string) =>
+    summary.replace(/<div class="proens-key">.*?<\/div><p>/u, '<p>');
+  expect(withoutKey(complete.summary)).toBe(withoutKey(before.summary));
+  expect(complete.summary).toContain(
+    '<div><span class="swatch internal-swatch"></span>Data interna</div>',
+  );
+  expect(before.summary).not.toContain('internal-swatch');
 });
 
 test('the official version, the default, prints no internal date in the grid or in the lists', () => {
@@ -159,8 +161,9 @@ test('coinciding annual and semester dates stay distinct in both versions', () =
     for (const ids of pairs) {
       const [semester, annual] = ids.map((id) => state.events.find((event) => event.id === id)!);
       expect(semester.name).not.toBe(annual.name);
-      expect(html, semester.id).toContain(`<td>${semester.name} [`);
-      expect(html, annual.id).toContain(`<td>${annual.name} [`);
+      // Both reach every offer of the calendar, so neither prints a list of offers.
+      expect(html, semester.id).toContain(`<td>${semester.name}</td>`);
+      expect(html, annual.id).toContain(`<td>${annual.name}</td>`);
     }
 });
 
