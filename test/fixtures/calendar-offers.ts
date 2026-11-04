@@ -53,7 +53,7 @@ const stages = (
 export function calendarOffersFixture(): CalendarOffersFixture {
   return {
     schemaVersion: 5,
-    rulesetVersion: 'consup-292-2027-v5',
+    rulesetVersion: 'consup-292-2027-v7',
     year: 2027,
     campus: 'Campus de referência sintético',
     offers: [

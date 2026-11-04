@@ -53,5 +53,14 @@ export const rulesetChanges: readonly RulesetChange[] = [
     summary:
       'Novas datas de formação pedagógica, planejamento, eventos, semanas e reuniões começam na categoria da legenda PROENS, não em prazo. Sem mudança de obrigações.',
   },
+  {
+    version: 'consup-292-2027-v7',
+    date: civilDate('2026-11-04'),
+    effect: 'tightens',
+    criteria: ['VII'],
+    source: 'Art. 11, VII, da Resolução 292 e levantamento dos campi de outubro de 2026',
+    summary:
+      'Trancamento de curso e cancelamento de matrícula em componente passam a ser atividades distintas, cada uma com suas datas; datas já vinculadas ao prazo conjunto valem como trancamento de curso.',
+  },
 ];
 export const rulesetVersion = rulesetChanges.at(-1)!.version;

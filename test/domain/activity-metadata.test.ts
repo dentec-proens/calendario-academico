@@ -11,7 +11,7 @@ import { activityDraft } from '../../web/features/calendar-editor/events/event-d
 const previous = {
   group(id: string) {
     if (
-      /^(registration|admission-notice|regular-admission|enrolment|adjustment|withdrawal|recognition|final-appeal)-/.test(
+      /^(registration|admission-notice|regular-admission|enrolment|adjustment|withdrawal|component-cancellation|recognition|final-appeal)-/.test(
         id,
       )
     )

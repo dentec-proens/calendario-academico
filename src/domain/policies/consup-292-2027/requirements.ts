@@ -190,9 +190,20 @@ export const rules: ActivityRule[] = [
         group: 'admission',
         criterion: 'V',
       },
+      // Art. 11, VII, names two deadlines; v7 declares each as its own activity. A date linked
+      // to `withdrawal` before v7 keeps meaning the course withdrawal deadline.
       {
         id: 'withdrawal',
-        ...perTerm('Prazo de trancamento de curso e cancelamento de matrícula em componente'),
+        ...perTerm('Prazo de trancamento de curso'),
+        basis: 'Art. 11, VII',
+        reason: perCycle,
+        optionalFor: notOnIntegrated,
+        group: 'admission',
+        criterion: 'VII',
+      },
+      {
+        id: 'component-cancellation',
+        ...perTerm('Prazo de cancelamento de matrícula em componente'),
         basis: 'Art. 11, VII',
         reason: perCycle,
         optionalFor: notOnIntegrated,

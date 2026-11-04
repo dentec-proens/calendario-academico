@@ -1987,7 +1987,23 @@
           "modalities": ["integrado", "subsequente"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["integrado", "subsequente"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["integrado", "subsequente"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -2686,6 +2702,28 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "subsequente",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-0",
           "offerId": "integrado",
           "applicability": "optional",
@@ -3314,6 +3352,12 @@
           "problems": false
         },
         "withdrawal-0": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": true,
+          "problems": false
+        },
+        "component-cancellation-0": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": true,
@@ -4598,7 +4642,23 @@
           "modalities": ["integrado", "graduacao"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["integrado", "graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["integrado", "graduacao"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -4721,7 +4781,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-1",
           "term": "first",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 1º semestre",
+          "name": "Prazo de trancamento de curso — 1º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao-2", "graduacao-3"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-1",
+          "term": "first",
+          "name": "Prazo de cancelamento de matrícula em componente — 1º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -4844,7 +4920,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-2",
           "term": "second",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 2º semestre",
+          "name": "Prazo de trancamento de curso — 2º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao-2", "graduacao-3"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-2",
+          "term": "second",
+          "name": "Prazo de cancelamento de matrícula em componente — 2º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -6020,6 +6112,50 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao-2",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao-3",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-0",
           "offerId": "integrado",
           "applicability": "optional",
@@ -6416,6 +6552,50 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-1",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao-2",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao-3",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-1",
           "offerId": "integrado",
           "applicability": "optional",
@@ -6802,6 +6982,50 @@
         },
         {
           "activity": "withdrawal-2",
+          "offerId": "graduacao-3",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "graduacao",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "graduacao-2",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
           "offerId": "graduacao-3",
           "applicability": "required",
           "coverage": "pending",
@@ -8053,6 +8277,12 @@
           "diverges": true,
           "problems": false
         },
+        "component-cancellation-0": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": true,
+          "problems": false
+        },
         "registration-0": {
           "status": "optional",
           "toConfirm": 0,
@@ -8107,6 +8337,12 @@
           "diverges": true,
           "problems": false
         },
+        "component-cancellation-1": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": true,
+          "problems": false
+        },
         "registration-1": {
           "status": "optional",
           "toConfirm": 0,
@@ -8156,6 +8392,12 @@
           "problems": false
         },
         "withdrawal-2": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": true,
+          "problems": false
+        },
+        "component-cancellation-2": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": true,
@@ -9510,7 +9752,23 @@
           "modalities": ["integrado"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["integrado"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["integrado"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -10026,6 +10284,17 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-0",
           "offerId": "integrado",
           "applicability": "required",
@@ -10386,6 +10655,12 @@
           "problems": false
         },
         "withdrawal-0": {
+          "status": "optional",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "component-cancellation-0": {
           "status": "optional",
           "toConfirm": 0,
           "diverges": false,
@@ -10963,7 +11238,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -11391,6 +11682,17 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-0",
           "offerId": "graduacao",
           "applicability": "required",
@@ -11703,6 +12005,12 @@
           "problems": false
         },
         "withdrawal-0": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "component-cancellation-0": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -12296,7 +12604,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -12768,6 +13092,17 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-0",
           "offerId": "graduacao",
           "applicability": "required",
@@ -13104,6 +13439,12 @@
           "problems": false
         },
         "withdrawal-0": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "component-cancellation-0": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -13761,7 +14102,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -14277,6 +14634,17 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-0",
           "offerId": "graduacao",
           "applicability": "required",
@@ -14637,6 +15005,12 @@
           "problems": false
         },
         "withdrawal-0": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "component-cancellation-0": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -15214,7 +15588,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-1",
           "term": "first",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 1º semestre",
+          "name": "Prazo de trancamento de curso — 1º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-1",
+          "term": "first",
+          "name": "Prazo de cancelamento de matrícula em componente — 1º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -15337,7 +15727,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-2",
           "term": "second",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 2º semestre",
+          "name": "Prazo de trancamento de curso — 2º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-2",
+          "term": "second",
+          "name": "Prazo de cancelamento de matrícula em componente — 2º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -15765,6 +16171,17 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-1",
           "offerId": "graduacao",
           "applicability": "optional",
@@ -15854,6 +16271,17 @@
         },
         {
           "activity": "withdrawal-2",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
           "offerId": "graduacao",
           "applicability": "required",
           "coverage": "pending",
@@ -16181,6 +16609,12 @@
           "diverges": false,
           "problems": false
         },
+        "component-cancellation-1": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
         "registration-1": {
           "status": "optional",
           "toConfirm": 0,
@@ -16230,6 +16664,12 @@
           "problems": false
         },
         "withdrawal-2": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "component-cancellation-2": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -16888,7 +17328,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-1",
           "term": "first",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 1º semestre",
+          "name": "Prazo de trancamento de curso — 1º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-1",
+          "term": "first",
+          "name": "Prazo de cancelamento de matrícula em componente — 1º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -17011,7 +17467,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-2",
           "term": "second",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 2º semestre",
+          "name": "Prazo de trancamento de curso — 2º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-2",
+          "term": "second",
+          "name": "Prazo de cancelamento de matrícula em componente — 2º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -17527,6 +17999,17 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-1",
           "offerId": "graduacao",
           "applicability": "optional",
@@ -17616,6 +18099,17 @@
         },
         {
           "activity": "withdrawal-2",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
           "offerId": "graduacao",
           "applicability": "required",
           "coverage": "pending",
@@ -17991,6 +18485,12 @@
           "diverges": false,
           "problems": false
         },
+        "component-cancellation-1": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
         "registration-1": {
           "status": "optional",
           "toConfirm": 0,
@@ -18040,6 +18540,12 @@
           "problems": false
         },
         "withdrawal-2": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "component-cancellation-2": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -19122,7 +19628,23 @@
           "modalities": ["integrado", "subsequente"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["integrado", "subsequente"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["integrado", "subsequente"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -19245,7 +19767,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-1",
           "term": "first",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 1º semestre",
+          "name": "Prazo de trancamento de curso — 1º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-1",
+          "term": "first",
+          "name": "Prazo de cancelamento de matrícula em componente — 1º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -19368,7 +19906,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-2",
           "term": "second",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 2º semestre",
+          "name": "Prazo de trancamento de curso — 2º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-2",
+          "term": "second",
+          "name": "Prazo de cancelamento de matrícula em componente — 2º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -20500,6 +21054,50 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "subsequente",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "posgraduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "registration-0",
           "offerId": "integrado",
           "applicability": "required",
@@ -20896,6 +21494,50 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "component-cancellation-1",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "subsequente",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "posgraduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "registration-1",
           "offerId": "integrado",
           "applicability": "optional",
@@ -21282,6 +21924,50 @@
         },
         {
           "activity": "withdrawal-2",
+          "offerId": "posgraduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "subsequente",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
           "offerId": "posgraduacao",
           "applicability": "unconfigured",
           "coverage": "pending",
@@ -22509,6 +23195,12 @@
           "diverges": true,
           "problems": true
         },
+        "component-cancellation-0": {
+          "status": "pending",
+          "toConfirm": 1,
+          "diverges": true,
+          "problems": true
+        },
         "registration-0": {
           "status": "pending",
           "toConfirm": 1,
@@ -22563,6 +23255,12 @@
           "diverges": true,
           "problems": true
         },
+        "component-cancellation-1": {
+          "status": "pending",
+          "toConfirm": 1,
+          "diverges": true,
+          "problems": true
+        },
         "registration-1": {
           "status": "unconfigured",
           "toConfirm": 0,
@@ -22612,6 +23310,12 @@
           "problems": true
         },
         "withdrawal-2": {
+          "status": "pending",
+          "toConfirm": 1,
+          "diverges": true,
+          "problems": true
+        },
+        "component-cancellation-2": {
           "status": "pending",
           "toConfirm": 1,
           "diverges": true,
@@ -25070,7 +25774,23 @@
           "modalities": ["integrado"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["integrado"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["integrado"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -25193,7 +25913,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-1",
           "term": "first",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 1º semestre",
+          "name": "Prazo de trancamento de curso — 1º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-1",
+          "term": "first",
+          "name": "Prazo de cancelamento de matrícula em componente — 1º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -25316,7 +26052,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-2",
           "term": "second",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 2º semestre",
+          "name": "Prazo de trancamento de curso — 2º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-2",
+          "term": "second",
+          "name": "Prazo de cancelamento de matrícula em componente — 2º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -26008,6 +26760,28 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "registration-0",
           "offerId": "integrado",
           "applicability": "unconfigured",
@@ -26206,6 +26980,28 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "component-cancellation-1",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "registration-1",
           "offerId": "integrado",
           "applicability": "unconfigured",
@@ -26394,6 +27190,28 @@
         },
         {
           "activity": "withdrawal-2",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "component-cancellation-2",
           "offerId": "graduacao",
           "applicability": "unconfigured",
           "coverage": "pending",
@@ -27037,6 +27855,12 @@
           "diverges": false,
           "problems": true
         },
+        "component-cancellation-0": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
         "registration-0": {
           "status": "unconfigured",
           "toConfirm": 0,
@@ -27091,6 +27915,12 @@
           "diverges": false,
           "problems": true
         },
+        "component-cancellation-1": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
         "registration-1": {
           "status": "unconfigured",
           "toConfirm": 0,
@@ -27140,6 +27970,12 @@
           "problems": true
         },
         "withdrawal-2": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "component-cancellation-2": {
           "status": "unconfigured",
           "toConfirm": 0,
           "diverges": false,
@@ -27936,7 +28772,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -28364,6 +29216,17 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-0",
           "offerId": "graduacao",
           "applicability": "required",
@@ -28676,6 +29539,12 @@
           "problems": false
         },
         "withdrawal-0": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "component-cancellation-0": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -29125,7 +29994,23 @@
           "modalities": ["integrado"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["integrado"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["integrado"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -29248,7 +30133,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-1",
           "term": "first",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 1º semestre",
+          "name": "Prazo de trancamento de curso — 1º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-1",
+          "term": "first",
+          "name": "Prazo de cancelamento de matrícula em componente — 1º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -29371,7 +30272,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-2",
           "term": "second",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 2º semestre",
+          "name": "Prazo de trancamento de curso — 2º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-2",
+          "term": "second",
+          "name": "Prazo de cancelamento de matrícula em componente — 2º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -29799,6 +30716,28 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-0",
           "offerId": "integrado",
           "applicability": "required",
@@ -29997,6 +30936,28 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-1",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-1",
           "offerId": "integrado",
           "applicability": "optional",
@@ -30185,6 +31146,28 @@
         },
         {
           "activity": "withdrawal-2",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
           "offerId": "graduacao",
           "applicability": "required",
           "coverage": "pending",
@@ -30684,6 +31667,12 @@
           "diverges": false,
           "problems": false
         },
+        "component-cancellation-0": {
+          "status": "optional",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
         "registration-0": {
           "status": "pending",
           "toConfirm": 0,
@@ -30738,6 +31727,12 @@
           "diverges": true,
           "problems": false
         },
+        "component-cancellation-1": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": true,
+          "problems": false
+        },
         "registration-1": {
           "status": "optional",
           "toConfirm": 0,
@@ -30787,6 +31782,12 @@
           "problems": false
         },
         "withdrawal-2": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": true,
+          "problems": false
+        },
+        "component-cancellation-2": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": true,
@@ -33570,7 +34571,23 @@
           "modalities": ["integrado", "graduacao"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["integrado", "graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["integrado", "graduacao"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -34262,6 +35279,28 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-0",
           "offerId": "integrado",
           "applicability": "optional",
@@ -34890,6 +35929,12 @@
           "problems": false
         },
         "withdrawal-0": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": true,
+          "problems": false
+        },
+        "component-cancellation-0": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": true,
@@ -44217,7 +45262,23 @@
           "modalities": ["integrado", "graduacao"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["integrado", "graduacao"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["integrado", "graduacao"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -44340,7 +45401,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-1",
           "term": "first",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 1º semestre",
+          "name": "Prazo de trancamento de curso — 1º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao-2", "graduacao-3"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-1",
+          "term": "first",
+          "name": "Prazo de cancelamento de matrícula em componente — 1º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -44463,7 +45540,23 @@
           "modalities": ["graduacao"],
           "id": "withdrawal-2",
           "term": "second",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — 2º semestre",
+          "name": "Prazo de trancamento de curso — 2º semestre",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["graduacao-2", "graduacao-3"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["graduacao"],
+          "id": "component-cancellation-2",
+          "term": "second",
+          "name": "Prazo de cancelamento de matrícula em componente — 2º semestre",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -45639,6 +46732,50 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao-2",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-0",
+          "offerId": "graduacao-3",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-0",
           "offerId": "integrado",
           "applicability": "optional",
@@ -46035,6 +47172,50 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-1",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao-2",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-1",
+          "offerId": "graduacao-3",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-1",
           "offerId": "integrado",
           "applicability": "optional",
@@ -46421,6 +47602,50 @@
         },
         {
           "activity": "withdrawal-2",
+          "offerId": "graduacao-3",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "graduacao",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
+          "offerId": "graduacao-2",
+          "applicability": "required",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
+          "activity": "component-cancellation-2",
           "offerId": "graduacao-3",
           "applicability": "required",
           "coverage": "pending",
@@ -47672,6 +48897,12 @@
           "diverges": true,
           "problems": false
         },
+        "component-cancellation-0": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": true,
+          "problems": false
+        },
         "registration-0": {
           "status": "optional",
           "toConfirm": 0,
@@ -47726,6 +48957,12 @@
           "diverges": true,
           "problems": false
         },
+        "component-cancellation-1": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": true,
+          "problems": false
+        },
         "registration-1": {
           "status": "optional",
           "toConfirm": 0,
@@ -47775,6 +49012,12 @@
           "problems": false
         },
         "withdrawal-2": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": true,
+          "problems": false
+        },
+        "component-cancellation-2": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": true,
@@ -52364,7 +53607,23 @@
           "modalities": ["integrado"],
           "id": "withdrawal-0",
           "term": "annual",
-          "name": "Prazo de trancamento de curso e cancelamento de matrícula em componente — ano letivo",
+          "name": "Prazo de trancamento de curso — ano letivo",
+          "basis": "Art. 11, VII",
+          "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
+          "optionalFor": {
+            "integrado": "Não exigido por este inciso para o integrado; cadastro permitido."
+          },
+          "offerIds": ["integrado"],
+          "reviewCriterionId": "VII",
+          "group": "admission",
+          "defaultCategory": "prazo",
+          "variant": "activity"
+        },
+        {
+          "modalities": ["integrado"],
+          "id": "component-cancellation-0",
+          "term": "annual",
+          "name": "Prazo de cancelamento de matrícula em componente — ano letivo",
           "basis": "Art. 11, VII",
           "reason": "Frequência por ciclo de organização da oferta; o inciso não fixa dois semestres para cursos anuais.",
           "optionalFor": {
@@ -52880,6 +54139,17 @@
           "warnings": []
         },
         {
+          "activity": "component-cancellation-0",
+          "offerId": "integrado",
+          "applicability": "optional",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": []
+        },
+        {
           "activity": "registration-0",
           "offerId": "integrado",
           "applicability": "required",
@@ -53240,6 +54510,12 @@
           "problems": false
         },
         "withdrawal-0": {
+          "status": "optional",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "component-cancellation-0": {
           "status": "optional",
           "toConfirm": 0,
           "diverges": false,

@@ -25,6 +25,11 @@ import {
   offerFor,
 } from '../../src/domain/calendar/offers.ts';
 import { withDeclaredCategories } from '../helpers/declared-categories.ts';
+import {
+  withSplitCoverage,
+  withSplitReadiness,
+  withSplitWithdrawal,
+} from '../helpers/split-withdrawal.ts';
 import { legacyIds, namesLegacyRow } from '../helpers/legacy-classification.ts';
 
 /**
@@ -263,11 +268,17 @@ test.each(inputs.cases.filter(({ input }) => input.year > 2026))(
   'preserves the captured semantics in format 5: $name',
   ({ name, input: stored }) => {
     const expected = withoutLegacyRows(oracle.cases.find((item) => item.name === name)!.expected);
-    // consup-292-2027-v6 declares default categories the capture did not have.
-    if (stored.year === 2027)
-      (expected as Projection).requirements = withDeclaredCategories(
-        (expected as Projection).requirements,
+    // consup-292-2027-v6 declares default categories the capture did not have; v7 splits the
+    // art. 11, VII, deadline.
+    if (stored.year === 2027) {
+      const projection = expected as Projection;
+      projection.requirements = withSplitWithdrawal(
+        withDeclaredCategories(projection.requirements),
       );
+      projection.diagnostics.coverage = withSplitCoverage(projection.diagnostics.coverage);
+      projection.readiness.issues = withSplitReadiness(projection.readiness.issues);
+      projection.readiness.warnings = withSplitReadiness(projection.readiness.warnings);
+    }
     const input = structuredClone(stored);
     const before = structuredClone(input);
     expect(readinessTokens(semanticProjection(input, catalogue), input)).toEqual(
