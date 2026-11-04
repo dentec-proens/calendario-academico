@@ -1,46 +1,206 @@
-import { frozenCriteria, parecerItems } from '../../reviews/parecer-items.ts';
+import { frozenCriteria } from '../../reviews/parecer-items.ts';
 
+/** Items of the review under Resolução 292, declared whole: the 2026 parecer's list is not their source. */
 export const criteria = frozenCriteria([
-  ...parecerItems.map((criterion) => ({
-    ...criterion,
-    page: [
-      'XII',
-      'XIII',
-      'XIV',
-      'XV',
-      'XVI',
-      'XVII',
-      'XVIII',
-      'XIX',
-      'XX',
-      'XXI',
-      'XXII',
-      'XXIII',
-      'XXIV',
-      'XXV',
-    ].includes(criterion.id)
-      ? 4
-      : 3,
-    item:
-      criterion.id === 'annual'
-        ? 'Art. 4º'
-        : criterion.id === 'semester'
-          ? 'Art. 4º, § 1º'
-          : criterion.id === 'window'
-            ? 'Art. 8º'
-            : criterion.item.replace('Art. 7º', 'Art. 11'),
+  {
+    id: 'annual',
+    title: 'Mínimo de 200 dias letivos anuais e carga horária do PPC',
+    page: 3,
+    item: 'Art. 4º',
+    pattern: null,
+  },
+  {
+    id: 'semester',
+    title: '100 dias por semestre para oferta semestral',
+    page: 3,
+    item: 'Art. 4º, § 1º',
+    pattern: null,
+  },
+  {
+    id: 'window',
+    title: 'Janela do ano letivo: 01/02 a 17/12/2027; início até 15/02/2027',
+    page: 3,
+    item: 'Art. 8º',
+    pattern: null,
+  },
+  {
+    id: 'minutes',
+    title: 'Extratos das atas de aprovação pelo CGPC e Codic',
+    page: 3,
+    item: 'Instrução processual',
+    pattern: 'cgpc|codic|ata',
+  },
+  {
+    id: 'I',
+    title: 'Início e término de cada período: bimestre/trimestre, semestre e ano',
+    page: 3,
+    item: 'Art. 11, I',
+    pattern: null,
+  },
+  {
+    id: 'II',
+    title: 'Feriados e recessos acadêmicos e administrativos',
+    page: 3,
+    item: 'Art. 11, II',
+    pattern: 'feriado|recesso',
+  },
+  {
+    id: 'III',
+    title: 'Períodos de férias escolares',
+    page: 3,
+    item: 'Art. 11, III',
+    pattern: 'ferias',
+  },
+  {
+    id: 'IV',
+    title: 'Férias docentes: 45 dias, preferencialmente coincidentes com férias escolares',
+    page: 3,
+    item: 'Art. 11, IV',
+    pattern: 'ferias.*docent|docent.*ferias',
+  },
+  {
+    id: 'V',
+    title: 'Matrícula e ajustes de veteranos dos cursos subsequentes e de graduação',
+    page: 3,
+    item: 'Art. 11, V',
+    pattern: 'matricula',
+  },
+  {
+    id: 'VI',
     title:
-      criterion.id === 'window'
-        ? 'Janela do ano letivo: 01/02 a 17/12/2027; início até 15/02/2027'
-        : criterion.id === 'XII'
-          ? 'Plano de Ensino, PIT e RIT em cada semestre'
-          : criterion.id === 'XXIV'
-            ? 'Semana de Valorização de Mulheres que Fizeram História — segunda semana de março'
-            : criterion.id === 'XXV'
-              ? 'Semana da Ética e da Cidadania — primeira semana de maio'
-              : criterion.title.replaceAll('2026', '2027'),
-    pattern: criterion.id === 'XXV' ? 'etica|cidadania' : criterion.pattern,
-  })),
+      'Aproveitamento de estudos, certificação de conhecimentos e equivalência de estágio: uma vez no anual; duas no semestral',
+    page: 3,
+    item: 'Art. 11, VI',
+    pattern: 'aproveitamento|certificacao|equivalencia',
+  },
+  {
+    id: 'VII',
+    title: 'Trancamento de curso e cancelamento de componente: subsequentes e graduação',
+    page: 3,
+    item: 'Art. 11, VII',
+    pattern: 'trancamento|cancelamento',
+  },
+  {
+    id: 'VIII',
+    title:
+      'Editais de transferência, reingresso e portadores de diploma antes do período: uma vez no anual; duas no semestral',
+    page: 3,
+    item: 'Art. 11, VIII',
+    pattern: 'transferencia|reingresso|diploma',
+  },
+  {
+    id: 'IX',
+    title: 'Lançamento dos resultados e frequência de cada etapa',
+    page: 3,
+    item: 'Art. 11, IX',
+    pattern: 'resultado|rendimento|frequencia',
+  },
+  {
+    id: 'X',
+    title: 'Lançamento dos resultados finais e frequência',
+    page: 3,
+    item: 'Art. 11, X',
+    pattern: 'resultado.*fina|fina.*resultado',
+  },
+  {
+    id: 'XI',
+    title: 'Fechamento e entrega dos diários de classe',
+    page: 3,
+    item: 'Art. 11, XI',
+    pattern: 'diario',
+  },
+  {
+    id: 'XII',
+    title: 'Plano de Ensino, PIT e RIT em cada semestre',
+    page: 4,
+    item: 'Art. 11, XII',
+    pattern: '\\bpit\\b|plano.*ensino|plano individual',
+  },
+  {
+    id: 'XIII',
+    title: 'Conselhos/coletivos e reuniões pedagógicas após resultados parciais',
+    page: 4,
+    item: 'Art. 11, XIII',
+    pattern: 'conselho|coletivo|reuniao pedagogica',
+  },
+  {
+    id: 'XIV',
+    title: 'Prazo para estudantes solicitarem revisão de resultados finais',
+    page: 4,
+    item: 'Art. 11, XIV',
+    pattern: 'revisao.*resultado',
+  },
+  {
+    id: 'XV',
+    title: 'Conselhos/coletivos extraordinários para revisão de resultados',
+    page: 4,
+    item: 'Art. 11, XV',
+    pattern: 'extraordinario',
+  },
+  {
+    id: 'XVI',
+    title: 'Reuniões com familiares, responsáveis e comunidade',
+    page: 4,
+    item: 'Art. 11, XVI',
+    pattern: 'familia|responsave|comunidade',
+  },
+  {
+    id: 'XVII',
+    title: 'Eventos de ensino, pesquisa, extensão e inovação do campus',
+    page: 4,
+    item: 'Art. 11, XVII',
+    pattern: 'ensino|pesquisa|extensao|inovacao',
+  },
+  {
+    id: 'XVIII',
+    title: 'Encontro dos egressos',
+    page: 4,
+    item: 'Art. 11, XVIII',
+    pattern: 'egresso',
+  },
+  { id: 'XIX', title: 'Evento sobre estágios', page: 4, item: 'Art. 11, XIX', pattern: 'estagio' },
+  {
+    id: 'XX',
+    title: 'Fase local da Olimpíada Brasileira de Robótica até 31/08/2027',
+    page: 4,
+    item: 'Art. 11, XX',
+    pattern: 'robotica|\\bobr\\b',
+  },
+  {
+    id: 'XXI',
+    title: 'Mostra de Cursos até 30/09/2027',
+    page: 4,
+    item: 'Art. 11, XXI',
+    pattern: 'mostra.*curso',
+  },
+  {
+    id: 'XXII',
+    title: 'Formação pedagógica: mínimo de 40 horas anuais',
+    page: 4,
+    item: 'Art. 11, XXII',
+    pattern: 'formacao',
+  },
+  {
+    id: 'XXIII',
+    title: 'Planejamento/replanejamento coletivo: mínimo de 20 horas anuais',
+    page: 4,
+    item: 'Art. 11, XXIII',
+    pattern: 'planejamento',
+  },
+  {
+    id: 'XXIV',
+    title: 'Semana de Valorização de Mulheres que Fizeram História — segunda semana de março',
+    page: 4,
+    item: 'Art. 11, XXIV',
+    pattern: 'mulher',
+  },
+  {
+    id: 'XXV',
+    title: 'Semana da Ética e da Cidadania — primeira semana de maio',
+    page: 4,
+    item: 'Art. 11, XXV',
+    pattern: 'etica|cidadania',
+  },
   {
     id: 'XXVI',
     title:
