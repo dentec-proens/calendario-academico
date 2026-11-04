@@ -6,9 +6,11 @@ sistema: **corte limpo**. O aplicativo está em alfa, os dados em produção pod
 migração, e o código não sustenta formatos antigos nem estados de transição. O que a migração não
 resolve sozinha é resolvido com regra determinística e perda declarada, não com código legado.
 
-Duas decisões ficam registradas como adotadas por este plano e sujeitas a confirmação da gestão
-antes do ensaio de B3: (1) a organização padrão da migração é **anual**; (2) os dois calendários
-**enviados** são devolvidos ao campus antes da migração.
+Uma decisão fica registrada como adotada por este plano e sujeita a confirmação da gestão antes
+do ensaio de B3: a organização padrão da migração para ofertas a classificar (regra 3 de B1), com
+as opções descritas ali. Pareceres não são uma restrição: em 04/11/2026 a tabela `reviews` de
+produção estava vazia, e a gestão decidiu que qualquer parecer existente na data da migração é
+apagado por ela.
 
 ## Situação
 
@@ -224,11 +226,23 @@ por documento:
    reorganização futura (`organization/offers.ts`). Perda declarada: a nota “Ingresso informado” do
    formulário e o sufixo “(não exigido: sem ingresso…)” do catálogo operacional, que passa a não
    distinguir ausência de ingresso.
-3. **Organização.** Toda oferta `a-classificar` vira `anual`: com `stages: { defined, perTerm:
-count }` quando havia total informado, sem `stages` quando não havia (12 das 25 ofertas em
-   produção, como os rascunhos “Ivaiporã” e “Cascavel” das fixtures). Perda declarada: uma
-   graduação semestral terá de ser reorganizada pelo campus e, como posições definidas nunca são
-   reinterpretadas, cada etapa corrigida por **Corrigir atividade vinculada**.
+3. **Organização** (decisão pendente da gestão). Toda oferta `a-classificar` recebe uma
+   organização. Os dados de produção em 04/11/2026: 25 ofertas em 12 rascunhos; em 8 deles o
+   calendário tem exatamente dois períodos sem associação, quase certamente os semestres do
+   formato 4; nos outros 4 não há período nem total informado. Opções:
+   - **Anual para todas**: com `stages: { defined, perTerm: count }` quando havia total informado,
+     sem `stages` quando não havia. Simples; nos 8 rascunhos com dois períodos, a regra 4 os
+     remove e uma graduação semestral terá de ser reorganizada pelo campus, etapa por etapa, porque
+     posições definidas nunca são reinterpretadas (**Corrigir atividade vinculada**).
+   - **Inferir pelos períodos** (recomendada): dois períodos sem associação e sem sobreposição no
+     calendário → `semestral`, com os dois períodos associados a essas ofertas como 1º e 2º
+     semestres e `perTerm = count / 2` quando o total é par; um período ou nenhum → `anual`. Total
+     ímpar com dois períodos → `anual`, com os períodos removidos pela regra 4. Acerta nos dados
+     atuais; erra se um campus anual registrou dois períodos por outro motivo.
+   - **Não decidir**: oferta sem períodos e sem etapas, datas desvinculadas, campus preenche de
+     novo. Não grava palpite, perde mais dados.
+     Perda declarada em qualquer opção: a organização atribuída pela migração aparece no relatório
+     por calendário, para o campus conferir.
 4. **Períodos sem associação.** Exatamente um período sem associação no documento → período anual
    compartilhado entre as ofertas que a regra 3 definiu (a normalização aceita associação com
    várias ofertas do mesmo ciclo). Zero → nada. Dois ou mais → removidos, listados no relatório
@@ -303,8 +317,9 @@ inclusões rebaixadas, coberturas que mudam. O relatório é enviado a cada camp
   `docs/migracao-schema.md` (“a evidência preserva o significado”) é revogada para o formato 6, e
   o backup pré-migração fica como evidência de registro.
 - Pareceres não ficam desatualizados pela migração (`reviewIsCurrent` compara versão do calendário,
-  versão de regras e identidade da base, que a migração não toca). Por isso os dois calendários
-  enviados são devolvidos antes.
+  versão de regras e identidade da base, que a migração não toca). Por isso a migração apaga
+  `reviews` e `reviewVersions` (vazias em 04/11/2026), e os calendários enviados continuam
+  enviados, com o hash do envio recalculado; a revisão começa do zero sobre o conteúdo migrado.
 - Abas abertas com o bundle anterior deixam de salvar após a expansão, com a mensagem própria.
 
 #### B4. Período como parte da oferta (avaliar depois do formato 6)
@@ -335,8 +350,7 @@ projeção.
    `assessmentAutoStart` em data que perderia o vínculo, destinos de edital por período,
    `targetDays`, inclusões letivas fora de período, `intake` fora dos ciclos da oferta, entradas
    do snapshot só com `modalities` ou com `[]`.
-3. Decisão da gestão sobre as regras de B1 com a lista nominal da perda por calendário. Devolver
-   os dois calendários enviados.
+3. Decisão da gestão sobre as regras de B1 com a lista nominal da perda por calendário.
 4. Conversor puro, com as fixtures gravadas convertidas como teste. Ensaio sobre backup restaurado
    em deployment descartável, com `normalizeOfferCalendar` passando em todos os documentos e
    relatório por calendário.
