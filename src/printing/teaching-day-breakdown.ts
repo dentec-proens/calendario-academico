@@ -85,7 +85,7 @@ export function teachingDayBreakdown(
   );
   let semesters: (DateRange | null)[] = [null, null];
   for (const period of periods) {
-    if (period.association.status !== 'defined' || period.association.term === 'annual') continue;
+    if (period.association.term === 'annual') continue;
     semesters[period.association.term === 'first' ? 0 : 1] = {
       start: period.start,
       end: period.end,
@@ -103,7 +103,7 @@ export function teachingDayBreakdown(
   const stageRows = stages.map((range, i) => {
     const term = offer ? stageTerm(offer, i + 1) : undefined;
     const label =
-      offer?.organization === 'semestral' && offer.stages?.status === 'defined'
+      offer?.organization === 'semestral' && offer.stages
         ? `${stageInTerm(i + 1, offer.stages.perTerm).number}ª etapa — ${term ? termLabels[term] : 'ciclo a conferir'}`
         : `${i + 1}ª etapa — ${offer ? (stageCycle(offer) ?? 'ciclo a conferir') : 'ciclo a conferir'}`;
     const item = row(label, range);
@@ -112,7 +112,6 @@ export function teachingDayBreakdown(
       range &&
       !periods.some(
         (period) =>
-          period.association?.status === 'defined' &&
           period.association.term === term &&
           period.start <= range.start &&
           range.end <= period.end,
@@ -157,16 +156,15 @@ export function teachingDayBreakdown(
     months,
     stages: stageRows,
     stageLabel: 'etapa de avaliação',
-    stageGroups:
-      offer && offer.organization !== 'a-classificar'
-        ? termsByOrganization[offer.organization]
-            .map((term) => ({
-              term,
-              label: `Etapas de avaliação — ${termLabels[term]}`,
-              rows: stageRows.filter((_, index) => stageTerm(offer, index + 1) === term),
-            }))
-            .filter((group) => group.rows.length)
-        : [],
+    stageGroups: offer
+      ? termsByOrganization[offer.organization]
+          .map((term) => ({
+            term,
+            label: `Etapas de avaliação — ${termLabels[term]}`,
+            rows: stageRows.filter((_, index) => stageTerm(offer, index + 1) === term),
+          }))
+          .filter((group) => group.rows.length)
+      : [],
     showSemesters,
     semesters: semesterRows,
     annual: row('Total anual', {

@@ -127,7 +127,20 @@ describe('preview and command', () => {
   });
 
   test('a cycle generated for one offer only does not cover a date of two offers', () => {
-    let state = ivaiporaDraft();
+    const stored = ivaiporaDraft();
+    // Only the integrated offer stays annual, and the date keeps a link no offer generates.
+    let state: typeof stored = {
+      ...stored,
+      periods: [],
+      offers: stored.offers.map((offer) =>
+        offer.id === 'integrado' ? offer : { ...offer, organization: 'semestral' },
+      ),
+      events: stored.events.map((event) =>
+        event.id === 'ivaipora-final-1'
+          ? { ...event, activity: cycleLink('teaching-plan', 'first') }
+          : event,
+      ),
+    };
     const draft = offerOrganizationDraft(state, 'integrado');
     draft.organization = 'anual';
     draft.count = '2';

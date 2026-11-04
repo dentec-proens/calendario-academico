@@ -7,7 +7,6 @@ import {
   type CalendarContent,
   type CalendarOffer,
   type CalendarPeriod,
-  type IntakeConfiguration,
   type OfferStages,
   type VacationPeriods,
 } from '../model.ts';
@@ -54,44 +53,24 @@ function choice<const T extends string>(value: unknown, choices: readonly T[], m
   return choices.find((candidate) => candidate === value) ?? fail(message);
 }
 const term = (value: unknown) => choice(value, academicTerms, 'Ciclo letivo inválido.');
-/** Reported total without a confirmed cycle, or stages per cycle. */
 function offerStages(value: unknown): OfferStages {
   const row = calendarObject(value);
-  const status = choice(row.status, ['reported', 'defined'], 'Etapas da oferta inválidas.');
-  return status === 'reported'
-    ? {
-        status,
-        count:
-          ([2, 3, 4] as const).find((count) => count === row.count) ??
-          fail('Quantidade informada de etapas inválida.'),
-      }
-    : { status, perTerm: number(row.perTerm) };
+  const status = choice(row.status, ['defined'], 'Etapas da oferta inválidas.');
+  return { status, perTerm: number(row.perTerm) };
 }
 function offer(value: unknown): CalendarOffer {
   const row = calendarObject(value);
   const organization = choice(row.organization, organizations, 'Organização da oferta inválida.');
   const intake: CalendarOffer['intake'] = row.intake === undefined ? undefined : {};
   if (intake)
-    for (const [key, raw] of Object.entries(calendarObject(row.intake))) {
-      const entry = calendarObject(raw);
-      intake[term(key)] = {
-        status: choice(
-          entry.status,
-          ['unknown', 'yes', 'no'],
-          'Configuração de ingresso inválida.',
-        ),
-        ...(entry.required === undefined ? {} : { required: boolean(entry.required) }),
-      } satisfies IntakeConfiguration;
-    }
+    for (const [key, raw] of Object.entries(calendarObject(row.intake)))
+      intake[term(key)] = raw === true ? raw : fail('Configuração de ingresso inválida.');
   return {
     id: text(row.id),
     kind: choice(row.kind, modalityIds, 'Tipo de oferta inválido.'),
     delivery: choice(row.delivery, ['presencial', 'ead', 'a-conferir'], 'Modo da oferta inválido.'),
     organization,
     ...(row.label === undefined ? {} : { label: text(row.label) }),
-    ...(row.organizationBasis === undefined
-      ? {}
-      : { organizationBasis: text(row.organizationBasis) }),
     ...(row.stages === undefined ? {} : { stages: offerStages(row.stages) }),
     ...(row.scope === undefined
       ? {}
@@ -117,15 +96,13 @@ const period = (value: unknown): CalendarPeriod => {
     end: date(row.end),
     ...(row.targetDays === undefined ? {} : { targetDays: number(row.targetDays) }),
     association:
-      association.status === 'a-classificar'
-        ? { status: 'a-classificar' }
-        : association.status === 'defined'
-          ? {
-              status: 'defined',
-              offers: array(association.offers, text),
-              term: term(association.term),
-            }
-          : fail('Associação do período inválida.'),
+      association.status === 'defined'
+        ? {
+            status: 'defined',
+            offers: array(association.offers, text),
+            term: term(association.term),
+          }
+        : fail('Associação do período inválida.'),
   };
 };
 const eventScope = (value: unknown): CalendarEvent['scope'] => {
@@ -193,10 +170,7 @@ const activity = (value: unknown): CalendarEvent => {
       : {}),
     ...(adjustment
       ? {
-          deadlineAdjustment: {
-            date: date(adjustment.date),
-            reviewed: boolean(adjustment.reviewed),
-          },
+          deadlineAdjustment: { date: date(adjustment.date) },
         }
       : {}),
   };

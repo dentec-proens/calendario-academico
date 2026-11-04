@@ -97,11 +97,10 @@ export function contentAssessment(record: ContentRecord) {
   if (
     offers.some(
       (offer) =>
-        offer.stages?.status !== 'reported' &&
-        (offer.stages?.status !== 'defined' ||
-          !(offer.organization === 'anual'
-            ? assessmentStageCounts.includes(offer.stages.perTerm)
-            : offer.organization === 'semestral' && [1, 2].includes(offer.stages.perTerm))),
+        !offer.stages ||
+        !(offer.organization === 'anual'
+          ? assessmentStageCounts.includes(offer.stages.perTerm)
+          : [1, 2].includes(offer.stages.perTerm)),
     )
   )
     issue('stages', 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).', {
@@ -146,7 +145,7 @@ export function contentAssessment(record: ContentRecord) {
         results = eventFor('results'),
         council = eventFor('council');
       const position =
-        offer.organization === 'semestral' && offer.stages?.status === 'defined'
+        offer.organization === 'semestral' && offer.stages
           ? stageInTerm(n, offer.stages.perTerm)
           : undefined;
       const stage = position
@@ -172,7 +171,7 @@ export function contentAssessment(record: ContentRecord) {
           `${stage}: término anterior ao início.`,
           stageInfo('Término anterior ao início.'),
         );
-      if (start && offer.stages?.status !== 'reported') {
+      if (start) {
         const cycleIssue = assessmentCycleIssue(record.state, start);
         if (cycleIssue) stageWarning('stage-cycle', cycleIssue);
       }
@@ -289,17 +288,6 @@ export function contentAssessment(record: ContentRecord) {
           title: 'Períodos letivos',
           detail: 'Cadastre os períodos letivos.',
         });
-      else if (item.code === 'organization-unclassified')
-        issue(
-          `organization-unclassified:${item.offerId}`,
-          `${labelFor(record.state, item.offerId)} — Organização a conferir antes de confirmar contagem e conclusão.`,
-          {
-            ...organization,
-            title: 'Organização',
-            detail: 'Organização a conferir antes de confirmar contagem e conclusão.',
-            offerId: item.offerId,
-          },
-        );
       else if (item.code === 'period-count') {
         const detail = `Cadastre ${item.expected === 1 ? 'o ciclo anual' : 'os dois semestres letivos'}.`;
         issue(
@@ -319,11 +307,7 @@ export function contentAssessment(record: ContentRecord) {
         const period = record.state.periods.find((p) => p.id === check.scope);
         // A period split changes its identifier, so the code names the term instead.
         const scope =
-          check.scope === 'annual'
-            ? 'annual'
-            : period?.association.status === 'defined'
-              ? period.association.term
-              : check.scope;
+          check.scope === 'annual' ? 'annual' : (period?.association.term ?? check.scope);
         issue(
           `teaching-days:${check.offerId}:${scope}`,
           `${labelFor(record.state, check.offerId)} — ${check.scope === 'annual' ? 'Total anual' : period?.name}: mínimo de dias não atendido ou não configurado.`,
@@ -364,11 +348,9 @@ export function contentAssessment(record: ContentRecord) {
                   ? 'confirme a semana letiva'
                   : item.code === 'periods-missing'
                     ? 'cadastre os períodos letivos'
-                    : item.code === 'organization-unclassified'
-                      ? `classifique a organização de ${labelFor(record.state, item.offerId)}`
-                      : item.code === 'period-count'
-                        ? `cadastre os períodos de ${labelFor(record.state, item.offerId)}`
-                        : '',
+                    : item.code === 'period-count'
+                      ? `cadastre os períodos de ${labelFor(record.state, item.offerId)}`
+                      : '',
               )
               .join('; ')}.`
           : 'Complete e confira a semana letiva, os períodos e os dados da contagem.',

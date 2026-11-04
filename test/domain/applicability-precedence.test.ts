@@ -16,7 +16,6 @@ const row = (fields: Partial<ActivityPlanItem>): ActivityPlanItem => ({
   name: 'Atividade sintética',
   ...fields,
 });
-const yes = { status: 'yes', required: true } as const;
 
 test.each<[string, Partial<CalendarOffer>, Partial<ActivityPlanItem>, string]>([
   [
@@ -35,7 +34,7 @@ test.each<[string, Partial<CalendarOffer>, Partial<ActivityPlanItem>, string]>([
   ['offer other than the row offer', {}, { offerId: 'outra' }, 'optional'],
   [
     'offer outside the row offers wins over a required intake',
-    { intake: { annual: yes } },
+    { intake: { annual: true } },
     { offerIds: ['outra'], intake: true },
     'optional',
   ],
@@ -48,38 +47,26 @@ test.each<[string, Partial<CalendarOffer>, Partial<ActivityPlanItem>, string]>([
   ],
   [
     'required intake wins over the row field',
-    { intake: { annual: yes } },
+    { intake: { annual: true } },
     { intake: true, required: false },
     'required',
   ],
   [
-    'intake answered no ends the branch',
-    { intake: { annual: { status: 'no' } } },
+    'no local requirement ends the branch',
+    {},
     { intake: true, applicability: 'required' },
-    'optional',
-  ],
-  [
-    'intake without requirement',
-    { intake: { annual: { status: 'yes' } } },
-    { intake: true },
-    'optional',
-  ],
-  [
-    'intake unknown',
-    { intake: { annual: { status: 'unknown', required: true } } },
-    { intake: true },
     'optional',
   ],
   ['intake not configured', {}, { intake: true }, 'optional'],
   [
     'intake row without term reads the annual entry',
-    { intake: { annual: yes } },
+    { intake: { annual: true } },
     { intake: true },
     'required',
   ],
   [
     'intake row with term ignores the annual entry',
-    { intake: { annual: yes } },
+    { intake: { annual: true } },
     { intake: true, term: 'first' },
     'optional',
   ],

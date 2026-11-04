@@ -202,7 +202,7 @@ describe('activityKey()', () => {
 
 describe('activityFromKey() validates a complete key read from a URL', () => {
   test('returns the link of every key activityKey() produces, for every generated row', () => {
-    const offers = ['anual', 'semestral', 'a-classificar'] as const;
+    const offers = ['anual', 'semestral'] as const;
     const keys = new Set<string>();
     for (const year of [2026, 2027])
       for (const organization of offers) {
@@ -215,10 +215,7 @@ describe('activityFromKey() validates a complete key read from a URL', () => {
               kind: 'integrado',
               delivery: 'a-conferir',
               organization,
-              stages:
-                organization === 'a-classificar'
-                  ? { status: 'reported', count: 3 }
-                  : { status: 'defined', perTerm: organization === 'anual' ? 2 : 1 },
+              stages: { status: 'defined', perTerm: organization === 'anual' ? 2 : 1 },
             },
           ],
         };

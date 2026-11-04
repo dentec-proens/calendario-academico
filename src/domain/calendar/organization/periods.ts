@@ -1,9 +1,12 @@
 import type { AssessmentSettings, Organization, CalendarPeriod, AcademicTerm } from '../model.ts';
 import { associationOffers, offerFor } from '../offers.ts';
-export function organizationForOffer(state: AssessmentSettings, id: string): Organization {
-  return offerFor(state, id)?.organization ?? 'a-classificar';
+export function organizationForOffer(
+  state: AssessmentSettings,
+  id: string,
+): Organization | undefined {
+  return offerFor(state, id)?.organization;
 }
-/** Never pass overlapping offers to the counting core. Unclassified periods have no coverage. */
+/** Never pass overlapping offers to the counting core. */
 export function periodsForOffer<T extends CalendarPeriod>(
   state: AssessmentSettings & { periods: T[] },
   id: string,
@@ -15,9 +18,7 @@ export function periodForTerm(
   id: string,
   term: AcademicTerm,
 ) {
-  return periodsForOffer(state, id).find(
-    (period) => period.association.status === 'defined' && period.association.term === term,
-  );
+  return periodsForOffer(state, id).find((period) => period.association.term === term);
 }
 export function samePeriodScope(a: CalendarPeriod, b: CalendarPeriod) {
   return associationOffers(a.association).some((id) =>

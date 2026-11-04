@@ -27,11 +27,8 @@ export function assessmentCycleIssue(
   if (!offer) return 'A oferta da etapa de avaliação não pertence ao calendário.';
   const ordinal = stageOrdinal(offer, event.activity.position);
   const term = ordinal === undefined ? undefined : stageTerm(offer, ordinal);
-  if (ordinal === undefined || !term)
-    return 'Defina a organização e a quantidade de etapas da oferta.';
-  const periods = periodsForOffer(state, id).filter(
-    (period) => period.association?.status === 'defined' && period.association.term === term,
-  );
+  if (ordinal === undefined || !term) return 'Defina a quantidade de etapas da oferta.';
+  const periods = periodsForOffer(state, id).filter((period) => period.association.term === term);
   if (assessmentIntervalIssue(periods, event.start, event.end))
     return `A etapa de avaliação deve estar inteiramente dentro do período do ${termLabels[term]} da oferta.`;
   for (const other of state.events ?? []) {

@@ -84,7 +84,7 @@ test('reading persisted dates preserves historical choices, metadata and the exa
         originalStart: '2027-10-28',
         originalEnd: '2027-10-28',
         assessmentAutoStart: '2027-10-01',
-        deadlineAdjustment: { date: '2027-10-30', reviewed: true, evidence: 'Decisão preservada' },
+        deadlineAdjustment: { date: '2027-10-30', evidence: 'Decisão preservada' },
       },
     ],
     updatedAt: '2026-10-30T15:00:00Z',
@@ -114,7 +114,7 @@ test('JSON import validates auxiliary dates, observances and vacations as well a
     { ...base, events: [{ ...base.events[0], assessmentAutoStart: '2027-02-30' }] },
     {
       ...base,
-      events: [{ ...base.events[0], deadlineAdjustment: { date: '2027-02-30', reviewed: false } }],
+      events: [{ ...base.events[0], deadlineAdjustment: { date: '2027-02-30' } }],
     },
   ])
     expect(() => normalizeOfferCalendar(invalid)).toThrow();

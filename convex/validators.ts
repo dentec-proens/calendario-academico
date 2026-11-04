@@ -22,17 +22,14 @@ export const regime = v.union(
   v.literal('anual'),
   v.literal('semestral'),
   v.literal('misto'),
-  v.literal('a-classificar'),
+  v.null(),
 );
 export const academicTerm = v.union(...academicTerms.map((term) => v.literal(term)));
-export const periodAssociation = v.union(
-  v.object({ status: v.literal('a-classificar') }),
-  v.object({
-    status: v.literal('defined'),
-    offers: v.array(v.string()),
-    term: academicTerm,
-  }),
-);
+export const periodAssociation = v.object({
+  status: v.literal('defined'),
+  offers: v.array(v.string()),
+  term: academicTerm,
+});
 export const stages = v.union(...assessmentStageValues.map((count) => v.literal(count)));
 export const period = v.object({
   id: v.string(),
@@ -84,7 +81,7 @@ export const event = v.object({
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
   notice: v.optional(notice),
-  deadlineAdjustment: v.optional(v.object({ date: v.string(), reviewed: v.boolean() })),
+  deadlineAdjustment: v.optional(v.object({ date: v.string() })),
   deadlineExtensionCause: v.optional(
     v.union(v.literal('municipal-holiday'), v.literal('municipal-recess')),
   ),
@@ -113,9 +110,7 @@ export const institutionalEventSnapshot = v.object({
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
   notice: v.optional(notice),
-  deadlineAdjustment: v.optional(
-    v.object({ date: v.string(), evidence: v.string(), reviewed: v.boolean() }),
-  ),
+  deadlineAdjustment: v.optional(v.object({ date: v.string() })),
   deadlineExtensionCause: v.optional(
     v.union(v.literal('municipal-holiday'), v.literal('municipal-recess')),
   ),
@@ -133,45 +128,25 @@ export const vacations = v.object({
   thirdStart: v.optional(v.string()),
   thirdEnd: v.optional(v.string()),
 });
-export const organization = v.union(
-  v.literal('anual'),
-  v.literal('semestral'),
-  v.literal('a-classificar'),
-);
+export const organization = v.union(v.literal('anual'), v.literal('semestral'));
 export const calendarOffer = v.object({
   id: v.string(),
   kind: modality,
   label: v.optional(v.string()),
   delivery: v.union(v.literal('presencial'), v.literal('ead'), v.literal('a-conferir')),
   organization,
-  // Reported total without a confirmed cycle, or stages per cycle.
   stages: v.optional(
-    v.union(
-      v.object({
-        status: v.literal('reported'),
-        count: v.union(v.literal(2), v.literal(3), v.literal(4)),
-      }),
-      v.object({
-        status: v.literal('defined'),
-        perTerm: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),
-      }),
-    ),
+    v.object({
+      status: v.literal('defined'),
+      perTerm: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),
+    }),
   ),
   scope: v.optional(
     v.object({
       status: v.union(v.literal('covered'), v.literal('own-regulation')),
     }),
   ),
-  intake: v.optional(
-    v.record(
-      v.string(),
-      v.object({
-        status: v.union(v.literal('unknown'), v.literal('yes'), v.literal('no')),
-        required: v.optional(v.boolean()),
-      }),
-    ),
-  ),
-  organizationBasis: v.optional(v.string()),
+  intake: v.optional(v.record(v.string(), v.literal(true))),
 });
 export const contentState = v.object({
   schemaVersion: v.literal(5),

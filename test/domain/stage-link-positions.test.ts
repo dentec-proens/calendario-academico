@@ -18,7 +18,7 @@ import { storedCases } from '../helpers/stored-fixtures.ts';
 /**
  * Stage positions of a link: a
  * save never swaps a stored stage position, an unclassified position counts as a stage of the offer
- * only while its organization is not confirmed, and confirming the organization keeps a defined
+ * only while its count is not confirmed, and confirming the organization keeps a defined
  * position as stored.
  */
 type SaveState = Parameters<typeof prepareOfferCalendarSave>[0];
@@ -38,6 +38,18 @@ const stageEvent = (id: string, activity: CalendarEvent['activity'], month: numb
   activity,
   scope: { offers: ['integrado'], confirmed: true },
 });
+
+/** A stored annual integrated calendar whose stages the campus has not confirmed. */
+function uncounted() {
+  const item = byName('Quantidade anterior de 2 etapas');
+  return {
+    ...item.content.state,
+    year: item.year,
+    campus: item.campus,
+    events: [],
+    offers: item.content.state.offers.map(({ stages: _stages, ...offer }) => offer),
+  } as unknown as ActivityState;
+}
 
 /** The frozen four-stage annual integrated calendar, as stored in format 5. */
 function annualFour() {
@@ -80,14 +92,8 @@ describe('a save never swaps a stored stage position', () => {
     ).toBe(false);
   });
 
-  test('unclassified to defined, with the organization still unconfirmed, is refused', () => {
-    const item = byName('Quantidade anterior de 2 etapas');
-    const previous = {
-      ...item.content.state,
-      year: item.year,
-      campus: item.campus,
-      events: [],
-    } as unknown as ActivityState & SaveState;
+  test('unclassified to defined, with the stages still unconfirmed, is refused', () => {
+    const previous = uncounted() as ActivityState & SaveState;
     previous.events = [1, 2].map((n) =>
       stageEvent(`old-${n}`, unclassifiedStage('stage', 'integrado', n), n + 2),
     );
@@ -99,42 +105,6 @@ describe('a save never swaps a stored stage position', () => {
     };
     expect(() => prepareOfferCalendarSave(previous, proposed, saveContext(previous))).toThrow(
       /não perde nem troca|Vínculo de atividade inválido/,
-    );
-  });
-
-  test('confirming the organization by a manual save without rewriting the positions is refused', () => {
-    const item = byName('Quantidade anterior de 2 etapas');
-    const previous = {
-      ...item.content.state,
-      year: item.year,
-      campus: item.campus,
-    } as unknown as ActivityState & SaveState;
-    previous.events = [1, 2].map((n) =>
-      stageEvent(`old-${n}`, unclassifiedStage('stage', 'integrado', n), n + 2),
-    );
-    const proposed = {
-      ...previous,
-      offers: previous.offers.map((offer) => ({
-        ...offer,
-        organization: 'anual' as const,
-        stages: { status: 'defined' as const, perTerm: 2 },
-      })),
-      periods: [
-        {
-          id: 'annual',
-          name: 'Ano letivo',
-          start: civilDate('2027-02-01'),
-          end: civilDate('2027-12-17'),
-          association: {
-            status: 'defined' as const,
-            offers: ['integrado'],
-            term: 'annual' as const,
-          },
-        },
-      ],
-    };
-    expect(() => prepareOfferCalendarSave(previous, proposed, saveContext(previous))).toThrow(
-      'Configure',
     );
   });
 });
@@ -207,12 +177,7 @@ describe('confirming the organization keeps defined positions as stored', () => 
 
 describe('the comparison names linked activities', () => {
   test('a reported stage confirmed in its cycle is the same link; another link shows its row name', () => {
-    const item = byName('Quantidade anterior de 2 etapas');
-    const before = {
-      ...item.content.state,
-      year: item.year,
-      campus: item.campus,
-    } as unknown as ActivityState;
+    const before = uncounted();
     before.events = [1, 2].map((n) =>
       stageEvent(`old-${n}`, unclassifiedStage('stage', 'integrado', n), n + 2),
     );

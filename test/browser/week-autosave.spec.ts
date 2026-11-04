@@ -127,7 +127,7 @@ test('changing weekdays recalculates targets and preserves the draft when period
     const { record } = window.editorTest;
     record.state.offers = record.state.offers.map((offer) => ({
       ...offer,
-      organization: offer.id === 'integrado' ? ('semestral' as const) : ('a-classificar' as const),
+      organization: offer.id === 'integrado' ? ('semestral' as const) : ('anual' as const),
     }));
 
     record.state.periods = [

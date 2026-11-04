@@ -61,6 +61,20 @@ export interface OrganizationIssue {
   path: string;
   message: string;
 }
+/**
+ * An offer the form is about to include. It has no organization of its own: only the draft holds
+ * the campus's choice until the offer enters the calendar with it.
+ */
+export type NewOffer = Omit<CalendarOffer, 'organization' | 'stages'>;
+
+/** The offer being included as the draft organizes it; a draft without a choice is refused first. */
+export const offerAsDrafted = (
+  offer: NewOffer,
+  draft: Pick<OfferOrganizationDraft, 'organization'>,
+): CalendarOffer => ({
+  ...offer,
+  organization: draft.organization === 'semestral' ? 'semestral' : 'anual',
+});
 
 /** Assessment interval date of the offer's `n`-th stage (ordinal in the year), if recorded. */
 const stageDate = (
@@ -168,16 +182,13 @@ export function offerOrganizationDraft(
   const periods = periodsForOffer(state, modality);
   const organization = organizationForOffer(state, modality);
   return {
-    organization: organization === 'a-classificar' ? '' : organization,
-    // A reported total has no cycle yet: the campus chooses the count per cycle explicitly.
+    organization: organization ?? '',
     count: String(stagesPerTerm(offerFor(state, modality) ?? {}) ?? ''),
     periods: termsByOrganization.semestral.map((_, index) => {
       const term = organization === 'semestral' ? (index ? 'second' : 'first') : 'annual';
       const period =
         index === 0 || organization === 'semestral'
-          ? periods.find(
-              (item) => item.association?.status === 'defined' && item.association.term === term,
-            )
+          ? periods.find((item) => item.association.term === term)
           : undefined;
       return {
         sourceId: period?.id ?? '',
@@ -230,12 +241,13 @@ export function organizationDraftStages(
 function withOffer<S extends ActivityState>(
   state: S,
   modality: string,
-  newOffer?: CalendarOffer,
+  draft: Pick<OfferOrganizationDraft, 'organization'>,
+  newOffer?: NewOffer,
 ): S {
   if (offerIds(state).includes(modality)) return state;
   if (!newOffer || newOffer.id !== modality) throw new DomainError('Oferta inválida.');
   // Adding an offer neither extends nor confirms the scope of existing dates.
-  return { ...state, offers: [...state.offers, newOffer] };
+  return { ...state, offers: [...state.offers, offerAsDrafted(newOffer, draft)] };
 }
 
 /** New offers must arrive with their complete independent periods and stages. */
@@ -259,11 +271,7 @@ export function validateAddedOffers(previous: readonly string[], next: ActivityS
     );
     if (
       periods.length !== expected.length ||
-      periods.some(
-        (period) =>
-          period.association?.status !== 'defined' ||
-          associationOffers(period.association).length !== 1,
-      ) ||
+      periods.some((period) => associationOffers(period.association).length !== 1) ||
       stages.length !== Number(draft.count) * (organization === 'semestral' ? 2 : 1)
     )
       throw new DomainError(
@@ -277,7 +285,7 @@ export function offerOrganizationIssues(
   state: ActivityState,
   modality: string,
   draft: OfferOrganizationDraft,
-  newOffer?: CalendarOffer,
+  newOffer?: NewOffer,
 ): OrganizationIssue[] {
   const issues: OrganizationIssue[] = [];
   const issue = (path: string, message: string) => issues.push({ path, message });
@@ -289,7 +297,7 @@ export function offerOrganizationIssues(
     issue('organization', 'Oferta inválida.');
     return issues;
   }
-  state = withOffer(state, modality, newOffer);
+  state = withOffer(state, modality, draft, newOffer);
   if (!['anual', 'semestral'].includes(draft.organization))
     issue('organization', 'Selecione a organização da oferta.');
   const count = Number(draft.count);
@@ -301,9 +309,8 @@ export function offerOrganizationIssues(
     issue('periods[1]', 'Escolha períodos existentes diferentes para cada semestre.');
   if (draft.organization && draft.organization !== organizationForOffer(state, modality)) {
     if (
-      Object.entries(offerFor(state, modality)?.intake ?? {}).some(
-        ([term, entry]) =>
-          entry.required && (term === 'annual') !== (draft.organization === 'anual'),
+      Object.keys(offerFor(state, modality)?.intake ?? {}).some(
+        (term) => (term === 'annual') !== (draft.organization === 'anual'),
       )
     )
       issue(
@@ -436,7 +443,7 @@ export function offerOrganizationWarnings(
   state: ActivityState,
   modality: string,
   draft: OfferOrganizationDraft,
-  newOffer?: CalendarOffer,
+  newOffer?: NewOffer,
 ): OrganizationIssue[] {
   if (offerOrganizationIssues(state, modality, draft, newOffer).length) return [];
   let sequence = 0;
@@ -489,7 +496,7 @@ export function applyOfferOrganization<S extends ActivityState>(
   modality: string,
   draft: OfferOrganizationDraft,
   id: () => string,
-  newOffer?: CalendarOffer,
+  newOffer?: NewOffer,
 ): S {
   const issues = offerOrganizationIssues(state, modality, draft, newOffer);
   if (issues.length) throw new DomainError(issues[0].message);
@@ -505,9 +512,9 @@ function organize<S extends ActivityState>(
   modality: string,
   draft: OfferOrganizationDraft,
   id: () => string,
-  newOffer?: CalendarOffer,
+  newOffer?: NewOffer,
 ): S {
-  state = withOffer(state, modality, newOffer);
+  state = withOffer(state, modality, draft, newOffer);
   const count = Number(draft.count);
   const stageCount = count * (draft.organization === 'semestral' ? 2 : 1);
   const organization: 'anual' | 'semestral' =
@@ -519,14 +526,10 @@ function organize<S extends ActivityState>(
   for (const source of sourceIds) {
     const existing = state.periods.find((period) => period.id === source);
     if (!existing) throw new DomainError('O período mudou. Reabra a organização desta oferta.');
-    if (
-      existing.association?.status === 'defined' &&
-      !associationOffers(existing.association).includes(modality)
-    )
+    if (!associationOffers(existing.association).includes(modality))
       throw new DomainError('O período selecionado pertence a outra oferta.');
   }
   const retained = state.periods.flatMap((period) => {
-    if (period.association?.status !== 'defined') return sourceIds.has(period.id) ? [] : [period];
     if (!associationOffers(period.association).includes(modality)) return [period];
     const modalities = associationOffers(period.association).filter((m) => m !== modality);
     return modalities.length
@@ -535,8 +538,7 @@ function organize<S extends ActivityState>(
   });
   const periods: CalendarPeriod[] = selected.map((value, index) => {
     const source = state.periods.find((period) => period.id === value.sourceId);
-    const shared =
-      source?.association?.status === 'defined' && associationOffers(source.association).length > 1;
+    const shared = source !== undefined && associationOffers(source.association).length > 1;
     const periodId = source && !shared ? source.id : id();
     if (source) remapped.set(source.id, periodId);
     return {
@@ -553,7 +555,6 @@ function organize<S extends ActivityState>(
     ...state,
     offers: state.offers.map((offer) => {
       if (offer.id !== modality) return offer;
-      // Confirming resolves the reported total into the count and cycles.
       return { ...offer, organization, stages: { status: 'defined' as const, perTerm: count } };
     }),
     periods: [...retained, ...periods],

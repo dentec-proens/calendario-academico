@@ -255,12 +255,12 @@ test('native calendar saves validate per-offer stages and preserve the selected 
       {
         ...record.state.offers[0],
         stages: { status: 'defined', perTerm: 2 },
-        intake: { second: { status: 'no' } },
+        intake: { second: true },
       },
       {
         ...record.state.offers[1],
         stages: { status: 'defined', perTerm: 1 },
-        intake: { second: { status: 'no' } },
+        intake: { second: true },
       },
     ],
     weekdays: [1, 2, 3, 4, 5],
@@ -298,7 +298,7 @@ test('native calendar saves validate per-offer stages and preserve the selected 
   const loaded = await campus.read(path);
   assert.deepEqual(loaded.state.offers, state.offers);
   assert.deepEqual(loaded.state.events[0].activity, definedStage('stage', 'graduacao', 'first', 1));
-  assert.equal(loaded.state.offers[1].intake.second.status, 'no');
+  assert.equal(loaded.state.offers[1].intake.second, true);
   for (const invalid of [
     {
       ...state,

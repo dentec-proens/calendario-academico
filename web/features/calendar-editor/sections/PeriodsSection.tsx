@@ -73,24 +73,6 @@ export default function PeriodsSection() {
         id="assessment-area"
         aria-labelledby="editor-section-title"
       >
-        {state.periods.some((period) => period.association?.status !== 'defined') && (
-          <p className="help">
-            Há períodos existentes com associação a conferir. Ao configurar uma oferta, selecione o
-            período correspondente para preservar suas datas.
-          </p>
-        )}
-        {state.periods.some((period) => period.association?.status !== 'defined') && (
-          <ul className="offer-unclassified">
-            {state.periods
-              .filter((period) => period.association?.status !== 'defined')
-              .map((period) => (
-                <li key={period.id}>
-                  {period.name} · {period.start.split('-').reverse().join('/')} a{' '}
-                  {period.end.split('-').reverse().join('/')}
-                </li>
-              ))}
-          </ul>
-        )}
         {state.offers.map((offer) => (
           <OfferOrganizationForm
             key={`${offer.id}:${formEpoch}`}

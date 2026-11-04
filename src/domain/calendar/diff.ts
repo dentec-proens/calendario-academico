@@ -67,7 +67,6 @@ export const fieldLabels = {
     stages: 'Etapas de avaliação',
     scope: 'Escopo da norma',
     intake: 'Ingresso de estudantes',
-    organizationBasis: 'Fundamento da organização',
   },
   period: {
     name: 'Nome',
@@ -267,7 +266,7 @@ function compareItems<T extends { id: string; name?: string }>(
 export interface TeachingDayEffect {
   offerId: string;
   label: string;
-  term: AcademicTerm | 'a-classificar';
+  term: AcademicTerm;
   termLabel: string;
   before: number | null;
   after: number | null;
@@ -283,9 +282,8 @@ function teachingDays(side: DiffSide) {
     for (const [offerId, count] of Object.entries(result.byOffer))
       for (const [periodId, total] of Object.entries(count.byPeriod)) {
         const period = state.periods.find((item) => item.id === periodId);
-        const term =
-          period?.association.status === 'defined' ? period.association.term : 'a-classificar';
-        const key = `${offerId}|${term}`;
+        if (!period) continue;
+        const key = `${offerId}|${period.association.term}`;
         days.set(key, (days.get(key) ?? 0) + total);
       }
     return days;
@@ -318,13 +316,13 @@ function effect(before: DiffSide, after: DiffSide) {
     next = teachingDays(after);
   const keys = new Set([...(old?.keys() ?? []), ...(next?.keys() ?? [])]);
   const rows: TeachingDayEffect[] = [...keys].sort().map((key) => {
-    const [offerId, term] = key.split('|') as [string, AcademicTerm | 'a-classificar'];
+    const [offerId, term] = key.split('|') as [string, AcademicTerm];
     const owner = after.state.offers.some((offer) => offer.id === offerId) ? after : before;
     return {
       offerId,
       label: labelFor(owner.state, offerId),
       term,
-      termLabel: term === 'a-classificar' ? 'Período a classificar' : termLabels[term],
+      termLabel: termLabels[term],
       before: old ? (old.get(key) ?? null) : null,
       after: next ? (next.get(key) ?? null) : null,
     };
@@ -365,18 +363,12 @@ export function compareContents(before: DiffSide, after: DiffSide) {
   );
 
   const periodKey = (period: CalendarPeriod) =>
-    period.association.status === 'defined'
-      ? `${sortedIds(period.association.offers).join(',')}|${period.association.term}`
-      : undefined;
+    `${sortedIds(period.association.offers).join(',')}|${period.association.term}`;
   const periodSide = (side: DiffSide) =>
-    side.state.periods.map((period) =>
-      period.association.status === 'defined'
-        ? {
-            ...period,
-            association: { ...period.association, offers: sortedIds(period.association.offers) },
-          }
-        : period,
-    );
+    side.state.periods.map((period) => ({
+      ...period,
+      association: { ...period.association, offers: sortedIds(period.association.offers) },
+    }));
   const recalculatedByBase = before.catalogueRevision !== after.catalogueRevision;
   const periods = compareItems(
     periodSide(before),
@@ -566,14 +558,15 @@ export function describeValue(field: string, value: unknown, state?: ActivitySta
         activityKey(activity)
       );
     }
-    if (field === 'stages' && record.status === 'reported')
-      return `${String(record.count)} etapas informadas; ciclos a conferir`;
-    if (field === 'stages' && record.status === 'defined')
-      return `${String(record.perTerm)} por ciclo`;
+    if (field === 'stages') return `${String(record.perTerm)} por ciclo`;
     if (field === 'association')
-      return record.status === 'defined'
-        ? `${describeValue('offers', record.offers, state)} · ${termLabels[record.term as AcademicTerm] ?? String(record.term)}`
-        : 'a classificar';
+      return `${describeValue('offers', record.offers, state)} · ${termLabels[record.term as AcademicTerm] ?? String(record.term)}`;
+    if (field === 'intake')
+      return (
+        Object.keys(record)
+          .map((term) => termLabels[term as AcademicTerm] ?? term)
+          .join(', ') || '—'
+      );
     return Object.entries(record)
       .map(([key, item]) => `${key}: ${describeValue(key, item, state)}`)
       .join('; ');

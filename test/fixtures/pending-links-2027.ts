@@ -30,7 +30,7 @@ const offer = (id: OfferKind): CalendarOffer => ({
   id,
   kind: id,
   delivery: 'presencial',
-  organization: 'a-classificar',
+  organization: 'anual',
   scope: { status: 'covered' },
 });
 
@@ -65,18 +65,11 @@ function draft(
     weekConfirmed: true,
     periods: [
       {
-        id: `${prefix}-first`,
-        name: 'Primeiro período',
+        id: `${prefix}-year`,
+        name: 'Ano letivo',
         start: day('01/02'),
-        end: day('09/07'),
-        association: { status: 'a-classificar' },
-      },
-      {
-        id: `${prefix}-second`,
-        name: 'Segundo período',
-        start: day('26/07'),
         end: day('17/12'),
-        association: { status: 'a-classificar' },
+        association: { status: 'defined', offers: [...offers], term: 'annual' },
       },
     ],
     events: rows.map(([suffix, activity, start, end, scope]) =>
@@ -95,7 +88,7 @@ function draft(
 }
 
 /**
- * Ivaiporã draft: 11 semester links with every offer and period still unclassified. Annual
+ * Ivaiporã draft: 11 semester links in annual offers, which generate no semester cycle. Annual
  * records with coinciding data are distinct dates without a link and must stay distinct.
  */
 export function ivaiporaDraft(): PendingLinksFixture {
@@ -264,7 +257,7 @@ export function conflictingLinks(): PendingLinksFixture {
 
 /**
  * Results and councils linked by offer stage that the configuration does not generate: under an
- * unclassified organization without a reported count, and beyond the count of an annual offer.
+ * offer without confirmed stages, and beyond the count of an annual offer.
  * The first annual stage is generated and serves as the control.
  */
 export function stageLinksToReview(): PendingLinksFixture {
@@ -353,9 +346,9 @@ export function legacyOperationalLinks(): PendingLinksFixture {
 }
 
 /**
- * Stage positions to confirm. The integrated offer is still unclassified,
- * with a reported total of three stages: its first stage and the first results are unambiguous,
- * two dates report the second stage and one reports a fourth, beyond the count. The subsequent
+ * Stage positions to confirm. The integrated offer has no confirmed stages yet: its first stage
+ * and the first results are unambiguous, two dates report the second stage and one reports a
+ * fourth, beyond the count of three the campus confirms. The subsequent
  * offer is annual with three confirmed stages and a fourth reported beyond its count, as the
  * conversion leaves it (`beyond-count`).
  */
@@ -382,7 +375,7 @@ export function stagePositionsToConfirm(): PendingLinksFixture {
     year: 2027,
     campus: 'Campus sintético de posições de etapa',
     offers: [
-      { ...offer('integrado'), stages: { status: 'reported', count: 3 } },
+      offer('integrado'),
       { ...offer('subsequente'), organization: 'anual', stages: { status: 'defined', perTerm: 3 } },
     ],
     weekdays: [1, 2, 3, 4, 5],
@@ -390,10 +383,10 @@ export function stagePositionsToConfirm(): PendingLinksFixture {
     periods: [
       {
         id: 'integrado-period',
-        name: 'Período a classificar',
+        name: 'Ano letivo do integrado',
         start: day('01/02'),
         end: day('17/12'),
-        association: { status: 'a-classificar' },
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
       {
         id: 'subsequente-year',
@@ -460,7 +453,7 @@ export function stagePositionsToConfirm(): PendingLinksFixture {
 }
 
 /**
- * Ivaiporã draft after the campus confirmed both offers as annual, with two stages: the 11 semester
+ * Ivaiporã draft after the campus confirmed two stages for both annual offers: the 11 semester
  * links stay under “Vínculo a conferir” (`Classificação pendente`), and the annual cycle of their
  * activities is now generated for both offers, so each date can have its link corrected
  * (`changeActivity`).

@@ -41,7 +41,7 @@ test('definitive release requires every reviewed criterion, current versions and
           id: 'integrado',
           kind: 'integrado' as const,
           delivery: 'a-conferir' as const,
-          organization: 'anual' as const as 'anual' | 'semestral' | 'a-classificar',
+          organization: 'anual' as const,
           stages: { status: 'defined' as const, perTerm: 4 },
           scope: {
             status: 'covered' as const,

@@ -1500,20 +1500,6 @@ fieldset.event-fields {
 .offer-settings-grid .help {
   margin: -4px 0 12px;
 }
-.offer-more {
-  margin-top: 4px;
-}
-.offer-more summary {
-  width: fit-content;
-  cursor: pointer;
-  color: var(--ui-action);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-.offer-more[open] summary {
-  margin-bottom: 12px;
-}
-
 .offer-term {
   display: block;
   min-width: 0;

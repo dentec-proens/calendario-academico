@@ -110,14 +110,11 @@ export function validateActivityRecord(
     const modality = event.activity.offerId;
     const offer = offerFor(state, modality);
     if (!offer) throw new DomainError('A oferta da etapa de avaliação não pertence ao calendário.');
-    const issue =
-      offer.organization === 'a-classificar' && offer.stages?.status !== 'reported'
-        ? ''
-        : assessmentIntervalIssue(
-            periodsForOffer({ ...state, periods: state.periods }, modality),
-            event.start,
-            event.end,
-          );
+    const issue = assessmentIntervalIssue(
+      periodsForOffer({ ...state, periods: state.periods }, modality),
+      event.start,
+      event.end,
+    );
     if (issue) throw new DomainError(issue);
   }
   if (event.effect === 'include' && state.periods) {
@@ -139,13 +136,8 @@ export function validateActivityRecord(
   }
   if (event.deadlineAdjustment) {
     parseDate(event.deadlineAdjustment.date);
-    if (
-      notice?.admission?.type !== 'regular' ||
-      typeof event.deadlineAdjustment.reviewed !== 'boolean'
-    )
-      throw new DomainError(
-        'Ajuste de prazo exige edital regular, data válida e indicação de conferência.',
-      );
+    if (notice?.admission?.type !== 'regular')
+      throw new DomainError('Ajuste de prazo exige edital regular e data válida.');
   }
   if (notice?.publication && !notice.admission && event.activity?.activityId === 'admission-notice')
     throw new DomainError('Identifique a finalidade de ingresso do edital.');
@@ -204,7 +196,7 @@ export function noticeDestinationIssues(
           message: `período de destino “${period.name ?? periodId}” não está associado à oferta`,
         },
       ];
-    if (period.association.status === 'defined' && period.association.term !== admission.term)
+    if (period.association.term !== admission.term)
       return [
         {
           offerId,

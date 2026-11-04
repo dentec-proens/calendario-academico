@@ -318,15 +318,6 @@ test('the free event form opens in the side panel with a labelled offer group', 
     record.offerKinds = record.state.offers.map((offer) => offer.kind);
     record.state.offers = record.state.offers.map((offer) => ({
       ...offer,
-      organization:
-        offer.id === 'integrado'
-          ? ('anual' as const)
-          : offer.id === 'graduacao'
-            ? ('anual' as const)
-            : ('a-classificar' as const),
-    }));
-    record.state.offers = record.state.offers.map((offer) => ({
-      ...offer,
       stages:
         offer.id === 'integrado'
           ? {
@@ -654,15 +645,6 @@ test('the offer filter decides what is left to fill for that offer only', async 
       organization: 'anual' as const,
     }));
     record.offerKinds = record.state.offers.map((offer) => offer.kind);
-    record.state.offers = record.state.offers.map((offer) => ({
-      ...offer,
-      organization:
-        offer.id === 'integrado'
-          ? ('anual' as const)
-          : offer.id === 'graduacao'
-            ? ('anual' as const)
-            : ('a-classificar' as const),
-    }));
     record.version++;
     return window.publishReviewerCalendar();
   });

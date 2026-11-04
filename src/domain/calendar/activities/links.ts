@@ -68,13 +68,12 @@ function positionOfOrdinal(position: StagePosition, n: number) {
 /**
  * The same link in two states of one calendar: the same key, or, for an unclassified link by offer
  * stage, the same activity and offer with a position that some organization gives its reported
- * ordinal, once the offer's organization is confirmed. Confirming the organization re-expresses an
+ * ordinal, once the offer's stages are confirmed. Confirming the organization re-expresses an
  * unconfirmed position in the new cycles, as the format 4 identifier (`stage-N:offer`) did by its
  * ordinal. A save may carry several confirmations, and a defined position
  * is then kept as the first one gave it (`reorganizedLinks`), so the stored ordinal is checked
  * against every organization, not only the final one. A defined position is never reinterpreted:
- * another position is a swap, and so is any position while the offer's organization
- * is not confirmed.
+ * another position is a swap, and so is any position while the offer's stages are not confirmed.
  */
 export function sameLink(
   before: OfferState | undefined,
@@ -95,7 +94,6 @@ export function sameLink(
   const afterOffer = offerFor(after, next.offerId);
   return (
     afterOffer !== undefined &&
-    afterOffer.organization !== 'a-classificar' &&
     stagesPerTerm(afterOffer) !== undefined &&
     positionOfOrdinal(next.position, previous.position.reportedOrdinal)
   );
@@ -249,9 +247,7 @@ function cyclePeriods(
   offerId: string,
   term: string,
 ): CalendarPeriod[] {
-  return periodsForOffer(state, offerId).filter(
-    (period) => period.association.status === 'defined' && period.association.term === term,
-  );
+  return periodsForOffer(state, offerId).filter((period) => period.association.term === term);
 }
 
 const keptLink = (

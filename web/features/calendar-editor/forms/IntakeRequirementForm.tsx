@@ -15,7 +15,7 @@ function OfferRequirement({ offer, term }: { offer: CalendarOffer; term: Academi
   const { form, submit, error } = useCalendarForm(
     `intake-requirement:${modality}:${term}`,
     {
-      required: current?.required ?? false,
+      required: current === true,
     },
     (value) => {
       session.apply((state) => configureIntakeRequirement(state, modality, term, value.required));
@@ -26,11 +26,6 @@ function OfferRequirement({ offer, term }: { offer: CalendarOffer; term: Academi
     <form onSubmit={submit} data-intake-requirement={`${modality}:${term}`}>
       <fieldset disabled={readOnly}>
         <legend>{offerLabel(offer)}</legend>
-        {current?.status && current.status !== 'unknown' && (
-          <p className="help">
-            Ingresso informado: {current.status === 'yes' ? 'há ingresso' : 'não há ingresso'}.
-          </p>
-        )}
         <form.Field name="required">
           {(field) => (
             <Check

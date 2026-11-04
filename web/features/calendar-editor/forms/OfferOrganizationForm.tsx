@@ -13,6 +13,7 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import {
   applyOfferOrganization,
+  offerAsDrafted,
   offerOrganizationDraft,
   offerOrganizationIssues,
   offerOrganizationWarnings,
@@ -26,13 +27,7 @@ import {
 } from '#src/domain/calendar/commands/organization.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { validateOffers } from '#src/domain/calendar/normalization/normalize.ts';
-import {
-  nextOfferId,
-  offerLabel,
-  reportedStageCount,
-  stageCount,
-  stagesPerTerm,
-} from '#src/domain/calendar/offers.ts';
+import { nextOfferId, offerLabel, stageCount, stagesPerTerm } from '#src/domain/calendar/offers.ts';
 import type {
   CalendarOffer,
   OfferDelivery,
@@ -40,6 +35,7 @@ import type {
   ActivityState,
 } from '#src/domain/calendar/model.ts';
 import type {
+  NewOffer,
   OfferOrganizationDraft,
   OrganizationIssue,
 } from '#src/domain/calendar/organization/offers.ts';
@@ -62,7 +58,6 @@ interface OfferFormValues extends OfferOrganizationDraft {
   kind: OfferKind | '';
   label: string;
   delivery: OfferDelivery;
-  organizationBasis: string;
 }
 
 const deliveryOptions: ReadonlyArray<{ value: OfferDelivery; label: string }> = [
@@ -79,7 +74,7 @@ const organizationOptions = Object.keys(termsByOrganization).map((organization) 
   value: organization,
   label: organizationLabels[organization],
 }));
-const identityPaths = ['kind', 'label', 'delivery', 'organizationBasis'];
+const identityPaths = ['kind', 'label', 'delivery'];
 
 function formDefaults(
   state: ActivityState & { offers: CalendarOffer[] },
@@ -91,7 +86,6 @@ function formDefaults(
     kind: offer?.kind ?? '',
     label: offer?.label ?? '',
     delivery: offer?.delivery ?? 'presencial',
-    organizationBasis: offer?.organizationBasis ?? '',
   };
 }
 
@@ -148,7 +142,6 @@ export default function OfferOrganizationForm({
   const location = useRouterState({ select: (router) => router.location.href });
   const [applied, setApplied] = useState(false);
   const [attempted, setAttempted] = useState(false);
-  const [showBasis, setShowBasis] = useState(Boolean(defaults.organizationBasis));
   const opener = useRef<HTMLButtonElement>(null);
   const pendingFocus = useRef<string | null>(null);
   const formElement = useRef<HTMLFormElement>(null);
@@ -186,22 +179,13 @@ export default function OfferOrganizationForm({
             'A organização confirmada antes ainda não foi salva. Aguarde o salvamento para confirmá-la de novo.',
           );
         appliedId = existingId ?? nextOfferId(current, kind);
-        const metadata = {
-          label: value.label,
-          delivery: value.delivery,
-          organizationBasis: value.organizationBasis,
-        };
+        const metadata = { label: value.label, delivery: value.delivery };
         const prepared = existingId
           ? configureOfferMetadata(current, existingId, metadata)
           : current;
-        const newOffer: CalendarOffer | undefined = existingId
+        const newOffer: NewOffer | undefined = existingId
           ? undefined
-          : {
-              id: appliedId,
-              kind,
-              organization: 'a-classificar',
-              ...metadata,
-            };
+          : { id: appliedId, kind, ...metadata };
         next = applyOfferOrganization(
           prepared,
           appliedId,
@@ -218,38 +202,23 @@ export default function OfferOrganizationForm({
     },
   );
   const kind = selectableModalities.find((kind) => kind === values.kind);
-  const selectedOffer: CalendarOffer | undefined =
+  const selectedOffer: NewOffer | undefined =
     savedOffer ??
-    (kind
-      ? {
-          id: nextOfferId(state, kind),
-          kind,
-          organization: 'a-classificar',
-          delivery: values.delivery,
-        }
-      : undefined);
+    (kind ? { id: nextOfferId(state, kind), kind, delivery: values.delivery } : undefined);
   const modality = selectedOffer?.id ?? 'new';
   const label = savedOffer
     ? offerLabel(savedOffer)
     : values.label.trim() || (kind ? modalityLabels[kind] : 'Nova oferta');
-  const metadata = {
-    label: values.label,
-    delivery: values.delivery,
-    organizationBasis: values.organizationBasis,
-  };
+  const metadata = { label: values.label, delivery: values.delivery };
   const candidate = selectedOffer ? { ...selectedOffer, ...metadata } : undefined;
   let prepared = state;
   const metadataIssues: OrganizationIssue[] = [];
   try {
     if (savedOffer) prepared = configureOfferMetadata(state, savedOffer.id, metadata);
-    else if (candidate) validateOffers([...state.offers, candidate]);
+    else if (candidate) validateOffers([...state.offers, offerAsDrafted(candidate, values)]);
   } catch (cause) {
     metadataIssues.push({
-      path: !['presencial', 'ead', 'a-conferir'].includes(values.delivery)
-        ? 'delivery'
-        : values.organizationBasis.trim().length > calendarLimits.maximumTextLength
-          ? 'organizationBasis'
-          : 'label',
+      path: !['presencial', 'ead', 'a-conferir'].includes(values.delivery) ? 'delivery' : 'label',
       message: cause instanceof Error ? cause.message : String(cause),
     });
   }
@@ -307,9 +276,7 @@ export default function OfferOrganizationForm({
   const validCount = allowedCounts.includes(perTerm);
   const count = validCount ? perTerm * (semestral ? 2 : 1) : 0;
   const savedCount = savedOffer && stagesPerTerm(savedOffer);
-  const reportedCount = savedOffer && reportedStageCount(savedOffer);
   const savedTotal = savedOffer ? stageCount(savedOffer) : 0;
-  const unclassified = state.periods.filter((period) => period.association?.status !== 'defined');
   const datedStages = values.stages
     .slice(0, count)
     .filter((stage) => stage.start && stage.end).length;
@@ -356,7 +323,6 @@ export default function OfferOrganizationForm({
         message: `${label}: ${issue ? issue.message : 'Aplique as alterações da organização antes de continuar.'}`,
         reveal: () => {
           setAttempted(true);
-          if (issue?.path === 'organizationBasis') setShowBasis(true);
           pendingFocus.current = targetId;
           setOpen(true);
           setCollapsedHref(null);
@@ -385,12 +351,6 @@ export default function OfferOrganizationForm({
       <div className="offer-organization-heading">
         <div className="offer-organization-title">
           <h4 id={`${prefix}-heading`}>{label}</h4>
-          {reportedCount !== undefined && (
-            <p className="help" data-reported-stages>
-              {reportedCount} etapas informadas, sem ciclo confirmado. Confirme a organização e a
-              quantidade por ciclo para classificá-las.
-            </p>
-          )}
           {(included || dirty) && (
             <p
               className="offer-status"
@@ -399,9 +359,7 @@ export default function OfferOrganizationForm({
               role="status"
             >
               {!validCount
-                ? reportedCount !== undefined
-                  ? 'Organização e etapas por ciclo a definir; quantidade informada preservada.'
-                  : 'Etapas pendentes: defina a quantidade e as datas.'
+                ? 'Etapas pendentes: defina a quantidade e as datas.'
                 : datedStages < count
                   ? `Etapas pendentes: datas de ${datedStages} de ${count} etapas definidas.`
                   : stageIssues
@@ -455,9 +413,7 @@ export default function OfferOrganizationForm({
                   ? savedOffer.organization === 'semestral'
                     ? `${savedCount} etapa${savedCount === 1 ? '' : 's'} por semestre (${savedTotal} no ano)`
                     : `${savedCount} etapas no ano`
-                  : reportedCount !== undefined
-                    ? `${reportedCount} etapas informadas; ciclos a conferir`
-                    : 'Etapas a definir'}
+                  : 'Etapas a definir'}
               </li>
             </ul>
           )}
@@ -466,7 +422,7 @@ export default function OfferOrganizationForm({
               ? periods
                   .map(
                     (period) =>
-                      `${period.association?.status === 'defined' && period.association.term !== 'annual' ? (period.association.term === 'first' ? '1º semestre: ' : '2º semestre: ') : 'Anual: '}${civilDate(period.start)} a ${civilDate(period.end)}`,
+                      `${period.association.term === 'annual' ? 'Anual: ' : period.association.term === 'first' ? '1º semestre: ' : '2º semestre: '}${civilDate(period.start)} a ${civilDate(period.end)}`,
                   )
                   .join(' · ')
               : included
@@ -560,27 +516,6 @@ export default function OfferOrganizationForm({
                 )}
               </form.Field>
               {fieldError('delivery')}
-              <details
-                className="offer-more"
-                open={showBasis || Boolean(messageFor('organizationBasis'))}
-                onToggle={(event) => setShowBasis(event.currentTarget.open)}
-              >
-                <summary>
-                  Base da organização <span className="field-optional">(opcional)</span>
-                </summary>
-                <form.Field name="organizationBasis">
-                  {(field) => (
-                    <Input
-                      field={field}
-                      label="Documento que fundamenta a organização"
-                      id={`${prefix}-organizationBasis`}
-                      placeholder="Ex.: PPC aprovado pela Resolução nº …"
-                      maxLength={calendarLimits.maximumTextLength}
-                    />
-                  )}
-                </form.Field>
-                {fieldError('organizationBasis')}
-              </details>
             </section>
             <section className="offer-block" aria-labelledby={`${prefix}-structure-heading`}>
               <BlockHeading id={`${prefix}-structure-heading`} step={2} state={blockState(1)}>
@@ -665,33 +600,6 @@ export default function OfferOrganizationForm({
                       <legend>
                         Período letivo<span className="visually-hidden"> — {term}</span>
                       </legend>
-                      {unclassified.length > 0 && (
-                        <label>
-                          Usar período existente a classificar
-                          <select
-                            id={`${prefix}-source-${cycle}`}
-                            value={values.periods[cycle].sourceId}
-                            onChange={(event) => {
-                              const period = unclassified.find(
-                                (item) => item.id === event.target.value,
-                              );
-                              form.setFieldValue(`periods[${cycle}]`, {
-                                sourceId: period?.id ?? '',
-                                name: period?.name ?? '',
-                                start: period?.start ?? '',
-                                end: period?.end ?? '',
-                              });
-                            }}
-                          >
-                            <option value="">Definir novas datas</option>
-                            {unclassified.map((period) => (
-                              <option key={period.id} value={period.id}>
-                                {period.name} · {civilDate(period.start)} a {civilDate(period.end)}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      )}
                       <div className="offer-date-grid">
                         {(['start', 'end'] as const).map((edge) => (
                           <form.Field key={edge} name={`periods[${cycle}].${edge}`}>

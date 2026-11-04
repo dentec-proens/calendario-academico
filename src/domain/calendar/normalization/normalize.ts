@@ -53,35 +53,21 @@ export function validateOffers(offers: CalendarOffer[]): CalendarOffer[] {
       if (labels.has(key)) fail('Os nomes das ofertas devem ser únicos no calendário.');
       labels.add(key);
     }
-    if (
-      offer.stages?.status === 'reported' &&
-      (![2, 3, 4].includes(offer.stages.count) || offer.organization !== 'a-classificar')
-    )
-      fail('A quantidade informada de etapas exige organização a conferir, sem etapas por ciclo.');
-    if (offer.stages?.status === 'defined') {
-      const allowed =
-        offer.organization === 'anual'
-          ? [2, 3, 4]
-          : offer.organization === 'semestral'
-            ? [1, 2]
-            : [];
+    if (offer.stages) {
+      const allowed = offer.organization === 'anual' ? [2, 3, 4] : [1, 2];
       if (!allowed.includes(offer.stages.perTerm))
         fail(
           offer.organization === 'semestral'
             ? 'Selecione uma ou duas etapas por semestre.'
-            : 'Selecione a organização e de duas a quatro etapas no ano letivo.',
+            : 'Selecione de duas a quatro etapas no ano letivo.',
         );
     }
     for (const [term, value] of Object.entries(offer.intake ?? {}))
-      if (
-        !academicTerms.some((allowed) => allowed === term) ||
-        (value.required === true && value.status !== 'yes')
-      )
+      if (!academicTerms.some((allowed) => allowed === term) || value !== true)
         fail('Configuração de ingresso por oferta inválida.');
     return {
       ...offer,
       ...(label ? { label } : {}),
-      ...(offer.organizationBasis ? { organizationBasis: text(offer.organizationBasis) } : {}),
     };
   });
 }
@@ -160,12 +146,10 @@ export function normalizeOfferCalendar(
         period.targetDays > calendarLimits.maximumTargetDays)
     )
       fail('Meta de dias letivos inválida.');
-    if (period.association.status === 'defined') {
-      scope(period.association.offers);
-      const organization = period.association.term === 'annual' ? 'anual' : 'semestral';
-      if (period.association.offers.some((id) => offerFor(s, id)?.organization !== organization))
-        fail('Associação do período incompatível com a oferta e seu ciclo.');
-    }
+    scope(period.association.offers);
+    const organization = period.association.term === 'annual' ? 'anual' : 'semestral';
+    if (period.association.offers.some((id) => offerFor(s, id)?.organization !== organization))
+      fail('Associação do período incompatível com a oferta e seu ciclo.');
   }
   for (let i = 0; i < s.periods.length; i++)
     for (let j = i + 1; j < s.periods.length; j++) {
@@ -177,11 +161,7 @@ export function normalizeOfferCalendar(
         )
       )
         continue;
-      if (
-        a.association.status === 'defined' &&
-        b.association.status === 'defined' &&
-        a.association.term === b.association.term
-      )
+      if (a.association.term === b.association.term)
         fail('Há mais de um período para o mesmo ciclo da oferta.');
       if (a.start <= b.end && a.end >= b.start) fail('Períodos sobrepostos.');
     }

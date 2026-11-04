@@ -5,8 +5,6 @@ import { onceLink } from '../helpers/activity-links.ts';
 import { makeFunctionReference } from 'convex/server';
 import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
-import { calendarOffer } from '../../convex/validators.ts';
-import { saveInput } from '../../convex/contracts.ts';
 import type { DomainState, domainState } from '../../convex/validators.ts';
 import type { Infer } from 'convex/values';
 import { preserveSubmission } from '../helpers/lifecycle.ts';
@@ -22,11 +20,7 @@ const oldSave = makeFunctionReference<
 function assertSourceFree(state: Infer<typeof domainState>) {
   expect(state).not.toHaveProperty('weekEvidence');
   expect(state.teacherVacations ?? {}).not.toHaveProperty('evidence');
-  for (const offer of state.offers) {
-    expect(offer.scope ?? {}).not.toHaveProperty('source');
-    for (const entry of Object.values(offer.intake ?? {}))
-      expect(entry).not.toHaveProperty('source');
-  }
+  for (const offer of state.offers) expect(offer.scope ?? {}).not.toHaveProperty('source');
   for (const event of state.events) {
     expect(event).not.toHaveProperty('evidence');
     expect(event.deadlineAdjustment ?? {}).not.toHaveProperty('evidence');
@@ -82,7 +76,7 @@ test('canonical records and historical restoration have no manual or generated s
     offers: created.state.offers.map((offer) => ({
       ...offer,
       scope: { status: 'covered' },
-      intake: { annual: { status: 'yes', required: true } },
+      intake: { annual: true },
     })),
     teacherVacations: { firstStart: civilDate('2027-01-04'), firstEnd: civilDate('2027-01-15') },
     periods: [
@@ -107,7 +101,7 @@ test('canonical records and historical restoration have no manual or generated s
           publication: 'planned',
           admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
         },
-        deadlineAdjustment: { date: civilDate('2027-07-20'), reviewed: false },
+        deadlineAdjustment: { date: civilDate('2027-07-20') },
       },
       {
         id: 'detached-stage',
@@ -186,7 +180,7 @@ const legacyFields: Array<[string, (state: DomainState) => Record<string, unknow
       events: [
         {
           ...event,
-          deadlineAdjustment: { date: civilDate('2027-03-02'), reviewed: false, evidence: secret },
+          deadlineAdjustment: { date: civilDate('2027-03-02'), evidence: secret },
         },
       ],
     }),
@@ -240,15 +234,6 @@ test.each(legacyFields)(
     );
   },
 );
-
-// convex-test 0.0.64 does not recurse through v.record validators. Inspect the
-// real published validator instead of changing production code for that mock gap.
-test('nested intake records have no source slot in storage or public input', () => {
-  const stored = calendarOffer.fields.intake.value.fields;
-  const submitted = saveInput.fields.state.fields.offers.element.fields.intake.value.fields;
-  expect(Object.keys(stored)).toEqual(['status', 'required']);
-  expect(Object.keys(submitted)).toEqual(['status', 'required']);
-});
 
 test('current contents and submission copies refuse retired manual fields', async () => {
   const { fixture, created } = await createRecord();

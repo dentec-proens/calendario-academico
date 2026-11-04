@@ -1,7 +1,7 @@
 {
   "oracleSourceCommit": "34e35b9eaed1162d676299920e4d9b27680cc549",
   "oracleSha256": "eff78c9cb6b7e88f6061bb4a2b40c99a2cce22c2e054cc2490b569dd9e77e75c",
-  "capture": "Inputs converted by the validated release A converter before its removal in release B; expected projections remain in offers-v3-oracle.json. Converted to format 5 (cases and the catalogue of offers-v3-oracle.json) by the phase 2 migration converter at bd9826b, before its removal in the contraction.",
+  "capture": "Inputs converted by the validated release A converter before its removal in release B; expected projections remain in offers-v3-oracle.json. Converted to format 5 (cases and the catalogue of offers-v3-oracle.json) by the phase 2 migration converter at bd9826b, before its removal in the contraction. Rewritten afterwards by rules 1 to 5 and 7 of src/domain/calendar/normalization/convert-format-6.ts, keeping scope and schemaVersion 5. The three cases of an offer without organization were removed.",
   "releaseAConverters": {
     "src/domain/calendar/normalization/conversion.ts": "6753eaa8469e799c3fa5c3d778119641570a9a7fc2e926e2e52bcfd28b40048a",
     "src/domain/calendar/normalization/conversion-v4.ts": "e124b04ef6d5a938ee31858f6b852e8dd1eb7432d585bb29add020f63e71ffa9"
@@ -26,18 +26,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           }
         ],
@@ -212,18 +201,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           }
         ],
@@ -356,18 +334,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           }
         ],
@@ -521,18 +488,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           }
         ],
@@ -707,18 +663,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "second": true
             }
           }
         ],
@@ -862,18 +807,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "second": true
             }
           }
         ],
@@ -1059,18 +993,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           },
           {
@@ -1086,18 +1009,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           },
           {
@@ -1113,18 +1025,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "second": true
             }
           },
           {
@@ -1137,18 +1038,7 @@
               "perTerm": 1
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "second": true
             }
           }
         ],
@@ -1543,18 +1433,7 @@
               "perTerm": 2
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           }
         ],
@@ -1687,18 +1566,7 @@
               "status": "own-regulation"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           },
           {
@@ -1714,18 +1582,7 @@
               "status": "own-regulation"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "second": true
             }
           }
         ],
@@ -1961,18 +1818,7 @@
               "perTerm": 2
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           }
         ],
@@ -2101,18 +1947,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           },
           {
@@ -2124,18 +1959,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "second": true
             }
           }
         ],
@@ -2230,211 +2054,6 @@
       }
     },
     {
-      "name": "v3 organização a classificar",
-      "input": {
-        "schemaVersion": 5,
-        "rulesetVersion": "consup-292-2027-v2",
-        "offers": [
-          {
-            "id": "integrado",
-            "kind": "integrado",
-            "delivery": "a-conferir",
-            "organization": "a-classificar",
-            "scope": {
-              "status": "covered"
-            },
-            "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
-            }
-          }
-        ],
-        "weekdays": [1, 2, 3, 4, 5],
-        "weekConfirmed": true,
-        "periods": [
-          {
-            "id": "integrado-annual",
-            "name": "Ano letivo — integrado",
-            "start": "2027-02-01",
-            "end": "2027-12-17",
-            "association": {
-              "status": "a-classificar"
-            }
-          }
-        ],
-        "events": [
-          {
-            "id": "saturday",
-            "name": "Inclusão de sábado sintética",
-            "start": "2027-02-06",
-            "end": "2027-02-06",
-            "effect": "include",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
-          },
-          {
-            "id": "saturday-blocker",
-            "name": "Impedimento sintético",
-            "start": "2027-02-06",
-            "end": "2027-02-06",
-            "effect": "exclude",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
-          },
-          {
-            "id": "community",
-            "name": "Reunião com a comunidade sintética",
-            "start": "2027-04-20",
-            "end": "2027-04-20",
-            "effect": "note",
-            "activity": {
-              "activityId": "family-meeting"
-            },
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": true
-            }
-          },
-          {
-            "id": "implicit-note",
-            "name": "Registro sem escopo explícito sintético",
-            "start": "2027-05-03",
-            "end": "2027-05-03",
-            "effect": "note",
-            "scope": {
-              "offers": ["integrado"],
-              "confirmed": false
-            }
-          }
-        ],
-        "year": 2027,
-        "campus": "Campus sintético"
-      }
-    },
-    {
-      "name": "v3 mapa de organização ausente não herda regime",
-      "input": {
-        "schemaVersion": 5,
-        "rulesetVersion": "consup-292-2027-v2",
-        "offers": [
-          {
-            "id": "integrado",
-            "kind": "integrado",
-            "delivery": "a-conferir",
-            "organization": "a-classificar",
-            "scope": {
-              "status": "covered"
-            },
-            "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
-            }
-          }
-        ],
-        "weekdays": [1, 2, 3, 4, 5],
-        "weekConfirmed": true,
-        "periods": [],
-        "events": [],
-        "year": 2027,
-        "campus": "Campus sintético"
-      }
-    },
-    {
-      "name": "v2 organização ambígua pendente",
-      "input": {
-        "schemaVersion": 5,
-        "rulesetVersion": "consup-292-2027-v2",
-        "offers": [
-          {
-            "id": "integrado",
-            "kind": "integrado",
-            "delivery": "a-conferir",
-            "organization": "a-classificar",
-            "scope": {
-              "status": "covered"
-            },
-            "intake": {
-              "second": {
-                "status": "unknown"
-              }
-            }
-          },
-          {
-            "id": "graduacao",
-            "kind": "graduacao",
-            "delivery": "a-conferir",
-            "organization": "a-classificar",
-            "scope": {
-              "status": "covered"
-            },
-            "intake": {
-              "second": {
-                "status": "unknown"
-              }
-            }
-          }
-        ],
-        "weekdays": [1, 2, 3, 4, 5],
-        "weekConfirmed": true,
-        "periods": [
-          {
-            "id": "integrado-annual",
-            "name": "Ano letivo — integrado",
-            "start": "2027-02-01",
-            "end": "2027-12-17",
-            "association": {
-              "status": "a-classificar"
-            }
-          },
-          {
-            "id": "graduacao-first",
-            "name": "1º semestre — graduacao",
-            "start": "2027-02-01",
-            "end": "2027-06-30",
-            "association": {
-              "status": "a-classificar"
-            }
-          },
-          {
-            "id": "graduacao-second",
-            "name": "2º semestre — graduacao",
-            "start": "2027-08-02",
-            "end": "2027-12-17",
-            "association": {
-              "status": "a-classificar"
-            }
-          }
-        ],
-        "events": [],
-        "year": 2027,
-        "campus": "Campus sintético"
-      }
-    },
-    {
       "name": "v2 combinado, ingresso legado do segundo semestre",
       "input": {
         "schemaVersion": 5,
@@ -2451,11 +2070,6 @@
             },
             "scope": {
               "status": "covered"
-            },
-            "intake": {
-              "second": {
-                "status": "unknown"
-              }
             }
           },
           {
@@ -2469,11 +2083,6 @@
             },
             "scope": {
               "status": "covered"
-            },
-            "intake": {
-              "second": {
-                "status": "unknown"
-              }
             }
           }
         ],
@@ -2690,18 +2299,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           },
           {
@@ -2717,18 +2315,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "annual": true
             }
           }
         ],
@@ -2975,11 +2562,6 @@
             },
             "scope": {
               "status": "covered"
-            },
-            "intake": {
-              "second": {
-                "status": "no"
-              }
             }
           }
         ],
@@ -3123,18 +2705,7 @@
               "status": "covered"
             },
             "intake": {
-              "annual": {
-                "status": "yes",
-                "required": true
-              },
-              "first": {
-                "status": "no",
-                "required": false
-              },
-              "second": {
-                "status": "yes",
-                "required": true
-              }
+              "second": true
             }
           }
         ],

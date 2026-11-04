@@ -90,11 +90,10 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
         id: 'subsequente',
         kind: 'subsequente' as const,
         delivery: 'a-conferir' as const,
-        organization: 'a-classificar' as const,
+        organization: 'semestral' as const,
       },
     ],
   };
-  assert.throws(() => evaluateCalendar(state, []), /Organização a conferir/);
   const classified = {
     ...state,
     schemaVersion: 5 as const,
@@ -108,8 +107,6 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
     })),
     offers: state.offers.map((offer) => ({
       ...offer,
-      organization: ({ subsequente: 'semestral' as const }[offer.id] ?? 'a-classificar') as
-        'anual' | 'semestral' | 'a-classificar',
       scope: { status: 'covered' as const },
     })),
   };

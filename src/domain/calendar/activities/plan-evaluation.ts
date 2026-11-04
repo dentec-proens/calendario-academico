@@ -201,11 +201,7 @@ export function evaluatePlan(
               const period = periodId
                 ? periodsForOffer(state, modality).find((p) => p.id === periodId)
                 : undefined;
-              if (
-                !period ||
-                period.association?.status !== 'defined' ||
-                period.association.term !== admission.term
-              ) {
+              if (!period || period.association.term !== admission.term) {
                 issues.push('Vincule o período de ingresso correspondente à oferta.');
                 return false;
               }

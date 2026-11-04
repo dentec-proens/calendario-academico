@@ -53,7 +53,7 @@ function byRepeat(rules: readonly ActivityRule[]) {
 
 /** Meaning of the statuses whose label alone does not explain them. */
 export const statusHelp = [
-  ['intake', 'exigida quando o campus declara ingresso com exigência local na oferta e no ciclo'],
+  ['intake', 'exigida quando o campus declara exigência local na oferta e no ciclo'],
   ['unconfigured', 'oferta fora desta norma, com calendário e norma próprios'],
 ] as const satisfies readonly (readonly [OfferStatus, string])[];
 

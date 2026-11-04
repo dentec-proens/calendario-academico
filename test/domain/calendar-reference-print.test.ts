@@ -121,13 +121,13 @@ test('print distributions use the semantic semester of each offer despite coinci
         id: 'integrado',
         kind: 'integrado' as const,
         delivery: 'a-conferir' as const,
-        organization: 'anual' as const as 'anual' | 'semestral' | 'a-classificar',
+        organization: 'anual' as const,
       },
       {
         id: 'graduacao',
         kind: 'graduacao' as const,
         delivery: 'a-conferir' as const,
-        organization: 'semestral' as const as 'anual' | 'semestral' | 'a-classificar',
+        organization: 'semestral' as const,
       },
     ],
   };

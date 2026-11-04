@@ -1,7 +1,7 @@
 {
   "capture": {
     "sourceCommit": "bd9826b",
-    "description": "Documentos de calendarContents e calendarSubmissions de test/fixtures/v4 (43aff30, com os acréscimos da fase 2) convertidos para o formato 5 pelo conversor da migração (src/domain/calendar/migration/convert-v5.ts), com o contentHash dos envios recalculado como a migração fez. As fixtures v4 e o conversor foram removidos na contração; os caminhos citados existem no commit bd9826b. Os casos com source em test/fixtures/offers-oracle-inputs.json vêm desse arquivo, que se chamava offers-v4-oracle-inputs.json até a contração. Tipados só como JSON."
+    "description": "Documentos de calendarContents e calendarSubmissions de test/fixtures/v4 (43aff30, com os acréscimos da fase 2) convertidos para o formato 5 pelo conversor da migração (src/domain/calendar/migration/convert-v5.ts), com o contentHash dos envios recalculado como a migração fez. As fixtures v4 e o conversor foram removidos na contração; os caminhos citados existem no commit bd9826b. Os casos com source em test/fixtures/offers-oracle-inputs.json vêm desse arquivo, que se chamava offers-v4-oracle-inputs.json até a contração. Tipados só como JSON. Reescritos depois pelas regras 1 a 5 e 7 de src/domain/calendar/normalization/convert-format-6.ts, conservando scope e schemaVersion 5, com o contentHash dos envios recalculado; a cópia anterior é contents-format-5.json."
   },
   "cases": [
     {
@@ -19,7 +19,7 @@
               "id": "integrado",
               "kind": "integrado",
               "delivery": "presencial",
-              "organization": "a-classificar",
+              "organization": "semestral",
               "scope": {
                 "status": "covered"
               }
@@ -28,7 +28,7 @@
               "id": "subsequente",
               "kind": "subsequente",
               "delivery": "presencial",
-              "organization": "a-classificar",
+              "organization": "semestral",
               "scope": {
                 "status": "covered"
               }
@@ -43,7 +43,9 @@
               "start": "2027-02-01",
               "end": "2027-07-09",
               "association": {
-                "status": "a-classificar"
+                "status": "defined",
+                "offers": ["integrado", "subsequente"],
+                "term": "first"
               }
             },
             {
@@ -52,7 +54,9 @@
               "start": "2027-07-26",
               "end": "2027-12-17",
               "association": {
-                "status": "a-classificar"
+                "status": "defined",
+                "offers": ["integrado", "subsequente"],
+                "term": "second"
               }
             }
           ],
@@ -323,7 +327,7 @@
           },
           "submittedFrom": "rascunho",
           "contentVersion": 1,
-          "contentHash": "11b3a2db31924074886580df16a773db548e1b95250ca0da3f2022f01ea80c9c",
+          "contentHash": "c582d56654973331e004292b8d4916eef25f16309bad70032f2f49b27714bd0c",
           "state": {
             "schemaVersion": 5,
             "rulesetVersion": "consup-292-2027-v3",
@@ -332,7 +336,7 @@
                 "id": "integrado",
                 "kind": "integrado",
                 "delivery": "presencial",
-                "organization": "a-classificar",
+                "organization": "semestral",
                 "scope": {
                   "status": "covered"
                 }
@@ -341,7 +345,7 @@
                 "id": "subsequente",
                 "kind": "subsequente",
                 "delivery": "presencial",
-                "organization": "a-classificar",
+                "organization": "semestral",
                 "scope": {
                   "status": "covered"
                 }
@@ -356,7 +360,9 @@
                 "start": "2027-02-01",
                 "end": "2027-07-09",
                 "association": {
-                  "status": "a-classificar"
+                  "status": "defined",
+                  "offers": ["integrado", "subsequente"],
+                  "term": "first"
                 }
               },
               {
@@ -365,7 +371,9 @@
                 "start": "2027-07-26",
                 "end": "2027-12-17",
                 "association": {
-                  "status": "a-classificar"
+                  "status": "defined",
+                  "offers": ["integrado", "subsequente"],
+                  "term": "second"
                 }
               }
             ],
@@ -647,7 +655,7 @@
               "id": "integrado",
               "kind": "integrado",
               "delivery": "presencial",
-              "organization": "a-classificar",
+              "organization": "semestral",
               "scope": {
                 "status": "covered"
               }
@@ -656,7 +664,7 @@
               "id": "graduacao",
               "kind": "graduacao",
               "delivery": "presencial",
-              "organization": "a-classificar",
+              "organization": "semestral",
               "scope": {
                 "status": "covered"
               }
@@ -671,7 +679,9 @@
               "start": "2027-02-01",
               "end": "2027-07-09",
               "association": {
-                "status": "a-classificar"
+                "status": "defined",
+                "offers": ["integrado", "graduacao"],
+                "term": "first"
               }
             },
             {
@@ -680,7 +690,9 @@
               "start": "2027-07-26",
               "end": "2027-12-17",
               "association": {
-                "status": "a-classificar"
+                "status": "defined",
+                "offers": ["integrado", "graduacao"],
+                "term": "second"
               }
             }
           ],
@@ -1976,18 +1988,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             }
           ],
@@ -2170,18 +2171,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             }
           ],
@@ -2322,18 +2312,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             }
           ],
@@ -2495,18 +2474,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             }
           ],
@@ -2689,18 +2657,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "second": true
               }
             }
           ],
@@ -2852,18 +2809,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "second": true
               }
             }
           ],
@@ -3057,18 +3003,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             },
             {
@@ -3084,18 +3019,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             },
             {
@@ -3111,18 +3035,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "second": true
               }
             },
             {
@@ -3135,18 +3048,7 @@
                 "perTerm": 1
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "second": true
               }
             }
           ],
@@ -3549,18 +3451,7 @@
                 "perTerm": 2
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             }
           ],
@@ -3701,18 +3592,7 @@
                 "status": "own-regulation"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             },
             {
@@ -3728,18 +3608,7 @@
                 "status": "own-regulation"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "second": true
               }
             }
           ],
@@ -3983,18 +3852,7 @@
                 "perTerm": 2
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             }
           ],
@@ -4131,18 +3989,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             },
             {
@@ -4154,18 +4001,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "second": true
               }
             }
           ],
@@ -4277,23 +4113,12 @@
               "id": "integrado",
               "kind": "integrado",
               "delivery": "a-conferir",
-              "organization": "a-classificar",
+              "organization": "anual",
               "scope": {
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             }
           ],
@@ -4306,7 +4131,9 @@
               "start": "2027-02-01",
               "end": "2027-12-17",
               "association": {
-                "status": "a-classificar"
+                "status": "defined",
+                "offers": ["integrado"],
+                "term": "annual"
               }
             }
           ],
@@ -4381,23 +4208,12 @@
               "id": "integrado",
               "kind": "integrado",
               "delivery": "a-conferir",
-              "organization": "a-classificar",
+              "organization": "anual",
               "scope": {
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             }
           ],
@@ -4427,62 +4243,24 @@
               "id": "integrado",
               "kind": "integrado",
               "delivery": "a-conferir",
-              "organization": "a-classificar",
+              "organization": "anual",
               "scope": {
                 "status": "covered"
-              },
-              "intake": {
-                "second": {
-                  "status": "unknown"
-                }
               }
             },
             {
               "id": "graduacao",
               "kind": "graduacao",
               "delivery": "a-conferir",
-              "organization": "a-classificar",
+              "organization": "anual",
               "scope": {
                 "status": "covered"
-              },
-              "intake": {
-                "second": {
-                  "status": "unknown"
-                }
               }
             }
           ],
           "weekdays": [1, 2, 3, 4, 5],
           "weekConfirmed": true,
-          "periods": [
-            {
-              "id": "integrado-annual",
-              "name": "Ano letivo — integrado",
-              "start": "2027-02-01",
-              "end": "2027-12-17",
-              "association": {
-                "status": "a-classificar"
-              }
-            },
-            {
-              "id": "graduacao-first",
-              "name": "1º semestre — graduacao",
-              "start": "2027-02-01",
-              "end": "2027-06-30",
-              "association": {
-                "status": "a-classificar"
-              }
-            },
-            {
-              "id": "graduacao-second",
-              "name": "2º semestre — graduacao",
-              "start": "2027-08-02",
-              "end": "2027-12-17",
-              "association": {
-                "status": "a-classificar"
-              }
-            }
-          ],
+          "periods": [],
           "events": []
         },
         "catalogueRevision": 0,
@@ -4513,11 +4291,6 @@
               },
               "scope": {
                 "status": "covered"
-              },
-              "intake": {
-                "second": {
-                  "status": "unknown"
-                }
               }
             },
             {
@@ -4531,11 +4304,6 @@
               },
               "scope": {
                 "status": "covered"
-              },
-              "intake": {
-                "second": {
-                  "status": "unknown"
-                }
               }
             }
           ],
@@ -4760,18 +4528,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             },
             {
@@ -4787,18 +4544,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             }
           ],
@@ -5053,11 +4799,6 @@
               },
               "scope": {
                 "status": "covered"
-              },
-              "intake": {
-                "second": {
-                  "status": "no"
-                }
               }
             }
           ],
@@ -5209,18 +4950,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "second": true
               }
             }
           ],
@@ -5405,10 +5135,10 @@
               "id": "integrado",
               "kind": "integrado",
               "delivery": "a-conferir",
-              "organization": "a-classificar",
+              "organization": "anual",
               "stages": {
-                "status": "reported",
-                "count": 2
+                "status": "defined",
+                "perTerm": 2
               }
             }
           ],
@@ -5438,10 +5168,10 @@
               "id": "integrado",
               "kind": "integrado",
               "delivery": "a-conferir",
-              "organization": "a-classificar",
+              "organization": "anual",
               "stages": {
-                "status": "reported",
-                "count": 3
+                "status": "defined",
+                "perTerm": 3
               }
             }
           ],
@@ -5471,10 +5201,10 @@
               "id": "integrado",
               "kind": "integrado",
               "delivery": "a-conferir",
-              "organization": "a-classificar",
+              "organization": "anual",
               "stages": {
-                "status": "reported",
-                "count": 4
+                "status": "defined",
+                "perTerm": 4
               }
             }
           ],
@@ -7068,7 +6798,7 @@
               "id": "integrado",
               "kind": "integrado",
               "delivery": "presencial",
-              "organization": "a-classificar",
+              "organization": "semestral",
               "scope": {
                 "status": "covered"
               }
@@ -7077,7 +6807,7 @@
               "id": "graduacao",
               "kind": "graduacao",
               "delivery": "presencial",
-              "organization": "a-classificar",
+              "organization": "semestral",
               "scope": {
                 "status": "covered"
               }
@@ -7092,7 +6822,9 @@
               "start": "2027-02-01",
               "end": "2027-07-09",
               "association": {
-                "status": "a-classificar"
+                "status": "defined",
+                "offers": ["integrado", "graduacao"],
+                "term": "first"
               }
             },
             {
@@ -7101,7 +6833,9 @@
               "start": "2027-07-26",
               "end": "2027-12-17",
               "association": {
-                "status": "a-classificar"
+                "status": "defined",
+                "offers": ["integrado", "graduacao"],
+                "term": "second"
               }
             }
           ],
@@ -7149,8 +6883,9 @@
                 "activityId": "stage",
                 "offerId": "integrado",
                 "position": {
-                  "status": "unclassified",
-                  "reportedOrdinal": 3
+                  "status": "defined",
+                  "term": "first",
+                  "number": 3
                 }
               },
               "scope": {
@@ -7169,8 +6904,9 @@
                 "activityId": "results",
                 "offerId": "integrado",
                 "position": {
-                  "status": "unclassified",
-                  "reportedOrdinal": 2
+                  "status": "defined",
+                  "term": "first",
+                  "number": 2
                 }
               },
               "scope": {
@@ -7189,8 +6925,9 @@
                 "activityId": "council",
                 "offerId": "graduacao",
                 "position": {
-                  "status": "unclassified",
-                  "reportedOrdinal": 1
+                  "status": "defined",
+                  "term": "first",
+                  "number": 1
                 }
               },
               "scope": {
@@ -7369,18 +7106,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "second": true
               }
             },
             {
@@ -7621,8 +7347,9 @@
                 "activityId": "stage",
                 "offerId": "graduacao",
                 "position": {
-                  "status": "unclassified",
-                  "reportedOrdinal": 5
+                  "status": "defined",
+                  "term": "first",
+                  "number": 5
                 }
               },
               "scope": {
@@ -7641,8 +7368,9 @@
                 "activityId": "results",
                 "offerId": "integrado",
                 "position": {
-                  "status": "unclassified",
-                  "reportedOrdinal": 1
+                  "status": "defined",
+                  "term": "annual",
+                  "number": 1
                 }
               },
               "scope": {
@@ -7682,18 +7410,7 @@
                 "status": "covered"
               },
               "intake": {
-                "annual": {
-                  "status": "yes",
-                  "required": true
-                },
-                "first": {
-                  "status": "no",
-                  "required": false
-                },
-                "second": {
-                  "status": "yes",
-                  "required": true
-                }
+                "annual": true
               }
             }
           ],
@@ -7911,7 +7628,7 @@
           },
           "submittedFrom": "rascunho",
           "contentVersion": 1,
-          "contentHash": "025094912bce755baa4be96d64d27e5b54e5d6998d0ca5159546c18b3a7701a2",
+          "contentHash": "51b1f6c7796d7cf67de032adf8503aad5ca96a635d3242bdcff8608d3389bad1",
           "state": {
             "schemaVersion": 5,
             "rulesetVersion": "consup-292-2027-v2",
@@ -7929,18 +7646,7 @@
                   "status": "covered"
                 },
                 "intake": {
-                  "annual": {
-                    "status": "yes",
-                    "required": true
-                  },
-                  "first": {
-                    "status": "no",
-                    "required": false
-                  },
-                  "second": {
-                    "status": "yes",
-                    "required": true
-                  }
+                  "annual": true
                 }
               }
             ],

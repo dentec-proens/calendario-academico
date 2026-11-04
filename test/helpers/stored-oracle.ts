@@ -22,13 +22,11 @@ import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.
 import type { StoredCase, StoredContent, StoredSubmission } from './stored-fixtures.ts';
 
 /**
- * Oracle of the stored format 5 documents (`test/fixtures/stored/oracle.json`): what the domain
+ * Oracle of the stored documents (`test/fixtures/stored/oracle.json`): what the domain
  * computes for each document of `test/fixtures/stored/contents.json` (counting with the ledger by
  * SHA-256, coverage, situation, activities, links under review, base identity, the PROENS print
  * by SHA-256 and the teaching-day breakdown), plus the content hash of each document and of each
- * submission. It replaces the oracle of format 4, removed with the converter in the
- * contraction: when recorded, every value except the hashes was checked equal to what that oracle
- * expected of the converted documents.
+ * submission. It replaces the oracle of format 4, removed with the converter in the contraction.
  */
 const hash = (value: string) => bytesToHex(sha256(new TextEncoder().encode(value)));
 const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;

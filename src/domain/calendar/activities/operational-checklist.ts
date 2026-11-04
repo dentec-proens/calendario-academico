@@ -1,11 +1,5 @@
 import type { AssessmentSettings, ActivityPlanItem } from '../model.ts';
-import {
-  calendarOffers,
-  offerLabel,
-  organizationSummary,
-  secondSemesterIntake,
-  stageCycle,
-} from '../offers.ts';
+import { calendarOffers, offerLabel, organizationSummary, stageCycle } from '../offers.ts';
 import {
   declareRules,
   expandRules,
@@ -41,9 +35,6 @@ const cyclesByRegime = (state: AssessmentSettings): CycleSlot[] => {
  * of years without a policy remain valid.
  */
 export function operationalRules(): ActivityRule[] {
-  const withoutSecondIntake = ({ n, state }: Slot) => {
-    return n === 2 && secondSemesterIntake(state.offers) === false;
-  };
   return [
     ...declareRules({ repeat: 'stage' }, [
       {
@@ -99,10 +90,7 @@ export function operationalRules(): ActivityRule[] {
       },
       {
         id: 'registration',
-        name: (s) =>
-          `Período destinado à matrícula — ${termLabel(s)}` +
-          (withoutSecondIntake(s) ? ' (não exigido: sem ingresso neste semestre)' : ''),
-        required: (s) => (withoutSecondIntake(s) ? false : undefined),
+        name: (s) => `Período destinado à matrícula — ${termLabel(s)}`,
         intake: true,
         group: 'admission',
       },

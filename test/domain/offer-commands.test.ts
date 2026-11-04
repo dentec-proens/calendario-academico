@@ -21,9 +21,10 @@ import {
   offerOrganizationDraft,
   offerOrganizationIssues,
   validateAddedOffers,
+  type NewOffer,
 } from '../../src/domain/calendar/organization/offers.ts';
 import { offerIds } from '../../src/domain/calendar/offers.ts';
-import type { ActivityState, CalendarOffer } from '../../src/domain/calendar/model.ts';
+import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 function ids() {
   let sequence = 0;
@@ -156,10 +157,7 @@ test('semester organization accepts one or two stages per cycle and rejects thre
 test('intake configuration changes only the selected offer identity', () => {
   const state = calendarOffersFixture();
   const next = configureIntakeRequirement(state, 'graduacao-2', 'second', true);
-  expect(next.offers.find((offer) => offer.id === 'graduacao-2')?.intake?.second).toEqual({
-    status: 'yes',
-    required: true,
-  });
+  expect(next.offers.find((offer) => offer.id === 'graduacao-2')?.intake?.second).toBe(true);
   expect(next.offers.find((offer) => offer.id === 'graduacao-3')).toEqual(
     state.offers.find((offer) => offer.id === 'graduacao-3'),
   );
@@ -200,12 +198,11 @@ test('adding an opaque offer identity keeps earlier scopes and creates its own p
     start: civilDate('2027-04-01'),
     end: civilDate('2027-04-01'),
   });
-  const newOffer: CalendarOffer = {
+  const newOffer: NewOffer = {
     id: 'graduacao-4',
     kind: 'graduacao',
     label: 'Novo curso',
     delivery: 'a-conferir',
-    organization: 'semestral',
   };
   const draft = offerOrganizationDraft(state, newOffer.id);
   draft.organization = 'semestral';
@@ -223,8 +220,21 @@ test('adding an opaque offer identity keeps earlier scopes and creates its own p
   Object.assign(draft.stages[0], { start: civilDate('2027-02-01'), end: civilDate('2027-07-09') });
   Object.assign(draft.stages[1], { start: civilDate('2027-07-26'), end: civilDate('2027-12-17') });
   const previousIds = offerIds(state);
+  // Without the campus's choice the offer does not enter the calendar.
+  const undecided = { ...draft, organization: '' };
+  expect(offerOrganizationIssues(state, newOffer.id, undecided, newOffer)).toContainEqual({
+    path: 'organization',
+    message: 'Selecione a organização da oferta.',
+  });
+  expect(() => applyOfferOrganization(state, newOffer.id, undecided, ids(), newOffer)).toThrow(
+    'Selecione a organização',
+  );
   const next = applyOfferOrganization(state, newOffer.id, draft, ids(), newOffer);
-  expect(next.offers.at(-1)).toEqual({ ...newOffer, stages: { status: 'defined', perTerm: 1 } });
+  expect(next.offers.at(-1)).toEqual({
+    ...newOffer,
+    organization: 'semestral',
+    stages: { status: 'defined', perTerm: 1 },
+  });
   // Neither extended nor confirmed.
   expect(next.events.find((event) => event.id === 'earlier-global')?.scope).toEqual({
     offers: previousIds,

@@ -89,14 +89,7 @@ for (const width of [1440, 390]) {
       }));
       record.state.offers = record.state.offers.map((offer) => ({
         ...offer,
-        organization:
-          offer.id === 'integrado'
-            ? ('anual' as const)
-            : offer.id === 'graduacao'
-              ? ('semestral' as const)
-              : offer.id === 'posgraduacao'
-                ? ('anual' as const)
-                : ('a-classificar' as const),
+        organization: offer.id === 'graduacao' ? ('semestral' as const) : ('anual' as const),
       }));
       record.state.offers = record.state.offers.map((offer) => ({
         ...offer,

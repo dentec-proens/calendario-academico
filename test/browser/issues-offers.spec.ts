@@ -36,22 +36,15 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#issue-list')).not.toContainText('undefined');
     await page.evaluate(async () => {
       const { record } = window.editorTest;
-      record.state.offers = record.state.offers.map((offer) =>
-        offer.id === 'graduacao-2'
-          ? { ...offer, organization: 'a-classificar', stages: undefined }
-          : offer,
-      );
-      record.state.periods = record.state.periods.map((period) =>
-        period.association.status === 'defined' && period.association.offers.includes('graduacao-2')
-          ? { ...period, association: { status: 'a-classificar' } }
-          : period,
+      record.state.periods = record.state.periods.filter(
+        (period) => !period.association.offers.includes('graduacao-2'),
       );
       record.version++;
       await window.publishReviewerCalendar();
     });
-    // Without a classified organization the count stops, and its issue names what to fix.
+    // Without the periods of an offer the count stops, and its issue names what to fix.
     await expect(page.locator('#issue-list [data-issue="count-unavailable"]')).toContainText(
-      'classifique a organização de Engenharia Elétrica',
+      'cadastre os períodos de Engenharia Elétrica',
     );
     await expect(page.locator('#issue-list')).not.toContainText('undefined');
   });

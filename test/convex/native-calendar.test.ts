@@ -23,8 +23,8 @@ async function setup() {
         campusId: fixture.ids.campuses.a,
         year: 2027,
         offers: [
-          { kind: 'integrado', organization: 'a-classificar' },
-          { kind: 'graduacao', organization: 'a-classificar' },
+          { kind: 'integrado', organization: 'anual' },
+          { kind: 'graduacao', organization: 'anual' },
         ],
       },
     })
@@ -33,7 +33,7 @@ async function setup() {
   return { ...fixture, actor, record };
 }
 
-test.each(['anual', 'semestral', 'a-classificar'] as const)(
+test.each(['anual', 'semestral'] as const)(
   'creation preserves organization %s and leaves later editor decisions undefined',
   async (organization) => {
     const { asClient, ids } = await createNativeFixture();
@@ -78,10 +78,7 @@ test('the round-trip preserves independent organization, intake, actual dates an
     offers: record.state.offers.map((offer): DomainState['offers'][number] => ({
       ...offer,
       organization: offer.kind === 'integrado' ? 'anual' : 'semestral',
-      intake:
-        offer.kind === 'integrado'
-          ? { annual: { status: 'unknown' } }
-          : { first: { status: 'yes', required: true }, second: { status: 'no' } },
+      intake: offer.kind === 'integrado' ? { annual: true } : { first: true },
     })),
     periods: [
       {
@@ -134,7 +131,7 @@ test('the round-trip preserves independent organization, intake, actual dates an
           publication: 'planned',
           admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
         },
-        deadlineAdjustment: { date: civilDate('2027-12-15'), reviewed: false },
+        deadlineAdjustment: { date: civilDate('2027-12-15') },
         scope: { offers: ['integrado'], confirmed: true },
       },
     ],
@@ -654,7 +651,7 @@ test('saving an impossible civil date returns the public validation error and le
         name: 'Período inválido',
         start: '2027-02-30',
         end: '2027-03-01',
-        association: { status: 'a-classificar' as const },
+        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
       },
     ],
   };

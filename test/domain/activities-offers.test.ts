@@ -70,7 +70,7 @@ test('escopo e configuração de ingresso são independentes em ofertas do mesmo
   const state = calendarOffersFixture();
   const policy = policyFor(state.year);
   state.offers[2].scope = { status: 'own-regulation' };
-  state.offers[3].intake = { first: { status: 'yes', required: true } };
+  state.offers[3].intake = { first: true };
   const registration = policy.requirements(state).find((row) => row.id === 'registration-1')!;
   expect(policy.applicability(state, registration, offerFor(state, 'graduacao-2')!)).toBe(
     'unconfigured',
@@ -100,17 +100,17 @@ test('nova edição exige o próprio semestre sem impedir salvar outros dados mi
   expect(assessmentCycleIssue(state, migrated)).toContain('2º semestre');
   expect(() => validateActivityRecord(state, migrated)).not.toThrow();
   expect(assessmentCycleIssue(state, original)).toBeUndefined();
-  const unclassified = {
+  const uncounted = {
     ...state,
     offers: state.offers.map((offer) =>
-      offer.id === 'graduacao-2'
-        ? { ...offer, organization: 'a-classificar' as const, stages: undefined }
-        : offer,
+      offer.id === 'graduacao-2' ? { ...offer, stages: undefined } : offer,
     ),
-    periods: [],
   };
-  expect(() => validateActivityRecord(unclassified, migrated)).not.toThrow();
-  expect(assessmentCycleIssue(unclassified, migrated)).toContain('Defina a organização');
+  expect(assessmentCycleIssue(uncounted, migrated)).toContain('Defina a quantidade');
+  // Every offer has an organization, so a stage date is always checked against its periods.
+  expect(() => validateActivityRecord({ ...uncounted, periods: [] }, migrated)).toThrow(
+    'inteiramente dentro',
+  );
 });
 
 test('sequência de novas etapas é conferida dentro do ciclo da mesma oferta', () => {

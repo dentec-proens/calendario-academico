@@ -146,7 +146,7 @@ test('adding an offer neither extends nor confirms any scope and does not mutate
     'graduacao',
     draft,
     () => `added-${sequence++}`,
-    { id: 'graduacao', kind: 'graduacao', delivery: 'a-conferir', organization: 'a-classificar' },
+    { id: 'graduacao', kind: 'graduacao', delivery: 'a-conferir' },
   );
   const before = structuredClone({ previous, proposed });
   const prepared = prepareOfferCalendarSave(previous, proposed, {

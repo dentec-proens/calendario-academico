@@ -26,15 +26,6 @@ for (const width of [1440, 390]) {
         organization: 'anual' as const,
       }));
       record.offerKinds = record.state.offers.map((offer) => offer.kind);
-      record.state.offers = record.state.offers.map((offer) => ({
-        ...offer,
-        organization:
-          offer.id === 'integrado'
-            ? ('anual' as const)
-            : offer.id === 'graduacao'
-              ? ('anual' as const)
-              : ('a-classificar' as const),
-      }));
       record.version++;
       return window.publishReviewerCalendar();
     });

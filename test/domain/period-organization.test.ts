@@ -20,13 +20,13 @@ function calendar(): ActivityState {
         id: 'integrado',
         kind: 'integrado' as const,
         delivery: 'a-conferir' as const,
-        organization: 'a-classificar' as const,
+        organization: 'anual' as const,
       },
       {
         id: 'graduacao',
         kind: 'graduacao' as const,
         delivery: 'a-conferir' as const,
-        organization: 'a-classificar' as const,
+        organization: 'anual' as const,
       },
     ],
   };
@@ -69,13 +69,12 @@ test('annual and semester periods of different offers survive normalization', ()
   ).toThrow('mais de um período');
 });
 
-test('unknown intake creates no configuration chore and an existing local requirement stays required', () => {
+test('no local requirement creates no configuration chore and an existing one stays required', () => {
   const state: ActivityState = {
     ...calendar(),
     offers: calendar().offers.map((offer) => ({
       ...offer,
-      organization: ({ integrado: 'anual', graduacao: 'semestral' }[offer.id] ??
-        'a-classificar') as 'anual' | 'semestral' | 'a-classificar',
+      organization: offer.id === 'integrado' ? 'anual' : 'semestral',
     })),
   };
   const registration = () =>
@@ -85,7 +84,7 @@ test('unknown intake creates no configuration chore and an existing local requir
   expect(registration()?.applicability).toBe('optional');
   state.offers = state.offers.map((offer) => ({
     ...offer,
-    intake: offer.id === 'integrado' ? { annual: { status: 'yes', required: true } } : undefined,
+    intake: offer.id === 'integrado' ? { annual: true } : undefined,
   }));
   expect(registration()?.applicability).toBe('required');
   expect(registration()?.coverage).toBe('pending');
@@ -95,27 +94,22 @@ test('a local requirement uses its explicit choice without sources and preserves
   const state = calendar();
   state.offers = state.offers.map((offer) => ({
     ...offer,
-    organization:
-      offer.id === 'integrado' ? 'anual' : offer.id === 'graduacao' ? 'semestral' : 'a-classificar',
+    organization: offer.id === 'integrado' ? 'anual' : 'semestral',
   }));
   state.offers = state.offers.map((offer) => ({
     ...offer,
-    intake: offer.id === 'integrado' ? { annual: { status: 'no' } } : undefined,
+    intake: offer.id === 'integrado' ? { annual: true } : undefined,
   }));
   const original = structuredClone(state);
   const configured = configureIntakeRequirement(state, 'graduacao', 'second', true);
   expect(configured.offers.find((offer) => offer.id === 'integrado')?.intake).toEqual({
-    annual: { status: 'no' },
+    annual: true,
   });
-  expect(configured.offers.find((offer) => offer.id === 'graduacao')?.intake?.second).toEqual({
-    status: 'yes',
-    required: true,
+  expect(configured.offers.find((offer) => offer.id === 'graduacao')?.intake).toEqual({
+    second: true,
   });
   const optional = configureIntakeRequirement(configured, 'graduacao', 'second', false);
-  expect(optional.offers.find((offer) => offer.id === 'graduacao')?.intake?.second).toEqual({
-    status: 'yes',
-    required: false,
-  });
+  expect(optional.offers.find((offer) => offer.id === 'graduacao')?.intake).toBeUndefined();
   expect(() => configureIntakeRequirement(state, 'graduacao', 'annual', true)).toThrow('ciclo');
   expect(state).toEqual(original);
 });
@@ -124,8 +118,7 @@ test('semester teacher deadlines stay valid when their offer changes to annual o
   let state = calendar();
   state.offers = state.offers.map((offer) => ({
     ...offer,
-    organization:
-      offer.id === 'integrado' ? 'anual' : offer.id === 'graduacao' ? 'semestral' : 'a-classificar',
+    organization: offer.id === 'integrado' ? 'anual' : 'semestral',
   }));
   state = add(state, 'graduacao', 'first', 'undergraduate-first', '2027-02-01', '2027-06-30');
   state.events = ['pit', 'rit', 'teaching-plan'].map((activityId) => ({

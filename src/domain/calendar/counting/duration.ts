@@ -15,7 +15,7 @@ export function recalculatePeriods<T extends CalendarPeriod>(
   events: DurationEvent[],
 ): T[] {
   const periods = state.periods.map((p) =>
-    p.targetDays === undefined || p.association.status !== 'defined'
+    p.targetDays === undefined
       ? { ...p }
       : {
           ...p,

@@ -7,7 +7,6 @@ import type { evaluateCalendar } from './counting/evaluation.ts';
 
 export type CalendarDiagnostic =
   | { code: 'week-unconfirmed' | 'periods-missing' }
-  | { code: 'organization-unclassified'; offerId: string }
   | { code: 'period-count'; offerId: string; expected: number; actual: number };
 
 /** Examines an explicit snapshot. It never claims that local work has been saved or approved. */
@@ -19,15 +18,10 @@ export function diagnoseCalendar(
   if (!state.weekConfirmed) structure.push({ code: 'week-unconfirmed' });
   if (!state.periods.length) structure.push({ code: 'periods-missing' });
   for (const offer of calendarOffers(state)) {
-    const organization = offer.organization;
-    const scope = { offerId: offer.id };
-    if (organization === 'a-classificar') {
-      structure.push({ code: 'organization-unclassified', ...scope });
-      continue;
-    }
-    const expected = periodCountByOrganization[organization];
+    const expected = periodCountByOrganization[offer.organization];
     const actual = periodsForOffer(state, offer.id).length;
-    if (actual !== expected) structure.push({ code: 'period-count', ...scope, expected, actual });
+    if (actual !== expected)
+      structure.push({ code: 'period-count', offerId: offer.id, expected, actual });
   }
   return { structure, plan: evaluatePlan(state, events) };
 }

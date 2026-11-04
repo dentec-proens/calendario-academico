@@ -178,8 +178,6 @@ export function eventFromValues(
 ): Omit<CalendarEvent, 'activity'> {
   if (!value.effect) throw new Error('Escolha o efeito na contagem.');
   const notice = noticeActive(value);
-  // An unchanged adjustment keeps its institutional review; a new date needs another.
-  const adjustment = target.base?.deadlineAdjustment;
   const {
     assessmentAutoStart: _automatic,
     activity: _link,
@@ -207,11 +205,7 @@ export function eventFromValues(
         ? { ...(publication && { publication }), ...(admission && { admission }) }
         : undefined,
     deadlineAdjustment:
-      notice && value.adjustedDeadline
-        ? adjustment?.date === value.adjustedDeadline
-          ? { date: adjustment.date, reviewed: adjustment.reviewed }
-          : { date: civilDate(value.adjustedDeadline), reviewed: false }
-        : undefined,
+      notice && value.adjustedDeadline ? { date: civilDate(value.adjustedDeadline) } : undefined,
     category:
       target.base && !target.base.category && value.category === eventCategory(target.base)
         ? undefined
@@ -252,13 +246,8 @@ export function activityDraft(
       : valid;
   const destinationPeriod = state.periods.find(
     (period) =>
-      period.association?.status === 'defined' &&
       period.association.term === requirement.term &&
-      modalities.every(
-        (modality) =>
-          period.association?.status === 'defined' &&
-          associationOffers(period.association).includes(modality),
-      ),
+      modalities.every((modality) => associationOffers(period.association).includes(modality)),
   );
   const notice = requirement.variant === 'admission-notice';
   return {

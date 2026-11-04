@@ -13,7 +13,6 @@ import {
   type CalendarEvent,
   type CalendarOffer,
   type InstitutionalEventSnapshot,
-  type IntakeConfiguration,
 } from '../../src/domain/calendar/model.ts';
 
 // External metadata is test input, never a storage/API contract.
@@ -24,11 +23,8 @@ type AnnotatedEvent = CalendarEvent & {
 type AnnotatedState = Omit<ActivityState, 'events' | 'offers'> & {
   events: AnnotatedEvent[];
   weekEvidence?: string;
-  offers: (Omit<CalendarOffer, 'scope' | 'intake'> & {
+  offers: (Omit<CalendarOffer, 'scope'> & {
     scope?: CalendarOffer['scope'] & { source?: string };
-    intake?: Partial<
-      Record<'annual' | 'first' | 'second', IntakeConfiguration & { source?: string }>
-    >;
   })[];
 };
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
@@ -126,10 +122,7 @@ const baseHoliday: InstitutionalEventSnapshot = {
 function removeManualSources(input: AnnotatedState): AnnotatedState {
   const result = structuredClone(input);
   delete result.weekEvidence;
-  for (const offer of result.offers) {
-    if (offer.scope) delete offer.scope.source;
-    for (const entry of Object.values(offer.intake ?? {})) delete entry.source;
-  }
+  for (const offer of result.offers) if (offer.scope) delete offer.scope.source;
   for (const event of result.events) {
     delete event.evidence;
     if (event.deadlineAdjustment)
@@ -209,8 +202,7 @@ function deadlineState(): ActivityState {
     events: [],
     offers: state().offers.map((offer) => ({
       ...offer,
-      organization: ({ integrado: 'anual', graduacao: 'anual' }[offer.id] ?? 'a-classificar') as
-        'anual' | 'semestral' | 'a-classificar',
+      organization: 'anual' as const,
     })),
   };
 }
@@ -295,10 +287,7 @@ for (const scenario of [
 
 test('local registration keeps its explicit required and optional choices without sources', () => {
   const original = state();
-  original.offers.find((offer) => offer.id === 'graduacao')!.intake = {
-    first: { status: 'yes', required: true, source: 'Regra manual' },
-    second: { status: 'no', required: false, source: 'Ata manual' },
-  };
+  original.offers.find((offer) => offer.id === 'graduacao')!.intake = { first: true };
   const stripped = removeManualSources(original);
   const rows = activityPlan(original).filter(
     (row) => row.id.startsWith('registration-') && row.modalities?.includes('graduacao'),
@@ -313,7 +302,7 @@ test('local registration keeps its explicit required and optional choices withou
   );
 });
 
-test('an exceptional regular notice deadline keeps its date even with reviewed false and no source', () => {
+test('an exceptional regular notice deadline keeps its date even with no source', () => {
   const original = {
     ...deadlineState(),
     offers: [
@@ -344,7 +333,6 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
     deadlineAdjustment: {
       date: civilDate('2027-12-03'),
       evidence: 'Cronograma manual',
-      reviewed: false,
     },
   };
   original.events = [event];
@@ -359,7 +347,6 @@ test('an exceptional regular notice deadline keeps its date even with reviewed f
   expect(before.coverage).toBe('complete');
   expect(after.coverage).toBe(before.coverage);
   expect(after.execution).toBe(before.execution);
-  expect(stripped.events[0].deadlineAdjustment?.reviewed).toBe(false);
   stripped.events[0].end = civilDate('2027-12-04');
   expect(
     evaluatePlan(stripped).rows.find(
@@ -393,7 +380,6 @@ test('PDF omits manual source text but keeps automatic institutional references 
       deadlineAdjustment: {
         date: civilDate('2027-09-03'),
         evidence: 'SEGREDO MANUAL DO AJUSTE',
-        reviewed: false,
       },
     },
     {

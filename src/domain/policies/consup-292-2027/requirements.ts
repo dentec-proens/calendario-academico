@@ -392,8 +392,8 @@ export function requirements(state: AssessmentSettings): ActivityPlanItem[] {
  * 2. an offer outside `modalities` (always present: `requirements` injects the supported kinds),
  *    `offerId` or `offerIds` is `optional`;
  * 3. an entry in `optionalFor` for the offer's kind, even `''`, is `optional`;
- * 4. an `intake` row reads the configuration of `term ?? 'annual'`: only `yes` with `required` is
- *    `required`, anything else is `optional`, and the row's own fields are not read;
+ * 4. an `intake` row reads the offer's requirement for `term ?? 'annual'`: `required` when the campus
+ *    declared it, `optional` otherwise, and the row's own fields are not read;
  * 5. otherwise `applicability`, and without it `required: false` is `optional`, else `required`.
  */
 export function applicability(
@@ -407,10 +407,7 @@ export function applicability(
   if (requirement.offerId && requirement.offerId !== offer.id) return 'optional';
   if (requirement.offerIds && !requirement.offerIds.includes(offer.id)) return 'optional';
   if (requirement.optionalFor?.[kind] !== undefined) return 'optional';
-  if (requirement.intake) {
-    const config = offer.intake?.[requirement.term ?? 'annual'];
-    if (!config || config.status === 'unknown') return 'optional';
-    return config.status === 'yes' && config.required === true ? 'required' : 'optional';
-  }
+  if (requirement.intake)
+    return offer.intake?.[requirement.term ?? 'annual'] === true ? 'required' : 'optional';
   return requirement.applicability ?? (requirement.required === false ? 'optional' : 'required');
 }

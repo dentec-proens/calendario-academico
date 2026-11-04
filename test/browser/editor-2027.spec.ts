@@ -235,46 +235,6 @@ test('URL filters validate invalid input and follow browser history without losi
   await expect(page.locator('#event-name')).toHaveValue('Rascunho com filtros');
 });
 
-test('migrated pending organization preserves period IDs until explicit offer and cycle classification', async ({
-  page,
-  fixtureServer,
-}) => {
-  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
-  await expect(page.locator('#record-title')).toBeVisible();
-  await page.evaluate(() => {
-    const { record } = window.editorTest;
-    record.state.schemaVersion = 5;
-    record.state.offers[0].organization = 'a-classificar';
-    delete record.state.offers[0].stages;
-    delete record.state.rulesetVersion;
-    record.state.periods = [
-      {
-        id: 'legacy-cycle',
-        name: 'Período legado sintético',
-        start: '2027-02-01',
-        end: '2027-12-17',
-        association: { status: 'a-classificar' },
-      },
-    ];
-    record.version++;
-    return window.publishReviewerCalendar();
-  });
-  await selectEditorSection(page, 'periods');
-  await expect(page.locator('#periods')).toContainText('associação a conferir');
-  await page.locator('[data-edit-organization="integrado"]').click();
-  await page.locator('#offer-integrado-source-0').selectOption('legacy-cycle');
-  await configureOffer(page, 'integrado', '2027-02-01', '2027-12-17');
-  await expect
-    .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0].association))
-    .toEqual({ status: 'defined', offers: ['integrado'], term: 'annual' });
-  expect(await page.evaluate(() => window.editorTest.record.state.periods[0].id)).toBe(
-    'legacy-cycle',
-  );
-  expect(await page.evaluate(() => window.editorTest.record.state.periods[0].start)).toBe(
-    '2027-02-01',
-  );
-});
-
 test('annual integrated and semester undergraduate offers keep independent overlapping periods and intake settings', async ({
   page,
   fixtureServer,
@@ -333,7 +293,7 @@ test('annual integrated and semester undergraduate offers keep independent overl
       page.evaluate(
         () =>
           window.editorTest.record.state.offers.find((offer) => offer.id === 'graduacao')?.intake
-            ?.second?.required,
+            ?.second,
       ),
     )
     .toBe(true);

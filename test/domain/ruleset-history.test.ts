@@ -51,14 +51,25 @@ const archive = JSON.parse(
   v4Settings: Omit<AssessmentSettings, 'year'>[];
   v4Catalogues: Record<string, unknown>;
 };
-// The archive keeps the v4 offer stages; the code reads `{ status: 'defined', perTerm }` (step 8).
+/**
+ * The archive keeps the v4 offer stages and intake configuration; the code reads
+ * `{ status: 'defined', perTerm }` and only the cycles with a local requirement.
+ */
 const referenceSettings = archive.v4Settings.map((settings) => ({
   ...settings,
   offers: settings.offers.map((offer) => {
-    const stored = offer.stages as { perTerm: number } | undefined;
-    return stored
-      ? { ...offer, stages: { status: 'defined' as const, perTerm: stored.perTerm } }
-      : offer;
+    const { stages, intake, ...rest } = offer as Omit<CalendarOffer, 'stages' | 'intake'> & {
+      stages?: { perTerm: number };
+      intake?: Record<string, { required?: boolean }>;
+    };
+    const required = Object.entries(intake ?? {}).filter(([, value]) => value.required === true);
+    return {
+      ...rest,
+      ...(stages ? { stages: { status: 'defined' as const, perTerm: stages.perTerm } } : {}),
+      ...(required.length
+        ? { intake: Object.fromEntries(required.map(([term]) => [term, true as const])) }
+        : {}),
+    };
   }),
 }));
 

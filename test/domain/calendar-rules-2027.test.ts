@@ -135,10 +135,6 @@ test('2027 requirements use offer and academic cycle while PE/PIT/RIT remain sem
 });
 test('one event covers only the explicitly declared offers and does not waive veterans for absent intake', () => {
   const state = calendar();
-  state.offers = state.offers.map((offer) => ({
-    ...offer,
-    intake: offer.id === 'subsequente' ? { annual: { status: 'no' } } : undefined,
-  }));
   state.events = [
     {
       ...notice({
@@ -234,7 +230,7 @@ test('planned regular publication remains planned and December requires an expli
       (r) => r.offerId === 'integrado' && r.requirement.id === 'regular-admission-notice',
     ),
   ).toMatchObject({ coverage: 'partial', execution: 'planned' });
-  state.events[0].deadlineAdjustment = { date: civilDate('2027-12-02'), reviewed: true };
+  state.events[0].deadlineAdjustment = { date: civilDate('2027-12-02') };
   expect(
     evaluatePlan(state).rows.find(
       (r) => r.offerId === 'integrado' && r.requirement.id === 'regular-admission-notice',

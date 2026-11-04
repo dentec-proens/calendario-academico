@@ -4,7 +4,6 @@ import { countCalendar, automaticEventSource } from './core.ts';
 import { appliesTo } from '../modalities.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 import { calendarOffers } from '../offers.ts';
-import { DomainError } from '../../errors.ts';
 
 export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
   const byOffer: Record<string, ReturnType<typeof countCalendar>> = {};
@@ -12,10 +11,6 @@ export function evaluateCalendar(s: TeachingState, events: CountingEvent[]) {
   for (const offer of offers) {
     const scoped = events.filter((e) => appliesTo(e, offer));
     const periods = periodsForOffer(s, offer.id);
-    if (offer.organization === 'a-classificar')
-      throw new DomainError(
-        'Organização a conferir: classifique os períodos por oferta antes de confirmar a contagem.',
-      );
     const minimum = policyFor(s.year).countingMinimums(s, offer);
     byOffer[offer.id] = countCalendar({
       year: s.year,

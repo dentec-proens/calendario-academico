@@ -20,12 +20,11 @@ export const assessmentStageRequirementPattern = new RegExp(
 );
 export const academicTerms = ['annual', 'first', 'second'] as const;
 export type AcademicTerm = (typeof academicTerms)[number];
-export const organizations = ['anual', 'semestral', 'a-classificar'] as const;
+export const organizations = ['anual', 'semestral'] as const;
 export type Organization = (typeof organizations)[number];
 export const organizationLabels: Record<string, string> = {
   anual: 'Anual',
   semestral: 'Semestral',
-  'a-classificar': 'Organização a conferir',
 };
 export const termLabels: Record<AcademicTerm, string> = {
   annual: 'ano letivo',
@@ -35,7 +34,7 @@ export const termLabels: Record<AcademicTerm, string> = {
 export const termsByOrganization = {
   anual: ['annual'],
   semestral: ['first', 'second'],
-} as const satisfies Record<'anual' | 'semestral', readonly AcademicTerm[]>;
+} as const satisfies Record<Organization, readonly AcademicTerm[]>;
 export const periodCountByOrganization = {
   anual: termsByOrganization.anual.length,
   semestral: termsByOrganization.semestral.length,

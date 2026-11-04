@@ -25,7 +25,7 @@ export type StageActivityId = ActivityId<'stage'>;
 export type ReferenceSemester = 'first' | 'second';
 
 /**
- * Position of a stage link: the ordinal reported while the offer's organization is not classified
+ * Position of a stage link: the ordinal reported before the offer's stages were confirmed
  * (`unclassified`), or the stage's cycle and number within it once defined. A defined position is
  * kept when the number of stages changes; it is never reinterpreted.
  */

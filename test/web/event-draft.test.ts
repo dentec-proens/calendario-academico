@@ -37,22 +37,20 @@ test('the link is not a form value: the date command decides it from the context
   expect(edit(base, { name: 'Encontro revisado' })).not.toHaveProperty('activity');
 });
 
-test('an unchanged reviewed deadline adjustment keeps its review', () => {
+test('a deadline adjustment keeps its date until the form changes it', () => {
   const base = saved({
     activity: onceLink('regular-admission-notice'),
     notice: {
       publication: 'planned',
       admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
     },
-    deadlineAdjustment: { date: civilDate('2027-07-01'), reviewed: true },
+    deadlineAdjustment: { date: civilDate('2027-07-01') },
   });
   expect(edit(base, { category: 'evento' }).deadlineAdjustment).toEqual({
     date: civilDate('2027-07-01'),
-    reviewed: true,
   });
   expect(edit(base, { adjustedDeadline: '2027-07-02' }).deadlineAdjustment).toEqual({
     date: civilDate('2027-07-02'),
-    reviewed: false,
   });
 });
 

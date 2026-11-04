@@ -4,12 +4,12 @@ import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.
 import {
   applyOfferOrganization,
   offerOrganizationDraft,
+  type NewOffer,
 } from '../../src/domain/calendar/organization/offers.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import {
   projectDates,
   type CalendarContent,
-  type CalendarOffer,
   type InstitutionalEventSnapshot,
   type TeachingState,
 } from '../../src/domain/calendar/model.ts';
@@ -98,11 +98,10 @@ export function offerAdditionCounting(): Record<string, unknown> {
 }
 
 /** Offer added to the fixture, with no date of its own before its organization is applied. */
-export const newOffer: CalendarOffer = {
+export const newOffer: NewOffer = {
   id: 'subsequente',
   kind: 'subsequente',
   delivery: 'a-conferir',
-  organization: 'a-classificar',
 };
 
 /** The new offer with its complete annual organization, as the Periods step applies it. */

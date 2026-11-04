@@ -13,7 +13,6 @@ import {
   stageCount,
   stageCycle,
   nextOfferId,
-  secondSemesterIntake,
 } from '../../src/domain/calendar/offers.ts';
 import {
   assessmentStageRequirementPattern,
@@ -51,25 +50,10 @@ describe('identidade e tipo da oferta v4', () => {
     expect(calendarLimits.maximumOffers).toBe(12);
   });
 
-  it('resume organizações, incluindo ofertas a conferir', () => {
-    expect(organizationSummary([])).toBe('a-classificar');
+  it('resume organizações; sem ofertas não há resumo', () => {
+    expect(organizationSummary([])).toBeNull();
     expect(organizationSummary([offer()])).toBe('anual');
     expect(organizationSummary([offer(), offer({ organization: 'semestral' })])).toBe('misto');
-    expect(organizationSummary([offer(), offer({ organization: 'a-classificar' })])).toBe(
-      'a-classificar',
-    );
-  });
-
-  it('não confunde ingresso desconhecido com ausência confirmada', () => {
-    expect(secondSemesterIntake([offer()])).toBeUndefined();
-    expect(secondSemesterIntake([])).toBeUndefined();
-    expect(secondSemesterIntake([offer({ intake: { second: { status: 'no' } } })])).toBe(false);
-    expect(
-      secondSemesterIntake([offer(), offer({ intake: { second: { status: 'no' } } })]),
-    ).toBeUndefined();
-    expect(secondSemesterIntake([offer(), offer({ intake: { second: { status: 'yes' } } })])).toBe(
-      true,
-    );
   });
 
   it.each([2, 3, 4])('preserva %i etapas anuais', (perTerm) => {
@@ -89,14 +73,9 @@ describe('identidade e tipo da oferta v4', () => {
     expect(stageCycle(semester)).toBe(perTerm === 1 ? 'semestral' : 'bimestral');
   });
 
-  it('não inventa etapas antes da confirmação da organização e da quantidade', () => {
+  it('não inventa etapas antes da confirmação da quantidade', () => {
     expect(stageCount(offer())).toBe(0);
     expect(stageTerm(offer(), 1)).toBeUndefined();
-    expect(
-      stageCycle(
-        offer({ organization: 'a-classificar', stages: { status: 'defined', perTerm: 2 } }),
-      ),
-    ).toBeUndefined();
     expect(() => stageInTerm(1, 0)).toThrow();
     expect(() => stageInTerm(0, 2)).toThrow();
   });

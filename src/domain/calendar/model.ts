@@ -16,18 +16,19 @@ export interface CalendarOffer {
   organization: Organization;
   stages?: OfferStages;
   scope?: { status: 'covered' | 'own-regulation' };
-  intake?: Partial<Record<AcademicTerm, IntakeConfiguration>>;
-  organizationBasis?: string;
+  /** Cycles where the campus requires new-student registration by a local rule. */
+  intake?: Partial<Record<AcademicTerm, true>>;
 }
-/**
- * Assessment stages of an offer: a total reported while the organization has
- * no confirmed cycle (`reported`, only with `a-classificar`), or the stages of each cycle of a
- * defined organization (`defined`). Confirming the organization turns `reported` into `defined`.
- */
-export type OfferStages =
-  { status: 'reported'; count: 2 | 3 | 4 } | { status: 'defined'; perTerm: number };
-export type PeriodAssociation =
-  { status: 'defined'; offers: string[]; term: AcademicTerm } | { status: 'a-classificar' };
+/** Assessment stages of each cycle of the offer's organization. */
+export interface OfferStages {
+  status: 'defined';
+  perTerm: number;
+}
+export interface PeriodAssociation {
+  status: 'defined';
+  offers: string[];
+  term: AcademicTerm;
+}
 /** Stored format version of a calendar's content (`calendarContents.state`). */
 export const calendarSchemaVersion = 5;
 /** Version five persists offer configuration, never its derived summaries. */
@@ -65,10 +66,6 @@ export interface AdmissionNotice {
   publication?: PublicationStatus;
   admission?: Admission;
 }
-export interface IntakeConfiguration {
-  status: 'unknown' | 'yes' | 'no';
-  required?: boolean;
-}
 /** How a date affects the count of school days (arts. 4º and 5º). */
 export type EventEffect = 'include' | 'exclude' | 'note';
 export const eventEffects: readonly EventEffect[] = ['include', 'exclude', 'note'];
@@ -94,7 +91,7 @@ export interface DateFields {
   assessmentAutoStart?: CivilDate;
   deadlineExtensionCause?: 'municipal-holiday' | 'municipal-recess';
   notice?: AdmissionNotice;
-  deadlineAdjustment?: { date: CivilDate; reviewed: boolean };
+  deadlineAdjustment?: { date: CivilDate };
 }
 /** A local date of the calendar (`state.events`). */
 export interface CalendarEvent extends DateFields {

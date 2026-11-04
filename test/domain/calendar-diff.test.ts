@@ -57,7 +57,6 @@ test('items are added, removed and changed by id in offers, periods and events',
     value.state.offers[1] = {
       ...value.state.offers[1],
       label: 'Química',
-      organizationBasis: 'Resolução',
     };
     value.state.periods[0] = { ...value.state.periods[0], end: civilDate('2027-12-10') };
     value.state.periods[1] = {
@@ -85,7 +84,6 @@ test('items are added, removed and changed by id in offers, periods and events',
           before: 'Licenciatura em Química',
           after: 'Química',
         }),
-        expect.objectContaining({ field: 'organizationBasis', after: 'Resolução' }),
       ],
     }),
   ]);
@@ -368,19 +366,15 @@ test('a notice change shows its publication and its admission with destinations 
   expect(compareContents(before, reordered).events).toEqual([]);
 });
 
-test('resolving a reported total shows the assessment stages before and after', () => {
-  const reported = side((value) => {
-    value.state.offers[0] = {
-      ...value.state.offers[0],
-      organization: 'a-classificar',
-      stages: { status: 'reported', count: 3 },
-    };
+test('changing the count per cycle shows the assessment stages before and after', () => {
+  const recounted = side((value) => {
+    value.state.offers[0] = { ...value.state.offers[0], stages: { status: 'defined', perTerm: 3 } };
   });
-  const diff = compareContents(reported, side());
-  const change = diff.offers.find((item) => item.id === reported.state.offers[0].id)!;
+  const diff = compareContents(recounted, side());
+  const change = diff.offers.find((item) => item.id === recounted.state.offers[0].id)!;
   const stages = change.fields.find((field) => field.field === 'stages')!;
   expect(stages.label).toBe('Etapas de avaliação');
-  expect(describeValue('stages', stages.before)).toBe('3 etapas informadas; ciclos a conferir');
+  expect(describeValue('stages', stages.before)).toBe('3 por ciclo');
   expect(describeValue('stages', stages.after)).toBe(
     `${(side().state.offers[0].stages as { perTerm: number }).perTerm} por ciclo`,
   );

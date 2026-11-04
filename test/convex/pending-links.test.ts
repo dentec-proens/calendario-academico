@@ -36,7 +36,7 @@ async function stored(fixture: PendingLinksFixture) {
         year: 2027,
         offers: fixture.offers.map(({ kind }) => ({
           kind,
-          organization: 'a-classificar' as const,
+          organization: 'anual' as const,
         })),
       },
     })
@@ -227,46 +227,6 @@ test('a stage position is never swapped for another of the same ordinal by a sav
       ),
     }),
   ).rejects.toThrow('não perde nem troca');
-  expect((await current()).state).toEqual(record.state);
-});
-
-test('a reported total is not withdrawn by a save that leaves its stages unclassified', async () => {
-  const fixture = ivaiporaDraft();
-  const integrado = fixture.offers.find((offer) => offer.id === 'integrado')!;
-  integrado.stages = { status: 'reported', count: 2 };
-  fixture.events.push(
-    ...[1, 2].map((n) => ({
-      id: `old-${n}`,
-      name: `${n}ª etapa preservada`,
-      start: civilDate(`2027-0${n + 2}-02`),
-      end: civilDate(`2027-0${n + 2}-12`),
-      effect: 'note' as const,
-      category: 'limite',
-      activity: unclassifiedStage('stage', 'integrado', n),
-      scope: { offers: ['integrado'], confirmed: true },
-    })),
-  );
-  const { record, save, current } = await stored(fixture);
-  await expect(
-    save({
-      ...record.state,
-      offers: record.state.offers.map((offer) =>
-        offer.id === 'integrado'
-          ? { ...offer, organization: 'anual', stages: { status: 'defined', perTerm: 2 } }
-          : offer,
-      ),
-      periods: [
-        ...record.state.periods,
-        {
-          id: 'integrado-annual',
-          name: 'Ano letivo',
-          start: civilDate('2027-02-01'),
-          end: civilDate('2027-12-17'),
-          association: { status: 'defined', offers: ['integrado'], term: 'annual' },
-        },
-      ],
-    }),
-  ).rejects.toThrow('Configure');
   expect((await current()).state).toEqual(record.state);
 });
 

@@ -179,7 +179,7 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
         name: 'Período importado',
         start: '2027-02-01',
         end: '2027-03-01',
-        association: { status: 'a-classificar' },
+        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
     ],
   }));
@@ -202,7 +202,7 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
   await expect(page.locator('dialog[open]')).toBeVisible();
   await page.locator('.confirmation-dialog__confirm').click();
   await expect(page.locator('#periods'))
-    .toContainText('Período importado')
+    .toContainText('Anual: 01/02/2027 a 01/03/2027')
     .catch(async (error: unknown) => {
       throw new Error(
         JSON.stringify({
@@ -213,7 +213,7 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
       );
     });
   await page.locator('[data-edit-organization="integrado"]').click();
-  await expect(page.locator('input#offer-integrado-period-0-start')).toHaveValue('');
+  await expect(page.locator('input#offer-integrado-period-0-start')).toHaveValue('2027-02-01');
   await page.waitForFunction(() => window.editorTest.calls.saves === 1);
 
   // Invalid JSON never discards a field or asks to confirm an unusable file.
@@ -253,7 +253,7 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
   expect(await page.evaluate(() => window.editorTest.calls.transitions)).toBe(0);
   await page.locator('.confirmation-dialog__cancel').click();
   await page.locator('[data-view="periods"]').click();
-  await page.locator('#offer-integrado-period-0-start').fill('');
+  await page.locator('#offer-integrado-period-0-start').fill('2027-02-01');
   await expect(page.locator('#unapplied-status')).toBeHidden();
   await page.evaluate(() => {
     window.editorTest.calls.failTransition = true;

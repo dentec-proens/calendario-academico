@@ -13,7 +13,6 @@ import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { cascavelDraft, conflictingLinks, ivaiporaDraft } from '../fixtures/pending-links-2027.ts';
-import { storedCases } from '../helpers/stored-fixtures.ts';
 
 /**
  * The evaluation is calculated by activity × offer, in separate dimensions, and none of them is
@@ -21,16 +20,10 @@ import { storedCases } from '../helpers/stored-fixtures.ts';
  * count as fulfilment.
  */
 
-const audited = (): [string, ActivityState][] =>
-  storedCases()
-    .filter((item) => item.name.endsWith('(seção 11)'))
-    .map((item) => {
-      const content = item.content;
-      return [
-        item.name,
-        { ...content.state, year: item.year, campus: item.campus } as unknown as ActivityState,
-      ];
-    });
+const audited = (): [string, ActivityState][] => [
+  ['Ivaiporã', ivaiporaDraft()],
+  ['Cascavel', cascavelDraft()],
+];
 
 const pendingDates = (state: ActivityState) =>
   [...linksToReview(state)].filter(([, issue]) => issue === 'unclassified').map(([id]) => id);

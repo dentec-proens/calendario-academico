@@ -222,7 +222,9 @@ const oracle = JSON.parse(
 // 18 cases passed against this oracle before and after the release B cleanup.
 // The input fixture records the converter hashes; expected values stay frozen.
 // The inputs and the catalogue were converted again to format 5 by the format 5
-// migration converter before its removal in the contraction.
+// migration converter before its removal in the contraction. The cases of an offer without
+// organization left the inputs when every offer came to have one; their capture stays in the
+// frozen oracle, which also keeps semester requirements the organization of an offer cannot have.
 const inputs = JSON.parse(
   readFileSync(new URL('../fixtures/offers-oracle-inputs.json', import.meta.url), 'utf8'),
 ) as {
@@ -230,6 +232,12 @@ const inputs = JSON.parse(
   cases: { name: string; input: ActivityState }[];
   catalogueEvents: typeof oracle.catalogue.events;
 };
+
+const withoutOrganization = [
+  'v3 organização a classificar',
+  'v3 mapa de organização ausente não herda regime',
+  'v2 organização ambígua pendente',
+];
 
 test('retains the immutable pre-v4 oracle and all independently captured v4 inputs', () => {
   expect(
@@ -240,7 +248,9 @@ test('retains the immutable pre-v4 oracle and all independently captured v4 inpu
   expect(inputs.oracleSha256).toBe(
     'eff78c9cb6b7e88f6061bb4a2b40c99a2cce22c2e054cc2490b569dd9e77e75c',
   );
-  expect(inputs.cases.map(({ name }) => name)).toEqual(oracle.cases.map(({ name }) => name));
+  expect(inputs.cases.map(({ name }) => name)).toEqual(
+    oracle.cases.map(({ name }) => name).filter((name) => !withoutOrganization.includes(name)),
+  );
 });
 
 interface Projection {

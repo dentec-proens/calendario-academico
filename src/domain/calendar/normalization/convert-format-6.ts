@@ -1,3 +1,5 @@
+import { DomainError } from '../../errors.ts';
+
 /**
  * One-way conversion of a stored calendar document from format 5 to format 6, run only by the
  * format 6 migration. Pure and deterministic, with the shapes of format 5 frozen here so the rest
@@ -310,7 +312,8 @@ export function convertToFormat6<D extends Format5Document>(
 } {
   const report = emptyReport();
   const state = copy(document.state);
-  if (state.schemaVersion !== 5) throw new Error('O conversor do formato 6 só lê o formato 5.');
+  if (state.schemaVersion !== 5)
+    throw new DomainError('O conversor do formato 6 só lê o formato 5.');
   const decided = state.offers
     .filter((offer) => offer.organization === 'a-classificar')
     .map((offer) => offer.id);

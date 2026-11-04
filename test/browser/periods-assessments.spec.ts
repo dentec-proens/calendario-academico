@@ -58,7 +58,7 @@ test('an existing local intake declaration survives explicit organization of its
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(async () => {
     const { record } = window.editorTest;
-    record.state.offers[0].intake = { annual: { status: 'yes', required: true } };
+    record.state.offers[0].intake = { annual: true };
     record.version++;
     await window.publishReviewerCalendar();
   });
@@ -66,10 +66,7 @@ test('an existing local intake declaration survives explicit organization of its
   await configureOffer(page, 'integrado', '2027-02-01', '2027-12-17');
   expect(
     (await savedState(page)).state.offers.find((offer) => offer.id === 'integrado')?.intake?.annual,
-  ).toEqual({
-    status: 'yes',
-    required: true,
-  });
+  ).toBe(true);
 });
 
 test('changing an offer cycle previews linked dates to review and keeps their links', async ({

@@ -59,14 +59,10 @@ function eventOffers(state: PrintState, event: PrintEvent) {
   return labels.join(', ');
 }
 
-/** Label of a period boundary: the cycle when classified, else the period's own name. */
+/** Label of a period boundary: its cycle. */
 const boundaryName = (edge: 'Início' | 'Término', period: CalendarPeriod) =>
   `${edge} — ${
-    period.association?.status === 'defined'
-      ? period.association.term === 'annual'
-        ? 'Ano letivo'
-        : termLabels[period.association.term]
-      : period.name
+    period.association.term === 'annual' ? 'Ano letivo' : termLabels[period.association.term]
   }`;
 
 /**
@@ -287,17 +283,12 @@ export function proensLayout(
   }).join('');
   const countRows = state.periods
     .map((p) => {
-      const scope =
-        p.association?.status === 'defined' ? associationOffers(p.association) : offerIds(state);
-      const unclassified = p.association?.status === 'a-classificar';
-      const counts = unclassified
-        ? 'Organização a conferir'
-        : scope
-            .map(
-              (m) =>
-                `${esc(labelFor(state, m))}: ${byOffer?.[m]?.byPeriod[p.id] ?? (byOffer ? '—' : (result?.byPeriod[p.id] ?? '—'))}`,
-            )
-            .join(' · ');
+      const counts = associationOffers(p.association)
+        .map(
+          (m) =>
+            `${esc(labelFor(state, m))}: ${byOffer?.[m]?.byPeriod[p.id] ?? (byOffer ? '—' : (result?.byPeriod[p.id] ?? '—'))}`,
+        )
+        .join(' · ');
       return `<tr><td>${esc(p.name)}</td><td>${counts}</td></tr>`;
     })
     .join('');

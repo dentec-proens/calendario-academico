@@ -22,8 +22,7 @@ export const labelFor = (state: AssessmentSettings, id: string): string => {
   const offer = offerFor(state, id);
   return offer ? offerLabel(offer) : id;
 };
-export const associationOffers = (association?: PeriodAssociation): string[] =>
-  association?.status === 'defined' ? association.offers : [];
+export const associationOffers = (association: PeriodAssociation): string[] => association.offers;
 
 export const kindOf = (offer: CalendarOffer): OfferKind => offer.kind;
 export const levelOf = (offer: CalendarOffer): 'tecnico' | 'graduacao' | 'posgraduacao' =>
@@ -53,10 +52,11 @@ export function kinds(state: { offers: readonly CalendarOffer[] }): OfferKind[] 
 
 export function organizationSummary(
   offers: readonly Pick<CalendarOffer, 'organization'>[],
-): Organization | 'misto' {
-  const values = new Set(offers.map((offer) => offer.organization));
-  if (!offers.length || values.has('a-classificar')) return 'a-classificar';
-  return values.size === 1 ? offers[0].organization : 'misto';
+): Organization | 'misto' | null {
+  if (!offers.length) return null;
+  return new Set(offers.map((offer) => offer.organization)).size === 1
+    ? offers[0].organization
+    : 'misto';
 }
 
 /** The annual persisted ordinal is kept while numbering restarts within each cycle. */
@@ -67,17 +67,13 @@ export function stageInTerm(n: number, perTerm: number): { term: number; number:
   return { term, number: n - (term - 1) * perTerm };
 }
 
-/** Stages per cycle of a defined organization; undefined while only a total was reported. */
+/** Stages per cycle of the offer; undefined while the campus has not chosen them. */
 export const stagesPerTerm = (offer: Pick<CalendarOffer, 'stages'>): number | undefined =>
-  offer.stages?.status === 'defined' ? offer.stages.perTerm : undefined;
-
-/** Total reported without a confirmed cycle. */
-export const reportedStageCount = (offer: Pick<CalendarOffer, 'stages'>): number | undefined =>
-  offer.stages?.status === 'reported' ? offer.stages.count : undefined;
+  offer.stages?.perTerm;
 
 export function stageTerm(offer: CalendarOffer, n: number): AcademicTerm | undefined {
   const perTerm = stagesPerTerm(offer);
-  if (perTerm === undefined || offer.organization === 'a-classificar') return undefined;
+  if (perTerm === undefined) return undefined;
   if (n < 1 || n > stageCount(offer) || !Number.isInteger(n)) return undefined;
   return offer.organization === 'anual'
     ? 'annual'
@@ -88,7 +84,7 @@ export function stageTerm(offer: CalendarOffer, n: number): AcademicTerm | undef
 
 /**
  * Position of the offer's `n`-th stage (ordinal in the year) under its current organization: the
- * cycle and the number within it once organised and counted, else the reported ordinal.
+ * cycle and the number within it once counted, else the reported ordinal.
  */
 export function stagePosition(offer: CalendarOffer, n: number): StagePosition {
   const term = stageTerm(offer, n);
@@ -103,14 +99,12 @@ export function stagePosition(offer: CalendarOffer, n: number): StagePosition {
 /**
  * Ordinal in the year of a stage position under the offer's current organization, the inverse of
  * `stagePosition`; undefined for a defined position the organization does not have. An
- * unclassified position is a stage of the offer only while its organization or count is not
- * confirmed: once confirmed, it is a link to review, never the stage with that ordinal.
+ * unclassified position is a stage of the offer only while its count is not confirmed: once
+ * confirmed, it is a link to review, never the stage with that ordinal.
  */
 export function stageOrdinal(offer: CalendarOffer, position: StagePosition): number | undefined {
   if (position.status === 'unclassified')
-    return offer.organization === 'a-classificar' || stagesPerTerm(offer) === undefined
-      ? position.reportedOrdinal
-      : undefined;
+    return stagesPerTerm(offer) === undefined ? position.reportedOrdinal : undefined;
   const perTerm = stagesPerTerm(offer);
   if (perTerm === undefined) return undefined;
   const ordinal = position.term === 'second' ? perTerm + position.number : position.number;
@@ -121,7 +115,6 @@ export function stageOrdinal(offer: CalendarOffer, position: StagePosition): num
 }
 
 export function stageCount(offer: CalendarOffer): number {
-  if (offer.organization === 'a-classificar') return reportedStageCount(offer) ?? 0;
   const perTerm = stagesPerTerm(offer);
   if (perTerm === undefined) return 0;
   return perTerm * (offer.organization === 'semestral' ? 2 : 1);
@@ -138,23 +131,13 @@ export function stageCycle(offer: CalendarOffer): string | undefined {
         : undefined;
 }
 
-/** Informational legacy summary; requirements still inspect each offer's explicit intake. */
-export function secondSemesterIntake(offers: readonly CalendarOffer[]): boolean | undefined {
-  if (offers.some((offer) => offer.intake?.second?.status === 'yes')) return true;
-  return offers.length && offers.every((offer) => offer.intake?.second?.status === 'no')
-    ? false
-    : undefined;
-}
-
 /** References reserve identities even when the current form no longer contains the offer. */
 export function nextOfferId(
   state: Pick<CalendarContent, 'offers' | 'periods' | 'events'>,
   kind: OfferKind,
 ): string {
   const used = new Set(state.offers.map((offer) => offer.id));
-  for (const period of state.periods)
-    if (period.association.status === 'defined')
-      for (const id of period.association.offers) used.add(id);
+  for (const period of state.periods) for (const id of period.association.offers) used.add(id);
   for (const event of state.events) {
     for (const id of event.scope.offers) used.add(id);
     if (event.activity && 'offerId' in event.activity) used.add(event.activity.offerId);

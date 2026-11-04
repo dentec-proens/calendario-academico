@@ -204,7 +204,7 @@ for (const width of [1440, 390])
 
     // A complete key that names neither a generated activity nor a date to review warns, also
     // for an operational row v4 kept in 2027 as “Classificação legada” (step 9d: no fallback).
-    for (const key of ['council:stage:unclassified:3:integrado', 'final:cycle:annual']) {
+    for (const key of ['council:stage:unclassified:3:integrado', 'enrolment:cycle:first']) {
       await followLink(page, key);
       await expect(page.locator('#activity-link-missing')).toBeVisible();
       await expect(page.locator('#activity-link-invalid')).toHaveCount(0);

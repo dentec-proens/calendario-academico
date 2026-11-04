@@ -101,12 +101,6 @@ test('duration and period recalculation select only the period associated offers
   );
   expect(recalculatePeriods(state, events)[0].end).toBe('2027-03-08');
   expect(period.end).toBe('2027-03-05');
-  expect(
-    recalculatePeriods(
-      { ...state, periods: [{ ...period, association: { status: 'a-classificar' as const } }] },
-      events,
-    )[0].end,
-  ).toBe('2027-03-05');
 });
 
 test('structure and readiness name the incomplete offer instead of its shared kind', () => {

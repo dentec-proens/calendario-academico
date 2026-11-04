@@ -114,17 +114,13 @@ test('an incomplete calendar remains diagnosable while counting is unavailable',
     periods: [],
     offers: calendar().offers.map((offer) => ({
       ...offer,
-      organization:
-        {
-          integrado: 'a-classificar' as const,
-          graduacao: 'semestral' as const,
-        }[offer.id] ?? 'a-classificar',
+      organization: offer.id === 'graduacao' ? ('semestral' as const) : ('anual' as const),
     })),
   };
   expect(diagnoseCalendar(state).structure).toEqual([
     { code: 'week-unconfirmed' },
     { code: 'periods-missing' },
-    { code: 'organization-unclassified', offerId: 'integrado' },
+    { code: 'period-count', offerId: 'integrado', expected: 1, actual: 0 },
     { code: 'period-count', offerId: 'graduacao', expected: 2, actual: 0 },
   ]);
 });

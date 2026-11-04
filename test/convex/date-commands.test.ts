@@ -32,7 +32,7 @@ async function stored() {
         year: 2027,
         offers: fixture.offers.map(({ kind }) => ({
           kind,
-          organization: 'a-classificar' as const,
+          organization: 'anual' as const,
         })),
       },
     })

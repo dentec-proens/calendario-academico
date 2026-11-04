@@ -39,7 +39,7 @@ interface ActivityInput extends RangeInput {
   originalStart?: string;
   originalEnd?: string;
   assessmentAutoStart?: string;
-  deadlineAdjustment?: { date: string; reviewed: boolean };
+  deadlineAdjustment?: { date: string };
   activity?: unknown;
 }
 export interface VacationInput {
