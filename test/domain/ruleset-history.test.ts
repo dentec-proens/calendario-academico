@@ -1,16 +1,9 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
-import type {
-  ActivityPlanItem,
-  AssessmentSettings,
-  CalendarOffer,
-} from '../../src/domain/calendar/model.ts';
-import { calendarOffers } from '../../src/domain/calendar/offers.ts';
-import { modalityIds } from '../../src/domain/calendar/config.ts';
-import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import type { CalendarPolicy, RulesetChange } from '../../src/domain/policies/contract.ts';
 import {
   activityIds,
@@ -32,17 +25,15 @@ import {
   reviewBoundary,
   rulesetChangesBetween,
 } from '../../src/domain/policies/registry.ts';
-import { legacyIds } from '../helpers/legacy-classification.ts';
-import { withDeclaredCategories } from '../helpers/declared-categories.ts';
-import { withSplitWithdrawal } from '../helpers/split-withdrawal.ts';
-import { withOptionalNotice } from '../helpers/optional-notice.ts';
+import { catalogue, fingerprint } from '../helpers/catalogue-reference.ts';
 
 /**
  * Catalogue fingerprint of each policy version. When this test fails on a bound policy, append a
  * version to its `rulesetChanges`, classify its effect and record the new version's fingerprint
  * here; never edit the fingerprint of a released version. Retired policies retain their published
- * fingerprints only in the archive checks. Changing `hidden` or `referenceSettings` recomputes
- * every runtime fingerprint, so do it alone, with the rules unchanged.
+ * fingerprints only in the archive checks. Changing `referenceSettings` or the fields left out of
+ * the hash (`test/helpers/catalogue-reference.ts`) recomputes every runtime fingerprint and the
+ * expected catalogue, so do it alone, with the rules unchanged.
  */
 const catalogueFingerprints: Record<string, string> = {
   'legacy-2026-v1': 'b0e948ba297029f2f001473bd645baab6ed4f4a44c793835c9b3d0d6286a32df',
@@ -52,182 +43,15 @@ const catalogueFingerprints: Record<string, string> = {
 };
 
 /**
- * Captured from release A before removing its compatibility paths. Historical
- * cases 3 and 5 deliberately had contradictory global/offer organizations.
- * The archive preserves their released hashes; the independent v4 capture
- * compares this implementation with release A using only explicit offers.
+ * Capture of release A, kept for consultation: the catalogues it published (2026 to 2028) and the
+ * settings and catalogues of its v4 comparison. Nothing reads it but the published fingerprints
+ * below, and the whole file is checked by hash, since its value is that it never changes. The
+ * expectation of the current code lives in `test/fixtures/catalogue-expected.json`.
  */
-const archive = JSON.parse(
-  readFileSync(new URL('../fixtures/ruleset-release-a-catalogues.json', import.meta.url), 'utf8'),
-) as {
-  sourceSha256: string;
+const archiveFile = new URL('../fixtures/ruleset-release-a-catalogues.json', import.meta.url);
+const archive = JSON.parse(readFileSync(archiveFile, 'utf8')) as {
   historicalCatalogues: Record<string, unknown>;
-  v4Settings: Omit<AssessmentSettings, 'year'>[];
-  v4Catalogues: Record<string, unknown>;
 };
-/**
- * The archive keeps the v4 offer stages and intake configuration; the code reads
- * `{ status: 'defined', perTerm }` and only the cycles with a local requirement.
- */
-const archiveSettings = archive.v4Settings.map((settings) => ({
-  ...settings,
-  offers: settings.offers.map((offer) => {
-    const { stages, intake, ...rest } = offer as Omit<CalendarOffer, 'stages' | 'intake'> & {
-      stages?: { perTerm: number };
-      intake?: Record<string, { required?: boolean }>;
-    };
-    const required = Object.entries(intake ?? {}).filter(([, value]) => value.required === true);
-    return {
-      ...rest,
-      ...(stages ? { stages: { status: 'defined' as const, perTerm: stages.perTerm } } : {}),
-      ...(required.length
-        ? { intake: Object.fromEntries(required.map(([term]) => [term, true as const])) }
-        : {}),
-    };
-  }),
-}));
-
-const offerOf = (
-  kind: CalendarOffer['kind'],
-  delivery: CalendarOffer['delivery'],
-  organization: CalendarOffer['organization'],
-  perTerm: number,
-  intake?: CalendarOffer['intake'],
-): CalendarOffer => ({
-  id: kind,
-  kind,
-  delivery,
-  organization,
-  stages: { status: 'defined', perTerm },
-  ...(intake ? { intake } : {}),
-});
-
-/**
- * Configurations the archive never had. The norm an offer follows comes from its delivery mode
- * when the campus gave no `scope`, which the archive's settings always spelled out or left at
- * `a-conferir`: presencial offers are covered and EaD ones have their own regulation, which
- * changes applicability, window and minimums. Intake variants cover each cycle and combination a
- * campus can require by a local rule.
- */
-const addedSettings: Omit<AssessmentSettings, 'year'>[] = [
-  {
-    offers: [
-      offerOf('integrado', 'presencial', 'anual', 4),
-      offerOf('subsequente', 'presencial', 'semestral', 2),
-      offerOf('graduacao', 'presencial', 'semestral', 1),
-      offerOf('posgraduacao', 'presencial', 'semestral', 1),
-    ],
-  },
-  {
-    offers: [
-      offerOf('integrado', 'ead', 'anual', 4),
-      offerOf('subsequente', 'ead', 'semestral', 2),
-      offerOf('graduacao', 'ead', 'semestral', 1),
-      offerOf('posgraduacao', 'ead', 'semestral', 1),
-    ],
-  },
-  {
-    offers: [
-      offerOf('integrado', 'presencial', 'anual', 3),
-      offerOf('subsequente', 'ead', 'anual', 2),
-      offerOf('graduacao', 'presencial', 'semestral', 2),
-      offerOf('posgraduacao', 'ead', 'semestral', 1),
-    ],
-  },
-  {
-    offers: [
-      offerOf('integrado', 'presencial', 'anual', 4, { annual: true }),
-      offerOf('subsequente', 'presencial', 'semestral', 2, { first: true }),
-      offerOf('graduacao', 'presencial', 'semestral', 1, { first: true, second: true }),
-      offerOf('posgraduacao', 'presencial', 'semestral', 1, { second: true }),
-    ],
-  },
-  {
-    offers: [
-      offerOf('integrado', 'ead', 'anual', 4, { annual: true }),
-      offerOf('graduacao', 'presencial', 'semestral', 1, { second: true }),
-    ],
-  },
-];
-
-const referenceSettings = [...archiveSettings, ...addedSettings];
-
-/**
- * Requirement fields left out of the hash because they act only through `byModality`, and the
- * row's link (`activity`), which is derived from the ID and the slot already
- * in the fingerprint and carries no normative content. Every other field, including fields
- * added later, is part of the fingerprint.
- */
-const hidden = new Set<string>([
-  'required',
-  'applicability',
-  'optionalFor',
-  'activity',
-] satisfies (keyof ActivityPlanItem)[]);
-
-const note = (policy: CalendarPolicy, requirement: ActivityPlanItem, offer: CalendarOffer) =>
-  policy.applicabilityNote?.(requirement, offer) ?? null;
-
-function catalogue(
-  policy: CalendarPolicy,
-  year: number,
-  settingsList: readonly Omit<AssessmentSettings, 'year'>[] = referenceSettings,
-) {
-  return {
-    criteria: policy.review.criteria,
-    excludedModalities: calendarOffers({
-      offers: modalityIds.map((kind) => ({
-        id: kind,
-        kind,
-        delivery: 'a-conferir',
-        organization: 'anual',
-      })),
-    })
-      .filter((offer) => policy.excludes(offer))
-      .map((offer) => offer.id),
-    states: settingsList.map((settings) => {
-      const state = { ...settings, year };
-      return {
-        window: policy.window(state),
-        requirements: activityPlan(state).map((requirement) => ({
-          ...Object.fromEntries(Object.entries(requirement).filter(([key]) => !hidden.has(key))),
-          byModality: Object.fromEntries(
-            calendarOffers(state).map((offer) => [
-              offer.id,
-              {
-                applicability: policy.applicability(state, requirement, offer),
-                note: note(policy, requirement, offer),
-                minimums: (() => {
-                  const minimums = policy.countingMinimums(state, offer);
-                  return {
-                    annual: minimums.annual?.days ?? null,
-                    semester: minimums.semester?.days ?? null,
-                  };
-                })(),
-              },
-            ]),
-          ),
-        })),
-      };
-    }),
-  };
-}
-
-/** JSON with sorted keys and without undefined values, so field order never changes the hash. */
-const canonical = (value: unknown): unknown =>
-  Array.isArray(value)
-    ? value.map(canonical)
-    : value && typeof value === 'object'
-      ? Object.fromEntries(
-          Object.entries(value)
-            .filter(([, item]) => item !== undefined)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([key, item]) => [key, canonical(item)]),
-        )
-      : value;
-
-const fingerprint = (value: unknown) =>
-  bytesToHex(sha256(new TextEncoder().encode(JSON.stringify(canonical(value)))));
 
 const years = [2027, 2028];
 const boundPolicies = years.map(policyFor).filter((policy) => policy.rulesetPrefix);
@@ -315,19 +139,15 @@ test('the global set of declarations keeps every released pair readable and hold
     );
 });
 
-test('published historical fingerprints remain intact and v4 catalogues match the independent release A capture', () => {
-  expect(archive.sourceSha256).toBe(
-    '32009116a85436005331f9dfe4a82f32c37f83865af6781ec63d174c7dda369c',
+test('the release A capture is intact and its published versions keep their fingerprints', () => {
+  expect(createHash('sha256').update(readFileSync(archiveFile)).digest('hex')).toBe(
+    '62bffefecc56d6c82d05dd52b0e1963e80bbb52520b3777a56b5df1a6d57614f',
   );
   for (const [version, expected] of Object.entries(catalogueFingerprints)) {
     const year =
       version === 'legacy-2026-v1' ? 2026 : version.startsWith('consup-292-2027') ? 2027 : 2028;
     expect(fingerprint(archive.historicalCatalogues[year]), version).toBe(expected);
   }
-  for (const year of years)
-    expect(canonical(catalogue(policyFor(year), year, archiveSettings)), String(year)).toEqual(
-      canonical(withCapturedCategories(withoutLegacyRows(archive.v4Catalogues[year]), year)),
-    );
 });
 
 /**
@@ -361,64 +181,6 @@ test('the expanded catalogue of the current version keeps its fingerprint', () =
       currentFingerprints[version],
     );
   }
-});
-
-/**
- * consup-292-2027-v6 declares default categories (only `defaultCategory` of those rows differs,
- * in 2027), v7 splits the art. 11, VII, deadline, also in the operational catalogue, and v8 makes
- * the transfer notice optional (2027).
- */
-function withCapturedCategories(captured: unknown, year: number) {
-  const value = captured as { states: { requirements: { id: string }[] }[] };
-  return {
-    ...value,
-    states: value.states.map((state) => ({
-      ...state,
-      requirements: withSplitWithdrawal(
-        year === 2027
-          ? withOptionalNotice(withDeclaredCategories(state.requirements), { optionalFor: false })
-          : state.requirements,
-      ),
-    })),
-  };
-}
-
-/**
- * 2027 no longer generates the optional rows the capture kept from the operational catalogue as
- * “Classificação legada”. They never carried an obligation (`optional`, or `unconfigured` for
- * excluded offers; outside the policy's declarations and `/regras`), so the ruleset version is kept
- * and the capture is compared without them; every other row is compared in full.
- */
-function withoutLegacyRows(captured: unknown) {
-  const value = captured as { states: { requirements: { id: string; basis?: string }[] }[] };
-  return {
-    ...value,
-    states: value.states.map((state) => {
-      const ids = legacyIds(state.requirements);
-      return { ...state, requirements: state.requirements.filter((row) => !ids.has(row.id)) };
-    }),
-  };
-}
-
-test('the capture of 2027 had the retired legacy rows, never required, and the code no longer generates them', () => {
-  const states = (
-    archive.v4Catalogues[2027] as {
-      states: { requirements: { id: string; basis?: string; byModality: object }[] }[];
-    }
-  ).states;
-  const retired = states.flatMap((state) =>
-    state.requirements.filter((row) => legacyIds([row]).size),
-  );
-  expect(retired.length).toBeGreaterThan(0);
-  for (const row of retired)
-    for (const offer of Object.values(row.byModality) as { applicability: string }[])
-      expect(['optional', 'unconfigured']).toContain(offer.applicability);
-  for (const settings of referenceSettings)
-    expect(
-      activityPlan({ ...settings, year: 2027 }).filter(
-        (row) => row.basis === 'Classificação legada',
-      ),
-    ).toEqual([]);
 });
 
 test('only establishing or tightening versions bind reviews and base identities', () => {

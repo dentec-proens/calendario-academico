@@ -14,3 +14,5 @@ convex/_generated/
 .agents/skills/convex*/
 .claude/skills/convex*/
 .claude/worktrees/
+# Expectativa do catálogo: uma linha por linha de regra, escrita por UPDATE_CATALOGUE_EXPECTED=1.
+test/fixtures/catalogue-expected.json
