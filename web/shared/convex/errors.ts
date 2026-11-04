@@ -3,12 +3,21 @@ function errorRecord(value: unknown): Record<string, unknown> {
 }
 
 /**
- * A refused request reaches the client as a server error, without a message of the application,
- * when it does not match the backend's contract: the usual cause is a tab running an earlier build.
+ * A request without a message of the application. A contract refusal is identified by name where
+ * the deployment shows it; production only says `Server Error`, also for an internal failure, so
+ * that message suggests reloading without asserting that the build is the cause.
  */
-const outdatedClient = /ArgumentValidationError|Server Error/;
 export const outdatedClientMessage =
   'O servidor não aceitou o pedido. Atualize a aplicação recarregando a página e tente novamente.';
+export const serverFailureMessage =
+  'O servidor não concluiu o pedido. Se esta página está aberta há algum tempo, recarregue-a e tente novamente.';
+
+const unexplained = (message: string | undefined) =>
+  message?.includes('ArgumentValidationError')
+    ? outdatedClientMessage
+    : message?.includes('Server Error')
+      ? serverFailureMessage
+      : message;
 
 export function nativeError(error: unknown): Error & { status?: number } {
   const outer = errorRecord(error);
@@ -17,10 +26,7 @@ export function nativeError(error: unknown): Error & { status?: number } {
     (value): value is string => typeof value === 'string' && value.length > 0,
   );
   const status = detail.status ?? outer.status;
-  const shown =
-    typeof detail.error !== 'string' && message && outdatedClient.test(message)
-      ? outdatedClientMessage
-      : message;
+  const shown = typeof detail.error === 'string' ? message : unexplained(message);
   return Object.assign(new Error(shown || 'Não foi possível concluir.'), {
     status: typeof status === 'number' ? status : undefined,
   });

@@ -7,7 +7,11 @@ import { legacySecret } from '../../convex/authCrypto';
 import { revokeSessions } from '../../convex/access/store';
 import { inviteError } from '../../convex/access/invitations';
 import { resetError } from '../../convex/access/passwordRecovery';
-import { nativeError, outdatedClientMessage } from '../../web/shared/convex/errors';
+import {
+  nativeError,
+  outdatedClientMessage,
+  serverFailureMessage,
+} from '../../web/shared/convex/errors';
 import { createNativeFixture } from '../helpers/native-database';
 
 afterEach(() => {
@@ -311,12 +315,17 @@ test('internal invariants remain ordinary errors', async () => {
   );
 });
 
-test('a request outside the contract asks to update the application', () => {
-  for (const message of [
-    '[CONVEX M(calendars:saveCalendar)] [Request ID: 1] Server Error\nArgumentValidationError: Value does not match validator.',
-    '[Request ID: 2] Server Error',
-  ])
-    assert.equal(nativeError(new Error(message)).message, outdatedClientMessage);
+test('a request without a message of the application says what can be said of it', () => {
+  assert.equal(
+    nativeError(
+      new Error('[Request ID: 1] ArgumentValidationError: Value does not match validator.'),
+    ).message,
+    outdatedClientMessage,
+  );
+  assert.equal(
+    nativeError(new Error('[Request ID: 2] Server Error')).message,
+    serverFailureMessage,
+  );
   assert.equal(
     nativeError(new ConvexError({ error: 'Server Error do domínio', status: 400 })).message,
     'Server Error do domínio',
