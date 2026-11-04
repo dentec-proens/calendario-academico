@@ -130,7 +130,7 @@ export function rulesView(year: number) {
             if (!row) return { offer: offer.id, status: 'absent' as OfferStatus };
             const applicability = policy.applicability(state, row, offer);
             const status: OfferStatus =
-              row.intake && policy.intakeRequirements && applicability !== 'unconfigured'
+              row.intake && policy.configured && applicability !== 'unconfigured'
                 ? 'intake'
                 : applicability;
             return { offer: offer.id, status, note: policy.applicabilityNote?.(row, offer) };

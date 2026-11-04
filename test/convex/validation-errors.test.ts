@@ -7,7 +7,7 @@ import { legacySecret } from '../../convex/authCrypto';
 import { revokeSessions } from '../../convex/access/store';
 import { inviteError } from '../../convex/access/invitations';
 import { resetError } from '../../convex/access/passwordRecovery';
-import { nativeError } from '../../web/shared/convex/errors';
+import { nativeError, outdatedClientMessage } from '../../web/shared/convex/errors';
 import { createNativeFixture } from '../helpers/native-database';
 
 afterEach(() => {
@@ -309,4 +309,17 @@ test('internal invariants remain ordinary errors', async () => {
     client.run((ctx) => revokeSessions(ctx, ids.users['campus-a'])),
     (error: unknown) => error instanceof Error && !(error instanceof ConvexError),
   );
+});
+
+test('a request outside the contract asks to update the application', () => {
+  for (const message of [
+    '[CONVEX M(calendars:saveCalendar)] [Request ID: 1] Server Error\nArgumentValidationError: Value does not match validator.',
+    '[Request ID: 2] Server Error',
+  ])
+    assert.equal(nativeError(new Error(message)).message, outdatedClientMessage);
+  assert.equal(
+    nativeError(new ConvexError({ error: 'Server Error do domínio', status: 400 })).message,
+    'Server Error do domínio',
+  );
+  assert.equal(nativeError(new Error('Sem conexão')).message, 'Sem conexão');
 });

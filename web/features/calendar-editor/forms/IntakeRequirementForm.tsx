@@ -50,7 +50,7 @@ function OfferRequirement({ offer, term }: { offer: CalendarOffer; term: Academi
 export default function IntakeRequirementForm({ item }: { item: ActivityPlanItem }) {
   const { state } = useCalendarEditor();
   const policy = policyFor(state.year);
-  if (!policy.intakeRequirements || !item.intake || !item.term) return null;
+  if (!policy.configured || !item.intake || !item.term) return null;
   const term = item.term;
   return (
     <details className="activity-detail">

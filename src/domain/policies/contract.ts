@@ -108,10 +108,6 @@ export interface CalendarPolicy {
   };
   /** Legacy records must declare the offers they cover before counting towards coverage. */
   explicitRecordOffers: boolean;
-  /** Local requirement of new-student registration per offer and cycle. */
-  intakeRequirements: boolean;
-  /** Readiness warns when an offer's periods leave the norm's window. */
-  windowInReadiness: boolean;
   review: {
     source: ReviewSource;
     criteria: readonly ReviewCriterion[];
@@ -124,8 +120,6 @@ export interface CalendarPolicy {
     evidence: 'coverage' | 'pattern';
     /** Thresholds compared in the review findings. */
     dayMinimums: { annual: number; semester: number };
-    /** Reference shown for the annual total when counting itself has no configured minimum. */
-    annualReference?(modality: string): number | undefined;
   };
   notices?: {
     /** Deadline note shown while classifying a regular admission notice. */

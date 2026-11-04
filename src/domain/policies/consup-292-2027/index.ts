@@ -71,8 +71,6 @@ export const consup2922027Policy: CalendarPolicy = {
       'Confirme o escopo da Resolução 292: EaD, qualificação e pós-graduação exigem calendário e norma próprios; a oferta não identifica sozinha essa aplicabilidade.',
   },
   explicitRecordOffers: true,
-  intakeRequirements: true,
-  windowInReadiness: true,
   review: {
     source: {
       id: 'SEI 4422750',

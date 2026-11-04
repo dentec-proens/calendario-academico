@@ -13,8 +13,6 @@ export const unconfiguredPolicy: CalendarPolicy = {
   countingMinimums: () => ({ annual: null, semester: null }),
   excludes: () => false,
   explicitRecordOffers: false,
-  intakeRequirements: false,
-  windowInReadiness: false,
   review: {
     // The latest parecer remains the review reference; its dates are not applied to other years.
     source: parecerSource,

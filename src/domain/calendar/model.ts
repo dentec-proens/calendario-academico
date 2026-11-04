@@ -138,7 +138,6 @@ export interface ActivityPlanItem {
   offerIds?: string[];
   modalities?: string[];
   term?: AcademicTerm;
-  periodId?: string;
   basis?: string;
   /** Decision that narrows or widens `basis`, with the ruleset version that adopted it. */
   decision?: string;

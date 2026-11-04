@@ -247,7 +247,7 @@ export function contentAssessment(record: ContentRecord) {
         },
       );
   const window = policy.window(record.state);
-  if (window && policy.windowInReadiness)
+  if (window && policy.configured)
     for (const offer of offers.filter(
       (offer) => !policy.excludes(offer) && scopeStatus(offer) !== 'own-regulation',
     )) {

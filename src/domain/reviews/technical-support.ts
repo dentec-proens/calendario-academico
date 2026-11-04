@@ -166,10 +166,7 @@ export function reviewSupport<
           ? countLabel +
             counts
               .map(([m, r]) => {
-                const offer = offerFor(record.state, m);
-                const minimum =
-                  (offer ? policy.review.annualReference?.(offer.kind) : undefined) ??
-                  r.checks.find((check) => check.scope === 'annual')?.expected;
+                const minimum = r.checks.find((check) => check.scope === 'annual')?.expected;
                 return `${labelFor(record.state, m)}: ${r.total} dias letivos registrados; ${minimum == null ? 'mínimo normativo não configurado para este escopo' : `${r.total >= minimum ? 'alcança' : 'não alcança'} a referência de ${minimum} dias`}`;
               })
               .join('; ') +
