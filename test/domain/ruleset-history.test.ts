@@ -69,7 +69,7 @@ const archive = JSON.parse(
  * The archive keeps the v4 offer stages and intake configuration; the code reads
  * `{ status: 'defined', perTerm }` and only the cycles with a local requirement.
  */
-const referenceSettings = archive.v4Settings.map((settings) => ({
+const archiveSettings = archive.v4Settings.map((settings) => ({
   ...settings,
   offers: settings.offers.map((offer) => {
     const { stages, intake, ...rest } = offer as Omit<CalendarOffer, 'stages' | 'intake'> & {
@@ -87,6 +87,71 @@ const referenceSettings = archive.v4Settings.map((settings) => ({
   }),
 }));
 
+const offerOf = (
+  kind: CalendarOffer['kind'],
+  delivery: CalendarOffer['delivery'],
+  organization: CalendarOffer['organization'],
+  perTerm: number,
+  intake?: CalendarOffer['intake'],
+): CalendarOffer => ({
+  id: kind,
+  kind,
+  delivery,
+  organization,
+  stages: { status: 'defined', perTerm },
+  ...(intake ? { intake } : {}),
+});
+
+/**
+ * Configurations the archive never had. The norm an offer follows comes from its delivery mode
+ * when the campus gave no `scope`, which the archive's settings always spelled out or left at
+ * `a-conferir`: presencial offers are covered and EaD ones have their own regulation, which
+ * changes applicability, window and minimums. Intake variants cover each cycle and combination a
+ * campus can require by a local rule.
+ */
+const addedSettings: Omit<AssessmentSettings, 'year'>[] = [
+  {
+    offers: [
+      offerOf('integrado', 'presencial', 'anual', 4),
+      offerOf('subsequente', 'presencial', 'semestral', 2),
+      offerOf('graduacao', 'presencial', 'semestral', 1),
+      offerOf('posgraduacao', 'presencial', 'semestral', 1),
+    ],
+  },
+  {
+    offers: [
+      offerOf('integrado', 'ead', 'anual', 4),
+      offerOf('subsequente', 'ead', 'semestral', 2),
+      offerOf('graduacao', 'ead', 'semestral', 1),
+      offerOf('posgraduacao', 'ead', 'semestral', 1),
+    ],
+  },
+  {
+    offers: [
+      offerOf('integrado', 'presencial', 'anual', 3),
+      offerOf('subsequente', 'ead', 'anual', 2),
+      offerOf('graduacao', 'presencial', 'semestral', 2),
+      offerOf('posgraduacao', 'ead', 'semestral', 1),
+    ],
+  },
+  {
+    offers: [
+      offerOf('integrado', 'presencial', 'anual', 4, { annual: true }),
+      offerOf('subsequente', 'presencial', 'semestral', 2, { first: true }),
+      offerOf('graduacao', 'presencial', 'semestral', 1, { first: true, second: true }),
+      offerOf('posgraduacao', 'presencial', 'semestral', 1, { second: true }),
+    ],
+  },
+  {
+    offers: [
+      offerOf('integrado', 'ead', 'anual', 4, { annual: true }),
+      offerOf('graduacao', 'presencial', 'semestral', 1, { second: true }),
+    ],
+  },
+];
+
+const referenceSettings = [...archiveSettings, ...addedSettings];
+
 /**
  * Requirement fields left out of the hash because they act only through `byModality`, and the
  * row's link (`activity`), which is derived from the ID and the slot already
@@ -103,7 +168,11 @@ const hidden = new Set<string>([
 const note = (policy: CalendarPolicy, requirement: ActivityPlanItem, offer: CalendarOffer) =>
   policy.applicabilityNote?.(requirement, offer) ?? null;
 
-function catalogue(policy: CalendarPolicy, year: number) {
+function catalogue(
+  policy: CalendarPolicy,
+  year: number,
+  settingsList: readonly Omit<AssessmentSettings, 'year'>[] = referenceSettings,
+) {
   return {
     criteria: policy.review.criteria,
     excludedModalities: calendarOffers({
@@ -116,7 +185,7 @@ function catalogue(policy: CalendarPolicy, year: number) {
     })
       .filter((offer) => policy.excludes(offer))
       .map((offer) => offer.id),
-    states: referenceSettings.map((settings) => {
+    states: settingsList.map((settings) => {
       const state = { ...settings, year };
       return {
         window: policy.window(state),
@@ -256,9 +325,42 @@ test('published historical fingerprints remain intact and v4 catalogues match th
     expect(fingerprint(archive.historicalCatalogues[year]), version).toBe(expected);
   }
   for (const year of years)
-    expect(canonical(catalogue(policyFor(year), year)), String(year)).toEqual(
+    expect(canonical(catalogue(policyFor(year), year, archiveSettings)), String(year)).toEqual(
       canonical(withCapturedCategories(withoutLegacyRows(archive.v4Catalogues[year]), year)),
     );
+});
+
+/**
+ * Fingerprint of the expanded catalogue of the current version, over every reference
+ * configuration (`referenceSettings`), checked apart from the historical archive above.
+ *
+ * In the hash: the review criteria; the offers each policy excludes; and, for each configuration,
+ * the window, the minimums per offer and every expanded row with all its fields (name, basis,
+ * decision, criterion, term, cycles, deadline, group, category, variant, instruction, and the like)
+ * and, per offer, its applicability, applicability note and counting minimums.
+ *
+ * Not in the hash: `required`, `applicability`, `optionalFor` and the `activity` link of the row,
+ * whose effect `byModality` already carries; the observances and art. 5º classification, which
+ * have their own fingerprints; and the review's `source`, `evidence` and `dayMinimums`, the policy
+ * `scope` declaration and the notices, which carry text or help that does not change what the
+ * calendar must satisfy. A change to any of those is a new ruleset version only through the
+ * channel that fingerprints it.
+ */
+const currentFingerprints: Record<string, string> = {
+  'consup-292-2027-v8': 'a3c86fac6b3ee258649f8fa80b288c569305b0cf1ff6569616b5d2c15b13c904',
+};
+
+test('the expanded catalogue of the current version keeps its fingerprint', () => {
+  expect(boundPolicies.length).toBeGreaterThan(0);
+  for (const policy of boundPolicies) {
+    const version = versionOf(policy, policy.year!);
+    expect(Object.keys(currentFingerprints), 'Registre a impressão da versão corrente.').toContain(
+      version,
+    );
+    expect(fingerprint(catalogue(policy, policy.year!)), version).toBe(
+      currentFingerprints[version],
+    );
+  }
 });
 
 /**
