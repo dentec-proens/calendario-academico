@@ -1,7 +1,7 @@
 import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/calendar-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
-import { cycleLink, definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
+import { cycleLink, definedStage } from '../helpers/activity-links.ts';
 import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { api } from '../../convex/_generated/api.js';
 import type { ContentState } from '../../convex/validators.ts';
@@ -97,7 +97,7 @@ test('the 21 audited dates are stored with their activity and saved under “Ví
       );
     }
     const review = linksToReview({ ...saved.state, year: 2027 });
-    expect(linked.map((event) => review.get(event.id))).toEqual(linked.map(() => 'unclassified'));
+    expect(linked.map((event) => review.get(event.id))).toEqual(linked.map(() => 'not-generated'));
   }
   expect(audited).toBe(21);
 });
@@ -107,10 +107,10 @@ test('results and councils by stage without generated stage are saved under revi
   const saved = await save({ ...record.state, weekdays: [1, 2, 3, 4] });
   expect(linkOf(saved.state)).toEqual(linkOf(record.state));
   expect(Object.fromEntries(linksToReview({ ...saved.state, year: 2027 }))).toEqual({
-    'results-unclassified': 'unclassified',
-    'council-unclassified': 'unclassified',
-    'results-beyond': 'unclassified',
-    'council-beyond': 'unclassified',
+    'results-uncounted': 'not-generated',
+    'council-uncounted': 'not-generated',
+    'results-beyond': 'not-generated',
+    'council-beyond': 'not-generated',
   });
   // A new link to a stage the configuration does not generate is still refused.
   const [beyond] = record.state.events.filter((event) => event.id === 'results-beyond');
@@ -127,8 +127,8 @@ test('links v4 resolved as “Classificação legada” are saved under review, 
   const saved = await save({ ...record.state, weekdays: [1, 2, 3, 4] });
   expect(linkOf(saved.state)).toEqual(linkOf(record.state));
   expect(Object.fromEntries(linksToReview({ ...saved.state, year: 2027 }))).toEqual({
-    'legacy-teaching-plan': 'unclassified',
-    'legacy-enrolment': 'unclassified',
+    'legacy-teaching-plan': 'not-generated',
+    'legacy-enrolment': 'not-generated',
   });
   // 2027 no longer generates the operational rows: a new date with such a link is refused.
   for (const id of ['legacy-teaching-plan', 'legacy-enrolment']) {
@@ -216,13 +216,12 @@ test('new, swapped and removed links are refused and the stored calendar stays i
 
 test('a stage position is never swapped for another of the same ordinal by a save', async () => {
   const { record, save, current } = await stored(conflictingLinks());
-  // With the organization unchanged, the reported ordinal of the stored stage is another link.
   await expect(
     save({
       ...record.state,
       events: record.state.events.map((event) =>
         event.id === 'stage-first'
-          ? { ...event, activity: unclassifiedStage('stage', 'integrado', 1) }
+          ? { ...event, activity: definedStage('stage', 'integrado', 'first', 1) }
           : event,
       ),
     }),
@@ -242,7 +241,7 @@ test('preexisting conflicts save; edits that create one are refused', async () =
   expect(Object.fromEntries(linksToReview({ ...saved.state, year: 2027 }))).toMatchObject({
     'stage-twice-a': 'duplicate-stage',
     'stage-late': 'stage-sequence',
-    'teacher-vacation-january': 'unclassified',
+    'teacher-vacation-january': 'not-generated',
   });
   const vacations = await save(
     {
@@ -278,11 +277,11 @@ test('preexisting conflicts save; edits that create one are refused', async () =
     },
     vacations.version,
   );
-  expect(linksToReview({ ...reduced.state, year: 2027 }).get('stage-early')).toBe('unclassified');
+  expect(linksToReview({ ...reduced.state, year: 2027 }).get('stage-early')).toBe('not-generated');
 });
 
-test('confirming the organization saves only unambiguous stage positions as defined', async () => {
-  const { record, save, current } = await stored(stagePositionsToConfirm());
+test('informing the stages of an offer saves every recorded position as it was', async () => {
+  const { record, save } = await stored(stagePositionsToConfirm());
   const draft = offerOrganizationDraft(record.state, 'integrado');
   draft.organization = 'anual';
   draft.count = '3';
@@ -293,8 +292,7 @@ test('confirming the organization saves only unambiguous stage positions as defi
     start: '2027-02-01',
     end: '2027-12-17',
   };
-  draft.stages[1] = { id: '', start: '2027-05-03', end: '2027-07-30' };
-  draft.stages[2] = { id: '', start: '2027-08-02', end: '2027-12-17' };
+  draft.stages[2] = { id: '', start: '2027-08-02', end: '2027-10-29' };
   let sequence = 0;
   const configured = applyOfferOrganization(
     record.state,
@@ -302,33 +300,16 @@ test('confirming the organization saves only unambiguous stage positions as defi
     draft,
     () => `new-${++sequence}`,
   );
-  // Two dates on the same re-expressed position are refused: the duplicate stays unclassified.
-  await expect(
-    save({
-      ...configured,
-      events: configured.events
-        .filter((event) => !event.id.startsWith('new-'))
-        .map((event) =>
-          event.id.startsWith('stage-two')
-            ? { ...event, activity: definedStage('stage', 'integrado', 'annual', 2) }
-            : event,
-        ),
-    }),
-  ).rejects.toThrow('nenhuma outra data a ocupa');
-  expect((await current()).state).toEqual(record.state);
   const saved = await save(configured);
   expect(linkOf(saved.state)).toEqual({
     ...linkOf(record.state),
-    'stage-one': definedStage('stage', 'integrado', 'annual', 1),
-    'results-one': definedStage('results', 'integrado', 'annual', 1),
-    'new-1': definedStage('stage', 'integrado', 'annual', 2),
-    'new-2': definedStage('stage', 'integrado', 'annual', 3),
+    'new-1': definedStage('stage', 'integrado', 'annual', 3),
   });
   expect(Object.fromEntries(linksToReview({ ...saved.state, year: 2027 }))).toEqual({
-    'stage-two-a': 'unclassified',
-    'stage-two-b': 'unclassified',
-    'stage-four': 'unclassified',
-    'sub-stage-4': 'unclassified',
+    'stage-two-a': 'duplicate-stage',
+    'stage-two-b': 'duplicate-stage',
+    'stage-four': 'not-generated',
+    'sub-stage-4': 'not-generated',
   });
 });
 
@@ -354,7 +335,7 @@ test('changing the count keeps defined positions; a save cannot reinterpret them
     stages: { status: 'defined', perTerm: 2 },
   });
   expect(linkOf(saved.state)).toEqual(linkOf(record.state));
-  expect(linksToReview({ ...saved.state, year: 2027 }).get('sub-stage-3')).toBe('unclassified');
+  expect(linksToReview({ ...saved.state, year: 2027 }).get('sub-stage-3')).toBe('not-generated');
 });
 
 test.each([

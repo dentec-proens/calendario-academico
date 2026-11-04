@@ -71,7 +71,7 @@ test.each([
     expect(links(saved.state)).toEqual(links(state));
     expect(saved.state.events).toHaveLength(state.events.length);
     const review = linksToReview(saved.state);
-    expect([...review.values()]).toEqual(Array(count).fill('unclassified'));
+    expect([...review.values()]).toEqual(Array(count).fill('not-generated'));
     expect(saved.state.events.find((event) => event.id.endsWith('-final-appeal-2'))?.hours).toBe(
       fixture === ivaiporaDraft ? 28 : undefined,
     );
@@ -139,7 +139,7 @@ test('confirming an offer organization warns about links instead of refusing, an
     definedStage('stage', 'integrado', 'annual', 2),
   ]);
   const saved = save(state, configured);
-  expect([...linksToReview(saved.state).values()]).toEqual(Array(11).fill('unclassified'));
+  expect([...linksToReview(saved.state).values()]).toEqual(Array(11).fill('not-generated'));
   // A second confirmation updates the recorded stages instead of creating new ones.
   const again = offerOrganizationDraft(saved.state, 'integrado');
   again.stages[1].end = '2027-12-16';
@@ -218,8 +218,8 @@ test('reducing stages of an unchanged calendar is saved; positions without a sta
       .sort((a, b) => a.localeCompare(b));
   expect(dates(saved.state.events)).toEqual(dates(semester.events));
   expect(Object.fromEntries(linksToReview(saved.state))).toEqual({
-    'stage-twice-a': 'unclassified',
-    'stage-early': 'unclassified',
+    'stage-twice-a': 'not-generated',
+    'stage-early': 'not-generated',
   });
 });
 

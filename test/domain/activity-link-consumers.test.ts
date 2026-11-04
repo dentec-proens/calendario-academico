@@ -145,7 +145,7 @@ describe('PIT, RIT and teaching plan per reference semester (art. 11, XII)', () 
         id: 'pit-as-cycle',
         activity: activityRef({ activityId: 'teaching-plan', term: 'first' }),
       };
-      expect(linksToReview({ ...state, events: [cycle] }).get(cycle.id)).toBe('unclassified');
+      expect(linksToReview({ ...state, events: [cycle] }).get(cycle.id)).toBe('not-generated');
     },
   );
 });
@@ -160,7 +160,7 @@ describe('dates under “Vínculo a conferir”', () => {
     for (const { state, event } of linked) {
       expect('term' in event.activity!).toBe(true);
       expect(activityRef(event.activity)).toEqual(event.activity);
-      expect(linksToReview(state).get(event.id)).toBe('unclassified');
+      expect(linksToReview(state).get(event.id)).toBe('not-generated');
       expect(generatedActivity(generatedActivities(state), event.activity)).toBeUndefined();
       // No coverage row lists it: its activity is not generated for the configuration.
       expect(
@@ -181,20 +181,15 @@ describe('dates under “Vínculo a conferir”', () => {
   test('results and councils by stage wait for review when the stage is not generated', () => {
     const state = stageLinksToReview();
     expect(Object.fromEntries(linksToReview(state))).toEqual({
-      'results-unclassified': 'unclassified',
-      'council-unclassified': 'unclassified',
-      'results-beyond': 'unclassified',
-      'council-beyond': 'unclassified',
+      'results-uncounted': 'not-generated',
+      'council-uncounted': 'not-generated',
+      'results-beyond': 'not-generated',
+      'council-beyond': 'not-generated',
     });
     const coverage = evaluatePlan(state).rows;
     const linkedRows = (id: string) =>
       coverage.filter((row) => row.events.some((event) => event.id === id));
-    for (const id of [
-      'results-unclassified',
-      'council-unclassified',
-      'results-beyond',
-      'council-beyond',
-    ])
+    for (const id of ['results-uncounted', 'council-uncounted', 'results-beyond', 'council-beyond'])
       expect(linkedRows(id)).toEqual([]);
     for (const family of ['results', 'council']) {
       const [row] = linkedRows(`${family}-generated`);

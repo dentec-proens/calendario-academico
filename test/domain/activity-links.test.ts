@@ -91,9 +91,9 @@ test('unchanged date: never refused for a conflict, which becomes a review reaso
     'stage-twice-a': 'duplicate-stage',
     'stage-twice-b': 'duplicate-stage',
     'stage-late': 'out-of-cycle',
-    'stage-early': 'unclassified',
-    'teacher-vacation-january': 'unclassified',
-    'transfer-notice': 'unclassified',
+    'stage-early': 'not-generated',
+    'teacher-vacation-january': 'not-generated',
+    'transfer-notice': 'not-generated',
   });
 });
 
@@ -103,10 +103,10 @@ test('the shared diagnostic reports each reason once and leaves valid links out'
     'stage-twice-b': 'duplicate-stage',
     'stage-late': 'stage-sequence',
     'stage-early': 'stage-sequence',
-    'teacher-vacation-january': 'unclassified',
-    'transfer-notice': 'unclassified',
+    'teacher-vacation-january': 'not-generated',
+    'transfer-notice': 'not-generated',
   });
-  expect([...linksToReview(cascavelDraft()).values()]).toEqual(Array(10).fill('unclassified'));
+  expect([...linksToReview(cascavelDraft()).values()]).toEqual(Array(10).fill('not-generated'));
 });
 
 test('a generated activity of another offer does not cover the date: classification pending', () => {
@@ -134,5 +134,5 @@ test('a generated activity of another offer does not cover the date: classificat
         : offer,
     ),
   };
-  expect(linksToReview(semester).get('annual-result')).toBe('unclassified');
+  expect(linksToReview(semester).get('annual-result')).toBe('not-generated');
 });

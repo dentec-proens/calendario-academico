@@ -1,6 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { describe, expect, it } from 'vitest';
-import { unclassifiedStage } from '../helpers/activity-links.ts';
+import { definedStage } from '../helpers/activity-links.ts';
 import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import {
   kindOf,
@@ -110,7 +110,7 @@ describe('identidade e tipo da oferta v4', () => {
           end: civilDate('2027-01-01'),
           effect: 'note',
           scope: { offers: ['graduacao'], confirmed: true },
-          activity: unclassifiedStage('stage', 'graduacao-4', 1),
+          activity: definedStage('stage', 'graduacao-4', 'annual', 1),
         },
       ],
     };

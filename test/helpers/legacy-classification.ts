@@ -3,7 +3,7 @@
  * “Classificação legada”. The frozen oracles were captured with them; these helpers derive what the
  * oracles expect without them, so every other value is still compared in full. A date that was
  * linked to one of those rows is now a link without generated activity, under “Vínculo a conferir”
- * (`unclassified`), never dropped.
+ * (`not-generated`), never dropped.
  */
 export const legacyBasis = 'Classificação legada';
 

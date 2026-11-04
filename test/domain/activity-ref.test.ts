@@ -19,7 +19,7 @@ import { calendarSchemaVersion, type AssessmentSettings } from '../../src/domain
  */
 const stage = (
   activityId: string,
-  position: unknown = { status: 'unclassified', reportedOrdinal: 1 },
+  position: unknown = { status: 'defined', term: 'annual', number: 1 },
 ) => ({
   activityId,
   offerId: 'integrado',
@@ -62,7 +62,6 @@ describe('activityRef() validates each base', () => {
     ['single activity', { activityId: 'family-meeting' }],
     ['offer cycle', { activityId: 'final', term: 'annual' }],
     ['reference semester', { activityId: 'pit', semester: 'second' }],
-    ['unclassified stage', stage('results', { status: 'unclassified', reportedOrdinal: 3 })],
     ['defined stage', stage('council', { status: 'defined', term: 'second', number: 1 })],
     ['stage meeting', stage('pedagogical-meeting')],
   ])('accepts a %s', (_name, value) => {
@@ -127,16 +126,12 @@ describe('activityRef() validates each base', () => {
     ['an extra field', { activityId: 'family-meeting', note: 'x' }],
     [
       'a stage without offer',
-      { activityId: 'stage', position: { status: 'unclassified', reportedOrdinal: 1 } },
+      { activityId: 'stage', position: { status: 'defined', term: 'annual', number: 1 } },
     ],
     ['a stage with an empty offer', { ...stage('stage'), offerId: '' }],
     ['a stage without position', { activityId: 'stage', offerId: 'integrado' }],
-    ['a zero ordinal', stage('stage', { status: 'unclassified', reportedOrdinal: 0 })],
-    ['a fractional ordinal', stage('stage', { status: 'unclassified', reportedOrdinal: 1.5 })],
-    [
-      'an unclassified position with a cycle',
-      stage('stage', { status: 'unclassified', reportedOrdinal: 1, term: 'first' }),
-    ],
+    ['a fractional number', stage('stage', { status: 'defined', term: 'annual', number: 1.5 })],
+    ['an unclassified position', stage('stage', { status: 'unclassified', reportedOrdinal: 1 })],
     ['a defined position without cycle', stage('stage', { status: 'defined', number: 1 })],
     [
       'a defined position with an unknown cycle',
@@ -160,7 +155,6 @@ describe('activityKey()', () => {
     { activityId: 'teaching-plan', term: 'first' },
     { activityId: 'teaching-plan', semester: 'first' },
     { activityId: 'pit', semester: 'second' },
-    stage('stage', { status: 'unclassified', reportedOrdinal: 2 }),
     stage('stage', { status: 'defined', term: 'annual', number: 2 }),
     stage('stage', { status: 'defined', term: 'first', number: 2 }),
     stage('results', { status: 'defined', term: 'first', number: 2 }),
@@ -170,14 +164,13 @@ describe('activityKey()', () => {
   ].map((value) => activityRef(value));
 
   test('names the declaration, base and position, with the offer last', () => {
-    expect(refs.slice(0, 8).map(activityKey)).toEqual([
+    expect(refs.slice(0, 7).map(activityKey)).toEqual([
       'family-meeting',
       'final:cycle:annual',
       'final:cycle:first',
       'teaching-plan:cycle:first',
       'teaching-plan:semester:first',
       'pit:semester:second',
-      'stage:stage:unclassified:2:integrado',
       'stage:stage:annual:2:integrado',
     ]);
   });
@@ -234,7 +227,7 @@ describe('activityFromKey() validates a complete key read from a URL', () => {
   });
 
   test.each([
-    'stage:stage:unclassified:3:integrado',
+    'stage:stage:first:3:integrado',
     'results:stage:first:2:graduacao',
     'pit:semester:second',
   ])('accepts the declared key %s, generated or not', (key) => {
@@ -254,7 +247,8 @@ describe('activityFromKey() validates a complete key read from a URL', () => {
     ['a stage without offer', 'stage:stage:annual:1:'],
     ['a stage without number', 'stage:stage:annual::integrado'],
     ['a non-canonical number', 'stage:stage:annual:01:integrado'],
-    ['a zero ordinal', 'stage:stage:unclassified:0:integrado'],
+    ['a zero number', 'stage:stage:annual:0:integrado'],
+    ['an unclassified position', 'stage:stage:unclassified:3:integrado'],
     ['an unknown stage status', 'stage:stage:pending:1:integrado'],
     ['extra parts', 'final:cycle:first:integrado'],
     ['an empty key', ''],

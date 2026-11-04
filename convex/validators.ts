@@ -57,10 +57,11 @@ export const eventScope = v.object({ offers: v.array(v.string()), confirmed: v.b
  * Link of a date with the activity it serves: one shape per repetition base.
  * The declared IDs of each base are checked by the domain (`activityRef()`), not by prefix.
  */
-const stagePosition = v.union(
-  v.object({ status: v.literal('unclassified'), reportedOrdinal: v.number() }),
-  v.object({ status: v.literal('defined'), term: academicTerm, number: v.number() }),
-);
+const stagePosition = v.object({
+  status: v.literal('defined'),
+  term: academicTerm,
+  number: v.number(),
+});
 export const activityRef = v.union(
   v.object({ activityId: v.string() }),
   v.object({ activityId: v.string(), term: academicTerm }),

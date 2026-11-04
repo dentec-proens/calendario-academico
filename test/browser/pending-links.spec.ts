@@ -117,36 +117,25 @@ for (const width of [1440, 390]) {
     await page.locator('[data-edit-organization="integrado"]').click();
     await page.locator('#offer-integrado-organization [data-choice="anual"]').click();
     await page.locator('#offer-integrado-count [data-choice="3"]').click();
-    // Only the position a single date reports is filled; the duplicated one is left empty.
+    // Each position a recorded date holds is filled, with the first date for a duplicate.
     await expect(page.locator('#offer-integrado-stage-0-start')).toHaveValue('2027-02-01');
-    await expect(page.locator('#offer-integrado-stage-1-start')).toHaveValue('');
+    await expect(page.locator('#offer-integrado-stage-1-start')).toHaveValue('2027-05-03');
     await expect(page.locator('#offer-integrado-stage-2-start')).toHaveValue('');
     await page.locator('#offer-integrado-period-0-start').fill('2027-02-01');
     await page.locator('#offer-integrado-period-0-end').fill('2027-12-17');
-    for (const [index, [start, end]] of [
-      ['2027-05-03', '2027-07-30'],
-      ['2027-08-02', '2027-12-17'],
-    ].entries()) {
-      await page.locator(`#offer-integrado-stage-${index + 1}-start`).fill(start);
-      await page.locator(`#offer-integrado-stage-${index + 1}-end`).fill(end);
-    }
+    await page.locator('#offer-integrado-stage-2-start').fill('2027-08-02');
+    await page.locator('#offer-integrado-stage-2-end').fill('2027-10-29');
     const warnings = page.locator('#offer-integrado-link-warnings li');
     await expect(warnings).toHaveText([
-      '“Data sintética stage-two-a” ficará em Vínculo a conferir (Classificação pendente).',
-      '“Data sintética stage-two-b” ficará em Vínculo a conferir (Classificação pendente).',
-      '“Data sintética stage-four” ficará em Vínculo a conferir (Classificação pendente).',
+      '“Data sintética stage-two-a” ficará em Vínculo a conferir (Etapa duplicada).',
+      '“Data sintética stage-two-b” ficará em Vínculo a conferir (Etapa duplicada).',
+      '“Data sintética stage-four” ficará em Vínculo a conferir (Atividade não gerada).',
     ]);
     await page.locator('#offer-integrado-apply').click();
     const organized = await savedState(page);
     expect(organized.saves).toBeGreaterThan(0);
     const saved = linked(organized.state.events);
-    expect(saved).toMatchObject({
-      'stage-one': 'stage:stage:annual:1:integrado',
-      'results-one': 'results:stage:annual:1:integrado',
-      'stage-two-a': linked(fixture.events)['stage-two-a'],
-      'stage-two-b': linked(fixture.events)['stage-two-b'],
-      'stage-four': linked(fixture.events)['stage-four'],
-    });
+    expect(saved).toMatchObject(linked(fixture.events));
   });
 }
 
@@ -172,7 +161,7 @@ for (const width of [1440, 390]) {
     const id = 'ivaipora-final-1';
     const original = fixture.events.find((event) => event.id === id)!;
     await review.locator(`[data-open-event="${id}"]`).click();
-    await expect(page.locator('#link-review-reason')).toContainText('Classificação pendente');
+    await expect(page.locator('#link-review-reason')).toContainText('Atividade não gerada');
 
     // Opening and cancelling by keyboard returns the focus to the action.
     const action = page.locator(`[data-change-activity="${id}"]`);
@@ -195,7 +184,7 @@ for (const width of [1440, 390]) {
     const preview = page.locator('#activity-change-preview');
     await expect(preview).toContainText('Data sintética final-1 · 22/06/2027 a 22/06/2027');
     await expect(preview).toContainText('(sem alteração)');
-    await expect(preview).toContainText('final:cycle:first — Classificação pendente');
+    await expect(preview).toContainText('final:cycle:first — Atividade não gerada');
     await expect(preview).toContainText('A data deixa Vínculo a conferir');
     // Nothing is applied before the confirmation.
     const before = await page.evaluate(() => ({
@@ -271,7 +260,7 @@ test('a date put under review by an unsaved organization is corrected after the 
   const id = 'ivaipora-annual-5';
   await page.locator(`#link-review [data-open-event="${id}"]`).click();
   const reason = page.locator('#link-review-reason');
-  await expect(reason).toContainText('Classificação pendente');
+  await expect(reason).toContainText('Atividade não gerada');
   await expect(reason).toContainText('fica disponível depois que as alterações forem salvas');
   await expect(page.locator(`[data-change-activity="${id}"]`)).toHaveCount(0);
 

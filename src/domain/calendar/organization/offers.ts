@@ -108,67 +108,21 @@ function organizedOffer(
 }
 
 /**
- * The links of the offer's stage dates once the offer takes the confirmed organization, by date
- * ID. A defined position is kept as stored, even when the count or the
- * cycles change: it is never reinterpreted, and a position the new organization lacks goes to
- * “Vínculo a conferir”. An unclassified position becomes defined only when unambiguous: the
- * organization or the stages of the offer change, the reported ordinal is within the confirmed
- * count (the position `stagePosition` gives it, as the format 4 identifier `stage-N:offer` did) and
- * no other date of the same activity holds that position. Every other case keeps the reported
- * ordinal and is listed in the preview of the organization.
- */
-function reorganizedLinks(
-  state: Pick<ActivityState, 'offers' | 'events'>,
-  organized: CalendarOffer,
-): Map<string, StageActivityRef> {
-  const stages = state.events.filter(
-    (event): event is CalendarEvent & { activity: StageActivityRef } =>
-      isStageActivity(event.activity) && event.activity.offerId === organized.id,
-  );
-  const current = offerFor(state, organized.id);
-  const confirms =
-    !current ||
-    current.organization !== organized.organization ||
-    !equalValues(current.stages, organized.stages);
-  const proposed = new Map(
-    stages.map(({ id, activity }) => {
-      if (!confirms || activity.position.status === 'defined') return [id, activity];
-      const position = stagePosition(organized, activity.position.reportedOrdinal);
-      return [id, position.status === 'defined' ? { ...activity, position } : activity];
-    }),
-  );
-  return new Map(
-    stages.map(({ id, activity }) => {
-      const next = proposed.get(id)!;
-      const shared =
-        next !== activity &&
-        stages.some((other) => other.id !== id && sameActivity(proposed.get(other.id), next));
-      return [id, shared ? activity : next];
-    }),
-  );
-}
-
-/**
- * The recorded date the draft's `n`-th stage updates: the stage date whose link, under the
- * confirmed organization, is the position of that ordinal, preferring the date the draft names. A
- * date that keeps another position is never reused: it stays as recorded, under “Vínculo a
- * conferir”.
+ * The recorded date the draft's `n`-th stage updates: the stage date whose link is the position of
+ * that ordinal under the confirmed organization, preferring the date the draft names. A position is
+ * never reinterpreted, so a date recorded in another position is not reused: it keeps its link and,
+ * if the organization no longer has that position, goes to “Vínculo a conferir”.
  */
 function draftStageDate(
-  state: Pick<ActivityState, 'offers' | 'events'>,
+  state: Pick<ActivityState, 'events'>,
   organized: CalendarOffer,
   n: number,
   id?: string,
-  links = reorganizedLinks(state, organized),
 ) {
   const position = stagePosition(organized, n);
-  const holds = (event: CalendarEvent) =>
-    isAssessmentStage(event.activity) &&
-    event.activity.offerId === organized.id &&
-    sameActivity(links.get(event.id), {
-      ...event.activity,
-      position,
-    });
+  if (!position) return undefined;
+  const link = { activityId: 'stage', offerId: organized.id, position } as StageActivityRef;
+  const holds = (event: CalendarEvent) => sameActivity(event.activity, link);
   return (
     (id ? state.events.find((event) => event.id === id && holds(event)) : undefined) ??
     state.events.find(holds)
@@ -210,9 +164,9 @@ export function offerOrganizationDraft(
 
 /**
  * The stage fields of a draft once the campus chooses the organization and the count: each field
- * shows the recorded date that will hold that position (`draftStageDate`), never the date of the
- * same ordinal under the previous organization. A field keeps what the campus typed while it still
- * refers to the same date (or to a new one); a position no date holds unambiguously is left empty.
+ * shows the recorded date that holds that position (`draftStageDate`), never the date of the same
+ * ordinal under the previous organization. A field keeps what the campus typed while it still
+ * refers to the same date (or to a new one); a position no date holds is left empty.
  * Without a valid organization and count, the fields are returned as they are.
  */
 export function organizationDraftStages(
@@ -228,9 +182,8 @@ export function organizationDraftStages(
     return draft.stages;
   const organized = organizedOffer(state, modality, draft);
   if (!organized) return draft.stages;
-  const links = reorganizedLinks(state, organized);
   return assessmentStageNumbers.map((number, index) => {
-    const event = draftStageDate(state, organized, number, undefined, links);
+    const event = draftStageDate(state, organized, number);
     const typed = draft.stages[index];
     if (typed && typed.id === (event?.id ?? '')) return typed;
     return { id: event?.id ?? '', start: event?.start ?? '', end: event?.end ?? '' };
@@ -471,9 +424,9 @@ export function offerOrganizationWarnings(
  * The draft confirms the offer's organization again while the previous confirmation is not saved:
  * the offer's organization or stages differ from the stored state (or the offer is not stored yet)
  * and the draft changes them once more. Both confirmations would reach the server in one save, and
- * the stage dates the first one created or converted could keep positions the second one lacks,
- * which a save refuses for a new date. The editor waits for the
- * save instead; confirming without changing the organization or the count stays allowed.
+ * the stage dates the first one created could keep positions the second one lacks, which a save
+ * refuses for a new date. The editor waits for the save instead; confirming without changing the
+ * organization or the count stays allowed.
  */
 export function organizationAwaitingSave(
   stored: Pick<ActivityState, 'offers'>,
@@ -560,12 +513,11 @@ function organize<S extends ActivityState>(
     periods: [...retained, ...periods],
   };
   const organized = offerFor(next, modality)!;
-  const links = reorganizedLinks(state, organized);
   // Each draft stage updates the date already recorded for it, never a second one.
   const stageDates = new Map<string, OrganizationStageDraft>();
   const added: CalendarEvent[] = [];
   for (const [index, value] of draft.stages.slice(0, stageCount).entries()) {
-    const existing = draftStageDate(state, organized, index + 1, value.id, links);
+    const existing = draftStageDate(state, organized, index + 1, value.id);
     if (existing) stageDates.set(existing.id, value);
     else
       added.push({
@@ -574,7 +526,7 @@ function organize<S extends ActivityState>(
         activity: {
           activityId: 'stage',
           offerId: modality,
-          position: stagePosition(organized, index + 1),
+          position: stagePosition(organized, index + 1)!,
         } as StageActivityRef,
         start: civilDate(value.start),
         end: civilDate(value.end),
@@ -586,11 +538,7 @@ function organize<S extends ActivityState>(
   }
   // Links are never removed here: retired, duplicate or incompatible dates keep their link and
   // appear under “Vínculo a conferir” (`linksToReview`).
-  const events: CalendarEvent[] = state.events.flatMap((stored) => {
-    const event =
-      isStageActivity(stored.activity) && stored.activity.offerId === modality
-        ? { ...stored, activity: links.get(stored.id)! }
-        : stored;
+  const events: CalendarEvent[] = state.events.flatMap((event) => {
     const stage = stageDates.get(event.id);
     if (stage) {
       const { assessmentAutoStart: _auto, ...previous } = event;

@@ -114,7 +114,7 @@ describe('updateDate', () => {
     const date = updated.events.find((event) => event.id === saved.id)!;
     expect(date).toMatchObject({ name: 'Resultado final revisado', start: '2027-06-23' });
     expect(date.activity).toEqual(activity);
-    expect(linksToReview({ ...updated, year: 2027 }).get(saved.id)).toBe('unclassified');
+    expect(linksToReview({ ...updated, year: 2027 }).get(saved.id)).toBe('not-generated');
   });
 
   test('never changes the link: swapping is refused and a date of the campus gains none', () => {

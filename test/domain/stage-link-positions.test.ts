@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { civilDate } from '../../src/domain/civil-date.ts';
-import { linksToReview, sameLink } from '../../src/domain/calendar/activities/links.ts';
+import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
+import { stageActivity } from '../../src/domain/calendar/activities/assessment.ts';
 import { compareContents, describeValue, type DiffSide } from '../../src/domain/calendar/diff.ts';
 import type { ActivityState, CalendarEvent } from '../../src/domain/calendar/model.ts';
 import {
@@ -11,15 +12,15 @@ import {
   applyOfferOrganization,
   offerOrganizationDraft,
 } from '../../src/domain/calendar/organization/offers.ts';
+import { stageOrdinal, stagePosition } from '../../src/domain/calendar/offers.ts';
 import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
-import { definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
+import { definedStage } from '../helpers/activity-links.ts';
 import { storedCases } from '../helpers/stored-fixtures.ts';
 
 /**
- * Stage positions of a link: a
- * save never swaps a stored stage position, an unclassified position counts as a stage of the offer
- * only while its count is not confirmed, and confirming the organization keeps a defined
- * position as stored.
+ * Stage positions of a link: a save never swaps a stored position, an offer without stages has no
+ * position, so its links wait under “Vínculo a conferir” until the stages are informed, and
+ * reorganizing the offer keeps every position as stored.
  */
 type SaveState = Parameters<typeof prepareOfferCalendarSave>[0];
 const byName = (name: string) => storedCases().find((item) => item.name === name)!;
@@ -39,7 +40,7 @@ const stageEvent = (id: string, activity: CalendarEvent['activity'], month: numb
   scope: { offers: ['integrado'], confirmed: true },
 });
 
-/** A stored annual integrated calendar whose stages the campus has not confirmed. */
+/** A stored annual integrated calendar whose number of stages the campus has not informed. */
 function uncounted() {
   const item = byName('Quantidade anterior de 2 etapas');
   return {
@@ -64,48 +65,66 @@ function annualFour() {
 const stageIds = (state: ActivityState) =>
   state.events.filter((event) => event.activity?.activityId === 'stage').map((event) => event.id);
 
-describe('a save never swaps a stored stage position', () => {
-  test('defined to unclassified, with the same organization, is refused', () => {
-    const previous = annualFour();
-    const [first] = stageIds(previous);
-    expect(previous.events.find((event) => event.id === first)!.activity).toEqual(
-      definedStage('stage', 'integrado', 'annual', 1),
+describe('an offer without stages has no position, and its links wait for the stages', () => {
+  const withLinks = () => {
+    const state = uncounted() as ActivityState & SaveState;
+    state.events = [1, 2].map((n) =>
+      stageEvent(`old-${n}`, definedStage('stage', 'integrado', 'annual', n), n + 2),
     );
-    const proposed = {
-      ...previous,
-      events: previous.events.map((event) =>
-        event.id === first
-          ? { ...event, activity: unclassifiedStage('stage', 'integrado', 1) }
-          : event,
-      ),
-    };
-    expect(() => prepareOfferCalendarSave(previous, proposed, saveContext(previous))).toThrow(
-      'não perde nem troca',
-    );
-    expect(
-      sameLink(
-        previous,
-        definedStage('stage', 'integrado', 'annual', 1),
-        previous,
-        unclassifiedStage('stage', 'integrado', 1),
-      ),
-    ).toBe(false);
+    return state;
+  };
+
+  test('no ordinal has a position, no position has an ordinal, and no link is generated', () => {
+    const state = withLinks();
+    const offer = state.offers.find((item) => item.id === 'integrado')!;
+    expect(stagePosition(offer, 1)).toBeUndefined();
+    expect(stageOrdinal(offer, { status: 'defined', term: 'annual', number: 1 })).toBeUndefined();
+    expect(stageActivity(state, 'stage', 'integrado', 1)).toBeUndefined();
+    expect(Object.fromEntries(linksToReview(state))).toEqual({
+      'old-1': 'not-generated',
+      'old-2': 'not-generated',
+    });
   });
 
-  test('unclassified to defined, with the stages still unconfirmed, is refused', () => {
-    const previous = uncounted() as ActivityState & SaveState;
-    previous.events = [1, 2].map((n) =>
-      stageEvent(`old-${n}`, unclassifiedStage('stage', 'integrado', n), n + 2),
-    );
-    const proposed = {
+  test('the date is saved as recorded and still edited, but a new date cannot take a position', () => {
+    const previous = withLinks();
+    const edited = {
       ...previous,
-      events: previous.events.map((event, index) =>
-        index ? event : { ...event, activity: definedStage('stage', 'integrado', 'annual', 1) },
+      events: previous.events.map((event) =>
+        event.id === 'old-1' ? { ...event, end: civilDate('2027-03-20') } : event,
       ),
     };
-    expect(() => prepareOfferCalendarSave(previous, proposed, saveContext(previous))).toThrow(
-      /não perde nem troca|Vínculo de atividade inválido/,
+    const saved = prepareOfferCalendarSave(previous, edited, saveContext(previous)).state;
+    expect(saved.events.map((event) => event.activity)).toEqual(
+      previous.events.map((event) => event.activity),
     );
+    expect(linksToReview({ ...saved, year: previous.year }).get('old-1')).toBe('not-generated');
+    const added = {
+      ...previous,
+      events: [
+        ...previous.events,
+        stageEvent('new', definedStage('stage', 'integrado', 'annual', 3), 6),
+      ],
+    };
+    expect(() => prepareOfferCalendarSave(previous, added, saveContext(previous))).toThrow(
+      'Vínculo de atividade inválido',
+    );
+  });
+
+  test('informing the stages makes the same positions count, as recorded', () => {
+    const state = withLinks();
+    const draft = offerOrganizationDraft(state, 'integrado');
+    draft.organization = 'anual';
+    draft.count = '2';
+    draft.periods[0] = { sourceId: '', name: 'Ano', start: '2027-02-01', end: '2027-12-17' };
+    draft.stages[0] = { id: 'old-1', start: '2027-03-02', end: '2027-03-12' };
+    draft.stages[1] = { id: 'old-2', start: '2027-04-02', end: '2027-04-12' };
+    const next = applyOfferOrganization(state, 'integrado', draft, () => 'unused');
+    expect(next.events.map((event) => event.activity)).toEqual(
+      state.events.map((event) => event.activity),
+    );
+    expect(next.events).toHaveLength(state.events.length);
+    expect(linksToReview(next).size).toBe(0);
   });
 });
 
@@ -141,7 +160,7 @@ describe('confirming the organization keeps defined positions as stored', () => 
     for (const event of state.events)
       expect(next.events.find((item) => item.id === event.id)?.activity).toEqual(event.activity);
     const [, , , fourth] = stageIds(state);
-    expect(Object.fromEntries(linksToReview(next))).toEqual({ [fourth]: 'unclassified' });
+    expect(Object.fromEntries(linksToReview(next))).toEqual({ [fourth]: 'not-generated' });
   });
 
   test('annual to semester: annual positions are kept, to review, and the new stages are added', () => {
@@ -149,7 +168,7 @@ describe('confirming the organization keeps defined positions as stored', () => 
     for (const event of state.events)
       expect(next.events.find((item) => item.id === event.id)?.activity).toEqual(event.activity);
     const review = linksToReview(next);
-    for (const id of stageIds(state)) expect(review.get(id)).toBe('unclassified');
+    for (const id of stageIds(state)) expect(review.get(id)).toBe('not-generated');
     expect(
       next.events.filter((event) => event.id.startsWith('new-')).map((event) => event.activity),
     ).toEqual([
@@ -176,43 +195,28 @@ describe('confirming the organization keeps defined positions as stored', () => 
 });
 
 describe('the comparison names linked activities', () => {
-  test('a reported stage confirmed in its cycle is the same link; another link shows its row name', () => {
-    const before = uncounted();
-    before.events = [1, 2].map((n) =>
-      stageEvent(`old-${n}`, unclassifiedStage('stage', 'integrado', n), n + 2),
-    );
-    const draft = offerOrganizationDraft(before, 'integrado');
-    draft.organization = 'anual';
-    draft.count = '2';
-    draft.periods[0] = { sourceId: '', name: 'Ano', start: '2027-02-01', end: '2027-12-17' };
-    draft.stages[0] = { id: 'old-1', start: '2027-03-02', end: '2027-03-12' };
-    draft.stages[1] = { id: 'old-2', start: '2027-04-02', end: '2027-04-12' };
-    const after = applyOfferOrganization(before, 'integrado', draft, () => 'new');
-    expect(after.events.map((event) => event.activity)).toEqual([
-      definedStage('stage', 'integrado', 'annual', 1),
-      definedStage('stage', 'integrado', 'annual', 2),
-    ]);
+  test('another link is shown by the names of the generated rows, never by its key', () => {
+    const before = annualFour();
+    const [first] = stageIds(before);
+    const swapped = {
+      ...before,
+      events: before.events.map((event) =>
+        event.id === first
+          ? { ...event, activity: definedStage('stage', 'integrado', 'annual', 2) }
+          : event,
+      ),
+    };
     const side = (value: ActivityState): DiffSide => ({
       state: value,
       institutionalSnapshot: [],
       documentSnapshot: [],
       catalogueRevision: 0,
     });
-    const linkFields = (left: ActivityState, right: ActivityState) =>
-      compareContents(side(left), side(right)).events.flatMap((change) =>
-        change.fields.filter((field) => field.field === 'activity'),
-      );
-    expect(linkFields(before, after)).toEqual([]);
-    // A different link is shown by the names of the generated rows, never by its key.
-    const swapped = {
-      ...after,
-      events: after.events.map((event, index) =>
-        index ? event : { ...event, activity: definedStage('stage', 'integrado', 'annual', 2) },
-      ),
-    };
-    const [field] = linkFields(after, swapped);
+    const [field] = compareContents(side(before), side(swapped)).events.flatMap((change) =>
+      change.fields.filter((item) => item.field === 'activity'),
+    );
     expect(field.text).toEqual({
-      before: describeValue('activity', field.before, after),
+      before: describeValue('activity', field.before, before),
       after: describeValue('activity', field.after, swapped),
     });
     expect(field.text!.before).not.toMatch(/^stage:/);

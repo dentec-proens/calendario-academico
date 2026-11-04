@@ -19,9 +19,6 @@ export const stageLink = (
   offerId: string,
   position: StagePosition,
 ): ActivityRef => activityRef({ activityId, offerId, position });
-/** A stage link by its reported ordinal, as under an unclassified organization. */
-export const unclassifiedStage = (activityId: string, offerId: string, ordinal: number) =>
-  stageLink(activityId, offerId, { status: 'unclassified', reportedOrdinal: ordinal });
 export const definedStage = (
   activityId: string,
   offerId: string,

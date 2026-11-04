@@ -26,7 +26,7 @@ const audited = (): [string, ActivityState][] => [
 ];
 
 const pendingDates = (state: ActivityState) =>
-  [...linksToReview(state)].filter(([, issue]) => issue === 'unclassified').map(([id]) => id);
+  [...linksToReview(state)].filter(([, issue]) => issue === 'not-generated').map(([id]) => id);
 
 /** Every value of the rows a fulfilment could change, without the dates themselves. */
 const situation = (state: ActivityState) =>
@@ -56,7 +56,7 @@ describe('the 21 audited dates (section 11)', () => {
         const entries = links.byOffer.filter((item) => item.eventId === id);
         expect(entries.map((item) => item.offerId)).toEqual(event.scope.offers);
         expect(entries.every((item) => item.classification === 'pending')).toBe(true);
-        expect(entries.every((item) => item.issue === 'unclassified')).toBe(true);
+        expect(entries.every((item) => item.issue === 'not-generated')).toBe(true);
         for (const offerId of event.scope.offers)
           expect(links.forOffer(id, offerId)).toBe('pending');
       }
@@ -137,7 +137,7 @@ test('a link is pending for an offer its generated activity does not reach', () 
     expect(row.coverage).not.toBe('complete');
     expect(row.classification).toBe('pending');
     expect(row.evidence.map((e) => e.id)).not.toContain('cascavel-final-1');
-    expect(row.warnings.join(' ')).toContain('Classificação pendente');
+    expect(row.warnings.join(' ')).toContain('Atividade não gerada');
   }
   // The integrated offer, which the generated activity reaches, still counts the same date.
   const forIntegrado = rows.find(
@@ -180,7 +180,7 @@ test('the evaluation is calculated, never stored on the dates', () => {
 
 test('each dimension has its own values', () => {
   expect(classificationOf(undefined)).toBe('compatible');
-  expect(classificationOf('unclassified')).toBe('pending');
+  expect(classificationOf('not-generated')).toBe('pending');
   for (const issue of ['duplicate-stage', 'stage-sequence', 'out-of-cycle'] as const)
     expect(classificationOf(issue)).toBe('divergent');
   expect(executionOf([])).toBe('unclassified');

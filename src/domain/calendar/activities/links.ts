@@ -7,7 +7,7 @@ import type {
 } from '../model.ts';
 import { equalValues } from '../../../shared/equal.ts';
 import { DomainError } from '../../errors.ts';
-import { offerFor, stageOrdinal, stagesPerTerm, stageTerm } from '../offers.ts';
+import { offerFor, stageOrdinal, stageTerm } from '../offers.ts';
 import { activityPlan } from './plan.ts';
 import { assessmentCycleIssue, assessmentIntervalIssue } from './assessment-intervals.ts';
 import {
@@ -17,7 +17,6 @@ import {
   sameActivity,
   type ActivityRef,
   type StageActivityRef,
-  type StagePosition,
 } from './activity-ref.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 
@@ -55,71 +54,20 @@ export function stageLocation(state: OfferState, activity: StageActivityRef) {
 }
 
 /**
- * The position the `n`-th stage of an offer has under some confirmed organization: annual `n`, or,
- * semestral with `p` stages per cycle, the first cycle's `n` (p >= n) or the second cycle's `n - p`
- * (n / 2 <= p < n). Confirming an organization re-expresses an unclassified position this way.
- */
-function positionOfOrdinal(position: StagePosition, n: number) {
-  if (position.status !== 'defined') return false;
-  if (position.term === 'second') return position.number >= 1 && position.number <= n / 2;
-  return position.number === n;
-}
-
-/**
- * The same link in two states of one calendar: the same key, or, for an unclassified link by offer
- * stage, the same activity and offer with a position that some organization gives its reported
- * ordinal, once the offer's stages are confirmed. Confirming the organization re-expresses an
- * unconfirmed position in the new cycles, as the format 4 identifier (`stage-N:offer`) did by its
- * ordinal. A save may carry several confirmations, and a defined position
- * is then kept as the first one gave it (`reorganizedLinks`), so the stored ordinal is checked
- * against every organization, not only the final one. A defined position is never reinterpreted:
- * another position is a swap, and so is any position while the offer's stages are not confirmed.
- */
-export function sameLink(
-  before: OfferState | undefined,
-  previous: ActivityRef | undefined,
-  after: OfferState,
-  next: ActivityRef | undefined,
-) {
-  if (sameActivity(previous, next)) return true;
-  if (
-    !before ||
-    !isStageActivity(previous) ||
-    !isStageActivity(next) ||
-    previous.position.status !== 'unclassified' ||
-    previous.activityId !== next.activityId ||
-    previous.offerId !== next.offerId
-  )
-    return false;
-  const afterOffer = offerFor(after, next.offerId);
-  return (
-    afterOffer !== undefined &&
-    stagesPerTerm(afterOffer) !== undefined &&
-    positionOfOrdinal(next.position, previous.position.reportedOrdinal)
-  );
-}
-
-/** States of one calendar compared by date ID; without them, links compare by key only. */
-export interface LinkStates {
-  before: OfferState;
-  after: OfferState;
-}
-
-/**
  * Why a dated link cannot be accepted as fulfilment. The link is kept as recorded; the date is
  * shown under “Vínculo a conferir” and never counts toward coverage, stage days or printing.
  */
-export type LinkIssue = 'unclassified' | 'duplicate-stage' | 'stage-sequence' | 'out-of-cycle';
+export type LinkIssue = 'not-generated' | 'duplicate-stage' | 'stage-sequence' | 'out-of-cycle';
 
 export const linkIssueLabels: Record<LinkIssue, string> = {
-  unclassified: 'Classificação pendente',
+  'not-generated': 'Atividade não gerada',
   'duplicate-stage': 'Etapa duplicada',
   'stage-sequence': 'Etapas fora de sequência',
   'out-of-cycle': 'Fora do período do ciclo',
 };
 
 export const linkIssueActions: Record<LinkIssue, string> = {
-  unclassified:
+  'not-generated':
     'A atividade gravada não existe na organização atual da oferta. Corrija a atividade vinculada, ajuste a organização ou exclua a data.',
   'duplicate-stage': 'Há outra data para a mesma etapa. Exclua uma delas.',
   'stage-sequence':
@@ -136,7 +84,7 @@ export function linksToReview(
   for (const event of state.events) {
     if (!event.activity) continue;
     const activity = generatedActivity(generated, event.activity);
-    if (!activity || !coversDate(state, activity, event)) issues.set(event.id, 'unclassified');
+    if (!activity || !coversDate(state, activity, event)) issues.set(event.id, 'not-generated');
   }
   const stages = state.events.filter(
     (event): event is LinkedDate & { activity: StageActivityRef } =>
@@ -219,10 +167,9 @@ export function coversAllOffers(
  * covers all the offers of the date. Other fields may change in the same save, as `updateDate`
  * after the correction would change them: the corrected date passes every check of an edited
  * date. A date put under review only by other changes of the same save is not corrected with
- * them, since the swap would re-express a link that counted; the interface offers the
- * correction once those changes are saved (`correctableLinkIssue`). Removing a link is never a
- * correction, and a link that counts is never swapped: a defined stage position is not
- * reinterpreted.
+ * them, since the swap would replace a link that counted; the interface offers the correction once
+ * those changes are saved (`correctableLinkIssue`). Removing a link is never a correction, and a
+ * link that counts is never swapped: a stage position is not reinterpreted.
  */
 export function linkCorrected(
   state: Pick<LinkState, 'offers'>,
@@ -250,38 +197,20 @@ function cyclePeriods(
   return periodsForOffer(state, offerId).filter((period) => period.association.term === term);
 }
 
-const keptLink = (
-  previous: CalendarEvent | undefined,
-  next: CalendarEvent,
-  states: LinkStates | undefined,
-) =>
-  states
-    ? sameLink(states.before, previous?.activity, states.after, next.activity)
-    : sameActivity(previous?.activity, next.activity);
-
 /** Dates whose start, end, offers and link match the previous state are left as they are. */
-export function dateEdited(
-  previous: CalendarEvent | undefined,
-  next: CalendarEvent,
-  states?: LinkStates,
-) {
+export function dateEdited(previous: CalendarEvent | undefined, next: CalendarEvent) {
   return (
     !previous ||
     previous.start !== next.start ||
     previous.end !== next.end ||
-    !keptLink(previous, next, states) ||
+    !sameActivity(previous.activity, next.activity) ||
     !equalValues(previous.scope.offers, next.scope.offers)
   );
 }
 
 /** The date keeps exactly the link it already had: no generated activity is required for it. */
-export function linkKept(
-  previous: CalendarEvent | undefined,
-  next: CalendarEvent,
-  states?: LinkStates,
-) {
-  return !!next.activity && !!previous?.activity && keptLink(previous, next, states);
-}
+export const linkKept = (previous: CalendarEvent | undefined, next: CalendarEvent) =>
+  !!next.activity && sameActivity(previous?.activity, next.activity);
 
 const describe = (event: CalendarEvent) =>
   `“${event.name}” (${event.start.split('-').reverse().join('/')})`;
@@ -306,14 +235,13 @@ export function validateLinks(
   next: LinkState,
 ) {
   const before = new Map(previous?.events.map((event) => [event.id, event]));
-  const states = previous && { before: previous, after: next };
   const requirements = generatedActivities(next);
   const toReview = new Set(previous ? linksToReview(previous).keys() : []);
   const corrected = (event: CalendarEvent) =>
     linkCorrected(next, requirements, toReview, before.get(event.id), event);
   const changed = next.events.filter((event) => {
     const old = before.get(event.id);
-    return old?.activity !== undefined && !linkKept(old, event, states) && !corrected(event);
+    return old?.activity !== undefined && !linkKept(old, event) && !corrected(event);
   });
   if (changed.length)
     throw new DomainError(
@@ -328,35 +256,32 @@ export function validateLinks(
     throw new DomainError(
       `Uma data do campus não passa a ter atividade vinculada: ${gained.map(describe).join('; ')}.`,
     );
-  // A re-expressed stage position must be unambiguous: no other date holds it (step 9e).
-  const ambiguous = next.events.filter((event) => {
-    const old = before.get(event.id)?.activity;
-    return (
-      old !== undefined &&
-      !sameActivity(old, event.activity) &&
-      // Two dates of one activity are normal; a stage position is held by one date only.
-      (!corrected(event) || isStageActivity(event.activity)) &&
+  // Two dates of one activity are normal; a stage position is held by one date only, so a
+  // correction never puts a date on a position another date holds.
+  const ambiguous = next.events.filter(
+    (event) =>
+      corrected(event) &&
+      isStageActivity(event.activity) &&
       next.events.some(
         (other) => other.id !== event.id && sameActivity(other.activity, event.activity),
-      )
-    );
-  });
+      ),
+  );
   if (ambiguous.length)
     throw new DomainError(
-      `Uma etapa só passa a uma posição, na nova organização ou pela correção do vínculo, quando nenhuma outra data a ocupa: ${ambiguous.map(describe).join('; ')}.`,
+      `Uma etapa só passa a uma posição pela correção do vínculo quando nenhuma outra data a ocupa: ${ambiguous.map(describe).join('; ')}.`,
     );
   const unknown = next.events.filter(
     (event) =>
       event.activity &&
       !generatedActivity(requirements, event.activity) &&
-      !linkKept(before.get(event.id), event, states),
+      !linkKept(before.get(event.id), event),
   );
   if (unknown.length)
     throw new DomainError(
       `Vínculo de atividade inválido para esta organização: ${unknown.map(describe).join('; ')}.`,
     );
   for (const event of next.events) {
-    if (!event.activity || !dateEdited(before.get(event.id), event, states)) continue;
+    if (!event.activity || !dateEdited(before.get(event.id), event)) continue;
     const activity = generatedActivity(requirements, event.activity);
     // A kept link without generated activity has no cycle or scope to check its dates against.
     if (!activity) continue;

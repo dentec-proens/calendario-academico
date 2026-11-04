@@ -128,5 +128,5 @@ test('updateDate saves a date without generated activity with its recorded link'
   );
   const date = saved.state.events.find((event) => event.id === pending.id)!;
   expect(date).toMatchObject({ name: 'Resultado final revisado', activity });
-  expect(linksToReview({ ...saved.state, year: 2027 }).get(pending.id)).toBe('unclassified');
+  expect(linksToReview({ ...saved.state, year: 2027 }).get(pending.id)).toBe('not-generated');
 });

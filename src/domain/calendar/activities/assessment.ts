@@ -7,7 +7,7 @@ export function assessmentCount(state: AssessmentSettings, modality: string) {
 }
 /**
  * Link of the offer's `n`-th stage of an activity repeated by stage, at the position the current
- * organization gives it; undefined for an offer outside the calendar.
+ * organization gives it; undefined for an offer outside the calendar or a stage it does not have.
  */
 export function stageActivity(
   state: AssessmentSettings,
@@ -16,7 +16,6 @@ export function stageActivity(
   n: number,
 ): StageActivityRef | undefined {
   const offer = offerFor(state, offerId);
-  return offer
-    ? ({ activityId, offerId, position: stagePosition(offer, n) } as StageActivityRef)
-    : undefined;
+  const position = offer && stagePosition(offer, n);
+  return position ? ({ activityId, offerId, position } as StageActivityRef) : undefined;
 }

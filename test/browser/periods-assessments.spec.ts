@@ -130,7 +130,7 @@ test('changing an offer cycle previews linked dates to review and keeps their li
   }
   // The annual result is not generated for a semester offer: it is kept, to review.
   await expect(warnings).toContainText(
-    '“Resultado final da graduação” ficará em Vínculo a conferir (Classificação pendente)',
+    '“Resultado final da graduação” ficará em Vínculo a conferir (Atividade não gerada)',
   );
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
   await page.locator('#offer-graduacao-apply').click();

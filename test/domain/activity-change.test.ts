@@ -51,7 +51,7 @@ describe('preview and command', () => {
     expect(state).toEqual(before);
     expect(preview).toEqual({
       date: date(state, 'ivaipora-final-1'),
-      from: { activity: cycleLink('final', 'first'), name: undefined, issue: 'unclassified' },
+      from: { activity: cycleLink('final', 'first'), name: undefined, issue: 'not-generated' },
       to: {
         activity: annualFinal,
         name: expect.stringContaining('Prazo de lançamento do resultado final'),
@@ -283,16 +283,16 @@ describe('correction saved with other changes (review of step 13)', () => {
     const organized = applyOfferOrganization(state, 'subsequente', draft, () => `x-${++sequence}`);
     // The annual stage of the offer counted when saved and is under review only locally.
     expect(linksToReview(state).has('ivaipora-annual-5')).toBe(false);
-    expect(linksToReview(organized).get('ivaipora-annual-5')).toBe('unclassified');
+    expect(linksToReview(organized).get('ivaipora-annual-5')).toBe('not-generated');
     // The correction is offered only after the organization is saved: in the same save, the
-    // swap would re-express a link that counted (step 9e).
+    // swap would replace a link that counted.
     expect(correctableLinkIssue(state, organized, 'ivaipora-annual-5')).toBeUndefined();
     const family = onceLink('family-meeting');
     expect(() => save(state, changeActivity(organized, 'ivaipora-annual-5', family, []))).toThrow(
       'não perde nem troca',
     );
     const stored = save(state, organized).state;
-    expect(correctableLinkIssue(stored, stored, 'ivaipora-annual-5')).toBe('unclassified');
+    expect(correctableLinkIssue(stored, stored, 'ivaipora-annual-5')).toBe('not-generated');
     const saved = save(stored, changeActivity(stored, 'ivaipora-annual-5', family, []));
     expect(date(saved.state, 'ivaipora-annual-5').activity).toEqual(family);
   });

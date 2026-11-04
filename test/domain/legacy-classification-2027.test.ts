@@ -85,8 +85,8 @@ describe('links of the operational catalogue stay to review in 2027', () => {
     for (const event of state.events)
       expect(generatedActivity(generated, event.activity)).toBeUndefined();
     expect(Object.fromEntries(linksToReview(state))).toEqual({
-      'legacy-teaching-plan': 'unclassified',
-      'legacy-enrolment': 'unclassified',
+      'legacy-teaching-plan': 'not-generated',
+      'legacy-enrolment': 'not-generated',
     });
     // The policy declares the same activities with its own bases; none of them is fulfilled.
     expect(generated.has('teaching-plan:semester:first')).toBe(true);
@@ -103,7 +103,7 @@ describe('links of the operational catalogue stay to review in 2027', () => {
       const review = linksToReview(state);
       for (const event of state.events.filter((event) => retired.includes(event.id))) {
         expect(event.activity, event.id).toBeDefined();
-        expect(review.get(event.id), event.id).toBe('unclassified');
+        expect(review.get(event.id), event.id).toBe('not-generated');
         reviewed.push(event.id);
       }
     }

@@ -42,7 +42,7 @@ export type Execution = 'planned' | 'published' | 'unclassified';
 export type HumanReview = 'reviewed' | 'pending' | 'unmapped';
 
 export const classificationLabels: Record<Classification, string> = {
-  pending: 'Classificação pendente',
+  pending: 'Atividade não gerada',
   compatible: 'Compatível',
   divergent: 'Divergente',
 };
@@ -55,7 +55,7 @@ export const executionLabels: Record<Exclude<Execution, 'unclassified'>, string>
 
 /** A pending classification is a link without generated activity; any other reason diverges. */
 export const classificationOf = (issue: LinkIssue | undefined): Classification =>
-  !issue ? 'compatible' : issue === 'unclassified' ? 'pending' : 'divergent';
+  !issue ? 'compatible' : issue === 'not-generated' ? 'pending' : 'divergent';
 
 /** The classification of one linked date for one offer of its scope. */
 export interface LinkEvaluation {
@@ -159,7 +159,9 @@ export function evaluatePlan(
           // A date whose generated activity does not reach this offer is pending for it: it never
           // counts as fulfilment here, even when it fits another offer of its scope.
           if (links.forOffer(event.id, offer.id) !== 'compatible') {
-            warnings.push(`${linkIssueLabels.unclassified}: ${linkIssueActions.unclassified}`);
+            warnings.push(
+              `${linkIssueLabels['not-generated']}: ${linkIssueActions['not-generated']}`,
+            );
             return false;
           }
           // Under explicit offers (2027), only a scope the campus confirmed counts.

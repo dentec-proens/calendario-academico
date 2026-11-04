@@ -62,7 +62,7 @@ for (const width of [1440, 390])
       // A date to review opens read-only link details; editing keeps the link.
       const [first] = linked;
       await page.locator(`#date-list [data-open-event="${first.id}"]`).click();
-      await expect(page.locator('#link-review-reason')).toContainText('Classificação pendente');
+      await expect(page.locator('#link-review-reason')).toContainText('Atividade não gerada');
       await expect(page.locator('#link-review-reason')).toContainText(activityKey(first.activity!));
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
@@ -198,13 +198,13 @@ for (const width of [1440, 390])
 
     // The key of a date under “Vínculo a conferir” opens that date, with its pending reason.
     await followLink(page, 'final:cycle:first');
-    await expect(page.locator('#link-review-reason')).toContainText('Classificação pendente');
+    await expect(page.locator('#link-review-reason')).toContainText('Atividade não gerada');
     await expect(page.locator('#link-review-reason')).toContainText('final:cycle:first');
     await page.locator('#close-event-panel').click();
 
     // A complete key that names neither a generated activity nor a date to review warns, also
     // for an operational row v4 kept in 2027 as “Classificação legada” (step 9d: no fallback).
-    for (const key of ['council:stage:unclassified:3:integrado', 'enrolment:cycle:first']) {
+    for (const key of ['council:stage:annual:9:integrado', 'enrolment:cycle:first']) {
       await followLink(page, key);
       await expect(page.locator('#activity-link-missing')).toBeVisible();
       await expect(page.locator('#activity-link-invalid')).toHaveCount(0);

@@ -45,7 +45,7 @@ test('the activity of a review link is a complete key, kept readable in the URL'
     'family-meeting',
     'final:cycle:first',
     'pit:semester:second',
-    'stage:stage:unclassified:3:integrado',
+    'stage:stage:first:3:integrado',
     'results:stage:first:2:graduacao',
   ]) {
     expect(applicationSearch(parseApplicationSearch(`?atividade=${key}`))).toEqual({

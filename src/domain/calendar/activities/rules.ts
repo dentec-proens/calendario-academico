@@ -156,7 +156,8 @@ function rowActivity(rule: ActivityRule, slot: Slot): ActivityRef {
       return {
         activityId: rule.id,
         offerId: slot.offer!.id,
-        position: stagePosition(slot.offer!, slot.n),
+        // The slots of a stage rule are the stages the offer has, each with its position.
+        position: stagePosition(slot.offer!, slot.n)!,
       } as ActivityRef;
   }
 }

@@ -122,11 +122,11 @@ test('reducing semester stages keeps every binding and leaves excess dates to re
     ],
   ]);
   const review = linksToReview(next);
-  expect(review.get('graduacao-2-stage-2')).toBe('unclassified');
-  expect(review.get('graduacao-2-stage-4')).toBe('unclassified');
+  expect(review.get('graduacao-2-stage-2')).toBe('not-generated');
+  expect(review.get('graduacao-2-stage-4')).toBe('not-generated');
   expect(offerOrganizationWarnings(state, 'graduacao-2', draft).map((w) => w.message)).toEqual([
-    expect.stringContaining('ficará em Vínculo a conferir (Classificação pendente)'),
-    expect.stringContaining('ficará em Vínculo a conferir (Classificação pendente)'),
+    expect.stringContaining('ficará em Vínculo a conferir (Atividade não gerada)'),
+    expect.stringContaining('ficará em Vínculo a conferir (Atividade não gerada)'),
   ]);
 });
 

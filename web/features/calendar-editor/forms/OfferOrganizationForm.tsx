@@ -294,7 +294,7 @@ export default function OfferOrganizationForm({
   const currentBlock = blockIssues.indexOf(true);
   const blockState = (index: number) =>
     !blockIssues[index] ? 'done' : index === currentBlock ? 'current' : 'pending';
-  // The stage fields follow the positions of the chosen organization and count (step 9e).
+  // The stage fields follow the positions of the chosen organization and count.
   function restage(change: Partial<Pick<OfferOrganizationDraft, 'organization' | 'count'>>) {
     const current = form.state.values;
     const stages = organizationDraftStages(state, modality, { ...current, ...change });

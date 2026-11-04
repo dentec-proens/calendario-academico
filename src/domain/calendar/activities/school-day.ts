@@ -4,7 +4,7 @@ import { datesBetween } from '../counting/core.ts';
 import { parseDate } from '../../civil-date.ts';
 import { policyFor } from '../../policies/registry.ts';
 import { eventCategory } from './categories.ts';
-import { dateEdited, type LinkStates } from './links.ts';
+import { dateEdited } from './links.ts';
 
 /**
  * Whether a date may make a day a school day (art. 5º of Resolução 292): `school-day` activities
@@ -96,13 +96,8 @@ function teachingDay(
  * date, or one whose dates, offers, link, effect, category or cause changed. A saved date left as
  * it was stays as a readiness issue, so it never blocks saving other changes.
  */
-export const schoolDayEdited = (
-  previous: CalendarEvent | undefined,
-  next: CalendarEvent,
-  /** The link rule's states: a link carried over by a confirmed organization is kept. */
-  states?: LinkStates,
-) =>
-  dateEdited(previous, next, states) ||
+export const schoolDayEdited = (previous: CalendarEvent | undefined, next: CalendarEvent) =>
+  dateEdited(previous, next) ||
   previous!.effect !== next.effect ||
   eventCategory(previous!) !== eventCategory(next) ||
   previous!.deadlineExtensionCause !== next.deadlineExtensionCause;

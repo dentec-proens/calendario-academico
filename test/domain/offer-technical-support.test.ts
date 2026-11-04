@@ -1,6 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
-import { definedStage, unclassifiedStage } from '../helpers/activity-links.ts';
+import { definedStage } from '../helpers/activity-links.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
@@ -72,7 +72,7 @@ test('pending semester stages retain every assessment-dependent binding while ot
       end: civilDate('2027-03-02'),
       effect: 'note' as const,
       scope: { offers: ['graduacao'], confirmed: true },
-      activity: unclassifiedStage(prefix, 'graduacao', 1),
+      activity: definedStage(prefix, 'graduacao', 'annual', 1),
     })),
   };
   const before = structuredClone(state);

@@ -3966,8 +3966,8 @@
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:4d8df7f3d46d8d66c801bdd37673811d9d20963803f04eea3e948db7d9aff59a",
       "linksToReview": {
-        "teacher-vacation-january": "unclassified",
-        "transfer-notice": "unclassified",
+        "teacher-vacation-january": "not-generated",
+        "transfer-notice": "not-generated",
         "stage-twice-a": "duplicate-stage",
         "stage-twice-b": "duplicate-stage",
         "stage-late": "stage-sequence",
@@ -55031,11 +55031,11 @@
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {
-        "forms-stage": "unclassified",
-        "forms-results": "unclassified",
-        "forms-council": "unclassified",
-        "forms-teaching-plan-annual": "unclassified",
-        "forms-notice-published": "unclassified"
+        "forms-stage": "not-generated",
+        "forms-results": "not-generated",
+        "forms-council": "not-generated",
+        "forms-teaching-plan-annual": "not-generated",
+        "forms-notice-published": "not-generated"
       },
       "activities": [
         {
@@ -57012,8 +57012,8 @@
       "submissions": [],
       "baseIdentity": "base-v1:7edbf254758e3e62cbf6a4d02e608ea868c07e6cee25f614ab8b9e3f33f7cfde",
       "linksToReview": {
-        "unconfigured-stage-5": "unclassified",
-        "unconfigured-results": "unclassified",
+        "unconfigured-stage-5": "not-generated",
+        "unconfigured-results": "not-generated",
         "graduacao-stage-2": "out-of-cycle"
       },
       "activities": [
@@ -59536,7 +59536,7 @@
       ],
       "baseIdentity": "base-v2:consup-292-2027-v1:5c64be2f395662a4f6fbeb469c84d50a0f65322cd1ccd7a5a0e7b9c51493862f",
       "linksToReview": {
-        "legacy-enrolment": "unclassified"
+        "legacy-enrolment": "not-generated"
       },
       "activities": [
         {

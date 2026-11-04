@@ -167,7 +167,6 @@ export function normalizeOfferCalendar(
     }
   const generated = generatedActivities(s);
   const before = new Map(previous?.events.map((event) => [event.id, event]));
-  const states = previous && { before: { offers: [...previous.offers] }, after: s };
   for (const event of s.events) {
     text(event.id, 100);
     text(event.name, 160);
@@ -179,12 +178,11 @@ export function normalizeOfferCalendar(
     validateActivityRecord(s, event, {
       // Edited stage intervals are checked against their cycle by `validateLinks`.
       stageInterval: false,
-      keptWithoutActivity:
-        linkKept(old, event, states) && !generatedActivity(generated, event.activity),
+      keptWithoutActivity: linkKept(old, event) && !generatedActivity(generated, event.activity),
     });
     // Art. 5º and the municipal cause bind a new or edited date; an unchanged one stays a
     // readiness issue, so it never blocks saving other changes.
-    if (schoolDayEdited(old, event, states)) {
+    if (schoolDayEdited(old, event)) {
       const issue = schoolDayIssue(s, event) ?? activityExtensionIssue(event);
       if (issue) fail(issue);
     }

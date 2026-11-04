@@ -25,13 +25,10 @@ export type StageActivityId = ActivityId<'stage'>;
 export type ReferenceSemester = 'first' | 'second';
 
 /**
- * Position of a stage link: the ordinal reported before the offer's stages were confirmed
- * (`unclassified`), or the stage's cycle and number within it once defined. A defined position is
- * kept when the number of stages changes; it is never reinterpreted.
+ * Position of a stage link: the stage's cycle and its number within that cycle. A position is kept
+ * as recorded when the organization or the number of stages changes; it is never reinterpreted.
  */
-export type StagePosition =
-  | { status: 'unclassified'; reportedOrdinal: number }
-  | { status: 'defined'; term: AcademicTerm; number: number };
+export type StagePosition = { status: 'defined'; term: AcademicTerm; number: number };
 
 export type ActivityRef =
   | { activityId: OnceActivityId }
@@ -90,24 +87,17 @@ const positiveInteger = (value: unknown) =>
 
 function stagePosition(value: unknown): StagePosition {
   if (!isObject(value)) throw invalid('posição de etapa ausente');
-  if (value.status === 'unclassified') {
-    exactKeys(value, ['status', 'reportedOrdinal'], 'a posição não classificada');
-    if (!positiveInteger(value.reportedOrdinal))
-      throw invalid('ordinal informado deve ser inteiro positivo');
-    return { status: 'unclassified', reportedOrdinal: value.reportedOrdinal as number };
-  }
-  if (value.status === 'defined') {
-    exactKeys(value, ['status', 'term', 'number'], 'a posição definida');
-    if (!academicTerms.includes(value.term as AcademicTerm))
-      throw invalid(`ciclo da etapa “${String(value.term)}” desconhecido`);
-    if (!positiveInteger(value.number)) throw invalid('número da etapa deve ser inteiro positivo');
-    return {
-      status: 'defined',
-      term: value.term as AcademicTerm,
-      number: value.number as number,
-    };
-  }
-  throw invalid(`situação de posição “${String(value.status)}” desconhecida`);
+  if (value.status !== 'defined')
+    throw invalid(`situação de posição “${String(value.status)}” desconhecida`);
+  exactKeys(value, ['status', 'term', 'number'], 'a posição definida');
+  if (!academicTerms.includes(value.term as AcademicTerm))
+    throw invalid(`ciclo da etapa “${String(value.term)}” desconhecido`);
+  if (!positiveInteger(value.number)) throw invalid('número da etapa deve ser inteiro positivo');
+  return {
+    status: 'defined',
+    term: value.term as AcademicTerm,
+    number: value.number as number,
+  };
 }
 
 /** Base implied by the fields of a link: each base has its own shape. */
@@ -171,11 +161,7 @@ export function activityKey(ref: ActivityRef): string {
   if ('semester' in ref) return `${ref.activityId}:semester:${ref.semester}`;
   if ('position' in ref) {
     const { position } = ref;
-    const at =
-      position.status === 'defined'
-        ? `${position.term}:${position.number}`
-        : `unclassified:${position.reportedOrdinal}`;
-    return `${ref.activityId}:stage:${at}:${ref.offerId}`;
+    return `${ref.activityId}:stage:${position.term}:${position.number}:${ref.offerId}`;
   }
   return ref.activityId;
 }
@@ -196,14 +182,11 @@ export function activityFromKey(key: string): ActivityRef | undefined {
   else if (base === 'cycle' && rest.length === 1) candidate = { activityId, term: rest[0] };
   else if (base === 'semester' && rest.length === 1) candidate = { activityId, semester: rest[0] };
   else if (base === 'stage' && rest.length >= 3) {
-    const [status, number, ...offer] = rest;
+    const [term, number, ...offer] = rest;
     candidate = {
       activityId,
       offerId: offer.join(':'),
-      position:
-        status === 'unclassified'
-          ? { status, reportedOrdinal: ordinal(number) }
-          : { status: 'defined', term: status, number: ordinal(number) },
+      position: { status: 'defined', term, number: ordinal(number) },
     };
   } else return undefined;
   try {

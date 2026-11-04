@@ -84,11 +84,12 @@ export function stageTerm(offer: CalendarOffer, n: number): AcademicTerm | undef
 
 /**
  * Position of the offer's `n`-th stage (ordinal in the year) under its current organization: the
- * cycle and the number within it once counted, else the reported ordinal.
+ * cycle and the number within it. Undefined when the offer has no such stage, because its number of
+ * stages was not informed or `n` goes beyond it.
  */
-export function stagePosition(offer: CalendarOffer, n: number): StagePosition {
+export function stagePosition(offer: CalendarOffer, n: number): StagePosition | undefined {
   const term = stageTerm(offer, n);
-  if (!term) return { status: 'unclassified', reportedOrdinal: n };
+  if (!term) return undefined;
   return {
     status: 'defined',
     term,
@@ -98,20 +99,15 @@ export function stagePosition(offer: CalendarOffer, n: number): StagePosition {
 
 /**
  * Ordinal in the year of a stage position under the offer's current organization, the inverse of
- * `stagePosition`; undefined for a defined position the organization does not have. An
- * unclassified position is a stage of the offer only while its count is not confirmed: once
- * confirmed, it is a link to review, never the stage with that ordinal.
+ * `stagePosition`; undefined for a position the organization does not have, which includes every
+ * position of an offer whose number of stages was not informed.
  */
 export function stageOrdinal(offer: CalendarOffer, position: StagePosition): number | undefined {
-  if (position.status === 'unclassified')
-    return stagesPerTerm(offer) === undefined ? position.reportedOrdinal : undefined;
   const perTerm = stagesPerTerm(offer);
   if (perTerm === undefined) return undefined;
   const ordinal = position.term === 'second' ? perTerm + position.number : position.number;
   const back = stagePosition(offer, ordinal);
-  return back.status === 'defined' && back.term === position.term && back.number === position.number
-    ? ordinal
-    : undefined;
+  return back?.term === position.term && back.number === position.number ? ordinal : undefined;
 }
 
 export function stageCount(offer: CalendarOffer): number {

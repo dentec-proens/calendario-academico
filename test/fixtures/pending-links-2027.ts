@@ -11,12 +11,7 @@ import {
   applyOfferOrganization,
   offerOrganizationDraft,
 } from '../../src/domain/calendar/organization/offers.ts';
-import {
-  cycleLink,
-  definedStage,
-  semesterLink,
-  unclassifiedStage,
-} from '../helpers/activity-links.ts';
+import { cycleLink, definedStage, semesterLink } from '../helpers/activity-links.ts';
 
 export type PendingLinksFixture = CalendarContent & { year: number; campus: string };
 
@@ -292,8 +287,8 @@ export function stageLinksToReview(): PendingLinksFixture {
       },
     ],
     events: [
-      date('results-unclassified', unclassifiedStage('results', 'integrado', 1), 'integrado'),
-      date('council-unclassified', unclassifiedStage('council', 'integrado', 1), 'integrado'),
+      date('results-uncounted', definedStage('results', 'integrado', 'annual', 1), 'integrado'),
+      date('council-uncounted', definedStage('council', 'integrado', 'annual', 1), 'integrado'),
       date('results-beyond', definedStage('results', 'subsequente', 'annual', 3), 'subsequente'),
       date('council-beyond', definedStage('council', 'subsequente', 'annual', 3), 'subsequente'),
       date('results-generated', definedStage('results', 'subsequente', 'annual', 1), 'subsequente'),
@@ -346,11 +341,10 @@ export function legacyOperationalLinks(): PendingLinksFixture {
 }
 
 /**
- * Stage positions to confirm. The integrated offer has no confirmed stages yet: its first stage
- * and the first results are unambiguous, two dates report the second stage and one reports a
- * fourth, beyond the count of three the campus confirms. The subsequent
- * offer is annual with three confirmed stages and a fourth reported beyond its count, as the
- * conversion leaves it (`beyond-count`).
+ * Stage positions recorded before the organization is confirmed. The integrated offer has no stages
+ * yet: its dates hold the first stage and results, two of them the second stage, and one a fourth,
+ * beyond the count of three the campus informs. The subsequent offer is annual with three stages
+ * and a date in a fourth position, beyond its count.
  */
 export function stagePositionsToConfirm(): PendingLinksFixture {
   const date = (
@@ -397,25 +391,37 @@ export function stagePositionsToConfirm(): PendingLinksFixture {
       },
     ],
     events: [
-      date('stage-one', unclassifiedStage('stage', 'integrado', 1), '01/02', '30/04', 'integrado'),
+      date(
+        'stage-one',
+        definedStage('stage', 'integrado', 'annual', 1),
+        '01/02',
+        '30/04',
+        'integrado',
+      ),
       date(
         'stage-two-a',
-        unclassifiedStage('stage', 'integrado', 2),
+        definedStage('stage', 'integrado', 'annual', 2),
         '03/05',
         '30/07',
         'integrado',
       ),
       date(
         'stage-two-b',
-        unclassifiedStage('stage', 'integrado', 2),
+        definedStage('stage', 'integrado', 'annual', 2),
         '10/05',
         '31/07',
         'integrado',
       ),
-      date('stage-four', unclassifiedStage('stage', 'integrado', 4), '01/11', '17/12', 'integrado'),
+      date(
+        'stage-four',
+        definedStage('stage', 'integrado', 'annual', 4),
+        '01/11',
+        '17/12',
+        'integrado',
+      ),
       date(
         'results-one',
-        unclassifiedStage('results', 'integrado', 1),
+        definedStage('results', 'integrado', 'annual', 1),
         '07/05',
         '07/05',
         'integrado',
@@ -443,7 +449,7 @@ export function stagePositionsToConfirm(): PendingLinksFixture {
       ),
       date(
         'sub-stage-4',
-        unclassifiedStage('stage', 'subsequente', 4),
+        definedStage('stage', 'subsequente', 'annual', 4),
         '01/11',
         '17/12',
         'subsequente',
@@ -454,7 +460,7 @@ export function stagePositionsToConfirm(): PendingLinksFixture {
 
 /**
  * Ivaiporã draft after the campus confirmed two stages for both annual offers: the 11 semester
- * links stay under “Vínculo a conferir” (`Classificação pendente`), and the annual cycle of their
+ * links stay under “Vínculo a conferir” (`not-generated`), and the annual cycle of their
  * activities is now generated for both offers, so each date can have its link corrected
  * (`changeActivity`).
  */
