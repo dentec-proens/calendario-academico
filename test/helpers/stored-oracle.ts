@@ -3,7 +3,6 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import type { Doc } from '../../convex/_generated/dataModel';
 import { contentHash } from '../../convex/calendars/lifecycle.ts';
-import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import {
   activitySituation,
@@ -24,14 +23,26 @@ import type { StoredCase, StoredContent, StoredSubmission } from './stored-fixtu
 /**
  * Oracle of the stored documents (`test/fixtures/stored/oracle.json`): what the domain
  * computes for each document of `test/fixtures/stored/contents.json` (counting with the ledger by
- * SHA-256, coverage, situation, activities, links under review, base identity, the PROENS print
- * by SHA-256 and the teaching-day breakdown), plus the content hash of each document and of each
- * submission. It replaces the oracle of format 4, removed with the converter in the contraction.
+ * SHA-256, coverage, situation, links under review, base identity, the PROENS print by SHA-256 and
+ * the teaching-day breakdown), plus the content hash of each document and of each submission. It
+ * replaces the oracle of format 4, removed with the converter in the contraction.
+ *
+ * What the catalogue decides is not recorded here: the expanded rows of each activity and the
+ * coverage rows that carry no date, no issue and no warning are the applicability of an activity
+ * for an offer, which `test/fixtures/catalogue-expected.json` already holds, so a new activity or
+ * a changed applicability does not rewrite this oracle. The situation of every activity is still
+ * recorded (`status`), and with it the activities each document generates.
  */
 const hash = (value: string) => bytesToHex(sha256(new TextEncoder().encode(value)));
 const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const hashOf = (content: StoredContent | StoredSubmission) =>
   contentHash(content as unknown as Doc<'calendarContents'>);
+
+const isNotable = (row: {
+  events: readonly unknown[];
+  issues: readonly unknown[];
+  warnings: readonly unknown[];
+}) => row.events.length > 0 || row.issues.length > 0 || row.warnings.length > 0;
 
 export function oracleValues(item: StoredCase) {
   const { content } = item;
@@ -68,8 +79,7 @@ export function oracleValues(item: StoredCase) {
     })),
     baseIdentity: inspect(base, base, state).identity,
     linksToReview: Object.fromEntries(linksToReview(state)),
-    activities: activityPlan(state).map(({ activity: _link, ...row }) => row),
-    coverage: coverage.map((row) => ({
+    coverage: coverage.filter(isNotable).map((row) => ({
       activity: row.requirement.id,
       offerId: row.offerId,
       applicability: row.applicability,
