@@ -386,6 +386,16 @@ export function requirements(state: AssessmentSettings): ActivityPlanItem[] {
     ...row,
   }));
 }
+/**
+ * Precedence of the 2027 policy, first match wins:
+ * 1. an excluded offer or one under its own regulation is `unconfigured`;
+ * 2. an offer outside `modalities` (always present: `requirements` injects the supported kinds),
+ *    `offerId` or `offerIds` is `optional`;
+ * 3. an entry in `optionalFor` for the offer's kind, even `''`, is `optional`;
+ * 4. an `intake` row reads the configuration of `term ?? 'annual'`: only `yes` with `required` is
+ *    `required`, anything else is `optional`, and the row's own fields are not read;
+ * 5. otherwise `applicability`, and without it `required: false` is `optional`, else `required`.
+ */
 export function applicability(
   _state: AssessmentSettings,
   requirement: ActivityPlanItem,

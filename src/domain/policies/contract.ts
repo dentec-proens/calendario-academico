@@ -73,6 +73,7 @@ export interface CalendarPolicy {
   catalogue?: readonly ActivityRule[];
   /** Requirements linked to coverage; `activityPlan` adds the fallback's applicability. */
   requirements(state: AssessmentSettings): ActivityPlanItem[];
+  /** The precedence among a requirement's fields belongs to each policy. */
   applicability(
     state: AssessmentSettings,
     requirement: ActivityPlanItem,
