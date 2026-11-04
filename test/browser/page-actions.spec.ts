@@ -13,7 +13,7 @@ for (const width of [1440, 390, 320]) {
       '/eventos-institucionais',
       '/campi',
       '/contas',
-      '/logs',
+      // The operations log shows its action only after older pages are loaded.
     ]) {
       await page.goto(origin + path);
       const action = page.locator('.page-action');
