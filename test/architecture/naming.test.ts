@@ -105,6 +105,9 @@ const formatFourAllowed: readonly string[] = [
   'test/helpers/retired-fields.ts',
   // The frozen v3 oracle names each linked date by the row its link resolves to.
   'test/domain/offers-equivalence.test.ts',
+  // Translators of that oracle, until its catalogue paths leave the frozen comparison.
+  'test/helpers/optional-notice.ts',
+  'test/helpers/split-withdrawal.ts',
 ];
 
 const allowed = (path: string) => formatFourAllowed.includes(path);
