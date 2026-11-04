@@ -170,19 +170,21 @@ export const convex = {
         });
       }
       case 'calendars:updateCalendarIdentity': {
-        const body = args.body as {
-          courses: string;
-          classes: string;
-          shifts: string;
-          label: string;
-        };
-        const base = record.name.split(' — ').slice(0, 2).join(' — ');
+        const body = args.body as { courses: string; classes: string; shifts: string };
         Object.assign(record, {
           courses: body.courses.trim(),
           classes: body.classes.trim(),
           shifts: body.shifts.trim(),
-          label: body.label.trim() || undefined,
-          name: body.label.trim() ? `${base} — ${body.label.trim()}` : base,
+        });
+        publish();
+        return Promise.resolve({ ok: true });
+      }
+      case 'calendars:renameCalendar': {
+        const label = (args.label as string).trim();
+        const base = record.name.split(' — ').slice(0, 2).join(' — ');
+        Object.assign(record, {
+          label: label || undefined,
+          name: label ? `${base} — ${label}` : base,
         });
         publish();
         return Promise.resolve({ ok: true });

@@ -1,22 +1,13 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-  type PropsWithChildren,
-} from 'react';
+import { createContext, useContext, useMemo, useState, type PropsWithChildren } from 'react';
 import { CircleAlert, Pencil } from 'lucide-react';
 import { identityLimits, type CalendarIdentity } from '#src/domain/calendar/identity.ts';
-import { calendarName } from '#src/domain/calendar/label.ts';
 import { PanelDialog, PanelHeader } from '../../../components/ui/Panel.tsx';
 import { TextAreaField, TextField } from '../../../components/ui/Field.tsx';
 import { Button } from '../../../components/ui/Button.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { useDraftForm } from '../../../shared/forms/useDraftForm.ts';
-import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
+import { useUnappliedDraft } from './useUnappliedDraft.ts';
 import { calendars } from '../../../shared/convex/calendars.ts';
 import { useAppSession } from '../../../app/session.tsx';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -32,24 +23,15 @@ export function useIdentityPanel() {
 
 // Inside the calendar draft scope, so leaving or reopening the calendar also discards it.
 const identityDraftKey = (calendarId: string) => `calendar:${calendarId}:identity`;
-const noSubscription = () => () => {};
 
 export function IdentityPanelProvider({ children }: PropsWithChildren) {
   const [open, setOpen] = useState(false);
   const { editorRecovery, maintenance } = useAppSession();
-  const { record, session } = useCalendarEditor();
+  const { record } = useCalendarEditor();
   const paused = Boolean(editorRecovery || maintenance);
   const show = useMemo(() => () => setOpen(true), []);
   // An unsaved identity, even with the panel closed, is unapplied work: it blocks the submission.
-  const drafts = useFormDrafts();
-  const editing = useSyncExternalStore(
-    drafts?.subscribe ?? noSubscription,
-    () => Boolean(drafts?.isEditing(identityDraftKey(record.id))),
-    () => false,
-  );
-  useEffect(() => {
-    session.setFormDirty('identity', editing);
-  }, [session, editing]);
+  useUnappliedDraft('identity', identityDraftKey(record.id));
   return (
     <IdentityPanelContext.Provider value={show}>
       {children}
@@ -117,7 +99,6 @@ function IdentityForm({ onSaved }: { onSaved: () => void }) {
     courses: record.courses,
     classes: record.classes,
     shifts: record.shifts,
-    label: record.label ?? '',
   };
   // `expected` keeps the identity this edit started from, even when resumed from a draft.
   const saved = { ...identity, expected: identity };
@@ -132,7 +113,6 @@ function IdentityForm({ onSaved }: { onSaved: () => void }) {
       onSaved();
     },
   });
-  const campus = record.state.campus;
   return (
     <form id="identity-form" onSubmit={submit}>
       <p className="help">
@@ -175,19 +155,6 @@ function IdentityForm({ onSaved }: { onSaved: () => void }) {
           maxLength={identityLimits.shifts}
           value={values.shifts}
           onValueChange={(value) => form.setFieldValue('shifts', value)}
-        />
-        <TextField
-          id="calendar-label"
-          name="label"
-          label={
-            <>
-              Apelido do rascunho <span className="field-optional">(opcional)</span>
-            </>
-          }
-          description={`Diferencia rascunhos do mesmo campus e ano. ${values.label.trim() ? `O nome fica: ${calendarName(record.year, campus, values.label)}.` : 'Ex.: Proposta com recesso em julho.'}`}
-          maxLength={identityLimits.label}
-          value={values.label}
-          onValueChange={(value) => form.setFieldValue('label', value)}
         />
         <FormActions preserveOnClose>
           <Button type="submit" pending={pending} loadingLabel="Salvando…">

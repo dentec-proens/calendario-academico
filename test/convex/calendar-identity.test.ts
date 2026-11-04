@@ -4,7 +4,7 @@ import type { Id } from '../../convex/_generated/dataModel.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, calendarStatus } from '../helpers/lifecycle.ts';
 
-const blank = { courses: '', classes: '', shifts: '', label: '' };
+const blank = { courses: '', classes: '', shifts: '' };
 
 async function fixture() {
   const f = await createNativeFixture();
@@ -26,7 +26,6 @@ async function fixture() {
       courses: row!.courses,
       classes: row!.classes,
       shifts: row!.shifts,
-      label: row!.label ?? '',
     };
   };
   const identify = async (
@@ -39,7 +38,22 @@ async function fixture() {
       expected: await stored(id),
       body: { ...blank, ...body },
     });
-  return { ...f, campus, create, identify, stored };
+  const rename = async (client: typeof campus, id: Id<'calendars'>, label: string) =>
+    client.mutation(api.calendars.renameCalendar, {
+      id,
+      expected: (await f.client.run((ctx) => ctx.db.get(id)))!.label ?? '',
+      label,
+    });
+  const audited = (id: Id<'calendars'>, action: string) =>
+    f.client.run((ctx) =>
+      ctx.db
+        .query('audit')
+        .withIndex('by_calendarId_and_action_and_at', (q) =>
+          q.eq('calendarId', id).eq('action', action),
+        )
+        .collect(),
+    );
+  return { ...f, campus, create, identify, rename, stored, audited };
 }
 
 test('a calendar starts without courses, which are required only to submit', async () => {
@@ -54,29 +68,17 @@ test('a calendar starts without courses, which are required only to submit', asy
     courses: '  Técnico em Informática  ',
     classes: '1º ano A',
     shifts: 'matutino',
-    label: ' Proposta A ',
   });
   const identified = await calendarStatus(f.campus, id);
   expect(identified.record).toMatchObject({
     courses: 'Técnico em Informática',
     classes: '1º ano A',
     shifts: 'matutino',
-    label: 'Proposta A',
-    name: 'Calendário 2027 - Campus A — Proposta A',
+    name: 'Calendário 2027 - Campus A',
   });
   expect(identified.record.version, 'identity keeps the content version').toBe(1);
   await act(f.campus, id, 'submit');
   expect((await calendarStatus(f.campus, id)).status).toBe('enviado');
-});
-
-test('clearing the label restores the default name', async () => {
-  const f = await fixture();
-  const id = await f.create();
-  await f.identify(f.campus, id, { courses: 'Curso', label: 'Proposta A' });
-  await f.identify(f.campus, id, { courses: 'Curso' });
-  const { record } = await calendarStatus(f.campus, id);
-  expect(record.label).toBeUndefined();
-  expect(record.name).toBe('Calendário 2027 - Campus A');
 });
 
 test('identity follows the calendar locks and the campus scope', async () => {
@@ -129,24 +131,68 @@ test('the identity change is attributed and audited without a new content versio
 test('a change from another session is reported instead of overwritten', async () => {
   const f = await fixture();
   const id = await f.create();
-  await f.identify(f.campus, id, { courses: 'Curso', label: 'Proposta A' });
+  await f.identify(f.campus, id, { courses: 'Curso' });
   const opened = await f.stored(id);
-  await f.identify(f.asClient('admin'), id, { courses: 'Curso corrigido', label: 'Proposta A' });
+  await f.identify(f.asClient('admin'), id, { courses: 'Curso corrigido' });
   await expect(
     f.campus.mutation(api.calendars.updateCalendarIdentity, {
       id,
       expected: opened,
-      body: { ...opened, label: 'Proposta B' },
+      body: { ...opened, classes: '1º ano A' },
     }),
   ).rejects.toThrow(/alterada em outra sessão/);
-  expect((await calendarStatus(f.campus, id)).record).toMatchObject({
-    courses: 'Curso corrigido',
-    label: 'Proposta A',
-  });
+  expect((await calendarStatus(f.campus, id)).record.courses).toBe('Curso corrigido');
   // Saving what is already stored is not a conflict.
   await f.campus.mutation(api.calendars.updateCalendarIdentity, {
     id,
     expected: opened,
     body: await f.stored(id),
   });
+});
+
+test('renaming changes only the label after campus and year', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await f.rename(f.campus, id, ' Proposta A ');
+  const renamed = await calendarStatus(f.campus, id);
+  expect(renamed.record).toMatchObject({
+    label: 'Proposta A',
+    name: 'Calendário 2027 - Campus A — Proposta A',
+  });
+  expect(renamed.record.version, 'renaming keeps the content version').toBe(1);
+
+  await f.rename(f.campus, id, '   ');
+  const cleared = await calendarStatus(f.campus, id);
+  expect(cleared.record.label).toBeUndefined();
+  expect(cleared.record.name).toBe('Calendário 2027 - Campus A');
+});
+
+test('renaming follows the calendar locks, the campus scope and the length limit', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await expect(f.rename(f.asClient('campus-b'), id, 'Alheio')).rejects.toThrow();
+  await expect(f.rename(f.campus, id, 'x'.repeat(121))).rejects.toThrow(/até 120 caracteres/);
+  await f.identify(f.campus, id, { courses: 'Curso' });
+  await act(f.campus, id, 'submit');
+  await expect(f.rename(f.campus, id, 'Proposta B')).rejects.toThrow(
+    /enviado e não pode ser alterado/,
+  );
+  expect((await calendarStatus(f.campus, id)).record.name).toBe('Calendário 2027 - Campus A');
+});
+
+test('renaming is attributed and audited, and a rename from another session is not overwritten', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await f.rename(f.asClient('admin'), id, 'Proposta A');
+  expect((await calendarStatus(f.campus, id)).record.updatedByName).toBe('Admin');
+  expect(await f.audited(id, 'RENAME_CALENDAR')).toHaveLength(1);
+  await f.rename(f.campus, id, 'Proposta A');
+  expect(await f.audited(id, 'RENAME_CALENDAR'), 'an unchanged name writes nothing').toHaveLength(
+    1,
+  );
+
+  await expect(
+    f.campus.mutation(api.calendars.renameCalendar, { id, expected: '', label: 'Proposta B' }),
+  ).rejects.toThrow(/alterado em outra sessão/);
+  expect((await calendarStatus(f.campus, id)).record.label).toBe('Proposta A');
 });

@@ -14,16 +14,17 @@ export async function calendarAuthorship(
       )
       .order(order)
       .first();
-  const [original, derived, saved, converted, identified] = await Promise.all([
+  const [original, derived, saved, converted, identified, renamed] = await Promise.all([
     entry('CREATE_CALENDAR', 'asc'),
     entry('CREATE_CALENDAR_VERSION', 'asc'),
     entry('SAVE_CALENDAR', 'desc'),
     entry('MAKE_CALENDAR_DEFINITIVE', 'desc'),
     entry('UPDATE_CALENDAR_IDENTITY', 'desc'),
+    entry('RENAME_CALENDAR', 'desc'),
   ]);
   const created = original ?? derived;
   // Uploads, reviews, trash operations and lifecycle transitions keep updatedAt and version.
-  const latest = [created, saved, converted, identified]
+  const latest = [created, saved, converted, identified, renamed]
     .filter((item) => item !== null)
     .filter(
       (item) =>

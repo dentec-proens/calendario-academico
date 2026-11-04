@@ -69,6 +69,25 @@
   min-width: 0;
   padding-right: 24px;
 }
+.editor-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  min-width: 0;
+}
+.editor-title-row h1 {
+  min-width: 0;
+}
+.editor-name-preview {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.editor-name-preview strong {
+  color: var(--ui-text);
+}
 .editor-heading-group h1 {
   font-size: 1.65rem;
   line-height: 1.25;

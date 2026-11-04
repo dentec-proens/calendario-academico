@@ -3,6 +3,30 @@ import { selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
+  test(`the editor title is renamed from its own panel at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(await fixtureServer('editor'));
+    const rename = page.getByRole('button', { name: 'Renomear calendário' });
+    await rename.click();
+    const panel = page.getByRole('dialog', { name: 'Nome do calendário' });
+    await expect(panel).toContainText('O ano letivo e o campus fazem parte do nome e não mudam.');
+    await panel.getByLabel('Complemento do nome (opcional)').fill('Proposta A');
+    await expect(panel.locator('.editor-name-preview')).toHaveText(
+      'O nome fica: Calendário 2027 - Campus Campus de teste — Proposta A',
+    );
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await panel.getByRole('button', { name: 'Salvar nome' }).click();
+    await expect(panel).toBeHidden();
+    await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste — Proposta A');
+    await expect(rename).toBeFocused();
+    expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
+  });
+
   test(`the editor header shows the identity and saves it from the side panel at ${width}px`, async ({
     page,
     fixtureServer,
@@ -18,8 +42,6 @@ for (const width of [1440, 390]) {
     await expect(panel.getByLabel('Cursos')).toHaveValue('Curso sintético');
     await panel.getByLabel('Cursos').fill('Técnico em Informática, Técnico em Administração');
     await panel.getByLabel('Turmas (opcional)').fill('1º ano A');
-    await panel.getByLabel('Apelido do rascunho (opcional)').fill('Proposta A');
-    await expect(panel).toContainText('O nome fica: Calendário 2027 - Campus Campus de teste');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
@@ -28,7 +50,6 @@ for (const width of [1440, 390]) {
     await expect(identity).toHaveText(
       /Técnico em Informática, Técnico em Administração · 1º ano A/,
     );
-    await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste — Proposta A');
     await expect(edit).toBeFocused();
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
   });
@@ -73,6 +94,29 @@ test('a reviewer reads the identity without the edit action', async ({ page, fix
   await page.goto(await fixtureServer('editor-reviewer'));
   await expect(page.locator('#calendar-identity')).toHaveText(/Curso sintético/);
   await expect(page.locator('#calendar-identity button')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Renomear calendário' })).toHaveCount(0);
+});
+
+test('an unsaved name left in the closed panel counts as unapplied work', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('editor'));
+  const rename = page.getByRole('button', { name: 'Renomear calendário' });
+  await rename.click();
+  const panel = page.getByRole('dialog', { name: 'Nome do calendário' });
+  await panel.getByLabel('Complemento do nome (opcional)').fill('Proposta em preenchimento');
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+  await expect(page.locator('#unapplied-status')).toBeVisible();
+  await expect(page.locator('.editor-save-indicator')).toHaveText('Campos ainda em preenchimento');
+  await rename.click();
+  await expect(panel.getByLabel('Complemento do nome (opcional)')).toHaveValue(
+    'Proposta em preenchimento',
+  );
+  await panel.getByRole('button', { name: 'Descartar alterações' }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#unapplied-status')).toBeHidden();
 });
 
 test('an unsaved identity left in the closed panel counts as unapplied work', async ({

@@ -178,7 +178,6 @@ export const identityInput = v.object({
   courses: v.string(),
   classes: v.string(),
   shifts: v.string(),
-  label: v.string(),
 });
 export const saveState = v.object({
   ...contentState.fields,

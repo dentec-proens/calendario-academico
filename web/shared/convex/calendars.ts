@@ -34,6 +34,10 @@ export const calendars = {
         ...args,
       }),
     ),
+  rename: (id: string, args: Omit<FunctionArgs<typeof functions.calendars.renameCalendar>, 'id'>) =>
+    request(() =>
+      convex.mutation(functions.calendars.renameCalendar, { id: id as Id<'calendars'>, ...args }),
+    ),
   synchronizeBase: (id: string, version: number) =>
     request(() =>
       convex

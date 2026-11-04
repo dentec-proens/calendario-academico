@@ -172,7 +172,6 @@ export function validSei(value: string) {
   return sei;
 }
 
-export const maximumLabelLength = 120;
 export const maximumNoteLength = 4000;
 
 /** Offer kinds two calendars share: the unit of uniqueness. */

@@ -16,7 +16,7 @@ import { query, mutation } from './_generated/server';
 import { requireNativeUser } from './access/identity';
 import { calendarRow, campusName, contents, summary } from './calendars/model';
 import { applyTransition } from './calendars/transitions';
-import { calendarName } from '../src/domain/calendar/label';
+import { calendarName, normalizeLabel } from '../src/domain/calendar/label';
 import { normalizeIdentity } from '../src/domain/calendar/identity';
 import type { Member } from './access/contracts';
 import { fullRecord, calendarSummaries, calendarQuery, baseRecord } from './calendars/record';
@@ -290,7 +290,7 @@ export const synchronizeBase = mutation({
 });
 
 /**
- * Courses, classes, shifts and label describe the calendar without being part of its content:
+ * Courses, classes and shifts describe the calendar without being part of its content:
  * they keep the content version, so an open editor never sees this change as a conflict.
  * `expected` is the identity the form started from, so a change from another session is
  * reported instead of overwritten.
@@ -310,7 +310,6 @@ export const updateCalendarIdentity = mutation({
         courses: row.courses,
         classes: row.classes,
         shifts: row.shifts,
-        label: row.label ?? '',
       }),
     );
     if (equalValues(next, stored)) return { ok: true };
@@ -324,13 +323,45 @@ export const updateCalendarIdentity = mutation({
         'A identificação foi alterada em outra sessão. Descarte as alterações para ver os valores atuais e edite novamente.',
         409,
       );
-    // An empty label is stored as an absent field, so the name falls back to campus and year.
-    const { label, ...fields } = next;
-    await ctx.db.patch(id, { ...fields, label: label || undefined, updatedAt: Date.now() });
+    await ctx.db.patch(id, { ...next, updatedAt: Date.now() });
     await appendAudit(
       ctx,
       user,
       'UPDATE_CALENDAR_IDENTITY',
+      { type: 'calendar', id },
+      { calendarId: id, campusId: row.campusId, version: row.version },
+    );
+    return { ok: true };
+  },
+});
+
+/**
+ * Year and campus stay fixed in the name; only its label changes, under the same locks and
+ * concurrency check as the identity and without a new content version.
+ */
+export const renameCalendar = mutation({
+  args: { ...idArgs, expected: v.string(), label: v.string() },
+  returns: ok,
+  handler: async (ctx, { id, expected, label }) => {
+    await assertWritesOpen(ctx);
+    const { user } = await requireNativeUser(ctx);
+    calendarEditor(user);
+    const row = await calendarRow(ctx, user, id);
+    assertEditableStatus(row.status);
+    const next = domainRule(() => normalizeLabel(label));
+    const stored = row.label ?? '';
+    if (next === stored) return { ok: true };
+    if (domainRule(() => normalizeLabel(expected)) !== stored)
+      fail(
+        'O nome foi alterado em outra sessão. Descarte as alterações para ver o nome atual e edite novamente.',
+        409,
+      );
+    // An empty label is stored as an absent field, so the name falls back to campus and year.
+    await ctx.db.patch(id, { label: next || undefined, updatedAt: Date.now() });
+    await appendAudit(
+      ctx,
+      user,
+      'RENAME_CALENDAR',
       { type: 'calendar', id },
       { calendarId: id, campusId: row.campusId, version: row.version },
     );

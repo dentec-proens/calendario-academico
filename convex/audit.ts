@@ -32,6 +32,7 @@ const labels: Record<string, string> = {
   REINSTATE_CALENDAR: 'Calendário restabelecido',
   CREATE_CALENDAR_VERSION: 'Nova versão do calendário criada',
   UPDATE_CALENDAR_IDENTITY: 'Identificação do calendário alterada',
+  RENAME_CALENDAR: 'Calendário renomeado',
   UPLOAD_HISTORY: 'Calendário anterior enviado',
   CREATE_USER: 'Membro cadastrado',
   UNLOCK_PASSWORD_LOGIN: 'Login por senha desbloqueado',

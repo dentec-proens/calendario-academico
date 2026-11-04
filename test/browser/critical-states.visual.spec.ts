@@ -109,6 +109,14 @@ test('missing courses in the header and the identity panel', async ({ page, fixt
   await expect(page).toHaveScreenshot('identity-panel.png');
 });
 
+test('the name panel keeps campus and year fixed', async ({ page, fixtureServer }) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await page.locator('#calendar-rename').click();
+  await page.locator('#calendar-label').fill('Proposta com recesso em julho');
+  await assertNoOverflow(page);
+  await expect(page).toHaveScreenshot('name-panel.png');
+});
+
 test('step 6 lists activities and opens one in the side panel', async ({ page, fixtureServer }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await expect(page.locator('#record-title')).toBeVisible();

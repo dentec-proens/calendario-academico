@@ -33,6 +33,7 @@ import ImportCalendarForm from './forms/ImportCalendarForm.tsx';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { IdentityPanelProvider, IdentitySummary } from './identity/CalendarIdentity.tsx';
+import { CalendarTitle } from './identity/CalendarName.tsx';
 import { missingCoursesIssue } from '#src/domain/calendar/identity.ts';
 
 function EditorFrame() {
@@ -192,9 +193,7 @@ function EditorFrame() {
       )}
       <div className="editor-intro">
         <div className="editor-heading-group">
-          <h1 id="record-title" tabIndex={-1}>
-            {record.name}
-          </h1>
+          <CalendarTitle />
           <div id="record-heading" className="editor-meta">
             <StatusBadge status={record.status} />
             {record.seiProcess ? <span>Processo SEI nº {record.seiProcess}</span> : null}
