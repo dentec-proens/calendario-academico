@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import {
   activityKey,
+  activityRef,
   type ActivityBase,
   type ActivityRef,
 } from '../../src/domain/calendar/activities/activity-ref.ts';
@@ -23,6 +24,14 @@ import {
   legacyOperationalLinks,
   stageLinksToReview,
 } from '../fixtures/pending-links-2027.ts';
+import { civilDate } from '../../src/domain/civil-date.ts';
+import {
+  activityBases,
+  pairsOf,
+  released2027,
+  releasedGlobal,
+  releasedOperational,
+} from '../helpers/released-activities.ts';
 import { legacyBasis } from '../helpers/legacy-classification.ts';
 import { storedCases, type StoredCase } from '../helpers/stored-fixtures.ts';
 
@@ -108,6 +117,68 @@ describe('links of the operational catalogue stay to review in 2027', () => {
       }
     }
     expect(reviewed.sort()).toEqual(retired);
+  });
+});
+
+/** A link of the shape its repetition base takes, for a date of the synthetic calendar. */
+const linkOf = (id: string, base: ActivityBase): ActivityRef =>
+  activityRef(
+    {
+      once: { activityId: id },
+      cycle: { activityId: id, term: 'annual' },
+      semester: { activityId: id, semester: 'first' },
+      stage: {
+        activityId: id,
+        offerId: 'integrado',
+        position: { status: 'defined', term: 'annual', number: 1 },
+      },
+    }[base],
+  );
+
+/**
+ * A link is readable when any catalogue declares its pair; whether the configuration generates it
+ * is a classification. A readable link the policy does not generate falls under “Vínculo a
+ * conferir” (`not-generated`), and neither reading nor evaluating the plan throws.
+ */
+describe.each([
+  [2027, 'a pair only the operational catalogue declares'],
+  [2028, 'a pair only the 2027 policy declares'],
+])('in %i, %s', (year, _what) => {
+  const state = (): ActivityState => {
+    const base = legacyOperationalLinks() as ActivityState;
+    const pairs = activityBases.flatMap((kind) => releasedGlobal[kind].map((id) => ({ id, kind })));
+    return {
+      ...base,
+      year,
+      events: pairs.map(({ id, kind }) => ({
+        id: `${id}/${kind}`,
+        name: `Data sintética ${id}/${kind}`,
+        start: civilDate(`${year}-02-19`),
+        end: civilDate(`${year}-02-19`),
+        effect: 'note',
+        category: 'prazo',
+        activity: linkOf(id, kind),
+        offers: ['integrado'],
+      })),
+    } as ActivityState;
+  };
+  const declaredByTheOther = year === 2027 ? releasedOperational : released2027;
+  const own = year === 2027 ? released2027 : releasedOperational;
+  const missing = activityBases.flatMap((kind) =>
+    declaredByTheOther[kind].filter((id) => !own[kind].includes(id)).map((id) => `${id}/${kind}`),
+  );
+
+  test('every released pair is readable, and what the catalogue lacks is reviewed, not an error', () => {
+    const current = state();
+    expect(current.events.length).toBe(pairsOf(releasedGlobal).length);
+    const review = linksToReview(current);
+    expect(missing.length).toBeGreaterThan(0);
+    for (const pair of missing) expect(review.get(pair), pair).toBe('not-generated');
+    const generated = generatedActivities(current);
+    for (const event of current.events)
+      if (!generatedActivity(generated, event.activity))
+        expect(review.get(event.id), event.id).toBe('not-generated');
+    expect(() => evaluatePlan(current)).not.toThrow();
   });
 });
 

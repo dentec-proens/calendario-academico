@@ -13,6 +13,20 @@ import { modalityIds } from '../../src/domain/calendar/config.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import type { CalendarPolicy, RulesetChange } from '../../src/domain/policies/contract.ts';
 import {
+  activityIds,
+  type ActivityBase,
+} from '../../src/domain/calendar/activities/activity-ref.ts';
+import { operationalRules } from '../../src/domain/calendar/activities/operational-checklist.ts';
+import {
+  activityBases,
+  pairsOf,
+  released2027,
+  releasedGlobal,
+  releasedOperational,
+  type ReleasedActivities,
+} from '../helpers/released-activities.ts';
+import {
+  declaredActivityRules,
   equivalentRulesets,
   policyFor,
   reviewBoundary,
@@ -182,57 +196,54 @@ test('every bound ruleset has an ordered history ending at the current version',
 });
 
 /**
- * Activity IDs released by each bound policy. Saved events link to them, and normalization rejects
- * an event whose activity left the checklist, so released activities are never removed.
+ * Saved dates link to a declaration (ID and repetition base), and normalization rejects a link no
+ * catalogue declares, so released pairs are never retired. They are protected at two levels: per
+ * catalogue, so that dropping a pair from one catalogue fails even when another still declares it
+ * (the 2027 policy and the operational catalogue repeat some activities by different bases), and
+ * in the global set that `activityIds()` reads, which is what keeps a stored link readable.
  */
-const releasedActivities: Record<number, readonly string[]> = {
-  2027: [
-    'stage',
-    'results',
-    'council',
-    'pedagogical-meeting',
-    'final',
-    'diary',
-    'recognition',
-    'final-appeal',
-    'admission-notice',
-    'enrolment',
-    'adjustment',
-    'withdrawal',
-    'component-cancellation',
-    'registration',
-    'pit',
-    'rit',
-    'teaching-plan',
-    'extraordinary-council',
-    'family-meeting',
-    'campus-events',
-    'alumni-meeting',
-    'internship-event',
-    'regular-admission-notice',
-    'robotics',
-    'course-showcase',
-    'pedagogical-training',
-    'collective-planning',
-    'women-week',
-    'ethics-week',
-    'cultural-week',
-  ],
+const declaredBy = (rules: readonly { id: string; repeat: ActivityBase }[]): ReleasedActivities => {
+  const of = (base: ActivityBase) => [
+    ...new Set(rules.filter((rule) => rule.repeat === base).map((rule) => rule.id)),
+  ];
+  return { once: of('once'), cycle: of('cycle'), semester: of('semester'), stage: of('stage') };
 };
 
-test('released activities stay declared so saved records keep resolving', () => {
-  for (const policy of boundPolicies) {
-    const released = releasedActivities[policy.year!] ?? [];
-    const declared = policy.catalogue!.map((rule) => rule.id);
-    expect(
-      released.filter((id) => !declared.includes(id)),
-      'Uma atividade publicada saiu da tabela e invalidaria calendários que a vinculam. Mantenha a linha, por exemplo opcional com optionalFor.',
-    ).toEqual([]);
-    expect(
-      declared.filter((id) => !released.includes(id)),
-      'Registre a nova atividade em releasedActivities.',
-    ).toEqual([]);
-  }
+const protectedCatalogue = (
+  name: string,
+  declared: ReleasedActivities,
+  released: ReleasedActivities,
+) => {
+  expect(
+    pairsOf(released).filter((pair) => !pairsOf(declared).includes(pair)),
+    `${name}: uma atividade publicada saiu do catálogo e invalidaria calendários que a vinculam. Mantenha a linha, por exemplo opcional com optionalFor.`,
+  ).toEqual([]);
+  expect(
+    pairsOf(declared).filter((pair) => !pairsOf(released).includes(pair)),
+    `${name}: registre a nova atividade em test/helpers/released-activities.ts.`,
+  ).toEqual([]);
+};
+
+test('released activities stay declared by the 2027 policy, pair by pair', () => {
+  const policy = policyFor(2027);
+  expect(policy.rulesetPrefix).toBeDefined();
+  protectedCatalogue('consup-292-2027', declaredBy(policy.catalogue!), released2027);
+});
+
+test('released activities stay declared by the operational catalogue, pair by pair', () => {
+  protectedCatalogue('catálogo operacional', declaredBy(operationalRules()), releasedOperational);
+});
+
+test('the global set of declarations keeps every released pair readable and holds nothing else', () => {
+  const global = declaredBy(declaredActivityRules());
+  for (const base of activityBases)
+    expect([...activityIds(base)].sort(), base).toEqual([...global[base]].sort());
+  protectedCatalogue('conjunto global', global, releasedGlobal);
+  // Every catalogue's pairs belong to the global set, so no catalogue publishes outside it.
+  for (const catalogue of [released2027, releasedOperational])
+    expect(pairsOf(catalogue).filter((pair) => !pairsOf(releasedGlobal).includes(pair))).toEqual(
+      [],
+    );
 });
 
 test('published historical fingerprints remain intact and v4 catalogues match the independent release A capture', () => {
