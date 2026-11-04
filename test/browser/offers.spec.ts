@@ -237,3 +237,49 @@ for (const width of [1440, 390]) {
     );
   });
 }
+
+test('a draft removes an offer with its dates after confirmation and keeps the others', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('editor'));
+  await expect(page.locator('#record-title')).toBeVisible();
+  await selectEditorSection(page, 'periods');
+  await configureOffer(page, 'integrado', '2027-02-01', '2027-12-17');
+  await savedState(page);
+  // The last offer of the calendar cannot be removed.
+  await page.locator('[data-edit-organization="integrado"]').click();
+  await expect(page.locator('#offer-integrado-remove')).toHaveCount(0);
+  await page.locator('#offer-integrado-cancel').click();
+  await addUndergraduateOffer(
+    page,
+    'Licenciatura em Química',
+    'anual',
+    2,
+    [['2027-02-01', '2027-12-17']],
+    [
+      ['2027-02-01', '2027-06-30'],
+      ['2027-07-01', '2027-12-17'],
+    ],
+  );
+  await page.locator('[data-edit-organization="graduacao"]').click();
+  await page.locator('#offer-graduacao-remove').click();
+  const dialog = page.locator('.confirmation-dialog');
+  await expect(dialog).toContainText('Remover a oferta Licenciatura em Química?');
+  await expect(dialog).toContainText('Período removido: Ano letivo — Licenciatura em Química');
+  await expect(dialog).toContainText(
+    'Data removida: 1ª etapa de avaliação — Licenciatura em Química',
+  );
+  await page.locator('.confirmation-dialog__confirm').click();
+  await expect(page.locator('[data-offer="graduacao"]')).toHaveCount(0);
+  const saved = await savedState(page);
+  expect(saved.state.offers.map((offer) => offer.id)).toEqual(['integrado']);
+  expect(saved.state.periods.every((period) => !period.id.includes('graduacao'))).toBe(true);
+  expect(
+    saved.state.events.every(
+      (event) =>
+        !event.scope.offers.includes('graduacao') &&
+        !(event.activity && 'offerId' in event.activity && event.activity.offerId === 'graduacao'),
+    ),
+  ).toBe(true);
+});

@@ -18,16 +18,27 @@ type OfferState = CalendarContent & { year: number; campus?: string };
 export function prepareOfferCalendarSave<E extends DateFields & { active: boolean }>(
   previous: OfferState,
   proposed: OfferState,
-  context: { storedContent: unknown; catalogue: { events: E[] }; recalculate: boolean },
+  context: {
+    storedContent: unknown;
+    catalogue: { events: E[] };
+    recalculate: boolean;
+    /** A draft may drop an offer (`removeOffer`); a calendar once submitted keeps its offers. */
+    allowOfferRemoval?: boolean;
+  },
 ) {
   if (proposed.year !== previous.year) invalidCalendar('O ano não pode mudar neste registro.');
   for (const old of previous.offers) {
     const next = proposed.offers.find((offer) => offer.id === old.id);
-    if (!next)
+    if (!next) {
+      if (context.allowOfferRemoval) continue;
       return invalidCalendar('Ofertas existentes não podem ser removidas por esta operação.');
+    }
     if (next.kind !== old.kind) invalidCalendar('O tipo de uma oferta existente não pode mudar.');
   }
-  const previousIds = previous.offers.map((offer) => offer.id);
+  // Removed offers leave nothing behind: normalization refuses a date or period that names one.
+  const previousIds = previous.offers
+    .map((offer) => offer.id)
+    .filter((id) => proposed.offers.some((offer) => offer.id === id));
   // Adding an offer neither extends nor confirms the scope of existing dates.
   let state = normalizeOfferCalendar({ ...proposed, campus: previous.campus ?? '' }, previous);
   for (const offer of state.offers) {

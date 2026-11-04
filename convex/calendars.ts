@@ -211,7 +211,7 @@ export const saveCalendar = mutation({
         'O conjunto de regras mudou. Atualize a aplicação e confira o preenchimento antes de salvar.',
         409,
       );
-    // Offers cannot be removed: an overlap born here between transitions could not be undone.
+    // Only a draft drops an offer: a returned calendar keeps the kinds its submission covered.
     const proposedKinds = kinds(body.state);
     if (status === 'devolvido' && proposedKinds.some((kind) => !row.offerKinds.includes(kind)))
       await assertUniqueInFlow(ctx, row, proposedKinds);
@@ -223,6 +223,7 @@ export const saveCalendar = mutation({
         storedContent: savedContent,
         catalogue: base,
         recalculate: reconciliation.recalculate,
+        allowOfferRemoval: status === 'rascunho',
       }),
     );
     // Convex validators constrain the transport; domain normalization preserves those literals.

@@ -4,7 +4,16 @@ import { definedStage, rowLink } from '../helpers/activity-links.ts';
 import { isStageActivity } from '../../src/domain/calendar/activities/activity-ref.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { applyDate } from '../helpers/date-commands.ts';
-import { configureIntakeRequirement } from '../../src/domain/calendar/commands/organization.ts';
+import {
+  configureIntakeRequirement,
+  offerRemovalPreview,
+  removeOffer,
+} from '../../src/domain/calendar/commands/organization.ts';
+import {
+  normalizeOfferCalendar,
+  offerCalendarContent,
+} from '../../src/domain/calendar/normalization/normalize.ts';
+import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import {
   applyOfferOrganization,
@@ -315,4 +324,91 @@ test('splitting a shared period remaps only the destination of the reorganized o
   expect(
     next.periods.find((period) => period.id === destinations[1].periodId)?.association,
   ).toEqual({ status: 'defined', offers: ['graduacao-2'], term: 'annual' });
+});
+
+test('removing an offer takes its periods, stages, own dates, destinations and scope, keeping the rest', () => {
+  const state = calendarOffersFixture();
+  const day = civilDate('2027-03-10');
+  state.events.push(
+    {
+      id: 'shared-date',
+      name: 'Reunião compartilhada',
+      start: day,
+      end: day,
+      effect: 'note',
+      scope: { offers: ['integrado', 'graduacao-2'], confirmed: true },
+    },
+    {
+      id: 'own-date',
+      name: 'Data só da Engenharia',
+      start: day,
+      end: day,
+      effect: 'note',
+      scope: { offers: ['graduacao-2'], confirmed: true },
+    },
+    {
+      id: 'notice',
+      name: 'Edital compartilhado',
+      start: day,
+      end: day,
+      effect: 'note',
+      notice: {
+        publication: 'planned',
+        admission: {
+          type: 'transfer',
+          year: 2027,
+          term: 'first',
+          destinations: [
+            { offerId: 'graduacao-2', periodId: 'graduacao-2-first' },
+            { offerId: 'graduacao-3', periodId: 'graduacao-3-first' },
+          ],
+        },
+      },
+      scope: { offers: ['graduacao-2', 'graduacao-3'], confirmed: true },
+    },
+  );
+  const before = structuredClone(state);
+  const preview = offerRemovalPreview(state, 'graduacao-2');
+  expect(preview.removedPeriods).toEqual(['1º semestre', '2º semestre']);
+  expect(preview.removedDates).toHaveLength(5);
+  expect(preview.removedDates).toContain('Data só da Engenharia');
+  expect(preview.narrowedDates).toEqual(['Reunião compartilhada', 'Edital compartilhado']);
+  const next = removeOffer(state, 'graduacao-2', []);
+  expect(state).toEqual(before);
+  expect(offerIds(next)).toEqual(['integrado', 'graduacao', 'graduacao-3']);
+  expect(next.periods.map((period) => period.id)).toEqual(
+    before.periods.filter((period) => !period.id.startsWith('graduacao-2')).map((p) => p.id),
+  );
+  expect(
+    next.events.some(
+      (event) =>
+        event.scope.offers.includes('graduacao-2') ||
+        (event.activity && 'offerId' in event.activity && event.activity.offerId === 'graduacao-2'),
+    ),
+  ).toBe(false);
+  expect(next.events.find((event) => event.id === 'own-date')).toBeUndefined();
+  expect(next.events.find((event) => event.id === 'shared-date')?.scope).toEqual({
+    offers: ['integrado'],
+    confirmed: true,
+  });
+  expect(
+    next.events.find((event) => event.id === 'notice')?.notice?.admission?.destinations,
+  ).toEqual([{ offerId: 'graduacao-3', periodId: 'graduacao-3-first' }]);
+  // The result is a valid calendar, and a draft may save it; a submitted calendar may not.
+  const previous = normalizeOfferCalendar(state, state);
+  expect(normalizeOfferCalendar(next, previous)).toBeTruthy();
+  const context = { storedContent: offerCalendarContent(previous), catalogue: { events: [] } };
+  expect(
+    prepareOfferCalendarSave(previous, next, {
+      ...context,
+      recalculate: false,
+      allowOfferRemoval: true,
+    }).offerKinds,
+  ).toEqual(['integrado', 'graduacao']);
+  expect(() =>
+    prepareOfferCalendarSave(previous, next, { ...context, recalculate: false }),
+  ).toThrow('não podem ser removidas');
+  expect(() => removeOffer(state, 'outra', [])).toThrow('não pertence');
+  const single = { ...state, offers: state.offers.slice(0, 1) };
+  expect(() => offerRemovalPreview(single, 'integrado')).toThrow('pelo menos uma oferta');
 });

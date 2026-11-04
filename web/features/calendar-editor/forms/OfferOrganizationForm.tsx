@@ -19,7 +19,12 @@ import {
   organizationAwaitingSave,
   organizationDraftStages,
 } from '#src/domain/calendar/organization/offers.ts';
-import { configureOfferMetadata } from '#src/domain/calendar/commands/organization.ts';
+import {
+  configureOfferMetadata,
+  offerRemovalPreview,
+  removeOffer,
+} from '#src/domain/calendar/commands/organization.ts';
+import { confirmAction } from '../../../components/confirmation.ts';
 import { validateOffers } from '#src/domain/calendar/normalization/normalize.ts';
 import {
   nextOfferId,
@@ -41,7 +46,7 @@ import type {
 import { periodsForOffer } from '#src/domain/calendar/organization/periods.ts';
 import { modalityLabels } from '#src/domain/calendar/modalities.ts';
 import { civilDate } from '../events/activity-query.ts';
-import { Check, ChevronUp, Eye, Pencil, Plus } from 'lucide-react';
+import { Check, ChevronUp, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button.tsx';
 import { ChoiceGroup, focusableField } from '../../../components/ui/ChoiceGroup.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
@@ -135,7 +140,7 @@ export default function OfferOrganizationForm({
   onResolved: () => void;
 }) {
   const navigate = useNavigate();
-  const { state, session, readOnly, record } = useCalendarEditor();
+  const { state, session, readOnly, record, institutional } = useCalendarEditor();
   const savedOffer = state.offers.find((offer) => offer.id === existingId);
   const defaults = formDefaults(state, existingId);
   const [open, setOpen] = useState(!existingId);
@@ -292,6 +297,9 @@ export default function OfferOrganizationForm({
       .map((issue) => issue.message)
       .join(' ');
   const included = Boolean(savedOffer);
+  // Only a draft drops an offer, and never its last one (`removeOffer`).
+  const removable =
+    included && !readOnly && record.status === 'rascunho' && state.offers.length > 1;
   const periods = periodsForOffer(state, modality);
   const semestral = values.organization === 'semestral';
   const perTerm = Number(values.count);
@@ -789,6 +797,44 @@ export default function OfferOrganizationForm({
               >
                 Cancelar edição
               </Button>
+              {removable && (
+                <Button
+                  type="button"
+                  variant="danger"
+                  id={`${prefix}-remove`}
+                  onClick={() => {
+                    const preview = offerRemovalPreview(state, existingId!);
+                    const items = [
+                      ...preview.removedPeriods.map((name) => `Período removido: ${name}`),
+                      ...preview.removedDates.map((name) => `Data removida: ${name}`),
+                      ...preview.narrowedDates.map(
+                        (name) => `Data conservada para as outras ofertas: ${name}`,
+                      ),
+                    ];
+                    void confirmAction({
+                      title: `Remover a oferta ${label}?`,
+                      description:
+                        'As etapas de avaliação, os períodos e as datas que alcançam só esta oferta saem do calendário. Datas de várias ofertas conservam as demais.',
+                      consequence:
+                        'A remoção é gravada com o salvamento automático. Para desfazer, inclua a oferta de novo e preencha suas datas.',
+                      items,
+                      intent: 'danger',
+                      confirmLabel: 'Remover oferta',
+                      onConfirm: async () => {
+                        session.apply((current) =>
+                          removeOffer(current, existingId!, institutional),
+                        );
+                        clearDraft();
+                        session.setFormDirty(`organization:${existingId}`, false);
+                        onResolved();
+                        requestAnimationFrame(() => document.getElementById('add-offer')?.focus());
+                      },
+                    });
+                  }}
+                >
+                  <Trash2 size={18} aria-hidden="true" /> Remover oferta
+                </Button>
+              )}
             </FormActions>
           </fieldset>
         </form>
