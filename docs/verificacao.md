@@ -16,6 +16,8 @@ pnpm exec prettier --check docs/verificacao.md
 
 Os testes de domínio, backend, infraestrutura e autosave usam Vitest e `convex-test`, sem serviço remoto. Os testes de UI usam Playwright com Chromium e fixtures sintéticas que carregam os componentes e CSS reais. Todos entram na checagem estrita de tipos (`pnpm typecheck:tests`).
 
+O catálogo de atividades de cada ano tem uma expectativa legível, `test/fixtures/catalogue-expected.json`, com uma linha por critério, oferta e linha de regra, sobre as configurações de referência de `test/helpers/catalogue-reference.ts` (ofertas presenciais, EaD e a conferir, com variantes de ingresso). O arquivo só muda por `UPDATE_CATALOGUE_EXPECTED=1 pnpm exec vitest run test/domain/catalogue-expected.test.ts`, que o reescreve a partir do código e aceita o que o código produz; por isso a revisão do diff é a conferência. Toda mudança normativa declara na mensagem do commit quais linhas, aplicabilidades e coberturas podiam mudar e confere o diff da fixture contra essa declaração. A impressão da versão corrente, em `test/domain/ruleset-history.test.ts`, é registrada junto com a nova versão da norma, e as impressões publicadas nunca são editadas.
+
 Os testes de rotas verificam acesso direto às telas nos servidores Vite e de preview, equivalência com as regras da Vercel e respostas 404 para caminhos desconhecidos e arquivos inexistentes. Os testes de navegador cobrem a sincronização de tela e URL, recarregamento, histórico, permissões e preservação dos formulários ao navegar. Esse fluxo não exige geração de rotas por comandos de shell.
 
 Na primeira execução, instale o navegador:

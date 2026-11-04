@@ -67,3 +67,7 @@ test('the expected catalogue has no row of the retired “Classificação legada
       ),
     ).toEqual([]);
 });
+
+test('the fixture keeps the one-line-per-row format UPDATE_CATALOGUE_EXPECTED writes', () => {
+  expect(readFileSync(file, 'utf8')).toBe(formatExpected(expected));
+});
