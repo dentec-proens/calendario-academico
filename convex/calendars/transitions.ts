@@ -13,7 +13,7 @@ import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
 import type { Member } from '../access/contracts';
 import { appendAudit } from '../lib/audit';
-import { domainRule, fail } from '../lib/shared';
+import { clean, domainRule, fail } from '../lib/shared';
 import { campusName } from './model';
 import { baseRecord } from './record';
 import {
@@ -55,6 +55,42 @@ export interface TransitionRequest {
 const actor = (user: Member) => ({ id: user.id, name: user.name });
 
 /**
+ * A submission states what it was made under: the rules and references in force. Without this, the
+ * locked calendar would compare itself to rules it never recorded and start out as outdated.
+ */
+async function recordCurrentBase(
+  ctx: MutationCtx,
+  user: Member,
+  { row, content, compatibility }: Awaited<ReturnType<typeof baseRecord>>,
+) {
+  const { snapshot, documents } = compatibility;
+  if (
+    content.state.rulesetVersion === snapshot.rulesetVersion &&
+    content.catalogueRevision === snapshot.revision &&
+    !documents.added.length &&
+    !documents.removed.length &&
+    !documents.changed.length
+  )
+    return { content, version: row.version };
+  const fields = {
+    state: clean({ ...content.state, rulesetVersion: snapshot.rulesetVersion }),
+    catalogueRevision: snapshot.revision,
+    documentSnapshot: snapshot.documents,
+  };
+  const version = row.version + 1;
+  await ctx.db.patch(content._id, fields);
+  await ctx.db.patch(row._id, { version, updatedAt: Date.now() });
+  await appendAudit(
+    ctx,
+    user,
+    'SAVE_CALENDAR',
+    { type: 'calendar', id: row._id },
+    { calendarId: row._id, campusId: row.campusId, version },
+  );
+  return { content: { ...content, ...fields }, version };
+}
+
+/**
  * Reads the competitors, validates and writes in one mutation: Convex's serializable
  * transaction keeps uniqueness against simultaneous submissions and publications.
  */
@@ -80,6 +116,7 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
       rulesetVersion: rulesetVersion(record.state),
     });
   const scope = { calendarId: row._id, campusId: row.campusId, version: row.version };
+  let submitted = { content, version: row.version };
 
   switch (request.action) {
     case 'submit': {
@@ -94,6 +131,8 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
         allowed: user.role === 'ADMIN',
         confirmed: request.partial === true,
       });
+      submitted = await recordCurrentBase(ctx, user, loaded);
+      scope.version = submitted.version;
       const campus = await campusName(ctx, row);
       // A restored draft still answers its last return, which stays the comparison base.
       const answered =
@@ -105,12 +144,12 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
         submittedBy: actor(user),
         submittedFrom: status as 'rascunho' | 'devolvido',
         ...(answered ? { previousSubmissionId: answered } : {}),
-        contentVersion: row.version,
-        contentHash: contentHash(content),
-        state: content.state,
-        catalogueRevision: content.catalogueRevision,
-        institutionalSnapshot: content.institutionalSnapshot,
-        documentSnapshot: content.documentSnapshot,
+        contentVersion: submitted.version,
+        contentHash: contentHash(submitted.content),
+        state: submitted.content.state,
+        catalogueRevision: submitted.content.catalogueRevision,
+        institutionalSnapshot: submitted.content.institutionalSnapshot,
+        documentSnapshot: submitted.content.documentSnapshot,
         offerKinds: row.offerKinds,
         campusName: campus,
         decisions: [],

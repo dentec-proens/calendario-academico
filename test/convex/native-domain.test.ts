@@ -174,7 +174,7 @@ test('native publication gates base revisions and reviews retain concurrent revi
   });
   await assert.rejects(
     campus.write(path, { ...saveBody(await campus.read(path)), catalogueRevision: 1 }, 'PUT'),
-    /mudanças aplicáveis na base institucional/,
+    /eventos institucionais mudaram/,
   );
   const full = await inspect();
   assert.equal(full.reviews[0].history.length, 1);

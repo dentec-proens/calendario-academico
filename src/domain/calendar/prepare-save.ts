@@ -39,7 +39,7 @@ export function prepareOfferCalendarSave<E extends DateFields & { active: boolea
   let state = normalizeOfferCalendar({ ...proposed, campus: previous.campus ?? '' }, previous);
   validateAddedOffers(previousIds, state);
   const inherited = inheritedEvents(context.catalogue, previous.year, state.offers);
-  validateObservances(inherited, state);
+  validateObservances(inherited, state, previous);
   if (context.recalculate || !equalValues(context.storedContent, offerCalendarContent(state)))
     state = normalizeOfferCalendar(
       recalculateCalendar(state, applyObservances(inherited, state)),

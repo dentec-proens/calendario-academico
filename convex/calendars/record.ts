@@ -35,8 +35,8 @@ export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>
   };
   // A later base change never alters a published calendar.
   const compatibility = isPublished(status)
-    ? frozenBase(record.state, content)
-    : inspectBase(record.state, content, base, docs);
+    ? frozenBase(status, record.state, content)
+    : inspectBase(status, record.state, content, base, docs);
   const readiness = {
     ...releaseReadiness(record, {
       base: compatibility,

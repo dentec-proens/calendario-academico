@@ -216,8 +216,7 @@ export default function RulesPage() {
         <>
           <h3>Histórico das regras</h3>
           <p className="help">
-            Só versões que estabelecem ou ampliam exigências pedem nova incorporação e nova revisão
-            dos calendários.
+            Só versões que estabelecem ou ampliam exigências pedem nova revisão dos calendários.
           </p>
           <ol className="rules-history">
             {view.changes.map((change) => (

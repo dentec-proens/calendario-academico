@@ -49,7 +49,7 @@ function semanticProjection(
     documents: [],
     rulesetVersion: state.rulesetVersion,
   };
-  const base = inspect(baseSnapshot, baseSnapshot, state);
+  const base = inspect(baseSnapshot, baseSnapshot, state, false);
   const label = (message: string) =>
     [...requirements]
       .sort((a, b) => b.name.length - a.name.length)

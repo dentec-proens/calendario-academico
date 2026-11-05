@@ -77,7 +77,7 @@ export function oracleValues(item: StoredCase) {
       storedContentHash: submission.contentHash,
       equalToContent: hashOf(submission) === hashOf(content),
     })),
-    baseIdentity: inspect(base, base, state).identity,
+    baseIdentity: inspect(base, base, state, true).identity,
     linksToReview: Object.fromEntries(linksToReview(state)),
     coverage: coverage.filter(isNotable).map((row) => ({
       activity: row.requirement.id,

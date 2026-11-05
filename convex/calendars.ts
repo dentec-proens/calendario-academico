@@ -236,7 +236,7 @@ export const saveCalendar = mutation({
       if (content.catalogueRevision !== base.revision)
         await ctx.db.patch(content._id, { catalogueRevision: base.revision });
       return {
-        base: inspectBase(state, content, base, docs).dto,
+        base: inspectBase(status, state, content, base, docs).dto,
         version: row.version,
         state: record.state,
         updatedAt: iso(row.updatedAt),
@@ -496,10 +496,14 @@ export const createCalendarVersion = mutation({
     // The review belongs to the published calendar and is not copied.
     await ctx.db.insert('calendarContents', {
       calendarId: copy,
-      state: content.state,
+      // A new draft starts under what is in force, so it never begins with a pending update.
+      state: {
+        ...content.state,
+        rulesetVersion: rulesetVersion({ year: row.year, offers: content.state.offers }),
+      },
       catalogueRevision: content.catalogueRevision,
       institutionalSnapshot: content.institutionalSnapshot,
-      documentSnapshot: content.documentSnapshot,
+      documentSnapshot: await currentDocuments(ctx, row.year),
     });
     await appendAudit(
       ctx,

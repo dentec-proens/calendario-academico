@@ -76,6 +76,23 @@ export function rulesetChangesBetween(
   return changes.slice(changes.findIndex((change) => change.version === before) + 1, end + 1);
 }
 
+/**
+ * What a campus needs to hear about: wording changes say nothing, and establishing the rules is not
+ * news. A calendar with no recorded version only hears of changes after its last save, since the
+ * rest already held when it was edited.
+ */
+export function announcedRuleChanges(
+  rules: { before: string | undefined; changes: readonly RulesetChange[] },
+  updatedAt: string,
+) {
+  return rules.changes.filter(
+    (change) =>
+      change.effect !== 'editorial' &&
+      change.effect !== 'establishes' &&
+      (rules.before !== undefined || change.date > updatedAt.slice(0, 10)),
+  );
+}
+
 export const rulesetVersion = (state: AssessmentSettings) =>
   policyFor(state.year).rulesetVersion(state);
 

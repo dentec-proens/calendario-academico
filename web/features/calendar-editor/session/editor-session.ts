@@ -23,6 +23,11 @@ export interface EditorSnapshot {
   >;
 }
 
+function withoutStamp(state: CalendarState) {
+  const { rulesetVersion: _stamp, ...content } = state;
+  return content;
+}
+
 export function createEditorSession(
   record: CalendarRecord,
   write: (body: {
@@ -170,7 +175,8 @@ export function createEditorSession(
         throw new Error(current.error || 'Resolva o conflito antes de aplicar alterações.');
       const changed = command(structuredClone(current.state));
       const state = { ...structuredClone(changed), rulesetVersion: rulesetVersion(changed) };
-      const dirty = !equalValues(state, current.record.state);
+      // The stamp follows real changes: on its own it does not make a new version.
+      const dirty = !equalValues(withoutStamp(state), withoutStamp(current.record.state));
       publish({
         state,
         dirty,

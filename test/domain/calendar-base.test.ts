@@ -1,6 +1,27 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
-import { inspect, reconcile, reviewIsCurrent } from '../../src/domain/calendar/base.ts';
+import {
+  inspect as inspectBase,
+  reconcile,
+  reviewIsCurrent,
+} from '../../src/domain/calendar/base.ts';
+import { announcedRuleChanges } from '../../src/domain/policies/registry.ts';
+
+/** A locked calendar: every difference counts. */
+const inspect = (
+  ...args: [
+    Parameters<typeof inspectBase>[0],
+    Parameters<typeof inspectBase>[1],
+    Parameters<typeof inspectBase>[2],
+  ]
+) => locked(...args);
+function locked(
+  previous: Parameters<typeof inspectBase>[0],
+  current: Parameters<typeof inspectBase>[1],
+  scope: Parameters<typeof inspectBase>[2],
+) {
+  return inspectBase(previous, current, scope, false);
+}
 
 const scope = {
   year: 2027,
@@ -158,4 +179,47 @@ test('legacy base identities remain stable for years without changed rules', () 
     expect(after.identity).toBe(before.identity);
     expect(after.compatible).toBe(true);
   }
+});
+
+test('a calendar being edited follows rules and documents, and only events ask for something', () => {
+  const document = {
+    id: 'norma',
+    year: 2027,
+    type: 'norma',
+    title: 'Norma',
+    source: 'PROENS',
+    hash: 'a',
+    filename: 'norma.pdf',
+  };
+  const scope = { year: 2027, offers: [] };
+  const stored = {
+    revision: 1,
+    events: [],
+    documents: [],
+    rulesetVersion: 'consup-292-2027-v6',
+  };
+  const inForce = { ...stored, rulesetVersion: 'consup-292-2027-v8' };
+  const rules = inspectBase(stored, inForce, scope, true);
+  expect(rules).toMatchObject({ kind: 'rules', compatible: true });
+  const documents = inspectBase(stored, { ...inForce, documents: [document] }, scope, true);
+  expect(documents).toMatchObject({ kind: 'documents', compatible: true });
+  expect(inspectBase(stored, inForce, scope, false)).toMatchObject({
+    kind: 'rules',
+    compatible: false,
+  });
+});
+
+test('only what a campus needs to hear about is announced', () => {
+  const change = (version: string, effect: string, date: string) =>
+    ({ version, effect, date, source: '', summary: version }) as never;
+  const changes = [
+    change('v1', 'establishes', '2026-10-26'),
+    change('v2', 'relaxes', '2026-10-29'),
+    change('v3', 'editorial', '2026-11-04'),
+    change('v4', 'tightens', '2026-11-04'),
+  ];
+  const announced = (before: string | undefined, updatedAt: string) =>
+    announcedRuleChanges({ before, changes }, updatedAt).map((item) => item.version);
+  expect(announced('v0', '2026-11-05T12:00:00.000Z')).toEqual(['v2', 'v4']);
+  expect(announced(undefined, '2026-10-30T12:00:00.000Z')).toEqual(['v4']);
 });

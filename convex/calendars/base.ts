@@ -13,16 +13,18 @@ type Content = Pick<
   Doc<'calendarContents'>,
   'catalogueRevision' | 'institutionalSnapshot' | 'documentSnapshot'
 >;
+type Status = Doc<'calendars'>['status'];
 type Snapshot = {
   rulesetVersion?: string;
   revision: number;
   events: ReturnType<typeof readActivityDates<Infer<typeof institutionalEventSnapshot>>>[];
   documents: Infer<typeof documentSnapshot>[];
 };
-function assess(state: DomainState, content: Content, snapshot: Snapshot) {
+function assess(status: Status, state: DomainState, content: Content, snapshot: Snapshot) {
   const assessment = inspectCalendar(
     {
       ...content,
+      status,
       institutionalSnapshot: content.institutionalSnapshot.map(readActivityDates),
       state,
     },
@@ -45,12 +47,13 @@ function assess(state: DomainState, content: Content, snapshot: Snapshot) {
   };
 }
 export function inspectBase(
+  status: Status,
   state: DomainState,
   content: Content,
   base: Awaited<ReturnType<typeof catalogue>>,
   docs: Awaited<ReturnType<typeof currentDocuments>>,
 ) {
-  return assess(state, content, {
+  return assess(status, state, content, {
     rulesetVersion: rulesetVersion(state),
     revision: base.revision,
     events: (
@@ -60,8 +63,8 @@ export function inspectBase(
   });
 }
 /** A published calendar reads only the base frozen with its content. */
-export function frozenBase(state: DomainState, content: Content) {
-  return assess(state, content, {
+export function frozenBase(status: Status, state: DomainState, content: Content) {
+  return assess(status, state, content, {
     rulesetVersion: state.rulesetVersion ?? rulesetVersion(state),
     revision: content.catalogueRevision,
     events: content.institutionalSnapshot.map(readActivityDates),

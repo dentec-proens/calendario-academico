@@ -24,6 +24,7 @@ import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { contentIssues } from '#src/domain/calendar/readiness.ts';
 import EditorSteps from './EditorSteps.tsx';
 import TeachingDaySummary from './TeachingDaySummary.tsx';
+import BaseChangesNotice from './BaseChangesNotice.tsx';
 import BaseUpdateCard from './BaseUpdateCard.tsx';
 import { useCalendarSummaryTool } from '../../shared/integrations/webmcp.ts';
 import './calendar-editor.css';
@@ -415,6 +416,7 @@ function EditorFrame() {
         </Notice>
         <TeachingDaySummary key={currentSection} />
       </div>
+      <BaseChangesNotice />
       <BaseUpdateCard />
       {context && !eventEditorOpen && (
         <button

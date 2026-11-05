@@ -246,6 +246,17 @@ test('removing the last period is saved and leaves the unchanged stages to revie
   ).rejects.toThrow(/etapa.*período/);
 });
 
+test('a command that changes nothing leaves an unstamped calendar with nothing to save', async () => {
+  const record = await opened();
+  delete record.state.rulesetVersion;
+  const write = vi.fn();
+  const session = createEditorSession(record, write);
+  session.apply((state) => state);
+  expect(session.getSnapshot().dirty).toBe(false);
+  await session.flush();
+  expect(write).not.toHaveBeenCalled();
+});
+
 test('flush drains edits applied during a write and advances the expected version', async () => {
   const record = await opened();
   const sent: { version: number; name: string }[] = [];

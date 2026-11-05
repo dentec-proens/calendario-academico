@@ -65,9 +65,9 @@ test('projection is idempotent, restores originals and preserves base identity',
     documents: [],
     rulesetVersion: policyFor(2027).rulesetVersion(state),
   });
-  expect(inspect(snapshot(original), snapshot(moved), state).compatible).toBe(true);
-  expect(inspect(snapshot(original), snapshot(original), state).identity).toBe(
-    inspect(snapshot(moved), snapshot(moved), state).identity,
+  expect(inspect(snapshot(original), snapshot(moved), state, false).compatible).toBe(true);
+  expect(inspect(snapshot(original), snapshot(original), state, false).identity).toBe(
+    inspect(snapshot(moved), snapshot(moved), state, false).identity,
   );
 });
 
@@ -97,7 +97,11 @@ test('invalid and orphaned choices stay readable, cannot be confirmed, and can a
     applyObservances(confirmed, invalid).find((event) => event.id === teacherDayId)?.start,
   ).toBe('2027-10-13');
   expect(observanceIssues(confirmed, invalid)).toHaveLength(1);
-  expect(() => validateObservances(confirmed, invalid)).toThrow();
+  expect(() => validateObservances(confirmed, invalid, {})).toThrow();
+  expect(
+    () => validateObservances(confirmed, invalid, invalid),
+    'an earlier choice does not stop other saves',
+  ).not.toThrow();
   const removed = base().filter((event) => event.id !== teacherDayId);
   expect(() => applyObservances(removed, chosen)).not.toThrow();
   expect(

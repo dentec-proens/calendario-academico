@@ -6,6 +6,7 @@ import { equalValues } from '../../shared/equal.ts';
 import type { CalendarOffer, InstitutionalEventSnapshot } from './model.ts';
 import { kinds } from './offers.ts';
 import { DomainError } from '../errors.ts';
+import { isEditable, type CalendarStatus } from './lifecycle.ts';
 import {
   bindsRuleset,
   equivalentRulesets,
@@ -109,11 +110,17 @@ function identity(snapshot: BaseSnapshot, scope: BaseScope) {
   );
 }
 
-/** The only policy for institutional-base equivalence and confirmation. Revision is a concurrency marker, not content. */
+/**
+ * The only policy for institutional-base equivalence and confirmation. Revision is a concurrency
+ * marker, not content. A calendar being edited always follows the current rules and documents, so
+ * only a changed event asks for anything; a locked one keeps what was submitted, and any change
+ * there is solved by a return.
+ */
 export function inspect<E extends InstitutionalEventSnapshot, D extends BaseDocument>(
   previous: BaseSnapshot<E, D>,
   current: BaseSnapshot<E, D>,
   scope: BaseScope,
+  editing: boolean,
 ) {
   const events = changes(previous.events, current.events, (event) => eventContent(event, scope));
   const documents = changes(previous.documents, current.documents, documentContent);
@@ -125,18 +132,25 @@ export function inspect<E extends InstitutionalEventSnapshot, D extends BaseDocu
       !equivalentRulesets(previous.rulesetVersion, current.rulesetVersion),
     changes: rulesetChangesBetween(previous.rulesetVersion, current.rulesetVersion),
   };
-  const kind = rules.changed
-    ? 'rules'
-    : hasChanges(events)
+  const unchanged = previous.revision === current.revision ? 'current' : 'equivalent';
+  const kind = editing
+    ? hasChanges(events)
       ? 'events'
       : hasChanges(documents)
         ? 'documents'
-        : previous.revision === current.revision
-          ? 'current'
-          : 'equivalent';
+        : rules.changed
+          ? 'rules'
+          : unchanged
+    : rules.changed
+      ? 'rules'
+      : hasChanges(events)
+        ? 'events'
+        : hasChanges(documents)
+          ? 'documents'
+          : unchanged;
   return {
     kind,
-    compatible: kind === 'current' || kind === 'equivalent',
+    compatible: editing ? kind !== 'events' : kind === 'current' || kind === 'equivalent',
     identity: identity(current, scope),
     rules,
     events,
@@ -153,10 +167,13 @@ export function reconcile(assessment: ReturnType<typeof inspect>, acceptance?: s
     );
   if (!assessment.compatible && acceptance === undefined)
     throw new DomainError(
-      'Há mudanças aplicáveis na base institucional. Confira e incorpore antes de salvar.',
+      'Os eventos institucionais mudaram. Abra o aviso “Há mudanças que afetam este calendário”, confira e incorpore antes de salvar.',
       409,
     );
-  return { incorporate: !assessment.compatible, recalculate: hasChanges(assessment.events) };
+  return {
+    incorporate: assessment.kind !== 'current' && assessment.kind !== 'equivalent',
+    recalculate: hasChanges(assessment.events),
+  };
 }
 
 export function reviewIsCurrent(
@@ -189,6 +206,7 @@ export function reviewIsCurrent(
 /** Read the same assessment from persisted calendar records in either adapter. */
 export function inspectCalendar<E extends InstitutionalEventSnapshot, D extends BaseDocument>(
   record: {
+    status: CalendarStatus;
     state: BaseScope;
     catalogueRevision: number;
     institutionalSnapshot: E[];
@@ -215,6 +233,7 @@ export function inspectCalendar<E extends InstitutionalEventSnapshot, D extends 
       rulesetVersion: latest.currentRulesetVersion ?? rulesetVersion(record.state),
     },
     record.state,
+    isEditable(record.status),
   );
 }
 

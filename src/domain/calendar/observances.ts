@@ -92,8 +92,19 @@ export function applyObservances<T extends ObservanceEvent>(
   });
 }
 
-export function validateObservances(events: ObservanceEvent[], state: ObservanceState) {
-  const issues = observanceIssues(events, state);
+/**
+ * Refuses only a choice made now. One that a later rule or base change made invalid stays a
+ * readiness issue: it must never stop the campus from saving something else.
+ */
+export function validateObservances(
+  events: ObservanceEvent[],
+  state: ObservanceState,
+  previous: Pick<ObservanceState, 'observanceDates'>,
+) {
+  const issues = observanceIssues(events, state).filter(({ key }) => {
+    const selected = state.observanceDates?.[key];
+    return selected !== undefined && selected !== previous.observanceDates?.[key];
+  });
   if (issues.length) throw new DomainError(issues.map((issue) => issue.message).join(' '));
 }
 

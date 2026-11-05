@@ -12,23 +12,17 @@ for (const width of [1440, 390]) {
     await page.goto(await fixtureServer('editor'));
     await publishBaseUpdate(page);
     const card = page.locator('.base-update-card');
-    const summary = card.locator('summary');
     const action = card.getByRole('button', { name: 'Incorporar mudanças ao calendário' });
-    await expect(card).toBeVisible();
-    await expect(action).toBeHidden();
-    await summary.focus();
-    await page.keyboard.press('Enter');
-    await expect(action).toBeVisible();
+    await expect(
+      action,
+      'the card starts open, so the way out of a refusal is in sight',
+    ).toBeVisible();
     await expect(card).toContainText('Incluído: Encontro institucional');
     await expect(card).toContainText('Removido: Recesso removido');
     await expect(card).toContainText('15/10/2027');
     await expect(card).toContainText('14/10/2027');
     await expect(card).toContainText('Fonte: Portaria atualizada');
-    await expect(card).toContainText('Orientações atualizadas');
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
-    await summary.click();
-    await expect(action).toBeHidden();
-    await summary.click();
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
       .toBe(true);
@@ -58,16 +52,65 @@ for (const width of [1440, 390]) {
   });
 }
 
-test('a document-only update explains that calendar events did not change', async ({
+test('a document-only update is told and asks for nothing', async ({ page, fixtureServer }) => {
+  await page.goto(await fixtureServer('editor'));
+  await publishBaseUpdate(page, true);
+  const notice = page.locator('#base-changes-notice');
+  await expect(notice).toContainText('Os documentos de referência foram atualizados.');
+  await expect(notice).toContainText('Orientações atualizadas');
+  await expect(page.locator('.base-update-card')).toHaveCount(0);
+  await notice.getByRole('button', { name: 'Fechar aviso' }).click();
+  await expect(notice).toHaveCount(0);
+});
+
+test('newer rules are told and ask for nothing', async ({ page, fixtureServer }) => {
+  await page.goto(await fixtureServer('editor'));
+  await expect(page.locator('#record-title')).toBeVisible();
+  await page.evaluate(() => {
+    const { record } = window.editorTest;
+    record.state.rulesetVersion = 'consup-292-2027-v6';
+    record.version++;
+    return window.publishReviewerCalendar();
+  });
+  const notice = page.locator('#base-changes-notice');
+  await expect(notice).toContainText('As novas regras não alteraram suas datas.');
+  await expect(notice).toContainText('Trancamento de curso');
+  await expect(notice).not.toContainText('consup-292');
+  await expect(page.locator('.base-update-card')).toHaveCount(0);
+  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
+});
+
+test('a returned calendar is warned that a review would have to be redone', async ({
   page,
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('editor'));
+  await expect(page.locator('#record-title')).toBeVisible();
+  await page.evaluate(() => {
+    const { record } = window.editorTest;
+    record.state.rulesetVersion = 'consup-292-2027-v6';
+    record.status = 'devolvido';
+    record.version++;
+    return window.publishReviewerCalendar();
+  });
+  await expect(page.locator('#base-changes-notice')).toContainText(
+    'Se já houver parecer, ele precisará ser refeito sob estas regras.',
+  );
+});
+
+test('a withdrawn reference document is told', async ({ page, fixtureServer }) => {
+  await page.goto(await fixtureServer('editor'));
   await publishBaseUpdate(page, true);
-  const card = page.locator('.base-update-card');
-  await card.locator('summary').click();
-  await expect(card).toContainText('Documentos de referência atualizados');
-  await expect(card).toContainText('As datas do calendário permanecem iguais.');
+  await page.evaluate(async () => {
+    const modulePath = '/test/fixtures/editor-client.ts';
+    const { record, publish } = (await import(modulePath)) as typeof EditorFixture;
+    record.documentSnapshot = record.currentDocuments;
+    record.currentDocuments = [];
+    publish();
+  });
+  await expect(page.locator('#base-changes-notice')).toContainText(
+    'Documento de referência retirado: Orientações atualizadas.',
+  );
 });
 
 test('an equivalent base advance stays invisible and synchronizes without saving a draft', async ({
@@ -129,7 +172,6 @@ test('a changed institutional date remains explicit when a campus adjustment kee
     module.publish();
   });
   const card = page.locator('.base-update-card');
-  await card.locator('summary').click();
   await expect(card).toContainText('Data institucional: 15/10/2027');
   await expect(card).toContainText('Data institucional: 16/10/2027');
 });
