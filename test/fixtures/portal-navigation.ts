@@ -103,7 +103,8 @@ const calendar: Bootstrap['calendars'][number] = {
   campusName: 'Campus de teste',
   year: 2027,
   offerKinds: ['integrado'],
-  status: 'rascunho',
+  status: (new URLSearchParams(location.search).get('calendar-status') ??
+    'rascunho') as CalendarStatus,
   statusRevision: 0,
   courses: 'Curso de teste',
   classes: '',

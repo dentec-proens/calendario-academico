@@ -52,6 +52,20 @@ Os critérios formam uma lista contínua, com divisórias simples e avaliação 
 
 A navegação de seções e formulários usa `web/scroll.ts`: respeita `prefers-reduced-motion`, revela o início de formulários maiores que a tela e reserva a altura real do feedback fixo por meio de `ResizeObserver` e `scroll-padding`. Isso evita offsets fixos que deixam títulos sob avisos quando o texto quebra em mais linhas. Os testes `test/browser/scroll-layout.spec.ts` verificam a visibilidade e a recepção de cliques em desktop e mobile. As capturas visuais não corrigem a rolagem da aplicação antes de comparar as imagens.
 
+## Listagens de calendários
+
+`/calendarios` e `/revisoes` são rotas separadas, porque diferem em permissão, página inicial e rascunhos, mas listam da mesma forma, com os componentes de `web/features/calendar-list/`:
+
+- `CalendarTable` recebe as colunas de cada tela (`label`, `width`, `render`). `render` devolve a própria célula, filha direta da grade da linha. As colunas empilham até 860 px de container. O cabeçalho é visual (`aria-hidden`), então cada célula que não se identifica sozinha leva um rótulo próprio, oculto quando as colunas aparecem. A galeria do perfil Campus não usa a tabela, só `CalendarIdentityCell` e o CSS comum.
+- `CalendarIdentityCell` mostra nome, oferta, cursos, turmas, turnos, SEI e **Substituído por**. Em telas sem coluna de campus, `withOrigin` acrescenta campus e ano quando o nome não os traz. O campus vem de `campusName`, em `summary`, porque `bootstrap` omite campi arquivados.
+- `CampusFilter` e `useSelectedCampus` tratam o parâmetro `campus`. Um campus que o perfil não pode escolher é ignorado.
+
+Cada componente importa `calendar-list.css`, porque as rotas são carregadas sob demanda e estilo herdado de outra tela só apareceria depois de visitá-la. Pelo mesmo motivo, as abas da fila têm `reviews.css`.
+
+A fila não tem coluna Campus: o nome gerado já o traz, e a coluna deixaria o nome estreito demais com a barra lateral em 1280 px. O badge de situação também sai da linha, porque a aba informa isso. A aba fica em `situacao`, validado em `web/app/search.ts` com todas as situações de calendário, e cada tela restringe o valor ao que lista. A trilha de `WorkspaceLayout` repassa só `situacao` e `campus`, nunca avisos pontuais como `aviso`. As setas nas abas partem da aba focada, porque a URL muda de forma assíncrona. O painel da aba não recebe `tabindex`, porque o filtro de campus garante nele um elemento focável.
+
+**Abrir parecer**, em `/calendarios`, fica na célula de situação e não em **Ações**: com ele, a coluna de ações ocuparia o espaço do nome. **Abrir calendário**, na fila, abre em outra aba, porque a volta do editor não leva à fila.
+
 ## Formulários e navegação
 
 TanStack Form controla preenchimento, validação e submissão, integrado aos campos visuais. Rótulos, descrições e erros são associados ao controle; validação do backend continua obrigatória. Durante submissão, o formulário conserva os valores e apresenta erro sem reset indevido. Dados condicionais e listas são identificados por contexto e ID.

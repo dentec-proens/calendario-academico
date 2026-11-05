@@ -20,6 +20,16 @@
   padding: 8px;
 }
 
+/* The parecer belongs to the situation, so its link leaves the row actions as they are. */
+#root .calendar-list-parecer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  font-size: 0.8125rem;
+  text-underline-offset: 3px;
+}
+
 /* Campus profiles see their few calendars as cards. */
 .calendar-list[data-view='gallery'] .calendar-list-items {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));

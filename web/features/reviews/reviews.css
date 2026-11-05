@@ -54,3 +54,21 @@
 .review-queue-progress .ui-status {
   border-radius: var(--ui-radius);
 }
+.review-queue-actions {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+#root .review-queue-calendar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  font-size: 0.8125rem;
+  text-underline-offset: 3px;
+}
+@container calendar-list (min-width: 860px) {
+  .review-queue-actions {
+    justify-items: end;
+  }
+}

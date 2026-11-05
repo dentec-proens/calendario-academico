@@ -495,3 +495,40 @@ test('the campus filter of the review queue lives in the URL with the selected t
   await expect(page.locator('#campus-filter')).toHaveValue('');
   await expect(row).toBeVisible();
 });
+
+test('the calendar list leads reviewers to the parecer, past the draft stage', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  const parecer = page.getByRole('link', { name: 'Abrir parecer' });
+  await page.goto(origin + '/calendarios?calendar-status=vigente&queue-status=vigente');
+  await expect(parecer).toHaveAttribute('href', '/revisoes/calendar-a?situacao=vigente');
+  await parecer.click();
+  await expect(page.locator('#review-content')).toBeVisible();
+  await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
+  await expect(page).toHaveURL(origin + '/revisoes?situacao=vigente');
+  await expect(page.getByRole('tab', { name: 'Vigentes' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  const list = page.locator('#calendar-list');
+  await page.goto(origin + '/calendarios');
+  await expect(list).toContainText('Calendário de teste');
+  await expect(parecer, 'a draft has no parecer').toHaveCount(0);
+  await page.goto(origin + '/calendarios?calendar-status=vigente&role=CAMPUS');
+  await expect(list).toContainText('Calendário de teste');
+  await expect(parecer, 'the campus does not read pareceres').toHaveCount(0);
+});
+
+test('the review queue opens the calendar in another tab, keeping the list', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/revisoes');
+  const link = page.locator('[data-open-calendar="calendar-a"]');
+  await expect(link).toHaveAccessibleName('Abrir calendário em outra aba');
+  await expect(link).toHaveAttribute('target', '_blank');
+  await expect(link).toHaveAttribute('href', /^\/calendarios\/calendar-a\//);
+});

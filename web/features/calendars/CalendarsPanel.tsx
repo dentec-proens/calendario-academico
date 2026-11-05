@@ -3,7 +3,7 @@ import { Button } from '../../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 import type { PaginationState } from '../../shared/forms/Pagination.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
-import { CopyPlus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { ClipboardCheck, CopyPlus, Eye, Pencil, Trash2 } from 'lucide-react';
 import { canCreateVersion, isDeletable, isEditable } from '#src/domain/calendar/lifecycle.ts';
 import { CalendarStatusBadge } from '../lifecycle/LifecycleActions.tsx';
 import { useNavigate } from '@tanstack/react-router';
@@ -24,6 +24,7 @@ export default function CalendarsPanel({
   info,
   calendars,
   canSelectCampus,
+  canReview,
   filter,
   onFilter,
   notify,
@@ -32,6 +33,7 @@ export default function CalendarsPanel({
   info: Bootstrap;
   calendars: readonly CalendarSummary[];
   canSelectCampus: boolean;
+  canReview: boolean;
   filter: string;
   onFilter: (id: string) => void;
   notify: Notify;
@@ -147,6 +149,20 @@ export default function CalendarsPanel({
         <div className="calendar-list-status">
           <span className="visually-hidden">Situação: </span>
           <CalendarStatusBadge status={c.status} />
+          {canReview && c.status !== 'rascunho' ? (
+            <Link
+              to="/revisoes/$calendarId"
+              params={{ calendarId: c.id }}
+              search={{
+                campus: filter || undefined,
+                situacao: c.status === 'enviado' ? undefined : c.status,
+              }}
+              className="calendar-list-parecer"
+            >
+              <ClipboardCheck aria-hidden="true" size={16} />
+              Abrir parecer
+            </Link>
+          ) : null}
         </div>
       ),
     },

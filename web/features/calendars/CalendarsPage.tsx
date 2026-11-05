@@ -20,6 +20,7 @@ export default function CalendarsPage() {
       calendars={pagination.results}
       notify={notify}
       canSelectCampus={permissions.selectCampus}
+      canReview={permissions.reviewCalendars}
       filter={campus?.id || ''}
       onFilter={(id) => {
         void navigate({ to: '/calendarios', search: { campus: id || undefined }, replace: true });

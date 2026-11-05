@@ -77,6 +77,8 @@ for (const width of [1440, 390, 320]) {
     await page.keyboard.press('Tab');
     await expect(first).toBeFocused();
     await page.keyboard.press('Tab');
+    await expect(rows.nth(0).getByRole('link', { name: 'Abrir calendário' })).toBeFocused();
+    await page.keyboard.press('Tab');
     await expect(second).toBeFocused();
     await expect(second).toBeInViewport();
     expect(

@@ -9,3 +9,5 @@ Extensões combinadas e ainda não implementadas, à espera de um caso real. Cad
 - **Período como parte da oferta.** Avaliar a lista plana de períodos com `offerId` e `term` no lugar de `association` contra o aninhamento na oferta. Qualquer das duas exige IDs determinísticos para conteúdo e envio, separar os períodos compartilhados e conservar `targetDays`, com novo formato de dados.
 - **Férias com representação única.** `teacherVacations` guarda os intervalos e `events` as datas derivadas. Avaliar os intervalos como fonte única, com as datas derivadas na projeção.
 - **Fábrica de políticas.** Nada a extrair enquanto houver uma só norma; a política de 2028 nasce com a resolução, e a extração se faz com esse segundo caso à vista.
+- **Ordem da fila de pareceres.** `reviewQueue` segue `_creationTime`, com o calendário criado por último primeiro. Em **Aguardando análise** o esperado seria o envio mais antigo primeiro, o que exige gravar `submittedAt` no calendário, com migração.
+- **Filtro de situação em `/calendarios`.** O índice `by_campusId_and_status_and_deletedAt` já permite filtrar por situação junto com o campus; falta decidir se a tela precisa disso.

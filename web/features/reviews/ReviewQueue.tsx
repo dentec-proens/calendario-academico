@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { FunctionReturnType } from 'convex/server';
-import { FilePlus2, FileText, PenLine, RefreshCw } from 'lucide-react';
+import { ExternalLink, FilePlus2, FileText, PenLine, RefreshCw } from 'lucide-react';
+import { editorUrl } from '#src/app/routes.ts';
 import type { CalendarStatus } from '#src/domain/calendar/lifecycle.ts';
 import { StatusBadge } from '../../components/ui/Feedback.tsx';
 import type { functions } from '../../shared/convex/client.ts';
@@ -104,17 +105,29 @@ export default function ReviewQueue({
       render: ({ id, review }) => {
         const state = reviewState(review);
         return (
-          <div className="calendar-list-actions">
-            <Link
-              to="/revisoes/$calendarId"
-              params={{ calendarId: id }}
-              search={filters}
-              className="ui-button ui-button--primary"
-              data-open-review={id}
+          <div className="review-queue-actions">
+            <div className="calendar-list-actions">
+              <Link
+                to="/revisoes/$calendarId"
+                params={{ calendarId: id }}
+                search={filters}
+                className="ui-button ui-button--primary"
+                data-open-review={id}
+              >
+                <state.Icon size={18} aria-hidden="true" />
+                {state.action}
+              </Link>
+            </div>
+            <a
+              className="review-queue-calendar"
+              href={editorUrl(id, 'calendar')}
+              target="_blank"
+              rel="noopener"
+              data-open-calendar={id}
             >
-              <state.Icon size={18} aria-hidden="true" />
-              {state.action}
-            </Link>
+              <ExternalLink size={16} aria-hidden="true" />
+              Abrir calendário<span className="visually-hidden"> em outra aba</span>
+            </a>
           </div>
         );
       },
