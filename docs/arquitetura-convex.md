@@ -25,7 +25,7 @@ Políticas vinculadas expõem a tabela em `catalogue`, e a página **Regras do c
 
 ## Regras, salvamento e erros
 
-Comandos de domínio validam e aplicam alterações puras. A preparação do salvamento preserva campus e ano, impede remover ofertas, limita registros legados ao acrescentar ofertas e recalcula quando necessário, sem acessar banco nem confirmar gravação. A mutation mantém autorização, controle de versão, aceitação da base, histórico, auditoria e persistência na mesma transação.
+Comandos de domínio validam e aplicam alterações puras. A preparação do salvamento preserva campus e ano, impede remover ofertas, limita registros legados ao acrescentar ofertas, sem acessar banco nem confirmar gravação. O término de um período é sempre o gravado: uma mudança na base muda a contagem, nunca a data escolhida. A mutation mantém autorização, controle de versão, histórico, auditoria e persistência na mesma transação.
 
 Um vínculo gravado nunca é apagado por efeito colateral. A fronteira de gravação compara cada data com a de mesmo ID no estado anterior: um vínculo sem atividade gerada pela configuração atual só é aceito se já constava, idêntico, naquela data; vínculo novo ou alterado precisa de atividade gerada; só excluir a data ou corrigir a atividade vinculada mudam o vínculo. Uma data editada (início, término, ofertas ou vínculo) passa por todas as validações de intervalo e associação; uma data inalterada nunca é recusada por elas, mesmo depois de mudar organização, etapas ou períodos, e o conflito vira diagnóstico em **Vínculo a conferir**, sem contar como atendimento. Mudar a configuração nunca é recusado por datas existentes. Os comandos de data seguem o mesmo contrato (`src/domain/calendar/commands/events.ts` e `activities/links.ts`): `planActivityDate` exige a atividade vinda do contexto, `createCampusDate` recusa atividade, `updateDate` preserva o vínculo e só `changeActivity` (**Corrigir atividade vinculada**) o altera, com prévia.
 
@@ -53,7 +53,7 @@ A transição trava novas edições antes da navegação e oferece cancelamento 
 
 ## Estado do editor e concorrência
 
-1. O snapshot **confirmado** possui versão aceita pelo backend e revisão institucional incorporada.
+1. O snapshot **confirmado** possui versão aceita pelo backend e a cópia da base gravada no último salvamento.
 2. O calendário **aplicado** contém as ações Aplicar/Adicionar da sessão e pode aguardar gravação.
 3. O **preenchimento** pertence ao formulário e só altera o calendário quando aplicado.
 
@@ -79,7 +79,7 @@ Convex Auth é a biblioteca `@convex-dev/auth`, configurada pela aplicação par
 
 O backend deriva identidade, papel e campus da sessão. CAMPUS só atua na unidade autorizada; ADMIN gerencia o sistema; PARECERISTA revisa sem editar calendários. Guards organizam as telas, mas cada função Convex autoriza a operação.
 
-Salvar confere versão, status e base e preserva atributos protegidos; uma gravação sem mudança não cria versão artificial. Salvar e sincronizar a base só gravam em rascunho e devolvido; o editor deriva o modo somente leitura do papel e do status e recria a sessão quando o status muda em outra aba. A revisão humana tem salvamento explícito e depende da versão do calendário, da base e da revisão do parecer. Atualização institucional exige incorporação explícita.
+Salvar confere versão, status e base e preserva atributos protegidos; uma gravação sem mudança não cria versão artificial. Salvar só grava em rascunho e devolvido; o editor deriva o modo somente leitura do papel e do status e recria a sessão quando o status muda em outra aba. A revisão humana tem salvamento explícito e depende da versão do calendário, da base e da revisão do parecer.
 
 ## Arquivos, impressão e manutenção
 
@@ -137,9 +137,19 @@ Na grade de sábados, o estado aplicado vem dos comandos e a seleção pertence 
 
 A revisão numérica da base é um marcador técnico; a equivalência considera o conteúdo aplicável ao calendário: eventos, fontes, aplicabilidade e arquivos documentais. Ordem dos registros, ofertas externas e metadados operacionais não exigem decisão do usuário.
 
-Uma base equivalente não apresenta card: a sincronização atualiza somente a referência técnica, sem recalcular datas, alterar autoria ou criar versão, e não é pré-requisito para salvar ou imprimir. Alterações reais exigem confirmação vinculada à identidade do conteúdo exibido, verificada novamente na transação. Mudanças em eventos recalculam o calendário; mudanças apenas documentais preservam as datas. Ambas geram versão editorial.
+**Um calendário em edição sempre segue as regras e a base vigentes; o que fica gravado só passa a importar quando ele sai da edição.** Ninguém aceita nem incorpora nada:
 
-Revisões humanas guardam a identidade da base. Uma mudança irrelevante no contador não invalida a análise; mudanças no conteúdo aplicável ou na versão editorial invalidam. Revisões antigas sem essa identidade continuam exigindo a revisão técnica original, pois não há evidência para declarar equivalência retroativa. A sincronização nunca reescreve uma revisão humana.
+- Em rascunho e devolvido, editor, pendências, contagem, impressão, prontidão do servidor e comparação com a devolução leem `institutionalEvents`, `currentDocuments` e `currentCatalogueRevision`. Abrir o calendário não grava nada e não há autoria "Sistema".
+- O próximo salvamento humano grava carimbo de regras e cópias da base, com `version + 1`. Uma base apenas equivalente não grava nada. Catálogo novo com edição em andamento não é conflito entre sessões.
+- `BaseChangesNotice` informa o que difere da cópia gravada: regras, documentos e eventos, com o efeito nos dias letivos de cada oferta. Um evento mudado é uma data que mudou; o que ele deixa inconsistente vira pendência comum.
+- O envio informa a `identity` da base que a pessoa viu, lida depois do flush. Se o servidor tiver outra, recusa com 409 sem escrever, e o editor já mostra a base nova; uma base que só chegou com o último salvamento também pede nova conferência. Se coincidir, grava a base vigente e só então copia para o envio, cujo hash a publicação compara. Sem a identidade, a aba antiga é orientada a atualizar.
+- Enviado, em revisão e revisado ficam como enviados; se a base ou as regras mudarem, cabe ao parecerista devolver. Vigente não muda, e a nova versão nasce com o que está vigente.
+
+Como o clique do campus era a única barreira a um erro de digitação no catálogo, `catalogueImpact` mostra ao ADMIN quantos calendários em edição são alcançados e quantos ganham pendência antes de salvar, e o audit registra o que mudou. Não há rascunho de catálogo. A consulta examina no máximo 100 conteúdos e, passando disso, diz "ao menos".
+
+Uma mudança de regras nunca pede ação manual ao campus. Se muda o sentido de uma data, a migração de formato resolve, ou a própria data vira pendência, como em "Vínculo a conferir".
+
+Revisões humanas guardam a identidade da base. Uma mudança irrelevante no contador não invalida a análise; mudanças no conteúdo aplicável ou na versão editorial invalidam. Revisões antigas sem essa identidade continuam exigindo a revisão técnica original, pois não há evidência para declarar equivalência retroativa.
 
 Quando a política vincula base e revisão ao conjunto de regras, como em 2027, a identidade da base inclui esse conjunto. Anos sem essa vinculação mantêm a identidade anterior e não recebem falsa mudança global. Os envios permanecem imutáveis.
 
@@ -152,7 +162,7 @@ Cada política vinculada mantém em `rulesetChanges` o histórico ordenado das v
 - `relaxes`: dispensa ou restringe uma exigência.
 - `editorial`: muda redação sem alterar exigências.
 
-A base e a revisão se vinculam à última versão `establishes` ou `tightens` até a versão em que foram feitas. Somente uma nova versão desses dois tipos exige incorporação e nova revisão; o rascunho de parecer de outro vínculo perde as confirmações antigas, e o card de atualização lista as versões adotadas com fonte e resumo. Versões `relaxes` e `editorial` mantêm a identidade da base e as revisões atuais, pois a conferência feita continua válida. O servidor aceita conteúdo e revisão de uma versão equivalente e grava a versão vigente.
+A base e a revisão se vinculam à última versão `establishes` ou `tightens` até a versão em que foram feitas. Somente uma nova versão desses dois tipos exige nova revisão e, em calendário já enviado, a devolução; o rascunho de parecer de outro vínculo perde as confirmações antigas. Em edição, a versão vale de imediato e o aviso resume o que mudou. Versões `relaxes` e `editorial` mantêm a identidade da base e as revisões atuais, pois a conferência feita continua válida. O servidor aceita conteúdo e revisão de uma versão equivalente e grava a versão vigente.
 
 Quando uma regra restringe ou amplia o que o inciso diz, `decision` registra a decisão e a versão que a adotou, e o detalhe da atividade a mostra ao lado da base normativa. Em 2027, `consup-292-2027-v2` restringiu ao técnico integrado a reunião com familiares, responsáveis e comunidade (Art. 11, XVI).
 
@@ -161,3 +171,9 @@ Quando uma regra restringe ou amplia o que o inciso diz, `decision` registra a d
 A autorização compara a geração da sessão com a do usuário, inclusive ao emitir e renovar JWT. A revogação é imediata; exclusões físicas são limitadas por lote. Ações de acesso sensíveis exigem ADMIN e login nos últimos 15 minutos. Convites e resets válidos consomem quota persistente antes do hash; tentativas inválidas não abrem leases.
 
 Uploads administrativos são validados e gravados de forma atômica numa mutation; o cliente não associa IDs de Storage. Sessões e credenciais expiradas têm limpeza limitada, interrompida durante manutenção. O [guia de segurança operacional](seguranca.md) detalha dependências, patches versionados e requisitos da futura publicação.
+
+## Falhas vistas no navegador
+
+Uma recusa não pode ser gravada pela própria mutation, porque o erro reverte a transação. Por isso `clientErrors.report`, autenticada, recebe do cliente as recusas de salvamento, as falhas de exibição e as promessas sem tratamento, e a administração as lê em `/logs`. Não há fornecedor externo.
+
+O registro nunca recebe o estado do calendário nem valores de formulário, e a rota perde a query. Só as mensagens de situação do registro (403, 404, 409 e 503) são guardadas; uma recusa 400 pode citar um nome digitado e vira "Recusa do servidor", e qualquer outro erro vira tipo e posição no código. Há limite de 30 relatos por pessoa por hora, deduplicação de um minuto no cliente e limpeza diária do que passa de 90 dias.

@@ -20,6 +20,9 @@ import { useRouteForm } from '../../app/navigation.ts';
  * is shown only once, so it crosses that remount here, in memory, and is taken by the next mount.
  */
 let createdInvite: Invitation | null = null;
+const keepInvite = (invite: Invitation | null) => {
+  createdInvite = invite;
+};
 
 export default function AccountsPanel({
   info,
@@ -42,7 +45,7 @@ export default function AccountsPanel({
   useEffect(() => {
     if (createdInvite)
       requestAnimationFrame(() => scrollIntoView(inviteRef.current, { behavior: 'smooth' }));
-    createdInvite = null;
+    keepInvite(null);
   }, []);
   const defaults: {
     role: Bootstrap['user']['role'];
@@ -85,7 +88,7 @@ export default function AccountsPanel({
       setInvite(null);
       setRecovery(null);
       if (created.inviteUrl) {
-        createdInvite = { inviteUrl: created.inviteUrl, inviteExpiresAt: created.inviteExpiresAt! };
+        keepInvite({ inviteUrl: created.inviteUrl, inviteExpiresAt: created.inviteExpiresAt! });
         notify('Convite criado. A conta ficará pendente até a pessoa cadastrar sua senha.');
       } else
         notify(

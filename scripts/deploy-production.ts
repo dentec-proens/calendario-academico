@@ -8,11 +8,14 @@ import type * as EnvironmentConfig from '../config/environments.ts';
 import type * as EnvironmentTools from './environment.ts';
 import type * as BackupTools from './release-backup.ts';
 import type * as CandidateTools from './release-candidate.ts';
+import type * as RehearsalTools from './release-rehearsal.ts';
 import type * as CoordinationTools from './release-coordination.ts';
 import { readReleaseEnvironment, releaseEnvFile } from './release-environment.ts';
 import { createReleaseSnapshot } from './release-snapshot.ts';
 
-const args = process.argv.slice(2);
+const allArgs = process.argv.slice(2);
+const skipRehearsal = allArgs.includes('--skip-rehearsal');
+const args = allArgs.filter((value) => value !== '--skip-rehearsal');
 const maintenanceIndex = args.indexOf('--maintenance');
 const maintenanceCommit = maintenanceIndex < 0 ? undefined : args[maintenanceIndex + 1];
 const flags =
@@ -69,7 +72,9 @@ try {
     (flags.length && !dryRun) ||
     (maintenanceIndex >= 0 && !/^[a-f0-9]{40}$/.test(maintenanceCommit ?? ''))
   )
-    throw Error('Uso: pnpm deploy:production [--dry-run] [--maintenance COMMIT_DA_JANELA]');
+    throw Error(
+      'Uso: pnpm deploy:production [--dry-run] [--maintenance COMMIT_DA_JANELA] [--skip-rehearsal]',
+    );
   const release = readReleaseEnvironment(root);
   if (dryRun) {
     const { environments }: typeof EnvironmentConfig = await import('../config/environments.ts');
@@ -77,7 +82,7 @@ try {
       `Destinos: Convex ${environments.production.deployment}; Vercel ${environments.vercel.team}/${environments.vercel.project}.`,
     );
     console.log(
-      'Ordem: capturar HEAD em checkout isolado e instalar dependências fixadas → conferir destinos/reservar → build Production Vercel → backup se o backend mudou → deploy Convex → migrações → promover.',
+      'Ordem: capturar HEAD em checkout isolado e instalar dependências fixadas → conferir destinos/reservar → build Production Vercel → backup e ensaio dos calendários se o backend mudou → deploy Convex → migrações → promover.',
     );
     console.log(`Credenciais: ${releaseEnvFile}; backups em ${release.backupDirectory}.`);
     console.log('Simulação: nenhum comando, conexão remota ou arquivo de ambiente foi alterado.');
@@ -99,6 +104,9 @@ try {
     );
     const { backupProduction, changesBackend }: typeof BackupTools = await import(
       pathToFileURL(join(releaseRoot, 'scripts/release-backup.ts')).href
+    );
+    const { assertRehearsal }: typeof RehearsalTools = await import(
+      pathToFileURL(join(releaseRoot, 'scripts/release-rehearsal.ts')).href
     );
     const { productionCandidates }: typeof CandidateTools = await import(
       pathToFileURL(join(releaseRoot, 'scripts/release-candidate.ts')).href
@@ -237,6 +245,7 @@ try {
         release.backupDirectory,
       );
       console.log(`Backup privado com Storage conferido: ${backup}.`);
+      assertRehearsal(backup, skipRehearsal);
     }
     backendAttempted = true;
     run(

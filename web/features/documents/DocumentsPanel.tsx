@@ -11,6 +11,9 @@ import { Notice } from '../../components/ui/Notice.tsx';
 
 /** Closing the form changes route and remounts this panel: the confirmation crosses it here. */
 let uploadedMessage = '';
+const keepUploadedMessage = (text: string) => {
+  uploadedMessage = text;
+};
 
 export default function DocumentsPanel({
   canManage,
@@ -34,7 +37,7 @@ export default function DocumentsPanel({
   const [creating, setCreating] = useRouteForm('institution');
   const [message, setMessage] = useState(() => uploadedMessage);
   useEffect(() => {
-    uploadedMessage = '';
+    keepUploadedMessage('');
   }, []);
   const year = Number(yearFilter);
   const documents = (liveData?.documents ?? [])
@@ -61,7 +64,7 @@ export default function DocumentsPanel({
         <UploadDocumentForm
           onUploaded={onUploaded}
           onMessage={(text) => {
-            uploadedMessage = text;
+            keepUploadedMessage(text);
             setMessage(text);
           }}
         />

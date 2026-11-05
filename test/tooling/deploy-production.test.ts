@@ -5,8 +5,35 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { strToU8, zipSync } from 'fflate';
 import { changesBackend } from '../../scripts/release-backup.ts';
 
+const backup = (tables: Record<string, object[]>) =>
+  Buffer.from(
+    zipSync(
+      Object.fromEntries(
+        Object.entries({ _tables: [], _storage: [], ...tables }).map(([name, rows]) => [
+          `${name}/documents.jsonl`,
+          strToU8(rows.map((row) => JSON.stringify(row)).join('\n')),
+        ]),
+      ),
+    ),
+  ).toString('base64');
+const emptyBackup = backup({});
+const refusedBackup = backup({
+  calendars: [{ _id: 'c', _creationTime: 1, status: 'rascunho', year: 2027, campusId: 'x' }],
+  calendarContents: [
+    {
+      _id: 'k',
+      _creationTime: 1,
+      calendarId: 'c',
+      state: { schemaVersion: 6, periods: 'inválido' },
+      catalogueRevision: 1,
+      institutionalSnapshot: [],
+      documentSnapshot: [],
+    },
+  ],
+});
 const execute = promisify(execFile);
 const commit = 'a'.repeat(40);
 const lockRelease = 'origin :refs/heads/codex/production-release-lock';
@@ -51,7 +78,7 @@ childProcess.execFileSync = (command, args, options) => {
   if(args[0] === 'worktree' && args[1] === 'add') {
     snapshotDirectory=args[3];
     fs.mkdirSync(snapshotDirectory,{recursive:true});
-    for(const name of ['scripts','config','convex']) fs.cpSync(path.join(process.cwd(),name),path.join(snapshotDirectory,name),{recursive:true});
+    for(const name of ['scripts','config','convex','src']) fs.cpSync(path.join(process.cwd(),name),path.join(snapshotDirectory,name),{recursive:true});
     fs.writeFileSync(path.join(snapshotDirectory,'package.json'),packageContent);
     fs.symlinkSync(path.join(process.cwd(),'node_modules'),path.join(snapshotDirectory,'node_modules'),'dir');
     return '';
@@ -84,7 +111,7 @@ childProcess.spawnSync = (command, args) => {
   }
   if (command === process.execPath && args[1] === 'export') {
     record('backup');
-    fs.writeFileSync(args[args.indexOf('--path')+1],Buffer.concat([Buffer.from([80,75,3,4]),Buffer.alloc(100)]));
+    fs.writeFileSync(args[args.indexOf('--path')+1],Buffer.from(scenario==='backend-rehearsal-refused'?'${refusedBackup}':'${emptyBackup}','base64'));
     return {status:scenario==='backend-backup-failed'?1:0};
   }
   throw Error('Unexpected subprocess '+command+' '+args.join(' '));
@@ -183,6 +210,15 @@ test('frontend release builds Production, deploys Convex with default typecheck 
     calls.indexOf(promote),
   );
   expect(calls.at(-1)).toContain('git worktree remove --force');
+});
+
+test('a backup where a calendar in editing would stop saving stops the release before the deploy', async () => {
+  const result = await release('backend-rehearsal-refused');
+  expect(result.code).toBe(1);
+  expect(result.stderr).toContain('O ensaio recusaria 1 calendários');
+  expect(result.calls).toContain('backup');
+  expect(result.calls).not.toContain('backend-deploy');
+  expect(result.calls).not.toContain(promote);
 });
 
 test('backend release exports first, deploys, waits for migrations and only then promotes', async () => {
