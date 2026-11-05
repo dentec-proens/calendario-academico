@@ -1,0 +1,163 @@
+/* Filters that share a row above a calendar list. */
+.calendar-list-tools {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  min-width: 0;
+}
+.calendar-list-tools:has(> label) {
+  flex-basis: 24rem;
+}
+#root .calendar-list-tools > label {
+  flex: 1 1 14rem;
+  min-width: 0;
+  max-width: 360px;
+  margin: 0;
+}
+
+/* What a row holds in any view; broader profiles scan a table, campus profiles see cards. */
+.calendar-list {
+  container: calendar-list / inline-size;
+}
+.calendar-list-items {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.calendar-list-items > li {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.calendar-list-items p {
+  margin: 0;
+}
+.calendar-list-items small {
+  display: block;
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.calendar-list-details {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  min-width: 0;
+}
+.calendar-list-name {
+  color: var(--ui-text);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+.calendar-list-offering {
+  color: var(--ui-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.calendar-list-courses {
+  color: var(--ui-text);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.calendar-list-courses > span {
+  display: block;
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+}
+.calendar-list-actions {
+  display: flex;
+  gap: var(--ui-space-2);
+}
+#root .calendar-list-actions > a {
+  flex: 1 1 auto;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.calendar-list-items > li.calendar-list-empty {
+  grid-column: 1 / -1;
+  padding: 32px 16px;
+  border: 1px dashed var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  color: var(--ui-muted);
+  text-align: center;
+}
+
+/* The table stacks its cells until the container fits the columns of the screen. */
+.calendar-list-heading {
+  display: none;
+  gap: var(--ui-space-4);
+  padding-bottom: var(--ui-space-3);
+  border-bottom: 1px solid var(--ui-border-soft);
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.calendar-list[data-view='table'] .calendar-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-4) 0;
+  border-bottom: 1px solid var(--ui-border-soft);
+}
+.calendar-list[data-view='table'] .calendar-list-status {
+  order: -1;
+}
+.calendar-list-campus {
+  color: var(--ui-text);
+  font-size: 0.875rem;
+}
+.calendar-list-updated {
+  color: var(--ui-text);
+  font-size: 0.8125rem;
+}
+.calendar-list[data-view='table'] .calendar-list-actions {
+  margin-top: var(--ui-space-2);
+}
+#root .calendar-list[data-view='table'] .calendar-list-actions > a {
+  flex: 0 1 auto;
+  padding: 8px 14px;
+}
+@container calendar-list (min-width: 860px) {
+  .calendar-list-heading,
+  .calendar-list[data-view='table'] .calendar-list-row {
+    display: grid;
+    grid-template-columns: var(--calendar-columns);
+    gap: var(--ui-space-4);
+    align-items: center;
+  }
+  .calendar-list[data-view='table'] .calendar-list-row {
+    padding: var(--ui-space-4) var(--ui-space-2);
+    margin: 0 calc(-1 * var(--ui-space-2));
+    border-radius: var(--ui-radius);
+  }
+  .calendar-list-heading {
+    padding-inline: var(--ui-space-2);
+    margin: 0 calc(-1 * var(--ui-space-2));
+  }
+  .calendar-list[data-view='table'] .calendar-list-row:hover {
+    background: var(--ui-surface-subtle);
+  }
+  .calendar-list[data-view='table'] .calendar-list-status {
+    order: 0;
+  }
+  /* The visible heading is hidden from screen readers, so the cells keep their own labels. */
+  .calendar-list-cell-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .calendar-list[data-view='table'] .calendar-list-actions {
+    justify-content: flex-end;
+    margin-top: 0;
+  }
+  .calendar-list-heading > :last-child {
+    text-align: right;
+  }
+}

@@ -107,17 +107,6 @@
   min-width: min(100%, 240px);
 }
 
-.review-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.review-tabs [aria-selected='true'] {
-  border-color: var(--ui-action);
-  background: var(--ui-action-soft);
-  color: var(--ui-action);
-}
 .review-lifecycle {
   margin-block: 4px 16px;
 }

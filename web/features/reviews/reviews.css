@@ -1,0 +1,52 @@
+.review-queue-note {
+  margin: 0 0 var(--ui-space-4);
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+
+/* Tabs select what the list shows, so they read differently from the actions in its rows. */
+.review-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-bottom: var(--ui-space-4);
+  border-bottom: 1px solid var(--ui-border-soft);
+}
+#root .review-tabs [role='tab'] {
+  min-height: 44px;
+  margin-bottom: -1px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--ui-radius) var(--ui-radius) 0 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+#root .review-tabs [role='tab']:hover {
+  background: var(--ui-surface-subtle);
+  box-shadow: none;
+  color: var(--ui-text);
+}
+#root .review-tabs [role='tab'][aria-selected='true'] {
+  border-bottom-color: var(--ui-action);
+  color: var(--ui-action);
+}
+
+.review-queue-submission {
+  display: grid;
+  gap: 2px;
+  color: var(--ui-text);
+  font-size: 0.8125rem;
+}
+.review-queue-progress {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+/* The state can take two lines in the column, where a full pill would look like a blob. */
+.review-queue-progress .ui-status {
+  border-radius: var(--ui-radius);
+}

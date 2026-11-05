@@ -4,7 +4,7 @@ export function StatusBadge({
   tone = 'neutral',
   children,
   ...props
-}: HTMLAttributes<HTMLSpanElement> & { tone?: 'neutral' | 'success' | 'warning' }) {
+}: HTMLAttributes<HTMLSpanElement> & { tone?: 'neutral' | 'info' | 'success' | 'warning' }) {
   return (
     <span {...props} className={`ui-status ui-status--${tone}`}>
       {children}

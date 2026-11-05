@@ -247,6 +247,10 @@ dialog.ui-panel-dialog--side {
   font-weight: 600;
   line-height: 1.5;
 }
+.ui-status--info {
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
+}
 .ui-status--success {
   background: var(--ui-action-soft);
   color: var(--ui-action);

@@ -21,7 +21,7 @@ import { functions } from '../../shared/convex/client.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
 import './lifecycle.css';
 
-export function StatusBadge({ status }: { status: CalendarStatus }) {
+export function CalendarStatusBadge({ status }: { status: CalendarStatus }) {
   return (
     <span className="status-badge" data-status={status}>
       {statusLabels[status]}

@@ -2,7 +2,10 @@ import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { EditorErrorBoundary } from './EditorErrorBoundary.tsx';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Download, Ellipsis, Eye, History } from 'lucide-react';
-import LifecycleActions, { ReturnNote, StatusBadge } from '../lifecycle/LifecycleActions.tsx';
+import LifecycleActions, {
+  CalendarStatusBadge,
+  ReturnNote,
+} from '../lifecycle/LifecycleActions.tsx';
 import {
   ReturnComparison,
   diffSummary,
@@ -201,7 +204,7 @@ function EditorFrame() {
         <div className="editor-heading-group">
           <CalendarTitle />
           <div id="record-heading" className="editor-meta">
-            <StatusBadge status={record.status} />
+            <CalendarStatusBadge status={record.status} />
             {record.seiProcess ? <span>Processo SEI nº {record.seiProcess}</span> : null}
             {record.supersededByName ? (
               <span>Substituído por {record.supersededByName}</span>

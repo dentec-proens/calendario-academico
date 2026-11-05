@@ -19,6 +19,12 @@ test('typed filters retain readable scalar URLs and reject repeated or invalid v
   expect(applicationSearch({ ano: 1899, situacao: ['vigente'], campus: ['campus-a'] })).toEqual({});
 });
 
+test('the situation accepts any calendar status and each screen narrows it', () => {
+  expect(applicationSearch({ situacao: 'em_revisao' })).toEqual({ situacao: 'em_revisao' });
+  expect(applicationSearch({ situacao: 'enviado' })).toEqual({ situacao: 'enviado' });
+  expect(applicationSearch({ situacao: 'constructor' })).toEqual({});
+});
+
 test('view, pendency, origin and situation are separate step filters without aliases', () => {
   expect(
     applicationSearch(

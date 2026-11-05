@@ -8,6 +8,7 @@ test('2027 rules invalidate legacy confirmations while preserving their observat
   await page.goto(await fixtureServer('review'));
   await expect(page.locator('[data-open-review]').first()).toBeVisible();
   await page.evaluate(() => window.reviewUiTest.publishLegacy2027Review());
+  await page.getByRole('tab', { name: 'Em análise' }).click();
   await page.locator('[data-open-review]').first().click();
   const ethics = page.locator('#criterion-title-XXV').locator('xpath=ancestor::li');
   await expect(ethics).toContainText('Ética e da Cidadania');
@@ -116,6 +117,7 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   await notesToggle.click();
   await expect(page.locator(notes)).toBeHidden();
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
+  await page.getByRole('tab', { name: 'Em análise' }).click();
   await page.locator('[data-open-review]').first().click();
   await expect(page.locator('[data-origin="annual"]')).toHaveText('Conferido e salvo');
   await expect(notesToggle).toContainText('observação registrada');
@@ -295,7 +297,7 @@ test('the review list states each parecer and names the next step', async ({
   await page.goto(await fixtureServer('review'));
   const row = page.locator('#review-calendars > li').first();
   const action = page.locator('[data-open-review="synthetic-review"]');
-  await expect(row.locator('.review-queue-state')).toHaveText('Parecer não iniciado');
+  await expect(row.locator('[data-review-label]')).toHaveText('Parecer não iniciado');
   await expect(action).toHaveText('Iniciar parecer');
   await action.click();
   const item = page.locator('#review-items > li').first();
@@ -304,7 +306,9 @@ test('the review list states each parecer and names the next step', async ({
   await page.getByRole('button', { name: 'Salvar parecer' }).first().click();
   await expect(page.locator('#review-message')).toContainText('Parecer salvo');
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
-  await expect(row.locator('.review-queue-state')).toHaveText(
+  // Saving started the review, so the calendar left the first tab.
+  await page.getByRole('tab', { name: 'Em análise' }).click();
+  await expect(row.locator('[data-review-label]')).toHaveText(
     /^Em andamento · 1 de \d+ critérios conferidos$/,
   );
   await expect(row).toContainText('Rev. 1');

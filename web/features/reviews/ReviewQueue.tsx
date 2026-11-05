@@ -1,10 +1,12 @@
 import { Link } from '@tanstack/react-router';
 import type { FunctionReturnType } from 'convex/server';
 import { FilePlus2, FileText, PenLine, RefreshCw } from 'lucide-react';
+import type { CalendarStatus } from '#src/domain/calendar/lifecycle.ts';
+import { StatusBadge } from '../../components/ui/Feedback.tsx';
 import type { functions } from '../../shared/convex/client.ts';
-import { modalityLabels } from '#src/domain/calendar/modalities.ts';
-import { StatusBadge } from '../lifecycle/LifecycleActions.tsx';
 import { updatedLabel } from '../../shared/dates.ts';
+import CalendarIdentityCell from '../calendar-list/CalendarIdentityCell.tsx';
+import CalendarTable, { type CalendarColumn } from '../calendar-list/CalendarTable.tsx';
 
 type QueueItem = FunctionReturnType<typeof functions.reviews.reviewQueue>['page'][number];
 
@@ -12,7 +14,7 @@ type QueueItem = FunctionReturnType<typeof functions.reviews.reviewQueue>['page'
 export function reviewState(review: QueueItem['review']) {
   if (!review)
     return {
-      tone: 'none',
+      tone: 'neutral',
       label: 'Parecer não iniciado',
       action: 'Iniciar parecer',
       Icon: FilePlus2,
@@ -46,49 +48,84 @@ export function reviewState(review: QueueItem['review']) {
   } as const;
 }
 
-export default function ReviewQueue({ items }: { items: QueueItem[] }) {
-  return (
-    <ul id="review-calendars" className="records">
-      {items.map((calendar) => {
-        const state = reviewState(calendar.review);
+export default function ReviewQueue({
+  items,
+  status,
+}: {
+  items: QueueItem[];
+  /** The selected tab, carried to the parecer so that its trail returns here. */
+  status?: Exclude<CalendarStatus, 'rascunho' | 'enviado'>;
+}) {
+  const columns: CalendarColumn<QueueItem>[] = [
+    {
+      label: 'Calendário',
+      width: 'minmax(0, 1fr)',
+      render: (calendar) => <CalendarIdentityCell calendar={calendar} withOrigin />,
+    },
+    {
+      label: 'Envio',
+      width: '8rem',
+      render: ({ submission }) =>
+        submission ? (
+          <div className="review-queue-submission" data-submission={submission.sequence}>
+            <span>
+              Envio {submission.sequence}
+              {submission.resubmission ? ' · reenvio' : ''}
+            </span>
+            <small>{updatedLabel(submission.submittedAt)}</small>
+          </div>
+        ) : (
+          <small>Envio não registrado</small>
+        ),
+    },
+    {
+      label: 'Parecer',
+      width: '13rem',
+      render: ({ review }) => {
+        const state = reviewState(review);
         return (
-          <li key={calendar.id} data-review-state={state.tone}>
-            <div className="review-queue-details">
-              <strong>
-                <StatusBadge status={calendar.status} /> {calendar.name}
-              </strong>
-              {calendar.submission ? (
-                <small data-submission={calendar.submission.sequence}>
-                  Envio {calendar.submission.sequence}
-                  {calendar.submission.resubmission ? ' · reenvio' : ''} ·{' '}
-                  {updatedLabel(calendar.submission.submittedAt)}
-                </small>
-              ) : null}
-              <p className="review-queue-offering">
-                {calendar.offerKinds.map((m) => modalityLabels[m] || m).join(' + ')}
-                {calendar.courses ? ` · ${calendar.courses}` : ''}
-              </p>
-              <span className="review-queue-state" data-tone={state.tone}>
-                {state.label}
-              </span>
-              {calendar.review ? (
-                <small>
-                  Rev. {calendar.review.revision} · {calendar.review.reviewerName} ·{' '}
-                  {updatedLabel(calendar.review.updatedAt)}
-                </small>
-              ) : null}
-            </div>
+          <div className="review-queue-progress">
+            <span className="visually-hidden">Parecer: </span>
+            <StatusBadge tone={state.tone} data-review-label>
+              {state.label}
+            </StatusBadge>
+            {review ? (
+              <small>
+                Rev. {review.revision} · {review.reviewerName} · {updatedLabel(review.updatedAt)}
+              </small>
+            ) : null}
+          </div>
+        );
+      },
+    },
+    {
+      label: 'Ações',
+      width: '12rem',
+      render: ({ id, review }) => {
+        const state = reviewState(review);
+        return (
+          <div className="calendar-list-actions">
             <Link
               to="/revisoes/$calendarId"
-              params={{ calendarId: calendar.id }}
-              data-open-review={calendar.id}
+              params={{ calendarId: id }}
+              search={{ situacao: status }}
+              className="ui-button ui-button--primary"
+              data-open-review={id}
             >
               <state.Icon size={18} aria-hidden="true" />
               {state.action}
             </Link>
-          </li>
+          </div>
         );
-      })}
-    </ul>
+      },
+    },
+  ];
+  return (
+    <CalendarTable
+      id="review-calendars"
+      items={items}
+      columns={columns}
+      rowProps={({ review }) => ({ 'data-review-state': reviewState(review).tone })}
+    />
   );
 }

@@ -7,6 +7,7 @@ import type { FunctionReference } from 'convex/server';
 import { portalReview } from './portal-router-client.ts';
 import type { Bootstrap, DocumentsData } from '../../web/shared/convex/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
+import type { CalendarStatus } from '../../src/domain/calendar/lifecycle.ts';
 import '../../web/style.css';
 import '../../web/portal.css';
 import '../../web/portal/react-portal.css';
@@ -99,6 +100,7 @@ const calendar: Bootstrap['calendars'][number] = {
   id: 'calendar-a' as Id<'calendars'>,
   name: 'Calendário de teste',
   campusId,
+  campusName: 'Campus de teste',
   year: 2027,
   offerKinds: ['integrado'],
   status: 'rascunho',
@@ -134,11 +136,14 @@ const documents: DocumentsData['documents'] = (['rascunho', 'vigente', 'arquivad
     ...(status !== 'rascunho' ? { publishedAt: '2026-10-23T12:00:00Z' } : {}),
   }),
 );
-function reviewQueueRows() {
-  // The queue lists submitted calendars only.
+// As the server, the queue lists one situation at a time; the rows default to the first tab.
+const queueStatus = (new URLSearchParams(location.search).get('queue-status') ??
+  'enviado') as CalendarStatus;
+function reviewQueueRows(status = 'enviado') {
+  if (status !== queueStatus) return [];
   return calendarRows(false).map((item) => ({
     ...item,
-    status: 'enviado' as const,
+    status: queueStatus,
     statusRevision: 1,
     submission: null,
     review: null,
@@ -197,7 +202,7 @@ const client = {
                 : name === 'calendars:calendarPage'
                   ? calendarRows(!!args.deleted)
                   : name === 'reviews:reviewQueue'
-                    ? reviewQueueRows()
+                    ? reviewQueueRows(args.status)
                     : [],
             isDone: true,
             continueCursor: '',
@@ -225,7 +230,7 @@ const client = {
                 page: calendarRows(!!args.deleted),
               };
             if ('page' in result && name === 'reviews:reviewQueue')
-              result = { ...result, page: reviewQueueRows() };
+              result = { ...result, page: reviewQueueRows(args.status) };
           },
           notify: onUpdate,
         };

@@ -53,6 +53,7 @@ export const summary = v.object({
   id: v.id('calendars'),
   name: v.string(),
   campusId: v.id('campuses'),
+  campusName: v.string(),
   year: v.number(),
   offerKinds: v.array(modality),
   status: calendarStatus,

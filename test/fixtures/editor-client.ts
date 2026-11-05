@@ -13,6 +13,7 @@ import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 export const record: WireCalendarRecord = {
   id: 'synthetic-calendar' as Id<'calendars'>,
   campusId: 'campus-a' as Id<'campuses'>,
+  campusName: 'Campus de teste',
   name: '2027 — Campus de teste',
   year: 2027,
   offerKinds: ['integrado'],

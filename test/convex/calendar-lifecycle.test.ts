@@ -190,6 +190,18 @@ test('reviews are bound to the submission and the first save starts the review',
   expect(drafts.page, 'the default tab lists submitted calendars only').toEqual([]);
 });
 
+test('a calendar keeps naming its campus after the campus is archived', async () => {
+  const f = await fixture();
+  const id = await f.create(['integrado'], { ready: true });
+  await act(f.campus, id, 'submit');
+  await f.client.run((ctx) => ctx.db.patch(f.ids.campuses.a, { archived: true }));
+  const paginationOpts = { numItems: 10, cursor: null };
+  const queue = await f.reviewer.query(api.reviews.reviewQueue, { paginationOpts });
+  expect(queue.page.map((item) => item.campusName)).toEqual(['A']);
+  const page = await f.reviewer.query(api.calendars.calendarPage, { paginationOpts });
+  expect(page.page.map((item) => item.campusName)).toEqual(['A']);
+});
+
 test('returns, conclusions and reopenings accumulate decisions; the campus reads the note', async () => {
   const f = await fixture();
   const id = await f.create();

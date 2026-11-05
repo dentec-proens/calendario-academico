@@ -1,9 +1,11 @@
 import { calendarLimits } from '#src/domain/calendar/config.ts';
 import { activityFromKey } from '#src/domain/calendar/activities/activity-ref.ts';
+import { calendarStatuses } from '#src/domain/calendar/lifecycle.ts';
 export type DocumentStatus = '' | 'rascunho' | 'vigente' | 'arquivado';
 
-function documentStatus(value: unknown): Exclude<DocumentStatus, ''> | undefined {
-  return value === 'rascunho' || value === 'vigente' || value === 'arquivado' ? value : undefined;
+/** Each screen narrows `situacao` to the situations it lists; documents use only three of them. */
+function situationFilter(value: unknown) {
+  return calendarStatuses.find((status) => status === value);
 }
 
 function text(value: unknown): string | undefined {
@@ -36,7 +38,7 @@ export function stringifyApplicationSearch(values: Record<string, unknown>) {
 
 export function applicationSearch(input: Record<string, unknown>) {
   const year = Number(input.ano);
-  const situation = documentStatus(input.situacao);
+  const situation = situationFilter(input.situacao);
   return {
     ...(text(input.campus) ? { campus: text(input.campus) } : {}),
     ...(Number.isInteger(year) &&

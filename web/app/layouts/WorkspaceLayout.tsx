@@ -1,7 +1,7 @@
 import { useUpdateNavigation } from '../updates/UpdateProvider.tsx';
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { Link, Outlet, useRouterState } from '@tanstack/react-router';
+import { Link, Outlet, useRouterState, useSearch } from '@tanstack/react-router';
 import {
   Building2,
   CalendarDays,
@@ -96,6 +96,8 @@ export default function WorkspaceLayout() {
   if (info.user.role === 'CAMPUS') navigation.push(audit);
   else administrative.push(audit);
   const back = [...navigation, ...administrative].find(({ id }) => id === metadata?.back);
+  // The trail returns to the list as it was left: only its filters, never a one-off notice.
+  const { campus, situacao } = useSearch({ strict: false });
   useEffect(() => {
     document.title = `${title} · PROENS`;
     if (previous.current === activePath) return;
@@ -163,7 +165,11 @@ export default function WorkspaceLayout() {
         </nav>
       </aside>
       <div className="portal-content">
-        {back ? <BackLink to={back.to}>{back.label}</BackLink> : null}
+        {back ? (
+          <BackLink to={back.to} search={{ campus, situacao }}>
+            {back.label}
+          </BackLink>
+        ) : null}
         <div className="workspace-heading">
           <h1 id="panel-title" ref={heading} tabIndex={-1}>
             {title}

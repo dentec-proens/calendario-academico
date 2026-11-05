@@ -57,7 +57,7 @@ export const convex = {
     queueMicrotask(() => callback(authenticated));
   },
   clearAuth() {},
-  watchQuery(reference: FunctionReference<'query'>, args: { campusId?: string }) {
+  watchQuery(reference: FunctionReference<'query'>, args: { campusId?: string; status?: string }) {
     const name = getFunctionName(reference);
     if (name === 'workspace:bootstrap' || name === 'access/session:status') {
       let cached = sessionResult(name);
@@ -78,7 +78,7 @@ export const convex = {
         journal: () => undefined,
         onUpdate: () => () => {},
       };
-    const watched = reviewClient.watchQuery(reference);
+    const watched = reviewClient.watchQuery(reference, args);
     if (name !== 'calendars:calendarPage' || args.campusId !== 'other-campus') return watched;
     return {
       ...watched,

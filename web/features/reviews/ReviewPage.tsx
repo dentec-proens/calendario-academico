@@ -9,7 +9,7 @@ import type { ReviewSupport } from './review-values.ts';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { Notice, type NoticeTone } from '../../components/ui/Notice.tsx';
 import { useAppSession } from '../../app/session.tsx';
-import LifecycleActions, { StatusBadge } from '../lifecycle/LifecycleActions.tsx';
+import LifecycleActions, { CalendarStatusBadge } from '../lifecycle/LifecycleActions.tsx';
 import SubmissionComparison from '../lifecycle/SubmissionComparison.tsx';
 import { statusLabels } from '#src/domain/calendar/lifecycle.ts';
 
@@ -64,7 +64,7 @@ export default function ReviewPage() {
         {opened ? (
           <>
             <p id="review-status">
-              <StatusBadge status={opened.status} />
+              <CalendarStatusBadge status={opened.status} />
               {opened.submission ? ` Envio ${opened.submission.sequence}` : ''}
             </p>
             <LifecycleActions

@@ -28,6 +28,13 @@ test('portal calendar dashboard', async ({ page, fixtureServer }) => {
   await expect(page).toHaveScreenshot('portal-dashboard.png', { fullPage: true });
 });
 
+test('portal calendar gallery of a campus profile', async ({ page, fixtureServer }) => {
+  await page.goto(`${await fixtureServer('portal')}?role=CAMPUS`);
+  await expect(page.locator('#calendar-list')).toContainText('Calendário de teste');
+  await assertNoOverflow(page);
+  await expect(page).toHaveScreenshot('portal-gallery.png', { fullPage: true });
+});
+
 test('calendar creation form', async ({ page, fixtureServer }) => {
   await page.goto(await fixtureServer('portal'));
   await expect(page.locator('#calendar-list')).toBeVisible();

@@ -204,6 +204,73 @@ test('mobile keyboard navigation changes route, closes the menu and focuses the 
     .toBe(true);
 });
 
+test('the review trail returns to the tab the parecer was opened from', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/revisoes?queue-status=em_revisao&situacao=em_revisao');
+  await expect(page.getByRole('tab', { name: 'Em análise' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await page.locator('[data-open-review="calendar-a"]').click();
+  await expect(page).toHaveURL(origin + '/revisoes/calendar-a?situacao=em_revisao');
+  await expect(page.locator('#review-content')).toBeVisible();
+  await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
+  await expect(page).toHaveURL(origin + '/revisoes?situacao=em_revisao');
+  await expect(page.getByRole('tab', { name: 'Em análise' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(page.locator('[data-open-review="calendar-a"]')).toBeVisible();
+});
+
+test('the review queue keeps its tab in the URL and falls back from a situation it omits', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  const first = page.getByRole('tab', { name: 'Aguardando análise' });
+  await page.goto(origin + '/revisoes?situacao=rascunho');
+  await expect(first).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('[data-open-review]').first()).toBeVisible();
+  await page.getByRole('tab', { name: 'Devolvidos' }).click();
+  await expect(page).toHaveURL(origin + '/revisoes?situacao=devolvido');
+  await expect(page.locator('#review-message')).toContainText('Nenhum calendário devolvido');
+  await expect(page.locator('#review-queue-panel')).toHaveAttribute('tabindex', '0');
+  await first.click();
+  await expect(page).toHaveURL(origin + '/revisoes');
+  await expect(page.locator('#review-queue-panel')).not.toHaveAttribute('tabindex', '0');
+});
+
+test('the arrows move through the review tabs even when pressed quickly', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/revisoes');
+  await page.getByRole('tab', { name: 'Aguardando análise' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: 'Concluídos' })).toBeFocused();
+  await expect(page).toHaveURL(origin + '/revisoes?situacao=revisado');
+  await page.keyboard.press('ArrowLeft');
+  await expect(page.getByRole('tab', { name: 'Em análise' })).toBeFocused();
+});
+
+test('the review tabs bring their own styles on direct entry and from another page', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/revisoes');
+  await expect(page.locator('.review-tabs')).toHaveCSS('display', 'flex');
+  await page.goto(origin + '/calendarios');
+  await page.getByRole('link', { name: 'Revisões e pareceres' }).click();
+  await expect(page.locator('.review-tabs')).toHaveCSS('display', 'flex');
+});
+
 test('review analysis has a direct URL and browser back returns to its list', async ({
   page,
   fixtureServer,

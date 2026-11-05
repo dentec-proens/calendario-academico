@@ -1,17 +1,14 @@
 import { useNavigate } from '@tanstack/react-router';
 import { usePaginatedQuery } from 'convex/react';
 import { useAppSession } from '../../app/session.tsx';
-import { useFeatureRoute } from '../../app/navigation.ts';
 import { functions } from '../../shared/convex/client.ts';
+import { useSelectedCampus } from '../calendar-list/selected-campus.ts';
 import CalendarsPanel from './CalendarsPanel.tsx';
 
 export default function CalendarsPage() {
   const { info, notify, permissions } = useAppSession();
-  const route = useFeatureRoute();
+  const campus = useSelectedCampus();
   const navigate = useNavigate();
-  const campus = permissions.selectCampus
-    ? info.campuses.find((item) => item.id === route.campus)
-    : undefined;
   const pagination = usePaginatedQuery(
     functions.calendars.calendarPage,
     { deleted: false, ...(campus ? { campusId: campus.id } : {}) },
@@ -19,7 +16,8 @@ export default function CalendarsPage() {
   );
   return (
     <CalendarsPanel
-      info={{ ...info, calendars: pagination.results }}
+      info={info}
+      calendars={pagination.results}
       notify={notify}
       canSelectCampus={permissions.selectCampus}
       filter={campus?.id || ''}

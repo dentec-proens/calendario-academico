@@ -30,6 +30,7 @@ export async function summary(ctx: Context, row: Doc<'calendars'>, campus: Doc<'
     id: row._id,
     name: calendarName(row.year, campus.name, row.label),
     campusId: row.campusId,
+    campusName: campus.name,
     year: row.year,
     offerKinds: row.offerKinds,
     status: row.status,

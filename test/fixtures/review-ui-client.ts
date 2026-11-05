@@ -89,6 +89,7 @@ const calendars: Bootstrap['calendars'] = [
     id: 'synthetic-review' as Id<'calendars'>,
     name: '2027 — Campus de teste',
     campusId: 'synthetic-campus' as Id<'campuses'>,
+    campusName: 'Campus de teste',
     year: 2027,
     offerKinds: ['integrado'],
     status: 'enviado',
@@ -101,7 +102,7 @@ const calendars: Bootstrap['calendars'] = [
   },
 ];
 
-function query(reference: FunctionReference<'query'>) {
+function query(reference: FunctionReference<'query'>, args: { status?: string } = {}) {
   switch (getFunctionName(reference)) {
     case 'reviews:review':
       return structuredClone(snapshot);
@@ -109,28 +110,32 @@ function query(reference: FunctionReference<'query'>) {
       return { page: calendars, isDone: true, continueCursor: '' };
     case 'reviews:reviewQueue':
       return {
-        page: calendars.map((calendar) => ({
-          ...calendar,
-          submission: {
-            id: 'synthetic-submission' as Id<'calendarSubmissions'>,
-            sequence: 1,
-            submittedAt: '2026-10-23T15:00:00Z',
-            resubmission: false,
-          },
-          review: snapshot.review
-            ? {
-                revision: snapshot.review.revision,
-                reviewerName: snapshot.review.reviewer.name,
-                updatedAt: snapshot.review.updatedAt,
-                reviewed: snapshot.review.entries.filter(
-                  (entry) => entry.reviewed && entry.status !== 'PENDENTE',
-                ).length,
-                total: snapshot.criteria.length,
-                calendarChanged: snapshot.review.calendarVersion !== calendar.version,
-                otherSubmission: false,
-              }
-            : null,
-        })),
+        // As the server, saving the first parecer starts the review and moves the calendar there.
+        page: calendars
+          .map((calendar) => ({
+            ...calendar,
+            status: snapshot.review ? ('em_revisao' as const) : ('enviado' as const),
+            submission: {
+              id: 'synthetic-submission' as Id<'calendarSubmissions'>,
+              sequence: 1,
+              submittedAt: '2026-10-23T15:00:00Z',
+              resubmission: false,
+            },
+            review: snapshot.review
+              ? {
+                  revision: snapshot.review.revision,
+                  reviewerName: snapshot.review.reviewer.name,
+                  updatedAt: snapshot.review.updatedAt,
+                  reviewed: snapshot.review.entries.filter(
+                    (entry) => entry.reviewed && entry.status !== 'PENDENTE',
+                  ).length,
+                  total: snapshot.criteria.length,
+                  calendarChanged: snapshot.review.calendarVersion !== calendar.version,
+                  otherSubmission: false,
+                }
+              : null,
+          }))
+          .filter((calendar) => calendar.status === (args.status ?? 'enviado')),
         isDone: true,
         continueCursor: '',
       };
@@ -198,14 +203,14 @@ export const convex = {
     listeners.forEach((listener) => listener.notify());
     return Promise.resolve({ revision: snapshot.review.revision });
   },
-  watchQuery: (reference: FunctionReference<'query'>) => {
-    let result = query(reference);
+  watchQuery: (reference: FunctionReference<'query'>, args: { status?: string } = {}) => {
+    let result = query(reference, args);
     return {
       onUpdate: (notify: () => void) => {
         const listener = {
           notify,
           refresh: () => {
-            result = query(reference);
+            result = query(reference, args);
           },
         };
         listeners.add(listener);
