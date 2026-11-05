@@ -1,6 +1,11 @@
 import { readActivityDates } from '../../src/domain/calendar/civil-dates.ts';
 import { frozenBase, inspectBase } from './base';
-import { isEditable, isPublished, isUnderReview, officialApproval } from '../../src/domain/calendar/lifecycle';
+import {
+  isEditable,
+  isPublished,
+  isUnderReview,
+  officialApproval,
+} from '../../src/domain/calendar/lifecycle';
 import { lastReturn, outcome } from './lifecycle';
 import { releaseReadiness } from '../../src/domain/calendar/readiness';
 import type { Doc, Id } from '../_generated/dataModel';
