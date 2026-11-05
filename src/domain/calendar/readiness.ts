@@ -1,4 +1,5 @@
 import { diagnoseCalendar, diagnoseTeachingDays } from './diagnostics.ts';
+import { compactDate, longDate, longRange } from '../date-labels.ts';
 import { assessmentStageCounts } from './config.ts';
 import { referenceIsCurrent, reviewIsCurrent } from './base.ts';
 import {
@@ -208,10 +209,10 @@ export function contentAssessment(record: ContentRecord) {
     if (reason)
       issue(
         `link-review:${event.id}:${reason}`,
-        `Vínculo a conferir — “${event.name}” (${event.start.split('-').reverse().join('/')}): ${linkIssueLabels[reason]}. ${linkIssueActions[reason]}`,
+        `Vínculo a conferir — “${event.name}” (${longDate(event.start)}): ${linkIssueLabels[reason]}. ${linkIssueActions[reason]}`,
         {
           group: 'dates',
-          title: `Vínculo a conferir — ${event.name} (${event.start.split('-').reverse().join('/')})`,
+          title: `Vínculo a conferir — ${event.name} (${compactDate(event.start, record.state.year)})`,
           detail: `${linkIssueLabels[reason]}. ${linkIssueActions[reason]}`,
           target: { area: 'date', eventId: event.id, name: event.name },
         },
@@ -222,10 +223,9 @@ export function contentAssessment(record: ContentRecord) {
   for (const event of record.state.events) {
     const message = schoolDayIssue(record.state, event);
     if (message) {
-      const date = event.start.split('-').reverse().join('/');
       issue(`school-day:${event.id}`, message, {
         group: 'dates',
-        title: `Não constitui dia letivo — ${event.name} (${date})`,
+        title: `Não constitui dia letivo — ${event.name} (${compactDate(event.start, record.state.year)})`,
         detail: message,
         target: { area: 'date', eventId: event.id, name: event.name },
       });
@@ -236,10 +236,10 @@ export function contentAssessment(record: ContentRecord) {
     for (const item of noticeDestinationIssues(record.state, event))
       warn(
         `notice-destination:${event.id}:${item.offerId}`,
-        `${labelFor(record.state, item.offerId)} — “${event.name}” (${event.start.split('-').reverse().join('/')}): ${item.message}. Revise o destino do edital.`,
+        `${labelFor(record.state, item.offerId)} — “${event.name}” (${longDate(event.start)}): ${item.message}. Revise o destino do edital.`,
         {
           group: 'dates',
-          title: `${event.name} (${event.start.split('-').reverse().join('/')})`,
+          title: `${event.name} (${compactDate(event.start, record.state.year)})`,
           detail: `${item.message.charAt(0).toUpperCase() + item.message.slice(1)}. Revise o destino do edital.`,
           offerId: item.offerId,
           target: { area: 'date', eventId: event.id, name: event.name },
@@ -261,7 +261,7 @@ export function contentAssessment(record: ContentRecord) {
         end &&
         (start < window.start || start > window.latestStart || end > window.end)
       ) {
-        const detail = `Datas fora da referência ${window.start} a ${window.end}, início até ${window.latestStart}. Confira a justificativa e a deliberação institucional antes de concluir a revisão.`;
+        const detail = `Datas fora da referência: ${longRange(window)}, início até ${longDate(window.latestStart)}. Confira a justificativa e a deliberação institucional antes de concluir a revisão.`;
         warn(`window:${offer.id}`, `${labelFor(record.state, offer.id)} — ${detail}`, {
           group: 'structure',
           title: 'Ano letivo',
@@ -330,7 +330,7 @@ export function contentAssessment(record: ContentRecord) {
       issue('conflicts', 'Resolva os conflitos entre dias letivos e exclusões.', {
         group: 'teaching-days',
         title: 'Conflitos na contagem',
-        detail: `Há inclusão e exclusão em ${conflicts.map((date) => date.split('-').reverse().join('/')).join(', ')}. Esses dias ficam fora da contagem até a resolução.`,
+        detail: `Há inclusão e exclusão em ${conflicts.map((date) => compactDate(date, record.state.year)).join(', ')}. Esses dias ficam fora da contagem até a resolução.`,
         target: { area: 'teaching-days' },
       });
   } catch {

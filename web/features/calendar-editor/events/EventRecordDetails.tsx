@@ -4,7 +4,7 @@ import { isInternalDate } from '#src/domain/calendar/internal-dates.ts';
 import { StatusBadge } from '../../../components/ui/Feedback.tsx';
 import type { EditorEvent } from '../types.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
-import { civilDate } from './activity-query.ts';
+import { longRange } from '#src/domain/date-labels.ts';
 import { destinationIssueLines, destinationText, publicationLabels } from './notice-details.ts';
 
 /** Read-only summary of one calendar record, shared by the campus events and the record list. */
@@ -30,7 +30,7 @@ export default function EventRecordDetails({
         </small>
       )}
       <small>
-        {civilDate(event.start)} a {civilDate(event.end)} ·{' '}
+        {longRange(event)} ·{' '}
         {event.effect === 'include'
           ? 'Inclusão letiva'
           : event.effect === 'exclude'

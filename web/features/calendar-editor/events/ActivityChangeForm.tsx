@@ -16,7 +16,7 @@ import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { Button } from '../../../components/ui/Button.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
-import { civilDate } from './activity-query.ts';
+import { longRange } from '#src/domain/date-labels.ts';
 
 /**
  * **Corrigir atividade vinculada**: the campus chooses another generated
@@ -105,8 +105,7 @@ export default function ActivityChangeForm({
               <dl>
                 <dt>Data</dt>
                 <dd>
-                  {preview.date.name} · {civilDate(preview.date.start)} a{' '}
-                  {civilDate(preview.date.end)} ·{' '}
+                  {preview.date.name} · {longRange(preview.date)} ·{' '}
                   {preview.date.offers.map((offer) => labelFor(state, offer)).join(', ')} (sem
                   alteração)
                 </dd>

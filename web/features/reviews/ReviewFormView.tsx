@@ -180,6 +180,7 @@ export default function ReviewFormView({
           {opened.criteria.map((criterion, index) => (
             <ReviewCriterion
               key={criterion.id}
+              calendarYear={opened.calendar.year}
               criterion={criterion}
               number={index + 1}
               entry={draft.entries.find((entry) => entry.id === criterion.id) || criterion.initial}

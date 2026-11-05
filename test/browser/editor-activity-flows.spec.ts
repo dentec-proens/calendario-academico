@@ -286,7 +286,7 @@ test('going back to the activity keeps an unapplied period pending and a saved o
     .toBe('2027-06-12');
   // Saving returns to the activity, where the new period is listed.
   await expect(page.locator('#event-form')).toBeHidden();
-  await expect(page.locator('#event-panel .activity-records')).toContainText('12/06/2027');
+  await expect(page.locator('#event-panel .activity-records')).toContainText('12 de junho de 2027');
   await expect(page.locator('#event-panel [data-prepare-activity]')).toHaveText('Adicionar data');
   await expect(page.locator('#event-panel [data-prepare-activity]')).toBeFocused();
 
@@ -298,7 +298,7 @@ test('going back to the activity keeps an unapplied period pending and a saved o
   await page.locator('#back-to-activity').click();
   await expect(page.locator('#event-form')).toBeHidden();
   await expect(page.locator('#panel-pending-event')).toHaveCount(0);
-  await expect(page.locator('#event-panel .activity-records')).toContainText('12/06/2027');
+  await expect(page.locator('#event-panel .activity-records')).toContainText('12 de junho de 2027');
 });
 
 test('the free event form opens in the side panel with a labelled offer group', async ({

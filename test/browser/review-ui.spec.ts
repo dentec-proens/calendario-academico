@@ -326,9 +326,7 @@ for (const width of [1360, 390]) {
       'Ver registros possivelmente relacionados (1)',
     );
     await related.locator('summary').click();
-    await expect(related.locator('li')).toHaveText([
-      '2027-10-05 a 2027-10-05 · Semana Cultural Interescolar',
-    ]);
+    await expect(related.locator('li')).toHaveText(['5 out · Semana Cultural Interescolar']);
     const internal = item.locator('[data-internal-dates="XXVI"]');
     await expect(internal.locator('summary')).toHaveText(
       'Datas internas do campus, só para consulta (1)',

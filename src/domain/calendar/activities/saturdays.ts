@@ -1,3 +1,4 @@
+import { longDate } from '../../date-labels.ts';
 import { type CivilDate } from '../../civil-date.ts';
 import type { ActivityState, CalendarEvent, AssessmentSettings } from '../model.ts';
 import { datesBetween } from '../counting/core.ts';
@@ -33,7 +34,7 @@ export function saturdayEvents(
     )
       throw new DomainError(
         'O sábado ' +
-          date.split('-').reverse().join('/') +
+          longDate(date) +
           ' está fora dos períodos letivos. Cadastre ou ajuste o início e o término na etapa Períodos letivos e tente adicionar novamente.',
       );
   }

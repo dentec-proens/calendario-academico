@@ -10,7 +10,7 @@ import { offerFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { useActivityCoverage } from './useActivityCoverage.ts';
-import { civilDate } from './activity-query.ts';
+import { longRange } from '#src/domain/date-labels.ts';
 import { Button } from '../../../components/ui/Button.tsx';
 import IntakeRequirementForm from '../forms/IntakeRequirementForm.tsx';
 import { destinationIssueLines, destinationText, publicationLabels } from './notice-details.ts';
@@ -130,7 +130,7 @@ export default function ActivityDetails({
               <p>
                 <strong>{event.name}</strong>
                 <small>
-                  {civilDate(event.start)} a {civilDate(event.end)} ·{' '}
+                  {longRange(event)} ·{' '}
                   {event.offers.map((modality) => labelFor(state, modality)).join(', ')}
                   {showHours ? ` · ${formatHours(event.hours ?? 0)}` : ''}
                   {event.notice?.publication

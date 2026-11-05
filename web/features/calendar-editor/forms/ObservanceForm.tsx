@@ -1,3 +1,4 @@
+import { longDate } from '#src/domain/date-labels.ts';
 import { civilDate } from '../../../../src/domain/civil-date.ts';
 import { calendarObservances, chooseObservance } from '#src/domain/calendar/observances.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -7,8 +8,6 @@ import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { Button } from '../../../components/ui/Button.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
-
-const dateLabel = (date: string) => date.split('-').reverse().join('/');
 
 export default function ObservanceForm({
   observanceKey,
@@ -52,12 +51,12 @@ export default function ObservanceForm({
                 >
                   {!entry.rule!.allowedDates.some((date) => date === field.state.value) && (
                     <option value={field.state.value}>
-                      Escolha registrada: {field.state.value}
+                      Escolha registrada: {field.state.value && longDate(field.state.value)}
                     </option>
                   )}
                   {entry.rule!.allowedDates.map((allowed) => (
                     <option key={allowed} value={allowed}>
-                      {dateLabel(allowed)}
+                      {longDate(allowed)}
                       {allowed === reference ? ' — data institucional' : ''}
                     </option>
                   ))}

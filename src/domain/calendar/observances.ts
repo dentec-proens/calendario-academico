@@ -1,3 +1,4 @@
+import { compactDate } from '../date-labels.ts';
 import { civilDate, type CivilDate } from '../civil-date.ts';
 import type { ObservanceRule } from '../policies/contract.ts';
 import { policyFor } from '../policies/registry.ts';
@@ -64,7 +65,7 @@ export function observanceIssues(events: ObservanceEvent[], state: ObservanceSta
     if (selected !== undefined && !rule.allowedDates.includes(selected))
       issues.push({
         key,
-        message: `${label}: escolha uma das datas permitidas: ${rule.allowedDates.map((date) => date.split('-').reverse().join('/')).join(', ')}.`,
+        message: `${label}: escolha uma das datas permitidas: ${rule.allowedDates.map((date) => compactDate(date)).join(', ')}.`,
       });
   }
   return issues;

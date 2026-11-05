@@ -18,14 +18,13 @@ import { useEventEditor } from './EventEditorProvider.tsx';
 import { useActivityCoverage } from './useActivityCoverage.ts';
 import { useActivityList } from './activity-list.ts';
 import type { ActivityLine, DateLine } from './activity-step.ts';
-import { activityGroups, civilDate, useActivitySearch } from './activity-query.ts';
+import { activityGroups, useActivitySearch } from './activity-query.ts';
+import { compactRange } from '#src/domain/date-labels.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { Notice } from '../../../components/ui/Notice.tsx';
 import ActivityRow from './ActivityRow.tsx';
 import ActivityGroup from './ActivityGroup.tsx';
 
-const range = (event: { start: string; end: string }) =>
-  `${civilDate(event.start)} a ${civilDate(event.end)}`;
 /** Moves the focus once the step has rendered the URL a notice action navigated to. */
 const focusAfterRender = (target: () => HTMLElement | null) =>
   requestAnimationFrame(() => target()?.focus());
@@ -38,6 +37,7 @@ const monthLabel = (date: string) =>
 
 export default function ActivityChecklist() {
   const { state, readOnly } = useCalendarEditor();
+  const range = (event: { start: string; end: string }) => compactRange(event, state.year);
   const editor = useEventEditor();
   const search = useActivitySearch();
   const navigate = useNavigate();

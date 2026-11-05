@@ -1,3 +1,4 @@
+import { longDate } from '../../date-labels.ts';
 import {
   isLocalDate,
   type AssessmentSettings,
@@ -217,7 +218,7 @@ export function evaluatePlan(
             : null;
           if (deadline?.source === 'municipal-extension')
             warnings.push(
-              `Prazo de ${deadline.original} prorrogado para ${deadline.date ?? 'conferência do primeiro dia letivo subsequente'} por feriado municipal ou recesso decorrente.${deadline.evidence.length ? ` Fontes institucionais: ${deadline.evidence.join('; ')}.` : ''}`,
+              `Prazo de ${longDate(deadline.original)} prorrogado para ${deadline.date ? longDate(deadline.date) : 'conferência do primeiro dia letivo subsequente'} por feriado municipal ou recesso decorrente.${deadline.evidence.length ? ` Fontes institucionais: ${deadline.evidence.join('; ')}.` : ''}`,
             );
           if (deadline && (!deadline.date || event.end > deadline.date)) {
             const adjustment = event.deadlineAdjustment;
@@ -227,7 +228,7 @@ export function evaluatePlan(
               event.end <= adjustment.date
             )) {
               issues.push(
-                `Data posterior ao prazo de ${requirement.deadline}; confira eventual cronograma ajustado pela Proens.`,
+                `Data posterior ao prazo de ${longDate(requirement.deadline!)}; confira eventual cronograma ajustado pela Proens.`,
               );
               return false;
             }

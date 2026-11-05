@@ -121,7 +121,9 @@ test('new, swapped and removed links are still refused by command and save', () 
   expect(() => save(state, { ...state, events: removed })).toThrow('não perde nem troca');
   const added = [...state.events, { ...event, id: 'copy' }];
   expect(() => save(state, { ...state, events: added })).toThrow('Vínculo de atividade inválido');
-  expect(() => normalizeOfferCalendar(state)).toThrow(/Vínculo.*21\/07\/2027.*21\/12\/2027/);
+  expect(() => normalizeOfferCalendar(state)).toThrow(
+    /Vínculo.*21 de julho de 2027.*21 de dezembro de 2027/,
+  );
   expect(() => normalizeOfferCalendar(state, state)).not.toThrow();
 });
 

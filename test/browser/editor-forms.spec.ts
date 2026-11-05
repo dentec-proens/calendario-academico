@@ -121,7 +121,7 @@ test('Saturday panel applies one activity to the selected dates without moving f
   await expect(page.locator('[data-saturday="2027-03-06"] [data-edit-saturday]')).toBeFocused();
   await page.locator('#saturday-panel [data-edit-saturday]').first().click();
   await expect(page.locator('#saturday-edit-title')).toBeFocused();
-  await expect(page.locator('#saturday-edit-title')).toContainText('06/03');
+  await expect(page.locator('#saturday-edit-title')).toContainText('6 mar');
 
   // The next selection offers the activities already used.
   await page.locator('#saturday-dates input[value="2027-03-13"]').check();
@@ -322,7 +322,7 @@ test('a selected holiday warns that it will not count as a teaching day', async 
   await page.locator('#close-event-panel').click();
   await selectEditorSection(page, 'days');
   await page.locator('#saturday-dates input[value="2027-05-01"]').check();
-  await expect(page.locator('#saturday-impediments')).toContainText('01/05');
+  await expect(page.locator('#saturday-impediments')).toContainText('1 mai');
   await expect(page.locator('#saturday-impediments')).toContainText('Dia do Trabalho');
 });
 
@@ -383,7 +383,7 @@ test('a registered Saturday is edited and removed from the panel', async ({
   await page.locator('#saturday-edit-remove').click();
   const confirmation = page.getByRole('alertdialog');
   await expect(confirmation).toContainText('Remover sábado letivo');
-  await expect(confirmation).toContainText('06/03/2027');
+  await expect(confirmation).toContainText('6 de março de 2027');
   await expect.poll(saturdays).toEqual([{ start: '2027-03-06', name: 'Feira de ciências' }]);
   await confirmation.getByRole('button', { name: 'Cancelar' }).click();
   await expect(confirmation).toBeHidden();

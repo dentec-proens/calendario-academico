@@ -1,3 +1,4 @@
+import { longDate } from '../../date-labels.ts';
 import { civilDate } from '../../civil-date.ts';
 import type { ActivityState, CalendarEvent } from '../model.ts';
 import { isSaturdayRecord, saturdayEvents } from '../activities/saturdays.ts';
@@ -34,7 +35,7 @@ export function applySaturdayActivities<S extends ActivityState>(
       );
     } catch (error) {
       throw new DomainError(
-        `${activity.date.split('-').reverse().join('/')}: ${error instanceof Error ? error.message : String(error)}`,
+        `${longDate(activity.date)}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

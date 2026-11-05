@@ -1,3 +1,4 @@
+import { compactRange } from '#src/domain/date-labels.ts';
 import { CheckCheck, Info, RotateCcw } from 'lucide-react';
 import type { reviews } from '../../shared/convex/reviews.ts';
 import { Button } from '../../components/ui/Button.tsx';
@@ -15,6 +16,7 @@ const assessmentOptions = [
 ] as const;
 
 export default function ReviewCriterion({
+  calendarYear,
   criterion,
   number,
   entry,
@@ -24,6 +26,7 @@ export default function ReviewCriterion({
   onChange,
   onConfirm,
 }: {
+  calendarYear: number;
   criterion: Criterion;
   number: number;
   entry: Entry;
@@ -98,7 +101,7 @@ export default function ReviewCriterion({
             <ul>
               {official.map((candidate, index) => (
                 <li key={candidate.id || index}>
-                  {candidate.start} a {candidate.end} · {candidate.name}
+                  {compactRange(candidate, calendarYear)} · {candidate.name}
                 </li>
               ))}
             </ul>
@@ -114,8 +117,8 @@ export default function ReviewCriterion({
             <ul>
               {internal.map((candidate, index) => (
                 <li key={candidate.id || index}>
-                  <StatusBadge data-internal-badge>Interna</StatusBadge> {candidate.start} a{' '}
-                  {candidate.end} · {candidate.name}
+                  <StatusBadge data-internal-badge>Interna</StatusBadge>{' '}
+                  {compactRange(candidate, calendarYear)} · {candidate.name}
                 </li>
               ))}
             </ul>

@@ -15,7 +15,7 @@ for (const width of [1440, 390]) {
     await expect(notice).toContainText('Este calendário já segue a base vigente.');
     await expect(notice).toContainText('Incluído: Encontro institucional');
     await expect(notice).toContainText('Retirado: Recesso removido');
-    await expect(notice).toContainText('de 15/10/2027 para 14/10/2027');
+    await expect(notice).toContainText('de 15 out para 14 out');
     await expect(notice).not.toContainText('Suas datas não mudaram');
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
     await expect

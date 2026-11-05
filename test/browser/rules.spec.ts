@@ -16,7 +16,7 @@ for (const role of ['ADMIN', 'CAMPUS', 'PARECERISTA'] as const)
     await expect(page.locator('#rules-title')).toHaveText('Regras do calendário de 2027');
     await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v8');
     await expect(page.locator('[data-observance-rule="public-servant-day"]')).toContainText(
-      '28/10/2027, 29/10/2027',
+      '28 out, 29 out',
     );
     const family = page.locator('[data-rule="family-meeting"]');
     await expect(family).toContainText('Decisão: exigida apenas no técnico integrado');

@@ -1,3 +1,4 @@
+import { longDate } from '../../date-labels.ts';
 import { readDateRange } from '../civil-dates.ts';
 import { civilDate } from '../../civil-date.ts';
 import {
@@ -361,7 +362,7 @@ export function offerOrganizationIssues(
       )
         issue(
           'periods',
-          `A inclusão letiva “${event.name}” (${event.start.split('-').reverse().join('/')}) ficaria fora dos períodos desta oferta. Ajuste as datas ou revise a inclusão antes de aplicar.`,
+          `A inclusão letiva “${event.name}” (${longDate(event.start)}) ficaria fora dos períodos desta oferta. Ajuste as datas ou revise a inclusão antes de aplicar.`,
         );
     }
   // Edited stages are also checked against every other recorded date, as saving does.

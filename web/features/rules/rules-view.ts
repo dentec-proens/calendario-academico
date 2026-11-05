@@ -1,3 +1,4 @@
+import { compactDate, longDate } from '#src/domain/date-labels.ts';
 import {
   calendarSchemaVersion,
   type AssessmentSettings,
@@ -42,7 +43,8 @@ const repeatLabels = {
   },
   once: { title: 'Uma vez por ano letivo', help: '' },
 };
-const civilDate = (date: string) => date.split('-').reverse().join('/');
+/** The written form of a deadline inside the name of a rule, which comes from the norm's text. */
+const dateInRuleName = (date: string) => date.split('-').reverse().join('/');
 
 /** Rules grouped by repetition base, in the order each base first appears. */
 function byRepeat(rules: readonly ActivityRule[]) {
@@ -110,7 +112,7 @@ export function rulesView(year: number) {
     ],
     changes: (policy.rulesetChanges ?? []).map((change) => ({
       ...change,
-      date: civilDate(change.date),
+      date: compactDate(change.date, year),
       effect: effectLabels[change.effect],
     })),
     sections: byRepeat(policy.catalogue ?? []).map(([repeat, rules]) => {
@@ -144,8 +146,8 @@ export function rulesView(year: number) {
             byOffer,
             details: [
               sample.deadline &&
-                !sample.name.includes(civilDate(sample.deadline)) &&
-                `Prazo${sample.deadlinePolicy === 'reference' ? ' de referência' : ''}: ${civilDate(sample.deadline)}.`,
+                !sample.name.includes(dateInRuleName(sample.deadline)) &&
+                `Prazo${sample.deadlinePolicy === 'reference' ? ' de referência' : ''}: ${longDate(sample.deadline)}.`,
               policy.schoolDay &&
                 schoolDayNature(year, { activity: sample.activity, effect: 'note' }) !==
                   'school-day' &&

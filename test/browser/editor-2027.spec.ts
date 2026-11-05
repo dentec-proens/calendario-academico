@@ -106,7 +106,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   // Optional since consup-292-2027-v8: the row shows the situation and the recorded date.
   const noticeRow = page.locator('[data-activity-row="admission-notice:cycle:annual"]');
   await expect(noticeRow).toContainText('Opcional');
-  await expect(noticeRow).toContainText('01/12/2026');
+  await expect(noticeRow).toContainText('1 dez 2026');
   await page.locator('#close-event-panel').click();
   await openActivity(page, 'regular-admission-notice');
   await expect(page.locator('#event-admission-year')).toHaveValue('2028');
@@ -124,9 +124,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
       ),
     )
     .toBe('2027-12-01');
-  await expect(page.locator('#event-panel .activity-details')).toContainText(
-    /15\/06\/2027|2027-06-15/,
-  );
+  await expect(page.locator('#event-panel .activity-details')).toContainText('15 de junho de 2027');
   await page.locator('#close-event-panel').click();
   await selectEditorSection(page, 'issues');
   await expect(page.locator('#issue-list')).toContainText(/prazo|Proens/);

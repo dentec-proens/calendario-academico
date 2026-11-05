@@ -10,14 +10,14 @@ for (const width of [1440, 390, 320]) {
     const origin = new URL(await fixtureServer('portal')).origin;
     await page.goto(origin + '/eventos-institucionais');
     const row = page.locator('#catalogue-list li').first();
-    await expect(row.locator('.catalogue-date')).toHaveText('1 de janeiro de 2027');
+    await expect(row.locator('.catalogue-date')).toHaveText('1 jan 2027');
     await expect(row).toContainText('Feriado · Técnico integrado');
     await expect(row).toContainText('Fonte: Fonte de teste');
 
     for (const [start, end, label] of [
-      ['2027-12-20', '2027-12-24', '20 a 24 de dezembro de 2027'],
-      ['2027-01-30', '2027-02-02', '30 de janeiro a 2 de fevereiro de 2027'],
-      ['2027-12-20', '2028-01-02', '20 de dezembro de 2027 a 2 de janeiro de 2028'],
+      ['2027-12-20', '2027-12-24', '20 a 24 dez 2027'],
+      ['2027-01-30', '2027-02-02', '30 jan a 2 fev 2027'],
+      ['2027-12-20', '2028-01-02', '20 dez 2027 a 2 jan 2028'],
     ]) {
       await page.evaluate(
         ({ start, end }) => {

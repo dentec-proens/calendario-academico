@@ -1,3 +1,4 @@
+import { compactDate } from '#src/domain/date-labels.ts';
 import { useMemo, useRef, useState } from 'react';
 import { isYearSaturday, saturdayYear } from '#src/domain/calendar/activities/saturdays.ts';
 import { applySaturdayActivities } from '#src/domain/calendar/commands/saturdays.ts';
@@ -22,7 +23,6 @@ import './saturdays.css';
 /** Below this step width the panel no longer fits beside the grid and opens as a dialog. */
 const compactWidth = 760;
 
-const shortDate = (date: string) => date.slice(5).split('-').reverse().join('/');
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
 // A date outside the periods has no control; its cell takes focus so keyboard users keep their place.
@@ -33,6 +33,7 @@ const dateControl = (date: string) =>
 
 export default function SaturdaysForm() {
   const { state, record, events, session, readOnly } = useCalendarEditor();
+  const shortDate = (date: string) => compactDate(date, state.year);
   const { editorRecovery, maintenance } = useAppSession();
   // Opening a registered Saturday is local panel state, like the event editor; it never enters the URL.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -255,6 +256,7 @@ export default function SaturdaysForm() {
   );
   const idleBody = (
     <SaturdayRegisteredList
+      year={state.year}
       registered={registered}
       hasAvailable={saturdays.some((day) => day.status === 'available')}
       onOpen={(eventId) => {

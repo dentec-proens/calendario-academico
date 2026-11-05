@@ -1,3 +1,4 @@
+import { longDate } from '#src/domain/date-labels.ts';
 import type { CalendarEvent } from '#src/domain/calendar/model.ts';
 import { removeEvent } from '#src/domain/calendar/commands/events.ts';
 import { updateSaturdayActivity } from '#src/domain/calendar/commands/saturdays.ts';
@@ -8,8 +9,6 @@ import { Input } from '../forms/fields.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { Button } from '../../../components/ui/Button.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
-
-const fullDate = (date: string) => date.split('-').reverse().join('/');
 
 export default function SaturdayEditForm({
   event,
@@ -27,7 +26,7 @@ export default function SaturdayEditForm({
       session.apply((current) => updateSaturdayActivity(current, { id: event.id, ...value }));
       onClose(event.start);
     },
-    { successMessage: () => `Sábado ${fullDate(event.start)} atualizado.` },
+    { successMessage: () => `Sábado ${longDate(event.start)} atualizado.` },
   );
   function discard() {
     form.reset({ name: event.name });
@@ -38,7 +37,7 @@ export default function SaturdayEditForm({
   async function remove() {
     const confirmed = await confirmAction({
       title: 'Remover sábado letivo',
-      description: `O sábado ${fullDate(event.start)} deixa de contar como dia letivo.`,
+      description: `O sábado ${longDate(event.start)} deixa de contar como dia letivo.`,
       intent: 'danger',
       confirmLabel: 'Remover sábado',
     });
@@ -48,7 +47,7 @@ export default function SaturdayEditForm({
   return (
     <form id="saturday-edit-form" onSubmit={submit}>
       <fieldset disabled={readOnly || pending}>
-        <legend className="saturday-sr">Atividade do sábado {fullDate(event.start)}</legend>
+        <legend className="saturday-sr">Atividade do sábado {longDate(event.start)}</legend>
         <form.Field name="name">
           {(field) => (
             <Input

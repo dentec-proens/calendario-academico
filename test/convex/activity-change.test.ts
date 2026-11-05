@@ -198,7 +198,7 @@ test('a reviewed calendar with a link to review keeps its status and is publishe
   expect(record.readiness.issues.filter((issue) => issue.startsWith('Vínculo a conferir'))).toEqual(
     [
       expect.stringContaining(
-        '“Resultado final do 1º semestre” (22/06/2027): Atividade não gerada',
+        '“Resultado final do 1º semestre” (22 de junho de 2027): Atividade não gerada',
       ),
     ],
   );

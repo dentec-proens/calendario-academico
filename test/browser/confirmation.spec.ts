@@ -202,7 +202,7 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
   await expect(page.locator('dialog[open]')).toBeVisible();
   await page.locator('.confirmation-dialog__confirm').click();
   await expect(page.locator('#periods'))
-    .toContainText('Anual: 01/02/2027 a 01/03/2027')
+    .toContainText('Anual: 1 fev a 1 mar')
     .catch(async (error: unknown) => {
       throw new Error(
         JSON.stringify({

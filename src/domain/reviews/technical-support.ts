@@ -1,3 +1,4 @@
+import { longRange } from '../date-labels.ts';
 import {
   isLocalDate,
   type CalendarEvent,
@@ -190,7 +191,7 @@ export function reviewSupport<
             : error);
       if (c.id === 'I')
         signal =
-          record.state.periods.map((p) => `${p.name}: ${p.start} a ${p.end}`).join('; ') ||
+          record.state.periods.map((p) => `${p.name}: ${longRange(p)}`).join('; ') ||
           'Nenhum período cadastrado. Confira também as etapas internas.';
       if (c.id === 'window') {
         const starts = windowPeriods.map((p) => p.start).sort(),
@@ -201,7 +202,7 @@ export function reviewSupport<
             ? 'Aplicabilidade da janela a conferir; identifique o escopo e a norma própria quando necessária.'
             : !starts.length
               ? 'Nenhum período cadastrado.'
-              : `${starts[0]} a ${ends.at(-1)}. ${starts[0] >= windowStart && starts[0] <= latestStart && ends.at(-1)! <= windowEnd ? 'Dentro da janela indicada no parecer.' : 'Fora da janela indicada no parecer; revisar.'}`;
+              : `${longRange({ start: starts[0]!, end: ends.at(-1)! })}. ${starts[0] >= windowStart && starts[0] <= latestStart && ends.at(-1)! <= windowEnd ? 'Dentro da janela indicada no parecer.' : 'Fora da janela indicada no parecer; revisar.'}`;
       }
       if (
         ['V', 'VII'].includes(c.id) &&

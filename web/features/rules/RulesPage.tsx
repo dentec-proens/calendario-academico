@@ -1,10 +1,9 @@
 import { useNavigate } from '@tanstack/react-router';
 import { documentedYears } from '#src/domain/policies/registry.ts';
+import { compactDate, compactRange } from '#src/domain/date-labels.ts';
 import { useFeatureRoute } from '../../app/navigation.ts';
 import { offerStatusLabels, rulesView, statusHelp, type RulesView } from './rules-view.ts';
 import './rules.css';
-
-const civilDate = (date: string) => date.split('-').reverse().join('/');
 
 function Activities({
   id,
@@ -119,7 +118,7 @@ export default function RulesPage() {
           <dt>Ano letivo</dt>
           <dd>
             {view.window
-              ? `${civilDate(view.window.start)} a ${civilDate(view.window.end)}, início até ${civilDate(view.window.latestStart)}`
+              ? `${compactRange(view.window, view.year)}, início até ${compactDate(view.window.latestStart, view.year)}`
               : 'Sem janela definida'}
           </dd>
         </div>
@@ -157,7 +156,7 @@ export default function RulesPage() {
                 <dt>
                   <strong>{rule.label}</strong>
                 </dt>
-                <dd>{rule.allowedDates.map(civilDate).join(', ')}</dd>
+                <dd>{rule.allowedDates.map((date) => compactDate(date, view.year)).join(', ')}</dd>
               </div>
             ))}
           </dl>

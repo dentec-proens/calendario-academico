@@ -96,11 +96,11 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   }
   await observer.locator('[data-view="periods"]').click();
   await applyOrganization(`${year}-03-01`, `${year}-03-31`);
-  await expect(observer.locator('[data-offer="integrado"]')).toContainText(`01/03/${year}`);
+  await expect(observer.locator('[data-offer="integrado"]')).toContainText('1 a 31 mar');
   await editor.reload();
   await expect(editor.locator('#record-title')).toContainText(String(year));
   await editor.locator('[data-view="periods"]').click();
-  await expect(editor.locator('[data-offer="integrado"]')).toContainText(`01/03/${year}`);
+  await expect(editor.locator('[data-offer="integrado"]')).toContainText('1 a 31 mar');
   await observer.locator('[data-edit-organization="integrado"]').click();
   // The observer's form opens from the organization applied in the other session.
   await expect(observer.locator('#offer-integrado-period-0-start')).toHaveValue(`${year}-03-01`);
@@ -118,11 +118,11 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   await expect(
     observer.getByRole('button', { name: 'Reabrir calendário atualizado' }),
   ).toBeVisible();
-  await expect(observer.locator('[data-offer="integrado"]')).toContainText(`01/05/${year}`);
+  await expect(observer.locator('[data-offer="integrado"]')).toContainText('1 a 31 mai');
   await editor.reload();
   await editor.locator('[data-view="periods"]').click();
-  await expect(editor.locator('[data-offer="integrado"]')).toContainText(`01/04/${year}`);
-  await expect(editor.locator('[data-offer="integrado"]')).not.toContainText(`01/05/${year}`);
+  await expect(editor.locator('[data-offer="integrado"]')).toContainText('1 a 30 abr');
+  await expect(editor.locator('[data-offer="integrado"]')).not.toContainText('1 a 31 mai');
 
   // Trash only the synthetic calendar produced by this run.
   await editor.goto(base);

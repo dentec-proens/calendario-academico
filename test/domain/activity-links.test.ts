@@ -24,10 +24,10 @@ test('identity of the link: a date that keeps its link needs no generated activi
   expect(linkKept(event, { ...event, name: 'Outra descrição' })).toBe(true);
   expect(() => validateLinks(state, state)).not.toThrow();
   expect(() => validateLinks(undefined, state)).toThrow(
-    /Vínculo de atividade inválido.*“Data sintética final-1” \(21\/07\/2027\)/,
+    /Vínculo de atividade inválido.*“Data sintética final-1” \(21 de julho de 2027\)/,
   );
   const added = { ...state, events: [...state.events, { ...event, id: 'new-final-1' }] };
-  expect(() => validateLinks(state, added)).toThrow(/new-final-1|21\/07\/2027/);
+  expect(() => validateLinks(state, added)).toThrow(/new-final-1|21 de julho de 2027/);
   expect(() =>
     validateLinks(state, moved(state, event.id, { activity: cycleLink('diary', 'first') })),
   ).toThrow('não perde nem troca');

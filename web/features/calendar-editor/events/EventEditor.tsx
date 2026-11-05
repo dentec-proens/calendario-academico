@@ -1,3 +1,4 @@
+import { compactDate } from '#src/domain/date-labels.ts';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { categories } from '#src/domain/calendar/activities/categories.ts';
@@ -553,7 +554,7 @@ export default function EventEditor() {
                       )}
                       {state.periods.map((period) => (
                         <option key={period.id} value={period.id}>
-                          {period.name} — {period.start.split('-').reverse().join('/')}
+                          {period.name} — {compactDate(period.start, state.year)}
                         </option>
                       ))}
                     </Select>

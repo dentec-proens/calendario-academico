@@ -37,8 +37,8 @@ for (const width of [1440, 390]) {
     const date = page.locator('#observance-date-public-servant-day');
     await expect(date).not.toHaveAttribute('aria-describedby');
     await expect(date.locator('option')).toHaveText([
-      '28/10/2027 — data institucional',
-      '29/10/2027',
+      '28 de outubro de 2027 — data institucional',
+      '29 de outubro de 2027',
     ]);
     await date.selectOption('2027-10-29');
     expect(

@@ -41,7 +41,7 @@ import type {
 } from '#src/domain/calendar/organization/offers.ts';
 import { periodsForOffer } from '#src/domain/calendar/organization/periods.ts';
 import { modalityLabels } from '#src/domain/calendar/modalities.ts';
-import { civilDate } from '../events/activity-query.ts';
+import { compactRange } from '#src/domain/date-labels.ts';
 import { Check, ChevronUp, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button.tsx';
 import { ChoiceGroup, focusableField } from '../../../components/ui/ChoiceGroup.tsx';
@@ -422,7 +422,7 @@ export default function OfferOrganizationForm({
               ? periods
                   .map(
                     (period) =>
-                      `${period.association.term === 'annual' ? 'Anual: ' : period.association.term === 'first' ? '1º semestre: ' : '2º semestre: '}${civilDate(period.start)} a ${civilDate(period.end)}`,
+                      `${period.association.term === 'annual' ? 'Anual: ' : period.association.term === 'first' ? '1º semestre: ' : '2º semestre: '}${compactRange(period, state.year)}`,
                   )
                   .join(' · ')
               : included

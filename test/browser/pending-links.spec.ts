@@ -182,7 +182,7 @@ for (const width of [1440, 390]) {
     await expect(select.locator('option').nth(1)).toHaveText(/resultado final.*ano letivo/i);
     await select.selectOption({ index: 1 });
     const preview = page.locator('#activity-change-preview');
-    await expect(preview).toContainText('Data sintética final-1 · 22/06/2027 a 22/06/2027');
+    await expect(preview).toContainText('Data sintética final-1 · 22 de junho de 2027');
     await expect(preview).toContainText('(sem alteração)');
     await expect(preview).toContainText('final:cycle:first — Atividade não gerada');
     await expect(preview).toContainText('A data deixa Vínculo a conferir');

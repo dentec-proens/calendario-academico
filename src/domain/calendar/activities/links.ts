@@ -1,3 +1,4 @@
+import { longDate } from '../../date-labels.ts';
 import type {
   ActivityPlanItem,
   ActivityState,
@@ -212,8 +213,7 @@ export function dateEdited(previous: CalendarEvent | undefined, next: CalendarEv
 export const linkKept = (previous: CalendarEvent | undefined, next: CalendarEvent) =>
   !!next.activity && sameActivity(previous?.activity, next.activity);
 
-const describe = (event: CalendarEvent) =>
-  `“${event.name}” (${event.start.split('-').reverse().join('/')})`;
+const describe = (event: CalendarEvent) => `“${event.name}” (${longDate(event.start)})`;
 
 /**
  * Link rule shared by saving, importing and editing commands, against the previous state of the

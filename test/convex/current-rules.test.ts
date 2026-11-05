@@ -291,7 +291,7 @@ test('the audit says what changed in the catalogue', async () => {
     paginationOpts: { cursor: null, numItems: 10 },
   });
   expect(entries[0]!.action).toBe(
-    'Base institucional alterada: Feriado novo, 2027-03-09: incluído',
+    'Base institucional alterada: Feriado novo, 9 de março de 2027: incluído',
   );
 });
 

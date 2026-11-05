@@ -15,7 +15,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
-import { dateRangeLabel } from '../../shared/dates.ts';
+import { compactRange } from '#src/domain/date-labels.ts';
 import { ChoiceGroup } from '../../components/ui/ChoiceGroup.tsx';
 import { countEffects } from '../../shared/count-effects.ts';
 import './catalogue.css';
@@ -309,7 +309,7 @@ export default function CataloguePanel({
                   {item.name}
                   {!item.active ? ' · Inativo' : ''}
                 </strong>
-                <span className="catalogue-date">{dateRangeLabel(item.start, item.end)}</span>
+                <span className="catalogue-date">{compactRange(item)}</span>
                 <small>
                   <CategoryMark event={item} withLabel /> ·{' '}
                   {item.modalities.map((m) => modalityLabels[m]).join(', ')}

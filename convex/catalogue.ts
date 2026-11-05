@@ -1,4 +1,5 @@
 import { readDateRange } from '../src/domain/calendar/civil-dates.ts';
+import { longRange } from '../src/domain/date-labels.ts';
 import { assertWritesOpen } from './lib/maintenance';
 import { datesBetween } from '../src/domain/calendar/counting/core';
 import { validCategory } from '../src/domain/calendar/activities/categories';
@@ -26,18 +27,17 @@ const ok = v.object({ ok: v.boolean() });
 const impactCalendars = 1000;
 const impactContents = 100;
 
-const dates = ({ start, end }: { start: string; end: string }) =>
-  start === end ? start : `${start} a ${end}`;
-
 /** What the audit shows of a change: there is no catalogue draft, so a typo must be easy to spot. */
 function catalogueChange(
   prior: Pick<Doc<'institutionalEvents'>, 'name' | 'start' | 'end' | 'effect' | 'active'> | null,
   next: Pick<Doc<'institutionalEvents'>, 'name' | 'start' | 'end' | 'effect' | 'active'>,
 ) {
-  if (!prior) return `${next.name}, ${dates(next)}: incluído`;
+  if (!prior) return `${next.name}, ${longRange(next)}: incluído`;
   const changes = [
     ...(prior.name === next.name ? [] : [`nome era ${prior.name}`]),
-    ...(dates(prior) === dates(next) ? [] : [`de ${dates(prior)} para ${dates(next)}`]),
+    ...(longRange(prior) === longRange(next)
+      ? []
+      : [`de ${longRange(prior)} para ${longRange(next)}`]),
     ...(prior.effect === next.effect ? [] : [`efeito de ${prior.effect} para ${next.effect}`]),
     ...(prior.active === next.active ? [] : [next.active ? 'reativado' : 'desativado']),
   ];

@@ -21,7 +21,7 @@ for (const width of [1440, 390]) {
     await expect(row).toContainText('Data do campus');
     // A campus date is a kind of date, shown apart from a completed activity.
     await expect(row.locator('.activity-status')).toHaveCSS('color', 'rgb(23, 74, 126)');
-    await expect(row).toContainText('10/03/2027');
+    await expect(row).toContainText('10 mar');
     // The row repeats the printed legend color of the category, with its name as text.
     const category = row.locator('.category-mark[data-category="evento"]');
     await expect(category).toContainText('Eventos artísticos');

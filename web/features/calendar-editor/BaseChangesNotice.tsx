@@ -1,3 +1,4 @@
+import { compactRange, longDate } from '#src/domain/date-labels.ts';
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Notice } from '../../components/ui/Notice.tsx';
@@ -8,9 +9,6 @@ import { editorPages } from './editor-steps.ts';
 import { useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 
 type BaseUpdate = ReturnType<typeof useCalendarEditor>['baseUpdate'];
-
-const dayAndMonth = (value: string) => value.split('-').reverse().slice(0, 2).join('/');
-const date = (value: string) => value.split('-').reverse().join('/');
 
 /**
  * Tells what the system already applied: nothing here asks for a decision. Saving records what is
@@ -49,11 +47,9 @@ export default function BaseChangesNotice() {
   );
 }
 
-const dateRange = ({ start, end }: { start: string; end: string }) =>
-  start === end ? date(start) : `${date(start)} a ${date(end)}`;
-
 /** What the current base changed, compared with the copy stored by the last save. */
-function eventItems({ added, removed, changed }: BaseUpdate['events']) {
+function eventItems({ added, removed, changed }: BaseUpdate['events'], year: number) {
+  const dateRange = (dates: { start: string; end: string }) => compactRange(dates, year);
   return [
     ...added.map((event) => `Incluído: ${event.name}, ${dateRange(event)}.`),
     ...removed.map((event) => `Retirado: ${event.name}, ${dateRange(event)}.`),
@@ -69,7 +65,7 @@ function announcement(record: CalendarRecord, state: CalendarState, update: Base
   const { rules, documents, events } = update;
   const changes = announcedRuleChanges(rules, record.updatedAt);
   const references = [...documents.added, ...documents.changed.map(({ after }) => after)];
-  const dates = eventItems(events);
+  const dates = eventItems(events, state.year);
   const effects = dates.length
     ? teachingDayEffects(state, record.institutionalSnapshot, record.institutionalEvents)
     : [];
@@ -87,7 +83,7 @@ function announcement(record: CalendarRecord, state: CalendarState, update: Base
     title: dates.length
       ? 'Os eventos institucionais mudaram. Este calendário já segue a base vigente.'
       : latest
-        ? `As regras de ${record.state.year} mudaram em ${dayAndMonth(latest)}. As novas regras não alteraram suas datas.`
+        ? `As regras de ${record.state.year} mudaram em ${longDate(latest)}. As novas regras não alteraram suas datas.`
         : 'Os documentos de referência foram atualizados. Suas datas não mudaram.',
     items,
     review: record.status === 'devolvido' && changes.some((change) => change.effect === 'tightens'),

@@ -4,6 +4,7 @@
  * submission copies and the content already open in the editor.
  */
 import { equalValues } from '../../shared/equal.ts';
+import { compactDate } from '../date-labels.ts';
 import type { CivilDate } from '../civil-date.ts';
 import type {
   ActivityState,
@@ -519,8 +520,7 @@ export function describeValue(field: string, value: unknown, state?: ActivitySta
   if (field === 'notice.publication' && (value === 'planned' || value === 'published'))
     return executionLabels[value];
   if (typeof value === 'boolean') return value ? 'sim' : 'não';
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))
-    return value.split('-').reverse().join('/');
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return compactDate(value);
   if (field === 'weekdays' && Array.isArray(value))
     return value.map((day) => weekdayNames[Number(day)] ?? String(day)).join(', ');
   if (field === 'offers' && Array.isArray(value))

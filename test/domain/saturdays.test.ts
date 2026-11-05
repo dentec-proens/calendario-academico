@@ -209,7 +209,7 @@ test('each Saturday keeps its activity and date without a source and a failed ba
       applySaturdayActivities(state, [activities[0]!, { ...activities[1]!, name: '' }], () =>
         String(++id),
       ),
-    /07\/08\/2027:.*atividade/,
+    /7 de agosto de 2027:.*atividade/,
   );
   assert.throws(
     () =>
