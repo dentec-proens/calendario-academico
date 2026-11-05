@@ -40,10 +40,10 @@ export default function UploadDocumentForm({
       if (!isCurrent()) return;
       form.reset();
       if (fileInput.current) fileInput.current.value = '';
-      onUploaded(value.year);
       onMessage(
         'Arquivo preservado como rascunho. Confira e defina como vigente para disponibilizá-lo aos campi.',
       );
+      onUploaded(value.year);
     },
   });
   return (

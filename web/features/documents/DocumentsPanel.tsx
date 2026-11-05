@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { DocumentsData } from '../../shared/convex/types.ts';
 import type { PaginationState } from '../../shared/forms/Pagination.tsx';
 import Pagination from '../../shared/forms/Pagination.tsx';
@@ -8,6 +8,9 @@ import UploadDocumentForm from './UploadDocumentForm.tsx';
 import DocumentRecord from './DocumentRecord.tsx';
 import './documents.css';
 import { Notice } from '../../components/ui/Notice.tsx';
+
+/** Closing the form changes route and remounts this panel: the confirmation crosses it here. */
+let uploadedMessage = '';
 
 export default function DocumentsPanel({
   canManage,
@@ -29,7 +32,10 @@ export default function DocumentsPanel({
   onUploaded: (year: string) => void;
 }) {
   const [creating, setCreating] = useRouteForm('institution');
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(() => uploadedMessage);
+  useEffect(() => {
+    uploadedMessage = '';
+  }, []);
   const year = Number(yearFilter);
   const documents = (liveData?.documents ?? [])
     .filter((document) => !year || document.year === year)
@@ -51,7 +57,15 @@ export default function DocumentsPanel({
           ) : null}
         </div>
       }
-      form={<UploadDocumentForm onUploaded={onUploaded} onMessage={setMessage} />}
+      form={
+        <UploadDocumentForm
+          onUploaded={onUploaded}
+          onMessage={(text) => {
+            uploadedMessage = text;
+            setMessage(text);
+          }}
+        />
+      }
     >
       <p className="documents-description">
         Consulte as normas e os documentos que orientam a elaboração do calendário acadêmico.

@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 type Invitation = Awaited<ReturnType<ReturnType<typeof useAccounts>['issueInvitation']>>;
 import { confirmAction } from '../../components/confirmation.ts';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { KeyRound, MailPlus, Trash2, UnlockKeyhole } from 'lucide-react';
 import { useAccounts } from '../../shared/convex/accounts.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
@@ -14,6 +14,12 @@ import MemberRoleEditor from './MemberRoleEditor.tsx';
 import { useAction } from '../../shared/forms/useAction.ts';
 import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
 import { useRouteForm } from '../../app/navigation.ts';
+
+/**
+ * Closing the form changes route (`/contas/nova` to `/contas`), which remounts this page. The link
+ * is shown only once, so it crosses that remount here, in memory, and is taken by the next mount.
+ */
+let createdInvite: Invitation | null = null;
 
 export default function AccountsPanel({
   info,
@@ -26,13 +32,18 @@ export default function AccountsPanel({
 }) {
   const [creating, setCreating] = useRouteForm('accounts');
   const accounts = useAccounts();
-  const [invite, setInvite] = useState<Invitation | null>(null);
+  const [invite, setInvite] = useState<Invitation | null>(() => createdInvite);
   const [recovery, setRecovery] = useState<Awaited<
     ReturnType<typeof accounts.passwordRecovery>
   > | null>(null);
   const inviteRef = useRef<HTMLDivElement>(null);
   const recoveryRef = useRef<HTMLDivElement>(null);
   const actions = useAction(notify);
+  useEffect(() => {
+    if (createdInvite)
+      requestAnimationFrame(() => scrollIntoView(inviteRef.current, { behavior: 'smooth' }));
+    createdInvite = null;
+  }, []);
   const defaults: {
     role: Bootstrap['user']['role'];
     method: 'invite' | 'google' | 'local';
@@ -71,11 +82,10 @@ export default function AccountsPanel({
       });
       if (!isCurrent()) return;
       form.reset();
-      setCreating(false);
       setInvite(null);
       setRecovery(null);
       if (created.inviteUrl) {
-        showInvite({ inviteUrl: created.inviteUrl, inviteExpiresAt: created.inviteExpiresAt! });
+        createdInvite = { inviteUrl: created.inviteUrl, inviteExpiresAt: created.inviteExpiresAt! };
         notify('Convite criado. A conta ficará pendente até a pessoa cadastrar sua senha.');
       } else
         notify(
@@ -83,6 +93,7 @@ export default function AccountsPanel({
             ? 'Acesso Google autorizado para o e-mail cadastrado. Nenhum e-mail foi enviado; o login depende da configuração Google pela TI.'
             : `Conta ${roleLabels[value.role]} criada.`,
         );
+      setCreating(false);
     },
   });
   const { role, method, campusId } = values;
