@@ -77,6 +77,8 @@ export default function ReviewPage() {
               }}
               role={info.user.role}
               notify={(text, error) => report(text, error ? 'danger' : 'success')}
+              // Submitting from here states the base this page shows.
+              prepare={() => Promise.resolve({ baseIdentity: opened.baseIdentity })}
               // Concluding or returning always acts on the saved review, never on unsaved edits.
               guard={() =>
                 reviewWork

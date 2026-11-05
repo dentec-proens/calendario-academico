@@ -47,7 +47,6 @@ export interface ItemChange {
   previousId?: string;
   name: string;
   fields: FieldChange[];
-  note?: string;
 }
 
 type VacationField =

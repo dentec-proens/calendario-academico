@@ -2,10 +2,10 @@ import { Migrations } from '@convex-dev/migrations';
 import type { MigrationFunctionReference } from '@convex-dev/migrations';
 import { getFunctionName } from 'convex/server';
 import { v } from 'convex/values';
-import { isEditable } from '../src/domain/calendar/lifecycle.ts';
 import { components, internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
 import { internalMutation, internalQuery } from './_generated/server';
+import { contentHash } from './calendars/lifecycle';
 import schema from './schema';
 
 export const migrations = new Migrations(components.migrations, { schema, internalMutation });
@@ -16,40 +16,39 @@ export const run = migrations.runner();
 const holdsTargetDays = (row: Doc<'calendarContents'> | Doc<'calendarSubmissions'>) =>
   row.state.periods.some((period) => period.targetDays !== undefined);
 
+const withoutTargetDays = <S extends Doc<'calendarContents'>['state']>(state: S): S => ({
+  ...state,
+  periods: state.periods.map(({ targetDays: _retired, ...period }) => period),
+});
+
 /**
  * Level 1: no form ever wrote this value and only one draft period holds it. The stored `end`,
  * which is what the calendar shows and counts, stays. No new version: nothing a person sees changes.
- * A submission fixes its content by hash, so a copy holding the value stops the migration with
- * nothing written over it: that calendar is returned and saved first, which drops the value.
+ * If that draft was submitted meanwhile, its copy loses the value too, with its fingerprint, so
+ * publication still compares content with content and the release never waits for a person.
  * The contraction removes these migrations with `targetDays` from the period validator.
  */
-export const refuseTargetDaysInSubmissions = migrations.define({
-  table: 'calendarSubmissions',
+export const dropPeriodTargetDays = migrations.define({
+  table: 'calendarContents',
   migrateOne: (_ctx, row) => {
-    if (holdsTargetDays(row))
-      throw new Error(`Envio ${row._id} guarda targetDays: devolva e salve o calendário antes.`);
+    if (holdsTargetDays(row)) return { state: withoutTargetDays(row.state) };
   },
 });
 
-export const dropPeriodTargetDays = migrations.define({
-  table: 'calendarContents',
-  migrateOne: async (ctx, row) => {
+export const dropSubmissionTargetDays = migrations.define({
+  table: 'calendarSubmissions',
+  migrateOne: (_ctx, row) => {
     if (!holdsTargetDays(row)) return;
-    const calendar = await ctx.db.get('calendars', row.calendarId);
-    if (!calendar || !isEditable(calendar.status))
-      throw new Error(`Calendário ${row.calendarId} guarda targetDays e não está em edição.`);
-    return {
-      state: {
-        ...row.state,
-        periods: row.state.periods.map(({ targetDays: _retired, ...period }) => period),
-      },
-    };
+    if (contentHash(row) !== row.contentHash)
+      throw new Error(`O hash gravado no envio ${row._id} não é o do próprio envio.`);
+    const next = { ...row, state: withoutTargetDays(row.state) };
+    return { state: next.state, contentHash: contentHash(next) };
   },
 });
 
 const pending: MigrationFunctionReference[] = [
-  internal.migrations.refuseTargetDaysInSubmissions,
   internal.migrations.dropPeriodTargetDays,
+  internal.migrations.dropSubmissionTargetDays,
 ];
 
 export const start = internalMutation({

@@ -74,8 +74,8 @@ test('the offers storage never reruns the old backfill during maintenance', asyn
   expect(await client.mutation(internal.migrations.start, {})).toBeNull();
   const pending = await client.query(internal.migrations.status, {});
   expect(pending.map(({ name }) => name)).toEqual([
-    'migrations:refuseTargetDaysInSubmissions',
     'migrations:dropPeriodTargetDays',
+    'migrations:dropSubmissionTargetDays',
   ]);
   expect(await client.run((ctx) => ctx.db.query('audit').take(10))).toEqual([]);
 });

@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { api, internal } from '../../convex/_generated/api.js';
 import type { Doc } from '../../convex/_generated/dataModel';
+import { contentHash } from '../../convex/calendars/lifecycle.ts';
+import { act } from '../helpers/lifecycle.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 
@@ -43,8 +45,8 @@ test('the migration removes the retired value, keeps the end and writes nothing 
   await fixture.client.mutation(internal.migrations.start, {});
   await fixture.client.finishAllScheduledFunctions(vi.runAllTimers);
   expect(await fixture.client.query(internal.migrations.status, {})).toMatchObject([
-    { name: 'migrations:refuseTargetDaysInSubmissions', state: 'success', error: null },
     { name: 'migrations:dropPeriodTargetDays', state: 'success', error: null },
+    { name: 'migrations:dropSubmissionTargetDays', state: 'success', error: null },
   ]);
   const after = (await read(fixture, stored))!;
   expect(after.state.periods[0]).toEqual({
@@ -59,15 +61,20 @@ test('the migration removes the retired value, keeps the end and writes nothing 
   expect(afterRest).toEqual(beforeRest);
 });
 
-test('a content that left editing is not rewritten, because a submission fixed it by hash', async () => {
+test('a calendar submitted meanwhile keeps content and copy comparable, and the release goes on', async () => {
   const { fixture, stored } = await withStoredTarget();
-  const before = (await read(fixture, stored))!;
-  await fixture.client.run(async (ctx) => {
-    await ctx.db.patch(before.calendarId, { status: 'enviado' });
-  });
+  const account = fixture.asClient('admin');
+  const { calendarId } = (await read(fixture, stored))!;
+  await fixture.client.run((ctx) => ctx.db.patch(calendarId, { courses: 'Curso' }));
+  await act(account, calendarId, 'submit');
   await fixture.client.mutation(internal.migrations.start, {});
   await fixture.client.finishAllScheduledFunctions(vi.runAllTimers);
   const status = await fixture.client.query(internal.migrations.status, {});
-  expect(status[1]).toMatchObject({ name: 'migrations:dropPeriodTargetDays', state: 'failed' });
-  expect(await read(fixture, stored)).toEqual(before);
+  expect(status.map(({ state }) => state)).toEqual(['success', 'success']);
+  const after = (await read(fixture, stored))!;
+  const copy = (await fixture.client.run((ctx) => ctx.db.query('calendarSubmissions').first()))!;
+  expect(JSON.stringify(after.state)).not.toContain('targetDays');
+  expect(JSON.stringify(copy.state)).not.toContain('targetDays');
+  expect(copy.contentHash).toBe(contentHash(copy));
+  expect(contentHash(after)).toBe(copy.contentHash);
 });

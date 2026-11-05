@@ -355,7 +355,6 @@ function Items({ title, items }: { title: string; items: ItemChange[] }) {
         {items.map((item) => (
           <li key={`${item.kind}:${item.id}`} data-kind={item.kind}>
             <strong>{kindLabels[item.kind]}:</strong> {item.name}
-            {item.note ? <small> · {item.note}</small> : null}
             <Fields fields={item.fields} />
           </li>
         ))}

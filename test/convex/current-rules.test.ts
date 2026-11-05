@@ -294,3 +294,13 @@ test('the audit says what changed in the catalogue', async () => {
     'Base institucional alterada: Feriado novo, 2027-03-09: incluído',
   );
 });
+
+test('a returned calendar can be submitted again from the review page', async () => {
+  const { account, record } = await draftUnderOldRules();
+  await act(account, record.id, 'submit');
+  await act(account, record.id, 'return', { note: 'Ajustar.' });
+  const page = await account.query(api.reviews.review, { id: record.id });
+  await act(account, record.id, 'submit', { baseIdentity: page.baseIdentity });
+  const fresh = await account.query(api.calendars.calendar, { id: record.id });
+  expect(fresh.status).toBe('enviado');
+});
