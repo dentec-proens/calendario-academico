@@ -134,8 +134,7 @@ export const fieldLabels = {
 /** Identity, storage and bookkeeping fields: compared through their sections or not at all. */
 export const ignoredFields = {
   offer: ['id'],
-  // `targetDays` is retired: only the validator still knows it, until the contraction.
-  period: ['id', 'targetDays'],
+  period: ['id'],
   event: ['id'],
   state: [
     'schemaVersion',

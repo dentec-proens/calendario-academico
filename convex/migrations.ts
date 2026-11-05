@@ -2,10 +2,8 @@ import { Migrations } from '@convex-dev/migrations';
 import type { MigrationFunctionReference } from '@convex-dev/migrations';
 import { getFunctionName } from 'convex/server';
 import { v } from 'convex/values';
-import { components, internal } from './_generated/api';
-import type { Doc } from './_generated/dataModel';
+import { components } from './_generated/api';
 import { internalMutation, internalQuery } from './_generated/server';
-import { contentHash } from './calendars/lifecycle';
 import schema from './schema';
 
 export const migrations = new Migrations(components.migrations, { schema, internalMutation });
@@ -13,43 +11,7 @@ export const migrations = new Migrations(components.migrations, { schema, intern
 /** CLI entry for one migration, including `dryRun` (docs/implantacao-convex-vercel.md, Comandos). */
 export const run = migrations.runner();
 
-const holdsTargetDays = (row: Doc<'calendarContents'> | Doc<'calendarSubmissions'>) =>
-  row.state.periods.some((period) => period.targetDays !== undefined);
-
-const withoutTargetDays = <S extends Doc<'calendarContents'>['state']>(state: S): S => ({
-  ...state,
-  periods: state.periods.map(({ targetDays: _retired, ...period }) => period),
-});
-
-/**
- * Level 1: no form ever wrote this value and only one draft period holds it. The stored `end`,
- * which is what the calendar shows and counts, stays. No new version: nothing a person sees changes.
- * If that draft was submitted meanwhile, its copy loses the value too, with its fingerprint, so
- * publication still compares content with content and the release never waits for a person.
- * The contraction removes these migrations with `targetDays` from the period validator.
- */
-export const dropPeriodTargetDays = migrations.define({
-  table: 'calendarContents',
-  migrateOne: (_ctx, row) => {
-    if (holdsTargetDays(row)) return { state: withoutTargetDays(row.state) };
-  },
-});
-
-export const dropSubmissionTargetDays = migrations.define({
-  table: 'calendarSubmissions',
-  migrateOne: (_ctx, row) => {
-    if (!holdsTargetDays(row)) return;
-    if (contentHash(row) !== row.contentHash)
-      throw new Error(`O hash gravado no envio ${row._id} não é o do próprio envio.`);
-    const next = { ...row, state: withoutTargetDays(row.state) };
-    return { state: next.state, contentHash: contentHash(next) };
-  },
-});
-
-const pending: MigrationFunctionReference[] = [
-  internal.migrations.dropPeriodTargetDays,
-  internal.migrations.dropSubmissionTargetDays,
-];
+const pending: MigrationFunctionReference[] = [];
 
 export const start = internalMutation({
   args: {},

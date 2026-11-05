@@ -72,10 +72,6 @@ test('calendar storage requires offerKinds and refuses the retired modalities fi
 test('the offers storage never reruns the old backfill during maintenance', async () => {
   const { client } = await createNativeFixture();
   expect(await client.mutation(internal.migrations.start, {})).toBeNull();
-  const pending = await client.query(internal.migrations.status, {});
-  expect(pending.map(({ name }) => name)).toEqual([
-    'migrations:dropPeriodTargetDays',
-    'migrations:dropSubmissionTargetDays',
-  ]);
+  expect(await client.query(internal.migrations.status, {})).toEqual([]);
   expect(await client.run((ctx) => ctx.db.query('audit').take(10))).toEqual([]);
 });
