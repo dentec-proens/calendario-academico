@@ -12,7 +12,6 @@ import {
   useSyncExternalStore,
   type PropsWithChildren,
 } from 'react';
-import { documentTransition } from '../../../app/updates/transition.ts';
 import { useQuery, useConvexConnectionState } from 'convex/react';
 import { useBlocker } from '@tanstack/react-router';
 import type { Id } from '../../../../convex/_generated/dataModel.js';
@@ -21,7 +20,7 @@ import { calendars } from '../../../shared/convex/calendars.ts';
 import { sessionIdentity, useAppSession } from '../../../app/session.tsx';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
-import { applyObservances, observanceIssues } from '#src/domain/calendar/observances.ts';
+import { applyObservances } from '#src/domain/calendar/observances.ts';
 import { evaluateCalendar } from '#src/domain/calendar/counting/evaluation.ts';
 import { projectDates } from '#src/domain/calendar/model.ts';
 import { createEditorSession } from './editor-session.ts';
@@ -47,10 +46,6 @@ function useSession(record: CalendarRecord) {
   );
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const connection = useConvexConnectionState();
-  const documentChange = useSyncExternalStore(
-    documentTransition.subscribe,
-    documentTransition.getSnapshot,
-  );
   const suspended = Boolean(editorRecovery || maintenance);
   useEffect(() => {
     session.setAccessSuspended(suspended);
@@ -58,42 +53,6 @@ function useSession(record: CalendarRecord) {
   useEffect(() => {
     session.receive(record);
   }, [record, session]);
-  const synchronization = useRef('');
-  useEffect(() => {
-    if (
-      readOnly ||
-      !connection.isWebSocketConnected ||
-      suspended ||
-      snapshot.baseUpdate.kind !== 'equivalent'
-    )
-      return;
-    const key = `${snapshot.record.version}:${snapshot.remote?.currentCatalogueRevision ?? snapshot.record.currentCatalogueRevision}`;
-    if (synchronization.current === key) return;
-    const operation = drafts?.protection.begin();
-    if (operation === null) return;
-    synchronization.current = key;
-    void calendars
-      .synchronizeBase(record.id, snapshot.record.version)
-      .then((fresh) => session.receive(fresh))
-      .catch(() => {
-        synchronization.current = '';
-      })
-      .finally(() => {
-        if (operation) drafts?.protection.finish(operation);
-      });
-  }, [
-    drafts,
-    documentChange,
-    record.id,
-    snapshot.baseUpdate.kind,
-    snapshot.record.version,
-    snapshot.record.currentCatalogueRevision,
-    snapshot.remote?.currentCatalogueRevision,
-    readOnly,
-    suspended,
-    connection.isWebSocketConnected,
-    session,
-  ]);
   const previousEvents = useRef(new Set(record.state.events.map((event) => event.id)));
   useEffect(() => {
     const present = new Set(snapshot.state.events.map((event) => event.id));
@@ -164,21 +123,13 @@ function useSession(record: CalendarRecord) {
     },
     enableBeforeUnload: false,
   });
+  // A calendar in editing follows the current base; a locked one reads the copy it was submitted with.
+  const baseEvents = locked
+    ? snapshot.record.institutionalSnapshot
+    : snapshot.record.institutionalEvents;
   const institutional = useMemo(
-    () =>
-      applyObservances(
-        snapshot.baseUpdate.compatible &&
-          !observanceIssues(snapshot.record.institutionalEvents, snapshot.state).length
-          ? snapshot.record.institutionalEvents
-          : snapshot.record.institutionalSnapshot,
-        snapshot.state,
-      ),
-    [
-      snapshot.baseUpdate.compatible,
-      snapshot.record.institutionalEvents,
-      snapshot.record.institutionalSnapshot,
-      snapshot.state,
-    ],
+    () => applyObservances(baseEvents, snapshot.state),
+    [baseEvents, snapshot.state],
   );
   const events = useMemo<EditorEvent[]>(
     () => projectDates(institutional, snapshot.state.events),
@@ -208,6 +159,7 @@ function useSession(record: CalendarRecord) {
   return {
     ...snapshot,
     session,
+    baseEvents,
     institutional,
     events,
     evaluation,

@@ -120,9 +120,6 @@ test('a new calendar is a draft; submitting copies the content and locks every w
       body: { version: 1, catalogueRevision: record.currentCatalogueRevision, state: record.state },
     }),
   ).rejects.toThrow(/enviado e não pode ser alterado/);
-  await expect(
-    f.campus.mutation(api.calendars.synchronizeBase, { id, version: 1 }),
-  ).rejects.toThrow(/não pode ser alterado/);
   await expect(f.campus.mutation(api.calendars.deleteCalendar, { id, version: 1 })).rejects.toThrow(
     /não pode ir para a lixeira/,
   );

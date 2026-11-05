@@ -40,8 +40,8 @@ async function opened() {
   return { ...fixture, account, record };
 }
 
-test('equivalence sync is idempotent, scoped and preserves version, timestamp, snapshots and review evidence', async () => {
-  const { client, account, record, asClient, inspect } = await opened();
+test('an equivalent base writes nothing and keeps the review evidence', async () => {
+  const { account, record } = await opened();
   await act(account, record.id, 'submit');
   const review = await account.query(api.reviews.review, { id: record.id });
   await account.mutation(api.reviews.saveReview, {
@@ -84,42 +84,13 @@ test('equivalence sync is idempotent, scoped and preserves version, timestamp, s
     .then(calendarRecordDates);
   expect(inspectCalendar(fresh, fresh).kind).toBe('equivalent');
   expect((await account.query(api.reviews.review, { id: record.id })).stale).toBe(false);
-  await expect(
-    asClient('campus-b')
-      .mutation(api.calendars.synchronizeBase, { id: record.id, version: 1 })
-      .then(calendarRecordDates),
-  ).rejects.toThrow('Registro não encontrado');
-  const first = await account
-    .mutation(api.calendars.synchronizeBase, {
-      id: record.id,
-      version: 1,
-    })
-    .then(calendarRecordDates);
-  const second = await account
-    .mutation(api.calendars.synchronizeBase, {
-      id: record.id,
-      version: 1,
-    })
-    .then(calendarRecordDates);
-  expect(first).toEqual(second);
-  expect(first).toMatchObject({
+  expect(fresh).toMatchObject({
     version: 1,
     updatedAt: record.updatedAt,
-    catalogueRevision: 2,
+    catalogueRevision: 1,
     state: record.state,
     institutionalSnapshot: record.institutionalSnapshot,
-    documentSnapshot: record.documentSnapshot,
   });
-  const db = await inspect();
-  expect(db.calendars[0]!.submissions).toHaveLength(1);
-  expect(db.reviews[0]!.catalogueRevision).toBe(1);
-  expect((await account.query(api.reviews.review, { id: record.id })).stale).toBe(false);
-  // Without historical content evidence, a legacy review cannot be silently carried forward.
-  await client.run(async (ctx) => {
-    const row = (await ctx.db.query('reviews').first())!;
-    await ctx.db.patch(row._id, { baseIdentity: undefined });
-  });
-  expect((await account.query(api.reviews.review, { id: record.id })).stale).toBe(true);
 });
 
 test('real changes require the displayed content acceptance and events recalculate teaching-day targets atomically', async () => {
@@ -164,32 +135,14 @@ test('real changes require the displayed content acceptance and events recalcula
   const fresh = await account
     .query(api.calendars.calendar, { id: record.id })
     .then(calendarRecordDates);
-  const acceptance = inspectCalendar(fresh, fresh).identity;
-  await expect(
-    account
-      .mutation(api.calendars.synchronizeBase, { id: record.id, version: initial.version })
-      .then(calendarRecordDates),
-  ).rejects.toThrow('incorpore');
-  const body = {
-    version: initial.version,
-    catalogueRevision: fresh.currentCatalogueRevision,
-    state: fresh.state,
-  };
-  await expect(
-    account.mutation(api.calendars.saveCalendar, { id: record.id, body }).then(calendarSaveDates),
-  ).rejects.toThrow('incorpore');
-  await expect(
-    account
-      .mutation(api.calendars.saveCalendar, {
-        id: record.id,
-        body: { ...body, baseAcceptance: 'outdated' },
-      })
-      .then(calendarSaveDates),
-  ).rejects.toThrow('novamente');
   const saved = await account
     .mutation(api.calendars.saveCalendar, {
       id: record.id,
-      body: { ...body, baseAcceptance: acceptance },
+      body: {
+        version: initial.version,
+        catalogueRevision: fresh.currentCatalogueRevision,
+        state: fresh.state,
+      },
     })
     .then(calendarSaveDates);
   expect(saved.version).toBe(initial.version + 1);
@@ -198,7 +151,7 @@ test('real changes require the displayed content acceptance and events recalcula
   expect(saved.base.events[0]!.start).toBe('2027-03-04');
 });
 
-test('document incorporation preserves dates, invalidates the evidenced review and archives the old references', async () => {
+test('a new document preserves dates, invalidates the evidenced review and archives the old references', async () => {
   const { client, account, record, inspect } = await opened();
   await act(account, record.id, 'submit');
   const support = await account.query(api.reviews.review, { id: record.id });
@@ -253,7 +206,6 @@ test('document incorporation preserves dates, invalidates the evidenced review a
       body: {
         version: 1,
         catalogueRevision: 1,
-        baseAcceptance: assessment.identity,
         state: fresh.state,
       },
     })
@@ -338,7 +290,6 @@ test('removing Teacher Day leaves its local adjustment inspectable and permits e
       body: {
         version: adjusted.version,
         catalogueRevision: record.currentCatalogueRevision,
-        baseAcceptance: assessment.identity,
         state: { ...record.state, observanceDates: undefined },
       },
     })

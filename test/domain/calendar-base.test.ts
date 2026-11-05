@@ -1,10 +1,6 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
-import {
-  inspect as inspectBase,
-  reconcile,
-  reviewIsCurrent,
-} from '../../src/domain/calendar/base.ts';
+import { inspect as inspectBase, reviewIsCurrent } from '../../src/domain/calendar/base.ts';
 import { announcedRuleChanges } from '../../src/domain/policies/registry.ts';
 
 /** A locked calendar: every difference counts. */
@@ -62,28 +58,25 @@ test('equivalent revisions ignore ordering, operational metadata and offers outs
   };
   const result = inspect(snapshot, current, scope);
   expect(result.kind).toBe('equivalent');
-  expect(reconcile(result)).toEqual({ incorporate: false });
   expect(result.identity).toBe(inspect(snapshot, snapshot, scope).identity);
 });
-test('document changes require confirmation without recalculating dates', () => {
+test('a document change is a difference of a locked calendar', () => {
   const result = inspect(
     snapshot,
     { ...snapshot, documents: [{ ...document, hash: 'new' }] },
     scope,
   );
   expect(result.kind).toBe('documents');
-  expect(() => reconcile(result)).toThrow('incorpore');
-  expect(reconcile(result, result.identity)).toEqual({ incorporate: true });
+  expect(result.compatible).toBe(false);
 });
-test('event changes are identified even at the same revision and stale acceptance cannot incorporate them', () => {
+test('event changes are identified even at the same revision and change the identity', () => {
   const result = inspect(
     snapshot,
     { ...snapshot, events: [{ ...event, start: civilDate('2027-04-02') }] },
     scope,
   );
   expect(result.kind).toBe('events');
-  expect(() => reconcile(result, inspect(snapshot, snapshot, scope).identity)).toThrow('novamente');
-  expect(reconcile(result, result.identity).incorporate).toBe(true);
+  expect(result.identity).not.toBe(inspect(snapshot, snapshot, scope).identity);
 });
 test('campus adjustments do not manufacture institutional changes', () => {
   const previous = {
@@ -119,14 +112,13 @@ test('human reviews follow evidenced content; legacy reviews conservatively foll
   ).toBe(false);
 });
 
-test('2027 rules adoption is explicit and invalidates reviews without changing dates', () => {
+test('2027 rules invalidate reviews without changing dates', () => {
   const rulesetVersion = 'consup-292-2027-v1';
   const result = inspect(snapshot, { ...snapshot, rulesetVersion }, scope);
   expect(result.kind).toBe('rules');
   expect(result.compatible).toBe(false);
   expect(result.rules).toMatchObject({ before: undefined, after: rulesetVersion, changed: true });
   expect(result.rules.changes.map((change) => change.version)).toEqual([rulesetVersion]);
-  expect(reconcile(result, result.identity)).toEqual({ incorporate: true });
   expect(result.identity).toMatch(/^base-v2:consup-292-2027-v1:/);
   const current = { revision: 1, identity: result.identity, rulesetVersion };
   const old = { calendarVersion: 1, catalogueRevision: 1, baseIdentity: result.identity };

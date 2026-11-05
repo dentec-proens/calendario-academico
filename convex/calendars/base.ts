@@ -1,5 +1,5 @@
 import { readActivityDates } from '../../src/domain/calendar/civil-dates.ts';
-import { applicableEvents, inspectCalendar, reconcile } from '../../src/domain/calendar/base';
+import { applicableEvents, inspectCalendar } from '../../src/domain/calendar/base';
 import { rulesetVersion } from '../../src/domain/policies/registry';
 import type { DomainState, documentSnapshot, institutionalEventSnapshot } from '../validators';
 import type { Infer } from 'convex/values';
@@ -7,7 +7,7 @@ import type { Doc } from '../_generated/dataModel';
 import type { catalogue } from '../catalogue/model';
 import type { currentDocuments } from '../documents/model';
 import { documentDto } from '../documents/model';
-import { domainRule, clean } from '../lib/shared';
+import { clean } from '../lib/shared';
 
 type Content = Pick<
   Doc<'calendarContents'>,
@@ -70,7 +70,4 @@ export function frozenBase(status: Status, state: DomainState, content: Content)
     events: content.institutionalSnapshot.map(readActivityDates),
     documents: content.documentSnapshot,
   });
-}
-export function reconcileBase(assessment: ReturnType<typeof inspectBase>, acceptance?: string) {
-  return domainRule(() => reconcile(assessment, acceptance));
 }

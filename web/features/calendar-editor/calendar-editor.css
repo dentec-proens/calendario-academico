@@ -638,45 +638,6 @@
   }
 }
 
-.base-update-card {
-  margin-bottom: 20px;
-  border: 1px solid var(--ui-border);
-  border-radius: 8px;
-  background: var(--ui-action-soft);
-  overflow-wrap: anywhere;
-}
-.base-update-card > summary {
-  cursor: pointer;
-  padding: 16px;
-}
-.base-update-card > summary > span {
-  display: inline-grid;
-  gap: 6px;
-  vertical-align: top;
-  max-width: calc(100% - 24px);
-}
-.base-update-card__toggle {
-  text-decoration: underline;
-}
-.base-update-card__content {
-  padding: 0 16px 16px;
-}
-.base-update-card__content li + li {
-  margin-top: 12px;
-}
-.base-update-card__content button {
-  white-space: normal;
-}
-@media print {
-  .base-update-card {
-    display: none;
-  }
-}
-.base-update-card:not([open]) .base-update-card__collapse,
-.base-update-card[open] .base-update-card__expand {
-  display: none;
-}
-
 /* One toolbar row: view, search, pendency and the extra-filters toggle wrap only when space runs out. */
 .activity-filters {
   display: flex;

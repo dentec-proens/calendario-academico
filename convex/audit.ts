@@ -125,7 +125,10 @@ async function auditEntries(
     const author = row.actorId && row.actorLabel === undefined ? await actor(row.actorId) : null;
     entries.push({
       at: new Date(row.at).toISOString(),
-      action: labels[row.action] ?? 'Alteração administrativa registrada',
+      action:
+        row.action === 'UPDATE_CATALOGUE' && row.details
+          ? `${labels[row.action]}: ${row.details}`
+          : (labels[row.action] ?? 'Alteração administrativa registrada'),
       actor: row.actorLabel ?? author?.name ?? 'Sistema',
       calendar: record && unit ? calendarName(record.year, unit.name, record.label) : null,
       version: row.version ?? null,

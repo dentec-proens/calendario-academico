@@ -2,7 +2,7 @@ import type { CalendarRecord, CalendarState, CalendarSave } from '../types.ts';
 import { equalValues } from '#src/shared/equal.ts';
 import { createAutosaver } from '../../../autosave.ts';
 import type { AutosaveStatus } from '../../../autosave.ts';
-import { inspectCalendar, reconcile } from '#src/domain/calendar/base.ts';
+import { inspectCalendar } from '#src/domain/calendar/base.ts';
 import { kinds } from '#src/domain/calendar/offers.ts';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
 
@@ -31,6 +31,12 @@ function failureMessage(detail: unknown) {
     : detail.message;
 }
 
+const baseMark = (record: CalendarRecord) =>
+  JSON.stringify([
+    record.currentCatalogueRevision,
+    record.currentDocuments.map(({ id, hash }) => [id, hash]),
+  ]);
+
 function withoutStamp(state: CalendarState) {
   const { rulesetVersion: _stamp, ...content } = state;
   return content;
@@ -42,7 +48,6 @@ export function createEditorSession(
     state: CalendarState;
     version: number;
     catalogueRevision: number;
-    baseAcceptance?: string;
   }) => Promise<CalendarSave>,
   readOnly = false,
   canEdit = () => true,
@@ -63,8 +68,6 @@ export function createEditorSession(
   let abandoned = false;
   let accessSuspended = false;
   let suspendedStatus: Pick<EditorSnapshot, 'status' | 'error'> | null = null;
-  let baseAcceptance: string | undefined;
-  let rejectedBaseAcceptance = false;
   const listeners = new Set<() => void>();
   const forms = new Set<string>();
   function publish(update: Partial<EditorSnapshot>) {
@@ -72,18 +75,6 @@ export function createEditorSession(
     current = { ...current, ...update };
     current.baseUpdate = inspectCalendar(current.record, current.remote ?? current.record);
     for (const listener of listeners) listener();
-    if (
-      rejectedBaseAcceptance &&
-      current.status === 'blocked' &&
-      !accessSuspended &&
-      current.baseUpdate.compatible &&
-      (!current.remote || current.remote.version === current.record.version)
-    ) {
-      rejectedBaseAcceptance = false;
-      saver.resume();
-      publish({ status: current.dirty ? 'pending' : 'idle', error: '' });
-      saver.schedule();
-    }
   }
   const saver = createAutosaver({
     isDirty: () => current.dirty,
@@ -91,23 +82,12 @@ export function createEditorSession(
       state: current.state,
       version: current.record.version,
       catalogueRevision: current.record.catalogueRevision,
-      ...(baseAcceptance ? { baseAcceptance } : {}),
     }),
     write: async (sent) => {
       try {
         return await write(sent);
       } catch (cause) {
         onSaveFailure(cause);
-        if (
-          sent.baseAcceptance &&
-          cause &&
-          typeof cause === 'object' &&
-          'status' in cause &&
-          cause.status === 409
-        ) {
-          if (baseAcceptance === sent.baseAcceptance) baseAcceptance = undefined;
-          rejectedBaseAcceptance = true;
-        }
         throw cause;
       }
     },
@@ -126,9 +106,14 @@ export function createEditorSession(
         name: described.name,
         ...value,
         offerKinds: kinds(saved.state),
-        catalogueRevision: base.revision,
-        institutionalSnapshot: base.events,
-        documentSnapshot: base.documents,
+        // A save with nothing to record leaves the stored copy where it was.
+        ...(saved.unchanged
+          ? {}
+          : {
+              catalogueRevision: base.revision,
+              institutionalSnapshot: base.events,
+              documentSnapshot: base.documents,
+            }),
         ...(base.revision >= current.record.currentCatalogueRevision
           ? {
               currentCatalogueRevision: base.revision,
@@ -137,8 +122,6 @@ export function createEditorSession(
             }
           : {}),
       };
-      if (baseAcceptance === sent.baseAcceptance) baseAcceptance = undefined;
-      rejectedBaseAcceptance = false;
       publish({
         record: confirmed,
         ...(unchanged ? { state: structuredClone(saved.state) } : {}),
@@ -223,10 +206,8 @@ export function createEditorSession(
         return;
       }
       if (fresh.version < current.record.version) return;
-      if (
-        fresh.version === current.record.version &&
-        inspectCalendar(current.record, fresh).compatible
-      ) {
+      // A new catalogue reaches the open editor as it is: only another person's version waits.
+      if (fresh.version === current.record.version) {
         publish({ record: { ...fresh, state: current.record.state }, remote: null });
       } else if (current.dirty || current.unapplied || current.status === 'saving')
         publish({ remote: fresh });
@@ -243,30 +224,19 @@ export function createEditorSession(
       if (!readOnly) await saver.flush();
       return current.record;
     },
-    async confirmBase(acceptance: string) {
-      assertEditing();
-      if (current.unapplied)
-        throw new Error('Aplique ou descarte os campos em edição antes de confirmar a base.');
-      if (current.status === 'saving') await saver.save();
-      const latest = current.remote || current.record;
-      if (latest.version !== current.record.version)
+    /**
+     * What a submission states: the base the person was seeing. A flush may bring a newer base that
+     * the subscription had not delivered yet, and that one has not been seen. The identity is read
+     * only afterwards because a just-added offer legitimately changes what applies to the calendar.
+     */
+    async prepareSubmission() {
+      const seen = baseMark(current.record);
+      const saved = await saver.flush().then(() => current.record);
+      if (baseMark(saved) !== seen)
         throw new Error(
-          'Há uma versão mais recente do calendário. Reabra antes de confirmar a base.',
+          'A base institucional mudou enquanto você preenchia. Confira o calendário e envie novamente.',
         );
-      reconcile(inspectCalendar(current.record, latest), acceptance);
-      baseAcceptance = acceptance;
-      publish({
-        dirty: true,
-        state: {
-          ...structuredClone(current.state),
-          rulesetVersion: rulesetVersion(current.state),
-        },
-      });
-      saver.resume();
-      await saver.save(true);
-      await saver.flush();
-      if (current.status === 'blocked' || current.status === 'error')
-        throw new Error(current.error);
+      return { version: saved.version, baseIdentity: current.baseUpdate.identity };
     },
     reopenRemote() {
       if (!active || abandoned || !canEdit())
@@ -274,8 +244,6 @@ export function createEditorSession(
       if (current.status === 'saving') throw new Error('Aguarde a confirmação do salvamento.');
       const fresh = current.remote ?? current.record;
       forms.clear();
-      baseAcceptance = undefined;
-      rejectedBaseAcceptance = false;
       saver.resume();
       publish({
         record: structuredClone(fresh),

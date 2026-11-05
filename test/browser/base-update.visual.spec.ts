@@ -5,14 +5,12 @@ test('institutional base changes', async ({ page, fixtureServer }) => {
   await page.clock.setFixedTime(new Date('2026-10-23T12:00:00-03:00'));
   await page.goto(await fixtureServer('editor'));
   await publishBaseUpdate(page);
-  const card = page.locator('.base-update-card');
-  await expect(
-    card.getByRole('button', { name: 'Incorporar mudanças ao calendário' }),
-  ).toBeVisible();
+  const notice = page.locator('#base-changes-notice');
+  await expect(notice).toContainText('Incluído: Encontro institucional');
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
     .toBe(true);
-  await expect(page).toHaveScreenshot('base-update-expanded.png', { fullPage: true });
+  await expect(notice).toHaveScreenshot('event-notice.png');
 });
 
 test('newer rules leave only an informative notice', async ({ page, fixtureServer }) => {

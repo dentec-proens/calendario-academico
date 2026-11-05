@@ -103,8 +103,8 @@ export default function LifecycleActions({
   calendar: LifecycleCalendar;
   role: LifecycleRole;
   notify: (text: string, error?: boolean) => void;
-  /** Runs before submitting, e.g. to flush the editor, and returns the version to submit. */
-  prepare?: () => Promise<number | undefined>;
+  /** Runs before submitting, e.g. to flush the editor, and returns what is being submitted. */
+  prepare?: () => Promise<{ version?: number; baseIdentity?: string }>;
   /** Shown in the submission dialog, such as what changed since the return. */
   submitSummary?: string;
   /** A reason to refuse every action now, such as unsaved work in the review form. */
@@ -151,12 +151,12 @@ export default function LifecycleActions({
     action: LifecycleAction,
     extra: { note?: string; sei?: string; partial?: boolean } = {},
   ) {
-    const version = action === 'submit' && prepare ? await prepare() : undefined;
+    const submitted = action === 'submit' && prepare ? await prepare() : {};
     await calendars.transition(calendar.id, {
       from: calendar.status,
       statusRevision: calendar.statusRevision,
       action,
-      ...(version === undefined ? {} : { version }),
+      ...submitted,
       ...extra,
     });
     notify(`${actionLabels[action]}: concluído.`);

@@ -47,6 +47,7 @@ export interface TransitionRequest {
   statusRevision: number;
   action: LifecycleAction;
   version?: number;
+  baseIdentity?: string;
   note?: string;
   sei?: string;
   partial?: boolean;
@@ -63,10 +64,13 @@ async function recordCurrentBase(
   user: Member,
   { row, content, compatibility }: Awaited<ReturnType<typeof baseRecord>>,
 ) {
-  const { snapshot, documents } = compatibility;
+  const { snapshot, documents, events } = compatibility;
   if (
     content.state.rulesetVersion === snapshot.rulesetVersion &&
     content.catalogueRevision === snapshot.revision &&
+    !events.added.length &&
+    !events.removed.length &&
+    !events.changed.length &&
     !documents.added.length &&
     !documents.removed.length &&
     !documents.changed.length
@@ -75,6 +79,9 @@ async function recordCurrentBase(
   const fields = {
     state: clean({ ...content.state, rulesetVersion: snapshot.rulesetVersion }),
     catalogueRevision: snapshot.revision,
+    institutionalSnapshot: clean(
+      snapshot.events,
+    ) as Doc<'calendarContents'>['institutionalSnapshot'],
     documentSnapshot: snapshot.documents,
   };
   const version = row.version + 1;
@@ -123,8 +130,14 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
       if (request.version !== undefined && request.version !== row.version)
         fail('Há versão mais recente. Reabra o calendário antes de enviar.', 409);
       if (!row.courses.trim()) fail(missingCoursesIssue, 409);
-      if (!compatibility.compatible)
-        fail('Incorpore a atualização da base institucional antes de enviar.', 409);
+      if (request.baseIdentity === undefined)
+        fail('Atualize a aplicação recarregando a página antes de enviar.', 409);
+      // Nobody submits dates they did not see. Nothing is written, and the editor already shows it.
+      if (request.baseIdentity !== compatibility.identity)
+        fail(
+          'A base institucional mudou enquanto você preenchia. Confira o calendário e envie novamente.',
+          409,
+        );
       await assertUniqueInFlow(ctx, row);
       // Checked here so the error does not surface only after the review.
       await replacedCalendars(ctx, row, {

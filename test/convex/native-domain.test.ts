@@ -1,6 +1,5 @@
 import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
-import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import type { FunctionReturnType } from 'convex/server';
 import type { CalendarEvent } from '../../src/domain/calendar/model.ts';
 import { test } from 'vitest';
@@ -172,10 +171,8 @@ test('native publication gates base revisions and reviews retain concurrent revi
     evidence: 'Lei',
     modalities: ['integrado'],
   });
-  await assert.rejects(
-    campus.write(path, { ...saveBody(await campus.read(path)), catalogueRevision: 1 }, 'PUT'),
-    /eventos institucionais mudaram/,
-  );
+  // The new event needs no acceptance: the next save records it.
+  await campus.write(path, { ...saveBody(await campus.read(path)), catalogueRevision: 1 }, 'PUT');
   const full = await inspect();
   assert.equal(full.reviews[0].history.length, 1);
   assert.equal(full.reviews[0].history[0].revision, 1);
@@ -473,7 +470,6 @@ test('native institutional publication requires admin confirmation and preserves
     {
       version: 1,
       catalogueRevision: 2,
-      baseAcceptance: inspectCalendar(loaded, loaded).identity,
       state: loaded.state,
     },
     'PUT',

@@ -13,7 +13,7 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { PrintVersion } from '#src/printing/calendar-layout.ts';
 
 function useExportController() {
-  const { session, record, notify, baseUpdate, readOnly } = useCalendarEditor();
+  const { session, record, notify } = useCalendarEditor();
   const protection = useFormDrafts()?.protection;
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
@@ -46,8 +46,6 @@ function useExportController() {
   /** Prints the preview; the complete version (with internal dates) suggests its own file name. */
   const print = (version: PrintVersion = 'official') =>
     run(async () => {
-      if (!readOnly && !baseUpdate.compatible)
-        throw new Error('Incorpore a atualização da base institucional antes de imprimir.');
       const saved = await session.flush();
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       if (!active.current) return;

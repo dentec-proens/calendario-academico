@@ -4,49 +4,32 @@ import { test, expect } from './test.ts';
 import { publishBaseUpdate } from './base-update.ts';
 
 for (const width of [1440, 390]) {
-  test(`institutional changes can be reviewed and incorporated at ${width}px`, async ({
+  test(`changed institutional events are told and ask for nothing at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(await fixtureServer('editor'));
     await publishBaseUpdate(page);
-    const card = page.locator('.base-update-card');
-    const action = card.getByRole('button', { name: 'Incorporar mudanças ao calendário' });
-    await expect(
-      action,
-      'the card starts open, so the way out of a refusal is in sight',
-    ).toBeVisible();
-    await expect(card).toContainText('Incluído: Encontro institucional');
-    await expect(card).toContainText('Removido: Recesso removido');
-    await expect(card).toContainText('15/10/2027');
-    await expect(card).toContainText('14/10/2027');
-    await expect(card).toContainText('Fonte: Portaria atualizada');
+    const notice = page.locator('#base-changes-notice');
+    await expect(notice).toContainText('Este calendário já segue a base vigente.');
+    await expect(notice).toContainText('Incluído: Encontro institucional');
+    await expect(notice).toContainText('Retirado: Recesso removido');
+    await expect(notice).toContainText('de 15/10/2027 para 14/10/2027');
+    await expect(notice).not.toContainText('Suas datas não mudaram');
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
       .toBe(true);
 
-    await selectEditorSection(page, 'periods');
-    await page.locator('[data-edit-organization="integrado"]').click();
-    await page.locator('#offer-integrado-period-0-start').fill('2027-03-01');
-    await expect(action).toBeDisabled();
-    await expect(card).toContainText('Aplique ou descarte os campos');
-
-    await page.locator('#offer-integrado-period-0-start').fill('');
-    await expect(action).toBeEnabled();
-    await action.click();
-    await expect(card).toHaveCount(0);
-    await expect(page.locator('#message')).toContainText(
-      'Mudanças da base institucional incorporadas',
-    );
-    // Feedback on a finished action can be closed.
-    await page.locator('#message').getByRole('button', { name: 'Fechar aviso' }).click();
-    await expect(page.locator('#message')).toBeEmpty();
-    expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(1);
+    // The next save records the base, with no acceptance in the way.
+    await page.locator('#weekdays input[value="5"]').uncheck();
+    await expect
+      .poll(() => page.evaluate(() => window.editorTest.calls.saves), { timeout: 5000 })
+      .toBe(1);
     expect(
       await page.evaluate(() =>
-        window.editorTest.record.state.events.some((event) => event.id === 'local-event'),
+        window.editorTest.record.institutionalSnapshot.some((event) => event.id === 'added-event'),
       ),
     ).toBe(true);
   });
@@ -58,7 +41,6 @@ test('a document-only update is told and asks for nothing', async ({ page, fixtu
   const notice = page.locator('#base-changes-notice');
   await expect(notice).toContainText('Os documentos de referência foram atualizados.');
   await expect(notice).toContainText('Orientações atualizadas');
-  await expect(page.locator('.base-update-card')).toHaveCount(0);
   await notice.getByRole('button', { name: 'Fechar aviso' }).click();
   await expect(notice).toHaveCount(0);
 });
@@ -76,7 +58,6 @@ test('newer rules are told and ask for nothing', async ({ page, fixtureServer })
   await expect(notice).toContainText('As novas regras não alteraram suas datas.');
   await expect(notice).toContainText('Trancamento de curso');
   await expect(notice).not.toContainText('consup-292');
-  await expect(page.locator('.base-update-card')).toHaveCount(0);
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });
 
@@ -113,7 +94,7 @@ test('a withdrawn reference document is told', async ({ page, fixtureServer }) =
   );
 });
 
-test('an equivalent base advance stays invisible and synchronizes without saving a draft', async ({
+test('an equivalent base advance stays invisible and writes nothing', async ({
   page,
   fixtureServer,
 }) => {
@@ -128,8 +109,6 @@ test('an equivalent base advance stays invisible and synchronizes without saving
     module.record.currentCatalogueRevision = 3;
     module.publish();
   });
-  await expect(page.locator('.base-update-card')).toHaveCount(0);
-  await expect.poll(() => page.evaluate(() => window.editorTest.calls.synchronizations)).toBe(1);
   await expect(page.locator('#offer-integrado-period-0-start')).toHaveValue('2027-03-01');
   expect(
     await page.evaluate(() => ({
@@ -137,10 +116,10 @@ test('an equivalent base advance stays invisible and synchronizes without saving
       version: window.editorTest.record.version,
       revision: window.editorTest.record.catalogueRevision,
     })),
-  ).toEqual({ saves: 0, version: 1, revision: 3 });
+  ).toEqual({ saves: 0, version: 1, revision: 1 });
 });
 
-test('a changed institutional date remains explicit when a campus adjustment keeps the visible day', async ({
+test('a changed institutional date is told even when a campus adjustment keeps the visible day', async ({
   page,
   fixtureServer,
 }) => {
@@ -171,7 +150,5 @@ test('a changed institutional date remains explicit when a campus adjustment kee
     module.record.currentCatalogueRevision = 2;
     module.publish();
   });
-  const card = page.locator('.base-update-card');
-  await expect(card).toContainText('Data institucional: 15/10/2027');
-  await expect(card).toContainText('Data institucional: 16/10/2027');
+  await expect(page.locator('#base-changes-notice')).toContainText('Alterado: ');
 });

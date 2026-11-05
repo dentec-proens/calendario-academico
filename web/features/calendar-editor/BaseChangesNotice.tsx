@@ -1,21 +1,26 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Notice } from '../../components/ui/Notice.tsx';
+import { teachingDayEffects } from './base-changes.ts';
 import { announcedRuleChanges } from '#src/domain/policies/registry.ts';
+import type { CalendarRecord, CalendarState } from './types.ts';
 import { editorPages } from './editor-steps.ts';
 import { useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 
-const dayAndMonth = (date: string) => date.split('-').reverse().slice(0, 2).join('/');
+type BaseUpdate = ReturnType<typeof useCalendarEditor>['baseUpdate'];
+
+const dayAndMonth = (value: string) => value.split('-').reverse().slice(0, 2).join('/');
+const date = (value: string) => value.split('-').reverse().join('/');
 
 /**
  * Tells what the system already applied: nothing here asks for a decision. Saving records what is
  * in force and ends the difference, so the notice stays for the session it first appeared in.
  */
 export default function BaseChangesNotice() {
-  const { record, baseUpdate, readOnly } = useCalendarEditor();
+  const { record, state, baseUpdate, readOnly } = useCalendarEditor();
   const [dismissed, setDismissed] = useState(false);
   const [shown, setShown] = useState<ReturnType<typeof announcement>>(null);
-  const current = readOnly ? null : announcement(record, baseUpdate);
+  const current = readOnly ? null : announcement(record, state, baseUpdate);
   if (current && current.key !== shown?.key) setShown(current);
   if (dismissed || !shown) return null;
   return (
@@ -44,13 +49,33 @@ export default function BaseChangesNotice() {
   );
 }
 
-function announcement(
-  record: ReturnType<typeof useCalendarEditor>['record'],
-  { rules, documents }: ReturnType<typeof useCalendarEditor>['baseUpdate'],
-) {
+const dateRange = ({ start, end }: { start: string; end: string }) =>
+  start === end ? date(start) : `${date(start)} a ${date(end)}`;
+
+/** What the current base changed, compared with the copy stored by the last save. */
+function eventItems({ added, removed, changed }: BaseUpdate['events']) {
+  return [
+    ...added.map((event) => `Incluído: ${event.name}, ${dateRange(event)}.`),
+    ...removed.map((event) => `Retirado: ${event.name}, ${dateRange(event)}.`),
+    ...changed.map(({ before, after }) =>
+      dateRange(before) === dateRange(after)
+        ? `Alterado: ${after.name}.`
+        : `Alterado: ${after.name}, de ${dateRange(before)} para ${dateRange(after)}.`,
+    ),
+  ];
+}
+
+function announcement(record: CalendarRecord, state: CalendarState, update: BaseUpdate) {
+  const { rules, documents, events } = update;
   const changes = announcedRuleChanges(rules, record.updatedAt);
   const references = [...documents.added, ...documents.changed.map(({ after }) => after)];
+  const dates = eventItems(events);
+  const effects = dates.length
+    ? teachingDayEffects(state, record.institutionalSnapshot, record.institutionalEvents)
+    : [];
   const items = [
+    ...dates,
+    ...effects,
     ...changes.map((change) => change.summary),
     ...references.map((document) => `Documento de referência atualizado: ${document.title}.`),
     ...documents.removed.map((document) => `Documento de referência retirado: ${document.title}.`),
@@ -59,9 +84,11 @@ function announcement(
   const latest = changes.at(-1)?.date;
   return {
     key: items.join('|'),
-    title: latest
-      ? `As regras de ${record.state.year} mudaram em ${dayAndMonth(latest)}. As novas regras não alteraram suas datas.`
-      : 'Os documentos de referência foram atualizados. Suas datas não mudaram.',
+    title: dates.length
+      ? 'Os eventos institucionais mudaram. Este calendário já segue a base vigente.'
+      : latest
+        ? `As regras de ${record.state.year} mudaram em ${dayAndMonth(latest)}. As novas regras não alteraram suas datas.`
+        : 'Os documentos de referência foram atualizados. Suas datas não mudaram.',
     items,
     review: record.status === 'devolvido' && changes.some((change) => change.effect === 'tightens'),
   };

@@ -120,6 +120,10 @@ export const functions = api;
 export const convex = {
   url: 'http://127.0.0.1',
   query: (reference: FunctionReference<'query'>, args: Record<string, unknown>) => {
+    if (getFunctionName(reference) === 'catalogue:catalogueImpact')
+      return Promise.resolve(
+        window.portalRouterTest.catalogueImpact ?? { reached: 0, withNewIssues: 0, partial: false },
+      );
     if (getFunctionName(reference) === 'workspace:logs')
       return olderAuditPage((args.paginationOpts as { cursor?: string }).cursor);
     if (getFunctionName(reference) === 'reviews:review')
@@ -223,6 +227,7 @@ declare global {
   interface Window {
     portalRouterTest: {
       catalogue: Bootstrap['catalogue'];
+      catalogueImpact?: { reached: number; withNewIssues: number; partial: boolean };
       members: Bootstrap['users'];
       mutations: { name: string; args: Record<string, unknown> }[];
       publishCatalogue(catalogue: Bootstrap['catalogue']): void;

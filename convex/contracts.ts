@@ -185,7 +185,6 @@ export const saveState = v.object({
   campus: v.string(),
 });
 const saveFields = {
-  baseAcceptance: v.optional(v.string()),
   version: v.number(),
   catalogueRevision: v.number(),
 };

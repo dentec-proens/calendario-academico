@@ -171,36 +171,126 @@ test('a new version starts under the current rules and references', async () => 
   expect(inspectCalendar(copy, copy).documents.added).toEqual([]);
 });
 
-test('a changed institutional event still asks for incorporation', async () => {
-  const { account, record } = await draftUnderOldRules();
-  await account.mutation(api.catalogue.saveCatalogue, {
+async function withNewEvent() {
+  const context = await draftUnderOldRules();
+  await context.account.mutation(api.catalogue.saveCatalogue, {
     body: {
-      id: 'holiday',
       revision: 1,
-      name: 'Feriado',
-      start: civilDate('2027-03-04'),
-      end: civilDate('2027-03-04'),
+      name: 'Feriado novo',
+      start: civilDate('2027-03-09'),
+      end: civilDate('2027-03-09'),
       effect: 'exclude',
       category: 'feriado',
-      evidence: 'Portaria nova',
+      evidence: 'Portaria',
       modalities: ['integrado'],
       active: true,
     },
   });
-  const fresh = await account
-    .query(api.calendars.calendar, { id: record.id })
-    .then(calendarRecordDates);
-  const assessment = inspectCalendar(fresh, fresh);
-  expect(assessment.kind).toBe('events');
-  expect(assessment.compatible).toBe(false);
+  return context;
+}
+
+test('a catalogue change writes nothing until a person saves', async () => {
+  const { account, record } = await withNewEvent();
+  const fresh = await account.query(api.calendars.calendar, { id: record.id });
+  expect(fresh.version).toBe(record.version);
+  expect(fresh.institutionalSnapshot.map(({ name }) => name)).not.toContain('Feriado novo');
+  expect(fresh.institutionalEvents.map(({ name }) => name)).toContain('Feriado novo');
+});
+
+test('a submission of a base the person did not see is refused without writing', async () => {
+  const { account, record } = await withNewEvent();
+  const seen = inspectCalendar(record, record).identity;
+  await expect(act(account, record.id, 'submit', { baseIdentity: seen })).rejects.toThrow(
+    'Confira o calendário e envie novamente',
+  );
+  const fresh = await account.query(api.calendars.calendar, { id: record.id });
+  expect(fresh).toMatchObject({ status: 'rascunho', version: record.version });
+});
+
+test('a tab from before this check is asked to update', async () => {
+  const { account, record } = await draftUnderOldRules();
   await expect(
-    account.mutation(api.calendars.saveCalendar, {
+    account.mutation(api.calendars.transitionCalendar, {
       id: record.id,
-      body: {
-        version: fresh.version,
-        catalogueRevision: fresh.currentCatalogueRevision,
-        state: { ...fresh.state, rulesetVersion: rulesetVersion(fresh.state) },
-      },
+      from: record.status,
+      statusRevision: record.statusRevision,
+      action: 'submit',
     }),
-  ).rejects.toThrow('incorpore');
+  ).rejects.toThrow('Atualize a aplicação');
+});
+
+test('submitting what was seen records the current base first, so publication can compare it', async () => {
+  const { account, record } = await withNewEvent();
+  await act(account, record.id, 'submit');
+  const fresh = await account.query(api.calendars.calendar, { id: record.id });
+  expect(fresh.version).toBe(record.version + 1);
+  expect(fresh.status).toBe('enviado');
+  expect(fresh.institutionalSnapshot.map(({ name }) => name)).toContain('Feriado novo');
+  expect(inspectCalendar(calendarRecordDates(fresh), calendarRecordDates(fresh)).kind).toBe(
+    'current',
+  );
+});
+
+test('the administration sees the reach of a catalogue change before saving', async () => {
+  const { account, record } = await draftUnderOldRules();
+  const body = {
+    revision: 1,
+    name: 'Feriado novo',
+    start: civilDate('2027-03-09'),
+    end: civilDate('2027-03-09'),
+    effect: 'exclude' as const,
+    category: 'feriado' as const,
+    evidence: 'Portaria',
+    modalities: ['integrado' as const],
+    active: true,
+  };
+  await expect(account.query(api.catalogue.catalogueImpact, { body })).resolves.toMatchObject({
+    reached: 1,
+  });
+  const other = { ...body, modalities: ['graduacao' as const] };
+  await expect(
+    account.query(api.catalogue.catalogueImpact, { body: other }),
+  ).resolves.toMatchObject({
+    reached: 0,
+  });
+  await act(account, record.id, 'submit');
+  await expect(account.query(api.catalogue.catalogueImpact, { body })).resolves.toMatchObject({
+    reached: 0,
+  });
+});
+
+test('moving an event to another year counts the calendars that lose it', async () => {
+  const { account, client } = await withNewEvent();
+  const stored = await client.run((ctx) =>
+    ctx.db
+      .query('institutionalEvents')
+      .withIndex('by_year', (q) => q.eq('year', 2027))
+      .first(),
+  );
+  const body = {
+    id: stored!.code,
+    revision: 2,
+    name: stored!.name,
+    start: civilDate('2028-03-09'),
+    end: civilDate('2028-03-09'),
+    effect: stored!.effect,
+    category: stored!.category,
+    evidence: stored!.evidence,
+    modalities: stored!.modalities,
+    active: true,
+  };
+  await expect(account.query(api.catalogue.catalogueImpact, { body })).resolves.toMatchObject({
+    reached: 1,
+    partial: false,
+  });
+});
+
+test('the audit says what changed in the catalogue', async () => {
+  const { account } = await withNewEvent();
+  const { entries } = await account.query(api.workspace.logs, {
+    paginationOpts: { cursor: null, numItems: 10 },
+  });
+  expect(entries[0]!.action).toBe(
+    'Base institucional alterada: Feriado novo, 2027-03-09: incluído',
+  );
 });

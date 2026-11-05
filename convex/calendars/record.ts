@@ -1,6 +1,6 @@
 import { readActivityDates } from '../../src/domain/calendar/civil-dates.ts';
 import { frozenBase, inspectBase } from './base';
-import { isPublished, isUnderReview, officialApproval } from '../../src/domain/calendar/lifecycle';
+import { isEditable, isPublished, isUnderReview, officialApproval } from '../../src/domain/calendar/lifecycle';
 import { lastReturn, outcome } from './lifecycle';
 import { releaseReadiness } from '../../src/domain/calendar/readiness';
 import type { Doc, Id } from '../_generated/dataModel';
@@ -38,13 +38,19 @@ export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>
     ? frozenBase(status, record.state, content)
     : inspectBase(status, record.state, content, base, docs);
   const readiness = {
-    ...releaseReadiness(record, {
-      base: compatibility,
-      catalogue: { revision: compatibility.snapshot.revision },
-      reviews: review ? [reviewDto(review)] : [],
-      submissionId: row.currentSubmissionId ?? null,
-      locked: isUnderReview(status),
-    }),
+    // While editing, pending issues follow the current base; a locked calendar keeps its own copy.
+    ...releaseReadiness(
+      isEditable(status)
+        ? { ...record, institutionalSnapshot: compatibility.snapshot.events }
+        : record,
+      {
+        base: compatibility,
+        catalogue: { revision: compatibility.snapshot.revision },
+        reviews: review ? [reviewDto(review)] : [],
+        submissionId: row.currentSubmissionId ?? null,
+        locked: isUnderReview(status),
+      },
+    ),
     officialApproval: officialApproval(status),
   } as Infer<typeof contracts.readiness>;
   return { row, status, content, record, base, docs, review, readiness, compatibility };

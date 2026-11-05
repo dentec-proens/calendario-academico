@@ -38,12 +38,6 @@ export const calendars = {
     request(() =>
       convex.mutation(functions.calendars.renameCalendar, { id: id as Id<'calendars'>, ...args }),
     ),
-  synchronizeBase: (id: string, version: number) =>
-    request(() =>
-      convex
-        .mutation(functions.calendars.synchronizeBase, { id: id as Id<'calendars'>, version })
-        .then(calendarRecordDates),
-    ),
   remove: (id: string, version: number) =>
     request(() =>
       convex.mutation(functions.calendars.deleteCalendar, { id: id as Id<'calendars'>, version }),

@@ -7,7 +7,7 @@ import {
 import { kinds, nextOfferId } from '../src/domain/calendar/offers';
 import { calendarSchemaVersion, type CalendarOffer } from '../src/domain/calendar/model';
 import { equalValues } from '../src/shared/equal';
-import { inspectBase, reconcileBase } from './calendars/base';
+import { inspectBase } from './calendars/base';
 import { assertWritesOpen } from './lib/maintenance';
 import { equivalentRulesets, rulesetVersion } from '../src/domain/policies/registry';
 import { inheritedEvents } from '../src/domain/institution/catalogue';
@@ -215,7 +215,8 @@ export const saveCalendar = mutation({
     const proposedKinds = kinds(body.state);
     if (status === 'devolvido' && proposedKinds.some((kind) => !row.offerKinds.includes(kind)))
       await assertUniqueInFlow(ctx, row, proposedKinds);
-    const reconciliation = reconcileBase(compatibility, body.baseAcceptance);
+    // What differs from the stored copy is recorded here: the base was already live in the editor.
+    const baseChanged = compatibility.kind !== 'current' && compatibility.kind !== 'equivalent';
     const savedContent = clean(content.state);
     const proposedState = domainRule(() => readCalendarOfferInput(body.state));
     const prepared = domainRule(() =>
@@ -229,11 +230,9 @@ export const saveCalendar = mutation({
     const state = prepared.state as validators.DomainState;
     const next = prepared.content as validators.ContentState;
     const institutionalSnapshot = clean(prepared.institutionalSnapshot);
-    if (prepared.unchanged && !reconciliation.incorporate) {
+    if (prepared.unchanged && !baseChanged) {
       if (!equalValues(row.offerKinds, prepared.offerKinds))
         await ctx.db.patch(id, { offerKinds: prepared.offerKinds });
-      if (content.catalogueRevision !== base.revision)
-        await ctx.db.patch(content._id, { catalogueRevision: base.revision });
       return {
         base: inspectBase(status, state, content, base, docs).dto,
         version: row.version,
@@ -269,23 +268,6 @@ export const saveCalendar = mutation({
       updatedAt: saved.record.updatedAt,
       readiness: saved.readiness,
     };
-  },
-});
-
-export const synchronizeBase = mutation({
-  args: { ...idArgs, version: v.number() },
-  returns: contracts.calendarDto,
-  handler: async (ctx, { id, version }) => {
-    await assertWritesOpen(ctx);
-    const { user } = await requireNativeUser(ctx);
-    calendarEditor(user);
-    const { row, status, content, compatibility } = await baseRecord(ctx, user, id);
-    if (row.version !== version) fail('Há versão mais recente. Reabra o calendário.', 409);
-    assertEditableStatus(status);
-    reconcileBase(compatibility);
-    if (content.catalogueRevision !== compatibility.snapshot.revision)
-      await ctx.db.patch(content._id, { catalogueRevision: compatibility.snapshot.revision });
-    return fullRecord(ctx, user, id);
   },
 });
 
@@ -451,6 +433,8 @@ export const transitionCalendar = mutation({
     statusRevision: v.number(),
     action: validators.lifecycleAction,
     version: v.optional(v.number()),
+    /** The base the person was seeing when submitting: `identity` of `inspectCalendar`. */
+    baseIdentity: v.optional(v.string()),
     note: v.optional(v.string()),
     sei: v.optional(v.string()),
     partial: v.optional(v.boolean()),

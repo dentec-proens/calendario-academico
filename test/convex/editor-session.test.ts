@@ -4,7 +4,6 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { definedStage } from '../helpers/activity-links.ts';
 import { api } from '../../convex/_generated/api.js';
 import { createNativeFixture } from '../helpers/native-database.ts';
-import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { createEditorSession } from '../../web/features/calendar-editor/session/editor-session.ts';
 import { applyWeek } from '../../src/domain/calendar/commands/periods.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
@@ -446,31 +445,74 @@ test('the week command rejects invalid changes atomically', async () => {
   expect(record.state).toEqual(original);
 });
 
-test('a new institutional revision is saved only after explicit confirmation, preserving applied edits', async () => {
-  const original = await opened();
-  const record = { ...original, currentCatalogueRevision: 2 };
-  const revisions: number[] = [];
-  const session = createEditorSession(record, async (body) => {
-    revisions.push(body.catalogueRevision);
-    if (body.baseAcceptance !== inspectCalendar(record, record).identity)
-      throw Object.assign(new Error('A base institucional mudou.'), { status: 409 });
-    return {
-      state: body.state,
-      version: 2,
-      updatedAt: record.updatedAt,
-      readiness: record.readiness,
-      base: savedBase(record),
-    };
-  });
+const newEvent = {
+  id: 'inst:new',
+  name: 'Novo evento',
+  start: civilDate('2027-03-09'),
+  end: civilDate('2027-03-09'),
+  effect: 'exclude',
+  category: 'feriado',
+  evidence: 'Portaria',
+  offers: ['integrado'],
+  institutional: true,
+} as CalendarRecord['institutionalEvents'][number];
+
+test('a new catalogue reaches an editor with local edits without becoming a conflict', async () => {
+  const record = await opened();
+  vi.useFakeTimers();
+  const session = createEditorSession(record, vi.fn());
   session.apply((state) => editPeriodName(state, 'Decisão local preservada'));
-  await expect(session.flush()).rejects.toThrow('base institucional');
-  expect(revisions).toEqual([1]);
-  await session.confirmBase(session.getSnapshot().baseUpdate.identity);
-  expect(revisions).toEqual([1, 1]);
+  session.receive({
+    ...record,
+    currentCatalogueRevision: record.currentCatalogueRevision + 1,
+    institutionalEvents: [...record.institutionalEvents, newEvent],
+  });
   expect(session.getSnapshot()).toMatchObject({
-    dirty: false,
-    record: { catalogueRevision: 2 },
+    remote: null,
+    dirty: true,
     state: { periods: [{ name: 'Decisão local preservada' }] },
+    record: { currentCatalogueRevision: record.currentCatalogueRevision + 1 },
+  });
+  expect(session.getSnapshot().baseUpdate.events.added.map(({ id }) => id)).toEqual(['inst:new']);
+  session.dispose();
+});
+
+test('a save with nothing to record leaves the stored copy where it was', async () => {
+  const record = await opened();
+  const live = [newEvent];
+  const session = createEditorSession({ ...record, institutionalEvents: live }, async (body) => ({
+    state: body.state,
+    version: record.version,
+    updatedAt: record.updatedAt,
+    readiness: record.readiness,
+    unchanged: true,
+    base: { ...savedBase(record), events: live },
+  }));
+  session.apply((state) => editPeriodName(state, 'Outra'));
+  await session.flush();
+  expect(session.getSnapshot().record.institutionalSnapshot).toEqual(record.institutionalSnapshot);
+  session.dispose();
+});
+
+test('a base that only arrived with the last save was not seen, so the submission waits', async () => {
+  const record = await opened();
+  vi.useFakeTimers();
+  const session = createEditorSession(record, async (body) => ({
+    state: body.state,
+    version: record.version + 1,
+    updatedAt: record.updatedAt,
+    readiness: record.readiness,
+    base: {
+      ...savedBase(record),
+      revision: record.currentCatalogueRevision + 1,
+      events: [newEvent],
+    },
+  }));
+  session.apply((state) => editPeriodName(state, 'Última edição'));
+  await expect(session.prepareSubmission()).rejects.toThrow('Confira o calendário');
+  await expect(session.prepareSubmission()).resolves.toMatchObject({
+    version: record.version + 1,
+    baseIdentity: session.getSnapshot().baseUpdate.identity,
   });
   session.dispose();
 });
@@ -490,94 +532,6 @@ test('a delayed equivalence synchronization cannot hide a newer calendar conflic
   expect(session.getSnapshot().remote).toEqual(remote);
   session.dispose();
 });
-
-test('confirmation keeps the identity shown to the person instead of accepting a more recent publication', async () => {
-  const record = await opened();
-  const write = vi.fn(async () => {
-    throw Error('Não deve gravar');
-  });
-  const session = createEditorSession(record, write);
-  const displayed = session.getSnapshot().baseUpdate.identity;
-  session.receive({
-    ...record,
-    currentCatalogueRevision: 2,
-    institutionalEvents: [
-      ...record.institutionalEvents,
-      {
-        id: 'inst:new',
-        name: 'Novo feriado',
-        start: civilDate('2027-04-01'),
-        end: civilDate('2027-04-01'),
-        effect: 'exclude',
-        evidence: 'Portaria',
-        offers: record.state.offers.map((offer) => offer.id),
-      },
-    ],
-  });
-  await expect(session.confirmBase(displayed)).rejects.toThrow('novamente');
-  expect(write).not.toHaveBeenCalled();
-  expect(session.getSnapshot().dirty).toBe(false);
-  session.dispose();
-});
-
-test.each(['before-failure', 'after-failure'])(
-  'a rejected acceptance is discarded and a reverted equivalent base releases autosave (%s)',
-  async (timing) => {
-    const original = await opened();
-    const record = {
-      ...original,
-      currentCatalogueRevision: 2,
-      institutionalEvents: [
-        ...original.institutionalEvents,
-        {
-          id: 'inst:temporary',
-          name: 'Evento temporário',
-          start: civilDate('2027-04-01'),
-          end: civilDate('2027-04-01'),
-          effect: 'note' as const,
-          evidence: 'Portaria',
-          offers: original.state.offers.map((offer) => offer.id),
-        },
-      ],
-    };
-    let writes = 0;
-    const sent: Array<string | undefined> = [];
-    const reverted = { ...original, currentCatalogueRevision: 3 };
-    const session = createEditorSession(record, async (body) => {
-      sent.push(body.baseAcceptance);
-      if (++writes === 1) {
-        if (timing === 'before-failure') session.receive(reverted);
-        throw Object.assign(Error('A base mudou desde a comparação.'), { status: 409 });
-      }
-      return {
-        state: body.state,
-        version: original.version,
-        updatedAt: original.updatedAt,
-        readiness: original.readiness,
-        base: { ...savedBase(original), revision: 3 },
-      };
-    });
-    const accepting = session.confirmBase(session.getSnapshot().baseUpdate.identity);
-    if (timing === 'after-failure') {
-      await expect(accepting).rejects.toThrow('comparação');
-      expect(session.getSnapshot().status).toBe('blocked');
-      session.receive(reverted);
-      await session.flush();
-    } else await accepting;
-    expect(sent).toHaveLength(2);
-    expect(sent[0]).toBeTruthy();
-    expect(sent[1]).toBeUndefined();
-    expect(session.getSnapshot()).toMatchObject({
-      dirty: false,
-      status: 'saved',
-      record: { version: original.version, catalogueRevision: 3 },
-    });
-    session.apply((state) => editPeriodName(state, 'Nova alteração permitida'));
-    await session.flush();
-    expect(sent.at(-1)).toBeUndefined();
-    session.dispose();
-  },
-);
 
 test('explicitly reopening remote data preserves the active session and accepts later confirmed saves', async () => {
   const record = await opened();

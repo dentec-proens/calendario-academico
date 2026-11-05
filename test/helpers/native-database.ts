@@ -1,3 +1,5 @@
+import { inspectCalendar } from '../../src/domain/calendar/base.ts';
+import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
 import { convexModules } from './convex-modules.ts';
 import { convexTest } from 'convex-test';
 import rateLimiterTest from '@convex-dev/rate-limiter/test';
@@ -226,6 +228,14 @@ export async function createNativeFixture(overrides: Seed = {}) {
               id,
               from: current.status,
               statusRevision: current.statusRevision,
+              ...(body.action === 'submit'
+                ? {
+                    baseIdentity: inspectCalendar(
+                      calendarRecordDates(current),
+                      calendarRecordDates(current),
+                    ).identity,
+                  }
+                : {}),
               ...body,
             });
           }

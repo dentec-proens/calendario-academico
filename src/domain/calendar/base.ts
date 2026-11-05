@@ -5,7 +5,6 @@ import { bytesToHex } from '@noble/hashes/utils.js';
 import { equalValues } from '../../shared/equal.ts';
 import type { CalendarOffer, InstitutionalEventSnapshot } from './model.ts';
 import { kinds } from './offers.ts';
-import { DomainError } from '../errors.ts';
 import { isEditable, type CalendarStatus } from './lifecycle.ts';
 import {
   bindsRuleset,
@@ -111,10 +110,10 @@ function identity(snapshot: BaseSnapshot, scope: BaseScope) {
 }
 
 /**
- * The only policy for institutional-base equivalence and confirmation. Revision is a concurrency
- * marker, not content. A calendar being edited always follows the current rules and documents, so
- * only a changed event asks for anything; a locked one keeps what was submitted, and any change
- * there is solved by a return.
+ * The only policy for institutional-base equivalence. Revision is a concurrency marker, not content.
+ * A calendar being edited always follows the current base, so nothing there asks for anything; what
+ * differs from the stored copy is told and recorded on the next save. A locked one keeps what was
+ * submitted, and any change there is solved by a return.
  */
 export function inspect<E extends InstitutionalEventSnapshot, D extends BaseDocument>(
   previous: BaseSnapshot<E, D>,
@@ -150,28 +149,11 @@ export function inspect<E extends InstitutionalEventSnapshot, D extends BaseDocu
           : unchanged;
   return {
     kind,
-    compatible: editing ? kind !== 'events' : kind === 'current' || kind === 'equivalent',
+    compatible: editing || kind === 'current' || kind === 'equivalent',
     identity: identity(current, scope),
     rules,
     events,
     documents,
-  };
-}
-
-/** An acceptance is tied to the exact applicable content presented, even if another revision arrives. */
-export function reconcile(assessment: ReturnType<typeof inspect>, acceptance?: string) {
-  if (acceptance !== undefined && acceptance !== assessment.identity)
-    throw new DomainError(
-      'A base institucional mudou desde a comparação. Confira as mudanças novamente.',
-      409,
-    );
-  if (!assessment.compatible && acceptance === undefined)
-    throw new DomainError(
-      'Os eventos institucionais mudaram. Abra o aviso “Há mudanças que afetam este calendário”, confira e incorpore antes de salvar.',
-      409,
-    );
-  return {
-    incorporate: assessment.kind !== 'current' && assessment.kind !== 'equivalent',
   };
 }
 

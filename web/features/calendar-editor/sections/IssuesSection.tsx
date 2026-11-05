@@ -156,10 +156,10 @@ function ReviewGroup({
 }
 
 export default function IssuesSection() {
-  const { state, record, dirty, evaluation } = useCalendarEditor();
+  const { state, record, dirty, evaluation, baseEvents } = useCalendarEditor();
   const assessment = useMemo(
-    () => contentAssessment({ state, institutionalSnapshot: record.institutionalSnapshot }),
-    [state, record.institutionalSnapshot],
+    () => contentAssessment({ state, institutionalSnapshot: baseEvents }),
+    [state, baseEvents],
   );
   const issues: Row[] = [
     // The backend refuses the submission without courses.

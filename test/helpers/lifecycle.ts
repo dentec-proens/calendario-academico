@@ -6,6 +6,8 @@ import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import type { CalendarStatus, LifecycleAction } from '../../src/domain/calendar/lifecycle.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { api } from '../../convex/_generated/api.js';
+import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
+import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import type { createNativeFixture } from './native-database.ts';
 
 type Client = Pick<
@@ -97,7 +99,13 @@ export async function act(
   client: Client,
   id: Id<'calendars'>,
   action: LifecycleAction,
-  extra: { note?: string; sei?: string; partial?: boolean; version?: number } = {},
+  extra: {
+    note?: string;
+    sei?: string;
+    partial?: boolean;
+    version?: number;
+    baseIdentity?: string;
+  } = {},
   reader: Client = client,
 ) {
   const { status, statusRevision } = await calendarStatus(reader, id);
@@ -106,8 +114,15 @@ export async function act(
     from: status,
     statusRevision,
     action,
+    // As the editor: a submission states the base the person was seeing.
+    ...(action === 'submit' ? { baseIdentity: await seenBase(reader, id) } : {}),
     ...extra,
   });
+}
+
+async function seenBase(client: Client, id: Id<'calendars'>) {
+  const record = calendarRecordDates(await client.query(api.calendars.calendar, { id }));
+  return inspectCalendar(record, record).identity;
 }
 
 /** Saves a review of the current submission with every criterion confirmed. */

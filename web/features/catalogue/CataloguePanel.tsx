@@ -7,6 +7,7 @@ import { categories } from '#src/domain/calendar/activities/categories.ts';
 import { CategoryMark } from '../../components/ui/CategoryMark.tsx';
 import { modalityLabels, selectableModalities } from '#src/domain/calendar/modalities.ts';
 import { institution } from '../../shared/convex/institution.ts';
+import { confirmAction } from '../../components/confirmation.ts';
 import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
 
 import { useFeatureRoute } from '../../app/navigation.ts';
@@ -70,16 +71,27 @@ export default function CataloguePanel({
       if (!value.modalities.length) throw new Error('Selecione ao menos uma oferta.');
       if (!value.start || !value.end || value.end < value.start)
         throw new Error('Confira o intervalo do evento.');
-      await institution.saveCatalogue({
-        ...value,
-        id: value.id || undefined,
-        revision: value.revision,
-      });
+      const body = { ...value, id: value.id || undefined, revision: value.revision };
+      const { reached, withNewIssues, partial } = await institution.catalogueImpact(body);
+      if (reached || partial) {
+        const atLeast = partial ? 'ao menos ' : '';
+        const confirmed = await confirmAction({
+          title: `Esta mudança alcança ${atLeast}${reached} ${reached === 1 ? 'calendário' : 'calendários'} em edição`,
+          description: withNewIssues
+            ? `${atLeast}${withNewIssues} ${withNewIssues === 1 ? 'ganha' : 'ganham'} novas pendências.`
+            : 'Nenhum dos conferidos ganha novas pendências.',
+          consequence: 'Eles passam a seguir a base assim que ela for salva, sem nova confirmação.',
+          confirmLabel: 'Salvar mudança',
+          intent: 'warning',
+          onConfirm: () => institution.saveCatalogue(body).then(() => undefined),
+        });
+        if (!confirmed) return;
+      } else await institution.saveCatalogue(body);
       if (!isCurrent()) return;
       clearDraft();
       form.reset(emptyEvent(catalogue.revision));
       await navigate({ to: '/eventos-institucionais' });
-      notify('Base atualizada. Os campi receberão a nova revisão ao abrir seus calendários.');
+      notify('Base atualizada. Os calendários em edição já seguem esta mudança.');
     },
   });
   const remoteChanged = event.revision !== catalogue.revision;

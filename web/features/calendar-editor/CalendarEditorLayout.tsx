@@ -25,7 +25,6 @@ import { contentIssues } from '#src/domain/calendar/readiness.ts';
 import EditorSteps from './EditorSteps.tsx';
 import TeachingDaySummary from './TeachingDaySummary.tsx';
 import BaseChangesNotice from './BaseChangesNotice.tsx';
-import BaseUpdateCard from './BaseUpdateCard.tsx';
 import { useCalendarSummaryTool } from '../../shared/integrations/webmcp.ts';
 import './calendar-editor.css';
 import { useAppSession, useSessionState } from '../../app/session.tsx';
@@ -47,7 +46,7 @@ function EditorFrame() {
     error,
     remote,
     connected,
-    baseUpdate,
+    baseEvents,
     session,
     evaluation,
     readOnly,
@@ -63,11 +62,19 @@ function EditorFrame() {
   const currentContent = useMemo<DiffSide>(
     () => ({
       state,
-      institutionalSnapshot: record.institutionalSnapshot,
-      documentSnapshot: record.documentSnapshot,
-      catalogueRevision: record.catalogueRevision,
+      institutionalSnapshot: baseEvents,
+      documentSnapshot: locked ? record.documentSnapshot : record.currentDocuments,
+      catalogueRevision: locked ? record.catalogueRevision : record.currentCatalogueRevision,
     }),
-    [state, record.institutionalSnapshot, record.documentSnapshot, record.catalogueRevision],
+    [
+      state,
+      baseEvents,
+      locked,
+      record.documentSnapshot,
+      record.currentDocuments,
+      record.catalogueRevision,
+      record.currentCatalogueRevision,
+    ],
   );
   const returned = record.status === 'devolvido' ? record.lastReturn : null;
   const sinceReturn = useReturnComparison(
@@ -133,21 +140,19 @@ function EditorFrame() {
         ? 'warning'
         : 'info';
   const openIssues = useMemo(
-    () => contentIssues(state, record.institutionalSnapshot).map((issue) => issue.message),
-    [state, record.institutionalSnapshot],
+    () => contentIssues(state, baseEvents).map((issue) => issue.message),
+    [state, baseEvents],
   );
   // The backend refuses these submissions too; saying why beats an error after confirming.
   const submitUnavailable = !connected
     ? 'Sem conexão. O envio volta a ficar disponível quando a conexão for restabelecida.'
-    : !baseUpdate.compatible
-      ? 'Incorpore a atualização da base institucional antes de enviar.'
-      : remote
-        ? 'O calendário mudou em outra sessão. Reabra-o antes de enviar.'
-        : status === 'error' || status === 'blocked'
-          ? 'Resolva o salvamento das alterações antes de enviar.'
-          : !record.courses
-            ? missingCoursesIssue
-            : undefined;
+    : remote
+      ? 'O calendário mudou em outra sessão. Reabra-o antes de enviar.'
+      : status === 'error' || status === 'blocked'
+        ? 'Resolva o salvamento das alterações antes de enviar.'
+        : !record.courses
+          ? missingCoursesIssue
+          : undefined;
   // Shared by the header and by the review step's footer, which repeats only the submission.
   const lifecycle = {
     calendar: record,
@@ -159,7 +164,7 @@ function EditorFrame() {
     prepare: async () => {
       if (session.getSnapshot().unapplied)
         throw new Error('Aplique ou descarte os campos em edição antes de enviar.');
-      return (await session.flush()).version;
+      return session.prepareSubmission();
     },
   };
   const saveLabel = readOnly
@@ -419,7 +424,6 @@ function EditorFrame() {
         <TeachingDaySummary key={currentSection} />
       </div>
       <BaseChangesNotice />
-      <BaseUpdateCard />
       {context && !eventEditorOpen && (
         <button
           id="resume-event"

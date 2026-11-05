@@ -56,7 +56,6 @@ test('reviewer consults the complete calendar and live changes without editing o
   await expect(page.locator('#event-list')).toContainText(/Evento atualizado pelo campus/);
   for (const control of await eventControls.all()) await expect(control).toBeEnabled();
   expect(await page.evaluate(() => window.editorTest.calls)).toEqual({
-    synchronizations: 0,
     saves: 0,
     transitions: 0,
     failTransition: false,

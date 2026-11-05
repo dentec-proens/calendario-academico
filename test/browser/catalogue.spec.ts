@@ -76,3 +76,29 @@ for (const width of [1440, 390, 320]) {
     );
   });
 }
+
+test('the administration confirms a change that reaches calendars in editing', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/eventos-institucionais');
+  await page.evaluate(() => {
+    window.portalRouterTest.catalogueImpact = { reached: 3, withNewIssues: 1, partial: false };
+  });
+  const row = page.locator('#catalogue-list li').first();
+  await row.getByRole('button', { name: 'Editar', exact: true }).click();
+  await page.locator('#catalogue-form button[type="submit"]').click();
+  const dialog = page.locator('dialog[open]');
+  await expect(dialog).toContainText('Esta mudança alcança 3 calendários em edição');
+  await expect(dialog).toContainText('1 ganha novas pendências.');
+  await page.locator('.confirmation-dialog__cancel').click();
+  expect(
+    await page.evaluate(() =>
+      window.portalRouterTest.mutations.filter(({ name }) => name === 'saveCatalogue'),
+    ),
+  ).toEqual([]);
+  await page.locator('#catalogue-form button[type="submit"]').click();
+  await page.locator('.confirmation-dialog__confirm').click();
+  await expect(page.locator('#message')).toContainText('já seguem esta mudança');
+});
