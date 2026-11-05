@@ -224,7 +224,7 @@ export function reviewSupport<
             linked
               .map(
                 (row) =>
-                  `${labelFor(record.state, row.offerId)} — ${row.requirement.name}: ${row.applicability === 'required' ? 'obrigatório' : row.applicability === 'optional' ? 'opcional' : 'escopo a conferir'}; planejamento ${row.coverage === 'complete' ? 'completo' : row.coverage === 'partial' ? 'parcial' : 'pendente'}; ${row.execution === 'published' ? 'execução comprovada' : row.execution === 'planned' ? 'publicação programada' : 'execução a classificar'}. ${[...row.issues, ...row.warnings].join(' ')}`,
+                  `${labelFor(record.state, row.offerId)} — ${row.requirement.name}: ${row.applicability === 'required' ? 'obrigatório' : row.applicability === 'optional' ? 'opcional' : 'escopo a conferir'}; planejamento ${row.coverage === 'complete' ? 'completo' : row.coverage === 'partial' ? 'parcial' : 'pendente'}; ${row.execution === 'published' ? 'execução comprovada' : row.execution === 'planned' ? 'publicação programada' : 'execução a classificar'}. ${[...row.issues, ...row.warnings, ...row.reviewNotes].join(' ')}`,
               )
               .join(' | ') +
             ' A presença não comprova atendimento. A conferência humana permanece necessária.';

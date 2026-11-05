@@ -148,7 +148,8 @@ export function evaluatePlan(
           (event) => linkedTo(event, requirement) && appliesTo(event, offer),
         );
         const issues: string[] = [],
-          warnings: string[] = [];
+          warnings: string[] = [],
+          reviewNotes: string[] = [];
         const valid = linked.filter((event) => {
           const reason = links.issues.get(event.id);
           // The date blocks the conclusion once, by its own readiness issue (`readiness.ts`); the
@@ -217,7 +218,7 @@ export function evaluatePlan(
                 }
             : null;
           if (deadline?.source === 'municipal-extension')
-            warnings.push(
+            reviewNotes.push(
               `Prazo de ${longDate(deadline.original)} prorrogado para ${deadline.date ? longDate(deadline.date) : 'conferência do primeiro dia letivo subsequente'} por feriado municipal ou recesso decorrente.${deadline.evidence.length ? ` Fontes institucionais: ${deadline.evidence.join('; ')}.` : ''}`,
             );
           if (deadline && (!deadline.date || event.end > deadline.date)) {
@@ -232,7 +233,7 @@ export function evaluatePlan(
               );
               return false;
             }
-            warnings.push(
+            reviewNotes.push(
               'Prazo ajustado informado pelo campus; confira a autorização e o escopo na revisão.',
             );
           }
@@ -254,7 +255,7 @@ export function evaluatePlan(
             issues.push(`Registre pelo menos ${requirement.minHours} horas.`);
         }
         if (requirement.reviewInstruction && valid.length)
-          warnings.push(requirement.reviewInstruction);
+          reviewNotes.push(requirement.reviewInstruction);
         if (applicability === 'unconfigured')
           warnings.push(
             requirement.intake
@@ -291,6 +292,11 @@ export function evaluatePlan(
           evidence: linked.filter((event) => links.forOffer(event.id, offer.id) === 'compatible'),
           issues,
           warnings,
+          /**
+           * What the human review confirms about a date that already counts: never a pending item
+           * of the plan, since the campus has nothing left to fill, but still a readiness notice.
+           */
+          reviewNotes,
           execution: executionOf(linked),
         };
       }),

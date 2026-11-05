@@ -9,6 +9,9 @@ import {
 } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
+import { contentAssessment } from '../../src/domain/calendar/readiness.ts';
+import { onceLink } from '../helpers/activity-links.ts';
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
@@ -198,4 +201,35 @@ test('each dimension has its own values', () => {
       { applicability: 'required', coverage: 'partial', issues: [], warnings: [] },
     ]).status,
   ).toBe('partial');
+});
+
+test('a review instruction is a note of the review, kept apart from what is pending', () => {
+  const state = ivaiporaDraft();
+  state.events.push({
+    id: 'women-week',
+    name: 'Semana sintética',
+    start: civilDate('2027-03-08'),
+    end: civilDate('2027-03-12'),
+    effect: 'note',
+    offers: ['integrado', 'subsequente'],
+    activity: onceLink('women-week'),
+  });
+  const rows = evaluatePlan(state).rows.filter((row) => row.requirement.id === 'women-week');
+  const instruction = rows[0].requirement.reviewInstruction!;
+  for (const row of rows)
+    expect(row).toMatchObject({
+      coverage: 'complete',
+      issues: [],
+      warnings: [],
+      reviewNotes: [instruction],
+    });
+  expect(activitySituation(rows)).toMatchObject({ status: 'complete', problems: false });
+  // The readiness notices and the signal of the criterion still carry it.
+  const { notes } = contentAssessment({ state, institutionalSnapshot: [] });
+  expect(notes.filter((note) => note.message.endsWith(instruction))).toHaveLength(rows.length);
+  const criterion = reviewSupport(
+    { id: 'c', name: 'Calendário', version: 1, state },
+    state.events,
+  ).criteria.find((item) => item.id === 'XXIV');
+  expect(criterion?.signal).toContain(instruction);
 });

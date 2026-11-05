@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import { civilDate } from '../../src/domain/civil-date.ts';
 import { cycleLink, onceLink } from '../helpers/activity-links.ts';
 import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import {
@@ -123,4 +124,93 @@ test('visibility hides date lines only, never recomputing coverage, situation or
     step(withInternalDates, { atividadeVisibilidade: 'internas' }, 'pit:semester:first').activities
       .length,
   ).toBe(1);
+});
+
+const weeks = [
+  ['women-week', '2027-03-08', '2027-03-12'],
+  ['ethics-week', '2027-05-03', '2027-05-07'],
+] as const;
+/** The draft with a date for each week whose review instruction only applies to a valid date. */
+const withWeeks = (fixture: typeof ivaiporaDraft = ivaiporaDraft) => {
+  const state = fixture();
+  state.events = [
+    ...state.events,
+    ...weeks.map(([id, start, end]) => ({
+      id,
+      name: id,
+      start: civilDate(start),
+      end: civilDate(end),
+      effect: 'note' as const,
+      offers: ['integrado', 'subsequente'],
+      activity: onceLink(id),
+    })),
+  ];
+  return state;
+};
+const weekLines = (lines: ReturnType<typeof step>['activities']) =>
+  lines.filter((line) => weeks.some(([id]) => line.key === activityKey(onceLink(id))));
+
+test('a complete activity with only a review note has nothing left to fill', () => {
+  const all = step(withWeeks);
+  expect(weekLines(all.activities).map((line) => [line.status.status, line.pending])).toEqual([
+    ['complete', false],
+    ['complete', false],
+  ]);
+  expect(weekLines(step(withWeeks, { atividadePendencia: 'preencher' }).activities)).toEqual([]);
+  expect(
+    weekLines(step(withWeeks, { atividadePendencia: 'sem-pendencias' }).activities),
+  ).toHaveLength(2);
+  const byDate = step(withWeeks, { atividadeVisao: 'data' }).dates.filter((line) =>
+    weeks.some(([id]) => line.event.id === id),
+  );
+  expect(byDate.map((line) => line.pending)).toEqual([false, false]);
+});
+
+test('issues, unreached offers and open applications stay to fill', () => {
+  // A link that does not reach an offer: complete by the required offer, pending for the other.
+  const unreached = () => {
+    const state = cascavelDraft();
+    state.offers[0] = {
+      ...state.offers[0]!,
+      organization: 'semestral',
+      stages: { status: 'defined', perTerm: 1 },
+    };
+    return state;
+  };
+  expect(
+    step(unreached).activities.some((line) => line.status.status === 'complete' && line.pending),
+  ).toBe(true);
+
+  // An application still to confirm beside a complete required offer.
+  const open = () => {
+    const state = withWeeks();
+    state.offers = [...state.offers, { ...state.offers[0], id: 'pos', kind: 'posgraduacao' }];
+    return state;
+  };
+  expect(weekLines(step(open).activities)[0]).toMatchObject({
+    status: { status: 'complete', toConfirm: 1 },
+    pending: true,
+  });
+
+  // An invalid date on an optional offer.
+  const optional = () => {
+    const state = cascavelDraft();
+    state.offers = state.offers.filter((offer) => offer.kind === 'graduacao');
+    state.events = [
+      {
+        id: 'women-week',
+        name: 'women-week',
+        start: civilDate('2027-04-05'),
+        end: civilDate('2027-04-09'),
+        effect: 'note',
+        offers: ['graduacao'],
+        activity: onceLink('women-week'),
+      },
+    ];
+    return state;
+  };
+  expect(weekLines(step(optional).activities)[0]).toMatchObject({
+    status: { status: 'optional' },
+    pending: true,
+  });
 });

@@ -152,6 +152,7 @@ function semanticProjection(
             offer: _offer,
             classification: _classification,
             evidence: _evidence,
+            reviewNotes: _reviewNotes,
             ...row
           }) => ({
             ...row,

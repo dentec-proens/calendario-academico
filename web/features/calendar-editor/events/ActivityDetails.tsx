@@ -76,7 +76,12 @@ export default function ActivityDetails({
       <details
         className="activity-detail"
         data-activity-detail={key}
-        open={detailOpen || summary.diverges || summary.problems}
+        open={
+          detailOpen ||
+          summary.diverges ||
+          summary.problems ||
+          evidence.some((row) => row.reviewNotes.length > 0)
+        }
       >
         <summary>Situação por oferta e conferência</summary>
         <ul className="activity-coverage" aria-label="Cobertura por oferta">
@@ -116,6 +121,9 @@ export default function ActivityDetails({
               ))}
               {row.warnings.map((warning) => (
                 <small key={warning}>{warning}</small>
+              ))}
+              {row.reviewNotes.map((note) => (
+                <small key={note}>{note}</small>
               ))}
             </li>
           ))}

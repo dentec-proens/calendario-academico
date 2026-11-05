@@ -131,7 +131,7 @@ export function contentAssessment(record: ContentRecord) {
       );
     if (row.applicability === 'required' || row.events.length)
       for (const item of row.issues) issue(`${code}:${item}`, `${prefix}: ${item}`, activity(item));
-    for (const warning of row.warnings)
+    for (const warning of [...row.warnings, ...row.reviewNotes])
       warn(`${code}:${warning}`, `${prefix}: ${warning}`, activity(warning));
   }
   for (const offer of offers) {

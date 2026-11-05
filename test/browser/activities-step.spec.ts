@@ -476,3 +476,35 @@ for (const width of [1440, 390])
       true,
     );
   });
+
+test('a complete week leaves the pending filter and its panel opens on the review note', async ({
+  page,
+  fixtureServer,
+}) => {
+  const state = ivaiporaDraft();
+  state.events.push({
+    id: 'women-week-date',
+    name: 'Semana sintética',
+    start: civilDate('2027-03-08'),
+    end: civilDate('2027-03-12'),
+    effect: 'note',
+    category: 'comemorativo',
+    activity: onceLink('women-week'),
+    offers: ['integrado', 'subsequente'],
+  });
+  await open(page, fixtureServer, state);
+  const key = activityKey(onceLink('women-week'));
+  const row = page.locator(`[data-activity-open="${key}"]`);
+
+  await page.locator('#activity-pendency-preencher').check();
+  await expect(row).toHaveCount(0);
+  await page.locator('#activity-pendency-sem-pendencias').check();
+  await expect(row).toContainText('Completo');
+
+  await row.click();
+  const detail = page.locator(`#event-panel [data-activity-detail="${key}"]`);
+  await expect(detail).toHaveAttribute('open', '');
+  await expect(detail.locator('.activity-coverage')).toContainText(
+    'Confira a segunda semana de março',
+  );
+});

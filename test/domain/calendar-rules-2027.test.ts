@@ -235,7 +235,12 @@ test('planned regular publication remains planned and December requires an expli
     evaluatePlan(state).rows.find(
       (r) => r.offerId === 'integrado' && r.requirement.id === 'regular-admission-notice',
     ),
-  ).toMatchObject({ coverage: 'complete', execution: 'planned' });
+  ).toMatchObject({
+    coverage: 'complete',
+    execution: 'planned',
+    warnings: [],
+    reviewNotes: [expect.stringContaining('Prazo ajustado informado pelo campus')],
+  });
   expect(state.events[0].start).toBe('2027-12-01');
   expect(state.events[0].notice?.publication).toBe('planned');
 });
@@ -448,4 +453,37 @@ test('preserved duplicate occurrences remain editable after PDF provenance is re
   expect(applyDate(cleaned, cleaned.events[0])).toBe(cleaned);
   expect(() => applyDate(state, { ...first, id: 'new-duplicate' })).toThrow('mesmas datas');
   expect(() => applyDate(state, { ...third, name: first.name }, true)).toThrow('mesmas datas');
+});
+
+test('a deadline extended by a municipal cause is a review note, not a pending item', () => {
+  const state = calendar();
+  state.events = [
+    {
+      id: 'municipal',
+      name: 'Feriado municipal sintético',
+      start: civilDate('2027-06-15'),
+      end: civilDate('2027-06-15'),
+      effect: 'exclude',
+      offers: ['integrado'],
+      deadlineExtensionCause: 'municipal-holiday',
+    },
+    notice({
+      start: civilDate('2027-06-16'),
+      end: civilDate('2027-06-16'),
+      notice: {
+        publication: 'planned',
+        admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
+      },
+      activity: onceLink('regular-admission-notice'),
+    }),
+  ];
+  expect(
+    evaluatePlan(state).rows.find(
+      (r) => r.offerId === 'integrado' && r.requirement.id === 'regular-admission-notice',
+    ),
+  ).toMatchObject({
+    coverage: 'complete',
+    warnings: [],
+    reviewNotes: [expect.stringContaining('por feriado municipal ou recesso decorrente')],
+  });
 });
