@@ -8,6 +8,35 @@ import {
 } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
+for (const [status, retries] of [
+  [409, 0],
+  [503, 1],
+] as const) {
+  test(`a save failing with ${status} offers a retry only when one can help`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.goto(await fixtureServer('editor'));
+    await expect(page.locator('#weekdays')).toBeVisible();
+    await page.evaluate(async (status) => {
+      const modulePath = '/test/fixtures/editor-event-drafts-client.ts';
+      const { convex } = (await import(modulePath)) as {
+        convex: { mutation: () => Promise<unknown> };
+      };
+      convex.mutation = () =>
+        Promise.reject(Object.assign(new Error('Recusa sintética.'), { status }));
+    }, status);
+    await page.locator('#weekdays input[value="5"]').uncheck();
+    await expect(page.locator('#autosave-status')).toContainText('Recusa sintética.', {
+      timeout: 5000,
+    });
+    await expect(page.getByRole('button', { name: 'Tentar novamente', exact: true })).toHaveCount(
+      retries,
+    );
+    await expect(page.getByRole('button', { name: 'Sair sem salvar', exact: true })).toBeVisible();
+  });
+}
+
 test('an open event form adopts a newer confirmed value only while it has no local changes', async ({
   page,
   fixtureServer,

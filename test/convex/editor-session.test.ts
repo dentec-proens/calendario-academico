@@ -257,6 +257,40 @@ test('a command that changes nothing leaves an unstamped calendar with nothing t
   expect(write).not.toHaveBeenCalled();
 });
 
+test('each refused write is reported once', async () => {
+  const record = await opened();
+  vi.useFakeTimers();
+  const refused = Object.assign(new Error('Há versão mais recente.'), { status: 409 });
+  const failures: unknown[] = [];
+  const write = vi.fn().mockRejectedValueOnce(refused);
+  const session = createEditorSession(
+    record,
+    write,
+    false,
+    () => true,
+    (error) => failures.push(error),
+  );
+  session.apply((state) => editPeriodName(state, 'Primeira'));
+  await expect(session.flush()).rejects.toThrow('versão mais recente');
+  expect(session.getSnapshot()).toMatchObject({
+    status: 'blocked',
+    error: 'Há versão mais recente.',
+  });
+  // Trying to save while blocked sends nothing, so it reports nothing new.
+  await session.retry();
+  expect(failures).toEqual([refused]);
+});
+
+test('an expired session says what to do', async () => {
+  const record = await opened();
+  vi.useFakeTimers();
+  const expired = Object.assign(new Error('Entre com sua conta.'), { status: 401 });
+  const session = createEditorSession(record, vi.fn().mockRejectedValue(expired));
+  session.apply((state) => editPeriodName(state, 'Primeira'));
+  await expect(session.flush()).rejects.toThrow('Entre com sua conta');
+  expect(session.getSnapshot().error).toContain('Sua sessão expirou');
+});
+
 test('flush drains edits applied during a write and advances the expected version', async () => {
   const record = await opened();
   const sent: { version: number; name: string }[] = [];

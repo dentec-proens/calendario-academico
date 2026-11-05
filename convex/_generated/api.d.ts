@@ -35,6 +35,7 @@ import type * as calendars_transitions from "../calendars/transitions.js";
 import type * as campuses from "../campuses.js";
 import type * as catalogue from "../catalogue.js";
 import type * as catalogue_model from "../catalogue/model.js";
+import type * as clientErrors from "../clientErrors.js";
 import type * as contracts from "../contracts.js";
 import type * as crons from "../crons.js";
 import type * as devSetup from "../devSetup.js";
@@ -90,6 +91,7 @@ declare const fullApi: ApiFromModules<{
   campuses: typeof campuses;
   catalogue: typeof catalogue;
   "catalogue/model": typeof catalogue_model;
+  clientErrors: typeof clientErrors;
   contracts: typeof contracts;
   crons: typeof crons;
   devSetup: typeof devSetup;

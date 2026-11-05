@@ -242,6 +242,7 @@ const client = {
         )
           return undefined;
         if (name === 'workspace:logs') return window.auditTest.first;
+        if (name === 'clientErrors:list') return window.auditTest.failures;
         if (!deferredDone) return undefined;
         if (name === 'reviews:review' && args.id && removedCalendars.has(args.id))
           throw new Error('Calendário removido.');

@@ -146,6 +146,18 @@ export default defineSchema({
     .index('by_tokenHash', ['tokenHash'])
     .index('by_userId', ['userId'])
     .index('by_expiresAt', ['expiresAt']),
+  clientErrors: defineTable({
+    at: v.number(),
+    userId: v.id('users'),
+    kind: v.union(v.literal('save'), v.literal('render'), v.literal('rejection')),
+    status: v.optional(v.number()),
+    message: v.string(),
+    route: v.string(),
+    calendarId: v.optional(v.id('calendars')),
+    release: v.string(),
+  })
+    .index('by_at', ['at'])
+    .index('by_userId_and_at', ['userId', 'at']),
   audit: defineTable({
     at: v.number(),
     actorId: v.optional(v.id('users')),

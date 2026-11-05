@@ -346,16 +346,18 @@ function EditorFrame() {
           </p>
           {!readOnly && (status === 'error' || status === 'blocked') && (
             <div className="actions">
-              <button
-                id="server-save"
-                type="button"
-                className="secondary"
-                onClick={() => {
-                  void session.retry();
-                }}
-              >
-                Tentar novamente
-              </button>
+              {status === 'error' && (
+                <button
+                  id="server-save"
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    void session.retry();
+                  }}
+                >
+                  Tentar novamente
+                </button>
+              )}
               <button
                 type="button"
                 className="secondary"

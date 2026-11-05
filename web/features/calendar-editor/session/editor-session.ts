@@ -23,6 +23,14 @@ export interface EditorSnapshot {
   >;
 }
 
+/** An expired session is the one refusal that clears by itself, so it says what to do instead. */
+function failureMessage(detail: unknown) {
+  if (!(detail instanceof Error)) return 'Não foi possível salvar.';
+  return 'status' in detail && detail.status === 401
+    ? 'Sua sessão expirou. Entre novamente: as alterações continuam nesta página.'
+    : detail.message;
+}
+
 function withoutStamp(state: CalendarState) {
   const { rulesetVersion: _stamp, ...content } = state;
   return content;
@@ -38,6 +46,7 @@ export function createEditorSession(
   }) => Promise<CalendarSave>,
   readOnly = false,
   canEdit = () => true,
+  onSaveFailure: (error: unknown) => void = () => undefined,
 ) {
   let current: EditorSnapshot = {
     record: structuredClone(record),
@@ -88,6 +97,7 @@ export function createEditorSession(
       try {
         return await write(sent);
       } catch (cause) {
+        onSaveFailure(cause);
         if (
           sent.baseAcceptance &&
           cause &&
@@ -144,12 +154,7 @@ export function createEditorSession(
     onStatus: (status, detail) => {
       const update = {
         status,
-        error:
-          status === 'error' || status === 'blocked'
-            ? detail instanceof Error
-              ? detail.message
-              : 'Não foi possível salvar.'
-            : '',
+        error: status === 'error' || status === 'blocked' ? failureMessage(detail) : '',
       };
       if (accessSuspended) suspendedStatus = update;
       else publish(update);

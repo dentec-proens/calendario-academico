@@ -5,10 +5,13 @@ import type { FunctionReturnType } from 'convex/server';
 import { convex, functions } from '../../shared/convex/client.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
 import { Button } from '../../components/ui/Button.tsx';
+import { useAppSession } from '../../app/session.tsx';
 import AuditTable from './AuditTable.tsx';
+import ClientErrors from './ClientErrors.tsx';
 
 type Logs = FunctionReturnType<typeof functions.workspace.logs>;
 export default function AuditPage() {
+  const { info } = useAppSession();
   const first = useQuery(functions.workspace.logs, {
     paginationOpts: { cursor: null, numItems: 50 },
   });
@@ -80,6 +83,7 @@ export default function AuditPage() {
           Carregar anteriores
         </Button>
       ) : null}
+      {info.user.role === 'ADMIN' && <ClientErrors />}
     </section>
   );
 }

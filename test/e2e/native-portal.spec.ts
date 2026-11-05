@@ -114,7 +114,10 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   await fillOrganization(observer, `${year}-05-01`, `${year}-05-31`);
   await observer.locator('#offer-integrado-apply').click();
   await expect(observer.locator('#autosave-status')).toHaveAttribute('data-state', 'blocked');
-  await expect(observer.locator('button#server-save')).toBeVisible();
+  await expect(observer.locator('button#server-save')).toBeHidden();
+  await expect(
+    observer.getByRole('button', { name: 'Reabrir calendário atualizado' }),
+  ).toBeVisible();
   await expect(observer.locator('[data-offer="integrado"]')).toContainText(`01/05/${year}`);
   await editor.reload();
   await editor.locator('[data-view="periods"]').click();

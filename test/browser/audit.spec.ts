@@ -117,3 +117,36 @@ test('audit explains the initial loading and empty states', async ({ page, fixtu
   await expect(page.locator('#log-message')).toContainText('Nenhuma operação registrada');
   await expect(page.locator('#log-list')).toHaveCount(0);
 });
+
+test('the administration sees failures people met, in their own table', async ({
+  page,
+  fixtureServer,
+}) => {
+  const { origin } = new URL(await fixtureServer('portal'));
+  await page.goto(origin + '/logs');
+  await expect(page.getByRole('table', { name: 'Registro de operações' })).toBeVisible();
+  await page.evaluate(() => {
+    window.auditTest.failures = {
+      entries: [
+        {
+          at: '2026-11-04T19:34:00Z',
+          kind: 'save',
+          status: 409,
+          message: 'Há versão mais recente. Reabra o calendário.',
+          route: '/calendarios/abc',
+          actor: 'Pessoa editora',
+          calendar: 'Calendário 2027 — Campus de teste',
+          release: 'build-identifier',
+        },
+      ],
+      isDone: true,
+      continueCursor: '',
+    };
+    window.auditTest.publish(window.auditTest.first);
+  });
+  const failures = page.getByRole('table', { name: 'Falhas registradas' });
+  await expect(failures).toContainText(
+    'Salvamento recusado (409): Há versão mais recente. Reabra o calendário. · /calendarios/abc · publicação build-id',
+  );
+  await expect(failures).toContainText('Pessoa editora');
+});

@@ -2,6 +2,7 @@ import { Button } from '../components/ui/Button.tsx';
 import { Component, useState, type PropsWithChildren } from 'react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { nativeError } from '../shared/convex/errors.ts';
+import { reportClientError } from '../shared/convex/report-error.ts';
 import { Notice } from '../components/ui/Notice.tsx';
 
 function AccessError({ error }: { error: unknown }) {
@@ -51,6 +52,10 @@ export default class ApplicationErrorBoundary extends Component<PropsWithChildre
 
   static getDerivedStateFromError(error: unknown): ErrorState {
     return { error: nativeError(error) };
+  }
+
+  override componentDidCatch(error: unknown) {
+    reportClientError('render', error);
   }
 
   override render() {

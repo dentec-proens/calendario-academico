@@ -33,6 +33,7 @@ const first: AuditPage = {
 let resolveMore: (() => void) | undefined;
 window.auditTest = {
   first: new URLSearchParams(location.search).has('audit-loading') ? undefined : first,
+  failures: undefined,
   deferMore: false,
   pending: false,
   failMore: false,
@@ -73,6 +74,7 @@ declare global {
   interface Window {
     auditTest: {
       first: AuditPage | undefined;
+      failures: FunctionReturnType<typeof functions.clientErrors.list> | undefined;
       deferMore: boolean;
       pending: boolean;
       failMore: boolean;

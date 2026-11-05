@@ -25,6 +25,7 @@ import { applyObservances, observanceIssues } from '#src/domain/calendar/observa
 import { evaluateCalendar } from '#src/domain/calendar/counting/evaluation.ts';
 import { projectDates } from '#src/domain/calendar/model.ts';
 import { createEditorSession } from './editor-session.ts';
+import { reportClientError } from '../../../shared/convex/report-error.ts';
 import type { CalendarRecord, CalendarState, EditorEvent } from '../types.ts';
 import EditorAccessNotice from './EditorAccessNotice.tsx';
 import { isEditable } from '#src/domain/calendar/lifecycle.ts';
@@ -41,6 +42,7 @@ function useSession(record: CalendarRecord) {
       (body) => calendars.save(record.id, body),
       readOnly,
       () => !drafts?.protection.locked,
+      (error) => reportClientError('save', error, record.id),
     ),
   );
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);

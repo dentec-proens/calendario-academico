@@ -14,23 +14,28 @@ export type AuditEntry = FunctionReturnType<typeof functions.workspace.logs>['en
 export default function AuditTable({
   entries,
   label,
+  id = 'log-list',
   showCalendar = true,
+  showVersion = true,
 }: {
   entries: AuditEntry[];
   label: string;
+  id?: string;
   /** A single calendar's history omits the column, which would repeat on every row. */
   showCalendar?: boolean;
+  /** A failure belongs to no calendar version. */
+  showVersion?: boolean;
 }) {
   const columns = [
     { key: 'at', label: 'Data e hora' },
     { key: 'action', label: 'Operação' },
     ...(showCalendar ? [{ key: 'calendar', label: 'Calendário' }] : []),
     { key: 'actor', label: 'Responsável' },
-    { key: 'version', label: 'Versão' },
+    ...(showVersion ? [{ key: 'version', label: 'Versão' }] : []),
   ];
   return (
     <table
-      id="log-list"
+      id={id}
       className={`audit-table ${showCalendar ? '' : 'audit-table-single'}`}
       role="table"
       aria-label={label}
@@ -73,12 +78,14 @@ export default function AuditTable({
               </span>
               <span>{entry.actor}</span>
             </td>
-            <td role="cell">
-              <span className="audit-cell-label" aria-hidden="true">
-                Versão
-              </span>
-              <span>{entry.version ?? '—'}</span>
-            </td>
+            {showVersion && (
+              <td role="cell">
+                <span className="audit-cell-label" aria-hidden="true">
+                  Versão
+                </span>
+                <span>{entry.version ?? '—'}</span>
+              </td>
+            )}
           </tr>
         ))}
       </tbody>

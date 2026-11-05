@@ -3,6 +3,7 @@ import type { PropsWithChildren } from 'react';
 import { useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
+import { reportClientError } from '../../shared/convex/report-error.ts';
 
 function EditorFailure({ reset }: ErrorComponentProps) {
   const { readOnly } = useCalendarEditor();
@@ -26,7 +27,11 @@ function EditorFailure({ reset }: ErrorComponentProps) {
 /** Place below calendar, export and event-form ownership; never recreate their state. */
 export function EditorErrorBoundary({ children }: PropsWithChildren) {
   return (
-    <CatchBoundary getResetKey={() => 'editor-region'} errorComponent={EditorFailure}>
+    <CatchBoundary
+      getResetKey={() => 'editor-region'}
+      errorComponent={EditorFailure}
+      onCatch={(error) => reportClientError('render', error)}
+    >
       {children}
     </CatchBoundary>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createRouter, createBrowserHistory, RouterProvider } from '@tanstack/react-router';
 import type { RouterHistory } from '@tanstack/react-router';
+import { reportClientError } from '../shared/convex/report-error.ts';
 import { ApplicationError } from './errors.tsx';
 import { routeTree } from './routes.tsx';
 import { useSessionState, type SessionState } from './session.tsx';
@@ -22,6 +23,7 @@ export function createApplicationRouter(
   return createRouter({
     routeTree,
     defaultErrorComponent: ApplicationError,
+    defaultOnCatch: (error) => reportClientError('render', error),
     parseSearch: parseApplicationSearch,
     stringifySearch: stringifyApplicationSearch,
     history,
