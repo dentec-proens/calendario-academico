@@ -77,10 +77,6 @@ export default function EditorSteps({
             </div>
           ))}
         </nav>
-        <p className="editor-guide-note">
-          <strong>Você pode revisar a qualquer momento.</strong>Volte às etapas anteriores para
-          ajustar as informações antes de concluir.
-        </p>
       </details>
     </aside>
   );
