@@ -50,11 +50,11 @@ export function reviewState(review: QueueItem['review']) {
 
 export default function ReviewQueue({
   items,
-  status,
+  filters,
 }: {
   items: QueueItem[];
-  /** The selected tab, carried to the parecer so that its trail returns here. */
-  status?: Exclude<CalendarStatus, 'rascunho' | 'enviado'>;
+  /** The selected filters, carried to the parecer so that its trail returns here. */
+  filters: { campus?: string; situacao?: Exclude<CalendarStatus, 'rascunho' | 'enviado'> };
 }) {
   const columns: CalendarColumn<QueueItem>[] = [
     {
@@ -108,7 +108,7 @@ export default function ReviewQueue({
             <Link
               to="/revisoes/$calendarId"
               params={{ calendarId: id }}
-              search={{ situacao: status }}
+              search={filters}
               className="ui-button ui-button--primary"
               data-open-review={id}
             >

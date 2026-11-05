@@ -73,6 +73,8 @@ for (const width of [1440, 390, 320]) {
     await page.keyboard.press('Tab');
     await expect(page.getByRole('tab', { name: 'Aguardando análise' })).toBeFocused();
     await page.keyboard.press('Tab');
+    await expect(page.locator('#campus-filter')).toBeFocused();
+    await page.keyboard.press('Tab');
     await expect(first).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(second).toBeFocused();

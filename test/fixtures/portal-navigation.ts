@@ -139,8 +139,8 @@ const documents: DocumentsData['documents'] = (['rascunho', 'vigente', 'arquivad
 // As the server, the queue lists one situation at a time; the rows default to the first tab.
 const queueStatus = (new URLSearchParams(location.search).get('queue-status') ??
   'enviado') as CalendarStatus;
-function reviewQueueRows(status = 'enviado') {
-  if (status !== queueStatus) return [];
+function reviewQueueRows(status = 'enviado', campus?: string) {
+  if (status !== queueStatus || (campus && campus !== campusId)) return [];
   return calendarRows(false).map((item) => ({
     ...item,
     status: queueStatus,
@@ -178,7 +178,7 @@ const client = {
   subscribeToConnectionState: () => () => {},
   watchQuery: (
     reference: FunctionReference<'query'>,
-    args: { deleted?: boolean; year?: number; status?: string; id?: string },
+    args: { deleted?: boolean; year?: number; status?: string; id?: string; campusId?: string },
   ) => {
     const name = getFunctionName(reference);
     let result =
@@ -202,7 +202,7 @@ const client = {
                 : name === 'calendars:calendarPage'
                   ? calendarRows(!!args.deleted)
                   : name === 'reviews:reviewQueue'
-                    ? reviewQueueRows(args.status)
+                    ? reviewQueueRows(args.status, args.campusId)
                     : [],
             isDone: true,
             continueCursor: '',
@@ -230,7 +230,7 @@ const client = {
                 page: calendarRows(!!args.deleted),
               };
             if ('page' in result && name === 'reviews:reviewQueue')
-              result = { ...result, page: reviewQueueRows(args.status) };
+              result = { ...result, page: reviewQueueRows(args.status, args.campusId) };
           },
           notify: onUpdate,
         };

@@ -76,6 +76,7 @@ export default defineSchema({
   })
     .index('by_campusId_and_year_and_status', ['campusId', 'year', 'status'])
     .index('by_status_and_deletedAt', ['status', 'deletedAt'])
+    .index('by_campusId_and_status_and_deletedAt', ['campusId', 'status', 'deletedAt'])
     .index('by_campusId_and_deletedAt', ['campusId', 'deletedAt'])
     .index('by_year', ['year'])
     .index('by_deletedAt', ['deletedAt']),

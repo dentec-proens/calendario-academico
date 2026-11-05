@@ -5,6 +5,9 @@ import { useFeatureRoute } from '../../app/navigation.ts';
 import { functions } from '../../shared/convex/client.ts';
 import Pagination from '../../shared/forms/Pagination.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
+import { useAppSession } from '../../app/session.tsx';
+import CampusFilter from '../calendar-list/CampusFilter.tsx';
+import { useSelectedCampus } from '../calendar-list/selected-campus.ts';
 import ReviewQueue from './ReviewQueue.tsx';
 import './reviews.css';
 
@@ -19,23 +22,25 @@ const tabs = [
 ] as const satisfies readonly (readonly [Exclude<CalendarStatus, 'rascunho'>, string])[];
 
 export default function ReviewsPage() {
+  const { info } = useAppSession();
   const route = useFeatureRoute();
+  const campus = useSelectedCampus();
   const navigate = useNavigate();
   // A situation the queue does not list, such as a draft, falls back to the default tab.
   const status = tabs.find(([value]) => value === route.situacao)?.[0] ?? 'enviado';
-  const urlStatus = status === 'enviado' ? undefined : status;
+  const filters = {
+    campus: campus?.id,
+    situacao: status === 'enviado' ? undefined : status,
+  };
   const pagination = usePaginatedQuery(
     functions.reviews.reviewQueue,
-    { status },
+    { status, ...(campus ? { campusId: campus.id } : {}) },
     { initialNumItems: 50 },
   );
   function select(next: (typeof tabs)[number][0]) {
     void navigate({
       to: '/revisoes',
-      search: {
-        campus: route.campus || undefined,
-        situacao: next === 'enviado' ? undefined : next,
-      },
+      search: { ...filters, situacao: next === 'enviado' ? undefined : next },
       replace: true,
     });
   }
@@ -77,14 +82,21 @@ export default function ReviewsPage() {
             </button>
           ))}
         </div>
-        {/* With no link to reach in the list, the panel itself takes the keyboard focus. */}
-        <div
-          id="review-queue-panel"
-          role="tabpanel"
-          aria-labelledby={`review-tab-${status}`}
-          tabIndex={pagination.results.length ? undefined : 0}
-        >
-          <ReviewQueue items={pagination.results} status={urlStatus} />
+        <div id="review-queue-panel" role="tabpanel" aria-labelledby={`review-tab-${status}`}>
+          <div className="calendar-list-tools review-queue-tools">
+            <CampusFilter
+              campuses={info.campuses}
+              value={campus?.id ?? ''}
+              onChange={(id) => {
+                void navigate({
+                  to: '/revisoes',
+                  search: { ...filters, campus: id || undefined },
+                  replace: true,
+                });
+              }}
+            />
+          </div>
+          <ReviewQueue items={pagination.results} filters={filters} />
           <Pagination
             pagination={pagination}
             label="Carregar mais calendários"
@@ -93,7 +105,8 @@ export default function ReviewsPage() {
           <div id="review-message" role="status" aria-live="polite">
             {!pagination.results.length && pagination.status === 'Exhausted' ? (
               <Notice tone="info">
-                Nenhum calendário {statusLabels[status].toLowerCase()} no momento.
+                Nenhum calendário {statusLabels[status].toLowerCase()}
+                {campus ? ' neste campus' : ''} no momento.
               </Notice>
             ) : null}
           </div>

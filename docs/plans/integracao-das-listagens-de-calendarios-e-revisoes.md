@@ -120,7 +120,7 @@ Processo SEI nº …
     focável e índice das setas calculado pela aba focada, não por `status`, que agora muda de forma
     assíncrona.
 
-## Etapa 2: filtro de campus na fila
+## Etapa 2: filtro de campus na fila (implementada)
 
 1. Adicionar `.index('by_campusId_and_status_and_deletedAt', ['campusId', 'status', 'deletedAt'])` a
    `calendars`. É só um índice novo em uma tabela pequena: não há migração nem índice `staged`.

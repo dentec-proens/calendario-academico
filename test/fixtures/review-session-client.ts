@@ -79,7 +79,11 @@ export const convex = {
         onUpdate: () => () => {},
       };
     const watched = reviewClient.watchQuery(reference, args);
-    if (name !== 'calendars:calendarPage' || args.campusId !== 'other-campus') return watched;
+    if (
+      (name !== 'calendars:calendarPage' && name !== 'reviews:reviewQueue') ||
+      args.campusId !== 'other-campus'
+    )
+      return watched;
     return {
       ...watched,
       localQueryResult: () => emptyPage,

@@ -190,6 +190,45 @@ test('reviews are bound to the submission and the first save starts the review',
   expect(drafts.page, 'the default tab lists submitted calendars only').toEqual([]);
 });
 
+test('the review queue filters by campus across pages and keeps each tab apart', async () => {
+  const f = await fixture();
+  const first = await f.create(['integrado'], { label: 'Primeiro' });
+  const second = await f.create(['integrado'], { label: 'Segundo' });
+  const reviewing = await f.create(['integrado'], { label: 'Em análise' });
+  // The submission rules refuse overlapping calendars; this test is only about listing them.
+  await f.client.run(async (ctx) => {
+    await ctx.db.patch(first, { status: 'enviado' });
+    await ctx.db.patch(second, { status: 'enviado' });
+    await ctx.db.patch(reviewing, { status: 'em_revisao' });
+  });
+  const queue = async (args: {
+    campusId: Id<'campuses'>;
+    status?: 'enviado' | 'em_revisao';
+    cursor?: string | null;
+  }) => {
+    const { cursor = null, ...filters } = args;
+    return f.reviewer.query(api.reviews.reviewQueue, {
+      ...filters,
+      paginationOpts: { numItems: 1, cursor },
+    });
+  };
+  const campusId = f.ids.campuses.a;
+  const page = await queue({ campusId });
+  expect(page.page.map((item) => item.id)).toEqual([second]);
+  const next = await queue({ campusId, cursor: page.continueCursor });
+  expect(next.page.map((item) => item.id)).toEqual([first]);
+  const inReview = await queue({ campusId, status: 'em_revisao' });
+  expect(inReview.page.map((item) => item.id)).toEqual([reviewing]);
+  expect((await queue({ campusId: f.ids.campuses.b })).page).toEqual([]);
+  await expect(
+    f.campus.query(api.reviews.reviewQueue, {
+      campusId,
+      paginationOpts: { numItems: 1, cursor: null },
+    }),
+    'the campus profile has no access to the queue, even for its own campus',
+  ).rejects.toThrow(/exclusivo/);
+});
+
 test('a calendar keeps naming its campus after the campus is archived', async () => {
   const f = await fixture();
   const id = await f.create(['integrado'], { ready: true });

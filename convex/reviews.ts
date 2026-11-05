@@ -20,11 +20,11 @@ import type { Doc } from './_generated/dataModel';
 import * as contracts from './contracts';
 import { documentDto } from './documents/model';
 import { appendAudit } from './lib/audit';
-import { reviewer } from './lib/authorization';
+import { assertCampus, reviewer } from './lib/authorization';
 import { pageBound } from './lib/pagination';
 import { fail, iso, clean } from './lib/shared';
 import { reviewRow, reviewDto, reviewProgress } from './reviews/model';
-import { paginationOptsValidator } from 'convex/server';
+import { paginationOptsValidator, paginationResultValidator } from 'convex/server';
 import type { Infer } from 'convex/values';
 import { v } from 'convex/values';
 
@@ -43,21 +43,27 @@ function reviewForSubmission(
 
 /** The reviewer works by status; drafts never reach the queue. */
 export const reviewQueue = query({
-  args: { paginationOpts: paginationOptsValidator, status: v.optional(queueStatus) },
-  returns: v.object({
-    page: v.array(contracts.reviewQueueItem),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
-  handler: async (ctx, { paginationOpts, status = 'enviado' }) => {
+  args: {
+    paginationOpts: paginationOptsValidator,
+    status: v.optional(queueStatus),
+    campusId: v.optional(v.id('campuses')),
+  },
+  returns: paginationResultValidator(contracts.reviewQueueItem),
+  handler: async (ctx, { paginationOpts, status = 'enviado', campusId }) => {
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
     pageBound(paginationOpts.numItems);
-    const result = await ctx.db
-      .query('calendars')
-      .withIndex('by_status_and_deletedAt', (q) =>
-        q.eq('status', status).eq('deletedAt', undefined),
-      )
+    if (campusId) assertCampus(user, campusId);
+    const calendars = ctx.db.query('calendars');
+    const result = await (
+      campusId
+        ? calendars.withIndex('by_campusId_and_status_and_deletedAt', (q) =>
+            q.eq('campusId', campusId).eq('status', status).eq('deletedAt', undefined),
+          )
+        : calendars.withIndex('by_status_and_deletedAt', (q) =>
+            q.eq('status', status).eq('deletedAt', undefined),
+          )
+    )
       .order('desc')
       .paginate(paginationOpts);
     const page = await Promise.all(
@@ -82,7 +88,7 @@ export const reviewQueue = query({
         };
       }),
     );
-    return { page, isDone: result.isDone, continueCursor: result.continueCursor };
+    return { ...result, page };
   },
 });
 

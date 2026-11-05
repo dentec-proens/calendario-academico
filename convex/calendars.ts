@@ -64,11 +64,7 @@ export const calendarPage = query({
     deleted: v.optional(v.boolean()),
     campusId: v.optional(v.id('campuses')),
   },
-  returns: v.object({
-    page: v.array(contracts.summary),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
+  returns: paginationResultValidator(contracts.summary),
   handler: async (ctx, { paginationOpts, deleted, campusId }) => {
     const { user } = await requireNativeUser(ctx);
     pageBound(paginationOpts.numItems);
@@ -82,7 +78,7 @@ export const calendarPage = query({
         return summary(ctx, row, campus);
       }),
     );
-    return { page, isDone: result.isDone, continueCursor: result.continueCursor };
+    return { ...result, page };
   },
 });
 

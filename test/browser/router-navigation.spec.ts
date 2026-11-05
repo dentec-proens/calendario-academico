@@ -209,20 +209,22 @@ test('the review trail returns to the tab the parecer was opened from', async ({
   fixtureServer,
 }) => {
   const origin = new URL(await fixtureServer('portal')).origin;
-  await page.goto(origin + '/revisoes?queue-status=em_revisao&situacao=em_revisao');
+  const filters = 'campus=campus-a&situacao=em_revisao';
+  await page.goto(`${origin}/revisoes?queue-status=em_revisao&${filters}`);
   await expect(page.getByRole('tab', { name: 'Em análise' })).toHaveAttribute(
     'aria-selected',
     'true',
   );
   await page.locator('[data-open-review="calendar-a"]').click();
-  await expect(page).toHaveURL(origin + '/revisoes/calendar-a?situacao=em_revisao');
+  await expect(page).toHaveURL(`${origin}/revisoes/calendar-a?${filters}`);
   await expect(page.locator('#review-content')).toBeVisible();
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
-  await expect(page).toHaveURL(origin + '/revisoes?situacao=em_revisao');
+  await expect(page).toHaveURL(`${origin}/revisoes?${filters}`);
   await expect(page.getByRole('tab', { name: 'Em análise' })).toHaveAttribute(
     'aria-selected',
     'true',
   );
+  await expect(page.locator('#campus-filter')).toHaveValue('campus-a');
   await expect(page.locator('[data-open-review="calendar-a"]')).toBeVisible();
 });
 
@@ -238,10 +240,8 @@ test('the review queue keeps its tab in the URL and falls back from a situation 
   await page.getByRole('tab', { name: 'Devolvidos' }).click();
   await expect(page).toHaveURL(origin + '/revisoes?situacao=devolvido');
   await expect(page.locator('#review-message')).toContainText('Nenhum calendário devolvido');
-  await expect(page.locator('#review-queue-panel')).toHaveAttribute('tabindex', '0');
   await first.click();
   await expect(page).toHaveURL(origin + '/revisoes');
-  await expect(page.locator('#review-queue-panel')).not.toHaveAttribute('tabindex', '0');
 });
 
 test('the arrows move through the review tabs even when pressed quickly', async ({
@@ -463,4 +463,35 @@ test('editor sections support direct URLs, reload and Back/Forward without disca
   await page.goForward();
   await expect(page.locator('#periods')).toBeVisible();
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
+});
+
+test('the campus filter of the review queue lives in the URL with the selected tab', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/revisoes');
+  const row = page.locator('[data-open-review="calendar-a"]');
+  await expect(row).toBeVisible();
+  await page.locator('#campus-filter').selectOption('campus-a');
+  await expect(page).toHaveURL(origin + '/revisoes?campus=campus-a');
+  await expect(row).toBeVisible();
+  await page.getByRole('tab', { name: 'Devolvidos' }).click();
+  await expect(page).toHaveURL(origin + '/revisoes?campus=campus-a&situacao=devolvido');
+  await expect(page.locator('#review-message')).toContainText(
+    'Nenhum calendário devolvido neste campus no momento.',
+  );
+  await page.locator('#campus-filter').selectOption('');
+  await expect(page).toHaveURL(origin + '/revisoes?situacao=devolvido');
+  await expect(page.locator('#review-message')).toContainText(
+    'Nenhum calendário devolvido no momento.',
+  );
+  await page.reload();
+  await expect(page.getByRole('tab', { name: 'Devolvidos' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await page.goto(origin + '/revisoes?campus=inexistente');
+  await expect(page.locator('#campus-filter')).toHaveValue('');
+  await expect(row).toBeVisible();
 });

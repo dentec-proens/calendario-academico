@@ -35,6 +35,10 @@
   color: var(--ui-action);
 }
 
+.review-queue-tools {
+  margin-bottom: var(--ui-space-4);
+}
+
 .review-queue-submission {
   display: grid;
   gap: 2px;
