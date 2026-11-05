@@ -36,6 +36,7 @@ export const period = v.object({
   name: v.string(),
   start: v.string(),
   end: v.string(),
+  /** Retired: ignored on input and removed from stored data by `dropPeriodTargetDays`. */
   targetDays: v.optional(v.number()),
   association: periodAssociation,
 });

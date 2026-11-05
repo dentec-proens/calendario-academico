@@ -11,7 +11,6 @@ import {
   validateObservances,
   validateObservanceCatalogueEvent,
 } from '../../src/domain/calendar/observances.ts';
-import { durationEnd } from '../../src/domain/calendar/counting/duration.ts';
 import { inspect } from '../../src/domain/calendar/base.ts';
 import { policyFor } from '../../src/domain/policies/registry.ts';
 import { teacherDayId, publicServantDayId } from '../fixtures/observances.ts';
@@ -79,9 +78,6 @@ test('29 October is excluded once and 28 October becomes eligible, including dur
   expect(
     moved.filter((event) => event.start === '2027-10-29' && event.effect === 'exclude'),
   ).toHaveLength(2);
-  expect(durationEnd('2027-10-28', 1, state, base())).toBe('2027-11-03');
-  expect(durationEnd('2027-10-28', 1, state, moved)).toBe('2027-10-28');
-  expect(durationEnd('2027-10-28', 2, state, moved)).toBe('2027-11-03');
   expect(
     moved
       .filter((event) => event.id !== publicServantDayId)

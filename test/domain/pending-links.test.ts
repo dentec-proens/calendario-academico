@@ -38,7 +38,6 @@ const save = (previous: PendingLinksFixture, proposed: PendingLinksFixture) =>
   prepareOfferCalendarSave(previous, proposed, {
     storedContent: offerCalendarContent(previous),
     catalogue: { events: [] },
-    recalculate: false,
   });
 const links = (state: { events: { id: string; activity?: ActivityRef }[] }) =>
   state.events.map(({ id, activity }) => [id, activity && activityKey(activity)]);
@@ -93,7 +92,7 @@ test('editing description, dates and offers of a date without generated activity
     end: civilDate('2027-06-24'),
     offers: ['integrado'],
   };
-  const applied = applyDate(state, edited, [], true);
+  const applied = applyDate(state, edited, true);
   expect(applied.events.find((event) => event.id === original.id)).toEqual(edited);
   const saved = save(state, applied);
   expect(saved.state.events.find((event) => event.id === original.id)).toMatchObject({
@@ -105,14 +104,14 @@ test('editing description, dates and offers of a date without generated activity
 test('new, swapped and removed links are still refused by command and save', () => {
   const state = cascavelDraft();
   const event = state.events[0];
-  expect(() => applyDate(state, { ...event, id: 'copy' }, [])).toThrow('Atividade inválida');
-  expect(() =>
-    applyDate(state, { ...event, activity: cycleLink('diary', 'first') }, [], true),
-  ).toThrow('não perde nem troca');
+  expect(() => applyDate(state, { ...event, id: 'copy' })).toThrow('Atividade inválida');
+  expect(() => applyDate(state, { ...event, activity: cycleLink('diary', 'first') }, true)).toThrow(
+    'não perde nem troca',
+  );
   // An edit without link keeps the saved one: `updateDate` never removes it.
   const { activity: _kept, ...unlinked } = event;
   expect(
-    applyDate(state, unlinked, [], true).events.find((item) => item.id === event.id)?.activity,
+    applyDate(state, unlinked, true).events.find((item) => item.id === event.id)?.activity,
   ).toEqual(event.activity);
   const swapped = state.events.map((item) =>
     item.id === event.id ? { ...item, activity: cycleLink('diary', 'first') } : item,
@@ -225,11 +224,10 @@ test('reducing stages of an unchanged calendar is saved; positions without a sta
 
 test('regenerated teacher vacations keep the link recorded for the same date ID', () => {
   const state = conflictingLinks();
-  const changed = applyVacations(
-    state,
-    { firstStart: civilDate('2027-01-05'), firstEnd: civilDate('2027-01-30') },
-    [],
-  );
+  const changed = applyVacations(state, {
+    firstStart: civilDate('2027-01-05'),
+    firstEnd: civilDate('2027-01-30'),
+  });
   expect(changed.events.find((event) => event.id === 'teacher-vacation-january')).toMatchObject({
     activity: cycleLink('diary', 'first'),
     start: '2027-01-05',
@@ -260,7 +258,7 @@ test('a preexisting duplicated stage saves, is reviewed and never counts as fulf
   expect(first.coverage).toBe('complete');
   // Creating another duplicate is refused.
   const extra = { ...state.events[0], id: 'stage-again', name: 'Outra 1ª etapa' };
-  expect(() => applyDate(state, extra, [])).toThrow('duplicadas');
+  expect(() => applyDate(state, extra)).toThrow('duplicadas');
   expect(() => save(state, { ...state, events: [...state.events, extra] })).toThrow('duplicadas');
 });
 
@@ -327,7 +325,7 @@ describe('links kept without generated activity', () => {
     };
     const early = reduced.events.find((event) => event.id === 'stage-early')!;
     const moved = { ...early, end: civilDate('2027-09-29') };
-    expect(() => applyDate(reduced, moved, [], true)).not.toThrow();
+    expect(() => applyDate(reduced, moved, true)).not.toThrow();
     const edited = {
       ...reduced,
       events: reduced.events.map((e) => (e.id === early.id ? moved : e)),
@@ -390,7 +388,7 @@ describe('links kept without generated activity', () => {
       effect: 'note',
       offers: ['integrado'],
     };
-    expect(() => applyDate(semester, event, [])).toThrow(/oferta/);
+    expect(() => applyDate(semester, event)).toThrow(/oferta/);
     expect(() => normalizeOfferCalendar({ ...semester, events: [event] }, semester)).toThrow(
       /oferta/,
     );

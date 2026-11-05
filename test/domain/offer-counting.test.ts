@@ -1,10 +1,9 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { linkedToRow } from '../helpers/activity-links.ts';
-import type { ActivityState, CalendarPeriod } from '../../src/domain/calendar/model.ts';
+import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessment-days.ts';
-import { durationEnd, recalculatePeriods } from '../../src/domain/calendar/counting/duration.ts';
 import { diagnoseCalendar, diagnoseTeachingDays } from '../../src/domain/calendar/diagnostics.ts';
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
@@ -74,33 +73,6 @@ test('assessment day counts select the suffixed offer and retain the annual ordi
   expect(assessmentDayCounts(state, state.events)['graduacao-2-stage-4']).toEqual([
     { offerId: 'graduacao-2', days: 55, saturdays: 0, excluded: 0 },
   ]);
-});
-
-test('duration and period recalculation select only the period associated offers', () => {
-  const fixture = calendarOffersFixture();
-  const period: CalendarPeriod = {
-    id: 'engineering-duration',
-    name: 'Período da engenharia',
-    start: civilDate('2027-03-01'),
-    end: civilDate('2027-03-05'),
-    targetDays: 5,
-    association: { status: 'defined', offers: ['graduacao-2'], term: 'first' },
-  };
-  const state = { ...fixture, periods: [period] };
-  const events = [
-    {
-      id: 'engineering-exclusion',
-      effect: 'exclude' as const,
-      start: civilDate('2027-03-02'),
-      end: civilDate('2027-03-02'),
-      offers: ['graduacao-2'],
-    },
-  ];
-  expect(() => durationEnd('2027-03-01', 5, state, events)).toThrow(
-    'As ofertas têm impedimentos diferentes',
-  );
-  expect(recalculatePeriods(state, events)[0].end).toBe('2027-03-08');
-  expect(period.end).toBe('2027-03-05');
 });
 
 test('structure and readiness name the incomplete offer instead of its shared kind', () => {

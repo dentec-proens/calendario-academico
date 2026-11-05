@@ -30,7 +30,7 @@ export default function ActivityChangeForm({
   eventId: string;
   onClose: (applied: boolean) => void;
 }) {
-  const { state, institutional, session, readOnly } = useCalendarEditor();
+  const { state, session, readOnly } = useCalendarEditor();
   const options = activityChangeOptions(state, eventId);
   const formId = `activity-change:${eventId}`;
   const { form, submit, error, pending, values } = useCalendarForm(
@@ -39,7 +39,7 @@ export default function ActivityChangeForm({
     (value) => {
       const row = options.find((option) => activityKey(option.activity) === value.activity);
       if (!row) throw new DomainError('Escolha a atividade correta para a data.');
-      session.apply((current) => changeActivity(current, eventId, row.activity, institutional));
+      session.apply((current) => changeActivity(current, eventId, row.activity));
       return { activity: '' };
     },
     {
@@ -54,7 +54,7 @@ export default function ActivityChangeForm({
   let previewError = '';
   if (chosen)
     try {
-      preview = previewActivityChange(state, eventId, chosen.activity, institutional);
+      preview = previewActivityChange(state, eventId, chosen.activity);
     } catch (cause) {
       previewError = cause instanceof Error ? cause.message : String(cause);
     }

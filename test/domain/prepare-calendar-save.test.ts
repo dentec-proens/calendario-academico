@@ -54,7 +54,6 @@ test('save preparation preserves record identity and detects unchanged editable 
   const prepared = prepareOfferCalendarSave(previous, proposed, {
     storedContent: calendarContent(previous),
     catalogue: { events: [] },
-    recalculate: false,
   });
   expect(prepared.unchanged).toBe(true);
   expect(prepared.state.campus).toBe('Campus confirmado');
@@ -65,12 +64,12 @@ test('save preparation preserves record identity and detects unchanged editable 
     prepareOfferCalendarSave(
       previous,
       { ...previous, year: 2028 },
-      { storedContent: {}, catalogue: { events: [] }, recalculate: false },
+      { storedContent: {}, catalogue: { events: [] } },
     ),
   ).toThrow('O ano não pode mudar');
 });
 
-test('accepting a changed institutional base recalculates unchanged input and preserves inherited sources', () => {
+test('a changed institutional base leaves the input as it is and copies inherited sources', () => {
   const previous = normalizeOfferCalendar({
     ...calendar(),
     weekdays: [1, 2, 3, 4, 5],
@@ -81,7 +80,6 @@ test('accepting a changed institutional base recalculates unchanged input and pr
         name: 'Ano',
         start: civilDate('2027-03-01'),
         end: civilDate('2027-03-05'),
-        targetDays: 5,
         association: { status: 'defined', offers: ['integrado'], term: 'annual' },
       },
     ],
@@ -101,16 +99,15 @@ test('accepting a changed institutional base recalculates unchanged input and pr
   const unchanged = prepareOfferCalendarSave(previous, previous, {
     storedContent,
     catalogue: { events: [] },
-    recalculate: true,
   });
   expect(unchanged.unchanged).toBe(true);
   const changed = prepareOfferCalendarSave(previous, previous, {
     storedContent,
     catalogue: { events: [holiday] },
-    recalculate: true,
   });
-  expect(changed.state.periods[0].end).toBe('2027-03-08');
-  expect(changed.unchanged).toBe(false);
+  // A new holiday is counted; it never moves the end the campus chose.
+  expect(changed.state.periods[0].end).toBe('2027-03-05');
+  expect(changed.unchanged).toBe(true);
   // The catalogue's kinds resolve to offers in the copy, which keeps none of them.
   const { modalities: _kinds, ...copied } = holiday;
   expect(changed.institutionalSnapshot).toEqual([
@@ -126,7 +123,6 @@ test('malformed civil dates remain structural errors rather than being relabelle
     prepareOfferCalendarSave(previous, readCalendarDates(proposed), {
       storedContent: calendarContent(previous),
       catalogue: { events: [] },
-      recalculate: false,
     }),
   ).toThrow(TypeError);
 });
@@ -154,7 +150,6 @@ test('adding an offer does not extend any list of offers and does not mutate eit
   const prepared = prepareOfferCalendarSave(previous, proposed, {
     storedContent: calendarContent(previous),
     catalogue: { events: [] },
-    recalculate: false,
   });
   // Every date keeps the offers it listed.
   for (const id of ['legacy', 'chosen'])
@@ -169,7 +164,7 @@ test('adding an offer does not extend any list of offers and does not mutate eit
         ...proposed,
         events: [...proposed.events, { ...previous.events[0], id: 'new-unscoped', offers: [] }],
       },
-      { storedContent: calendarContent(previous), catalogue: { events: [] }, recalculate: false },
+      { storedContent: calendarContent(previous), catalogue: { events: [] } },
     ),
   ).toThrow('Oferta do registro fora do calendário.');
   expect(prepared.state.offers.map((offer) => offer.id)).toEqual(['integrado', 'graduacao']);
@@ -189,7 +184,7 @@ test('adding an offer does not extend any list of offers and does not mutate eit
           },
         ],
       },
-      { storedContent: {}, catalogue: { events: [] }, recalculate: false },
+      { storedContent: {}, catalogue: { events: [] } },
     ),
   ).toThrow('não podem ser removidas');
 });

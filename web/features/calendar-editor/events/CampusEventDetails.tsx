@@ -24,7 +24,7 @@ import ActivityChangeForm from './ActivityChangeForm.tsx';
  * of the institutional base are only consulted here.
  */
 export default function CampusEventDetails({ event }: { event: EditorEvent }) {
-  const { state, record, institutional, applyCommand, readOnly } = useCalendarEditor();
+  const { state, record, applyCommand, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const issue = event.institutional ? undefined : linksToReview(state).get(event.id);
   // The save boundary corrects only a date under review in the saved calendar.
@@ -103,7 +103,7 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
             disabled={readOnly || editor.pending}
             aria-label={`Remover ${event.name}`}
             onClick={() => {
-              if (!applyCommand((current) => removeEvent(current, event.id, institutional))) return;
+              if (!applyCommand((current) => removeEvent(current, event.id))) return;
               if (editor.eventId === event.id) editor.discard();
               else editor.close();
             }}

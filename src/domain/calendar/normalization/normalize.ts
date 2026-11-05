@@ -139,13 +139,6 @@ export function normalizeOfferCalendar(
     datesBetween(period.start, period.end);
     if (Number(period.start.slice(0, 4)) !== s.year || Number(period.end.slice(0, 4)) !== s.year)
       fail('Data fora do ano.');
-    if (
-      period.targetDays !== undefined &&
-      (!Number.isInteger(period.targetDays) ||
-        period.targetDays < calendarLimits.minimumTargetDays ||
-        period.targetDays > calendarLimits.maximumTargetDays)
-    )
-      fail('Meta de dias letivos inválida.');
     listedOffers(period.association.offers);
     const organization = period.association.term === 'annual' ? 'anual' : 'semestral';
     if (period.association.offers.some((id) => offerFor(s, id)?.organization !== organization))

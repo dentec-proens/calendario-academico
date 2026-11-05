@@ -134,7 +134,7 @@ export default function OfferOrganizationForm({
   onResolved: () => void;
 }) {
   const navigate = useNavigate();
-  const { state, session, readOnly, record, institutional } = useCalendarEditor();
+  const { state, session, readOnly, record } = useCalendarEditor();
   const savedOffer = state.offers.find((offer) => offer.id === existingId);
   const defaults = formDefaults(state, existingId);
   const [open, setOpen] = useState(!existingId);
@@ -729,9 +729,7 @@ export default function OfferOrganizationForm({
                       intent: 'danger',
                       confirmLabel: 'Remover oferta',
                       onConfirm: async () => {
-                        session.apply((current) =>
-                          removeOffer(current, existingId!, institutional),
-                        );
+                        session.apply((current) => removeOffer(current, existingId!));
                         clearDraft();
                         session.setFormDirty(`organization:${existingId}`, false);
                         onResolved();

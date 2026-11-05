@@ -222,7 +222,6 @@ export const saveCalendar = mutation({
       prepareOfferCalendarSave(record.state, proposedState, {
         storedContent: savedContent,
         catalogue: base,
-        recalculate: reconciliation.recalculate,
         allowOfferRemoval: status === 'rascunho',
       }),
     );

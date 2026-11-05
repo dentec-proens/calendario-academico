@@ -1,7 +1,5 @@
 import { civilDate } from '../../../../src/domain/civil-date.ts';
-import { useState } from 'react';
 import { calendarObservances, chooseObservance } from '#src/domain/calendar/observances.ts';
-import { recalculateCalendar } from '#src/domain/calendar/commands/recalculate.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Select } from './fields.tsx';
@@ -19,34 +17,22 @@ export default function ObservanceForm({
   observanceKey: string;
   onClose: () => void;
 }) {
-  const { state, record, session, institutional, readOnly } = useCalendarEditor();
+  const { state, record, session, readOnly } = useCalendarEditor();
   const entry = calendarObservances(record.institutionalEvents, state).find(
     (item) => item.key === observanceKey,
   );
   const reference = entry?.event?.originalStart ?? entry?.event?.start ?? '';
   const date = state.observanceDates?.[observanceKey] ?? reference;
   const formId = `observance:${observanceKey}`;
-  const [periodChanges, setPeriodChanges] = useState<string[]>([]);
   const applyDate = (selected: string | undefined) => {
-    const changes: string[] = [];
-    session.apply((current) => {
-      const chosen = chooseObservance(
+    session.apply((current) =>
+      chooseObservance(
         current,
         observanceKey,
         selected === undefined ? undefined : civilDate(selected),
         record.institutionalEvents,
-      );
-      const next = recalculateCalendar(chosen, institutional);
-      for (const period of next.periods) {
-        const before = current.periods.find((item) => item.id === period.id);
-        if (before && before.end !== period.end)
-          changes.push(
-            `${period.name || 'Período letivo'}: término de ${dateLabel(before.end)} para ${dateLabel(period.end)}.`,
-          );
-      }
-      return next;
-    });
-    setPeriodChanges(changes);
+      ),
+    );
   };
   const { form, submit, error, dirty, pending } = useCalendarForm(formId, { date }, (value) =>
     applyDate(value.date),
@@ -86,13 +72,6 @@ export default function ObservanceForm({
           </Notice>
         )}
         <FormFeedback error={error} />
-        {periodChanges.length > 0 && (
-          <Notice tone="info" title="Términos recalculados">
-            {periodChanges.map((change) => (
-              <p key={change}>{change}</p>
-            ))}
-          </Notice>
-        )}
         <FormActions>
           {entry?.rule && entry.event && (
             <Button type="submit" id={`apply-observance-${observanceKey}`}>

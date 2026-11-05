@@ -5,7 +5,6 @@ import { definedStage } from '../helpers/activity-links.ts';
 import assert from 'node:assert/strict';
 import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
-import { durationEnd } from '../../src/domain/calendar/counting/duration.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessment-days.ts';
 
@@ -72,12 +71,6 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
         )!.counted,
         false,
       );
-    assert.equal(
-      durationEnd('2027-10-01', 13, state, events),
-      result.ledger
-        .filter((d: ReturnType<typeof countCalendar>['ledger'][number]) => d.counted)
-        .at(-1)!.date,
-    );
     assert.equal(
       assessmentDayCounts(
         {

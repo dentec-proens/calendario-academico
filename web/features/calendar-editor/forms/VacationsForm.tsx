@@ -25,7 +25,7 @@ function vacationDatesFromValues(value: VacationInput) {
 }
 
 export default function VacationsForm() {
-  const { state, session, institutional, readOnly } = useCalendarEditor();
+  const { state, session, readOnly } = useCalendarEditor();
   const { form, values, submit, error } = useCalendarForm(
     'vacations',
     {
@@ -41,9 +41,7 @@ export default function VacationsForm() {
     },
     function apply(value) {
       const { firstDays: _first, secondDays: _second, thirdDays: _third, ...periods } = value;
-      session.apply((current) =>
-        applyVacations(current, vacationDatesFromValues(periods), institutional),
-      );
+      session.apply((current) => applyVacations(current, vacationDatesFromValues(periods)));
     },
   );
   useEffect(() => {

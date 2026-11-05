@@ -74,7 +74,7 @@ test('a correction of a date under review is saved with only its link changed', 
   const { record, save, current } = await stored(ivaiporaAnnual(), ['integrado', 'subsequente']);
   const original = record.state.events.find((event) => event.id === 'ivaipora-final-1')!;
   const saved = await save(
-    changeActivity(record.state, 'ivaipora-final-1', annualFinal, []),
+    changeActivity(record.state, 'ivaipora-final-1', annualFinal),
     record.version,
   );
   const corrected = saved.state.events.find((event) => event.id === 'ivaipora-final-1')!;
@@ -111,7 +111,7 @@ test('swaps that are not a correction are refused and the stored calendar stays 
 
   // A link that counts is never swapped, even for another generated activity.
   const corrected = await save(
-    changeActivity(record.state, 'ivaipora-final-1', annualFinal, []),
+    changeActivity(record.state, 'ivaipora-final-1', annualFinal),
     record.version,
   );
   await expect(
@@ -125,11 +125,11 @@ test('swaps that are not a correction are refused and the stored calendar stays 
 
 test('a correction and an edit of the same date are saved together (review of step 13)', async () => {
   const { record, save } = await stored(ivaiporaAnnual(), ['integrado', 'subsequente']);
-  const corrected = changeActivity(record.state, 'ivaipora-final-1', annualFinal, []);
+  const corrected = changeActivity(record.state, 'ivaipora-final-1', annualFinal);
   const { activity: _activity, ...edit } = corrected.events.find(
     (event) => event.id === 'ivaipora-final-1',
   )!;
-  const edited = updateDate(corrected, { ...edit, name: 'Resultado final corrigido' }, []);
+  const edited = updateDate(corrected, { ...edit, name: 'Resultado final corrigido' });
   const saved = await save(edited, record.version);
   expect(saved.state.events.find((event) => event.id === 'ivaipora-final-1')).toMatchObject({
     activity: annualFinal,
@@ -146,7 +146,7 @@ test('a stage with automatic distribution corrected to another activity is saved
     (row) => row.activity.activityId !== 'stage',
   )!;
   const saved = await save(
-    changeActivity(record.state, 'stage-twice-b', other.activity, []),
+    changeActivity(record.state, 'stage-twice-b', other.activity),
     record.version,
   );
   const corrected = saved.state.events.find((event) => event.id === 'stage-twice-b')!;
@@ -220,7 +220,7 @@ test('a reviewed calendar with a link to review keeps its status and is publishe
   await act(parecer, id, 'return', { note: 'Corrija a atividade vinculada.' });
   const returned = await current();
   const corrected = await save(
-    changeActivity(returned.state, 'pending-final-1', annualFinal, returned.institutionalSnapshot),
+    changeActivity(returned.state, 'pending-final-1', annualFinal),
     returned.version,
   );
   expect(corrected.state.events.find((event) => event.id === 'pending-final-1')?.activity).toEqual(

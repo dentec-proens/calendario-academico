@@ -62,7 +62,7 @@ test('equivalent revisions ignore ordering, operational metadata and offers outs
   };
   const result = inspect(snapshot, current, scope);
   expect(result.kind).toBe('equivalent');
-  expect(reconcile(result)).toEqual({ incorporate: false, recalculate: false });
+  expect(reconcile(result)).toEqual({ incorporate: false });
   expect(result.identity).toBe(inspect(snapshot, snapshot, scope).identity);
 });
 test('document changes require confirmation without recalculating dates', () => {
@@ -73,7 +73,7 @@ test('document changes require confirmation without recalculating dates', () => 
   );
   expect(result.kind).toBe('documents');
   expect(() => reconcile(result)).toThrow('incorpore');
-  expect(reconcile(result, result.identity)).toEqual({ incorporate: true, recalculate: false });
+  expect(reconcile(result, result.identity)).toEqual({ incorporate: true });
 });
 test('event changes are identified even at the same revision and stale acceptance cannot incorporate them', () => {
   const result = inspect(
@@ -83,7 +83,7 @@ test('event changes are identified even at the same revision and stale acceptanc
   );
   expect(result.kind).toBe('events');
   expect(() => reconcile(result, inspect(snapshot, snapshot, scope).identity)).toThrow('novamente');
-  expect(reconcile(result, result.identity).recalculate).toBe(true);
+  expect(reconcile(result, result.identity).incorporate).toBe(true);
 });
 test('campus adjustments do not manufacture institutional changes', () => {
   const previous = {
@@ -126,7 +126,7 @@ test('2027 rules adoption is explicit and invalidates reviews without changing d
   expect(result.compatible).toBe(false);
   expect(result.rules).toMatchObject({ before: undefined, after: rulesetVersion, changed: true });
   expect(result.rules.changes.map((change) => change.version)).toEqual([rulesetVersion]);
-  expect(reconcile(result, result.identity)).toEqual({ incorporate: true, recalculate: false });
+  expect(reconcile(result, result.identity)).toEqual({ incorporate: true });
   expect(result.identity).toMatch(/^base-v2:consup-292-2027-v1:/);
   const current = { revision: 1, identity: result.identity, rulesetVersion };
   const old = { calendarVersion: 1, catalogueRevision: 1, baseIdentity: result.identity };

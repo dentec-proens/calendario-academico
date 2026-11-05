@@ -439,9 +439,9 @@ test('read-only sessions reject domain commands and never persist', async () => 
 test('the week command rejects invalid changes atomically', async () => {
   const record = await opened(false);
   const original = structuredClone(record.state);
-  expect(() => applyWeek(record.state, { weekdays: [], weekConfirmed: true }, [])).toThrow();
+  expect(() => applyWeek(record.state, { weekdays: [], weekConfirmed: true })).toThrow();
   expect(record.state).toEqual(original);
-  const week = applyWeek(record.state, { weekdays: [1, 2, 3, 4, 5], weekConfirmed: true }, []);
+  const week = applyWeek(record.state, { weekdays: [1, 2, 3, 4, 5], weekConfirmed: true });
   expect(week.weekdays).toEqual([1, 2, 3, 4, 5]);
   expect(record.state).toEqual(original);
 });

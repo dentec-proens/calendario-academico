@@ -117,65 +117,6 @@ test('server acknowledgements preserve weekday edits made during a save', async 
   await expect(page.locator('#weekdays input[value="3"]')).toBeFocused();
 });
 
-test('changing weekdays recalculates targets and preserves the draft when periods would overlap', async ({
-  page,
-  fixtureServer,
-}) => {
-  await page.goto(await fixtureServer('editor'));
-  await expect(page.locator('#weekdays input[value="5"]')).toBeVisible();
-  await page.evaluate(async () => {
-    const { record } = window.editorTest;
-    record.state.offers = record.state.offers.map((offer) => ({
-      ...offer,
-      organization: offer.id === 'integrado' ? ('semestral' as const) : ('anual' as const),
-    }));
-
-    record.state.periods = [
-      {
-        id: 'first',
-        name: 'Primeiro período',
-        start: '2027-03-01',
-        end: '2027-03-05',
-        targetDays: 5,
-        association: { status: 'defined', offers: ['integrado'], term: 'first' },
-      },
-    ];
-    record.version++;
-    await window.publishReviewerCalendar();
-  });
-  await expect(page.locator('.teaching-day-details')).toContainText('Primeiro período');
-  await page.locator('#weekdays input[value="5"]').uncheck();
-  expect((await savedState(page)).state.periods[0].end).toBe('2027-03-08');
-  await page.locator('#weekdays input[value="5"]').check();
-  expect((await savedState(page)).state.periods[0].end).toBe('2027-03-05');
-  await page.evaluate(async () => {
-    const { record } = window.editorTest;
-    record.state.periods.push({
-      id: 'second',
-      name: 'Segundo período',
-      start: '2027-03-08',
-      end: '2027-03-12',
-      targetDays: 5,
-      association: { status: 'defined', offers: ['integrado'], term: 'second' },
-    });
-    record.version++;
-    await window.publishReviewerCalendar();
-  });
-  await expect(page.locator('.teaching-day-details')).toContainText('Segundo período');
-  const before = await savedState(page);
-  await page.locator('#weekdays input[value="5"]').uncheck();
-  await expect(page.locator('#week-form [role="alert"]')).toContainText('alcança Segundo período');
-  await expect(page.locator('#unapplied-status')).toBeVisible();
-  await page.locator('#editor-continue').click();
-  await expect(page).toHaveURL(/\/editar$/);
-  await expect(page.locator('#weekdays input[value="5"]')).not.toBeChecked();
-  expect(await page.evaluate(() => window.editorTest.record.state)).toEqual(before.state);
-  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(before.saves);
-  await page.locator('#weekdays input[value="5"]').check();
-  await expect(page.locator('#week-form [role="alert"]')).toHaveCount(0);
-  await expect(page.locator('#unapplied-status')).toBeHidden();
-});
-
 test('reverting a valid change before the debounce clears the pending save indicator', async ({
   page,
   fixtureServer,

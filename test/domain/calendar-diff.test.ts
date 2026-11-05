@@ -172,14 +172,9 @@ test('offer order is no change; a narrower list shows as Ofertas and an offer in
   expect(diff.base.events).toEqual([]);
 });
 
-test('a base change and a recalculated period are reported in the base section', () => {
+test('a base change is reported in the base section', () => {
   const after = side((value) => {
     value.catalogueRevision = 4;
-    value.state.periods[0] = {
-      ...value.state.periods[0],
-      targetDays: 200,
-      end: civilDate('2027-12-10'),
-    };
     value.institutionalSnapshot[1] = {
       ...value.institutionalSnapshot[1],
       start: civilDate('2027-04-22'),
@@ -187,11 +182,11 @@ test('a base change and a recalculated period are reported in the base section',
     };
     value.documentSnapshot[0] = { ...value.documentSnapshot[0], hash: 'b'.repeat(64) };
   });
-  const before = side((value) => {
-    value.state.periods[0] = { ...value.state.periods[0], targetDays: 200 };
-  });
-  const diff = compareContents(before, after);
-  expect(diff.periods[0].note).toMatch(/recalculado pela base/);
+  const diff = compareContents(
+    side(() => undefined),
+    after,
+  );
+  expect(diff.periods).toEqual([]);
   expect(diff.base.fields.map((field) => field.field)).toEqual(['catalogueRevision']);
   expect(diff.base.events.map((change) => change.id)).toEqual(['inst:feriado']);
   expect(diff.base.documents[0].fields.map((field) => field.field)).toEqual(['hash']);

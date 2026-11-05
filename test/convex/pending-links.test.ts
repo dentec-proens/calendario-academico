@@ -154,7 +154,6 @@ test('a pending date is edited and saved with its link', async () => {
       end: civilDate('2027-07-30'),
       offers: ['subsequente'],
     },
-    [],
     true,
   );
   const saved = await save(edited);

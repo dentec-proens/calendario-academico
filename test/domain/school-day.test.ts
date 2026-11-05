@@ -52,7 +52,6 @@ const save = (previous: State, proposed: State) =>
   prepareOfferCalendarSave(previous, proposed, {
     storedContent: offerCalendarContent(previous),
     catalogue: { events: [] },
-    recalculate: false,
   });
 
 /** A saved date as an earlier version stored it, before the rule existed. */
@@ -135,11 +134,10 @@ describe('date commands', () => {
         state,
         activity,
         date({ start: saturday, end: saturday, effect: 'include' }),
-        [],
       ),
     ).toThrow('não constitui dia letivo');
     for (const effect of ['note', 'exclude'] as const)
-      expect(() => planActivityDate(state, activity, date({ effect }), [])).not.toThrow();
+      expect(() => planActivityDate(state, activity, date({ effect }))).not.toThrow();
   });
 
   test('refuse a council date of the campus that adds a day', () => {
@@ -147,7 +145,6 @@ describe('date commands', () => {
       createCampusDate(
         ivaiporaAnnual(),
         date({ start: saturday, end: saturday, effect: 'include' }),
-        [],
       ),
     ).toThrow('não constitui dia letivo');
   });
@@ -159,7 +156,6 @@ describe('date commands', () => {
         state,
         rowLink(state, 'family-meeting'),
         date({ effect: 'exclude', deadlineExtensionCause: 'municipal-holiday' }),
-        [],
       ),
     ).toThrow('prorrogação municipal');
   });
@@ -169,11 +165,11 @@ describe('date commands', () => {
     const state = stored(base, legacyMeeting(base));
     // The form never carries the link: `updateDate` keeps the saved one.
     const { activity: _activity, ...saved } = state.events.find((event) => event.id === 'family')!;
-    expect(() => updateDate(state, { ...saved, name: 'Reunião geral' }, [])).not.toThrow();
-    expect(() => updateDate(state, { ...saved, end: civilDate('2027-05-09') }, [])).toThrow(
+    expect(() => updateDate(state, { ...saved, name: 'Reunião geral' })).not.toThrow();
+    expect(() => updateDate(state, { ...saved, end: civilDate('2027-05-09') })).toThrow(
       'não constitui dia letivo',
     );
-    expect(() => updateDate(state, { ...saved, effect: 'note' }, [])).not.toThrow();
+    expect(() => updateDate(state, { ...saved, effect: 'note' })).not.toThrow();
   });
 });
 

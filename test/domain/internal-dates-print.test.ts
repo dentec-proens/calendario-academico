@@ -53,7 +53,7 @@ const internalDates: DateInput<State>[] = [
 
 function calendar() {
   let state = ivaiporaAnnual();
-  for (const date of internalDates) state = createCampusDate(state, date, []);
+  for (const date of internalDates) state = createCampusDate(state, date);
   const events = projectDates([], state.events);
   return { state, events };
 }

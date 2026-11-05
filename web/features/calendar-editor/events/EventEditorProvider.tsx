@@ -58,8 +58,7 @@ const noSubscription = () => () => {};
 const dateFormId = (dateId: string | null) => (dateId ? `event:${dateId}` : 'event');
 
 function useController() {
-  const { state, institutional, session, record, notify, readOnly, formEpoch } =
-    useCalendarEditor();
+  const { state, session, record, notify, readOnly, formEpoch } = useCalendarEditor();
   const navigate = useNavigate();
   const drafts = useFormDrafts();
   const calendarOfferIds = useMemo(() => state.offers.map((offer) => offer.id), [state.offers]);
@@ -118,11 +117,11 @@ function useController() {
           id,
           base: current.events.find((event) => event.id === eventId),
         });
-        if (eventId) return updateDate(ready, date, institutional);
-        if (context?.kind !== 'activity') return createCampusDate(ready, date, institutional);
+        if (eventId) return updateDate(ready, date);
+        if (context?.kind !== 'activity') return createCampusDate(ready, date);
         const activity = activityFromKey(context.key);
         if (!activity) throw new Error('Atividade inválida para este calendário.');
-        return planActivityDate(ready, activity, date, institutional);
+        return planActivityDate(ready, activity, date);
       });
       if (context?.kind === 'activity') {
         // A saved period returns to the activity, where it now appears in the list.

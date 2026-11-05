@@ -1,10 +1,4 @@
-import type {
-  ActivityPlanItem,
-  ActivityState,
-  CalendarEvent,
-  InstitutionalEventSnapshot,
-  VacationPeriods,
-} from '../model.ts';
+import type { ActivityPlanItem, ActivityState, CalendarEvent, VacationPeriods } from '../model.ts';
 import { equalValues } from '../../../shared/equal.ts';
 import { datesBetween } from '../counting/core.ts';
 import { periodsForOffer } from '../organization/periods.ts';
@@ -32,7 +26,6 @@ import {
   type LinkIssue,
 } from '../activities/links.ts';
 import { offerIds } from '../offers.ts';
-import { recalculateCalendar } from './recalculate.ts';
 import { vacationIds } from './vacations.ts';
 import { DomainError } from '../../errors.ts';
 import { validateInternalDate } from '../internal-dates.ts';
@@ -40,7 +33,6 @@ import { validateInternalDate } from '../internal-dates.ts';
 export function removeEvent<S extends ActivityState & { teacherVacations?: VacationPeriods }>(
   state: S,
   id: string,
-  institutional: InstitutionalEventSnapshot[],
 ): S {
   if (!state.events.some((event) => event.id === id))
     throw new DomainError('O evento não existe mais.');
@@ -51,7 +43,7 @@ export function removeEvent<S extends ActivityState & { teacherVacations?: Vacat
     ),
   };
   if (vacationIds.has(id)) delete next.teacherVacations;
-  return recalculateCalendar(next, institutional);
+  return next;
 }
 
 /** Occurrence identity is independent of source documents and descriptive metadata. */
@@ -89,24 +81,19 @@ export function planActivityDate<S extends ActivityState>(
   state: S,
   activity: ActivityRef,
   date: DateInput<S>,
-  institutional: InstitutionalEventSnapshot[],
 ): S {
   if (givenLink(date) !== undefined && !sameActivity(givenLink(date), activity))
     throw new DomainError('A atividade da data vem do contexto do preenchimento.');
   if (!generatedActivity(generatedActivities(state), activity))
     throw new DomainError('Atividade inválida para este calendário.');
-  return applyDate(state, { ...withoutLink(date), activity } as Linked<S>, institutional);
+  return applyDate(state, { ...withoutLink(date), activity } as Linked<S>);
 }
 
 /** Creates a date of the campus: it has no activity, whatever the form says. */
-export function createCampusDate<S extends ActivityState>(
-  state: S,
-  date: DateInput<S>,
-  institutional: InstitutionalEventSnapshot[],
-): S {
+export function createCampusDate<S extends ActivityState>(state: S, date: DateInput<S>): S {
   if (givenLink(date) !== undefined)
     throw new DomainError('Uma data do campus não tem atividade vinculada.');
-  return applyDate(state, withoutLink(date) as Linked<S>, institutional);
+  return applyDate(state, withoutLink(date) as Linked<S>);
 }
 
 /**
@@ -114,18 +101,14 @@ export function createCampusDate<S extends ActivityState>(
  * linked date keeps its link, even without a generated activity. Only correcting the linked
  * activity changes it.
  */
-export function updateDate<S extends ActivityState>(
-  state: S,
-  date: DateInput<S>,
-  institutional: InstitutionalEventSnapshot[],
-): S {
+export function updateDate<S extends ActivityState>(state: S, date: DateInput<S>): S {
   const saved = state.events.find((item) => item.id === date.id);
   if (!saved) throw new DomainError('O evento não existe mais. Reabra o calendário.');
   if (givenLink(date) !== undefined && !sameActivity(givenLink(date), saved.activity))
     throw new DomainError('Uma data salva não perde nem troca a atividade vinculada.');
   const rest = withoutLink(date);
   const event = (saved.activity ? { ...rest, activity: saved.activity } : rest) as Linked<S>;
-  return applyDate(state, event, institutional, saved);
+  return applyDate(state, event, saved);
 }
 
 /**
@@ -233,10 +216,9 @@ export function previewActivityChange<S extends ActivityState>(
   state: S,
   eventId: string,
   activity: ActivityRef | undefined,
-  institutional: InstitutionalEventSnapshot[],
 ): ActivityChangePreview {
   const saved = state.events.find((item) => item.id === eventId);
-  const next = changeActivity(state, eventId, activity, institutional);
+  const next = changeActivity(state, eventId, activity);
   const date = next.events.find((item) => item.id === eventId)!;
   const generated = generatedActivities(state);
   return {
@@ -261,13 +243,9 @@ export function changeActivity<S extends ActivityState>(
   state: S,
   eventId: string,
   activity: ActivityRef | undefined,
-  institutional: InstitutionalEventSnapshot[],
 ): S {
   const corrected = correctedDate(state, eventId, activity);
-  return recalculateCalendar(
-    { ...state, events: state.events.map((item) => (item.id === eventId ? corrected : item)) },
-    institutional,
-  );
+  return { ...state, events: state.events.map((item) => (item.id === eventId ? corrected : item)) };
 }
 
 /**
@@ -278,7 +256,6 @@ export function changeActivity<S extends ActivityState>(
 function applyDate<S extends ActivityState>(
   state: S,
   event: S['events'][number],
-  institutional: InstitutionalEventSnapshot[],
   previous?: CalendarEvent,
 ): S {
   const editing = previous !== undefined;
@@ -363,5 +340,5 @@ function applyDate<S extends ActivityState>(
       const { assessmentAutoStart: _auto, ...rest } = item;
       return rest;
     });
-  return recalculateCalendar({ ...state, events }, institutional);
+  return { ...state, events };
 }

@@ -40,7 +40,8 @@ test('editor imports canonical drafts and preserves day targets', () => {
   );
   assert.equal('ignoredHistory' in state, false);
   assert.equal(state.offers[0].stages, undefined);
-  assert.equal(state.periods[0].targetDays, 200);
+  // A file exported before the field was retired is still accepted.
+  assert.equal('targetDays' in state.periods[0], false);
 });
 
 test('editor rejects legacy files and missing canonical fields without inventing history', () => {

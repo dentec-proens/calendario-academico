@@ -46,34 +46,26 @@ for (const width of [1440, 390]) {
     page,
   }, testInfo) => {
     let state = ivaiporaAnnual();
-    state = createCampusDate(
-      state,
-      {
-        id: 'campus-rehearsal',
-        name: 'Ensaio interno da banda',
-        start: civilDate('2027-03-10'),
-        end: civilDate('2027-03-11'),
-        effect: 'note',
-        category: 'evento',
-        offers: ['integrado'],
-        internal: true,
-      },
-      [],
-    );
-    state = createCampusDate(
-      state,
-      {
-        id: 'campus-planning',
-        name: 'Planejamento interno anterior',
-        start: civilDate('2026-12-07'),
-        end: civilDate('2026-12-07'),
-        effect: 'note',
-        category: 'prazo',
-        offers: ['integrado'],
-        internal: true,
-      },
-      [],
-    );
+    state = createCampusDate(state, {
+      id: 'campus-rehearsal',
+      name: 'Ensaio interno da banda',
+      start: civilDate('2027-03-10'),
+      end: civilDate('2027-03-11'),
+      effect: 'note',
+      category: 'evento',
+      offers: ['integrado'],
+      internal: true,
+    });
+    state = createCampusDate(state, {
+      id: 'campus-planning',
+      name: 'Planejamento interno anterior',
+      start: civilDate('2026-12-07'),
+      end: civilDate('2026-12-07'),
+      effect: 'note',
+      category: 'prazo',
+      offers: ['integrado'],
+      internal: true,
+    });
     const events = projectDates([], state.events);
     const paths = [
       '../../web/components/ui/tokens.css',

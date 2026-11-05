@@ -32,7 +32,7 @@ const dateControl = (date: string) =>
   );
 
 export default function SaturdaysForm() {
-  const { state, record, events, session, institutional, readOnly } = useCalendarEditor();
+  const { state, record, events, session, readOnly } = useCalendarEditor();
   const { editorRecovery, maintenance } = useAppSession();
   // Opening a registered Saturday is local panel state, like the event editor; it never enters the URL.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -71,7 +71,6 @@ export default function SaturdaysForm() {
         return applySaturdayActivities(
           current,
           dates.map((date) => ({ date, name: value.name })),
-          institutional,
           () => crypto.randomUUID(),
         );
       });

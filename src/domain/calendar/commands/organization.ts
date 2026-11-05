@@ -1,15 +1,8 @@
-import type {
-  ActivityState,
-  CalendarEvent,
-  CalendarOffer,
-  AcademicTerm,
-  InstitutionalEventSnapshot,
-} from '../model.ts';
+import type { ActivityState, CalendarEvent, CalendarOffer, AcademicTerm } from '../model.ts';
 import { organizationForOffer } from '../organization/periods.ts';
 import { offerFor, offerIds } from '../offers.ts';
 import { DomainError } from '../../errors.ts';
 import { validateOffers } from '../normalization/normalize.ts';
-import { recalculateCalendar } from './recalculate.ts';
 
 /** Editable metadata never changes an offer's identity, type, periods or assessment records. */
 export function configureOfferMetadata<S extends ActivityState & { offers: CalendarOffer[] }>(
@@ -96,11 +89,7 @@ export function offerRemovalPreview(state: ActivityState, id: string): OfferRemo
  * that reach only it, its periods, its intake and its admission destinations. A date of several
  * offers keeps the others, The calendar keeps at least one offer.
  */
-export function removeOffer<S extends ActivityState>(
-  state: S,
-  id: string,
-  institutional: InstitutionalEventSnapshot[],
-): S {
+export function removeOffer<S extends ActivityState>(state: S, id: string): S {
   offerRemovalPreview(state, id);
   const periods = state.periods.flatMap((period) => {
     if (!period.association.offers.includes(id)) return [period];
@@ -127,8 +116,5 @@ export function removeOffer<S extends ActivityState>(
       },
     ];
   });
-  return recalculateCalendar(
-    { ...state, offers: state.offers.filter((offer) => offer.id !== id), periods, events },
-    institutional,
-  );
+  return { ...state, offers: state.offers.filter((offer) => offer.id !== id), periods, events };
 }

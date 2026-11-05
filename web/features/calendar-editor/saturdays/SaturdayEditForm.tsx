@@ -18,15 +18,13 @@ export default function SaturdayEditForm({
   event: CalendarEvent;
   onClose: (focusDate: string) => void;
 }) {
-  const { session, institutional, readOnly, applyCommand } = useCalendarEditor();
+  const { session, readOnly, applyCommand } = useCalendarEditor();
   const id = `saturday-edit:${event.id}`;
   const { form, submit, pending, error, dirty } = useCalendarForm(
     id,
     { name: event.name },
     function apply(value) {
-      session.apply((current) =>
-        updateSaturdayActivity(current, { id: event.id, ...value }, institutional),
-      );
+      session.apply((current) => updateSaturdayActivity(current, { id: event.id, ...value }));
       onClose(event.start);
     },
     { successMessage: () => `Sábado ${fullDate(event.start)} atualizado.` },
@@ -44,8 +42,7 @@ export default function SaturdayEditForm({
       intent: 'danger',
       confirmLabel: 'Remover sábado',
     });
-    if (confirmed && applyCommand((current) => removeEvent(current, event.id, institutional)))
-      discard();
+    if (confirmed && applyCommand((current) => removeEvent(current, event.id))) discard();
   }
 
   return (

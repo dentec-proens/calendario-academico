@@ -1,4 +1,4 @@
-import type { ActivityState, InstitutionalEventSnapshot } from '../../src/domain/calendar/model.ts';
+import type { ActivityState } from '../../src/domain/calendar/model.ts';
 import {
   createCampusDate,
   planActivityDate,
@@ -14,12 +14,11 @@ import {
 export function applyDate<S extends ActivityState>(
   state: S,
   date: S['events'][number],
-  institutional: InstitutionalEventSnapshot[],
   editing = false,
 ): S {
   const { activity, ...rest } = date;
-  if (editing) return updateDate(state, date as DateInput<S>, institutional);
+  if (editing) return updateDate(state, date as DateInput<S>);
   return activity
-    ? planActivityDate(state, activity, rest as DateInput<S>, institutional)
-    : createCampusDate(state, rest as DateInput<S>, institutional);
+    ? planActivityDate(state, activity, rest as DateInput<S>)
+    : createCampusDate(state, rest as DateInput<S>);
 }

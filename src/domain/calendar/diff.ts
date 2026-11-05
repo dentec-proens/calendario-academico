@@ -71,7 +71,6 @@ export const fieldLabels = {
     name: 'Nome',
     start: 'Início',
     end: 'Término',
-    targetDays: 'Meta de dias letivos',
     association: 'Associação a ofertas',
   },
   event: {
@@ -136,7 +135,8 @@ export const fieldLabels = {
 /** Identity, storage and bookkeeping fields: compared through their sections or not at all. */
 export const ignoredFields = {
   offer: ['id'],
-  period: ['id'],
+  // `targetDays` is retired: only the validator still knows it, until the contraction.
+  period: ['id', 'targetDays'],
   event: ['id'],
   state: [
     'schemaVersion',
@@ -363,20 +363,12 @@ export function compareContents(before: DiffSide, after: DiffSide) {
       ...period,
       association: { ...period.association, offers: sortedIds(period.association.offers) },
     }));
-  const recalculatedByBase = before.catalogueRevision !== after.catalogueRevision;
   const periods = compareItems(
     periodSide(before),
     periodSide(after),
     fieldLabels.period,
     periodKey,
-  ).map((change) => {
-    const period = after.state.periods.find((item) => item.id === change.id);
-    return recalculatedByBase &&
-      period?.targetDays !== undefined &&
-      change.fields.some((field) => field.field === 'end')
-      ? { ...change, note: 'Possivelmente recalculado pela base.' }
-      : change;
-  });
+  );
 
   const eventSide = (side: DiffSide) =>
     side.state.events.filter((event) => !derivedVacation(event)).map(comparable);

@@ -27,7 +27,6 @@ const byName = (name: string) => storedCases().find((item) => item.name === name
 const saveContext = (state: SaveState) => ({
   storedContent: offerCalendarContent(state),
   catalogue: { events: [] },
-  recalculate: false,
 });
 const stageEvent = (id: string, activity: CalendarEvent['activity'], month: number) => ({
   id,

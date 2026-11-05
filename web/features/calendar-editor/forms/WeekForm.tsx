@@ -6,7 +6,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { editorPages, editorNavigation } from '../editor-steps.ts';
 
 export default function WeekForm() {
-  const { state, record, session, institutional, readOnly } = useCalendarEditor();
+  const { state, record, session, readOnly } = useCalendarEditor();
   const navigate = useNavigate();
   const next = editorNavigation('edit').next;
   const { form, submit, error } = useCalendarForm(
@@ -15,9 +15,7 @@ export default function WeekForm() {
       weekdays: state.weekdays,
     },
     function apply(value) {
-      session.apply((current) =>
-        applyWeek(current, { ...value, weekConfirmed: true }, institutional),
-      );
+      session.apply((current) => applyWeek(current, { ...value, weekConfirmed: true }));
     },
     {
       applyOnChange: true,

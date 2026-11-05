@@ -82,10 +82,9 @@ test('dates created and planned by the commands are saved with the link of their
   const year = { ...record.state, year: 2027 };
   const activity = rowLink(year, 'family-meeting');
   const planned = planActivityDate(
-    createCampusDate(record.state, campusDate(), []),
+    createCampusDate(record.state, campusDate()),
     activity,
     campusDate({ id: 'family-meeting-date', name: 'Encontro com as famílias' }),
-    [],
   );
   const saved = await save(planned, record.version);
   const byId = (id: string) => saved.state.events.find((event) => event.id === id);
@@ -95,7 +94,7 @@ test('dates created and planned by the commands are saved with the link of their
 
 test('a saved date of the campus does not gain an activity by a save; updateDate keeps it unlinked', async () => {
   const { record, save, current } = await stored();
-  const first = await save(createCampusDate(record.state, campusDate(), []), record.version);
+  const first = await save(createCampusDate(record.state, campusDate()), record.version);
   const activity = rowLink({ ...first.state, year: 2027 }, 'family-meeting');
   await expect(
     save(
@@ -110,7 +109,7 @@ test('a saved date of the campus does not gain an activity by a save; updateDate
   ).rejects.toThrow('Uma data do campus não passa a ter atividade vinculada');
   expect((await current()).state).toEqual(first.state);
   const renamed = await save(
-    updateDate(first.state, campusDate({ name: 'Reunião revisada' }), []),
+    updateDate(first.state, campusDate({ name: 'Reunião revisada' })),
     first.version,
   );
   expect(renamed.state.events.find((event) => event.id === 'campus-meeting')).toEqual(
@@ -123,7 +122,7 @@ test('updateDate saves a date without generated activity with its recorded link'
   const pending = record.state.events.find((event) => event.id === 'ivaipora-final-1')!;
   const { activity, ...fields } = pending;
   const saved = await save(
-    updateDate(record.state, { ...fields, name: 'Resultado final revisado' }, []),
+    updateDate(record.state, { ...fields, name: 'Resultado final revisado' }),
     record.version,
   );
   const date = saved.state.events.find((event) => event.id === pending.id)!;

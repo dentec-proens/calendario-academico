@@ -223,58 +223,6 @@ test('metadata rejects an activity for another modality before applying or savin
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
 });
 
-test('removing a campus exclusion recalculates the teaching-day target', async ({
-  page,
-  fixtureServer,
-}) => {
-  await page.goto(await fixtureServer('editor'));
-  await page.locator('[data-view="periods"]').click();
-  await page.evaluate(async () => {
-    const { record } = window.editorTest;
-    record.state.periods = [
-      {
-        id: 'target',
-        name: 'Cinco dias letivos',
-        start: '2027-03-01',
-        end: '2027-03-05',
-        targetDays: 5,
-        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
-      },
-    ];
-    record.version++;
-    await window.publishReviewerCalendar();
-  });
-  await expect
-    .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0]?.end))
-    .toBe('2027-03-05');
-  await selectEditorSection(page, 'events');
-  await page.locator('#new-event').click();
-  await page.locator('#event-name').fill('Feriado municipal');
-  await page.locator('#event-type-holiday').check();
-  await page.locator('#event-start').fill('2027-03-03');
-  await page.locator('#event-end').fill('2027-03-03');
-
-  await page.locator('#event-form button[type="submit"]').click();
-  await expect
-    .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0].end))
-    .toBe('2027-03-08');
-  await page.locator('#close-event-panel').click();
-  await page
-    .locator('#event-list li')
-    .filter({ hasText: 'Feriado municipal' })
-    .locator('[data-open-event]')
-    .click();
-  await page.locator('#event-panel [data-remove-event]').click();
-  await expect
-    .poll(() => page.evaluate(() => window.editorTest.record.state.periods[0].end))
-    .toBe('2027-03-05');
-  expect(
-    await page.evaluate(() =>
-      window.editorTest.record.state.events.some((event) => 'historicalSource' in event),
-    ),
-  ).toBe(false);
-});
-
 test('event removal clears its open draft and grouped teacher vacations', async ({
   page,
   fixtureServer,

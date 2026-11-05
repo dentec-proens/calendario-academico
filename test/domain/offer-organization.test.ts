@@ -83,7 +83,6 @@ test('one application splits a shared period and keeps the other offer and all s
     associationOffers(p.association).includes('integrado'),
   )!;
   expect(integrated.id).not.toBe('shared');
-  expect(integrated.targetDays).toBeUndefined();
   expect(next.events.filter((e) => e.offers.includes('graduacao'))).toEqual(
     before.events.filter((e) => e.offers.includes('graduacao')),
   );

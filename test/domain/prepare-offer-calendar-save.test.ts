@@ -12,7 +12,6 @@ import { prepareOfferCalendarSave } from '../../src/domain/calendar/prepare-save
 const context = (state: ReturnType<typeof calendarOffersFixture>) => ({
   storedContent: offerCalendarContent(state),
   catalogue: { events: [] },
-  recalculate: false,
 });
 
 test('prepares and recovers independent undergraduate offers without legacy fields', () => {

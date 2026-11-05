@@ -42,7 +42,6 @@ const save = (previous: State, proposed: State) =>
   prepareOfferCalendarSave(previous, proposed, {
     storedContent: offerCalendarContent(previous),
     catalogue: { events: [] },
-    recalculate: false,
   });
 
 /** A date carrying a link at runtime, as an untyped caller could send. */
@@ -52,16 +51,16 @@ const linked = (date: Input, activity: CalendarEvent['activity']) =>
 describe('createCampusDate', () => {
   test('creates a date without activity and is idempotent for the same date', () => {
     const state = ivaiporaDraft();
-    const created = createCampusDate(state, campusDate(), []);
+    const created = createCampusDate(state, campusDate());
     const date = created.events.find((event) => event.id === 'campus-meeting')!;
     expect(date).not.toHaveProperty('activity');
-    expect(createCampusDate(created, campusDate(), [])).toBe(created);
+    expect(createCampusDate(created, campusDate())).toBe(created);
   });
 
   test('refuses an activity, even one the configuration generates', () => {
     const state = ivaiporaDraft();
     for (const activity of [onceLink('family-meeting'), cycleLink('final', 'first')])
-      expect(() => createCampusDate(state, linked(campusDate(), activity), [])).toThrow(
+      expect(() => createCampusDate(state, linked(campusDate(), activity))).toThrow(
         'Uma data do campus não tem atividade vinculada.',
       );
   });
@@ -71,7 +70,7 @@ describe('planActivityDate', () => {
   test('links the date to the activity of the context', () => {
     const state = ivaiporaDraft();
     const activity = rowLink(state, 'family-meeting');
-    const planned = planActivityDate(state, activity, campusDate({ id: 'family' }), []);
+    const planned = planActivityDate(state, activity, campusDate({ id: 'family' }));
     expect(planned.events.find((event) => event.id === 'family')?.activity).toEqual(activity);
   });
 
@@ -79,7 +78,7 @@ describe('planActivityDate', () => {
     const state = cascavelDraft();
     // `final` of the first cycle is not generated while the organization is not classified.
     expect(() =>
-      planActivityDate(state, cycleLink('final', 'first'), campusDate({ id: 'final' }), []),
+      planActivityDate(state, cycleLink('final', 'first'), campusDate({ id: 'final' })),
     ).toThrow('Atividade inválida');
   });
 
@@ -90,7 +89,6 @@ describe('planActivityDate', () => {
         state,
         rowLink(state, 'family-meeting'),
         linked(campusDate({ id: 'family' }), onceLink('cultural-week')),
-        [],
       ),
     ).toThrow('A atividade da data vem do contexto do preenchimento.');
   });
@@ -101,16 +99,12 @@ describe('updateDate', () => {
     const state = ivaiporaDraft();
     const saved = state.events.find((event) => event.id === 'ivaipora-final-1')!;
     const { activity, ...fields } = saved;
-    const updated = updateDate(
-      state,
-      {
-        ...fields,
-        name: 'Resultado final revisado',
-        start: civilDate('2027-06-23'),
-        end: civilDate('2027-06-24'),
-      },
-      [],
-    );
+    const updated = updateDate(state, {
+      ...fields,
+      name: 'Resultado final revisado',
+      start: civilDate('2027-06-23'),
+      end: civilDate('2027-06-24'),
+    });
     const date = updated.events.find((event) => event.id === saved.id)!;
     expect(date).toMatchObject({ name: 'Resultado final revisado', start: '2027-06-23' });
     expect(date.activity).toEqual(activity);
@@ -118,23 +112,23 @@ describe('updateDate', () => {
   });
 
   test('never changes the link: swapping is refused and a date of the campus gains none', () => {
-    const state = createCampusDate(ivaiporaDraft(), campusDate(), []);
+    const state = createCampusDate(ivaiporaDraft(), campusDate());
     const saved = state.events.find((event) => event.id === 'ivaipora-final-1')!;
     const { activity: _activity, ...fields } = saved;
-    expect(() => updateDate(state, linked(fields, cycleLink('diary', 'first')), [])).toThrow(
+    expect(() => updateDate(state, linked(fields, cycleLink('diary', 'first')))).toThrow(
       'não perde nem troca',
     );
-    expect(() =>
-      updateDate(state, linked(campusDate(), rowLink(state, 'family-meeting')), []),
-    ).toThrow('não perde nem troca');
-    const renamed = updateDate(state, campusDate({ name: 'Reunião do campus revisada' }), []);
+    expect(() => updateDate(state, linked(campusDate(), rowLink(state, 'family-meeting')))).toThrow(
+      'não perde nem troca',
+    );
+    const renamed = updateDate(state, campusDate({ name: 'Reunião do campus revisada' }));
     expect(renamed.events.find((event) => event.id === 'campus-meeting')).not.toHaveProperty(
       'activity',
     );
   });
 
   test('refuses a date that no longer exists', () => {
-    expect(() => updateDate(ivaiporaDraft(), campusDate({ id: 'missing' }), [])).toThrow(
+    expect(() => updateDate(ivaiporaDraft(), campusDate({ id: 'missing' }))).toThrow(
       'O evento não existe mais',
     );
   });
@@ -160,7 +154,7 @@ describe('updateDate', () => {
       },
     });
     const { activity: _activity, ...fields } = state.events.at(-1)!;
-    const updated = updateDate(state, { ...fields, name: 'Edital revisado' }, []);
+    const updated = updateDate(state, { ...fields, name: 'Edital revisado' });
     const date = updated.events.find((event) => event.id === 'transfer-notice')!;
     expect(date.notice?.admission?.destinations).toEqual(destinations);
     expect(noticeDestinationIssues(updated, date).map(({ problem }) => problem)).toEqual([
@@ -174,7 +168,7 @@ describe('updateDate', () => {
 
 describe('the save boundary keeps the contracts of the commands', () => {
   test('a saved date of the campus does not gain an activity by a save', () => {
-    const previous = createCampusDate(ivaiporaDraft(), campusDate(), []);
+    const previous = createCampusDate(ivaiporaDraft(), campusDate());
     const activity = rowLink(previous, 'family-meeting');
     const proposed = {
       ...previous,

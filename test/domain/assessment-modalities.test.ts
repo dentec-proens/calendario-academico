@@ -5,7 +5,6 @@ import assert from 'node:assert/strict';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { assessmentCount } from '../../src/domain/calendar/activities/assessment.ts';
 import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessment-days.ts';
-import { recalculateCalendar } from '../../src/domain/calendar/commands/recalculate.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 const state: ActivityState = {
@@ -113,13 +112,10 @@ test('holidays and inclusions update per-offer counts without moving any assessm
     },
   ];
   const current = { ...state, events };
-  const before = structuredClone(current);
-  const next = recalculateCalendar(current, []);
-  expect(next.events).toEqual(before.events);
-  expect(assessmentDayCounts(next, next.events)['integrado-0']).toEqual([
+  expect(assessmentDayCounts(current, current.events)['integrado-0']).toEqual([
     { offerId: 'integrado', days: 10, saturdays: 1, excluded: 1 },
   ]);
-  expect(assessmentDayCounts(next, next.events)['graduacao-0']).toEqual([
+  expect(assessmentDayCounts(current, current.events)['graduacao-0']).toEqual([
     { offerId: 'graduacao', days: 10, saturdays: 0, excluded: 0 },
   ]);
 });

@@ -172,7 +172,6 @@ export function reconcile(assessment: ReturnType<typeof inspect>, acceptance?: s
     );
   return {
     incorporate: assessment.kind !== 'current' && assessment.kind !== 'equivalent',
-    recalculate: hasChanges(assessment.events),
   };
 }
 

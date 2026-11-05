@@ -77,7 +77,7 @@ test('a documented 2026 occurrence retains its actual dates through the event co
     publicationStatus: 'published' as const,
     offers: ['integrado'],
   };
-  const applied = applyDate(state, event, []);
+  const applied = applyDate(state, event);
   const normalized = normalizeOfferCalendar(applied);
   expect(normalized.events[0]).toMatchObject({
     start: civilDate('2026-12-01'),

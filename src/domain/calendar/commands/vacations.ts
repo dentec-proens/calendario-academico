@@ -1,7 +1,6 @@
-import type { ActivityState, InstitutionalEventSnapshot, VacationPeriods } from '../model.ts';
+import type { ActivityState, VacationPeriods } from '../model.ts';
 import { regeneratedVacations, teacherVacations } from '../activities/teacher-vacations.ts';
 import { offerIds } from '../offers.ts';
-import { recalculateCalendar } from './recalculate.ts';
 
 /** Teacher vacations are replaced as one group. */
 export const vacationIds = new Set([
@@ -10,21 +9,14 @@ export const vacationIds = new Set([
   'teacher-vacation-third',
 ]);
 
-export function applyVacations<S extends ActivityState>(
-  state: S,
-  values: VacationPeriods,
-  institutional: InstitutionalEventSnapshot[],
-): S {
+export function applyVacations<S extends ActivityState>(state: S, values: VacationPeriods): S {
   const vacation = teacherVacations(state.year, values);
-  return recalculateCalendar(
-    {
-      ...state,
-      teacherVacations: values,
-      events: [
-        ...state.events.filter((event) => !vacationIds.has(event.id)),
-        ...regeneratedVacations(vacation.events, offerIds(state), state.events),
-      ],
-    },
-    institutional,
-  );
+  return {
+    ...state,
+    teacherVacations: values,
+    events: [
+      ...state.events.filter((event) => !vacationIds.has(event.id)),
+      ...regeneratedVacations(vacation.events, offerIds(state), state.events),
+    ],
+  };
 }

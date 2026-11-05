@@ -140,7 +140,6 @@ test('real changes require the displayed content acceptance and events recalcula
               name: 'Período',
               start: civilDate('2027-03-01'),
               end: civilDate('2027-03-03'),
-              targetDays: 2,
               association: { status: 'defined', offers: ['integrado'], term: 'annual' },
             },
           ],
@@ -194,7 +193,7 @@ test('real changes require the displayed content acceptance and events recalcula
     })
     .then(calendarSaveDates);
   expect(saved.version).toBe(initial.version + 1);
-  expect(saved.state.periods[0]!.end).toBe('2027-03-02');
+  expect(saved.state.periods[0]!.end).toBe('2027-03-03');
   expect(saved.base.revision).toBe(2);
   expect(saved.base.events[0]!.start).toBe('2027-03-04');
 });

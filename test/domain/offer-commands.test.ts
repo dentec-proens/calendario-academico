@@ -172,12 +172,11 @@ test('event edits enforce the owning cycle and the explicit offer id', () => {
     applyDate(
       state,
       { ...stage, start: civilDate('2027-02-01'), end: civilDate('2027-04-16') },
-      [],
       true,
     ),
   ).toThrow('2º semestre');
-  expect(() => applyDate(state, { ...stage, offers: ['graduacao'] }, [], true)).toThrow('oferta');
-  const next = applyDate(state, { ...stage, name: 'Primeira etapa do segundo semestre' }, [], true);
+  expect(() => applyDate(state, { ...stage, offers: ['graduacao'] }, true)).toThrow('oferta');
+  const next = applyDate(state, { ...stage, name: 'Primeira etapa do segundo semestre' }, true);
   expect(next.events.find((event) => event.id === stage.id)?.name).toBe(
     'Primeira etapa do segundo semestre',
   );
@@ -375,7 +374,7 @@ test('removing an offer takes its periods, stages, own dates, destinations and s
   expect(preview.removedDates).toHaveLength(5);
   expect(preview.removedDates).toContain('Data só da Engenharia');
   expect(preview.narrowedDates).toEqual(['Reunião compartilhada', 'Edital compartilhado']);
-  const next = removeOffer(state, 'graduacao-2', []);
+  const next = removeOffer(state, 'graduacao-2');
   expect(state).toEqual(before);
   expect(offerIds(next)).toEqual(['integrado', 'graduacao', 'graduacao-3']);
   expect(next.periods.map((period) => period.id)).toEqual(
@@ -400,14 +399,13 @@ test('removing an offer takes its periods, stages, own dates, destinations and s
   expect(
     prepareOfferCalendarSave(previous, next, {
       ...context,
-      recalculate: false,
       allowOfferRemoval: true,
     }).offerKinds,
   ).toEqual(['integrado', 'graduacao']);
-  expect(() =>
-    prepareOfferCalendarSave(previous, next, { ...context, recalculate: false }),
-  ).toThrow('não podem ser removidas');
-  expect(() => removeOffer(state, 'outra', [])).toThrow('não pertence');
+  expect(() => prepareOfferCalendarSave(previous, next, { ...context })).toThrow(
+    'não podem ser removidas',
+  );
+  expect(() => removeOffer(state, 'outra')).toThrow('não pertence');
   const single = { ...state, offers: state.offers.slice(0, 1) };
   expect(() => offerRemovalPreview(single, 'integrado')).toThrow('pelo menos uma oferta');
 });

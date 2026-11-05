@@ -144,16 +144,16 @@ test('a confirmed annual selection includes Saturdays from different months in o
     confirmed: true,
   };
   let id = 0;
-  const changed = applySaturdays(state, selected, [], () => String(++id));
+  const changed = applySaturdays(state, selected, () => String(++id));
   assert.deepEqual(
     changed.events.map((event) => event.start),
     [civilDate('2027-03-06'), civilDate('2027-08-07')],
   );
   assert.ok(changed.events.every((event) => !Object.hasOwn(event, 'evidence')));
-  assert.equal(applySaturdays(changed, selected, [], () => String(++id)).events.length, 2);
+  assert.equal(applySaturdays(changed, selected, () => String(++id)).events.length, 2);
   assert.deepEqual(state, original);
   assert.throws(
-    () => applySaturdays(state, { ...selected, confirmed: false }, [], () => String(++id)),
+    () => applySaturdays(state, { ...selected, confirmed: false }, () => String(++id)),
     /Confirme/,
   );
   assert.throws(
@@ -161,7 +161,6 @@ test('a confirmed annual selection includes Saturdays from different months in o
       applySaturdays(
         state,
         { ...selected, dates: [civilDate('2027-03-06'), civilDate('2027-01-02')] },
-        [],
         () => String(++id),
       ),
     /fora dos períodos letivos/,
@@ -199,18 +198,15 @@ test('each Saturday keeps its activity and date without a source and a failed ba
     { date: civilDate('2027-08-07'), name: 'Reposição de aulas' },
   ];
   let id = 0;
-  const changed = applySaturdayActivities(state, activities, [], () => String(++id));
+  const changed = applySaturdayActivities(state, activities, () => String(++id));
   assert.deepEqual(
     changed.events.map(({ start, name }) => ({ date: start, name })),
     activities,
   );
-  assert.equal(
-    applySaturdayActivities(changed, activities, [], () => String(++id)).events.length,
-    2,
-  );
+  assert.equal(applySaturdayActivities(changed, activities, () => String(++id)).events.length, 2);
   assert.throws(
     () =>
-      applySaturdayActivities(state, [activities[0]!, { ...activities[1]!, name: '' }], [], () =>
+      applySaturdayActivities(state, [activities[0]!, { ...activities[1]!, name: '' }], () =>
         String(++id),
       ),
     /07\/08\/2027:.*atividade/,
@@ -220,12 +216,11 @@ test('each Saturday keeps its activity and date without a source and a failed ba
       applySaturdayActivities(
         state,
         [activities[0]!, { ...activities[1]!, date: civilDate('2027-01-02') }],
-        [],
         () => String(++id),
       ),
     /fora dos períodos/,
   );
-  assert.throws(() => applySaturdayActivities(state, [], [], () => String(++id)), /Selecione/);
+  assert.throws(() => applySaturdayActivities(state, [], () => String(++id)), /Selecione/);
   assert.deepEqual(state, original);
 });
 
@@ -318,7 +313,7 @@ test('saturday year classifies each Saturday and keeps registered dates reachabl
 });
 
 test('updating a Saturday activity trims values and rejects other records', () => {
-  const next = updateSaturdayActivity(yearState, { id: 's1', name: '  Reposição ' }, []);
+  const next = updateSaturdayActivity(yearState, { id: 's1', name: '  Reposição ' });
   assert.deepEqual(pick(next.events.find((e) => e.id === 's1')), { name: 'Reposição' });
   assert.equal(
     Object.hasOwn(
@@ -327,15 +322,12 @@ test('updating a Saturday activity trims values and rejects other records', () =
     ),
     false,
   );
+  assert.throws(() => updateSaturdayActivity(yearState, { id: 'x', name: 'a' }), /não existe mais/);
   assert.throws(
-    () => updateSaturdayActivity(yearState, { id: 'x', name: 'a' }, []),
-    /não existe mais/,
-  );
-  assert.throws(
-    () => updateSaturdayActivity(yearState, { id: 'semana', name: 'a' }, []),
+    () => updateSaturdayActivity(yearState, { id: 'semana', name: 'a' }),
     /Edite esta data na etapa Atividades\./,
   );
-  assert.throws(() => updateSaturdayActivity(yearState, { id: 's1', name: ' ' }, []), /atividade/);
+  assert.throws(() => updateSaturdayActivity(yearState, { id: 's1', name: ' ' }), /atividade/);
 });
 
 test('a Saturday covered by a wider inclusion stays editable through its own record', () => {

@@ -2,7 +2,9 @@ import { Migrations } from '@convex-dev/migrations';
 import type { MigrationFunctionReference } from '@convex-dev/migrations';
 import { getFunctionName } from 'convex/server';
 import { v } from 'convex/values';
-import { components } from './_generated/api';
+import { isEditable } from '../src/domain/calendar/lifecycle.ts';
+import { components, internal } from './_generated/api';
+import type { Doc } from './_generated/dataModel';
 import { internalMutation, internalQuery } from './_generated/server';
 import schema from './schema';
 
@@ -11,7 +13,44 @@ export const migrations = new Migrations(components.migrations, { schema, intern
 /** CLI entry for one migration, including `dryRun` (docs/implantacao-convex-vercel.md, Comandos). */
 export const run = migrations.runner();
 
-const pending: MigrationFunctionReference[] = [];
+const holdsTargetDays = (row: Doc<'calendarContents'> | Doc<'calendarSubmissions'>) =>
+  row.state.periods.some((period) => period.targetDays !== undefined);
+
+/**
+ * Level 1: no form ever wrote this value and only one draft period holds it. The stored `end`,
+ * which is what the calendar shows and counts, stays. No new version: nothing a person sees changes.
+ * A submission fixes its content by hash, so a copy holding the value stops the migration with
+ * nothing written over it: that calendar is returned and saved first, which drops the value.
+ * The contraction removes these migrations with `targetDays` from the period validator.
+ */
+export const refuseTargetDaysInSubmissions = migrations.define({
+  table: 'calendarSubmissions',
+  migrateOne: (_ctx, row) => {
+    if (holdsTargetDays(row))
+      throw new Error(`Envio ${row._id} guarda targetDays: devolva e salve o calendário antes.`);
+  },
+});
+
+export const dropPeriodTargetDays = migrations.define({
+  table: 'calendarContents',
+  migrateOne: async (ctx, row) => {
+    if (!holdsTargetDays(row)) return;
+    const calendar = await ctx.db.get('calendars', row.calendarId);
+    if (!calendar || !isEditable(calendar.status))
+      throw new Error(`Calendário ${row.calendarId} guarda targetDays e não está em edição.`);
+    return {
+      state: {
+        ...row.state,
+        periods: row.state.periods.map(({ targetDays: _retired, ...period }) => period),
+      },
+    };
+  },
+});
+
+const pending: MigrationFunctionReference[] = [
+  internal.migrations.refuseTargetDaysInSubmissions,
+  internal.migrations.dropPeriodTargetDays,
+];
 
 export const start = internalMutation({
   args: {},

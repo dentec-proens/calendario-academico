@@ -34,7 +34,6 @@ const save = (previous: PendingLinksFixture, proposed: PendingLinksFixture) =>
   prepareOfferCalendarSave(previous, proposed, {
     storedContent: offerCalendarContent(previous),
     catalogue: { events: [] },
-    recalculate: false,
   });
 
 const withoutLink = <T extends { activity?: unknown }>({ activity: _activity, ...rest }: T) => rest;
@@ -47,7 +46,7 @@ describe('preview and command', () => {
   test('the preview shows the date unchanged, both links and that the date will count', () => {
     const state = ivaiporaAnnual();
     const before = structuredClone(state);
-    const preview = previewActivityChange(state, 'ivaipora-final-1', annualFinal, []);
+    const preview = previewActivityChange(state, 'ivaipora-final-1', annualFinal);
     expect(state).toEqual(before);
     expect(preview).toEqual({
       date: date(state, 'ivaipora-final-1'),
@@ -62,7 +61,7 @@ describe('preview and command', () => {
 
   test('only the link of the whole date changes; the date leaves review and counts', () => {
     const state = ivaiporaAnnual();
-    const corrected = changeActivity(state, 'ivaipora-final-1', annualFinal, []);
+    const corrected = changeActivity(state, 'ivaipora-final-1', annualFinal);
     expect(corrected.events.map((event) => event.id)).toEqual(
       state.events.map((event) => event.id),
     );
@@ -103,8 +102,8 @@ describe('preview and command', () => {
       activity: Parameters<typeof changeActivity>[2],
       message: string,
     ) => {
-      expect(() => changeActivity(state, id, activity, [])).toThrow(message);
-      expect(() => previewActivityChange(state, id, activity, [])).toThrow(message);
+      expect(() => changeActivity(state, id, activity)).toThrow(message);
+      expect(() => previewActivityChange(state, id, activity)).toThrow(message);
     };
     refuses('missing', annualFinal, 'A data não existe mais');
     refuses('ivaipora-annual-final', annualFinal, 'Uma data do campus não passa a ter');
@@ -119,9 +118,9 @@ describe('preview and command', () => {
   });
 
   test('a date that already counts for its activity is not corrected', () => {
-    const corrected = changeActivity(ivaiporaAnnual(), 'ivaipora-final-1', annualFinal, []);
+    const corrected = changeActivity(ivaiporaAnnual(), 'ivaipora-final-1', annualFinal);
     expect(() =>
-      changeActivity(corrected, 'ivaipora-final-1', cycleLink('diary', 'annual'), []),
+      changeActivity(corrected, 'ivaipora-final-1', cycleLink('diary', 'annual')),
     ).toThrow('Só uma data em Vínculo a conferir');
     expect(activityChangeOptions(corrected, 'ivaipora-final-1')).toEqual([]);
   });
@@ -154,7 +153,7 @@ describe('preview and command', () => {
     draft.stages[1] = { id: '', start: civilDate('2027-07-26'), end: civilDate('2027-12-17') };
     let sequence = 0;
     state = applyOfferOrganization(state, 'integrado', draft, () => `annual-${++sequence}`);
-    expect(() => changeActivity(state, 'ivaipora-final-1', annualFinal, [])).toThrow(
+    expect(() => changeActivity(state, 'ivaipora-final-1', annualFinal)).toThrow(
       'Ajuste as ofertas da data antes de corrigir o vínculo',
     );
     expect(
@@ -166,14 +165,13 @@ describe('preview and command', () => {
     const state = conflictingLinks();
     expect(linksToReview(state).get('stage-twice-b')).toBe('duplicate-stage');
     expect(() =>
-      changeActivity(state, 'stage-twice-b', definedStage('stage', 'integrado', 'annual', 1), []),
+      changeActivity(state, 'stage-twice-b', definedStage('stage', 'integrado', 'annual', 1)),
     ).toThrow('nenhuma outra data a ocupa');
     // A notice keeps its admission data and destinations when its link is corrected.
     const corrected = changeActivity(
       state,
       'transfer-notice',
       cycleLink('admission-notice', 'annual'),
-      [],
     );
     expect(withoutLink(date(corrected, 'transfer-notice'))).toEqual(
       withoutLink(date(state, 'transfer-notice')),
@@ -185,7 +183,7 @@ describe('preview and command', () => {
 describe('save boundary', () => {
   test('a corrected link is accepted and saved with the date otherwise unchanged', () => {
     const state = ivaiporaAnnual();
-    const saved = save(state, changeActivity(state, 'ivaipora-final-1', annualFinal, []));
+    const saved = save(state, changeActivity(state, 'ivaipora-final-1', annualFinal));
     expect(date(saved.state, 'ivaipora-final-1')).toMatchObject({
       activity: annualFinal,
       name: 'Data sintética final-1',
@@ -237,12 +235,7 @@ describe('save boundary', () => {
 
   test('a correction to a once activity is accepted when it covers the date', () => {
     const state = ivaiporaAnnual();
-    const corrected = changeActivity(
-      state,
-      'ivaipora-recognition-1',
-      onceLink('family-meeting'),
-      [],
-    );
+    const corrected = changeActivity(state, 'ivaipora-recognition-1', onceLink('family-meeting'));
     expect(() => validateLinks(state, corrected)).not.toThrow();
   });
 });
@@ -250,9 +243,9 @@ describe('save boundary', () => {
 describe('correction saved with other changes (review of step 13)', () => {
   test('a correction followed by an edit of the same date is saved together', () => {
     const state = ivaiporaAnnual();
-    const corrected = changeActivity(state, 'ivaipora-final-1', annualFinal, []);
+    const corrected = changeActivity(state, 'ivaipora-final-1', annualFinal);
     const { activity: _activity, ...edit } = date(corrected, 'ivaipora-final-1');
-    const edited = updateDate(corrected, { ...edit, name: 'Resultado final corrigido' }, []);
+    const edited = updateDate(corrected, { ...edit, name: 'Resultado final corrigido' });
     const saved = save(state, edited);
     expect(date(saved.state, 'ivaipora-final-1')).toMatchObject({
       activity: annualFinal,
@@ -288,12 +281,12 @@ describe('correction saved with other changes (review of step 13)', () => {
     // swap would replace a link that counted.
     expect(correctableLinkIssue(state, organized, 'ivaipora-annual-5')).toBeUndefined();
     const family = onceLink('family-meeting');
-    expect(() => save(state, changeActivity(organized, 'ivaipora-annual-5', family, []))).toThrow(
+    expect(() => save(state, changeActivity(organized, 'ivaipora-annual-5', family))).toThrow(
       'não perde nem troca',
     );
     const stored = save(state, organized).state;
     expect(correctableLinkIssue(stored, stored, 'ivaipora-annual-5')).toBe('not-generated');
-    const saved = save(stored, changeActivity(stored, 'ivaipora-annual-5', family, []));
+    const saved = save(stored, changeActivity(stored, 'ivaipora-annual-5', family));
     expect(date(saved.state, 'ivaipora-annual-5').activity).toEqual(family);
   });
 
@@ -311,7 +304,7 @@ describe('correction saved with other changes (review of step 13)', () => {
     const options = activityChangeOptions(state, 'stage-twice-b');
     const other = options.find((row) => row.activity.activityId !== 'stage')!;
     expect(other).toBeDefined();
-    const corrected = changeActivity(state, 'stage-twice-b', other.activity, []);
+    const corrected = changeActivity(state, 'stage-twice-b', other.activity);
     expect(date(corrected, 'stage-twice-b').assessmentAutoStart).toBeUndefined();
     expect(() => save(state, corrected)).not.toThrow();
     // Any other field the correction did not need still counts as an edit of the date.
@@ -338,7 +331,7 @@ describe('readiness', () => {
       ).issues.filter((issue) => issue.startsWith('Vínculo a conferir'));
     expect(readiness(state)).toHaveLength(11);
     expect(readiness(state)[0]).toContain('Corrija a atividade vinculada');
-    const corrected = changeActivity(state, 'ivaipora-final-1', annualFinal, []);
+    const corrected = changeActivity(state, 'ivaipora-final-1', annualFinal);
     expect(readiness(corrected)).toHaveLength(10);
     expect(readiness(corrected).some((issue) => issue.includes('final-1'))).toBe(false);
   });

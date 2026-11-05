@@ -152,7 +152,6 @@ export interface CalendarPeriod {
   name?: string;
   start: CivilDate;
   end: CivilDate;
-  targetDays?: number;
   association: PeriodAssociation;
 }
 export interface AssessmentSettings {

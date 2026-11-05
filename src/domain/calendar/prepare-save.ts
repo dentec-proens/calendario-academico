@@ -2,7 +2,6 @@ import type { CalendarContent, DateFields } from './model.ts';
 import { equalValues } from '../../shared/equal.ts';
 import { inheritedEvents } from '../institution/catalogue.ts';
 import { applyObservances, validateObservances } from './observances.ts';
-import { recalculateCalendar } from './commands/recalculate.ts';
 import { invalidCalendar } from './normalization/input.ts';
 import { validateAddedOffers } from './organization/offers.ts';
 import { normalizeOfferCalendar, offerCalendarContent } from './normalization/normalize.ts';
@@ -17,7 +16,6 @@ export function prepareOfferCalendarSave<E extends DateFields & { active: boolea
   context: {
     storedContent: unknown;
     catalogue: { events: E[] };
-    recalculate: boolean;
     /** A draft may drop an offer (`removeOffer`); a calendar once submitted keeps its offers. */
     allowOfferRemoval?: boolean;
   },
@@ -36,15 +34,10 @@ export function prepareOfferCalendarSave<E extends DateFields & { active: boolea
     .map((offer) => offer.id)
     .filter((id) => proposed.offers.some((offer) => offer.id === id));
   // Adding an offer does not extend the offers existing dates list.
-  let state = normalizeOfferCalendar({ ...proposed, campus: previous.campus ?? '' }, previous);
+  const state = normalizeOfferCalendar({ ...proposed, campus: previous.campus ?? '' }, previous);
   validateAddedOffers(previousIds, state);
   const inherited = inheritedEvents(context.catalogue, previous.year, state.offers);
   validateObservances(inherited, state, previous);
-  if (context.recalculate || !equalValues(context.storedContent, offerCalendarContent(state)))
-    state = normalizeOfferCalendar(
-      recalculateCalendar(state, applyObservances(inherited, state)),
-      previous,
-    );
   const content = offerCalendarContent(state);
   return {
     state,

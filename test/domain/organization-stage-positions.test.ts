@@ -27,7 +27,6 @@ const save = (previous: PendingLinksFixture, proposed: PendingLinksFixture) =>
   prepareOfferCalendarSave(previous, proposed, {
     storedContent: offerCalendarContent(previous),
     catalogue: { events: [] },
-    recalculate: false,
   });
 const links = (state: { events: { id: string; activity?: ActivityRef }[] }) =>
   Object.fromEntries(state.events.map(({ id, activity }) => [id, activity]));

@@ -94,7 +94,6 @@ const period = (value: unknown): CalendarPeriod => {
     name: text(row.name),
     start: date(row.start),
     end: date(row.end),
-    ...(row.targetDays === undefined ? {} : { targetDays: number(row.targetDays) }),
     association:
       association.status === 'defined'
         ? {

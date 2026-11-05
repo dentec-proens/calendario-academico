@@ -51,7 +51,6 @@ const save = (previous: State, proposed: State) =>
   prepareOfferCalendarSave(previous, proposed, {
     storedContent: offerCalendarContent(previous),
     catalogue: { events: [] },
-    recalculate: false,
   });
 /** A saved date of the campus, as the form sends it back to `updateDate`. */
 const dateOf = (state: State, id = 'campus-rehearsal') =>
@@ -102,39 +101,37 @@ describe('eligibility (single rule over the effective category)', () => {
 describe('date commands', () => {
   test('refuse an internal date with effect, in a category out of the list or with an activity', () => {
     const state = ivaiporaDraft();
-    expect(() => createCampusDate(state, internal({ effect: 'exclude' }), [])).toThrow(
+    expect(() => createCampusDate(state, internal({ effect: 'exclude' }))).toThrow(
       /sem efeito na contagem/,
     );
     for (const category of ['feriado', 'recesso', 'ferias', 'limite', 'formacao', 'conselho'])
-      expect(() => createCampusDate(state, internal({ category }), []), category).toThrow(
+      expect(() => createCampusDate(state, internal({ category })), category).toThrow(
         /Só datas comemorativas, eventos/,
       );
     const activity = rowLink({ ...state, year: 2027 }, 'family-meeting');
-    expect(() => planActivityDate(state, activity, internal(), [])).toThrow(
-      /vinculada a atividade/,
-    );
+    expect(() => planActivityDate(state, activity, internal())).toThrow(/vinculada a atividade/);
     const linked = state.events.find((event) => event.activity)!;
-    expect(() => updateDate(state, { ...linked, internal: true } as Input, [])).toThrow(
+    expect(() => updateDate(state, { ...linked, internal: true } as Input)).toThrow(
       /vinculada a atividade/,
     );
     expect(() =>
-      createCampusDate(state, { ...campusDate(), internal: false } as unknown as Input, []),
+      createCampusDate(state, { ...campusDate(), internal: false } as unknown as Input),
     ).toThrow('Visibilidade da data inválida.');
   });
 
   test('accept a note without category as `institucional`', () => {
-    const created = createCampusDate(ivaiporaDraft(), internal({ category: undefined }), []);
+    const created = createCampusDate(ivaiporaDraft(), internal({ category: undefined }));
     expect(dateOf(created)).toMatchObject({ internal: true });
     expect(dateOf(created).category).toBeUndefined();
   });
 
   test('marking and unmarking is an ordinary edit that keeps ID, dates and scope', () => {
-    const created = createCampusDate(ivaiporaDraft(), campusDate(), []);
+    const created = createCampusDate(ivaiporaDraft(), campusDate());
     const before = dateOf(created);
-    const marked = updateDate(created, { ...before, internal: true }, []);
+    const marked = updateDate(created, { ...before, internal: true });
     const after = dateOf(marked);
     expect(after).toEqual({ ...before, internal: true });
-    const unmarked = updateDate(marked, { ...after, internal: undefined }, []);
+    const unmarked = updateDate(marked, { ...after, internal: undefined });
     expect(dateOf(unmarked)).toMatchObject({
       id: before.id,
       start: before.start,
@@ -143,7 +140,7 @@ describe('date commands', () => {
     });
     expect(dateOf(unmarked).internal).toBeUndefined();
     // Changing the effect of an internal date to one that counts is refused, never unmarked.
-    expect(() => updateDate(marked, { ...after, effect: 'exclude' }, [])).toThrow(
+    expect(() => updateDate(marked, { ...after, effect: 'exclude' })).toThrow(
       /sem efeito na contagem/,
     );
   });
@@ -152,7 +149,7 @@ describe('date commands', () => {
 describe('save boundary and JSON copy', () => {
   test('the save keeps the mark and refuses an ineligible one', () => {
     const previous = ivaiporaDraft();
-    const proposed = createCampusDate(previous, internal(), []);
+    const proposed = createCampusDate(previous, internal());
     expect(dateOf(save(previous, proposed).state)).toMatchObject({ internal: true });
     const tamper = (change: object) => ({
       ...proposed,
@@ -174,7 +171,7 @@ describe('save boundary and JSON copy', () => {
   });
 
   test('a note without category is accepted as `institucional` after exporting and importing JSON', () => {
-    const state = createCampusDate(ivaiporaDraft(), internal({ category: undefined }), []);
+    const state = createCampusDate(ivaiporaDraft(), internal({ category: undefined }));
     const exported = JSON.parse(
       JSON.stringify({ ...offerCalendarContent(state), year: 2027, campus: 'Ivaiporã' }, null, 2),
     ) as unknown;
@@ -203,8 +200,8 @@ describe('comparison of versions and submissions', () => {
   });
 
   test('marking or unmarking, as the only change, shows as Visibilidade', () => {
-    const official = createCampusDate(ivaiporaDraft(), campusDate(), []);
-    const marked = updateDate(official, { ...dateOf(official), internal: true }, []);
+    const official = createCampusDate(ivaiporaDraft(), campusDate());
+    const marked = updateDate(official, { ...dateOf(official), internal: true });
     const diff = compareContents(side(official), side(marked));
     expect(diff.campusChanges).toBe(1);
     expect(diff.events).toEqual([

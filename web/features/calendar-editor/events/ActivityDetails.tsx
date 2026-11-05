@@ -25,7 +25,7 @@ export default function ActivityDetails({
   item: ActivityPlanItem;
   detailOpen: boolean;
 }) {
-  const { state, institutional, applyCommand, readOnly } = useCalendarEditor();
+  const { state, applyCommand, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const { rowsFor, statusFor, counts } = useActivityCoverage();
   // The activity is addressed by the key of its link, as in the list and the URL.
@@ -177,7 +177,7 @@ export default function ActivityDetails({
                   aria-label={`Remover ${event.name}`}
                   onClick={() => {
                     if (
-                      applyCommand((current) => removeEvent(current, event.id, institutional)) &&
+                      applyCommand((current) => removeEvent(current, event.id)) &&
                       editor.eventId === event.id
                     ) {
                       // The panel stays on the activity whose record was removed.
