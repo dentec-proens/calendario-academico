@@ -61,7 +61,7 @@ export default function SaturdayEditForm({
               Descartar alterações
             </Button>
           )}
-          <Button id="saturday-edit-remove" variant="danger" onClick={() => void remove()}>
+          <Button id="saturday-edit-remove" variant="danger" onClick={remove}>
             Remover
           </Button>
         </FormActions>

@@ -299,7 +299,8 @@ export default function ActivityChecklist() {
             return items.length ? (
               <ActivityGroup
                 key={group}
-                headingId={`group-${group}`}
+                // Apart from the fixed groups below: the campus activities are not the campus dates.
+                headingId={`group-activity-${group}`}
                 title={label}
                 count={items.length}
                 pending={pendingIn(items)}

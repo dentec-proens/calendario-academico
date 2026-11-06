@@ -95,6 +95,22 @@ test('adding a campus date closes the panel and shows its row in a collapsed gro
   await expect(page.locator('[data-open-event="local-event"]')).toBeVisible();
 });
 
+test('the campus activities and the campus dates collapse separately', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('editor')).origin;
+  await page.goto(origin + '/calendarios/synthetic-calendar/atividades');
+  const dates = page.locator('#campus-dates .activity-group-toggle');
+  const activities = page.locator('#group-activity-campus .activity-group-toggle');
+  await expect(activities).toHaveAttribute('aria-controls', 'group-activity-campus-rows');
+  await expect(dates).toHaveAttribute('aria-controls', 'group-campus-rows');
+  await dates.click();
+  await expect(dates).toHaveAttribute('aria-expanded', 'false');
+  await expect(activities).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('[data-open-event="local-event"]')).toBeHidden();
+});
+
 test('applying a saved date without changes only closes, without touching it', async ({
   page,
   fixtureServer,
