@@ -281,10 +281,34 @@
 .review-criteria-heading .help {
   margin: 0;
 }
-.review-filter {
-  width: fit-content;
-  max-width: 100%;
-  margin: 0;
+.review-index {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: var(--ui-space-2);
+}
+#root .review-index__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  min-height: 44px;
+  padding: var(--ui-space-1) var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface);
+  box-shadow: none;
+  color: var(--ui-text);
+  font-size: 0.875rem;
+  font-weight: 400;
+  text-align: left;
+}
+#root .review-index__item strong {
+  font-weight: 700;
+}
+#root .review-index__item[aria-pressed='true'] {
+  border-color: var(--ui-info);
+  background: var(--ui-info-soft);
+  font-weight: 600;
 }
 .review-not-evaluated {
   margin-bottom: var(--ui-space-4);

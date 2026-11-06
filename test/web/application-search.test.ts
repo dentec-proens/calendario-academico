@@ -95,3 +95,8 @@ test('the visibility of dates is every date by default, official or internal', (
       {},
     );
 });
+
+test('the account filter accepts only known profiles', () => {
+  expect(applicationSearch({ perfil: 'PARECERISTA' }).perfil).toBe('PARECERISTA');
+  expect(applicationSearch({ perfil: 'outro' }).perfil).toBeUndefined();
+});

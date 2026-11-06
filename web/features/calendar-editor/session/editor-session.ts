@@ -11,6 +11,8 @@ export interface EditorSnapshot {
   state: CalendarState;
   dirty: boolean;
   unapplied: boolean;
+  /** IDs of the forms with values not yet applied. */
+  unappliedForms: readonly string[];
   status: AutosaveStatus | 'idle';
   error: string;
   remote: CalendarRecord | null;
@@ -56,6 +58,7 @@ export function createEditorSession(
     state: structuredClone(record.state),
     dirty: false,
     unapplied: false,
+    unappliedForms: [],
     status: 'idle',
     error: '',
     remote: null,
@@ -179,6 +182,7 @@ export function createEditorSession(
         state: structuredClone(state),
         dirty: !equalValues(state, current.record.state),
         unapplied: false,
+        unappliedForms: [],
         formEpoch: current.formEpoch + 1,
         edits: current.edits + 1,
       });
@@ -187,8 +191,11 @@ export function createEditorSession(
     setFormDirty(key: string, dirty: boolean) {
       if (dirty) forms.add(key);
       else forms.delete(key);
-      const unapplied = forms.size > 0;
-      if (unapplied !== current.unapplied) publish({ unapplied });
+      if (
+        forms.size !== current.unappliedForms.length ||
+        dirty !== current.unappliedForms.includes(key)
+      )
+        publish({ unapplied: forms.size > 0, unappliedForms: [...forms] });
     },
     receive(fresh: CalendarRecord) {
       const newest = current.remote ?? current.record;
@@ -254,6 +261,7 @@ export function createEditorSession(
         state: structuredClone(fresh.state),
         dirty: false,
         unapplied: false,
+        unappliedForms: [],
         status: 'idle',
         error: '',
         remote: null,
@@ -284,6 +292,7 @@ export function createEditorSession(
         state: structuredClone(current.record.state),
         dirty: false,
         unapplied: false,
+        unappliedForms: [],
         status: 'idle',
         error: '',
         formEpoch: current.formEpoch + 1,

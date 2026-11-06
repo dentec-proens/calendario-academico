@@ -2,10 +2,12 @@ import {
   readVacationDates,
   type VacationInput,
 } from '../../../../src/domain/calendar/civil-dates.ts';
-import { useEffect } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { useEffect, useRef, type FormEvent } from 'react';
 import { durationEnd } from '#src/domain/calendar/counting/duration.ts';
 import { teacherVacations } from '#src/domain/calendar/activities/teacher-vacations.ts';
 import { applyVacations } from '#src/domain/calendar/commands/vacations.ts';
+import { editorNavigation } from '../editor-steps.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Input } from './fields.tsx';
@@ -25,7 +27,10 @@ function vacationDatesFromValues(value: VacationInput) {
 }
 
 export default function VacationsForm() {
-  const { state, session, readOnly } = useCalendarEditor();
+  const { state, record, session, readOnly } = useCalendarEditor();
+  const navigate = useNavigate();
+  const next = editorNavigation('vacations').next;
+  const continuing = useRef(false);
   const { form, values, submit, error } = useCalendarForm(
     'vacations',
     {
@@ -42,6 +47,16 @@ export default function VacationsForm() {
     function apply(value) {
       const { firstDays: _first, secondDays: _second, thirdDays: _third, ...periods } = value;
       session.apply((current) => applyVacations(current, vacationDatesFromValues(periods)));
+    },
+    {
+      onSubmit: () => {
+        if (continuing.current && next)
+          void navigate({
+            to: next.path,
+            params: { calendarId: record.id },
+            search: (previous) => previous,
+          });
+      },
     },
   );
   useEffect(() => {
@@ -65,7 +80,15 @@ export default function VacationsForm() {
     preview = cause instanceof Error ? cause.message : '';
   }
   return (
-    <form id="vacation-form" onSubmit={submit}>
+    <form
+      id="vacation-form"
+      onSubmit={(event: FormEvent<HTMLFormElement>) => {
+        // The step's Continue button submits this form from outside it.
+        const { submitter } = event.nativeEvent as SubmitEvent;
+        continuing.current = submitter?.id === 'editor-continue';
+        submit(event);
+      }}
+    >
       <fieldset disabled={readOnly}>
         {(['first', 'second', 'third'] as const).map((part, index) => (
           <div key={part} className="row-form">

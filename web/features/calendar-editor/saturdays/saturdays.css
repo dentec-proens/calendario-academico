@@ -67,6 +67,9 @@
   border-color: var(--ui-border-soft);
   background: var(--ui-surface-muted);
 }
+.saturday-legend .is-partial::before {
+  border: 1px dashed var(--ui-muted);
+}
 .saturday-year {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
@@ -175,6 +178,12 @@
   border-color: var(--ui-warning);
   background: var(--ui-warning-soft);
   color: var(--ui-warning);
+}
+/* A dashed edge, explained by the legend and the month notes: the date reaches part of the offers. */
+#saturday-dates label.saturday-day.is-partial,
+.saturday-day.is-partial[data-status='registered'] button {
+  border-style: dashed;
+  border-color: var(--ui-muted);
 }
 #saturday-dates label.saturday-day:has(input:checked) {
   border-color: var(--ui-action);
@@ -350,6 +359,27 @@ dialog#saturday-panel::backdrop {
   background: var(--ui-warning-soft);
   color: var(--ui-warning);
 }
+.saturday-offers {
+  min-width: 0;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+}
+.saturday-offers legend {
+  padding: 0;
+}
+.saturday-offers .check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding-block: 10px;
+}
+.saturday-offers small {
+  display: block;
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+}
 .saturday-suggestions {
   margin: -6px 0 16px;
   color: var(--ui-muted);
@@ -405,6 +435,11 @@ dialog#saturday-panel::backdrop {
   font-size: 0.8125rem;
   font-weight: 500;
   text-align: left;
+}
+#saturday-panel .saturday-registrations small {
+  display: block;
+  color: var(--ui-muted);
+  font-size: 0.75rem;
 }
 #saturday-panel .saturday-registrations strong {
   white-space: nowrap;

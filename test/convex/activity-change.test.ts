@@ -102,7 +102,10 @@ test('swaps that are not a correction are refused and the stored calendar stays 
     [swapped({ activity: cycleLink('diary', 'second') }), 'não perde nem troca'],
     [swapped({ activity: definedStage('stage', 'integrado', 'annual', 1) }), 'não perde nem troca'],
     // The other change of the corrected date must still be valid for an edited date.
-    [swapped({ activity: annualFinal, end: civilDate('2027-06-20') }), 'Intervalo invertido'],
+    [
+      swapped({ activity: annualFinal, end: civilDate('2027-06-20') }),
+      'O término não pode ser anterior ao início',
+    ],
     // Removing the link is never a correction.
     [swapped({ activity: undefined }), 'não perde nem troca'],
   ] as const)

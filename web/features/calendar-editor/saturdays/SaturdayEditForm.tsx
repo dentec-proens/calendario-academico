@@ -1,12 +1,15 @@
 import { longDate } from '#src/domain/date-labels.ts';
 import type { CalendarEvent } from '#src/domain/calendar/model.ts';
+import { saturdayOfferOptions } from '#src/domain/calendar/activities/saturdays.ts';
 import { updateSaturdayActivity } from '#src/domain/calendar/commands/saturdays.ts';
+import { labelFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
 import { Input } from '../forms/fields.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { Button } from '../../../components/ui/Button.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
+import SaturdayOfferChoice from './SaturdayOfferChoice.tsx';
 
 export default function SaturdayEditForm({
   event,
@@ -15,11 +18,16 @@ export default function SaturdayEditForm({
   event: CalendarEvent;
   onClose: (focusDate: string) => void;
 }) {
-  const { session, readOnly, removeDate } = useCalendarEditor();
+  const { state, session, readOnly, removeDate } = useCalendarEditor();
   const id = `saturday-edit:${event.id}`;
+  const options = saturdayOfferOptions(state, event);
+  // In the order of the options, so unchecking and checking again returns to the original value.
+  const ordered = (offers: readonly string[]) =>
+    options.map((option) => option.id).filter((offer) => offers.includes(offer));
+  const saved = { name: event.name, offers: ordered(event.offers) };
   const { form, submit, pending, error, dirty } = useCalendarForm(
     id,
-    { name: event.name },
+    saved,
     function apply(value) {
       session.apply((current) => updateSaturdayActivity(current, { id: event.id, ...value }));
       onClose(event.start);
@@ -27,7 +35,7 @@ export default function SaturdayEditForm({
     { successMessage: () => `Sábado ${longDate(event.start)} atualizado.` },
   );
   function discard() {
-    form.reset({ name: event.name });
+    form.reset(saved);
     session.setFormDirty(id, false);
     onClose(event.start);
   }
@@ -48,6 +56,38 @@ export default function SaturdayEditForm({
               id="saturday-edit-name"
               maxLength={160}
               required
+            />
+          )}
+        </form.Field>
+        <form.Field name="offers">
+          {(field) => (
+            <SaturdayOfferChoice
+              id="saturday-edit-offers"
+              items={options.map((option) => {
+                const checked = field.state.value.includes(option.id);
+                // A listed offer can always be unchecked, which is how a stale list is corrected.
+                const blocked = !option.inPeriod || Boolean(option.coveredBy);
+                return {
+                  id: option.id,
+                  label: labelFor(state, option.id),
+                  checked,
+                  disabled: blocked && !checked,
+                  ...(!option.inPeriod
+                    ? { note: 'Sem período letivo nesta data.' }
+                    : option.coveredBy
+                      ? { note: `Já registrado nesta data: ${option.coveredBy}.` }
+                      : {}),
+                };
+              })}
+              onToggle={(offer, checked) =>
+                field.handleChange(
+                  ordered(
+                    checked
+                      ? [...field.state.value, offer]
+                      : field.state.value.filter((item) => item !== offer),
+                  ),
+                )
+              }
             />
           )}
         </form.Field>

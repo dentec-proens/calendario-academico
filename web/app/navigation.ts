@@ -21,9 +21,10 @@ export function useFeatureRoute() {
     calendarId: params.calendarId,
     campus: search.campus ?? '',
     ano: search.ano ?? '',
-    situacao: search.situacao ?? '',
+    situacao: search.situacao ?? ('' as const),
     responsavel: search.responsavel,
     busca: search.busca ?? '',
+    perfil: search.perfil,
   };
 }
 

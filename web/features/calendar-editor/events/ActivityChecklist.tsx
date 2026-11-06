@@ -21,6 +21,7 @@ import type { ActivityLine, DateLine } from './activity-step.ts';
 import { activityGroups, useActivitySearch } from './activity-query.ts';
 import { compactRange } from '#src/domain/date-labels.ts';
 import { scrollIntoView } from '../../../scroll.ts';
+import { Button } from '../../../components/ui/Button.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 import ActivityRow from './ActivityRow.tsx';
 import ActivityGroup from './ActivityGroup.tsx';
@@ -44,6 +45,9 @@ export default function ActivityChecklist() {
   const { coverage, statusFor } = useActivityCoverage();
   const list = useActivityList();
   const { selected, view: mode } = list;
+  // A single offer needs no badge: every line would repeat it.
+  const offerLabels = (offers: readonly string[]) =>
+    state.offers.length > 1 ? offers.map((offer) => labelFor(state, offer)) : [];
   const { view, viewEvent } = editor;
   // A review link names an activity by the complete key of its link, validated by the Router.
   // Assessment intervals answer their links in the assessment area, not here.
@@ -92,12 +96,13 @@ export default function ActivityChecklist() {
     (row) => row.applicability === 'required' && !isAssessmentStage(row.requirement.activity),
   );
 
-  const renderActivity = ({ key, item, status, dates }: ActivityLine) => (
+  const renderActivity = ({ key, item, status, dates, offerIds: offers }: ActivityLine) => (
     <li key={key} data-activity-row={key} data-status={status.status}>
       <ActivityRow
         id={`activity-${key}`}
         data-activity-open={key}
         label={item.name}
+        offers={offerLabels(offers)}
         status={status.status}
         selected={selected === key}
         dates={
@@ -137,6 +142,8 @@ export default function ActivityChecklist() {
           data-open-event={event.id}
           data-observance={observance?.key}
           label={event.name}
+          // A date of the base follows the kinds of offer, and its label does not name them.
+          offers={origin === 'base' ? [] : offerLabels(event.offers)}
           status={
             issue || planned
               ? 'pending'
@@ -207,6 +214,12 @@ export default function ActivityChecklist() {
   return (
     <>
       {/* The step's measure by offer, the same in both views and under any filter. */}
+      {state.offers.length > 1 && (
+        <p className="help activity-progress-note" id="activity-progress-note">
+          Progresso por oferta: cada oferta conta as suas atividades obrigatórias. O número de
+          pendências conta cada atividade uma vez, mesmo que falte em várias ofertas.
+        </p>
+      )}
       <ul id="activity-summary" className="activity-summary" role="status">
         {offerIds(state).map((modality) => {
           const required = mandatory.filter((row) => row.offerId === modality);
@@ -233,6 +246,36 @@ export default function ActivityChecklist() {
           );
         })}
       </ul>
+      {mode === 'data' && list.activitiesWithoutDates > 0 && (
+        <Notice
+          tone="info"
+          id="activities-without-dates"
+          actions={
+            <button
+              type="button"
+              className="link-button"
+              onClick={() =>
+                void navigate({
+                  to: '.',
+                  search: (previous) => ({ ...previous, atividadeVisao: undefined }),
+                  hashScrollIntoView: false,
+                }).then(() =>
+                  // The notice leaves with its button: focus goes to the view it switched to.
+                  focusAfterRender(() => document.getElementById('activity-mode-atividade')),
+                )
+              }
+            >
+              Ver em Por atividade
+            </button>
+          }
+        >
+          {list.activitiesWithoutDates === 1
+            ? '1 atividade a preencher ainda não tem data'
+            : `${list.activitiesWithoutDates} atividades a preencher ainda não têm data`}{' '}
+          e não {list.activitiesWithoutDates === 1 ? 'aparece' : 'aparecem'} nesta visão, que conta
+          só datas.
+        </Notice>
+      )}
       {list.activitiesHidden && (
         <Notice
           tone="info"
@@ -390,8 +433,29 @@ export default function ActivityChecklist() {
         </Notice>
       )}
       {empty && (
-        <Notice tone="info" id="activity-empty">
-          Nenhum item corresponde aos filtros. O preenchimento em andamento foi preservado.
+        <Notice
+          tone="info"
+          id="activity-empty"
+          actions={
+            <Button
+              variant="secondary"
+              onClick={() =>
+                void navigate({
+                  to: '.',
+                  search: (previous) =>
+                    Object.fromEntries(
+                      Object.entries(previous).filter(
+                        ([key]) => !key.startsWith('atividade') || key === 'atividadeVisao',
+                      ),
+                    ),
+                })
+              }
+            >
+              Limpar filtros
+            </Button>
+          }
+        >
+          Nenhum item corresponde aos filtros.
         </Notice>
       )}
     </>

@@ -20,7 +20,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await expect(page.getByRole('list', { name: 'Formas de oferta e níveis' })).toBeVisible();
     await expect(
-      page.getByRole('heading', { name: 'Etapa 1 de 6: Semana letiva', exact: true }),
+      page.getByRole('heading', { name: 'Passo 1 de 6: Semana letiva', exact: true }),
     ).toHaveCount(1);
 
     const weekdays = page.locator('#weekdays input');
@@ -44,7 +44,7 @@ for (const width of [1440, 390]) {
     await expect(page).toHaveURL(/\/periodos$/);
     await expect(page.locator('#editor-section-title')).toBeFocused();
     await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
-      'Etapa 2 de 6: Organização por oferta',
+      'Passo 2 de 6: Organização por oferta',
     );
     await expect(page.locator('#editor-section-title')).toContainText('Organização por oferta');
     await expect(page.locator('#assessment-area')).toBeVisible();
@@ -60,7 +60,7 @@ for (const width of [1440, 390]) {
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/dias$/);
     await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
-      'Etapa 3 de 6: Sábados letivos',
+      'Passo 3 de 6: Sábados letivos',
     );
     await expect(page.getByRole('heading', { name: /Sábados letivos/ })).toHaveCount(1);
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para férias docentes');
@@ -68,7 +68,7 @@ for (const width of [1440, 390]) {
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/ferias$/);
     await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
-      'Etapa 4 de 6: Férias docentes',
+      'Passo 4 de 6: Férias docentes',
     );
     await expect(page.getByRole('heading', { name: /férias docentes/i })).toHaveCount(1);
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para atividades');
@@ -76,10 +76,10 @@ for (const width of [1440, 390]) {
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/atividades$/);
     await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
-      'Etapa 5 de 6: Atividades',
+      'Passo 5 de 6: Atividades',
     );
     await expect(page.locator('#new-event')).toHaveText('Adicionar data do campus');
-    await expect(page.locator('#editor-continue')).toHaveText('Continuar para revisão e conclusão');
+    await expect(page.locator('#editor-continue')).toHaveText('Continuar para conferir e enviar');
     await selectEditorSection(page, 'issues');
     await expect(page.locator('#review-progress')).toBeVisible();
     await expect(
@@ -150,7 +150,7 @@ test('secondary actions support the keyboard and the mobile step picker follows 
   await page.keyboard.press('Enter');
   await expect(page.locator('[data-view="events"]')).toBeVisible();
   await page.locator('[data-view="events"]').click();
-  await expect(steps.locator('summary')).toContainText('Etapa 5 de 6');
+  await expect(steps.locator('summary')).toContainText('Passo 5 de 6');
   await expect(steps).not.toHaveAttribute('open');
   await expect(page.locator('#editor-section-title')).toBeFocused();
 });

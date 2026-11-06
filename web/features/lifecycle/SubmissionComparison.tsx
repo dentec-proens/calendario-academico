@@ -99,17 +99,25 @@ export function ReturnComparison({
   sequence: number;
   diff: CalendarDiff | null;
 }) {
+  // This note shows above every step: the note stays in view and the comparison on request.
+  if (diff?.unchanged)
+    return (
+      <p className="help" id="return-comparison" data-unchanged>
+        Nenhuma alteração desde a devolução do envio {sequence}.
+      </p>
+    );
   return (
-    <section
+    <details
       className="submission-comparison panel"
       id="return-comparison"
-      aria-labelledby="return-comparison-title"
       data-calendar={calendarId}
       data-base={returnedSubmissionId}
     >
-      <h3 id="return-comparison-title">O que mudou desde a devolução do envio {sequence}</h3>
+      <summary id="return-comparison-title">
+        O que mudou desde a devolução do envio {sequence}
+      </summary>
       {diff ? <DiffView diff={diff} /> : <p className="help">Carregando a comparação…</p>}
-    </section>
+    </details>
   );
 }
 

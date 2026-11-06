@@ -118,15 +118,15 @@ test('header logout can be cancelled and waits for an in-flight save before sign
   await page.locator('#close-event-panel').click();
   await page.locator('#logout').click();
   const dialog = page.getByRole('alertdialog');
-  await expect(dialog).toContainText('Os campos ainda não aplicados serão descartados');
-  await dialog.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await expect(dialog).toContainText('os campos ainda não aplicados serão descartados');
+  await dialog.getByRole('button', { name: 'Voltar ao preenchimento', exact: true }).click();
   await expect(page.locator('#event-name')).toHaveValue('Campo não aplicado');
   expect(await page.evaluate(() => window.editorSessionTest.counters.signOuts)).toBe(0);
   await expect
     .poll(() => page.evaluate(() => window.editorSessionTest.counters.saveStarted))
     .toBe(1);
   await page.locator('#logout').click();
-  await dialog.getByRole('button', { name: 'Salvar e sair', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Descartar os campos e sair', exact: true }).click();
   await expect(dialog).toContainText('Salvando');
   expect(await page.evaluate(() => window.editorSessionTest.counters.signOuts)).toBe(0);
   await page.evaluate(() => window.editorSessionTest.releaseSaves());

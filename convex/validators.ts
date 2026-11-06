@@ -228,6 +228,12 @@ export const reviewFields = {
   updatedAt: v.number(),
 };
 export const actorRef = v.object({ id: v.id('users'), name: v.string() });
+/** A return's copy of one unmet criterion: the name and the observation, nothing about the review. */
+export const returnedCriterion = v.object({
+  criterionId: v.string(),
+  title: v.string(),
+  note: v.optional(v.string()),
+});
 export const submissionDecision = v.object({
   action: v.union(
     v.literal('withdrawn'),
@@ -240,6 +246,8 @@ export const submissionDecision = v.object({
   by: actorRef,
   reviewRevision: v.optional(v.number()),
   note: v.optional(v.string()),
+  /** Returns only, and absent from the older ones: the campus cannot read the parecer itself. */
+  returnedCriteria: v.optional(v.array(returnedCriterion)),
 });
 export const contentFields = {
   calendarId: v.id('calendars'),

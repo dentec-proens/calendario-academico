@@ -2,12 +2,13 @@ import { equalValues } from '../../../shared/equal.ts';
 import { DomainError } from '../../errors.ts';
 import { policyFor } from '../../policies/registry.ts';
 import { isStageActivity } from '../activities/activity-ref.ts';
+import { isSaturdayRecord } from '../activities/saturdays.ts';
 import { coversAllOffers, generatedActivities, generatedActivity } from '../activities/links.ts';
 import { calendarLimits } from '../config.ts';
 import { datesBetween } from '../counting/core.ts';
 import type { ActivityState, CalendarEvent, EventEffect, VacationPeriods } from '../model.ts';
-import { labelFor, offerFor } from '../offers.ts';
-import { periodsForOffer } from '../organization/periods.ts';
+import { labelFor, offerFor, offerNames } from '../offers.ts';
+import { hasPeriodOn, periodsForOffer } from '../organization/periods.ts';
 import { createCampusDate, planActivityDate, type DateInput } from './events.ts';
 import { applyVacations, vacationIds } from './vacations.ts';
 
@@ -122,6 +123,15 @@ const outsidePeriods = (state: CopyState, event: CalendarEvent, offers: readonly
     ),
   );
 
+/**
+ * The offers chosen that a copied date can list. A Saturday reaches each offer on its own, as in
+ * the Saturdays step, so it goes only to those with a period on that day; other dates stay whole.
+ */
+const reachedOffers = (state: CopyState, event: CalendarEvent, offers: readonly string[]) =>
+  event.effect === 'include' && isSaturdayRecord(event)
+    ? offers.filter((offer) => hasPeriodOn(state, offer, event.start))
+    : offers;
+
 function dateWarning(event: CalendarEvent) {
   if (event.notice?.publication === 'published')
     return 'Marcada como publicada na origem. Confira se vale para este calendário.';
@@ -143,16 +153,21 @@ function dateCandidate(
   generated: ReturnType<typeof generatedActivities>,
 ): CopyCandidate {
   const row = generatedActivity(generated, event.activity);
-  const needsPeriods = outsidePeriods(target, event, offers);
+  const reached = reachedOffers(target, event, offers);
+  const leftOut = offers.filter((offer) => !reached.includes(offer));
+  const needsPeriods = !reached.length || outsidePeriods(target, event, reached);
   const blockedBy =
     event.activity && !row
-      ? 'Este calendário não gera esta atividade.'
+      ? 'Esta atividade não existe na organização atual deste calendário.'
       : needsPeriods
-        ? 'Fora dos períodos letivos deste calendário.'
-        : refusal(() => place(target, event, offers, probeId));
+        ? `Fora dos períodos letivos deste calendário${leftOut.length ? ` (${offerNames(target, leftOut)})` : ''}.`
+        : refusal(() => place(target, event, reached, probeId));
   const warning =
     dateWarning(event) ??
-    (row && !coversAllOffers(target, row, { offers })
+    (leftOut.length && reached.length
+      ? `Valerá só para ${offerNames(target, reached)}: ${offerNames(target, leftOut)} sem período letivo nesta data.`
+      : undefined) ??
+    (row && !coversAllOffers(target, row, { offers: reached })
       ? 'A atividade não abrange todas as ofertas escolhidas, e a data valerá para todas elas.'
       : undefined);
   const partial = event.offers.length < source.offers.length;
@@ -177,7 +192,7 @@ function dateCandidate(
       ? {
           activity: {
             name: row.name,
-            optional: offers.every((id) => {
+            optional: reached.every((id) => {
               const offer = offerFor(target, id);
               return !offer || policy.applicability(target, row, offer) !== 'required';
             }),
@@ -288,7 +303,11 @@ export function applyCopiedDates<S extends CopyState>(
     if (isStageActivity(event.activity)) continue;
     try {
       const missing = missingOffers(next, event, offers);
-      if (missing.length) next = place(next, event, missing, id());
+      if (missing.length) {
+        const reached = reachedOffers(next, event, missing);
+        if (!reached.length) throw new DomainError('Fora dos períodos letivos deste calendário.');
+        next = place(next, event, reached, id());
+      }
     } catch (error) {
       if (!(error instanceof DomainError)) throw error;
       throw new DomainError(`${event.name}: ${error.message}`);

@@ -13,6 +13,7 @@ import {
 } from '../lifecycle/SubmissionComparison.tsx';
 import type { DiffSide } from '#src/domain/calendar/diff.ts';
 import { BackLink } from '../../components/ui/BackLink.tsx';
+import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { CalendarEditorProvider, useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import { EventEditorProvider, useEventEditor } from './events/EventEditorProvider.tsx';
@@ -21,16 +22,21 @@ import EventPanel from './events/EventPanel.tsx';
 import NewEventButton from './events/NewEventButton.tsx';
 import { SectionActionsProvider } from './section-actions.tsx';
 import { CalendarExportProvider, useCalendarExport } from './export/CalendarExportProvider.tsx';
-import { confirmAction } from '../../components/confirmation.ts';
+import { confirmAction, type ConfirmationItem } from '../../components/confirmation.ts';
 import { editorSections } from '#src/app/routes.ts';
 import {
   editorPages,
   editorSteps,
   editorNavigation,
+  unappliedFormSection,
   continueLabel,
+  focusPendingScope,
+  criterionDestination,
+  issueDestination,
   stepIssueCounts,
 } from './editor-steps.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
+import { groupPendencies } from '#src/domain/calendar/pendencies.ts';
 import { contentIssues } from '#src/domain/calendar/readiness.ts';
 import EditorSteps from './EditorSteps.tsx';
 import TeachingDaySummary from './TeachingDaySummary.tsx';
@@ -52,6 +58,7 @@ function EditorFrame() {
     state,
     dirty,
     unapplied,
+    unappliedForms,
     status,
     error,
     remote,
@@ -129,6 +136,14 @@ function EditorFrame() {
     previous,
     next,
   } = editorNavigation(currentSection);
+  const unappliedPages = [
+    ...new Set(
+      unappliedForms.flatMap((formId) => {
+        const section = unappliedFormSection(formId);
+        return section ? [editorNavigation(section).current] : [];
+      }),
+    ),
+  ];
   const needsAttention =
     !connected ||
     Boolean(error || remote || unapplied) ||
@@ -141,9 +156,50 @@ function EditorFrame() {
       : !connected || remote
         ? 'warning'
         : 'info';
-  const issues = useMemo(() => contentIssues(state, baseEvents), [state, baseEvents]);
-  const openIssues = useMemo(() => issues.map((issue) => issue.message), [issues]);
-  const stepCounts = useMemo(() => stepIssueCounts(issues), [issues]);
+  const pendencies = useMemo(
+    () => groupPendencies(contentIssues(state, baseEvents), state),
+    [state, baseEvents],
+  );
+  const stepCounts = useMemo(() => stepIssueCounts(pendencies), [pendencies]);
+  // Each row of the submission leads where its row in the review step does.
+  const submitIssues = pendencies.map((item): ConfirmationItem => {
+    const destination = issueDestination(item);
+    return {
+      key: item.key,
+      title: item.title,
+      detail: item.details.map((detail) => detail.text).join(' '),
+      badges:
+        state.offers.length > 1 ? item.offerIds.map((offerId) => labelFor(state, offerId)) : [],
+      onSelect: destination
+        ? () =>
+            void navigate({
+              to: destination.to,
+              params: { calendarId: record.id },
+              search: (previous: Record<string, unknown>) => ({
+                ...previous,
+                ...destination.search,
+              }),
+              hashScrollIntoView: false,
+            }).then(() => {
+              if (item.target?.area === 'scope') requestAnimationFrame(focusPendingScope);
+            })
+        : undefined,
+    };
+  });
+  // The criteria of a return are resolved here, where the form in progress stays with the session.
+  const criterionLink = (criterionId: string, title: string) => {
+    const destination = criterionDestination(activityPlan(state), criterionId);
+    return destination ? (
+      <Link
+        to={destination.to}
+        params={{ calendarId: record.id }}
+        search={(previous: Record<string, unknown>) => ({ ...previous, ...destination.search })}
+        hashScrollIntoView={false}
+      >
+        Corrigir<span className="visually-hidden"> {title}</span>
+      </Link>
+    ) : null;
+  };
   // The backend refuses these submissions too; saying why beats an error after confirming.
   const submitUnavailable = !connected
     ? 'Sem conexão. O envio volta a ficar disponível quando a conexão for restabelecida.'
@@ -161,7 +217,7 @@ function EditorFrame() {
     notify,
     submitSummary: returned ? diffSummary(sinceReturn) : undefined,
     unavailable: submitUnavailable ? { submit: submitUnavailable } : undefined,
-    submitIssues: openIssues,
+    submitIssues,
     prepare: async () => {
       if (session.getSnapshot().unapplied)
         throw new Error('Aplique ou descarte os campos em edição antes de enviar.');
@@ -185,6 +241,9 @@ function EditorFrame() {
           }[status];
   return (
     <div className="calendar-editor-content">
+      <a className="skip-navigation" href="#editor-section-title">
+        Ir para o conteúdo
+      </a>
       {permissions.editCalendars ? (
         <BackLink to="/calendarios" className="editor-back">
           Calendários
@@ -246,7 +305,7 @@ function EditorFrame() {
         </p>
       ) : null}
       {returned ? (
-        <ReturnNote lastReturn={returned}>
+        <ReturnNote lastReturn={returned} criterionLink={criterionLink}>
           <ReturnComparison
             calendarId={record.id}
             returnedSubmissionId={returned.submissionId}
@@ -255,7 +314,7 @@ function EditorFrame() {
           />
         </ReturnNote>
       ) : record.status === 'rascunho' && record.lastReturn ? (
-        <ReturnNote lastReturn={record.lastReturn} />
+        <ReturnNote lastReturn={record.lastReturn} criterionLink={criterionLink} />
       ) : null}
       <div className="editor-feedback" ref={feedback}>
         <div id="message" role="status" aria-live="polite">
@@ -333,9 +392,22 @@ function EditorFrame() {
             </div>
           )}
           <p id="unapplied-status" className="help" role="status" hidden={!unapplied}>
-            {currentSection === 'edit'
-              ? 'Há alterações ainda não incluídas no calendário. Corrija as pendências da semana letiva ou conclua os formulários abertos.'
-              : 'Há alterações ainda não incluídas no calendário. Conclua o formulário ou descarte as alterações.'}
+            {unappliedPages.length
+              ? `Há alterações ainda não incluídas em ${unappliedPages.map((page) => page.title).join(', ')}.`
+              : 'Há alterações ainda não incluídas no calendário.'}{' '}
+            Conclua o formulário ou descarte as alterações.{' '}
+            {unappliedPages
+              .filter((page) => page.section !== currentSection)
+              .map((page) => (
+                <Link
+                  key={page.section}
+                  to={page.path}
+                  params={{ calendarId: record.id }}
+                  search={(previous) => previous}
+                >
+                  Ir para {page.title}
+                </Link>
+              ))}
           </p>
           {remote && (
             <p id="editor-remote-change">
@@ -388,7 +460,7 @@ function EditorFrame() {
           calendarId={record.id}
           current={currentSection}
           // Courses are a content issue too: the backend refuses the submission without them.
-          issueCount={openIssues.length + (record.courses ? 0 : 1)}
+          issueCount={pendencies.length + (record.courses ? 0 : 1)}
           stepCounts={stepCounts}
         />
         <div className="editor-section-content">
@@ -396,7 +468,7 @@ function EditorFrame() {
             <h2 id="editor-section-title" ref={heading} tabIndex={-1}>
               {activeStep && (
                 <>
-                  <span className="visually-hidden">Etapa </span>
+                  <span className="visually-hidden">Passo </span>
                   <span className="editor-title-step">{stepIndex + 1}</span>
                   <span className="visually-hidden"> de {editorSteps.length}: </span>
                 </>
@@ -445,7 +517,12 @@ function EditorFrame() {
                 {saveLabel}
               </span>
             </div>
-            {(currentSection === 'edit' || currentSection === 'periods') && !readOnly && next ? (
+            {currentSection === 'vacations' && unappliedForms.includes('vacations') && next ? (
+              // Moving on must not leave typed vacations behind: they are applied first.
+              <button id="editor-continue" type="submit" form="vacation-form">
+                {continueLabel(next)} <ArrowRight aria-hidden="true" />
+              </button>
+            ) : (currentSection === 'edit' || currentSection === 'periods') && !readOnly && next ? (
               <button
                 id="editor-continue"
                 type="submit"
@@ -489,7 +566,7 @@ function EditorFrame() {
                 params={{ calendarId: record.id }}
                 search={(previous) => previous}
               >
-                <ArrowLeft aria-hidden="true" /> Voltar à revisão
+                <ArrowLeft aria-hidden="true" /> Voltar para conferir e enviar
               </Link>
             ) : null}
           </div>

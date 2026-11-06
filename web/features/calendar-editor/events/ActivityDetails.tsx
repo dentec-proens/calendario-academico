@@ -7,6 +7,7 @@ import type { ActivityPlanItem } from '#src/domain/calendar/model.ts';
 import { policyFor } from '#src/domain/policies/registry.ts';
 import { offerFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
+import ActivityRuleNote from './ActivityRuleNote.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import { useActivityCoverage } from './useActivityCoverage.ts';
 import { longRange } from '#src/domain/date-labels.ts';
@@ -80,6 +81,7 @@ export default function ActivityDetails({
             </small>
           )}
         </p>
+        <ActivityRuleNote year={state.year} item={item} />
         <details
           className="activity-detail"
           data-activity-detail={key}
@@ -110,12 +112,12 @@ export default function ActivityDetails({
                   ? ` · ${row.execution === 'planned' ? 'Publicação programada' : row.execution === 'published' ? 'Publicação realizada' : 'Execução a conferir'}`
                   : ''}
                 <small>
-                  Conferência humana:{' '}
+                  Conferência da PROENS:{' '}
                   {row.humanReview === 'reviewed'
-                    ? 'revisado no conjunto vigente'
+                    ? 'conferido nas regras em vigor'
                     : row.humanReview === 'unmapped'
-                      ? 'sem critério normativo vinculado'
-                      : 'aguardando revisão atualizada'}
+                      ? 'sem critério do parecer vinculado'
+                      : 'será conferido após o envio'}
                 </small>
                 {offerFor(state, row.offerId)?.kind === 'posgraduacao' && (
                   <small>

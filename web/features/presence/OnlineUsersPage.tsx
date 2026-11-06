@@ -51,8 +51,12 @@ export default function OnlineUsersPanel() {
       ) : (
         <>
           <div className="online-summary" aria-live="polite" role="status">
-            <strong>{users.length} usuário(s) online</strong>
-            <span>{campuses.length} campus/campi conectado(s)</span>
+            <strong>
+              {users.length} {users.length === 1 ? 'usuário online' : 'usuários online'}
+            </strong>
+            <span>
+              {campuses.length} {campuses.length === 1 ? 'campus conectado' : 'campi conectados'}
+            </span>
           </div>
           {data.truncated ? (
             <Notice tone="info">

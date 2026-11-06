@@ -351,18 +351,26 @@ test('a suggestion waits for the reviewer, who may filter what is left to assess
   );
   await expect(page.locator('#review-progress')).toContainText(/^0 de/);
 
-  await page.getByRole('radio', { name: `A avaliar (${total})` }).click();
+  const index = page.locator('#review-index');
+  await index.locator('[data-review-filter="PENDENTE"]').click();
+  await expect(index.locator('[data-review-filter="PENDENTE"]')).toHaveText(`A avaliar ${total}`);
   // Assessing keeps the criterion in the list, with the observation open for what is missing.
   await criterion.locator('[data-choice="NAO_ATENDIDO"]').click();
   await expect(criterion).toBeVisible();
   await expect(criterion.locator('textarea')).toBeVisible();
   await expect(page.locator('#review-progress')).toContainText(/^1 de/);
-  await expect(page.getByRole('radio', { name: `A avaliar (${total - 1})` })).toBeChecked();
+  await expect(index.locator('[data-review-filter="PENDENTE"]')).toHaveText(
+    `A avaliar ${total - 1}`,
+  );
+  await expect(index.locator('[data-review-filter="PENDENTE"]')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 
   await page.locator('button[form="review-form"]').click();
   await expect(page.locator('#review-message')).toContainText('Parecer salvo');
   await expect(criterion).toBeHidden();
-  await page.getByRole('radio', { name: `Todos (${total})` }).click();
+  await index.locator('[data-review-filter="all"]').click();
   await expect(criterion).toBeVisible();
   await expect(criterion.locator('[data-origin]')).toHaveText('Salvo');
 });

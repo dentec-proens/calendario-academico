@@ -22,6 +22,16 @@ export const labelFor = (state: AssessmentSettings, id: string): string => {
   const offer = offerFor(state, id);
   return offer ? offerLabel(offer) : id;
 };
+/** The offers by name, for a sentence: "Técnico integrado e Graduação". */
+export const offerNames = (state: AssessmentSettings, ids: readonly string[]): string => {
+  const labels = ids.map((id) => labelFor(state, id));
+  return labels.length < 2
+    ? (labels[0] ?? '')
+    : `${labels.slice(0, -1).join(', ')} e ${labels.at(-1)}`;
+};
+/** The offers a date reaches by name, only when it leaves out some offer of the calendar. */
+export const partialOfferNames = (state: AssessmentSettings, ids: readonly string[]): string =>
+  offerIds(state).every((id) => ids.includes(id)) ? '' : offerNames(state, ids);
 export const associationOffers = (association: PeriodAssociation): string[] => association.offers;
 
 export const kindOf = (offer: CalendarOffer): OfferKind => offer.kind;

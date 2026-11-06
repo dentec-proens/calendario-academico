@@ -5,6 +5,7 @@ import {
   ArchiveRestore,
   CheckCheck,
   Ellipsis,
+  Plus,
   RotateCcw,
   Send,
   Stamp,
@@ -20,12 +21,13 @@ import {
   type LifecycleRole,
 } from '#src/domain/calendar/lifecycle.ts';
 import { modalityLabels } from '#src/domain/calendar/modalities.ts';
+import { fillReturnNote, type ReturnedCriterion } from '#src/domain/reviews/returned-criteria.ts';
 import type { Id } from '../../../convex/_generated/dataModel.js';
 import { ActionMenu, ActionMenuItem } from '../../components/ui/ActionMenu.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 import { TextAreaField, TextField } from '../../components/ui/Field.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
-import { confirmAction } from '../../components/confirmation.ts';
+import { confirmAction, type ConfirmationItem } from '../../components/confirmation.ts';
 import { calendars } from '../../shared/convex/calendars.ts';
 import { functions } from '../../shared/convex/client.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
@@ -111,6 +113,7 @@ export default function LifecycleActions({
   placement = 'header',
   menuActions = [],
   primaryActions,
+  returnCriteria,
 }: {
   calendar: LifecycleCalendar;
   role: LifecycleRole;
@@ -123,8 +126,8 @@ export default function LifecycleActions({
   guard?: () => string | undefined;
   /** Why an offered action cannot run now: the button stays visible, disabled, with the reason. */
   unavailable?: Partial<Record<LifecycleAction, string>>;
-  /** Content issues still open: submitting stays possible, after confirming them one by one. */
-  submitIssues?: readonly string[];
+  /** Items still open: submitting stays possible, after confirming them one by one. */
+  submitIssues?: readonly ConfirmationItem[];
   className?: string;
   /** The footer of the review step repeats only the submission, as the step's conclusion. */
   placement?: 'header' | 'footer';
@@ -132,6 +135,8 @@ export default function LifecycleActions({
   menuActions?: readonly LifecycleAction[];
   /** The actions shown as primary; by default, all but returning and withdrawing. */
   primaryActions?: readonly LifecycleAction[];
+  /** The unmet criteria of the saved parecer, to fill the note; only the parecer's page has them. */
+  returnCriteria?: readonly ReturnedCriterion[];
 }) {
   const [form, setForm] = useState<'return' | 'publish' | null>(null);
   const [pending, setPending] = useState(false);
@@ -157,7 +162,7 @@ export default function LifecycleActions({
     submitIssues.length > shownIssues
       ? [
           ...submitIssues.slice(0, shownIssues),
-          `E mais ${pendencies(submitIssues.length - shownIssues)} na etapa Revisão e conclusão.`,
+          `E mais ${pendencies(submitIssues.length - shownIssues)} no passo Conferir e enviar.`,
         ]
       : submitIssues;
   const uncovered = [...new Set(preview?.replaced.flatMap((item) => item.uncovered) ?? [])].map(
@@ -176,7 +181,9 @@ export default function LifecycleActions({
       ...submitted,
       ...extra,
     });
-    notify(`${actionLabels[action]}: concluído.`);
+    notify(
+      action === 'submit' ? 'Calendário enviado à PROENS.' : `${actionLabels[action]}: concluído.`,
+    );
   }
 
   function start(action: LifecycleAction) {
@@ -309,6 +316,7 @@ export default function LifecycleActions({
       )}
       {form === 'return' ? (
         <ReturnForm
+          criteria={returnCriteria}
           pending={pending}
           onCancel={() => setForm(null)}
           onSubmit={(note) => void run(() => perform('return', { note }))}
@@ -327,15 +335,29 @@ export default function LifecycleActions({
 }
 
 function ReturnForm({
+  criteria,
   pending,
   onSubmit,
   onCancel,
 }: {
+  criteria?: readonly ReturnedCriterion[];
   pending: boolean;
   onSubmit: (note: string) => void;
   onCancel: () => void;
 }) {
   const [note, setNote] = useState('');
+  const [fillOutcome, setFillOutcome] = useState('');
+  function fill(available: readonly ReturnedCriterion[]) {
+    const { note: filled, added, left } = fillReturnNote(note, available, maximumNoteLength);
+    setNote(filled);
+    setFillOutcome(
+      left.length
+        ? `A nota tem limite de ${maximumNoteLength.toLocaleString('pt-BR')} caracteres: ${added ? 'entrou parte dos critérios' : 'nenhum critério coube'}. Ficaram de fora ${left.join(', ')}, que o campus vê na lista mesmo assim.`
+        : added
+          ? ''
+          : 'Os critérios não atendidos já estão na nota.',
+    );
+  }
   return (
     <form
       className="lifecycle-form"
@@ -348,14 +370,40 @@ function ReturnForm({
       <TextAreaField
         id="lifecycle-return-note"
         label="O que o campus precisa ajustar"
-        description="A nota fica registrada no envio e aparece para o campus no editor."
+        description="A nota fica registrada no envio e aparece para o campus no editor, com a lista dos critérios marcados como Não atendido no parecer salvo e suas observações."
         required
         rows={4}
         maxLength={maximumNoteLength}
         value={note}
         disabled={pending}
-        onValueChange={setNote}
+        onValueChange={(value) => {
+          setNote(value);
+          setFillOutcome('');
+        }}
       />
+      {criteria ? (
+        <div className="lifecycle-fill">
+          <Button
+            type="button"
+            variant="secondary"
+            id="lifecycle-fill-note"
+            disabled={pending || !criteria.length}
+            aria-describedby={criteria.length ? undefined : 'lifecycle-fill-unavailable'}
+            onClick={() => fill(criteria)}
+          >
+            <Plus aria-hidden="true" size={18} /> Preencher com os critérios não atendidos
+          </Button>
+          {criteria.length ? null : (
+            <p className="help" id="lifecycle-fill-unavailable">
+              Nenhum critério está marcado como Não atendido no parecer salvo.
+            </p>
+          )}
+          {/* Always mounted: a status inserted along with its text may go unread. */}
+          <div id="lifecycle-fill-outcome" role="status">
+            {fillOutcome ? <Notice tone="warning">{fillOutcome}</Notice> : null}
+          </div>
+        </div>
+      ) : null}
       <FormButtons pending={pending} label="Devolver ao campus" onCancel={onCancel} />
     </form>
   );
@@ -464,12 +512,20 @@ function FormButtons({
   );
 }
 
-/** The returned note, prominent where the campus edits. */
+/** The returned note and the criteria behind it, prominent where the campus edits. */
 export function ReturnNote({
   lastReturn,
+  criterionLink,
   children,
 }: {
-  lastReturn: { sequence: number; at: string; note: string } | null;
+  lastReturn: {
+    sequence: number;
+    at: string;
+    note: string;
+    returnedCriteria?: readonly ReturnedCriterion[];
+  } | null;
+  /** Where each criterion is corrected; nothing when no step decides it. */
+  criterionLink?: (criterionId: string, title: string) => ReactNode;
   children?: ReactNode;
 }) {
   if (!lastReturn) return null;
@@ -477,6 +533,20 @@ export function ReturnNote({
     <Notice tone="warning" title={`Devolução do envio ${lastReturn.sequence}`} id="return-note">
       <p className="return-note-text">{lastReturn.note}</p>
       <small>Devolvido em {new Date(lastReturn.at).toLocaleString('pt-BR')}.</small>
+      {lastReturn.returnedCriteria?.length ? (
+        <details className="return-criteria" open>
+          <summary>Critérios não atendidos ({lastReturn.returnedCriteria.length})</summary>
+          <ul>
+            {lastReturn.returnedCriteria.map(({ criterionId, title, note }) => (
+              <li key={criterionId} data-returned-criterion={criterionId}>
+                <strong>{title}</strong>
+                {note ? <p className="return-note-text">{note}</p> : null}
+                {criterionLink?.(criterionId, title)}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
       {children}
     </Notice>
   );

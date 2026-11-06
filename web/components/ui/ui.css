@@ -554,7 +554,8 @@ dialog.ui-panel-dialog--with-footer[open] {
     }
   }
   @supports (backdrop-filter: blur(1px)) {
-    dialog.ui-panel-dialog::backdrop {
+    /* A side panel keeps the list behind it readable. */
+    dialog.ui-panel-dialog:not(.ui-panel-dialog--side)::backdrop {
       backdrop-filter: blur(4px);
     }
   }

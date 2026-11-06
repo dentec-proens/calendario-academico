@@ -129,7 +129,14 @@ async function seenBase(client: Client, id: Id<'calendars'>) {
 export async function saveReview(
   reviewer: Client,
   id: Id<'calendars'>,
-  options: { status?: 'ATENDIDO' | 'NAO_ATENDIDO' | 'PENDENTE'; acknowledgeStale?: boolean } = {},
+  options: {
+    status?: 'ATENDIDO' | 'NAO_ATENDIDO' | 'PENDENTE';
+    acknowledgeStale?: boolean;
+    /** Overrides the entry of a criterion, for a parecer with mixed assessments. */
+    entry?: (
+      id: string,
+    ) => { status: 'NAO_ATENDIDO' | 'ATENDIDO'; notes?: string; reviewed?: boolean } | undefined;
+  } = {},
 ) {
   const support = await reviewer.query(api.reviews.review, { id });
   const status = options.status ?? 'ATENDIDO';
@@ -152,6 +159,7 @@ export async function saveReview(
         status,
         notes: '',
         reviewed: status !== 'PENDENTE',
+        ...options.entry?.(criterion.id),
       })),
     },
   });

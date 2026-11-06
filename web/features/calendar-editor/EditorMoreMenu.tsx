@@ -71,7 +71,7 @@ export default function EditorMoreMenu({
                 id="save"
                 aria-label="Baixar cópia"
                 aria-describedby="download-copy-description"
-                title="Baixe uma cópia editável (.json) dos dados já incluídos no calendário para importar depois. Campos ainda em preenchimento não entram nessa cópia; o PDF fica na revisão."
+                title="Baixe uma cópia editável (.json) dos dados já incluídos no calendário para importar depois. Campos ainda em preenchimento não entram nessa cópia; o PDF fica no passo Conferir e enviar."
                 onClick={onCopy}
               >
                 <Download aria-hidden="true" />

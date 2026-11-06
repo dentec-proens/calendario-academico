@@ -276,7 +276,7 @@ test('a direct inclusion must fit every explicitly covered offer period', async 
           },
         })
         .then(calendarSaveDates),
-    ).rejects.toThrow('períodos cadastrados da oferta');
+    ).rejects.toThrow('período letivo da oferta');
   const saved = await actor
     .mutation(api.calendars.saveCalendar, {
       id: record.id,

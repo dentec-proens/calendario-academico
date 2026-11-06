@@ -70,9 +70,7 @@ for (const width of [1440, 390])
     });
 
 const count = async (page: Page, id: string) =>
-  Number(
-    /\((\d+)\)/.exec(await page.locator(`label:has(#activity-pendency-${id})`).innerText())![1],
-  );
+  Number(/\((\d+)/.exec(await page.locator(`label:has(#activity-pendency-${id})`).innerText())![1]);
 
 for (const width of [1440, 390])
   test(`filters combine with counters in the unit of each view at ${width}px`, async ({

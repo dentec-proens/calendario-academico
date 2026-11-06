@@ -259,6 +259,13 @@ export function useDraftForm<T extends object>(options: DraftFormOptions<T>) {
       });
   }
 
+  // A refusal is about the values that caused it: it leaves when they change. A form applied on
+  // change already judges each new value, and its refusal arrives with that value.
+  const [judgedValues, setJudgedValues] = useState(values);
+  if (judgedValues !== values) {
+    setJudgedValues(values);
+    if (!options.onChange && error) setError('');
+  }
   return { form: managedForm, values, dirty, pending, error, submit, clearDraft };
 }
 

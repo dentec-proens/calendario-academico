@@ -11,12 +11,12 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     await selectEditorSection(page, 'events');
     await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
-      'Etapa 5 de 6: Atividades',
+      'Passo 5 de 6: Atividades',
     );
     await expect(page.locator('#editor-section-title')).toContainText('Atividades');
     await expect(page.locator('#activity-checklist')).toBeVisible();
     await expect(page.locator('#event-list')).toBeVisible();
-    await expect(page.locator('#editor-continue')).toHaveText('Continuar para revisão e conclusão');
+    await expect(page.locator('#editor-continue')).toHaveText('Continuar para conferir e enviar');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
@@ -38,7 +38,7 @@ for (const fixture of ['editor', 'editor-reviewer'] as const) {
     );
     await expect(page.locator('#activity-checklist')).toBeVisible();
     await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
-      'Etapa 5 de 6: Atividades',
+      'Passo 5 de 6: Atividades',
     );
     await page.reload();
     // The former "all" situation is the default view now.

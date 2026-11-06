@@ -202,3 +202,32 @@ test('a date over every offer prints without the list of offers', () => {
   expect(line('Sábado letivo do teste')).not.toContain('[');
   expect(line('Reunião escolhida para todas')).not.toContain('[');
 });
+
+test('a Saturday of one offer prints with that offer and counts only for it', () => {
+  const state = calendarOffersFixture();
+  const day = civilDate(`${state.year}-03-06`);
+  const events = [
+    ...state.events,
+    {
+      id: 'saturday-integrado',
+      name: 'Sábado letivo',
+      start: day,
+      end: day,
+      effect: 'include' as const,
+      category: 'sabado',
+      offers: ['integrado'],
+    },
+  ];
+  const before = evaluateCalendar(state, state.events);
+  const result = evaluateCalendar(state, events);
+  expect(result.byOffer.integrado!.checks[0]!.observed).toBe(
+    before.byOffer.integrado!.checks[0]!.observed + 1,
+  );
+  for (const offer of state.offers.filter((item) => item.id !== 'integrado'))
+    expect(result.byOffer[offer.id]!.checks[0]!.observed).toBe(
+      before.byOffer[offer.id]!.checks[0]!.observed,
+    );
+  expect(proensLayout(state, events, result, null, '')).toContain(
+    'Sábado letivo [Técnico integrado]',
+  );
+});

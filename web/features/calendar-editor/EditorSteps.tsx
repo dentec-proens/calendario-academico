@@ -4,6 +4,15 @@ import { useEffect, useRef } from 'react';
 import type { EditorSection } from '#src/app/routes.ts';
 import { editorNavigation, editorSteps } from './editor-steps.ts';
 
+/**
+ * Each step says what its number measures: the review step adds up every kind of item and the
+ * organization corrects the structure, so neither reads as the number of activities to fill.
+ */
+const countQualifier: Partial<Record<EditorSection, string>> = {
+  periods: ' de estrutura',
+  issues: ' no total',
+};
+
 export default function EditorSteps({
   calendarId,
   current,
@@ -12,9 +21,9 @@ export default function EditorSteps({
 }: {
   calendarId: string;
   current: EditorSection;
-  /** Open content issues, shown under the review step that lists them. */
+  /** Open items of every kind, shown under the review step that lists them. */
   issueCount: number;
-  /** The issues that each filling step can correct. */
+  /** The items that each filling step can correct, each counted once. */
   stepCounts: Partial<Record<EditorSection, number>>;
 }) {
   const { active, stepIndex } = editorNavigation(current);
@@ -34,8 +43,8 @@ export default function EditorSteps({
         <summary>
           <span>
             {active
-              ? `Etapa ${stepIndex + 1} de ${editorSteps.length} · ${active.title}`
-              : 'Etapas de elaboração'}
+              ? `Passo ${stepIndex + 1} de ${editorSteps.length} · ${active.title}`
+              : 'Passos de elaboração'}
           </span>
           <ChevronDown aria-hidden="true" />
         </summary>
@@ -75,6 +84,7 @@ export default function EditorSteps({
                     {count > 0 && (
                       <span className="editor-step-note" data-issue-count={count}>
                         {count} {count === 1 ? 'pendência' : 'pendências'}
+                        {countQualifier[step.section]}
                       </span>
                     )}
                   </span>

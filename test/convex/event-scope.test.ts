@@ -152,3 +152,43 @@ test('saving a calendar with vacations and Saturdays, unchanged, writes nothing'
   expect(await storedHash()).toBe(hash);
   expect((await load()).state).toEqual(record.state);
 });
+
+test('a Saturday of one offer is saved as it lists and counts only for that offer', async () => {
+  const { record, save, load } = await stored(offerAdditionCase());
+  const offers = record.state.offers.map((offer) => offer.id);
+  const before = countingOf(
+    record.state as unknown as ScopeState,
+    record.institutionalSnapshot,
+    offers,
+  );
+  const saturday = (date: string, id: string) => ({
+    id,
+    name: 'Sábado letivo',
+    start: date,
+    end: date,
+    effect: 'include',
+    offers: ['integrado'],
+    category: 'sabado',
+  });
+  const withSaturday = (date: string, id: string) =>
+    ({
+      ...record.state,
+      events: [...record.state.events, saturday(date, id)],
+    }) as unknown as typeof record.state;
+
+  await expect(save(withSaturday('2027-01-02', 'outside'))).rejects.toThrow(/período letivo/);
+
+  await save(withSaturday('2027-03-06', 'saturday-integrado'));
+  const loaded = await load();
+  expect(loaded.state.events.find((event) => event.id === 'saturday-integrado')?.offers).toEqual([
+    'integrado',
+  ]);
+  const after = countingOf(
+    loaded.state as unknown as ScopeState,
+    loaded.institutionalSnapshot,
+    offers,
+  );
+  expect(after.integrado).not.toEqual(before.integrado);
+  for (const offer of offers.filter((id) => id !== 'integrado'))
+    expect(after[offer], offer).toEqual(before[offer]);
+});

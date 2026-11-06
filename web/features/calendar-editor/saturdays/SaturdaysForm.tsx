@@ -1,6 +1,12 @@
 import { compactDate } from '#src/domain/date-labels.ts';
 import { useMemo, useRef, useState } from 'react';
-import { isYearSaturday, saturdayYear } from '#src/domain/calendar/activities/saturdays.ts';
+import {
+  isYearSaturday,
+  saturdaySelection,
+  saturdayYear,
+} from '#src/domain/calendar/activities/saturdays.ts';
+import { offerIds, labelFor, offerNames } from '#src/domain/calendar/offers.ts';
+import { periodsForOffer } from '#src/domain/calendar/organization/periods.ts';
 import { applySaturdayActivities } from '#src/domain/calendar/commands/saturdays.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
@@ -14,6 +20,7 @@ import { Button } from '../../../components/ui/Button.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import SaturdayRegisteredList from './SaturdayRegisteredList.tsx';
 import SaturdayPrerequisites from './SaturdayPrerequisites.tsx';
+import SaturdayOfferChoice from './SaturdayOfferChoice.tsx';
 import { useDeferredFocus } from './useDeferredFocus.ts';
 import { useNarrowContainer } from './useNarrowContainer.ts';
 import { useAppSession } from '../../../app/session.tsx';
@@ -22,6 +29,10 @@ import './saturdays.css';
 
 /** Below this step width the panel no longer fits beside the grid and opens as a dialog. */
 const compactWidth = 760;
+
+// An unmarked list rather than a marked one: by default each date reaches every offer with a period
+// on it, including offers that a later selected date brings in.
+const emptySelection = { dates: [] as string[], unmarkedOffers: [] as string[], name: '' };
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
@@ -56,7 +67,7 @@ export default function SaturdaysForm() {
   });
   const { form, values, submit, pending, error } = useCalendarForm(
     'saturdays',
-    { dates: [] as string[], name: '' },
+    emptySelection,
     function apply(value) {
       let first = '';
       session.apply((current) => {
@@ -73,12 +84,13 @@ export default function SaturdaysForm() {
           current,
           dates.map((date) => ({ date, name: value.name })),
           () => crypto.randomUUID(),
+          offerIds(current).filter((offer) => !value.unmarkedOffers.includes(offer)),
         );
       });
       setPanelOpen(false);
       // The submit button leaves with the selection: continue from the first registered date.
       if (first) focusLater(() => dateControl(first));
-      return { dates: [], name: '' };
+      return emptySelection;
     },
   );
   const months = useMemo(() => saturdayYear(state, events), [state, events]);
@@ -97,11 +109,17 @@ export default function SaturdaysForm() {
   );
   const editing = registered.find((day) => day.registration!.id === editingId);
   const selectionLabel = plural(selection.length, 'sábado selecionado', 'sábados selecionados');
+  const withoutPeriods = offerIds(state).filter((offer) => !periodsForOffer(state, offer).length);
+  const reach = saturdaySelection(
+    state,
+    selection.map((day) => day.date),
+    offerIds(state).filter((offer) => !values.unmarkedOffers.includes(offer)),
+  );
+  const dateList = (dates: readonly string[]) => dates.map(shortDate).join(', ');
 
   function clear(focus?: string) {
     // An empty selection returns to the defaults, so nothing remains unapplied.
-    form.setFieldValue('dates', []);
-    form.setFieldValue('name', '');
+    form.reset(emptySelection);
     setPanelOpen(false);
     // A compact panel closes first; the date is reachable only once the dialog is gone.
     if (focus) focusLater(() => dateControl(focus));
@@ -161,8 +179,14 @@ export default function SaturdaysForm() {
           <dl className="saturday-registration">
             <dt>Atividade</dt>
             <dd>{editing.registration!.name}</dd>
+            {state.offers.length > 1 && (
+              <>
+                <dt>Vale para</dt>
+                <dd>{offerNames(state, editing.registration!.offers)}</dd>
+              </>
+            )}
           </dl>
-          <p className="help">Edite esta data na etapa {editorPages.events.title}.</p>
+          <p className="help">Edite esta data no passo {editorPages.events.title}.</p>
         </>
       )}
     </section>
@@ -243,6 +267,43 @@ export default function SaturdaysForm() {
           </ul>
         </div>
       )}
+      <form.Field name="unmarkedOffers">
+        {(field) => (
+          <SaturdayOfferChoice
+            id="saturday-offers"
+            form="saturday-form"
+            items={reach.offers.map(({ id, reached, outOfPeriod }) => ({
+              id,
+              label: labelFor(state, id),
+              checked: Boolean(reached.length) && !field.state.value.includes(id),
+              disabled: !reached.length,
+              ...(!reached.length
+                ? { note: 'Sem período letivo nas datas selecionadas.' }
+                : outOfPeriod.length
+                  ? {
+                      note: `Sem período letivo em ${dateList(outOfPeriod)}: ${outOfPeriod.length === 1 ? 'esta data fica' : 'estas datas ficam'} de fora.`,
+                    }
+                  : {}),
+            }))}
+            onToggle={(id, checked) =>
+              field.handleChange(
+                checked
+                  ? field.state.value.filter((item) => item !== id)
+                  : [...field.state.value, id],
+              )
+            }
+          />
+        )}
+      </form.Field>
+      {reach.unreached.length > 0 && (
+        <Notice id="saturday-unreached" tone="warning">
+          <p>
+            {reach.unreached.length === 1 ? 'Esta data não vale' : 'Estas datas não valem'} para
+            nenhuma oferta marcada: <strong>{dateList(reach.unreached)}</strong>. Marque outra
+            oferta ou retire {reach.unreached.length === 1 ? 'a data' : 'as datas'} da seleção.
+          </p>
+        </Notice>
+      )}
       <FormFeedback error={error} />
       <FormActions>
         <Button type="submit" id="saturday-submit" form="saturday-form">
@@ -256,9 +317,10 @@ export default function SaturdaysForm() {
   );
   const idleBody = (
     <SaturdayRegisteredList
-      year={state.year}
+      calendarId={record.id}
       registered={registered}
       hasAvailable={saturdays.some((day) => day.status === 'available')}
+      offersWithoutPeriods={withoutPeriods}
       onOpen={(eventId) => {
         // The list leaves the panel; continue on the opened registration.
         openEditing(eventId);
@@ -276,7 +338,7 @@ export default function SaturdaysForm() {
     <div className="saturday-step" ref={step}>
       <SaturdayPrerequisites
         calendarId={record.id}
-        hasPeriods={state.periods.length > 0}
+        offersWithoutPeriods={withoutPeriods}
         weekConfirmed={Boolean(state.weekConfirmed)}
       />
       <div className="saturday-layout">
@@ -287,7 +349,6 @@ export default function SaturdaysForm() {
             {(field) => (
               <SaturdayYearGrid
                 months={months}
-                year={state.year}
                 selected={field.state.value}
                 editingId={editing ? editingId : null}
                 disabled={readOnly || pending}

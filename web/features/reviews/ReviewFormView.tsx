@@ -2,9 +2,10 @@ import { useState, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { ChevronDown, Copy, Download, Eye, FileCode2, FileText, Pencil, Save } from 'lucide-react';
 import { ActionMenu, ActionMenuItem } from '../../components/ui/ActionMenu.tsx';
 import { Button } from '../../components/ui/Button.tsx';
-import { ChoiceGroup } from '../../components/ui/ChoiceGroup.tsx';
+import { assessmentCounts, assessmentSituation } from '#src/domain/reviews/criteria.ts';
 import { TextField } from '../../components/ui/Field.tsx';
 import ReviewCriterion from './ReviewCriterion.tsx';
+import ReviewIndex, { reviewFilterLabels, type ReviewFilter } from './ReviewIndex.tsx';
 import { ReviewPreview } from './review-export.tsx';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import type { ReviewDraft, ReviewEntry, ReviewDocument } from './review-values.ts';
@@ -58,10 +59,13 @@ export default function ReviewFormView({
 }: Props) {
   const opened = draft.opened;
   const dirty = draft.dirty;
-  const pendingIds = () =>
-    new Set(draft.entries.filter((entry) => entry.status === 'PENDENTE').map((entry) => entry.id));
-  const toAssess = pendingIds().size;
-  const [filter, setFilter] = useState<'all' | 'pending'>('all');
+  const idsIn = (situation: ReviewFilter) =>
+    new Set(
+      draft.entries
+        .filter((entry) => assessmentSituation(entry) === situation)
+        .map((entry) => entry.id),
+    );
+  const [filter, setFilter] = useState<ReviewFilter>('all');
   // The filtered list holds still until the filter changes or the parecer is saved, so choosing an
   // assessment never takes a criterion away before its observation is written.
   const [listed, setListed] = useState<ReadonlySet<string>>(new Set());
@@ -69,7 +73,7 @@ export default function ReviewFormView({
   const [listedFor, setListedFor] = useState(opened);
   if (listedFor !== opened) {
     setListedFor(opened);
-    setListed(pendingIds());
+    setListed(idsIn(filter));
   }
   const rules = opened.rulesetVersion?.match(/-(v\d+)$/)?.[1];
   return (
@@ -103,23 +107,19 @@ export default function ReviewFormView({
               {rules ? `${opened.source.norm} · regras ${rules}` : 'Ano sem norma configurada'}
             </p>
           </div>
-          <ChoiceGroup
-            className="review-filter"
-            label="Mostrar critérios"
-            value={filter}
-            options={[
-              { value: 'all', label: `Todos (${opened.criteria.length})` },
-              { value: 'pending', label: `A avaliar (${toAssess})` },
-            ]}
-            onValueChange={(value) => {
+          <ReviewIndex
+            total={opened.criteria.length}
+            counts={assessmentCounts(draft.entries)}
+            filter={filter}
+            onChange={(value) => {
               setFilter(value);
-              setListed(pendingIds());
+              setListed(idsIn(value));
             }}
           />
           <p className="visually-hidden" role="status">
-            {filter === 'pending'
-              ? `Mostrando ${listed.size} de ${opened.criteria.length} critérios.`
-              : `Mostrando ${opened.criteria.length} critérios.`}
+            {filter === 'all'
+              ? `Mostrando ${opened.criteria.length} critérios.`
+              : `Mostrando ${listed.size} de ${opened.criteria.length} critérios: ${reviewFilterLabels[filter]}.`}
           </p>
         </div>
         {!opened.scopeConfirmed ? (
@@ -144,14 +144,14 @@ export default function ReviewFormView({
               entry={draft.entries.find((entry) => entry.id === criterion.id) || criterion.initial}
               changed={Boolean(draft.changed[criterion.id])}
               busy={busy || readOnly}
-              hidden={filter === 'pending' && !listed.has(criterion.id)}
+              hidden={filter !== 'all' && !listed.has(criterion.id)}
               onChange={(field, value) => changeEntry(criterion.id, field, value)}
             />
           ))}
         </ul>
-        {filter === 'pending' && listed.size === 0 ? (
+        {filter !== 'all' && listed.size === 0 ? (
           <p className="help" data-review-empty>
-            Nenhum critério a avaliar.
+            Nenhum critério nesta situação: {reviewFilterLabels[filter]}.
           </p>
         ) : null}
         {opened.notEvaluated.length ? (

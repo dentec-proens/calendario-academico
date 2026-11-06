@@ -426,9 +426,9 @@ test('commands and direct import reject teaching inclusion outside the selected 
     effect: 'include' as const,
     offers: ['graduacao'],
   };
-  expect(() => applyDate(state, event)).toThrow('períodos');
+  expect(() => applyDate(state, event)).toThrow('período letivo');
   expect(() => normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [event] })).toThrow(
-    'períodos',
+    'período letivo',
   );
   const integrated = { ...event, offers: ['integrado'] };
   expect(

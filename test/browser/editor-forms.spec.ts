@@ -272,7 +272,7 @@ test('without teaching periods the Saturday step explains what is pending and li
   await expect(pending).toContainText('Nenhum sábado pode ser selecionado ainda');
   await expect(page.locator('#saturday-dates input')).toHaveCount(0);
   await expect(page.locator('#saturday-panel')).toContainText(
-    'Não há sábados disponíveis para seleção.',
+    'Não há sábados disponíveis para seleção: Técnico integrado sem período letivo.',
   );
   await pending.getByRole('link', { name: 'Organização por oferta' }).click();
   await expect(page).toHaveURL(/\/periodos$/);
@@ -294,7 +294,7 @@ test('Saturdays outside teaching periods are shown but not selectable', async ({
   const outside = page.locator('[data-saturday="2027-04-03"]');
   await expect(outside).toHaveAttribute('data-status', 'outside');
   await expect(outside.locator('input')).toHaveCount(0);
-  await expect(outside).toContainText('fora dos períodos letivos');
+  await expect(outside).toContainText('Técnico integrado: sem período letivo nesta data');
 });
 
 test('a selected holiday warns that it will not count as a teaching day', async ({
@@ -422,7 +422,7 @@ test('multi-day inclusions over a Saturday are registered but edited in the Acti
   await expect(saturday.locator('[data-edit-saturday]')).toHaveCount(0);
   await saturday.locator('button').click();
   await expect(page.locator('#saturday-panel')).toContainText(
-    'Edite esta data na etapa Atividades.',
+    'Edite esta data no passo Atividades.',
   );
   await expect(page.locator('#saturday-edit-form')).toHaveCount(0);
 });

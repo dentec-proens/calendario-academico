@@ -8,6 +8,7 @@ import { portalReview } from './portal-router-client.ts';
 import type { Bootstrap } from '../../web/shared/convex/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import type { CalendarStatus } from '../../src/domain/calendar/lifecycle.ts';
+import { matchesSearch } from '../../src/shared/search-text.ts';
 import '../../web/style.css';
 import '../../web/portal.css';
 import '../../web/portal/react-portal.css';
@@ -17,6 +18,8 @@ if (location.pathname === '/__portal')
   history.replaceState(null, '', '/calendarios' + location.search);
 let collectionsReady = !new URLSearchParams(location.search).has('collections-loading');
 const multipleReviews = new URLSearchParams(location.search).has('multiple-reviews');
+// A long list whose only "Informática" calendar sits past several server pages.
+const longList = new URLSearchParams(location.search).has('long-list');
 const removedCalendars = new Set<string>();
 const queryListeners = new Set<{ refresh: () => void; notify: () => void }>();
 window.portalRouterTest.resolvePendingCollections = () => {
@@ -145,6 +148,35 @@ function calendarRows(deleted: boolean) {
     .filter((item) => removedCalendars.has(item.id) === deleted)
     .map((item) => (deleted ? { ...item, deletedAt: 1793361600000 } : item));
 }
+const longListRows = Array.from({ length: 260 }, (_, index) => ({
+  ...calendar,
+  id: `calendar-long-${index}` as Id<'calendars'>,
+  name: `Calendário 2027 - Campus de teste — Lista ${index}`,
+  status: (index % 2 ? 'vigente' : 'rascunho') as CalendarStatus,
+  courses: index === 230 ? 'Técnico em Informática' : 'Curso de teste',
+}));
+/** As `calendarPage`: the situation fills the page, and the search filters each page once read. */
+function calendarPage(args: {
+  deleted?: boolean;
+  status?: string;
+  search?: string;
+  paginationOpts?: { numItems: number; cursor: string | null };
+}) {
+  const rows = (longList && !args.deleted ? longListRows : calendarRows(!!args.deleted)).filter(
+    (item) => !args.status || item.status === args.status,
+  );
+  const start = Number(args.paginationOpts?.cursor ?? 0);
+  const end = start + (args.paginationOpts?.numItems ?? rows.length);
+  return {
+    page: rows
+      .slice(start, end)
+      .filter((item) =>
+        matchesSearch(args.search ?? '', item.name, item.courses, item.classes, item.shifts),
+      ),
+    isDone: end >= rows.length,
+    continueCursor: String(end),
+  };
+}
 window.portalRouterTest.restoreCalendar = (id) => {
   removedCalendars.delete(id);
   const listeners = [...queryListeners];
@@ -164,7 +196,15 @@ const client = {
   subscribeToConnectionState: () => () => {},
   watchQuery: (
     reference: FunctionReference<'query'>,
-    args: { deleted?: boolean; year?: number; status?: string; id?: string; campusId?: string },
+    args: {
+      deleted?: boolean;
+      year?: number;
+      status?: string;
+      id?: string;
+      campusId?: string;
+      search?: string;
+      paginationOpts?: { numItems: number; cursor: string | null };
+    },
   ) => {
     const name = getFunctionName(reference);
     let result =
@@ -178,16 +218,14 @@ const client = {
           })()
         : name === 'reviews:reviewQueueCounts'
           ? reviewQueueCounts(args.campusId)
-          : {
-              page:
-                name === 'calendars:calendarPage'
-                  ? calendarRows(!!args.deleted)
-                  : name === 'reviews:reviewQueue'
-                    ? reviewQueueRows(args.status, args.campusId)
-                    : [],
-              isDone: true,
-              continueCursor: '',
-            };
+          : name === 'calendars:calendarPage'
+            ? calendarPage(args)
+            : {
+                page:
+                  name === 'reviews:reviewQueue' ? reviewQueueRows(args.status, args.campusId) : [],
+                isDone: true,
+                continueCursor: '',
+              };
     const deferred = name === 'reviews:review' && window.portalRouterTest.deferNextReview;
     if (deferred) {
       window.portalRouterTest.deferNextReview = false;
@@ -205,11 +243,7 @@ const client = {
       onUpdate: (onUpdate: () => void) => {
         const listener = {
           refresh: () => {
-            if ('page' in result && name === 'calendars:calendarPage')
-              result = {
-                ...result,
-                page: calendarRows(!!args.deleted),
-              };
+            if ('page' in result && name === 'calendars:calendarPage') result = calendarPage(args);
             if ('page' in result && name === 'reviews:reviewQueue')
               result = { ...result, page: reviewQueueRows(args.status, args.campusId) };
           },

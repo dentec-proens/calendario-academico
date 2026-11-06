@@ -708,3 +708,181 @@ test('a suggestion sent without an assessment is saved as pending, and a decisio
     notes: 'Observação preservada.',
   });
 });
+
+const unmet = (notes: Record<string, string>) => (id: string) =>
+  id in notes ? { status: 'NAO_ATENDIDO' as const, notes: notes[id] } : undefined;
+
+test('a return copies the unmet criteria of the saved parecer, and the campus reads only their names and observations', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await act(f.campus, id, 'submit');
+  await saveReview(f.reviewer, id, {
+    entry: (criterion) =>
+      criterion === 'VI'
+        ? { status: 'NAO_ATENDIDO', notes: '  Falta o prazo de aproveitamento.  ' }
+        : criterion === 'minutes'
+          ? { status: 'NAO_ATENDIDO' }
+          : undefined,
+  });
+  // The client states only the note: a list in the request does not reach the mutation.
+  const { status, statusRevision } = await calendarStatus(f.campus, id);
+  await expect(
+    f.reviewer.mutation(api.calendars.transitionCalendar, {
+      id,
+      from: status,
+      statusRevision,
+      action: 'return',
+      note: 'Ajuste.',
+      returnedCriteria: [{ criterionId: 'forged', title: 'Forjado' }],
+    } as never),
+  ).rejects.toThrow(/returnedCriteria/);
+  await expect(act(f.campus, id, 'return', { note: 'Ajuste.' })).rejects.toThrow(/não permitida/);
+  await expect(act(f.otherCampus, id, 'return', { note: 'Ajuste.' }, f.campus)).rejects.toThrow();
+
+  await act(f.reviewer, id, 'return', { note: 'Ajuste.' });
+  const [stored] = await f.submissions(id);
+  const expected = [
+    { criterionId: 'minutes', title: 'Atas do CGPC e do Codic' },
+    {
+      criterionId: 'VI',
+      title: 'Aproveitamento e certificação',
+      note: 'Falta o prazo de aproveitamento.',
+    },
+  ];
+  expect(stored.decisions[0].returnedCriteria).toEqual(expected);
+  // Authorship comes from the session, as for every decision.
+  expect(stored.decisions[0].by.name).toBe('Parecerista');
+
+  const campusRead = await calendarStatus(f.campus, id);
+  expect(campusRead.record.lastReturn).toEqual({
+    submissionId: stored._id,
+    sequence: 1,
+    at: expect.any(String),
+    note: 'Ajuste.',
+    returnedCriteria: expected,
+  });
+  const history = await f.campus.query(api.calendars.calendarSubmissions, {
+    id,
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(history.page[0].decisions[0]).toEqual({
+    action: 'returned',
+    at: expect.any(String),
+    note: 'Ajuste.',
+    returnedCriteria: expected,
+  });
+  // The copy is what the campus gets: the parecer stays closed to it, and to other campuses too.
+  await expect(f.campus.query(api.reviews.review, { id })).rejects.toThrow(/exclusivo/);
+  await expect(f.otherCampus.query(api.calendars.calendar, { id })).rejects.toThrow();
+  await expect(
+    f.otherCampus.query(api.calendars.calendarSubmissions, {
+      id,
+      paginationOpts: { numItems: 10, cursor: null },
+    }),
+  ).rejects.toThrow();
+
+  const reviewerRead = await calendarStatus(f.reviewer, id);
+  expect(reviewerRead.record.lastReturn).toMatchObject({
+    by: 'Parecerista',
+    returnedCriteria: expected,
+  });
+  const reviewerHistory = await f.reviewer.query(api.calendars.calendarSubmissions, {
+    id,
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(reviewerHistory.page[0].decisions[0]).toMatchObject({
+    by: { name: 'Parecerista' },
+    reviewRevision: 1,
+    returnedCriteria: expected,
+  });
+});
+
+test('the list of a return stays with the draft restored from it', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await act(f.campus, id, 'submit');
+  await saveReview(f.reviewer, id, { entry: unmet({ VI: 'Falta o prazo.' }) });
+  await act(f.reviewer, id, 'return', { note: 'Ajuste.' });
+  const { record } = await calendarStatus(f.campus, id);
+  await f.campus.mutation(api.calendars.deleteCalendar, { id, version: record.version });
+  await f.campus.mutation(api.calendars.restoreCalendar, { id, version: record.version });
+  const restored = await calendarStatus(f.campus, id);
+  expect(restored.status).toBe('rascunho');
+  expect(restored.record.lastReturn?.returnedCriteria).toEqual([
+    { criterionId: 'VI', title: 'Aproveitamento e certificação', note: 'Falta o prazo.' },
+  ]);
+});
+
+test('a return carries no list without an assessment of this round', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await act(f.campus, id, 'submit');
+  await act(f.reviewer, id, 'return', { note: 'Sem parecer salvo.' });
+  const withoutReview = await calendarStatus(f.campus, id);
+  expect(withoutReview.record.lastReturn).not.toHaveProperty('returnedCriteria');
+  expect((await f.submissions(id))[0].decisions[0]).not.toHaveProperty('returnedCriteria');
+
+  // A suggestion saved without an assessment is not a finding.
+  await act(f.campus, id, 'submit');
+  await saveReview(f.reviewer, id, {
+    entry: (criterion) =>
+      criterion === 'VI'
+        ? { status: 'NAO_ATENDIDO', notes: 'Sugestão', reviewed: false }
+        : undefined,
+  });
+  await act(f.reviewer, id, 'return', { note: 'Só a sugestão.' });
+  expect((await f.submissions(id))[1].decisions[0]).not.toHaveProperty('returnedCriteria');
+
+  // A parecer of the previous round is not inherited.
+  await act(f.campus, id, 'submit');
+  await saveReview(f.reviewer, id, { entry: unmet({ VI: 'Falta o prazo.' }) });
+  await act(f.reviewer, id, 'return', { note: 'Com lista.' });
+  await act(f.campus, id, 'submit');
+  await act(f.reviewer, id, 'return', { note: 'Rodada sem parecer.' });
+  const rounds = await f.submissions(id);
+  expect(rounds[2].decisions[0].returnedCriteria).toHaveLength(1);
+  expect(rounds[3].decisions[0]).not.toHaveProperty('returnedCriteria');
+});
+
+test('a return recorded before the list keeps showing only its note', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await act(f.campus, id, 'submit');
+  await saveReview(f.reviewer, id, { entry: unmet({ VI: 'Falta o prazo.' }) });
+  await act(f.reviewer, id, 'return', { note: 'Devolução antiga.' });
+  const [stored] = await f.submissions(id);
+  const { returnedCriteria: _dropped, ...older } = stored.decisions[0];
+  await f.client.run((ctx) => ctx.db.patch(stored._id, { decisions: [older] }));
+  const { record } = await calendarStatus(f.campus, id);
+  expect(record.lastReturn).toEqual({
+    submissionId: stored._id,
+    sequence: 1,
+    at: expect.any(String),
+    note: 'Devolução antiga.',
+  });
+});
+
+test('a return is refused whole when its criteria do not fit, never cut', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await act(f.campus, id, 'submit');
+  // Within the limit of each observation, but over the limit of the list: 2 bytes per character.
+  await saveReview(f.reviewer, id, {
+    entry: () => ({ status: 'NAO_ATENDIDO', notes: 'ç'.repeat(2000) }),
+  });
+  await expect(act(f.reviewer, id, 'return', { note: 'Ajuste.' })).rejects.toThrow(
+    /Encurte-as no parecer/,
+  );
+  expect((await calendarStatus(f.reviewer, id)).status).toBe('em_revisao');
+  expect((await f.submissions(id))[0].decisions).toEqual([]);
+  // A list that fits is refused too when the submission has no room left for it.
+  await saveReview(f.reviewer, id, { entry: unmet({ VI: 'Falta o prazo.' }) });
+  const [stored] = await f.submissions(id);
+  await f.client.run((ctx) => ctx.db.patch(stored._id, { campusName: 'c'.repeat(1000 * 1024) }));
+  await expect(act(f.reviewer, id, 'return', { note: 'Ajuste.' })).rejects.toThrow(
+    /Encurte-as no parecer/,
+  );
+  await f.client.run((ctx) => ctx.db.patch(stored._id, { campusName: stored.campusName }));
+  await act(f.reviewer, id, 'return', { note: 'Ajuste.' });
+  expect((await calendarStatus(f.campus, id)).record.lastReturn?.returnedCriteria).toHaveLength(1);
+});

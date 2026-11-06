@@ -9,6 +9,7 @@ import {
   effect,
   calendarStatus,
   regime,
+  returnedCriterion,
   submissionDecision,
   reviewFields,
   reviewEntry,
@@ -131,6 +132,7 @@ export const lastReturnDto = v.object({
   at: v.string(),
   note: v.string(),
   by: v.optional(v.string()),
+  returnedCriteria: v.optional(v.array(returnedCriterion)),
 });
 export const submissionListItem = v.object({
   id: v.id('calendarSubmissions'),

@@ -64,6 +64,7 @@ const calls = {
   deferNextSave: false,
   pendingSave: false,
   lastSave: null as Parameters<typeof reviewOperations.save>[1] | null,
+  lastTransition: null as Record<string, unknown> | null,
 };
 let finishPendingSave: (() => void) | undefined;
 function publish() {
@@ -242,6 +243,13 @@ export const convex = {
       publish();
       return null;
     }
+    if (getFunctionName(reference) === 'calendars:transitionCalendar') {
+      calls.lastTransition = structuredClone(args);
+      snapshot.status = 'devolvido';
+      snapshot.statusRevision++;
+      publish();
+      return { status: snapshot.status, statusRevision: snapshot.statusRevision };
+    }
     if (getFunctionName(reference) !== 'reviews:saveReview')
       return Promise.reject(new Error('Mutação sintética não implementada.'));
     calls.saves++;
@@ -266,6 +274,7 @@ export const convex = {
     snapshot.assignee ??= { id: user.id, name: user.name, at: '2026-10-23T15:00:00Z' };
     snapshot.review = {
       calendarId: snapshot.calendar.id,
+      submissionId: body.submissionId,
       calendarVersion: body.calendarVersion,
       catalogueRevision: body.catalogueRevision,
       rulesetVersion: body.rulesetVersion,

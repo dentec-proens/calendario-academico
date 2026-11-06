@@ -15,11 +15,6 @@ for (const width of [1440, 390, 320]) {
         name: 'Lixeira',
       }),
     ).toBeVisible();
-    if (width >= 1440) {
-      const filter = await page.locator('#campus-filter').boundingBox();
-      const create = await page.getByRole('button', { name: 'Novo calendário' }).boundingBox();
-      expect(Math.abs(filter!.y + filter!.height - (create!.y + create!.height))).toBeLessThan(2);
-    }
     await expect(trash).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await expect(trash).toHaveCSS('border-top-width', '0px');
     const linkBox = await trash.boundingBox();

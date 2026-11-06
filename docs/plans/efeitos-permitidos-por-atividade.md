@@ -180,7 +180,7 @@ atividade é interpretação versionada como as demais.
 - Cobertura: formação com `include` antigo continua cobrindo a atividade e somando horas.
 - Contagem: conselho com `exclude` numa quarta do período retira o dia só das ofertas do escopo;
   exclusão vence inclusão simultânea.
-- Pendência: registro antigo com `include` em `family-meeting` aparece como `issue` na Revisão, sem
+- Pendência: registro antigo com `include` em `family-meeting` aparece como `issue` em Conferir e enviar, sem
   erro ao carregar; `keptWithoutActivity` não é reavaliado.
 - Página de regras: a linha de `council` mostra “Não constitui dia letivo”; a de `campus-events` não
   (teste de ausência justificado: a regra distingue as duas linhas). Atualizar a versão esperada em

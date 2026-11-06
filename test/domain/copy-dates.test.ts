@@ -158,7 +158,7 @@ describe('copyList', () => {
     });
     expect(list(source).candidates[0]).toMatchObject({
       group: 'blocked',
-      blockedBy: 'Este calendário não gera esta atividade.',
+      blockedBy: 'Esta atividade não existe na organização atual deste calendário.',
     });
   });
 
@@ -391,5 +391,79 @@ describe('applyCopiedDates', () => {
     expect(() =>
       applyCopiedDates(graduation(), { ...source, year: 2028 }, [], ['graduacao'], ids),
     ).toThrow(/mesmo ano/);
+  });
+});
+
+describe('Saturdays reach the offers with a period on the day', () => {
+  const saturday = date('Reposição', {
+    start: civilDate('2027-03-06'),
+    end: civilDate('2027-03-06'),
+    effect: 'include',
+    category: 'sabado',
+  });
+  const period = (offerId: string, start: string, end: string) => ({
+    id: `period-${offerId}`,
+    name: offerId,
+    start: civilDate(start),
+    end: civilDate(end),
+    association: { status: 'defined' as const, offers: [offerId], term: 'annual' as const },
+  });
+  const source = calendar(secondary(), {
+    periods: [
+      period('integrado', '2027-02-01', '2027-12-17'),
+      period('subsequente', '2027-02-01', '2027-12-17'),
+    ],
+    events: [saturday],
+  });
+  const chosen = ['integrado', 'subsequente'];
+
+  test('an offer without a period stays out instead of blocking the date', () => {
+    const target = calendar(secondary(), {
+      periods: [period('integrado', '2027-02-01', '2027-12-17')],
+    });
+    const item = candidate(copyList(target, source, chosen).candidates, 'Reposição');
+    expect(item.group).toBe('activity');
+    expect(item.suggested).toBe(false);
+    expect(item.blockedBy).toBeUndefined();
+    expect(item.warning).toContain('Valerá só para Técnico integrado');
+    const copied = applyCopiedDates(target, source, ['Reposição'], chosen, ids);
+    expect(copied.events.map((event) => event.offers)).toEqual([['integrado']]);
+  });
+
+  test('no offer in period blocks the date and names the offers', () => {
+    const target = calendar(secondary());
+    const item = candidate(copyList(target, source, chosen).candidates, 'Reposição');
+    expect(item.needsPeriods).toBe(true);
+    expect(item.blockedBy).toContain('Fora dos períodos');
+    expect(item.blockedBy).toContain('Técnico integrado e Técnico subsequente');
+    expect(() => applyCopiedDates(target, source, ['Reposição'], chosen, ids)).toThrow(
+      /Reposição: Fora dos períodos/,
+    );
+  });
+
+  test('a Saturday recorded for one offer reaches only what is still missing', () => {
+    const target = calendar(secondary(), {
+      periods: source.periods,
+      events: [{ ...saturday, id: 'own', offers: ['integrado'] }],
+    });
+    const copied = applyCopiedDates(target, source, ['Reposição'], chosen, ids);
+    expect(copied.events.map((event) => event.offers)).toEqual([['integrado'], ['subsequente']]);
+  });
+
+  test('other inclusions still need a period for every offer', () => {
+    const week = date('Semana', {
+      start: civilDate('2027-03-01'),
+      end: civilDate('2027-03-05'),
+      effect: 'include',
+      category: 'institucional',
+    });
+    const target = calendar(secondary(), {
+      periods: [period('integrado', '2027-02-01', '2027-12-17')],
+    });
+    const item = candidate(
+      copyList(target, { ...source, events: [week] }, chosen).candidates,
+      'Semana',
+    );
+    expect(item.needsPeriods).toBe(true);
   });
 });

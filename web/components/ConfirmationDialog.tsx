@@ -4,12 +4,31 @@ import {
   getConfirmation,
   beginConfirmationOperation,
   subscribeConfirmation,
+  type ConfirmationItem,
   type ConfirmationRequest,
 } from './confirmation.ts';
 import './confirmation-dialog.css';
 import { Notice } from './ui/Notice.tsx';
 
 const icons = { danger: Trash2, primary: Info, warning: AlertTriangle, success: CheckCircle2 };
+
+function ItemBody({ item }: { item: ConfirmationItem }) {
+  return (
+    <>
+      <strong>{item.title}</strong>
+      {item.badges?.length ? (
+        <span className="confirmation-dialog__badges">
+          {item.badges.map((badge) => (
+            <span key={badge} className="ui-status ui-status--neutral">
+              {badge}
+            </span>
+          ))}
+        </span>
+      ) : null}
+      {item.detail ? <span className="confirmation-dialog__detail">{item.detail}</span> : null}
+    </>
+  );
+}
 
 function ConfirmationDialog({ request }: { request: ConfirmationRequest }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -97,9 +116,30 @@ function ConfirmationDialog({ request }: { request: ConfirmationRequest }) {
           <p>{request.description}</p>
           {request.items?.length ? (
             <ul className="confirmation-dialog__items">
-              {request.items.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
+              {request.items.map((item) =>
+                typeof item === 'string' ? (
+                  <li key={item}>{item}</li>
+                ) : (
+                  <li key={item.key} className="confirmation-dialog__item">
+                    {item.onSelect ? (
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => {
+                          request.finish(false);
+                          item.onSelect?.();
+                        }}
+                      >
+                        <ItemBody item={item} />
+                      </button>
+                    ) : (
+                      <div>
+                        <ItemBody item={item} />
+                      </div>
+                    )}
+                  </li>
+                ),
+              )}
             </ul>
           ) : null}
           {request.consequence ? (

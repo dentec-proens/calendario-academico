@@ -27,7 +27,13 @@ import {
 } from '#src/domain/calendar/commands/organization.ts';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { validateOffers } from '#src/domain/calendar/normalization/normalize.ts';
-import { nextOfferId, offerLabel, stageCount, stagesPerTerm } from '#src/domain/calendar/offers.ts';
+import {
+  nextOfferId,
+  offerLabel,
+  stageCount,
+  stagesPerTerm,
+  labelFor,
+} from '#src/domain/calendar/offers.ts';
 import type {
   CalendarOffer,
   OfferDelivery,
@@ -40,6 +46,8 @@ import type {
   OrganizationIssue,
 } from '#src/domain/calendar/organization/offers.ts';
 import { periodsForOffer } from '#src/domain/calendar/organization/periods.ts';
+import { pendingActivityCount } from '#src/domain/calendar/pendencies.ts';
+import { periodReference } from '#src/domain/policy-references.ts';
 import { modalityLabels } from '#src/domain/calendar/modalities.ts';
 import { compactRange } from '#src/domain/date-labels.ts';
 import { Check, ChevronUp, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -134,7 +142,9 @@ export default function OfferOrganizationForm({
   onResolved: () => void;
 }) {
   const navigate = useNavigate();
-  const { state, session, readOnly, record } = useCalendarEditor();
+  const { state, session, readOnly, record, baseEvents } = useCalendarEditor();
+  /** Activities the last application added to fill, from the count before and after it. */
+  const generated = useRef(0);
   const savedOffer = state.offers.find((offer) => offer.id === existingId);
   const defaults = formDefaults(state, existingId);
   const [open, setOpen] = useState(!existingId);
@@ -170,6 +180,7 @@ export default function OfferOrganizationForm({
       if (!kind) throw new Error('Selecione o tipo de oferta.');
       let next = state;
       let appliedId = existingId ?? '';
+      const before = pendingActivityCount(state, baseEvents);
       session.apply((current) => {
         if (
           existingId &&
@@ -195,10 +206,19 @@ export default function OfferOrganizationForm({
         );
         return next;
       });
+      generated.current = pendingActivityCount(next, baseEvents) - before;
       setApplied(true);
       onResolved();
       close();
       return formDefaults(next, appliedId);
+    },
+    {
+      successMessage: () =>
+        generated.current > 0
+          ? `Sua organização gerou ${
+              generated.current === 1 ? '1 nova atividade' : `${generated.current} novas atividades`
+            } para preencher.`
+          : '',
     },
   );
   const kind = selectableModalities.find((kind) => kind === values.kind);
@@ -211,6 +231,10 @@ export default function OfferOrganizationForm({
     : values.label.trim() || (kind ? modalityLabels[kind] : 'Nova oferta');
   const metadata = { label: values.label, delivery: values.delivery };
   const candidate = selectedOffer ? { ...selectedOffer, ...metadata } : undefined;
+  const reference = candidate
+    ? periodReference(state.year, offerAsDrafted(candidate, values))
+    : undefined;
+  const referenceId = `${prefix}-period-reference`;
   let prepared = state;
   const metadataIssues: OrganizationIssue[] = [];
   try {
@@ -376,6 +400,7 @@ export default function OfferOrganizationForm({
           aria-expanded={expanded}
           aria-controls={`${prefix}-editor`}
           data-edit-organization={modality}
+          aria-label={`${expanded ? 'Recolher' : 'Editar'} ${labelFor(state, modality)}`}
           onClick={() => {
             setApplied(false);
             setOpen(!expanded);
@@ -582,7 +607,7 @@ export default function OfferOrganizationForm({
               {savedTotal && count && count < savedTotal ? (
                 <p className="help">
                   Etapas e atividades além da quantidade escolhida serão preservadas com o vínculo
-                  gravado e aparecerão em Vínculo a conferir, na etapa Atividades.
+                  gravado e aparecerão em Vínculo a conferir, no passo Atividades.
                 </p>
               ) : null}
             </section>
@@ -591,6 +616,11 @@ export default function OfferOrganizationForm({
                 Períodos e etapas
               </BlockHeading>
               <OfferTimeline year={state.year} cycles={timelineCycles(values)} />
+              {reference ? (
+                <p className="help" id={referenceId} data-period-reference>
+                  {reference}
+                </p>
+              ) : null}
               {cycles.map((cycle) => {
                 const term = semestral ? `${cycle + 1}º semestre` : 'Ano letivo';
                 return (
@@ -613,7 +643,7 @@ export default function OfferOrganizationForm({
                                 min={`${state.year}-01-01`}
                                 max={`${state.year}-12-31`}
                                 aria-invalid={Boolean(messageFor(`periods[${cycle}]`))}
-                                aria-describedby={`${prefix}-period-${cycle}-error`}
+                                aria-describedby={`${reference ? `${referenceId} ` : ''}${prefix}-period-${cycle}-error`}
                               />
                             )}
                           </form.Field>
@@ -675,7 +705,7 @@ export default function OfferOrganizationForm({
                 title="Datas que ficarão em Vínculo a conferir"
               >
                 <p>
-                  O vínculo gravado em cada data é preservado. Confira-as na etapa Atividades depois
+                  O vínculo gravado em cada data é preservado. Confira-as no passo Atividades depois
                   de aplicar.
                 </p>
                 <ul>

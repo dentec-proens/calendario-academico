@@ -1,3 +1,7 @@
+.catalogue-source {
+  overflow-wrap: anywhere;
+}
+
 .catalogue-date {
   display: block;
   margin-block: 4px;
@@ -96,4 +100,16 @@
   color: var(--ui-muted);
   font-size: 0.8rem;
   font-weight: 400;
+}
+/* A reference inside the source text, not one of the record's actions (`.records a`). */
+#root .records .catalogue-source a {
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ui-link);
+  font: inherit;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
 }

@@ -24,7 +24,7 @@ const labels: Record<string, string> = {
   ASSUME_REVIEW: 'Parecer assumido',
   RELEASE_REVIEW: 'Parecer liberado',
   SUBMIT_CALENDAR: 'Calendário enviado para análise',
-  WITHDRAW_CALENDAR: 'Envio recolhido pelo campus',
+  WITHDRAW_CALENDAR: 'Envio recolhido',
   START_REVIEW: 'Revisão iniciada',
   RETURN_CALENDAR: 'Calendário devolvido ao campus',
   CONCLUDE_REVIEW: 'Revisão concluída',

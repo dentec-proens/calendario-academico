@@ -25,7 +25,7 @@ const gallery = h(
       'aria-labelledby': 'notice-warning-title',
       actions: h('button', { type: 'button', id: 'notice-action' }, 'Cadastrar períodos'),
     },
-    h('p', null, 'Conclua esta etapa e volte para cá:'),
+    h('p', null, 'Conclua este passo e volte para cá:'),
     h(
       'ol',
       null,

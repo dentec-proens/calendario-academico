@@ -39,7 +39,7 @@ const DAY = 86400000;
 export function datesBetween(start: string, end: string) {
   const a = parseDate(start),
     b = parseDate(end);
-  if (a > b) throw new RangeError('Intervalo invertido');
+  if (a > b) throw new RangeError('O término não pode ser anterior ao início.');
   if ((b - a) / DAY > 732) throw new RangeError('Intervalo excede o limite do núcleo inicial');
   return Array.from({ length: (b - a) / DAY + 1 }, (_, i) =>
     civilDate(new Date(a + i * DAY).toISOString().slice(0, 10)),

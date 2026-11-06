@@ -13,7 +13,7 @@ for (const width of [1440, 390]) {
     await addPeriod(page, '2027-03-01', '2027-03-26');
     await expect(page.locator('#editor-section-title')).toContainText('Organização por oferta');
     await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
-      'Etapa 2 de 6: Organização por oferta',
+      'Passo 2 de 6: Organização por oferta',
     );
     await page.locator('[data-edit-organization="integrado"]').click();
     await page.locator(`#offer-integrado-count [data-choice="4"]`).click();

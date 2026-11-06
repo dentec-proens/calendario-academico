@@ -117,6 +117,7 @@ function ReviewRowActions({
     <div className="calendar-list-actions">
       {free ? (
         <Button
+          variant="secondary"
           data-assume-review={item.id}
           pending={pending}
           onClick={() =>

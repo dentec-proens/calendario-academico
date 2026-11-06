@@ -57,7 +57,16 @@ export default function TeachingDaySummary() {
           ? Math.max(0, ...result.checks.map((check) => (check.expected ?? 0) - check.observed))
           : Infinity;
         const tone = !annual || annual.expected === null ? 'neutral' : missing ? 'warning' : 'met';
-        return { modality, periods, result, annual, missing, tone };
+        // The year's total can reach the minimum while a period does not: say which one.
+        const shortIndex =
+          result && missing > 0
+            ? result.checks.findIndex(
+                (check) => check.expected !== null && check.expected - check.observed === missing,
+              )
+            : -1;
+        const short = shortIndex > 0 ? periods[shortIndex - 1] : undefined;
+        const shortLabel = short ? short.name || short.id : undefined;
+        return { modality, periods, result, annual, missing, shortLabel, tone };
       }),
     [state, evaluation, events],
   );
@@ -87,7 +96,7 @@ export default function TeachingDaySummary() {
       <summary aria-label="Ver detalhes dos dias letivos">
         <span className="teaching-day-label">Dias letivos</span>
         <span className="teaching-day-offers" role="status" aria-live="polite" aria-atomic="true">
-          {offers.map(({ modality, annual, missing, tone: offerTone }) => (
+          {offers.map(({ modality, annual, missing, shortLabel, tone: offerTone }) => (
             <span className="teaching-day-current" key={modality} data-tone={offerTone}>
               <span className="teaching-day-offer">{labelFor(state, modality)}</span>
               {annual ? (
@@ -99,7 +108,7 @@ export default function TeachingDaySummary() {
                   {annual.expected !== null && (
                     <span className="teaching-day-status">
                       {annual.observed >= annual.expected && missing > 0
-                        ? 'Confira os períodos'
+                        ? `${shortLabel ?? 'Um período'}: falta${missing === 1 ? '' : 'm'} ${missing} dia${missing === 1 ? '' : 's'}`
                         : referenceStatus(annual.observed, annual.expected)}
                     </span>
                   )}

@@ -18,6 +18,10 @@ import { Notice } from '../../components/ui/Notice.tsx';
 import { compactRange } from '#src/domain/date-labels.ts';
 import { ChoiceGroup } from '../../components/ui/ChoiceGroup.tsx';
 import { countEffects } from '../../shared/count-effects.ts';
+import { ResultStatus, SearchField } from '../../shared/forms/SearchField.tsx';
+import { useUrlSearchText } from '../../shared/forms/useUrlSearchText.ts';
+import { matchesSearch } from '#src/shared/search-text.ts';
+import { textLinkParts } from '#src/shared/text-links.ts';
 import './catalogue.css';
 
 type CatalogueEvent = Bootstrap['catalogue']['events'][number];
@@ -36,6 +40,19 @@ const emptyEvent = (
   active: true,
 });
 
+/** A source may be a norm, a SEI process or an address; only web addresses become links. */
+function SourceText({ text }: { text: string }) {
+  return textLinkParts(text).map((part, index) =>
+    part.href ? (
+      <a key={index} href={part.href} target="_blank" rel="noreferrer">
+        {part.text}
+      </a>
+    ) : (
+      part.text
+    ),
+  );
+}
+
 export default function CataloguePanel({
   catalogue,
   canManage,
@@ -52,6 +69,12 @@ export default function CataloguePanel({
   const missingEvent = Boolean(routeId && !catalogue.events.some((item) => item.id === routeId));
   const item = catalogue.events.find((entry) => entry.id === routeId);
   const activeCount = catalogue.events.filter((entry) => entry.active).length;
+  const { text: search, setText: setSearch } = useUrlSearchText();
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searching = Boolean(search.trim());
+  const events = catalogue.events
+    .filter((entry) => matchesSearch(search, entry.name, entry.evidence))
+    .sort((a, b) => a.start.localeCompare(b.start));
   const {
     form,
     values: event,
@@ -90,7 +113,7 @@ export default function CataloguePanel({
       if (!isCurrent()) return;
       clearDraft();
       form.reset(emptyEvent(catalogue.revision));
-      await navigate({ to: '/eventos-institucionais' });
+      await navigate({ to: '/eventos-institucionais', search: (previous) => previous });
       notify('Base atualizada. Os calendários em edição já seguem esta mudança.');
     },
   });
@@ -107,25 +130,30 @@ export default function CataloguePanel({
   const nameRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLParagraphElement>(null);
   function setCreating(open: boolean) {
-    if (!open) void navigate({ to: '/eventos-institucionais' });
+    if (!open) void navigate({ to: '/eventos-institucionais', search: (previous) => previous });
     else if (event.id)
       void navigate({
         to: '/eventos-institucionais/$eventId/editar',
         params: { eventId: event.id },
+        search: (previous) => previous,
       });
-    else void navigate({ to: '/eventos-institucionais/novo' });
+    else void navigate({ to: '/eventos-institucionais/novo', search: (previous) => previous });
   }
   async function closeForm() {
     clearDraft();
     form.reset(emptyEvent(catalogue.revision));
-    await navigate({ to: '/eventos-institucionais' });
+    await navigate({ to: '/eventos-institucionais', search: (previous) => previous });
     requestAnimationFrame(() => {
       listRef.current?.focus({ preventScroll: true });
       scrollIntoView(listRef.current, { block: 'start' });
     });
   }
   function edit(entry: CatalogueEvent) {
-    void navigate({ to: '/eventos-institucionais/$eventId/editar', params: { eventId: entry.id } });
+    void navigate({
+      to: '/eventos-institucionais/$eventId/editar',
+      params: { eventId: entry.id },
+      search: (previous) => previous,
+    });
     requestAnimationFrame(() => nameRef.current?.focus());
   }
 
@@ -143,6 +171,17 @@ export default function CataloguePanel({
       onFormOpen={setCreating}
       canCreate={canManage}
       busy={pending}
+      toolbar={
+        <div className="list-tools">
+          <SearchField
+            id="catalogue-search"
+            hint="Nome ou fonte"
+            value={search}
+            inputRef={searchInput}
+            onChange={setSearch}
+          />
+        </div>
+      }
       feedback={
         missingEvent ? <p role="status">Evento institucional não encontrado.</p> : undefined
       }
@@ -299,38 +338,61 @@ export default function CataloguePanel({
         {activeCount} {activeCount === 1 ? 'evento ativo' : 'eventos ativos'} · Versão{' '}
         {catalogue.revision}
       </p>
+      <ResultStatus id="catalogue-results" quiet={searching && !events.length}>
+        {!searching
+          ? null
+          : events.length
+            ? `${events.length} de ${catalogue.events.length} ${catalogue.events.length === 1 ? 'evento' : 'eventos'}`
+            : 'Nenhum evento corresponde à busca.'}
+      </ResultStatus>
       <ul id="catalogue-list" className="records">
-        {[...catalogue.events]
-          .sort((a, b) => a.start.localeCompare(b.start))
-          .map((item) => (
-            <li key={item.id}>
-              <div>
-                <strong>
-                  {item.name}
-                  {!item.active ? ' · Inativo' : ''}
-                </strong>
-                <span className="catalogue-date">{compactRange(item)}</span>
-                <small>
-                  <CategoryMark event={item} withLabel /> ·{' '}
-                  {item.modalities.map((m) => modalityLabels[m]).join(', ')}
-                </small>
-                <small>Fonte: {item.evidence}</small>
-              </div>
-              {canManage ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  data-edit={item.id}
-                  disabled={pending}
-                  onClick={() => edit(item)}
-                >
-                  <Pencil aria-hidden="true" size={18} />
-                  Editar
-                </Button>
-              ) : null}
-            </li>
-          ))}
+        {events.map((item) => (
+          <li key={item.id}>
+            <div>
+              <strong>
+                {item.name}
+                {!item.active ? ' · Inativo' : ''}
+              </strong>
+              <span className="catalogue-date">{compactRange(item)}</span>
+              <small>
+                <CategoryMark event={item} withLabel /> ·{' '}
+                {item.modalities.map((m) => modalityLabels[m]).join(', ')}
+              </small>
+              <small className="catalogue-source">
+                Fonte: <SourceText text={item.evidence} />
+              </small>
+            </div>
+            {canManage ? (
+              <Button
+                type="button"
+                variant="secondary"
+                data-edit={item.id}
+                disabled={pending}
+                onClick={() => edit(item)}
+              >
+                <Pencil aria-hidden="true" size={18} />
+                Editar
+              </Button>
+            ) : null}
+          </li>
+        ))}
       </ul>
+      {searching && !events.length ? (
+        <div className="list-empty">
+          <p>Nenhum evento corresponde à busca.</p>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setSearch('');
+              // The button leaves with the empty state, so the focus goes back to the search.
+              searchInput.current?.focus();
+            }}
+          >
+            Limpar busca
+          </Button>
+        </div>
+      ) : null}
     </CollectionPanel>
   );
 }

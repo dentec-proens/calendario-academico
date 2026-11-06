@@ -28,9 +28,9 @@ for (const width of [1440, 390]) {
       'Tecnologia em Análise de Sistemas',
     ]) {
       await expect(page.locator('#review-progress')).toContainText(label);
-      // With several offers, each issue names its offer beside the detail.
+      // With several offers, each row names its offers in badges.
       await expect(
-        page.locator('#issue-list .review-row-offer').filter({ hasText: label }).first(),
+        page.locator('#issue-list [data-offer-badge]').filter({ hasText: label }).first(),
       ).toBeVisible();
     }
     await expect(page.locator('#issue-list')).not.toContainText('undefined');

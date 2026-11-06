@@ -10,6 +10,7 @@ import {
 import { rulesetVersion } from '../../src/domain/policies/registry';
 import { conclusionBlock } from '../../src/domain/reviews/conclusion-block';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria';
+import { criteriaToReturn } from '../../src/domain/reviews/returned-criteria';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
 import type { Member } from '../access/contracts';
@@ -20,10 +21,13 @@ import { baseRecord } from './record';
 import {
   appendDecision,
   assertUniqueInFlow,
+  jsonBytes,
   lastReturn,
   contentHash,
   lifecycleRole,
+  maximumReturnedCriteriaBytes,
   maximumSubmissionBytes,
+  maximumSubmissionDocumentBytes,
   nextSequence,
   overlapping,
   replacedCalendars,
@@ -164,7 +168,7 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
         campusName: campus,
         decisions: [],
       };
-      if (new TextEncoder().encode(JSON.stringify(copy)).length > maximumSubmissionBytes)
+      if (jsonBytes(copy) > maximumSubmissionBytes)
         fail(
           'O calendário ficou grande demais para ser enviado. Reduza a quantidade de eventos e tente novamente.',
         );
@@ -187,14 +191,29 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
       if (note.length > maximumNoteLength)
         fail(`A nota da devolução pode ter até ${maximumNoteLength} caracteres.`);
       const submission = await submissionRow(ctx, row.currentSubmissionId);
+      // Read from the saved parecer, never from the request: the client only writes the note.
+      const returnedCriteria = criteriaToReturn(reviewCriteriaFor(row.year), review, {
+        submissionId: submission._id,
+        rulesetVersion: rulesetVersion(record.state),
+      });
       // A review saved in an earlier round is never inherited by this return.
-      await appendDecision(ctx, submission, {
-        action: 'returned',
+      const decision = {
+        action: 'returned' as const,
         at: now,
         by: actor(user),
         note,
         ...(reviewMatches(submission._id) ? { reviewRevision: review!.revision } : {}),
-      });
+        ...(returnedCriteria.length ? { returnedCriteria } : {}),
+      };
+      if (
+        jsonBytes(returnedCriteria) > maximumReturnedCriteriaBytes ||
+        jsonBytes({ ...submission, decisions: [...submission.decisions, decision] }) >
+          maximumSubmissionDocumentBytes
+      )
+        fail(
+          'As observações dos critérios não atendidos ficaram longas demais para acompanhar a devolução. Encurte-as no parecer, salve e devolva de novo.',
+        );
+      await appendDecision(ctx, submission, decision);
       break;
     }
     case 'conclude':

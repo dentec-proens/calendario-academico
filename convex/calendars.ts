@@ -19,7 +19,13 @@ import { applyTransition } from './calendars/transitions';
 import { calendarName, normalizeLabel } from '../src/domain/calendar/label';
 import { normalizeIdentity } from '../src/domain/calendar/identity';
 import type { Member } from './access/contracts';
-import { fullRecord, calendarSummaries, calendarQuery, baseRecord } from './calendars/record';
+import {
+  baseRecord,
+  calendarMatchesSearch,
+  calendarQuery,
+  calendarSummaries,
+  fullRecord,
+} from './calendars/record';
 import {
   assertUniqueInFlow,
   decisionsFor,
@@ -41,12 +47,13 @@ import { appendAudit } from './lib/audit';
 import { calendarEditor, assertCampus, reviewer } from './lib/authorization';
 import { pageBound } from './lib/pagination';
 import { domainRule, fail, iso, clean } from './lib/shared';
-import type { Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import * as validators from './validators';
 import { paginationOptsValidator, paginationResultValidator } from 'convex/server';
 import { v, type Infer } from 'convex/values';
 
 const idArgs = { id: v.id('calendars') };
+const maximumSearchLength = 200;
 const ok = v.object({ ok: v.boolean() });
 
 /** Autosave, base synchronization and offer corrections never write to a locked calendar. */
@@ -58,27 +65,45 @@ function assertEditableStatus(status: Doc<'calendars'>['status']) {
     );
 }
 
+/**
+ * A page of the calendars the person may read. The situation is an equality the database can
+ * filter, so its pages stay full. The search folds accents and also reads the campus name, which
+ * no index or filter expression can do, so it filters each page after reading it: a page may come
+ * back short or empty while `isDone` is false, and the client keeps reading until the list fills.
+ * Every calendar in scope is reachable, each call reads at most `numItems` of them, and only the
+ * matches pay for the summary. The reactive page boundaries stay Convex's own.
+ */
 export const calendarPage = query({
   args: {
     paginationOpts: paginationOptsValidator,
     deleted: v.optional(v.boolean()),
     campusId: v.optional(v.id('campuses')),
+    status: v.optional(validators.calendarStatus),
+    search: v.optional(v.string()),
   },
   returns: paginationResultValidator(contracts.summary),
-  handler: async (ctx, { paginationOpts, deleted, campusId }) => {
+  handler: async (ctx, { paginationOpts, deleted, campusId, status, search }) => {
     const { user } = await requireNativeUser(ctx);
     pageBound(paginationOpts.numItems);
-    const result = await calendarQuery(ctx, user, deleted === true, campusId)
-      .order('desc')
-      .paginate(paginationOpts);
+    const scope = calendarQuery(ctx, user, deleted === true, campusId).order('desc');
+    const result = await (
+      status ? scope.filter((q) => q.eq(q.field('status'), status)) : scope
+    ).paginate(paginationOpts);
+    const query = search?.slice(0, maximumSearchLength) ?? '';
+    const campuses = new Map<Id<'campuses'>, Promise<Doc<'campuses'> | null>>();
+    const readCampus = (id: Id<'campuses'>) => {
+      const campus = campuses.get(id) ?? ctx.db.get(id);
+      campuses.set(id, campus);
+      return campus;
+    };
     const page = await Promise.all(
       result.page.map(async (row) => {
-        const campus = await ctx.db.get(row.campusId);
+        const campus = await readCampus(row.campusId);
         if (!campus) fail('Campus não encontrado.', 404);
-        return summary(ctx, row, campus);
+        return calendarMatchesSearch(row, campus, query) ? summary(ctx, row, campus) : null;
       }),
     );
-    return { ...result, page };
+    return { ...result, page: page.filter((item) => item !== null) };
   },
 });
 

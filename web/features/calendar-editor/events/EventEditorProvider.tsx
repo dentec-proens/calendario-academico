@@ -40,6 +40,8 @@ import { rulesetVersion } from '#src/domain/policies/registry.ts';
 import { scrollIntoView } from '../../../scroll.ts';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
 import { editorPages } from '../editor-steps.ts';
+import { useActivitySearch } from './activity-query.ts';
+import { activityStepFor, nextPendingActivity } from './activity-step.ts';
 
 /** Every date is filled in the Activities step; assessment intervals in their own area. */
 function destination(context: EventContext | null) {
@@ -59,8 +61,9 @@ const noSubscription = () => () => {};
 const dateFormId = (dateId: string | null) => (dateId ? `event:${dateId}` : 'event');
 
 function useController() {
-  const { state, session, record, notify, readOnly, formEpoch } = useCalendarEditor();
+  const { state, session, record, notify, readOnly, formEpoch, baseEvents } = useCalendarEditor();
   const navigate = useNavigate();
+  const search = useActivitySearch();
   const drafts = useFormDrafts();
   const calendarOfferIds = useMemo(() => state.offers.map((offer) => offer.id), [state.offers]);
   const [context, setContext] = useState<EventContext | null>(null);
@@ -107,11 +110,20 @@ function useController() {
     [rememberOpener],
   );
   const formId = dateFormId(dateId);
+  /** Set while the “next pending” action submits the form, whose validity may refuse it. */
+  const advanceArmed = useRef(false);
+  /** Whether the submission on its way came from that action, read once when it applies. */
+  const advanceRequested = useRef(false);
+  /** Where the application led, for the message that confirms it. */
+  const advanced = useRef<{ next?: string } | null>(null);
   const result = useCalendarForm(
     formId,
     (dateId && defaults) || emptyEvent(calendarOfferIds),
     function apply(value) {
       const id = dateId ?? crypto.randomUUID();
+      const advancing = advanceRequested.current;
+      advanceRequested.current = false;
+      advanced.current = null;
       // The link comes from the context, never from the form: a saved date keeps its own, a date
       // planned from an activity takes that activity and a new date of the campus has none.
       session.apply((current) => {
@@ -126,6 +138,37 @@ function useController() {
         if (!activity) throw new Error('Atividade inválida para este calendário.');
         return planActivityDate(ready, activity, date);
       });
+      if (advancing && context?.kind === 'activity') {
+        // Computed from the state just applied, since the rows on screen predate it.
+        const applied = session.getSnapshot().state;
+        const lines = activityStepFor({
+          state: applied,
+          baseEvents,
+          search,
+          pinned: context.key,
+        }).activities;
+        const next = nextPendingActivity(lines, context.key);
+        advanced.current = { next: next?.item.name };
+        if (next) {
+          // The same open panel moves on: the form adopts the next activity without closing, so
+          // the keyboard stays inside it. On closing later, focus goes to the row of that activity.
+          opener.current = document.getElementById(`activity-${next.key}`) ?? opener.current;
+          setDefaults(activityDraft(applied, next.item));
+          setDateId(crypto.randomUUID());
+          setContext({ kind: 'activity', key: next.key });
+          setEventId(null);
+          setPanel({ kind: 'activity', key: next.key });
+          return;
+        }
+        // Nothing else to fill here: back to the list, as after a date of the campus.
+        setContext(null);
+        setOpen(false);
+        setEventId(null);
+        setDateId(null);
+        setPanel(null);
+        setReturnFocus('new-event');
+        return;
+      }
       if (context?.kind === 'activity') {
         // A saved period returns to the activity, where it now appears in the list.
         setContext(null);
@@ -148,10 +191,14 @@ function useController() {
       setReturnFocus('new-event');
     },
     {
-      successMessage: (value) =>
-        eventId
-          ? `Data “${value.name}” atualizada.`
-          : `Data “${value.name}” adicionada ao calendário.`,
+      successMessage: (value) => {
+        if (eventId) return `Data “${value.name}” atualizada.`;
+        const message = `Data “${value.name}” adicionada ao calendário.`;
+        if (!advanced.current) return message;
+        return advanced.current.next
+          ? `${message} Próxima pendente: ${advanced.current.next}.`
+          : `${message} Não há outras atividades pendentes nesta lista.`;
+      },
     },
   );
   const dirty = result.dirty;
@@ -382,6 +429,7 @@ function useController() {
     ...result,
     /** A saved date with nothing changed has nothing to apply: leaving is all that is asked. */
     submit: (event: FormEvent<HTMLFormElement>) => {
+      advanceRequested.current = advanceArmed.current;
       if (!eventId || dirty) {
         result.submit(event);
         return;
@@ -393,6 +441,14 @@ function useController() {
         setPanel(null);
         setReturnFocus('new-event');
       }
+    },
+    /** Applies the new date and goes on to the next pending activity of the list. */
+    applyAndAdvance: (form: HTMLFormElement | null) => {
+      // The submission starts inside `requestSubmit`, or not at all when the browser refuses it:
+      // disarming here keeps a refused attempt from reaching the next plain application.
+      advanceArmed.current = true;
+      form?.requestSubmit();
+      advanceArmed.current = false;
     },
     context,
     open,

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 
+const scrollbarMargin = 24;
+
 /**
  * Whether the element is narrower than `threshold`; false until the first measurement.
  * `onChange` runs before the re-render, while the outgoing layout still holds focus.
@@ -22,7 +24,10 @@ export function useNarrowContainer(
     const observer = new ResizeObserver(([entry]) => {
       // A step without width is hidden or not laid out, not narrow; keep the current layout.
       if (!entry?.contentRect.width) return;
-      const next = entry.contentRect.width < threshold;
+      const { width } = entry.contentRect;
+      // A modal panel removes the page scrollbar and widens the step, which must not switch the
+      // layout (and close that panel): going back to wide needs more than a scrollbar's width.
+      const next = current ? width < threshold + scrollbarMargin : width < threshold;
       if (next === current) return;
       current = next;
       callback.current?.(next);

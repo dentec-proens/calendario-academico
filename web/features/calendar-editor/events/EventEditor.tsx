@@ -9,6 +9,7 @@ import { generatedActivities, generatedActivity } from '#src/domain/calendar/act
 import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
 import { applicabilityFor, policyFor } from '#src/domain/policies/registry.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
+import ActivityRuleNote from './ActivityRuleNote.tsx';
 import EventDateCalendar from './EventDateCalendar.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import {
@@ -495,6 +496,7 @@ export default function EventEditor() {
       )}
       <fieldset className="ui-panel-view" disabled={readOnly || editor.pending}>
         <div className="ui-panel-view__body">
+          {requirement ? <ActivityRuleNote year={state.year} item={requirement} withBasis /> : null}
           <fieldset className="event-fields">
             {/* The link comes from the context and is never edited here: a campus date has none,
               and a date kept with a link without generated activity shows it read-only. */}
@@ -727,6 +729,17 @@ export default function EventEditor() {
           }
         >
           <Button type="submit">{editor.eventId ? 'Aplicar alterações' : 'Adicionar data'}</Button>
+          {/* Only a new date of an activity continues the filling: a date of the campus or an edit
+              of a saved date has no list to go on with. */}
+          {activityRecord && !editor.eventId && (
+            <Button
+              id="apply-and-next-pending"
+              variant="secondary"
+              onClick={(event) => editor.applyAndAdvance(event.currentTarget.form)}
+            >
+              Aplicar e ir para a próxima pendente
+            </Button>
+          )}
           {editor.dirty && (
             <Button id="discard-event-form" variant="secondary" onClick={editor.discard}>
               Descartar alterações

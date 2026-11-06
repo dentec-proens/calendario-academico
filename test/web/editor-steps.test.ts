@@ -50,8 +50,8 @@ describe('calendar wizard metadata', () => {
   });
 
   test('continuation labels always use the complete destination title', () => {
-    expect(continueLabel({ ...editorPages.periods, title: 'Novo título da etapa' })).toBe(
-      'Continuar para novo título da etapa',
+    expect(continueLabel({ ...editorPages.periods, title: 'Novo título do passo' })).toBe(
+      'Continuar para novo título do passo',
     );
     expect(editorSteps.map(continueLabel)).toEqual([
       'Continuar para semana letiva',
@@ -59,7 +59,7 @@ describe('calendar wizard metadata', () => {
       'Continuar para sábados letivos',
       'Continuar para férias docentes',
       'Continuar para atividades',
-      'Continuar para revisão e conclusão',
+      'Continuar para conferir e enviar',
     ]);
   });
 });

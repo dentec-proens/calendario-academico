@@ -86,9 +86,10 @@ export default defineSchema({
       'deletedAt',
       'assignee.id',
     ])
-    .index('by_campusId_and_deletedAt', ['campusId', 'deletedAt'])
+    // Live lists follow the "Última alteração" column; `updatedAt` needs no backfill.
+    .index('by_campusId_and_deletedAt_and_updatedAt', ['campusId', 'deletedAt', 'updatedAt'])
     .index('by_year', ['year'])
-    .index('by_deletedAt', ['deletedAt']),
+    .index('by_deletedAt_and_updatedAt', ['deletedAt', 'updatedAt']),
   calendarContents: defineTable(contentFields).index('by_calendarId', ['calendarId']),
   calendarSubmissions: defineTable(submissionFields).index('by_calendarId_and_sequence', [
     'calendarId',

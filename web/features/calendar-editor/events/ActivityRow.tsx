@@ -2,6 +2,8 @@ import type { ComponentProps } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { StatusBadge } from '../../../components/ui/Feedback.tsx';
 import { CategoryMark } from '../../../components/ui/CategoryMark.tsx';
+import OfferBadges from '../OfferBadges.tsx';
+import { abbreviationIn, activityAbbreviations } from '#src/domain/calendar/activities/metadata.ts';
 import {
   situationLabels,
   type ActivitySituation,
@@ -9,6 +11,8 @@ import {
 
 type Props = Omit<ComponentProps<'button'>, 'children' | 'type' | 'className' | 'aria-current'> & {
   label: string;
+  /** Names of the offers of the row, only when the calendar has more than one. */
+  offers?: readonly string[];
   status: ActivitySituation;
   statusLabel?: string;
   /** Shows the status in the information blue when it names a kind of date, not a situation. */
@@ -28,6 +32,7 @@ type Props = Omit<ComponentProps<'button'>, 'children' | 'type' | 'className' | 
 /** Shared compact row for activities and dates of the Activities step. */
 export default function ActivityRow({
   label,
+  offers = [],
   status,
   statusLabel = situationLabels[status],
   tone,
@@ -39,16 +44,27 @@ export default function ActivityRow({
   selected = false,
   ...props
 }: Props) {
+  // The title does not reach touch screens or every screen reader, so the text is also on the row.
+  const abbreviation = abbreviationIn(label);
+  const [before, after] = abbreviation ? label.split(abbreviation, 2) : [label, ''];
   return (
     <button {...props} type="button" className="activity-row" aria-current={selected || undefined}>
       <span className="activity-dot" data-status={status} data-tone={tone} aria-hidden="true" />
       <span className="activity-row-text">
         <span className="activity-row-name">
-          {label}
+          {before}
+          {abbreviation && <abbr title={activityAbbreviations[abbreviation]}>{abbreviation}</abbr>}
+          {after}
           {internal && (
             <StatusBadge className="activity-row-badge" data-internal-badge>
               Interna
             </StatusBadge>
+          )}
+          <OfferBadges offers={offers} />
+          {abbreviation && (
+            <span className="activity-row-abbreviation" data-abbreviation={abbreviation}>
+              {abbreviation}: {activityAbbreviations[abbreviation]}
+            </span>
           )}
         </span>
         <span className="activity-row-meta">

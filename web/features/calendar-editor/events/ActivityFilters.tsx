@@ -85,7 +85,12 @@ export default function ActivityFilters() {
                 checked={(search.atividadePendencia ?? '') === id}
                 onChange={() => update('atividadePendencia', id)}
               />
-              {label} <span className="activity-view-count">({counts[id]})</span>
+              {label}{' '}
+              <span className="activity-view-count">
+                {/* The by-date view counts dates: an activity with no date has no line in it. */}(
+                {counts[id]}
+                {view === 'data' ? (counts[id] === 1 ? ' data' : ' datas') : ''})
+              </span>
             </label>
           ))}
         </div>

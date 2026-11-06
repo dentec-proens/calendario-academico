@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { documentedYears } from '#src/domain/policies/registry.ts';
-import { compactDate, compactRange } from '#src/domain/date-labels.ts';
+import { windowLabel } from '#src/domain/policy-references.ts';
+import { compactDate } from '#src/domain/date-labels.ts';
 import { useFeatureRoute } from '../../app/navigation.ts';
 import { offerStatusLabels, rulesView, statusHelp, type RulesView } from './rules-view.ts';
 import './rules.css';
@@ -126,11 +127,7 @@ export default function RulesPage() {
         </div>
         <div>
           <dt>Ano letivo</dt>
-          <dd>
-            {view.window
-              ? `${compactRange(view.window, view.year)}, início até ${compactDate(view.window.latestStart, view.year)}`
-              : 'Sem janela definida'}
-          </dd>
+          <dd>{view.window ? windowLabel(view.window, view.year) : 'Sem janela definida'}</dd>
         </div>
         <div>
           <dt>Ofertas com norma própria</dt>

@@ -32,7 +32,7 @@ export default function WeekForm() {
   return (
     <form id="week-form" onSubmit={submit} aria-labelledby="editor-section-title">
       <p className="help">
-        Os sábados são definidos separadamente na etapa {editorPages.days.title}.
+        Os sábados são definidos separadamente no passo {editorPages.days.title}.
       </p>
       <fieldset disabled={readOnly}>
         <form.Field name="weekdays">

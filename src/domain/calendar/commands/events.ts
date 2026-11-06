@@ -334,7 +334,9 @@ function applyDate<S extends ActivityState>(
       ),
     )
   )
-    throw new DomainError('Inclusões letivas devem estar dentro dos períodos cadastrados.');
+    throw new DomainError(
+      'O dia letivo acrescentado precisa estar dentro de um período letivo da oferta.',
+    );
   const updated = { ...event, name: event.name.trim() };
   if (!editing && existing) {
     if (equalValues(existing, updated)) return state;

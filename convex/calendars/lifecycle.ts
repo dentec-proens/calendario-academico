@@ -49,6 +49,16 @@ export function contentHash(
 
 /** Margin under Convex's 1 MiB document limit. */
 export const maximumSubmissionBytes = 900 * 1024;
+/**
+ * The criteria a return copies live in that margin, and every open of the editor reads them. A full
+ * parecer of long observations can pass this, so it is refused, never cut: a shortened observation
+ * would tell the campus something the reviewer did not write.
+ */
+export const maximumReturnedCriteriaBytes = 64 * 1024;
+/** The submission with its decisions, kept clear of the document limit whatever it holds. */
+export const maximumSubmissionDocumentBytes = 1000 * 1024;
+
+export const jsonBytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)).length;
 
 /**
  * Calendars of the same campus and year in the given statuses that share an offer kind.

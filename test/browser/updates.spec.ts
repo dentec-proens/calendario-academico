@@ -596,7 +596,7 @@ test('explicitly discarded editor fields cannot reappear as a detached draft', a
   await page.locator('#event-name').fill('Preenchimento a descartar');
   await page.locator('#close-event-panel').click();
   await page.locator('.ui-back-link').click();
-  await page.getByRole('button', { name: 'Salvar e sair', exact: true }).click();
+  await page.getByRole('button', { name: 'Descartar os campos e sair', exact: true }).click();
   await expect(page.locator('#calendar-list')).toBeVisible();
   expect(await page.evaluate(() => window.updateDrafts.protection.getSnapshot())).toEqual([]);
 });

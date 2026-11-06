@@ -11,7 +11,7 @@ import Pagination from '../../shared/forms/Pagination.tsx';
 
 export default function CalendarTrashPage() {
   const { notify } = useAppSession();
-  const { campus } = useFeatureRoute();
+  const { campus, situacao, busca } = useFeatureRoute();
   const { pending, run } = useAction(notify);
   const trashPagination = usePaginatedQuery(
     functions.calendars.calendarPage,
@@ -22,7 +22,14 @@ export default function CalendarTrashPage() {
   const trashLoading = trashPagination.status === 'LoadingFirstPage';
   return (
     <section className="page" aria-busy={pending}>
-      <BackLink to="/calendarios" search={{ campus: campus || undefined }}>
+      <BackLink
+        to="/calendarios"
+        search={{
+          campus: campus || undefined,
+          situacao: situacao || undefined,
+          busca: busca || undefined,
+        }}
+      >
         Voltar aos calendários
       </BackLink>
       <div className="panel calendar-trash">

@@ -18,6 +18,7 @@ import SubmissionComparison, {
 } from '../lifecycle/SubmissionComparison.tsx';
 import { statusLabels } from '#src/domain/calendar/lifecycle.ts';
 import { conclusionBlock } from '#src/domain/reviews/conclusion-block.ts';
+import { criteriaToReturn } from '#src/domain/reviews/returned-criteria.ts';
 import { editorUrl } from '#src/app/routes.ts';
 import ReviewAssignment from './ReviewAssignment.tsx';
 import ReviewSummary from './ReviewSummary.tsx';
@@ -169,6 +170,10 @@ function OpenedReview({
                     entries: opened.review?.entries ?? [],
                   })) ?? undefined,
           }}
+          returnCriteria={criteriaToReturn(opened.criteria, opened.review, {
+            submissionId: submission?.id,
+            rulesetVersion: opened.rulesetVersion,
+          })}
           menuActions={['withdraw']}
           primaryActions={['submit', 'conclude', 'publish']}
         />
@@ -180,7 +185,12 @@ function OpenedReview({
       ) : opened.status !== 'enviado' && opened.status !== 'em_revisao' ? (
         <Notice tone="info" id="review-locked-notice">
           Calendário {statusLabels[opened.status].toLowerCase()}: o parecer está disponível para
-          consulta e exportação. Reabra a revisão para alterá-lo.
+          consulta e exportação.
+          {opened.status === 'revisado'
+            ? ' Reabra a revisão para alterá-lo.'
+            : opened.status === 'devolvido'
+              ? ' Ele volta a ser editável quando o campus reenviar o calendário.'
+              : ''}
         </Notice>
       ) : null}
       <ReviewEditor

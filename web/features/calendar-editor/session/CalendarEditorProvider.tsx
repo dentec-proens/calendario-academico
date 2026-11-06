@@ -89,13 +89,15 @@ function useSession(record: CalendarRecord) {
     if (suspended) return false;
     const value = session.getSnapshot();
     if (!value.dirty && !value.unapplied && value.status !== 'saving') return true;
+    // Saving covers what was applied: the label must not promise it for fields still being filled.
     return confirmAction({
-      title: 'Sair deste calendário?',
-      description: 'As alterações aplicadas serão salvas antes de sair.',
-      consequence: value.unapplied
-        ? 'Os campos ainda não aplicados serão descartados. Cancele para conferir o preenchimento.'
-        : undefined,
-      confirmLabel: 'Salvar e sair',
+      title: value.unapplied ? 'Sair sem os campos em preenchimento?' : 'Sair deste calendário?',
+      description: value.unapplied
+        ? 'O que já foi aplicado será salvo, e os campos ainda não aplicados serão descartados.'
+        : 'As alterações aplicadas serão salvas antes de sair.',
+      intent: value.unapplied ? 'warning' : undefined,
+      confirmLabel: value.unapplied ? 'Descartar os campos e sair' : 'Salvar e sair',
+      cancelLabel: value.unapplied ? 'Voltar ao preenchimento' : undefined,
       pendingLabel: 'Salvando…',
       onConfirm: async () => {
         await session.flush();

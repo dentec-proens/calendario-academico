@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
+import { useFeatureRoute } from '../../app/navigation.ts';
 import { MapPin } from 'lucide-react';
 import { calendarName } from '#src/domain/calendar/label.ts';
 import { Button } from '../../components/ui/Button.tsx';
@@ -23,12 +24,13 @@ export default function CreateFromCopyForm({
   canSelectCampus: boolean;
 }) {
   const navigate = useNavigate();
+  const { campus: selectedCampus } = useFeatureRoute();
   const defaults: {
     campusId: string;
     sourceId: string;
     year: number;
     offers: CreationOffer[];
-  } = { campusId: '', sourceId: '', year: 0, offers: [] };
+  } = { campusId: selectedCampus, sourceId: '', year: 0, offers: [] };
   const { form, values, submit, pending, error, clearDraft } = useDraftForm({
     draftKey: `calendar:new-from-copy:${info.user.id}`,
     defaultValues: defaults,
@@ -62,7 +64,7 @@ export default function CreateFromCopyForm({
     <form id="create-calendar-from-copy" onSubmit={submit}>
       <fieldset className="form-fields" disabled={pending || !campus}>
         <p className="help">
-          Crie o rascunho e escolha em seguida quais datas copiar. Campus e ano vêm do calendário de
+          Crie o rascunho e escolha em seguida quais datas copiar. O ano vem do calendário de
           origem.
         </p>
         {canSelectCampus ? (

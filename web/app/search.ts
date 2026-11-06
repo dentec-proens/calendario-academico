@@ -51,6 +51,9 @@ export function applicationSearch(input: Record<string, unknown>) {
       ? { responsavel: input.responsavel as 'meus' | 'livres' }
       : {}),
     ...(text(input.busca) ? { busca: text(input.busca)?.slice(0, 200) } : {}),
+    ...(input.perfil === 'ADMIN' || input.perfil === 'CAMPUS' || input.perfil === 'PARECERISTA'
+      ? { perfil: input.perfil as 'ADMIN' | 'CAMPUS' | 'PARECERISTA' }
+      : {}),
     ...(text(input.retorno) ? { retorno: text(input.retorno) } : {}),
     // Calendar whose dates the copy screen lists; checked against the ones the person can read.
     ...(text(input.origem) ? { origem: text(input.origem)?.slice(0, 200) } : {}),

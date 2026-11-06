@@ -231,7 +231,7 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
   await expect(submit).toBeEnabled();
   // The count sits under the review step of the menu, not beside the submit button.
   await expect(page.locator('[data-view="issues"] .editor-step-note')).toHaveText(
-    /^\d+ pendências$/,
+    /^\d+ pendências no total$/,
   );
   await submit.click();
   await expect(page.locator('dialog.confirmation-dialog--warning[open] h2')).toHaveText(
@@ -239,7 +239,7 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
   );
   await expect(page.locator('.confirmation-dialog__items li')).toHaveCount(7);
   await expect(page.locator('.confirmation-dialog__items li').last()).toHaveText(
-    /^E mais \d+ pendências na etapa Revisão e conclusão\.$/,
+    /^E mais \d+ pendências no passo Conferir e enviar\.$/,
   );
   await expect(page.locator('.confirmation-dialog__confirm')).toHaveText('Enviar mesmo assim');
   await page.setViewportSize({ width: 1280, height: 900 });

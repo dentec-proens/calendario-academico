@@ -860,6 +860,21 @@ button.activity-group-toggle:enabled:hover {
   margin-inline-start: 0.5rem;
   vertical-align: middle;
 }
+.activity-row-abbreviation {
+  display: block;
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+}
+.offer-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-block-start: 0.25rem;
+}
+.offer-badge {
+  padding-block: 1px;
+  overflow-wrap: anywhere;
+}
 /* Capped so a long note wraps beside the name instead of squeezing it to one letter a line. */
 .activity-row-meta {
   display: flex;
@@ -947,6 +962,12 @@ button.activity-group-toggle:enabled:hover {
   background: transparent;
 }
 /* The step's main measure: a tinted card set apart from the filters and the groups. */
+.activity-progress-note {
+  margin-block: 1rem 0;
+}
+.activity-progress-note + .activity-summary {
+  margin-block-start: 0.5rem;
+}
 .activity-summary {
   display: grid;
   gap: 0.75rem;
@@ -990,6 +1011,16 @@ button.activity-group-toggle:enabled:hover {
 }
 .activity-meta small {
   flex-basis: 100%;
+}
+.activity-rule {
+  margin-block: 0 var(--ui-space-3);
+  font-size: 0.875rem;
+}
+.activity-rule a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
 }
 .activity-status {
   display: inline-block;
@@ -1734,8 +1765,13 @@ button.review-row:enabled:hover {
   color: var(--ui-muted);
   font-size: 0.875rem;
 }
-.review-row-offer {
-  margin-inline-end: var(--ui-space-2);
+.review-row-text > .offer-badges {
+  margin-block-start: 0;
+}
+.review-row-detail > span {
+  display: block;
+}
+.review-row-detail-offers {
   color: var(--ui-text);
   font-weight: 600;
 }

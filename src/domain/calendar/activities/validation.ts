@@ -13,7 +13,7 @@ export function temporalPosition(
 ) {
   const start = parseDate(event.start),
     end = parseDate(event.end);
-  if (start > end) throw new DomainError('Intervalo invertido.');
+  if (start > end) throw new DomainError('O término não pode ser anterior ao início.');
   const first = `${state.year}-01-01`,
     last = `${state.year}-12-31`;
   if (event.end > last) return event.start > last ? 'future' : 'future-crossing';
@@ -130,7 +130,7 @@ export function validateActivityRecord(
         )
       )
         throw new DomainError(
-          'Inclusões letivas devem estar dentro dos períodos cadastrados da oferta.',
+          'O dia letivo acrescentado precisa estar dentro de um período letivo da oferta.',
         );
     }
   }

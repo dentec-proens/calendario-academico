@@ -5,7 +5,14 @@ import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 import type { PaginationState } from '../../shared/forms/Pagination.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
 import { ClipboardCheck, CopyPlus, Eye, Pencil, Trash2 } from 'lucide-react';
-import { canCreateVersion, isDeletable, isEditable } from '#src/domain/calendar/lifecycle.ts';
+import {
+  calendarStatuses,
+  canCreateVersion,
+  isDeletable,
+  isEditable,
+  statusLabels,
+  type CalendarStatus,
+} from '#src/domain/calendar/lifecycle.ts';
 import { CalendarStatusBadge } from '../lifecycle/LifecycleActions.tsx';
 import { useNavigate } from '@tanstack/react-router';
 import { calendars as calendarClient } from '../../shared/convex/calendars.ts';
@@ -20,6 +27,8 @@ import CalendarIdentityCell, {
 } from '../calendar-list/CalendarIdentityCell.tsx';
 import CalendarTable, { type CalendarColumn } from '../calendar-list/CalendarTable.tsx';
 import CampusFilter from '../calendar-list/CampusFilter.tsx';
+import { ResultStatus, SearchField } from '../../shared/forms/SearchField.tsx';
+import { useRef } from 'react';
 import './calendars.css';
 
 export default function CalendarsPanel({
@@ -29,6 +38,12 @@ export default function CalendarsPanel({
   canReview,
   filter,
   onFilter,
+  situation,
+  onSituation,
+  searchText,
+  activeSearch,
+  onSearchText,
+  onClearFilters,
   notify,
   pagination,
 }: {
@@ -38,12 +53,20 @@ export default function CalendarsPanel({
   canReview: boolean;
   filter: string;
   onFilter: (id: string) => void;
+  situation: CalendarStatus | '';
+  onSituation: (status: CalendarStatus | '') => void;
+  /** What the box shows, ahead of `activeSearch`, the search already applied to the list. */
+  searchText: string;
+  activeSearch: string;
+  onSearchText: (text: string) => void;
+  onClearFilters: () => void;
   notify: Notify;
   pagination: PaginationState;
 }) {
   const [creating, setCreating] = useRouteForm('calendars');
   const { fromCopy } = useFeatureRoute();
   const navigate = useNavigate();
+  const searchInput = useRef<HTMLInputElement>(null);
 
   function remove(calendar: CalendarSummary) {
     void confirmAction({
@@ -117,7 +140,7 @@ export default function CalendarsPanel({
           type="button"
           variant="danger"
           data-delete-calendar={calendar.id}
-          aria-label="Excluir calendário"
+          aria-label={`Excluir calendário ${calendar.name}`}
           title="Excluir calendário"
           onClick={() => remove(calendar)}
         >
@@ -126,9 +149,32 @@ export default function CalendarsPanel({
       ) : null}
     </div>
   );
-  const empty = filter
-    ? 'Nenhum calendário registrado para este campus.'
-    : 'Nenhum calendário registrado nesta conta.';
+  const narrowed = Boolean(situation || activeSearch);
+  const loading = pagination.status === 'LoadingFirstPage' || pagination.status === 'LoadingMore';
+  const empty = narrowed ? (
+    <div className="calendar-list-no-match">
+      <p>Nenhum calendário corresponde aos filtros.</p>
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => {
+          onClearFilters();
+          // The button leaves with the empty state, so the focus goes back to the search.
+          searchInput.current?.focus();
+        }}
+      >
+        Limpar filtros
+      </Button>
+    </div>
+  ) : filter ? (
+    'Nenhum calendário registrado para este campus.'
+  ) : (
+    'Nenhum calendário registrado nesta conta.'
+  );
+  const found =
+    calendars.length === 1
+      ? '1 calendário encontrado'
+      : `${calendars.length} calendários encontrados`;
   const columns: CalendarColumn<CalendarSummary>[] = [
     {
       label: 'Calendário',
@@ -191,7 +237,7 @@ export default function CalendarsPanel({
           )
         }
         secondaryAction={
-          calendars.length ? (
+          calendars.length || narrowed ? (
             <Link
               id="new-calendar-from-copy"
               to={calendarCopyPath}
@@ -204,12 +250,42 @@ export default function CalendarsPanel({
         }
         toolbar={
           <div className="calendar-list-tools">
+            <SearchField
+              id="calendar-search"
+              hint="Nome, campus, curso, turma ou turno"
+              value={searchText}
+              inputRef={searchInput}
+              onChange={onSearchText}
+            />
+            <label id="status-filter-label">
+              Situação
+              <select
+                id="status-filter"
+                value={situation}
+                onChange={(event) =>
+                  onSituation(
+                    calendarStatuses.find((status) => status === event.target.value) ?? '',
+                  )
+                }
+              >
+                <option value="">Todas as situações</option>
+                {calendarStatuses.map((status) => (
+                  <option key={status} value={status}>
+                    {statusLabels[status]}
+                  </option>
+                ))}
+              </select>
+            </label>
             {canSelectCampus ? (
               <CampusFilter campuses={info.campuses} value={filter} onChange={onFilter} />
             ) : null}
             <Link
               to="/calendarios/lixeira"
-              search={{ campus: filter || undefined }}
+              search={{
+                campus: filter || undefined,
+                situacao: situation || undefined,
+                busca: activeSearch || undefined,
+              }}
               className="calendar-trash-link"
             >
               Lixeira
@@ -217,13 +293,24 @@ export default function CalendarsPanel({
           </div>
         }
       >
+        <ResultStatus id="calendar-results" quiet={!loading && !calendars.length}>
+          {!narrowed
+            ? null
+            : loading
+              ? 'Buscando calendários…'
+              : !calendars.length
+                ? 'Nenhum calendário corresponde aos filtros.'
+                : pagination.status === 'CanLoadMore'
+                  ? `${found} até aqui. Use Carregar mais para continuar a busca.`
+                  : `${found}.`}
+        </ResultStatus>
         {view === 'table' ? (
           <CalendarTable
             id="calendar-list"
             items={calendars}
             columns={columns}
             rowProps={(c) => ({ 'data-calendar-campus': c.campusId })}
-            empty={pagination.status === 'LoadingFirstPage' ? null : empty}
+            empty={loading ? null : empty}
           />
         ) : (
           <div className="calendar-list" data-view="gallery">
@@ -245,7 +332,7 @@ export default function CalendarsPanel({
                   {actions(c)}
                 </li>
               ))}
-              {!calendars.length && pagination.status !== 'LoadingFirstPage' ? (
+              {!calendars.length && !loading ? (
                 <li className="calendar-list-empty">{empty}</li>
               ) : null}
             </ul>

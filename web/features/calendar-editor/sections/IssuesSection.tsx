@@ -7,13 +7,20 @@ import {
   type ContentIssue,
   type ContentIssueGroup,
 } from '#src/domain/calendar/readiness.ts';
+import {
+  groupPendencies,
+  pendencyGroupOrder,
+  type Pendency,
+} from '#src/domain/calendar/pendencies.ts';
 import { labelFor, offerIds } from '#src/domain/calendar/offers.ts';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
-import { activityKey, isAssessmentStage } from '#src/domain/calendar/activities/activity-ref.ts';
+import { isAssessmentStage } from '#src/domain/calendar/activities/activity-ref.ts';
 import { missingCoursesIssue } from '#src/domain/calendar/identity.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useIdentityPanel } from '../identity/CalendarIdentity.tsx';
 import ScopeForm from '../forms/ScopeForm.tsx';
+import OfferBadges from '../OfferBadges.tsx';
+import { focusPendingScope, issueDestination } from '../editor-steps.ts';
 import { Notice } from '../../../components/ui/Notice.tsx';
 
 const groupTitles: Record<ContentIssueGroup, string> = {
@@ -22,7 +29,6 @@ const groupTitles: Record<ContentIssueGroup, string> = {
   dates: 'Datas a conferir',
   'teaching-days': 'Dias letivos',
 };
-const groupOrder: ContentIssueGroup[] = ['structure', 'activities', 'dates', 'teaching-days'];
 
 /** Checks the campus confirms by itself: they never become content issues. */
 const reminders = [
@@ -36,17 +42,17 @@ const reminders = [
   },
 ];
 
+const identityKey = 'identity';
+
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
-type Row = ContentIssue & { identity?: true };
-
-/** One issue, as a compact row that leads to where it is resolved. */
+/** One item, as a compact row that leads to where it is resolved. */
 function IssueRow({
   issue,
   tone,
   showOffer,
 }: {
-  issue: Row;
+  issue: Pendency;
   tone: 'pending' | 'info';
   showOffer: boolean;
 }) {
@@ -62,18 +68,28 @@ function IssueRow({
       />
       <span className="review-row-text">
         <strong>{issue.title}</strong>
+        {showOffer && (
+          <OfferBadges offers={issue.offerIds.map((offerId) => labelFor(state, offerId))} />
+        )}
         <span className="review-row-detail">
-          {showOffer && issue.offerId && (
-            <span className="review-row-offer">{labelFor(state, issue.offerId)}</span>
-          )}
-          {issue.detail}
+          {issue.details.map((detail) => (
+            <span key={detail.text}>
+              {/* The badges say whom the row concerns; a sentence for only some of them says so. */}
+              {showOffer && detail.offerIds.length < issue.offerIds.length && (
+                <span className="review-row-detail-offers">
+                  {detail.offerIds.map((offerId) => labelFor(state, offerId)).join(', ')}:{' '}
+                </span>
+              )}
+              {detail.text}
+            </span>
+          ))}
         </span>
       </span>
     </>
   );
   const chevron = <ChevronRight className="activity-row-chevron" aria-hidden="true" />;
   const target = issue.target;
-  if (issue.identity)
+  if (issue.key === identityKey)
     return readOnly ? (
       <div className="review-row">{body}</div>
     ) : (
@@ -85,51 +101,25 @@ function IssueRow({
     );
   if (target?.area === 'scope')
     return (
-      <button
-        type="button"
-        className="review-row"
-        onClick={() => {
-          const scope = document.getElementById('review-scope');
-          scope?.scrollIntoView({ block: 'start' });
-          scope
-            ?.querySelector<HTMLElement>('[role="radio"], button')
-            ?.focus({ preventScroll: true });
-        }}
-      >
+      <button type="button" className="review-row" onClick={focusPendingScope}>
         {body}
         {chevron}
       </button>
     );
-  const link = (to: string, search: Record<string, string | undefined> = {}, label?: string) => (
+  const destination = issueDestination(issue);
+  if (!destination) return <div className="review-row">{body}</div>;
+  return (
     <Link
       className="review-row"
-      to={to}
+      to={destination.to}
       params={{ calendarId: record.id }}
-      search={(previous: Record<string, unknown>) => ({ ...previous, ...search })}
+      search={(previous: Record<string, unknown>) => ({ ...previous, ...destination.search })}
       hashScrollIntoView={false}
     >
       {body}
-      {label && <span className="review-row-action">{label}</span>}
       {chevron}
     </Link>
   );
-  if (target?.area === 'organization') return link('/calendarios/$calendarId/periodos');
-  if (target?.area === 'activity') {
-    const stage = isAssessmentStage(target.activity);
-    // A link to an activity opens the by-activity view, whatever the URL had.
-    return link(
-      stage ? '/calendarios/$calendarId/periodos' : '/calendarios/$calendarId/atividades',
-      { atividade: activityKey(target.activity), atividadeVisao: undefined },
-    );
-  }
-  if (target?.area === 'date')
-    return link('/calendarios/$calendarId/atividades', {
-      atividadeVisao: 'data',
-      atividadeBusca: target.name,
-    });
-  if (target?.area === 'observance')
-    return link('/calendarios/$calendarId/atividades', { atividadeOrigem: 'base' });
-  return <div className="review-row">{body}</div>;
 }
 
 function ReviewGroup({
@@ -161,22 +151,19 @@ export default function IssuesSection() {
     () => contentAssessment({ state, institutionalSnapshot: baseEvents }),
     [state, baseEvents],
   );
-  const issues: Row[] = [
+  const identity: ContentIssue = {
+    code: identityKey,
+    message: missingCoursesIssue,
+    group: 'structure',
+    title: 'Identificação',
+    detail: missingCoursesIssue,
+  };
+  const issues = groupPendencies(
     // The backend refuses the submission without courses.
-    ...(record.courses
-      ? []
-      : [
-          {
-            code: 'identity',
-            message: missingCoursesIssue,
-            group: 'structure',
-            title: 'Identificação',
-            detail: missingCoursesIssue,
-            identity: true,
-          } as const,
-        ]),
-    ...assessment.issues,
-  ];
+    record.courses ? assessment.issues : [identity, ...assessment.issues],
+    state,
+  );
+  const notes = groupPendencies(assessment.notes, state);
   const showOffer = state.offers.length > 1;
   // What only the institutional review resolves, after the submission (saved state only).
   const contentMessages = new Set(assessment.issues.map((issue) => issue.message));
@@ -184,7 +171,7 @@ export default function IssuesSection() {
     ? []
     : record.readiness.issues.filter((issue) => !contentMessages.has(issue));
   const plan = useMemo(() => diagnoseCalendar(state).plan.rows, [state]);
-  const groups = groupOrder
+  const groups = pendencyGroupOrder
     .map((group) => ({ group, items: issues.filter((issue) => issue.group === group) }))
     .filter(({ items }) => items.length);
   return (
@@ -201,7 +188,7 @@ export default function IssuesSection() {
       >
         <p>
           {issues.length
-            ? `${groups.map(({ group, items }) => `${items.length} em ${groupTitles[group].toLowerCase()}`).join(' · ')}. Você pode enviar para análise mesmo com pendências: elas são listadas na confirmação do envio.`
+            ? `${groups.map(({ group, items }) => `${items.length} em ${groupTitles[group].toLowerCase()}`).join(' · ')}. ${showOffer ? 'Cada atividade conta uma vez, mesmo que falte em várias ofertas; estrutura e dias letivos contam por item. ' : ''}Você pode enviar para análise mesmo com pendências: elas são listadas na confirmação do envio.`
             : 'O calendário pode ser enviado para análise. A revisão da DENTEC/PROENS acontece depois do envio.'}
         </p>
       </Notice>
@@ -210,6 +197,12 @@ export default function IssuesSection() {
         <h3 id="review-progress-title" className="review-heading">
           Progresso por oferta
         </h3>
+        {showOffer && (
+          <p className="help">
+            Cada oferta conta as suas atividades obrigatórias, por isso estes números não somam às
+            pendências acima.
+          </p>
+        )}
         <ul id="review-progress" className="activity-summary review-progress">
           {offerIds(state).map((offerId) => {
             const required = plan.filter(
@@ -266,7 +259,7 @@ export default function IssuesSection() {
           >
             <ul className="review-rows">
               {items.map((issue) => (
-                <li key={issue.code} className="issue-item" data-issue={issue.code}>
+                <li key={issue.key} className="issue-item" data-issue={issue.key}>
                   <IssueRow issue={issue} tone="pending" showOffer={showOffer} />
                 </li>
               ))}
@@ -274,15 +267,11 @@ export default function IssuesSection() {
           </ReviewGroup>
         ))}
       </div>
-      {assessment.notes.length > 0 && (
-        <ReviewGroup
-          id="review-warnings"
-          title="Avisos sem bloqueio"
-          count={assessment.notes.length}
-        >
+      {notes.length > 0 && (
+        <ReviewGroup id="review-warnings" title="Avisos sem bloqueio" count={notes.length}>
           <ul className="review-rows">
-            {assessment.notes.map((note) => (
-              <li key={note.code} className="issue-item" data-warning={note.code}>
+            {notes.map((note) => (
+              <li key={note.key} className="issue-item" data-warning={note.key}>
                 <IssueRow issue={note} tone="info" showOffer={showOffer} />
               </li>
             ))}

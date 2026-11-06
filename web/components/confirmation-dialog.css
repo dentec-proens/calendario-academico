@@ -63,6 +63,56 @@
 .confirmation-dialog__items > li + li {
   margin-top: 6px;
 }
+.confirmation-dialog__items > .confirmation-dialog__item {
+  margin-inline-start: -18px;
+  list-style: none;
+}
+.confirmation-dialog__item > div,
+#root .confirmation-dialog__item > button {
+  display: grid;
+  justify-items: start;
+  justify-content: stretch;
+  gap: 2px;
+  width: 100%;
+  padding: 6px;
+  overflow-wrap: anywhere;
+  color: var(--ui-text);
+  font: inherit;
+  text-align: start;
+}
+#root .confirmation-dialog__item > button {
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+.confirmation-dialog__item > button > strong {
+  color: var(--ui-link);
+  text-decoration: underline;
+}
+@media (hover: hover) {
+  .confirmation-dialog__item > button:enabled:hover {
+    background: var(--ui-surface-muted);
+    box-shadow: none;
+  }
+}
+.confirmation-dialog__item strong {
+  font-weight: 600;
+}
+.confirmation-dialog__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.confirmation-dialog__badges .ui-status {
+  padding-block: 1px;
+  background: var(--ui-surface-muted);
+}
+.confirmation-dialog__detail {
+  color: var(--ui-muted);
+}
 .confirmation-dialog__consequence.ui-notice {
   margin: 12px 0 0;
 }

@@ -8,6 +8,8 @@ import {
 } from '../../web/features/calendar-editor/events/activity-step.ts';
 import { applicationSearch } from '../../web/app/search.ts';
 import { activityKey } from '../../src/domain/calendar/activities/activity-ref.ts';
+import { groupPendencies } from '../../src/domain/calendar/pendencies.ts';
+import { contentIssues } from '../../src/domain/calendar/readiness.ts';
 import { cascavelDraft, ivaiporaDraft } from '../fixtures/pending-links-2027.ts';
 import type { CalendarState } from '../../web/features/calendar-editor/types.ts';
 
@@ -22,6 +24,7 @@ const step = (
     events: state.events,
     institutional: [],
     evaluation: evaluatePlan(state),
+    pendencies: groupPendencies(contentIssues(state, []), state),
     search: applicationSearch(search),
     pinned,
   });
@@ -166,8 +169,8 @@ test('a complete activity with only a review note has nothing left to fill', () 
   expect(byDate.map((line) => line.pending)).toEqual([false, false]);
 });
 
-test('issues, unreached offers and open applications stay to fill', () => {
-  // A link that does not reach an offer: complete by the required offer, pending for the other.
+test('only what the calendar counts is to fill; warnings keep their situation on the row', () => {
+  // A link that does not reach an offer: complete by the required offer, a warning for the other.
   const unreached = () => {
     const state = cascavelDraft();
     state.offers[0] = {
@@ -178,8 +181,13 @@ test('issues, unreached offers and open applications stay to fill', () => {
     return state;
   };
   expect(
-    step(unreached).activities.some((line) => line.status.status === 'complete' && line.pending),
+    step(unreached).activities.some(
+      (line) => line.status.status === 'complete' && line.status.problems,
+    ),
   ).toBe(true);
+  expect(
+    step(unreached).activities.some((line) => line.status.status === 'complete' && line.pending),
+  ).toBe(false);
 
   // An application still to confirm beside a complete required offer.
   const open = () => {
@@ -189,7 +197,7 @@ test('issues, unreached offers and open applications stay to fill', () => {
   };
   expect(weekLines(step(open).activities)[0]).toMatchObject({
     status: { status: 'complete', toConfirm: 1 },
-    pending: true,
+    pending: false,
   });
 
   // An invalid date on an optional offer.

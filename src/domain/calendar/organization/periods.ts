@@ -13,6 +13,14 @@ export function periodsForOffer<T extends CalendarPeriod>(
 ): T[] {
   return state.periods.filter((period) => associationOffers(period.association).includes(id));
 }
+/** Whether a teaching period of the offer contains the date. */
+export function hasPeriodOn(
+  state: AssessmentSettings & { periods: CalendarPeriod[] },
+  id: string,
+  date: string,
+) {
+  return periodsForOffer(state, id).some((period) => period.start <= date && date <= period.end);
+}
 export function periodForTerm(
   state: AssessmentSettings & { periods: CalendarPeriod[] },
   id: string,

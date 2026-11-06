@@ -13,7 +13,10 @@ import PrivateLink from './PrivateLink.tsx';
 import MemberRoleEditor from './MemberRoleEditor.tsx';
 import { useAction } from '../../shared/forms/useAction.ts';
 import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
-import { useRouteForm } from '../../app/navigation.ts';
+import { useFeatureRoute, useRouteForm } from '../../app/navigation.ts';
+import { useNavigate } from '@tanstack/react-router';
+import { ResultStatus, SearchField } from '../../shared/forms/SearchField.tsx';
+import { matchesSearch } from '#src/shared/search-text.ts';
 
 /**
  * Closing the form changes route (`/contas/nova` to `/contas`), which remounts this page. The link
@@ -35,6 +38,18 @@ export default function AccountsPanel({
 }) {
   const [creating, setCreating] = useRouteForm('accounts');
   const accounts = useAccounts();
+  const { perfil } = useFeatureRoute();
+  const navigate = useNavigate();
+  // A person's name or e-mail must not reach the URL, history or logs: this search stays in memory.
+  const [search, setSearch] = useState('');
+  const searchInput = useRef<HTMLInputElement>(null);
+  const setRoleFilter = (role: string) => {
+    void navigate({
+      to: '.',
+      search: (previous) => ({ ...previous, perfil: role ? (role as typeof perfil) : undefined }),
+      replace: true,
+    });
+  };
   const [invite, setInvite] = useState<Invitation | null>(() => createdInvite);
   const [recovery, setRecovery] = useState<Awaited<
     ReturnType<typeof accounts.passwordRecovery>
@@ -142,6 +157,13 @@ export default function AccountsPanel({
     });
   }
 
+  const members = info.users.filter(
+    (member) =>
+      (!perfil || member.role === perfil) && matchesSearch(search, member.name, member.email),
+  );
+  const total = `${info.users.length} ${info.users.length === 1 ? 'conta' : 'contas'}`;
+  const filtered = Boolean(perfil || search.trim());
+
   const localInvite =
     invite && ['127.0.0.1', 'localhost'].includes(new URL(invite.inviteUrl).hostname);
 
@@ -194,6 +216,32 @@ export default function AccountsPanel({
         formOpen={creating}
         onFormOpen={setCreating}
         busy={pending}
+        toolbar={
+          <div className="list-tools">
+            <SearchField
+              id="account-search"
+              hint="Nome ou e-mail"
+              value={search}
+              inputRef={searchInput}
+              onChange={setSearch}
+            />
+            <label id="account-role-filter-label">
+              Perfil
+              <select
+                id="account-role-filter"
+                value={perfil ?? ''}
+                onChange={(event) => setRoleFilter(event.target.value)}
+              >
+                <option value="">Todos os perfis</option>
+                {Object.entries(roleLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        }
         form={
           <form id="user-form" onSubmit={submit}>
             <fieldset className="form-fields" disabled={pending}>
@@ -316,6 +364,9 @@ export default function AccountsPanel({
           </form>
         }
       >
+        <ResultStatus id="account-results">
+          {filtered ? `${members.length} de ${total}` : total}
+        </ResultStatus>
         <div className="account-list">
           <div className="account-list-heading" aria-hidden="true">
             <span>Conta</span>
@@ -324,7 +375,7 @@ export default function AccountsPanel({
             <span>Ações</span>
           </div>
           <ul id="user-list" className="records">
-            {info.users.map((u) => (
+            {members.map((u) => (
               <li key={u.id}>
                 <div className="account-identity">
                   <strong>{u.name}</strong>
@@ -408,6 +459,23 @@ export default function AccountsPanel({
               </li>
             ))}
           </ul>
+          {filtered && !members.length ? (
+            <div className="list-empty">
+              <p>Nenhuma conta corresponde à busca.</p>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setSearch('');
+                  setRoleFilter('');
+                  // The button leaves with the empty state, so the focus goes back to the search.
+                  searchInput.current?.focus();
+                }}
+              >
+                Limpar busca
+              </Button>
+            </div>
+          ) : null}
         </div>
       </CollectionPanel>
     </section>

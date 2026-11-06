@@ -104,6 +104,14 @@ function result(name: string, args?: Record<string, unknown>) {
       return { maintenance: false };
     case 'presence:online':
       return [];
+    case 'calendars:submissionContent':
+      // A returned calendar compares itself with the submission it answers.
+      return {
+        state: record.state,
+        institutionalSnapshot: record.institutionalSnapshot,
+        documentSnapshot: [],
+        catalogueRevision: record.catalogueRevision,
+      };
     case 'calendars:replacementPreview':
       return { replaced: [], suggestedSei: '' };
     case 'calendars:calendarSubmissions':

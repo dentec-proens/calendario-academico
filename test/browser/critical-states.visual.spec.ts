@@ -49,6 +49,35 @@ test('calendar creation form', async ({ page, fixtureServer }) => {
   await expect(page).toHaveScreenshot('calendar-creation.png', { fullPage: true });
 });
 
+test('the index of a review and the criteria of a return', async ({ page, fixtureServer }) => {
+  await page.goto(await fixtureServer('review'));
+  await page.locator('[data-open-review]').first().click();
+  const index = page.locator('#review-index');
+  await index.locator('[data-review-filter="PENDENTE"]').click();
+  await index.locator('[data-review-filter="PENDENTE"]').blur();
+  await expect(index).toHaveScreenshot('review-index.png');
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await expect(page.locator('#record-title')).toBeVisible();
+  await page.evaluate(async () => {
+    Object.assign(window.editorTest.record, {
+      status: 'rascunho',
+      lastReturn: {
+        submissionId: 'synthetic-round-1',
+        sequence: 1,
+        at: '2026-10-22T15:00:00Z',
+        note: 'Ajustar as datas apontadas.',
+        returnedCriteria: [
+          { criterionId: 'VI', title: 'Aproveitamento e certificação', note: 'Falta o prazo.' },
+          { criterionId: 'annual', title: 'Dias letivos anuais' },
+        ],
+      },
+    });
+    await window.publishReviewerCalendar();
+  });
+  await assertNoOverflow(page);
+  await expect(page.locator('#return-note')).toHaveScreenshot('return-note-criteria.png');
+});
+
 test('review with an assessment to save', async ({ page, fixtureServer }) => {
   await page.goto(await fixtureServer('review'));
   await page.locator('[data-open-review]').first().click();

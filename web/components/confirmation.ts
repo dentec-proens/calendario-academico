@@ -1,11 +1,20 @@
 export type DialogIntent = 'danger' | 'primary' | 'warning' | 'success';
 
+/** A line of the decision with a place to go: choosing it cancels and leads there. */
+export interface ConfirmationItem {
+  key: string;
+  title: string;
+  detail?: string;
+  badges?: readonly string[];
+  onSelect?: () => void;
+}
+
 export interface ConfirmationOptions {
   title: string;
   description: string;
   consequence?: string;
   /** What the decision covers item by item, such as the issues still open. */
-  items?: readonly string[];
+  items?: readonly (string | ConfirmationItem)[];
   intent?: DialogIntent;
   confirmLabel: string;
   cancelLabel?: string;

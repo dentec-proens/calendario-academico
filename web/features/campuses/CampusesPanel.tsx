@@ -7,6 +7,8 @@ import { useRouteForm } from '../../app/navigation.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 
+const accountsLabel = (count: number) => (count === 1 ? '1 conta' : `${count} contas`);
+
 export default function CampusesPanel({
   info,
   onCampus,
@@ -22,7 +24,7 @@ export default function CampusesPanel({
     defaultValues: { name: '' },
     onSubmit: async (value, { isCurrent }) => {
       const name = value.name.trim();
-      if (!name) throw new Error('Informe o nome da unidade.');
+      if (!name) throw new Error('Informe o nome do campus.');
       await institution.createCampus(name);
       if (!isCurrent()) return;
       form.reset();
@@ -37,7 +39,7 @@ export default function CampusesPanel({
       <CollectionPanel
         title="Campi cadastrados"
         actionLabel="Cadastrar campus"
-        formTitle="Cadastrar unidade"
+        formTitle="Cadastrar campus"
         formOpen={creating}
         onFormOpen={setCreating}
         busy={pending}
@@ -47,12 +49,12 @@ export default function CampusesPanel({
               <form.Field
                 name="name"
                 validators={{
-                  onBlur: ({ value }) => (!value.trim() ? 'Informe o nome da unidade.' : undefined),
+                  onBlur: ({ value }) => (!value.trim() ? 'Informe o nome do campus.' : undefined),
                 }}
               >
                 {(field) => (
                   <label>
-                    Nome da unidade
+                    Nome do campus
                     <input
                       id="campus-name"
                       name="name"
@@ -81,9 +83,7 @@ export default function CampusesPanel({
               <div>
                 <strong>{campus.name}</strong>
                 <small>
-                  {info.calendars.filter((calendar) => calendar.campusId === campus.id).length}{' '}
-                  calendário(s) carregado(s) ·{' '}
-                  {info.users.filter((user) => user.campusId === campus.id).length} conta(s)
+                  {accountsLabel(info.users.filter((user) => user.campusId === campus.id).length)}
                 </small>
               </div>
               <Button

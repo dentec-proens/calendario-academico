@@ -92,6 +92,8 @@
 }
 .diff-days th,
 .diff-days td {
+  /* Words break only when one alone does not fit its column. */
+  overflow-wrap: break-word;
   padding: 4px 8px;
   border-bottom: 1px solid var(--ui-border-soft);
   text-align: left;
@@ -105,4 +107,34 @@
   display: grid;
   gap: 4px;
   min-width: min(100%, 240px);
+}
+
+.lifecycle-fill {
+  display: grid;
+  justify-items: start;
+  gap: var(--ui-space-2);
+}
+.return-criteria summary {
+  min-height: 44px;
+  align-content: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+.return-criteria ul {
+  display: grid;
+  gap: var(--ui-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.return-criteria li {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+.return-criteria li a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }

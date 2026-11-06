@@ -1,4 +1,6 @@
 import { readActivityDates } from '../../src/domain/calendar/civil-dates.ts';
+import { calendarName } from '../../src/domain/calendar/label';
+import { matchesSearch } from '../../src/shared/search-text';
 import { frozenBase, inspectBase } from './base';
 import {
   isEditable,
@@ -87,6 +89,9 @@ export async function submissionSummary(ctx: Context, user: Member, row: Doc<'ca
             at: iso(decision.at),
             note: decision.note ?? '',
             ...(user.role === 'CAMPUS' ? {} : { by: decision.by.name }),
+            ...(decision.returnedCriteria?.length
+              ? { returnedCriteria: decision.returnedCriteria }
+              : {}),
           }
         : null,
   };
@@ -120,6 +125,10 @@ export async function calendarSummaries(ctx: Context, user: Member, deleted = fa
   );
 }
 
+/**
+ * Live calendars come from the most recently changed in descending order; the trash, whose range
+ * is on `deletedAt`, from the most recently deleted.
+ */
 export function calendarQuery(
   ctx: Context,
   user: Member,
@@ -129,13 +138,28 @@ export function calendarQuery(
   if (requestedCampus) assertCampus(user, requestedCampus);
   const campusId = user.role === 'CAMPUS' ? user.campusId! : requestedCampus;
   return campusId
-    ? ctx.db.query('calendars').withIndex('by_campusId_and_deletedAt', (q) => {
+    ? ctx.db.query('calendars').withIndex('by_campusId_and_deletedAt_and_updatedAt', (q) => {
         const scoped = q.eq('campusId', campusId);
         return deleted ? scoped.gt('deletedAt', 0) : scoped.eq('deletedAt', undefined);
       })
     : ctx.db
         .query('calendars')
-        .withIndex('by_deletedAt', (q) =>
+        .withIndex('by_deletedAt_and_updatedAt', (q) =>
           deleted ? q.gt('deletedAt', 0) : q.eq('deletedAt', undefined),
         );
+}
+
+/** The generated name already holds the year, the campus and the label. */
+export function calendarMatchesSearch(
+  row: Doc<'calendars'>,
+  campus: Doc<'campuses'>,
+  query: string,
+) {
+  return matchesSearch(
+    query,
+    calendarName(row.year, campus.name, row.label),
+    row.courses,
+    row.classes,
+    row.shifts,
+  );
 }
