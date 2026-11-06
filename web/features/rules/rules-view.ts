@@ -95,6 +95,7 @@ export function rulesView(year: number) {
   return {
     year,
     norm: policy.review.citation ?? policy.review.source.title,
+    normUrl: policy.review.citationUrl,
     version: policy.rulesetVersion(state),
     window: policy.window(state),
     excluded: offers.filter((offer) => policy.excludes(offer)).map(offerLabel),

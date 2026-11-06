@@ -5,7 +5,7 @@ import { mountApplication } from './mount-application.ts';
 import { getFunctionName } from 'convex/server';
 import type { FunctionReference } from 'convex/server';
 import { portalReview } from './portal-router-client.ts';
-import type { Bootstrap, DocumentsData } from '../../web/shared/convex/types.ts';
+import type { Bootstrap } from '../../web/shared/convex/types.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import type { CalendarStatus } from '../../src/domain/calendar/lifecycle.ts';
 import '../../web/style.css';
@@ -114,29 +114,6 @@ const calendar: Bootstrap['calendars'][number] = {
   createdByName: 'Pessoa autora',
   updatedByName: 'Pessoa editora',
 };
-const documents: DocumentsData['documents'] = (['rascunho', 'vigente', 'arquivado'] as const).map(
-  (status, i) => ({
-    id: `document-${i}` as Id<'documents'>,
-    year: i === 2 ? 2028 : 2027,
-    type: 'norma',
-    title: `Documento ${status}`,
-    source: 'Fonte de teste',
-    filename: 'teste.pdf',
-    hash: 'a'.repeat(64),
-    status,
-    version: 1,
-    createdAt: '2026-10-23T12:00:00Z',
-    ...(i === 0 && new URLSearchParams(location.search).has('missing-document')
-      ? {
-          unavailableFile: {
-            reason: 'not_migrated' as const,
-            sourceReference: 'synthetic-original',
-          },
-        }
-      : {}),
-    ...(status !== 'rascunho' ? { publishedAt: '2026-10-23T12:00:00Z' } : {}),
-  }),
-);
 // As the server, the queue lists one situation at a time; the rows default to the first tab.
 const queueStatus = (new URLSearchParams(location.search).get('queue-status') ??
   'enviado') as CalendarStatus;
@@ -203,18 +180,11 @@ const client = {
           ? reviewQueueCounts(args.campusId)
           : {
               page:
-                name === 'documents:documentPage'
-                  ? documents.filter(
-                      (document) =>
-                        (user.role === 'ADMIN' || document.publishedAt) &&
-                        (!args.year || document.year === args.year) &&
-                        (!args.status || document.status === args.status),
-                    )
-                  : name === 'calendars:calendarPage'
-                    ? calendarRows(!!args.deleted)
-                    : name === 'reviews:reviewQueue'
-                      ? reviewQueueRows(args.status, args.campusId)
-                      : [],
+                name === 'calendars:calendarPage'
+                  ? calendarRows(!!args.deleted)
+                  : name === 'reviews:reviewQueue'
+                    ? reviewQueueRows(args.status, args.campusId)
+                    : [],
               isDone: true,
               continueCursor: '',
             };

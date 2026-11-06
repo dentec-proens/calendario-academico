@@ -17,7 +17,7 @@ button.onclick = () => {
   void confirmAction({
     title: 'Mover calendário para a lixeira?',
     description: 'O calendário “2027 — Campus Curitiba” sairá das listas de trabalho e pareceres.',
-    consequence: 'Seus dados e documentos serão preservados para restauração.',
+    consequence: 'Seus dados serão preservados para restauração.',
     intent: 'danger',
     confirmLabel: 'Mover para a lixeira',
     pendingLabel: 'Movendo…',

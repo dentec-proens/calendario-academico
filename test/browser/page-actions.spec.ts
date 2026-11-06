@@ -8,7 +8,6 @@ for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     const origin = new URL(await fixtureServer('portal')).origin;
     for (const path of [
-      '/documentos',
       '/calendarios',
       '/eventos-institucionais',
       '/campi',

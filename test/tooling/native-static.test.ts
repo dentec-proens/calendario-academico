@@ -29,7 +29,6 @@ test('native server serves portal and invitation routes without a Node API or en
     for (const route of [
       '/calendarios',
       '/calendarios/novo',
-      '/documentos/novo?ano=2027',
       '/eventos-institucionais',
       '/eventos-institucionais/event-a/editar',
       '/campi/novo',

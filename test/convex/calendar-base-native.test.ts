@@ -6,6 +6,7 @@ import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, seedCourses } from '../helpers/lifecycle.ts';
+import type { Id } from '../../convex/_generated/dataModel';
 
 async function opened() {
   const fixture = await createNativeFixture({
@@ -151,8 +152,29 @@ test('real changes require the displayed content acceptance and events recalcula
   expect(saved.base.events[0]!.start).toBe('2027-03-04');
 });
 
-test('a new document preserves dates, invalidates the evidenced review and archives the old references', async () => {
+test('a change in the documents table leaves a calendar under review and its parecer as they were', async () => {
   const { client, account, record, inspect } = await opened();
+  // A calendar saved while documents were part of the base carries a stored list.
+  const document = await client.run(async (ctx) => {
+    const id = await ctx.db.insert('documents', {
+      year: 2027,
+      type: 'norma',
+      title: 'Norma vigente',
+      source: 'PROENS',
+      hash: '1'.repeat(64),
+      filename: 'norma.pdf',
+      status: 'vigente',
+      version: 1,
+      createdAt: Date.now(),
+    });
+    const content = await ctx.db
+      .query('calendarContents')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id as Id<'calendars'>))
+      .unique();
+    const { _id, _creationTime, ...fields } = (await ctx.db.get(id))!;
+    await ctx.db.patch(content!._id, { documentSnapshot: [{ id: _id, ...fields }] });
+    return id;
+  });
   await act(account, record.id, 'submit');
   const support = await account.query(api.reviews.review, { id: record.id });
   await account.mutation(api.reviews.saveReview, {
@@ -174,52 +196,20 @@ test('a new document preserves dates, invalidates the evidenced review and archi
       })),
     },
   });
-  await act(account, record.id, 'return', { note: 'Incorpore a norma.' });
-  const id = await client.run((ctx) =>
-    ctx.db.insert('documents', {
-      year: 2027,
-      type: 'norma',
-      title: 'Nova norma',
-      source: 'PROENS',
-      hash: '1'.repeat(64),
-      filename: 'norma.pdf',
-      status: 'rascunho',
-      version: 1,
-      createdAt: Date.now(),
-    }),
-  );
-  await account.mutation(api.documents.documentStatus, {
-    id,
-    revision: 1,
-    status: 'vigente',
-    confirmed: true,
-  });
+  await client.run((ctx) => ctx.db.patch(document, { status: 'arquivado' }));
   const fresh = await account
     .query(api.calendars.calendar, { id: record.id })
     .then(calendarRecordDates);
-  const assessment = inspectCalendar(fresh, fresh);
-  expect(assessment.kind).toBe('documents');
-  expect((await account.query(api.reviews.review, { id: record.id })).stale).toBe(true);
-  const saved = await account
-    .mutation(api.calendars.saveCalendar, {
-      id: record.id,
-      body: {
-        version: 1,
-        catalogueRevision: 1,
-        state: fresh.state,
-      },
-    })
-    .then(calendarSaveDates);
-  expect(saved.state).toEqual(record.state);
-  expect(saved.version).toBe(2);
-  expect(saved.base.documents[0]!.id).toBe(id);
+  expect(fresh.currentCatalogueRevision).toBe(1);
+  expect(inspectCalendar(fresh, fresh).compatible).toBe(true);
+  const after = await account.query(api.reviews.review, { id: record.id });
+  expect(after.stale).toBe(false);
+  expect(after.baseCompatible).toBe(true);
+  expect(after.baseIdentity).toBe(support.baseIdentity);
   const data = await inspect();
   const [submission] = await client.run((ctx) => ctx.db.query('calendarSubmissions').collect());
-  expect(
-    submission!.documentSnapshot,
-    'the submission keeps the references it was reviewed with',
-  ).toEqual([]);
-  expect(data.reviews[0]!.documentSnapshot).toEqual([]);
+  expect(submission!.documentSnapshot.map((item) => item.id)).toEqual([document]);
+  expect(data.reviews[0]!.documentSnapshot.map((item) => item.id)).toEqual([document]);
 });
 
 test('removing Teacher Day leaves its local adjustment inspectable and permits explicit resolution', async () => {

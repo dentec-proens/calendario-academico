@@ -6,7 +6,6 @@ test('each collection form supports a direct URL and reload', async ({ page, fix
   const origin = new URL(await fixtureServer('portal')).origin;
   const forms = [
     ['/calendarios/novo', '#create-calendar'],
-    ['/documentos/novo', '#document-form'],
     ['/eventos-institucionais/novo', '#catalogue-form'],
     ['/campi/novo', '#campus-form'],
     ['/contas/nova', '#user-form'],
@@ -60,53 +59,6 @@ test('a delayed campus creation preserves the section selected during the reques
   await expect(page.locator('#campus-name')).toHaveValue('');
 });
 
-test('document upload updates its list filter atomically and cannot navigate away from another section', async ({
-  page,
-  fixtureServer,
-}) => {
-  const origin = new URL(await fixtureServer('portal')).origin;
-  await page.route('**/__synthetic-upload', (route) =>
-    route.fulfill({ json: { storageId: 'synthetic-file' } }),
-  );
-  const fillUpload = async () => {
-    await page.locator('#document-year').fill('2029');
-    await page.locator('#document-title').fill('Norma de teste');
-    await page.locator('#document-source').fill('Resolução sintética');
-    await page.locator('#document-file').setInputFiles({
-      name: 'norma.pdf',
-      mimeType: 'application/pdf',
-      buffer: Buffer.from('%PDF-1.7\nDocumento sintético'),
-    });
-  };
-  await page.goto(origin + '/documentos/novo?situacao=vigente');
-  await fillUpload();
-  await page.locator('#document-form button[type="submit"]').click();
-  await expect(page).toHaveURL(origin + '/documentos?ano=2029');
-  await expect(page.locator('#document-message')).toContainText('Arquivo preservado como rascunho');
-  await expect(page.locator('#document-year-filter')).toHaveValue('2029');
-  await expect(page.locator('#document-status-filter')).toHaveValue('');
-
-  await page.getByRole('button', { name: 'Adicionar documento' }).click();
-  await fillUpload();
-  await page.evaluate(() => {
-    window.portalRouterTest.deferNextMutation = true;
-  });
-  await page.locator('#document-form button[type="submit"]').click();
-  await expect
-    .poll(() => page.evaluate(() => window.portalRouterTest.pendingMutation))
-    .toBe('uploadDocument');
-  await page.locator('[data-page="calendars"]').click();
-  await expect(page.locator('#calendar-list')).toBeVisible();
-  await page.evaluate(() => window.portalRouterTest.resolvePendingMutation());
-  await expect.poll(() => page.evaluate(() => window.portalRouterTest.pendingMutation)).toBeNull();
-  await expect
-    .poll(() => page.evaluate(() => window.portalRouterTest.completedMutation))
-    .toBe('uploadDocument');
-  await expect(page.locator('#document-form')).toHaveCount(0);
-  await expect(page).toHaveURL(origin + '/calendarios');
-  await expect(page.locator('#calendar-list')).toBeVisible();
-});
-
 test('URL, browser history and collection drafts stay synchronized', async ({
   page,
   fixtureServer,
@@ -123,8 +75,8 @@ test('URL, browser history and collection drafts stay synchronized', async ({
   await page.goForward();
   await expect(page.locator('#create-calendar')).toBeVisible();
   await expect(page.locator('#calendar-offer-subsequente')).toBeChecked();
-  await page.locator('[data-page="institution"]').click();
-  await expect(page).toHaveURL(origin + '/documentos');
+  await page.locator('[data-page="rules"]').click();
+  await expect(page).toHaveURL(origin + '/regras');
   await page.goBack();
   await expect(page).toHaveURL(origin + '/calendarios/novo');
   await expect(page.locator('#calendar-offer-subsequente')).toBeChecked();
@@ -149,7 +101,7 @@ test('institutional event editing has a stable record URL and reload restores th
   await expect(page).toHaveURL(origin + editPath);
   await expect(page.locator('#catalogue-name')).toHaveValue('Evento institucional de teste');
   await page.locator('#catalogue-name').fill('Edição ainda não enviada');
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await page.goBack();
   await expect(page.locator('#catalogue-name')).toHaveValue('Edição ainda não enviada');
   await page.locator('#cancel-catalogue').click();
@@ -167,15 +119,15 @@ test('section and record links keep native browser shortcuts and canonical URLs'
 }) => {
   const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/calendarios');
-  const documents = page.locator('[data-page="institution"]');
+  const documents = page.locator('[data-page="rules"]');
   await expect(documents).toHaveJSProperty('tagName', 'A');
-  await expect(documents).toHaveAttribute('href', '/documentos');
+  await expect(documents).toHaveAttribute('href', '/regras');
   const [newTab] = await Promise.all([
     context.waitForEvent('page'),
     documents.click({ modifiers: ['ControlOrMeta'] }),
   ]);
-  await expect(newTab).toHaveURL(origin + '/documentos');
-  await expect(newTab.locator('#document-list')).toBeVisible();
+  await expect(newTab).toHaveURL(origin + '/regras');
+  await expect(newTab.locator('.rules-page')).toBeVisible();
   await expect(page).toHaveURL(origin + '/calendarios');
   await newTab.close();
   await expect(page.locator('#calendar-list a').first()).toHaveAttribute(
@@ -193,12 +145,12 @@ test('mobile keyboard navigation changes route, closes the menu and focuses the 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(origin + '/calendarios');
   await page.locator('.sidebar-toggle').click();
-  await page.locator('[data-page="institution"]').focus();
+  await page.locator('[data-page="rules"]').focus();
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(origin + '/documentos');
+  await expect(page).toHaveURL(origin + '/regras');
   await expect(page.locator('.portal-sidebar')).toBeHidden();
   await expect(page.locator('#panel-title')).toBeFocused();
-  await expect(page.locator('#document-list')).toBeVisible();
+  await expect(page.locator('.rules-page')).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
     .toBe(true);
@@ -392,10 +344,10 @@ test('a delayed review response cannot reopen a section the user already left', 
   await expect
     .poll(() => page.evaluate(() => window.portalRouterTest.pendingReviewId))
     .toBe('calendar-a');
-  await page.locator('[data-page="institution"]').click();
-  await expect(page.locator('#document-list')).toBeVisible();
+  await page.locator('[data-page="rules"]').click();
+  await expect(page.locator('.rules-page')).toBeVisible();
   await page.evaluate(() => window.portalRouterTest.resolvePendingReview());
-  await expect(page).toHaveURL(origin + '/documentos');
+  await expect(page).toHaveURL(origin + '/regras');
   await expect(page.locator('#review-content')).toBeHidden();
 });
 
@@ -410,15 +362,10 @@ test('direct restricted URLs respect the current role and unknown URLs show a re
     expect(new URL(page.url()).pathname).toBe('/calendarios');
     await expect(page.locator('#user-form, #campus-form, #review-content')).toHaveCount(0);
   }
-  for (const path of ['/documentos/novo', '/eventos-institucionais/synthetic-event/editar']) {
-    await page.goto(origin + path + '?role=CAMPUS');
-    const destination = path.startsWith('/documentos') ? '/documentos' : '/eventos-institucionais';
-    await expect(
-      page.locator(destination === '/documentos' ? '#document-list' : '#catalogue-list'),
-    ).toBeVisible();
-    expect(new URL(page.url()).pathname).toBe(destination);
-    await expect(page.locator('#document-form, #catalogue-form')).toHaveCount(0);
-  }
+  await page.goto(origin + '/eventos-institucionais/synthetic-event/editar?role=CAMPUS');
+  await expect(page.locator('#catalogue-list')).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe('/eventos-institucionais');
+  await expect(page.locator('#catalogue-form')).toHaveCount(0);
   await page.goto(origin + '/calendarios/novo?role=PARECERISTA');
   await expect(page.locator('#review-panel')).toBeVisible();
   expect(new URL(page.url()).pathname).toBe('/revisoes');

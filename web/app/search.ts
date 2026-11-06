@@ -3,7 +3,7 @@ import { activityFromKey } from '#src/domain/calendar/activities/activity-ref.ts
 import { calendarStatuses } from '#src/domain/calendar/lifecycle.ts';
 export type DocumentStatus = '' | 'rascunho' | 'vigente' | 'arquivado';
 
-/** Each screen narrows `situacao` to the situations it lists; documents use only three of them. */
+/** Each screen narrows `situacao` to the situations it lists. */
 function situationFilter(value: unknown) {
   return calendarStatuses.find((status) => status === value);
 }

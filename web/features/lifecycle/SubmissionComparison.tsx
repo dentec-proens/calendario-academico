@@ -56,7 +56,6 @@ function useSubmissionSide(calendarId: string, submissionId: string | undefined)
       side: {
         state: dated.state,
         institutionalSnapshot: dated.institutionalSnapshot,
-        documentSnapshot: dated.documentSnapshot,
         catalogueRevision: dated.catalogueRevision,
       } as DiffSide,
     };
@@ -462,7 +461,6 @@ export function DiffView({ diff }: { diff: CalendarDiff }) {
           <h4>Base institucional</h4>
           <FieldSection title="Referências" fields={diff.base.fields} />
           <Items title="Eventos institucionais" items={diff.base.events} />
-          <Items title="Documentos" items={diff.base.documents} />
         </section>
       ) : null}
       {reidentified ? (

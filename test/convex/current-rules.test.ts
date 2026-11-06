@@ -59,42 +59,15 @@ async function stampRules(
   });
 }
 
-async function publishDocument({
-  client,
-  account,
-}: Awaited<ReturnType<typeof draftUnderOldRules>>) {
-  const id = await client.run((ctx) =>
-    ctx.db.insert('documents', {
-      year: 2027,
-      type: 'norma',
-      title: 'Nova norma',
-      source: 'PROENS',
-      hash: '1'.repeat(64),
-      filename: 'norma.pdf',
-      status: 'rascunho',
-      version: 1,
-      createdAt: Date.now(),
-    }),
-  );
-  await account.mutation(api.documents.documentStatus, {
-    id,
-    revision: 1,
-    status: 'vigente',
-    confirmed: true,
-  });
-  return id;
-}
-
-test('a draft under older rules and references saves without any acceptance', async () => {
+test('a draft under older rules saves without any acceptance', async () => {
   const fixture = await draftUnderOldRules();
   const { account, record, current } = fixture;
-  const document = await publishDocument(fixture);
   const fresh = await account
     .query(api.calendars.calendar, { id: record.id })
     .then(calendarRecordDates);
   const assessment = inspectCalendar(fresh, fresh);
   expect(assessment.compatible).toBe(true);
-  expect(assessment.kind).toBe('documents');
+  expect(assessment.kind).toBe('rules');
   expect(assessment.rules.after).toBe(current);
   expect(assessment.rules.changes.map((change) => change.version)).toContain(current);
   const saved = await account
@@ -112,14 +85,12 @@ test('a draft under older rules and references saves without any acceptance', as
   const after = await account
     .query(api.calendars.calendar, { id: record.id })
     .then(calendarRecordDates);
-  expect(after.documentSnapshot.map((item) => item.id)).toEqual([document]);
   expect(inspectCalendar(after, after).kind).toBe('current');
 });
 
-test('submitting records the current rules and references, and the review can go on', async () => {
+test('submitting records the current rules, and the review can go on', async () => {
   const fixture = await draftUnderOldRules();
   const { account, record, current, client, inspect } = fixture;
-  const document = await publishDocument(fixture);
   await act(account, record.id, 'submit');
   const after = await account
     .query(api.calendars.calendar, { id: record.id })
@@ -131,7 +102,6 @@ test('submitting records the current rules and references, and the review can go
   const [submission] = await client.run((ctx) => ctx.db.query('calendarSubmissions').collect());
   expect(submission!.contentVersion).toBe(after.version);
   expect(submission!.state.rulesetVersion).toBe(current);
-  expect(submission!.documentSnapshot.map((item) => item.id)).toEqual([document]);
   const audit = (await inspect()).audit.filter((row) => row.calendarId === record.id);
   expect(
     audit.find((row) => row.action === 'SAVE_CALENDAR' && row.version === after.version),
@@ -156,19 +126,36 @@ test('rules changed during the review still block concluding and publishing', as
   await expect(act(account, record.id, 'conclude')).rejects.toThrow('Devolva o calendário');
 });
 
-test('a new version starts under the current rules and references', async () => {
+test('a new version starts under the current rules and keeps the stored document list', async () => {
   const fixture = await draftUnderOldRules();
   const { account, record, client, current } = fixture;
-  const document = await publishDocument(fixture);
-  await client.run((ctx) =>
-    ctx.db.patch(record.id as Id<'calendars'>, { status: 'vigente', statusRevision: 9 }),
-  );
+  // Comparing a version with the published calendar must not report a removed document.
+  const document = await client.run(async (ctx) => {
+    const id = await ctx.db.insert('documents', {
+      year: 2027,
+      type: 'norma',
+      title: 'Norma anterior',
+      source: 'PROENS',
+      hash: '1'.repeat(64),
+      filename: 'norma.pdf',
+      status: 'arquivado',
+      version: 1,
+      createdAt: Date.now(),
+    });
+    const content = await ctx.db
+      .query('calendarContents')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id as Id<'calendars'>))
+      .unique();
+    const { _id, _creationTime, ...fields } = (await ctx.db.get(id))!;
+    await ctx.db.patch(content!._id, { documentSnapshot: [{ id: _id, ...fields }] });
+    await ctx.db.patch(record.id as Id<'calendars'>, { status: 'vigente', statusRevision: 9 });
+    return id;
+  });
   const copy = await account
     .mutation(api.calendars.createCalendarVersion, { id: record.id })
     .then(calendarRecordDates);
   expect(copy.state.rulesetVersion).toBe(current);
   expect(copy.documentSnapshot.map((item) => item.id)).toEqual([document]);
-  expect(inspectCalendar(copy, copy).documents.added).toEqual([]);
 });
 
 async function withNewEvent() {

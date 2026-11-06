@@ -65,16 +65,13 @@ async function recordCurrentBase(
   user: Member,
   { row, content, compatibility }: Awaited<ReturnType<typeof baseRecord>>,
 ) {
-  const { snapshot, documents, events } = compatibility;
+  const { snapshot, events } = compatibility;
   if (
     content.state.rulesetVersion === snapshot.rulesetVersion &&
     content.catalogueRevision === snapshot.revision &&
     !events.added.length &&
     !events.removed.length &&
-    !events.changed.length &&
-    !documents.added.length &&
-    !documents.removed.length &&
-    !documents.changed.length
+    !events.changed.length
   )
     return { content, version: row.version };
   const fields = {
@@ -83,7 +80,6 @@ async function recordCurrentBase(
     institutionalSnapshot: clean(
       snapshot.events,
     ) as Doc<'calendarContents'>['institutionalSnapshot'],
-    documentSnapshot: snapshot.documents,
   };
   const version = row.version + 1;
   await ctx.db.patch(content._id, fields);

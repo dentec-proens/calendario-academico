@@ -156,16 +156,6 @@ export const convex = {
         });
         return finishMutation('saveCatalogue', { ok: true });
       }
-      case 'documents:openDocument':
-        if (args.id === 'document-missing')
-          return Promise.reject(new Error('Documento não encontrado.'));
-        return finishMutation('openDocument', {
-          url: window.location.origin + '/__synthetic-document.pdf',
-        });
-      case 'documents:documentStatus':
-        if (args.revision !== window.portalRouterTest.catalogue.revision)
-          return Promise.reject(new Error('A base mudou. Atualize a lista antes de continuar.'));
-        return finishMutation('documentStatus', { ok: true });
       case 'access/security:unlockPassword':
         return finishMutation('unlockPassword', { ok: true });
       case 'access/members:updateMemberRole': {
@@ -185,11 +175,6 @@ export const convex = {
         });
         return finishMutation('updateMemberRole', { ok: true });
       }
-      case 'nativeFiles:receiveUpload':
-      case 'nativeFiles:issueUpload':
-        return Promise.resolve({
-          uploadId: 'synthetic-upload',
-        });
       case 'campuses:createCampus':
         return finishMutation('createCampus', {
           id: 'created-campus',
@@ -202,27 +187,8 @@ export const convex = {
         );
     }
   },
-  action: (reference: FunctionReference<'action'>, args: Record<string, unknown>) => {
-    switch (getFunctionName(reference)) {
-      case 'actions/uploads:completeUpload':
-        return Promise.resolve({ uploadId: 'synthetic-upload' });
-      case 'actions/documents:restoreDocumentOriginal':
-        return finishMutation('restoreDocumentOriginal', { ok: true });
-      case 'actions/documents:uploadDocument':
-        return finishMutation('uploadDocument', {
-          ...args,
-          id: 'created-document',
-          hash: 'a'.repeat(64),
-          status: 'rascunho',
-          version: 1,
-          createdAt: '2026-10-26T12:00:00Z',
-        });
-      default:
-        return Promise.reject(
-          new Error(`Action sintética não implementada: ${getFunctionName(reference)}`),
-        );
-    }
-  },
+  action: (reference: FunctionReference<'action'>) =>
+    Promise.reject(new Error(`Action sintética não implementada: ${getFunctionName(reference)}`)),
 };
 
 declare global {

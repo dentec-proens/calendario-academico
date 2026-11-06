@@ -160,7 +160,7 @@ test('destructive confirmation with preserved data explained', async ({ page, fi
   await page.locator('#trigger').click();
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText('Seus dados e documentos serão preservados');
+  await expect(dialog).toContainText('Seus dados serão preservados');
   await assertNoOverflow(page);
   await expect(page).toHaveScreenshot('confirmation.png', { fullPage: true });
 });

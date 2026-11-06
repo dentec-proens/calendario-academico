@@ -60,14 +60,12 @@ test('equivalent revisions ignore ordering, operational metadata and offers outs
   expect(result.kind).toBe('equivalent');
   expect(result.identity).toBe(inspect(snapshot, snapshot, scope).identity);
 });
-test('a document change is a difference of a locked calendar', () => {
-  const result = inspect(
-    snapshot,
-    { ...snapshot, documents: [{ ...document, hash: 'new' }] },
-    scope,
-  );
-  expect(result.kind).toBe('documents');
-  expect(result.compatible).toBe(false);
+test('a calendar is never compared with the documents in force, only identified by its own', () => {
+  const locked = inspect(snapshot, { revision: 2, events: [event] }, scope);
+  expect(locked.kind).toBe('equivalent');
+  expect(locked.compatible).toBe(true);
+  const other = { ...snapshot, documents: [{ ...document, hash: 'new' }] };
+  expect(inspect(other, other, scope).identity).not.toBe(locked.identity);
 });
 test('event changes are identified even at the same revision and change the identity', () => {
   const result = inspect(
@@ -173,16 +171,7 @@ test('legacy base identities remain stable for years without changed rules', () 
   }
 });
 
-test('a calendar being edited follows rules and documents, and only events ask for something', () => {
-  const document = {
-    id: 'norma',
-    year: 2027,
-    type: 'norma',
-    title: 'Norma',
-    source: 'PROENS',
-    hash: 'a',
-    filename: 'norma.pdf',
-  };
+test('a calendar being edited follows the rules, and only events ask for something', () => {
   const scope = { year: 2027, offers: [] };
   const stored = {
     revision: 1,
@@ -193,8 +182,6 @@ test('a calendar being edited follows rules and documents, and only events ask f
   const inForce = { ...stored, rulesetVersion: 'consup-292-2027-v8' };
   const rules = inspectBase(stored, inForce, scope, true);
   expect(rules).toMatchObject({ kind: 'rules', compatible: true });
-  const documents = inspectBase(stored, { ...inForce, documents: [document] }, scope, true);
-  expect(documents).toMatchObject({ kind: 'documents', compatible: true });
   expect(inspectBase(stored, inForce, scope, false)).toMatchObject({
     kind: 'rules',
     compatible: false,

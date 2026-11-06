@@ -30,7 +30,6 @@ export interface DiffSide {
     teacherVacations?: Partial<Record<VacationField, CivilDate>>;
   };
   institutionalSnapshot: (InstitutionalEventSnapshot & Record<string, unknown>)[];
-  documentSnapshot: ({ id: string } & Record<string, unknown>)[];
   catalogueRevision: number;
 }
 
@@ -120,16 +119,6 @@ export const fieldLabels = {
     originalStart: 'Início na base',
     originalEnd: 'Término na base',
   },
-  document: {
-    year: 'Ano',
-    type: 'Tipo',
-    title: 'Título',
-    source: 'Fonte',
-    hash: 'Conteúdo do arquivo',
-    filename: 'Nome do arquivo',
-    status: 'Situação',
-    version: 'Versão',
-  },
 } as const;
 
 /** Identity, storage and bookkeeping fields: compared through their sections or not at all. */
@@ -149,17 +138,6 @@ export const ignoredFields = {
     'weekConfirmed',
   ],
   institutionalEvent: ['id', 'institutional'],
-  document: [
-    'id',
-    'storageId',
-    'unavailableFile',
-    'size',
-    'createdAt',
-    'createdBy',
-    'publishedAt',
-    'publishedBy',
-    'archivedAt',
-  ],
 } as const;
 
 const derivedVacation = (event: { id: string }) => event.id.startsWith('teacher-vacation-');
@@ -444,10 +422,6 @@ export function compareContents(before: DiffSide, after: DiffSide) {
     return fields.length ? [{ ...change, fields }] : [];
   });
 
-  const documentName = (document: DiffSide['documentSnapshot'][number]) => ({
-    ...document,
-    name: typeof document.title === 'string' ? document.title : document.id,
-  });
   const base = {
     fields: fieldChanges(
       { rulesetVersion: before.state.rulesetVersion, catalogueRevision: before.catalogueRevision },
@@ -455,11 +429,6 @@ export function compareContents(before: DiffSide, after: DiffSide) {
       fieldLabels.base,
     ),
     events: institutional,
-    documents: compareItems(
-      before.documentSnapshot.map(documentName),
-      after.documentSnapshot.map(documentName),
-      fieldLabels.document,
-    ),
   };
   const campusChanges =
     offers.length +
@@ -468,7 +437,7 @@ export function compareContents(before: DiffSide, after: DiffSide) {
     events.length +
     observances.length +
     vacations.length;
-  const baseChanges = base.events.length + base.documents.length + base.fields.length;
+  const baseChanges = base.events.length + base.fields.length;
   return {
     offers,
     week,

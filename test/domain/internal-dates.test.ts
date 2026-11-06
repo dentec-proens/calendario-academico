@@ -195,7 +195,6 @@ describe('comparison of versions and submissions', () => {
   const side = (state: State): DiffSide => ({
     state,
     institutionalSnapshot: [],
-    documentSnapshot: [],
     catalogueRevision: 1,
   });
 

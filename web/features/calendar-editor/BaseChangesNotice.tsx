@@ -62,29 +62,21 @@ function eventItems({ added, removed, changed }: BaseUpdate['events'], year: num
 }
 
 function announcement(record: CalendarRecord, state: CalendarState, update: BaseUpdate) {
-  const { rules, documents, events } = update;
+  const { rules, events } = update;
   const changes = announcedRuleChanges(rules, record.updatedAt);
-  const references = [...documents.added, ...documents.changed.map(({ after }) => after)];
   const dates = eventItems(events, state.year);
   const effects = dates.length
     ? teachingDayEffects(state, record.institutionalSnapshot, record.institutionalEvents)
     : [];
-  const items = [
-    ...dates,
-    ...effects,
-    ...changes.map((change) => change.summary),
-    ...references.map((document) => `Documento de referência atualizado: ${document.title}.`),
-    ...documents.removed.map((document) => `Documento de referência retirado: ${document.title}.`),
-  ];
+  const items = [...dates, ...effects, ...changes.map((change) => change.summary)];
   if (!items.length) return null;
   const latest = changes.at(-1)?.date;
   return {
     key: items.join('|'),
-    title: dates.length
-      ? 'Os eventos institucionais mudaram. Este calendário já segue a base vigente.'
-      : latest
+    title:
+      latest && !dates.length
         ? `As regras de ${record.state.year} mudaram em ${longDate(latest)}. As novas regras não alteraram suas datas.`
-        : 'Os documentos de referência foram atualizados. Suas datas não mudaram.',
+        : 'Os eventos institucionais mudaram. Este calendário já segue a base vigente.',
     items,
     review: record.status === 'devolvido' && changes.some((change) => change.effect === 'tightens'),
   };

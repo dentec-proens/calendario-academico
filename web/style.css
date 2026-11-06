@@ -596,12 +596,6 @@ footer {
   #review-message:not(:empty) {
     white-space: pre-line;
   }
-  #document-message:not(:empty) {
-    position: sticky;
-    top: 10px;
-    z-index: 29;
-    white-space: pre-line;
-  }
 }
 fieldset.app-operation-scope {
   display: block;

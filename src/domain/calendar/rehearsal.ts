@@ -20,7 +20,6 @@ export interface RehearsalCalendar {
 export interface RehearsalBase {
   revision: number;
   events: CatalogueEvent[];
-  documents: BaseDocument[];
 }
 /** A difference between what is stored and what a save would write, under a collapsed path. */
 export interface RehearsalChange {
@@ -93,7 +92,6 @@ export function rehearseCalendar(
       {
         currentCatalogueRevision: base.revision,
         institutionalEvents: applicableEvents(base, state) as InstitutionalEventSnapshot[],
-        currentDocuments: base.documents,
         currentRulesetVersion: rulesetVersion(state),
       },
     );

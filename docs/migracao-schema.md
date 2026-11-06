@@ -28,7 +28,6 @@ A comparação de exportações precisa separar a mudança da operação do que 
 
 - A autenticação continua renovando credenciais de sessões existentes durante a manutenção. Essas renovações são esperadas.
 - O ciclo de presença é conferido somente nas tabelas e campos inventariados da versão instalada, preservando identidades e dados estáveis.
-- Tickets e PDFs efêmeros podem expirar durante a manutenção. Concluir seu ciclo normal antes do backup evita confundi-lo com mudanças da operação. Os demais arquivos continuam sujeitos à comparação estrita.
 
 Uma divergência não coberta por uma prova explícita exige investigação, sem alterar os hashes de um plano já ensaiado.
 

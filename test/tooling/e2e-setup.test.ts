@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, test, vi } from 'vitest';
 import { convexTest } from 'convex-test';
-import { api, internal } from '../../convex/_generated/api';
+import { internal } from '../../convex/_generated/api';
 import schema from '../../convex/schema';
 import { convexModules } from '../helpers/convex-modules';
 import { passwordCrypto } from '../../convex/authCrypto';
@@ -22,15 +22,6 @@ test('E2E preparation refuses production and mismatched deployments before writi
         runId,
         secret,
         preferredYear: 7000,
-      }),
-      /nunca produção/,
-    );
-    await assert.rejects(
-      client.mutation(internal.devSetup.prepareE2ERestoration, {
-        expectedCloudUrl,
-        runId,
-        year: 7000,
-        hash: 'a'.repeat(64),
       }),
       /nunca produção/,
     );
@@ -55,19 +46,6 @@ test('E2E reserves its own year/campus/account and publishing its fixture preser
       active: true,
       role: 'ADMIN',
       loginMethod: 'local',
-    });
-    const documentId = await ctx.db.insert('documents', {
-      year: 7000,
-      type: 'referencia',
-      title: 'Documento existente',
-      source: 'Fonte existente',
-      filename: 'existing.pdf',
-      hash: 'b'.repeat(64),
-      unavailableFile: { reason: 'not_migrated', sourceReference: 'existing' },
-      status: 'vigente',
-      version: 3,
-      createdAt: 1,
-      publishedAt: 1,
     });
     const calendarId = await ctx.db.insert('calendars', {
       campusId,
@@ -97,7 +75,6 @@ test('E2E reserves its own year/campus/account and publishing its fixture preser
     return {
       campus: await ctx.db.get(campusId),
       user: await ctx.db.get(userId),
-      document: await ctx.db.get(documentId),
       calendar: await ctx.db.get(calendarId),
       event: await ctx.db.get(eventId),
     };
@@ -106,30 +83,13 @@ test('E2E reserves its own year/campus/account and publishing its fixture preser
     expectedCloudUrl,
     runId,
     secret,
-    preferredYear: 7000,
+    preferredYear: 7001,
   });
   assert.equal(prepared.year, 7003);
   assert.notEqual(prepared.campusId, prior.campus!._id);
   assert.notEqual(prepared.userId, prior.user!._id);
-  const fixture = await client.mutation(internal.devSetup.prepareE2ERestoration, {
-    expectedCloudUrl,
-    runId,
-    year: prepared.year,
-    hash: 'a'.repeat(64),
-  });
-  const sessionId = await client.run((ctx) =>
-    ctx.db.insert('authSessions', { userId: prepared.userId, expirationTime: Date.now() + 60_000 }),
-  );
-  const account = client.withIdentity({ subject: `${prepared.userId}|${sessionId}` });
-  await account.mutation(api.documents.documentStatus, {
-    id: fixture.documentId,
-    status: 'vigente',
-    revision: 7,
-    confirmed: true,
-  });
   await client.run(async (ctx) => {
     for (const row of Object.values(prior)) assert.deepEqual(await ctx.db.get(row!._id), row);
-    assert.equal((await ctx.db.get(fixture.documentId))?.status, 'vigente');
     assert.equal(
       await ctx.db
         .query('calendars')

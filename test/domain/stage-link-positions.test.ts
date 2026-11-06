@@ -183,7 +183,6 @@ describe('confirming the organization keeps defined positions as stored', () => 
     const side = (value: ActivityState): DiffSide => ({
       state: value,
       institutionalSnapshot: [],
-      documentSnapshot: [],
       catalogueRevision: 0,
     });
     const diff = compareContents(side(state), side(next));
@@ -208,7 +207,6 @@ describe('the comparison names linked activities', () => {
     const side = (value: ActivityState): DiffSide => ({
       state: value,
       institutionalSnapshot: [],
-      documentSnapshot: [],
       catalogueRevision: 0,
     });
     const [field] = compareContents(side(before), side(swapped)).events.flatMap((change) =>

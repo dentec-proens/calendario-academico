@@ -111,6 +111,8 @@ export interface CalendarPolicy {
     criteria: readonly ReviewCriterion[];
     /** Full citation of the applicable norm, when the policy identifies it. */
     citation?: string;
+    /** Official publication of that norm. */
+    citationUrl?: string;
     /**
      * `coverage`: requirements are linked to criteria and coverage informs the review.
      * `pattern`: only the criteria's name search signals possibly related events.

@@ -35,7 +35,7 @@ import {
 } from '../src/domain/calendar/lifecycle';
 import { catalogue } from './catalogue/model';
 import * as contracts from './contracts';
-import { currentDocuments, documentDto } from './documents/model';
+import { documentDto } from './documents/model';
 import { logEntry, readCalendarHistory } from './audit';
 import { appendAudit } from './lib/audit';
 import { calendarEditor, assertCampus, reviewer } from './lib/authorization';
@@ -170,7 +170,7 @@ export const createCalendar = mutation({
       institutionalSnapshot: clean(
         applyObservances(inheritedEvents(base, body.year, state.offers), state),
       ),
-      documentSnapshot: await currentDocuments(ctx, body.year),
+      documentSnapshot: [],
     });
     await appendAudit(
       ctx,
@@ -190,11 +190,7 @@ export const saveCalendar = mutation({
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
-    const { row, status, content, record, base, docs, compatibility } = await baseRecord(
-      ctx,
-      user,
-      id,
-    );
+    const { row, status, content, record, base, compatibility } = await baseRecord(ctx, user, id);
     if (row.version !== body.version) fail('Há versão mais recente. Reabra o calendário.', 409);
     assertEditableStatus(status);
     if (
@@ -230,7 +226,7 @@ export const saveCalendar = mutation({
       if (!equalValues(row.offerKinds, prepared.offerKinds))
         await ctx.db.patch(id, { offerKinds: prepared.offerKinds });
       return {
-        base: inspectBase(status, state, content, base, docs).dto,
+        base: inspectBase(status, state, content, base).dto,
         version: row.version,
         state: record.state,
         updatedAt: iso(row.updatedAt),
@@ -242,7 +238,6 @@ export const saveCalendar = mutation({
       state: next,
       catalogueRevision: base.revision,
       institutionalSnapshot,
-      documentSnapshot: docs,
     });
     await ctx.db.patch(id, {
       offerKinds: kinds(state),
@@ -482,7 +477,7 @@ export const createCalendarVersion = mutation({
       },
       catalogueRevision: content.catalogueRevision,
       institutionalSnapshot: content.institutionalSnapshot,
-      documentSnapshot: await currentDocuments(ctx, row.year),
+      documentSnapshot: content.documentSnapshot,
     });
     await appendAudit(
       ctx,

@@ -47,19 +47,6 @@ test('a calendar of a missing campus is a failure', () => {
   ]);
 });
 
-test('two documents in force of one type refuse as the backend does', () => {
-  const document = row({ year: 2027, type: 'norma', status: 'vigente' });
-  const content = row({ calendarId: 'c', state: {} });
-  expect(
-    report({
-      calendars: [draft],
-      campuses: [campus],
-      calendarContents: [content],
-      documents: [document, document],
-    }).failures,
-  ).toEqual([{ calendarId: 'c', error: 'Base de 2027 com registros duplicados.' }]);
-});
-
 test('a calendar that would stop saving stops the release, and its reason stays with the backup', () => {
   const directory = backup({
     calendars: [draft],

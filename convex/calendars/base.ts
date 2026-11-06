@@ -5,7 +5,6 @@ import type { DomainState, documentSnapshot, institutionalEventSnapshot } from '
 import type { Infer } from 'convex/values';
 import type { Doc } from '../_generated/dataModel';
 import type { catalogue } from '../catalogue/model';
-import type { currentDocuments } from '../documents/model';
 import { documentDto } from '../documents/model';
 import { clean } from '../lib/shared';
 
@@ -31,7 +30,6 @@ function assess(status: Status, state: DomainState, content: Content, snapshot: 
     {
       currentCatalogueRevision: snapshot.revision,
       institutionalEvents: snapshot.events,
-      currentDocuments: snapshot.documents,
       currentRulesetVersion: snapshot.rulesetVersion,
     },
   );
@@ -51,7 +49,6 @@ export function inspectBase(
   state: DomainState,
   content: Content,
   base: Awaited<ReturnType<typeof catalogue>>,
-  docs: Awaited<ReturnType<typeof currentDocuments>>,
 ) {
   return assess(status, state, content, {
     rulesetVersion: rulesetVersion(state),
@@ -59,7 +56,7 @@ export function inspectBase(
     events: (
       clean(applicableEvents(base, state)) as Infer<typeof institutionalEventSnapshot>[]
     ).map(readActivityDates),
-    documents: docs,
+    documents: content.documentSnapshot,
   });
 }
 /** A published calendar reads only the base frozen with its content. */

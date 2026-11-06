@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import { rehearseCalendar, type RehearsalBase } from '../../src/domain/calendar/rehearsal.ts';
 import { readyContent } from '../helpers/lifecycle.ts';
 
-const base: RehearsalBase = { revision: 1, events: [], documents: [] };
+const base: RehearsalBase = { revision: 1, events: [] };
 const calendar = (status: 'rascunho' | 'enviado', rulesetVersion?: string) => {
   const content = readyContent();
   return {

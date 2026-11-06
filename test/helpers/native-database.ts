@@ -6,7 +6,7 @@ import rateLimiterTest from '@convex-dev/rate-limiter/test';
 import migrationsTest from '@convex-dev/migrations/test';
 import type { FunctionReference } from 'convex/server';
 import type { Id } from '../../convex/_generated/dataModel.js';
-import { api, internal } from '../../convex/_generated/api.js';
+import { api } from '../../convex/_generated/api.js';
 import schema from '../../convex/schema';
 
 export const userFixtures = [
@@ -158,14 +158,12 @@ export async function createNativeFixture(overrides: Seed = {}) {
       args: Entity,
     ) => account.mutation(reference, args);
     const calendarId = (value: string) => value as Id<'calendars'>;
-    const documentId = (value: string) => ids.documents[value] ?? (value as Id<'documents'>);
     // The dispatchers are test-only conveniences for the existing behavioral
     // scenarios. Each invocation reaches a concrete, validated Convex function.
     return {
       read: async (path: string): Promise<any> => {
         if (path === '/api/bootstrap') return query(api.workspace.bootstrap, {});
         if (path === '/api/status') return query(api.access.session.status, {});
-        if (path === '/api/documents') return query(api.documents.documents, {});
         if (path === '/api/calendar-trash') return query(api.calendars.trash, {});
         if (path.startsWith('/api/logs'))
           return query(api.workspace.logs, { paginationOpts: { numItems: 50, cursor: null } });
@@ -198,9 +196,6 @@ export async function createNativeFixture(overrides: Seed = {}) {
         if (path === '/api/catalogue') return mutation(api.catalogue.saveCatalogue, { body });
         if (path === '/api/campuses')
           return mutation(api.campuses.createCampus, { name: body.name });
-        const document = path.match(/^\/api\/documents\/([^/]+)\/status$/);
-        if (document)
-          return mutation(api.documents.documentStatus, { id: documentId(document[1]), ...body });
         const review = path.match(/^\/api\/reviews\/([^/]+)(\/export)?$/);
         if (review)
           return review[2]
@@ -254,14 +249,6 @@ export async function createNativeFixture(overrides: Seed = {}) {
           return mutation(api.calendars.saveCalendar, { id, body });
         }
         throw new Error('Unknown fixture mutation: ' + path);
-      },
-      finishAction: async (path: string, body: Entity, result: Entity): Promise<any> => {
-        if (path === '/api/documents')
-          return mutation(internal.documents.attachDocument, {
-            ...body,
-            uploadId: result.uploadId,
-          });
-        throw new Error('Unknown fixture action completion: ' + path);
       },
     };
   };

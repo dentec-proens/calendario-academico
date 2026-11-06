@@ -235,7 +235,6 @@ export const saveReview = mutation({
       status,
       record,
       base,
-      docs,
       compatibility,
       review: prior,
     } = await baseRecord(ctx, user, id);
@@ -314,7 +313,7 @@ export const saveReview = mutation({
       rulesetVersion: currentRules,
       revision: (prior?.revision ?? 0) + 1,
       source: reviewSourceFor(record.state.year).id,
-      documentSnapshot: docs,
+      documentSnapshot: compatibility.snapshot.documents,
       entries: body.entries,
       conclusion,
       processNumber: body.processNumber ?? '',

@@ -6,7 +6,7 @@ for (const role of ['ADMIN', 'CAMPUS', 'PARECERISTA'] as const)
     fixtureServer,
   }) => {
     const origin = new URL(await fixtureServer('portal')).origin;
-    await page.goto(`${origin}/documentos?role=${role}`);
+    await page.goto(`${origin}/eventos-institucionais?role=${role}`);
     const link = page.locator('.shared-navigation [data-page="rules"]');
     await expect(link).toHaveText('Regras do calendário');
     await link.click();
@@ -15,6 +15,9 @@ for (const role of ['ADMIN', 'CAMPUS', 'PARECERISTA'] as const)
     await expect(page.locator('#panel-title')).toHaveText('Regras do calendário');
     await expect(page.locator('#rules-title')).toHaveText('Regras do calendário de 2027');
     await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v8');
+    await expect(
+      page.locator('.rules-summary').getByRole('link', { name: 'Abrir publicação oficial' }),
+    ).toHaveAttribute('href', /sei\.ifpr\.edu\.br.*id_documento=4606058/);
     await expect(page.locator('[data-observance-rule="public-servant-day"]')).toContainText(
       '28 out, 29 out',
     );

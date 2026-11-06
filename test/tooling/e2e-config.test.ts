@@ -122,7 +122,7 @@ test('even an explicit disposable opt-in cannot target the known production port
 
 test('E2E dotenv serialization preserves Windows paths with apostrophes and credential delimiters', () => {
   const values = {
-    DENTEC_NATIVE_RESTORE_FIXTURE: String.raw`C:\Users\O'Connor\new-work\test\restoration.json`,
+    DENTEC_NATIVE_TEST_SOURCE: String.raw`C:\Users\O'Connor\new-work\test\source.json`,
     DENTEC_NATIVE_TEST_PASSWORD: `Synthetic'Password"`,
     DENTEC_NATIVE_BROWSER_URL: 'http://127.0.0.1:4183',
   };

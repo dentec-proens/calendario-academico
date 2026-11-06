@@ -284,14 +284,6 @@ export type ReviewFields = {
   [K in keyof typeof reviewFields]: Infer<(typeof reviewFields)[K]>;
 };
 
-export const documentUploadInput = v.object({
-  uploadId: v.string(),
-  filename: v.string(),
-  year: v.number(),
-  type: documentType,
-  title: v.string(),
-  source: v.string(),
-});
 export const documentMetadata = v.object({
   ...documentSnapshot.fields,
   createdAt: v.string(),

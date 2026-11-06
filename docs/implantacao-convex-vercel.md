@@ -126,15 +126,15 @@ Cada action registra `Operational lease`, o ID do lease e sua operação no pró
 
 Se a falha aconteceu antes de qualquer tentativa de deploy, os contratos não foram substituídos. Depois de confirmar `operations:status` sem leases ativos e a janela do mesmo commit, `operations:resume` com esse commit reabre o acesso. Se houve tentativa de deploy com resultado incerto, conferir os dois artefatos antes de liberar.
 
-O inventário da aplicação preserva os callbacks de `nativeFiles`. O componente de presença mantém sua versão fixada e seu ciclo próprio: heartbeat e disconnect continuam disponíveis durante manutenção e não alteram calendários, documentos ou acessos. Uma atualização desse componente exige conferir também seus jobs com `convex data _scheduled_functions --component presence` e `--component presence/batchWorker`, além de seu contrato de atualização; não está coberta por presumir que o inventário da aplicação inclui componentes.
+O componente de presença mantém sua versão fixada e seu ciclo próprio: heartbeat e disconnect continuam disponíveis durante manutenção e não alteram calendários ou acessos. Uma atualização desse componente exige conferir também seus jobs com `convex data _scheduled_functions --component presence` e `--component presence/batchWorker`, além de seu contrato de atualização; não está coberta por presumir que o inventário da aplicação inclui componentes.
 
-A recuperação confere as revisões efetivamente instaladas de backend e frontend e mantém seus contratos compatíveis, IDs e dados. Importar backup exige análise específica: dados criados após a reabertura não podem ser descartados por um rollback automático. Depois de um período de manutenção, a função interna `nativeFiles:cleanupExpired` remove temporários vencidos em lotes e preserva arquivos consumidos.
+A recuperação confere as revisões efetivamente instaladas de backend e frontend e mantém seus contratos compatíveis, IDs e dados. Importar backup exige análise específica: dados criados após a reabertura não podem ser descartados por um rollback automático.
 
 ## Backup e arquivos
 
 Exportar Convex completo com `--include-file-storage` quando houver PDFs. Manter ZIP, recibos e credenciais em local privado, fora do Git. Em operações de nível 2, ensaiar a restauração integral num deployment descartável antes de operar sobre dados compartilhados; importação isolada de tabelas pode quebrar referências.
 
-A aplicação repõe um PDF indisponível pelo fluxo [Restaurar original](restauracao-de-originais.md), com conferência de hash. Operações sobre exportações seguem [Operações administrativas de dados](migracao-schema.md).
+Operações sobre exportações seguem [Operações administrativas de dados](migracao-schema.md).
 
 Os testes remotos exigem opt-in de deployment descartável ou do desenvolvimento atual autorizado, com destino verificado e registros exclusivos da suíte conforme a [Verificação](verificacao.md). Produção não recebe E2E. A release não executa `pnpm check`; ele é a validação obrigatória do desenvolvimento, antes do commit.
 

@@ -106,7 +106,17 @@ export default function RulesPage() {
       <dl className="rules-summary">
         <div>
           <dt>Norma</dt>
-          <dd>{view.norm}</dd>
+          <dd>
+            {view.norm}
+            {view.normUrl ? (
+              <>
+                {' · '}
+                <a href={view.normUrl} target="_blank" rel="noopener noreferrer">
+                  Abrir publicação oficial
+                </a>
+              </>
+            ) : null}
+          </dd>
         </div>
         <div>
           <dt>Conjunto de regras</dt>

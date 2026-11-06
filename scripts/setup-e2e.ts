@@ -1,7 +1,7 @@
 import { serializeE2EEnvironment } from './e2e-environment.ts';
 import { spawn } from 'node:child_process';
-import { createHash, randomBytes } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { randomBytes } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseEnv } from 'node:util';
 import { passwordCrypto } from '../convex/authCrypto.ts';
@@ -38,31 +38,6 @@ async function run(
         );
     });
   });
-}
-
-function restorationPdf(year: number) {
-  const objects = [
-    '<< /Type /Catalog /Pages 2 0 R >>',
-    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-  ];
-  const stream = `BT /F1 18 Tf 50 780 Td (Referencia sintetica E2E ${year}) Tj ET`;
-  objects.push(`<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`);
-  let result = '%PDF-1.4\n';
-  const offsets = [0];
-  for (let index = 0; index < objects.length; index++) {
-    offsets.push(Buffer.byteLength(result));
-    result += `${index + 1} 0 obj\n${objects[index]}\nendobj\n`;
-  }
-  const xref = Buffer.byteLength(result);
-  result += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  result += offsets
-    .slice(1)
-    .map((offset) => `${String(offset).padStart(10, '0')} 00000 n \n`)
-    .join('');
-  result += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
-  return Buffer.from(result);
 }
 
 const selected = readDevEnvironment();
@@ -140,37 +115,6 @@ const prepared: { campusId: string; userId: string; year: number } = JSON.parse(
 );
 if (!prepared.campusId || !prepared.userId || !Number.isInteger(prepared.year))
   throw Error('O dev não confirmou a preparação E2E.');
-const directory = join(root, 'test', '.temp', 'e2e', runId);
-await mkdir(directory, { recursive: true });
-const pdf = restorationPdf(prepared.year - 1);
-await writeFile(join(directory, 'restoration-upload.pdf'), pdf);
-const restoration: { documentId: string } = JSON.parse(
-  await run(
-    [
-      'run',
-      'devSetup:prepareE2ERestoration',
-      JSON.stringify({
-        expectedCloudUrl: selected.VITE_CONVEX_URL,
-        runId,
-        year: prepared.year,
-        hash: createHash('sha256').update(pdf).digest('hex'),
-      }),
-      ...target,
-      '--codegen',
-      'disable',
-    ],
-    environment,
-  ),
-);
-const fixture = join(directory, 'restoration.json');
-await writeFile(
-  fixture,
-  JSON.stringify(
-    { ...restoration, runId, campusId: prepared.campusId, year: prepared.year },
-    null,
-    2,
-  ),
-);
 const configured: Record<string, string> = {
   DENTEC_DEVELOPMENT_E2E: '1',
   DENTEC_NATIVE_DEPLOYMENT: selected.CONVEX_DEPLOYMENT,
@@ -181,7 +125,6 @@ const configured: Record<string, string> = {
   DENTEC_NATIVE_TEST_YEAR: String(prepared.year),
   DENTEC_NATIVE_TEST_EMAIL: `e2e-${runId}@ifpr.edu.br`,
   DENTEC_NATIVE_TEST_PASSWORD: password,
-  DENTEC_NATIVE_RESTORE_FIXTURE: ['test', '.temp', 'e2e', runId, 'restoration.json'].join('/'),
 };
 await writeFile(join(root, '.env.e2e.local'), serializeE2EEnvironment(configured), { mode: 0o600 });
 console.log(

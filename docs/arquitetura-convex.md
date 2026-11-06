@@ -65,7 +65,7 @@ Exportações que exigem persistência aguardam as alterações aplicadas releva
 
 ## Persistência e autorização
 
-O estado editável fica separado dos metadados do calendário. Documentos e catálogo usam revisão por ano. Datas operacionais são timestamps; datas acadêmicas são civis.
+O estado editável fica separado dos metadados do calendário. O catálogo usa revisão por ano. Datas operacionais são timestamps; datas acadêmicas são civis.
 
 O calendário tem um ciclo de vida explícito (`calendars.status`): rascunho, enviado, em revisão, devolvido, revisado, vigente e arquivado. A tabela de transições é uma função pura em `src/domain/calendar/lifecycle.ts`; `transitionCalendar` a aplica e confere papel, campus, unicidade, cobertura e as condições de cada ação na mesma mutation, junto da auditoria. `calendars.version` conta só o conteúdo e avança apenas em `saveCalendar`; as transições usam `statusRevision` como controle de concorrência. Assim, a autoria, a prontidão e o parecer não mudam com uma transição.
 
@@ -83,7 +83,7 @@ Salvar confere versão, status e base e preserva atributos protegidos; uma grava
 
 ## Arquivos, impressão e manutenção
 
-PDFs ficam no Storage. Um link abre uma nova aba da aplicação, que verifica a sessão e a publicação do documento, emite acesso temporário e encaminha ao original com `Content-Disposition: inline`. A leitura, impressão e cópia ficam a cargo do navegador; o portal não inclui leitor nem worker PDF. Uploads têm proprietário, limite de 8 MB, assinatura PDF, SHA-256 e consumo único. Restauração exige o original exato e preserva ID, análises e vínculos. Tickets e temporários têm limpeza agendada.
+O sistema não guarda arquivos. A norma de cada ano é citada pela política, com link para a publicação oficial.
 
 O PDF é a impressão da prévia pelo navegador, com `@page` A4 definido em `assets/printing/calendar.css`; não há gerador no servidor. O título da página sugere o nome do arquivo. Produção não carrega Devtools nem a depuração de formulários sensíveis.
 
@@ -135,13 +135,13 @@ Na grade de sábados, o estado aplicado vem dos comandos e a seleção pertence 
 
 ## Compatibilidade da base institucional
 
-A revisão numérica da base é um marcador técnico; a equivalência considera o conteúdo aplicável ao calendário: eventos, fontes, aplicabilidade e arquivos documentais. Ordem dos registros, ofertas externas e metadados operacionais não exigem decisão do usuário.
+A revisão numérica da base é um marcador técnico; a equivalência considera o conteúdo aplicável ao calendário: eventos, fontes e aplicabilidade. A antiga base de documentos foi removida. A lista gravada em cada calendário fica congelada e entra apenas no cálculo da identidade, para que as identidades já registradas em pareceres continuem valendo. Calendários novos nascem com a lista vazia; uma nova versão copia a do calendário de origem, para a comparação entre os dois não apontar uma retirada que não houve. Ordem dos registros, ofertas externas e metadados operacionais não exigem decisão do usuário.
 
 **Um calendário em edição sempre segue as regras e a base vigentes; o que fica gravado só passa a importar quando ele sai da edição.** Ninguém aceita nem incorpora nada:
 
-- Em rascunho e devolvido, editor, pendências, contagem, impressão, prontidão do servidor e comparação com a devolução leem `institutionalEvents`, `currentDocuments` e `currentCatalogueRevision`. Abrir o calendário não grava nada e não há autoria "Sistema".
+- Em rascunho e devolvido, editor, pendências, contagem, impressão, prontidão do servidor e comparação com a devolução leem `institutionalEvents` e `currentCatalogueRevision`. Abrir o calendário não grava nada e não há autoria "Sistema".
 - O próximo salvamento humano grava carimbo de regras e cópias da base, com `version + 1`. Uma base apenas equivalente não grava nada. Catálogo novo com edição em andamento não é conflito entre sessões.
-- `BaseChangesNotice` informa o que difere da cópia gravada: regras, documentos e eventos, com o efeito nos dias letivos de cada oferta. Um evento mudado é uma data que mudou; o que ele deixa inconsistente vira pendência comum.
+- `BaseChangesNotice` informa o que difere da cópia gravada: regras e eventos, com o efeito nos dias letivos de cada oferta. Um evento mudado é uma data que mudou; o que ele deixa inconsistente vira pendência comum.
 - O envio informa a `identity` da base que a pessoa viu, lida depois do flush. Se o servidor tiver outra, recusa com 409 sem escrever, e o editor já mostra a base nova; uma base que só chegou com o último salvamento também pede nova conferência. Se coincidir, grava a base vigente e só então copia para o envio, cujo hash a publicação compara. Sem a identidade, a aba antiga é orientada a atualizar.
 - Enviado, em revisão e revisado ficam como enviados; se a base ou as regras mudarem, cabe ao parecerista devolver. Vigente não muda, e a nova versão nasce com o que está vigente.
 
@@ -170,7 +170,7 @@ Quando uma regra restringe ou amplia o que o inciso diz, `decision` registra a d
 
 A autorização compara a geração da sessão com a do usuário, inclusive ao emitir e renovar JWT. A revogação é imediata; exclusões físicas são limitadas por lote. Ações de acesso sensíveis exigem ADMIN e login nos últimos 15 minutos. Convites e resets válidos consomem quota persistente antes do hash; tentativas inválidas não abrem leases.
 
-Uploads administrativos são validados e gravados de forma atômica numa mutation; o cliente não associa IDs de Storage. Sessões e credenciais expiradas têm limpeza limitada, interrompida durante manutenção. O [guia de segurança operacional](seguranca.md) detalha dependências, patches versionados e requisitos da futura publicação.
+Sessões e credenciais expiradas têm limpeza limitada, interrompida durante manutenção. O [guia de segurança operacional](seguranca.md) detalha dependências, patches versionados e requisitos da futura publicação.
 
 ## Falhas vistas no navegador
 

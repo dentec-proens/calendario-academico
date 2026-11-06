@@ -118,11 +118,7 @@ test('portal shares each subject across roles while preserving drafts, scoped co
     .catch((error: unknown) => {
       throw new Error(JSON.stringify(errors), { cause: error });
     });
-  expect(await page.locator('[data-page="institution"]').evaluateAll((nodes) => nodes.length)).toBe(
-    1,
-  );
   await expect(page.locator('[data-page="institution-events"]')).toHaveCount(1);
-  await expect(page.locator('[data-page="manage-documents"]')).toHaveCount(0);
   await expect(page.locator('[data-page="manage-events"]')).toHaveCount(0);
   await expect(page.locator('.portal-sidebar')).not.toContainText(/Todos os campi/);
   await expect(page.locator('#create-calendar')).toBeHidden();
@@ -300,27 +296,6 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await page.locator('[data-page="calendars"]').click();
   await page.getByRole('button', { name: 'Novo calendário' }).click();
   await expect(page.locator('#calendar-offer-integrado')).toBeChecked();
-  await page.locator('[data-page="institution"]').click();
-  await expect(page.locator('#document-status-filter')).toBeVisible();
-  await expect(page.locator('#document-list')).toContainText(/Documento rascunho/);
-  await page.selectOption('#document-status-filter', 'rascunho');
-  await expect(page.locator('#document-list li')).toHaveCount(1);
-  await page.locator('#document-year-filter').fill('2028');
-  await expect(page.locator('#document-list')).toContainText('Nenhum documento encontrado');
-  await page.locator('#document-year-filter').fill('');
-  await page.selectOption('#document-status-filter', '');
-  await page.locator('#institution .collection-heading button').click();
-  expect(
-    await page
-      .locator('#document-title')
-      .evaluate((node) => getComputedStyle(node.closest('label')!).textAlign),
-  ).toBe('left');
-  await page.locator('#document-title').fill('Documento em preenchimento');
-  await page.locator('[data-page="calendars"]').click();
-  await expect(page.locator('#document-form')).toBeHidden();
-  await page.locator('[data-page="institution"]').click();
-  await page.getByRole('button', { name: 'Adicionar documento' }).click();
-  await expect(page.locator('input#document-title')).toHaveValue('Documento em preenchimento');
   await page.locator('[data-page="institution-events"]').click();
   await page.locator('[data-edit="synthetic-event"]').click();
   expect(
@@ -329,7 +304,7 @@ test('portal shares each subject across roles while preserving drafts, scoped co
       .evaluate((node) => getComputedStyle(node.closest('label')!).fontWeight),
   ).toBe('600');
   await page.locator('#catalogue-name').fill('Evento em edição');
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await expect(page.locator('#catalogue-form')).toBeHidden();
   await page.locator('[data-page="institution-events"]').click();
   await page.locator('[data-edit="synthetic-event"]').click();
@@ -368,16 +343,8 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   await expect(page.locator('.admin-navigation')).toHaveCount(0);
   await expect(page.locator('#user-form')).toHaveCount(0);
   await expect(page.locator('#campus-filter')).toHaveCount(0);
-  await expect(page.locator('#document-status-filter')).toHaveCount(0);
-  await expect(page.locator('#document-form')).toHaveCount(0);
   await expect(page.locator('#catalogue-form')).toHaveCount(0);
   await page.locator('.sidebar-toggle').click();
-  await page.locator('[data-page="institution"]').click();
-  await expect(page.locator('#document-list')).toBeVisible();
-  await expect(page.locator('#document-list')).not.toContainText(/Documento rascunho/);
-  await expect(page.locator('#document-list')).toContainText(/Documento vigente/);
-  await page.goto(origin + '/documentos');
-  await expect(page.locator('#document-status-filter')).toBeVisible();
   await page.goto(origin + '/eventos-institucionais?role=CAMPUS');
   await expect(page.locator('#catalogue-list')).toBeVisible();
   await expect(page.locator('[data-edit="synthetic-event"]')).toHaveCount(0);
@@ -391,9 +358,5 @@ test('portal shares each subject across roles while preserving drafts, scoped co
   expect(await page.locator('[data-open-review]').first().count()).toBeTruthy();
   await page.goto(origin + '/calendarios?role=PARECERISTA');
   await expect(page.locator('#review-panel')).toBeVisible();
-  await page.goto(origin + '/documentos?role=PARECERISTA');
-  await expect(page.locator('#document-list')).toBeVisible();
-  await expect(page.locator('#document-form')).toHaveCount(0);
-  await expect(page.locator('#document-list')).not.toContainText(/Documento rascunho/);
   expect(errors).toEqual([]);
 });

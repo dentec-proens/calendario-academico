@@ -74,18 +74,9 @@ function EditorFrame() {
     () => ({
       state,
       institutionalSnapshot: baseEvents,
-      documentSnapshot: locked ? record.documentSnapshot : record.currentDocuments,
       catalogueRevision: locked ? record.catalogueRevision : record.currentCatalogueRevision,
     }),
-    [
-      state,
-      baseEvents,
-      locked,
-      record.documentSnapshot,
-      record.currentDocuments,
-      record.catalogueRevision,
-      record.currentCatalogueRevision,
-    ],
+    [state, baseEvents, locked, record.catalogueRevision, record.currentCatalogueRevision],
   );
   const returned = record.status === 'devolvido' ? record.lastReturn : null;
   const sinceReturn = useReturnComparison(

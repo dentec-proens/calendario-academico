@@ -21,8 +21,6 @@ test('Vite serves direct application URLs and keeps unknown routes and assets as
   for (const path of [
     '/calendarios/novo',
     '/calendarios/lixeira',
-    '/documentos',
-    '/documentos/document-a/abrir',
     '/revisoes/calendar-a',
     '/eventos-institucionais/event-a/editar',
     '/calendarios/calendar-a/avaliacoes',

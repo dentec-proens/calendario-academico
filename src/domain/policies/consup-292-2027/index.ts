@@ -79,6 +79,8 @@ export const consup2922027Policy: CalendarPolicy = {
     },
     criteria,
     citation,
+    citationUrl:
+      'https://sei.ifpr.edu.br/sei/publicacoes/controlador_publicacoes.php?acao=publicacao_visualizar&id_documento=4606058&id_orgao_publicacao=0',
     evidence: 'coverage',
     dayMinimums,
   },

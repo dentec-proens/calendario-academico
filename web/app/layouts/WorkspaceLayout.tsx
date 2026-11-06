@@ -7,7 +7,6 @@ import {
   CalendarDays,
   CalendarRange,
   ClipboardCheck,
-  Library,
   ListChecks,
   Menu,
   Users,
@@ -49,7 +48,6 @@ export default function WorkspaceLayout() {
     ...(permissions.editCalendars
       ? [{ id: 'calendars', to: portalPaths.calendars, label: 'Calendários', Icon: CalendarDays }]
       : []),
-    { id: 'institution', to: portalPaths.institution, label: 'Documentos e normas', Icon: Library },
     {
       id: 'institution-events',
       to: portalPaths['institution-events'],

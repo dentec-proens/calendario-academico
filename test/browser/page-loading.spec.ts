@@ -88,7 +88,6 @@ for (const width of [1440, 390]) {
   for (const [path, label] of [
     ['/calendarios', 'Carregando calendários…'],
     ['/calendarios/lixeira', 'Carregando lixeira…'],
-    ['/documentos', 'Carregando documentos…'],
     ['/revisoes', 'Carregando calendários para revisão…'],
   ]) {
     test(`collection ${path} shares one loading indicator at ${width}px`, async ({
@@ -111,8 +110,6 @@ for (const width of [1440, 390]) {
       await expect(page.locator('.loading-indicator')).toHaveCount(0);
       if (path === '/calendarios')
         await expect(page.locator('#calendar-list li')).not.toHaveCount(0);
-      if (path === '/documentos')
-        await expect(page.locator('#document-list li')).not.toHaveCount(0);
       if (path === '/revisoes')
         await expect(page.locator('#review-calendars li')).not.toHaveCount(0);
     });

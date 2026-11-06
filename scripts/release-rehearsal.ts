@@ -6,7 +6,6 @@ import {
   type RehearsalCalendar,
 } from '../src/domain/calendar/rehearsal.ts';
 import type { CatalogueEvent } from '../src/domain/institution/catalogue.ts';
-import type { BaseDocument } from '../src/domain/calendar/base.ts';
 import { readSnapshot, type SnapshotRow } from './administration/snapshot.ts';
 
 export interface RehearsalReport {
@@ -29,16 +28,6 @@ function exampleValue(value: unknown) {
 }
 
 type Row<T> = SnapshotRow & T;
-const documentRow = ({ _id, year, type, title, source, hash, filename }: Row<BaseDocument>) => ({
-  id: _id,
-  year,
-  type,
-  title,
-  source,
-  hash,
-  filename,
-});
-
 /** Saves or a refusal, for every calendar of the backup, under the code being released. */
 export function rehearseBackup(zip: string): RehearsalReport {
   const { tables } = readSnapshot(zip);
@@ -56,19 +45,9 @@ export function rehearseBackup(zip: string): RehearsalReport {
     ]),
   );
   const events = rows<CatalogueEvent & { code: string; year: number }>('institutionalEvents');
-  const documents = rows<BaseDocument & { status: string }>('documents');
-  // The backend reads one revision per year and one document in force per type, or refuses.
-  const repeated = (keys: string[]) => keys.filter((key, i) => keys.indexOf(key) !== i);
-  const duplicated = new Set(
-    [
-      ...repeated(rows<{ year: number }>('catalogueRevisions').map((row) => `${row.year}`)),
-      ...repeated(
-        documents
-          .filter((document) => document.status === 'vigente')
-          .map((document) => `${document.year}:${document.type}`),
-      ),
-    ].map((key) => Number(key.split(':')[0])),
-  );
+  // The backend reads one revision per year, or refuses.
+  const years = rows<{ year: number }>('catalogueRevisions').map((row) => row.year);
+  const duplicated = new Set(years.filter((year, i) => years.indexOf(year) !== i));
   const report: RehearsalReport = {
     editable: 0,
     saved: 0,
@@ -116,9 +95,6 @@ export function rehearseBackup(zip: string): RehearsalReport {
             modalities,
             active,
           })) as CatalogueEvent[],
-        documents: documents
-          .filter((document) => document.year === row.year && document.status === 'vigente')
-          .map(documentRow),
       },
     );
     if (result.outcome === 'needs-return') report.needReturn.push(row._id);

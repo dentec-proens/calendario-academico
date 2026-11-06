@@ -97,17 +97,6 @@ test('malformed refresh pair does not delete a different known session', async (
   assert.ok(await asClient('campus-b').query(api.access.session.me, {}));
 });
 
-test('campus cannot obtain administrative upload capability', async () => {
-  const { asClient } = await fixture();
-  await assert.rejects(
-    asClient('campus-a').mutation(api.nativeFiles.issueUpload, {
-      filename: 'synthetic.pdf',
-      size: 12,
-    }),
-    /administra/,
-  );
-});
-
 test('new hashes use versioned bounded-memory v2 and verify legacy v1', async () => {
   const hash = await passwordCrypto.hashSecret('synthetic-password');
   assert.match(hash, /^dentec-scrypt-v2\$16384\$8\$5\$/);

@@ -61,21 +61,17 @@ export const prepareE2E = internalMutation({
     let year = Math.max(7000, Math.min(8999, Math.trunc(preferredYear)));
     let available = false;
     for (let attempt = 0; attempt < 100; attempt++, year = year >= 8999 ? 7000 : year + 1) {
-      const [calendar, document, event] = await Promise.all([
+      const [calendar, event] = await Promise.all([
         ctx.db
           .query('calendars')
           .withIndex('by_year', (q) => q.eq('year', year))
-          .first(),
-        ctx.db
-          .query('documents')
-          .withIndex('by_year_and_type_and_status', (q) => q.eq('year', year))
           .first(),
         ctx.db
           .query('institutionalEvents')
           .withIndex('by_year', (q) => q.eq('year', year))
           .first(),
       ]);
-      if (!calendar && !document && !event) {
+      if (!calendar && !event) {
         available = true;
         break;
       }
@@ -92,35 +88,6 @@ export const prepareE2E = internalMutation({
       }));
     await setPassword(ctx, (await ctx.db.get(userId))!, secret);
     return { campusId, userId, year };
-  },
-});
-
-export const prepareE2ERestoration = internalMutation({
-  args: { expectedCloudUrl: v.string(), runId: v.string(), year: v.number(), hash: v.string() },
-  returns: v.object({
-    documentId: v.id('documents'),
-  }),
-  handler: async (ctx, { expectedCloudUrl, runId, year, hash }) => {
-    assertE2EDevelopment(expectedCloudUrl);
-    if (!Number.isInteger(year) || year < 7000 || year > 8999 || !/^[a-f0-9]{64}$/.test(hash))
-      fail('Fixture E2E inválida.');
-    await e2eCampus(ctx, runId);
-    const source = {
-      filename: 'original-e2e.pdf',
-      hash,
-      unavailableFile: { sourceReference: `e2e:${runId}`, reason: 'not_migrated' as const },
-    };
-    const documentId = await ctx.db.insert('documents', {
-      year,
-      type: 'referencia',
-      title: `Restauração E2E ${runId}`,
-      source: `Fixture E2E ${runId}`,
-      ...source,
-      status: 'rascunho',
-      version: 1,
-      createdAt: Date.now(),
-    });
-    return { documentId };
   },
 });
 

@@ -26,7 +26,7 @@ test('dirty institutional event keeps its original revision and cannot overwrite
   await page.locator('#catalogue-name').fill('Edição local em andamento');
   await remoteCatalogue(page);
   await expect(page.locator('#catalogue-name')).toHaveValue('Edição local em andamento');
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await page.goBack();
   await expect(page.locator('#catalogue-name')).toHaveValue('Edição local em andamento');
   await page.locator('#catalogue-form button[type="submit"]').click();
@@ -62,28 +62,6 @@ test('pristine institutional event refreshes its fields and revision before anot
   expect(
     await page.evaluate(() => window.portalRouterTest.mutations.at(-1)?.args.body),
   ).toMatchObject({ revision: 2 });
-});
-
-test('document applicability confirmation stays attached to its catalogue revision', async ({
-  page,
-  fixtureServer,
-}) => {
-  const origin = new URL(await fixtureServer('portal')).origin;
-  await page.goto(origin + '/documentos');
-  await page
-    .locator('#document-list li')
-    .filter({ hasText: 'Documento rascunho' })
-    .getByText('Gerenciar', { exact: true })
-    .click();
-  await page.locator('[data-confirm-document="document-0"]').check();
-  await remoteCatalogue(page);
-  await page.locator('[data-document-id="document-0"]').click();
-  const form = page.locator('[data-confirm-document="document-0"]').locator('xpath=ancestor::form');
-  await expect(form.locator('[role="alert"]')).toContainText('base mudou');
-  expect(await page.evaluate(() => window.portalRouterTest.mutations.at(-1)?.args)).toMatchObject({
-    revision: 1,
-    status: 'vigente',
-  });
 });
 
 test('dirty account profile keeps its original expected role and campus when another ADMIN changes the member', async ({

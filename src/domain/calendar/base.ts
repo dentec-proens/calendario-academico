@@ -114,15 +114,17 @@ function identity(snapshot: BaseSnapshot, scope: BaseScope) {
  * A calendar being edited always follows the current base, so nothing there asks for anything; what
  * differs from the stored copy is told and recorded on the next save. A locked one keeps what was
  * submitted, and any change there is solved by a return.
+ *
+ * Documents are reference material and never make a calendar differ. Each calendar's stored list
+ * stays in the identity only so that the identities recorded by existing reviews keep matching.
  */
 export function inspect<E extends InstitutionalEventSnapshot, D extends BaseDocument>(
   previous: BaseSnapshot<E, D>,
-  current: BaseSnapshot<E, D>,
+  current: Omit<BaseSnapshot<E, D>, 'documents'>,
   scope: BaseScope,
   editing: boolean,
 ) {
   const events = changes(previous.events, current.events, (event) => eventContent(event, scope));
-  const documents = changes(previous.documents, current.documents, documentContent);
   const rules = {
     before: previous.rulesetVersion,
     after: current.rulesetVersion,
@@ -135,25 +137,20 @@ export function inspect<E extends InstitutionalEventSnapshot, D extends BaseDocu
   const kind = editing
     ? hasChanges(events)
       ? 'events'
-      : hasChanges(documents)
-        ? 'documents'
-        : rules.changed
-          ? 'rules'
-          : unchanged
+      : rules.changed
+        ? 'rules'
+        : unchanged
     : rules.changed
       ? 'rules'
       : hasChanges(events)
         ? 'events'
-        : hasChanges(documents)
-          ? 'documents'
-          : unchanged;
+        : unchanged;
   return {
     kind,
     compatible: editing || kind === 'current' || kind === 'equivalent',
-    identity: identity(current, scope),
+    identity: identity({ ...current, documents: previous.documents }, scope),
     rules,
     events,
-    documents,
   };
 }
 
@@ -196,7 +193,6 @@ export function inspectCalendar<E extends InstitutionalEventSnapshot, D extends 
   latest: {
     currentCatalogueRevision: number;
     institutionalEvents: E[];
-    currentDocuments: D[];
     currentRulesetVersion?: string;
   },
 ) {
@@ -210,7 +206,6 @@ export function inspectCalendar<E extends InstitutionalEventSnapshot, D extends 
     {
       revision: latest.currentCatalogueRevision,
       events: latest.institutionalEvents,
-      documents: latest.currentDocuments,
       rulesetVersion: latest.currentRulesetVersion ?? rulesetVersion(record.state),
     },
     record.state,

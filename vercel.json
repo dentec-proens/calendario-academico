@@ -26,10 +26,6 @@
       "destination": "/index.html"
     },
     {
-      "source": "/documentos",
-      "destination": "/index.html"
-    },
-    {
       "source": "/eventos-institucionais",
       "destination": "/index.html"
     },
@@ -59,14 +55,6 @@
     },
     {
       "source": "/calendarios/novo",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/documentos/:documentId/abrir",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/documentos/novo",
       "destination": "/index.html"
     },
     {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../browser/test.ts';
 import { editorUrl, parseEditorPath, portalPaths } from '../../src/app/routes.ts';
@@ -9,8 +9,6 @@ import { configuredE2ETarget } from '../../scripts/e2e-environment.ts';
 
 // Native PDF navigation requires Chromium's full browser rather than headless shell.
 test.use({ channel: 'chromium' });
-
-const restorationFixture = process.env.DENTEC_NATIVE_RESTORE_FIXTURE;
 
 function browserEnvironment() {
   return configuredE2ETarget(process.env);
@@ -210,58 +208,6 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await expect(page.locator('#message')).toContainText('Acesso excluído');
   await guest.close();
 
-  const fixtureContext = await browser.newContext();
-  cleanup(() => fixtureContext.close());
-  const fixture = await fixtureContext.newPage();
-  await fixture.setContent(
-    `<h1>Calendário sintético ${year - 1}</h1><p>01/01/${year - 1} Ano Novo</p><p>Referência sintética de teste.</p>`,
-  );
-  await mkdir(join(directory, 'source'));
-  const pdf = join(directory, 'source', 'synthetic-reference.pdf');
-  await fixture.pdf({ path: pdf, format: 'A4' });
-  await fixture.close();
-  await page.locator('[data-page="institution"]').click();
-  await page.locator('#institution .collection-heading button').click();
-  await page.locator('#document-year').fill(String(year));
-  await page.locator('#document-title').fill(marker);
-  await page.locator('#document-source').fill('Referência sintética exclusiva do laboratório');
-  await page.locator('input#document-file').setInputFiles(pdf);
-  await page.locator('#document-form button').click();
-  await expect(page.locator('#document-message')).toContainText('Arquivo preservado como rascunho');
-  await expect(page.locator('#document-list')).toContainText(marker);
-  const documentId = await page.locator('#document-list li').evaluateAll((rows, marker) => {
-    const control = rows
-      .find((row) => row.textContent?.includes(marker))
-      ?.querySelector<HTMLElement>('[data-confirm-document]');
-    const id = control?.dataset.confirmDocument;
-    if (!id) throw new Error('Synthetic document confirmation control was not found');
-    return id;
-  }, marker);
-  await page
-    .locator('#document-list li')
-    .filter({ has: page.locator(`[data-confirm-document="${documentId}"]`) })
-    .locator('.document-manage summary')
-    .click();
-  await page.locator(`[data-confirm-document="${documentId}"]`).click();
-  await page.locator(`[data-document-id="${documentId}"][data-document-status="vigente"]`).click();
-  await expect(page.locator('#document-message')).toContainText('Vigência atualizada');
-  const documentPopupPromise = page.waitForEvent('popup');
-  await page
-    .locator('#document-list li')
-    .filter({ hasText: marker })
-    .getByRole('link', { name: 'Abrir PDF em outra aba' })
-    .click();
-  const documentPopup = await documentPopupPromise;
-  await expect(documentPopup).toHaveURL(/\/files\/[a-f0-9]{64}$/);
-  const openedDocument = await page.request.get(documentPopup.url());
-  expect(openedDocument.status()).toBe(200);
-  expect(openedDocument.headers()['content-disposition']).toContain('inline;');
-  assert(
-    (await openedDocument.body()).equals(await readFile(pdf)),
-    'opening preserves the uploaded institutional PDF bytes',
-  );
-  await documentPopup.close();
-
   await page.locator('[data-page="calendars"]').click();
   await page.locator('#calendars .collection-heading button').click();
   await page.locator('#calendar-year [data-choice="outro"]').click();
@@ -383,17 +329,6 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await returnForm.locator('#lifecycle-return-note').fill('Devolução sintética do E2E.');
   await returnForm.getByRole('button', { name: 'Devolver ao campus' }).click();
   await expect(page.locator('#review-status')).toContainText('Devolvido');
-  await page.locator('[data-page="institution"]').click();
-  await page
-    .locator('#document-list li')
-    .filter({ has: page.locator(`[data-document-id="${documentId}"]`) })
-    .locator('.document-manage summary')
-    .click();
-  await page
-    .locator(`[data-document-id="${documentId}"][data-document-status="arquivado"]`)
-    .click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Retirar de vigência' }).click();
-  await expect(page.locator('#document-message')).toContainText('Vigência atualizada');
   await page.locator('[data-page="calendars"]').click();
   await page.locator(`[data-delete-calendar="${calendarId}"]`).click();
   await page.locator('.confirmation-dialog__confirm').click();
@@ -420,102 +355,4 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
     [],
     'all native account, file and review screens load without uncaught browser errors',
   );
-});
-
-test('admin restores institutional originals created for E2E', async ({
-  browser,
-  page,
-  cleanup,
-}) => {
-  test.skip(
-    !restorationFixture,
-    'Requires DENTEC_NATIVE_RESTORE_FIXTURE with missing originals in the disposable deployment.',
-  );
-  test.setTimeout(90_000);
-  const { base, email, password, year, campusId, runId, mode } = browserEnvironment();
-  assert(restorationFixture);
-  const fixture = JSON.parse(await readFile(restorationFixture, 'utf8')) as {
-    documentId: string;
-    runId?: string;
-    campusId?: string;
-    year?: number;
-  };
-  if (mode === 'development') {
-    assert.equal(fixture.runId, runId, 'restoration fixture must belong to the configured E2E run');
-    assert.equal(
-      fixture.campusId,
-      campusId,
-      'restoration fixture must use the dedicated E2E campus',
-    );
-    assert.equal(fixture.year, year, 'restoration fixture must use the reserved E2E year');
-  }
-  const original = join(dirname(restorationFixture), 'restoration-upload.pdf');
-  const expected = await readFile(original);
-  page.setDefaultTimeout(25_000);
-  page.on('dialog', (dialog) => {
-    void dialog.accept();
-  });
-  const errors: string[] = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(base);
-  await page.locator('#email').fill(email);
-  await page.locator('#password').fill(password);
-  await page.locator('#auth-submit').click();
-  await expect(page.locator('#workspace')).toBeVisible();
-  await page.close();
-  const documentContext = await browser.newContext();
-  cleanup(() => documentContext.close());
-  const documentPage = await documentContext.newPage();
-  documentPage.setDefaultTimeout(25_000);
-  documentPage.on('dialog', (dialog) => {
-    void dialog.accept();
-  });
-  documentPage.on('pageerror', (error) => errors.push(error.message));
-  await documentPage.goto(base);
-  await documentPage.locator('#email').fill(email);
-  await documentPage.locator('#password').fill(password);
-  await documentPage.locator('#auth-submit').click();
-  await expect(documentPage.locator('#workspace')).toBeVisible();
-  await documentPage.locator('[data-page="institution"]').click();
-  await documentPage
-    .locator('#document-list li')
-    .filter({ has: documentPage.locator(`form[data-restore-document="${fixture.documentId}"]`) })
-    .locator('.document-manage summary')
-    .click();
-  await expect(
-    documentPage.locator(`form[data-restore-document="${fixture.documentId}"]`),
-  ).toBeVisible();
-  if (mode === 'development')
-    await expect(
-      documentPage.locator('#document-list li').filter({
-        has: documentPage.locator(`form[data-restore-document="${fixture.documentId}"]`),
-      }),
-    ).toContainText(`Restauração E2E ${runId}`);
-  await documentPage
-    .locator(`form[data-restore-document="${fixture.documentId}"] input[type="file"]`)
-    .setInputFiles(original);
-  await documentPage.locator(`form[data-restore-document="${fixture.documentId}"] button`).click();
-
-  await expect(
-    documentPage.locator(`form[data-restore-document="${fixture.documentId}"]`),
-  ).toHaveCount(0);
-  const restoredPopupPromise = documentPage.waitForEvent('popup');
-  await documentPage
-    .locator('#document-list li')
-    .filter({ has: documentPage.locator(`[data-document-id="${fixture.documentId}"]`) })
-    .getByRole('link', { name: 'Abrir PDF em outra aba' })
-    .click();
-  const restoredPopup = await restoredPopupPromise;
-  await expect(restoredPopup).toHaveURL(/\/files\/[a-f0-9]{64}$/);
-  const restoredDocument = await documentPage.request.get(restoredPopup.url());
-  assert.equal(restoredDocument.status(), 200);
-  expect(restoredDocument.headers()['content-disposition']).toBe(
-    "inline; filename*=UTF-8''original-e2e.pdf",
-  );
-  assert(
-    (await restoredDocument.body()).equals(expected),
-    'restored institutional original keeps its bytes and stored filename',
-  );
-  await restoredPopup.close();
-  assert.deepEqual(errors, []);
 });

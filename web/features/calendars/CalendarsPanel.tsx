@@ -46,7 +46,7 @@ export default function CalendarsPanel({
     void confirmAction({
       title: 'Mover calendário para a lixeira?',
       description: `O calendário “${calendar.name}” sairá das listas de trabalho e pareceres.`,
-      consequence: 'Seus dados e documentos serão preservados para restauração.',
+      consequence: 'Seus dados serão preservados para restauração.',
       intent: 'danger',
       confirmLabel: 'Mover para a lixeira',
       pendingLabel: 'Movendo…',

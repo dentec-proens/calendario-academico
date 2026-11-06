@@ -12,7 +12,7 @@ import type { Doc, Id } from '../_generated/dataModel';
 import type { Member } from '../access/contracts';
 import { catalogue } from '../catalogue/model';
 import type * as contracts from '../contracts';
-import { documentDto, currentDocuments } from '../documents/model';
+import { documentDto } from '../documents/model';
 import { assertCampus } from '../lib/authorization';
 import type { Context } from '../lib/shared';
 import { fail, iso, clean } from '../lib/shared';
@@ -23,11 +23,10 @@ import type { Infer } from 'convex/values';
 export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>) {
   const row = await calendarRow(ctx, user, id),
     status = row.status,
-    [content, campus, base, docs, review] = await Promise.all([
+    [content, campus, base, review] = await Promise.all([
       contents(ctx, id),
       ctx.db.get(row.campusId),
       catalogue(ctx, row.year),
-      currentDocuments(ctx, row.year),
       reviewRow(ctx, id),
     ]);
   if (!campus) fail('Campus não encontrado.', 404);
@@ -41,7 +40,7 @@ export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>
   // A later base change never alters a published calendar.
   const compatibility = isPublished(status)
     ? frozenBase(status, record.state, content)
-    : inspectBase(status, record.state, content, base, docs);
+    : inspectBase(status, record.state, content, base);
   const readiness = {
     // While editing, pending issues follow the current base; a locked calendar keeps its own copy.
     ...releaseReadiness(
@@ -58,7 +57,7 @@ export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>
     ),
     officialApproval: officialApproval(status),
   } as Infer<typeof contracts.readiness>;
-  return { row, status, content, record, base, docs, review, readiness, compatibility };
+  return { row, status, content, record, base, review, readiness, compatibility };
 }
 
 export async function submissionSummary(ctx: Context, user: Member, row: Doc<'calendars'>) {
@@ -105,6 +104,7 @@ export async function fullRecord(
     readiness,
     institutionalEvents: compatibility.snapshot.events,
     currentCatalogueRevision: compatibility.snapshot.revision,
+    // Older clients still read this while a release is rolling out; nothing here uses it.
     currentDocuments: compatibility.snapshot.documents.map(documentDto),
   });
 }

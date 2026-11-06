@@ -183,31 +183,6 @@ export default defineSchema({
     .index('by_campusId_and_at', ['campusId', 'at'])
     .index('by_calendarId_and_action_and_at', ['calendarId', 'action', 'at'])
     .index('by_calendarId_and_at', ['calendarId', 'at']),
-  nativeUploads: defineTable({
-    uploadId: v.string(),
-    ownerId: v.id('users'),
-    filename: v.string(),
-    size: v.number(),
-    expiresAt: v.number(),
-    storageId: v.optional(v.id('_storage')),
-    hash: v.optional(v.string()),
-    completedAt: v.optional(v.number()),
-    verifiedIngress: v.optional(v.literal(true)),
-    consumedAt: v.optional(v.number()),
-  })
-    .index('by_uploadId', ['uploadId'])
-    .index('by_ownerId', ['ownerId'])
-    .index('by_storageId', ['storageId'])
-    .index('by_expiresAt', ['expiresAt']),
-  nativeFileTickets: defineTable({
-    tokenHash: v.string(),
-    storageId: v.id('_storage'),
-    filename: v.string(),
-    expiresAt: v.number(),
-    ephemeral: v.boolean(),
-  })
-    .index('by_tokenHash', ['tokenHash'])
-    .index('by_expiresAt', ['expiresAt']),
   operationalControl: defineTable({
     key: v.literal('release'),
     paused: v.boolean(),

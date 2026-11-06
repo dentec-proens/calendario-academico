@@ -199,39 +199,6 @@ test('native calendar trash is scoped and restores without destroying archive me
   assert.equal(full.calendars[0].status, 'rascunho');
 });
 
-test('native document actions register only validated storage files', async () => {
-  const { as, client, ids } = await fixture();
-  const admin = as('admin'),
-    campus = as('campus-a');
-  const result = { size: 12, hash: 'a'.repeat(64), uploadId: 'native-test' };
-  const documentResult = { ...result, uploadId: 'admin-upload' };
-  await client.run(async (ctx) =>
-    ctx.db.insert('nativeUploads', {
-      uploadId: documentResult.uploadId,
-      ownerId: ids.users.admin,
-      filename: 'norma.pdf',
-      size: result.size,
-      expiresAt: Date.now() + 10000,
-      storageId: await ctx.storage.store(new Blob(['%PDF-admin--'], { type: 'application/pdf' })),
-      hash: result.hash,
-      completedAt: Date.now(),
-      verifiedIngress: true,
-    }),
-  );
-  const document = await admin.finishAction(
-    '/api/documents',
-    { year: 2027, type: 'norma', title: 'Norma', source: 'Fonte', filename: 'norma.pdf' },
-    documentResult,
-  );
-  assert.equal((await campus.read('/api/documents')).documents.length, 0);
-  await admin.write('/api/documents/' + document.id + '/status', {
-    status: 'vigente',
-    confirmed: true,
-    revision: 1,
-  });
-  assert.equal((await campus.read('/api/documents')).documents.length, 1);
-});
-
 test('native calendar saves validate per-offer stages and preserve the selected second-semester intake', async () => {
   const { as } = await fixture();
   const campus = as('campus-a');
@@ -386,119 +353,8 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
   assert.equal((await submitted()).state.observanceDates?.['teacher-day'], '2027-10-13');
 });
 
-test('native institutional publication requires admin confirmation and preserves earlier document snapshots', async () => {
-  const { as, ids, ...native } = await fixture({
-    documents: [
-      {
-        id: 'prior',
-        year: 2027,
-        type: 'norma',
-        title: 'Norma anterior',
-        status: 'vigente',
-        publishedAt: '2026-01-01T00:00:00Z',
-      },
-      { id: 'next', year: 2027, type: 'norma', title: 'Norma posterior', status: 'rascunho' },
-      {
-        id: 'other-year',
-        year: 2028,
-        type: 'norma',
-        title: 'Norma de outro ano',
-        status: 'rascunho',
-      },
-    ],
-  });
-  const admin = as('admin');
-  const campus = as('campus-a');
-  const record = await campus.write('/api/calendars', identifiedBody());
-  const submitted = await preserveSubmission(native, record.id);
-  assert.deepEqual(
-    record.documentSnapshot.map((doc: { id: string }) => doc.id),
-    [ids.documents.prior],
-  );
-  assert.equal((await admin.read('/api/documents')).documents.length, 3);
-  assert.deepEqual(
-    (await campus.read('/api/documents')).documents.map((doc: { id: string }) => doc.id),
-    [ids.documents.prior],
-  );
-  await assert.rejects(
-    campus.write('/api/documents/next/status', {
-      revision: 1,
-      status: 'vigente',
-      confirmed: true,
-    }),
-    /Acesso exclusivo/,
-  );
-  await assert.rejects(
-    admin.write('/api/documents/next/status', {
-      revision: 1,
-      status: 'vigente',
-      confirmed: false,
-    }),
-    /Confirme/,
-  );
-  await assert.rejects(
-    admin.write('/api/documents/next/status', {
-      revision: 0,
-      status: 'vigente',
-      confirmed: true,
-    }),
-    /base mudou/,
-  );
-  await admin.write('/api/documents/next/status', {
-    revision: 1,
-    status: 'vigente',
-    confirmed: true,
-  });
-  const published = await admin.read('/api/documents');
-  assert.equal(published.revision, 2);
-  assert.equal(
-    published.documents.find((doc: { id: string }) => doc.id === ids.documents.prior)!.status,
-    'arquivado',
-  );
-  const path = '/api/calendars/' + record.id;
-  const loaded = await campus.read(path);
-  assert.deepEqual(
-    loaded.documentSnapshot.map((doc: { id: string }) => doc.id),
-    [ids.documents.prior],
-  );
-  assert.deepEqual(
-    loaded.currentDocuments.map((doc: { id: string }) => doc.id),
-    [ids.documents.next],
-  );
-  await campus.write(
-    path,
-    {
-      version: 1,
-      catalogueRevision: 2,
-      state: loaded.state,
-    },
-    'PUT',
-  );
-  const updated = await campus.read(path);
-  assert.equal(updated.version, 2);
-  assert.deepEqual(
-    updated.documentSnapshot.map((doc: { id: string }) => doc.id),
-    [ids.documents.next],
-  );
-  const archived = await submitted();
-  assert.deepEqual(
-    archived.documentSnapshot.map((doc: { id: string }) => doc.id),
-    [ids.documents.prior],
-  );
-  await admin.write('/api/documents/next/status', { revision: 2, status: 'arquivado' });
-  assert.equal((await admin.read('/api/documents')).revision, 3);
-  assert.deepEqual((await campus.read(path)).currentDocuments, []);
-  await admin.write('/api/documents/next/status', { revision: 3, status: 'arquivado' });
-  assert.equal((await admin.read('/api/documents')).revision, 3, 'repeated status is idempotent');
-  assert.deepEqual(await submitted(), archived);
-});
-
 test('institutional revisions affect only calendars and reviews for the changed year', async () => {
-  const { as } = await fixture({
-    documents: [
-      { id: 'next-year', year: 2028, type: 'norma', title: 'Norma de 2028', status: 'rascunho' },
-    ],
-  });
+  const { as } = await fixture();
   const admin = as('admin');
   const campus = as('campus-a');
   const record = await campus.write('/api/calendars', identifiedBody());
@@ -524,16 +380,8 @@ test('institutional revisions affect only calendars and reviews for the changed 
     },
     'PUT',
   );
-  await admin.write('/api/documents/next-year/status', {
-    status: 'vigente',
-    confirmed: true,
-    revision: 1,
-  });
-  assert.equal((await admin.read('/api/documents')).revision, 2);
-  assert.equal((await campus.read(path)).currentCatalogueRevision, record.currentCatalogueRevision);
-  assert.equal((await admin.read(reviewPath)).stale, false);
   await admin.write('/api/catalogue', {
-    revision: 2,
+    revision: 1,
     name: 'Evento do outro ano',
     start: civilDate('2028-04-21'),
     end: civilDate('2028-04-21'),
@@ -606,117 +454,6 @@ test('calendar pagination applies campus and trash scope before advancing its cu
     }),
     /Registro não encontrado/,
   );
-});
-
-test('document pagination applies publication access and year filters before its cursor', async () => {
-  const { asClient, ids } = await fixture({
-    documents: [
-      {
-        id: 'draft-2027',
-        year: 2027,
-        type: 'norma',
-        title: 'Rascunho privado',
-        status: 'rascunho',
-      },
-      {
-        id: 'current-2027',
-        year: 2027,
-        type: 'norma',
-        title: 'Norma vigente',
-        status: 'vigente',
-        publishedAt: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'archived-2027',
-        year: 2027,
-        type: 'referencia',
-        title: 'Referência preservada',
-        status: 'arquivado',
-        publishedAt: '2026-02-01T00:00:00Z',
-      },
-      {
-        id: 'current-2028',
-        year: 2028,
-        type: 'norma',
-        title: 'Norma de outro ano',
-        status: 'vigente',
-        publishedAt: '2026-03-01T00:00:00Z',
-      },
-    ],
-  });
-  const campus = asClient('campus-a');
-  const loaded = [];
-  let cursor: string | null = null;
-  for (;;) {
-    const result: FunctionReturnType<typeof api.documents.documentPage> = await campus.query(
-      api.documents.documentPage,
-      { year: 2027, paginationOpts: { numItems: 1, cursor } },
-    );
-    loaded.push(...result.page);
-    if (result.isDone) break;
-    cursor = result.continueCursor;
-  }
-  assert.deepEqual(
-    new Set(loaded.map((document) => document.id)),
-    new Set([ids.documents['current-2027'], ids.documents['archived-2027']]),
-  );
-  const admin = await asClient('admin').query(api.documents.documentPage, {
-    year: 2027,
-    paginationOpts: { numItems: 10, cursor: null },
-  });
-  assert.equal(admin.page.length, 3);
-  assert(admin.page.some((document) => document.id === ids.documents['draft-2027']));
-});
-
-test('document status filters are administrative and paginate within the selected status and year', async () => {
-  const { asClient, ids } = await fixture({
-    documents: [
-      { id: 'draft', year: 2027, type: 'norma', title: 'Rascunho', status: 'rascunho' },
-      { id: 'draft2', year: 2027, type: 'norma', title: 'Outro rascunho', status: 'rascunho' },
-      { id: 'other-year', year: 2028, type: 'norma', title: 'Outro ano', status: 'rascunho' },
-      {
-        id: 'current',
-        year: 2027,
-        type: 'norma',
-        title: 'Vigente',
-        status: 'vigente',
-        publishedAt: 1,
-      },
-    ],
-  });
-  const admin = asClient('admin');
-  const loaded = [];
-  let cursor: string | null = null;
-  for (;;) {
-    const result: FunctionReturnType<typeof api.documents.documentPage> = await admin.query(
-      api.documents.documentPage,
-      {
-        year: 2027,
-        status: 'rascunho',
-        paginationOpts: { numItems: 1, cursor },
-      },
-    );
-    loaded.push(...result.page);
-    if (result.isDone) break;
-    cursor = result.continueCursor;
-  }
-  assert.deepEqual(
-    new Set(loaded.map((document) => document.id)),
-    new Set([ids.documents.draft, ids.documents.draft2]),
-  );
-  const allYears = await admin.query(api.documents.documentPage, {
-    status: 'rascunho',
-    paginationOpts: { numItems: 10, cursor: null },
-  });
-  assert.equal(allYears.page.length, 3);
-  for (const status of ['rascunho', 'vigente', 'arquivado'] as const)
-    await assert.rejects(
-      asClient('campus-a').query(api.documents.documentPage, {
-        status,
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
-      /Acesso exclusivo/,
-    );
 });
 
 test('domain rule violations reach the client as ConvexError with their status and message', async () => {

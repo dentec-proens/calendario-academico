@@ -5,8 +5,7 @@ describe('return to the requested work page after signing in', () => {
   it.each([
     '/calendarios/calendar-a/atividades',
     '/calendarios/calendar-a/atividades#calendario-anterior',
-    '/documentos?ano=2027',
-    '/documentos/document-a/abrir',
+    '/regras?ano=2027',
     '/logs',
   ])('resumes %s', (path) => {
     expect(

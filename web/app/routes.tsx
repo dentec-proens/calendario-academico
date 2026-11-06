@@ -28,20 +28,12 @@ declare module '@tanstack/react-router' {
 }
 
 function permission(permission: keyof PortalPermissions) {
-  return ({
-    context,
-    location,
-  }: {
-    context: ApplicationContext;
-    location: { pathname: string };
-  }) => {
+  return ({ context }: { context: ApplicationContext }) => {
     const { info, isLoading } = context.session;
     if (!isLoading && info && !portalPermissions(info.user.role)[permission]) {
       const to =
         permission === 'manageInstitution'
-          ? location.pathname.startsWith('/documentos')
-            ? '/documentos'
-            : '/eventos-institucionais'
+          ? '/eventos-institucionais'
           : portalPermissions(info.user.role).editCalendars
             ? '/calendarios'
             : '/revisoes';
@@ -133,24 +125,6 @@ const newCalendar = createRoute({
   beforeLoad: permission('editCalendars'),
   component: lazy(() => import('../features/calendars/CalendarsPage.tsx')),
   staticData: { title: 'Calendários', page: 'calendars', creating: true },
-});
-const documents = createRoute({
-  getParentRoute: () => workspace,
-  path: '/documentos',
-  component: lazy(() => import('../features/documents/DocumentsPage.tsx')),
-  staticData: { title: 'Documentos e normas', page: 'institution' },
-});
-const openDocument = createRoute({
-  getParentRoute: () => authenticated,
-  path: '/documentos/$documentId/abrir',
-  component: lazy(() => import('../features/documents/OpenDocumentPage.tsx')),
-});
-const newDocument = createRoute({
-  getParentRoute: () => workspace,
-  path: '/documentos/novo',
-  beforeLoad: permission('manageInstitution'),
-  component: lazy(() => import('../features/documents/DocumentsPage.tsx')),
-  staticData: { title: 'Documentos e normas', page: 'institution', creating: true },
 });
 const catalogue = createRoute({
   getParentRoute: () => workspace,
@@ -334,13 +308,10 @@ export const routeTree = root.addChildren([
   activation,
   recovery,
   authenticated.addChildren([
-    openDocument,
     workspace.addChildren([
       calendars,
       calendarTrash,
       newCalendar,
-      documents,
-      newDocument,
       catalogue,
       newCatalogue,
       editCatalogue,

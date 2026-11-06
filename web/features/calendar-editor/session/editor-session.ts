@@ -20,7 +20,7 @@ export interface EditorSnapshot {
   baseUpdate: ReturnType<
     typeof inspectCalendar<
       CalendarRecord['institutionalEvents'][number],
-      CalendarRecord['currentDocuments'][number]
+      CalendarRecord['documentSnapshot'][number]
     >
   >;
 }
@@ -33,11 +33,7 @@ function failureMessage(detail: unknown) {
     : detail.message;
 }
 
-const baseMark = (record: CalendarRecord) =>
-  JSON.stringify([
-    record.currentCatalogueRevision,
-    record.currentDocuments.map(({ id, hash }) => [id, hash]),
-  ]);
+const baseMark = (record: CalendarRecord) => record.currentCatalogueRevision;
 
 function withoutStamp(state: CalendarState) {
   const { rulesetVersion: _stamp, ...content } = state;
@@ -115,13 +111,11 @@ export function createEditorSession(
           : {
               catalogueRevision: base.revision,
               institutionalSnapshot: base.events,
-              documentSnapshot: base.documents,
             }),
         ...(base.revision >= current.record.currentCatalogueRevision
           ? {
               currentCatalogueRevision: base.revision,
               institutionalEvents: base.events,
-              currentDocuments: base.documents,
             }
           : {}),
       };

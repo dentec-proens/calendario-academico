@@ -35,16 +35,6 @@ for (const width of [1440, 390]) {
   });
 }
 
-test('a document-only update is told and asks for nothing', async ({ page, fixtureServer }) => {
-  await page.goto(await fixtureServer('editor'));
-  await publishBaseUpdate(page, true);
-  const notice = page.locator('#base-changes-notice');
-  await expect(notice).toContainText('Os documentos de referência foram atualizados.');
-  await expect(notice).toContainText('Orientações atualizadas');
-  await notice.getByRole('button', { name: 'Fechar aviso' }).click();
-  await expect(notice).toHaveCount(0);
-});
-
 test('newer rules are told and ask for nothing', async ({ page, fixtureServer }) => {
   await page.goto(await fixtureServer('editor'));
   await expect(page.locator('#record-title')).toBeVisible();
@@ -76,21 +66,6 @@ test('a returned calendar is warned that a review would have to be redone', asyn
   });
   await expect(page.locator('#base-changes-notice')).toContainText(
     'Se já houver parecer, ele precisará ser refeito sob estas regras.',
-  );
-});
-
-test('a withdrawn reference document is told', async ({ page, fixtureServer }) => {
-  await page.goto(await fixtureServer('editor'));
-  await publishBaseUpdate(page, true);
-  await page.evaluate(async () => {
-    const modulePath = '/test/fixtures/editor-client.ts';
-    const { record, publish } = (await import(modulePath)) as typeof EditorFixture;
-    record.documentSnapshot = record.currentDocuments;
-    record.currentDocuments = [];
-    publish();
-  });
-  await expect(page.locator('#base-changes-notice')).toContainText(
-    'Documento de referência retirado: Orientações atualizadas.',
   );
 });
 

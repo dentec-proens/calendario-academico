@@ -72,7 +72,7 @@ Os testes unitários ficam agrupados pela camada exercitada: `test/domain/` (reg
 
 ## Referências visuais
 
-A suíte visual protege o portal, a criação de calendário, a consulta de documentos com links para os originais, a revisão humana com confirmação pendente, o editor, a edição de evento e o diálogo de confirmação. Dados, relógio, idioma, fuso e viewports são fixos. As referências ficam versionadas em `test/browser/__screenshots__/`, somente para macOS (`darwin`), separadas por viewport. O teste falha quando falta uma referência; os testes obrigatórios não são pulados quando o navegador está ausente.
+A suíte visual protege o portal, a criação de calendário, a revisão humana com confirmação pendente, o editor, a edição de evento e o diálogo de confirmação. Dados, relógio, idioma, fuso e viewports são fixos. As referências ficam versionadas em `test/browser/__screenshots__/`, somente para macOS (`darwin`), separadas por viewport. O teste falha quando falta uma referência; os testes obrigatórios não são pulados quando o navegador está ausente.
 
 Para uma mudança visual intencional, execute `pnpm test:visual:update`, confira cada screenshot alterado e execute `pnpm test:visual` novamente, sem atualização. Outros sistemas não têm referências versionadas, e a comparação visual falha neles. Ao atualizar Playwright, confira as referências afetadas. Não aceite alterações de screenshots sem verificar o efeito na interface.
 
@@ -89,8 +89,6 @@ O Chromium local no macOS usa a variante de controles nativos com `OverlayScroll
 Antes de abrir o navegador do worker, `chromium-native-theme.ts` consulta os argumentos reais da versão instalada pela API pública `launchServer().process().spawnargs` e fecha esse processo temporário. Mescla todas as features já desabilitadas pelo Playwright e pelos argumentos do projeto antes de acrescentar `OverlayScrollbar`, pois repetir `--disable-features` com uma lista parcial substituiria os defaults do Playwright. O teste de configuração confere essa preservação contra o Chromium instalado. As comparações mantêm as mesmas referências e tolerâncias; não há máscara de controles nem supressão de diferenças visuais.
 
 Os switches dedicados `--disable-overlay-scrollbar`, `--disable-overlay-scrollbars` e `--disable-blink-features=OverlayScrollbars` não estabilizaram essa variante no Chromium instalado. Por isso a configuração usa a mesclagem por feature. A sondagem acrescentou entre 0,10 e 0,14 segundo por worker neste Mac; encerra antes do navegador de execução, e uma regressão confirma o término do processo também quando a leitura dos argumentos falha.
-
-Os testes de abertura de documentos em `test/browser/documents.spec.ts` usam `channel: 'chromium'`, com o Chromium completo instalado por `pnpm test:browser:install`, para exercitar seu leitor nativo de PDF. O headless shell usado no restante da suíte força download nesse fluxo. Essa seleção segue a [configuração de navegadores do Playwright](https://playwright.dev/docs/browsers#chromium-new-headless-mode) e não muda as referências visuais.
 
 ## Impressão do calendário
 
@@ -113,11 +111,11 @@ Em outro terminal:
 pnpm test:e2e
 ```
 
-`e2e:setup` publica as funções no desenvolvimento conferido, preserva suas contas e dados e cria uma conta ADMIN, um campus e fontes exclusivos dos testes. Reserva um ano de 7000 a 8999 sem calendários, documentos ou eventos preexistentes, e grava `.env.e2e.local`, ignorado pelo Git. A configuração inclui frontend loopback na porta local, backend/deployment verificados, credenciais de teste e fixture de restauração em `test/.temp/`. O comando não cria outro ambiente e não aponta para produção.
+`e2e:setup` publica as funções no desenvolvimento conferido, preserva suas contas e dados e cria uma conta ADMIN, um campus e fontes exclusivos dos testes. Reserva um ano de 7000 a 8999 sem calendários ou eventos preexistentes, e grava `.env.e2e.local`, ignorado pelo Git. A configuração inclui frontend loopback na porta local, backend/deployment verificados, credenciais de teste. O comando não cria outro ambiente e não aponta para produção.
 
-`test:e2e` lê esse arquivo e confere novamente o destino antes de iniciar o navegador. O modo de desenvolvimento exige `DENTEC_NATIVE_DEPLOYMENT`, `DENTEC_NATIVE_BACKEND_URL`, `DENTEC_NATIVE_TEST_RUN_ID`, `DENTEC_NATIVE_TEST_CAMPUS_ID` e `DENTEC_NATIVE_TEST_YEAR`, além de URL e credenciais. A suíte altera somente os registros que cria; não reseta tabelas, não edita eventos institucionais existentes e não restaura originais arbitrários. Registros de teste ficam identificados, com calendários na lixeira e documentos arquivados após o fluxo; fontes, versões e auditoria são preservadas.
+`test:e2e` lê esse arquivo e confere novamente o destino antes de iniciar o navegador. O modo de desenvolvimento exige `DENTEC_NATIVE_DEPLOYMENT`, `DENTEC_NATIVE_BACKEND_URL`, `DENTEC_NATIVE_TEST_RUN_ID`, `DENTEC_NATIVE_TEST_CAMPUS_ID` e `DENTEC_NATIVE_TEST_YEAR`, além de URL e credenciais. A suíte altera somente os registros que cria; não reseta tabelas, e não edita eventos institucionais existentes. Registros de teste ficam identificados, com calendários na lixeira após o fluxo; fontes, versões e auditoria são preservadas.
 
-Para um deployment descartável configurado separadamente, informar `DENTEC_NATIVE_BROWSER_URL`, `DENTEC_NATIVE_TEST_EMAIL` e `DENTEC_NATIVE_TEST_PASSWORD` junto ao opt-in correspondente. Sem configuração válida o comando falha antes de acessar o deployment. Restauração requer `DENTEC_NATIVE_RESTORE_FIXTURE`; no desenvolvimento, a fixture deve pertencer ao run/campus/ano preparados. Nenhum comando sintético publica funções ou altera dados remotos.
+Para um deployment descartável configurado separadamente, informar `DENTEC_NATIVE_BROWSER_URL`, `DENTEC_NATIVE_TEST_EMAIL` e `DENTEC_NATIVE_TEST_PASSWORD` junto ao opt-in correspondente. Sem configuração válida o comando falha antes de acessar o deployment. Nenhum comando sintético publica funções ou altera dados remotos.
 
 ## Atualização segura entre versões
 
@@ -145,7 +143,7 @@ O manifesto interno do Vite não é publicado: `manifest` fica desabilitado na c
 
 ## Regressões de segurança
 
-`pnpm exec vitest run test/convex/security-hardening.test.ts test/convex/storage-simulator.test.ts test/convex/native-files.test.ts` exercita os fluxos reais de autenticação, quota e ingresso: mais de mil renovações/sessões, revogação e novo login com relógio congelado, geração legada, limpeza limitada, par incompatível de refresh, bloqueio/desbloqueio auditado, recência original do ADMIN antes do hash, reset intercalado após verificação real da senha e teto de trabalho em andamento mesmo após repor a quota de frequência. A suíte de Storage também verifica rollback externo e de subtransação do adaptador de testes. `test/browser/account-security.spec.ts` cobre a ação de desbloqueio com teclado em desktop/mobile.
+`pnpm exec vitest run test/convex/security-hardening.test.ts test/convex/storage-simulator.test.ts` exercita os fluxos reais de autenticação, quota e ingresso: mais de mil renovações/sessões, revogação e novo login com relógio congelado, geração legada, limpeza limitada, par incompatível de refresh, bloqueio/desbloqueio auditado, recência original do ADMIN antes do hash, reset intercalado após verificação real da senha e teto de trabalho em andamento mesmo após repor a quota de frequência. A suíte de Storage também verifica rollback externo e de subtransação do adaptador de testes. `test/browser/account-security.spec.ts` cobre a ação de desbloqueio com teclado em desktop/mobile.
 
 `pnpm audit` consulta avisos conhecidos das dependências e complementa `pnpm check`. `pnpm exec tsx scripts/benchmark-passwords.ts` mede hashes sintéticos somente no Node local. O [guia operacional](seguranca.md) distingue esses resultados da validação remota ainda exigida antes de publicar auth e ingresso de bytes.
 

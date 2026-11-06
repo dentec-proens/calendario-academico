@@ -26,7 +26,7 @@ export default function CalendarTrashPage() {
         Voltar aos calendários
       </BackLink>
       <div className="panel calendar-trash">
-        <p>Os dados e documentos são preservados para restauração.</p>
+        <p>Os dados são preservados para restauração.</p>
         <ul id="calendar-trash-list" className="records">
           {trashLoading ? null : trash.length ? (
             trash.map((c) => (

@@ -308,7 +308,7 @@ test('readings of a kept link without activity do not fail; review blocks the co
     false,
   );
   expect(() => reviewSupport(record, state.events)).not.toThrow();
-  const side = { state, institutionalSnapshot: [], documentSnapshot: [], catalogueRevision: 1 };
+  const side = { state, institutionalSnapshot: [], catalogueRevision: 1 };
   const edited = structuredClone(side);
   edited.state.events[0].name = 'Outra descrição';
   expect(compareContents(side, edited).campusChanges).toBe(1);

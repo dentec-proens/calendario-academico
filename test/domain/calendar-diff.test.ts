@@ -35,7 +35,6 @@ function side(change: (value: DiffSide) => void = () => {}): DiffSide {
       },
       institutional('inst:feriado', '2027-04-21'),
     ],
-    documentSnapshot: [{ id: 'norma', title: 'Norma', hash: 'a'.repeat(64), status: 'vigente' }],
     catalogueRevision: 3,
   };
   change(value);
@@ -180,7 +179,6 @@ test('a base change is reported in the base section', () => {
       start: civilDate('2027-04-22'),
       end: civilDate('2027-04-22'),
     };
-    value.documentSnapshot[0] = { ...value.documentSnapshot[0], hash: 'b'.repeat(64) };
   });
   const diff = compareContents(
     side(() => undefined),
@@ -189,7 +187,6 @@ test('a base change is reported in the base section', () => {
   expect(diff.periods).toEqual([]);
   expect(diff.base.fields.map((field) => field.field)).toEqual(['catalogueRevision']);
   expect(diff.base.events.map((change) => change.id)).toEqual(['inst:feriado']);
-  expect(diff.base.documents[0].fields.map((field) => field.field)).toEqual(['hash']);
 });
 
 test('a split period, a split linked event and a recreated event appear with a new identifier', () => {
@@ -296,9 +293,6 @@ test('every field of the stored validators is labeled or explicitly ignored', ()
       fieldLabels.institutionalEvent,
       ignoredFields.institutionalEvent,
     ),
-  ).toEqual([]);
-  expect(
-    covered(validators.documentSnapshot.fields, fieldLabels.document, ignoredFields.document),
   ).toEqual([]);
 });
 

@@ -32,9 +32,6 @@ export function useRouteForm(page: PortalPageId) {
       case 'calendars':
         void navigate({ to: open ? '/calendarios/novo' : '/calendarios', search });
         break;
-      case 'institution':
-        void navigate({ to: open ? '/documentos/novo' : '/documentos', search });
-        break;
       case 'institution-events':
         void navigate({
           to: open ? '/eventos-institucionais/novo' : '/eventos-institucionais',

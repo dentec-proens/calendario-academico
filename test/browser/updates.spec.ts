@@ -175,10 +175,10 @@ test('a clean production tab moves from A to B only on a workspace menu click', 
   server.select('b');
   await observeNewVersion(page);
   await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
-  await page.locator('[data-page="institution"]').click();
-  await expect(page).toHaveURL(server.origin + '/documentos');
+  await page.locator('[data-page="rules"]').click();
+  await expect(page).toHaveURL(server.origin + '/regras');
   await expect(
-    page.getByRole('heading', { name: 'Base institucional', exact: true }),
+    page.getByRole('heading', { name: 'Regras do calendário de 2027', exact: true }),
   ).toBeVisible();
   await expect(page.locator('html')).not.toHaveAttribute('data-old-document');
   expect(
@@ -204,7 +204,7 @@ test('a detached draft blocks manual and menu updates without submitting or disc
   await page.goto(server.origin + '/calendarios');
   await page.getByRole('button', { name: 'Novo calendário' }).click();
   await page.locator('#calendar-offer-subsequente').check();
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   const warning = page.waitForEvent('dialog');
   const reload = page.reload({ timeout: 1000 }).catch(() => undefined);
   const dialog = await warning;
@@ -294,14 +294,13 @@ for (const { width, switchIdentity } of [
       });
       observe();
     }, switchIdentity);
-    const { arrival, release } = server.delayNext('/documentos');
+    const { arrival, release } = server.delayNext('/regras');
     const failed = page.waitForEvent('requestfailed', {
-      predicate: (request) =>
-        request.isNavigationRequest() && request.url().endsWith('/documentos'),
+      predicate: (request) => request.isNavigationRequest() && request.url().endsWith('/regras'),
       timeout: 25_000,
     });
     if (width === 390) await page.getByRole('button', { name: 'Navegação · Calendários' }).click();
-    await page.locator('[data-page="institution"]').click({ noWaitAfter: true });
+    await page.locator('[data-page="rules"]').click({ noWaitAfter: true });
     await arrival;
     await expect.poll(() => visible?.text).toContain('Atualizando portal…');
     expect(visible?.inert).toBe(true);
@@ -359,7 +358,7 @@ test('review edits, query preferences and reversion use their real owners', asyn
     .first()
     .locator('textarea')
     .fill('Observações ainda não confirmadas');
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await expect(page.locator('.portal-update')).toContainText(/para atualizar\./);
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
   await page.locator('[data-page="review-panel"]').click();
@@ -398,9 +397,9 @@ test('private tokens and unavailable storage cannot authorize an update', async 
   await other.evaluate(() => {
     document.documentElement.dataset.oldDocument = 'yes';
   });
-  await other.locator('[data-page="institution"]').click();
+  await other.locator('[data-page="rules"]').click();
   await expect(
-    other.getByRole('heading', { name: 'Base institucional', exact: true }),
+    other.getByRole('heading', { name: 'Regras do calendário de 2027', exact: true }),
   ).toBeVisible();
   await expect(other.locator('html')).toHaveAttribute('data-old-document', 'yes');
 });
@@ -412,20 +411,20 @@ test('CSS failure retries the original production URL before displaying the reco
   const { origin } = await startUpdateServer(cleanup, 'portal-navigation');
   await page.goto(origin + '/calendarios');
   const failed: string[] = [];
-  await page.route('**/assets/DocumentsPage-*.css', (route) => {
+  await page.route('**/assets/RulesPage-*.css', (route) => {
     failed.push(route.request().url());
     return route.abort('failed');
   });
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await expect(
     page.getByRole('heading', { name: 'Não foi possível abrir esta página' }),
   ).toBeVisible();
-  await page.unroute('**/assets/DocumentsPage-*.css');
+  await page.unroute('**/assets/RulesPage-*.css');
   const retry = page.waitForResponse((response) => response.url() === failed[0]);
   await page.getByRole('button', { name: 'Tentar novamente', exact: true }).click();
   expect((await retry).status()).toBe(200);
   await expect(
-    page.getByRole('heading', { name: 'Base institucional', exact: true }),
+    page.getByRole('heading', { name: 'Regras do calendário de 2027', exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -435,31 +434,21 @@ test('CSS failure retries the original production URL before displaying the reco
   ).toBe(true);
 });
 
-test('upload and private submission remain protected after their forms unmount', async ({
+test('a private submission remains protected after its form unmounts', async ({
   page,
   cleanup,
 }) => {
   const server = await startUpdateServer(cleanup, 'portal-navigation');
   server.selectManifest('b');
-  await page.route('**/__synthetic-upload', (route) =>
-    route.fulfill({ json: { storageId: 'synthetic-file' } }),
-  );
-  await page.goto(server.origin + '/documentos/novo');
-  await page.locator('#document-year').fill('2027');
-  await page.locator('#document-title').fill('Documento em envio');
-  await page.locator('#document-source').fill('Fonte sintética');
-  await page.locator('#document-file').setInputFiles({
-    name: 'privado.pdf',
-    mimeType: 'application/pdf',
-    buffer: Buffer.from('%PDF-1.7\nDocumento sintético'),
-  });
+  await page.goto(server.origin + '/campi/novo');
+  await page.locator('#campus-name').fill('Campus em envio');
   await page.evaluate(() => {
     window.portalRouterTest.deferNextMutation = true;
   });
-  await page.locator('#document-form button[type="submit"]').click();
+  await page.locator('#campus-form button[type="submit"]').click();
   await expect
     .poll(() => page.evaluate(() => window.portalRouterTest.pendingMutation))
-    .toBe('uploadDocument');
+    .toBe('createCampus');
   await page.evaluate(() => {
     document.documentElement.dataset.oldDocument = 'yes';
   });
@@ -497,7 +486,7 @@ test('manual verification is cancelled by editing, and filters alone allow a lat
   await page.locator('#calendar-offer-subsequente').uncheck();
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeEnabled();
   // Modified menu clicks retain native browser behavior and never authorize an update.
-  await page.locator('[data-page="institution"]').click({ modifiers: ['Control'] });
+  await page.locator('[data-page="rules"]').click({ modifiers: ['Control'] });
   await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
   // Explicit manual action rechecks, then reloads this URL without another form submission.
   server.select('b');
@@ -519,12 +508,11 @@ test('stale evidence follows SPA and only a future gesture may replace the docum
     document.documentElement.dataset.oldDocument = 'yes';
   });
   await page.clock.fastForward(31_000);
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await expect(
-    page.getByRole('heading', { name: 'Base institucional', exact: true }),
+    page.getByRole('heading', { name: 'Regras do calendário de 2027', exact: true }),
   ).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
-  await page.locator('#document-year-filter').fill('2027');
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeEnabled();
   server.select('b');
   await page.locator('[data-page="calendars"]').click();
@@ -555,7 +543,7 @@ test('back-forward cache restores the old clean document without unlocking a dif
     document.documentElement.dataset.oldDocument = 'yes';
   });
   server.select('b');
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await expect(page.locator('html')).not.toHaveAttribute('data-old-document');
   await page.goBack({ waitUntil: 'commit' });
   await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
@@ -571,41 +559,6 @@ test('back-forward cache restores the old clean document without unlocking a dif
   ).toHaveLength(1);
 });
 
-test('a private file form without a draft key keeps its detached submission protected', async ({
-  page,
-  cleanup,
-}) => {
-  const server = await startUpdateServer(cleanup, 'portal-navigation');
-  server.selectManifest('b');
-  await page.route('**/__synthetic-upload', (route) =>
-    route.fulfill({ json: { storageId: 'synthetic-file' } }),
-  );
-  await page.goto(server.origin + '/documentos?missing-document=1');
-  const original = page.locator('[data-restore-document="document-0"]');
-  const row = page.locator('#document-list li').filter({ hasText: 'Documento rascunho' });
-  await row.getByText('Gerenciar', { exact: true }).click();
-  await original.locator('input[type="file"]').setInputFiles({
-    name: 'original-privado.pdf',
-    mimeType: 'application/pdf',
-    buffer: Buffer.from('%PDF-1.7\nArquivo sintético'),
-  });
-  await page.evaluate(() => {
-    window.portalRouterTest.deferNextMutation = true;
-  });
-  await original.locator('button[type="submit"]').click();
-  await expect
-    .poll(() => page.evaluate(() => window.portalRouterTest.pendingMutation))
-    .toBe('restoreDocumentOriginal');
-  await page.locator('[data-page="calendars"]').click();
-  await expect(page.locator('.portal-update')).toContainText(/para atualizar\./);
-  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
-  const risk = await page.evaluate(() => window.updateDrafts.protection.getSnapshot());
-  expect(risk).toContainEqual({ kind: 'operation', loss: true });
-  expect(JSON.stringify(risk)).not.toContain('original-privado');
-  await page.evaluate(() => window.portalRouterTest.resolvePendingMutation());
-  await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeEnabled();
-});
-
 test('going offline after a recent observation never replaces the current document', async ({
   page,
   context,
@@ -614,9 +567,9 @@ test('going offline after a recent observation never replaces the current docume
   const server = await startUpdateServer(cleanup, 'portal-navigation');
   await page.clock.install();
   await page.goto(server.origin + '/calendarios');
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await expect(
-    page.getByRole('heading', { name: 'Base institucional', exact: true }),
+    page.getByRole('heading', { name: 'Regras do calendário de 2027', exact: true }),
   ).toBeVisible();
   await page.locator('[data-page="calendars"]').click();
   server.selectManifest('b');
@@ -625,9 +578,9 @@ test('going offline after a recent observation never replaces the current docume
     document.documentElement.dataset.oldDocument = 'yes';
   });
   await context.setOffline(true);
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await expect(
-    page.getByRole('heading', { name: 'Base institucional', exact: true }),
+    page.getByRole('heading', { name: 'Regras do calendário de 2027', exact: true }),
   ).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-old-document', 'yes');
   expect(await page.evaluate(() => sessionStorage.getItem('portal-update-attempts-v1'))).toBeNull();
@@ -704,7 +657,7 @@ test('a document that loads its origin after an update exposes manual recovery a
   await page.goto(server.origin + '/calendarios');
   await expect(page.getByText('Uma nova versão do portal está disponível.')).toBeVisible();
   // Keep HTML in A to model a stale document response while the public manifest reports B.
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await expect(page.getByText(/A atualização anterior voltou à versão de origem/)).toBeVisible();
   await page.evaluate(() => {
     document.documentElement.dataset.returned = 'yes';
@@ -784,7 +737,7 @@ test('a removed A chunk after serving B keeps drafts editable until protected re
   const missing = page.waitForResponse(
     (response) => response.url().includes('/assets/') && response.status() === 404,
   );
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await missing;
   await expect(
     page.getByRole('heading', { name: 'Não foi possível abrir esta página' }),
@@ -795,9 +748,9 @@ test('a removed A chunk after serving B keeps drafts editable until protected re
   await expect(page.locator('#calendar-offer-subsequente')).toBeChecked();
   await page.locator('#calendar-offer-subsequente').uncheck();
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toBeEnabled();
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await expect(
-    page.getByRole('heading', { name: 'Base institucional', exact: true }),
+    page.getByRole('heading', { name: 'Regras do calendário de 2027', exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(() =>
@@ -817,10 +770,10 @@ test('a successful A to B to A rollback does not report a failed update', async 
   await expect(page.getByText('Uma nova versão do portal está disponível.')).toBeVisible();
   server.select('b');
   const arrivedB = page.waitForResponse((response) => response.url().endsWith('/version.json'));
-  await page.locator('[data-page="institution"]').click();
+  await page.locator('[data-page="rules"]').click();
   await arrivedB;
   await expect(
-    page.getByRole('heading', { name: 'Base institucional', exact: true }),
+    page.getByRole('heading', { name: 'Regras do calendário de 2027', exact: true }),
   ).toBeVisible();
   server.selectManifest('a');
   await observeNewVersion(page);
