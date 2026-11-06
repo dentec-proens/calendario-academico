@@ -121,7 +121,7 @@ export default function WorkspaceLayout() {
         onClick={updateNavigation ?? undefined}
         key={id}
         to={to}
-        className={'ui-button ui-button--primary sidebar-link' + (page === id ? ' active' : '')}
+        className={'sidebar-link' + (page === id ? ' active' : '')}
         data-page={id}
         id={id === 'accounts' ? 'admin-tab' : id === 'review-panel' ? 'review-tab' : undefined}
         aria-current={page === id ? 'page' : undefined}

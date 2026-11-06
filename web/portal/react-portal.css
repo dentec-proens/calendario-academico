@@ -379,18 +379,29 @@
 #root .sidebar-link {
   text-decoration: none;
   display: flex;
-  justify-content: flex-start;
+  align-items: center;
+  gap: var(--ui-space-2);
   width: 100%;
-  padding: 12px;
+  min-height: 44px;
+  padding: 10px 12px;
   margin: 3px 0;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: var(--ui-radius);
   background: transparent;
   color: var(--ui-muted);
   text-align: left;
   font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  transition:
+    background-color var(--ui-motion),
+    color var(--ui-motion);
+}
+#root .sidebar-link svg {
+  flex-shrink: 0;
 }
 #root .sidebar-link.active {
+  font-weight: 650;
   color: var(--area-color);
   background: var(--area-tint);
   border-color: var(--ui-info-border);
