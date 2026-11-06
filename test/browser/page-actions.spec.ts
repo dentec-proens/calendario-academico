@@ -104,6 +104,6 @@ for (const width of [1440, 390, 320]) {
     await expect(rows.nth(1).getByRole('link', { name: 'Ver parecer' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(origin + '/revisoes/calendar-b');
-    await expect(page.locator('#review-content')).toContainText('Calendário calendar-b');
+    await expect(page.locator('#review-heading')).toContainText('Calendário calendar-b');
   });
 }
