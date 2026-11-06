@@ -924,8 +924,8 @@
           </nav>
         </details>
         <p class="aside-note">
-          79 perguntas · 15 seções<br />Revisão documental de 29/10/2026<br />Leitura e filtros
-          disponíveis offline.
+          79 perguntas · 15 seções<br />Revisão documental de 29/10/2026, atualizada em
+          06/11/2026<br />Leitura e filtros disponíveis offline.
         </p>
       </aside>
       <main id="conteudo" tabindex="-1">
@@ -993,6 +993,13 @@
               Recorte Git: <code>6aeb682befd9725c294f7a18379b3d2b37b7731e</code>. As respostas
               descrevem o código e a documentação desse recorte. O estado efetivamente publicado não
               foi consultado e exige comprovação própria.
+            </p>
+            <p>
+              <strong>Atualização de 06/11/2026:</strong> o suporte a documentos e PDFs
+              institucionais foi retirado da aplicação (commits <code>67af57ce</code> e
+              <code>5d22cbca</code>), e as respostas sobre esse recurso foram ajustadas. Foi
+              conferido em produção, nessa data, que não restam registros de documentos nem arquivos
+              no Storage. As demais respostas e evidências seguem a revisão de 29/10/2026.
             </p>
             <p>
               <strong>Critério de preenchimento:</strong> as perguntas e a numeração do formulário
@@ -1163,7 +1170,7 @@
                 <p>
                   Apoiar a elaboração e revisão técnico-pedagógica dos calendários acadêmicos dos
                   campi do IFPR. Permite organizar ofertas, períodos e etapas de avaliação; semana
-                  letiva, eventos, sábados e férias docentes; consultar documentos e referências
+                  letiva, eventos, sábados e férias docentes; consultar regras e referências
                   institucionais; conferir pendências; manter versões e autoria; registrar revisão
                   humana; e imprimir o calendário ou salvá-lo como PDF no navegador, além de
                   exportar minuta de parecer.
@@ -1489,18 +1496,17 @@
               <div class="answer">
                 <p>
                   Aplicação web React/Vite com TanStack Router, servida como arquivos estáticos. O
-                  Convex concentra autenticação, consultas reativas, transações, banco, arquivos e
-                  tarefas. As regras acadêmicas puras ficam em <code>src/domain/</code>; o backend
-                  as adapta às transações. <code>server.ts</code> e
-                  <code>src/runtime/app-server.ts</code> servem o preview estático e recusam
-                  <code>/api/*</code>.
+                  Convex concentra autenticação, consultas reativas, transações, banco e tarefas. As
+                  regras acadêmicas puras ficam em <code>src/domain/</code>; o backend as adapta às
+                  transações. <code>server.ts</code> e <code>src/runtime/app-server.ts</code> servem
+                  o preview estático e recusam <code>/api/*</code>.
                 </p>
                 <p>
                   A prévia do calendário usa <code>src/printing/</code> e
                   <code>assets/printing/calendar.css</code>.
                   <strong>Imprimir ou salvar PDF</strong> chama <code>window.print()</code> no
-                  navegador, sem gerador PDF no servidor. Os documentos enviados abrem em outra aba,
-                  com leitura pelo próprio navegador.
+                  navegador, sem gerador PDF no servidor. A aplicação não recebe nem guarda
+                  documentos: a norma é citada com link para a publicação oficial.
                 </p>
                 <p>
                   <strong>Evidências:</strong>
@@ -1543,9 +1549,9 @@
                 <p>
                   O navegador obtém a interface na Vercel e se comunica com o Convex por HTTPS e
                   conexão reativa. O backend verifica identidade, perfil e campus; lê e grava
-                  calendários, versões, pareceres e auditoria; mantém documentos enviados no
-                  Storage. Convex Auth é uma biblioteca instalada no próprio backend. Google está
-                  preparado no código, mas intencionalmente desabilitado até segundo aviso.
+                  calendários, versões, pareceres e auditoria. Convex Auth é uma biblioteca
+                  instalada no próprio backend. Google está preparado no código, mas
+                  intencionalmente desabilitado até segundo aviso.
                 </p>
                 <p>
                   No editor, campos ainda em preenchimento pertencem ao formulário; comandos puros
@@ -1553,8 +1559,7 @@
                   comando de impressão aguarda o salvamento das alterações aplicadas, confere a
                   base, ajusta o título sugerido para o arquivo e abre a impressão da prévia no
                   próprio navegador. O usuário pode escolher Salvar como PDF. Esse arquivo não é
-                  gerado, armazenado nem entregue por ticket pelo servidor. Os tickets de download
-                  continuam destinados aos documentos armazenados.
+                  gerado nem armazenado pelo servidor.
                 </p>
                 <p>
                   A minuta de parecer pode ser exportada como HTML/texto e copiada pelo usuário. Não
@@ -1575,12 +1580,7 @@
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/web/features/calendar-editor/export/CalendarExportProvider.tsx"
                     >impressão</a
-                  >,
-                  <a
-                    href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/convex/nativeFiles.ts"
-                    >arquivos</a
-                  >
-                  e
+                  >, e
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/web/features/rules/RulesPage.tsx"
                     >regras</a
@@ -1643,9 +1643,9 @@
                         </td>
                       </tr>
                       <tr>
-                        <td>Documentos e impressão</td>
+                        <td>Impressão</td>
                         <td>
-                          Leitura de documentos e impressão pelo navegador; PDF.js
+                          Impressão pelo navegador; PDF.js
                           <code>6.3.289</code>
                           somente nos testes da saída do calendário
                         </td>
@@ -1712,8 +1712,9 @@
                 <p>
                   Banco documental/transacional gerenciado pelo Convex, diferente de PostgreSQL. O
                   schema define usuários/sessões, campi, calendários/conteúdos, versões/snapshots,
-                  documentos, revisões, eventos, auditoria, tickets e controle operacional.
-                  Componentes Convex possuem namespaces próprios, inclusive migrações.
+                  revisões, eventos, auditoria e controle operacional. A tabela de documentos
+                  permanece vazia, referenciada por cópias históricas de metadados. Componentes
+                  Convex possuem namespaces próprios, inclusive migrações.
                 </p>
                 <p>
                   Migrações são declaradas em <code>convex/migrations.ts</code>, com processamento
@@ -1765,10 +1766,10 @@
               </header>
               <div class="answer">
                 <p>
-                  PDFs institucionais enviados ficam no Convex File Storage, com
-                  identificadores/metadados no banco e persistência além da vida de uma execução.
-                  Tickets temporários permitem download e uploads abandonados têm limpeza. A
-                  restauração de originais exige o PDF de hash exato.
+                  A aplicação não recebe nem guarda arquivos. Calendários, envios e pareceres mantêm
+                  apenas cópias históricas de metadados de documentos (título, fonte, nome do
+                  arquivo e SHA-256), sem o conteúdo. Os backups exportados antes da remoção ainda
+                  contêm os PDFs.
                 </p>
                 <p>
                   O calendário exportado é produzido pela impressão do navegador e salvo no destino
@@ -1776,20 +1777,10 @@
                   e recibos de operações administrativas ficam em diretórios privados fora do Git.
                 </p>
                 <p>
-                  <strong>Não sei:</strong> inventário e volume efetivos, regiões, retenção
-                  contratada, objetos sem referência e recuperação integral. Restauração de um
-                  original não equivale a recuperação de todo o serviço.
+                  <strong>Não sei:</strong> regiões, retenção contratada e recuperação integral.
                 </p>
                 <p>
                   <strong>Evidências:</strong>
-                  <a
-                    href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/convex/nativeFiles.ts"
-                    >arquivos</a
-                  >,
-                  <a
-                    href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/docs/restauracao-de-originais.md"
-                    >restauração</a
-                  >,
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/web/features/calendar-editor/export/CalendarExportProvider.tsx"
                     >impressão</a
@@ -1819,12 +1810,12 @@
               </header>
               <div class="answer">
                 <p>
-                  Desenvolvimento exige Node 24 e pnpm 12.15.0. O ingresso de documentos aceita PDF
-                  de até 8 MB. Convites/resets com capacidade válida têm limite de duas operações
-                  por minuto e dois trabalhos simultâneos por capacidade; a higiene de autenticação
-                  roda a cada 15 minutos em lotes limitados. Esses controles não medem a capacidade
-                  global do serviço. A impressão do calendário depende do navegador do usuário; não
-                  exige runtime Linux/arquitetura de Chromium no backend.
+                  Desenvolvimento exige Node 24 e pnpm 12.15.0. Convites/resets com capacidade
+                  válida têm limite de duas operações por minuto e dois trabalhos simultâneos por
+                  capacidade; a higiene de autenticação roda a cada 15 minutos em lotes limitados.
+                  Esses controles não medem a capacidade global do serviço. A impressão do
+                  calendário depende do navegador do usuário; não exige runtime Linux/arquitetura de
+                  Chromium no backend.
                 </p>
                 <p>
                   A retenção dos arquivos públicos de versões do frontend verifica integridade e
@@ -2343,9 +2334,8 @@
                   <code>package.json</code> contém dependências diretas;
                   <code>pnpm-lock.yaml</code>, resoluções/integridade e transitivas;
                   <code>pnpm-workspace.yaml</code>, regras e patches. O backend depende do Convex e
-                  seus componentes; a hospedagem usa Vercel. A leitura de documentos e a impressão
-                  do calendário usam recursos nativos do navegador. PDF.js é usado somente nos
-                  testes.
+                  seus componentes; a hospedagem usa Vercel. A impressão do calendário usa recursos
+                  nativos do navegador. PDF.js é usado somente nos testes.
                 </p>
                 <p>
                   <strong>Pendente:</strong> inventário completo de licenças, suporte e condições
@@ -2622,10 +2612,9 @@
               <div class="answer">
                 <p>
                   Navegador/Convex trocam consultas, mutations, actions e assinaturas reativas, com
-                  dados funcionais, identidade e autorização por papel/campus. O fluxo de
-                  upload/download usa Convex Storage para documentos institucionais. Google está
+                  dados funcionais, identidade e autorização por papel/campus. Google está
                   preparado, mas intencionalmente desabilitado. Há tarefas de higiene de
-                  autenticação e limpeza de temporários.
+                  autenticação.
                 </p>
                 <p>
                   Ferramentas administrativas utilizam GitHub, registros de pacotes, Vercel e
@@ -2647,10 +2636,6 @@
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/convex/http.ts"
                     >HTTP</a
-                  >,
-                  <a
-                    href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/convex/nativeFiles.ts"
-                    >arquivos</a
                   >,
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/convex/migrations.ts"
@@ -2718,8 +2703,7 @@
                   credenciais no ambiente Convex e vinculação a conta previamente cadastrada, mas
                   permanece intencionalmente desabilitada. As ferramentas de publicação exigem
                   credenciais administrativas Convex/Vercel/Git; o guia determina uso de segredos
-                  fora de argumentos, logs e Git. Tickets restringem operações de arquivos conforme
-                  o código.
+                  fora de argumentos, logs e Git.
                 </p>
                 <p>
                   <strong>Não sei:</strong> escopo real dos tokens e contas de serviço, concessões
@@ -2818,10 +2802,9 @@
               </header>
               <div class="answer">
                 <p>
-                  Ingresso de documentos limitado a 8 MB; tickets têm expiração; convites/resets
-                  possuem quotas e teto simultâneo. O histórico de arquivos do frontend tem os
-                  limites da pergunta 17 e falha de integridade/disponibilidade bloqueia o build.
-                  Não são franquias contratadas.
+                  Convites/resets possuem quotas e teto simultâneo. O histórico de arquivos do
+                  frontend tem os limites da pergunta 17 e falha de integridade/disponibilidade
+                  bloqueia o build. Não são franquias contratadas.
                 </p>
                 <p>
                   O editor não confirma escrita sem retorno Convex; preserva o estado em memória e
@@ -3070,32 +3053,19 @@
                   campus; domínio normaliza entradas, e os geradores de prévia/minuta escapam texto.
                 </p>
                 <p>
-                  O ingresso de documentos confere ADMIN, ticket, propriedade, expiração, tamanho de
-                  até 8 MB, assinatura inicial PDF e SHA-256; objeto/vínculo são transacionais, sem
-                  associação arbitrária de storageId. Há regressões locais para idempotência, objeto
-                  alheio e rollback. A assinatura inicial não é antivírus nem validação integral.
-                </p>
-                <p>
-                  Tickets de documentos são bearer, de 256 bits, hash no banco, validade de um
-                  minuto, no-store e entrega como anexo. Não são de uso único nem vinculados à
-                  sessão: um link conhecido pode resolver até expirar mesmo após remover a conta. A
-                  impressão do calendário é feita no navegador e não utiliza esses tickets.
+                  A aplicação não recebe arquivos: o envio de PDF, seus tickets e a rota de abertura
+                  foram retirados. A impressão do calendário é feita no navegador.
                 </p>
                 <p>
                   <strong>Não sei / pendente:</strong> criptografia em repouso/backups comprovada,
-                  rede, varredura de malware se exigível, controles dos painéis, versão publicada e
-                  ensaios remotos de ingresso/isolamento. A presença de controles no código não
-                  certifica a segurança integral do serviço.
+                  rede, controles dos painéis, versão publicada e ensaios remotos de isolamento. A
+                  presença de controles no código não certifica a segurança integral do serviço.
                 </p>
                 <p>
                   <strong>Evidências:</strong>
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/vercel.json"
                     >headers</a
-                  >,
-                  <a
-                    href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/convex/nativeFiles.ts"
-                    >arquivos</a
                   >,
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/tree/6aeb682befd9725c294f7a18379b3d2b37b7731e/src/printing"
@@ -3127,20 +3097,19 @@
                 <p>
                   Os controles de segurança incluem revogação por geração, criação atômica de
                   sessão/validação da senha, autenticação recente de ADMIN, admissão com quota/teto
-                  simultâneo, validação transacional de bytes de upload e dependências/patches
-                  versionados. Existem testes de regressão para esses caminhos.
+                  simultâneo e dependências/patches versionados. Existem testes de regressão para
+                  esses caminhos.
                 </p>
                 <p>
                   <strong>Pontos conhecidos que exigem avaliação:</strong> MFA de ADMIN, resistência
-                  a abuso dirigido contra conta, tickets bearer não vinculados à sessão, tokens no
-                  armazenamento do navegador, monitoramento e gestão dos provedores/segredos. O
-                  serviço não possui gerador PDF no servidor. A configuração/publicação efetiva e os
-                  ensaios reais de hash/ingresso não foram comprovados nesta revisão.
+                  a abuso dirigido contra conta, tokens no armazenamento do navegador, monitoramento
+                  e gestão dos provedores/segredos. O serviço não possui gerador PDF no servidor. A
+                  configuração/publicação efetiva não foi comprovada nesta revisão.
                 </p>
                 <p>
-                  <strong>Não sei:</strong> incidentes reais, responsáveis formais, prazos aprovados
-                  e tratamento de objetos sem referência no ambiente remoto. Não se conclui ausência
-                  de outras vulnerabilidades. Google permanece desabilitado.
+                  <strong>Não sei:</strong> incidentes reais, responsáveis formais, prazos
+                  aprovados. Não se conclui ausência de outras vulnerabilidades. Google permanece
+                  desabilitado.
                 </p>
                 <p>
                   <strong>Evidências:</strong>
@@ -3176,11 +3145,10 @@
               </header>
               <div class="answer">
                 <p>
-                  Há revisão documentada de autenticação, autorização, credenciais e arquivos, com
-                  provas sintéticas e testes de regressão. A suíte atual contém verificações de
-                  sessões/refresh, recência, quotas/concorrência, ingresso e rollback de Storage. O
-                  recorte do código e a evidência de testes disponíveis estão identificados na
-                  pergunta 65.
+                  Há revisão documentada de autenticação, autorização e credenciais, com provas
+                  sintéticas e testes de regressão. A suíte atual contém verificações de
+                  sessões/refresh, recência e quotas/concorrência. O recorte do código e a evidência
+                  de testes disponíveis estão identificados na pergunta 65.
                 </p>
                 <p>
                   <strong>Não sei / pendente:</strong> auditoria de dependências integral vinculada
@@ -3241,16 +3209,17 @@
                   O modelo contempla nome/e-mail institucional, identificador, papel/campus, status,
                   credenciais derivadas, sessões e presença; autoria e datas de operações;
                   calendários com ano, ofertas, cursos/turmas/turnos, períodos, etapas, eventos e
-                  férias; documentos PDF/metadados; notas e versões de pareceres. Sua finalidade
-                  técnica é acesso, elaboração, revisão, rastreabilidade e exportação.
+                  férias; cópias históricas de metadados de documentos; notas e versões de
+                  pareceres. Sua finalidade técnica é acesso, elaboração, revisão, rastreabilidade e
+                  exportação.
                 </p>
                 <p>
-                  Origem: usuários autorizados e documentos/fontes institucionais. Navegador e
-                  Convex processam os dados; Vercel serve a interface e pode tratar metadados HTTP.
-                  Google está desabilitado no fluxo documentado. Saídas: consultas autorizadas, JSON
-                  de cópia, impressão/PDF local e minuta de parecer. A página de regras apresenta
-                  catálogo do código, sem consulta de dados pessoais ao backend. A tramitação SEI
-                  depende do usuário.
+                  Origem: usuários autorizados e fontes institucionais. Navegador e Convex processam
+                  os dados; Vercel serve a interface e pode tratar metadados HTTP. Google está
+                  desabilitado no fluxo documentado. Saídas: consultas autorizadas, JSON de cópia,
+                  impressão/PDF local e minuta de parecer. A página de regras apresenta catálogo do
+                  código, sem consulta de dados pessoais ao backend. A tramitação SEI depende do
+                  usuário.
                 </p>
                 <p>
                   O preenchimento acadêmico não solicita fontes manuais; referências institucionais
@@ -3258,8 +3227,7 @@
                   <strong>Não sei:</strong> conteúdo real, atributos remotos de integrações,
                   classificação, necessidade de cada campo, destinatários, retenção e descarte por
                   categoria. Não há requisito nominal de cadastro de alunos/sensíveis, mas campos
-                  livres e PDFs podem conter informações adicionais. Não foi comprovada
-                  anonimização.
+                  livres podem conter informações adicionais. Não foi comprovada anonimização.
                 </p>
                 <p>
                   <strong>Evidências:</strong>
@@ -3353,10 +3321,9 @@
               </header>
               <div class="answer">
                 <p>
-                  Sessões, convites, recuperação e tickets têm prazos técnicos. Há higiene de
-                  autenticação a cada 15 minutos em lotes e limpeza de objetos temporários. Remover
-                  acesso preserva registros funcionais e autoria. Calendários possuem lixeira e
-                  versões, sem eliminação física automática.
+                  Sessões, convites e recuperação têm prazos técnicos. Há higiene de autenticação a
+                  cada 15 minutos em lotes. Remover acesso preserva registros funcionais e autoria.
+                  Calendários possuem lixeira e versões, sem eliminação física automática.
                 </p>
                 <p>
                   <strong>Não sei:</strong> tabela de temporalidade por categoria, fundamentos,
@@ -3370,10 +3337,6 @@
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/docs/seguranca.md"
                     >segurança</a
-                  >,
-                  <a
-                    href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/convex/nativeFiles.ts"
-                    >arquivos</a
                   >,
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/docs/migracao-schema.md"
@@ -3687,10 +3650,10 @@
               </header>
               <div class="answer">
                 <p>
-                  A auditoria registra operações de calendário, parecer, documentos e contas, com
-                  data/hora, ator, recurso, campus/calendário e versão quando aplicável. Inclui
-                  desbloqueio de senha e contingência interna com referência ao incidente. Versões e
-                  snapshots preservam alterações. A consulta aplica escopo por perfil/campus.
+                  A auditoria registra operações de calendário, parecer e contas, com data/hora,
+                  ator, recurso, campus/calendário e versão quando aplicável. Inclui desbloqueio de
+                  senha e contingência interna com referência ao incidente. Versões e snapshots
+                  preservam alterações. A consulta aplica escopo por perfil/campus.
                 </p>
                 <p>
                   <strong>Registro de operações</strong> usa tabela no desktop e blocos no celular,
@@ -3845,25 +3808,21 @@
                 <p>
                   Há procedimentos de snapshot integral, ensaio e verificação em ambiente
                   descartável, além de relatos de operações administrativas com comparação de
-                  namespaces, referências e Storage. Há restauração de PDF institucional pelo hash
-                  exato. Os comprovantes privados não foram abertos nesta revisão.
+                  namespaces, referências e Storage. Os comprovantes privados não foram abertos
+                  nesta revisão.
                 </p>
                 <p>
                   <strong>Não sei:</strong> teste integral de recuperação por desastre da versão
                   atual, incluindo banco, Storage, autenticação, configuração, componentes e
-                  retomada por substituto; data, evidência e resultado. Ensaio de migração ou
-                  restauração de um PDF não comprovam recuperação completa. O backup por mudança de
-                  backend não substitui esse teste.
+                  retomada por substituto; data, evidência e resultado. Ensaio de migração não
+                  comprova recuperação completa. O backup por mudança de backend não substitui esse
+                  teste.
                 </p>
                 <p>
                   <strong>Evidências:</strong>
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/docs/migracao-schema.md"
                     >operações de dados</a
-                  >,
-                  <a
-                    href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/docs/restauracao-de-originais.md"
-                    >restauração</a
                   >,
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/docs/implantacao-convex-vercel.md"
@@ -3943,9 +3902,9 @@
                 <p>
                   <strong>Pendente:</strong> validação completa e auditoria de dependências
                   vinculadas ao conjunto formalmente entregue; E2E remoto autorizado, carga,
-                  hash/ingresso no serviço real, recuperação e reversão. Produção é bloqueada para a
-                  suíte E2E. Google só será ensaiado em eventual reativação autorizada. Verificações
-                  não executadas não contam como aprovação.
+                  recuperação e reversão. Produção é bloqueada para a suíte E2E. Google só será
+                  ensaiado em eventual reativação autorizada. Verificações não executadas não contam
+                  como aprovação.
                 </p>
                 <p>
                   <strong>Evidências:</strong>
@@ -4193,12 +4152,7 @@
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/docs/migracao-schema.md"
                     >migrações</a
-                  >,
-                  <a
-                    href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/docs/restauracao-de-originais.md"
-                    >restauração</a
-                  >
-                  e
+                  >, e
                   <a
                     href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/docs/seguranca.md"
                     >segurança</a
@@ -4473,9 +4427,8 @@
                 <p>
                   Existe remoção de acesso na aplicação, com revogação e preservação do histórico; o
                   código implementa revogação por geração e limpeza limitada de sessões. Isso não
-                  encerra contas administrativas, contratos ou dados nos fornecedores, nem revoga
-                  imediatamente tickets bearer de download já emitidos, que têm validade própria de
-                  um minuto. A efetiva implantação desses controles deve ser comprovada.
+                  encerra contas administrativas, contratos ou dados nos fornecedores. A efetiva
+                  implantação desses controles deve ser comprovada.
                 </p>
                 <p>
                   <strong>Não sei:</strong> responsável, sequência aprovada para revogar OAuth,
@@ -4638,7 +4591,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <td>Impressão e originais</td>
+                        <td>Impressão</td>
                         <td>
                           <a
                             href="https://github.com/dentec-proens/calendario-academico/tree/6aeb682befd9725c294f7a18379b3d2b37b7731e/src/printing"
@@ -4652,10 +4605,6 @@
                             href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/web/features/calendar-editor/export/CalendarExportProvider.tsx"
                             >controle de impressão</a
                           >,
-                          <a
-                            href="https://github.com/dentec-proens/calendario-academico/blob/6aeb682befd9725c294f7a18379b3d2b37b7731e/docs/restauracao-de-originais.md"
-                            >restauração</a
-                          >
                         </td>
                       </tr>
                       <tr>
@@ -4722,8 +4671,8 @@
                   </li>
                   <li>
                     <strong>Segurança:</strong> falta comprovar o conjunto e serviço reais; MFA,
-                    abuso por conta, tickets bearer, armazenamento de tokens no navegador, segredos
-                    e fornecedores exigem avaliação. Não há gerador PDF no servidor.
+                    abuso por conta, armazenamento de tokens no navegador, segredos e fornecedores
+                    exigem avaliação. Não há gerador PDF no servidor.
                   </li>
                   <li>
                     <strong>Qualidade:</strong> o recorte possui 463 testes unitários e 56
@@ -4910,8 +4859,8 @@
         </div>
         <footer class="document-footer">
           <span
-            >IFPR · DENTEC/PROENS · Minuta revisada em 29/10/2026<br />HTML autocontido. Evidências
-            no GitHub requerem rede ao abrir o link.</span
+            >IFPR · DENTEC/PROENS · Minuta revisada em 29/10/2026, atualizada em 06/11/2026<br />HTML
+            autocontido. Evidências no GitHub requerem rede ao abrir o link.</span
           ><a href="#inicio">Voltar ao início ↑</a>
         </footer>
       </main>
