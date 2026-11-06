@@ -190,16 +190,23 @@ function dateCandidate(
   };
 }
 
-const sameName = (a: CalendarEvent, b: CalendarEvent) =>
-  a.name.trim().toLocaleLowerCase() === b.name.trim().toLocaleLowerCase();
-
-/** This calendar has the date for every offer chosen: copying would add nothing. */
-const covered = (event: CalendarEvent, other: CalendarEvent, offers: readonly string[]) =>
-  sameName(event, other) &&
-  event.start === other.start &&
-  event.end === other.end &&
-  event.effect === other.effect &&
-  offers.every((offer) => other.offers.includes(offer));
+/**
+ * The offers chosen that this calendar does not have the date for. Copying reaches only these, so a
+ * date recorded for one offer is not repeated for it when the copy adds another.
+ */
+function missingOffers(target: CopyState, event: CalendarEvent, offers: readonly string[]) {
+  const name = event.name.trim().toLocaleLowerCase();
+  const reached = target.events
+    .filter(
+      (other) =>
+        other.name.trim().toLocaleLowerCase() === name &&
+        other.start === event.start &&
+        other.end === event.end &&
+        other.effect === event.effect,
+    )
+    .flatMap((other) => other.offers);
+  return offers.filter((offer) => !reached.includes(offer));
+}
 
 /**
  * One date per occurrence. Separate records for different offers become the same date here, where
@@ -247,8 +254,11 @@ export function copyList(
   for (const event of distinctDates(source.events)) {
     if (vacationIds.has(event.id)) continue;
     if (isStageActivity(event.activity)) omitted++;
-    else if (target.events.some((other) => covered(event, other, offers))) alreadyPresent++;
-    else candidates.push(dateCandidate(target, source, event, offers, generated));
+    else {
+      const missing = missingOffers(target, event, offers);
+      if (missing.length) candidates.push(dateCandidate(target, source, event, missing, generated));
+      else alreadyPresent++;
+    }
   }
   candidates.sort(
     (a, b) =>
@@ -277,7 +287,8 @@ export function applyCopiedDates<S extends CopyState>(
     if (!chosen.includes(event.id) || vacationIds.has(event.id)) continue;
     if (isStageActivity(event.activity)) continue;
     try {
-      next = place(next, event, offers, id());
+      const missing = missingOffers(next, event, offers);
+      if (missing.length) next = place(next, event, missing, id());
     } catch (error) {
       if (!(error instanceof DomainError)) throw error;
       throw new DomainError(`${event.name}: ${error.message}`);

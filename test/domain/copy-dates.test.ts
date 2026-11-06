@@ -368,6 +368,14 @@ describe('applyCopiedDates', () => {
     expect(target.events).toEqual([]);
   });
 
+  test('adds only the offers missing from a date this calendar already has', () => {
+    const target = calendar([offer('graduacao'), offer('posgraduacao')], {
+      events: [date('Feriado', { id: 'mine', offers: ['graduacao'] })],
+    });
+    const next = applyCopiedDates(target, source, ['Feriado'], ['graduacao', 'posgraduacao'], ids);
+    expect(next.events.map((event) => event.offers)).toEqual([['graduacao'], ['posgraduacao']]);
+  });
+
   test('says so when the copy goes over the limit of dates', () => {
     const full = graduation({
       events: Array.from({ length: 1000 }, (_, index) =>

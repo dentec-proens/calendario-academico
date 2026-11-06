@@ -42,6 +42,7 @@ const groups: { id: CopyGroup; title: string; hint: string }[] = [
   { id: 'blocked', title: 'Não podem ser copiadas agora', hint: 'Cada linha diz o motivo.' },
 ];
 
+const periodList = new Intl.ListFormat('pt-BR');
 const datesLabel = (count: number) => (count === 1 ? '1 data' : `${count} datas`);
 
 function CandidateRow({
@@ -73,7 +74,7 @@ function CandidateRow({
           onChange={(event) => onToggle(event.target.checked)}
         />
         <span className="copy-date-when">
-          {candidate.periods.map((period) => compactRange(period, year)).join(' e ')}
+          {periodList.format(candidate.periods.map((period) => compactRange(period, year)))}
         </span>
         <span className="copy-date-name">
           <CategoryMark event={candidate} />
@@ -235,26 +236,28 @@ function CopyDatesList({ sourceId }: { sourceId: string }) {
           </section>
         );
       })}
-      <div className="copy-dates-actions">
-        <span role="status">
-          {chosen.length
-            ? `${datesLabel(chosen.length)} ${chosen.length === 1 ? 'marcada' : 'marcadas'}`
-            : 'Nenhuma data marcada'}
-        </span>
-        <div>
-          <Link
-            className="ui-button ui-button--secondary"
-            to={editorPages.events.path}
-            params={{ calendarId: record.id }}
-            search={({ origem: _origem, ...search }) => search}
-          >
-            Cancelar
-          </Link>
-          <Button id="copy-dates-apply" disabled={readOnly || !chosen.length} onClick={apply}>
-            {chosen.length ? `Aplicar ${datesLabel(chosen.length)}` : 'Aplicar'}
-          </Button>
+      {list.candidates.length ? (
+        <div className="copy-dates-actions">
+          <span role="status">
+            {chosen.length
+              ? `${datesLabel(chosen.length)} ${chosen.length === 1 ? 'marcada' : 'marcadas'}`
+              : 'Nenhuma data marcada'}
+          </span>
+          <div>
+            <Link
+              className="ui-button ui-button--secondary"
+              to={editorPages.events.path}
+              params={{ calendarId: record.id }}
+              search={({ origem: _origem, ...search }) => search}
+            >
+              Cancelar
+            </Link>
+            <Button id="copy-dates-apply" disabled={readOnly || !chosen.length} onClick={apply}>
+              {chosen.length ? `Aplicar ${datesLabel(chosen.length)}` : 'Aplicar'}
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : null}
     </>
   );
 }

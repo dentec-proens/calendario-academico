@@ -191,3 +191,34 @@ test('a calendar alone in its campus and year says there is nothing to copy', as
   await page.goto(origin + '/calendarios/synthetic-calendar/copiar-datas?origem=gone');
   await expect(page.locator('#copy-dates-no-source')).toContainText('Não há outro calendário');
 });
+
+test('the form follows the profile: a campus has no campus to choose, a reviewer no access', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/calendarios/nova-copia?role=CAMPUS');
+  await expect(page.locator('#create-calendar-from-copy')).toBeVisible();
+  await expect(page.locator('select#calendar-campus')).toHaveCount(0);
+  await expect(page.locator('p#calendar-campus')).toContainText('Campus de teste');
+  await page.goto(origin + '/calendarios/nova-copia?role=PARECERISTA');
+  await expect(page).not.toHaveURL(/nova-copia/);
+  await expect(page.locator('#create-calendar-from-copy')).toHaveCount(0);
+});
+
+test('a source with nothing to copy offers no action to apply', async ({ page, fixtureServer }) => {
+  const origin = new URL(await fixtureServer('editor')).origin;
+  await page.goto(origin + '/calendarios/synthetic-calendar/atividades');
+  await expect(page.locator('#event-list')).toBeVisible();
+  await page.evaluate(() =>
+    window.editorTest.addCopySource({
+      id: 'empty-source',
+      name: 'Sem datas',
+      state: { ...window.editorTest.record.state, events: [] },
+    } as never),
+  );
+  await page.locator('#copy-dates').click();
+  await page.locator('#copy-dates-source').selectOption('empty-source');
+  await expect(page.locator('#copy-dates-empty')).toBeVisible();
+  await expect(page.locator('#copy-dates-apply')).toHaveCount(0);
+});
