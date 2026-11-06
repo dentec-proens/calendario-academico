@@ -38,6 +38,7 @@ import type * as contracts from "../contracts.js";
 import type * as crons from "../crons.js";
 import type * as devSetup from "../devSetup.js";
 import type * as documents_model from "../documents/model.js";
+import type * as documents_retire from "../documents/retire.js";
 import type * as http from "../http.js";
 import type * as lib_audit from "../lib/audit.js";
 import type * as lib_authorization from "../lib/authorization.js";
@@ -89,6 +90,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   devSetup: typeof devSetup;
   "documents/model": typeof documents_model;
+  "documents/retire": typeof documents_retire;
   http: typeof http;
   "lib/audit": typeof lib_audit;
   "lib/authorization": typeof lib_authorization;

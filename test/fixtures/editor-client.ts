@@ -52,7 +52,6 @@ export const record: WireCalendarRecord = {
   institutionalSnapshot: [],
   submission: null,
   lastReturn: null,
-  currentDocuments: [],
   readiness: { ready: false, issues: [], warnings: [], officialApproval: false },
 };
 record.state.rulesetVersion = rulesetVersion(record.state);
@@ -151,13 +150,11 @@ export const convex = {
         record.version++;
         record.catalogueRevision = record.currentCatalogueRevision;
         record.institutionalSnapshot = structuredClone(record.institutionalEvents);
-        record.documentSnapshot = structuredClone(record.currentDocuments);
         publish();
         return Promise.resolve({
           base: {
             revision: record.catalogueRevision,
             events: record.institutionalSnapshot,
-            documents: record.documentSnapshot,
           },
           state: structuredClone(record.state),
           version: record.version,

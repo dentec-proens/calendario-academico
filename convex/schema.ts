@@ -108,13 +108,7 @@ export default defineSchema({
     publishedAt: v.optional(v.number()),
     publishedBy: v.optional(v.id('users')),
     archivedAt: v.optional(v.number()),
-  })
-    .index('by_year_and_type_and_status', ['year', 'type', 'status'])
-    .index('by_year_and_publishedAt', ['year', 'publishedAt'])
-    .index('by_year_and_status', ['year', 'status'])
-    .index('by_status', ['status'])
-    .index('by_publishedAt', ['publishedAt'])
-    .index('by_storageId', ['storageId']),
+  }),
   reviews: defineTable(reviewFields).index('by_calendarId', ['calendarId']),
   reviewVersions: defineTable({
     reviewId: v.id('reviews'),

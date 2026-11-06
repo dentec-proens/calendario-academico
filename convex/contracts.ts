@@ -168,7 +168,6 @@ export const calendarDto = v.object({
   readiness,
   institutionalEvents: v.array(institutionalEventSnapshot),
   currentCatalogueRevision: v.number(),
-  currentDocuments: v.array(documentMetadata),
 });
 export const bootstrapDto = v.object({
   user: publicMember,
@@ -201,7 +200,6 @@ export const baseSnapshotDto = v.object({
   rulesetVersion: v.optional(v.string()),
   revision: v.number(),
   events: v.array(institutionalEventSnapshot),
-  documents: v.array(documentMetadata),
 });
 export const saveResult = v.object({
   base: baseSnapshotDto,

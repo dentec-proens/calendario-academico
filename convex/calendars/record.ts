@@ -104,8 +104,6 @@ export async function fullRecord(
     readiness,
     institutionalEvents: compatibility.snapshot.events,
     currentCatalogueRevision: compatibility.snapshot.revision,
-    // Older clients still read this while a release is rolling out; nothing here uses it.
-    currentDocuments: compatibility.snapshot.documents.map(documentDto),
   });
 }
 

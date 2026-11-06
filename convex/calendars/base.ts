@@ -5,7 +5,6 @@ import type { DomainState, documentSnapshot, institutionalEventSnapshot } from '
 import type { Infer } from 'convex/values';
 import type { Doc } from '../_generated/dataModel';
 import type { catalogue } from '../catalogue/model';
-import { documentDto } from '../documents/model';
 import { clean } from '../lib/shared';
 
 type Content = Pick<
@@ -40,7 +39,6 @@ function assess(status: Status, state: DomainState, content: Content, snapshot: 
       revision: snapshot.revision,
       rulesetVersion: snapshot.rulesetVersion,
       events: snapshot.events,
-      documents: snapshot.documents.map(documentDto),
     },
   };
 }

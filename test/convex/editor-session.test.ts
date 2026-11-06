@@ -17,7 +17,6 @@ import type {
 const savedBase = (record: CalendarRecord) => ({
   revision: record.currentCatalogueRevision,
   events: record.institutionalEvents,
-  documents: record.currentDocuments,
 });
 
 afterEach(() => vi.useRealTimers());
