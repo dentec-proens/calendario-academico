@@ -151,6 +151,13 @@ function reviewQueueRows(status = 'enviado', campus?: string) {
     review: null,
   }));
 }
+function reviewQueueCounts(campus?: string) {
+  const count = (status: string) => ({
+    count: reviewQueueRows(status, campus).length,
+    more: false,
+  });
+  return { enviado: count('enviado'), em_revisao: count('em_revisao') };
+}
 function calendarRows(deleted: boolean) {
   return [
     calendar,
@@ -192,23 +199,25 @@ const client = {
               return error instanceof Error ? error : new Error(String(error));
             }
           })()
-        : {
-            page:
-              name === 'documents:documentPage'
-                ? documents.filter(
-                    (document) =>
-                      (user.role === 'ADMIN' || document.publishedAt) &&
-                      (!args.year || document.year === args.year) &&
-                      (!args.status || document.status === args.status),
-                  )
-                : name === 'calendars:calendarPage'
-                  ? calendarRows(!!args.deleted)
-                  : name === 'reviews:reviewQueue'
-                    ? reviewQueueRows(args.status, args.campusId)
-                    : [],
-            isDone: true,
-            continueCursor: '',
-          };
+        : name === 'reviews:reviewQueueCounts'
+          ? reviewQueueCounts(args.campusId)
+          : {
+              page:
+                name === 'documents:documentPage'
+                  ? documents.filter(
+                      (document) =>
+                        (user.role === 'ADMIN' || document.publishedAt) &&
+                        (!args.year || document.year === args.year) &&
+                        (!args.status || document.status === args.status),
+                    )
+                  : name === 'calendars:calendarPage'
+                    ? calendarRows(!!args.deleted)
+                    : name === 'reviews:reviewQueue'
+                      ? reviewQueueRows(args.status, args.campusId)
+                      : [],
+              isDone: true,
+              continueCursor: '',
+            };
     const deferred = name === 'reviews:review' && window.portalRouterTest.deferNextReview;
     if (deferred) {
       window.portalRouterTest.deferNextReview = false;

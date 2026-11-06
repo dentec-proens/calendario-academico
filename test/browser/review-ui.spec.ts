@@ -383,3 +383,16 @@ for (const width of [1360, 390]) {
     );
   });
 }
+
+test('the tabs count what awaits review and stay quiet when nothing does', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('review'));
+  const waiting = page.getByRole('tab', { name: 'Aguardando análise' });
+  await expect(waiting.locator('[data-queue-count="enviado"]')).not.toHaveCount(0);
+  await expect(page.locator('[data-queue-count="em_revisao"]')).toHaveCount(0);
+  await expect(
+    page.getByRole('tab', { name: 'Concluídos' }).locator('[data-queue-count]'),
+  ).toHaveCount(0);
+});

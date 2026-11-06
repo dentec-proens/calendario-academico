@@ -10,29 +10,57 @@
   flex-wrap: wrap;
   gap: 4px 8px;
   margin-bottom: var(--ui-space-4);
-  border-bottom: 1px solid var(--ui-border-soft);
+  border-bottom: 1px solid var(--ui-border);
 }
 #root .review-tabs [role='tab'] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
   min-height: 44px;
   margin-bottom: -1px;
   padding: 8px 12px;
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
   border-radius: var(--ui-radius) var(--ui-radius) 0 0;
   background: transparent;
   box-shadow: none;
-  color: var(--ui-muted);
+  color: var(--ui-text);
   font-size: 0.875rem;
   font-weight: 600;
 }
 #root .review-tabs [role='tab']:hover {
-  background: var(--ui-surface-subtle);
+  background: var(--ui-surface-muted);
   box-shadow: none;
-  color: var(--ui-text);
 }
+/* Blue, as filters and selected views are elsewhere: green stays for the actions in the rows. */
 #root .review-tabs [role='tab'][aria-selected='true'] {
-  border-bottom-color: var(--ui-action);
-  color: var(--ui-action);
+  border-bottom-color: var(--ui-info);
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
+  font-weight: 700;
+}
+.review-tab-label::after {
+  content: attr(data-label);
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font-weight: 700;
+}
+.review-tab-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+  text-align: center;
+}
+[aria-selected='true'] > .review-tab-count {
+  background: var(--ui-surface);
 }
 
 .review-queue-tools {

@@ -219,3 +219,39 @@ test('the queue filters by holder, alone and within a campus', async () => {
   const { page } = await f.ana.query(api.reviews.reviewQueue, { paginationOpts });
   expect(page.map((item) => item.assignee?.name ?? null)).toEqual([null, 'Bruno', 'Ana']);
 });
+
+test('the tab counts follow the same filters as the list', async () => {
+  const f = await fixture();
+  const [mine, free] = [await f.drafted(), await f.drafted()];
+  await f.client.run(async (ctx) => {
+    await ctx.db.patch(mine, { status: 'em_revisao' });
+    await ctx.db.patch(free, { status: 'enviado' });
+  });
+  await f.ana.mutation(api.reviews.assumeReview, { id: mine, expectedAssigneeId: null });
+  const empty = { count: 0, more: false };
+  const one = { count: 1, more: false };
+  expect(await f.ana.query(api.reviews.reviewQueueCounts, {})).toEqual({
+    enviado: one,
+    em_revisao: one,
+  });
+  expect(await f.ana.query(api.reviews.reviewQueueCounts, { holder: 'mine' })).toEqual({
+    enviado: empty,
+    em_revisao: one,
+  });
+});
+
+test('the tab counts stop at their cap and refuse the campus profile', async () => {
+  const f = await fixture();
+  const id = await f.drafted();
+  const row = await f.client.run((ctx) => ctx.db.get(id));
+  await f.client.run(async (ctx) => {
+    const { _id, _creationTime, ...fields } = row!;
+    for (let index = 0; index < 100; index++)
+      await ctx.db.insert('calendars', { ...fields, status: 'enviado' });
+  });
+  expect((await f.ana.query(api.reviews.reviewQueueCounts, {})).enviado).toEqual({
+    count: 99,
+    more: true,
+  });
+  await expect(f.campus.query(api.reviews.reviewQueueCounts, {})).rejects.toThrow();
+});

@@ -77,6 +77,8 @@ export const reviewAssignee = v.union(
   v.null(),
   v.object({ id: v.id('users'), name: v.string(), at: v.string() }),
 );
+export const queueCount = v.object({ count: v.number(), more: v.boolean() });
+
 export const reviewQueueItem = v.object({
   ...summary.fields,
   assignee: reviewAssignee,

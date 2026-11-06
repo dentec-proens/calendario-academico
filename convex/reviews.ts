@@ -123,6 +123,37 @@ export const reviewQueue = query({
   },
 });
 
+/** Bounded on purpose: past this, the tabs say "99+" and the exact number changes nothing. */
+const queueCountCap = 99;
+
+/**
+ * How many calendars await a reviewer in the two tabs that ask for action, under the same filters
+ * as the list. These calendars are locked, so an autosave elsewhere does not invalidate the count.
+ */
+export const reviewQueueCounts = query({
+  args: {
+    campusId: v.optional(v.id('campuses')),
+    holder: v.optional(v.union(v.literal('mine'), v.literal('none'))),
+  },
+  returns: v.object({ enviado: contracts.queueCount, em_revisao: contracts.queueCount }),
+  handler: async (ctx, { campusId, holder }) => {
+    const { user } = await requireNativeUser(ctx);
+    reviewer(user);
+    if (campusId) assertCampus(user, campusId);
+    const count = async (status: 'enviado' | 'em_revisao') => {
+      const rows = await queueRows(
+        ctx,
+        status,
+        campusId,
+        holder && { id: holder === 'mine' ? user.id : undefined },
+      ).take(queueCountCap + 1);
+      return { count: Math.min(rows.length, queueCountCap), more: rows.length > queueCountCap };
+    };
+    const [enviado, em_revisao] = await Promise.all([count('enviado'), count('em_revisao')]);
+    return { enviado, em_revisao };
+  },
+});
+
 export const reviewHistory = query({
   args: { ...idArgs, paginationOpts: paginationOptsValidator },
   returns: v.object({

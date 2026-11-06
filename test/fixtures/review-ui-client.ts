@@ -149,6 +149,13 @@ function query(reference: FunctionReference<'query'>, args: { status?: string } 
         isDone: true,
         continueCursor: '',
       };
+    case 'reviews:reviewQueueCounts': {
+      const count = { count: calendars.length, more: false };
+      const none = { count: 0, more: false };
+      return snapshot.review
+        ? { enviado: none, em_revisao: count }
+        : { enviado: count, em_revisao: none };
+    }
     case 'calendars:calendarSubmissions':
       return { page: [], isDone: true, continueCursor: '', defaultBases: [], related: [] };
     default:

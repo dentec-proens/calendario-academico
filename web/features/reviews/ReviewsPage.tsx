@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { usePaginatedQuery } from 'convex/react';
+import { usePaginatedQuery, useQuery } from 'convex/react';
 import {
   reviewEditable,
   statusLabels,
@@ -50,6 +50,10 @@ export default function ReviewsPage() {
     } as const,
     { initialNumItems: 50 },
   );
+  const counts = useQuery(functions.reviews.reviewQueueCounts, {
+    ...(campus ? { campusId: campus.id } : {}),
+    ...(responsavel ? { holder: responsavel === 'meus' ? 'mine' : 'none' } : {}),
+  } as const);
   function select(next: (typeof tabs)[number][0]) {
     setError('');
     void navigate({
@@ -65,9 +69,6 @@ export default function ReviewsPage() {
   return (
     <section id="review-panel" className="page">
       <div className="panel">
-        <p className="review-queue-note">
-          A revisão apoia o parecer; assinatura e tramitação ocorrem no SEI.
-        </p>
         <div
           className="review-tabs"
           role="tablist"
@@ -85,20 +86,31 @@ export default function ReviewsPage() {
             document.getElementById(`review-tab-${next}`)?.focus();
           }}
         >
-          {tabs.map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="tab"
-              id={`review-tab-${value}`}
-              tabIndex={status === value ? 0 : -1}
-              aria-selected={status === value}
-              aria-controls="review-queue-panel"
-              onClick={() => select(value)}
-            >
-              {label}
-            </button>
-          ))}
+          {tabs.map(([value, label]) => {
+            const waiting = value === 'enviado' || value === 'em_revisao' ? counts?.[value] : null;
+            return (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                id={`review-tab-${value}`}
+                tabIndex={status === value ? 0 : -1}
+                aria-selected={status === value}
+                aria-controls="review-queue-panel"
+                onClick={() => select(value)}
+              >
+                {/* Reserves the bold width, so selecting a tab does not move its neighbors. */}
+                <span className="review-tab-label" data-label={label}>
+                  {label}
+                </span>
+                {waiting?.count ? (
+                  <span className="review-tab-count" data-queue-count={value}>
+                    {waiting.more ? `${waiting.count}+` : waiting.count}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
         <div id="review-queue-panel" role="tabpanel" aria-labelledby={`review-tab-${status}`}>
           <div className="calendar-list-tools review-queue-tools">
@@ -138,6 +150,9 @@ export default function ReviewsPage() {
               </label>
             ) : null}
           </div>
+          <p className="review-queue-note">
+            A revisão apoia o parecer; assinatura e tramitação ocorrem no SEI.
+          </p>
           <ReviewQueue
             items={pagination.results}
             filters={filters}
