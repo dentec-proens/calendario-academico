@@ -20,7 +20,7 @@ import { Notice } from '../../../components/ui/Notice.tsx';
  * A modal side sheet keeps the list visible behind it and closes with its button or Escape.
  */
 export default function EventPanel() {
-  const { state, events, readOnly, removal } = useCalendarEditor();
+  const { state, events, readOnly, undoable } = useCalendarEditor();
   const { message } = useSessionState();
   const editor = useEventEditor();
   const search = useActivitySearch();
@@ -70,11 +70,11 @@ export default function EventPanel() {
   const focusTitle = () => document.getElementById('event-panel-title')?.focus();
   // What was announced before this panel or form opened belongs to the page behind it.
   const surface = !open ? 'closed' : editor.open ? 'form' : 'view';
-  const [seen, setSeen] = useState({ surface, message, removal });
+  const [seen, setSeen] = useState({ surface, message, undoable });
   if (seen.surface !== surface)
     setSeen(
       seen.surface === 'closed' || surface === 'form'
-        ? { surface, message, removal }
+        ? { surface, message, undoable }
         : { ...seen, surface },
     );
   return (
@@ -104,7 +104,7 @@ export default function EventPanel() {
         <div id="event-panel-message" role="status" aria-live="polite">
           <EditorNotices
             message={!open || message === seen.message ? null : message}
-            removal={!open || removal === seen.removal ? null : removal}
+            undoable={!open || undoable === seen.undoable ? null : undoable}
             onUndone={focusTitle}
             onDismissed={focusTitle}
           />

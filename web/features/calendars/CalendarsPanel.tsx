@@ -1,4 +1,5 @@
 import CreateCalendarForm from './CreateCalendarForm.tsx';
+import CreateFromCopyForm from './CreateFromCopyForm.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 import type { Bootstrap, Notify } from '../../shared/convex/types.ts';
 import type { PaginationState } from '../../shared/forms/Pagination.tsx';
@@ -10,7 +11,8 @@ import { useNavigate } from '@tanstack/react-router';
 import { calendars as calendarClient } from '../../shared/convex/calendars.ts';
 import Pagination from '../../shared/forms/Pagination.tsx';
 import CollectionPanel from '../../shared/forms/CollectionPanel.tsx';
-import { useRouteForm } from '../../app/navigation.ts';
+import { useFeatureRoute, useRouteForm } from '../../app/navigation.ts';
+import { calendarCopyPath } from '#src/app/routes.ts';
 import { Link } from '@tanstack/react-router';
 import { updatedLabel } from '../../shared/dates.ts';
 import CalendarIdentityCell, {
@@ -40,6 +42,7 @@ export default function CalendarsPanel({
   pagination: PaginationState;
 }) {
   const [creating, setCreating] = useRouteForm('calendars');
+  const { fromCopy } = useFeatureRoute();
   const navigate = useNavigate();
 
   function remove(calendar: CalendarSummary) {
@@ -177,10 +180,28 @@ export default function CalendarsPanel({
     <section id="calendars" className="page">
       <CollectionPanel
         actionLabel="Novo calendário"
-        formTitle="Criar calendário"
+        formTitle={fromCopy ? 'Novo a partir de cópia' : 'Criar calendário'}
         formOpen={creating}
         onFormOpen={setCreating}
-        form={<CreateCalendarForm info={info} canSelectCampus={canSelectCampus} />}
+        form={
+          fromCopy ? (
+            <CreateFromCopyForm info={info} canSelectCampus={canSelectCampus} />
+          ) : (
+            <CreateCalendarForm info={info} canSelectCampus={canSelectCampus} />
+          )
+        }
+        secondaryAction={
+          calendars.length ? (
+            <Link
+              id="new-calendar-from-copy"
+              to={calendarCopyPath}
+              search={(previous) => previous}
+              className="ui-button ui-button--secondary"
+            >
+              <CopyPlus size={18} aria-hidden="true" /> Novo a partir de cópia
+            </Link>
+          ) : null
+        }
         toolbar={
           <div className="calendar-list-tools">
             {canSelectCampus ? (

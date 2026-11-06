@@ -1,0 +1,142 @@
+#copy-dates-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-4);
+}
+.copy-dates-source label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.copy-dates-source select {
+  width: 100%;
+  min-height: 44px;
+  font-weight: 400;
+}
+.copy-dates-offers p {
+  margin: 0;
+}
+.copy-dates-offers strong {
+  display: block;
+  font-size: 0.875rem;
+}
+.copy-dates-offers fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2) var(--ui-space-4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.copy-dates-group-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2) var(--ui-space-4);
+  padding-bottom: var(--ui-space-3);
+}
+.copy-dates-group h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+.copy-dates-group-heading .help {
+  margin: 2px 0 0;
+}
+.copy-dates-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.copy-date {
+  border-top: 1px solid var(--ui-border-soft);
+}
+.copy-date-choice.copy-date-choice {
+  display: grid;
+  grid-template-columns: 20px minmax(7rem, 11rem) minmax(0, 1fr) minmax(0, 11rem);
+  gap: var(--ui-space-1) var(--ui-space-3);
+  align-items: start;
+  min-height: 44px;
+  margin: 0;
+  padding-block: var(--ui-space-3);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  cursor: pointer;
+}
+.copy-date-choice input {
+  /* Keyboard focus stays clear of the fixed bar of actions. */
+  scroll-margin-block: 96px;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+.copy-date[data-blocked] .copy-date-choice {
+  color: var(--ui-muted);
+  cursor: default;
+}
+.copy-date-when {
+  font-variant-numeric: tabular-nums;
+}
+.copy-date-name {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+  align-items: baseline;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.copy-date-effect {
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+/* Under the description, in the same column as the name. */
+.copy-date-notes {
+  margin: 0;
+  padding: 0 0 var(--ui-space-3)
+    calc(20px + var(--ui-space-3) + min(11rem, 22%) + var(--ui-space-3));
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+.copy-date-notes p {
+  margin: 0;
+}
+.copy-date-warning {
+  color: var(--ui-warning);
+}
+.copy-dates-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2) var(--ui-space-4);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border-soft);
+  border-radius: var(--ui-radius-panel);
+  box-shadow: var(--ui-shadow-floating);
+}
+.copy-dates-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+}
+.copy-dates-actions .ui-button {
+  text-decoration: none;
+}
+@media (max-width: 700px) {
+  .copy-date-choice.copy-date-choice {
+    grid-template-columns: 20px minmax(0, 1fr);
+  }
+  .copy-date-name,
+  .copy-date-effect {
+    grid-column: 2;
+  }
+  .copy-date-notes {
+    padding-left: calc(20px + var(--ui-space-3));
+  }
+}

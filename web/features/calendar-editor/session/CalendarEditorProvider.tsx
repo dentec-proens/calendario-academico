@@ -20,7 +20,7 @@ import { calendars } from '../../../shared/convex/calendars.ts';
 import { sessionIdentity, useAppSession } from '../../../app/session.tsx';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
-import { removeEvent, restoreRemovedEvents } from '#src/domain/calendar/commands/events.ts';
+import { removeEvent, restoreEvents } from '#src/domain/calendar/commands/events.ts';
 import { applyObservances } from '#src/domain/calendar/observances.ts';
 import { evaluateCalendar } from '#src/domain/calendar/counting/evaluation.ts';
 import { projectDates } from '#src/domain/calendar/model.ts';
@@ -157,42 +157,54 @@ function useSession(record: CalendarRecord) {
       return false;
     }
   }
-  const [removal, setRemoval] = useState<{
+  const [undoable, setUndoable] = useState<{
     text: string;
+    undone: string;
     edits: number;
     before: CalendarState;
   } | null>(null);
-  /** Removes a date from the draft and offers to undo it until the next change to the calendar. */
-  function removeDate(eventId: string) {
+  /** Applies a change to the dates and offers to undo it until the next change to the calendar. */
+  function applyWithUndo(
+    command: (state: CalendarState) => CalendarState,
+    describe: (before: CalendarState, after: CalendarState) => { text: string; undone: string },
+  ) {
     const before = session.getSnapshot().state;
-    if (!applyCommand((current) => removeEvent(current, eventId))) return false;
+    if (!applyCommand(command)) return false;
     const after = session.getSnapshot();
-    const removed = before.events.length - after.state.events.length;
-    const event = before.events.find((item) => item.id === eventId);
-    setRemoval({
-      text:
-        removed === 1 && event
-          ? `Data “${event.name}” removida do calendário.`
-          : `${removed} datas removidas do calendário.`,
-      edits: after.edits,
-      before,
-    });
+    setUndoable({ ...describe(before, after.state), edits: after.edits, before });
     return true;
   }
-  function undoRemoval() {
-    if (!removal) return;
-    setRemoval(null);
-    if (applyCommand((current) => restoreRemovedEvents(current, removal.before)))
-      notify('Remoção desfeita.');
+  /** Removes a date from the draft, with the offer to undo it. */
+  function removeDate(eventId: string) {
+    return applyWithUndo(
+      (current) => removeEvent(current, eventId),
+      (before, after) => {
+        const removed = before.events.length - after.events.length;
+        const event = before.events.find((item) => item.id === eventId);
+        return {
+          text:
+            removed === 1 && event
+              ? `Data “${event.name}” removida do calendário.`
+              : `${removed} datas removidas do calendário.`,
+          undone: 'Remoção desfeita.',
+        };
+      },
+    );
+  }
+  function undo() {
+    if (!undoable) return;
+    setUndoable(null);
+    if (applyCommand((current) => restoreEvents(current, undoable.before))) notify(undoable.undone);
   }
   return {
     ...snapshot,
     session,
-    removal:
-      removal && removal.edits === snapshot.edits && !readOnly && !suspended ? removal : null,
+    undoable:
+      undoable && undoable.edits === snapshot.edits && !readOnly && !suspended ? undoable : null,
+    applyWithUndo,
     removeDate,
-    undoRemoval,
-    dismissRemoval: () => setRemoval(null),
+    undo,
+    dismissUndo: () => setUndoable(null),
     baseEvents,
     institutional,
     events,

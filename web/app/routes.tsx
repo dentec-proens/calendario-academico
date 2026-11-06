@@ -1,6 +1,6 @@
 import { controlledLazy as lazy } from './controlled-lazy.tsx';
 import { createRootRouteWithContext, createRoute, redirect } from '@tanstack/react-router';
-import { parseEditorPath, type PortalPageId } from '#src/app/routes.ts';
+import { calendarCopyPath, parseEditorPath, type PortalPageId } from '#src/app/routes.ts';
 import type { PortalPermissions } from '../portal/permissions.ts';
 import { portalPermissions } from '../portal/permissions.ts';
 import type { SessionState } from './session.tsx';
@@ -24,6 +24,7 @@ declare module '@tanstack/react-router' {
     /** Parent page linked above the heading of a detail page. */
     back?: PortalPageId;
     creating?: boolean;
+    fromCopy?: boolean;
   }
 }
 
@@ -125,6 +126,13 @@ const newCalendar = createRoute({
   beforeLoad: permission('editCalendars'),
   component: lazy(() => import('../features/calendars/CalendarsPage.tsx')),
   staticData: { title: 'Calendários', page: 'calendars', creating: true },
+});
+const newCalendarFromCopy = createRoute({
+  getParentRoute: () => workspace,
+  path: calendarCopyPath,
+  beforeLoad: permission('editCalendars'),
+  component: lazy(() => import('../features/calendars/CalendarsPage.tsx')),
+  staticData: { title: 'Calendários', page: 'calendars', creating: true, fromCopy: true },
 });
 const catalogue = createRoute({
   getParentRoute: () => workspace,
@@ -290,6 +298,12 @@ const operations = createRoute({
   component: lazy(() => import('../features/calendar-editor/sections/HistorySection.tsx')),
   staticData: { title: editorPages.operations.title },
 });
+const copyDates = createRoute({
+  getParentRoute: () => editor,
+  path: '/copiar-datas',
+  component: lazy(() => import('../features/calendar-editor/sections/CopyDatesSection.tsx')),
+  staticData: { title: editorPages.copy.title },
+});
 const issues = createRoute({
   getParentRoute: () => editor,
   path: '/pendencias',
@@ -312,6 +326,7 @@ export const routeTree = root.addChildren([
       calendars,
       calendarTrash,
       newCalendar,
+      newCalendarFromCopy,
       catalogue,
       newCatalogue,
       editCatalogue,
@@ -334,6 +349,7 @@ export const routeTree = root.addChildren([
       events,
       history,
       operations,
+      copyDates,
       issues,
       preview,
     ]),

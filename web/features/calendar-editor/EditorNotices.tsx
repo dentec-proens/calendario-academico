@@ -4,28 +4,28 @@ import { Notice } from '../../components/ui/Notice.tsx';
 import { useSessionState } from '../../app/session.tsx';
 import { useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 
-type Removal = NonNullable<ReturnType<typeof useCalendarEditor>['removal']>;
+type Undoable = NonNullable<ReturnType<typeof useCalendarEditor>['undoable']>;
 type Message = NonNullable<ReturnType<typeof useSessionState>['message']>;
 
 /**
- * The editor's last message and its offer to undo a removal. A modal panel covers the page, so it
+ * The editor's last message and its offer to undo a change. A modal panel covers the page, so it
  * shows them too; each place decides which it shows.
  */
 export default function EditorNotices({
   message,
-  removal,
+  undoable,
   onUndone,
   onDismissed,
 }: {
   message: Message | null;
-  removal: Removal | null;
+  undoable: Undoable | null;
   /** The undo button leaves with its notice: where focus continues. */
   onUndone: () => void;
   /** Inside a modal panel, the dismiss button must not take focus out of it as it leaves. */
   onDismissed?: () => void;
 }) {
   const { dismissMessage } = useSessionState();
-  const { undoRemoval, dismissRemoval } = useCalendarEditor();
+  const { undo, dismissUndo } = useCalendarEditor();
   return (
     <>
       {message?.text ? (
@@ -40,21 +40,21 @@ export default function EditorNotices({
           {message.text}
         </Notice>
       ) : null}
-      {removal ? (
+      {undoable ? (
         <Notice
           tone="success"
           elevated
-          data-removal-notice
+          data-undo-notice
           onDismiss={() => {
-            dismissRemoval();
+            dismissUndo();
             onDismissed?.();
           }}
           actions={
             <Button
               variant="secondary"
-              data-undo-removal
+              data-undo
               onClick={() => {
-                undoRemoval();
+                undo();
                 onUndone();
               }}
             >
@@ -62,7 +62,7 @@ export default function EditorNotices({
             </Button>
           }
         >
-          {removal.text}
+          {undoable.text}
         </Notice>
       ) : null}
     </>

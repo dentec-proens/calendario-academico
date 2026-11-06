@@ -15,6 +15,8 @@ interface CollectionPanelProps {
   form: ReactNode;
   feedback?: ReactNode;
   toolbar?: ReactNode;
+  /** Another way of creating, beside the main action. */
+  secondaryAction?: ReactNode;
 }
 
 export default function CollectionPanel({
@@ -29,6 +31,7 @@ export default function CollectionPanel({
   form,
   feedback,
   toolbar,
+  secondaryAction,
 }: CollectionPanelProps) {
   const id = useId();
   const listHeading = useRef<HTMLHeadingElement>(null);
@@ -64,6 +67,7 @@ export default function CollectionPanel({
               </h2>
             ) : null}
             {toolbar}
+            {canCreate ? secondaryAction : null}
             {canCreate ? (
               <Button
                 variant="secondary"

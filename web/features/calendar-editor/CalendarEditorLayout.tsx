@@ -1,7 +1,7 @@
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { EditorErrorBoundary } from './EditorErrorBoundary.tsx';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Eye } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Eye, Copy } from 'lucide-react';
 import LifecycleActions, {
   CalendarStatusBadge,
   ReturnNote,
@@ -64,7 +64,7 @@ function EditorFrame() {
     role,
     notify,
     formEpoch,
-    removal,
+    undoable,
   } = useCalendarEditor();
   const { context, resume, open: eventEditorOpen } = useEventEditor();
   const { message } = useSessionState();
@@ -261,7 +261,7 @@ function EditorFrame() {
         <div id="message" role="status" aria-live="polite">
           <EditorNotices
             message={message}
-            removal={removal}
+            undoable={undoable}
             // The step's title keeps the place.
             onUndone={() => heading.current?.focus({ preventScroll: true })}
           />
@@ -404,6 +404,17 @@ function EditorFrame() {
               {current.title}
             </h2>
             <div className="editor-section-actions" ref={setSectionActions}>
+              {currentSection === 'events' && !readOnly && (
+                <Link
+                  id="copy-dates"
+                  className="editor-action secondary"
+                  to={editorPages.copy.path}
+                  params={{ calendarId: record.id }}
+                  search={({ origem: _origem, ...search }) => search}
+                >
+                  <Copy aria-hidden="true" /> Copiar datas de outro calendário
+                </Link>
+              )}
               {currentSection === 'events' && <NewEventButton />}
             </div>
           </div>

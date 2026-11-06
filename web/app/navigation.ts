@@ -11,8 +11,12 @@ export function useFeatureRoute() {
   const creating = useRouterState({
     select: (state) => state.matches.some((match) => match.staticData.creating),
   });
+  const fromCopy = useRouterState({
+    select: (state) => state.matches.some((match) => match.staticData.fromCopy),
+  });
   return {
     creating,
+    fromCopy,
     eventId: params.eventId,
     calendarId: params.calendarId,
     campus: search.campus ?? '',

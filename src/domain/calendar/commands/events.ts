@@ -48,12 +48,13 @@ export function removeEvent<S extends ActivityState & { teacherVacations?: Vacat
 }
 
 /**
- * Reverses `removeEvent` from the state before it. The caller guarantees that nothing was edited
- * since, so the previous dates come back in their place and the removal leaves no difference.
+ * Reverses a change to the dates from the state before it. The caller guarantees that nothing was
+ * edited since, so the previous dates come back in their place and the change leaves no difference.
  */
-export function restoreRemovedEvents<
-  S extends ActivityState & { teacherVacations?: VacationPeriods },
->(state: S, before: S): S {
+export function restoreEvents<S extends ActivityState & { teacherVacations?: VacationPeriods }>(
+  state: S,
+  before: S,
+): S {
   const next = { ...state, events: before.events };
   if (before.teacherVacations) next.teacherVacations = before.teacherVacations;
   else delete next.teacherVacations;

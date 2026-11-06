@@ -92,6 +92,10 @@ TanStack Router controla caminhos e filtros efetivos da URL. Usar links tipados 
 
 O painel Devtools só existe em desenvolvimento nas rotas permitidas com `?devtools=1`. Credenciais, links privados, arquivos e tokens ficam fora dos eventos de instrumentação. O teste do painel verifica teclado e ausência de obstrução dos controles em desktop e mobile.
 
+## Copiar datas de outro calendário
+
+`CopyDatesSection`, em `/calendarios/<id>/copiar-datas`, é uma página do editor e não uma etapa, como **Histórico do calendário**: a lista é longa demais para o painel lateral e cada linha mostra data, descrição, efeito e motivo. A origem fica na URL (`origem`), conferida contra os calendários que a pessoa pode ler. `copyList` (`src/domain/calendar/commands/copy-dates.ts`) monta a lista e sugere as marcas; o que a pessoa altera fica por cima da sugestão. `applyCopiedDates` passa cada data pelos comandos de data e aplica tudo ou nada, sem mutation própria: a cópia altera o rascunho e segue pelo salvamento automático. A oferta de desfazer é a mesma da remoção de uma data (`applyWithUndo`).
+
 ## Etapa Revisão e conclusão
 
 O menu de etapas mostra, em cada etapa, as pendências que ela corrige (`stepIssueCounts`), levando aos mesmos destinos das linhas da revisão. A revisão mostra o total. Etapa sem pendência não recebe marca de concluída: o sistema não sabe se ela foi conferida.

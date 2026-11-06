@@ -52,6 +52,8 @@ export function applicationSearch(input: Record<string, unknown>) {
       : {}),
     ...(text(input.busca) ? { busca: text(input.busca)?.slice(0, 200) } : {}),
     ...(text(input.retorno) ? { retorno: text(input.retorno) } : {}),
+    // Calendar whose dates the copy screen lists; checked against the ones the person can read.
+    ...(text(input.origem) ? { origem: text(input.origem)?.slice(0, 200) } : {}),
     ...(input.devtools === '1' ? { devtools: '1' } : {}),
     ...(input.aviso === 'acesso-negado' ? { aviso: 'acesso-negado' } : {}),
     ...(typeof input.atividadeBusca === 'string' && input.atividadeBusca.trim()

@@ -58,6 +58,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/calendarios/nova-copia",
+      "destination": "/index.html"
+    },
+    {
       "source": "/eventos-institucionais/novo",
       "destination": "/index.html"
     },
@@ -103,6 +107,10 @@
     },
     {
       "source": "/calendarios/:calendarId/operacoes",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/calendarios/:calendarId/copiar-datas",
       "destination": "/index.html"
     },
     {

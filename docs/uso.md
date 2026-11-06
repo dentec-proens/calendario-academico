@@ -44,6 +44,17 @@ Em **Calendários → Novo calendário**, escolha o ano letivo e marque as ofert
 
 O restante é ajustado no editor. A **Organização por oferta** inclui outras ofertas, inclusive mais de uma do mesmo tipo com nomes distintos, até doze por calendário: pode haver, por exemplo, uma graduação anual e duas semestrais, com períodos e etapas independentes. A **Identificação**, sob o título do editor, reúne cursos, turmas e turnos; os cursos são exigidos para enviar o calendário à PROENS. Em **Renomear**, ao lado do título, é possível acrescentar ao nome um complemento opcional (até 120 caracteres) que diferencia calendários do mesmo campus e ano; o ano letivo e o campus continuam fixos no nome. O complemento acompanha o calendário na análise, na publicação e nas novas versões. Identificação e nome são editáveis enquanto o calendário é rascunho ou está devolvido e não alteram a versão do conteúdo.
 
+Para aproveitar datas de outro calendário do campus, use **Novo a partir de cópia**, ao lado de **Novo calendário**. Escolha o calendário de origem e as ofertas: campus e ano vêm da origem. **Criar rascunho e escolher datas** cria o rascunho e abre a tela de cópia. Quem já tem um rascunho chega à mesma tela por **Copiar datas de outro calendário**, na etapa **Atividades**.
+
+A tela lista as datas da origem, do mesmo campus e ano, em qualquer situação, e cada data é uma escolha:
+
+- **Datas de todas as ofertas da origem**, incluindo as férias docentes, como um único item, vêm marcadas, porque provavelmente valem para o campus inteiro. Férias que substituiriam as já cadastradas vêm desmarcadas, com aviso.
+- **Datas de parte das ofertas da origem** vêm desmarcadas e dizem a quais ofertas se aplicam.
+- **Datas de atividades e editais** vêm desmarcadas, porque uma data vinculada conta como atendimento da atividade neste calendário.
+- **Não podem ser copiadas agora** explica o motivo de cada linha. Um sábado letivo, por exemplo, depende dos períodos desta oferta: depois de cadastrá-los, volte à tela para copiá-lo.
+
+Datas de etapas, resultados, conselhos e reuniões por etapa ficam de fora, porque dependem da organização da oferta, e as que o calendário já tem para as ofertas escolhidas são apenas contadas. **Aplicar** copia as marcadas, que passam a ser datas comuns, editáveis e removíveis em **Atividades**, com **Desfazer** logo depois. A cópia é uma fotografia da origem naquele momento: mudanças posteriores em um calendário não alcançam o outro. Reabrir a tela depois de uma correção na origem mostra a data corrigida como nova, e a antiga continua até ser removida.
+
 ## Ciclo de vida do calendário
 
 Todo calendário começa como **Rascunho**. Rascunhos são ilimitados e servem também para experimentar a ferramenta: um rascunho nunca enviado não tem validade.

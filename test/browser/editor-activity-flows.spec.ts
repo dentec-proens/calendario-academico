@@ -653,7 +653,7 @@ test('a removal in an activity can be undone from the panel', async ({ page, fix
   const confirm = page.getByRole('alertdialog');
   if (await confirm.isVisible()) await confirm.getByRole('button').last().click();
   await expect(page.locator('[data-remove-event="activity-event"]')).toHaveCount(0);
-  await page.locator('#event-panel-message [data-undo-removal]').click();
+  await page.locator('#event-panel-message [data-undo]').click();
   await expect(page.locator('[data-remove-event="activity-event"]')).toBeVisible();
   await expect(page.locator('#event-panel-title')).toBeFocused();
 });

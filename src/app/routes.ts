@@ -23,6 +23,9 @@ export const portalCreationPaths = {
   logs: undefined,
 } as const;
 
+/** Second way of creating a calendar: its form starts from another calendar of the campus. */
+export const calendarCopyPath = '/calendarios/nova-copia';
+
 export const editorSections = {
   edit: 'editar',
   periods: 'periodos',
@@ -32,6 +35,7 @@ export const editorSections = {
   events: 'atividades',
   history: 'historico',
   operations: 'operacoes',
+  copy: 'copiar-datas',
   issues: 'pendencias',
   calendar: 'visualizar',
 } as const;
@@ -79,7 +83,7 @@ export function portalPageForPath(pathname: string): PortalPageId | undefined {
   const page = (Object.keys(portalPaths) as PortalPageId[]).find(
     (id) => portalPaths[id] === path || portalCreationPaths[id] === path,
   );
-  if (path === '/calendarios/lixeira') return 'calendars';
+  if (path === '/calendarios/lixeira' || path === calendarCopyPath) return 'calendars';
   if (catalogueEventId(path)) return 'institution-events';
   return (
     page ??
@@ -95,6 +99,7 @@ export function catalogueEventId(pathname: string): string | undefined {
 export function portalFormForPath(pathname: string) {
   return (
     Object.values(portalCreationPaths).some((path) => path === withoutTrailingSlash(pathname)) ||
+    withoutTrailingSlash(pathname) === calendarCopyPath ||
     !!catalogueEventId(pathname)
   );
 }

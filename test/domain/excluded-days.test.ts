@@ -4,7 +4,7 @@ import {
   groupExcludedDays,
   runDays,
 } from '../../src/domain/calendar/excluded-days.ts';
-import { removeEvent, restoreRemovedEvents } from '../../src/domain/calendar/commands/events.ts';
+import { removeEvent, restoreEvents } from '../../src/domain/calendar/commands/events.ts';
 
 test('only dates that exclude days explain a day, across their whole range', () => {
   const days = excludedDays([
@@ -46,9 +46,9 @@ test('undoing a removal leaves the state as it was, including teacher vacations'
   } as unknown as Parameters<typeof removeEvent>[0];
   const removed = removeEvent(before, 'b');
   expect(removed.events.map((event) => event.id)).toEqual(['a', 'c']);
-  expect(restoreRemovedEvents(removed, before)).toEqual(before);
+  expect(restoreEvents(removed, before)).toEqual(before);
 
   const { teacherVacations: _kept, ...withoutVacations } = before;
-  const restored = restoreRemovedEvents({ ...removed }, withoutVacations);
+  const restored = restoreEvents({ ...removed }, withoutVacations);
   expect('teacherVacations' in restored).toBe(false);
 });

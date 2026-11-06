@@ -138,6 +138,26 @@ export const convex = {
     const name = getFunctionName(reference);
     window.portalRouterTest.mutations.push({ name, args: structuredClone(args) });
     switch (name) {
+      case 'calendars:createCalendar': {
+        const body = args.body as { year: number; campusId: string };
+        return finishMutation('createCalendar', {
+          id: 'calendar-new',
+          campusId: body.campusId,
+          year: body.year,
+          state: {
+            schemaVersion: 6,
+            year: body.year,
+            campus: 'Campus de teste',
+            offers: [],
+            weekdays: [],
+            weekConfirmed: false,
+            periods: [],
+            events: [],
+          },
+          institutionalEvents: [],
+          institutionalSnapshot: [],
+        });
+      }
       case 'calendars:deleteCalendar':
         window.portalRouterTest.removeCalendar(String(args.id));
         return finishMutation('deleteCalendar', { ok: true });

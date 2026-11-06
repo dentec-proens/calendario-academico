@@ -106,13 +106,13 @@ test('a removal can be undone until the next change to the calendar', async ({
     (await savedState(page)).state.events.some((event) => event.id === 'local-event');
   await openCampusEvent(page, 'local-event');
   await page.locator('[data-remove-event="local-event"]').click();
-  const notice = page.locator('[data-removal-notice]');
+  const notice = page.locator('[data-undo-notice]');
   await expect(notice).toContainText('removida do calendário');
   await expect.poll(stored).toBe(false);
 
   // Saving does not end the offer: it depends on what the person does next.
-  await expect(page.locator('[data-undo-removal]')).toBeVisible();
-  await page.locator('[data-undo-removal]').click();
+  await expect(page.locator('[data-undo]')).toBeVisible();
+  await page.locator('[data-undo]').click();
   await expect(notice).toHaveCount(0);
   await expect(page.locator('#message')).toContainText('Remoção desfeita.');
   await expect(page.locator('#editor-section-title')).toBeFocused();

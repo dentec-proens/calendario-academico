@@ -58,6 +58,8 @@ record.state.rulesetVersion = rulesetVersion(record.state);
 record.institutionalSnapshot = structuredClone(record.institutionalEvents);
 export const calls = { saves: 0, transitions: 0, failTransition: false };
 export const fixtureProfile: { role: Bootstrap['user']['role'] } = { role: 'ADMIN' };
+/** Other calendars of the campus, for the screen that copies their dates. */
+const copySources: WireCalendarRecord[] = [];
 export const functions = api;
 const listeners = new Set<() => void>();
 const connection = {
@@ -71,10 +73,10 @@ const connection = {
 export function publish() {
   for (const listener of listeners) listener();
 }
-function result(name: string) {
+function result(name: string, args?: Record<string, unknown>) {
   switch (name) {
     case 'calendars:calendar':
-      return structuredClone(record);
+      return structuredClone(copySources.find((item) => item.id === args?.id) ?? record);
     case 'calendars:history':
       return {
         page: [
@@ -97,7 +99,7 @@ function result(name: string) {
         continueCursor: '',
       };
     case 'calendars:calendarPage':
-      return { page: [record], isDone: true, continueCursor: '' };
+      return { page: [record, ...copySources], isDone: true, continueCursor: '' };
     case 'operations:availability':
       return { maintenance: false };
     case 'presence:online':
@@ -114,15 +116,15 @@ export const convex = {
   url: 'http://127.0.0.1',
   connectionState: () => connection,
   subscribeToConnectionState: () => () => {},
-  watchQuery(reference: FunctionReference<'query'>) {
+  watchQuery(reference: FunctionReference<'query'>, args?: Record<string, unknown>) {
     const name = getFunctionName(reference);
-    let cached = result(name);
+    let cached = result(name, args);
     return {
       localQueryResult: () => cached,
       journal: () => undefined,
       onUpdate(callback: () => void) {
         const listener = () => {
-          cached = result(name);
+          cached = result(name, args);
           callback();
         };
         listeners.add(listener);
@@ -203,14 +205,25 @@ export const convex = {
     );
   },
 };
-window.editorTest = { record, calls };
+window.editorTest = {
+  record,
+  calls,
+  addCopySource(source) {
+    copySources.push({ ...structuredClone(record), ...source });
+    publish();
+  },
+};
 window.publishReviewerCalendar = () => {
   publish();
   return Promise.resolve();
 };
 declare global {
   interface Window {
-    editorTest: { record: typeof record; calls: typeof calls };
+    editorTest: {
+      record: typeof record;
+      calls: typeof calls;
+      addCopySource: (source: Partial<WireCalendarRecord>) => void;
+    };
     publishReviewerCalendar: () => Promise<void>;
   }
 }

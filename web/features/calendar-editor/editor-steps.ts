@@ -40,6 +40,10 @@ export const editorPages = {
   operations: defineEditorPage('operations', {
     title: 'Histórico do calendário',
   }),
+  // Not a filling step either: reached from the Activities step and from a new calendar.
+  copy: defineEditorPage('copy', {
+    title: 'Copiar datas de outro calendário',
+  }),
   issues: defineEditorPage('issues', {
     title: 'Revisão e conclusão',
   }),

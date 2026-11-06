@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import {
+  calendarCopyPath,
   catalogueEventId,
   editorUrl,
   editorSections,
@@ -26,6 +27,7 @@ describe('application paths', () => {
   test('matches collection and creation routes without confusing calendar IDs with collections', () => {
     for (const page of Object.keys(portalPaths) as PortalPageId[]) {
       expect(portalPageForPath(portalPaths[page])).toBe(page);
+      expect(portalFormForPath(calendarCopyPath)).toBe(true);
       expect(portalFormForPath(portalPaths[page])).toBe(false);
       expect(pageDocument(portalPaths[page])).toBe('index.html');
       const create = portalCreationPaths[page];

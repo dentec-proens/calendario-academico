@@ -382,8 +382,8 @@ test('a registered Saturday is edited and removed from the panel', async ({
   await page.locator('#saturday-edit-remove').click();
   await expect.poll(saturdays).toEqual([]);
   await expect(page.locator('#saturday-dates input[value="2027-03-06"]')).toBeFocused();
-  await expect(page.locator('[data-removal-notice]')).toContainText('Feira de ciências');
-  await page.locator('[data-undo-removal]').click();
+  await expect(page.locator('[data-undo-notice]')).toContainText('Feira de ciências');
+  await page.locator('[data-undo]').click();
   await expect.poll(saturdays).toEqual([{ start: '2027-03-06', name: 'Feira de ciências' }]);
   await expect(page.locator('#editor-section-title')).toBeFocused();
 });

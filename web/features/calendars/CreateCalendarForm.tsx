@@ -6,22 +6,12 @@ import { ChoiceGroup } from '../../components/ui/ChoiceGroup.tsx';
 import type { Bootstrap } from '../../shared/convex/types.ts';
 import { calendars as calendarClient } from '../../shared/convex/calendars.ts';
 import { calendarName } from '#src/domain/calendar/label.ts';
-import { modalityLabels, selectableModalities } from '#src/domain/calendar/modalities.ts';
-import { calendarLimits, organizationLabels, type Modality } from '#src/domain/calendar/config.ts';
+import { calendarLimits } from '#src/domain/calendar/config.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
+import OfferChoices, { offersSummary, type CreationOffer } from './OfferChoices.tsx';
 
-type Organization = 'anual' | 'semestral';
-interface CreationOffer {
-  kind: Modality;
-  organization: Organization;
-}
-
-const organizationOptions = (['anual', 'semestral'] as const).map((value) => ({
-  value,
-  label: organizationLabels[value],
-}));
 const otherYear = 'outro';
 const yearOptions = [
   ...[defaultCalendarYear - 1, defaultCalendarYear, defaultCalendarYear + 1].map((year) => ({
@@ -80,22 +70,7 @@ export default function CreateCalendarForm({
   });
   const campus = info.campuses.find((item) => item.id === values.campusId) || info.campuses[0];
   const configured = policyFor(values.year).configured;
-  const offerFor = (kind: Modality) => values.offers.find((offer) => offer.kind === kind);
-  // Offers follow the catalogue order, whatever the order in which they were marked.
-  const setOffer = (kind: Modality, organization: Organization | null) =>
-    form.setFieldValue(
-      'offers',
-      selectableModalities.flatMap((item): CreationOffer[] => {
-        const current = item === kind ? organization : offerFor(item)?.organization;
-        return current ? [{ kind: item, organization: current }] : [];
-      }),
-    );
-  const summary = values.offers
-    .map(
-      (offer) =>
-        `${modalityLabels[offer.kind]} (${organizationLabels[offer.organization].toLowerCase()})`,
-    )
-    .join(' + ');
+  const summary = offersSummary(values.offers);
 
   return (
     <form id="create-calendar" onSubmit={submit}>
@@ -158,52 +133,10 @@ export default function CreateCalendarForm({
             confere o atendimento às regras.
           </p>
         )}
-        <fieldset
-          id="calendar-offers"
-          className="calendar-create-offers"
-          aria-describedby="calendar-offers-help"
-        >
-          <legend>Ofertas</legend>
-          <div className="calendar-create-offer-grid">
-            {selectableModalities.map((kind) => {
-              const offer = offerFor(kind);
-              return (
-                <div
-                  key={kind}
-                  className="calendar-create-offer"
-                  data-create-offer={kind}
-                  data-selected={offer ? '' : undefined}
-                >
-                  <label className="check">
-                    <input
-                      type="checkbox"
-                      id={`calendar-offer-${kind}`}
-                      name="calendar-offer"
-                      value={kind}
-                      checked={Boolean(offer)}
-                      onChange={(event) => setOffer(kind, event.target.checked ? 'anual' : null)}
-                    />
-                    {modalityLabels[kind]}
-                  </label>
-                  {offer ? (
-                    <ChoiceGroup
-                      id={`calendar-offer-${kind}-organization`}
-                      label="Organização"
-                      className="calendar-create-organization"
-                      value={offer.organization}
-                      options={organizationOptions}
-                      onValueChange={(organization) => setOffer(kind, organization)}
-                    />
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-          <p id="calendar-offers-help" className="help">
-            Duas ofertas do mesmo tipo, cursos, turmas e modo de oferta são ajustados depois, no
-            editor.
-          </p>
-        </fieldset>
+        <OfferChoices
+          offers={values.offers}
+          onChange={(offers) => form.setFieldValue('offers', offers)}
+        />
         <div className="calendar-create-footer">
           <div className="calendar-create-preview">
             <output

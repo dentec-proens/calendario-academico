@@ -2,6 +2,16 @@
 #calendars .collection-heading {
   align-items: flex-end;
 }
+#root #new-calendar-from-copy {
+  margin-left: auto;
+  text-decoration: none;
+}
+/* Side by side at the right of the row; each one keeps to the right once they wrap. */
+@media (min-width: 1100px) {
+  #new-calendar-from-copy + .page-action {
+    margin-left: 0;
+  }
+}
 #root .calendar-trash-link {
   display: inline-flex;
   align-items: center;

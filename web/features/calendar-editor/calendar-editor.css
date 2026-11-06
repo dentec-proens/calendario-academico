@@ -395,6 +395,11 @@
   flex-wrap: wrap;
   gap: 12px;
 }
+.calendar-editor-content .editor-section-actions .editor-action {
+  gap: var(--ui-space-2);
+  min-height: 44px;
+  font-size: 1rem;
+}
 .editor-section-actions:empty {
   display: none;
 }
