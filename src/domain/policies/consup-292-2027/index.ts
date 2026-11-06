@@ -110,6 +110,6 @@ export const consup2922027Policy: CalendarPolicy = {
   },
   notices: {
     regularAdmission:
-      'Art. 10: publicação do processo seletivo de 2028 até 15/06/2027. O prazo não preenche a data de publicação. Cronograma ajustado pela Proens exige conferência institucional.',
+      'Art. 10: publique os editais do Processo Seletivo 2028 até 15/06/2027. Informe aqui a data da publicação; o prazo não a preenche automaticamente.',
   },
 };

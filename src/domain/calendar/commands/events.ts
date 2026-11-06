@@ -2,6 +2,7 @@ import type { ActivityPlanItem, ActivityState, CalendarEvent, VacationPeriods } 
 import { equalValues } from '../../../shared/equal.ts';
 import { datesBetween } from '../counting/core.ts';
 import { periodsForOffer } from '../organization/periods.ts';
+import { deadlineAdjustmentIssue } from '../activities/deadlines.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
 import {
   activityExtensionIssue,
@@ -288,6 +289,15 @@ function applyDate<S extends ActivityState>(
   if (!event.name.trim()) throw new DomainError('Informe a descrição.');
   if (!['include', 'exclude', 'note'].includes(event.effect))
     throw new DomainError('Tipo de evento inválido.');
+  // A saved adjustment is only judged when it or the date changes: other edits stay possible.
+  const adjustmentEdited =
+    previous?.end !== event.end ||
+    previous?.deadlineAdjustment?.date !== event.deadlineAdjustment?.date;
+  const adjustmentIssue =
+    adjustmentEdited &&
+    activity?.admissionType === 'regular' &&
+    deadlineAdjustmentIssue(activity, event);
+  if (adjustmentIssue) throw new DomainError(adjustmentIssue);
   // Only a date of the campus, without effect on the count, in an allowed category (art. 18).
   validateInternalDate(event);
   const modalities = event.offers;

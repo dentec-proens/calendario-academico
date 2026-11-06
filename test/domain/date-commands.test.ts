@@ -164,6 +164,47 @@ describe('updateDate', () => {
     const stored = save(state, updated).state.events.find((event) => event.id === date.id)!;
     expect(stored.notice?.admission?.destinations).toEqual(destinations);
   });
+
+  test('a declared deadline is refused when it does not cover the edited publication', () => {
+    const state = calendarOffersFixture() as unknown as State;
+    state.events.push({
+      id: 'regular-notice',
+      name: 'Edital regular',
+      start: civilDate('2027-06-15'),
+      end: civilDate('2027-06-20'),
+      effect: 'note',
+      category: 'prazo',
+      offers: ['integrado'],
+      activity: onceLink('regular-admission-notice'),
+      notice: {
+        publication: 'planned',
+        admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
+      },
+    });
+    const { activity: _activity, ...fields } = state.events.at(-1)!;
+    const declared = (date: string) => ({
+      ...fields,
+      deadlineAdjustment: { date: civilDate(date) },
+    });
+    expect(() => updateDate(state, declared('2026-06-20'))).toThrow(
+      'posterior a 15 de junho de 2027',
+    );
+    expect(() => updateDate(state, declared('2027-06-18'))).toThrow('fim da publicação');
+    expect(() => updateDate(state, declared('2027-06-20'))).not.toThrow();
+    // A saved adjustment does not stop other edits, only changes to it or to the date.
+    state.events.at(-1)!.deadlineAdjustment = { date: civilDate('2026-06-20') };
+    const saved = declared('2026-06-20');
+    expect(updateDate(state, { ...saved, name: 'Edital renomeado' }).events.at(-1)?.name).toBe(
+      'Edital renomeado',
+    );
+    expect(() => updateDate(state, { ...saved, end: civilDate('2027-06-19') })).toThrow(
+      'posterior a 15 de junho de 2027',
+    );
+    const { deadlineAdjustment: _cleared, ...withoutAdjustment } = saved;
+    expect(updateDate(state, withoutAdjustment).events.at(-1)).not.toHaveProperty(
+      'deadlineAdjustment',
+    );
+  });
 });
 
 describe('the save boundary keeps the contracts of the commands', () => {

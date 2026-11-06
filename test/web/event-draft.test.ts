@@ -6,6 +6,8 @@ import {
   emptyEvent,
   eventValues,
   keptDestinations,
+  noticeAnswered,
+  publicationDeadlineView,
   type EventValues,
 } from '../../web/features/calendar-editor/events/event-draft.ts';
 import type { CalendarEvent } from '../../web/features/calendar-editor/types.ts';
@@ -162,4 +164,110 @@ test('the internal option (art. 18) is a form value: marking and unmarking keep 
   expect(unmarked.internal).toBeUndefined();
   expect(unmarked).toMatchObject({ id: base.id, start: base.start, end: base.end });
   expect(emptyEvent(['integrado']).internal).toBe(false);
+});
+
+test('the form shows where a regular notice stands against its deadline, as it is typed', () => {
+  const state = {
+    year: 2027,
+    periods: [],
+    offers: [],
+  } as unknown as Parameters<typeof publicationDeadlineView>[0];
+  const requirement = {
+    id: 'regular-admission-notice',
+    name: 'Edital',
+    activity: onceLink('regular-admission-notice'),
+    admissionType: 'regular',
+    deadline: civilDate('2027-06-15'),
+    deadlinePolicy: 'reference',
+  } as Parameters<typeof publicationDeadlineView>[1];
+  const view = (end: string, adjustedDeadline = '') =>
+    publicationDeadlineView(state, requirement, [], {
+      end,
+      adjustedDeadline,
+      offers: ['integrado'],
+    });
+  expect(view('')).toMatchObject({ standing: 'within', daysLate: 0 });
+  expect(view('2027-06-15')).toMatchObject({ standing: 'within', daysLate: 0 });
+  expect(view('2027-06-20')).toMatchObject({ standing: 'late', daysLate: 5, limit: '2027-06-15' });
+  expect(view('2027-06-20', '2027-06-20')).toMatchObject({ standing: 'adjusted' });
+  expect(view('2027-06-20', '2027-06-20')?.issue).toBeUndefined();
+  expect(view('2027-06-20', '2026-06-20')?.issue).toContain('posterior a 15 de junho de 2027');
+  expect(view('2027-06-20', '2027-06-18')?.issue).toContain('fim da publicação');
+  // A year still being typed is not a date yet, even past the deadline as text.
+  expect(view('20270-06-10')).toMatchObject({ standing: 'within', daysLate: 0 });
+  expect(view('2027-06-20', '20270-06-10')).toMatchObject({ standing: 'late' });
+  expect(
+    publicationDeadlineView(state, undefined, [], {
+      end: '2027-06-20',
+      adjustedDeadline: '',
+      offers: ['integrado'],
+    }),
+  ).toBeUndefined();
+});
+
+test('an extended deadline is the strictest of the offers, and open while it cannot be determined', () => {
+  const state = {
+    year: 2027,
+    periods: [
+      {
+        id: 'annual',
+        name: 'Anual',
+        start: civilDate('2027-02-01'),
+        end: civilDate('2027-12-17'),
+        association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'annual' },
+      },
+    ],
+    offers: [
+      { id: 'integrado', kind: 'integrado' },
+      { id: 'graduacao', kind: 'graduacao' },
+    ],
+    weekdays: [1, 2, 3, 4, 5],
+    weekConfirmed: true,
+  } as unknown as Parameters<typeof publicationDeadlineView>[0];
+  const requirement = {
+    admissionType: 'regular',
+    deadline: civilDate('2027-06-15'),
+    deadlinePolicy: 'reference',
+  } as Parameters<typeof publicationDeadlineView>[1];
+  const holiday = {
+    id: 'holiday',
+    name: 'Feriado municipal',
+    start: civilDate('2027-06-15'),
+    end: civilDate('2027-06-15'),
+    effect: 'exclude',
+    deadlineExtensionCause: 'municipal-holiday',
+    offers: ['integrado'],
+  } as unknown as Parameters<typeof publicationDeadlineView>[2][number];
+  const values = (offers: string[]) => ({ end: '2027-06-16', adjustedDeadline: '', offers });
+  expect(
+    publicationDeadlineView(state, requirement, [holiday], values(['integrado'])),
+  ).toMatchObject({ limit: '2027-06-16', extended: true, standing: 'within' });
+  expect(
+    publicationDeadlineView(state, requirement, [holiday], values(['integrado', 'graduacao'])),
+  ).toMatchObject({ limit: '2027-06-15', standing: 'late', daysLate: 1 });
+  expect(
+    publicationDeadlineView({ ...state, weekConfirmed: false }, requirement, [holiday], {
+      ...values(['integrado']),
+    }),
+  ).toMatchObject({ limit: null, extended: true, standing: 'late', daysLate: 0 });
+  expect(publicationDeadlineView(state, requirement, [], values([]))).toMatchObject({
+    limit: '2027-06-15',
+  });
+});
+
+test('only the answers the activity already gives are stated instead of asked', () => {
+  const answered = {
+    admissionType: 'regular',
+    admissionYear: '2028',
+    admissionTerm: 'annual',
+    admissionPeriodId: '',
+  } as const;
+  expect(noticeAnswered(answered, {}, 2027)).toBe(true);
+  for (const change of [
+    { admissionType: 'transfer' },
+    { admissionYear: '2027' },
+    { admissionTerm: 'second' },
+    { admissionPeriodId: 'annual-2027' },
+  ] as const)
+    expect(noticeAnswered({ ...answered, ...change }, {}, 2027)).toBe(false);
 });

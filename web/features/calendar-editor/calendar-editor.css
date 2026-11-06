@@ -1185,6 +1185,12 @@ fieldset.event-fields {
   border: 1px solid var(--line, #a0aec0);
   margin-block: 1rem;
 }
+.event-deadline,
+.event-deadline-status:not(:empty) {
+  display: grid;
+  gap: 0.5rem;
+  margin-block: 1rem;
+}
 .intake-period {
   padding: 0.5rem;
   margin-block: 0.5rem;

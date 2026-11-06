@@ -11,7 +11,7 @@ import { calendarOffers } from '../offers.ts';
 import { policyFor } from '../../policies/registry.ts';
 import { admissionDestination, temporalPosition, validateActivityRecord } from './validation.ts';
 import { periodsForOffer } from '../organization/periods.ts';
-import { prorogatedDeadline } from './deadlines.ts';
+import { deadlineStanding, requirementDeadline } from './deadlines.ts';
 import type { ActivityRef } from './activity-ref.ts';
 import {
   coversDate,
@@ -207,36 +207,22 @@ export function evaluatePlan(
               }
             }
           }
-          const deadline = requirement.deadline
-            ? requirement.deadlinePolicy === 'reference'
-              ? prorogatedDeadline(state, requirement.deadline, events, modality)
-              : {
-                  date: requirement.deadline,
-                  original: requirement.deadline,
-                  source: 'norm' as const,
-                  evidence: [] as string[],
-                }
-            : null;
+          const deadline = requirementDeadline(state, requirement, events, modality);
           if (deadline?.source === 'municipal-extension')
             reviewNotes.push(
               `Prazo de ${longDate(deadline.original)} prorrogado para ${deadline.date ? longDate(deadline.date) : 'conferência do primeiro dia letivo subsequente'} por feriado municipal ou recesso decorrente.${deadline.evidence.length ? ` Fontes institucionais: ${deadline.evidence.join('; ')}.` : ''}`,
             );
-          if (deadline && (!deadline.date || event.end > deadline.date)) {
-            const adjustment = event.deadlineAdjustment;
-            if (!(
-              requirement.admissionType === 'regular' &&
-              adjustment &&
-              event.end <= adjustment.date
-            )) {
-              issues.push(
-                `Data posterior ao prazo de ${longDate(requirement.deadline!)}; confira eventual cronograma ajustado pela Proens.`,
-              );
-              return false;
-            }
+          const standing = deadlineStanding(requirement, deadline, event);
+          if (standing === 'late') {
+            issues.push(
+              `Data posterior ao prazo de ${longDate(requirement.deadline!)}; confira eventual cronograma ajustado pela Proens.`,
+            );
+            return false;
+          }
+          if (standing === 'adjusted')
             reviewNotes.push(
               'Prazo ajustado informado pelo campus; confira a autorização e o escopo na revisão.',
             );
-          }
           if (
             requirement.month &&
             (Number(event.start.slice(5, 7)) !== requirement.month ||
