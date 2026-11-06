@@ -58,7 +58,6 @@ test('calendar creation asks for year and offers and previews the draft name', a
   await expect(page.locator('.calendar-list')).toHaveAttribute('data-view', 'table');
   await expect(page.locator('.calendar-list-heading')).toBeVisible();
   const row = page.locator('#calendar-list > li[data-calendar-campus]').first();
-  await expect(row.locator('.calendar-list-campus')).toContainText('Campus de teste');
   await expect(row.locator('.calendar-list-authorship')).toContainText('por Pessoa editora');
   const statusPosition = await row.locator('.calendar-list-status').boundingBox();
   const namePosition = await row.locator('.calendar-list-name').boundingBox();

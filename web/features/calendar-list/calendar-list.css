@@ -104,10 +104,6 @@
 .calendar-list[data-view='table'] .calendar-list-status {
   order: -1;
 }
-.calendar-list-campus {
-  color: var(--ui-text);
-  font-size: 0.875rem;
-}
 .calendar-list-updated {
   color: var(--ui-text);
   font-size: 0.8125rem;

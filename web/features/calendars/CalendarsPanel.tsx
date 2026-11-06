@@ -130,17 +130,7 @@ export default function CalendarsPanel({
     {
       label: 'Calendário',
       width: 'minmax(0, 1fr)',
-      render: (c) => <CalendarIdentityCell calendar={c} />,
-    },
-    {
-      label: 'Campus',
-      width: '10rem',
-      render: (c) => (
-        <p className="calendar-list-campus">
-          <span className="calendar-list-cell-label">Campus: </span>
-          {c.campusName}
-        </p>
-      ),
+      render: (c) => <CalendarIdentityCell calendar={c} withOrigin />,
     },
     {
       label: 'Situação',
