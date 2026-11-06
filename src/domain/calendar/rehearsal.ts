@@ -22,17 +22,34 @@ export interface RehearsalBase {
   events: CatalogueEvent[];
   documents: BaseDocument[];
 }
+/** A difference between what is stored and what a save would write, under a collapsed path. */
+export interface RehearsalChange {
+  path: string;
+  before: unknown;
+  after: unknown;
+}
 export type RehearsalResult =
-  | { outcome: 'saves'; changed: string[] }
+  | { outcome: 'saves'; changed: RehearsalChange[] }
   | { outcome: 'fails'; error: string }
   | { outcome: 'unaffected' }
   | { outcome: 'needs-return' };
 
-/** Paths that differ, with list positions collapsed: `periods[].end`. */
-function changedPaths(before: unknown, after: unknown, path = ''): string[] {
+/**
+ * What every save records on its own: the rules in force. Anything else that differs is content
+ * stored in a form the current code no longer writes.
+ */
+export const expectedRehearsalChanges: ReadonlySet<string> = new Set(['rulesetVersion']);
+
+/** What differs, one entry per path, with list positions collapsed: `periods[].end`. */
+function changedPaths(before: unknown, after: unknown, path = ''): RehearsalChange[] {
   if (equalValues(before, after)) return [];
-  if (Array.isArray(before) && Array.isArray(after) && before.length === after.length)
-    return [...new Set(before.flatMap((item, i) => changedPaths(item, after[i], `${path}[]`)))];
+  if (Array.isArray(before) && Array.isArray(after) && before.length === after.length) {
+    const seen = new Map<string, RehearsalChange>();
+    for (const [i, item] of before.entries())
+      for (const change of changedPaths(item, after[i], `${path}[]`))
+        if (!seen.has(change.path)) seen.set(change.path, change);
+    return [...seen.values()];
+  }
   if (before && after && typeof before === 'object' && typeof after === 'object') {
     const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
     return [...keys].flatMap((key) =>
@@ -43,7 +60,7 @@ function changedPaths(before: unknown, after: unknown, path = ''): string[] {
       ),
     );
   }
-  return [path];
+  return [{ path, before, after }];
 }
 
 /**

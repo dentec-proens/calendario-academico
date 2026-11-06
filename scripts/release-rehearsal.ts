@@ -1,6 +1,10 @@
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { rehearseCalendar, type RehearsalCalendar } from '../src/domain/calendar/rehearsal.ts';
+import {
+  expectedRehearsalChanges,
+  rehearseCalendar,
+  type RehearsalCalendar,
+} from '../src/domain/calendar/rehearsal.ts';
 import type { CatalogueEvent } from '../src/domain/institution/catalogue.ts';
 import type { BaseDocument } from '../src/domain/calendar/base.ts';
 import { readSnapshot, type SnapshotRow } from './administration/snapshot.ts';
@@ -11,7 +15,17 @@ export interface RehearsalReport {
   failures: { calendarId: string; error: string }[];
   /** How many calendars would change at each path; dates moving here would be a bug. */
   changes: Record<string, number>;
+  /** The first calendar found at each path. It can quote what was typed: never for the terminal. */
+  examples: Record<string, { calendarId: string; before: string; after: string }>;
   needReturn: string[];
+}
+
+const exampleLimit = 200;
+/** `""` and an absent field read differently here, which is the point of an example. */
+function exampleValue(value: unknown) {
+  if (value === undefined) return 'ausente';
+  const text = JSON.stringify(value);
+  return text.length > exampleLimit ? `${text.slice(0, exampleLimit)}…` : text;
 }
 
 type Row<T> = SnapshotRow & T;
@@ -60,6 +74,7 @@ export function rehearseBackup(zip: string): RehearsalReport {
     saved: 0,
     failures: [],
     changes: {},
+    examples: {},
     needReturn: [],
   };
   for (const row of rows<{
@@ -113,7 +128,14 @@ export function rehearseBackup(zip: string): RehearsalReport {
       report.failures.push({ calendarId: row._id, error: result.error });
     else {
       report.saved++;
-      for (const path of result.changed) report.changes[path] = (report.changes[path] ?? 0) + 1;
+      for (const { path, before, after } of result.changed) {
+        report.changes[path] = (report.changes[path] ?? 0) + 1;
+        report.examples[path] ??= {
+          calendarId: row._id,
+          before: exampleValue(before),
+          after: exampleValue(after),
+        };
+      }
     }
   }
   return report;
@@ -134,8 +156,16 @@ export function assertRehearsal(backupDirectory: string, skip: boolean) {
   console.log(
     `Ensaio: ${report.saved} de ${report.editable} calendários em edição salvam com o código desta release.`,
   );
-  for (const [path, count] of Object.entries(report.changes))
-    console.log(`  ${path}: muda em ${count}.`);
+  const changes = Object.entries(report.changes);
+  const expected = changes.filter(([path]) => expectedRehearsalChanges.has(path));
+  const drift = changes.filter(([path]) => !expectedRehearsalChanges.has(path));
+  for (const [path, count] of expected) console.log(`  ${path}: atualizado em ${count}, esperado.`);
+  if (drift.length) {
+    console.log(
+      '  Conteúdo gravado difere do que o salvamento grava hoje; exemplos em rehearsal.json:',
+    );
+    for (const [path, count] of drift) console.log(`    ${path}: muda em ${count}.`);
+  }
   if (report.needReturn.length)
     console.log(
       `  ${report.needReturn.length} em análise precisarão de devolução: ${report.needReturn.join(', ')}.`,

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
 import { afterEach, expect, test, vi } from 'vitest';
 import { assertRehearsal, rehearseBackup } from '../../scripts/release-rehearsal.ts';
+import { readyContent } from '../helpers/lifecycle.ts';
 
 const directories: string[] = [];
 afterEach(() => {
@@ -76,4 +77,44 @@ test('a calendar that would stop saving stops the release, and its reason stays 
   };
   expect(saved).toMatchObject({ skipped: true });
   expect(saved.failures).toHaveLength(1);
+});
+
+test('the terminal tells the rules stamp from a stored difference, whose values stay with the backup', () => {
+  const directory = backup({
+    calendars: [draft],
+    campuses: [campus],
+    calendarContents: [
+      row({
+        calendarId: 'c',
+        catalogueRevision: 1,
+        institutionalSnapshot: [],
+        documentSnapshot: [],
+        state: {
+          ...readyContent(),
+          rulesetVersion: 'consup-292-2027-v1',
+          teacherVacations: {
+            firstStart: '2027-01-04',
+            firstEnd: '2027-01-20',
+            thirdStart: '',
+            thirdEnd: '',
+          },
+        },
+      }),
+    ],
+  });
+  const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  assertRehearsal(directory, false);
+  const printed = log.mock.calls.flat().join('\n');
+  expect(printed).toContain('rulesetVersion: atualizado em 1, esperado.');
+  expect(printed).toContain('Conteúdo gravado difere');
+  expect(printed).toContain('teacherVacations.thirdStart: muda em 1.');
+  expect(printed).not.toContain('consup-292-2027-v1');
+  const saved = JSON.parse(readFileSync(join(directory, 'rehearsal.json'), 'utf8')) as {
+    examples: Record<string, unknown>;
+  };
+  expect(saved.examples['teacherVacations.thirdStart']).toEqual({
+    calendarId: 'c',
+    before: '""',
+    after: 'ausente',
+  });
 });
