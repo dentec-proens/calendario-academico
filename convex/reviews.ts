@@ -286,8 +286,12 @@ export const saveReview = mutation({
       if (!criteria.some((c) => c.id === e.id) || e.notes.length > 2000)
         fail('Critério ou observação inválidos.');
       if (e.status === 'PENDENTE' && e.reviewed)
-        fail('Selecione Atendido, Não atendido ou Não aplicável antes de confirmar o critério.');
+        fail('Selecione Atendido, Não atendido ou Não aplicável para avaliar o critério.');
     }
+    // A suggestion sent by an open tab of the previous interface never becomes an assessment.
+    const entries = body.entries.map((entry) =>
+      entry.reviewed ? entry : { ...entry, status: 'PENDENTE' as const },
+    );
     const support = reviewSupport(
       record,
       projectDates(compatibility.snapshot.events, record.state.events),
@@ -295,7 +299,7 @@ export const saveReview = mutation({
     const conclusion = updateConclusion(
       body.conclusion,
       criteria,
-      body.entries,
+      entries,
       reviewNorm(record.state.year, support.sameYear ? support.source.norm : ''),
     );
     if (
@@ -314,7 +318,7 @@ export const saveReview = mutation({
       revision: (prior?.revision ?? 0) + 1,
       source: reviewSourceFor(record.state.year).id,
       documentSnapshot: compatibility.snapshot.documents,
-      entries: body.entries,
+      entries,
       conclusion,
       processNumber: body.processNumber ?? '',
       applicableNorm: body.applicableNorm || reviewNorm(record.state.year),

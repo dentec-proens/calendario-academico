@@ -135,7 +135,7 @@ test('calendar print keeps only the concise status and the title year, leaving p
   for (const text of [
     'Conjunto de regras',
     'Fonte da política',
-    'Janela do ano letivo',
+    'Período do ano letivo',
     'escopo a conferir',
     'Proposta preliminar',
     'Versão 15',

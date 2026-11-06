@@ -10,7 +10,6 @@ for (const loading of ['bootstrap', 'authentication'] as const) {
     await page.locator('[data-open-review]').first().click();
     const criterion = page.locator('#review-items > li').first();
     await criterion.locator('[data-choice="NAO_ATENDIDO"]').click();
-    await criterion.locator('.review-item__notes summary').click();
     await criterion.locator('textarea').fill('Observação ainda não salva após filtrar campus.');
     await page.locator('[data-page="calendars"]').click();
     await page.locator('#campus-filter').selectOption('other-campus');

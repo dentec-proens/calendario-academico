@@ -4,6 +4,7 @@ import type { CalendarPolicy } from '../contract.ts';
 import { citation, rulesetChanges, rulesetVersion } from './history.ts';
 import { rules, requirements, applicability, excluded } from './requirements.ts';
 import { criteria } from './criteria.ts';
+import { isTeacherVacation } from '../../reviews/parecer-items.ts';
 import { observances } from './observances.ts';
 
 const dayMinimums = { annual: 200, semester: 100 } as const;
@@ -83,6 +84,29 @@ export const consup2922027Policy: CalendarPolicy = {
       'https://sei.ifpr.edu.br/sei/publicacoes/controlador_publicacoes.php?acao=publicacao_visualizar&id_documento=4606058&id_orgao_publicacao=0',
     evidence: 'coverage',
     dayMinimums,
+    notes: {
+      annual: [
+        {
+          text: 'Carga horária do PPC e cada curso, quando uma oferta reúne vários: a contagem é por oferta.',
+        },
+      ],
+      minutes: [
+        {
+          text: 'Atas no processo SEI. Os 60 dias de antecedência do Art. 15 não são avaliados.',
+        },
+      ],
+      IV: [{ text: 'Os 45 dias: a identificação do evento não comprova a quantidade.' }],
+      XXVI: [{ text: 'Se o evento é aberto à comunidade.' }],
+      'admission-regular': [{ text: 'Se o prazo foi ajustado, o registro do ajuste da Proens.' }],
+    },
+    excludeFromSearch: (criterionId, event) => criterionId === 'III' && isTeacherVacation(event),
+    notEvaluated: [
+      'Art. 3º, § 2º: prorrogação de prazos por feriado municipal ou recesso dele decorrente.',
+      'Art. 9º: relação de cursos e vagas enviada à Proens até 31/05/2027.',
+      'Art. 12: datas de Jogos do IFPR, SE²P²IN e outros eventos institucionais, quando definidas.',
+      'Art. 13: finalidades dos sábados letivos.',
+      'Art. 15: encaminhamento à Proens com 60 dias de antecedência do início do ano letivo.',
+    ],
   },
   notices: {
     regularAdmission:

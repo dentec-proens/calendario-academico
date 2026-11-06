@@ -49,7 +49,7 @@ test('calendar creation form', async ({ page, fixtureServer }) => {
   await expect(page).toHaveScreenshot('calendar-creation.png', { fullPage: true });
 });
 
-test('review with a pending confirmed criterion', async ({ page, fixtureServer }) => {
+test('review with an assessment to save', async ({ page, fixtureServer }) => {
   await page.goto(await fixtureServer('review'));
   await page.locator('[data-open-review]').first().click();
   const item = page.locator('#review-items > li').first();
@@ -60,10 +60,9 @@ test('review with a pending confirmed criterion', async ({ page, fixtureServer }
   await item.locator('[data-choice="ATENDIDO"]').click();
   await item.locator('.review-item__notes summary').click();
   await item.locator('textarea').fill('Conferência documental registrada.');
-  await item.locator('[data-confirm-criterion]').click();
-  await expect(item.locator('[data-origin]')).toContainText('por salvar');
+  await expect(item.locator('[data-origin]')).toContainText(/por salvar/i);
   await assertNoOverflow(page);
-  await expect(item).toHaveScreenshot('review-pending-confirmation.png');
+  await expect(item).toHaveScreenshot('review-pending-save.png');
   await item.locator('[data-choice="NAO_ATENDIDO"]').click();
   await expect(item).toHaveScreenshot('review-not-attended.png');
   await item.locator('[data-choice="NAO_APLICAVEL"]').click();

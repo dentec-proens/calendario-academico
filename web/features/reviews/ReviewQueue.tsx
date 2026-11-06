@@ -44,13 +44,13 @@ export function reviewState(review: QueueItem['review']) {
   if (review.reviewed < review.total)
     return {
       tone: 'info',
-      label: `Em andamento · ${review.reviewed} de ${review.total} critérios conferidos`,
+      label: `Em andamento · ${review.reviewed} de ${review.total} critérios avaliados`,
       action: 'Continuar parecer',
       Icon: PenLine,
     } as const;
   return {
     tone: 'success',
-    label: 'Todos os critérios conferidos',
+    label: 'Todos os critérios avaliados',
     action: 'Ver parecer',
     Icon: FileText,
   } as const;

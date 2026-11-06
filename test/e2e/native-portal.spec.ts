@@ -275,17 +275,9 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await page.locator('[data-page="review-panel"]').click();
   await page.locator(`[data-open-review="${calendarId}"]`).click();
   await expect(page.locator('#review-content')).toBeVisible();
-  const criterion = await page
-    .locator('[data-confirm-criterion]')
-    .first()
-    .getAttribute('data-confirm-criterion');
+  const criterion = await page.locator('[data-fields]').first().getAttribute('data-fields');
   assert(criterion);
   await page.locator(`[data-fields="${criterion}"] [data-choice="NAO_ATENDIDO"]`).click();
-  await page
-    .locator('#review-items > li')
-    .filter({ has: page.locator(`[data-notes="${criterion}"]`) })
-    .locator('.review-item__notes summary')
-    .click();
   await page
     .locator(`[data-notes="${criterion}"]`)
     .fill('Observação sintética preservada no Convex.');
@@ -314,7 +306,6 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
     page.locator(`[data-notes="${criterion}"]`),
     'reopening the same calendar preserves the unsaved review after filtering the calendar list',
   ).toHaveValue('Observação sintética preservada no Convex.');
-  await page.locator(`[data-confirm-criterion="${criterion}"]`).click();
   if (await page.locator('#review-stale').count()) await page.locator('#review-stale').click();
   await page.locator('button[form="review-form"]').click();
   await expect(page.locator('#review-message')).toContainText('Parecer salvo');

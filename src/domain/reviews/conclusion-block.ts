@@ -23,7 +23,7 @@ export function conclusionBlock({
     return !entry?.reviewed || entry.status === 'PENDENTE';
   }).length;
   if (missing)
-    return `${missing === 1 ? 'Falta 1 critério' : `Faltam ${missing} critérios`}: confira e confirme todos antes de concluir.`;
+    return `${missing === 1 ? 'Falta 1 critério' : `Faltam ${missing} critérios`}: avalie todos antes de concluir.`;
   if (entries.some((entry) => entry.status === 'NAO_ATENDIDO'))
     return 'Há critério não atendido. Devolva o calendário ao campus para ajuste.';
   return null;

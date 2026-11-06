@@ -240,17 +240,83 @@ const candidate = v.object({
   start: v.string(),
   end: v.string(),
   evidence: v.string(),
-  /** Internal date (art. 18): listed apart, never evidence of the criterion. */
-  internal: v.optional(v.literal(true)),
 });
+const planCoverage = v.union(v.literal('pending'), v.literal('partial'), v.literal('complete'));
+const planExecution = v.union(
+  v.literal('planned'),
+  v.literal('published'),
+  v.literal('unclassified'),
+);
+const reviewEvidence = v.union(
+  v.object({
+    kind: v.literal('counts'),
+    provisional: v.boolean(),
+    issue: v.optional(v.string()),
+    rows: v.array(
+      v.object({
+        offer: v.string(),
+        period: v.optional(v.string()),
+        days: v.number(),
+        minimum: v.union(v.number(), v.null()),
+        met: v.union(v.boolean(), v.null()),
+      }),
+    ),
+  }),
+  v.object({
+    kind: v.literal('dates'),
+    state: v.union(
+      v.literal('compared'),
+      v.literal('not-applied'),
+      v.literal('scope'),
+      v.literal('empty'),
+      v.literal('listed'),
+    ),
+    withinWindow: v.optional(v.boolean()),
+    rows: v.array(v.object({ label: v.string(), start: v.string(), end: v.string() })),
+  }),
+  v.object({
+    kind: v.literal('coverage'),
+    rows: v.array(
+      v.object({
+        offer: v.string(),
+        activity: v.string(),
+        applicability: v.union(
+          v.literal('required'),
+          v.literal('optional'),
+          v.literal('unconfigured'),
+        ),
+        coverage: planCoverage,
+        execution: v.union(planExecution, v.null()),
+        issues: v.array(v.string()),
+        warnings: v.array(v.string()),
+      }),
+    ),
+  }),
+  v.object({ kind: v.literal('search') }),
+  v.object({ kind: v.literal('documental') }),
+  v.object({ kind: v.literal('unavailable'), reason: v.string() }),
+);
 const criterion = v.object({
   id: v.string(),
   title: v.string(),
-  page: v.number(),
   item: v.string(),
   pattern: v.union(v.string(), v.number(), v.null()),
-  signal: v.union(v.string(), v.null()),
+  requirement: v.union(v.string(), v.null()),
+  source: v.string(),
+  evidence: reviewEvidence,
+  /** Dates linked to the activities of the criterion. */
+  linkedRecords: v.array(candidate),
+  /** Records found only by name and category: a hint, never evidence. */
   candidates: v.array(candidate),
+  /** Internal dates (art. 18): listed apart, never evidence of the criterion. */
+  internalDates: v.array(candidate),
+  toCheck: v.array(v.string()),
+  suggestion: v.union(
+    v.literal('ATENDIDO'),
+    v.literal('NAO_ATENDIDO'),
+    v.literal('NAO_APLICAVEL'),
+    v.null(),
+  ),
   initial: v.object({ ...reviewEntry.fields, finding: v.string() }),
 });
 export const reviewSupportDto = v.object({
@@ -263,6 +329,8 @@ export const reviewSupportDto = v.object({
     norm: v.string(),
   }),
   sameYear: v.boolean(),
+  scopeConfirmed: v.boolean(),
+  notEvaluated: v.array(v.string()),
   officialApproval: v.boolean(),
   status: calendarStatus,
   statusRevision: v.number(),

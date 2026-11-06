@@ -91,10 +91,14 @@ test('review extracts 29 active criteria, flags other years and treats name matc
   assert.equal(reviewCriteria.length, 29);
   assert.equal(result.sameYear, false);
   assert.equal(result.officialApproval, false);
-  assert(result.criteria.find((c) => c.id === 'window')!.signal.includes('não aplicadas'));
+  assert.deepEqual(result.criteria.find((c) => c.id === 'window')!.evidence, {
+    kind: 'dates',
+    state: 'not-applied',
+    rows: [],
+  });
   assert.equal(result.criteria.find((c) => c.id === 'XXII')!.candidates.length, 1);
-  assert(result.criteria.find((c) => c.id === 'XXII')!.signal.includes('não comprova'));
-  assert(result.criteria.find((c) => c.id === 'XXV')!.signal.includes('facultativo'));
+  assert(result.criteria.find((c) => c.id === 'XXII')!.toCheck[0].includes('não está comprovada'));
+  assert(result.criteria.find((c) => c.id === 'XXV')!.toCheck[0].includes('facultativo'));
   assert(!result.criteria.some((c) => 'status' in c));
 });
 test('initial analysis identifies a measurable deficit without assuming documentary compliance', () => {
@@ -136,13 +140,14 @@ test('initial analysis identifies a measurable deficit without assuming document
     },
   };
   let result = reviewSupport(record, []);
-  assert.equal(result.criteria.find((c) => c.id === 'annual')!.initial.status, 'PENDENTE');
-  assert.equal(result.criteria.find((c) => c.id === 'window')!.initial.status, 'ATENDIDO');
+  assert.equal(result.criteria.find((c) => c.id === 'annual')!.suggestion, null);
+  assert.equal(result.criteria.find((c) => c.id === 'window')!.suggestion, 'ATENDIDO');
   record.state.periods[0].end = civilDate('2027-02-10');
   result = reviewSupport(record, []);
-  assert.equal(result.criteria.find((c) => c.id === 'annual')!.initial.status, 'NAO_ATENDIDO');
-  assert.equal(result.criteria.find((c) => c.id === 'annual')!.initial.reviewed, false);
-  assert.equal(result.criteria.find((c) => c.id === 'minutes')!.initial.status, 'PENDENTE');
+  assert.equal(result.criteria.find((c) => c.id === 'annual')!.suggestion, 'NAO_ATENDIDO');
+  // A suggestion stays apart: nothing starts assessed.
+  assert(result.criteria.every((c) => c.initial.status === 'PENDENTE' && !c.initial.reviewed));
+  assert.equal(result.criteria.find((c) => c.id === 'minutes')!.suggestion, null);
   const doc = reviewDocument(record, {
     entries: result.criteria.map((c) => c.initial),
     reviewer: { name: 'Revisor <teste>' },
@@ -154,7 +159,9 @@ test('initial analysis identifies a measurable deficit without assuming document
     applicableNorm: 'Norma confirmada pelo revisor',
   });
   assert.equal((doc.html.match(/<tr>/g) || []).length, 32);
-  assert(doc.html.includes('proposta automática, não confirmada'));
+  assert(doc.html.includes('Fonte: Arts. 4º e 5º; decisão de 03/11/2026.'));
+  assert(!doc.html.includes('Referência do modelo'));
+  assert(!doc.html.includes('proposta automática, não confirmada'));
   assert(doc.html.includes('23411.000001/2026-00'));
   assert(doc.html.includes('2. PARECER'));
   assert(doc.html.includes('&lt;script&gt;'));
@@ -220,12 +227,18 @@ test('review displays separate registered totals and provisional counts without 
     r.teachingDays.map((c) => c.total),
     [5, 4],
   );
-  assert.match(r.criteria.find((c) => c.id === 'annual')!.signal, /Graduação: 4 dias/);
-  assert.match(r.criteria.find((c) => c.id === 'semester')!.signal, /1º semestre: 4 dias/);
+  assert.deepEqual(r.criteria.find((c) => c.id === 'annual')!.evidence, {
+    kind: 'counts',
+    provisional: false,
+    rows: [
+      { offer: 'Técnico integrado', days: 5, minimum: null, met: null },
+      { offer: 'Graduação', days: 4, minimum: null, met: null },
+    ],
+  });
   record.state.weekConfirmed = false;
   r = reviewSupport(record, events);
   assert(r.teachingDays.every((c) => c.provisional));
-  assert.equal(r.criteria.find((c) => c.id === 'annual')!.initial.status, 'PENDENTE');
+  assert.equal(r.criteria.find((c) => c.id === 'annual')!.suggestion, null);
   record.state.weekdays = [];
   r = reviewSupport(record, events);
   assert.equal(r.teachingDays.length, 0);
@@ -234,16 +247,12 @@ test('review displays separate registered totals and provisional counts without 
   assert.equal(reviewSupport(record, events).teachingDays.length, 0);
 });
 
-test('2027 criteria identify the actual article and PDF page of Resolution 292', () => {
+test('2027 criteria identify the actual article of Resolution 292', () => {
   const criteria = reviewCriteriaFor(2027);
   assert.equal(reviewSourceFor(2027).id, 'SEI 4422750');
   assert.equal(criteria.find((c) => c.id === 'annual')?.item, 'Art. 4º');
   assert.equal(criteria.find((c) => c.id === 'semester')?.item, 'Art. 4º, § 1º');
   assert.equal(criteria.find((c) => c.id === 'window')?.item, 'Art. 8º');
-  assert.equal(criteria.find((c) => c.id === 'XI')?.page, 3);
-  assert.equal(criteria.find((c) => c.id === 'XII')?.page, 4);
-  assert.equal(criteria.find((c) => c.id === 'XXV')?.page, 4);
-  assert.equal(criteria.find((c) => c.id === 'XXVI')?.page, 4);
 });
 
 test('review coverage follows the criterion identity when its citation text changes', () => {
@@ -288,8 +297,12 @@ test('review coverage follows the criterion identity when its citation text chan
       ],
     );
     const result = support.criteria.find((row) => row.id === 'XVI')!;
-    assert(result.signal.includes('planejamento completo'));
-    assert(result.candidates.some((event) => event.id === 'meeting'));
+    assert.equal(result.evidence.kind, 'coverage');
+    assert(
+      result.evidence.kind === 'coverage' &&
+        result.evidence.rows.some((row) => row.coverage === 'complete'),
+    );
+    assert(result.linkedRecords.some((event) => event.id === 'meeting'));
     assert.equal(result.item, item);
   } finally {
     policy.review.criteria = original;

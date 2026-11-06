@@ -257,7 +257,7 @@ test('content issues have stable codes and the effect lists the new and resolved
   expect(
     issues.every(
       (issue) =>
-        !/Salve o calendário com a base|precisa salvar a revisão|aguardando confirmação/.test(
+        !/Salve o calendário com a base|precisa salvar a revisão|aguardando avaliação/.test(
           issue.message,
         ),
     ),

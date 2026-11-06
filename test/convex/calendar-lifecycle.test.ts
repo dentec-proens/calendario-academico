@@ -3,6 +3,7 @@ import { expect, test } from 'vitest';
 import { makeFunctionReference } from 'convex/server';
 import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
+import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, calendarStatus, readyContent, saveReview } from '../helpers/lifecycle.ts';
 
@@ -670,5 +671,40 @@ test('restoring always returns a draft, even for a row deleted outside the lifec
   expect(await calendarStatus(f.campus, id)).toMatchObject({
     status: 'rascunho',
     statusRevision: 5,
+  });
+});
+
+test('a suggestion sent without an assessment is saved as pending, and a decision stays', async () => {
+  const f = await fixture();
+  const id = await f.create(['integrado'], { ready: true });
+  await act(f.campus, id, 'submit');
+  const support = await f.reviewer.query(api.reviews.review, { id });
+  const [assessed, suggested] = reviewCriteriaFor(2027).map((criterion) => criterion.id);
+  await f.reviewer.mutation(api.reviews.saveReview, {
+    id,
+    body: {
+      schemaVersion: 6 as const,
+      revision: 0,
+      calendarVersion: support.calendar.version,
+      catalogueRevision: support.catalogueRevision,
+      baseIdentity: support.baseIdentity,
+      rulesetVersion: support.rulesetVersion,
+      conclusion: support.initialConclusion,
+      submissionId: support.submission?.id,
+      entries: reviewCriteriaFor(2027).map((criterion) => ({
+        id: criterion.id,
+        status: 'ATENDIDO' as const,
+        notes: 'Observação preservada.',
+        reviewed: criterion.id === assessed,
+      })),
+    },
+  });
+  const saved = await f.reviewer.query(api.reviews.review, { id });
+  const entry = (criterion: string) => saved.review!.entries.find((e) => e.id === criterion)!;
+  expect(entry(assessed)).toMatchObject({ status: 'ATENDIDO', reviewed: true });
+  expect(entry(suggested)).toMatchObject({
+    status: 'PENDENTE',
+    reviewed: false,
+    notes: 'Observação preservada.',
   });
 });

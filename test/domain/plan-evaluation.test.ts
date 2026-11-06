@@ -224,12 +224,12 @@ test('a review instruction is a note of the review, kept apart from what is pend
       reviewNotes: [instruction],
     });
   expect(activitySituation(rows)).toMatchObject({ status: 'complete', problems: false });
-  // The readiness notices and the signal of the criterion still carry it.
+  // The readiness notices and what the reviewer checks by hand still carry it.
   const { notes } = contentAssessment({ state, institutionalSnapshot: [] });
   expect(notes.filter((note) => note.message.endsWith(instruction))).toHaveLength(rows.length);
   const criterion = reviewSupport(
     { id: 'c', name: 'Calendário', version: 1, state },
     state.events,
   ).criteria.find((item) => item.id === 'XXIV');
-  expect(criterion?.signal).toContain(instruction);
+  expect(criterion?.toCheck).toEqual([instruction]);
 });

@@ -250,21 +250,33 @@ export default function RulesPage() {
           <thead>
             <tr>
               <th scope="col">Critério</th>
-              <th scope="col">Dispositivo</th>
-              <th scope="col">Título</th>
+              <th scope="col">Nome</th>
+              <th scope="col">A regra exige</th>
+              <th scope="col">Fonte</th>
             </tr>
           </thead>
           <tbody>
             {view.criteria.map((criterion) => (
               <tr key={criterion.id}>
                 <th scope="row">{criterion.id}</th>
-                <td>{criterion.item}</td>
                 <td>{criterion.title}</td>
+                <td>{criterion.requirement}</td>
+                <td>{criterion.source}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </details>
+      {view.notEvaluated.length ? (
+        <details className="rules-criteria">
+          <summary>O que a revisão não avalia</summary>
+          <ul>
+            {view.notEvaluated.map((device) => (
+              <li key={device}>{device}</li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
     </section>
   );
 }

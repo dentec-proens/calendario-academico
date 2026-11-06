@@ -33,7 +33,7 @@ export default function ReviewEditor({
   onWorkChange?: (pending: boolean) => void;
   /** Reports an outcome; confirmations are the default tone. */
   onMessage: (message: string, tone?: NoticeTone) => void;
-  /** What precedes the form, given the criteria confirmed in the form so far. */
+  /** What precedes the form, given the criteria assessed in the form so far. */
   renderSummary: (reviewedCount: number) => ReactNode;
 }) {
   const [conclusionEditable, setConclusionEditable] = useState(false);
@@ -155,17 +155,14 @@ export default function ReviewEditor({
     setDraft((current) =>
       withConclusion(current, {
         entries: current.entries.map((entry) =>
-          entry.id === id ? { ...entry, [field]: value, reviewed: false } : entry,
-        ),
-        changed: { ...current.changed, [id]: true },
-      }),
-    );
-  }
-  function confirmEntry(id: string) {
-    setDraft((current) =>
-      withConclusion(current, {
-        entries: current.entries.map((entry) =>
-          entry.id === id && entry.status !== 'PENDENTE' ? { ...entry, reviewed: true } : entry,
+          entry.id !== id
+            ? entry
+            : {
+                ...entry,
+                [field]: value,
+                // Choosing is the assessment; writing an observation does not change it.
+                reviewed: field === 'status' ? value !== 'PENDENTE' : entry.reviewed,
+              },
         ),
         changed: { ...current.changed, [id]: true },
       }),
@@ -247,7 +244,6 @@ export default function ReviewEditor({
         }}
         changeField={changeField}
         changeEntry={changeEntry}
-        confirmEntry={confirmEntry}
         exportReview={exportReview}
       />
     </>

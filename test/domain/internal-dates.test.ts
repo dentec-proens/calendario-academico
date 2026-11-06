@@ -263,28 +263,26 @@ describe('review evidence', () => {
     const internalOnly = reviewSupport(record(2027), [
       date('rehearsal', 'Ensaio da Semana Cultural', { internal: true }),
     ]).criteria.find((criterion) => criterion.id === 'XXVI')!;
-    expect(internalOnly.candidates).toEqual([
+    expect(internalOnly.candidates).toEqual([]);
+    expect(internalOnly.internalDates).toEqual([
       {
         id: 'rehearsal',
         name: 'Ensaio da Semana Cultural',
         start: '2027-10-05',
         end: '2027-10-05',
         evidence: '',
-        internal: true,
       },
     ]);
-    // In 2027 the signal describes the coverage of the activity, never the internal date.
-    expect(internalOnly.signal).not.toMatch(/possivelmente relacionado|Ensaio/);
+    // In 2027 the evidence describes the coverage of the activity, never the internal date.
+    expect(JSON.stringify(internalOnly.evidence)).not.toContain('Ensaio');
     expect(internalOnly.initial.finding).toBe('NAO_LOCALIZADO');
 
     const both = reviewSupport(record(2027), [
       date('rehearsal', 'Ensaio da Semana Cultural', { internal: true }),
       date('week', 'Semana Cultural Interescolar'),
     ]).criteria.find((criterion) => criterion.id === 'XXVI')!;
-    expect(both.candidates.map((item) => [item.id, item.internal])).toEqual([
-      ['week', undefined],
-      ['rehearsal', true],
-    ]);
+    expect(both.candidates.map((item) => item.id)).toEqual(['week']);
+    expect(both.internalDates.map((item) => item.id)).toEqual(['rehearsal']);
     expect(both.initial.finding).toBe('REGISTROS_LOCALIZADOS');
   });
 

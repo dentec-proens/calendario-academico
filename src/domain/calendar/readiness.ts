@@ -416,7 +416,7 @@ export function releaseReadiness(
     const entry = current ? review?.entries.find((e) => e.id === c.id) : undefined;
     if (!entry?.reviewed || !['ATENDIDO', 'NAO_APLICAVEL'].includes(entry.status))
       issues.push(
-        `${c.item}: ${c.title} — atendimento ou não aplicabilidade aguardando confirmação.`,
+        `${c.item}: ${c.title} — atendimento ou não aplicabilidade aguardando avaliação.`,
       );
     if (
       policy.review.evidence === 'pattern' &&

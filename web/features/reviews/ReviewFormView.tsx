@@ -1,7 +1,8 @@
-import type { FormEvent, ReactNode, RefObject } from 'react';
+import { useState, type FormEvent, type ReactNode, type RefObject } from 'react';
 import { ChevronDown, Copy, Download, Eye, FileCode2, FileText, Pencil, Save } from 'lucide-react';
 import { ActionMenu, ActionMenuItem } from '../../components/ui/ActionMenu.tsx';
 import { Button } from '../../components/ui/Button.tsx';
+import { ChoiceGroup } from '../../components/ui/ChoiceGroup.tsx';
 import { TextField } from '../../components/ui/Field.tsx';
 import ReviewCriterion from './ReviewCriterion.tsx';
 import { ReviewPreview } from './review-export.tsx';
@@ -33,7 +34,6 @@ interface Props {
     value: ReviewDraft[K],
   ) => void;
   changeEntry: <K extends 'status' | 'notes'>(id: string, field: K, value: ReviewEntry[K]) => void;
-  confirmEntry: (id: string) => void;
   exportReview: (format: 'preview' | 'copy' | 'html' | 'txt') => Promise<void>;
 }
 
@@ -54,11 +54,24 @@ export default function ReviewFormView({
   onEditConclusion,
   changeField,
   changeEntry,
-  confirmEntry,
   exportReview,
 }: Props) {
   const opened = draft.opened;
   const dirty = draft.dirty;
+  const pendingIds = () =>
+    new Set(draft.entries.filter((entry) => entry.status === 'PENDENTE').map((entry) => entry.id));
+  const toAssess = pendingIds().size;
+  const [filter, setFilter] = useState<'all' | 'pending'>('all');
+  // The filtered list holds still until the filter changes or the parecer is saved, so choosing an
+  // assessment never takes a criterion away before its observation is written.
+  const [listed, setListed] = useState<ReadonlySet<string>>(new Set());
+  // `opened` changes whenever the form is reset: on saving and on what another session changed.
+  const [listedFor, setListedFor] = useState(opened);
+  if (listedFor !== opened) {
+    setListedFor(opened);
+    setListed(pendingIds());
+  }
+  const rules = opened.rulesetVersion?.match(/-(v\d+)$/)?.[1];
   return (
     <div id="review-content">
       {summary}
@@ -84,19 +97,37 @@ export default function ReviewFormView({
           />
         </div>
         <div className="review-criteria-heading">
-          <h3>Critérios</h3>
-          {opened.rulesetVersion ? (
-            <p className="help">
-              Conjunto de regras: {opened.rulesetVersion}. Confira o planejamento e a execução
-              documental separadamente.
+          <div className="review-criteria-heading__title">
+            <h3>Critérios</h3>
+            <p className="help" data-ruleset>
+              {rules ? `${opened.source.norm} · regras ${rules}` : 'Ano sem norma configurada'}
             </p>
-          ) : null}
-          <p className="help">
-            A busca por nome e categoria pode omitir registros ou relacionar itens indevidos;
-            confira as evidências antes de concluir. Use as observações para registrar evidências ou
-            justificar sua avaliação quando necessário.
+          </div>
+          <ChoiceGroup
+            className="review-filter"
+            label="Mostrar critérios"
+            value={filter}
+            options={[
+              { value: 'all', label: `Todos (${opened.criteria.length})` },
+              { value: 'pending', label: `A avaliar (${toAssess})` },
+            ]}
+            onValueChange={(value) => {
+              setFilter(value);
+              setListed(pendingIds());
+            }}
+          />
+          <p className="visually-hidden" role="status">
+            {filter === 'pending'
+              ? `Mostrando ${listed.size} de ${opened.criteria.length} critérios.`
+              : `Mostrando ${opened.criteria.length} critérios.`}
           </p>
         </div>
+        {!opened.scopeConfirmed ? (
+          <Notice tone="warning" id="review-scope-warning" announce="polite">
+            Escopo da norma a confirmar: EaD, qualificação e pós-graduação dependem de calendário
+            próprio. Confirme o escopo antes de avaliar pelas regras abaixo.
+          </Notice>
+        ) : null}
         {!opened.sameYear ? (
           <Notice tone="warning" id="review-year-warning" announce="polite">
             Referência: Parecer SEI 3959640 ({opened.source.year}), páginas 1 e 2. Confira a norma
@@ -112,13 +143,27 @@ export default function ReviewFormView({
               number={index + 1}
               entry={draft.entries.find((entry) => entry.id === criterion.id) || criterion.initial}
               changed={Boolean(draft.changed[criterion.id])}
-              saved={Boolean(opened.review?.entries.some((entry) => entry.id === criterion.id))}
               busy={busy || readOnly}
+              hidden={filter === 'pending' && !listed.has(criterion.id)}
               onChange={(field, value) => changeEntry(criterion.id, field, value)}
-              onConfirm={() => confirmEntry(criterion.id)}
             />
           ))}
         </ul>
+        {filter === 'pending' && listed.size === 0 ? (
+          <p className="help" data-review-empty>
+            Nenhum critério a avaliar.
+          </p>
+        ) : null}
+        {opened.notEvaluated.length ? (
+          <details className="review-not-evaluated">
+            <summary>O que a revisão não avalia</summary>
+            <ul>
+              {opened.notEvaluated.map((device) => (
+                <li key={device}>{device}</li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
         <Button
           type="button"
           id="edit-conclusion"
@@ -167,7 +212,7 @@ export default function ReviewFormView({
             : readOnly
               ? 'Parecer em consulta: só pode ser alterado com o calendário enviado ou em revisão.'
               : dirty
-                ? 'Há alterações por salvar. Confirmar um critério não salva o parecer.'
+                ? 'Há alterações por salvar.'
                 : opened.review
                   ? 'Todas as alterações foram salvas.'
                   : 'O parecer ainda não foi salvo.'}

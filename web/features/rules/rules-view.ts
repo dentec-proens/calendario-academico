@@ -158,7 +158,13 @@ export function rulesView(year: number) {
         }),
       };
     }),
-    criteria: policy.review.criteria.map(({ id, item, title }) => ({ id, item, title })),
+    criteria: policy.review.criteria.map(({ id, item, title, requirement, source }) => ({
+      id,
+      title,
+      requirement,
+      source: source ?? item,
+    })),
+    notEvaluated: policy.review.notEvaluated ?? [],
   };
 }
 

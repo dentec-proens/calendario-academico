@@ -5,6 +5,13 @@ import type { ReviewCriterion, ReviewSource } from '../reviews/parecer-items.ts'
 
 export type Applicability = 'required' | 'optional' | 'unconfigured';
 
+/** What the system does not check about a criterion, shown to the reviewer. */
+export interface ReviewNote {
+  text: string;
+  /** Shown only when every offer of the calendar is of these kinds. */
+  whenAllOffers?: readonly CalendarOffer['kind'][];
+}
+
 /**
  * Effect of a ruleset version on work done under the previous ones. Only `establishes` and
  * `tightens` reopen reviews and base incorporation; a change that both tightens and relaxes
@@ -120,6 +127,12 @@ export interface CalendarPolicy {
     evidence: 'coverage' | 'pattern';
     /** Thresholds compared in the review findings. */
     dayMinimums: { annual: number; semester: number };
+    /** What the reviewer must check by hand, by criterion. */
+    notes?: Readonly<Record<string, readonly ReviewNote[]>>;
+    /** Records the name search of a criterion must leave out. */
+    excludeFromSearch?(criterionId: string, event: { id: string; name: string }): boolean;
+    /** Devices of the norm with no criterion of their own, listed for the reviewer. */
+    notEvaluated?: readonly string[];
   };
   notices?: {
     /** Deadline note shown while classifying a regular admission notice. */

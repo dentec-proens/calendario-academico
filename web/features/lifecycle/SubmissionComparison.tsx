@@ -1,3 +1,4 @@
+import { assessmentCounts } from '#src/domain/reviews/criteria.ts';
 import { useMemo, useState } from 'react';
 import { useQuery } from 'convex/react';
 import {
@@ -305,12 +306,7 @@ function DecisionReview({
     revision,
   });
   if (!review) return <p className="help">Carregando o parecer…</p>;
-  const counts = Object.entries(
-    review.entries.reduce<Record<string, number>>((total, entry) => {
-      total[entry.status] = (total[entry.status] ?? 0) + 1;
-      return total;
-    }, {}),
-  );
+  const counts = Object.entries(assessmentCounts(review.entries));
   return (
     <div className="decision-review">
       <p>

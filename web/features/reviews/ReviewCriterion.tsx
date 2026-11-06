@@ -1,19 +1,24 @@
-import { compactRange } from '#src/domain/date-labels.ts';
-import { CheckCheck, Info, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
 import type { reviews } from '../../shared/convex/reviews.ts';
-import { Button } from '../../components/ui/Button.tsx';
 import { ChoiceGroup } from '../../components/ui/ChoiceGroup.tsx';
 import { TextAreaField } from '../../components/ui/Field.tsx';
 import { StatusBadge } from '../../components/ui/Feedback.tsx';
+import ReviewEvidence, { type Criterion } from './ReviewEvidence.tsx';
 
-type Criterion = Awaited<ReturnType<typeof reviews.get>>['criteria'][number];
 type Entry = Parameters<typeof reviews.save>[1]['entries'][number];
 
 const assessmentOptions = [
+  { value: 'PENDENTE', label: 'A avaliar' },
   { value: 'ATENDIDO', label: 'Atendido' },
   { value: 'NAO_ATENDIDO', label: 'Não atendido' },
   { value: 'NAO_APLICAVEL', label: 'Não aplicável' },
 ] as const;
+
+const suggestionLabels: Record<NonNullable<Criterion['suggestion']>, string> = {
+  ATENDIDO: 'atendido',
+  NAO_ATENDIDO: 'não atendido',
+  NAO_APLICAVEL: 'não aplicável',
+};
 
 export default function ReviewCriterion({
   calendarYear,
@@ -21,50 +26,43 @@ export default function ReviewCriterion({
   number,
   entry,
   changed,
-  saved,
   busy,
+  hidden,
   onChange,
-  onConfirm,
 }: {
   calendarYear: number;
   criterion: Criterion;
   number: number;
   entry: Entry;
   changed: boolean;
-  saved: boolean;
   busy: boolean;
+  /** Left out by the filter, keeping what the reviewer opened in it. */
+  hidden: boolean;
   onChange: <K extends 'status' | 'notes'>(field: K, value: Entry[K]) => void;
-  onConfirm: () => void;
 }) {
+  const [notesOpen, setNotesOpen] = useState(entry.status === 'NAO_ATENDIDO');
+  // Whoever marks it, a criterion not attended asks for what the campus must adjust.
+  const [seenStatus, setSeenStatus] = useState(entry.status);
+  if (seenStatus !== entry.status) {
+    setSeenStatus(entry.status);
+    if (entry.status === 'NAO_ATENDIDO') setNotesOpen(true);
+  }
   const pending = entry.status === 'PENDENTE';
-  const origin = entry.reviewed
-    ? changed
-      ? 'Conferido · por salvar'
-      : 'Conferido e salvo'
-    : changed
-      ? 'Alteração não confirmada'
-      : pending
-        ? 'Pendente de conferência'
-        : saved
-          ? 'Avaliação salva · não confirmada'
-          : 'Sugestão automática · não conferida';
-  const signal = (criterion.signal ?? '')
-    .replace(' A presença não comprova atendimento.', '')
-    .replace(' Isso não comprova ausência no processo.', '');
-  const unavailableCount = signal.startsWith('Contagem indisponível:');
-  // Internal dates (art. 18) are listed apart, for consultation only, never as evidence.
-  const official = criterion.candidates.filter((candidate) => !candidate.internal);
-  const internal = criterion.candidates.filter((candidate) => candidate.internal);
-  const hint = entry.reviewed
-    ? changed
-      ? 'Salve o parecer para registrar esta conferência.'
-      : 'Se alterar a avaliação ou as observações, confirme novamente.'
+  // Only a suggestion saved before choosing became the assessment, in a parecer now closed.
+  const proposal = !pending && !entry.reviewed;
+  const situation = proposal
+    ? 'Proposta automática, não confirmada'
     : pending
-      ? 'Selecione uma avaliação para confirmar.'
-      : 'Confira as evidências antes de confirmar sua avaliação.';
+      ? changed
+        ? 'A avaliar · por salvar'
+        : 'A avaliar'
+      : changed
+        ? 'Por salvar'
+        : 'Salvo';
+  const suggestionId = `criterion-suggestion-${criterion.id}`;
 
   return (
-    <li className="review-item" aria-labelledby={`criterion-title-${criterion.id}`}>
+    <li className="review-item" aria-labelledby={`criterion-title-${criterion.id}`} hidden={hidden}>
       <span className="review-item__number" aria-hidden="true">
         {String(number).padStart(2, '0')}
       </span>
@@ -72,96 +70,54 @@ export default function ReviewCriterion({
         <div className="review-item__heading">
           <h3 id={`criterion-title-${criterion.id}`}>{criterion.title}</h3>
           <StatusBadge
-            tone={entry.reviewed ? 'success' : changed ? 'warning' : 'neutral'}
+            tone={changed ? 'warning' : !pending && !proposal ? 'success' : 'neutral'}
             data-origin={criterion.id}
           >
-            {origin}
+            {situation}
           </StatusBadge>
         </div>
-        <p className="review-item__signal">
-          <Info size={14} aria-hidden="true" />
-          <span>
-            {unavailableCount ? (
-              <>
-                <strong>Contagem automática indisponível.</strong>{' '}
-                {signal.replace('Contagem indisponível: ', '').replace(/[.!?]+\s*$/, '')}. Confira
-                os documentos para avaliar este critério.
-              </>
-            ) : (
-              <>
-                <span className="review-item__accessible-label">Indicação do sistema: </span>
-                {signal}
-              </>
-            )}
-          </span>
-        </p>
-        {official.length > 0 ? (
-          <details className="review-item__records">
-            <summary>Ver registros possivelmente relacionados ({official.length})</summary>
+        <div className="review-item__comparison">
+          <section className="review-item__rule" data-rule={criterion.id}>
+            <h4>A regra exige</h4>
+            {criterion.requirement ? <p>{criterion.requirement}</p> : null}
+            <p className="review-item__source">{criterion.source}</p>
+          </section>
+          <section className="review-item__registered" data-registered={criterion.id}>
+            <h4>Registrado no calendário</h4>
+            <ReviewEvidence criterion={criterion} calendarYear={calendarYear} />
+          </section>
+        </div>
+        {criterion.toCheck.length ? (
+          <div className="review-item__check" data-check={criterion.id}>
+            <h4>Confira</h4>
             <ul>
-              {official.map((candidate, index) => (
-                <li key={candidate.id || index}>
-                  {compactRange(candidate, calendarYear)} · {candidate.name}
-                </li>
+              {criterion.toCheck.map((text) => (
+                <li key={text}>{text}</li>
               ))}
             </ul>
-          </details>
-        ) : null}
-        {internal.length > 0 ? (
-          <details className="review-item__records" data-internal-dates={criterion.id}>
-            <summary>Datas internas do campus, só para consulta ({internal.length})</summary>
-            <p>
-              Datas de organização interna (art. 18) ficam fora do calendário oficial e não
-              comprovam o critério.
-            </p>
-            <ul>
-              {internal.map((candidate, index) => (
-                <li key={candidate.id || index}>
-                  <StatusBadge data-internal-badge>Interna</StatusBadge>{' '}
-                  {compactRange(candidate, calendarYear)} · {candidate.name}
-                </li>
-              ))}
-            </ul>
-          </details>
+          </div>
         ) : null}
       </div>
       <div className="review-item__evaluation" data-fields={criterion.id}>
         <ChoiceGroup
-          label="Sua avaliação"
-          value={pending ? null : entry.status}
+          label={`Avaliação: ${criterion.title}`}
+          value={entry.status}
           options={assessmentOptions}
           disabled={busy}
+          {...(criterion.suggestion ? { 'aria-describedby': suggestionId } : {})}
           onValueChange={(value) => onChange('status', value)}
         />
-        <div className="review-item__actions">
-          {!pending ? (
-            <Button
-              variant="secondary"
-              className="review-item__reset"
-              aria-label="Limpar avaliação"
-              disabled={busy}
-              onClick={() => onChange('status', 'PENDENTE')}
-            >
-              <RotateCcw size={16} aria-hidden="true" /> Limpar
-            </Button>
-          ) : null}
-          <Button
-            variant={pending || entry.reviewed ? 'secondary' : 'primary'}
-            className="review-item__confirm"
-            data-confirm-criterion={criterion.id}
-            aria-label={`${entry.reviewed ? 'Conferência confirmada' : 'Confirmar conferência'}: ${criterion.title}`}
-            aria-describedby={`criterion-hint-${criterion.id}`}
-            disabled={busy || pending || entry.reviewed}
-            onClick={onConfirm}
-          >
-            <CheckCheck size={16} aria-hidden="true" /> {entry.reviewed ? 'Conferido' : 'Confirmar'}
-          </Button>
-        </div>
-        <p id={`criterion-hint-${criterion.id}`} className="review-item__hint" role="status">
-          {hint}
-        </p>
+        {criterion.suggestion ? (
+          <p id={suggestionId} className="review-item__suggestion" data-suggestion={criterion.id}>
+            Sugestão do sistema: {suggestionLabels[criterion.suggestion]}
+          </p>
+        ) : null}
       </div>
-      <details className="review-item__notes">
+      <details
+        className="review-item__notes"
+        open={notesOpen}
+        onToggle={(event) => setNotesOpen(event.currentTarget.open)}
+      >
         <summary>
           Observações <span>{entry.notes.trim() ? '· observação registrada' : '(opcional)'}</span>
         </summary>

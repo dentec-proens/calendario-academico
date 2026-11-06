@@ -6,6 +6,7 @@ import { getFunctionName, type FunctionReference } from 'convex/server';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
 import { initialConclusion } from '../../src/domain/reviews/conclusion.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
+import { calendarOffersFixture } from './calendar-offers.ts';
 
 type Support = Awaited<ReturnType<typeof reviewOperations.get>>;
 /** The synthetic calendar under review; `publishInternalDates` adds dates to its criteria. */
@@ -370,6 +371,31 @@ window.reviewUiTest = {
     listeners.forEach((listener) => listener.refresh());
     listeners.forEach((listener) => listener.notify());
   },
+  /** A calendar with covered offers and counted days, so the system has something to suggest. */
+  publishCountedCalendar() {
+    const state = calendarOffersFixture();
+    const counted = reviewSupport(
+      { id: 'synthetic-review', name: '2027 — Campus de teste', version: 1, state },
+      state.events,
+    );
+    snapshot.criteria = counted.criteria as Support['criteria'];
+    snapshot.scopeConfirmed = counted.scopeConfirmed;
+    listeners.forEach((listener) => listener.refresh());
+    listeners.forEach((listener) => listener.notify());
+  },
+  /** A closed parecer saved before assessments replaced confirmation, with a suggestion in it. */
+  publishSavedSuggestion() {
+    window.reviewUiTest.publishLegacy2027Review();
+    snapshot.rulesetVersion = support.rulesetVersion;
+    snapshot.review!.rulesetVersion = support.rulesetVersion;
+    snapshot.review!.entries = snapshot.review!.entries.map((entry) => ({
+      ...entry,
+      reviewed: false,
+    }));
+    snapshot.status = 'revisado';
+    listeners.forEach((listener) => listener.refresh());
+    listeners.forEach((listener) => listener.notify());
+  },
   resolvePendingSave() {
     if (!finishPendingSave) throw new Error('Nenhuma gravação pendente.');
     finishPendingSave();
@@ -386,6 +412,8 @@ declare global {
       publishReview: (processNumber: string) => void;
       publishLegacy2027Review: () => void;
       publishInternalDates: () => void;
+      publishCountedCalendar: () => void;
+      publishSavedSuggestion: () => void;
       resolvePendingSave: () => void;
     };
   }

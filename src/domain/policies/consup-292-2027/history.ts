@@ -71,5 +71,13 @@ export const rulesetChanges: readonly RulesetChange[] = [
     summary:
       'Publicação dos editais de transferência, reingresso e portadores de diploma passa a ser opcional para todas as ofertas; o cadastro continua disponível.',
   },
+  {
+    version: 'consup-292-2027-v9',
+    date: civilDate('2026-11-06'),
+    effect: 'editorial',
+    source: 'Textos validados pela PROENS',
+    summary:
+      'Critérios da revisão passam a trazer nome curto, exigência completa e fonte; o critério das atas deixa de usar busca por nome. Sem mudança de obrigações.',
+  },
 ];
 export const rulesetVersion = rulesetChanges.at(-1)!.version;

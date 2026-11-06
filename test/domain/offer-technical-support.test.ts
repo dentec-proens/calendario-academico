@@ -30,8 +30,8 @@ test('the parecer compares minima and window only for covered offers', () => {
   expect(actual.criteria.find((item) => item.id === 'annual')?.initial.finding).toBe(
     'CONTAGEM_ALCANCADA',
   );
-  expect(actual.criteria.find((item) => item.id === 'semester')?.initial.status).toBe('ATENDIDO');
-  expect(actual.criteria.find((item) => item.id === 'window')?.initial.status).toBe('ATENDIDO');
+  expect(actual.criteria.find((item) => item.id === 'semester')?.suggestion).toBe('ATENDIDO');
+  expect(actual.criteria.find((item) => item.id === 'window')?.suggestion).toBe('ATENDIDO');
 });
 
 test('pending semester stages retain every assessment-dependent binding while other data is edited', () => {
@@ -104,15 +104,15 @@ test('an offer with its own regulation does not change the semester criterion of
     ),
   }).criteria.find((criterion) => criterion.id === 'semester')!;
   expect(mixed.initial).toEqual(annual.initial);
-  expect(mixed.initial.status).toBe('NAO_APLICAVEL');
+  expect(mixed.suggestion).toBe('NAO_APLICAVEL');
   expect(mixed.initial.finding).toBe('APLICABILIDADE');
 });
 
 test('coverage-linked candidates carry only the fields of the review contract', () => {
   const state = calendarOffersFixture();
-  const candidates = support(state).criteria.flatMap((item) => item.candidates);
-  expect(candidates.some((item) => item.id === 'integrado-stage-1')).toBe(true);
-  for (const item of candidates)
+  const records = support(state).criteria.flatMap((item) => item.linkedRecords);
+  expect(records.some((item) => item.id === 'integrado-stage-1')).toBe(true);
+  for (const item of records)
     expect(Object.keys(item).sort()).toEqual(['end', 'evidence', 'id', 'name', 'start']);
 });
 
@@ -132,9 +132,9 @@ test('dates under “Vínculo a conferir” are never coverage-linked candidates
     assessmentAutoStart: civilDate('2027-02-15'),
   });
   const criterion = support(state).criteria.find((item) => item.id === 'I')!;
-  expect(criterion.signal).toContain('Etapa duplicada');
+  expect(JSON.stringify(criterion.evidence)).toContain('Etapa duplicada');
   const ids = support(state)
-    .criteria.flatMap((item) => item.candidates)
+    .criteria.flatMap((item) => item.linkedRecords)
     .map((item) => item.id);
   expect(ids).not.toContain('linked-stage');
   expect(ids).not.toContain('integrado-stage-1');

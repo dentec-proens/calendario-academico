@@ -357,7 +357,7 @@ test('review edits, query preferences and reversion use their real owners', asyn
     .locator('#review-items > li')
     .first()
     .locator('textarea')
-    .fill('Observações ainda não confirmadas');
+    .fill('Observações ainda não salvas');
   await page.locator('[data-page="rules"]').click();
   await expect(page.locator('.portal-update')).toContainText(/para atualizar\./);
   await expect(page.getByRole('button', { name: 'Atualizar agora' })).toHaveCount(0);
@@ -365,7 +365,7 @@ test('review edits, query preferences and reversion use their real owners', asyn
   await page.locator('[data-open-review]').first().click();
   await page.locator('#review-items > li').first().locator('.review-item__notes summary').click();
   await expect(page.locator('#review-items > li').first().locator('textarea')).toHaveValue(
-    'Observações ainda não confirmadas',
+    'Observações ainda não salvas',
   );
   expect(await page.evaluate(() => window.portalRouterTest.mutations)).toHaveLength(0);
 });

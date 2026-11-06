@@ -269,11 +269,30 @@
   padding-top: var(--ui-space-4);
   border-top: 1px solid var(--ui-border-soft);
 }
-.review-criteria-heading h3 {
-  margin: 0 0 var(--ui-space-1);
+.review-criteria-heading__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ui-space-1) var(--ui-space-3);
+  margin-bottom: var(--ui-space-2);
 }
+.review-criteria-heading h3,
 .review-criteria-heading .help {
   margin: 0;
+}
+.review-filter {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+}
+.review-not-evaluated {
+  margin-bottom: var(--ui-space-4);
+  font-size: 0.85rem;
+}
+.review-not-evaluated ul {
+  margin: var(--ui-space-2) 0 0;
+  padding-left: var(--ui-space-4);
 }
 .review-disclaimer {
   margin-block: var(--ui-space-4) 0;

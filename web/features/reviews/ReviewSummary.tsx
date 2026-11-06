@@ -47,11 +47,11 @@ export default function ReviewSummary({
     <>
       <dl id="review-summary" className="review-summary">
         {editable ? <SummaryItem label="Responsável">{assignment}</SummaryItem> : null}
-        <SummaryItem label="Critérios conferidos">
+        <SummaryItem label="Critérios avaliados">
           <span id="review-progress" className="review-summary__value">
             {reviewedCount} de {total}
           </span>
-          <progress value={reviewedCount} max={total} aria-label="Critérios conferidos" />
+          <progress value={reviewedCount} max={total} aria-label="Critérios avaliados" />
         </SummaryItem>
         <SummaryItem label="Inclusão/exclusão">
           <span

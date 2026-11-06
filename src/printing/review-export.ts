@@ -14,10 +14,17 @@ const esc = (s: string | number | undefined | null) =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
   );
 const statusLabels: Record<string, string> = {
-  PENDENTE: 'Pendente de conferência',
+  PENDENTE: 'A avaliar',
   ATENDIDO: 'Atendido',
   NAO_ATENDIDO: 'Não atendido',
   NAO_APLICAVEL: 'Não aplicável',
+};
+
+/** A suggestion saved before assessments replaced confirmation still reads as a proposal. */
+const assessmentLabel = (e: Pick<ReviewEntry, 'status' | 'reviewed'>) => {
+  const label = statusLabels[e.status] || statusLabels.PENDENTE;
+  if (e.status === 'PENDENTE') return label;
+  return `${label} — ${e.reviewed === true ? 'avaliação humana' : 'proposta automática, não confirmada'}`;
 };
 
 export function reviewDocument(
@@ -29,6 +36,7 @@ export function reviewDocument(
   },
   review: {
     calendarVersion?: number;
+    rulesetVersion?: string;
     entries: ReviewEntry[];
     processNumber?: string;
     applicableNorm?: string;
@@ -45,9 +53,9 @@ export function reviewDocument(
     (e) =>
       e.reviewed === true && e.status !== 'PENDENTE' && reviewCriteria.some((c) => c.id === e.id),
   ).length;
-  const notice = `Minuta para revisão humana e inserção no SEI. ${assessed}/${reviewCriteria.length} critérios conferidos pelo parecerista. Não é documento assinado nem aprovação oficial.`;
+  const notice = `Minuta para revisão humana e inserção no SEI. ${assessed}/${reviewCriteria.length} critérios avaliados pelo parecerista. Não é documento assinado nem aprovação oficial.`;
   const metadata = [
-    ['Conjunto de regras', rulesetVersion(record.state)],
+    ['Conjunto de regras', review.rulesetVersion ?? rulesetVersion(record.state)],
     ['Processo nº', record.seiProcess || review.processNumber || 'Não informado'],
     ...(record.status ? [['Situação do calendário', calendarStatusLabels[record.status]]] : []),
     ['Assunto', `Calendário Acadêmico e Administrativo ${record.state.year}`],
@@ -78,8 +86,10 @@ export function reviewDocument(
       reviewed: false,
     };
     return {
-      criterion: `${c.title}\nReferência do modelo: página ${c.page}, ${c.item}.`,
-      assessment: `${statusLabels[e.status] || statusLabels.PENDENTE} — ${e.reviewed !== true || e.status === 'PENDENTE' ? 'proposta automática, não confirmada' : 'avaliação humana'}\n${e.notes}`,
+      criterion: [c.title, c.requirement, `Fonte: ${c.source ?? c.item}.`]
+        .filter(Boolean)
+        .join('\n'),
+      assessment: `${assessmentLabel(e)}\n${e.notes}`,
     };
   });
   const conclusion = review.conclusion || 'Conclusão pendente de elaboração pelo parecerista.';

@@ -175,11 +175,8 @@ test('the review lists an internal date apart, never as a candidate of the crite
   await act(f.campus, f.id, 'submit');
   const support = await f.reviewer.query(api.reviews.review, { id: f.id as Id<'calendars'> });
   const criterion = support.criteria.find((item) => item.id === 'XXVI')!;
-  expect(
-    criterion.candidates.filter((item) => !item.internal).map((item) => item.id),
-  ).not.toContain(rehearsal.id);
-  expect(criterion.candidates.find((item) => item.id === rehearsal.id)).toMatchObject({
-    internal: true,
+  expect(criterion.candidates.map((item) => item.id)).not.toContain(rehearsal.id);
+  expect(criterion.internalDates.find((item) => item.id === rehearsal.id)).toMatchObject({
     name: rehearsal.name,
   });
 });

@@ -14,7 +14,7 @@ test('the queue tells how long a submission has waited, only while it waits', as
   await expect(page.locator('[data-waiting]')).toHaveCount(0);
 });
 
-test('2027 rules invalidate legacy confirmations while preserving their observations as context', async ({
+test('2027 rules invalidate legacy assessments while preserving their observations as context', async ({
   page,
   fixtureServer,
 }) => {
@@ -25,8 +25,8 @@ test('2027 rules invalidate legacy confirmations while preserving their observat
   await page.locator('[data-open-review]').first().click();
   const ethics = page.locator('#criterion-title-XXV').locator('xpath=ancestor::li');
   await expect(ethics).toContainText('Ética e da Cidadania');
-  await expect(ethics.locator('[data-origin]')).toHaveText('Pendente de conferência');
-  await expect(ethics.locator('[role="radio"][aria-checked="true"]')).toHaveCount(0);
+  await expect(ethics.locator('[data-origin]')).toHaveText('A avaliar');
+  await expect(ethics.locator('[data-choice="PENDENTE"]')).toHaveAttribute('aria-checked', 'true');
   await ethics.locator('.review-item__notes summary').click();
   await expect(ethics.locator('textarea')).toHaveValue(
     /Contexto da revisão anterior.*Semana cultural conforme a regra anterior/,
@@ -35,7 +35,7 @@ test('2027 rules invalidate legacy confirmations while preserving their observat
   expect(await page.evaluate(() => window.reviewUiTest.calls.saves)).toBe(0);
 });
 
-test('direct review distinguishes automatic indications, confirmation and saved decisions on keyboard and mobile', async ({
+test('direct review separates the rule, the record and the assessment on keyboard and mobile', async ({
   page,
   fixtureServer,
 }) => {
@@ -53,28 +53,24 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   await page.goto(fixtureUrl);
   await page.locator('[data-open-review]').first().click();
   const item = '#review-items > li:first-child';
-  const confirm = `${item} [data-confirm-criterion]`;
   const notes = `${item} textarea`;
   const notesToggle = page.locator(`${item} .review-item__notes summary`);
   const choice = `${item} [data-choice="ATENDIDO"]`;
   await expect(page.locator(notes)).toBeHidden();
   await expect(page.locator(notes)).toBeEnabled();
-  await expect(page.locator(confirm)).toBeDisabled();
-  await expect(page.locator(`${item} .review-item__signal`)).toContainText(
+  await expect(page.locator(`${item} [data-rule]`)).toContainText('pelo menos 200 dias letivos');
+  await expect(page.locator(`${item} [data-registered]`)).toContainText(
     /Contagem automática indisponível/,
   );
+  await expect(page.locator(`${item} [data-check]`)).toContainText('Carga horária do PPC');
   await notesToggle.focus();
   await page.keyboard.press('Enter');
   await expect(page.locator(notes)).toBeVisible();
   await expect(page.locator(notes)).toHaveAccessibleName('Observações (opcional)');
-  await expect(
-    page
-      .locator(`${item} .review-item__notes`)
-      .getByText('Selecione uma avaliação para confirmar.', {
-        exact: true,
-      }),
-  ).toHaveCount(0);
-  await expect(page.locator(`${item} [role="radio"]`)).toHaveCount(3);
+  await expect(page.locator(`${item} [role="radiogroup"]`)).toHaveAccessibleName(
+    'Avaliação: Dias letivos anuais',
+  );
+  await expect(page.locator(`${item} [role="radio"]`)).toHaveCount(4);
   await page.locator(choice).focus();
   await page.keyboard.press('Space');
   const selectedBackground = () =>
@@ -98,19 +94,18 @@ test('direct review distinguishes automatic indications, confirmation and saved 
     3,
   );
   await page.keyboard.press('ArrowLeft');
-  await page.locator(confirm).click();
+  await page.keyboard.press('ArrowLeft');
+  await expect(page.locator(choice)).toHaveAttribute('aria-checked', 'true');
   expect(
     await page.evaluate(() => window.reviewUiTest.calls.saves),
-    'confirmation cannot persist or imply saving',
+    'choosing an assessment does not save the parecer',
   ).toBe(0);
-  await expect(page.locator(`${item} [data-origin]`)).toContainText(/por salvar/);
-  await page.locator(notes).fill('Conferência documental registrada.');
-  await expect(page.locator(notes)).toHaveValue('Conferência documental registrada.');
-  await expect(page.locator(`${item} [data-origin]`)).toContainText(/não confirmada/);
-  await page.locator(confirm).click();
+  await expect(page.locator(`${item} [data-origin]`)).toContainText(/por salvar/i);
+  await page.locator(notes).fill('Avaliação documental registrada.');
+  await expect(page.locator(notes)).toHaveValue('Avaliação documental registrada.');
   await page.locator('button[form="review-form"]').click();
   await expect(page.locator('[data-origin="annual"]'))
-    .toHaveText('Conferido e salvo')
+    .toHaveText('Salvo')
     .catch(async (cause: unknown) => {
       throw new Error(
         JSON.stringify(
@@ -132,54 +127,37 @@ test('direct review distinguishes automatic indications, confirmation and saved 
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
   await page.getByRole('tab', { name: 'Em análise' }).click();
   await page.locator('[data-open-review]').first().click();
-  await expect(page.locator('[data-origin="annual"]')).toHaveText('Conferido e salvo');
+  await expect(page.locator('[data-origin="annual"]')).toHaveText('Salvo');
   await expect(notesToggle).toContainText('observação registrada');
   await expect(page.locator(notes)).toBeHidden();
-  await expect(page.locator(notes)).toHaveValue('Conferência documental registrada.');
+  await expect(page.locator(notes)).toHaveValue('Avaliação documental registrada.');
   await notesToggle.click();
-  await page.locator(notes).fill('Observação alterada e salva sem nova confirmação.');
-  await expect(page.locator(notes)).toHaveValue(
-    'Observação alterada e salva sem nova confirmação.',
-  );
+  await page.locator(notes).fill('Observação alterada, com a avaliação mantida.');
+  await expect(page.locator(notes)).toHaveValue('Observação alterada, com a avaliação mantida.');
   await page.locator('button[form="review-form"]').click();
-  await expect(page.locator('[data-origin="annual"]')).toHaveText(
-    'Avaliação salva · não confirmada',
-  );
-  await expect(page.locator(confirm)).toBeEnabled();
+  await expect(page.locator('[data-origin="annual"]')).toHaveText('Salvo');
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
   await page.locator('[data-open-review]').first().click();
-  await expect(page.locator('[data-origin="annual"]')).toHaveText(
-    'Avaliação salva · não confirmada',
-  );
-  await expect(page.locator(notes)).toHaveValue(
-    'Observação alterada e salva sem nova confirmação.',
-  );
-  const clear = page.locator(item).getByRole('button', { name: 'Limpar avaliação', exact: true });
-  await expect(clear).toHaveText('Limpar');
-  await clear.click();
-  await expect(page.locator(`${item} [role="radio"][aria-checked="true"]`)).toHaveCount(0);
-  await expect(page.locator(confirm)).toBeDisabled();
+  await expect(page.locator('[data-origin="annual"]')).toHaveText('Salvo');
+  await expect(page.locator(notes)).toHaveValue('Observação alterada, com a avaliação mantida.');
+  await page.locator(`${item} [data-choice="PENDENTE"]`).click();
+  await expect(page.locator('[data-origin="annual"]')).toHaveText('A avaliar · por salvar');
   await page.locator(choice).click();
-  await page.locator('button[form="review-form"]').click();
-  await expect(page.locator('[data-origin="annual"]')).toHaveText(
-    'Avaliação salva · não confirmada',
-  );
-  await page.locator(confirm).click();
   await page.evaluate(() => {
     window.reviewUiTest.calls.failSave = true;
   });
   await page.locator('button[form="review-form"]').click();
   await expect(page.locator('#review-message')).toContainText('Falha sintética ao salvar');
-  // A failed save must not read as a confirmation.
+  // A failed save must not read as saved.
   await expect(page.locator('#review-message .ui-notice')).toHaveAttribute('data-tone', 'danger');
   expect(
     await page.locator(`${item} [data-origin]`).evaluate((node) => node.textContent ?? ''),
     'failed persistence must retain the pending-save badge',
-  ).toMatch(/por salvar/);
+  ).toMatch(/por salvar/i);
   // Reopening from the list remounts the analysis with its notes collapsed.
   await notesToggle.click();
-  await page.locator(notes).fill('Nova observação precisa de confirmação.');
-  await expect(page.locator(notes)).toHaveValue('Nova observação precisa de confirmação.');
+  await page.locator(notes).fill('Nova observação ainda por salvar.');
+  await expect(page.locator(notes)).toHaveValue('Nova observação ainda por salvar.');
   await page.locator(notes).focus();
   await page.waitForFunction((notes) => {
     const control = document.querySelector(notes)!;
@@ -213,13 +191,15 @@ test('direct review distinguishes automatic indications, confirmation and saved 
       `no horizontal overflow at ${width}px`,
     ).toBe(false);
     expect(
-      await page.locator(confirm).evaluate((node) => node.getBoundingClientRect().height >= 44),
+      await page
+        .locator(choice)
+        .evaluate((node) => node.closest('label')!.getBoundingClientRect().height >= 44),
     ).toBeTruthy();
     await notesToggle.click();
     await expect(page.locator(notes)).toBeHidden();
     await expect(notesToggle).toContainText('observação registrada');
     await notesToggle.click();
-    await expect(page.locator(notes)).toHaveValue('Nova observação precisa de confirmação.');
+    await expect(page.locator(notes)).toHaveValue('Nova observação ainda por salvar.');
   }
   expect(requests, 'isolated UI test cannot contact a real backend').toEqual([]);
   expect(errors).toEqual([]);
@@ -317,14 +297,13 @@ test('the review list states each parecer and names the next step', async ({
   await expect(page.locator('#review-assignee')).toHaveText('Você');
   const item = page.locator('#review-items > li').first();
   await item.locator('[data-choice="ATENDIDO"]').click();
-  await item.locator('[data-confirm-criterion]').click();
   await page.getByRole('button', { name: 'Salvar parecer' }).first().click();
   await expect(page.locator('#review-message')).toContainText('Parecer salvo');
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
   // Saving started the review, so the calendar left the first tab.
   await page.getByRole('tab', { name: 'Em análise' }).click();
   await expect(row.locator('[data-review-label]')).toHaveText(
-    /^Em andamento · 1 de \d+ critérios conferidos$/,
+    /^Em andamento · 1 de \d+ critérios avaliados$/,
   );
   await expect(row).toContainText('Rev. 1');
   await expect(row.locator('[data-review-assignee]')).toContainText('Com você');
@@ -352,6 +331,85 @@ test('a parecer held by a colleague is read only until assumed, and keeps the dr
   await expect(page.locator('#review-process')).toHaveValue('Processo do rascunho local');
 });
 
+test('a suggestion waits for the reviewer, who may filter what is left to assess', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('review'));
+  await page.evaluate(() => window.reviewUiTest.publishCountedCalendar());
+  await page.locator('[data-open-review]').first().click();
+  const items = page.locator('#review-items > li');
+  await expect(items.first()).toBeVisible();
+  const total = await items.count();
+  const suggested = page.locator('[data-suggestion]').first();
+  await expect(suggested).toContainText('Sugestão do sistema');
+  const id = await suggested.getAttribute('data-suggestion');
+  const criterion = page.locator(`#review-items > li:has([data-fields="${id}"])`);
+  await expect(criterion.locator('[data-choice="PENDENTE"]')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await expect(page.locator('#review-progress')).toContainText(/^0 de/);
+
+  await page.getByRole('radio', { name: `A avaliar (${total})` }).click();
+  // Assessing keeps the criterion in the list, with the observation open for what is missing.
+  await criterion.locator('[data-choice="NAO_ATENDIDO"]').click();
+  await expect(criterion).toBeVisible();
+  await expect(criterion.locator('textarea')).toBeVisible();
+  await expect(page.locator('#review-progress')).toContainText(/^1 de/);
+  await expect(page.getByRole('radio', { name: `A avaliar (${total - 1})` })).toBeChecked();
+
+  await page.locator('button[form="review-form"]').click();
+  await expect(page.locator('#review-message')).toContainText('Parecer salvo');
+  await expect(criterion).toBeHidden();
+  await page.getByRole('radio', { name: `Todos (${total})` }).click();
+  await expect(criterion).toBeVisible();
+  await expect(criterion.locator('[data-origin]')).toHaveText('Salvo');
+});
+
+test('the list says what the review does not assess, and warns of an unconfirmed scope', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('review'));
+  await page.locator('[data-open-review]').first().click();
+  await expect(page.locator('#review-scope-warning')).toContainText('Escopo da norma a confirmar');
+  await page.locator('.review-not-evaluated summary').click();
+  await expect(page.locator('.review-not-evaluated')).toContainText('Art. 15');
+});
+
+test('coverage reads by activity, without optional activities that have nothing to assess', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('review'));
+  await page.evaluate(() => window.reviewUiTest.publishCountedCalendar());
+  await page.locator('[data-open-review]').first().click();
+  await expect(page.locator('#review-scope-warning')).toHaveCount(0);
+  const family = page.locator('[data-registered="XVI"]');
+  await expect(family.locator('.review-coverage li')).toHaveCount(1);
+  await expect(family.locator('.review-coverage small').first()).toContainText('Obrigatório');
+  // Many activities collapse behind how they stand.
+  const stages = page.locator('[data-registered="XIII"] .review-item__coverage-all summary');
+  await expect(stages).toContainText(/^Ver \d+ atividades: \d+ completas/);
+});
+
+test('a closed parecer shows a suggestion saved long ago as a proposal, not as an assessment', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('review')).origin;
+  await page.goto(origin + '/revisoes/synthetic-review');
+  await expect(page.locator('#review-items')).toBeVisible();
+  await page.evaluate(() => window.reviewUiTest.publishSavedSuggestion());
+  await page.reload();
+  await page.evaluate(() => window.reviewUiTest.publishSavedSuggestion());
+  const first = page.locator('#review-items > li').first();
+  await expect(first.locator('[data-origin]')).toHaveText('Proposta automática, não confirmada');
+  await expect(first.locator('[data-choice="ATENDIDO"]')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('#review-progress')).toContainText(/^0 de/);
+});
+
 for (const width of [1360, 390]) {
   test(`an internal date is listed apart, with the Interna badge, never as a related record at ${width}px`, async ({
     page,
@@ -363,10 +421,6 @@ for (const width of [1360, 390]) {
     await page.locator('[data-open-review]').first().click();
     const item = page.locator('#criterion-title-XXVI').locator('xpath=ancestor::li');
     const related = item.locator('.review-item__records:not([data-internal-dates])');
-    await expect(related.locator('summary')).toHaveText(
-      'Ver registros possivelmente relacionados (1)',
-    );
-    await related.locator('summary').click();
     await expect(related.locator('li')).toHaveText(['5 out · Semana Cultural Interescolar']);
     const internal = item.locator('[data-internal-dates="XXVI"]');
     await expect(internal.locator('summary')).toHaveText(
@@ -484,7 +538,6 @@ test('concluding states why it is unavailable until the review allows it', async
   await expect(reason).toContainText('Salve o parecer deste envio');
   const item = page.locator('#review-items > li').first();
   await item.locator('[data-choice="ATENDIDO"]').click();
-  await item.locator('[data-confirm-criterion]').click();
   await expect(reason).toContainText('Salve ou descarte as alterações');
   await page.locator('button[form="review-form"]').click();
   await expect(page.locator('#review-message')).toContainText('Parecer salvo');

@@ -252,18 +252,21 @@ interface Projection {
 
 /** A readiness message that names an activity of the catalogue as `[id]`. */
 const namesActivity = (message: string) => /\[[a-z0-9][a-z0-9:-]*\]/.test(message);
+/** A readiness message that quotes a review criterion, whose wording belongs to the catalogue. */
+const quotesCriterion = (message: string) => /aguardando (confirmação|avaliação)\.$/.test(message);
+const followsCatalogue = (message: string) => namesActivity(message) || quotesCriterion(message);
 
 /**
  * The paths that follow the catalogue: the expanded rows, the plan coverage and the readiness
- * messages that cite an activity. They change when the rules do, so they are expected from
+ * messages that cite an activity or a review criterion. They change when the rules do, so they are expected from
  * `test/fixtures/offers-catalogue-expected.json`, which `UPDATE_CATALOGUE_EXPECTED=1` rewrites
  * from the current code (see `catalogue-expected.test.ts` for the regime).
  */
 const catalogueOf = (projection: Projection) => ({
   requirements: projection.requirements,
   coverage: projection.diagnostics.coverage,
-  issues: projection.readiness.issues.filter(namesActivity),
-  warnings: projection.readiness.warnings.filter(namesActivity),
+  issues: projection.readiness.issues.filter(followsCatalogue),
+  warnings: projection.readiness.warnings.filter(followsCatalogue),
 });
 
 /**
@@ -277,8 +280,8 @@ const frozenOf = (projection: Projection) => {
     diagnostics: { structure: diagnostics.structure, teaching: diagnostics.teaching },
     readiness: {
       ...readiness,
-      issues: readiness.issues.filter((message) => !namesActivity(message)),
-      warnings: readiness.warnings.filter((message) => !namesActivity(message)),
+      issues: readiness.issues.filter((message) => !followsCatalogue(message)),
+      warnings: readiness.warnings.filter((message) => !followsCatalogue(message)),
     },
   };
 };

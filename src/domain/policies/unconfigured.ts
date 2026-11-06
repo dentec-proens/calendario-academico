@@ -1,5 +1,11 @@
 import { operationalChecklist } from '../calendar/activities/operational-checklist.ts';
-import { parecerDayMinimums, parecerItems, parecerSource } from '../reviews/parecer-items.ts';
+import {
+  isTeacherVacation,
+  parecerDayMinimums,
+  parecerItems,
+  parecerNotes,
+  parecerSource,
+} from '../reviews/parecer-items.ts';
 import type { CalendarPolicy } from './contract.ts';
 
 /** Years without a configured norm keep activity links but never assert compliance. */
@@ -18,5 +24,7 @@ export const unconfiguredPolicy: CalendarPolicy = {
     criteria: parecerItems,
     evidence: 'pattern',
     dayMinimums: parecerDayMinimums,
+    notes: parecerNotes,
+    excludeFromSearch: (criterionId, event) => criterionId === 'III' && isTeacherVacation(event),
   },
 };
