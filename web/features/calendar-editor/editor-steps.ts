@@ -1,4 +1,6 @@
 import { editorSections, type EditorSection } from '#src/app/routes.ts';
+import { isAssessmentStage } from '#src/domain/calendar/activities/activity-ref.ts';
+import type { ContentIssue } from '#src/domain/calendar/readiness.ts';
 
 function defineEditorPage<Section extends EditorSection>(
   section: Section,
@@ -72,4 +74,32 @@ export function editorNavigation(section: EditorSection) {
 
 export function continueLabel(destination: Pick<EditorPage, 'title'>) {
   return `Continuar para ${destination.title.toLocaleLowerCase('pt-BR')}`;
+}
+
+/** The step where an issue is corrected, the same one its row in the review step leads to. */
+export function issueSection({ target }: Pick<ContentIssue, 'target'>): EditorSection {
+  switch (target?.area) {
+    case 'organization':
+      return 'periods';
+    case 'activity':
+      return isAssessmentStage(target.activity) ? 'periods' : 'events';
+    case 'date':
+    case 'observance':
+      return 'events';
+    default:
+      return 'issues';
+  }
+}
+
+/**
+ * Open issues by filling step. A step without issues is not a finished step, so this only ever
+ * says what is missing. The review step keeps the total, which also includes what is resolved there.
+ */
+export function stepIssueCounts(issues: readonly Pick<ContentIssue, 'target'>[]) {
+  const counts: Partial<Record<EditorSection, number>> = {};
+  for (const issue of issues) {
+    const section = issueSection(issue);
+    if (section !== 'issues') counts[section] = (counts[section] ?? 0) + 1;
+  }
+  return counts;
 }

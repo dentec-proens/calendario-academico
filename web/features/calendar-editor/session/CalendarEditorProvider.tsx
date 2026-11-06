@@ -20,6 +20,7 @@ import { calendars } from '../../../shared/convex/calendars.ts';
 import { sessionIdentity, useAppSession } from '../../../app/session.tsx';
 import { confirmAction } from '../../../components/confirmation.ts';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
+import { removeEvent, restoreRemovedEvents } from '#src/domain/calendar/commands/events.ts';
 import { applyObservances } from '#src/domain/calendar/observances.ts';
 import { evaluateCalendar } from '#src/domain/calendar/counting/evaluation.ts';
 import { projectDates } from '#src/domain/calendar/model.ts';
@@ -156,9 +157,42 @@ function useSession(record: CalendarRecord) {
       return false;
     }
   }
+  const [removal, setRemoval] = useState<{
+    text: string;
+    edits: number;
+    before: CalendarState;
+  } | null>(null);
+  /** Removes a date from the draft and offers to undo it until the next change to the calendar. */
+  function removeDate(eventId: string) {
+    const before = session.getSnapshot().state;
+    if (!applyCommand((current) => removeEvent(current, eventId))) return false;
+    const after = session.getSnapshot();
+    const removed = before.events.length - after.state.events.length;
+    const event = before.events.find((item) => item.id === eventId);
+    setRemoval({
+      text:
+        removed === 1 && event
+          ? `Data “${event.name}” removida do calendário.`
+          : `${removed} datas removidas do calendário.`,
+      edits: after.edits,
+      before,
+    });
+    return true;
+  }
+  function undoRemoval() {
+    if (!removal) return;
+    setRemoval(null);
+    if (applyCommand((current) => restoreRemovedEvents(current, removal.before)))
+      notify('Remoção desfeita.');
+  }
   return {
     ...snapshot,
     session,
+    removal:
+      removal && removal.edits === snapshot.edits && !readOnly && !suspended ? removal : null,
+    removeDate,
+    undoRemoval,
+    dismissRemoval: () => setRemoval(null),
     baseEvents,
     institutional,
     events,

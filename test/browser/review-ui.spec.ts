@@ -1,6 +1,19 @@
 import { test, expect } from './test.ts';
 import type {} from '../fixtures/review-ui-client.ts';
 
+test('the queue tells how long a submission has waited, only while it waits', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.clock.setFixedTime(new Date('2026-10-26T15:00:00Z'));
+  await page.goto(await fixtureServer('review'));
+  await expect(page.locator('[data-waiting]').first()).toHaveText('Aguardando há 3 dias');
+  await page.evaluate(() => window.reviewUiTest.publishLegacy2027Review());
+  await page.getByRole('tab', { name: 'Em análise' }).click();
+  await expect(page.locator('[data-open-review]').first()).toBeVisible();
+  await expect(page.locator('[data-waiting]')).toHaveCount(0);
+});
+
 test('2027 rules invalidate legacy confirmations while preserving their observations as context', async ({
   page,
   fixtureServer,

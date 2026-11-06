@@ -10,14 +10,15 @@
   border-radius: 14px;
   background: #fff;
   color: var(--ui-text);
-  box-shadow: 0 24px 80px #0005;
+  box-shadow: var(--ui-shadow-dialog);
   overflow-wrap: anywhere;
 }
 .confirmation-dialog[open] {
   animation: confirmation-enter 140ms ease-out;
 }
 .confirmation-dialog::backdrop {
-  background: rgb(0 0 0 / 50%);
+  background: var(--ui-backdrop);
+  backdrop-filter: blur(4px);
 }
 .confirmation-dialog--danger {
   --dialog-accent: var(--ui-danger);
@@ -91,6 +92,7 @@
   color: #fff;
   background: var(--dialog-accent);
   border-color: var(--dialog-accent);
+  box-shadow: var(--ui-highlight), var(--ui-shadow-button-quiet);
 }
 .confirmation-dialog button:disabled {
   opacity: 0.65;

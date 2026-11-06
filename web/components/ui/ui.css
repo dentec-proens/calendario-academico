@@ -15,17 +15,24 @@
   background: var(--ui-action);
   line-height: 1.4;
   filter: none;
+  box-shadow: var(--ui-highlight), var(--ui-shadow-button);
 }
 .ui-button.ui-button--secondary,
 .ui-button.ui-button.secondary {
   background: var(--ui-surface);
   border-color: var(--ui-border);
   color: var(--ui-action);
+  box-shadow: var(--ui-shadow-button-quiet);
 }
 .ui-button.ui-button--danger {
   background: var(--ui-danger-soft);
   border-color: var(--ui-danger-border);
   color: var(--ui-danger);
+  box-shadow: var(--ui-shadow-button-quiet);
+}
+.ui-button.ui-button:disabled,
+.ui-button.ui-button[aria-disabled='true'] {
+  box-shadow: none;
 }
 .ui-button svg {
   flex-shrink: 0;
@@ -40,7 +47,7 @@ dialog.ui-panel-dialog {
   --panel-inset: 16px;
 }
 dialog.ui-panel-dialog::backdrop {
-  background: #172b2566;
+  background: var(--ui-backdrop);
 }
 dialog.ui-panel-dialog--side {
   --panel-inset: 20px;
@@ -282,7 +289,7 @@ dialog.ui-panel-dialog--side {
   display: none !important;
 }
 .ui-notice--elevated {
-  box-shadow: 0 2px 8px #0002;
+  box-shadow: var(--ui-shadow-notice);
 }
 .ui-notice--success {
   --ui-notice-text: var(--ui-action);
@@ -441,6 +448,64 @@ dialog.ui-panel-dialog--side {
   :is(button, .ui-button)[aria-busy='true'] {
     cursor: wait;
   }
+  .ui-button.ui-button {
+    transition:
+      background-color var(--ui-motion),
+      border-color var(--ui-motion),
+      color var(--ui-motion),
+      box-shadow var(--ui-motion),
+      scale var(--ui-motion);
+  }
+  /* Surfaces arrive from where they sit. Without the motion preference they simply appear. */
+  @media (prefers-reduced-motion: no-preference) {
+    dialog.ui-panel-dialog {
+      transition:
+        translate var(--ui-motion-surface) var(--ui-ease-surface),
+        scale var(--ui-motion-surface) var(--ui-ease-surface),
+        opacity var(--ui-motion-surface) ease-out,
+        overlay var(--ui-motion-surface) allow-discrete,
+        display var(--ui-motion-surface) allow-discrete;
+    }
+    dialog.ui-panel-dialog:not([open]) {
+      opacity: 0;
+    }
+    dialog.ui-panel-dialog:not(.ui-panel-dialog--side):not([open]) {
+      scale: 0.98;
+    }
+    dialog.ui-panel-dialog--side:not([open]) {
+      translate: 24px 0;
+    }
+    @starting-style {
+      dialog.ui-panel-dialog[open] {
+        opacity: 0;
+      }
+      dialog.ui-panel-dialog:not(.ui-panel-dialog--side)[open] {
+        scale: 0.98;
+      }
+      dialog.ui-panel-dialog--side[open] {
+        translate: 24px 0;
+      }
+    }
+    dialog.ui-panel-dialog::backdrop {
+      transition:
+        opacity var(--ui-motion-surface) ease-out,
+        overlay var(--ui-motion-surface) allow-discrete,
+        display var(--ui-motion-surface) allow-discrete;
+    }
+    dialog.ui-panel-dialog:not([open])::backdrop {
+      opacity: 0;
+    }
+    @starting-style {
+      dialog.ui-panel-dialog[open]::backdrop {
+        opacity: 0;
+      }
+    }
+  }
+  @supports (backdrop-filter: blur(1px)) {
+    dialog.ui-panel-dialog::backdrop {
+      backdrop-filter: blur(4px);
+    }
+  }
   @media (hover: hover) {
     button:enabled:hover {
       box-shadow: var(--ui-shadow-control);
@@ -450,17 +515,20 @@ dialog.ui-panel-dialog--side {
       background: var(--ui-action-hover);
       border-color: var(--ui-action-hover);
       color: var(--ui-action-text);
+      box-shadow: var(--ui-highlight), var(--ui-shadow-control);
     }
     .ui-button.ui-button--secondary:enabled:hover,
     .ui-button.ui-button.secondary:enabled:hover {
       background: var(--ui-action-soft);
       border-color: var(--ui-action);
       color: var(--ui-action);
+      box-shadow: var(--ui-shadow-control);
     }
     .ui-button.ui-button--danger:enabled:hover {
       background: var(--ui-danger);
       border-color: var(--ui-danger);
       color: var(--ui-action-text);
+      box-shadow: var(--ui-shadow-control);
     }
     :is(
         input:not([type='checkbox'], [type='radio'], [type='hidden']),
@@ -473,6 +541,11 @@ dialog.ui-panel-dialog--side {
       border-color: var(--ui-action);
       background: var(--ui-action-soft);
     }
+  }
+  /* After the hover rules: a pressed button stays pressed under the pointer. */
+  .ui-button.ui-button:not(:disabled, [aria-disabled='true'], [aria-busy='true']):active {
+    scale: 0.97;
+    box-shadow: var(--ui-pressed);
   }
   @media (pointer: coarse) {
     button,
@@ -493,8 +566,11 @@ dialog.ui-panel-dialog--side {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  :is(button, input, select, textarea, .ui-choice) {
+  :is(button, input, select, textarea, .ui-choice, .ui-button) {
     transition: none !important;
+  }
+  .ui-button.ui-button:active {
+    scale: none !important;
   }
 }
 

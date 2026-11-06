@@ -4,10 +4,29 @@ import {
   type YearSaturday,
 } from '#src/domain/calendar/activities/saturdays.ts';
 
+import { groupExcludedDays, runDays } from '#src/domain/calendar/excluded-days.ts';
+
 const weekdays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'SÁB'];
 
 function saturdayLabel(day: { day: number }, month: YearMonth, year: number) {
   return `${String(day.day).padStart(2, '0')} de ${month.name.toLowerCase()} de ${year}`;
+}
+
+/** Why days of the month do not count, in text that a tooltip could not show on a touch screen. */
+function monthNotes(month: YearMonth) {
+  const runs = groupExcludedDays(
+    month.days.map(({ date, impediments: names }) => ({ date, names })),
+  );
+  if (!runs.length) return null;
+  return (
+    <ul className="saturday-month-notes" data-saturday-month-notes>
+      {runs.map((run) => (
+        <li key={run.start}>
+          <strong>{runDays(run)}</strong> {run.names.join('; ')}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export default function SaturdayYearGrid({
@@ -42,7 +61,6 @@ export default function SaturdayYearGrid({
           className={className}
           data-saturday={day.date}
           data-status={day.status}
-          title={day.impediments.join('; ') || undefined}
         >
           <input
             type="checkbox"
@@ -137,7 +155,6 @@ export default function SaturdayYearGrid({
                   <span
                     key={day.date}
                     className={`saturday-day${day.impediments.length ? ' has-impediment' : ''}`}
-                    title={day.impediments.join('; ') || undefined}
                     aria-hidden="true"
                   >
                     {day.day}
@@ -145,6 +162,7 @@ export default function SaturdayYearGrid({
                 ),
               )}
             </div>
+            {monthNotes(month)}
           </section>
         ))}
       </div>

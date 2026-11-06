@@ -39,7 +39,7 @@ test('React confirmation handles focus, keyboard, backdrop, async failure and du
     await page
       .locator('dialog')
       .evaluate((dialog) => getComputedStyle(dialog, '::backdrop').backgroundColor),
-  ).toBe('rgba(0, 0, 0, 0.5)');
+  ).toBe('rgba(23, 43, 37, 0.4)');
   expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden');
   expect(await page.evaluate(() => window.confirmationTest.duplicate())).toBe(false);
   await page.keyboard.press('Tab');
@@ -187,7 +187,7 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
 
   // Opening the picker is still a direct user gesture. The decision follows validation.
   const chooserPromise = page.waitForEvent('filechooser');
-  await page.locator('.editor-more > summary').click();
+  await page.locator('.editor-more-trigger').click();
   await page.locator('#load').click();
   await (await chooserPromise).setFiles([file]);
   await expect(page.locator('dialog[open]')).toBeVisible();

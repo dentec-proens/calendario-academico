@@ -29,6 +29,8 @@ O ícone acompanha o verbo da ação, não a tela. Um verbo tem sempre o mesmo �
 | Voltar                                      | `ArrowLeft`, antes do texto   |
 | Recolher, expandir                          | `ChevronUp`, `ChevronDown`    |
 | Entrar, Sair                                | `LogIn`, `LogOut`             |
+| Desfazer                                    | `Undo2`                       |
+| Escolher no calendário                      | `CalendarDays`                |
 
 Ações de ciclo de vida usam os ícones definidos em `LifecycleActions.tsx`. Um verbo novo entra nesta tabela antes de ganhar ícone.
 
@@ -38,7 +40,11 @@ Cada área tem no máximo um botão `primary`: a ação que conclui a etapa ou o
 
 O rótulo não repete o objeto quando o contexto já o identifica: dentro do cartão de uma oferta, **Editar** e **Aplicar organização**, não “Editar organização” ou “Aplicar organização de Técnico integrado”; no detalhe de uma data, **Editar**. Dentro do calendário, criar é **Adicionar…**; **Novo…** fica para entidades de primeiro nível, como o calendário. No editor, **Aplicar** grava no rascunho e **Salvar** fica para o que é gravado diretamente. Abandonar um preenchimento é sempre **Descartar alterações**; **Remover** retira um item do calendário e **Excluir** apaga um registro.
 
+**Mais ações**, no editor, é um `Menu` da Base UI (`EditorMoreMenu`), com setas, Esc e fechamento ao clicar fora. O formulário de importação fica fora do menu, porque precisa continuar montado depois que ele fecha para receber o arquivo.
+
 `tokens.css` centraliza cores semânticas, espaçamentos, raios e duração das transições. Texto, bordas e superfícies são neutros (cinza levemente frio); o verde (`--ui-action`) fica para ações, foco, seleção da etapa e conclusão. O azul de informação (`--ui-info`) marca links (`--ui-link`), filtros e visões selecionadas e avisos informativos; âmbar e vermelho ficam para pendência e perigo. Cor nova da tela entra como token em `tokens.css`, não como hexadecimal na folha da funcionalidade; as cores de categoria do calendário seguem a legenda da impressão: `categories.ts` é a fonte, usada pela impressão e por `CategoryMark`, e não ganham tokens próprios. `ui.css` define os componentes e os estados de interação, sendo importado pelo CSS compartilhado do site. As regras de interação ficam restritas à tela; o modelo de impressão em `assets/printing/calendar.css` permanece separado.
+
+O relevo e o movimento também saem de `tokens.css`. `--ui-shadow-button`, `--ui-highlight` e `--ui-pressed` dão ao `Button` o relevo e a resposta ao clique; `--ui-shadow-notice`, `--ui-shadow-floating`, `--ui-shadow-sheet` e `--ui-shadow-dialog` formam a escala de elevação, sem sombra solta nas folhas das funcionalidades; `--ui-backdrop` é o fundo de todo diálogo modal. Painéis e menus entram com `--ui-motion-surface` e `--ui-ease-surface`, só com `prefers-reduced-motion: no-preference`; o `PanelDialog` usa `@starting-style`, e a saída animada só existe quando o `<dialog>` continua montado ao fechar.
 
 Mantenha rótulos visíveis, foco por teclado, alvos de toque de pelo menos 44px e suporte a `prefers-reduced-motion`. Botões bloqueados não devem aparentar estar carregando, salvo quando a operação estiver efetivamente em andamento.
 
@@ -52,6 +58,10 @@ Os critérios formam uma lista contínua, com divisórias simples e avaliação 
 
 A navegação de seções e formulários usa `web/scroll.ts`: respeita `prefers-reduced-motion`, revela o início de formulários maiores que a tela e reserva a altura real do feedback fixo por meio de `ResizeObserver` e `scroll-padding`. Isso evita offsets fixos que deixam títulos sob avisos quando o texto quebra em mais linhas. Os testes `test/browser/scroll-layout.spec.ts` verificam a visibilidade e a recepção de cliques em desktop e mobile. As capturas visuais não corrigem a rolagem da aplicação antes de comparar as imagens.
 
+## Remover, desfazer e confirmar
+
+Remover uma data, um sábado ou férias altera só o rascunho e é imediato: `removeDate`, do editor, oferece **Desfazer** no `#message`. A oferta não tem prazo, porque um limite de tempo excluiria quem precisa de mais tempo para ler; ela some ao fechar o aviso ou na mudança seguinte do calendário, e nunca desfaz o que veio depois. O contador `edits` da sessão separa mudança de confirmação: o salvamento automático não encerra a oferta. O preenchimento em andamento na data removida não volta. A confirmação fica para o que tem efeito fora do rascunho, como enviar, devolver ou importar uma cópia.
+
 ## Listagens de calendários
 
 `/calendarios` e `/revisoes` são rotas separadas, porque diferem em permissão, página inicial e rascunhos, mas listam da mesma forma, com os componentes de `web/features/calendar-list/`:
@@ -61,6 +71,8 @@ A navegação de seções e formulários usa `web/scroll.ts`: respeita `prefers-
 - `CampusFilter` e `useSelectedCampus` tratam o parâmetro `campus`. Um campus que o perfil não pode escolher é ignorado.
 
 Cada componente importa `calendar-list.css`, porque as rotas são carregadas sob demanda e estilo herdado de outra tela só apareceria depois de visitá-la. Pelo mesmo motivo, as abas da fila têm `reviews.css`.
+
+Em **Aguardando análise**, a coluna **Envio** mostra há quanto tempo o envio espera (`waitingLabel`), atualizado por `useNow` com a página aberta, e a data exata logo abaixo. Só essa aba mostra a espera: nas demais, o calendário já não aguarda quem o analisa.
 
 A fila não tem coluna Campus: o nome gerado já o traz, e a coluna deixaria o nome estreito demais com a barra lateral em 1280 px. O badge de situação também sai da linha, porque a aba informa isso. A aba fica em `situacao`, validado em `web/app/search.ts` com todas as situações de calendário, e cada tela restringe o valor ao que lista. A trilha de `WorkspaceLayout` repassa só `situacao` e `campus`, nunca avisos pontuais como `aviso`. As setas nas abas partem da aba focada, porque a URL muda de forma assíncrona. O painel da aba não recebe `tabindex`, porque o filtro de campus garante nele um elemento focável.
 
@@ -80,9 +92,13 @@ O painel Devtools só existe em desenvolvimento nas rotas permitidas com `?devto
 
 ## Etapa Revisão e conclusão
 
+O menu de etapas mostra, em cada etapa, as pendências que ela corrige (`stepIssueCounts`), levando aos mesmos destinos das linhas da revisão. A revisão mostra o total. Etapa sem pendência não recebe marca de concluída: o sistema não sabe se ela foi conferida.
+
 `IssuesSection` lista `contentAssessment` (`src/domain/calendar/readiness.ts`), a mesma fonte da contagem no menu de etapas e das pendências da confirmação do envio, mais a identificação sem cursos, que o backend também recusa. Cada `ContentIssue` mantém `code` e `message`, usados na prontidão, nas comparações de envios e nos testes de equivalência, e acrescenta `group`, `title`, `detail`, `offerId` e `target`, que a etapa usa para agrupar e para levar ao lugar da correção; os avisos têm a mesma forma em `notes`. Quando a contagem de dias não pode ser feita, as pendências de estrutura não são registradas, por preservar a semântica capturada na migração; o detalhe de **Contagem de dias** nomeia o que falta. `ScopeForm` apresenta a norma pendente como decisão (`ChoiceGroup`) e a confirmada como linha com **Alterar**. O rodapé da etapa repete **Enviar para análise** com `LifecycleActions` em `placement="footer"`, que oferece só o envio, com atributos e ids próprios.
 
 ## Etapa Atividades
+
+O formulário de data oferece **Escolher no calendário** (`EventDateCalendar`), abaixo de início e término, que continuam aceitando digitação. O primeiro clique marca um dia e um clique em dia posterior fecha o período; qualquer outro recomeça. O calendário marca os dias que não contam como dia letivo e os fora dos períodos letivos, nomeia os motivos do mês em texto visível e nunca bloqueia a escolha. Fica dentro do formulário, sem popover flutuante, porque o painel lateral é um `<dialog>` modal, que deixaria fora de alcance o que se abre fora dele. A grade de sábados usa a mesma lista de motivos por mês (`excluded-days.ts`), em vez de `title`, que não aparece no toque.
 
 A etapa 5, **Atividades** (`EventsSection`), reúne atividades e datas com visões **Por atividade** / **Por data** e filtros na URL. `ActivityFilters` grava os parâmetros de prefixo `atividade*` validados no Router (`web/app/search.ts`) e preserva os demais. `activity-step.ts` é a lógica pura da etapa: a origem de cada data vem do contêiner e do vínculo (`dateOrigin`), as linhas e os grupos especiais vêm da avaliação calculada `evaluatePlan` (`src/domain/calendar/activities/plan-evaluation.ts`), a mesma das pendências do calendário (`diagnostics.ts`) e do parecer (`technical-support.ts`), e os contadores seguem a unidade de cada visão e todos os filtros exceto a pendência; não há decisão por exclusão. `useActivityList` liga essa função ao editor e `ActivityChecklist` renderiza datas ajustáveis a resolver, grupos de assunto, **Vínculo a conferir**, **Datas do campus**, **Datas da base institucional** (`<details>` recolhido, aberto por ação e mantido aberto) e a lista mensal de **Por data**. Descrições, fontes e valores do formulário não entram na URL. A cobertura compartilhada por atividade/oferta/período mantém aplicabilidade, cobertura, revisão humana e execução como dimensões diferentes.
 

@@ -23,7 +23,7 @@ test('a current copy round-trips and earlier formats are refused with their own 
   await page.goto(`${fixtureUrl}?id=synthetic-calendar`);
   await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
 
-  await page.locator('.editor-more > summary').click();
+  await page.locator('.editor-more-trigger').click();
   const download = page.waitForEvent('download');
   await page.locator('#save').click();
   const exportedFile = join(directory, 'exportada.json');

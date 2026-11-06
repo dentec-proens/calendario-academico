@@ -5,6 +5,7 @@ import {
   editorNavigation,
   editorPages,
   editorSteps,
+  stepIssueCounts,
 } from '../../web/features/calendar-editor/editor-steps.ts';
 
 describe('calendar wizard metadata', () => {
@@ -61,4 +62,18 @@ describe('calendar wizard metadata', () => {
       'Continuar para revisão e conclusão',
     ]);
   });
+});
+
+test('each issue counts for the step that corrects it, as its review row leads there', () => {
+  const activity = { kind: 'row', id: 'x' };
+  expect(
+    stepIssueCounts([
+      { target: { area: 'organization' } },
+      { target: { area: 'scope' } },
+      { target: { area: 'date', eventId: 'a', name: 'A' } },
+      { target: { area: 'observance', key: 'k' } },
+      { target: undefined },
+      { target: { area: 'activity', activity: activity as never } },
+    ]),
+  ).toEqual({ periods: 1, events: 3 });
 });

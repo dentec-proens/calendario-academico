@@ -344,7 +344,7 @@
     position: sticky;
     top: var(--sticky-top, 0px);
     z-index: 31;
-    box-shadow: 0 2px 8px #0002;
+    box-shadow: var(--ui-shadow-notice);
   }
 }
 

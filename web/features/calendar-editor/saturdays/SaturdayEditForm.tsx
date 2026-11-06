@@ -1,8 +1,6 @@
 import { longDate } from '#src/domain/date-labels.ts';
 import type { CalendarEvent } from '#src/domain/calendar/model.ts';
-import { removeEvent } from '#src/domain/calendar/commands/events.ts';
 import { updateSaturdayActivity } from '#src/domain/calendar/commands/saturdays.ts';
-import { confirmAction } from '../../../components/confirmation.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
 import { Input } from '../forms/fields.tsx';
@@ -17,7 +15,7 @@ export default function SaturdayEditForm({
   event: CalendarEvent;
   onClose: (focusDate: string) => void;
 }) {
-  const { session, readOnly, applyCommand } = useCalendarEditor();
+  const { session, readOnly, removeDate } = useCalendarEditor();
   const id = `saturday-edit:${event.id}`;
   const { form, submit, pending, error, dirty } = useCalendarForm(
     id,
@@ -34,14 +32,8 @@ export default function SaturdayEditForm({
     onClose(event.start);
   }
 
-  async function remove() {
-    const confirmed = await confirmAction({
-      title: 'Remover sábado letivo',
-      description: `O sábado ${longDate(event.start)} deixa de contar como dia letivo.`,
-      intent: 'danger',
-      confirmLabel: 'Remover sábado',
-    });
-    if (confirmed && applyCommand((current) => removeEvent(current, event.id))) discard();
+  function remove() {
+    if (removeDate(event.id)) discard();
   }
 
   return (

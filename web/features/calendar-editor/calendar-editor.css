@@ -185,11 +185,7 @@
   justify-content: center;
   font-size: 0.875rem;
 }
-.editor-more {
-  position: relative;
-}
-.editor-more > summary {
-  list-style: none;
+.editor-more-trigger {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -202,30 +198,46 @@
   color: var(--green);
   cursor: pointer;
 }
-.editor-more > summary::-webkit-details-marker,
 .editor-step-menu > summary::-webkit-details-marker {
   display: none;
 }
-.editor-more > summary:focus-visible,
+.editor-more-trigger:enabled:hover {
+  filter: none;
+}
+.editor-more-trigger:focus-visible,
 .editor-step-menu > summary:focus-visible,
 .editor-sidebar a:focus-visible {
   outline: 3px solid var(--ui-focus);
   outline-offset: 3px;
 }
-.editor-more-content {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 7px);
+.editor-more-positioner {
   z-index: 40;
+}
+.editor-more-content {
   width: 320px;
   max-width: calc(100vw - 32px);
   padding: 7px;
   background: var(--ui-surface);
   border: 1px solid var(--line);
   border-radius: 10px;
-  box-shadow: 0 8px 24px #172b251f;
+  box-shadow: var(--ui-shadow-floating);
+  transform-origin: var(--transform-origin);
 }
-.editor-more-content :is(a, button) {
+@media (prefers-reduced-motion: no-preference) {
+  .editor-more-content {
+    transition:
+      scale var(--ui-motion-surface) var(--ui-ease-surface),
+      opacity var(--ui-motion) ease-out;
+  }
+  .editor-more-content:is([data-starting-style], [data-ending-style]) {
+    scale: 0.98;
+    opacity: 0;
+  }
+}
+.editor-more-content:focus {
+  outline: none;
+}
+.editor-more-content [role='menuitem'] {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
   align-items: start;
@@ -241,8 +253,10 @@
   text-align: left;
   text-decoration: none;
   font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--ui-radius);
 }
-.editor-more-content :is(a, button) > svg {
+.editor-more-content [role='menuitem'] > svg {
   margin-top: 2px;
 }
 .editor-menu-copy {
@@ -261,12 +275,10 @@
   font-weight: 400;
   line-height: 1.5;
 }
-.editor-more-content :is(a, button):hover {
+.editor-more-content [role='menuitem'][data-highlighted] {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: -2px;
   background: var(--ui-action-soft);
-  filter: none;
-}
-.editor-more-content label {
-  margin: 0;
 }
 .calendar-editor .editor-feedback {
   box-shadow: none;
@@ -540,16 +552,6 @@
   /* The menu now sits on the left: it opens from the header's left edge, within its width. */
   .editor-intro {
     position: relative;
-  }
-  .editor-more {
-    position: static;
-  }
-  .editor-more-content {
-    top: auto;
-    right: auto;
-    left: 0;
-    max-width: 100%;
-    margin-top: 7px;
   }
   .calendar-editor-content .editor-sections-layout {
     grid-template-columns: minmax(0, 1fr);

@@ -15,6 +15,8 @@ export interface EditorSnapshot {
   error: string;
   remote: CalendarRecord | null;
   formEpoch: number;
+  /** Counts the changes to the state, not its confirmation, which an offer to undo depends on. */
+  edits: number;
   baseUpdate: ReturnType<
     typeof inspectCalendar<
       CalendarRecord['institutionalEvents'][number],
@@ -62,6 +64,7 @@ export function createEditorSession(
     error: '',
     remote: null,
     formEpoch: 0,
+    edits: 0,
     baseUpdate: inspectCalendar(record, record),
   };
   let active = true;
@@ -168,6 +171,7 @@ export function createEditorSession(
       publish({
         state,
         dirty,
+        edits: current.edits + 1,
         status: !dirty && current.status === 'scheduled' ? 'saved' : current.status,
       });
       saver.schedule();
@@ -182,6 +186,7 @@ export function createEditorSession(
         dirty: !equalValues(state, current.record.state),
         unapplied: false,
         formEpoch: current.formEpoch + 1,
+        edits: current.edits + 1,
       });
       saver.schedule();
     },
@@ -212,7 +217,12 @@ export function createEditorSession(
       } else if (current.dirty || current.unapplied || current.status === 'saving')
         publish({ remote: fresh });
       else {
-        publish({ record: fresh, state: structuredClone(fresh.state), remote: null });
+        publish({
+          record: fresh,
+          state: structuredClone(fresh.state),
+          remote: null,
+          edits: current.edits + 1,
+        });
       }
     },
     async retry() {
@@ -254,6 +264,7 @@ export function createEditorSession(
         error: '',
         remote: null,
         formEpoch: current.formEpoch + 1,
+        edits: current.edits + 1,
       });
     },
     setAccessSuspended(value: boolean) {
@@ -282,6 +293,7 @@ export function createEditorSession(
         status: 'idle',
         error: '',
         formEpoch: current.formEpoch + 1,
+        edits: current.edits + 1,
       });
     },
     dispose() {

@@ -8,6 +8,7 @@ import { generatedActivities, generatedActivity } from '#src/domain/calendar/act
 import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
 import { applicabilityFor, policyFor } from '#src/domain/policies/registry.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
+import EventDateCalendar from './EventDateCalendar.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import {
   commonDestination,
@@ -340,6 +341,15 @@ export default function EventEditor() {
               </form.Field>
             )}
           </div>
+          <EventDateCalendar
+            start={values.start}
+            end={values.end}
+            eventId={editor.eventId}
+            onChange={(range) => {
+              form.setFieldValue('start', range.start);
+              form.setFieldValue('end', range.end);
+            }}
+          />
           <div className="row-form">{nameField}</div>
           <form.Field name="offers">
             {(field) => {

@@ -45,6 +45,9 @@
   color: var(--ui-text);
   font-size: 0.8125rem;
 }
+.review-queue-waiting {
+  font-weight: 600;
+}
 .review-queue-progress {
   display: grid;
   justify-items: start;

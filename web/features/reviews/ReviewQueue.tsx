@@ -5,7 +5,8 @@ import { editorUrl } from '#src/app/routes.ts';
 import type { CalendarStatus } from '#src/domain/calendar/lifecycle.ts';
 import { StatusBadge } from '../../components/ui/Feedback.tsx';
 import type { functions } from '../../shared/convex/client.ts';
-import { updatedLabel } from '../../shared/dates.ts';
+import { updatedLabel, waitingLabel } from '../../shared/dates.ts';
+import { useNow } from '../../shared/useNow.ts';
 import CalendarIdentityCell from '../calendar-list/CalendarIdentityCell.tsx';
 import CalendarTable, { type CalendarColumn } from '../calendar-list/CalendarTable.tsx';
 
@@ -57,6 +58,7 @@ export default function ReviewQueue({
   /** The selected filters, carried to the parecer so that its trail returns here. */
   filters: { campus?: string; situacao?: Exclude<CalendarStatus, 'rascunho' | 'enviado'> };
 }) {
+  const now = useNow();
   const columns: CalendarColumn<QueueItem>[] = [
     {
       label: 'Calendário',
@@ -66,13 +68,18 @@ export default function ReviewQueue({
     {
       label: 'Envio',
       width: '8rem',
-      render: ({ submission }) =>
+      render: ({ submission, status }) =>
         submission ? (
           <div className="review-queue-submission" data-submission={submission.sequence}>
             <span>
               Envio {submission.sequence}
               {submission.resubmission ? ' · reenvio' : ''}
             </span>
+            {status === 'enviado' && (
+              <strong className="review-queue-waiting" data-waiting>
+                {waitingLabel(submission.submittedAt, now)}
+              </strong>
+            )}
             <small>{updatedLabel(submission.submittedAt)}</small>
           </div>
         ) : (

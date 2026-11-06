@@ -1,6 +1,5 @@
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
-import { removeEvent } from '#src/domain/calendar/commands/events.ts';
 import { situationLabels } from '#src/domain/calendar/activities/plan-evaluation.ts';
 import { linkedTo } from '#src/domain/calendar/activities/links.ts';
 import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
@@ -25,7 +24,7 @@ export default function ActivityDetails({
   item: ActivityPlanItem;
   detailOpen: boolean;
 }) {
-  const { state, applyCommand, readOnly } = useCalendarEditor();
+  const { state, removeDate, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const { rowsFor, statusFor, counts } = useActivityCoverage();
   // The activity is addressed by the key of its link, as in the list and the URL.
@@ -184,10 +183,7 @@ export default function ActivityDetails({
                   disabled={readOnly}
                   aria-label={`Remover ${event.name}`}
                   onClick={() => {
-                    if (
-                      applyCommand((current) => removeEvent(current, event.id)) &&
-                      editor.eventId === event.id
-                    ) {
+                    if (removeDate(event.id) && editor.eventId === event.id) {
                       // The panel stays on the activity whose record was removed.
                       editor.discard();
                       editor.view(key);

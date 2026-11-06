@@ -8,11 +8,14 @@ export default function EditorSteps({
   calendarId,
   current,
   issueCount,
+  stepCounts,
 }: {
   calendarId: string;
   current: EditorSection;
   /** Open content issues, shown under the review step that lists them. */
   issueCount: number;
+  /** The issues that each filling step can correct. */
+  stepCounts: Partial<Record<EditorSection, number>>;
 }) {
   const { active, stepIndex } = editorNavigation(current);
   const menu = useRef<HTMLDetailsElement>(null);
@@ -51,31 +54,34 @@ export default function EditorSteps({
             }
           }}
         >
-          {editorSteps.map((step, index) => (
-            <div
-              className={`editor-step-group ${step.section === active?.section ? 'is-current' : ''}`}
-              key={step.section}
-            >
-              <Link
-                to={step.path}
-                params={{ calendarId }}
-                search={(previous) => previous}
-                className="editor-step"
-                data-view={step.section}
-                aria-current={active?.section === step.section ? 'page' : undefined}
+          {editorSteps.map((step, index) => {
+            const count = step.section === 'issues' ? issueCount : (stepCounts[step.section] ?? 0);
+            return (
+              <div
+                className={`editor-step-group ${step.section === active?.section ? 'is-current' : ''}`}
+                key={step.section}
               >
-                <span className="editor-step-number">{index + 1}</span>
-                <span className="editor-step-text">
-                  <span className="editor-step-title">{step.title}</span>
-                  {step.section === 'issues' && issueCount > 0 && (
-                    <span className="editor-step-note" data-issue-count={issueCount}>
-                      {issueCount} {issueCount === 1 ? 'pendência' : 'pendências'}
-                    </span>
-                  )}
-                </span>
-              </Link>
-            </div>
-          ))}
+                <Link
+                  to={step.path}
+                  params={{ calendarId }}
+                  search={(previous) => previous}
+                  className="editor-step"
+                  data-view={step.section}
+                  aria-current={active?.section === step.section ? 'page' : undefined}
+                >
+                  <span className="editor-step-number">{index + 1}</span>
+                  <span className="editor-step-text">
+                    <span className="editor-step-title">{step.title}</span>
+                    {count > 0 && (
+                      <span className="editor-step-note" data-issue-count={count}>
+                        {count} {count === 1 ? 'pendência' : 'pendências'}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              </div>
+            );
+          })}
         </nav>
       </details>
     </aside>

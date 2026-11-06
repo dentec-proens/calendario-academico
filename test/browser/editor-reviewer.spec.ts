@@ -17,8 +17,8 @@ test('reviewer consults the complete calendar and live changes without editing o
   await expect(page.locator('#weekdays input').first()).toBeDisabled();
   await expect(page.locator('[data-lifecycle-action]')).toHaveCount(0);
   // Locked for editing, the calendar still exposes its own history.
-  await page.locator('.editor-more > summary').click();
-  await expect(page.getByRole('link', { name: 'Histórico do calendário' })).toBeVisible();
+  await page.locator('.editor-more-trigger').click();
+  await expect(page.getByRole('menuitem', { name: 'Histórico do calendário' })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.locator('[data-view="events"]').click();
   await expect(page.locator('#event-list')).toBeVisible();

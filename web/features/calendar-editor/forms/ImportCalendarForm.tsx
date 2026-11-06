@@ -1,8 +1,6 @@
-import { useRef } from 'react';
-import { Upload } from 'lucide-react';
+import type { RefObject } from 'react';
 import { useDraftForm } from '../../../shared/forms/useDraftForm.ts';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
-import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { normalizeOfferCalendar } from '#src/domain/calendar/normalization/normalize.ts';
 import { earlierFormatCopyMessage } from '#src/domain/calendar/normalization/input.ts';
 import { calendarSchemaVersion } from '#src/domain/calendar/model.ts';
@@ -10,11 +8,18 @@ import { confirmAction } from '../../../components/confirmation.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { CalendarState } from '../types.ts';
 
-export default function ImportCalendarForm() {
+/**
+ * The file input and what follows from it. It stays mounted outside the "Mais ações" menu, which
+ * closes and unmounts as the file chooser opens; a refusal is reported through the page feedback.
+ */
+export default function ImportCalendarForm({
+  input,
+}: {
+  input: RefObject<HTMLInputElement | null>;
+}) {
   const { state, record, session, notify, readOnly } = useCalendarEditor();
   const drafts = useFormDrafts();
-  const input = useRef<HTMLInputElement>(null);
-  const { form, submit, pending, error } = useDraftForm({
+  const { form, submit, pending } = useDraftForm({
     defaultValues: { file: null as File | null },
     onError: (message) => notify('Não foi possível abrir a cópia: ' + message, true),
     onSubmit: async (value, { isCurrent }) => {
@@ -68,7 +73,7 @@ export default function ImportCalendarForm() {
     },
   });
   return (
-    <form onSubmit={submit}>
+    <form onSubmit={submit} hidden>
       <fieldset disabled={readOnly || pending}>
         <form.Field name="file">
           {(field) => (
@@ -91,22 +96,6 @@ export default function ImportCalendarForm() {
             </label>
           )}
         </form.Field>
-        <button
-          id="load"
-          type="button"
-          className="secondary"
-          aria-label="Importar cópia"
-          aria-describedby="import-copy-description"
-          title="Abra uma cópia editável (.json) deste mesmo calendário. Os dados atuais serão substituídos após sua confirmação."
-          onClick={() => input.current?.click()}
-        >
-          <Upload aria-hidden="true" />
-          <span className="editor-menu-copy">
-            <span>Importar cópia</span>
-            <small id="import-copy-description">Restaurar uma cópia editável (.json)</small>
-          </span>
-        </button>
-        <FormFeedback error={error} />
       </fieldset>
     </form>
   );

@@ -99,6 +99,21 @@
   font-size: 0.75rem;
   text-align: center;
 }
+.saturday-month-notes {
+  display: grid;
+  gap: 2px;
+  margin: 8px 0 0;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--ui-border-soft);
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  list-style: none;
+}
+.saturday-month-notes strong {
+  color: var(--ui-text);
+  font-variant-numeric: tabular-nums;
+}
 .saturday-weekday {
   padding: 2px 0;
   color: var(--ui-muted);
@@ -232,7 +247,7 @@
   border: 1px solid var(--ui-border-soft);
   border-radius: var(--ui-radius-panel) var(--ui-radius-panel) 0 0;
   background: var(--ui-surface);
-  box-shadow: 0 -6px 18px #0c503a1f;
+  box-shadow: var(--ui-shadow-sheet);
 }
 #saturday-compact-bar strong {
   color: var(--ui-action);
@@ -253,10 +268,10 @@ dialog#saturday-panel {
   border-radius: var(--ui-radius-panel) var(--ui-radius-panel) 0 0;
   background: var(--ui-surface);
   color: var(--ui-text);
-  box-shadow: 0 -10px 30px #0c503a29;
+  box-shadow: var(--ui-shadow-sheet);
 }
 dialog#saturday-panel::backdrop {
-  background: #172b2566;
+  background: var(--ui-backdrop);
 }
 @media (min-width: 600px) {
   dialog#saturday-panel {

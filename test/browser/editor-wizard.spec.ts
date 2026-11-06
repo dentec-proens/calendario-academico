@@ -122,10 +122,10 @@ test('secondary actions support the keyboard and the mobile step picker follows 
   fixtureServer,
 }) => {
   await page.goto(await fixtureServer('editor'));
-  const toggle = page.locator('.editor-more > summary');
+  const toggle = page.locator('.editor-more-trigger');
   await toggle.focus();
   await page.keyboard.press('Enter');
-  const importCopy = page.getByRole('button', { name: 'Importar cópia', exact: true });
+  const importCopy = page.getByRole('menuitem', { name: 'Importar cópia', exact: true });
   await expect(importCopy).toBeVisible();
   await expect(importCopy).toHaveAccessibleDescription('Restaurar uma cópia editável (.json)');
   await expect(importCopy).toHaveAttribute('title', /substituídos após sua confirmação/);

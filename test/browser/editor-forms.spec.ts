@@ -381,18 +381,12 @@ test('a registered Saturday is edited and removed from the panel', async ({
 
   await registered.click();
   await page.locator('#saturday-edit-remove').click();
-  const confirmation = page.getByRole('alertdialog');
-  await expect(confirmation).toContainText('Remover sábado letivo');
-  await expect(confirmation).toContainText('6 de março de 2027');
-  await expect.poll(saturdays).toEqual([{ start: '2027-03-06', name: 'Feira de ciências' }]);
-  await confirmation.getByRole('button', { name: 'Cancelar' }).click();
-  await expect(confirmation).toBeHidden();
-  await expect(page.locator('#saturday-edit-remove')).toBeFocused();
-  await expect.poll(saturdays).toEqual([{ start: '2027-03-06', name: 'Feira de ciências' }]);
-  await page.locator('#saturday-edit-remove').click();
-  await confirmation.getByRole('button', { name: 'Remover sábado' }).click();
   await expect.poll(saturdays).toEqual([]);
   await expect(page.locator('#saturday-dates input[value="2027-03-06"]')).toBeFocused();
+  await expect(page.locator('[data-removal-notice]')).toContainText('Feira de ciências');
+  await page.locator('[data-undo-removal]').click();
+  await expect.poll(saturdays).toEqual([{ start: '2027-03-06', name: 'Feira de ciências' }]);
+  await expect(page.locator('#editor-section-title')).toBeFocused();
 });
 
 test('multi-day inclusions over a Saturday are registered but edited in the Activities step', async ({

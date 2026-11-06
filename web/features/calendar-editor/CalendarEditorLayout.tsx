@@ -1,7 +1,7 @@
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { EditorErrorBoundary } from './EditorErrorBoundary.tsx';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Download, Ellipsis, Eye, History } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Eye, Undo2 } from 'lucide-react';
 import LifecycleActions, {
   CalendarStatusBadge,
   ReturnNote,
@@ -22,7 +22,13 @@ import { SectionActionsProvider } from './section-actions.tsx';
 import { CalendarExportProvider, useCalendarExport } from './export/CalendarExportProvider.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
 import { editorSections } from '#src/app/routes.ts';
-import { editorPages, editorSteps, editorNavigation, continueLabel } from './editor-steps.ts';
+import {
+  editorPages,
+  editorSteps,
+  editorNavigation,
+  continueLabel,
+  stepIssueCounts,
+} from './editor-steps.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { contentIssues } from '#src/domain/calendar/readiness.ts';
 import EditorSteps from './EditorSteps.tsx';
@@ -32,7 +38,8 @@ import { useCalendarSummaryTool } from '../../shared/integrations/webmcp.ts';
 import './calendar-editor.css';
 import { useAppSession, useSessionState } from '../../app/session.tsx';
 import { scrollIntoView, trackScrollInset } from '../../scroll.ts';
-import ImportCalendarForm from './forms/ImportCalendarForm.tsx';
+import EditorMoreMenu from './EditorMoreMenu.tsx';
+import { Button } from '../../components/ui/Button.tsx';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { IdentityPanelProvider, IdentitySummary } from './identity/CalendarIdentity.tsx';
@@ -57,6 +64,9 @@ function EditorFrame() {
     role,
     notify,
     formEpoch,
+    removal,
+    undoRemoval,
+    dismissRemoval,
   } = useCalendarEditor();
   const { context, resume, open: eventEditorOpen } = useEventEditor();
   const { message, dismissMessage } = useSessionState();
@@ -142,10 +152,9 @@ function EditorFrame() {
       : !connected || remote
         ? 'warning'
         : 'info';
-  const openIssues = useMemo(
-    () => contentIssues(state, baseEvents).map((issue) => issue.message),
-    [state, baseEvents],
-  );
+  const issues = useMemo(() => contentIssues(state, baseEvents), [state, baseEvents]);
+  const openIssues = useMemo(() => issues.map((issue) => issue.message), [issues]);
+  const stepCounts = useMemo(() => stepIssueCounts(issues), [issues]);
   // The backend refuses these submissions too; saying why beats an error after confirming.
   const submitUnavailable = !connected
     ? 'Sem conexão. O envio volta a ficar disponível quando a conexão for restabelecida.'
@@ -232,64 +241,7 @@ function EditorFrame() {
           >
             <Eye aria-hidden="true" /> <span>Visualizar</span>
           </Link>
-          <details
-            className="editor-more"
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                event.currentTarget.open = false;
-                event.currentTarget.querySelector('summary')?.focus();
-              }
-            }}
-          >
-            <summary aria-label="Mais ações">
-              <Ellipsis aria-hidden="true" />
-            </summary>
-            <div
-              className="editor-more-content"
-              onClick={(event) => {
-                if ((event.target as HTMLElement).closest('a, button')) {
-                  const menu = event.currentTarget.closest('details');
-                  menu?.removeAttribute('open');
-                  menu?.querySelector('summary')?.focus();
-                }
-              }}
-            >
-              {/* Reading the history needs only access to the calendar, even when it is locked. */}
-              <Link
-                to={editorPages.operations.path}
-                params={{ calendarId: record.id }}
-                search={(previous) => previous}
-                className="editor-history"
-                aria-label="Histórico do calendário"
-                aria-describedby="calendar-history-description"
-                title="Consulte as operações registradas neste calendário e quem as fez."
-              >
-                <History aria-hidden="true" />
-                <span className="editor-menu-copy">
-                  <span>Histórico do calendário</span>
-                  <small id="calendar-history-description">Operações deste calendário</small>
-                </span>
-              </Link>
-              {!readOnly && <ImportCalendarForm />}
-              <button
-                id="save"
-                type="button"
-                className="secondary"
-                onClick={exporting.copy}
-                aria-label="Baixar cópia"
-                aria-describedby="download-copy-description"
-                title="Baixe uma cópia editável (.json) dos dados já incluídos no calendário para importar depois. Campos ainda em preenchimento não entram nessa cópia; o PDF fica na revisão."
-              >
-                <Download aria-hidden="true" />
-                <span className="editor-menu-copy">
-                  <span>Baixar cópia</span>
-                  <small id="download-copy-description">
-                    Guardar os dados já incluídos (.json)
-                  </small>
-                </span>
-              </button>
-            </div>
-          </details>
+          <EditorMoreMenu calendarId={record.id} readOnly={readOnly} onCopy={exporting.copy} />
         </div>
         {permissions.editCalendars ? (
           <LifecycleActions className="editor-lifecycle" {...lifecycle} />
@@ -321,6 +273,29 @@ function EditorFrame() {
           {message?.text ? (
             <Notice tone={message.error ? 'danger' : 'success'} elevated onDismiss={dismissMessage}>
               {message.text}
+            </Notice>
+          ) : null}
+          {removal ? (
+            <Notice
+              tone="success"
+              elevated
+              data-removal-notice
+              onDismiss={dismissRemoval}
+              actions={
+                <Button
+                  variant="secondary"
+                  data-undo-removal
+                  onClick={() => {
+                    undoRemoval();
+                    // The button leaves with the notice; the step's title keeps the place.
+                    heading.current?.focus({ preventScroll: true });
+                  }}
+                >
+                  <Undo2 size={18} aria-hidden="true" /> Desfazer
+                </Button>
+              }
+            >
+              {removal.text}
             </Notice>
           ) : null}
         </div>
@@ -447,6 +422,7 @@ function EditorFrame() {
           current={currentSection}
           // Courses are a content issue too: the backend refuses the submission without them.
           issueCount={openIssues.length + (record.courses ? 0 : 1)}
+          stepCounts={stepCounts}
         />
         <div className="editor-section-content">
           <div className="editor-section-heading">
