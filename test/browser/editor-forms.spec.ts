@@ -319,7 +319,6 @@ test('a selected holiday warns that it will not count as a teaching day', async 
       ),
     )
     .toBe(true);
-  await page.locator('#close-event-panel').click();
   await selectEditorSection(page, 'days');
   await page.locator('#saturday-dates input[value="2027-05-01"]').check();
   await expect(page.locator('#saturday-impediments')).toContainText('1 mai');
@@ -417,7 +416,6 @@ test('multi-day inclusions over a Saturday are registered but edited in the Acti
       ),
     )
     .toBe(true);
-  await page.locator('#close-event-panel').click();
   await selectEditorSection(page, 'days');
   const saturday = page.locator('[data-saturday="2027-03-27"]');
   await expect(saturday).toHaveAttribute('data-status', 'registered');
@@ -479,12 +477,18 @@ test('Teacher Day is applied and restored explicitly with exactly the policy opt
     )
     .toBe('2027-10-14');
   await savedState(page);
+  // Applying closes the panel and confirms the date on the page.
+  await expect(page.locator('#event-panel')).toBeHidden();
+  await expect(page.locator('#message')).toContainText('Dia do Professor: 14 de outubro de 2027');
+  await page.locator('#open-observance-teacher-day').click();
   await page.locator('#reset-observance-teacher-day').click();
   await expect
     .poll(() =>
       page.evaluate(() => window.editorTest.record.state.observanceDates?.['teacher-day']),
     )
     .toBeUndefined();
+  await expect(page.locator('#message')).toContainText('de volta à data institucional');
+  await page.locator('#open-observance-teacher-day').click();
   await expect(page.locator('#observance-date-teacher-day')).toHaveValue('2027-10-15');
   const before = await savedState(page);
   await expect(page.locator('#observance-date-teacher-day option')).toHaveCount(7);

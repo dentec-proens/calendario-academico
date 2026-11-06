@@ -37,7 +37,7 @@ import type { CivilDate } from '#src/domain/civil-date.ts';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { scrollIntoView } from '../../../scroll.ts';
 import { Button } from '../../../components/ui/Button.tsx';
-import { FormActions } from '../../../shared/forms/FormActions.tsx';
+import { PanelFooter } from '../../../components/ui/Panel.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 
 const effectLabels = {
@@ -56,13 +56,16 @@ export default function EventEditor() {
   useEffect(() => {
     if (!editor.open) return;
     const frame = requestAnimationFrame(() => {
-      // Inside the side panel, keep the heading clear of the panel's sticky header.
-      const panel = heading.current?.closest('dialog');
-      const header = panel?.querySelector('.ui-panel-header');
-      if (panel && header)
-        panel.style.scrollPaddingTop = `${header.getBoundingClientRect().height + 8}px`;
-      heading.current?.focus({ preventScroll: true });
-      scrollIntoView(heading.current, { block: 'start' });
+      // A date of the campus has the panel's own title; inside an activity the title names it.
+      const title = heading.current ?? document.getElementById('event-panel-title');
+      // Keep the heading clear of the panel's sticky top.
+      const panel = title?.closest('dialog');
+      const top = panel?.querySelector('.event-panel-top');
+      if (panel && top)
+        panel.style.scrollPaddingTop = `${top.getBoundingClientRect().height + 8}px`;
+      title?.focus({ preventScroll: true });
+      if (heading.current) scrollIntoView(heading.current, { block: 'start' });
+      else if (panel) panel.scrollTop = 0;
     });
     return () => cancelAnimationFrame(frame);
   }, [editor.open, editor.context]);
@@ -239,7 +242,11 @@ export default function EventEditor() {
   const typeQuestion = (
     <form.Field name="eventType">
       {(field) => (
-        <fieldset id="event-type" className="event-type event-section">
+        <fieldset
+          id="event-type"
+          // Below other fields it opens its own section; as the first question it needs no rule.
+          className={editor.eventId ? 'event-type event-section' : 'event-type'}
+        >
           <legend>O que é este evento?</legend>
           {eventTypes.map((type, index) => (
             <label className="check" key={type.id}>
@@ -264,8 +271,152 @@ export default function EventEditor() {
       )}
     </form.Field>
   );
+  // A notice's situation names the dates and its fields are required: answered as a notice, they
+  // come before the dates; otherwise the classification stays an optional detail at the end.
+  const noticeFirst = values.eventType === 'notice' || requirement?.variant === 'admission-notice';
+  const noticeFields = (
+    <>
+      {(publication ||
+        values.eventType === 'notice' ||
+        (!askType &&
+          !editor.activity &&
+          ['prazo', 'evento', 'institucional'].includes(values.category))) && (
+        <form.Field name="admissionType">
+          {(field) => (
+            <Select
+              field={field}
+              label="Tipo de edital (quando aplicável)"
+              id="event-admission-type"
+              required={values.eventType === 'notice' && !editor.activity}
+            >
+              <option value="">Não é edital de ingresso / classificação pendente</option>
+              <option value="regular">Processo seletivo regular</option>
+              <option value="transfer">Transferência, reingresso e portador de diploma</option>
+            </Select>
+          )}
+        </form.Field>
+      )}
+      {publication && (
+        <section className="event-publication" aria-label="Finalidade e situação do edital">
+          <p className="help">
+            O ingresso pode ocorrer em outro ano. Informe a data da publicação e identifique a
+            turma/período a que o edital se refere.
+          </p>
+          <div className="row-form">
+            <form.Field name="publicationStatus">
+              {(field) => (
+                <Select
+                  field={field}
+                  id="event-publication-status"
+                  label="Situação da publicação"
+                  required
+                >
+                  <option value="">Selecione</option>
+                  <option value="planned">Publicação programada</option>
+                  <option value="published">Publicação realizada</option>
+                </Select>
+              )}
+            </form.Field>
+            <form.Field name="admissionYear">
+              {(field) => (
+                <Input
+                  field={field}
+                  id="event-admission-year"
+                  label="Ano de ingresso"
+                  type="number"
+                  min="1900"
+                  max="9999"
+                  step="1"
+                  required
+                />
+              )}
+            </form.Field>
+            <form.Field name="admissionTerm">
+              {(field) => (
+                <Select
+                  field={field}
+                  id="event-admission-term"
+                  label="Período de ingresso"
+                  required
+                >
+                  <option value="annual">Ciclo anual</option>
+                  <option value="first">Primeiro semestre</option>
+                  <option value="second">Segundo semestre</option>
+                </Select>
+              )}
+            </form.Field>
+            <form.Field name="admissionPeriodId">
+              {(field) => (
+                <Select
+                  field={field}
+                  id="event-admission-period"
+                  label="Vínculo ao período cadastrado"
+                >
+                  <option value="">Ingresso futuro / período ainda não cadastrado</option>
+                  {(field.state.value === keptDestinations || distinctSaved) && (
+                    <option value={keptDestinations}>
+                      Manter os destinos distintos por oferta
+                    </option>
+                  )}
+                  {state.periods.map((period) => (
+                    <option key={period.id} value={period.id}>
+                      {period.name} — {compactDate(period.start, state.year)}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </form.Field>
+          </div>
+          {values.admissionPeriodId === keptDestinations && (
+            <p className="help" id="event-admission-destinations">
+              {destinationText(state, destinations)}
+            </p>
+          )}
+          {destinationIssues.length > 0 && (
+            <Notice
+              tone="warning"
+              id="event-destination-issues"
+              title="Destino de ingresso a revisar"
+            >
+              <ul>
+                {destinationIssues.map((issue) => (
+                  <li key={issue.offerId}>{issue.text}</li>
+                ))}
+              </ul>
+            </Notice>
+          )}
+          {values.admissionType === 'regular' && regularAdmissionNotice && (
+            <Notice tone="info">{regularAdmissionNotice}</Notice>
+          )}
+          {values.admissionType === 'transfer' && (
+            <p className="help">
+              Art. 11, VIII: publicação antes do início do período de destino. Vincule o período
+              correspondente quando ele já estiver cadastrado.
+            </p>
+          )}
+          <details>
+            <summary>Informar ajuste do prazo</summary>
+            <p>
+              O registro pelo campus não representa autorização da Proens. A revisão institucional
+              confere sua origem.
+            </p>
+            <form.Field name="adjustedDeadline">
+              {(field) => (
+                <Input
+                  field={field}
+                  id="event-adjusted-deadline"
+                  label="Prazo ajustado"
+                  type="date"
+                />
+              )}
+            </form.Field>
+          </details>
+        </section>
+      )}
+    </>
+  );
   return (
-    <form id="event-form" hidden={!editor.open} onSubmit={editor.submit}>
+    <form id="event-form" className="ui-panel-view" hidden={!editor.open} onSubmit={editor.submit}>
       {activityRecord && (
         <button
           type="button"
@@ -277,363 +428,240 @@ export default function EventEditor() {
           <ArrowLeft size={16} aria-hidden="true" /> Voltar à atividade
         </button>
       )}
-      <h3 id="event-form-title" ref={heading} tabIndex={-1}>
-        {editor.eventId ? 'Editar data' : activityRecord ? 'Adicionar data' : 'Nova data do campus'}
-      </h3>
-      <fieldset disabled={readOnly || editor.pending}>
-        <fieldset className="event-fields">
-          {/* The link comes from the context and is never edited here: a campus date has none,
+      {activityRecord && (
+        <h3 id="event-form-title" ref={heading} tabIndex={-1}>
+          {editor.eventId ? 'Editar data' : 'Adicionar data'}
+        </h3>
+      )}
+      <fieldset className="ui-panel-view" disabled={readOnly || editor.pending}>
+        <div className="ui-panel-view__body">
+          <fieldset className="event-fields">
+            {/* The link comes from the context and is never edited here: a campus date has none,
               and a date kept with a link without generated activity shows it read-only. */}
-          {!activityRecord && editor.activity && (
-            <p className="help" id="event-kept-link">
-              Atividade vinculada: <code>{activityKey(editor.activity)}</code> (preservada; somente
-              leitura).
-            </p>
-          )}
-          <div className="row-form">
-            <form.Field name="start">
-              {(field) => (
-                <Input
-                  field={field}
-                  label={
-                    publication
-                      ? realDate
-                        ? 'Data real de início da publicação'
-                        : 'Data programada de início da publicação'
-                      : 'Início'
-                  }
-                  id="event-start"
-                  type="date"
-                  required
-                />
-              )}
-            </form.Field>
-            <form.Field name="end">
-              {(field) => (
-                <Input
-                  field={field}
-                  label={
-                    publication
-                      ? realDate
-                        ? 'Data real de término da publicação'
-                        : 'Data programada de término da publicação'
-                      : 'Término'
-                  }
-                  id="event-end"
-                  type="date"
-                  required
-                />
-              )}
-            </form.Field>
-            {showHours && (
-              <form.Field name="hours">
+            {!activityRecord && editor.activity && (
+              <p className="help" id="event-kept-link">
+                Atividade vinculada: <code>{activityKey(editor.activity)}</code> (preservada;
+                somente leitura).
+              </p>
+            )}
+            {askType && !editor.eventId && typeQuestion}
+            {noticeFirst && noticeFields}
+            <div className="row-form">{nameField}</div>
+            <div className="row-form">
+              <form.Field name="start">
                 {(field) => (
                   <Input
                     field={field}
-                    label="Carga horária do evento (horas, quando aplicável)"
-                    id="event-hours"
-                    type="number"
-                    min="0.01"
-                    max="8784"
-                    step="0.01"
+                    label={
+                      publication
+                        ? realDate
+                          ? 'Data real de início da publicação'
+                          : 'Data programada de início da publicação'
+                        : 'Início'
+                    }
+                    id="event-start"
+                    type="date"
+                    required
                   />
                 )}
               </form.Field>
-            )}
-          </div>
-          <EventDateCalendar
-            start={values.start}
-            end={values.end}
-            eventId={editor.eventId}
-            onChange={(range) => {
-              form.setFieldValue('start', range.start);
-              form.setFieldValue('end', range.end);
-            }}
-          />
-          <div className="row-form">{nameField}</div>
-          <form.Field name="offers">
-            {(field) => {
-              // Offers already chosen stay visible so a legacy list can be corrected.
-              const choices = offerIds(state).filter(
-                (modality) => offers.includes(modality) || field.state.value.includes(modality),
-              );
-              return choices.length === 1 && field.state.value.join() === choices.join() ? (
-                <p id="event-modalities" className="event-scope">
-                  <strong>Oferta abrangida:</strong> {labelFor(state, choices[0])}
-                </p>
-              ) : (
-                <fieldset id="event-modalities" className="event-scope">
-                  <legend>Ofertas abrangidas</legend>
-                  {choices.map((modality) => (
-                    <label className="check" key={modality}>
-                      <input
-                        type="checkbox"
-                        name="event-modality"
-                        value={modality}
-                        checked={field.state.value.includes(modality)}
-                        onChange={(event) =>
-                          field.handleChange(
-                            event.target.checked
-                              ? [...field.state.value, modality]
-                              : field.state.value.filter((item) => item !== modality),
-                          )
-                        }
-                      />
-                      {labelFor(state, modality)}
-                      {requirement &&
-                      offers.includes(modality) &&
-                      applicabilityFor(state, requirement, modality) === 'required'
-                        ? ' (obrigatória)'
-                        : ''}
-                    </label>
-                  ))}
-                </fieldset>
-              );
-            }}
-          </form.Field>
-          {askType && typeQuestion}
-          <details id="event-more-options" className="event-more-options">
-            <summary>
-              <span className="event-more-heading">
-                <span className="event-more-title">Categoria e efeito</span>
-                {/* Only while closed: open, the fields themselves show both values. */}
-                <span className="event-more-summary">
-                  {values.category ? (
-                    <CategoryMark event={{ category: values.category }} withLabel />
-                  ) : (
-                    'Sem categoria'
-                  )}{' '}
-                  ·{' '}
-                  {values.effect ? (
-                    (nature === 'meeting' ? meetingLabels : effectLabels)[
-                      values.effect as keyof typeof effectLabels
-                    ]
-                  ) : (
-                    <span className="event-more-pending">Efeito a definir</span>
-                  )}
-                </span>
-              </span>
-              <ChevronDown className="event-more-chevron" aria-hidden="true" />
-            </summary>
-            <div className="event-more-fields">
-              {categoryField}
-              {effectField}
-              {schoolDayHelp}
-            </div>
-          </details>
-          {effectIssue && (
-            <Notice tone="warning" id="event-school-day-issue" title="Efeito a corrigir">
-              {effectIssue} Escolha outro efeito em Categoria e efeito.
-            </Notice>
-          )}
-          {freeEvent && internalAllowed && (
-            <form.Field
-              name="internal"
-              listeners={{ onChange: ({ value }) => value && setUnmarked(null) }}
-            >
-              {(field) => (
-                <div className="event-internal">
-                  <Check
+              <form.Field name="end">
+                {(field) => (
+                  <Input
                     field={field}
-                    id="event-internal"
-                    label={internalDateOption}
-                    aria-describedby="event-internal-help"
+                    label={
+                      publication
+                        ? realDate
+                          ? 'Data real de término da publicação'
+                          : 'Data programada de término da publicação'
+                        : 'Término'
+                    }
+                    id="event-end"
+                    type="date"
+                    required
                   />
-                  <p className="help" id="event-internal-help">
-                    Data de organização interna do campus: aparece no editor com o selo Interna, mas
-                    fica fora do calendário oficial e das evidências do parecer.
-                  </p>
-                </div>
-              )}
-            </form.Field>
-          )}
-          {unmarkedReason && !values.internal && (
-            <Notice
-              tone="warning"
-              id="event-internal-unmarked"
-              title="Data interna desmarcada"
-              onDismiss={() => setUnmarked(null)}
-            >
-              {unmarkedReason} A data passa a constar do calendário oficial.
-            </Notice>
-          )}
-          {/* A municipal holiday or recess is a date of the campus, never an activity or meeting. */}
-          {((values.effect === 'exclude' && !editor.activity && nature !== 'meeting') ||
-            values.deadlineExtensionCause) && (
-            <form.Field name="deadlineExtensionCause">
-              {(field) => (
-                <Select
-                  field={field}
-                  id="event-deadline-extension-cause"
-                  label="Prorrogação de prazos por motivo municipal"
-                >
-                  <option value="">Sem prorrogação municipal vinculada</option>
-                  <option value="municipal-holiday">Feriado municipal</option>
-                  <option value="municipal-recess">Recesso decorrente de feriado municipal</option>
-                </Select>
-              )}
-            </form.Field>
-          )}
-          {values.deadlineExtensionCause && (
-            <p className="help">
-              Art. 3º, § 2º: classifique o feriado municipal ou recesso correspondente. A política
-              confere os prazos afetados por oferta e preserva as datas reais das atividades.
-            </p>
-          )}
-          {(publication ||
-            values.eventType === 'notice' ||
-            (!askType &&
-              !editor.activity &&
-              ['prazo', 'evento', 'institucional'].includes(values.category))) && (
-            <form.Field name="admissionType">
-              {(field) => (
-                <Select
-                  field={field}
-                  label="Tipo de edital (quando aplicável)"
-                  id="event-admission-type"
-                  required={values.eventType === 'notice' && !editor.activity}
-                >
-                  <option value="">Não é edital de ingresso / classificação pendente</option>
-                  <option value="regular">Processo seletivo regular</option>
-                  <option value="transfer">Transferência, reingresso e portador de diploma</option>
-                </Select>
-              )}
-            </form.Field>
-          )}
-          {publication && (
-            <section className="event-publication" aria-label="Finalidade e situação do edital">
-              <p className="help">
-                O ingresso pode ocorrer em outro ano. Informe a data da publicação e identifique a
-                turma/período a que o edital se refere.
-              </p>
+                )}
+              </form.Field>
+            </div>
+            <EventDateCalendar
+              start={values.start}
+              end={values.end}
+              eventId={editor.eventId}
+              onChange={(range) => {
+                form.setFieldValue('start', range.start);
+                form.setFieldValue('end', range.end);
+              }}
+            />
+            {showHours && (
               <div className="row-form">
-                <form.Field name="publicationStatus">
-                  {(field) => (
-                    <Select
-                      field={field}
-                      id="event-publication-status"
-                      label="Situação da publicação"
-                      required
-                    >
-                      <option value="">Selecione</option>
-                      <option value="planned">Publicação programada</option>
-                      <option value="published">Publicação realizada</option>
-                    </Select>
-                  )}
-                </form.Field>
-                <form.Field name="admissionYear">
+                <form.Field name="hours">
                   {(field) => (
                     <Input
                       field={field}
-                      id="event-admission-year"
-                      label="Ano de ingresso"
+                      label="Carga horária (horas)"
+                      id="event-hours"
                       type="number"
-                      min="1900"
-                      max="9999"
-                      step="1"
-                      required
+                      min="0.01"
+                      max="8784"
+                      step="0.01"
                     />
-                  )}
-                </form.Field>
-                <form.Field name="admissionTerm">
-                  {(field) => (
-                    <Select
-                      field={field}
-                      id="event-admission-term"
-                      label="Período de ingresso"
-                      required
-                    >
-                      <option value="annual">Ciclo anual</option>
-                      <option value="first">Primeiro semestre</option>
-                      <option value="second">Segundo semestre</option>
-                    </Select>
-                  )}
-                </form.Field>
-                <form.Field name="admissionPeriodId">
-                  {(field) => (
-                    <Select
-                      field={field}
-                      id="event-admission-period"
-                      label="Vínculo ao período cadastrado"
-                    >
-                      <option value="">Ingresso futuro / período ainda não cadastrado</option>
-                      {(field.state.value === keptDestinations || distinctSaved) && (
-                        <option value={keptDestinations}>
-                          Manter os destinos distintos por oferta
-                        </option>
-                      )}
-                      {state.periods.map((period) => (
-                        <option key={period.id} value={period.id}>
-                          {period.name} — {compactDate(period.start, state.year)}
-                        </option>
-                      ))}
-                    </Select>
                   )}
                 </form.Field>
               </div>
-              {values.admissionPeriodId === keptDestinations && (
-                <p className="help" id="event-admission-destinations">
-                  {destinationText(state, destinations)}
-                </p>
-              )}
-              {destinationIssues.length > 0 && (
-                <Notice
-                  tone="warning"
-                  id="event-destination-issues"
-                  title="Destino de ingresso a revisar"
-                >
-                  <ul>
-                    {destinationIssues.map((issue) => (
-                      <li key={issue.offerId}>{issue.text}</li>
+            )}
+            <form.Field name="offers">
+              {(field) => {
+                // Offers already chosen stay visible so a legacy list can be corrected.
+                const choices = offerIds(state).filter(
+                  (modality) => offers.includes(modality) || field.state.value.includes(modality),
+                );
+                return choices.length === 1 && field.state.value.join() === choices.join() ? (
+                  <p id="event-modalities" className="event-scope">
+                    <strong>Oferta abrangida:</strong> {labelFor(state, choices[0])}
+                  </p>
+                ) : (
+                  <fieldset id="event-modalities" className="event-scope">
+                    <legend>Ofertas abrangidas</legend>
+                    {choices.map((modality) => (
+                      <label className="check" key={modality}>
+                        <input
+                          type="checkbox"
+                          name="event-modality"
+                          value={modality}
+                          checked={field.state.value.includes(modality)}
+                          onChange={(event) =>
+                            field.handleChange(
+                              event.target.checked
+                                ? [...field.state.value, modality]
+                                : field.state.value.filter((item) => item !== modality),
+                            )
+                          }
+                        />
+                        {labelFor(state, modality)}
+                        {requirement &&
+                        offers.includes(modality) &&
+                        applicabilityFor(state, requirement, modality) === 'required'
+                          ? ' (obrigatória)'
+                          : ''}
+                      </label>
                     ))}
-                  </ul>
-                </Notice>
-              )}
-              {values.admissionType === 'regular' && regularAdmissionNotice && (
-                <Notice tone="info">{regularAdmissionNotice}</Notice>
-              )}
-              {values.admissionType === 'transfer' && (
-                <p className="help">
-                  Art. 11, VIII: publicação antes do início do período de destino. Vincule o período
-                  correspondente quando ele já estiver cadastrado.
-                </p>
-              )}
-              <details>
-                <summary>Informar ajuste do prazo</summary>
-                <p>
-                  O registro pelo campus não representa autorização da Proens. A revisão
-                  institucional confere sua origem.
-                </p>
-                <form.Field name="adjustedDeadline">
-                  {(field) => (
-                    <Input
+                  </fieldset>
+                );
+              }}
+            </form.Field>
+            {askType && editor.eventId && typeQuestion}
+            <details id="event-more-options" className="event-more-options">
+              <summary>
+                <span className="event-more-heading">
+                  <span className="event-more-title">Categoria e efeito</span>
+                  {/* Only while closed: open, the fields themselves show both values. */}
+                  <span className="event-more-summary">
+                    {values.category ? (
+                      <CategoryMark event={{ category: values.category }} withLabel />
+                    ) : (
+                      'Sem categoria'
+                    )}{' '}
+                    ·{' '}
+                    {values.effect ? (
+                      (nature === 'meeting' ? meetingLabels : effectLabels)[
+                        values.effect as keyof typeof effectLabels
+                      ]
+                    ) : (
+                      <span className="event-more-pending">Efeito a definir</span>
+                    )}
+                  </span>
+                </span>
+                <ChevronDown className="event-more-chevron" aria-hidden="true" />
+              </summary>
+              <div className="event-more-fields">
+                {categoryField}
+                {effectField}
+                {schoolDayHelp}
+              </div>
+            </details>
+            {effectIssue && (
+              <Notice tone="warning" id="event-school-day-issue" title="Efeito a corrigir">
+                {effectIssue} Escolha outro efeito em Categoria e efeito.
+              </Notice>
+            )}
+            {freeEvent && internalAllowed && (
+              <form.Field
+                name="internal"
+                listeners={{ onChange: ({ value }) => value && setUnmarked(null) }}
+              >
+                {(field) => (
+                  <div className="event-internal">
+                    <Check
                       field={field}
-                      id="event-adjusted-deadline"
-                      label="Prazo ajustado"
-                      type="date"
+                      id="event-internal"
+                      label={internalDateOption}
+                      aria-describedby="event-internal-help"
                     />
-                  )}
-                </form.Field>
-              </details>
-            </section>
-          )}
-        </fieldset>
+                    <p className="help" id="event-internal-help">
+                      Data de organização interna do campus: aparece no editor com o selo Interna,
+                      mas fica fora do calendário oficial e das evidências do parecer.
+                    </p>
+                  </div>
+                )}
+              </form.Field>
+            )}
+            {unmarkedReason && !values.internal && (
+              <Notice
+                tone="warning"
+                id="event-internal-unmarked"
+                title="Data interna desmarcada"
+                onDismiss={() => setUnmarked(null)}
+              >
+                {unmarkedReason} A data passa a constar do calendário oficial.
+              </Notice>
+            )}
+            {/* A municipal holiday or recess is a date of the campus, never an activity or meeting. */}
+            {((values.effect === 'exclude' && !editor.activity && nature !== 'meeting') ||
+              values.deadlineExtensionCause) && (
+              <form.Field name="deadlineExtensionCause">
+                {(field) => (
+                  <Select
+                    field={field}
+                    id="event-deadline-extension-cause"
+                    label="Prorrogação de prazos por motivo municipal"
+                  >
+                    <option value="">Sem prorrogação municipal vinculada</option>
+                    <option value="municipal-holiday">Feriado municipal</option>
+                    <option value="municipal-recess">
+                      Recesso decorrente de feriado municipal
+                    </option>
+                  </Select>
+                )}
+              </form.Field>
+            )}
+            {values.deadlineExtensionCause && (
+              <p className="help">
+                Art. 3º, § 2º: classifique o feriado municipal ou recesso correspondente. A política
+                confere os prazos afetados por oferta e preserva as datas reais das atividades.
+              </p>
+            )}
+            {!noticeFirst && noticeFields}
+          </fieldset>
+        </div>
         {/* The refusal repeats “Efeito a corrigir”, already shown above the fields. */}
-        <FormFeedback
-          error={
-            effectIssue && editor.error === effectIssue
-              ? 'Corrija o efeito indicado em “Efeito a corrigir”.'
-              : editor.error
+        <PanelFooter
+          feedback={
+            <FormFeedback
+              error={
+                effectIssue && editor.error === effectIssue
+                  ? 'Corrija o efeito indicado em “Efeito a corrigir”.'
+                  : editor.error
+              }
+            />
           }
-        />
-        <FormActions>
+        >
           <Button type="submit">{editor.eventId ? 'Aplicar alterações' : 'Adicionar data'}</Button>
           {editor.dirty && (
             <Button id="discard-event-form" variant="secondary" onClick={editor.discard}>
               Descartar alterações
             </Button>
           )}
-        </FormActions>
+        </PanelFooter>
       </fieldset>
     </form>
   );

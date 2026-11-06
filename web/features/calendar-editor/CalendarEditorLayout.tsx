@@ -1,7 +1,7 @@
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { EditorErrorBoundary } from './EditorErrorBoundary.tsx';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Eye, Undo2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Eye } from 'lucide-react';
 import LifecycleActions, {
   CalendarStatusBadge,
   ReturnNote,
@@ -16,6 +16,7 @@ import { BackLink } from '../../components/ui/BackLink.tsx';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { CalendarEditorProvider, useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import { EventEditorProvider, useEventEditor } from './events/EventEditorProvider.tsx';
+import EditorNotices from './EditorNotices.tsx';
 import EventPanel from './events/EventPanel.tsx';
 import NewEventButton from './events/NewEventButton.tsx';
 import { SectionActionsProvider } from './section-actions.tsx';
@@ -39,7 +40,6 @@ import './calendar-editor.css';
 import { useAppSession, useSessionState } from '../../app/session.tsx';
 import { scrollIntoView, trackScrollInset } from '../../scroll.ts';
 import EditorMoreMenu from './EditorMoreMenu.tsx';
-import { Button } from '../../components/ui/Button.tsx';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { IdentityPanelProvider, IdentitySummary } from './identity/CalendarIdentity.tsx';
@@ -65,11 +65,9 @@ function EditorFrame() {
     notify,
     formEpoch,
     removal,
-    undoRemoval,
-    dismissRemoval,
   } = useCalendarEditor();
   const { context, resume, open: eventEditorOpen } = useEventEditor();
-  const { message, dismissMessage } = useSessionState();
+  const { message } = useSessionState();
   const { permissions } = useAppSession();
   const exporting = useCalendarExport();
   const currentContent = useMemo<DiffSide>(
@@ -270,34 +268,12 @@ function EditorFrame() {
       ) : null}
       <div className="editor-feedback" ref={feedback}>
         <div id="message" role="status" aria-live="polite">
-          {message?.text ? (
-            <Notice tone={message.error ? 'danger' : 'success'} elevated onDismiss={dismissMessage}>
-              {message.text}
-            </Notice>
-          ) : null}
-          {removal ? (
-            <Notice
-              tone="success"
-              elevated
-              data-removal-notice
-              onDismiss={dismissRemoval}
-              actions={
-                <Button
-                  variant="secondary"
-                  data-undo-removal
-                  onClick={() => {
-                    undoRemoval();
-                    // The button leaves with the notice; the step's title keeps the place.
-                    heading.current?.focus({ preventScroll: true });
-                  }}
-                >
-                  <Undo2 size={18} aria-hidden="true" /> Desfazer
-                </Button>
-              }
-            >
-              {removal.text}
-            </Notice>
-          ) : null}
+          <EditorNotices
+            message={message}
+            removal={removal}
+            // The step's title keeps the place.
+            onUndone={() => heading.current?.focus({ preventScroll: true })}
+          />
         </div>
         <Notice
           className="autosave-panel"

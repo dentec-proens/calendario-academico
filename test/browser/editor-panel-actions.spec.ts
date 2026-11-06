@@ -32,6 +32,8 @@ for (const width of [1440, 390]) {
     await opener.click();
     await expect(date).toHaveValue('2027-10-14');
     await page.locator('#apply-observance-teacher-day').click();
+    await expect(opener).toBeFocused();
+    await opener.click();
     await expect(page.locator('#discard-observance-teacher-day')).toBeHidden();
     await date.selectOption('2027-10-13');
     const discard = page.locator('#discard-observance-teacher-day');
@@ -51,6 +53,8 @@ for (const width of [1440, 390]) {
     await expect(date).toHaveValue('2027-10-14');
     await expect(page.locator('#unapplied-status')).toBeHidden();
     await page.locator('#reset-observance-teacher-day').click();
+    await expect(opener).toBeFocused();
+    await opener.click();
     await expect(date).toHaveValue('2027-10-15');
     await expect(page.locator('#discard-observance-teacher-day')).toBeHidden();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(

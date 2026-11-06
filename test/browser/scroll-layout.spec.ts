@@ -49,7 +49,7 @@ for (const width of [1440, 390]) {
       `reduced motion must not animate scroll: ${positions.join(', ')}`,
     ).toBe(1);
   });
-  test(`editor opens the event form heading below the panel header at ${width}px`, async ({
+  test(`editor opens the event form's first field below the panel header at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
@@ -59,9 +59,10 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toHaveText('2027 — Campus de teste');
     await selectCampusEvents(page);
     await editCampusEvent(page, 'local-event');
-    const title = page.locator('#event-form-title');
+    await expect(page.locator('#event-panel-title')).toBeFocused();
+    const title = page.locator('#event-name');
     await expect(title).toBeInViewport({ ratio: 1 });
-    // The form opens in the side panel; its sticky header must not cover the heading.
+    // The form opens in the side panel; its sticky header must not cover the first field.
     await expect
       .poll(() =>
         title.evaluate((element) => {
@@ -104,7 +105,6 @@ for (const width of [1440, 390]) {
           .evaluate((element) => element.getBoundingClientRect().height),
       )
       .toBeGreaterThan(originalHeight);
-    await page.locator('#close-event-panel').click();
     await selectEditorSection(page, 'periods');
     await expect(page.locator('#editor-section-title')).toContainText('Organização por oferta');
     await expect

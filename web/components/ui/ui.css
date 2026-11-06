@@ -59,6 +59,55 @@ dialog.ui-panel-dialog--side {
   padding: 0 var(--panel-inset) 24px;
   border-left: 1px solid var(--ui-border-soft);
 }
+/* A panel whose views end in a footer: each view fills the height, keeping the footer at the end. */
+dialog.ui-panel-dialog--with-footer {
+  padding-bottom: 0;
+  scroll-padding-bottom: 96px;
+}
+dialog.ui-panel-dialog--with-footer[open] {
+  display: flex;
+  flex-direction: column;
+}
+.ui-panel-view:not([hidden]) {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+.ui-panel-view__body {
+  flex: 1 0 auto;
+  min-width: 0;
+  padding-bottom: var(--ui-space-4);
+}
+.ui-panel-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: grid;
+  gap: var(--ui-space-2);
+  margin-inline: calc(-1 * var(--panel-inset));
+  padding: 12px var(--panel-inset);
+  border-top: 1px solid var(--ui-border-soft);
+  background: var(--ui-surface);
+}
+.ui-panel-footer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-2) var(--ui-space-3);
+}
+.ui-panel-footer__actions .ui-button {
+  margin: 0;
+}
+.ui-panel-footer__actions > .ui-button--danger {
+  margin-inline-start: auto;
+}
+/* On a short screen a fixed footer would cover what is being filled. */
+@media (max-height: 560px) {
+  .ui-panel-footer {
+    position: static;
+  }
+}
 .ui-panel-header {
   display: flex;
   align-items: flex-start;
@@ -120,6 +169,9 @@ dialog.ui-panel-dialog--side {
     width: 100vw;
     padding-bottom: 20px;
     border-left: 0;
+  }
+  dialog.ui-panel-dialog--side.ui-panel-dialog--with-footer {
+    padding-bottom: 0;
   }
 }
 

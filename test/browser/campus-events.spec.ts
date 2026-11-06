@@ -41,13 +41,16 @@ for (const width of [1440, 390]) {
     await expect(row).toBeFocused();
     await openCampusEvent(page, 'local-event');
     await page.locator('[data-edit-event="local-event"]').click();
-    await expect(page.locator('#event-form-title')).toBeFocused();
+    await expect(page.locator('#event-panel-title')).toBeFocused();
+    await expect(page.locator('#event-panel-title')).toHaveText('Editar data');
     await page.locator('#event-name').fill('Encontro do campus');
     await page.locator('#event-form button[type="submit"]').click();
     expect(
       (await savedState(page)).state.events.find((event) => event.id === 'local-event')?.name,
     ).toBe('Encontro do campus');
-    await page.locator('#close-event-panel').click();
+    // Applying finishes the work: the panel closes and the page confirms it.
+    await expect(page.locator('#event-panel')).toBeHidden();
+    await expect(page.locator('#message')).toContainText('Data “Encontro do campus” atualizada.');
     await expect(row).toBeFocused();
     await expect(row).toContainText('Encontro do campus');
     await openCampusEvent(page, 'local-event');
@@ -63,6 +66,49 @@ for (const width of [1440, 390]) {
     );
   });
 }
+
+test('adding a campus date closes the panel and shows its row in a collapsed group', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('editor')).origin;
+  await page.goto(origin + '/calendarios/synthetic-calendar/atividades');
+  await selectCampusEvents(page);
+  await page.locator('#campus-dates .activity-group-toggle').click();
+  await expect(page.locator('[data-open-event="local-event"]')).toBeHidden();
+
+  await page.locator('#new-event').click();
+  await expect(page.locator('#event-panel-title')).toBeFocused();
+  await expect(page.locator('#event-panel-title')).toHaveText('Nova data do campus');
+  await page.locator('#event-type-campus-event').check();
+  await page.locator('#event-name').fill('Semana de integração');
+  await page.locator('#event-start').fill('2027-02-15');
+  await page.locator('#event-end').fill('2027-02-17');
+  await page.locator('#event-form button[type="submit"]').click();
+
+  await expect(page.locator('#event-panel')).toBeHidden();
+  await expect(page.locator('#message')).toContainText(
+    'Data “Semana de integração” adicionada ao calendário.',
+  );
+  await expect(page.locator('#new-event')).toBeFocused();
+  await expect(page.locator('#event-list')).toContainText('Semana de integração');
+  await expect(page.locator('[data-open-event="local-event"]')).toBeVisible();
+});
+
+test('applying a saved date without changes only closes, without touching it', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('editor')).origin;
+  await page.goto(origin + '/calendarios/synthetic-calendar/atividades');
+  const saves = await page.evaluate(() => window.editorTest.calls.saves);
+  await editCampusEvent(page, 'local-event');
+  await page.locator('#event-form button[type="submit"]').click();
+  await expect(page.locator('#event-panel')).toBeHidden();
+  await expect(page.locator('[data-open-event="local-event"]')).toBeFocused();
+  await expect(page.locator('#message')).toBeEmpty();
+  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(saves);
+});
 
 test('campus consultation preserves another activity draft and prevents replacing it', async ({
   page,
@@ -165,7 +211,6 @@ for (const width of [1440, 390]) {
       (event) => event.id === 'local-event',
     );
     expect(marked).toEqual({ ...before, internal: true });
-    await page.locator('#close-event-panel').click();
     await expect(row).toBeFocused();
     await expect(row.locator('[data-internal-badge]')).toHaveText('Interna');
     await openCampusEvent(page, 'local-event');

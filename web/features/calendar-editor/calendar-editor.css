@@ -897,8 +897,26 @@ button.activity-group-toggle:enabled:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-#event-panel #event-form {
-  margin-top: 1.25rem;
+/* The title and the last message stay together above whatever the panel scrolls. */
+.event-panel-top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex: none;
+  margin-bottom: var(--ui-space-5);
+  background: var(--ui-surface);
+}
+.event-panel-top .ui-panel-header {
+  position: static;
+  margin-bottom: 0;
+}
+#event-panel-message:not(:empty) {
+  display: grid;
+  gap: var(--ui-space-2);
+  padding-block: var(--ui-space-3);
+}
+#event-panel #event-hours {
+  max-width: 12rem;
 }
 .activity-details > .activity-detail {
   margin-bottom: 0.75rem;

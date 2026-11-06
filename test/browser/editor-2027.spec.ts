@@ -50,7 +50,6 @@ for (const width of [1440, 390]) {
       )
       .toBe('2026-12-01');
     // The search also narrows the dates; clearing it shows the new campus date.
-    await page.locator('#close-event-panel').click();
     await page.locator('#activity-search').fill('');
     await expect(page.locator('#event-list')).toContainText('Edital anterior sintético');
     await expect

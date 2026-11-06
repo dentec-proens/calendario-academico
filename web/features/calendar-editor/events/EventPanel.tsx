@@ -1,11 +1,12 @@
 import { useWorkRisk } from '../../../shared/forms/useWorkRisk.ts';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { PanelDialog, PanelHeader } from '../../../components/ui/Panel.tsx';
 import { generatedActivities } from '#src/domain/calendar/activities/links.ts';
 import { observanceRules } from '#src/domain/calendar/observances.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
-import { useAppSession } from '../../../app/session.tsx';
+import { useAppSession, useSessionState } from '../../../app/session.tsx';
+import EditorNotices from '../EditorNotices.tsx';
 import ObservanceForm from '../forms/ObservanceForm.tsx';
 import { useActivitySearch } from './activity-query.ts';
 import { useEventEditor } from './EventEditorProvider.tsx';
@@ -19,7 +20,8 @@ import { Notice } from '../../../components/ui/Notice.tsx';
  * A modal side sheet keeps the list visible behind it and closes with its button or Escape.
  */
 export default function EventPanel() {
-  const { state, events, readOnly } = useCalendarEditor();
+  const { state, events, readOnly, removal } = useCalendarEditor();
+  const { message } = useSessionState();
   const editor = useEventEditor();
   const search = useActivitySearch();
   const navigate = useNavigate();
@@ -65,32 +67,49 @@ export default function EventPanel() {
     if (paused && !wasPaused.current) closeEditor();
     wasPaused.current = paused;
   }, [paused, closeEditor]);
+  const focusTitle = () => document.getElementById('event-panel-title')?.focus();
+  // What was announced before this panel or form opened belongs to the page behind it.
+  const surface = !open ? 'closed' : editor.open ? 'form' : 'view';
+  const [seen, setSeen] = useState({ surface, message, removal });
+  if (seen.surface !== surface)
+    setSeen(
+      seen.surface === 'closed' || surface === 'form'
+        ? { surface, message, removal }
+        : { ...seen, surface },
+    );
   return (
     <PanelDialog
       id="event-panel"
-      className="ui-panel-dialog--side"
+      className="ui-panel-dialog--side ui-panel-dialog--with-footer"
       open={open}
       aria-labelledby="event-panel-title"
       onClose={editor.close}
     >
-      <PanelHeader
-        title={
-          activity?.name ??
-          campusEvent?.name ??
-          (observanceKey
-            ? (observance?.label ?? 'Ajuste de observância')
-            : editor.eventId
-              ? 'Data do campus'
-              : 'Nova data do campus')
-        }
-        titleId="event-panel-title"
-        closeId="close-event-panel"
-        disabled={editor.pending}
-        onClose={editor.close}
-      />
-      {activity && (
-        <ActivityDetails item={activity} detailOpen={search.atividade === activityKey} />
-      )}
+      <div className="event-panel-top">
+        <PanelHeader
+          title={
+            activity?.name ??
+            campusEvent?.name ??
+            (observanceKey
+              ? (observance?.label ?? 'Ajuste de observância')
+              : editor.eventId
+                ? 'Editar data'
+                : 'Nova data do campus')
+          }
+          titleId="event-panel-title"
+          closeId="close-event-panel"
+          disabled={editor.pending}
+          onClose={editor.close}
+        />
+        <div id="event-panel-message" role="status" aria-live="polite">
+          <EditorNotices
+            message={!open || message === seen.message ? null : message}
+            removal={!open || removal === seen.removal ? null : removal}
+            onUndone={focusTitle}
+            onDismissed={focusTitle}
+          />
+        </div>
+      </div>
       {!editor.open && editor.context && editor.dirty && (
         <Notice
           as="section"
@@ -128,6 +147,9 @@ export default function EventPanel() {
             preenchimento antes de abrir outro.
           </p>
         </Notice>
+      )}
+      {activity && (
+        <ActivityDetails item={activity} detailOpen={search.atividade === activityKey} />
       )}
       {campusEvent && <CampusEventDetails key={campusEvent.id} event={campusEvent} />}
       {observanceKey && (

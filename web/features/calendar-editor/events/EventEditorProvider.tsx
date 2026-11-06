@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type FormEvent,
   type PropsWithChildren,
 } from 'react';
 import { useNavigate } from '@tanstack/react-router';
@@ -82,6 +83,8 @@ function useController() {
   const [returnFocus, setReturnFocus] = useState<
     'resume-event' | 'new-event' | 'pending-event-title' | 'editor-section-title' | null
   >(null);
+  /** The date just applied, until the list has opened its group and brought its row into view. */
+  const [lastApplied, setLastApplied] = useState<string | null>(null);
   // The action that opened the panel receives focus when it closes; actions inside it do not.
   const rememberOpener = useCallback(() => {
     // A new action supersedes a focus return queued by the previously closed panel.
@@ -135,12 +138,20 @@ function useController() {
         );
         return;
       }
-      setEventId(id);
-      setContext({ kind: 'event', eventId: id });
+      // A date of the campus returns to the list, where it now appears.
+      setContext(null);
+      setOpen(false);
+      setEventId(null);
+      setDateId(null);
+      setPanel(null);
+      setLastApplied(id);
+      setReturnFocus('new-event');
     },
     {
       successMessage: (value) =>
-        `Data “${value.name}” aplicada. Confira o indicador de salvamento.`,
+        eventId
+          ? `Data “${value.name}” atualizada.`
+          : `Data “${value.name}” adicionada ao calendário.`,
     },
   );
   const dirty = result.dirty;
@@ -180,17 +191,22 @@ function useController() {
         !active.closest('#event-panel')
       ) {
         setReturnFocus(null);
+        setLastApplied(null);
         return;
       }
       // A pause gives focus to the access notice; the editor behind it is inert.
       if (!target?.closest('[inert]')) {
         target?.focus({ preventScroll: true });
-        scrollIntoView(target, { block: 'start' });
+        // Focus continues from the action; the view shows the date that was just applied.
+        const row = lastApplied ? document.getElementById(`date-${lastApplied}`) : null;
+        if (row) scrollIntoView(row, { block: 'center' });
+        else scrollIntoView(target, { block: 'start' });
       }
       setReturnFocus(null);
+      setLastApplied(null);
     });
     return () => cancelAnimationFrame(frame);
-  }, [returnFocus]);
+  }, [returnFocus, lastApplied]);
   const previousVersion = useRef(record.version);
   useEffect(() => {
     if (previousVersion.current === record.version) return;
@@ -301,8 +317,7 @@ function useController() {
     if (!requirement) return;
     begin({ kind: 'activity', key }, activityDraft(state, requirement));
   }
-  function discard() {
-    if (result.pending) return;
+  function clearForm() {
     result.form.reset(emptyEvent(calendarOfferIds));
     result.clearDraft();
     session.setFormDirty(formId, false);
@@ -310,6 +325,23 @@ function useController() {
     setOpen(false);
     setEventId(null);
     setDateId(null);
+  }
+  function focusActivityView() {
+    requestAnimationFrame(() =>
+      (
+        document.getElementById('panel-resume-event') ??
+        document.querySelector<HTMLElement>('#event-panel [data-prepare-activity]')
+      )?.focus(),
+    );
+  }
+  /** Abandons the form; inside an activity, its view stays, as after applying a date. */
+  function discard() {
+    if (result.pending) return;
+    clearForm();
+    if (panel?.kind === 'activity') {
+      focusActivityView();
+      return;
+    }
     setPanel(null);
     setReturnFocus('new-event');
   }
@@ -324,7 +356,8 @@ function useController() {
     setPanel(context?.kind === 'activity' ? { kind: 'activity', key: context.key } : null);
     setOpen(true);
     requestAnimationFrame(() => {
-      const heading = document.getElementById('event-form-title');
+      const heading =
+        document.getElementById('event-form-title') ?? document.getElementById('event-panel-title');
       heading?.focus({ preventScroll: true });
       scrollIntoView(heading, { block: 'start' });
     });
@@ -342,16 +375,25 @@ function useController() {
       setDateId(null);
     }
     setPanel({ kind: 'activity', key: context.key });
-    requestAnimationFrame(() =>
-      (
-        document.getElementById('panel-resume-event') ??
-        document.querySelector<HTMLElement>('#event-panel [data-prepare-activity]')
-      )?.focus(),
-    );
+    focusActivityView();
   }
   const saved = eventId ? state.events.find((event) => event.id === eventId) : undefined;
   return {
     ...result,
+    /** A saved date with nothing changed has nothing to apply: leaving is all that is asked. */
+    submit: (event: FormEvent<HTMLFormElement>) => {
+      if (!eventId || dirty) {
+        result.submit(event);
+        return;
+      }
+      event.preventDefault();
+      if (context?.kind === 'activity') backToActivity();
+      else if (!result.pending) {
+        clearForm();
+        setPanel(null);
+        setReturnFocus('new-event');
+      }
+    },
     context,
     open,
     eventId,
@@ -362,6 +404,7 @@ function useController() {
         ? activityFromKey(context.key)
         : undefined,
     pendingDates,
+    lastApplied,
     backToActivity,
     edit,
     prepare,
@@ -386,7 +429,9 @@ function useController() {
         return;
       }
       if (!dirty) {
-        discard();
+        clearForm();
+        setPanel(null);
+        setReturnFocus('new-event');
         return;
       }
       setOpen(false);

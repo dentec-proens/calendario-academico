@@ -78,7 +78,7 @@ test('calendar editor and its event form', async ({ page, fixtureServer }) => {
   await editCampusEvent(page, 'local-event');
   await expect(page.locator('#event-form')).toBeVisible();
   await assertNoOverflow(page);
-  const eventHeading = page.locator('#event-form-title');
+  const eventHeading = page.locator('#event-name');
   await expect(eventHeading).toBeInViewport({ ratio: 1 });
   await expect
     .poll(() =>

@@ -6,7 +6,13 @@ import { longDate } from '#src/domain/date-labels.ts';
 import { excludedDays, groupExcludedDays, runDays } from '#src/domain/calendar/excluded-days.ts';
 import { Button } from '../../../components/ui/Button.tsx';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
-import { initialMonth, isoDate, localDate, nextDateRange } from './date-calendar.ts';
+import {
+  initialMonth,
+  isoDate,
+  localDate,
+  monthAfterChange,
+  nextDateRange,
+} from './date-calendar.ts';
 import './event-date-calendar.css';
 
 /**
@@ -30,6 +36,13 @@ export default function EventDateCalendar({
   const id = useId();
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => initialMonth(start, state.periods, state.year));
+  // The form stays mounted between dates: the month follows typed dates and another date's values.
+  const [dates, setDates] = useState({ start, end });
+  if (dates.start !== start || dates.end !== end) {
+    setDates({ start, end });
+    const next = monthAfterChange(dates, { start, end }, month, state.periods, state.year);
+    if (next) setMonth(next);
+  }
   const excluded = useMemo(
     () => excludedDays(events.filter((event) => event.id !== eventId)),
     [events, eventId],

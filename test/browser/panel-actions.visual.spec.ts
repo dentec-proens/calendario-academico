@@ -31,7 +31,7 @@ test('event footer has apply and discard while the shared header closes the pane
   await expect(page.locator('#record-title')).toBeVisible();
   await selectCampusEvents(page);
   await editCampusEvent(page, 'local-event');
-  await expect(page.locator('#event-form-title')).toBeFocused();
+  await expect(page.locator('#event-panel-title')).toBeFocused();
   await page.locator('#event-name').fill('Evento com alteração ainda não aplicada');
   await page.locator('#event-form button[type="submit"]').focus();
   await expect(page.locator('#event-form button[type="submit"]')).toBeFocused();

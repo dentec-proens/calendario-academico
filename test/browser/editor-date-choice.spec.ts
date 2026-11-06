@@ -31,6 +31,23 @@ test('the calendar in the date form fills the fields and leaves typing as it was
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
+test('the open calendar follows a date typed in another month', async ({ page, fixtureServer }) => {
+  await page.goto(await fixtureServer('editor'));
+  await page.locator('[data-view="events"]').click();
+  await selectCampusEvents(page);
+  await page.locator('#new-event').click();
+  await page.locator('[data-event-calendar-toggle]').click();
+
+  await page.locator('#event-start').fill('2027-02-15');
+  await expect(page.locator(day('2027-02-15'))).toHaveAttribute('aria-label', /selecionado/);
+  await page.locator('#event-end').fill('2027-04-02');
+  await expect(page.locator(day('2027-04-02'))).toHaveAttribute('aria-label', /selecionado/);
+  // A day clicked in the month on screen keeps the month.
+  await page.locator(day('2027-04-20')).click();
+  await expect(page.locator(day('2027-04-20'))).toBeVisible();
+  await expect(page.locator('#event-start')).toHaveValue('2027-04-20');
+});
+
 test('the calendar names the days that do not count and never blocks them', async ({
   page,
   fixtureServer,

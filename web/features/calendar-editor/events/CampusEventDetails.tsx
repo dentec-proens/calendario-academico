@@ -14,7 +14,7 @@ import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { EditorEvent } from '../types.ts';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import EventRecordDetails from './EventRecordDetails.tsx';
-import { FormActions } from '../../../shared/forms/FormActions.tsx';
+import { PanelFooter } from '../../../components/ui/Panel.tsx';
 import { Button } from '../../../components/ui/Button.tsx';
 import ActivityChangeForm from './ActivityChangeForm.tsx';
 
@@ -37,81 +37,95 @@ export default function CampusEventDetails({ event }: { event: EditorEvent }) {
   const changeButton = useRef<HTMLButtonElement>(null);
   const editButton = useRef<HTMLButtonElement>(null);
   return (
-    <section className="campus-event-details" aria-label="Detalhes da data">
-      <div className="campus-event-record">
-        <EventRecordDetails event={event} activity={activity} />
-      </div>
-      {issue && (
-        <Notice
-          tone="warning"
-          id="link-review-reason"
-          title={`Vínculo a conferir: ${linkIssueLabels[issue]}`}
-        >
-          <p>
-            Vínculo gravado: <code>{event.activity && activityKey(event.activity)}</code>.{' '}
-            {linkIssueActions[issue]}
-          </p>
-          {!correctable && (
+    <section className="campus-event-details ui-panel-view" aria-label="Detalhes da data">
+      <div className="ui-panel-view__body">
+        <div className="campus-event-record">
+          <EventRecordDetails event={event} activity={activity} />
+        </div>
+        {issue && (
+          <Notice
+            tone="warning"
+            id="link-review-reason"
+            title={`Vínculo a conferir: ${linkIssueLabels[issue]}`}
+          >
             <p>
-              A correção da atividade vinculada fica disponível depois que as alterações forem
-              salvas.
+              Vínculo gravado: <code>{event.activity && activityKey(event.activity)}</code>.{' '}
+              {linkIssueActions[issue]}
             </p>
-          )}
-        </Notice>
-      )}
-      {correctable && changing && (
-        <ActivityChangeForm
-          eventId={event.id}
-          onClose={(applied) => {
-            setChanging(false);
-            // The corrected date leaves the review group and its button: focus the next action.
-            requestAnimationFrame(() =>
-              (applied ? editButton : changeButton).current?.focus({ preventScroll: false }),
-            );
-          }}
-        />
-      )}
-      {event.institutional ? (
-        <p className="help">Data da base institucional, somente para consulta.</p>
-      ) : (
-        <FormActions>
-          {correctable && !changing && (
+            {!correctable && (
+              <p>
+                A correção da atividade vinculada fica disponível depois que as alterações forem
+                salvas.
+              </p>
+            )}
+          </Notice>
+        )}
+        {correctable && changing && (
+          <ActivityChangeForm
+            eventId={event.id}
+            onClose={(applied) => {
+              setChanging(false);
+              // The corrected date leaves the review group and its button: focus the next action.
+              requestAnimationFrame(() =>
+                (applied ? editButton : changeButton).current?.focus({ preventScroll: false }),
+              );
+            }}
+          />
+        )}
+        {event.institutional && (
+          <p className="help">Data da base institucional, somente para consulta.</p>
+        )}
+      </div>
+      <PanelFooter>
+        {!event.institutional && (
+          <>
+            {correctable && !changing && (
+              <Button
+                type="button"
+                variant="secondary"
+                ref={changeButton}
+                data-change-activity={event.id}
+                disabled={readOnly || editor.pending}
+                onClick={() => setChanging(true)}
+              >
+                <Link2 size={18} aria-hidden="true" /> Corrigir atividade vinculada
+              </Button>
+            )}
+            <Button
+              type="button"
+              ref={editButton}
+              data-edit-event={event.id}
+              disabled={readOnly || editor.pending}
+              onClick={() => editor.edit(event.id)}
+            >
+              <Pencil size={18} aria-hidden="true" /> Editar
+            </Button>
             <Button
               type="button"
               variant="secondary"
-              ref={changeButton}
-              data-change-activity={event.id}
-              disabled={readOnly || editor.pending}
-              onClick={() => setChanging(true)}
+              id="close-campus-event"
+              disabled={editor.pending}
+              onClick={editor.close}
             >
-              <Link2 size={18} aria-hidden="true" /> Corrigir atividade vinculada
+              Fechar
             </Button>
-          )}
-          <Button
-            type="button"
-            ref={editButton}
-            data-edit-event={event.id}
-            disabled={readOnly || editor.pending}
-            onClick={() => editor.edit(event.id)}
-          >
-            <Pencil size={18} aria-hidden="true" /> Editar
-          </Button>
-          <Button
-            type="button"
-            variant="danger"
-            data-remove-event={event.id}
-            disabled={readOnly || editor.pending}
-            aria-label={`Remover ${event.name}`}
-            onClick={() => {
-              if (!removeDate(event.id)) return;
-              if (editor.eventId === event.id) editor.discard();
-              else editor.close();
-            }}
-          >
-            <Trash2 size={18} aria-hidden="true" /> Remover
-          </Button>
-        </FormActions>
-      )}
+            <Button
+              type="button"
+              variant="danger"
+              data-remove-event={event.id}
+              disabled={readOnly || editor.pending}
+              aria-label={`Remover ${event.name}`}
+              onClick={() => {
+                if (!removeDate(event.id)) return;
+                if (editor.eventId === event.id) editor.discard();
+                else editor.close();
+              }}
+            >
+              <Trash2 size={18} aria-hidden="true" /> Remover
+            </Button>
+          </>
+        )}
+      </PanelFooter>
     </section>
   );
 }

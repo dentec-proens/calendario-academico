@@ -65,7 +65,7 @@ export default function ImportCalendarForm({
           session.replace(next);
           form.reset();
           if (input.current) input.current.value = '';
-          notify('Cópia aplicada. Confira o indicador de salvamento.');
+          notify('Cópia aplicada ao calendário.');
           return Promise.resolve();
         },
       });

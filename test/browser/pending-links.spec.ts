@@ -47,7 +47,6 @@ for (const width of [1440, 390]) {
     const unrelated = await savedState(page);
     expect(unrelated.saves).toBeGreaterThan(0);
     expect(linked(unrelated.state.events)).toEqual(links);
-    await page.locator('#close-event-panel').click();
 
     // A pending date is edited: description and end change, the link stays.
     const pending = 'ivaipora-recognition-2';
@@ -69,7 +68,6 @@ for (const width of [1440, 390]) {
     });
 
     // Confirming the organization previews the dates to review and keeps their links.
-    await page.locator('#close-event-panel').click();
     await selectEditorSection(page, 'periods');
     await page.locator('[data-edit-organization="integrado"]').click();
     await page.locator('#offer-integrado-organization [data-choice="anual"]').click();

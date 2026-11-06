@@ -341,7 +341,7 @@ test('the free event form opens in the side panel with a labelled offer group', 
   await expect(offers.locator(':scope > legend')).toHaveText('Ofertas abrangidas');
   await expect(offers.locator('input')).toHaveCount(2);
   await expect(page.locator('#close-event-panel')).toHaveAccessibleName('Fechar painel');
-  await expect(page.locator('#event-form .form-actions button')).toHaveCount(1);
+  await expect(page.locator('#event-form .ui-panel-footer button')).toHaveCount(1);
   await expect(page.locator('#discard-event-form')).toBeHidden();
 });
 
@@ -613,7 +613,52 @@ test('a review link to an assessment stage opens it in the combined step and clo
   await expect(page.locator('#event-panel')).toBeHidden();
 });
 
-test('discarding a pending draft from another activity returns focus to that activity', async ({
+test('a date applied in an activity is confirmed in its view, which the person then concludes', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await selectEditorSection(page, 'events');
+  await openActivity(page, 'family-meeting');
+  const row = page.locator('[data-activity-open="family-meeting"]');
+  await page.locator('#event-start').fill('2027-05-08');
+  await page.locator('#event-end').fill('2027-05-08');
+  await page.locator('#event-form button[type="submit"]').click();
+
+  const confirmation = page.locator('#event-panel-message');
+  await expect(confirmation).toContainText('adicionada ao calendário');
+  await expect(confirmation.locator('.ui-notice, [class*="notice"]').first()).toBeInViewport();
+  await expect(page.locator('#event-panel .activity-records')).toContainText('8 de maio de 2027');
+  await expect(page.locator('#finish-activity')).toHaveText('Concluir');
+  // Dismissing the confirmation keeps focus inside the modal panel.
+  await confirmation.getByRole('button', { name: 'Fechar aviso' }).press('Enter');
+  await expect(confirmation).toBeEmpty();
+  await expect(page.locator('#event-panel-title')).toBeFocused();
+  // A new form starts clean: the confirmation belonged to the date just applied.
+  await page.locator('[data-prepare-activity="family-meeting"]').click();
+  await expect(confirmation).toBeEmpty();
+  await page.locator('#close-event-panel').click();
+
+  await row.click();
+  await page.locator('#finish-activity').click();
+  await expect(page.locator('#event-panel')).toBeHidden();
+  await expect(row).toBeFocused();
+});
+
+test('a removal in an activity can be undone from the panel', async ({ page, fixtureServer }) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await selectEditorSection(page, 'events');
+  await openActivity(page, 'cultural-week');
+  await page.locator('[data-remove-event="activity-event"]').click();
+  const confirm = page.getByRole('alertdialog');
+  if (await confirm.isVisible()) await confirm.getByRole('button').last().click();
+  await expect(page.locator('[data-remove-event="activity-event"]')).toHaveCount(0);
+  await page.locator('#event-panel-message [data-undo-removal]').click();
+  await expect(page.locator('[data-remove-event="activity-event"]')).toBeVisible();
+  await expect(page.locator('#event-panel-title')).toBeFocused();
+});
+
+test('discarding a pending draft from another activity stays on that activity', async ({
   page,
   fixtureServer,
 }) => {
@@ -626,6 +671,8 @@ test('discarding a pending draft from another activity returns focus to that act
   const other = page.locator('[data-activity-open="alumni-meeting"]');
   await other.click();
   await page.locator('#panel-discard-event').click();
+  await expect(page.locator('[data-prepare-activity="alumni-meeting"]')).toBeFocused();
+  await page.locator('#finish-activity').click();
   await expect(page.locator('#event-panel')).toBeHidden();
   await expect(other).toBeFocused();
 });

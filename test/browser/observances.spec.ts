@@ -52,8 +52,12 @@ for (const width of [1440, 390]) {
     expect((await savedState(page)).state.observanceDates).toEqual({
       'public-servant-day': '2027-10-29',
     });
+    await expect(opener).toBeFocused();
+    await opener.click();
     await page.locator('#reset-observance-public-servant-day').click();
     expect((await savedState(page)).state.observanceDates).toBeUndefined();
+    await expect(opener).toBeFocused();
+    await opener.click();
     await expect(date).toHaveValue('2027-10-28');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,

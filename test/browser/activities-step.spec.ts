@@ -465,7 +465,7 @@ for (const width of [1440, 390])
     await page.locator('#close-event-panel').click();
     // A new date of the campus starts with every offer of the calendar.
     await page.locator('#new-event').click();
-    await expect(page.locator('#event-form-title')).toHaveText('Nova data do campus');
+    await expect(page.locator('#event-panel-title')).toHaveText('Nova data do campus');
     expect(await chosen()).toEqual([
       'integrado:true',
       'graduacao:true',

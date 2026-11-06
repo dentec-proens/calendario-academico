@@ -26,7 +26,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('[data-open-event="local-event"]')).toBeFocused();
     await expect(page.locator('#resume-event')).toBeHidden();
     await add.press('Enter');
-    await expect(page.locator('#event-form-title')).toHaveText('Nova data do campus');
+    await expect(page.locator('#event-panel-title')).toHaveText('Nova data do campus');
     await page.locator('#event-name').fill('Evento para continuar depois');
 
     await page.locator('#event-start').fill('2027-04-05');
@@ -56,7 +56,7 @@ for (const width of [1440, 390]) {
     await page.keyboard.press('Tab');
     await expect(page.locator('#resume-pending-event')).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.locator('#event-form-title')).toBeFocused();
+    await expect(page.locator('#event-panel-title')).toBeFocused();
     await expect(page.locator('#event-name')).toHaveValue('Evento para continuar depois');
     await expect(page.locator('#event-start')).toHaveValue('2027-04-05');
     await expect(page.locator('#event-end')).toHaveValue('2027-04-06');
@@ -79,12 +79,11 @@ for (const width of [1440, 390]) {
     await page.locator('#event-start').fill('2027-04-07');
     await page.locator('#event-end').fill('2027-04-07');
     await page.locator('#event-form button[type="submit"]').click();
-    await expect(page.locator('#event-form-title')).toHaveText('Editar data');
+    await expect(page.locator('#event-panel')).toBeHidden();
     await expect(notice).toBeHidden();
-    await page.locator('#close-event-panel').click();
     await expect(add).toBeEnabled();
     await add.click();
-    await expect(page.locator('#event-form-title')).toHaveText('Nova data do campus');
+    await expect(page.locator('#event-panel-title')).toHaveText('Nova data do campus');
     await expect(page.locator('#event-name')).toHaveValue('');
     await expect(page.locator('#event-list')).toContainText('Primeiro evento incluído');
     await expect
@@ -129,7 +128,7 @@ test('editor separates creation from editing and preserves closed activity draft
   await expect(page.locator('#event-form')).toBeHidden();
   await editCampusEvent(page, 'local-event');
   await expect(page.locator('#new-event')).toBeVisible();
-  await expect(page.locator('#event-form-title')).toHaveText('Editar data');
+  await expect(page.locator('#event-panel-title')).toHaveText('Editar data');
   await page.locator('#event-name').fill('Edição local ainda não aplicada');
 
   await setDates('2027-03-11', '2027-03-12');
@@ -149,7 +148,7 @@ test('editor separates creation from editing and preserves closed activity draft
   expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
   await expect(page.locator('#new-event')).toBeVisible();
   await page.locator('#new-event').click();
-  await expect(page.locator('#event-form-title')).toHaveText('Nova data do campus');
+  await expect(page.locator('#event-panel-title')).toHaveText('Nova data do campus');
   await expect(page.locator('#event-requirement')).toHaveCount(0);
   await expect(page.locator('#event-form')).toBeVisible();
   await expect(page.locator('#close-event-panel')).toBeVisible();
@@ -164,9 +163,7 @@ test('editor separates creation from editing and preserves closed activity draft
     ),
   );
   expect(await page.evaluate(() => window.editorTest.record.state.events.length)).toBe(3);
-  await expect(page.locator('#event-form-title')).toHaveText('Editar data');
-  await expect(page.locator('#discard-event-form')).toBeHidden();
-  await page.locator('#close-event-panel').click();
+  await expect(page.locator('#event-panel')).toBeHidden();
 
   await openActivity(page, 'cultural-week');
   await page.locator('[data-edit-activity-event="activity-event"]').click();
@@ -282,12 +279,14 @@ for (const width of [1440, 390]) {
     expect(await savedName('activity-event')).not.toBe('Semana cultural — rascunho A');
     await expect(page.locator('[data-pending-draft="activity-event"]')).toBeVisible();
     await expect(page.locator(`[data-pending-draft="${second.id}"]`)).toHaveCount(0);
+    // With a draft still pending, the activity can be left but is not concluded.
+    await expect(page.locator('#finish-activity')).toHaveText('Fechar');
     await page.locator('[data-edit-activity-event="activity-event"]').click();
     await expect(name).toHaveValue('Semana cultural — rascunho A');
     await page.locator('#discard-event-form').click();
     await expect(page.locator('[data-pending-draft]')).toHaveCount(0);
     await expect(page.locator('#unapplied-status')).toBeHidden();
-    await openActivity(page, 'cultural-week');
+    // Discarding stays on the activity, as applying does.
     await page.locator('[data-edit-activity-event="activity-event"]').click();
     await expect(name).toHaveValue((await savedName('activity-event'))!);
     await expect

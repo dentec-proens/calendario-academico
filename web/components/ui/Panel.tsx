@@ -55,6 +55,23 @@ export function PanelDialog({
   );
 }
 
+/** Actions of a panel view, in reach at the bottom however long the view is. */
+export function PanelFooter({
+  feedback,
+  children,
+}: {
+  /** Shown beside the actions, so a refusal is not left out of sight above them. */
+  feedback?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="ui-panel-footer">
+      {feedback}
+      <div className="ui-panel-footer__actions">{children}</div>
+    </div>
+  );
+}
+
 export function PanelHeader({
   title,
   titleId,

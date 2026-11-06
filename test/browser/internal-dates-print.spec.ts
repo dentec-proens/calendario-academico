@@ -166,7 +166,6 @@ for (const width of [1440, 390]) {
     expect(
       (await savedState(page)).state.events.find((event) => event.id === 'local-event')?.internal,
     ).toBe(true);
-    await page.locator('#close-event-panel').click();
     await page.locator('[data-view="calendar"]').click();
 
     const choice = page.locator('#print-version');

@@ -191,6 +191,7 @@ export default function ActivityChecklist() {
     lines.some(
       ({ event, activity }) =>
         event.id === panelEvent ||
+        event.id === editor.lastApplied ||
         event.id === linkedDate ||
         (panelObservance !== undefined &&
           observanceForEvent(state.year, event.id)?.key === panelObservance) ||

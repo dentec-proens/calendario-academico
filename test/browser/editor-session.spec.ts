@@ -112,6 +112,7 @@ test('header logout can be cancelled and waits for an in-flight save before sign
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => window.editorSessionTest.holdSaves());
   await editAppliedEvent(page);
+  await editCampusEvent(page, 'local-event');
   await page.locator('#event-name').fill('Campo não aplicado');
   // The side panel is modal; Fechar keeps the unapplied field.
   await page.locator('#close-event-panel').click();
@@ -144,6 +145,7 @@ test('expired editor offers only reauthentication and preserves applied changes 
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(() => window.editorSessionTest.holdSaves());
   await editAppliedEvent(page, 'Evento preservado após expiração');
+  await editCampusEvent(page, 'local-event');
   await page.locator('#event-name').fill('Rascunho também preservado');
   await expect
     .poll(() => page.evaluate(() => window.editorSessionTest.counters.saveStarted))
@@ -208,6 +210,7 @@ for (const viewport of [
       await expect
         .poll(() => page.evaluate(() => window.editorTest.record.state.events[0].name))
         .toBe('Evento antes da manutenção');
+      await editCampusEvent(page, 'local-event');
       await page.locator('#event-name').fill('Campo mantido durante manutenção');
       await page.evaluate(() => window.editorSessionTest.maintenance(true));
       const notice = page.locator('#editor-access-notice');
@@ -235,6 +238,7 @@ for (const viewport of [
       await page.goto(await fixtureServer('editor-session'));
       await expect(page.locator('#record-title')).toBeVisible();
       await editAppliedEvent(page, 'Evento preservado na manutenção');
+      await editCampusEvent(page, 'local-event');
       await page.locator('#event-name').fill('Rascunho da manutenção');
       await page.evaluate(() => window.editorSessionTest.expire());
       await page.locator('#expired-editor-login').click();

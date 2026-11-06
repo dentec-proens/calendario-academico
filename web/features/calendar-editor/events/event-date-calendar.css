@@ -6,7 +6,6 @@
 }
 .event-date-calendar > div {
   width: 100%;
-  max-width: 340px;
 }
 .event-date-calendar .help {
   margin: 0 0 var(--ui-space-2);

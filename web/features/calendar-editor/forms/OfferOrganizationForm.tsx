@@ -434,7 +434,7 @@ export default function OfferOrganizationForm({
       )}
       {!expanded && applied && (
         <p className="offer-applied" role="status">
-          Organização aplicada. Confira o indicador de salvamento.
+          Organização aplicada ao calendário.
         </p>
       )}
       <div id={`${prefix}-editor`} hidden={!expanded}>
